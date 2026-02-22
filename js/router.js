@@ -1,4 +1,4 @@
-import { withDeployAssetVersion, debugLog } from './utils.js';
+import { withDeployAssetVersion, debugLog } from '../src/apps/shared/utils.js';
 import { loadDeferredModule, runDeferredModule } from './loader.js';
 import { setThemeMode } from './theme.js';
 import { changeLanguage } from './i18n.js';

@@ -14,8 +14,8 @@
 
 ```html
 <!-- ESTAS REFERENCIAS NO EXISTEN -->
-<script src="bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1"></script>
-<script src="script.js?v=figo-20260221-phase10-realagenda1"></script>
+<script src="bootstrap-inline-engine.js?v=figo-20260222-slotservicefix1"></script>
+<script src="script.js?v=figo-20260222-slotservicefix1"></script>
 ```
 
 **Impacto**: La aplicación no carga correctamente en producción.

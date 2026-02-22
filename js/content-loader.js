@@ -1,4 +1,4 @@
-import { debugLog, withDeployAssetVersion } from './utils.js';
+import { debugLog, withDeployAssetVersion } from '../src/apps/shared/utils.js';
 
 const CONTENT_JSON_URL = withDeployAssetVersion('/content/index.json');
 const REQUIRED_SECTION_IDS = [

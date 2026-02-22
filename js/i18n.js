@@ -1,4 +1,4 @@
-import { withDeployAssetVersion, showToast, debugLog } from './utils.js';
+import { withDeployAssetVersion, showToast, debugLog } from '../src/apps/shared/utils.js';
 import { loadDeferredModule, withDeferredModule } from './loader.js';
 import { state } from './state.js';
 import { renderPublicReviews } from './engagement.js';

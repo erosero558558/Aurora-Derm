@@ -1,4 +1,4 @@
-import { withDeployAssetVersion, escapeHtml, showToast } from './utils.js';
+import { withDeployAssetVersion, escapeHtml, showToast } from '../src/apps/shared/utils.js';
 import {
     loadDeferredModule,
     runDeferredModule,

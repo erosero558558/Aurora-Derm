@@ -3,7 +3,8 @@ import {
     resolveDeployAssetVersion,
     withDeployAssetVersion,
     debugLog,
-} from './utils.js';
+} from '../src/apps/shared/utils.js';
+import { initFeatureFlags } from '../src/apps/shared/features.js';
 import { initActionRouterEngine } from './router.js';
 import { initThemeMode } from './theme.js';
 import { changeLanguage, initEnglishBundleWarmup } from './i18n.js';
@@ -248,6 +249,7 @@ function initChatActionFallbackBridge() {
 document.addEventListener('DOMContentLoaded', function () {
     disablePlaceholderExternalLinks();
     bootstrapConsent();
+    initFeatureFlags();
     initChatActionFallbackBridge();
     initActionRouterEngine();
     initDeferredStylesheetLoading();

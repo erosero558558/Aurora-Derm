@@ -1,4 +1,4 @@
-import { withDeployAssetVersion } from './utils.js';
+import { withDeployAssetVersion } from '../src/apps/shared/utils.js';
 import { loadDeferredModule, runDeferredModule } from './loader.js';
 import { state } from './state.js';
 import { THEME_STORAGE_KEY, VALID_THEME_MODES } from './config.js';

@@ -11,7 +11,7 @@ import {
     getApiSlowNoticeLastAt,
     setApiSlowNoticeLastAt,
 } from './state.js';
-import { showToast, waitMs } from './utils.js';
+import { showToast, waitMs } from '../src/apps/shared/utils.js';
 
 export async function apiRequest(resource, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();

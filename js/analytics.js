@@ -1,4 +1,4 @@
-import { withDeployAssetVersion, debugLog } from './utils.js';
+import { withDeployAssetVersion, debugLog } from '../src/apps/shared/utils.js';
 import {
     loadDeferredModule,
     runDeferredModule,

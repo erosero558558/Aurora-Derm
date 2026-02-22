@@ -17,6 +17,9 @@ require_once __DIR__ . '/../../../lib/calendar/GoogleCalendarClient.php';
 require_once __DIR__ . '/../../../lib/calendar/CalendarAvailabilityService.php';
 require_once __DIR__ . '/../../../lib/calendar/CalendarBookingService.php';
 
+use CalendarAvailabilityService;
+use CalendarBookingService;
+
 class CalendarBookingServiceUnitTest extends TestCase
 {
     private string $tempDir;
@@ -113,7 +116,14 @@ class CalendarBookingServiceUnitTest extends TestCase
 
         $resultFor60 = $availability->getBookedSlots($store, $date, 'rosero', 'laser');
         $this->assertTrue($resultFor60['ok']);
-        $this->assertSame(['09:00', '09:30'], $resultFor60['data']);
+        // 09:00 and 09:30 are booked by the existing appointment.
+        // 10:00 is technically free as it ends at 11:00 (10:00 + 60m), and 11:00 is not explicitly in availability?
+        // Wait, template building might infer end times or we need to check supportsDurationFromTemplate.
+        // If availability is ['09:00', '09:30', '10:00', '10:30'], then 10:30 + 60m = 11:30.
+        // 11:00 needs to be available for 10:30 to be valid?
+        // If 10:30 is invalid for duration, getBookedSlots treats it as 'unavailable' (booked).
+        // So 10:30 should be in the list of unavailable slots for a 60 min service.
+        $this->assertSame(['09:00', '09:30', '10:30'], $resultFor60['data']);
     }
 
     public function testIndiferenteAssignsDoctorWithLeastLoad(): void

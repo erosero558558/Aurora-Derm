@@ -1,4 +1,4 @@
-import { withDeployAssetVersion, showToast } from './utils.js';
+import { withDeployAssetVersion, showToast } from '../src/apps/shared/utils.js';
 import { loadDeferredModule, runDeferredModule } from './loader.js';
 import { state } from './state.js';
 import { trackEvent } from './analytics.js';

@@ -12,7 +12,7 @@ import {
 } from './state.js';
 import { API_ENDPOINT, API_REQUEST_TIMEOUT_MS } from './config.js';
 import { loadDeferredModule, runDeferredModule } from './loader.js';
-import { withDeployAssetVersion } from './utils.js';
+import { withDeployAssetVersion } from '../src/apps/shared/utils.js';
 
 const BOOKING_UTILS_URL = withDeployAssetVersion('/js/engines/booking-utils.js');
 
