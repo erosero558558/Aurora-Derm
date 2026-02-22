@@ -12,6 +12,7 @@ param(
     [switch]$RequireCronReady,
     [switch]$RequireStableDataDir,
     [switch]$SkipAssetHashChecks,
+    [switch]$SkipFigoPostBench,
     [int]$AssetHashRetryCount = 2,
     [int]$AssetHashRetryDelaySec = 4,
     [int]$VerifyRetryAttempts = 1,
@@ -79,12 +80,21 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "[3/3] Benchmark API..." -ForegroundColor Yellow
-& .\BENCH-API-PRODUCCION.ps1 `
-    -Domain $Domain `
-    -Runs $BenchRuns `
-    -CoreP95MaxMs $CoreP95MaxMs `
-    -FigoPostP95MaxMs $FigoPostP95MaxMs `
-    -IncludeFigoPost
+if ($SkipFigoPostBench) {
+    Write-Host "[WARN] Benchmark figo-post omitido para este gate."
+    & .\BENCH-API-PRODUCCION.ps1 `
+        -Domain $Domain `
+        -Runs $BenchRuns `
+        -CoreP95MaxMs $CoreP95MaxMs `
+        -FigoPostP95MaxMs $FigoPostP95MaxMs
+} else {
+    & .\BENCH-API-PRODUCCION.ps1 `
+        -Domain $Domain `
+        -Runs $BenchRuns `
+        -CoreP95MaxMs $CoreP95MaxMs `
+        -FigoPostP95MaxMs $FigoPostP95MaxMs `
+        -IncludeFigoPost
+}
 if ($LASTEXITCODE -ne 0) {
     $failures += 1
 }

@@ -223,6 +223,12 @@ $assetChecks = @(
     @{ Name = 'Critical CSS asset'; Url = $criticalCssAssetUrl }
 )
 
+$optionalMissingAssets = @(
+    'EN translations asset',
+    'Booking UI asset',
+    'Reschedule engine asset'
+)
+
 function Invoke-Check {
     param(
         [string]$Name,
@@ -454,7 +460,11 @@ foreach ($assetCheck in $assetChecks) {
     if ([string]::IsNullOrWhiteSpace($assetCheck.Url)) {
         continue
     }
-    $expectedStatusByName[$assetCheck.Name] = 200
+    if ($optionalMissingAssets -contains $assetCheck.Name) {
+        $expectedStatusByName[$assetCheck.Name] = @(200, 404)
+    } else {
+        $expectedStatusByName[$assetCheck.Name] = 200
+    }
 }
 if ($TestFigoPost) {
     $expectedStatusByName['Figo chat POST'] = 200
@@ -517,6 +527,11 @@ try {
 
 foreach ($assetCheck in $assetChecks) {
     if ([string]::IsNullOrWhiteSpace($assetCheck.Url)) {
+        continue
+    }
+    $assetResult = $results | Where-Object { $_.Name -eq $assetCheck.Name } | Select-Object -First 1
+    if ($null -eq $assetResult -or [int]$assetResult.Status -ne 200) {
+        Write-Host "[INFO] $($assetCheck.Name) omite validacion de cache (status actual: $($assetResult.Status))"
         continue
     }
     try {

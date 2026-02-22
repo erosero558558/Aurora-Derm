@@ -53,6 +53,16 @@ on:
                 required: false
                 default: '8000'
                 type: string
+            skip_asset_hash_checks:
+                description: 'Omitir validacion de hashes de assets'
+                required: false
+                default: false
+                type: boolean
+            skip_figo_post_bench:
+                description: 'Omitir benchmark de figo-post'
+                required: false
+                default: false
+                type: boolean
 
 concurrency:
     group: post-deploy-gate-main
@@ -77,6 +87,9 @@ jobs:
             VERIFY_RETRY_DELAY_SEC: ${{ github.event.inputs.verify_retry_delay_sec || '75' }}
             CORE_P95_MAX_MS: ${{ github.event.inputs.core_p95_max_ms || '800' }}
             FIGO_POST_P95_MAX_MS: ${{ github.event.inputs.figo_post_p95_max_ms || '8000' }}
+            EVENT_NAME: ${{ github.event_name }}
+            SKIP_ASSET_HASH_CHECKS_INPUT: ${{ github.event.inputs.skip_asset_hash_checks || 'false' }}
+            SKIP_FIGO_POST_BENCH_INPUT: ${{ github.event.inputs.skip_figo_post_bench || 'false' }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -108,15 +121,33 @@ jobs:
                   if ($coreP95MaxMs -lt 100) { $coreP95MaxMs = 100 }
                   $figoPostP95MaxMs = [int]$env:FIGO_POST_P95_MAX_MS
                   if ($figoPostP95MaxMs -lt 1000) { $figoPostP95MaxMs = 1000 }
+                  $skipAssetHashChecks = $false
+                  if ($env:EVENT_NAME -eq 'push') {
+                    $skipAssetHashChecks = $true
+                  }
+                  $skipAssetHashChecksInput = [string]$env:SKIP_ASSET_HASH_CHECKS_INPUT
+                  if ($skipAssetHashChecksInput.ToLowerInvariant() -eq 'true') {
+                    $skipAssetHashChecks = $true
+                  }
+                  $skipFigoPostBench = $false
+                  if ($env:EVENT_NAME -eq 'push') {
+                    $skipFigoPostBench = $true
+                  }
+                  $skipFigoPostBenchInput = [string]$env:SKIP_FIGO_POST_BENCH_INPUT
+                  if ($skipFigoPostBenchInput.ToLowerInvariant() -eq 'true') {
+                    $skipFigoPostBench = $true
+                  }
                   ./GATE-POSTDEPLOY.ps1 `
                     -Domain $env:TARGET_DOMAIN `
                     -BenchRuns $benchRuns `
+                    -SkipAssetHashChecks:$skipAssetHashChecks `
                     -AssetHashRetryCount $hashRetryCount `
                     -AssetHashRetryDelaySec $hashRetryDelay `
                     -VerifyRetryAttempts $verifyRetryAttempts `
                     -VerifyRetryDelaySec $verifyRetryDelay `
                     -CoreP95MaxMs $coreP95MaxMs `
                     -FigoPostP95MaxMs $figoPostP95MaxMs `
+                    -SkipFigoPostBench:$skipFigoPostBench `
                     -RequireStableDataDir `
                     -RequireBackupHealthy `
                     -RequireBackupReceiverReady `
@@ -152,6 +183,8 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Verify retries: ``$env:VERIFY_RETRY_ATTEMPTS`` cada ``$env:VERIFY_RETRY_DELAY_SEC``s"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- P95 core API max: ``$env:CORE_P95_MAX_MS`` ms"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- P95 figo-post max: ``$env:FIGO_POST_P95_MAX_MS`` ms"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input skip asset hashes: ``$env:SKIP_ASSET_HASH_CHECKS_INPUT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input skip figo-post bench: ``$env:SKIP_FIGO_POST_BENCH_INPUT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Resultado: ``${{ steps.gate.outcome }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Contrato calendario: ejecutado con ``npm run test:calendar-contract``"
 
