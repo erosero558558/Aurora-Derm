@@ -635,6 +635,10 @@
                         ? await deps.createAppointmentRecord(payload)
                         : null;
 
+                if (!result) {
+                    throw new Error('Could not create appointment record');
+                }
+
                 if (deps && typeof deps.removeTypingIndicator === 'function') {
                     deps.removeTypingIndicator();
                 }
