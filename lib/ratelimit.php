@@ -42,6 +42,53 @@ function rate_limit_key(string $action, ?string $ip = null): string
     return md5($clientIp . ':' . $action);
 }
 
+function _rate_limit_redis_holder($instance = null)
+{
+    static $client = null;
+    if ($instance !== null) {
+        $client = $instance;
+    }
+    return $client;
+}
+
+function _get_rate_limit_redis()
+{
+    $client = _rate_limit_redis_holder();
+    if ($client !== null) {
+        return $client;
+    }
+
+    static $tried = false;
+    if ($tried) {
+        return null;
+    }
+    $tried = true;
+
+    $host = getenv('PIELARMONIA_REDIS_HOST');
+    if (is_string($host) && trim($host) !== '' && class_exists('Predis\Client')) {
+        try {
+            $c = new \Predis\Client([
+                'scheme' => 'tcp',
+                'host'   => trim($host),
+                'port'   => 6379,
+                'read_write_timeout' => 2,
+            ]);
+            $c->connect();
+            _rate_limit_redis_holder($c);
+            return $c;
+        } catch (Exception $e) {
+            error_log('RateLimit: Redis connection failed, falling back to file. ' . $e->getMessage());
+        }
+    }
+
+    return null;
+}
+
+function _set_rate_limit_redis($client): void
+{
+    _rate_limit_redis_holder($client);
+}
+
 function rate_limit_file_path(string $action, ?string $ip = null): string
 {
     $key = rate_limit_key($action, $ip);
@@ -122,6 +169,20 @@ function is_rate_limited(string $action, int $maxRequests = 10, int $windowSecon
     $windowSeconds = max(1, $windowSeconds);
 
     $now = time();
+
+    $redis = _get_rate_limit_redis();
+    if ($redis) {
+        try {
+            $key = 'ratelimit:' . rate_limit_key($action);
+            $redis->zremrangebyscore($key, 0, $now - $windowSeconds);
+            $count = $redis->zcard($key);
+            return $count >= $maxRequests;
+        } catch (Exception $e) {
+            error_log('RateLimit: Redis error in is_rate_limited: ' . $e->getMessage());
+            // Fallback to file check below
+        }
+    }
+
     $filePath = rate_limit_file_path($action);
     $entries = rate_limit_read_entries($filePath);
     $entries = rate_limit_filter_window($entries, $now, $windowSeconds);
@@ -134,9 +195,37 @@ function check_rate_limit(string $action, int $maxRequests = 10, int $windowSeco
     $maxRequests = max(1, $maxRequests);
     $windowSeconds = max(1, $windowSeconds);
 
+    $now = time();
+
+    $redis = _get_rate_limit_redis();
+    if ($redis) {
+        try {
+            $key = 'ratelimit:' . rate_limit_key($action);
+
+            // Cleanup old
+            $redis->zremrangebyscore($key, 0, $now - $windowSeconds);
+
+            // Check count
+            $count = $redis->zcard($key);
+            if ($count >= $maxRequests) {
+                return false;
+            }
+
+            // Add new
+            // Use current timestamp as score, and unique member to allow multiple requests per second
+            $member = $now . ':' . uniqid('', true);
+            $redis->zadd($key, [$member => $now]);
+            $redis->expire($key, $windowSeconds);
+
+            return true;
+        } catch (Exception $e) {
+            error_log('RateLimit: Redis error in check_rate_limit: ' . $e->getMessage());
+            // Fallback to file check below
+        }
+    }
+
     $rateDir = data_dir_path() . DIRECTORY_SEPARATOR . 'ratelimit';
     $filePath = rate_limit_file_path($action);
-    $now = time();
 
     $entries = rate_limit_read_entries($filePath);
     $entries = rate_limit_filter_window($entries, $now, $windowSeconds);
@@ -156,6 +245,16 @@ function check_rate_limit(string $action, int $maxRequests = 10, int $windowSeco
 
 function reset_rate_limit(string $action): void
 {
+    $redis = _get_rate_limit_redis();
+    if ($redis) {
+        try {
+            $key = 'ratelimit:' . rate_limit_key($action);
+            $redis->del([$key]);
+        } catch (Exception $e) {
+            error_log('RateLimit: Redis error in reset_rate_limit: ' . $e->getMessage());
+        }
+    }
+
     $filePath = rate_limit_file_path($action);
     if (is_file($filePath)) {
         @unlink($filePath);
