@@ -47,10 +47,11 @@ function read_store(): array
     return $mock_store;
 }
 
-function write_store(array $store): void
+function write_store(array $store): bool
 {
     global $mock_store;
     $mock_store = $store;
+    return true;
 }
 
 function require_rate_limit($key, $limit, $window): void
