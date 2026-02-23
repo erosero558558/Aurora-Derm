@@ -68,14 +68,18 @@ class SystemController
         echo Metrics::export();
 
         // Output business metrics
-        foreach ($revenueByDate as $date => $amount) {
+        if (!empty($revenueByDate)) {
             echo "\n# TYPE pielarmonia_revenue_daily_total gauge";
-            echo "\npielarmonia_revenue_daily_total{date=\"$date\"} $amount";
+            foreach ($revenueByDate as $date => $amount) {
+                echo "\npielarmonia_revenue_daily_total{date=\"$date\"} $amount";
+            }
         }
 
-        foreach ($stats as $st => $count) {
+        if (!empty($stats)) {
             echo "\n# TYPE pielarmonia_appointments_total gauge";
-            echo "\npielarmonia_appointments_total{status=\"$st\"} $count";
+            foreach ($stats as $st => $count) {
+                echo "\npielarmonia_appointments_total{status=\"$st\"} $count";
+            }
         }
 
         $totalValid = $stats['confirmed'] + $stats['no_show'] + $stats['completed'];
@@ -104,9 +108,11 @@ class SystemController
                 $serviceCounts[$svc]++;
             }
         }
-        foreach ($serviceCounts as $svc => $count) {
+        if (!empty($serviceCounts)) {
             echo "\n# TYPE pielarmonia_service_popularity_total gauge";
-            echo "\npielarmonia_service_popularity_total{service=\"$svc\"} $count";
+            foreach ($serviceCounts as $svc => $count) {
+                echo "\npielarmonia_service_popularity_total{service=\"$svc\"} $count";
+            }
         }
 
         // Lead Time (Last 30 days)
