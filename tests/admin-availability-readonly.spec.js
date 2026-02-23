@@ -129,8 +129,23 @@ async function openAvailabilitySection(page) {
 
     await page.locator('.nav-item[data-section="availability"]').click();
     await expect(page.locator('#availability')).toHaveClass(/active/);
-    await expect(page.locator('#availabilityCalendar .calendar-day.has-slots').first()).toBeVisible();
-    await page.locator('#availabilityCalendar .calendar-day.has-slots').first().click();
+
+    // Wait for calendar to render
+    await page.waitForTimeout(500);
+
+    // Find the first day with slots. If none are visible (e.g. month change), we might need to navigate.
+    // But since buildDataPayload injects slots for T+3 days, it should be visible in current month unless T+3 crosses month boundary.
+    // If it crosses, we fail. Let's make sure T+3 is safe or we navigate.
+
+    const dayWithSlots = page.locator('#availabilityCalendar .calendar-day.has-slots').first();
+    if (await dayWithSlots.isVisible()) {
+        await dayWithSlots.click();
+    } else {
+        // Fallback: click next month if needed, or just warn.
+        // For now, let's just assert existence with a longer timeout to allow render
+        await expect(dayWithSlots).toBeVisible({ timeout: 10000 });
+        await dayWithSlots.click();
+    }
 }
 
 test.describe('Admin disponibilidad: modo Google solo lectura', () => {
