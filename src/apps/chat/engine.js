@@ -13,6 +13,7 @@ const KIMI_CONFIG = {
     temperature: 0.7,
 };
 const CHAT_CONTEXT_MAX_ITEMS = 24;
+const OPENCLAW_POLL_MAX_MS = 30000;
 
 let deps = null;
 let conversationContext = [];
@@ -145,6 +146,46 @@ function shouldUseRealAI() {
     }
 
     return true;
+}
+
+function createFigoError(message, details = {}) {
+    const error = new Error(message);
+    if (details && typeof details === 'object') {
+        Object.assign(error, details);
+    }
+    return error;
+}
+
+function isOpenClawQueueError(error) {
+    if (!error || typeof error !== 'object') {
+        return false;
+    }
+
+    if (error.noLocalFallback === true) {
+        return true;
+    }
+
+    if (typeof error.provider === 'string' && error.provider === 'openclaw_queue') {
+        return true;
+    }
+
+    if (typeof error.code === 'string') {
+        return /^(queue_|gateway_|provider_mode_disabled)/.test(error.code);
+    }
+
+    return false;
+}
+
+function showOpenClawUnavailableMessage(reason = '') {
+    const hint = reason
+        ? `<br><small>Detalle técnico: ${String(reason)}</small>`
+        : '';
+
+    addBotMessage(
+        `El asistente Figo no está disponible por unos minutos.${hint}<br><br>
+Puedes continuar por <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp +593 98 245 3672</a> para atención inmediata.`,
+        false
+    );
 }
 
 async function processWithKimi(message) {
@@ -505,12 +546,49 @@ async function requestFigoCompletion(
         throw new Error('Respuesta no es JSON valido');
     }
 
+    if (data && typeof data === 'object' && data.mode === 'queued') {
+        return {
+            content: '',
+            mode: 'queued',
+            source: typeof data.source === 'string' ? data.source : '',
+            reason: typeof data.reason === 'string' ? data.reason : '',
+            configured: data.configured !== false,
+            recursiveConfigDetected: data.recursiveConfigDetected === true,
+            upstreamStatus: Number.isFinite(data.upstreamStatus)
+                ? Number(data.upstreamStatus)
+                : 0,
+            queued: true,
+            provider:
+                typeof data.provider === 'string'
+                    ? data.provider
+                    : 'openclaw_queue',
+            jobId: typeof data.jobId === 'string' ? data.jobId : '',
+            pollUrl: typeof data.pollUrl === 'string' ? data.pollUrl : '',
+            pollAfterMs: Number.isFinite(data.pollAfterMs)
+                ? Number(data.pollAfterMs)
+                : 1500,
+        };
+    }
+
     if (!response.ok || data.ok === false) {
         const reasonHint =
             data && typeof data.reason === 'string' && data.reason
                 ? ` (${data.reason})`
                 : '';
-        throw new Error(`HTTP ${response.status}${reasonHint}`);
+        throw createFigoError(`HTTP ${response.status}${reasonHint}`, {
+            provider:
+                data && typeof data.provider === 'string'
+                    ? data.provider
+                    : '',
+            code:
+                data && typeof data.errorCode === 'string'
+                    ? data.errorCode
+                    : '',
+            noLocalFallback:
+                data &&
+                typeof data.provider === 'string' &&
+                data.provider === 'openclaw_queue',
+        });
     }
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
@@ -528,7 +606,132 @@ async function requestFigoCompletion(
         upstreamStatus: Number.isFinite(data.upstreamStatus)
             ? Number(data.upstreamStatus)
             : 0,
+        queued: false,
+        provider:
+            typeof data.provider === 'string'
+                ? data.provider
+                : '',
+        jobId: typeof data.jobId === 'string' ? data.jobId : '',
+        pollUrl: typeof data.pollUrl === 'string' ? data.pollUrl : '',
+        pollAfterMs: Number.isFinite(data.pollAfterMs)
+            ? Number(data.pollAfterMs)
+            : 1500,
     };
+}
+
+async function waitForQueuedCompletion(initialReply) {
+    const jobId = String(initialReply?.jobId || '').trim();
+    if (!jobId) {
+        throw createFigoError('queue_missing_job_id', {
+            code: 'queue_missing_job_id',
+            noLocalFallback: true,
+            provider: 'openclaw_queue',
+        });
+    }
+
+    const pollAfterMs = Math.max(
+        500,
+        Math.min(5000, Number(initialReply?.pollAfterMs || 1500))
+    );
+    const rawPollUrl = String(initialReply?.pollUrl || '').trim();
+    const pollUrl = rawPollUrl
+        ? rawPollUrl
+        : `/check-ai-response.php?jobId=${encodeURIComponent(jobId)}`;
+    const deadline = Date.now() + OPENCLAW_POLL_MAX_MS;
+
+    let firstPoll = true;
+    while (Date.now() < deadline) {
+        if (!firstPoll) {
+            await new Promise((resolve) => setTimeout(resolve, pollAfterMs));
+        }
+        firstPoll = false;
+        const pollTickUrl = pollUrl.includes('?')
+            ? `${pollUrl}&t=${Date.now()}`
+            : `${pollUrl}?t=${Date.now()}`;
+
+        let response;
+        try {
+            response = await fetch(pollTickUrl, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Cache-Control': 'no-cache',
+                },
+            });
+        } catch (networkError) {
+            throw createFigoError('queue_poll_network', {
+                code: 'queue_poll_network',
+                noLocalFallback: true,
+                provider: 'openclaw_queue',
+                cause: networkError,
+            });
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            throw createFigoError('queue_poll_invalid_json', {
+                code: 'queue_poll_invalid_json',
+                noLocalFallback: true,
+                provider: 'openclaw_queue',
+                cause: parseError,
+            });
+        }
+
+        const status = String(data?.status || '').toLowerCase();
+        if (status === 'queued' || status === 'processing') {
+            continue;
+        }
+
+        if (status === 'completed') {
+            const completion = data?.completion;
+            const content = String(
+                completion?.choices?.[0]?.message?.content || ''
+            ).trim();
+            if (!content) {
+                throw createFigoError('queue_completed_without_content', {
+                    code: 'queue_completed_without_content',
+                    noLocalFallback: true,
+                    provider: 'openclaw_queue',
+                });
+            }
+
+            return {
+                content,
+                mode: 'live',
+                source: 'openclaw_queue',
+                reason: '',
+                configured: true,
+                recursiveConfigDetected: false,
+                upstreamStatus: 200,
+                queued: false,
+                provider: 'openclaw_queue',
+                jobId,
+                pollUrl,
+                pollAfterMs,
+            };
+        }
+
+        throw createFigoError('queue_failed', {
+            code:
+                typeof data?.errorCode === 'string'
+                    ? data.errorCode
+                    : 'queue_failed',
+            noLocalFallback: true,
+            provider: 'openclaw_queue',
+            message:
+                typeof data?.errorMessage === 'string'
+                    ? data.errorMessage
+                    : 'No se pudo completar la respuesta de Figo',
+        });
+    }
+
+    throw createFigoError('queue_timeout', {
+        code: 'queue_timeout',
+        noLocalFallback: true,
+        provider: 'openclaw_queue',
+    });
 }
 
 async function tryRealAI(message) {
@@ -562,11 +765,20 @@ async function tryRealAI(message) {
             conversationContext.length,
             'mensajes'
         );
-        const primaryReply = await requestFigoCompletion(
+        let primaryReply = await requestFigoCompletion(
             messages,
             {},
             'principal'
         );
+
+        if (primaryReply.queued === true) {
+            debugLog(
+                'Respuesta en cola detectada. jobId:',
+                primaryReply.jobId || 'n/a'
+            );
+            primaryReply = await waitForQueuedCompletion(primaryReply);
+        }
+
         let botResponse = String(primaryReply.content || '').trim();
         if (!botResponse) {
             throw new Error('Respuesta vacia del backend de chat');
@@ -658,7 +870,10 @@ Pregunta original del paciente: "${message}"`;
     } catch (error) {
         debugLog('Error con bot del servidor:', error);
         removeTypingIndicator();
-
+        if (isOpenClawQueueError(error)) {
+            showOpenClawUnavailableMessage(error?.code || error?.message || '');
+            return;
+        }
         processLocalResponse(message, false);
     }
 }
@@ -959,4 +1174,3 @@ if (typeof window !== 'undefined') {
         mostrarInfoDebug,
     };
 }
-

@@ -35,6 +35,7 @@ require_once __DIR__ . '/lib/calendar/CalendarAvailabilityService.php';
 require_once __DIR__ . '/lib/calendar/CalendarBookingService.php';
 require_once __DIR__ . '/lib/backup.php';
 require_once __DIR__ . '/lib/audit.php';
+require_once __DIR__ . '/lib/figo_queue.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/email.php';
 require_once __DIR__ . '/lib/ratelimit.php';

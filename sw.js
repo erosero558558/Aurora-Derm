@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v9-20260221-phase10-realagenda1';
+const CACHE_NAME = 'pielarmonia-v10-20260223-openclaw-queue1';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -19,6 +19,8 @@ const STATIC_ASSETS = [
 const NETWORK_ONLY_PREFIXES = [
     '/api.php',
     '/figo-chat.php',
+    '/figo-ai-bridge.php',
+    '/check-ai-response.php',
     '/figo-backend.php',
     '/proxy.php',
     '/admin-auth.php',
@@ -179,6 +181,6 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     event.waitUntil(
-        clients.openWindow(event.notification.data)
+        self.clients.openWindow(event.notification.data)
     );
 });

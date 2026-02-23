@@ -48,7 +48,7 @@ const CHAT_BOOKING_ENGINE_URL = withDeployAssetVersion(
     '/js/engines/chat-booking-engine.js?v=figo-chat-booking-20260219-mbfix1'
 );
 const FIGO_CHAT_ENGINE_URL = withDeployAssetVersion(
-    '/js/engines/chat-engine.js?v=figo-chat-20260219-phase3-runtimeconfig1-contextcap1-sync1'
+    '/js/engines/chat-engine.js?v=figo-chat-20260223-openclaw-queue1'
 );
 
 const CHAT_HISTORY_STORAGE_KEY = 'chatHistory';

@@ -54,6 +54,35 @@
 // putenv('FIGO_AI_API_KEY=sk-or-v1-REEMPLAZAR');
 // putenv('FIGO_AI_MODEL=arcee-ai/trinity-large-preview:free');
 
+// -- OpenClaw Queue (modo recomendado sin Trinity) ----------------------------
+// Activa el modo cola OpenClaw en figo-chat.php
+// putenv('FIGO_PROVIDER_MODE=openclaw_queue');
+// Endpoint OpenAI-compatible de tu gateway OpenClaw
+// putenv('OPENCLAW_GATEWAY_ENDPOINT=https://tu-gateway-openclaw.example/v1/chat/completions');
+// API key del gateway
+// putenv('OPENCLAW_GATEWAY_API_KEY=REEMPLAZAR_TOKEN_OPENCLAW');
+// Modelo por defecto
+// putenv('OPENCLAW_GATEWAY_MODEL=figo-openclaw');
+// Header/prefijo para auth (por defecto Authorization + Bearer)
+// putenv('OPENCLAW_GATEWAY_KEY_HEADER=Authorization');
+// putenv('OPENCLAW_GATEWAY_KEY_PREFIX=Bearer');
+// TTL y retencion de jobs en cola
+// putenv('OPENCLAW_QUEUE_TTL_SEC=1800');
+// putenv('OPENCLAW_QUEUE_RETENTION_SEC=86400');
+// Espera sincrona inicial del bridge antes de devolver queued
+// putenv('OPENCLAW_BRIDGE_SYNC_WAIT_MS=3200');
+// Parametros del worker
+// putenv('OPENCLAW_WORKER_MAX_JOBS=20');
+// putenv('OPENCLAW_WORKER_RETRY_MAX=2');
+// putenv('OPENCLAW_GATEWAY_TIMEOUT_SECONDS=12');
+// Polling sugerido para frontend
+// putenv('OPENCLAW_POLL_AFTER_MS=800');
+// Trigger local al encolar (opcional)
+// putenv('OPENCLAW_TRIGGER_MAX_JOBS=3');
+// putenv('OPENCLAW_TRIGGER_TIME_BUDGET_MS=1200');
+// En produccion, recomendado desactivar fallback local silencioso
+// putenv('FIGO_ALLOW_LOCAL_FALLBACK=false');
+
 // ── Cron (recordatorios automáticos) ────────────────
 // putenv('PIELARMONIA_CRON_SECRET=un_token_secreto_largo');
 

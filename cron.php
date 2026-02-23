@@ -9,11 +9,13 @@ declare(strict_types=1);
  *   GET /cron.php?action=reminders&token=YOUR_CRON_SECRET
  *   GET /cron.php?action=backup-health&token=YOUR_CRON_SECRET
  *   GET /cron.php?action=backup-offsite&token=YOUR_CRON_SECRET
+ *   GET /cron.php?action=ai-queue-worker&token=YOUR_CRON_SECRET
  *
  * Suggested cron jobs (America/Guayaquil):
  *   0 18 * * * curl -s "https://pielarmonia.com/cron.php?action=reminders&token=YOUR_CRON_SECRET"
  *   10 3 * * * curl -s "https://pielarmonia.com/cron.php?action=backup-health&token=YOUR_CRON_SECRET"
  *   20 3 * * * curl -s "https://pielarmonia.com/cron.php?action=backup-offsite&token=YOUR_CRON_SECRET"
+ *   * * * * * curl -s "https://pielarmonia.com/cron.php?action=ai-queue-worker&token=YOUR_CRON_SECRET"
  */
 
 require_once __DIR__ . '/api-lib.php';
@@ -233,6 +235,35 @@ if ($action === 'backup-offsite') {
         'snapshot' => $snapshotSummary,
         'upload' => $upload
     ], $uploadOk ? 200 : 502);
+}
+
+if ($action === 'ai-queue-worker') {
+    if (!figo_queue_enabled()) {
+        cron_json([
+            'ok' => false,
+            'action' => 'ai-queue-worker',
+            'error' => 'FIGO_PROVIDER_MODE no esta en openclaw_queue'
+        ], 503);
+    }
+
+    $maxJobs = isset($_GET['maxJobs']) ? (int) $_GET['maxJobs'] : null;
+    $timeBudgetMs = isset($_GET['timeBudgetMs']) ? (int) $_GET['timeBudgetMs'] : null;
+    $result = figo_queue_process_worker($maxJobs, $timeBudgetMs, true);
+
+    $statusCode = ($result['ok'] ?? false) ? 200 : 503;
+    cron_json([
+        'ok' => (bool) ($result['ok'] ?? false),
+        'action' => 'ai-queue-worker',
+        'processed' => (int) ($result['processed'] ?? 0),
+        'completed' => (int) ($result['completed'] ?? 0),
+        'failed' => (int) ($result['failed'] ?? 0),
+        'remaining' => (int) ($result['remaining'] ?? 0),
+        'expired' => (int) ($result['expired'] ?? 0),
+        'deleted' => (int) ($result['deleted'] ?? 0),
+        'durationMs' => (int) ($result['durationMs'] ?? 0),
+        'reason' => isset($result['reason']) ? (string) $result['reason'] : '',
+        'timestamp' => gmdate('c')
+    ], $statusCode);
 }
 
 cron_json(['ok' => false, 'error' => 'Accion no valida'], 400);

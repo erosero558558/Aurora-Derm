@@ -344,6 +344,11 @@ if ($method === 'OPTIONS') {
 
 header('Content-Type: application/json; charset=utf-8');
 $fileConfig = figo_read_file_config();
+$providerMode = figo_queue_provider_mode();
+$openclawOverview = [];
+if ($providerMode === 'openclaw_queue') {
+    $openclawOverview = figo_queue_status_overview();
+}
 
 $endpoint = figo_first_non_empty([
     getenv('FIGO_CHAT_ENDPOINT'),
@@ -369,12 +374,27 @@ $recursiveConfigDetected = figo_is_recursive_endpoint($endpoint);
 $upstreamReachable = null;
 $requestMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 if ($requestMethod === 'GET') {
-    $upstreamReachable = figo_probe_upstream($endpoint, 3);
+    if ($providerMode === 'openclaw_queue') {
+        $upstreamReachable = isset($openclawOverview['openclawReachable'])
+            ? $openclawOverview['openclawReachable']
+            : null;
+    } else {
+        $upstreamReachable = figo_probe_upstream($endpoint, 3);
+    }
 }
 
-$diagnosticMode = (!$endpointDiagnostics['configured'] || $recursiveConfigDetected || $upstreamReachable === false)
-    ? 'degraded'
-    : 'live';
+$diagnosticMode = 'live';
+if ($providerMode === 'openclaw_queue') {
+    $gatewayConfigured = isset($openclawOverview['gatewayConfigured'])
+        ? ((bool) $openclawOverview['gatewayConfigured'])
+        : false;
+    if (!$gatewayConfigured || $upstreamReachable === false) {
+        $diagnosticMode = 'degraded';
+    }
+} elseif (!$endpointDiagnostics['configured'] || $recursiveConfigDetected || $upstreamReachable === false) {
+    $diagnosticMode = 'degraded';
+}
+
 $configSource = isset($fileConfig['__source']) && is_string($fileConfig['__source'])
     ? basename((string) $fileConfig['__source'])
     : 'environment';
@@ -385,12 +405,14 @@ if ($method === 'GET') {
         'degradedMode' => figo_degraded_mode_enabled(),
         'endpointHost' => $endpointDiagnostics['endpointHost'],
         'recursiveConfigDetected' => $recursiveConfigDetected,
-        'upstreamReachable' => $upstreamReachable
+        'upstreamReachable' => $upstreamReachable,
+        'providerMode' => $providerMode
     ]);
-    json_response([
+    $statusPayload = [
         'ok' => true,
         'service' => 'figo-chat',
         'mode' => $diagnosticMode,
+        'providerMode' => $providerMode,
         'configured' => $endpointDiagnostics['configured'],
         'degradedMode' => figo_degraded_mode_enabled(),
         'hasFileConfig' => isset($fileConfig['__source']),
@@ -401,7 +423,37 @@ if ($method === 'GET') {
         'recursiveConfigDetected' => $recursiveConfigDetected,
         'upstreamReachable' => $upstreamReachable,
         'timestamp' => gmdate('c')
-    ]);
+    ];
+
+    if ($providerMode === 'openclaw_queue') {
+        $statusPayload['provider'] = 'openclaw_queue';
+        $statusPayload['queueDepth'] = isset($openclawOverview['queueDepth']) && is_array($openclawOverview['queueDepth'])
+            ? $openclawOverview['queueDepth']
+            : [];
+        $statusPayload['workerLastRunAt'] = isset($openclawOverview['workerLastRunAt'])
+            ? (string) $openclawOverview['workerLastRunAt']
+            : '';
+        $statusPayload['workerLastRunDurationMs'] = isset($openclawOverview['workerLastRunDurationMs'])
+            ? (int) $openclawOverview['workerLastRunDurationMs']
+            : 0;
+        $statusPayload['openclawReachable'] = isset($openclawOverview['openclawReachable'])
+            ? $openclawOverview['openclawReachable']
+            : null;
+        $statusPayload['gatewayConfigured'] = isset($openclawOverview['gatewayConfigured'])
+            ? ((bool) $openclawOverview['gatewayConfigured'])
+            : false;
+        $statusPayload['gatewayAuthConfigured'] = isset($openclawOverview['gatewayAuthConfigured'])
+            ? ((bool) $openclawOverview['gatewayAuthConfigured'])
+            : false;
+        $statusPayload['gatewayHost'] = isset($openclawOverview['gatewayHost'])
+            ? (string) $openclawOverview['gatewayHost']
+            : '';
+        $statusPayload['gatewayPath'] = isset($openclawOverview['gatewayPath'])
+            ? (string) $openclawOverview['gatewayPath']
+            : '';
+    }
+
+    json_response($statusPayload);
 }
 
 if ($method !== 'POST') {
@@ -465,6 +517,58 @@ $upstreamPayload = [
         'source' => 'web'
     ]
 ];
+
+if ($providerMode === 'openclaw_queue') {
+    $bridgeResult = figo_queue_bridge_result($upstreamPayload);
+    $bridgeStatus = isset($bridgeResult['httpStatus']) ? (int) $bridgeResult['httpStatus'] : 500;
+    $bridgePayload = isset($bridgeResult['payload']) && is_array($bridgeResult['payload'])
+        ? $bridgeResult['payload']
+        : [
+            'ok' => false,
+            'mode' => 'failed',
+            'provider' => 'openclaw_queue',
+            'reason' => 'bridge_internal_error',
+            'error' => 'No se pudo procesar la consulta'
+        ];
+
+    // Compatibilidad: passthrough de campos para polling en frontend.
+    if (($bridgePayload['mode'] ?? '') === 'queued') {
+        $bridgePayload['providerMode'] = 'openclaw_queue';
+        $bridgePayload['pollAfterMs'] = isset($bridgePayload['pollAfterMs']) && is_numeric($bridgePayload['pollAfterMs'])
+            ? (int) $bridgePayload['pollAfterMs']
+            : figo_queue_poll_after_ms();
+        if (!isset($bridgePayload['jobId']) || !is_string($bridgePayload['jobId'])) {
+            $bridgePayload['jobId'] = '';
+        }
+        if (!isset($bridgePayload['pollUrl']) || !is_string($bridgePayload['pollUrl']) || trim($bridgePayload['pollUrl']) === '') {
+            $bridgePayload['pollUrl'] = '/check-ai-response.php?jobId=' . rawurlencode((string) $bridgePayload['jobId']);
+        }
+        json_response($bridgePayload, 200);
+    }
+
+    if (isset($bridgePayload['choices'][0]['message']['content']) && is_string($bridgePayload['choices'][0]['message']['content'])) {
+        $bridgePayload['providerMode'] = 'openclaw_queue';
+        $bridgePayload['mode'] = isset($bridgePayload['mode']) && is_string($bridgePayload['mode']) && trim($bridgePayload['mode']) !== ''
+            ? (string) $bridgePayload['mode']
+            : 'live';
+        $bridgePayload['source'] = isset($bridgePayload['source']) && is_string($bridgePayload['source']) && trim($bridgePayload['source']) !== ''
+            ? (string) $bridgePayload['source']
+            : 'openclaw_gateway';
+        json_response($bridgePayload, 200);
+    }
+
+    // Sin fallback silencioso cuando OpenClaw no responde.
+    if (!isset($bridgePayload['reason']) && isset($bridgePayload['errorCode'])) {
+        $bridgePayload['reason'] = (string) $bridgePayload['errorCode'];
+    }
+    if (!isset($bridgePayload['provider'])) {
+        $bridgePayload['provider'] = 'openclaw_queue';
+    }
+    if (!isset($bridgePayload['mode'])) {
+        $bridgePayload['mode'] = 'failed';
+    }
+    json_response($bridgePayload, $bridgeStatus >= 100 ? $bridgeStatus : 503);
+}
 
 $encodedPayload = json_encode($upstreamPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 if (!is_string($encodedPayload)) {
