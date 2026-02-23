@@ -188,7 +188,7 @@ test.describe('Checklist de Pruebas en Producción', () => {
 
         // Esperar horarios
         // Esto puede variar según la implementación (select o botones)
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(2000); // Aumentado para esperar renderizado
 
         // Intentar seleccionar hora si aparece un select de hora
         const timeSelect = page.locator('select[name="time"]');

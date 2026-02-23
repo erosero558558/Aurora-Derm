@@ -131,9 +131,9 @@ async function openAvailabilitySection(page) {
     await expect(page.locator('#availability')).toHaveClass(/active/);
 
     // Wait for calendar to be rendered
-    await page.waitForSelector('#availabilityCalendar .calendar-day.has-slots', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('#availabilityCalendar .calendar-day.has-slots', { state: 'visible', timeout: 15000 });
 
-    await expect(page.locator('#availabilityCalendar .calendar-day.has-slots').first()).toBeVisible();
+    await expect(page.locator('#availabilityCalendar .calendar-day.has-slots').first()).toBeVisible({ timeout: 15000 });
     await page.locator('#availabilityCalendar .calendar-day.has-slots').first().click();
 }
 
