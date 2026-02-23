@@ -1067,7 +1067,7 @@ if ($localStyleRef -ne '') {
 
 if ($SkipAssetHashChecks) {
     Write-Host '[WARN] Se omite verificacion de hashes de assets (SkipAssetHashChecks).'
-} elseif ($deployFreshnessStale -and $deployFreshnessFailRequired) {
+} elseif ($deployFreshnessStale) {
     Write-Host '[WARN] Se omite verificacion de hashes de assets hasta que el deploy remoto se sincronice con HEAD.'
 } else {
     $checks = @()
