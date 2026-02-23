@@ -17,6 +17,9 @@ require_once __DIR__ . '/../../../lib/calendar/GoogleCalendarClient.php';
 require_once __DIR__ . '/../../../lib/calendar/CalendarAvailabilityService.php';
 require_once __DIR__ . '/../../../lib/calendar/CalendarBookingService.php';
 
+use CalendarBookingService;
+use CalendarAvailabilityService;
+
 class CalendarBookingServiceUnitTest extends TestCase
 {
     private string $tempDir;
