@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Tests\Booking;
+namespace Tests\Unit\Booking;
 
 use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../../lib/business.php';
+require_once __DIR__ . '/../../../lib/business.php';
 
 class AvailabilityCalculatorTest extends TestCase
 {

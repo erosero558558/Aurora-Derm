@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Tests\Payment;
+namespace Tests\Unit\Payment;
 
 use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../../tests/helpers/StripeMock.php';
-require_once __DIR__ . '/../../lib/business.php';
-require_once __DIR__ . '/../../payment-lib.php';
+require_once __DIR__ . '/../../../tests/helpers/StripeMock.php';
+require_once __DIR__ . '/../../../lib/business.php';
+require_once __DIR__ . '/../../../payment-lib.php';
 
+/**
+ * @runInSeparateProcess
+ */
 class StripeServiceUnitTest extends TestCase
 {
     protected function tearDown(): void

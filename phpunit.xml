@@ -9,13 +9,13 @@
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Booking">
-            <directory>tests/Booking</directory>
+            <directory>tests/Unit/Booking</directory>
         </testsuite>
         <testsuite name="Payment">
-            <directory>tests/Payment</directory>
+            <directory>tests/Unit/Payment</directory>
         </testsuite>
         <testsuite name="Security">
-            <directory>tests/Security</directory>
+            <directory>tests/Unit/Security</directory>
         </testsuite>
         <testsuite name="Integration">
             <directory>tests/Integration</directory>

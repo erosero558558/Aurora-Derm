@@ -123,4 +123,41 @@ class RateLimiterTest extends TestCase
 
         reset_rate_limit($action);
     }
+
+    public function testRateLimitRespectsDifferentIPs(): void
+    {
+        $originalIp = $_SERVER['REMOTE_ADDR'] ?? null;
+        $originalCf = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? null;
+        $originalReal = $_SERVER['HTTP_X_REAL_IP'] ?? null;
+        $originalForwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
+
+        try {
+            unset($_SERVER['HTTP_CF_CONNECTING_IP'], $_SERVER['HTTP_X_REAL_IP'], $_SERVER['HTTP_X_FORWARDED_FOR']);
+
+            $_SERVER['REMOTE_ADDR'] = '1.1.1.1';
+            $action = 'unit_ip_' . bin2hex(random_bytes(4));
+
+            $this->assertTrue(check_rate_limit($action, 1, 60));
+            $this->assertFalse(check_rate_limit($action, 1, 60));
+
+            $_SERVER['REMOTE_ADDR'] = '2.2.2.2';
+            $this->assertTrue(check_rate_limit($action, 1, 60), 'Different IP should be tracked separately');
+
+        } finally {
+            if ($originalIp !== null) {
+                $_SERVER['REMOTE_ADDR'] = $originalIp;
+            } else {
+                unset($_SERVER['REMOTE_ADDR']);
+            }
+            if ($originalCf !== null) {
+                $_SERVER['HTTP_CF_CONNECTING_IP'] = $originalCf;
+            }
+            if ($originalReal !== null) {
+                $_SERVER['HTTP_X_REAL_IP'] = $originalReal;
+            }
+            if ($originalForwarded !== null) {
+                $_SERVER['HTTP_X_FORWARDED_FOR'] = $originalForwarded;
+            }
+        }
+    }
 }

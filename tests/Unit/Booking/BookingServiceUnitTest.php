@@ -54,6 +54,9 @@ if (!function_exists('payment_currency')) {
 // No, we can't redefine existing functions easily.
 // We will use relative dates for testing.
 
+/**
+ * @runInSeparateProcess
+ */
 class BookingServiceUnitTest extends TestCase
 {
     private BookingService $service;
