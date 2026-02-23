@@ -74,14 +74,17 @@ Dominio: https://pielarmonia.com
 - Duraciones por servicio verificadas (caso 60 min probado).
 - Flujo de reprogramacion real validado.
 
-4. Fase 3 - Conversion y medicion: En progreso avanzado.
+4. Fase 3 - Conversion y medicion: Completada.
 - Eventos funnel y contrato API validados.
-- Dashboard operacional semanal automatizado implementado (`npm run report:weekly:prod`).
-- Alertas operativas semanales implementadas en GitHub Actions (`weekly-kpi-report.yml`).
+- Dashboard operacional semanal automatizado (`npm run report:weekly:prod`).
+- Alertas operativas semanales en GitHub Actions (`weekly-kpi-report.yml`).
+- Abandon reason analysis: backend agrega por step y por reason, dashboard renderiza funnelAbandonReasonList y funnelAbandonList.
+- Tests funnel confirmados: 3 passed (2026-02-23).
 
-5. Fase 4 - UX movil y rendimiento critico: En progreso avanzado.
-- Regresiones moviles criticas en verde.
-- Pendiente: seguimiento visual continuo post deploy.
+5. Fase 4 - UX movil y rendimiento critico: Completada.
+- Regresiones moviles: 4 passed (2026-02-23).
+- admin.js code split: 71KB -> 49.7KB (bajo target <50KB). Chunks bajo demanda: appointments + availability.
+- script.js (111KB): deuda tecnica pendiente en sesion dedicada.
 
 6. Fase 5 - Hardening final y hash gate estricto: Completada.
 - 3 corridas hash estrictas consecutivas en verde.
@@ -114,13 +117,16 @@ Dominio: https://pielarmonia.com
 - Jules (Google AI) trabajando en scaffolding de tests (BookingServiceTest, RateLimiterTest, AuthSessionTest).
 - Pendiente integracion de su PR.
 
-7. Monitoring/observabilidad: Sentry configurado en codigo pero DSN no en produccion.
-- Pendiente: activar DSN en env de produccion.
+7. Monitoring/observabilidad: Sentry ACTIVO en produccion.
+- DSN backend (PHP) y DSN frontend (JS) configurados en env del servidor.
+- Proyectos separados en sentry.io: pielarmonia-backend y pielarmonia-frontend.
+- SDK carga lazy via monitoring-loader.js (async, no bloquea render).
+- Pendiente: confirmar primer evento recibido en dashboard de Sentry.
 
 ## Siguiente ejecucion recomendada
 
 1. Mantener corrida diaria de `npm run gate:prod:hash-strict` como control preventivo.
 2. Publicar dashboard semanal de `booking_confirmed`, error rate y p95 de `figo-post`.
 3. Integrar PR de Jules (tests unitarios) cuando este listo.
-4. Activar Sentry DSN en produccion.
-5. Sesion dedicada para split de script.js (chat/shell refactor).
+4. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
+5. Sesion dedicada para split de script.js (chat/shell refactor, ~31KB de ahorro potencial).
