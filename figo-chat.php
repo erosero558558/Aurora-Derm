@@ -586,6 +586,35 @@ $headers = [
     'Accept: application/json'
 ];
 
+$internalToken = figo_first_non_empty([
+    getenv('FIGO_INTERNAL_TOKEN'),
+    getenv('FIGO_CHAT_INTERNAL_TOKEN'),
+    $fileConfig['internalToken'] ?? null
+]);
+$internalTokenHeader = figo_first_non_empty([
+    getenv('FIGO_INTERNAL_TOKEN_HEADER'),
+    $fileConfig['internalTokenHeader'] ?? null
+]);
+if ($internalTokenHeader === '') {
+    $internalTokenHeader = 'X-Figo-Internal-Token';
+}
+if ($internalToken !== '') {
+    if (strcasecmp($internalTokenHeader, 'Authorization') === 0) {
+        $hasAuthorization = false;
+        foreach ($headers as $headerLine) {
+            if (stripos((string) $headerLine, 'Authorization:') === 0) {
+                $hasAuthorization = true;
+                break;
+            }
+        }
+        if (!$hasAuthorization) {
+            $headers[] = 'Authorization: Bearer ' . $internalToken;
+        }
+    } else {
+        $headers[] = $internalTokenHeader . ': ' . $internalToken;
+    }
+}
+
 $authToken = figo_first_non_empty([
     getenv('FIGO_CHAT_TOKEN'),
     getenv('FIGO_CHAT_BEARER_TOKEN'),

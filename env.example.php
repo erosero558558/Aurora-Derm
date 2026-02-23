@@ -47,12 +47,21 @@
 // putenv('FIGO_TELEGRAM_BOT_TOKEN=TOKEN_BOTFATHER_ROTADO');
 // putenv('FIGO_TELEGRAM_CHAT_ID=TU_CHAT_ID_TELEGRAM');
 // putenv('FIGO_TELEGRAM_WEBHOOK_SECRET=TOKEN_SECRETO_WEBHOOK');
+// Token interno opcional entre figo-chat.php y figo-backend.php (recomendado en produccion).
+// putenv('FIGO_INTERNAL_TOKEN=token_interno_largo_rotado');
+// Header opcional del token interno (default X-Figo-Internal-Token).
+// putenv('FIGO_INTERNAL_TOKEN_HEADER=X-Figo-Internal-Token');
 
 // ── IA para Figo (respuestas naturales) ──────────────
 // Endpoint OpenAI-compatible (OpenRouter, Kimi, DeepSeek, OpenAI, Ollama, etc.)
 // putenv('FIGO_AI_ENDPOINT=https://openrouter.ai/api/v1/chat/completions');
 // putenv('FIGO_AI_API_KEY=sk-or-v1-REEMPLAZAR');
 // putenv('FIGO_AI_MODEL=arcee-ai/trinity-large-preview:free');
+// Alias equivalente para endpoint IA (compatibilidad):
+// putenv('FIGO_AI_API_URL=https://api.moonshot.ai/v1/chat/completions');
+// Ejemplo Kimi:
+// putenv('FIGO_AI_API_KEY=sk-REEMPLAZAR');
+// putenv('FIGO_AI_MODEL=kimi-k2.5');
 
 // -- OpenClaw Queue (modo recomendado sin Trinity) ----------------------------
 // Activa el modo cola OpenClaw en figo-chat.php

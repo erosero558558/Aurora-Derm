@@ -132,6 +132,8 @@ function figo_queue_gateway_endpoint(): string
     return figo_queue_first_non_empty([
         getenv('OPENCLAW_GATEWAY_ENDPOINT'),
         getenv('FIGO_OPENCLAW_GATEWAY_ENDPOINT'),
+        getenv('FIGO_AI_API_URL'),
+        getenv('FIGO_AI_ENDPOINT'),
         $fileConfig['openclawGatewayEndpoint'] ?? null,
         $openclawNode['endpoint'] ?? null,
         $aiNode['endpoint'] ?? null

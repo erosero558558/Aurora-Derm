@@ -123,6 +123,81 @@ function figo_backend_read_file_config(): array
     return $cached;
 }
 
+function figo_backend_internal_token(): string
+{
+    $fileConfig = figo_backend_read_file_config();
+    return figo_backend_first_non_empty([
+        getenv('FIGO_INTERNAL_TOKEN'),
+        getenv('FIGO_CHAT_INTERNAL_TOKEN'),
+        $fileConfig['internalToken'] ?? null
+    ]);
+}
+
+function figo_backend_internal_token_header(): string
+{
+    $fileConfig = figo_backend_read_file_config();
+    $header = figo_backend_first_non_empty([
+        getenv('FIGO_INTERNAL_TOKEN_HEADER'),
+        $fileConfig['internalTokenHeader'] ?? null
+    ]);
+
+    return $header !== '' ? $header : 'X-Figo-Internal-Token';
+}
+
+function figo_backend_request_header_value(string $headerName): string
+{
+    $headerName = trim($headerName);
+    if ($headerName === '') {
+        return '';
+    }
+
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $name => $value) {
+                if (is_string($name) && strcasecmp($name, $headerName) === 0) {
+                    return is_string($value) ? trim($value) : '';
+                }
+            }
+        }
+    }
+
+    $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $headerName));
+    if (isset($_SERVER[$serverKey]) && is_string($_SERVER[$serverKey])) {
+        return trim((string) $_SERVER[$serverKey]);
+    }
+
+    return '';
+}
+
+function figo_backend_read_internal_request_token(): string
+{
+    $headerName = figo_backend_internal_token_header();
+    $raw = figo_backend_request_header_value($headerName);
+    if ($raw !== '') {
+        if (strcasecmp($headerName, 'Authorization') === 0) {
+            if (preg_match('/^\s*Bearer\s+(.+)\s*$/i', $raw, $matches) === 1) {
+                return trim((string) $matches[1]);
+            }
+            return '';
+        }
+        return $raw;
+    }
+
+    // Fallback defensivo para infraestructura legacy.
+    $legacyRaw = figo_backend_request_header_value('X-Figo-Internal-Token');
+    if ($legacyRaw !== '') {
+        return $legacyRaw;
+    }
+
+    $authRaw = figo_backend_request_header_value('Authorization');
+    if ($authRaw !== '' && preg_match('/^\s*Bearer\s+(.+)\s*$/i', $authRaw, $matches) === 1) {
+        return trim((string) $matches[1]);
+    }
+
+    return '';
+}
+
 function figo_backend_parse_bool_value(string $raw): ?bool
 {
     $value = strtolower(trim($raw));
@@ -155,6 +230,7 @@ function figo_backend_ai_endpoint(): string
     $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
 
     $candidates = [
+        getenv('FIGO_AI_API_URL'),
         getenv('FIGO_AI_ENDPOINT'),
         getenv('FIGO_AI_URL'),
         $fileConfig['aiEndpoint'] ?? null,
@@ -287,6 +363,26 @@ function figo_backend_ai_endpoint_host(): string
         return '';
     }
     return isset($parts['host']) ? strtolower((string) $parts['host']) : '';
+}
+
+function figo_backend_ai_provider(): string
+{
+    $host = figo_backend_ai_endpoint_host();
+    if ($host === '') {
+        return 'none';
+    }
+
+    if (strpos($host, 'moonshot.ai') !== false || strpos($host, 'kimi.com') !== false) {
+        return 'kimi';
+    }
+    if (strpos($host, 'openrouter.ai') !== false) {
+        return 'openrouter';
+    }
+    if (strpos($host, 'openai.com') !== false) {
+        return 'openai';
+    }
+
+    return 'openai_compatible';
 }
 
 function figo_backend_probe_ai_endpoint(int $timeoutSeconds = 3): ?bool
@@ -558,6 +654,7 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
 {
     $aiConfigured = figo_backend_ai_endpoint() !== '';
     $allowFallback = figo_backend_allow_local_fallback();
+    $aiProvider = figo_backend_ai_provider();
 
     $aiContent = null;
     if ($aiConfigured) {
@@ -568,7 +665,7 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
         return [
             'ok' => true,
             'mode' => 'ai',
-            'provider' => 'ai_enhanced',
+            'provider' => $aiProvider,
             'reason' => '',
             'content' => trim($aiContent),
             'status' => 200
@@ -579,7 +676,7 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
         return [
             'ok' => false,
             'mode' => 'unavailable',
-            'provider' => $aiConfigured ? 'ai_enhanced' : 'none',
+            'provider' => $aiConfigured ? $aiProvider : 'none',
             'reason' => $aiConfigured ? 'ai_upstream_unavailable' : 'ai_not_configured',
             'content' => figo_backend_ai_unavailable_message(),
             'status' => 503
@@ -794,12 +891,15 @@ if ($method === 'GET') {
         'ok' => true,
         'service' => 'figo-backend',
         'mode' => $aiEndpoint !== '' ? 'ai' : 'local',
-        'provider' => $aiEndpoint !== '' ? 'ai_enhanced' : 'pattern_matching',
+        'provider' => $aiEndpoint !== '' ? figo_backend_ai_provider() : 'pattern_matching',
+        'aiProvider' => figo_backend_ai_provider(),
         'aiConfigured' => $aiEndpoint !== '',
         'aiModel' => figo_backend_ai_model(),
         'aiEndpointHost' => figo_backend_ai_endpoint_host(),
         'aiUpstreamReachable' => figo_backend_probe_ai_endpoint(3),
         'allowLocalFallback' => figo_backend_allow_local_fallback(),
+        'internalTokenRequired' => figo_backend_internal_token() !== '',
+        'internalTokenHeader' => figo_backend_internal_token_header(),
         'configSource' => $configSource,
         'telegramConfigured' => $telegramConfigured,
         'telegramChatConfigured' => $telegramChatConfigured,
@@ -820,6 +920,18 @@ $payload = require_json_body();
 
 if (figo_backend_is_telegram_update($payload)) {
     figo_backend_handle_telegram_update($payload, $telegramToken);
+}
+
+$requiredInternalToken = figo_backend_internal_token();
+if ($requiredInternalToken !== '') {
+    $requestToken = figo_backend_read_internal_request_token();
+    if ($requestToken === '' || !hash_equals($requiredInternalToken, $requestToken)) {
+        json_response([
+            'ok' => false,
+            'error' => 'Unauthorized',
+            'code' => 'invalid_internal_token'
+        ], 401);
+    }
 }
 
 $messages = isset($payload['messages']) && is_array($payload['messages'])
