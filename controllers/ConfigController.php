@@ -14,8 +14,17 @@ class ConfigController
         $config = is_array($configMeta['config'] ?? null) ? $configMeta['config'] : [];
         $masked = api_mask_figo_config($config);
         $aiNode = (isset($config['ai']) && is_array($config['ai'])) ? $config['ai'] : [];
+        $openclawNode = (isset($config['openclaw']) && is_array($config['openclaw'])) ? $config['openclaw'] : [];
         $aiEndpoint = isset($aiNode['endpoint']) && is_string($aiNode['endpoint']) ? trim((string) $aiNode['endpoint']) : '';
         $figoEndpoint = isset($config['endpoint']) && is_string($config['endpoint']) ? trim((string) $config['endpoint']) : '';
+        $providerMode = isset($config['providerMode']) && is_string($config['providerMode']) && trim((string) $config['providerMode']) !== ''
+            ? strtolower(trim((string) $config['providerMode']))
+            : (isset($openclawNode['providerMode']) && is_string($openclawNode['providerMode']) && trim((string) $openclawNode['providerMode']) !== ''
+                ? strtolower(trim((string) $openclawNode['providerMode']))
+                : 'legacy_proxy');
+        $openclawEndpoint = isset($config['openclawGatewayEndpoint']) && is_string($config['openclawGatewayEndpoint']) && trim((string) $config['openclawGatewayEndpoint']) !== ''
+            ? trim((string) $config['openclawGatewayEndpoint'])
+            : (isset($openclawNode['endpoint']) && is_string($openclawNode['endpoint']) ? trim((string) $openclawNode['endpoint']) : '');
 
         json_response([
             'ok' => true,
@@ -26,6 +35,8 @@ class ConfigController
             'writePath' => (string) $writePath,
             'figoEndpointConfigured' => $figoEndpoint !== '',
             'aiConfigured' => $aiEndpoint !== '',
+            'providerMode' => in_array($providerMode, ['legacy_proxy', 'openclaw_queue'], true) ? $providerMode : 'legacy_proxy',
+            'openclawConfigured' => $openclawEndpoint !== '',
             'timestamp' => gmdate('c')
         ]);
     }
@@ -97,8 +108,17 @@ class ConfigController
         }
 
         $aiNode = (isset($next['ai']) && is_array($next['ai'])) ? $next['ai'] : [];
+        $openclawNode = (isset($next['openclaw']) && is_array($next['openclaw'])) ? $next['openclaw'] : [];
         $aiEndpoint = isset($aiNode['endpoint']) && is_string($aiNode['endpoint']) ? trim((string) $aiNode['endpoint']) : '';
         $figoEndpoint = isset($next['endpoint']) && is_string($next['endpoint']) ? trim((string) $next['endpoint']) : '';
+        $providerMode = isset($next['providerMode']) && is_string($next['providerMode']) && trim((string) $next['providerMode']) !== ''
+            ? strtolower(trim((string) $next['providerMode']))
+            : (isset($openclawNode['providerMode']) && is_string($openclawNode['providerMode']) && trim((string) $openclawNode['providerMode']) !== ''
+                ? strtolower(trim((string) $openclawNode['providerMode']))
+                : 'legacy_proxy');
+        $openclawEndpoint = isset($next['openclawGatewayEndpoint']) && is_string($next['openclawGatewayEndpoint']) && trim((string) $next['openclawGatewayEndpoint']) !== ''
+            ? trim((string) $next['openclawGatewayEndpoint'])
+            : (isset($openclawNode['endpoint']) && is_string($openclawNode['endpoint']) ? trim((string) $openclawNode['endpoint']) : '');
         $figoHost = '';
         if ($figoEndpoint !== '') {
             $figoParts = @parse_url($figoEndpoint);
@@ -112,6 +132,8 @@ class ConfigController
             'figoEndpointConfigured' => $figoEndpoint !== '',
             'figoEndpointHost' => $figoHost,
             'aiConfigured' => $aiEndpoint !== '',
+            'providerMode' => in_array($providerMode, ['legacy_proxy', 'openclaw_queue'], true) ? $providerMode : 'legacy_proxy',
+            'openclawConfigured' => $openclawEndpoint !== '',
             'allowLocalFallback' => isset($next['allowLocalFallback']) ? (bool) $next['allowLocalFallback'] : null
         ]);
 
@@ -123,6 +145,8 @@ class ConfigController
             'data' => api_mask_figo_config($next),
             'figoEndpointConfigured' => $figoEndpoint !== '',
             'aiConfigured' => $aiEndpoint !== '',
+            'providerMode' => in_array($providerMode, ['legacy_proxy', 'openclaw_queue'], true) ? $providerMode : 'legacy_proxy',
+            'openclawConfigured' => $openclawEndpoint !== '',
             'timestamp' => gmdate('c')
         ]);
     }

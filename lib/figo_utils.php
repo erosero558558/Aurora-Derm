@@ -206,15 +206,41 @@ function api_mask_secret_value(string $value): string
 
 function api_mask_figo_config(array $config): array
 {
-    $masked = $config;
-    foreach (['token', 'apiKey'] as $key) {
-        if (isset($masked[$key]) && is_string($masked[$key])) {
-            $masked[$key] = api_mask_secret_value((string) $masked[$key]);
+    $masked = [];
+    foreach ($config as $key => $value) {
+        if (is_array($value)) {
+            $masked[$key] = api_mask_figo_config($value);
+            continue;
         }
-    }
 
-    if (isset($masked['ai']) && is_array($masked['ai']) && isset($masked['ai']['apiKey']) && is_string($masked['ai']['apiKey'])) {
-        $masked['ai']['apiKey'] = api_mask_secret_value((string) $masked['ai']['apiKey']);
+        if (!is_string($value)) {
+            $masked[$key] = $value;
+            continue;
+        }
+
+        $lowerKey = strtolower((string) $key);
+        $isSensitive = false;
+        if (
+            strpos($lowerKey, 'token') !== false
+            || strpos($lowerKey, 'secret') !== false
+            || strpos($lowerKey, 'password') !== false
+            || strpos($lowerKey, 'apikey') !== false
+        ) {
+            $isSensitive = true;
+        }
+
+        if (
+            $lowerKey === 'apikeyheader'
+            || $lowerKey === 'apikeyprefix'
+            || $lowerKey === 'openclawgatewaykeyheader'
+            || $lowerKey === 'openclawgatewaykeyprefix'
+        ) {
+            $isSensitive = false;
+        }
+
+        $masked[$key] = $isSensitive
+            ? api_mask_secret_value($value)
+            : $value;
     }
 
     return $masked;
@@ -266,6 +292,7 @@ function api_merge_figo_config(array $existing, array $payload): array
     $next = $existing;
     $endpointTouched = false;
     $aiEndpointTouched = false;
+    $openclawEndpointTouched = false;
 
     foreach (['endpoint', 'token', 'apiKeyHeader', 'apiKey'] as $key) {
         if (!array_key_exists($key, $payload)) {
@@ -293,6 +320,118 @@ function api_merge_figo_config(array $existing, array $payload): array
         }
 
         $next[$key] = $value;
+    }
+
+    if (array_key_exists('providerMode', $payload)) {
+        $rawMode = $payload['providerMode'];
+        if ($rawMode === null || (is_string($rawMode) && trim($rawMode) === '')) {
+            unset($next['providerMode']);
+        } elseif (!is_string($rawMode)) {
+            throw new RuntimeException('providerMode debe ser texto', 400);
+        } else {
+            $mode = strtolower(trim($rawMode));
+            if (!in_array($mode, ['legacy_proxy', 'openclaw_queue'], true)) {
+                throw new RuntimeException('providerMode invalido. Usa legacy_proxy u openclaw_queue', 400);
+            }
+            $next['providerMode'] = $mode;
+        }
+    }
+
+    foreach (
+        [
+            'openclawGatewayEndpoint',
+            'openclawGatewayApiKey',
+            'openclawGatewayModel',
+            'openclawGatewayKeyHeader',
+            'openclawGatewayKeyPrefix'
+        ] as $key
+    ) {
+        if (!array_key_exists($key, $payload)) {
+            continue;
+        }
+
+        if ($key === 'openclawGatewayEndpoint') {
+            $openclawEndpointTouched = true;
+        }
+
+        $value = $payload[$key];
+        if ($value === null) {
+            unset($next[$key]);
+            continue;
+        }
+
+        if (!is_string($value)) {
+            throw new RuntimeException($key . ' debe ser texto', 400);
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            unset($next[$key]);
+            continue;
+        }
+
+        $next[$key] = $value;
+    }
+
+    if (array_key_exists('openclaw', $payload)) {
+        $rawOpenclaw = $payload['openclaw'];
+        if ($rawOpenclaw === null) {
+            unset($next['openclaw']);
+        } else {
+            if (!is_array($rawOpenclaw)) {
+                throw new RuntimeException('openclaw debe ser un objeto JSON', 400);
+            }
+
+            $openclawNext = (isset($next['openclaw']) && is_array($next['openclaw'])) ? $next['openclaw'] : [];
+            foreach (['endpoint', 'apiKey', 'model', 'apiKeyHeader', 'apiKeyPrefix'] as $openclawKey) {
+                if (!array_key_exists($openclawKey, $rawOpenclaw)) {
+                    continue;
+                }
+
+                if ($openclawKey === 'endpoint') {
+                    $openclawEndpointTouched = true;
+                }
+
+                $openclawValue = $rawOpenclaw[$openclawKey];
+                if ($openclawValue === null) {
+                    unset($openclawNext[$openclawKey]);
+                    continue;
+                }
+
+                if (!is_string($openclawValue)) {
+                    throw new RuntimeException('openclaw.' . $openclawKey . ' debe ser texto', 400);
+                }
+
+                $openclawValue = trim($openclawValue);
+                if ($openclawValue === '') {
+                    unset($openclawNext[$openclawKey]);
+                    continue;
+                }
+
+                $openclawNext[$openclawKey] = $openclawValue;
+            }
+
+            if (array_key_exists('providerMode', $rawOpenclaw)) {
+                $rawOpenclawMode = $rawOpenclaw['providerMode'];
+                if ($rawOpenclawMode === null || (is_string($rawOpenclawMode) && trim($rawOpenclawMode) === '')) {
+                    unset($openclawNext['providerMode']);
+                } elseif (!is_string($rawOpenclawMode)) {
+                    throw new RuntimeException('openclaw.providerMode debe ser texto', 400);
+                } else {
+                    $openclawMode = strtolower(trim($rawOpenclawMode));
+                    if (!in_array($openclawMode, ['legacy_proxy', 'openclaw_queue'], true)) {
+                        throw new RuntimeException('openclaw.providerMode invalido. Usa legacy_proxy u openclaw_queue', 400);
+                    }
+                    $openclawNext['providerMode'] = $openclawMode;
+                }
+            }
+
+            if (empty($openclawNext)) {
+                unset($next['openclaw']);
+            } else {
+                $next['openclaw'] = $openclawNext;
+            }
+        }
     }
 
     if (array_key_exists('timeout', $payload)) {
@@ -402,6 +541,28 @@ function api_merge_figo_config(array $existing, array $payload): array
 
     if ($aiEndpointTouched && isset($next['ai']) && is_array($next['ai']) && isset($next['ai']['endpoint']) && is_string($next['ai']['endpoint'])) {
         api_validate_absolute_http_url((string) $next['ai']['endpoint'], 'ai.endpoint');
+    }
+
+    if ($openclawEndpointTouched) {
+        $openclawEndpoint = '';
+        if (isset($next['openclawGatewayEndpoint']) && is_string($next['openclawGatewayEndpoint'])) {
+            $openclawEndpoint = trim((string) $next['openclawGatewayEndpoint']);
+        }
+        if (
+            $openclawEndpoint === ''
+            && isset($next['openclaw'])
+            && is_array($next['openclaw'])
+            && isset($next['openclaw']['endpoint'])
+            && is_string($next['openclaw']['endpoint'])
+        ) {
+            $openclawEndpoint = trim((string) $next['openclaw']['endpoint']);
+        }
+        if ($openclawEndpoint !== '') {
+            api_validate_absolute_http_url($openclawEndpoint, 'openclaw.endpoint');
+            if (api_is_figo_recursive_config($openclawEndpoint)) {
+                throw new RuntimeException('openclaw.endpoint no debe apuntar a /figo-chat.php', 400);
+            }
+        }
     }
 
     return $next;
