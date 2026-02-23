@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
     '/admin.js',
     '/styles-deferred.css?v=ui-20260223-opt1',
     '/js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1',
-    '/script.js?v=figo-20260221-phase10-realagenda1',
+    '/script.js?v=figo-20260222-slotservicefix1',
     '/images/optimized/hero-woman.jpg',
     '/favicon.ico',
     '/manifest.json',
