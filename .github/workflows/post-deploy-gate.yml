@@ -135,9 +135,6 @@ jobs:
                   $figoPostP95MaxMs = [int]$env:FIGO_POST_P95_MAX_MS
                   if ($figoPostP95MaxMs -lt 1000) { $figoPostP95MaxMs = 1000 }
                   $skipAssetHashChecks = $false
-                  if ($env:EVENT_NAME -eq 'push') {
-                    $skipAssetHashChecks = $true
-                  }
                   $skipAssetHashChecksInput = [string]$env:SKIP_ASSET_HASH_CHECKS_INPUT
                   if ($skipAssetHashChecksInput.ToLowerInvariant() -eq 'true') {
                     $skipAssetHashChecks = $true
@@ -147,6 +144,31 @@ jobs:
                   if ($forceAssetHashChecksInput.ToLowerInvariant() -eq 'true') {
                     $forceAssetHashChecks = $true
                   }
+                  if (
+                    $env:EVENT_NAME -eq 'push' -and
+                    -not $skipAssetHashChecks -and
+                    -not $forceAssetHashChecks
+                  ) {
+                    $deadlineRaw = [string]$env:ASSET_HASH_WARNING_UNTIL_INPUT
+                    $withinWarningWindow = $false
+                    if (-not [string]::IsNullOrWhiteSpace($deadlineRaw)) {
+                      try {
+                        $deadline = [DateTimeOffset]::Parse($deadlineRaw)
+                        if ([DateTimeOffset]::UtcNow -le $deadline.ToUniversalTime()) {
+                          $withinWarningWindow = $true
+                        }
+                      } catch {
+                        Write-Host "[WARN] No se pudo parsear ASSET_HASH_WARNING_UNTIL_INPUT='$deadlineRaw'."
+                      }
+                    }
+                    if ($withinWarningWindow) {
+                      $skipAssetHashChecks = $true
+                    }
+                  }
+                  if ($forceAssetHashChecks) {
+                    $skipAssetHashChecks = $false
+                  }
+                  Write-Host "Asset hash mode => skip=$skipAssetHashChecks force=$forceAssetHashChecks event=$env:EVENT_NAME"
                   $skipFigoPostBench = $false
                   if ($env:EVENT_NAME -eq 'push') {
                     $skipFigoPostBench = $true

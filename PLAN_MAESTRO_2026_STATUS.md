@@ -11,6 +11,7 @@ Dominio: https://pielarmonia.com
 - Gate de produccion: Verde en modo backend (hash checks en modo warning temporal hasta 2026-03-08).
 - Umbral operativo `figo-post` endurecido a p95 <= `2500 ms` en gate/benchmark/workflow.
 - Gate hash estricto: ya valida hashes aun con deploy stale (fix aplicado en scripts de verificacion).
+- Workflow post-deploy ajustado para reactivar hash gate automaticamente en `push` despues del vencimiento de warning.
 
 ## Evidencia ejecutada hoy
 
