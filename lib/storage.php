@@ -546,7 +546,7 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
                     continue;
                 }
                 $stmt->execute([
-                    $appt['id'],
+                    (string) $appt['id'],
                     $appt['date'] ?? '',
                     $appt['time'] ?? '',
                     $appt['doctor'] ?? '',
@@ -572,7 +572,7 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
                     continue;
                 }
                 $stmt->execute([
-                    $review['id'],
+                    (string) $review['id'],
                     $review['name'] ?? '',
                     $review['rating'] ?? 0,
                     $review['text'] ?? '',
@@ -591,7 +591,7 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
                     continue;
                 }
                 $stmt->execute([
-                    $cb['id'],
+                    (string) $cb['id'],
                     $cb['telefono'] ?? '',
                     $cb['preferencia'] ?? '',
                     $cb['fecha'] ?? '',
@@ -837,7 +837,7 @@ function write_store(array $store, bool $emitHttpErrors = true): bool
             if (!isset($appt['id'])) {
                 continue;
             }
-            $id = $appt['id'];
+            $id = (string) $appt['id'];
             $incomingIds[$id] = true;
 
             $stmtUpsert->execute([
@@ -875,7 +875,7 @@ function write_store(array $store, bool $emitHttpErrors = true): bool
             if (!isset($review['id'])) {
                 continue;
             }
-            $id = $review['id'];
+            $id = (string) $review['id'];
             $incomingIds[$id] = true;
             $stmtUpsert->execute([
                 $id,
@@ -903,7 +903,7 @@ function write_store(array $store, bool $emitHttpErrors = true): bool
             if (!isset($cb['id'])) {
                 continue;
             }
-            $id = $cb['id'];
+            $id = (string) $cb['id'];
             $incomingIds[$id] = true;
             $stmtUpsert->execute([
                 $id,

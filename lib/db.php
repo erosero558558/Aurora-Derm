@@ -105,7 +105,7 @@ function ensure_db_schema(): void
 
     $queries = [
         "CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY,
+            id TEXT PRIMARY KEY,
             date TEXT NOT NULL,
             time TEXT NOT NULL,
             doctor TEXT,
@@ -123,7 +123,7 @@ function ensure_db_schema(): void
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )",
         "CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY,
+            id TEXT PRIMARY KEY,
             name TEXT,
             rating INTEGER,
             text TEXT,
@@ -132,7 +132,7 @@ function ensure_db_schema(): void
             json_data TEXT
         )",
         "CREATE TABLE IF NOT EXISTS callbacks (
-            id INTEGER PRIMARY KEY,
+            id TEXT PRIMARY KEY,
             telefono TEXT,
             preferencia TEXT,
             fecha TEXT,
