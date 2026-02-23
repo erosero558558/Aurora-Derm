@@ -1,0 +1,546 @@
+Running PHP tests...
+Testing tests/api-lib_test.php...
+PASS: parse_bool(true) is true
+PASS: parse_bool(false) is false
+PASS: parse_bool("1") is true
+PASS: parse_bool("true") is true
+PASS: parse_bool("True") is true
+PASS: parse_bool("TRUE") is true
+PASS: parse_bool("yes") is true
+PASS: parse_bool("on") is true
+PASS: parse_bool("0") is false
+PASS: parse_bool("false") is false
+PASS: parse_bool("no") is false
+PASS: parse_bool("off") is false
+PASS: parse_bool("") is false
+PASS: parse_bool("random") is false
+PASS: parse_bool(1) is true
+PASS: parse_bool(0) is false
+PASS: parse_bool(2) is false
+PASS: parse_bool(-1) is false
+PASS: parse_bool(null) is false
+PASS: parse_bool([]) is false
+PASS: parse_bool(new stdClass()) is false
+PASS: parse_bool(1.0) is false
+
+Summary:
+Passed: 22
+Failed: 0
+Testing tests/ApiSecurityTest.php...
+Starting server on port 8090 for security tests...
+✅ Security: JSON Headers
+✅ Security: Admin Auth Required
+✅ Security: Rate Limiting
+Stopping server (PID 4152)...
+
+Results: 3 passed, 0 failed.
+Testing tests/BookingFlowTest.php...
+Starting server on port 8089 with data dir /tmp/pielarmonia-test-data-699c944b40a3f...
+✅ Integration: Check Availability
+✅ Integration: Configure Availability
+✅ Integration: Create Appointment
+✅ Integration: Verify Slot Taken
+✅ Integration: Verify Persistence on Disk
+Stopping server (PID 4163)...
+
+Results: 5 passed, 0 failed.
+Testing tests/BookingServiceIntegrationTest.php...
+✅ get_vat_rate default
+✅ get_service_price_amount exists
+✅ get_service_price_amount invalid
+✅ get_service_total_price calculation
+✅ appointment_slot_taken basic
+✅ appointment_slot_taken excludes cancelled
+✅ appointment_slot_taken excludes self
+✅ appointment_slot_taken doctor logic
+❌ AppointmentController::store validation failure: Call to undefined function with_store_lock()
+❌ AppointmentController::store successful card payment: Call to undefined function data_dir_path()
+
+Results: 8 passed, 2 failed.
+FAILED: tests/BookingServiceIntegrationTest.php
+Testing tests/CriticalFlowsE2ETest.php...
+Starting server on port 8090 with data dir /tmp/pielarmonia-test-critical-699c944ba16ff...
+Create 1 Failed: {"ok":false,"error":"No hay agenda disponible para la fecha seleccionada","code":"bad_request"}
+❌ E2E: Conflict Handling: Expected 201 but got 400. First booking failed
+❌ E2E: Reschedule Flow: Expected 201 but got 400.
+❌ E2E: Admin Cancellation: Expected 201 but got 400.
+Stopping server (PID 4182)...
+
+Results: 0 passed, 3 failed.
+FAILED: tests/CriticalFlowsE2ETest.php
+Testing tests/normalize_callback_test.php...
+Running normalize_callback tests...
+PASS: Default status should be pendiente
+PASS: Default phone should be empty
+PASS: Default preference should be empty
+PASS: ID generated correctly
+PASS: Status 'contacted' should normalize to 'contactado'
+PASS: Status 'pending' should normalize to 'pendiente'
+PASS: Status 'CONTACTED' should normalize to 'contactado'
+PASS: Status 'PENDING' should normalize to 'pendiente'
+PASS: Status 'unknown' should normalize to 'pendiente'
+PASS: Status 'contactado' should normalize to 'contactado'
+PASS: Status 'pendiente' should normalize to 'pendiente'
+PASS: Phone should be truncated to 20 chars
+PASS: Phone content match after truncation
+PASS: Preference should be truncated to 200 chars
+PASS: Preference content match after truncation
+PASS: Provided ID should be preserved
+PASS: Provided date should be preserved
+All tests passed!
+Testing tests/StripeServiceIntegrationTest.php...
+✅ payment_currency default
+✅ payment_currency override
+✅ payment_expected_amount_cents calculation
+✅ payment_build_idempotency_key format
+✅ stripe_create_payment_intent success
+✅ stripe_create_payment_intent fails without secret
+
+Results: 6 passed, 0 failed.
+Testing tests/test-api-lib.php...
+Running tests for normalize_review...
+✅ Happy Path
+✅ Rating < 1 should be 1
+✅ Rating negative should be 1
+✅ Rating > 5 should be 5
+✅ Rating way over 5 should be 5
+✅ Missing rating should be 1 (default logic)
+✅ Name truncation > 100 chars
+✅ Text truncation > 2000 chars
+✅ Verified "true" string
+✅ Verified "false" string
+✅ Verified "1" string
+✅ Verified integer 1
+✅ Verified missing defaults to true
+✅ Missing ID generates one
+✅ Missing Date uses current date
+✅ HTML chars are sanitized (api-lib handles storage)
+
+Results: 16 passed, 0 failed.
+Testing tests/test-appointments-index.php...
+Testing appointment indexing...
+[PASS] Index created correctly.
+[PASS] appointment_slot_taken uses index correctly.
+[PASS] Index updated correctly.
+All tests passed.
+Testing tests/test-chat.php...
+Running FigoBrain V3 Tests...
+[PASS] Input: 'tengo sangrado' -> Found: 'IMPORTANTE: Mensaje de Seguridad'
+[PASS] Input: 'dolor insoportable' -> Found: 'acude inmediatamente a urgencias'
+[PASS] Input: 'ayuda medica urgente' -> Found: '911'
+[PASS] Input: 'porque elegirlos' -> Found: 'excelencia médica y calidez humana'
+[PASS] Input: 'que tecnologia tienen' -> Found: 'Láser CO2 Fraccionado'
+[PASS] Input: 'tienen laser fotona' -> Found: 'tecnología de vanguardia'
+[PASS] Input: 'hola' -> Found: 'Bienvenido a **Piel en Armonía**'
+[PASS] Input: 'prcio consulta' -> Found: 'valores referenciales'
+[PASS] Input: 'cunto cuesta acne' -> Found: '$80.00'
+[PASS] Input: 'agendar cita' -> Found: 'Maravillosa elección'
+[PASS] Input: 'donde estan' -> Found: 'Edificio Citimed'
+[PASS] Input: 'dr rosero' -> Found: 'Especialista en Dermatología Clínica'
+[PASS] Input: 'manchas oscuras' -> Found: 'Melasma'
+[PASS] Input: 'se me cae el cabello' -> Found: 'Caída de Cabello'
+[PASS] Input: 'tengo verrugas' -> Found: 'Verrugas y Lunares'
+[PASS] Input: 'pesimo servicio' -> Found: 'Siento mucho que estés pasando'
+[PASS] Input: 'quiero poner una queja' -> Found: 'Gerencia de Atención'
+
+Result: 17 passed, 0 failed.
+Testing tests/test-features.php...
+Defaults test passed.
+Env override test passed.
+feature_enabled test passed.
+Testing tests/test-handoff.php...
+Array
+(
+    [0] => ReflectionMethod Object
+        (
+            [name] => process
+            [class] => FigoBrain
+        )
+
+    [1] => ReflectionMethod Object
+        (
+            [name] => detectIntent
+            [class] => FigoBrain
+        )
+
+    [2] => ReflectionMethod Object
+        (
+            [name] => generateResponse
+            [class] => FigoBrain
+        )
+
+    [3] => ReflectionMethod Object
+        (
+            [name] => getGreeting
+            [class] => FigoBrain
+        )
+
+    [4] => ReflectionMethod Object
+        (
+            [name] => normalize
+            [class] => FigoBrain
+        )
+
+    [5] => ReflectionMethod Object
+        (
+            [name] => getPrice
+            [class] => FigoBrain
+        )
+
+    [6] => ReflectionMethod Object
+        (
+            [name] => getOpeningStatus
+            [class] => FigoBrain
+        )
+
+    [7] => ReflectionMethod Object
+        (
+            [name] => buildResponse
+            [class] => FigoBrain
+        )
+
+)
+=== Testing FigoBrain V3 Handoff & Persona ===
+Testing message: 'Quiero hablar con una persona real' ... PASS
+Testing message: 'necesito hablar con un humano' ... PASS
+Testing message: 'quiero hablar con el doctor' ... PASS
+Testing message: 'esto es una estafa' ... PASS
+Testing message: 'pesimo servicio' ... PASS
+Testing message: 'quien eres' ... PASS
+=== Done ===
+Testing tests/test-redis-ratelimit.php...
+Testing Rate Limiter...
+Request 1 (Limit 2)... OK (Allowed)
+Request 2 (Limit 2)... OK (Allowed)
+Request 3 (Limit 2)... OK (Blocked correctly)
+File-based Rate Limiter Test Passed.
+All tests passed.
+Testing tests/test-validation.php...
+[PASS] Valid appointment
+[PASS] Missing name detected
+[PASS] Invalid email detected
+[PASS] Unavailable slot detected
+[PASS] Past date detected
+Testing tests/test_api_lib.php...
+Running tests for truncate_field...
+
+✅ PASS: String shorter than max length should remain unchanged
+✅ PASS: String equal to max length should remain unchanged
+✅ PASS: String longer than max length should be truncated
+✅ PASS: Empty string should remain empty
+✅ PASS: Multibyte string shorter than max length should remain unchanged
+✅ PASS: Multibyte string should be truncated correctly by character count
+✅ PASS: Emoji should count as 1 character and be truncated correctly
+✅ PASS: Max length 0 should return empty string
+
+Tests completed.
+Passed: 8
+Failed: 0
+Testing tests/test_appointment_slot_taken.php...
+Running tests for appointment_slot_taken...
+✅ PASS: Slot 09:00 (free) should return false
+✅ PASS: Slot different date (free) should return false
+✅ PASS: Slot 10:00 (taken by rosero) requested by rosero should return true
+✅ PASS: Slot 10:00 (taken by rosero) requested by narvaez should return false
+✅ PASS: Slot 12:00 (taken by indiferente) requested by rosero should return true
+✅ PASS: Slot 10:00 (taken by rosero) requested by indiferente should return true
+✅ PASS: Slot 10:00 (taken by ID 1) requested by rosero EXCLUDING ID 1 should return false
+✅ PASS: Slot 10:00 (taken by ID 1 AND ID 5) excluding ID 1 should return true due to ID 5
+✅ PASS: Slot 13:00 (cancelled) should return false
+✅ PASS: Slot 10:00 (taken by rosero) requested with empty doctor should return true
+✅ PASS: Slot 14:00 (taken by empty doctor) requested by rosero should return true
+
+Summary: 11 / 11 passed.
+Testing tests/test_audit_log.php...
+Running tests...
+Test 1: Basic Logging... [info] test_event {"ts":"2026-02-23T12:54:20-05:00","event":"test_event","ip":"127.0.0.1","actor":"public","path":"/test-uri","details":{"key":"value"}}
+PASSED
+[info] public_event {"ts":"2026-02-23T12:54:20-05:00","event":"public_event","ip":"127.0.0.1","actor":"public","path":"/test-uri","details":[]}
+Test 2: Actor Logic (Public)... PASSED
+Test 3: Actor Logic (Admin)... [info] admin_event {"ts":"2026-02-23T12:54:20-05:00","event":"admin_event","ip":"127.0.0.1","actor":"admin","path":"/test-uri","details":[]}
+PASSED
+Test 4: Security Check (.htaccess)... PASSED
+Cleaning up...
+All tests passed!
+Testing tests/test_business_iva.php...
+=== TESTS UNITARIOS: Sistema de Precios e IVA ===
+
+1. Testing compute_tax():
+   ✓ IVA 0% de $40.00 = $0.00
+   ✓ IVA 15% de $150.00 = $22.50
+   ✓ IVA 15% de $120.00 = $18.00
+
+2. Testing compute_total():
+   ✓ Total consulta ($40 + 0% IVA) = $40.00
+   ✓ Total laser ($150 + 15% IVA) = $172.50
+   ✓ Total rejuvenecimiento ($120 + 15% IVA) = $138.00
+
+3. Testing get_service_config():
+   ✓ Servicio 'consulta': $40 (IVA: 0%)
+   ✓ Servicio 'laser': Desde $150 (IVA: 15%)
+   ✓ Servicio inexistente retorna null
+
+4. Testing get_service_price_breakdown():
+   ✓ Breakdown 'consulta': Total $$40.00 (IVA: IVA 0%)
+   ✓ Breakdown 'laser': Total $$172.50 (Base: $$150.00, IVA: $$22.50)
+
+5. Testing validate_payment_amount():
+   ✓ Validacion pago exacto ($40.00): VALIDO
+   ✓ Validacion con tolerancia ($40.005): VALIDO
+   ✓ Validacion pago incorrecto ($50.00): INVALIDO
+
+6. Testing regla de negocio - Servicios clinicos IVA 0%:
+   ✓ 'consulta': IVA 0%
+   ✓ 'telefono': IVA 0%
+   ✓ 'video': IVA 0%
+   ✓ 'acne': IVA 0%
+   ✓ 'cancer': IVA 0%
+
+7. Testing regla de negocio - Servicios esteticos IVA 15%:
+   ✓ 'laser': IVA 15%
+   ✓ 'rejuvenecimiento': IVA 15%
+
+8. Testing consistencia de precios:
+   ✓ 'consulta': $40 (esperado: $40)
+   ✓ 'telefono': $25 (esperado: $25)
+   ✓ 'video': $30 (esperado: $30)
+   ✓ 'laser': $150 (esperado: $150)
+   ✓ 'rejuvenecimiento': $120 (esperado: $120)
+   ✓ 'acne': $80 (esperado: $80)
+   ✓ 'cancer': $70 (esperado: $70)
+
+=== TODOS LOS TESTS PASARON ✓ ===
+Total tests ejecutados: 8 grupos
+Sistema de IVA funcionando correctamente.
+Testing tests/test_dynamic_pricing.php...
+Testing Dynamic Pricing Logic...
+is_weekend passed.
+get_dynamic_price_multiplier passed.
+get_service_price_amount passed.
+get_service_price_breakdown passed.
+All tests passed.
+Testing tests/test_features_class.php...
+Testing FeatureFlags class...
+PASS: Default new_booking_ui should be false
+PASS: new_booking_ui should be enabled after enable()
+PASS: new_booking_ui should be disabled after disable()
+PASS: 100% rollout should be enabled for user1
+PASS: 100% rollout should be enabled for user2
+PASS: 0% rollout should be disabled for user1
+PASS: Env var=true should override 0% rollout
+PASS: Env var=false should override enabled storage
+All tests passed.
+Testing tests/test_get_service_total_price.php...
+PASS: Standard service (consulta) with default VAT
+PASS: Standard service (consulta) with custom VAT (15%)
+PASS: Standard service (consulta) with zero VAT
+PASS: Taxed service (laser) - Tax 15%
+PASS: Taxed service (rejuvenecimiento) - Tax 15%
+PASS: Unknown service (should be 0 price)
+PASS: Negative VAT (should be 0)
+
+All tests passed!
+Testing tests/test_manifest.php...
+Testing Manifest existence and validity...
+PASSED: Manifest is valid.
+Testing tests/test_map_appointment_status.php...
+Running 17 tests for map_appointment_status()...
+
+All 17 tests passed!
+Testing tests/test_map_callback_status.php...
+Testing map_callback_status...
+PASS: Should map 'contacted' to 'contactado'
+PASS: Should map 'CONTACTED' to 'contactado'
+PASS: Should map '  contacted  ' to 'contactado'
+PASS: Should map 'pending' to 'pendiente'
+PASS: Should map 'PENDING' to 'pendiente'
+PASS: Should map '  pending  ' to 'pendiente'
+PASS: Should keep 'contactado' as 'contactado'
+PASS: Should keep 'CONTACTADO' as 'contactado'
+PASS: Should keep 'pendiente' as 'pendiente'
+PASS: Should keep 'PENDIENTE' as 'pendiente'
+PASS: Should default 'unknown' to 'pendiente'
+PASS: Should default '' to 'pendiente'
+PASS: Should default '  ' to 'pendiente'
+PASS: Should default 'cancelled' to 'pendiente'
+All tests passed for map_callback_status!
+Testing tests/test_normalize_appointment.php...
+Starting tests for normalize_appointment()...
+
+--- Test Case 1: Defaults ---
+✅ PASS: ID should be an integer
+✅ PASS: ID should be positive
+✅ PASS: Default paymentMethod should be 'unpaid'
+✅ PASS: Default casePhotoCount should be 0
+✅ PASS: Default service should be empty string
+✅ PASS: Default status should be 'confirmed'
+✅ PASS: Default tenantId should be 'pielarmonia'
+
+--- Test Case 2: Payment Method Normalization ---
+✅ PASS: Payment method 'Card' -> 'card'
+✅ PASS: Payment method 'TRANSFER' -> 'transfer'
+✅ PASS: Payment method 'cash' -> 'cash'
+✅ PASS: Payment method 'bitcoin' -> 'unpaid'
+✅ PASS: Payment method '' -> 'unpaid'
+
+--- Test Case 3: Service Price Calculation ---
+✅ PASS: Price for 'consulta' should be '$40.00'
+✅ PASS: Price for 'laser' should be '$172.50'
+
+--- Test Case 4: Truncation Limits ---
+✅ PASS: Name should be truncated to 150 chars
+✅ PASS: Name content should match prefix
+✅ PASS: Reason should be truncated to 1000 chars
+
+--- Test Case 5: Photo Limits ---
+✅ PASS: Should limit to 3 photos
+✅ PASS: Photo 1 should match
+✅ PASS: Photo 3 should match
+✅ PASS: casePhotoCount should be 3
+✅ PASS: casePhotoCount should be clamped to 3 even if provided as 5
+
+--- Test Case 6: Status Mapping ---
+✅ PASS: Status 'Confirmed' -> 'confirmed'
+✅ PASS: Status 'PENDING' -> 'pending'
+✅ PASS: Status 'Cancelled' -> 'cancelled'
+✅ PASS: Status 'Completed' -> 'completed'
+✅ PASS: Status 'invalid_status' -> 'confirmed'
+
+🎉 All tests passed!
+Testing tests/test_normalize_string_list.php...
+Testing normalize_string_list...
+PASS: Null input returns empty array
+PASS: String input returns empty array
+PASS: Int input returns empty array
+PASS: Simple valid array
+PASS: Max items limit
+PASS: Max length truncation
+PASS: Non-scalar items skipped
+PASS: Trimming whitespace
+PASS: Empty strings skipped
+PASS: Scalar types converted to string
+All tests passed!
+Testing tests/test_payment_currency.php...
+✅ PASS: Default currency is USD
+✅ PASS: Valid currency EUR
+✅ PASS: Lowercase currency converted to uppercase
+✅ PASS: Invalid format returns USD
+✅ PASS: Whitespace is trimmed
+
+Summary: 5 passed, 0 failed.
+Testing tests/test_payment_lib.php...
+Testing payment_build_idempotency_key...
+[PASS] Standard prefix
+[PASS] Special characters in prefix
+[PASS] Empty prefix defaults to pay
+[PASS] Prefix with only non-alphanumeric
+[PASS] Idempotency check
+[PASS] Variance check
+[PASS] Prefix lowercasing
+All tests passed!
+Testing tests/test_prediction.php...
+Testing NoShowPredictor...
+New patient test passed.
+Good history test passed.
+Bad history test passed.
+Risk factors test passed.
+All tests passed.
+Testing tests/test_ratelimit_hardening.php...
+All tests passed.
+Testing tests/test_storage_backup.php...
+Testing Storage Backup Logic (SQLite)...
+Using temp data dir: /tmp/pielarmonia-test-storage-699c944d40dc0
+✅ Writing to store should create a backup of the previous state
+✅ Backup rotation (max backups)
+
+Results: 2 passed, 0 failed.
+Testing tests/test_tenants.php...
+Starting tests for tenants.php...
+
+--- Test 1: Default Tenant ID ---
+✅ PASS: Default tenant ID should be 'pielarmonia'
+
+--- Test 2: Tenant Config for Default ---
+✅ PASS: Config ID should match requested ID
+✅ PASS: Default name should be correct
+✅ PASS: Currency should be USD
+
+--- Test 3: Tenant Config without ID ---
+✅ PASS: Should default to pielarmonia
+
+--- Test 4: Unknown Tenant Fallback ---
+✅ PASS: Should return requested ID even if unknown (fallback)
+✅ PASS: Should have fallback name
+✅ PASS: Should inherit defaults
+
+🎉 All tenant tests passed!
+Testing tests/test_validate_email.php...
+Running validate_email tests...
+
+Summary: 12 passed, 0 failed.
+Testing tests/test_validate_phone.php...
+Running validate_phone tests...
+
+[PASS] Standard 10 digits: '0987654321' -> true
+[PASS] With spaces: '098 765 4321' -> true
+[PASS] With dashes: '098-765-4321' -> true
+[PASS] With parentheses: '(02) 2345678' -> true
+[PASS] With international code (+): '+593 98 765 4321' -> true
+[PASS] Minimum length (7 digits): '1234567' -> true
+[PASS] Maximum length (15 digits): '123456789012345' -> true
+[PASS] Mixed alphanumeric (valid digits): '098765432a' -> true
+[PASS] Too short (6 digits): '123456' -> false
+[PASS] Too long (16 digits): '1234567890123456' -> false
+[PASS] Empty string: '' -> false
+[PASS] Only letters (no digits): 'abcdefg' -> false
+[PASS] Only symbols (no digits): '+-() ' -> false
+
+Summary: 13 passed, 0 failed.
+Testing tests/test_vat_rate.php...
+Running get_vat_rate() tests...
+✅ Default (unset): Passed
+✅ Default (empty string): Passed
+✅ Decimal (0.15): Passed
+✅ Percentage (15): Passed
+✅ Percentage (12): Passed
+✅ Percentage (100): Passed
+✅ Zero: Passed
+✅ One: Passed
+✅ Negative (-0.5): Passed
+✅ Negative Percentage (-5): Passed
+✅ Over 100 (150): Passed
+✅ Over 1.0 but <= 100 (50): Passed
+✅ Non-numeric (abc): Passed
+
+Results: 13 passed, 0 failed.
+Testing tests/verify-api-lib.php...
+All definitions present.
+Testing tests/verify_backups_p0.php...
+Starting Backup Verification Server on port 8737 with data dir /tmp/pielarmonia-test-backup-699c944e92536...
+Backups before write: 0
+Sending booking request to http://localhost:8737/api.php...
+Response Code: 201
+Backups after write: 1
+Stopping server (PID 4283)...
+SUCCESS: Backup created successfully.
+Testing tests/verify_disaster_recovery_cli.php...
+Starting Disaster Recovery Integration Test...
+Attempting to write store to: /tmp/pielarmonia_dr_test_699c944fcd67b/store.sqlite
+SUCCESS: Disaster Recovery Test Passed.
+Testing tests/verify_frontend_features.php...
+PASS: Feature flag 'new_booking_ui' is correctly injected as true.
+Testing tests/verify_restore_procedure.php...
+[TEST] Starting Backup/Restore Verification...
+[TEST] Preserved original store content (49152 bytes)
+[TEST] Writing test state to store (Test ID: cd38d29fa3b7bb30)...
+[TEST] Triggering backup snapshot...
+[TEST] Backup created at: /app/lib/../data/backups/offsite/store-offsite-20260223-125424-59b53610.json
+[TEST] Simulating data loss (clearing store)...
+[TEST] Starting restore procedure from /app/lib/../data/backups/offsite/store-offsite-20260223-125424-59b53610.json...
+[TEST] Restore action completed.
+[TEST] SUCCESS: Data restored correctly!
+[TEST] Cleaned up backup file.
+[TEST] Restored original store content.
+
+Tests passed: 38
+Tests failed: 2
