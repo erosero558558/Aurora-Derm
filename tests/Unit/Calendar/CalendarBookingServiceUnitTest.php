@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Calendar;
 
 use PHPUnit\Framework\TestCase;
+use CalendarAvailabilityService;
+use CalendarBookingService;
 
 require_once __DIR__ . '/../../../lib/common.php';
 require_once __DIR__ . '/../../../lib/metrics.php';
