@@ -39,6 +39,8 @@ function register_api_routes(Router $router): void
     $router->add('POST', 'availability', [AvailabilityController::class, 'update']);
 
     $router->add('GET', 'booked-slots', [AppointmentController::class, 'bookedSlots']);
+    $router->add('POST', 'funnel-event', [AnalyticsController::class, 'recordEvent']);
+    $router->add('GET', 'funnel-metrics', [AnalyticsController::class, 'getFunnelMetrics']);
 
     $router->add('POST', 'payment-intent', [PaymentController::class, 'createIntent']);
     $router->add('POST', 'payment-verify', [PaymentController::class, 'verify']);

@@ -65,6 +65,7 @@ class AnalyticsController
 
         if (class_exists('Metrics')) {
             Metrics::increment('conversion_funnel_events_total', $labels);
+            self::recordDerivedMetrics($event, $labels);
         }
 
         json_response([
@@ -244,6 +245,23 @@ class AnalyticsController
                 break;
         }
         return $labels;
+    }
+
+    /**
+     * Record derived metrics that are easier to alert on and dashboard.
+     */
+    private static function recordDerivedMetrics(string $event, array $labels): void
+    {
+        if (!class_exists('Metrics')) {
+            return;
+        }
+
+        if ($event === 'checkout_abandon') {
+            Metrics::increment('booking_funnel_dropoff_total', [
+                'step' => self::normalizeLabel($labels['checkout_step'] ?? 'unknown'),
+                'reason' => self::normalizeLabel($labels['reason'] ?? 'unknown'),
+            ]);
+        }
     }
 
     /**
