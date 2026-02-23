@@ -253,3 +253,14 @@ export function setCookieConsent(status) {
         // noop
     }
 }
+
+export function isFeatureEnabled(flagName) {
+    if (
+        window.Piel &&
+        window.Piel.config &&
+        window.Piel.config.features
+    ) {
+        return !!window.Piel.config.features[flagName];
+    }
+    return false;
+}

@@ -80,6 +80,7 @@ if (is_file($contentFile)) {
                         'siteKey' => $captchaSiteKey,
                         'scriptUrl' => $captchaScriptUrl,
                     ],
+                    'features' => FeatureFlags::getAll(),
                 ];
 
                 $runtimeJson = json_encode(
