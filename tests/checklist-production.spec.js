@@ -194,10 +194,14 @@ test.describe('Checklist de Pruebas en Producción', () => {
         const timeSelect = page.locator('select[name="time"]');
         if (await timeSelect.isVisible()) {
             // Wait for options to be populated (more than just the placeholder)
-            await page.waitForFunction(() => {
-                const select = document.querySelector('select[name="time"]');
-                return select && select.options.length > 1;
-            }, null, { timeout: 15000 }).catch(() => {});
+            try {
+                await page.waitForFunction(() => {
+                    const select = document.querySelector('select[name="time"]');
+                    return select && select.options.length > 1;
+                }, null, { timeout: 15000 });
+            } catch (e) {
+                // Ignore timeout if options don't appear, proceed to attempt selection anyway
+            }
 
             // Select the first non-disabled, non-placeholder option
             const firstAvailableOption = timeSelect.locator('option:not([disabled]):not([value=""])').first();

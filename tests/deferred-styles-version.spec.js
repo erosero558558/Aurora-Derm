@@ -1,7 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
 // Updated to match the optimized minified CSS file
-const EXPECTED_DEFERRED_VERSION = 'ui-20260221-deferred18-fullcssfix1';
 const EXPECTED_DEFERRED_VERSION = 'ui-20260223-clsfix1';
 
 test('Homepage has correct deferred stylesheet version', async ({ page }) => {

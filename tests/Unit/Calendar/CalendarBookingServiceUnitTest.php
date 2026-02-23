@@ -144,6 +144,8 @@ class CalendarBookingServiceUnitTest extends TestCase
         // 10:30: Booked (insufficient duration, 11:00 missing)
         //
         // Expected Booked: ['09:00', '09:30', '10:30']
+        // Note: Sort order matters if the implementation sorts.
+        // CalendarAvailabilityService::bookedSlotsFromStore sorts the result.
         $this->assertSame(['09:00', '09:30', '10:30'], $resultFor60['data']);
     }
 
