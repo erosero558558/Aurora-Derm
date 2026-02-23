@@ -183,6 +183,11 @@ test.describe('Checklist de Pruebas en Producción', () => {
         const dateInput = page.locator('input[name="date"]');
         const futureDate = new Date();
         futureDate.setDate(futureDate.getDate() + 2); // 2 días en el futuro
+        // Ensure it's not Sunday (day 0) or Saturday (day 6), as defaults might have limited/no slots
+        // Default availability: Mon-Sat 9-18, Sat 9-13. Sunday no.
+        if (futureDate.getDay() === 0) { // Sunday
+            futureDate.setDate(futureDate.getDate() + 1); // Move to Monday
+        }
         await dateInput.fill(futureDate.toISOString().split('T')[0]);
         await dateInput.dispatchEvent('change');
 
@@ -193,6 +198,13 @@ test.describe('Checklist de Pruebas en Producción', () => {
         // Intentar seleccionar hora si aparece un select de hora
         const timeSelect = page.locator('select[name="time"]');
         if (await timeSelect.isVisible()) {
+            // Wait for options to be populated and first valid option to be enabled
+            // Index 0 is placeholder, Index 1 is first slot
+            const firstSlot = timeSelect.locator('option').nth(1);
+            await expect(firstSlot).not.toBeDisabled({ timeout: 10000 }).catch(() => {
+                console.warn('Timeout waiting for time slot enabled. Availability might be empty.');
+            });
+
             // Seleccionar primera opción válida
             const options = await timeSelect.locator('option').all();
             if (options.length > 1) {

@@ -134,6 +134,8 @@ async function openAvailabilitySection(page) {
 }
 
 test.describe('Admin disponibilidad: modo Google solo lectura', () => {
+    test.use({ serviceWorkers: 'block' }); // Block SW to ensure page.route intercepts requests
+
     test('muestra estado Google y bloquea edicion local', async ({ page }) => {
         await setupAdminApiMocks(page, 'google');
         await openAvailabilitySection(page);
