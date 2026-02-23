@@ -10,7 +10,11 @@ $mock_store = [
     'availability' => [],
     'idx_appointments_date' => []
 ];
+$GLOBALS['mock_store'] = &$mock_store;
+
 $mock_payload = [];
+$GLOBALS['mock_payload'] = &$mock_payload;
+
 $mock_intent = [
     'status' => 'succeeded',
     'amount' => 4000,
@@ -23,6 +27,7 @@ $mock_intent = [
         'doctor' => 'rosero'
     ]
 ];
+$GLOBALS['mock_intent'] = &$mock_intent;
 
 class JsonResponseException extends Exception
 {
@@ -47,10 +52,24 @@ function read_store(): array
     return $mock_store;
 }
 
-function write_store(array $store): void
+function write_store(array $store): bool
 {
     global $mock_store;
     $mock_store = $store;
+    return true;
+}
+
+function with_store_lock(callable $callback): array
+{
+    return [
+        'ok' => true,
+        'result' => $callback()
+    ];
+}
+
+function data_dir_path(): string
+{
+    return sys_get_temp_dir();
 }
 
 function require_rate_limit($key, $limit, $window): void
@@ -105,6 +124,11 @@ require_once __DIR__ . '/../lib/validation.php';
 require_once __DIR__ . '/../lib/models.php';
 require_once __DIR__ . '/../lib/business.php';
 require_once __DIR__ . '/../lib/event_setup.php';
+// Ensure event dispatcher is global if this file is included inside a function
+if (isset($eventDispatcher)) {
+    $GLOBALS['eventDispatcher'] = $eventDispatcher;
+}
+
 require_once __DIR__ . '/../controllers/AppointmentController.php';
 
 // Tests for lib/business.php
@@ -184,7 +208,7 @@ run_test('appointment_slot_taken doctor logic', function () {
 
 run_test('AppointmentController::store validation failure', function () {
     global $mock_payload;
-    $mock_payload = []; // Empty
+    $mock_payload = ['service' => 'consulta']; // Partial
 
     try {
         AppointmentController::store(['store' => read_store()]);
