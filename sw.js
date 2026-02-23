@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v10-20260223-openclaw-queue1';
+const CACHE_NAME = 'pielarmonia-v11-20260223-fix-assets1';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -6,9 +6,9 @@ const STATIC_ASSETS = [
     '/admin.html',
     '/admin.css',
     '/admin.js',
-    '/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1',
+    '/styles-deferred.css?v=ui-20260223-clsfix1',
     '/js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1',
-    '/script.js?v=figo-20260221-phase10-realagenda1',
+    '/script.js?v=figo-20260222-slotservicefix1',
     '/images/optimized/hero-woman.jpg',
     '/favicon.ico',
     '/manifest.json',

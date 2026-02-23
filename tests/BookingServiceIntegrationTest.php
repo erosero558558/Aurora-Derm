@@ -63,6 +63,17 @@ function require_json_body(): array
     return $mock_payload;
 }
 
+function data_dir_path(): string
+{
+    return sys_get_temp_dir();
+}
+
+function with_store_lock(callable $callback): array
+{
+    // No-op lock for test
+    return ['ok' => true, 'result' => $callback()];
+}
+
 // Mocking email functions if not already defined (though lib/email.php might be included via event_setup.php)
 // Since we now include event_setup.php -> EmailListener.php -> email.php, we should remove these mocks if they conflict.
 // However, existing tests rely on them being mocks? No, email.php has real logic.

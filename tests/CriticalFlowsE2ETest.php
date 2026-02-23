@@ -17,7 +17,7 @@ if (!is_dir($dataDir)) {
     mkdir($dataDir, 0777, true);
 }
 // We need to pass env vars to the server process
-$envVars = "PIELARMONIA_DATA_DIR=$dataDir PIELARMONIA_ADMIN_PASSWORD=secret";
+$envVars = "PIELARMONIA_DATA_DIR=$dataDir PIELARMONIA_ADMIN_PASSWORD=secret PIELARMONIA_DEFAULT_AVAILABILITY_ENABLED=true";
 
 echo "Starting server on port $port with data dir $dataDir...\n";
 // Start server relative to project root
