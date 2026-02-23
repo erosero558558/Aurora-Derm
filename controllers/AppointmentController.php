@@ -84,7 +84,7 @@ class AppointmentController
     public static function store(array $context): void
     {
         // POST /appointments
-        $store = $context['store'];
+        // Ignoring $context['store'] to use fresh read inside lock
         require_rate_limit('appointments', 5, 60);
         $payload = require_json_body();
         $bookingService = new BookingService();
@@ -94,8 +94,46 @@ class AppointmentController
         $lockTime = (string) ($normalized['time'] ?? '');
 
         $runCreate = static function () use ($bookingService, $payload): array {
-            $freshStore = read_store();
-            return $bookingService->create($freshStore, $payload);
+            $lockResult = with_store_lock(function () use ($bookingService, $payload) {
+                $freshStore = read_store();
+                $createResult = $bookingService->create($freshStore, $payload);
+
+                if (($createResult['ok'] ?? false) === true) {
+                    if (!write_store($createResult['store'], false)) {
+                        // Rollback: cancel calendar event if created
+                        $appointment = $createResult['data'] ?? [];
+                        if (!empty($appointment['calendarId']) && !empty($appointment['calendarEventId'])) {
+                            $calendarBooking = CalendarBookingService::fromEnv();
+                            if ($calendarBooking->isGoogleActive()) {
+                                $cancelResult = $calendarBooking->cancelCalendarEvent($appointment);
+                                if (($cancelResult['ok'] ?? false) !== true) {
+                                    audit_log_event('calendar.error', [
+                                        'operation' => 'events_delete_compensation',
+                                        'reason' => (string) ($cancelResult['error'] ?? 'compensation_failed'),
+                                        'appointmentId' => (int) ($appointment['id'] ?? 0),
+                                    ]);
+                                }
+                            }
+                        }
+                        return [
+                            'ok' => false,
+                            'error' => 'No se pudo confirmar la reserva en este momento (storage)',
+                            'code' => 503,
+                            'errorCode' => 'booking_store_failed'
+                        ];
+                    }
+                }
+                return $createResult;
+            });
+
+            if (($lockResult['ok'] ?? false) !== true) {
+                return [
+                    'ok' => false,
+                    'error' => (string) ($lockResult['error'] ?? 'Store lock failed'),
+                    'code' => (int) ($lockResult['code'] ?? 503),
+                ];
+            }
+            return is_array($lockResult['result']) ? $lockResult['result'] : ['ok' => false, 'code' => 500];
         };
 
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $lockDate) && preg_match('/^\d{2}:\d{2}$/', $lockTime)) {
@@ -131,36 +169,13 @@ class AppointmentController
             json_response($errorPayload, $statusCode);
         }
 
-        $newStore = $result['store'];
         $appointment = $result['data'];
-        $calendarBooking = CalendarBookingService::fromEnv();
-        if (!isset($appointment['slotDurationMin']) || (int) $appointment['slotDurationMin'] <= 0) {
-            $appointment['slotDurationMin'] = $calendarBooking->getDurationMin((string) ($appointment['service'] ?? 'consulta'));
-        }
-        if (!isset($appointment['calendarProvider']) || trim((string) $appointment['calendarProvider']) === '') {
-            $appointment['calendarProvider'] = $calendarBooking->isGoogleActive() ? 'google' : 'store';
-        }
 
-        $stored = write_store($newStore, false);
-        if ($stored !== true) {
-            if (!empty($appointment['calendarId']) && !empty($appointment['calendarEventId'])) {
-                $calendarBooking = CalendarBookingService::fromEnv();
-                if ($calendarBooking->isGoogleActive()) {
-                    $cancelResult = $calendarBooking->cancelCalendarEvent($appointment);
-                    if (($cancelResult['ok'] ?? false) !== true) {
-                        audit_log_event('calendar.error', [
-                            'operation' => 'events_delete_compensation',
-                            'reason' => (string) ($cancelResult['error'] ?? 'compensation_failed'),
-                            'appointmentId' => (int) ($appointment['id'] ?? 0),
-                        ]);
-                    }
-                }
-            }
-            json_response([
-                'ok' => false,
-                'error' => 'No se pudo confirmar la reserva en este momento',
-                'code' => 'booking_store_failed'
-            ], 503);
+        // Redundant checks removed as BookingService handles them now
+        // But keeping slotDurationMin just in case
+        if (!isset($appointment['slotDurationMin']) || (int) $appointment['slotDurationMin'] <= 0) {
+            $calendarBooking = CalendarBookingService::fromEnv();
+            $appointment['slotDurationMin'] = $calendarBooking->getDurationMin((string) ($appointment['service'] ?? 'consulta'));
         }
 
         $event = new BookingCreated($appointment);
@@ -177,7 +192,6 @@ class AppointmentController
     public static function update(array $context): void
     {
         // PATCH /appointments (Admin)
-        $store = $context['store'];
         $payload = require_json_body();
         $id = isset($payload['id']) ? (int) $payload['id'] : 0;
         if ($id <= 0) {
@@ -186,59 +200,89 @@ class AppointmentController
                 'error' => 'Identificador inválido'
             ], 400);
         }
-        $found = false;
-        $cancelledAppointment = null;
-        foreach ($store['appointments'] as &$appt) {
-            if ((int) ($appt['id'] ?? 0) !== $id) {
-                continue;
-            }
-            $found = true;
-            if (isset($payload['status'])) {
-                $appt['status'] = map_appointment_status((string) $payload['status']);
-                if ($appt['status'] === 'cancelled') {
-                    $cancelledAppointment = $appt;
+
+        $lockResult = with_store_lock(function () use ($id, $payload) {
+            $store = read_store();
+            $found = false;
+            $cancelledAppointment = null;
+            $updatedAppointment = null;
+
+            foreach ($store['appointments'] as &$appt) {
+                if ((int) ($appt['id'] ?? 0) !== $id) {
+                    continue;
                 }
+                $found = true;
+                if (isset($payload['status'])) {
+                    $appt['status'] = map_appointment_status((string) $payload['status']);
+                    if ($appt['status'] === 'cancelled') {
+                        $cancelledAppointment = $appt;
+                    }
+                }
+                if (isset($payload['paymentStatus'])) {
+                    $appt['paymentStatus'] = (string) $payload['paymentStatus'];
+                }
+                if (isset($payload['paymentMethod'])) {
+                    $appt['paymentMethod'] = (string) $payload['paymentMethod'];
+                }
+                if (isset($payload['paymentProvider'])) {
+                    $appt['paymentProvider'] = (string) $payload['paymentProvider'];
+                }
+                if (isset($payload['paymentIntentId'])) {
+                    $appt['paymentIntentId'] = (string) $payload['paymentIntentId'];
+                }
+                if (isset($payload['paymentPaidAt'])) {
+                    $appt['paymentPaidAt'] = (string) $payload['paymentPaidAt'];
+                }
+                if (isset($payload['transferReference'])) {
+                    $appt['transferReference'] = (string) $payload['transferReference'];
+                }
+                if (isset($payload['transferProofPath'])) {
+                    $appt['transferProofPath'] = (string) $payload['transferProofPath'];
+                }
+                if (isset($payload['transferProofUrl'])) {
+                    $appt['transferProofUrl'] = (string) $payload['transferProofUrl'];
+                }
+                if (isset($payload['transferProofName'])) {
+                    $appt['transferProofName'] = (string) $payload['transferProofName'];
+                }
+                if (isset($payload['transferProofMime'])) {
+                    $appt['transferProofMime'] = (string) $payload['transferProofMime'];
+                }
+                $updatedAppointment = $appt;
             }
-            if (isset($payload['paymentStatus'])) {
-                $appt['paymentStatus'] = (string) $payload['paymentStatus'];
+            unset($appt);
+
+            if (!$found) {
+                return ['ok' => false, 'error' => 'Cita no encontrada', 'code' => 404];
             }
-            if (isset($payload['paymentMethod'])) {
-                $appt['paymentMethod'] = (string) $payload['paymentMethod'];
+
+            if (!write_store($store)) {
+                return ['ok' => false, 'error' => 'Storage write failed', 'code' => 503];
             }
-            if (isset($payload['paymentProvider'])) {
-                $appt['paymentProvider'] = (string) $payload['paymentProvider'];
-            }
-            if (isset($payload['paymentIntentId'])) {
-                $appt['paymentIntentId'] = (string) $payload['paymentIntentId'];
-            }
-            if (isset($payload['paymentPaidAt'])) {
-                $appt['paymentPaidAt'] = (string) $payload['paymentPaidAt'];
-            }
-            if (isset($payload['transferReference'])) {
-                $appt['transferReference'] = (string) $payload['transferReference'];
-            }
-            if (isset($payload['transferProofPath'])) {
-                $appt['transferProofPath'] = (string) $payload['transferProofPath'];
-            }
-            if (isset($payload['transferProofUrl'])) {
-                $appt['transferProofUrl'] = (string) $payload['transferProofUrl'];
-            }
-            if (isset($payload['transferProofName'])) {
-                $appt['transferProofName'] = (string) $payload['transferProofName'];
-            }
-            if (isset($payload['transferProofMime'])) {
-                $appt['transferProofMime'] = (string) $payload['transferProofMime'];
-            }
-        }
-        unset($appt);
-        if (!$found) {
+
+            return [
+                'ok' => true,
+                'cancelled' => $cancelledAppointment,
+                'updated' => $updatedAppointment
+            ];
+        });
+
+        if (($lockResult['ok'] ?? false) !== true) {
             json_response([
                 'ok' => false,
-                'error' => 'Cita no encontrada'
-            ], 404);
+                'error' => (string) ($lockResult['error'] ?? 'Store lock failed')
+            ], (int) ($lockResult['code'] ?? 503));
         }
-        write_store($store);
 
+        $result = $lockResult['result'];
+        if (($result['ok'] ?? false) !== true) {
+            json_response([
+                'ok' => false,
+                'error' => (string) ($result['error'] ?? 'Error desconocido')
+            ], (int) ($result['code'] ?? 500));
+        }
+
+        $cancelledAppointment = $result['cancelled'];
         if (is_array($cancelledAppointment)) {
             $calendarBooking = CalendarBookingService::fromEnv();
             if ($calendarBooking->isGoogleActive()) {
@@ -254,13 +298,8 @@ class AppointmentController
         }
 
         // Enviar email de cancelación al paciente si se canceló la cita
-        if (isset($payload['status']) && map_appointment_status((string) $payload['status']) === 'cancelled') {
-            foreach ($store['appointments'] as $apptNotify) {
-                if ((int) ($apptNotify['id'] ?? 0) === $id) {
-                    get_event_dispatcher()->dispatch(new BookingCancelled($apptNotify));
-                    break;
-                }
-            }
+        if (isset($payload['status']) && map_appointment_status((string) $payload['status']) === 'cancelled' && isset($result['updated'])) {
+            get_event_dispatcher()->dispatch(new BookingCancelled($result['updated']));
         }
 
         json_response([
@@ -318,8 +357,62 @@ class AppointmentController
 
         $bookingService = new BookingService();
         $runReschedule = static function () use ($bookingService, $token, $newDate, $newTime): array {
-            $freshStore = read_store();
-            return $bookingService->reschedule($freshStore, $token, $newDate, $newTime);
+            $lockResult = with_store_lock(function () use ($bookingService, $token, $newDate, $newTime) {
+                $freshStore = read_store();
+                $rescheduleResult = $bookingService->reschedule($freshStore, $token, $newDate, $newTime);
+
+                if (($rescheduleResult['ok'] ?? false) === true) {
+                    if (!write_store($rescheduleResult['store'], false)) {
+                        // Rollback: revert google calendar changes
+                        $appointment = $rescheduleResult['data'] ?? [];
+                        $previousCalendarState = null;
+                        if (isset($rescheduleResult['meta']['previousCalendarState']) && is_array($rescheduleResult['meta']['previousCalendarState'])) {
+                            $previousCalendarState = $rescheduleResult['meta']['previousCalendarState'];
+                        }
+
+                        $calendarBooking = CalendarBookingService::fromEnv();
+                        if ($calendarBooking->isGoogleActive() && is_array($previousCalendarState)) {
+                            $previousDate = trim((string) ($previousCalendarState['date'] ?? ''));
+                            $previousTime = trim((string) ($previousCalendarState['time'] ?? ''));
+                            $previousDoctor = trim((string) ($previousCalendarState['doctor'] ?? ($appointment['doctor'] ?? '')));
+                            if (
+                                preg_match('/^\d{4}-\d{2}-\d{2}$/', $previousDate) &&
+                                preg_match('/^\d{2}:\d{2}$/', $previousTime)
+                            ) {
+                                $rollbackResult = $calendarBooking->patchCalendarEvent(
+                                    $appointment,
+                                    $previousDate,
+                                    $previousTime,
+                                    $previousDoctor !== '' ? $previousDoctor : null
+                                );
+                                if (($rollbackResult['ok'] ?? false) !== true) {
+                                    audit_log_event('calendar.error', [
+                                        'operation' => 'events_patch_rollback',
+                                        'reason' => (string) ($rollbackResult['error'] ?? 'rollback_failed'),
+                                        'appointmentId' => (int) ($appointment['id'] ?? 0),
+                                    ]);
+                                }
+                            }
+                        }
+                        return [
+                            'ok' => false,
+                            'error' => 'No se pudo guardar la reprogramacion en este momento',
+                            'code' => 503,
+                            'errorCode' => 'reschedule_store_failed'
+                        ];
+                    }
+                }
+                return $rescheduleResult;
+            });
+
+            if (($lockResult['ok'] ?? false) !== true) {
+                 return [
+                    'ok' => false,
+                    'error' => (string) ($lockResult['error'] ?? 'Store lock failed'),
+                    'code' => (int) ($lockResult['code'] ?? 503),
+                ];
+            }
+            return is_array($lockResult['result']) ? $lockResult['result'] : ['ok' => false, 'code' => 500];
         };
 
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate) && preg_match('/^\d{2}:\d{2}$/', $newTime)) {
@@ -355,52 +448,14 @@ class AppointmentController
             json_response($errorPayload, $statusCode);
         }
 
-        $newStore = $result['store'];
         $appointment = $result['data'];
-        $calendarBooking = CalendarBookingService::fromEnv();
+
+        // Redundant checks removed
         if (!isset($appointment['slotDurationMin']) || (int) $appointment['slotDurationMin'] <= 0) {
+            $calendarBooking = CalendarBookingService::fromEnv();
             $appointment['slotDurationMin'] = $calendarBooking->getDurationMin((string) ($appointment['service'] ?? 'consulta'));
         }
-        if (!isset($appointment['calendarProvider']) || trim((string) $appointment['calendarProvider']) === '') {
-            $appointment['calendarProvider'] = $calendarBooking->isGoogleActive() ? 'google' : 'store';
-        }
 
-        $previousCalendarState = null;
-        if (isset($result['meta']['previousCalendarState']) && is_array($result['meta']['previousCalendarState'])) {
-            $previousCalendarState = $result['meta']['previousCalendarState'];
-        }
-
-        $stored = write_store($newStore, false);
-        if ($stored !== true) {
-            if ($calendarBooking->isGoogleActive() && is_array($previousCalendarState)) {
-                $previousDate = trim((string) ($previousCalendarState['date'] ?? ''));
-                $previousTime = trim((string) ($previousCalendarState['time'] ?? ''));
-                $previousDoctor = trim((string) ($previousCalendarState['doctor'] ?? ($appointment['doctor'] ?? '')));
-                if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}$/', $previousDate) &&
-                    preg_match('/^\d{2}:\d{2}$/', $previousTime)
-                ) {
-                    $rollbackResult = $calendarBooking->patchCalendarEvent(
-                        $appointment,
-                        $previousDate,
-                        $previousTime,
-                        $previousDoctor !== '' ? $previousDoctor : null
-                    );
-                    if (($rollbackResult['ok'] ?? false) !== true) {
-                        audit_log_event('calendar.error', [
-                            'operation' => 'events_patch_rollback',
-                            'reason' => (string) ($rollbackResult['error'] ?? 'rollback_failed'),
-                            'appointmentId' => (int) ($appointment['id'] ?? 0),
-                        ]);
-                    }
-                }
-            }
-            json_response([
-                'ok' => false,
-                'error' => 'No se pudo guardar la reprogramacion en este momento',
-                'code' => 'reschedule_store_failed'
-            ], 503);
-        }
         get_event_dispatcher()->dispatch(new BookingRescheduled($appointment));
 
         json_response([

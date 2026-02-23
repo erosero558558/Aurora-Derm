@@ -215,6 +215,8 @@ class BookingService
             $appointment['calendarId'] = (string) ($calendarEvent['calendarId'] ?? '');
             $appointment['calendarEventId'] = (string) ($calendarEvent['eventId'] ?? '');
             $appointment['calendarEventUrl'] = (string) ($calendarEvent['eventHtmlLink'] ?? '');
+        } else {
+            $appointment['calendarProvider'] = 'store';
         }
 
         $store['appointments'][] = $appointment;

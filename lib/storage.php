@@ -758,6 +758,40 @@ function acquire_store_lock($fp, int $timeoutMs = STORE_LOCK_TIMEOUT_MS): bool
     return true;
 }
 
+function with_store_lock(callable $callback): array
+{
+    $lockFile = data_dir_path() . DIRECTORY_SEPARATOR . 'store.lock';
+    $fp = @fopen($lockFile, 'c+');
+    if (!is_resource($fp)) {
+        return ['ok' => false, 'error' => 'No se pudo obtener lock de store', 'code' => 503];
+    }
+
+    $deadline = microtime(true) + (STORE_LOCK_TIMEOUT_MS / 1000.0);
+    $locked = false;
+    while (microtime(true) < $deadline) {
+        if (flock($fp, LOCK_EX | LOCK_NB)) {
+            $locked = true;
+            break;
+        }
+        usleep(STORE_LOCK_RETRY_DELAY_US);
+    }
+
+    if (!$locked) {
+        fclose($fp);
+        return ['ok' => false, 'error' => 'Store ocupado, intenta de nuevo', 'code' => 503];
+    }
+
+    try {
+        $result = $callback();
+        return ['ok' => true, 'result' => $result];
+    } catch (Throwable $e) {
+         return ['ok' => false, 'error' => $e->getMessage(), 'code' => 500];
+    } finally {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+    }
+}
+
 function write_store(array $store, bool $emitHttpErrors = true): bool
 {
     if (!ensure_data_file()) {
