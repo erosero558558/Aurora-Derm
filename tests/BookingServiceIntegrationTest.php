@@ -47,10 +47,11 @@ function read_store(): array
     return $mock_store;
 }
 
-function write_store(array $store): void
+function write_store(array $store): bool
 {
     global $mock_store;
     $mock_store = $store;
+    return true;
 }
 
 function require_rate_limit($key, $limit, $window): void
@@ -61,6 +62,22 @@ function require_json_body(): array
 {
     global $mock_payload;
     return $mock_payload;
+}
+
+function data_dir_path(): string
+{
+    return sys_get_temp_dir();
+}
+
+function with_store_lock(callable $callback): array
+{
+    // Mock implementation that simply runs the callback
+    try {
+        $result = $callback();
+        return ['ok' => true, 'result' => $result];
+    } catch (Throwable $e) {
+        return ['ok' => false, 'error' => $e->getMessage(), 'code' => 500];
+    }
 }
 
 // Mocking email functions if not already defined (though lib/email.php might be included via event_setup.php)
@@ -184,7 +201,7 @@ run_test('appointment_slot_taken doctor logic', function () {
 
 run_test('AppointmentController::store validation failure', function () {
     global $mock_payload;
-    $mock_payload = []; // Empty
+    $mock_payload = ['service' => 'consulta']; // Provide service to reach required fields validation
 
     try {
         AppointmentController::store(['store' => read_store()]);
