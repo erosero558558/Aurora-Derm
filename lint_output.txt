@@ -1,0 +1,280 @@
+
+> lint
+> npm run lint:js && npm run lint:php
+
+
+> lint:js
+> eslint .
+
+
+/app/js/admin-chunks/dashboard.js
+   7:14  warning  'error' is defined but never used  no-unused-vars
+  44:14  warning  'error' is defined but never used  no-unused-vars
+
+/app/js/analytics.js
+    1:34  warning  'debugLog' is defined but never used            no-unused-vars
+    5:5   warning  'withDeferredModule' is defined but never used  no-unused-vars
+  119:14  warning  '_error' is defined but never used              no-unused-vars
+  119:22  warning  Empty block statement                           no-empty
+
+/app/js/api.js
+  95:22  warning  'error' is defined but never used  no-unused-vars
+
+/app/js/engines/analytics-engine.js
+  32:22  warning  '_' is defined but never used  no-unused-vars
+
+/app/js/engines/booking-engine.js
+   51:14  warning  '_' is defined but never used  no-unused-vars
+  191:14  warning  '_' is defined but never used  no-unused-vars
+
+/app/js/engines/booking-utils.js
+  371:18  warning  '_' is defined but never used                             no-unused-vars
+  447:13  warning  This assigned value is not used in subsequent statements  no-useless-assignment
+  470:13  warning  This assigned value is not used in subsequent statements  no-useless-assignment
+  473:18  warning  'error' is defined but never used                         no-unused-vars
+
+/app/js/engines/data-bundle.js
+  106:22  warning  'error' is defined but never used  no-unused-vars
+
+/app/js/engines/data-engine.js
+  131:22  warning  '_' is defined but never used      no-unused-vars
+  131:25  warning  Empty block statement              no-empty
+  194:30  warning  'error' is defined but never used  no-unused-vars
+  321:22  warning  '_' is defined but never used      no-unused-vars
+  321:25  warning  Empty block statement              no-empty
+  348:26  warning  'error' is defined but never used  no-unused-vars
+
+/app/js/engines/engagement-bundle.js
+   26:18  warning  'e' is defined but never used      no-unused-vars
+   94:22  warning  'error' is defined but never used  no-unused-vars
+  196:22  warning  'error' is defined but never used  no-unused-vars
+  397:18  warning  'error' is defined but never used  no-unused-vars
+
+/app/js/engines/ui-bundle.js
+  550:18  warning  'error' is defined but never used  no-unused-vars
+  562:18  warning  'error' is defined but never used  no-unused-vars
+
+/app/js/gallery.js
+  5:5  warning  'bindWarmupTarget' is defined but never used  no-unused-vars
+
+/app/js/legal-i18n.js
+  233:18  warning  'error' is defined but never used  no-unused-vars
+  241:18  warning  'error' is defined but never used  no-unused-vars
+
+/app/js/main.js
+  416:15  warning  'subscription' is assigned a value but never used  no-unused-vars
+
+/app/js/success-modal.js
+  62:18  warning  'e' is defined but never used  no-unused-vars
+
+/app/js/utils.js
+   81:14  warning  '_error' is defined but never used  no-unused-vars
+  106:14  warning  '_error' is defined but never used  no-unused-vars
+  173:14  warning  '_error' is defined but never used  no-unused-vars
+  181:14  warning  '_error' is defined but never used  no-unused-vars
+  236:14  warning  '_error' is defined but never used  no-unused-vars
+  252:14  warning  'error' is defined but never used   no-unused-vars
+
+/app/src/apps/admin/modules/api.js
+  33:9   warning  This assigned value is not used in subsequent statements  no-useless-assignment
+  36:14  warning  'error' is defined but never used                         no-unused-vars
+
+/app/src/apps/admin/modules/auth.js
+  14:14  warning  'error' is defined but never used  no-unused-vars
+  23:14  warning  'error' is defined but never used  no-unused-vars
+
+/app/src/apps/admin/modules/data.js
+  17:14  warning  'error' is defined but never used  no-unused-vars
+  25:14  warning  'error' is defined but never used  no-unused-vars
+  80:14  warning  'error' is defined but never used  no-unused-vars
+
+/app/src/apps/admin/modules/push.js
+  203:14  warning  'error' is defined but never used  no-unused-vars
+
+/app/src/apps/admin/utils.js
+  16:29  warning  'args' is defined but never used  no-unused-vars
+
+/app/src/apps/analytics/engine.js
+  31:18  warning  '_' is defined but never used  no-unused-vars
+
+/app/src/apps/booking/engine.js
+   36:10  warning  'getCurrentLang' is defined but never used  no-unused-vars
+   39:14  warning  '_' is defined but never used               no-unused-vars
+   59:14  warning  '_' is defined but never used               no-unused-vars
+  199:14  warning  '_' is defined but never used               no-unused-vars
+
+/app/src/apps/consent/engine.js
+  44:14  warning  'error' is defined but never used  no-unused-vars
+  56:14  warning  'error' is defined but never used  no-unused-vars
+
+/app/src/apps/engagement/forms.js
+   24:14  warning  'e' is defined but never used      no-unused-vars
+   92:18  warning  'error' is defined but never used  no-unused-vars
+  194:18  warning  'error' is defined but never used  no-unused-vars
+
+/app/src/apps/payment/engine.js
+   50:14  warning  '_' is defined but never used                             no-unused-vars
+  126:9   warning  This assigned value is not used in subsequent statements  no-useless-assignment
+  149:9   warning  This assigned value is not used in subsequent statements  no-useless-assignment
+  152:14  warning  'error' is defined but never used                         no-unused-vars
+
+/app/src/apps/reviews/engine.js
+  157:14  warning  'error' is defined but never used  no-unused-vars
+
+/app/src/apps/shared/i18n.js
+  104:18  warning  'error' is defined but never used  no-unused-vars
+
+/app/sw.js
+  182:9  warning  'clients' is not defined  no-undef
+
+/app/tests/_debug-deferred.spec.js
+   6:13  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  11:9   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  15:9   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  27:13  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  33:11  warning  Unexpected use of page.waitForTimeout()                                        playwright/no-wait-for-timeout
+  51:5   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+/app/tests/admin.spec.js
+  26:9   warning  Avoid having conditionals in tests              playwright/no-conditional-in-test
+  26:13  warning  Avoid having conditionals in tests              playwright/no-conditional-in-test
+  29:19  warning  Unexpected use of page.waitForTimeout()         playwright/no-wait-for-timeout
+  31:19  warning  'dashboard' is assigned a value but never used  no-unused-vars
+  37:19  warning  Avoid calling `expect` conditionally            playwright/no-conditional-expect
+  48:9   warning  Avoid having conditionals in tests              playwright/no-conditional-in-test
+  48:13  warning  Avoid having conditionals in tests              playwright/no-conditional-in-test
+  51:19  warning  Unexpected use of page.waitForTimeout()         playwright/no-wait-for-timeout
+  57:13  warning  Avoid having conditionals in tests              playwright/no-conditional-in-test
+  58:23  warning  Avoid calling `expect` conditionally            playwright/no-conditional-expect
+
+/app/tests/api-security-headers.spec.js
+  12:9  warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+
+/app/tests/booking.spec.js
+   33:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+   34:19  warning  Avoid calling `expect` conditionally     playwright/no-conditional-expect
+   47:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+   62:15  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+   66:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+   68:13  warning  Avoid calling `expect` conditionally     playwright/no-conditional-expect
+   77:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+   80:19  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+   95:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+  107:15  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+  111:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+  115:13  warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+  122:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+  126:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+  130:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+  140:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+
+/app/tests/calendar-google-contract.spec.js
+   64:9   warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+   78:9   warning  Avoid having conditionals in tests          playwright/no-conditional-in-test
+   79:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+   80:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+   82:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+   83:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+   84:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+   96:9   warning  Avoid having conditionals in tests          playwright/no-conditional-in-test
+   97:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+   98:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+  100:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+  101:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+  102:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+  111:9   warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+  126:9   warning  Avoid having conditionals in tests          playwright/no-conditional-in-test
+  127:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+  128:13  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+
+/app/tests/calendar-google-write.spec.js
+   70:9   warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+   78:9   warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+   88:9   warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+   92:9   warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+   98:9   warning  Unexpected use of the `.skip()` annotation  playwright/no-skipped-test
+  206:13  warning  Avoid having conditionals in tests          playwright/no-conditional-in-test
+  206:17  warning  Avoid having conditionals in tests          playwright/no-conditional-in-test
+  220:17  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+  222:17  warning  Avoid calling `expect` conditionally        playwright/no-conditional-expect
+
+/app/tests/checklist-production.spec.js
+   86:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+   87:13  warning  Avoid calling `expect` conditionally                             playwright/no-conditional-expect
+  104:33  warning  Unexpected usage of not.toBeVisible(). Use toBeHidden() instead  playwright/no-useless-not
+  115:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  116:13  warning  Unexpected use of the `.skip()` annotation                       playwright/no-skipped-test
+  151:13  warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  153:23  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+  178:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  191:15  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+  195:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  198:13  warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  210:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  261:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  262:19  warning  Avoid calling `expect` conditionally                             playwright/no-conditional-expect
+  276:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  278:13  warning  Avoid calling `expect` conditionally                             playwright/no-conditional-expect
+  279:13  warning  Avoid calling `expect` conditionally                             playwright/no-conditional-expect
+  286:13  warning  Avoid calling `expect` conditionally                             playwright/no-conditional-expect
+  299:9   warning  Avoid having conditionals in tests                               playwright/no-conditional-in-test
+  302:13  warning  Avoid calling `expect` conditionally                             playwright/no-conditional-expect
+
+/app/tests/cookie-consent.spec.js
+  25:33  warning  Unexpected use of { force: true } option                         playwright/no-force-option
+  27:30  warning  Unexpected usage of not.toBeVisible(). Use toBeHidden() instead  playwright/no-useless-not
+  43:33  warning  Unexpected use of { force: true } option                         playwright/no-force-option
+  45:30  warning  Unexpected usage of not.toBeVisible(). Use toBeHidden() instead  playwright/no-useless-not
+  69:30  warning  Unexpected usage of not.toBeVisible(). Use toBeHidden() instead  playwright/no-useless-not
+  77:33  warning  Unexpected use of { force: true } option                         playwright/no-force-option
+  78:15  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+  88:33  warning  Unexpected use of { force: true } option                         playwright/no-force-option
+  89:15  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+
+/app/tests/deferred-styles-version.spec.js
+  5:7  warning  'DEFERRED_STYLESHEET_NAME' is assigned a value but never used  no-unused-vars
+
+/app/tests/funnel-tracking.spec.js
+   87:17  warning  This assigned value is not used in subsequent statements         no-useless-assignment
+   90:22  warning  'e' is defined but never used                                    no-unused-vars
+  115:34  warning  Unexpected usage of not.toBeVisible(). Use toBeHidden() instead  playwright/no-useless-not
+  150:11  warning  Unexpected use of page.waitForSelector()                         playwright/no-wait-for-selector
+  174:11  warning  Unexpected use of page.waitForSelector()                         playwright/no-wait-for-selector
+  231:11  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+  234:11  warning  Unexpected use of page.waitForSelector()                         playwright/no-wait-for-selector
+  235:11  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+  269:26  warning  'e' is defined but never used                                    no-unused-vars
+  319:30  warning  'e' is defined but never used                                    no-unused-vars
+  407:15  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+  434:15  warning  Unexpected use of page.waitForSelector()                         playwright/no-wait-for-selector
+  459:15  warning  Unexpected use of page.waitForTimeout()                          playwright/no-wait-for-timeout
+
+/app/tests/hero-preload-paths.spec.js
+  19:19  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+
+/app/tests/homepage.spec.js
+  36:15  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+
+/app/tests/mobile-overflow-regression.spec.js
+   83:15  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+   92:19  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+  108:15  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+
+/app/tests/reschedule.spec.js
+   8:15  warning  Unexpected use of page.waitForTimeout()  playwright/no-wait-for-timeout
+  13:9   warning  Avoid having conditionals in tests       playwright/no-conditional-in-test
+  14:19  warning  Avoid calling `expect` conditionally     playwright/no-conditional-expect
+
+/app/tests/script-version-parity.spec.js
+  15:41  warning  Unexpected use of page.$$eval()  playwright/no-eval
+  34:41  warning  Unexpected use of page.$$eval()  playwright/no-eval
+
+/app/tests/visual-regression.spec.js
+  12:9   warning  Unused eslint-disable directive (no problems were reported from 'playwright/no-networkidle')
+  15:15  warning  Unexpected use of page.waitForTimeout()                                                       playwright/no-wait-for-timeout
+  30:37  error    Unexpected use of networkidle                                                                 playwright/no-networkidle
+  31:15  warning  Unexpected use of page.waitForTimeout()                                                       playwright/no-wait-for-timeout
+  49:15  warning  Unexpected use of page.waitForTimeout()                                                       playwright/no-wait-for-timeout
+
+✖ 181 problems (1 error, 180 warnings)
+  0 errors and 11 warnings potentially fixable with the `--fix` option.

@@ -29,10 +29,11 @@ class PushService
         $store = $this->readSubscriptions();
         $items = is_array($store['items'] ?? null) ? $store['items'] : [];
         $endpoint = $normalized['endpoint'];
-        $items = array_values(array_filter($items, static function ($item) use ($endpoint): bool {
+        $items = array_filter($items, static function ($item) use ($endpoint): bool {
             return (string) ($item['endpoint'] ?? '') !== $endpoint;
-        }));
+        });
         $items[] = $normalized;
+        $items = array_values($items);
 
         $store['items'] = $items;
         $store['updatedAt'] = local_date('c');
@@ -48,9 +49,10 @@ class PushService
 
         $store = $this->readSubscriptions();
         $items = is_array($store['items'] ?? null) ? $store['items'] : [];
-        $filtered = array_values(array_filter($items, static function ($item) use ($endpoint): bool {
+        $filtered = array_filter($items, static function ($item) use ($endpoint): bool {
             return (string) ($item['endpoint'] ?? '') !== $endpoint;
-        }));
+        });
+        $filtered = array_values($filtered);
 
         if (count($filtered) === count($items)) {
             return true;

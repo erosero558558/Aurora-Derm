@@ -51,7 +51,7 @@ class CalendarBookingServiceUnitTest extends TestCase
 
     public function testServiceDurationMapIsApplied(): void
     {
-        $booking = CalendarBookingService::fromEnv();
+        $booking = \CalendarBookingService::fromEnv();
 
         $this->assertSame(30, $booking->getDurationMin('consulta'));
         $this->assertSame(60, $booking->getDurationMin('laser'));
@@ -60,7 +60,7 @@ class CalendarBookingServiceUnitTest extends TestCase
 
     public function testStoreAvailabilityFiltersInvalidStartsForSixtyMinuteServices(): void
     {
-        $availability = CalendarAvailabilityService::fromEnv();
+        $availability = \CalendarAvailabilityService::fromEnv();
         $date = date('Y-m-d', strtotime('+2 day'));
 
         $store = [
@@ -85,7 +85,7 @@ class CalendarBookingServiceUnitTest extends TestCase
 
     public function testStoreBookedSlotsRespectOverlapAndDuration(): void
     {
-        $availability = CalendarAvailabilityService::fromEnv();
+        $availability = \CalendarAvailabilityService::fromEnv();
         $date = date('Y-m-d', strtotime('+2 day'));
 
         $store = [
@@ -118,7 +118,7 @@ class CalendarBookingServiceUnitTest extends TestCase
 
     public function testIndiferenteAssignsDoctorWithLeastLoad(): void
     {
-        $booking = CalendarBookingService::fromEnv();
+        $booking = \CalendarBookingService::fromEnv();
         $date = date('Y-m-d', strtotime('+3 day'));
 
         $store = [
@@ -156,7 +156,7 @@ class CalendarBookingServiceUnitTest extends TestCase
 
     public function testIndiferenteTieBreakUsesCursorAndThenAdvances(): void
     {
-        $booking = CalendarBookingService::fromEnv();
+        $booking = \CalendarBookingService::fromEnv();
         $date = date('Y-m-d', strtotime('+4 day'));
 
         $store = [

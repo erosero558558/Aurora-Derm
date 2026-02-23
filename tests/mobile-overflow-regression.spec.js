@@ -78,6 +78,7 @@ test.describe('Mobile overflow regressions', () => {
     }) => {
         await page.setViewportSize({ width: 360, height: 800 });
         await page.goto('/', { timeout: 45000, waitUntil: 'domcontentloaded' });
+        // eslint-disable-next-line playwright/no-networkidle
         await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => null);
         await page.waitForTimeout(1500);
 

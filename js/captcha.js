@@ -10,7 +10,7 @@ function loadCaptchaScript() {
         return Promise.resolve(null);
     }
 
-    captchaPromise = new Promise((resolve, reject) => {
+    captchaPromise = new Promise((resolve) => {
         const script = document.createElement('script');
         script.src = config.scriptUrl;
         script.async = true;
