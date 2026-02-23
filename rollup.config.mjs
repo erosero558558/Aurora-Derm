@@ -1,4 +1,5 @@
 import resolve from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
 
 export default [
     // Admin App
@@ -9,7 +10,7 @@ export default [
             format: 'es',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Booking UI
     {
@@ -19,7 +20,7 @@ export default [
             format: 'es',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
         // Removed external: ['booking-calendar-lazy'] to bundle it inline
     },
     // Booking Engine
@@ -30,7 +31,7 @@ export default [
             format: 'es',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Booking Calendar
     {
@@ -40,7 +41,7 @@ export default [
             format: 'es',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Chat UI Engine
     {
@@ -50,7 +51,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Chat Widget Engine
     {
@@ -60,7 +61,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Chat Booking Engine
     {
@@ -70,7 +71,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Figo Chat Engine
     {
@@ -80,7 +81,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Analytics Engine
     {
@@ -90,7 +91,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Booking Utils Bundle
     {
@@ -100,7 +101,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Data Bundle
     {
@@ -110,7 +111,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // UI Bundle
     {
@@ -120,7 +121,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Engagement Bundle
     {
@@ -130,7 +131,7 @@ export default [
             format: 'iife',
             sourcemap: false
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Main Script
     {
@@ -141,6 +142,6 @@ export default [
             sourcemap: false,
             banner: '/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in js/main.js and run npm run build */',
         },
-        plugins: [resolve()],
+        plugins: [resolve(), terser()],
     },
 ];
