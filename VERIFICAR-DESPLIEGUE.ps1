@@ -120,7 +120,7 @@ function Get-RemoteSha256 {
 
     $tmp = New-TemporaryFile
     try {
-        curl.exe -sS -L --max-time 30 --connect-timeout 8 -o $tmp $Url | Out-Null
+        curl.exe -sS -L --max-time 20 --connect-timeout 8 -o $tmp $Url | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "No se pudo descargar $Url"
         }
@@ -245,7 +245,7 @@ function Get-RemoteText {
 
     $tmp = New-TemporaryFile
     try {
-        curl.exe -sS -L --max-time 30 --connect-timeout 8 -o $tmp $Url | Out-Null
+        curl.exe -sS -L --max-time 20 --connect-timeout 8 -o $tmp $Url | Out-Null
         if ($LASTEXITCODE -ne 0) {
             return ''
         }
@@ -261,7 +261,7 @@ function Invoke-JsonGet {
     param([string]$Url)
 
     try {
-        $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec 30 -UseBasicParsing -Headers @{
+        $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
             'Cache-Control' = 'no-cache'
             'User-Agent' = 'PielArmoniaDeployCheck/1.0'
         }
@@ -474,7 +474,7 @@ $remoteIndexCandidates = @("$base/", "$base/index.html")
 foreach ($candidateUrl in $remoteIndexCandidates) {
     $remoteIndexTmp = New-TemporaryFile
     try {
-        curl.exe -sS -L --max-time 30 --connect-timeout 8 -o $remoteIndexTmp $candidateUrl | Out-Null
+        curl.exe -sS -L --max-time 20 --connect-timeout 8 -o $remoteIndexTmp $candidateUrl | Out-Null
         if ($LASTEXITCODE -ne 0) {
             continue
         }
@@ -502,7 +502,7 @@ try {
     $homeCandidates = @("$base/", "$base/index.html")
     foreach ($homeCandidate in $homeCandidates) {
         try {
-            $candidateResp = Invoke-WebRequest -Uri $homeCandidate -Method GET -TimeoutSec 30 -UseBasicParsing -Headers @{
+            $candidateResp = Invoke-WebRequest -Uri $homeCandidate -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
                 'Cache-Control' = 'no-cache'
                 'User-Agent' = 'PielArmoniaDeployCheck/1.0'
             }
@@ -597,7 +597,7 @@ try {
         $localHead = Get-LocalGitHeadInfo
         if ($null -ne $localHead) {
             $deployFreshnessChecked = $true
-            $scriptHeadResp = Invoke-WebRequest -Uri $deployFreshnessProbeUrl -Method HEAD -TimeoutSec 30 -UseBasicParsing -Headers @{
+            $scriptHeadResp = Invoke-WebRequest -Uri $deployFreshnessProbeUrl -Method HEAD -TimeoutSec 20 -UseBasicParsing -Headers @{
                 'Cache-Control' = 'no-cache'
                 'User-Agent' = 'PielArmoniaDeployCheck/1.0'
             }
@@ -661,7 +661,7 @@ try {
         if ([string]::IsNullOrWhiteSpace($assetCheck.Url)) {
             continue
         }
-        $assetResp = Invoke-WebRequest -Uri $assetCheck.Url -Method GET -TimeoutSec 30 -UseBasicParsing -Headers @{
+        $assetResp = Invoke-WebRequest -Uri $assetCheck.Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
             'Cache-Control' = 'no-cache'
             'User-Agent' = 'PielArmoniaDeployCheck/1.0'
         }
@@ -691,7 +691,7 @@ try {
 }
 
 try {
-    $healthHeaderResp = Invoke-WebRequest -Uri "$base/api.php?resource=health" -Method GET -TimeoutSec 30 -UseBasicParsing -Headers @{
+    $healthHeaderResp = Invoke-WebRequest -Uri "$base/api.php?resource=health" -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
         'Cache-Control' = 'no-cache'
         'User-Agent' = 'PielArmoniaDeployCheck/1.0'
     }
@@ -928,7 +928,7 @@ try {
         if ([string]::IsNullOrWhiteSpace($assetCheck.Url)) {
             continue
         }
-        $assetResp = Invoke-WebRequest -Uri $assetCheck.Url -Method GET -TimeoutSec 30 -UseBasicParsing -Headers @{
+        $assetResp = Invoke-WebRequest -Uri $assetCheck.Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
             'Cache-Control' = 'no-cache'
             'User-Agent' = 'PielArmoniaDeployCheck/1.0'
         }

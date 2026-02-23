@@ -86,7 +86,7 @@ jobs:
     gate:
         name: Gate estricto en produccion
         runs-on: windows-latest
-        timeout-minutes: 55
+        timeout-minutes: 70
         env:
             TARGET_DOMAIN: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
             BENCH_RUNS: ${{ github.event.inputs.bench_runs || '25' }}
