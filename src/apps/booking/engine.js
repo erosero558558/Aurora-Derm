@@ -550,38 +550,56 @@ function bindPaymentListeners() {
     if (listenersBound) return;
     listenersBound = true;
 
-        document.addEventListener('click', (e) => {
-            const method = e.target.closest('.payment-method');
-            if (!method) return;
+    document.addEventListener('click', (e) => {
+        const policyLink = e.target.closest(
+            '[data-action="open-payment-policy"]'
+        );
+        if (policyLink) {
+            trackEvent('booking_policy_opened', {
+                source: 'payment_modal',
+            });
+            setCheckoutStep('payment_policy_opened', {
+                source: 'payment_modal',
+            });
+            return;
+        }
 
-            if (method.classList.contains('disabled')) {
-                showToast('Pago con tarjeta no disponible por el momento.', 'warning');
-                return;
-            }
+        const method = e.target.closest('.payment-method');
+        if (!method) return;
 
-            document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
-            method.classList.add('active');
+        if (method.classList.contains('disabled')) {
+            showToast('Pago con tarjeta no disponible por el momento.', 'warning');
+            return;
+        }
 
-            const methodType = method.dataset.method;
-            syncPaymentForms(methodType);
+        document
+            .querySelectorAll('.payment-method')
+            .forEach((m) => m.classList.remove('active'));
+        method.classList.add('active');
 
-            clearPaymentError();
-            trackEvent('payment_method_selected', {
-                payment_method: methodType || 'unknown'
+        const methodType = method.dataset.method;
+        syncPaymentForms(methodType);
+
+        clearPaymentError();
+        trackEvent('payment_method_selected', {
+            payment_method: methodType || 'unknown'
         });
 
-            if (methodType === 'card') {
-                refreshCardPaymentAvailability().catch(error => {
-                    setPaymentError(error?.message || 'No se pudo cargar el formulario de tarjeta');
-                });
-            }
+        if (methodType === 'card') {
+            refreshCardPaymentAvailability().catch((error) => {
+                setPaymentError(
+                    error?.message ||
+                        'No se pudo cargar el formulario de tarjeta'
+                );
+            });
+        }
     });
 
-        document.addEventListener('change', (e) => {
-            if (e.target && e.target.id === 'transferProofFile') {
-                updateTransferProofFileName();
-            }
-        });
+    document.addEventListener('change', (e) => {
+        if (e.target && e.target.id === 'transferProofFile') {
+            updateTransferProofFileName();
+        }
+    });
 }
 
 const api = {
