@@ -272,6 +272,26 @@ function figo_queue_poll_after_ms(): int
     return figo_queue_clamp_int(getenv('OPENCLAW_POLL_AFTER_MS'), 800, 400, 5000);
 }
 
+function figo_queue_allow_client_model(): bool
+{
+    return figo_queue_parse_bool(getenv('OPENCLAW_ALLOW_CLIENT_MODEL'), false);
+}
+
+function figo_queue_normalize_model_name($rawModel): string
+{
+    if (!is_string($rawModel)) {
+        return '';
+    }
+    $model = trim($rawModel);
+    if ($model === '') {
+        return '';
+    }
+    if (!preg_match('/^[a-zA-Z0-9._:\\/\\-]{2,160}$/', $model)) {
+        return '';
+    }
+    return $model;
+}
+
 function figo_queue_dir_base(): string
 {
     return data_dir_path() . DIRECTORY_SEPARATOR . 'ai-queue';
@@ -509,9 +529,13 @@ function figo_queue_default_request(array $payload): array
     $messages = isset($payload['messages']) && is_array($payload['messages'])
         ? figo_queue_normalize_messages($payload['messages'])
         : [];
-    $model = isset($payload['model']) && is_string($payload['model']) && trim($payload['model']) !== ''
-        ? trim((string) $payload['model'])
-        : figo_queue_gateway_model();
+    $model = figo_queue_gateway_model();
+    if (figo_queue_allow_client_model()) {
+        $clientModel = figo_queue_normalize_model_name($payload['model'] ?? null);
+        if ($clientModel !== '') {
+            $model = $clientModel;
+        }
+    }
 
     $maxTokens = isset($payload['max_tokens']) ? (int) $payload['max_tokens'] : 1000;
     if ($maxTokens < 64) {
