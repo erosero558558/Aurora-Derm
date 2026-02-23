@@ -74,7 +74,12 @@ function initGA4() {
     function gtag() { window.dataLayer.push(arguments); }
     window.gtag = gtag;
     gtag('js', new Date());
-    gtag('consent', 'update', { analytics_storage: 'granted' });
+    gtag('consent', 'update', {
+        analytics_storage: 'granted',
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted'
+    });
     gtag('config', measurementId);
 }
 
@@ -85,6 +90,11 @@ function setBannerActiveState(banner, isActive) {
 
     const active = isActive === true;
     banner.classList.toggle('active', active);
+}
+
+function showBanner() {
+    const banner = document.getElementById('cookieBanner');
+    setBannerActiveState(banner, true);
 }
 
 function handleConsentAction(action) {
@@ -105,6 +115,16 @@ function handleConsentAction(action) {
     } else if (action === 'rejected') {
         setCookieConsent('rejected');
         setBannerActiveState(banner, false);
+
+        if (window.gtag) {
+            window.gtag('consent', 'update', {
+                analytics_storage: 'denied',
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied'
+            });
+        }
+
         showToastSafe(
             getCurrentLang() === 'es'
                 ? 'Solo se mantendran cookies esenciales.'
@@ -124,6 +144,9 @@ function bindDelegatedListeners() {
             handleConsentAction('accepted');
         } else if (target.closest('#cookieRejectBtn')) {
             handleConsentAction('rejected');
+        } else if (target.closest('#cookiePrefsBtn') || target.closest('#cookieResetBtn')) {
+            e.preventDefault();
+            showBanner();
         }
     });
 }
@@ -154,7 +177,8 @@ window.Piel.ConsentEngine = {
     getCookieConsent,
     setCookieConsent,
     initGA4,
-    initCookieBanner
+    initCookieBanner,
+    showBanner
 };
 
 // Legacy support just in case

@@ -91,4 +91,57 @@ test.describe('Consentimiento de cookies', () => {
         const ga4Loaded = await page.evaluate(() => !!window._ga4Loaded);
         expect(ga4Loaded).toBe(true);
     });
+
+    test('Boton de preferencias reabre el banner', async ({ page }) => {
+        // Aceptar primero
+        const banner = page.locator('#cookieBanner');
+        await expect(banner).toBeVisible({ timeout: 10000 });
+        await page.locator('#cookieAcceptBtn').click({ force: true });
+        await expect(banner).not.toBeVisible();
+
+        // Clic en preferencias
+        const prefsBtn = page.locator('#cookiePrefsBtn');
+        await expect(prefsBtn).toBeVisible();
+        await prefsBtn.click();
+
+        await expect(banner).toBeVisible();
+    });
+
+    test('Revocar consentimiento actualiza estado a denied', async ({ page }) => {
+        const banner = page.locator('#cookieBanner');
+        await expect(banner).toBeVisible({ timeout: 10000 });
+
+        // Aceptar
+        await page.locator('#cookieAcceptBtn').click({ force: true });
+        await expect(banner).not.toBeVisible();
+
+        // Verificar signals de aceptacion en dataLayer
+        const grantCalls = await page.evaluate(() => {
+            return window.dataLayer.filter(args =>
+                args[0] === 'consent' && args[1] === 'update' && args[2].analytics_storage === 'granted'
+            );
+        });
+        expect(grantCalls.length).toBeGreaterThan(0);
+
+        // Reabrir y Rechazar
+        await page.locator('#cookiePrefsBtn').click();
+        await expect(banner).toBeVisible();
+        await page.locator('#cookieRejectBtn').click({ force: true });
+        await expect(banner).not.toBeVisible();
+
+        // Verificar signals de rechazo (denied)
+        const denyCalls = await page.evaluate(() => {
+            return window.dataLayer.filter(args =>
+                args[0] === 'consent' && args[1] === 'update' && args[2].analytics_storage === 'denied'
+            );
+        });
+        expect(denyCalls.length).toBeGreaterThan(0);
+
+        // Verificar persistencia
+        const consent = await page.evaluate(() => {
+            const raw = localStorage.getItem('pa_cookie_consent_v1');
+            return raw ? JSON.parse(raw) : null;
+        });
+        expect(consent.status).toBe('rejected');
+    });
 });
