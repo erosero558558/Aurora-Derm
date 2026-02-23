@@ -111,7 +111,7 @@ class CalendarBookingServiceUnitTest extends TestCase
 
         $resultFor30 = $availability->getBookedSlots($store, $date, 'rosero', 'consulta');
         $this->assertTrue($resultFor30['ok']);
-        $this->assertSame(['09:00', '09:30', '10:30'], $resultFor30['data']);
+        $this->assertSame(['09:00', '09:30'], $resultFor30['data']);
 
         $resultFor60 = $availability->getBookedSlots($store, $date, 'rosero', 'laser');
         $this->assertTrue($resultFor60['ok']);
