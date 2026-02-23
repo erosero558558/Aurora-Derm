@@ -11,15 +11,16 @@ import {
 } from './booking.js';
 import { closeSuccessModal } from './success-modal.js';
 import { closeRescheduleModal, submitReschedule } from './reschedule.js';
-import {
-    toggleChatbot,
-    sendChatMessage,
-    handleChatBookingSelection,
-    sendQuickMessage,
-    minimizeChatbot,
-    startChatBooking,
-    handleChatDateSelect,
-} from '../src/apps/chat/shell.js';
+// Chat shell cargado bajo demanda (code splitting)
+function loadChatShell() {
+    return import('../src/apps/chat/shell.js');
+}
+function chatAction(name) {
+    return async (...args) => {
+        const shell = await loadChatShell();
+        return shell[name](...args);
+    };
+}
 
 const DATA_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/data-bundle.js?v=20260221-api-fix'
@@ -59,13 +60,13 @@ function getActionRouterEngineDeps() {
         closeSuccessModal,
         closeRescheduleModal,
         submitReschedule,
-        toggleChatbot,
-        sendChatMessage,
-        handleChatBookingSelection,
-        sendQuickMessage,
-        minimizeChatbot,
-        startChatBooking,
-        handleChatDateSelect,
+        toggleChatbot: chatAction('toggleChatbot'),
+        sendChatMessage: chatAction('sendChatMessage'),
+        handleChatBookingSelection: chatAction('handleChatBookingSelection'),
+        sendQuickMessage: chatAction('sendQuickMessage'),
+        minimizeChatbot: chatAction('minimizeChatbot'),
+        startChatBooking: chatAction('startChatBooking'),
+        handleChatDateSelect: chatAction('handleChatDateSelect'),
         selectService,
     };
 }

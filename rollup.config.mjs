@@ -134,12 +134,14 @@ export default [
         },
         plugins: [resolve()]
     },
-    // Main Script
+    // Main Script (ES module for code splitting; requires type="module" in HTML)
     {
         input: 'js/main.js',
         output: {
-            file: 'script.js',
-            format: 'iife',
+            dir: '.',
+            entryFileNames: 'script.js',
+            chunkFileNames: 'js/chunks/[name]-[hash].js',
+            format: 'es',
             sourcemap: false,
             banner: '/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in js/main.js and run npm run build */',
         },

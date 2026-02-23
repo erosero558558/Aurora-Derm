@@ -109,9 +109,8 @@ Dominio: https://pielarmonia.com
 - Pruebas: `101.47.4.223` en puertos `22`, `21`, `990` -> `TcpTestSucceeded=False`.
 - Implicacion: no hay canal remoto util para sincronizar artefactos (SSH/FTP/FTPS).
 
-5. script.js (111KB > target 80KB): deuda tecnica activa.
-- Causa: chat/shell.js (15KB) importado estaticamente por main.js y router.js. Split requiere refactor coordinado de ambos.
-- Accion recomendada: sesion dedicada para extraer chat shell a dynamic import compartido.
+5. script.js: 111KB -> 85.9KB (-25KB). Chat shell (15.2KB) extraido a js/chunks/shell-*.js (carga bajo demanda al primer uso del chat). Target <80KB, delta pendiente: ~6KB.
+- Accion: split adicional de warmup modules (reschedule, success-modal, engagement-forms) en sesion posterior si se requiere llegar a 80KB.
 
 6. Cobertura de tests: ~5-35% actual vs 80% objetivo.
 - Jules (Google AI) trabajando en scaffolding de tests (BookingServiceTest, RateLimiterTest, AuthSessionTest).
@@ -129,4 +128,4 @@ Dominio: https://pielarmonia.com
 2. Publicar dashboard semanal de `booking_confirmed`, error rate y p95 de `figo-post`.
 3. Integrar PR de Jules (tests unitarios) cuando este listo.
 4. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
-5. Sesion dedicada para split de script.js (chat/shell refactor, ~31KB de ahorro potencial).
+5. Split adicional de script.js si se requiere <80KB: extraer warmup modules deferred (reschedule, success-modal, engagement-forms).

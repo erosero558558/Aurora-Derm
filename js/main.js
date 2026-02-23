@@ -23,21 +23,10 @@ import {
 } from './booking.js';
 import { initReviewsEngineWarmup } from './engagement.js';
 import { initGalleryInteractionsWarmup } from './gallery.js';
-import {
-    initChatUiEngineWarmup,
-    initChatWidgetEngineWarmup,
-    initChatEngineWarmup,
-    initChatBookingEngineWarmup,
-    toggleChatbot,
-    sendChatMessage,
-    handleChatBookingSelection,
-    sendQuickMessage,
-    minimizeChatbot,
-    startChatBooking,
-    handleChatDateSelect,
-    handleChatKeypress,
-    checkServerEnvironment,
-} from '../src/apps/chat/shell.js';
+// Chat shell cargado bajo demanda (code splitting)
+function loadChatShell() {
+    return import('../src/apps/chat/shell.js');
+}
 import { initUiEffectsWarmup, initModalUxEngineWarmup } from './ui.js';
 import { initRescheduleEngineWarmup } from './reschedule.js';
 import { initSuccessModalEngineWarmup } from './success-modal.js';
@@ -185,7 +174,7 @@ function initChatActionFallbackBridge() {
     }
     chatActionFallbackBridgeBound = true;
 
-    document.addEventListener('click', function (event) {
+    document.addEventListener('click', async function (event) {
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
 
@@ -199,32 +188,32 @@ function initChatActionFallbackBridge() {
             case 'toggle-chatbot':
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                toggleChatbot();
+                (await loadChatShell()).toggleChatbot();
                 break;
             case 'minimize-chat':
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                minimizeChatbot();
+                (await loadChatShell()).minimizeChatbot();
                 break;
             case 'send-chat-message':
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                sendChatMessage();
+                (await loadChatShell()).sendChatMessage();
                 break;
             case 'quick-message':
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                sendQuickMessage(value);
+                (await loadChatShell()).sendQuickMessage(value);
                 break;
             case 'chat-booking':
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                handleChatBookingSelection(value);
+                (await loadChatShell()).handleChatBookingSelection(value);
                 break;
             case 'start-booking':
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                startChatBooking();
+                (await loadChatShell()).startChatBooking();
                 break;
             case 'select-service':
                 event.preventDefault();
@@ -236,11 +225,11 @@ function initChatActionFallbackBridge() {
         }
     });
 
-    document.addEventListener('change', function (event) {
+    document.addEventListener('change', async function (event) {
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
         if (target.closest('[data-action="chat-date-select"]')) {
-            handleChatDateSelect(target.value);
+            (await loadChatShell()).handleChatDateSelect(target.value);
         }
     });
 }
@@ -265,15 +254,19 @@ document.addEventListener('DOMContentLoaded', function () {
             initDataEngineWarmup();
             initBookingEngineWarmup();
             initBookingUiWarmup();
-            initChatUiEngineWarmup();
-            initChatWidgetEngineWarmup();
+            loadChatShell().then((shell) => {
+                shell.initChatUiEngineWarmup();
+                shell.initChatWidgetEngineWarmup();
+            }).catch(() => undefined);
         });
 
         const initLowPriorityWarmups = createOnceTask(() => {
             initReviewsEngineWarmup();
             initGalleryInteractionsWarmup();
-            initChatEngineWarmup();
-            initChatBookingEngineWarmup();
+            loadChatShell().then((shell) => {
+                shell.initChatEngineWarmup();
+                shell.initChatBookingEngineWarmup();
+            }).catch(() => undefined);
             initUiEffectsWarmup();
             initRescheduleEngineWarmup();
             initSuccessModalEngineWarmup();
@@ -302,7 +295,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
-            chatInput.addEventListener('keypress', handleChatKeypress);
+            chatInput.addEventListener('keypress', async (e) => {
+                (await loadChatShell()).handleChatKeypress(e);
+            });
         }
 
         // Gallery lazy load is already initialized below in the legacy fallback block.
@@ -313,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function () {
         maybeTrackCheckoutAbandon('page_hide');
     });
 
-    const isServer = checkServerEnvironment();
+    const isServer = window.location.protocol !== 'file:';
     if (!isServer) {
         debugLog(
             'Chatbot en modo offline: abre el sitio desde servidor para usar IA real.'
