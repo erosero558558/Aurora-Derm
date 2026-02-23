@@ -170,8 +170,17 @@
 // putenv('FEATURE_CHATGPT_INTEGRATION=true');
 
 // ── Debug seguro (solo desarrollo) ───────────────────
-// En produccion mantener en false para no filtrar errores internos al frontend
-// putenv('PIELARMONIA_DEBUG_EXCEPTIONS=false');
+// PRODUCCION: mantener en false. En true expone mensajes de excepcion al frontend.
+putenv('PIELARMONIA_DEBUG_EXCEPTIONS=false');
+
+// ── Monitoring / Sentry ───────────────────────────────
+// Activar con DSN real de https://sentry.io (crear proyecto PHP + Browser).
+// PIELARMONIA_SENTRY_DSN      = DSN para errores PHP backend (sentry.io > Settings > Client Keys)
+// PIELARMONIA_SENTRY_DSN_PUBLIC = DSN para errores JS frontend (mismo proyecto o uno separado)
+// PIELARMONIA_SENTRY_ENV      = nombre del entorno (ej: production, staging)
+// putenv('PIELARMONIA_SENTRY_DSN=https://xxxxx@oXXXXX.ingest.sentry.io/YYYYYYY');
+// putenv('PIELARMONIA_SENTRY_DSN_PUBLIC=https://xxxxx@oXXXXX.ingest.sentry.io/YYYYYYY');
+// putenv('PIELARMONIA_SENTRY_ENV=production');
 
 // ── Auditoria API (performance) ───────────────────────
 // Por defecto los GET publicos no se auditan para reducir I/O.

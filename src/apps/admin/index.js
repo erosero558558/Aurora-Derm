@@ -11,28 +11,20 @@ import {
 import { apiRequest } from './modules/api.js';
 import { loadDashboardData } from './modules/dashboard.js';
 import {
-    loadAppointments,
-    filterAppointments,
-    searchAppointments,
-    cancelAppointment,
-    approveTransfer,
-    rejectTransfer,
-    markNoShow,
-    exportAppointmentsCSV,
-} from './modules/appointments.js';
-import {
     loadCallbacks,
     filterCallbacks,
     markContacted,
 } from './modules/callbacks.js';
 import { loadReviews } from './modules/reviews.js';
-import {
-    initAvailabilityCalendar,
-    changeMonth,
-    addTimeSlot,
-    removeTimeSlot,
-} from './modules/availability.js';
 import { initPushNotifications } from './modules/push.js';
+
+// Modulos cargados bajo demanda (code splitting)
+function loadAppointmentsModule() {
+    return import('./modules/appointments.js');
+}
+function loadAvailabilityModule() {
+    return import('./modules/availability.js');
+}
 
 async function renderSection(section) {
     const titles = {
@@ -55,18 +47,22 @@ async function renderSection(section) {
         case 'dashboard':
             loadDashboardData();
             break;
-        case 'appointments':
+        case 'appointments': {
+            const { loadAppointments } = await loadAppointmentsModule();
             loadAppointments();
             break;
+        }
         case 'callbacks':
             loadCallbacks();
             break;
         case 'reviews':
             loadReviews();
             break;
-        case 'availability':
+        case 'availability': {
+            const { initAvailabilityCalendar } = await loadAvailabilityModule();
             await initAvailabilityCalendar();
             break;
+        }
         default:
             loadDashboardData();
             break;
@@ -260,25 +256,29 @@ function attachGlobalListeners() {
             document.getElementById('importFileInput')?.click();
             return;
         }
-        if (action === 'export-csv') {
-            event.preventDefault();
-            exportAppointmentsCSV();
-            return;
-        }
 
         try {
+            if (action === 'export-csv') {
+                event.preventDefault();
+                const { exportAppointmentsCSV } = await loadAppointmentsModule();
+                exportAppointmentsCSV();
+                return;
+            }
             if (action === 'change-month') {
                 event.preventDefault();
+                const { changeMonth } = await loadAvailabilityModule();
                 changeMonth(Number(actionEl.dataset.delta || 0));
                 return;
             }
             if (action === 'add-time-slot') {
                 event.preventDefault();
+                const { addTimeSlot } = await loadAvailabilityModule();
                 await addTimeSlot();
                 return;
             }
             if (action === 'remove-time-slot') {
                 event.preventDefault();
+                const { removeTimeSlot } = await loadAvailabilityModule();
                 await removeTimeSlot(
                     decodeURIComponent(actionEl.dataset.date || ''),
                     decodeURIComponent(actionEl.dataset.time || '')
@@ -287,21 +287,25 @@ function attachGlobalListeners() {
             }
             if (action === 'approve-transfer') {
                 event.preventDefault();
+                const { approveTransfer } = await loadAppointmentsModule();
                 await approveTransfer(Number(actionEl.dataset.id || 0));
                 return;
             }
             if (action === 'reject-transfer') {
                 event.preventDefault();
+                const { rejectTransfer } = await loadAppointmentsModule();
                 await rejectTransfer(Number(actionEl.dataset.id || 0));
                 return;
             }
             if (action === 'cancel-appointment') {
                 event.preventDefault();
+                const { cancelAppointment } = await loadAppointmentsModule();
                 await cancelAppointment(Number(actionEl.dataset.id || 0));
                 return;
             }
             if (action === 'mark-no-show') {
                 event.preventDefault();
+                const { markNoShow } = await loadAppointmentsModule();
                 await markNoShow(Number(actionEl.dataset.id || 0));
                 return;
             }
@@ -319,12 +323,18 @@ function attachGlobalListeners() {
 
     const appointmentFilter = document.getElementById('appointmentFilter');
     if (appointmentFilter) {
-        appointmentFilter.addEventListener('change', filterAppointments);
+        appointmentFilter.addEventListener('change', async () => {
+            const { filterAppointments } = await loadAppointmentsModule();
+            filterAppointments();
+        });
     }
 
     const searchInput = document.getElementById('searchAppointments');
     if (searchInput) {
-        searchInput.addEventListener('input', searchAppointments);
+        searchInput.addEventListener('input', async () => {
+            const { searchAppointments } = await loadAppointmentsModule();
+            searchAppointments();
+        });
     }
 
     const callbackFilter = document.getElementById('callbackFilter');

@@ -1,11 +1,13 @@
 import resolve from '@rollup/plugin-node-resolve';
 
 export default [
-    // Admin App
+    // Admin App (code-split: appointments y availability se cargan bajo demanda)
     {
         input: 'src/apps/admin/index.js',
         output: {
-            file: 'admin.js',
+            dir: '.',
+            entryFileNames: 'admin.js',
+            chunkFileNames: 'js/admin-chunks/[name]-[hash].js',
             format: 'es',
             sourcemap: false
         },

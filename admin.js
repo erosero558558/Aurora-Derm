@@ -747,260 +747,6 @@ function loadDashboardData() {
     renderFunnelMetrics();
 }
 
-function getWeekRange() {
-    const now = new Date();
-    const start = new Date(now);
-    start.setDate(now.getDate() - now.getDay());
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    return {
-        start: start.toISOString().split('T')[0],
-        end: end.toISOString().split('T')[0]
-    };
-}
-
-function renderAppointments(appointments) {
-    const tbody = document.getElementById('appointmentsTableBody');
-    if (!tbody) return;
-
-    if (appointments.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty-message">No hay citas registradas</td></tr>';
-        return;
-    }
-
-    const sorted = [...appointments].sort((a, b) => {
-        const dateA = (a.date || '') + ' ' + (a.time || '');
-        const dateB = (b.date || '') + ' ' + (b.time || '');
-        return dateB.localeCompare(dateA);
-    });
-
-    tbody.innerHTML = sorted.map(a => `
-        <tr>
-            <td>
-                <strong>${escapeHtml(a.name)}</strong><br>
-                <small>${escapeHtml(a.email)}</small>
-            </td>
-            <td>${escapeHtml(getServiceName(a.service))}</td>
-            <td>${escapeHtml(getDoctorName(a.doctor))}${a.doctorAssigned ? '<br><small>Asignado: ' + escapeHtml(getDoctorName(a.doctorAssigned)) + '</small>' : ''}</td>
-            <td>${escapeHtml(formatDate(a.date))}</td>
-            <td>${escapeHtml(a.time)}</td>
-            <td>
-                <strong>${escapeHtml(a.price || '$0.00')}</strong><br>
-                <small>${escapeHtml(getPaymentMethodText(a.paymentMethod))} - ${escapeHtml(getPaymentStatusText(a.paymentStatus))}</small>
-                ${(a.transferReference ? `<br><small>Ref: ${escapeHtml(a.transferReference)}</small>` : '')}
-                ${(sanitizePublicHref(a.transferProofUrl) ? `<br><a href="${escapeHtml(sanitizePublicHref(a.transferProofUrl))}" target="_blank" rel="noopener noreferrer">Ver comprobante</a>` : '')}
-            </td>
-            <td>
-                <span class="status-badge status-${escapeHtml(a.status || 'confirmed')}">
-                    ${escapeHtml(getStatusText(a.status || 'confirmed'))}
-                </span>
-            </td>
-            <td>
-                <div class="table-actions">
-                    ${(a.paymentStatus === 'pending_transfer_review' ? `
-                    <button type="button" class="btn-icon success" data-action="approve-transfer" data-id="${Number(a.id) || 0}" title="Aprobar transferencia">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    <button type="button" class="btn-icon danger" data-action="reject-transfer" data-id="${Number(a.id) || 0}" title="Rechazar transferencia">
-                        <i class="fas fa-ban"></i>
-                    </button>
-                    ` : '')}
-                    <a href="tel:${escapeHtml(a.phone)}" class="btn-icon" title="Llamar">
-                        <i class="fas fa-phone"></i>
-                    </a>
-                    <a href="https://wa.me/${escapeHtml(String(a.phone || '').replace(/\\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp">
-                        <i class="fab fa-whatsapp"></i>
-                    </a>
-                    <button type="button" class="btn-icon danger" data-action="cancel-appointment" data-id="${Number(a.id) || 0}" title="Cancelar">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    ${((a.status || 'confirmed') !== 'cancelled' && (a.status || 'confirmed') !== 'completed' && (a.status || 'confirmed') !== 'no_show' ? `
-                    <button type="button" class="btn-icon warning" data-action="mark-no-show" data-id="${Number(a.id) || 0}" title="Marcar no asistio">
-                        <i class="fas fa-user-slash"></i>
-                    </button>
-                    ` : '')}
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function loadAppointments() {
-    renderAppointments(currentAppointments);
-}
-
-function filterAppointments() {
-    const filter = document.getElementById('appointmentFilter').value;
-    let filtered = [...currentAppointments];
-
-    const today = new Date().toISOString().split('T')[0];
-    const currentWeek = getWeekRange();
-    const currentMonthNumber = new Date().getMonth();
-
-    switch (filter) {
-        case 'today':
-            filtered = filtered.filter(a => a.date === today);
-            break;
-        case 'week':
-            filtered = filtered.filter(a => a.date >= currentWeek.start && a.date <= currentWeek.end);
-            break;
-        case 'month':
-            filtered = filtered.filter(a => new Date(a.date).getMonth() === currentMonthNumber);
-            break;
-        case 'confirmed':
-        case 'cancelled':
-        case 'no_show':
-            filtered = filtered.filter(a => (a.status || 'confirmed') === filter);
-            break;
-        case 'pending_transfer':
-            filtered = filtered.filter(a => a.paymentStatus === 'pending_transfer_review');
-            break;
-    }
-
-    renderAppointments(filtered);
-}
-
-function searchAppointments() {
-    const search = document.getElementById('searchAppointments').value.toLowerCase();
-    const filtered = currentAppointments.filter(a =>
-        String(a.name || '').toLowerCase().includes(search) ||
-        String(a.email || '').toLowerCase().includes(search) ||
-        String(a.phone || '').includes(search)
-    );
-    renderAppointments(filtered);
-}
-
-async function cancelAppointment(id) {
-    if (!confirm('¿Estas seguro de cancelar esta cita?')) return;
-    if (!id) {
-        showToast('Id de cita invalido', 'error');
-        return;
-    }
-    try {
-        await apiRequest('appointments', {
-            method: 'PATCH',
-            body: { id: id, status: 'cancelled' }
-        });
-        await refreshData();
-        loadAppointments();
-        loadDashboardData();
-        showToast('Cita cancelada correctamente', 'success');
-    } catch (error) {
-        showToast(`No se pudo cancelar la cita: ${error.message}`, 'error');
-    }
-}
-
-async function markNoShow(id) {
-    if (!confirm('Marcar esta cita como "No asistio"?')) return;
-    if (!id) {
-        showToast('Id de cita invalido', 'error');
-        return;
-    }
-    try {
-        await apiRequest('appointments', {
-            method: 'PATCH',
-            body: { id: id, status: 'no_show' }
-        });
-        await refreshData();
-        loadAppointments();
-        loadDashboardData();
-        showToast('Cita marcada como no asistio', 'success');
-    } catch (error) {
-        showToast(`No se pudo marcar no-show: ${error.message}`, 'error');
-    }
-}
-
-async function approveTransfer(id) {
-    if (!confirm('¿Aprobar el comprobante de transferencia de esta cita?')) return;
-    if (!id) { showToast('Id de cita invalido', 'error'); return; }
-    try {
-        await apiRequest('appointments', {
-            method: 'PATCH',
-            body: { id: id, paymentStatus: 'paid', paymentPaidAt: new Date().toISOString() }
-        });
-        await refreshData();
-        loadAppointments();
-        loadDashboardData();
-        showToast('Transferencia aprobada', 'success');
-    } catch (error) {
-        showToast(`No se pudo aprobar: ${error.message}`, 'error');
-    }
-}
-
-async function rejectTransfer(id) {
-    if (!confirm('¿Rechazar el comprobante de transferencia? La cita quedará como pago fallido.')) return;
-    if (!id) { showToast('Id de cita invalido', 'error'); return; }
-    try {
-        await apiRequest('appointments', {
-            method: 'PATCH',
-            body: { id: id, paymentStatus: 'failed' }
-        });
-        await refreshData();
-        loadAppointments();
-        loadDashboardData();
-        showToast('Transferencia rechazada', 'warning');
-    } catch (error) {
-        showToast(`No se pudo rechazar: ${error.message}`, 'error');
-    }
-}
-
-function csvSafe(value) {
-    let text = String(value ?? '');
-    if (/^[=+\-@]/.test(text)) {
-        text = "'" + text;
-    }
-    return `"${text.replace(/"/g, '""')}"`;
-}
-
-function exportAppointmentsCSV() {
-    if (!Array.isArray(currentAppointments) || currentAppointments.length === 0) {
-        showToast('No hay citas para exportar', 'warning');
-        return;
-    }
-
-    const headers = [
-        'ID',
-        'Fecha',
-        'Hora',
-        'Paciente',
-        'Email',
-        'Telefono',
-        'Servicio',
-        'Doctor',
-        'Precio',
-        'Estado',
-        'Estado pago',
-        'Metodo pago'
-    ];
-
-    const rows = currentAppointments.map((a) => [
-        Number(a.id) || 0,
-        a.date || '',
-        a.time || '',
-        csvSafe(a.name || ''),
-        csvSafe(a.email || ''),
-        csvSafe(a.phone || ''),
-        csvSafe(getServiceName(a.service)),
-        csvSafe(getDoctorName(a.doctor)),
-        a.price || '',
-        csvSafe(getStatusText(a.status || 'confirmed')),
-        csvSafe(getPaymentStatusText(a.paymentStatus)),
-        csvSafe(getPaymentMethodText(a.paymentMethod))
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `citas-pielarmonia-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    showToast('CSV exportado correctamente', 'success');
-}
-
 function renderCallbacks(callbacks) {
     const grid = document.getElementById('callbacksGrid');
     if (!grid) return;
@@ -1136,400 +882,6 @@ function loadReviews() {
                 <small>${escapeHtml(new Date(r.date).toLocaleDateString('es-EC'))}</small>
             </div>
         `).join('');
-}
-
-let selectedDate = null;
-let currentMonth = new Date();
-let availabilityReadOnly = false;
-
-function ensureStatusElements() {
-    const panel = document.querySelector('#availability .time-slots-config');
-    if (!panel)
-        return { statusEl: null, detailsEl: null, linksEl: null };
-
-    let statusEl = document.getElementById('availabilitySyncStatus');
-    if (!statusEl) {
-        statusEl = document.createElement('div');
-        statusEl.id = 'availabilitySyncStatus';
-        statusEl.className = 'selected-date';
-        if (panel.firstChild) {
-            panel.insertBefore(statusEl, panel.firstChild.nextSibling);
-        } else {
-            panel.appendChild(statusEl);
-        }
-    }
-
-    let detailsEl = document.getElementById('availabilitySyncDetails');
-    if (!detailsEl) {
-        detailsEl = document.createElement('div');
-        detailsEl.id = 'availabilitySyncDetails';
-        detailsEl.className = 'selected-date';
-        statusEl.insertAdjacentElement('afterend', detailsEl);
-    }
-
-    let linksEl = document.getElementById('availabilitySyncLinks');
-    if (!linksEl) {
-        linksEl = document.createElement('div');
-        linksEl.id = 'availabilitySyncLinks';
-        linksEl.className = 'selected-date';
-        detailsEl.insertAdjacentElement('afterend', linksEl);
-    }
-
-    return { statusEl, detailsEl, linksEl };
-}
-
-function formatStatusTime(isoValue) {
-    const value = String(isoValue || '').trim();
-    if (!value) return 'n/d';
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return 'n/d';
-    return parsed.toLocaleString('es-EC');
-}
-
-function renderStatus() {
-    const { statusEl, detailsEl, linksEl } = ensureStatusElements();
-    if (!statusEl) return;
-
-    const source = String(currentAvailabilityMeta.source || 'store');
-    const mode = String(currentAvailabilityMeta.mode || 'live');
-    const timezone = String(currentAvailabilityMeta.timezone || 'America/Guayaquil');
-    const calendarAuth = String(currentAvailabilityMeta.calendarAuth || 'n/d');
-    const tokenHealthy = currentAvailabilityMeta.calendarTokenHealthy === false ? 'no' : 'si';
-    const configured = currentAvailabilityMeta.calendarConfigured === false ? 'no' : 'si';
-    const reachable = currentAvailabilityMeta.calendarReachable === false ? 'no' : 'si';
-    const generatedLabel = formatStatusTime(currentAvailabilityMeta.generatedAt);
-    const lastSuccessLabel = formatStatusTime(
-        currentAvailabilityMeta.calendarLastSuccessAt
-    );
-    const lastErrorLabel = formatStatusTime(currentAvailabilityMeta.calendarLastErrorAt);
-    const lastErrorReason = String(currentAvailabilityMeta.calendarLastErrorReason || '').trim();
-
-    if (source === 'google') {
-        const modeLabel = mode === 'blocked' ? 'bloqueado' : 'live';
-        statusEl.innerHTML = `Fuente: <strong>Google Calendar</strong> | Modo: <strong>${escapeHtml(modeLabel)}</strong> | TZ: <strong>${escapeHtml(timezone)}</strong>`;
-        if (detailsEl) {
-            let details = `Auth: <strong>${escapeHtml(calendarAuth)}</strong> | Token OK: <strong>${escapeHtml(tokenHealthy)}</strong> | Configurado: <strong>${escapeHtml(configured)}</strong> | Reachable: <strong>${escapeHtml(reachable)}</strong> | Ultimo exito: <strong>${escapeHtml(lastSuccessLabel)}</strong> | Snapshot: <strong>${escapeHtml(generatedLabel)}</strong>`;
-            if (mode === 'blocked' && lastErrorReason) {
-                details += ` | Ultimo error: <strong>${escapeHtml(lastErrorLabel)}</strong> (${escapeHtml(lastErrorReason)})`;
-            }
-            detailsEl.innerHTML = details;
-        }
-    } else {
-        statusEl.innerHTML = `Fuente: <strong>Configuracion local</strong>`;
-        if (detailsEl) {
-            detailsEl.innerHTML = `Snapshot: <strong>${escapeHtml(generatedLabel)}</strong>`;
-        }
-    }
-    updateSectionHeadings(source);
-
-    if (!linksEl) return;
-
-    const doctorCalendars = currentAvailabilityMeta.doctorCalendars;
-    if (!doctorCalendars || typeof doctorCalendars !== 'object') {
-        linksEl.innerHTML = '';
-        return;
-    }
-
-    const renderDoctor = (doctorKey, doctorLabel) => {
-        const record = doctorCalendars[doctorKey];
-        if (!record || typeof record !== 'object') {
-            return `${doctorLabel}: n/d`;
-        }
-        const masked = escapeHtml(String(record.idMasked || 'n/d'));
-        const openUrl = String(record.openUrl || '');
-        if (!/^https:\/\/calendar\.google\.com\//.test(openUrl)) {
-            return `${doctorLabel}: ${masked}`;
-        }
-        return `${doctorLabel}: ${masked} <a href="${escapeHtml(openUrl)}" target="_blank" rel="noopener noreferrer">Abrir</a>`;
-    };
-
-    linksEl.innerHTML = [
-        renderDoctor('rosero', 'Dr. Rosero'),
-        renderDoctor('narvaez', 'Dra. Narvaez'),
-    ].join(' | ');
-}
-
-function updateSectionHeadings(source) {
-    const calendarTitle = document.querySelector(
-        '#availability .availability-calendar h3'
-    );
-    if (calendarTitle) {
-        calendarTitle.textContent =
-            source === 'google'
-                ? 'Disponibilidad (Google Calendar - Solo lectura)'
-                : 'Configurar Horarios Disponibles';
-    }
-
-    const dayTitle = document.querySelector('#availability .time-slots-config h3');
-    if (dayTitle) {
-        dayTitle.textContent =
-            source === 'google'
-                ? 'Horarios del Dia (solo lectura)'
-                : 'Horarios del Dia';
-    }
-}
-
-function clearSelectedDateState() {
-    const selectedLabel = document.getElementById('selectedDate');
-    if (selectedLabel) {
-        selectedLabel.textContent = 'Selecciona una fecha';
-    }
-    const list = document.getElementById('timeSlotsList');
-    if (list) {
-        list.innerHTML = '<p class="empty-message">Selecciona una fecha para ver los horarios</p>';
-    }
-}
-
-function toggleReadOnlyUi() {
-    const addSlotForm = document.getElementById('addSlotForm');
-    if (addSlotForm) {
-        addSlotForm.classList.toggle('is-hidden', availabilityReadOnly);
-    }
-}
-
-async function refreshAvailabilitySnapshot() {
-    try {
-        const payload = await apiRequest('availability', {
-            query: {
-                doctor: 'indiferente',
-                service: 'consulta',
-                days: 45,
-            },
-        });
-
-        const data =
-            payload && payload.data && typeof payload.data === 'object'
-                ? payload.data
-                : {};
-        const snapshotMeta =
-            payload && payload.meta && typeof payload.meta === 'object'
-                ? payload.meta
-                : {};
-        const baseMeta =
-            currentAvailabilityMeta &&
-            typeof currentAvailabilityMeta === 'object'
-                ? currentAvailabilityMeta
-                : {};
-        const mergedMeta = {
-            ...baseMeta,
-            ...snapshotMeta,
-            source: String(snapshotMeta.source || baseMeta.source || 'store'),
-            mode: String(snapshotMeta.mode || baseMeta.mode || 'live'),
-            timezone: String(
-                snapshotMeta.timezone || baseMeta.timezone || 'America/Guayaquil'
-            ),
-            generatedAt: String(
-                snapshotMeta.generatedAt ||
-                    baseMeta.generatedAt ||
-                    new Date().toISOString()
-            ),
-        };
-
-        setAvailability(data);
-        setAvailabilityMeta(mergedMeta);
-        availabilityReadOnly = String(mergedMeta.source || '') === 'google';
-        renderStatus();
-        toggleReadOnlyUi();
-        if (selectedDate && !currentAvailability[selectedDate]) {
-            selectedDate = null;
-            clearSelectedDateState();
-        }
-    } catch (error) {
-        console.error('Error refreshing availability:', error);
-        showToast(
-            `Error al actualizar disponibilidad: ${error?.message || 'error desconocido'}`,
-            'error'
-        );
-        availabilityReadOnly = String(currentAvailabilityMeta.source || '') === 'google';
-        renderStatus();
-        toggleReadOnlyUi();
-    }
-}
-
-function renderAvailabilityCalendar() {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrevMonth = new Date(year, month, 0).getDate();
-
-    document.getElementById('calendarMonth').textContent = new Date(
-        year,
-        month
-    ).toLocaleDateString('es-EC', {
-        month: 'long',
-        year: 'numeric',
-    });
-
-    const calendar = document.getElementById('availabilityCalendar');
-    calendar.innerHTML = '';
-
-    const weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-    weekDays.forEach((day) => {
-        const dayEl = document.createElement('div');
-        dayEl.className = 'calendar-day-header';
-        dayEl.textContent = day;
-        calendar.appendChild(dayEl);
-    });
-
-    for (let i = firstDay - 1; i >= 0; i -= 1) {
-        const day = daysInPrevMonth - i;
-        const dayEl = document.createElement('div');
-        dayEl.className = 'calendar-day other-month';
-        dayEl.textContent = day;
-        calendar.appendChild(dayEl);
-    }
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-        const date = new Date(year, month, day);
-        const dateStr = date.toISOString().split('T')[0];
-        const dayEl = document.createElement('div');
-        dayEl.className = 'calendar-day';
-        dayEl.textContent = day;
-
-        if (selectedDate === dateStr) dayEl.classList.add('selected');
-        if (
-            currentAvailability[dateStr] &&
-            currentAvailability[dateStr].length > 0
-        )
-            dayEl.classList.add('has-slots');
-
-        dayEl.addEventListener('click', () => selectDate(dateStr));
-        calendar.appendChild(dayEl);
-    }
-
-    const rendered = firstDay + daysInMonth;
-    const remaining = 42 - rendered;
-    for (let day = 1; day <= remaining; day += 1) {
-        const dayEl = document.createElement('div');
-        dayEl.className = 'calendar-day other-month';
-        dayEl.textContent = day;
-        calendar.appendChild(dayEl);
-    }
-}
-
-async function initAvailabilityCalendar() {
-    await refreshAvailabilitySnapshot();
-    renderAvailabilityCalendar();
-    if (!selectedDate) {
-        clearSelectedDateState();
-    }
-}
-
-function changeMonth(delta) {
-    currentMonth.setMonth(currentMonth.getMonth() + delta);
-    renderAvailabilityCalendar();
-}
-
-function selectDate(dateStr) {
-    selectedDate = dateStr;
-    renderAvailabilityCalendar();
-    const date = new Date(dateStr);
-    document.getElementById('selectedDate').textContent = date.toLocaleDateString(
-        'es-EC',
-        {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-        }
-    );
-    document.getElementById('addSlotForm').classList.toggle('is-hidden', availabilityReadOnly);
-    loadTimeSlots(dateStr);
-}
-
-function loadTimeSlots(dateStr) {
-    const slots = currentAvailability[dateStr] || [];
-    const list = document.getElementById('timeSlotsList');
-    if (slots.length === 0) {
-        list.innerHTML = '<p class="empty-message">No hay horarios configurados</p>';
-        return;
-    }
-
-    const encodedDate = encodeURIComponent(String(dateStr || ''));
-
-    list.innerHTML = slots
-        .slice()
-        .sort()
-        .map(
-            (time) => `
-        <div class="time-slot-item">
-            <span class="time">${escapeHtml(time)}</span>
-            <div class="slot-actions">
-                ${
-                    availabilityReadOnly
-                        ? '<span class="selected-date">Solo lectura</span>'
-                        : `<button type="button" class="btn-icon danger" data-action="remove-time-slot" data-date="${encodedDate}" data-time="${encodeURIComponent(String(time || ''))}">
-                    <i class="fas fa-trash"></i>
-                </button>`
-                }
-            </div>
-        </div>
-    `
-        )
-        .join('');
-}
-
-async function saveAvailability() {
-    if (availabilityReadOnly) {
-        throw new Error('Disponibilidad en solo lectura (Google Calendar).');
-    }
-    await apiRequest('availability', {
-        method: 'POST',
-        body: { availability: currentAvailability },
-    });
-}
-
-async function addTimeSlot() {
-    if (availabilityReadOnly) {
-        showToast('Disponibilidad en solo lectura: gestionala desde Google Calendar.', 'warning');
-        return;
-    }
-    if (!selectedDate) {
-        showToast('Selecciona una fecha primero', 'warning');
-        return;
-    }
-    const time = document.getElementById('newSlotTime').value;
-    if (!time) {
-        showToast('Ingresa un horario', 'warning');
-        return;
-    }
-
-    if (!currentAvailability[selectedDate]) {
-        currentAvailability[selectedDate] = [];
-    }
-
-    if (currentAvailability[selectedDate].includes(time)) {
-        showToast('Este horario ya existe', 'warning');
-        return;
-    }
-
-    try {
-        currentAvailability[selectedDate].push(time);
-        await saveAvailability();
-        loadTimeSlots(selectedDate);
-        renderAvailabilityCalendar();
-        document.getElementById('newSlotTime').value = '';
-        showToast('Horario agregado', 'success');
-    } catch (error) {
-        showToast(`No se pudo guardar el horario: ${error.message}`, 'error');
-    }
-}
-
-async function removeTimeSlot(dateStr, time) {
-    if (availabilityReadOnly) {
-        showToast('Disponibilidad en solo lectura: gestionala desde Google Calendar.', 'warning');
-        return;
-    }
-    try {
-        currentAvailability[dateStr] = (currentAvailability[dateStr] || []).filter((t) => t !== time);
-        await saveAvailability();
-        loadTimeSlots(dateStr);
-        renderAvailabilityCalendar();
-        showToast('Horario eliminado', 'success');
-    } catch (error) {
-        showToast(`No se pudo eliminar el horario: ${error.message}`, 'error');
-    }
 }
 
 let initialized = false;
@@ -1737,6 +1089,14 @@ async function initPushNotifications() {
     }
 }
 
+// Modulos cargados bajo demanda (code splitting)
+function loadAppointmentsModule() {
+    return import('./js/admin-chunks/appointments-ScVXm-lJ.js');
+}
+function loadAvailabilityModule() {
+    return import('./js/admin-chunks/availability-AXgzYhjZ.js');
+}
+
 async function renderSection(section) {
     const titles = {
         dashboard: 'Dashboard',
@@ -1758,18 +1118,22 @@ async function renderSection(section) {
         case 'dashboard':
             loadDashboardData();
             break;
-        case 'appointments':
+        case 'appointments': {
+            const { loadAppointments } = await loadAppointmentsModule();
             loadAppointments();
             break;
+        }
         case 'callbacks':
             loadCallbacks();
             break;
         case 'reviews':
             loadReviews();
             break;
-        case 'availability':
+        case 'availability': {
+            const { initAvailabilityCalendar } = await loadAvailabilityModule();
             await initAvailabilityCalendar();
             break;
+        }
         default:
             loadDashboardData();
             break;
@@ -1963,25 +1327,29 @@ function attachGlobalListeners() {
             document.getElementById('importFileInput')?.click();
             return;
         }
-        if (action === 'export-csv') {
-            event.preventDefault();
-            exportAppointmentsCSV();
-            return;
-        }
 
         try {
+            if (action === 'export-csv') {
+                event.preventDefault();
+                const { exportAppointmentsCSV } = await loadAppointmentsModule();
+                exportAppointmentsCSV();
+                return;
+            }
             if (action === 'change-month') {
                 event.preventDefault();
+                const { changeMonth } = await loadAvailabilityModule();
                 changeMonth(Number(actionEl.dataset.delta || 0));
                 return;
             }
             if (action === 'add-time-slot') {
                 event.preventDefault();
+                const { addTimeSlot } = await loadAvailabilityModule();
                 await addTimeSlot();
                 return;
             }
             if (action === 'remove-time-slot') {
                 event.preventDefault();
+                const { removeTimeSlot } = await loadAvailabilityModule();
                 await removeTimeSlot(
                     decodeURIComponent(actionEl.dataset.date || ''),
                     decodeURIComponent(actionEl.dataset.time || '')
@@ -1990,21 +1358,25 @@ function attachGlobalListeners() {
             }
             if (action === 'approve-transfer') {
                 event.preventDefault();
+                const { approveTransfer } = await loadAppointmentsModule();
                 await approveTransfer(Number(actionEl.dataset.id || 0));
                 return;
             }
             if (action === 'reject-transfer') {
                 event.preventDefault();
+                const { rejectTransfer } = await loadAppointmentsModule();
                 await rejectTransfer(Number(actionEl.dataset.id || 0));
                 return;
             }
             if (action === 'cancel-appointment') {
                 event.preventDefault();
+                const { cancelAppointment } = await loadAppointmentsModule();
                 await cancelAppointment(Number(actionEl.dataset.id || 0));
                 return;
             }
             if (action === 'mark-no-show') {
                 event.preventDefault();
+                const { markNoShow } = await loadAppointmentsModule();
                 await markNoShow(Number(actionEl.dataset.id || 0));
                 return;
             }
@@ -2022,12 +1394,18 @@ function attachGlobalListeners() {
 
     const appointmentFilter = document.getElementById('appointmentFilter');
     if (appointmentFilter) {
-        appointmentFilter.addEventListener('change', filterAppointments);
+        appointmentFilter.addEventListener('change', async () => {
+            const { filterAppointments } = await loadAppointmentsModule();
+            filterAppointments();
+        });
     }
 
     const searchInput = document.getElementById('searchAppointments');
     if (searchInput) {
-        searchInput.addEventListener('input', searchAppointments);
+        searchInput.addEventListener('input', async () => {
+            const { searchAppointments } = await loadAppointmentsModule();
+            searchAppointments();
+        });
     }
 
     const callbackFilter = document.getElementById('callbackFilter');
@@ -2069,3 +1447,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await checkAuthAndBoot();
 });
+
+export { apiRequest as a, getDoctorName as b, currentAppointments as c, getStatusText as d, getPaymentStatusText as e, getPaymentMethodText as f, getServiceName as g, escapeHtml as h, formatDate as i, sanitizePublicHref as j, currentAvailability as k, loadDashboardData as l, currentAvailabilityMeta as m, setAvailability as n, setAvailabilityMeta as o, refreshData as r, showToast as s };

@@ -1,6 +1,6 @@
 # Plan Maestro 2026 - Estado Operativo
 
-Fecha de actualizacion: 2026-02-23
+Fecha de actualizacion: 2026-02-23 (sesion Claude tarde)
 Dominio: https://pielarmonia.com
 
 ## Resumen rapido
@@ -12,6 +12,9 @@ Dominio: https://pielarmonia.com
 - Umbral operativo `figo-post` endurecido a p95 <= `2500 ms` en gate/benchmark/workflow.
 - Gate hash estricto: validado en 3 corridas consecutivas.
 - Workflow post-deploy ajustado para ejecutar hashes bloqueantes en `push` de forma inmediata.
+- admin.js code split completado: 71KB -> 49.7KB (bajo target <50KB). Chunks: appointments + availability bajo demanda.
+- PIELARMONIA_DEBUG_EXCEPTIONS: default explicitamente `false` en env.example.php.
+- Dependencias circulares JS: investigadas y confirmadas como inexistentes en codigo actual (state.js no tiene imports del proyecto).
 
 ## Evidencia ejecutada hoy
 
@@ -103,8 +106,21 @@ Dominio: https://pielarmonia.com
 - Pruebas: `101.47.4.223` en puertos `22`, `21`, `990` -> `TcpTestSucceeded=False`.
 - Implicacion: no hay canal remoto util para sincronizar artefactos (SSH/FTP/FTPS).
 
+5. script.js (111KB > target 80KB): deuda tecnica activa.
+- Causa: chat/shell.js (15KB) importado estaticamente por main.js y router.js. Split requiere refactor coordinado de ambos.
+- Accion recomendada: sesion dedicada para extraer chat shell a dynamic import compartido.
+
+6. Cobertura de tests: ~5-35% actual vs 80% objetivo.
+- Jules (Google AI) trabajando en scaffolding de tests (BookingServiceTest, RateLimiterTest, AuthSessionTest).
+- Pendiente integracion de su PR.
+
+7. Monitoring/observabilidad: Sentry configurado en codigo pero DSN no en produccion.
+- Pendiente: activar DSN en env de produccion.
+
 ## Siguiente ejecucion recomendada
 
 1. Mantener corrida diaria de `npm run gate:prod:hash-strict` como control preventivo.
 2. Publicar dashboard semanal de `booking_confirmed`, error rate y p95 de `figo-post`.
-3. Continuar fase de optimizacion de conversion (copy/UX/reserva) sobre base ya estabilizada.
+3. Integrar PR de Jules (tests unitarios) cuando este listo.
+4. Activar Sentry DSN en produccion.
+5. Sesion dedicada para split de script.js (chat/shell refactor).
