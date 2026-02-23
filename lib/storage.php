@@ -179,9 +179,13 @@ function data_dir_candidates(): array
 function resolve_data_dir(): array
 {
     static $resolved = null;
-    if (is_array($resolved) && isset($resolved['path'], $resolved['source'])) {
+    static $lastEnv = null;
+    $currentEnv = getenv('PIELARMONIA_DATA_DIR');
+
+    if (is_array($resolved) && isset($resolved['path'], $resolved['source']) && $lastEnv === $currentEnv) {
         return $resolved;
     }
+    $lastEnv = $currentEnv;
 
     foreach (data_dir_candidates() as $candidate) {
         $path = (string) ($candidate['path'] ?? '');

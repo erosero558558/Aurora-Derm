@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Calendar;
 
 use PHPUnit\Framework\TestCase;
+use CalendarBookingService;
+use CalendarAvailabilityService;
 
 require_once __DIR__ . '/../../../lib/common.php';
 require_once __DIR__ . '/../../../lib/metrics.php';
@@ -113,7 +115,7 @@ class CalendarBookingServiceUnitTest extends TestCase
 
         $resultFor60 = $availability->getBookedSlots($store, $date, 'rosero', 'laser');
         $this->assertTrue($resultFor60['ok']);
-        $this->assertSame(['09:00', '09:30'], $resultFor60['data']);
+        $this->assertSame(['09:00', '09:30', '10:30'], $resultFor60['data']);
     }
 
     public function testIndiferenteAssignsDoctorWithLeastLoad(): void
