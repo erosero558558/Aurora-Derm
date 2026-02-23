@@ -54,6 +54,79 @@ function normalizeEcuadorPhone(rawValue) {
     return raw;
 }
 
+function getPhoneDigits(value) {
+    return String(value || '').replace(/\D/g, '');
+}
+
+function hasValidPhoneLength(value) {
+    const digits = getPhoneDigits(value);
+    return digits.length >= 7 && digits.length <= 15;
+}
+
+function ensurePhoneInputGuidance(phoneInput) {
+    if (!phoneInput) return;
+
+    const placeholder = t('+593 9XXXXXXXX', '+593 9XXXXXXXX');
+    if (!phoneInput.placeholder || phoneInput.placeholder.trim() === '') {
+        phoneInput.placeholder = placeholder;
+    }
+
+    phoneInput.setAttribute('inputmode', 'tel');
+    phoneInput.setAttribute('autocomplete', 'tel');
+    phoneInput.setAttribute('autocapitalize', 'off');
+    phoneInput.setAttribute('spellcheck', 'false');
+
+    const helpId = 'bookingPhoneFormatHelp';
+    let help = document.getElementById(helpId);
+    if (!help) {
+        help = document.createElement('small');
+        help.id = helpId;
+        help.className = 'form-help';
+        phoneInput.insertAdjacentElement('afterend', help);
+    }
+    help.textContent = t(
+        'Formato recomendado: +593 9XXXXXXXX o 09XXXXXXXX.',
+        'Recommended format: +593 9XXXXXXXX or 09XXXXXXXX.'
+    );
+}
+
+function ensureReschedulePolicyHint(appointmentForm) {
+    if (!appointmentForm) return;
+    if (appointmentForm.querySelector('.booking-policy-note')) {
+        return;
+    }
+
+    const policyNote = document.createElement('p');
+    policyNote.className = 'form-help booking-policy-note';
+    policyNote.innerHTML = `${t(
+        'Reprogramacion o cancelacion sin costo hasta 24 horas antes.',
+        'Free rescheduling or cancellation up to 24 hours before.'
+    )} <a href="terminos.html#cancelaciones" target="_blank" rel="noopener noreferrer">${t(
+        'Ver politica',
+        'View policy'
+    )}</a>`;
+
+    const policyLink = policyNote.querySelector('a');
+    if (policyLink) {
+        policyLink.addEventListener('click', () => {
+            trackFormStep('reschedule_policy_opened', {}, { once: false });
+            if (deps && typeof deps.trackEvent === 'function') {
+                deps.trackEvent('booking_policy_opened', {
+                    source: 'booking_form',
+                });
+            }
+        });
+    }
+
+    const consentBlock = appointmentForm.querySelector('.form-consent');
+    if (consentBlock && consentBlock.parentNode) {
+        consentBlock.insertAdjacentElement('afterend', policyNote);
+        return;
+    }
+
+    appointmentForm.appendChild(policyNote);
+}
+
 function trackFormStep(step, payload = {}, options = {}) {
     if (!deps || typeof deps.trackEvent !== 'function' || !step) {
         return;
@@ -210,16 +283,28 @@ function init(inputDeps) {
     }
 
     if (phoneInput) {
+        ensurePhoneInputGuidance(phoneInput);
         phoneInput.addEventListener('blur', () => {
             const normalized = normalizeEcuadorPhone(phoneInput.value);
             if (normalized !== '') {
                 phoneInput.value = normalized;
             }
 
-            const digits = normalized.replace(/\D/g, '');
-            if (digits.length >= 7 && digits.length <= 15) {
+            const validPhoneLength = hasValidPhoneLength(normalized);
+            phoneInput.setCustomValidity(
+                validPhoneLength
+                    ? ''
+                    : t(
+                          'Ingresa un telefono valido (ejemplo: +593 9XXXXXXXX).',
+                          'Enter a valid phone number (example: +593 9XXXXXXXX).'
+                      )
+            );
+            if (validPhoneLength) {
                 trackFormStep('phone_added');
             }
+        });
+        phoneInput.addEventListener('input', () => {
+            phoneInput.setCustomValidity('');
         });
     }
 
@@ -281,6 +366,7 @@ function init(inputDeps) {
             }
         });
     }
+    ensureReschedulePolicyHint(appointmentForm);
 
     if (serviceSelect.value) {
         serviceSelect.dispatchEvent(new Event('change'));
@@ -315,6 +401,14 @@ function init(inputDeps) {
             const normalizedPhone = normalizeEcuadorPhone(
                 formData.get('phone')
             );
+            if (!hasValidPhoneLength(normalizedPhone)) {
+                throw new Error(
+                    t(
+                        'Ingresa un telefono valido (ejemplo: +593 9XXXXXXXX).',
+                        'Enter a valid phone number (example: +593 9XXXXXXXX).'
+                    )
+                );
+            }
 
             const appointment = {
                 service: formData.get('service'),
