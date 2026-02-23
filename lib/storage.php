@@ -545,22 +545,27 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
                 if (!isset($appt['id'])) {
                     continue;
                 }
-                $stmt->execute([
-                    (int) $appt['id'],
-                    $appt['date'] ?? '',
-                    $appt['time'] ?? '',
-                    $appt['doctor'] ?? '',
-                    $appt['service'] ?? '',
-                    $appt['name'] ?? '',
-                    $appt['email'] ?? '',
-                    $appt['phone'] ?? '',
-                    $appt['status'] ?? 'confirmed',
-                    $appt['paymentMethod'] ?? '',
-                    $appt['paymentStatus'] ?? '',
-                    $appt['paymentIntentId'] ?? '',
-                    $appt['rescheduleToken'] ?? '',
-                    json_encode($appt, JSON_UNESCAPED_UNICODE)
-                ]);
+                try {
+                    $stmt->execute([
+                        (int) $appt['id'],
+                        $appt['date'] ?? '',
+                        $appt['time'] ?? '',
+                        $appt['doctor'] ?? '',
+                        $appt['service'] ?? '',
+                        $appt['name'] ?? '',
+                        $appt['email'] ?? '',
+                        $appt['phone'] ?? '',
+                        $appt['status'] ?? 'confirmed',
+                        $appt['paymentMethod'] ?? '',
+                        $appt['paymentStatus'] ?? '',
+                        $appt['paymentIntentId'] ?? '',
+                        $appt['rescheduleToken'] ?? '',
+                        json_encode($appt, JSON_UNESCAPED_UNICODE)
+                    ]);
+                } catch (Exception $e) {
+                    error_log('Migration failed for appointment ID ' . $appt['id'] . ': ' . $e->getMessage());
+                    throw $e;
+                }
             }
         }
 
@@ -571,15 +576,20 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
                 if (!isset($review['id'])) {
                     continue;
                 }
-                $stmt->execute([
-                    (int) $review['id'],
-                    $review['name'] ?? '',
-                    $review['rating'] ?? 0,
-                    $review['text'] ?? '',
-                    $review['date'] ?? '',
-                    isset($review['verified']) && $review['verified'] ? 1 : 0,
-                    json_encode($review, JSON_UNESCAPED_UNICODE)
-                ]);
+                try {
+                    $stmt->execute([
+                        (int) $review['id'],
+                        $review['name'] ?? '',
+                        $review['rating'] ?? 0,
+                        $review['text'] ?? '',
+                        $review['date'] ?? '',
+                        isset($review['verified']) && $review['verified'] ? 1 : 0,
+                        json_encode($review, JSON_UNESCAPED_UNICODE)
+                    ]);
+                } catch (Exception $e) {
+                    error_log('Migration failed for review ID ' . $review['id'] . ': ' . $e->getMessage());
+                    throw $e;
+                }
             }
         }
 
@@ -590,14 +600,19 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
                 if (!isset($cb['id'])) {
                     continue;
                 }
-                $stmt->execute([
-                    (int) $cb['id'],
-                    $cb['telefono'] ?? '',
-                    $cb['preferencia'] ?? '',
-                    $cb['fecha'] ?? '',
-                    $cb['status'] ?? 'pendiente',
-                    json_encode($cb, JSON_UNESCAPED_UNICODE)
-                ]);
+                try {
+                    $stmt->execute([
+                        (int) $cb['id'],
+                        $cb['telefono'] ?? '',
+                        $cb['preferencia'] ?? '',
+                        $cb['fecha'] ?? '',
+                        $cb['status'] ?? 'pendiente',
+                        json_encode($cb, JSON_UNESCAPED_UNICODE)
+                    ]);
+                } catch (Exception $e) {
+                    error_log('Migration failed for callback ID ' . $cb['id'] . ': ' . $e->getMessage());
+                    throw $e;
+                }
             }
         }
 
@@ -837,7 +852,7 @@ function write_store(array $store, bool $emitHttpErrors = true): bool
             if (!isset($appt['id'])) {
                 continue;
             }
-            $id = (int) $appt['id'];
+            $id = $appt['id'];
             $incomingIds[$id] = true;
 
             $stmtUpsert->execute([
@@ -875,7 +890,7 @@ function write_store(array $store, bool $emitHttpErrors = true): bool
             if (!isset($review['id'])) {
                 continue;
             }
-            $id = (int) $review['id'];
+            $id = $review['id'];
             $incomingIds[$id] = true;
             $stmtUpsert->execute([
                 $id,
@@ -903,7 +918,7 @@ function write_store(array $store, bool $emitHttpErrors = true): bool
             if (!isset($cb['id'])) {
                 continue;
             }
-            $id = (int) $cb['id'];
+            $id = $cb['id'];
             $incomingIds[$id] = true;
             $stmtUpsert->execute([
                 $id,

@@ -145,11 +145,11 @@
         <link
             rel="preload"
             as="style"
-            href="../styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1"
+            href="../styles-deferred.css?v=ui-20260223-clsfix1"
         />
         <link
             rel="stylesheet"
-            href="../styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1"
+            href="../styles-deferred.css?v=ui-20260223-clsfix1"
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -2563,10 +2563,26 @@
                 >
             </div>
         </div>
+        <!--
         <script
             src="../script.js?v=figo-20260221-phase10-realagenda1"
             defer
         ></script>
+        -->
+        <script type="module" src="../dist/main.bundle.js"></script>
+        <script type="module">
+            // Lazy load chat engine prefetch
+            const chatToggle = document.querySelector('.chatbot-toggle');
+            if (chatToggle) {
+                chatToggle.addEventListener('mouseenter', async () => {
+                    try {
+                        await import('../dist/chat.bundle.js');
+                    } catch (e) {
+                        console.error('Failed to prefetch chat bundle', e);
+                    }
+                }, { once: true, passive: true });
+            }
+        </script>
         <script src="../js/services-init.js" defer></script>
     </body>
 </html>
