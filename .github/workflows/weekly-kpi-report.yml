@@ -1,0 +1,205 @@
+name: Weekly KPI Report
+
+on:
+    schedule:
+        - cron: '0 14 * * 1'
+    workflow_dispatch:
+        inputs:
+            domain:
+                description: 'Dominio objetivo'
+                required: false
+                default: 'https://pielarmonia.com'
+                type: string
+            bench_runs:
+                description: 'Muestras por endpoint para benchmark'
+                required: false
+                default: '15'
+                type: string
+            fail_on_warnings:
+                description: 'Fallar workflow si hay warnings de KPI'
+                required: false
+                default: true
+                type: boolean
+
+concurrency:
+    group: weekly-kpi-report
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    issues: write
+
+jobs:
+    weekly-kpi:
+        name: Weekly conversion and latency report
+        runs-on: windows-latest
+        timeout-minutes: 20
+        env:
+            TARGET_DOMAIN: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
+            BENCH_RUNS: ${{ github.event.inputs.bench_runs || '15' }}
+            FAIL_ON_WARNINGS: ${{ github.event.inputs.fail_on_warnings || 'true' }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Ejecutar reporte semanal
+              shell: pwsh
+              run: |
+                  $benchRuns = [int]$env:BENCH_RUNS
+                  if ($benchRuns -lt 5) { $benchRuns = 5 }
+
+                  $args = @(
+                    '-Domain', $env:TARGET_DOMAIN,
+                    '-BenchRuns', $benchRuns
+                  )
+                  if ($env:FAIL_ON_WARNINGS -eq 'true') {
+                    $args += '-FailOnWarnings'
+                  }
+
+                  & ./REPORTE-SEMANAL-PRODUCCION.ps1 @args
+
+            - name: Detectar ultimo reporte
+              if: ${{ always() }}
+              id: report
+              shell: pwsh
+              run: |
+                  $latestJson = Get-ChildItem -Path 'verification/weekly' -Filter 'weekly-report-*.json' -ErrorAction SilentlyContinue |
+                    Sort-Object LastWriteTimeUtc -Descending |
+                    Select-Object -First 1
+
+                  if (-not $latestJson) {
+                    "report_json_path=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "report_md_path=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "warnings_count=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    exit 0
+                  }
+
+                  $jsonPath = $latestJson.FullName
+                  $mdPath = [System.IO.Path]::ChangeExtension($jsonPath, '.md')
+                  $warningsCount = 0
+
+                  try {
+                    $payload = Get-Content -Path $jsonPath -Raw | ConvertFrom-Json -Depth 10
+                    if ($payload.warnings) {
+                      $warningsCount = @($payload.warnings).Count
+                    }
+                  } catch {
+                    $warningsCount = -1
+                  }
+
+                  "report_json_path=$jsonPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "report_md_path=$mdPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "warnings_count=$warningsCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+            - name: Publicar artefactos
+              if: ${{ always() && steps.report.outputs.report_json_path != '' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: weekly-kpi-report
+                  path: |
+                      ${{ steps.report.outputs.report_json_path }}
+                      ${{ steps.report.outputs.report_md_path }}
+                  if-no-files-found: warn
+                  retention-days: 30
+
+            - name: Resumen
+              if: ${{ always() }}
+              shell: pwsh
+              run: |
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Weekly KPI report"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Dominio: ``$env:TARGET_DOMAIN``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Bench runs: ``$env:BENCH_RUNS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Fail on warnings: ``$env:FAIL_ON_WARNINGS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings count: ``${{ steps.report.outputs.warnings_count }}``"
+                  if ("${{ steps.report.outputs.report_md_path }}" -ne "") {
+                    Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Report file: ``${{ steps.report.outputs.report_md_path }}``"
+                  }
+
+            - name: Crear/actualizar incidente semanal
+              if: ${{ failure() && github.event_name == 'schedule' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI report con warnings';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const body = [
+                        'El workflow `Weekly KPI Report` fallo o detecto warnings en ejecucion programada.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body
+                        });
+                        core.info(`Issue existente actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body
+                        });
+                        core.info(`Issue creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente semanal al recuperar
+              if: ${{ success() && github.event_name == 'schedule' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI report con warnings';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por reporte semanal.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue cerrado: #${existing.number}`);

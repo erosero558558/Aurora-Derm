@@ -4,7 +4,8 @@ param(
     [int]$TimeoutSec = 20,
     [string]$OutputDir = 'verification/weekly',
     [int]$CoreP95MaxMs = 800,
-    [int]$FigoPostP95MaxMs = 2500
+    [int]$FigoPostP95MaxMs = 2500,
+    [switch]$FailOnWarnings
 )
 
 $ErrorActionPreference = 'Stop'
@@ -559,6 +560,10 @@ Write-Host "Reporte json: $reportJsonPath"
 Write-Host "booking_confirmed=$bookingConfirmed error_rate_pct=$errorRatePct core_p95_max_ms=$coreP95Max figo_post_p95_ms=$figoPostP95"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow
+    if ($FailOnWarnings) {
+        Write-Host 'FailOnWarnings activo: reporte marcado como fallido.' -ForegroundColor Red
+        exit 2
+    }
 } else {
     Write-Host 'Warnings: none' -ForegroundColor Green
 }
