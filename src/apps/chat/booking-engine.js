@@ -77,7 +77,9 @@ function isCalendarUnavailableError(error) {
         code === 'calendar_auth_failed' ||
         code === 'calendar_token_rejected' ||
         message.includes('calendar_unreachable') ||
-        message.includes('agenda temporalmente no disponible')
+        message.includes('agenda temporalmente no disponible') ||
+        message.includes('no se pudo consultar la agenda real') ||
+        message.includes('google calendar no')
     );
 }
 
