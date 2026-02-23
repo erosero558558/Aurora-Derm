@@ -556,6 +556,39 @@ function bindPaymentListeners() {
             return;
         }
 
+        const faqSummary = e.target.closest('#paymentModal .payment-faq summary');
+        if (faqSummary) {
+            const faqDetails = faqSummary.closest('details');
+            if (!faqDetails) {
+                return;
+            }
+
+            // Wait for the native details toggle before reading open state.
+            window.requestAnimationFrame(() => {
+                if (!faqDetails.open) {
+                    return;
+                }
+
+                const faqItem =
+                    faqSummary.getAttribute('data-i18n') ||
+                    normalizeAnalyticsLabel(
+                        faqSummary.textContent || 'payment_faq_unknown',
+                        'payment_faq_unknown'
+                    );
+
+                trackEvent('payment_faq_interacted', {
+                    source: 'payment_modal',
+                    action: 'open',
+                    faq_item: faqItem,
+                });
+
+                setCheckoutStep('payment_faq_opened', {
+                    source: 'payment_modal',
+                });
+            });
+            return;
+        }
+
         const method = e.target.closest('.payment-method');
         if (!method) return;
 
