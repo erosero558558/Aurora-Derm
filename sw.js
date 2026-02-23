@@ -1,19 +1,27 @@
-const CACHE_NAME = 'pielarmonia-v10-20260223-openclaw-queue1';
+const CACHE_NAME = 'pielarmonia-v11-20260224-sw-fix';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/telemedicina.html',
     '/admin.html',
-    '/admin.css',
+    '/admin.css?v=admin-css-fix-login1',
     '/admin.js',
-    '/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1',
+    '/styles.min.css',
+    '/admin.min.css',
+    '/styles-deferred.css?v=ui-20260223-clsfix1',
     '/js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1',
-    '/script.js?v=figo-20260221-phase10-realagenda1',
+    '/script.js?v=figo-20260222-slotservicefix1',
+    '/js/engines/ui-bundle.js?v=20260220-consolidated1&cv=figo-20260221-phase10-realagenda1',
+    '/js/engines/data-bundle.js?v=20260220-consolidated1&cv=figo-20260221-phase10-realagenda1',
+    '/js/engines/data-engine.js?v=figo-data-20260219-phase1&cv=figo-20260221-phase10-realagenda1',
+    '/js/engines/analytics-engine.js?v=figo-analytics-20260219-phase2-funnelstep1&cv=figo-20260221-phase10-realagenda1',
     '/images/optimized/hero-woman.jpg',
     '/favicon.ico',
     '/manifest.json',
     '/images/icon-192.png',
     '/images/icon-512.png',
+    '/fonts/plus-jakarta-sans.woff2',
+    '/fonts/fraunces.woff2',
 ];
 
 const NETWORK_ONLY_PREFIXES = [
@@ -161,7 +169,10 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('sync', (event) => {
     if (event.tag === 'sync-appointments') {
-        // Background sync placeholder - no-op for now
+        // Placeholder for background sync logic.
+        // Full implementation requires IndexedDB instead of localStorage (which is currently used).
+        // This handler is ready for future integration.
+        console.log('[SW] Sync event triggered for appointments');
     }
 });
 
