@@ -2826,7 +2826,7 @@
 
     // Deferred Stylesheet
     const DEFERRED_STYLESHEET_URL = withDeployAssetVersion(
-        '/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1'
+        '/styles-deferred.css?v=ui-20260223-opt1'
     );
     let deferredStylesheetPromise = null;
     let deferredStylesheetInitDone = false;

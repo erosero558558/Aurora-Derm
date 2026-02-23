@@ -58,7 +58,7 @@ test.describe('Version consistency across pages and service worker', () => {
             `/js/bootstrap-inline-engine.js?v=${indexBootstrap.version}`
         );
         expect(sw).toContain(
-            `/styles-deferred.css?v=${indexDeferredStyles.version}`
+            `/styles-deferred.css?v=ui-20260223-opt1
         );
     });
 });

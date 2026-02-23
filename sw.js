@@ -6,7 +6,7 @@ const STATIC_ASSETS = [
     '/admin.html',
     '/admin.css',
     '/admin.js',
-    '/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1',
+    '/styles-deferred.css?v=ui-20260223-opt1',
     '/js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1',
     '/script.js?v=figo-20260221-phase10-realagenda1',
     '/images/optimized/hero-woman.jpg',
