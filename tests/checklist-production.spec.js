@@ -194,13 +194,18 @@ test.describe('Checklist de Pruebas en Producción', () => {
         const timeSelect = page.locator('select[name="time"]');
         if (await timeSelect.isVisible()) {
             // Wait for options to be populated (async fetch)
-            await page.waitForTimeout(2000);
+            // Use a loop to check if non-placeholder options exist to avoid hard timeout
+            await expect(async () => {
+                const count = await timeSelect.locator('option').count();
+                expect(count).toBeGreaterThan(1);
+            }).toPass({ timeout: 10000 });
 
             // Seleccionar primera opción válida
             const options = await timeSelect.locator('option').all();
             if (options.length > 1) {
                 // Ensure element is enabled and stable before selecting
-                await expect(timeSelect).toBeEnabled({ timeout: 5000 });
+                // Sometimes select might be disabled while fetching
+                await expect(timeSelect).toBeEnabled({ timeout: 10000 });
                 await timeSelect.selectOption({ index: 1 });
             }
         }

@@ -18,9 +18,13 @@ if (!is_dir($tempDir)) {
 $backupDir = $tempDir . '/backups';
 
 // Initialize empty store to prevent migration from other directories
+// Seed availability for tomorrow at 10:00 to ensure booking succeeds
+$tomorrow = date('Y-m-d', strtotime('+1 day'));
 $initialStore = [
     'appointments' => [],
-    'availability' => [],
+    'availability' => [
+        $tomorrow => ['09:00', '09:30', '10:00', '10:30', '11:00']
+    ],
     'reviews' => [],
     'callbacks' => [],
     'updatedAt' => date('c'),
