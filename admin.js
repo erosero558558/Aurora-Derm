@@ -1213,7 +1213,9 @@ async function refreshAvailabilitySnapshot() {
             selectedDate = null;
             clearSelectedDateState();
         }
-    } catch {
+    } catch (error) {
+        console.error('Error refreshing availability:', error);
+        showToast('Error al actualizar disponibilidad: ' + error.message, 'error');
         availabilityReadOnly = String(currentAvailabilityMeta.source || '') === 'google';
         renderStatus();
         toggleReadOnlyUi();
