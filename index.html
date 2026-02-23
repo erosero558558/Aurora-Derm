@@ -1929,10 +1929,26 @@
             src="js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1"
             defer
         ></script>
+        <!--
         <script
             src="script.js?v=figo-20260222-slotservicefix1"
             defer
         ></script>
+        -->
+        <script type="module" src="dist/main.bundle.js"></script>
+        <script type="module">
+            // Lazy load chat engine prefetch
+            const chatToggle = document.querySelector('.chatbot-toggle');
+            if (chatToggle) {
+                chatToggle.addEventListener('mouseenter', async () => {
+                    try {
+                        await import('./dist/chat.bundle.js');
+                    } catch (e) {
+                        console.error('Failed to prefetch chat bundle', e);
+                    }
+                }, { once: true, passive: true });
+            }
+        </script>
     </head>
     <body>
         <!-- Language Selector -->

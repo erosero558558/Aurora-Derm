@@ -1,6 +1,21 @@
 import resolve from '@rollup/plugin-node-resolve';
 
 export default [
+    // Main App with Lazy Loading Modules (ESM)
+    {
+        input: {
+            main: 'src/main-esm.js',
+            chat: 'src/modules/chat/index.js',
+            booking: 'src/modules/booking/index.js'
+        },
+        output: {
+            dir: 'dist',
+            format: 'es',
+            entryFileNames: '[name].bundle.js',
+            chunkFileNames: 'shared/[name]-[hash].js'
+        },
+        plugins: [resolve()]
+    },
     // Admin App
     {
         input: 'src/apps/admin/index.js',
