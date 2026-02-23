@@ -249,7 +249,7 @@ function figo_queue_retention_sec(): int
 
 function figo_queue_sync_wait_ms(): int
 {
-    return figo_queue_clamp_int(getenv('OPENCLAW_BRIDGE_SYNC_WAIT_MS'), 3200, 0, 10000);
+    return figo_queue_clamp_int(getenv('OPENCLAW_BRIDGE_SYNC_WAIT_MS'), 1400, 0, 10000);
 }
 
 function figo_queue_worker_max_jobs(): int
@@ -1275,7 +1275,7 @@ function figo_queue_wait_for_terminal(string $jobId, int $waitMs): array
         if (in_array($status, ['completed', 'failed', 'expired'], true)) {
             return ['status' => $status, 'job' => $job];
         }
-        usleep(180000);
+        usleep(120000);
     } while (((int) floor(microtime(true) * 1000) - $startedAt) < $waitMs);
 
     return ['status' => 'queued', 'job' => figo_queue_read_job($jobId)];
