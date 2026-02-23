@@ -26,6 +26,11 @@ class RateLimiterTest extends TestCase
         require_once __DIR__ . '/../../lib/common.php';
         require_once __DIR__ . '/../../lib/storage.php';
         require_once __DIR__ . '/../../lib/ratelimit.php';
+
+        // Clear headers that might interfere with IP detection in CI environments
+        unset($_SERVER['HTTP_CF_CONNECTING_IP']);
+        unset($_SERVER['HTTP_X_REAL_IP']);
+        unset($_SERVER['HTTP_X_FORWARDED_FOR']);
     }
 
     protected function tearDown(): void
