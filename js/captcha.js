@@ -52,7 +52,7 @@ export async function getCaptchaToken(action) {
                             action: normalizedAction,
                         });
                         resolve(token || null);
-                    } catch (_) {
+                    } catch {
                         resolve(null);
                     }
                 });
@@ -75,7 +75,7 @@ export async function getCaptchaToken(action) {
                         if (widgetId !== null && window.turnstile && typeof window.turnstile.remove === 'function') {
                             window.turnstile.remove(widgetId);
                         }
-                    } catch (_) {
+                    } catch {
                         // noop
                     }
                     target.remove();
@@ -94,13 +94,13 @@ export async function getCaptchaToken(action) {
                             resolve(null);
                         },
                     });
-                } catch (_) {
+                } catch {
                     cleanup();
                     resolve(null);
                 }
             });
         }
-    } catch (_) {
+    } catch {
         return null;
     }
 

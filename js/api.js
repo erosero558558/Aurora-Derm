@@ -92,7 +92,7 @@ export async function apiRequest(resource, options = {}) {
             let payload = {};
             try {
                 payload = responseText ? JSON.parse(responseText) : {};
-            } catch (error) {
+            } catch {
                 throw makeApiError(
                     'Respuesta del servidor no es JSON valido',
                     response.status,

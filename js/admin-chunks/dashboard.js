@@ -4,7 +4,7 @@ function getLocalData(key, fallback) {
     try {
         const value = JSON.parse(localStorage.getItem(key) || 'null');
         return value === null ? fallback : value;
-    } catch (error) {
+    } catch {
         return fallback;
     }
 }
@@ -41,7 +41,7 @@ async function refreshData() {
         } else {
             setFunnelMetrics(getEmptyFunnelMetrics());
         }
-    } catch (error) {
+    } catch {
         loadFallbackState();
         showToast('No se pudo conectar al backend. Usando datos locales.', 'warning');
     }
