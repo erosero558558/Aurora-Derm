@@ -130,14 +130,14 @@ function figo_queue_gateway_endpoint(): string
         : [];
 
     return figo_queue_first_non_empty([
+        $fileConfig['openclawGatewayEndpoint'] ?? null,
+        $openclawNode['endpoint'] ?? null,
+        $aiNode['endpoint'] ?? null,
         getenv('FIGO_AI_API_URL'),
         getenv('FIGO_AI_ENDPOINT'),
         getenv('FIGO_AI_URL'),
         getenv('OPENCLAW_GATEWAY_ENDPOINT'),
         getenv('FIGO_OPENCLAW_GATEWAY_ENDPOINT'),
-        $fileConfig['openclawGatewayEndpoint'] ?? null,
-        $openclawNode['endpoint'] ?? null,
-        $aiNode['endpoint'] ?? null
     ]);
 }
 
@@ -152,13 +152,13 @@ function figo_queue_gateway_api_key(): string
         : [];
 
     return figo_queue_first_non_empty([
+        $fileConfig['openclawGatewayApiKey'] ?? null,
+        $openclawNode['apiKey'] ?? null,
+        $aiNode['apiKey'] ?? null,
         getenv('FIGO_AI_API_KEY'),
         getenv('FIGO_AI_KEY'),
         getenv('OPENCLAW_GATEWAY_API_KEY'),
         getenv('FIGO_OPENCLAW_GATEWAY_API_KEY'),
-        $fileConfig['openclawGatewayApiKey'] ?? null,
-        $openclawNode['apiKey'] ?? null,
-        $aiNode['apiKey'] ?? null
     ]);
 }
 
@@ -184,12 +184,12 @@ function figo_queue_gateway_model(): string
         : [];
 
     $model = figo_queue_first_non_empty([
+        $fileConfig['openclawGatewayModel'] ?? null,
+        $openclawNode['model'] ?? null,
+        $aiNode['model'] ?? null,
         getenv('FIGO_AI_MODEL'),
         getenv('OPENCLAW_GATEWAY_MODEL'),
         getenv('FIGO_OPENCLAW_GATEWAY_MODEL'),
-        $fileConfig['openclawGatewayModel'] ?? null,
-        $openclawNode['model'] ?? null,
-        $aiNode['model'] ?? null
     ]);
 
     return $model !== '' ? $model : 'auto';
@@ -205,24 +205,14 @@ function figo_queue_gateway_key_header(): string
         ? $fileConfig['ai']
         : [];
 
-    if (figo_queue_prefers_figo_ai_auth()) {
-        $header = figo_queue_first_non_empty([
-            getenv('OPENCLAW_GATEWAY_KEY_HEADER'),
-            getenv('FIGO_OPENCLAW_GATEWAY_KEY_HEADER'),
-            getenv('FIGO_AI_API_KEY_HEADER'),
-            getenv('FIGO_AI_KEY_HEADER')
-        ]);
-        return $header !== '' ? $header : 'Authorization';
-    }
-
     $header = figo_queue_first_non_empty([
+        $fileConfig['openclawGatewayKeyHeader'] ?? null,
+        $openclawNode['apiKeyHeader'] ?? null,
+        $aiNode['apiKeyHeader'] ?? null,
         getenv('OPENCLAW_GATEWAY_KEY_HEADER'),
         getenv('FIGO_OPENCLAW_GATEWAY_KEY_HEADER'),
         getenv('FIGO_AI_API_KEY_HEADER'),
         getenv('FIGO_AI_KEY_HEADER'),
-        $fileConfig['openclawGatewayKeyHeader'] ?? null,
-        $openclawNode['apiKeyHeader'] ?? null,
-        $aiNode['apiKeyHeader'] ?? null
     ]);
 
     return $header !== '' ? $header : 'Authorization';
@@ -238,24 +228,14 @@ function figo_queue_gateway_key_prefix(): string
         ? $fileConfig['ai']
         : [];
 
-    if (figo_queue_prefers_figo_ai_auth()) {
-        $prefix = figo_queue_first_non_empty([
-            getenv('OPENCLAW_GATEWAY_KEY_PREFIX'),
-            getenv('FIGO_OPENCLAW_GATEWAY_KEY_PREFIX'),
-            getenv('FIGO_AI_API_KEY_PREFIX'),
-            getenv('FIGO_AI_KEY_PREFIX')
-        ]);
-        return $prefix !== '' ? $prefix : 'Bearer';
-    }
-
     $prefix = figo_queue_first_non_empty([
+        $fileConfig['openclawGatewayKeyPrefix'] ?? null,
+        $openclawNode['apiKeyPrefix'] ?? null,
+        $aiNode['apiKeyPrefix'] ?? null,
         getenv('OPENCLAW_GATEWAY_KEY_PREFIX'),
         getenv('FIGO_OPENCLAW_GATEWAY_KEY_PREFIX'),
         getenv('FIGO_AI_API_KEY_PREFIX'),
         getenv('FIGO_AI_KEY_PREFIX'),
-        $fileConfig['openclawGatewayKeyPrefix'] ?? null,
-        $openclawNode['apiKeyPrefix'] ?? null,
-        $aiNode['apiKeyPrefix'] ?? null
     ]);
 
     return $prefix !== '' ? $prefix : 'Bearer';
