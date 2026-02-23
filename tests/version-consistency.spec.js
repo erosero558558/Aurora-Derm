@@ -57,11 +57,15 @@ test.describe('Version consistency across pages and service worker', () => {
         // expect(laserScript?.version).toBe(indexScript.version);
         // expect(teleBootstrap?.version).toBe(indexBootstrap.version);
 
-        // Temporary relaxed check to pass CI if versions are present
-        expect(teleScript?.version).toBeTruthy();
-        expect(acneScript?.version).toBeTruthy();
-        expect(laserScript?.version).toBeTruthy();
-        expect(teleBootstrap?.version).toBeTruthy();
+        // Update expectation logic: script.js versions might differ slightly due to bundle timing or cache busting strategies
+        // but they should match recent deploy patterns.
+        // For now, we align them to what is present in index.html as the source of truth
+
+        // Reverting to strict check matching CI environment
+        expect(teleScript?.version).toBe(indexScript.version);
+        expect(acneScript?.version).toBe(indexScript.version);
+        expect(laserScript?.version).toBe(indexScript.version);
+        expect(teleBootstrap?.version).toBe(indexBootstrap.version);
 
         expect(sw).toContain(`/script.js?v=${indexScript.version}`);
         expect(sw).toContain(
