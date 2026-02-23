@@ -6,6 +6,20 @@ let escapeListenerBound = false;
 let backGestureBound = false;
 let isClosingViaBack = false;
 
+function isAnyModalActive() {
+    return document.querySelectorAll('.modal.active').length > 0;
+}
+
+function updateScrollLock() {
+    const shouldLock = isAnyModalActive() || (document.getElementById('mobileMenu') && document.getElementById('mobileMenu').classList.contains('active'));
+
+    if (shouldLock) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
 function closeModalElement(modal) {
     if (!modal) {
         return;
@@ -18,8 +32,25 @@ function closeModalElement(modal) {
         return;
     }
 
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
+    // Add closing class for exit animation
+    modal.classList.add('closing');
+
+    const onAnimationEnd = () => {
+        modal.classList.remove('active');
+        modal.classList.remove('closing');
+        modal.removeEventListener('animationend', onAnimationEnd);
+        updateScrollLock();
+    };
+
+    // Listen for animation end
+    modal.addEventListener('animationend', onAnimationEnd, { once: true });
+
+    // Fallback in case animation fails or prefers-reduced-motion
+    setTimeout(() => {
+        if (modal.classList.contains('closing')) {
+            onAnimationEnd();
+        }
+    }, 400);
 }
 
 function bindBackdropClose() {
@@ -47,19 +78,16 @@ function bindEscapeClose() {
             return;
         }
 
-        document.querySelectorAll('.modal').forEach((modal) => {
-            if (modal.id === 'paymentModal' && modal.classList.contains('active')) {
-                if (deps && typeof deps.closePaymentModal === 'function') {
-                    deps.closePaymentModal();
-                }
-                return;
-            }
-            modal.classList.remove('active');
+        document.querySelectorAll('.modal.active').forEach((modal) => {
+            closeModalElement(modal);
         });
 
-        document.body.style.overflow = '';
         if (deps && typeof deps.toggleMobileMenu === 'function') {
-            deps.toggleMobileMenu(false);
+            // Check if mobile menu is open before trying to close it
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenu && mobileMenu.classList.contains('active')) {
+                deps.toggleMobileMenu(false);
+            }
         }
     });
 }
@@ -96,7 +124,7 @@ function setupBackGesture() {
         }
 
         if (closedAny) {
-            document.body.style.overflow = '';
+            updateScrollLock();
         }
 
         setTimeout(() => {
@@ -118,6 +146,9 @@ function setupBackGesture() {
                 }
             }
         });
+
+        // Always update scroll lock on state change
+        updateScrollLock();
 
         if (opened) {
             if (!history.state || !history.state.modalOpen) {

@@ -244,6 +244,24 @@
                     transform: translateY(0);
                 }
             }
+            @keyframes fadeOut {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+            @keyframes fadeOutDown {
+                from {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+            }
             .section-header,
             .services-grid,
             .telemedicine-options,
@@ -1122,7 +1140,7 @@
             .modal {
                 position: fixed;
                 inset: 0;
-                z-index: 2400;
+                z-index: 3000;
                 background: rgba(6, 12, 22, 0.55);
                 backdrop-filter: blur(6px);
                 display: none;
@@ -1132,6 +1150,9 @@
             }
             .modal.active {
                 display: flex;
+            }
+            .modal.closing {
+                animation: fadeOut 300ms ease-in forwards;
             }
             .modal-content {
                 width: min(640px, 100%);
@@ -1143,6 +1164,9 @@
                 box-shadow: var(--ui-shadow-lg);
                 padding: 24px 20px;
                 animation: fadeInUp 260ms ease-out;
+            }
+            .modal.closing .modal-content {
+                animation: fadeOutDown 300ms ease-in forwards;
             }
             .footer {
                 padding: 72px 0 110px;
