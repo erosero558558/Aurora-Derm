@@ -817,7 +817,7 @@ if (-not $hasTranslationsEnAsset) {
 $bookingEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'booking-engine.js'
 $bookingEngineRemoteUrl = if ($bookingEngineRef -ne '') {
     Get-Url -Base $base -Ref $bookingEngineRef
-} elseif ((Test-Path 'booking-engine.js') -or (Test-Path 'js/engines/booking-engine.js')) {
+} elseif (Test-Path 'js/engines/booking-engine.js') {
     "$base/js/engines/booking-engine.js"
 } else {
     ''
@@ -874,7 +874,7 @@ $bookingUiRemoteUrl = if ($bookingUiRef -ne '') {
 $chatBookingEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'chat-booking-engine.js'
 $chatBookingEngineRemoteUrl = if ($chatBookingEngineRef -ne '') {
     Get-Url -Base $base -Ref $chatBookingEngineRef
-} elseif ((Test-Path 'chat-booking-engine.js') -or (Test-Path 'js/engines/chat-booking-engine.js')) {
+} elseif (Test-Path 'js/engines/chat-booking-engine.js') {
     "$base/js/engines/chat-booking-engine.js"
 } else {
     ''
@@ -1125,8 +1125,8 @@ if ($SkipAssetHashChecks) {
         },
         [PSCustomObject]@{
             Name = 'booking-engine.js'
-            LocalPath = 'booking-engine.js'
-            LocalCandidates = @('js/engines/booking-engine.js')
+            LocalPath = 'js/engines/booking-engine.js'
+            LocalCandidates = @()
             RemoteUrl = $bookingEngineRemoteUrl
         },
         [PSCustomObject]@{
@@ -1149,8 +1149,8 @@ if ($SkipAssetHashChecks) {
         },
         [PSCustomObject]@{
             Name = 'chat-booking-engine.js'
-            LocalPath = 'chat-booking-engine.js'
-            LocalCandidates = @('js/engines/chat-booking-engine.js')
+            LocalPath = 'js/engines/chat-booking-engine.js'
+            LocalCandidates = @()
             RemoteUrl = $chatBookingEngineRemoteUrl
         },
         [PSCustomObject]@{
