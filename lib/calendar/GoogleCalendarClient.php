@@ -21,7 +21,8 @@ class GoogleCalendarClient
         int $cacheTtlSec = 60
     ) {
         $this->tokenProvider = $tokenProvider;
-        $this->timezone = trim($timezone) !== '' ? trim($timezone) : APP_TIMEZONE;
+        /** @psalm-suppress UndefinedConstant */
+        $this->timezone = trim($timezone) !== '' ? trim($timezone) : (defined('APP_TIMEZONE') ? APP_TIMEZONE : 'America/Guayaquil');
         $this->doctorCalendarMap = $doctorCalendarMap;
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->timeoutMs = max(2000, $timeoutMs);

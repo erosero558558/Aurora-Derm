@@ -24,7 +24,8 @@ class CalendarAvailabilityService
         $this->client = $client;
         $this->source = $source;
         $this->blockOnFailure = $blockOnFailure;
-        $this->timezone = $timezone !== '' ? $timezone : APP_TIMEZONE;
+        /** @psalm-suppress UndefinedConstant */
+        $this->timezone = $timezone !== '' ? $timezone : (defined('APP_TIMEZONE') ? APP_TIMEZONE : 'America/Guayaquil');
         $this->slotStepMin = max(15, min(60, $slotStepMin));
         $this->durationMap = $durationMap;
         $this->maxDays = max(1, min(90, $maxDays));

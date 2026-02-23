@@ -10,7 +10,8 @@ module.exports = [
             'node_modules/**',
             'playwright-report/**',
             'test-results/**',
-            'verification/**'
+            'verification/**',
+            'dist/**'
         ]
     },
     js.configs.recommended,

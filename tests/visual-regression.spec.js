@@ -9,6 +9,8 @@ test.describe('Pruebas de regresión visual', () => {
 
         // Esperar a que la carga termine
         await page.waitForLoadState('load');
+        // eslint-disable-next-line playwright/no-networkidle
+        // eslint-disable-next-line playwright/no-networkidle
         await page.waitForLoadState('networkidle');
         await page.waitForTimeout(2000); // Allow layout to settle
 
@@ -25,6 +27,7 @@ test.describe('Pruebas de regresión visual', () => {
 
         // Esperar a que la carga termine
         await page.waitForLoadState('load');
+        // eslint-disable-next-line playwright/no-networkidle
         await page.waitForLoadState('networkidle');
         await page.waitForTimeout(2000); // Allow layout to settle
 
