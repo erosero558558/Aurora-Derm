@@ -1,4 +1,4 @@
-import { withDeployAssetVersion, showToast, debugLog } from './utils.js';
+import { withDeployAssetVersion, showToast, debugLog } from '../../core/utils.js';
 import {
     loadDeferredModule,
     runDeferredModule,
@@ -6,31 +6,31 @@ import {
     bindWarmupTarget,
     observeOnceWhenVisible,
     scheduleDeferredTask,
-} from './loader.js';
+} from '../../core/loader.js';
 import {
     state,
     setCurrentAppointment,
-} from './state.js';
+} from '../../core/state.js';
 import {
     loadPaymentConfig,
     loadStripeSdk,
     createPaymentIntent,
     verifyPaymentIntent,
-} from './payment.js';
+} from '../payment/shell.js';
 import {
     trackEvent,
     normalizeAnalyticsLabel,
     loadAnalyticsEngine,
     markBookingViewed,
-} from './analytics.js';
-import { showSuccessModal } from './success-modal.js';
+} from '../analytics/shell.js';
+import { showSuccessModal } from '../success-modal/shell.js';
 import {
     createAppointmentRecord,
     uploadTransferProof,
     loadAvailabilityData,
     getBookedSlots,
-} from './data.js';
-import { getCaptchaToken } from './captcha.js';
+} from '../data/shell.js';
+import { getCaptchaToken } from '../../core/captcha.js';
 
 export { markBookingViewed };
 

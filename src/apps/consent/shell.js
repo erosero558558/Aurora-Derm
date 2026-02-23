@@ -1,8 +1,8 @@
-import { withDeployAssetVersion, showToast } from './utils.js';
-import { loadDeferredModule, runDeferredModule } from './loader.js';
-import { state } from './state.js';
-import { trackEvent } from './analytics.js';
-import { COOKIE_CONSENT_KEY } from './config.js';
+import { withDeployAssetVersion, showToast } from '../../core/utils.js';
+import { loadDeferredModule, runDeferredModule } from '../../core/loader.js';
+import { state } from '../../core/state.js';
+import { trackEvent } from '../analytics/shell.js';
+import { COOKIE_CONSENT_KEY } from '../../core/config.js';
 
 const UI_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/ui-bundle.js?v=20260220-consolidated1'

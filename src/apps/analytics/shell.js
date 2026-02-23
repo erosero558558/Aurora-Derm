@@ -1,12 +1,12 @@
-import { withDeployAssetVersion, debugLog } from './utils.js';
+import { withDeployAssetVersion, debugLog } from '../../core/utils.js';
 import {
     loadDeferredModule,
     runDeferredModule,
     withDeferredModule,
-} from './loader.js';
-import { observeOnceWhenVisible } from './loader.js';
-import { loadAvailabilityData } from './data.js';
-import { loadPublicReviews } from './engagement.js';
+} from '../../core/loader.js';
+import { observeOnceWhenVisible } from '../../core/loader.js';
+import { loadAvailabilityData } from '../data/shell.js';
+import { loadPublicReviews } from '../engagement/shell.js';
 
 const ANALYTICS_ENGINE_URL = withDeployAssetVersion(
     '/js/engines/analytics-engine.js?v=figo-analytics-20260219-phase2-funnelstep1'

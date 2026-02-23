@@ -1,7 +1,7 @@
-import { withDeployAssetVersion } from './utils.js';
-import { loadDeferredModule, runDeferredModule } from './loader.js';
-import { state } from './state.js';
-import { THEME_STORAGE_KEY, VALID_THEME_MODES } from './config.js';
+import { withDeployAssetVersion } from '../../core/utils.js';
+import { loadDeferredModule, runDeferredModule } from '../../core/loader.js';
+import { state } from '../../core/state.js';
+import { THEME_STORAGE_KEY, VALID_THEME_MODES } from '../../core/config.js';
 
 const UI_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/ui-bundle.js?v=20260220-consolidated1'

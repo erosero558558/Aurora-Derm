@@ -1,4 +1,4 @@
-/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in js/main.js and run npm run build */
+/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in src/main.js and run npm run build */
 (function () {
     'use strict';
 

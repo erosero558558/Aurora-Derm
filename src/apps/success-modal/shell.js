@@ -1,13 +1,13 @@
-import { withDeployAssetVersion, escapeHtml, showToast } from './utils.js';
+import { withDeployAssetVersion, escapeHtml, showToast } from '../../core/utils.js';
 import {
     loadDeferredModule,
     runDeferredModule,
     createWarmupRunner,
     bindWarmupTarget,
     scheduleDeferredTask,
-} from './loader.js';
-import { getCurrentLang, getCurrentAppointment } from './state.js';
-import { CLINIC_ADDRESS } from './config.js';
+} from '../../core/loader.js';
+import { getCurrentLang, getCurrentAppointment } from '../../core/state.js';
+import { CLINIC_ADDRESS } from '../../core/config.js';
 
 const UI_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/ui-bundle.js?v=20260220-consolidated1'

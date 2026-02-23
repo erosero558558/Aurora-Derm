@@ -1,7 +1,3 @@
-/**
- * Bootstrap runtime helpers extracted from inline script.
- * Keeps CSP strict by avoiding executable inline scripts.
- */
 (function () {
     'use strict';
 
@@ -31,7 +27,7 @@
         const onModuleReady = safeOptions.onModuleReady;
         const missingApiError = safeOptions.missingApiError;
         const loadError = safeOptions.loadError;
-        const logLabel = safeOptions.logLabel;
+        safeOptions.logLabel;
 
         if (
             !cacheKey ||
@@ -101,9 +97,6 @@
             document.head.appendChild(script);
         }).catch(function (error) {
             deferredModulePromises.delete(cacheKey);
-            if (logLabel) {
-                debugLog(logLabel + ' failed:', error);
-            }
             throw error;
         });
 
@@ -263,7 +256,7 @@
             .then(function (moduleRef) {
                 return onReady(moduleRef);
             });
-    }
+        }
 
     function runDeferredModule(loader, onReady, onError) {
         return withDeferredModule(loader, onReady).catch(function (error) {
@@ -315,7 +308,6 @@
             document.head.appendChild(link);
         }).catch(function (error) {
             deferredStylesheetPromise = null;
-            debugLog('CSS fail', error);
             throw error;
         });
 
@@ -351,7 +343,6 @@
             navigator.serviceWorker
                 .register('/sw.js', { updateViaCache: 'none' })
                 .catch(function (error) {
-                    debugLog('SW fail', error);
                 });
         });
     }
@@ -368,5 +359,7 @@
     window.runDeferredModule = runDeferredModule;
     window.loadDeferredStylesheet = loadDeferredStylesheet;
     window.initDeferredStylesheetLoading = initDeferredStylesheetLoading;
+
+    initDeferredStylesheetLoading();
+
 })();
-window.initDeferredStylesheetLoading();

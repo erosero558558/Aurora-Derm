@@ -1,11 +1,11 @@
-import { withDeployAssetVersion } from './utils.js';
+import { withDeployAssetVersion } from '../../core/utils.js';
 import {
     loadDeferredModule,
     createWarmupRunner,
     bindWarmupTarget,
     scheduleDeferredTask,
     observeOnceWhenVisible,
-} from './loader.js';
+} from '../../core/loader.js';
 
 const GALLERY_INTERACTIONS_URL = withDeployAssetVersion(
     '/js/engines/gallery-interactions.js?v=figo-gallery-20260218-phase4'

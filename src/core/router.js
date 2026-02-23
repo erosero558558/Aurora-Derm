@@ -1,16 +1,16 @@
 import { withDeployAssetVersion, debugLog } from './utils.js';
 import { loadDeferredModule, runDeferredModule } from './loader.js';
-import { setThemeMode } from './theme.js';
+import { setThemeMode } from '../apps/theme/shell.js';
 import { changeLanguage } from './i18n.js';
-import { toggleMobileMenu, startWebVideo, closeVideoModal } from './ui.js';
-import { openReviewModal, closeReviewModal } from './engagement.js';
+import { toggleMobileMenu, startWebVideo, closeVideoModal } from '../apps/ui-effects/shell.js';
+import { openReviewModal, closeReviewModal } from '../apps/engagement/shell.js';
 import {
     closePaymentModal,
     processPayment,
     markBookingViewed,
-} from './booking.js';
-import { closeSuccessModal } from './success-modal.js';
-import { closeRescheduleModal, submitReschedule } from './reschedule.js';
+} from '../apps/booking/shell.js';
+import { closeSuccessModal } from '../apps/success-modal/shell.js';
+import { closeRescheduleModal, submitReschedule } from '../apps/reschedule/shell.js';
 import {
     toggleChatbot,
     sendChatMessage,
@@ -19,7 +19,7 @@ import {
     minimizeChatbot,
     startChatBooking,
     handleChatDateSelect,
-} from '../src/apps/chat/shell.js';
+} from '../apps/chat/shell.js';
 
 const DATA_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/data-bundle.js?v=20260221-api-fix'

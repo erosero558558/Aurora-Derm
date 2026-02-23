@@ -132,14 +132,24 @@ export default [
         },
         plugins: [resolve()]
     },
+    // Bootstrap Inline Engine
+    {
+        input: 'src/core/bootstrap-inline-engine.js',
+        output: {
+            file: 'js/bootstrap-inline-engine.js',
+            format: 'iife',
+            sourcemap: false
+        },
+        plugins: [resolve()]
+    },
     // Main Script
     {
-        input: 'js/main.js',
+        input: 'src/main.js',
         output: {
             file: 'script.js',
             format: 'iife',
             sourcemap: false,
-            banner: '/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in js/main.js and run npm run build */',
+            banner: '/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in src/main.js and run npm run build */',
         },
         plugins: [resolve()],
     },

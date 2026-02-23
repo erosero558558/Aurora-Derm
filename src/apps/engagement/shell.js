@@ -3,7 +3,7 @@ import {
     showToast,
     escapeHtml,
     storageGetJSON,
-} from './utils.js';
+} from '../../core/utils.js';
 import {
     loadDeferredModule,
     runDeferredModule,
@@ -12,13 +12,13 @@ import {
     bindWarmupTarget,
     scheduleDeferredTask,
     observeOnceWhenVisible,
-} from './loader.js';
-import { getCurrentLang, getReviewsCache, setReviewsCache } from './state.js';
+} from '../../core/loader.js';
+import { getCurrentLang, getReviewsCache, setReviewsCache } from '../../core/state.js';
 import {
     apiRequest,
     createCallbackRecord,
     createReviewRecord,
-} from './data.js';
+} from '../data/shell.js';
 
 const ENGAGEMENT_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/engagement-bundle.js?v=20260220-consolidated1'
