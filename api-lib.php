@@ -41,6 +41,7 @@ require_once __DIR__ . '/lib/storage.php';
 require_once __DIR__ . '/lib/calendar/runtime.php';
 require_once __DIR__ . '/lib/backup.php';
 require_once __DIR__ . '/lib/audit.php';
+require_once __DIR__ . '/lib/figo_utils.php';
 require_once __DIR__ . '/lib/figo_queue.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/email.php';

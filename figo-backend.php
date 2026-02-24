@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/api-lib.php';
+require_once __DIR__ . '/lib/figo_utils.php';
 
 apply_security_headers(false);
 
@@ -136,82 +137,10 @@ function figo_backend_last_user_message(array $messages): string
     return '';
 }
 
-function figo_backend_first_non_empty(array $values): string
-{
-    foreach ($values as $value) {
-        if (is_string($value) && trim($value) !== '') {
-            return trim($value);
-        }
-    }
-    return '';
-}
-
-function figo_backend_config_paths(): array
-{
-    $paths = [];
-
-    $customPath = getenv('FIGO_BACKEND_CONFIG_PATH');
-    if (is_string($customPath) && trim($customPath) !== '') {
-        $paths[] = trim($customPath);
-    }
-
-    $legacyPath = getenv('FIGO_CHAT_CONFIG_PATH');
-    if (is_string($legacyPath) && trim($legacyPath) !== '') {
-        $paths[] = trim($legacyPath);
-    }
-
-    $paths[] = data_dir_path() . DIRECTORY_SEPARATOR . 'figo-config.json';
-    $paths[] = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'figo-config.json';
-    $paths[] = __DIR__ . DIRECTORY_SEPARATOR . 'figo-config.json';
-
-    $normalized = [];
-    foreach ($paths as $path) {
-        $path = trim((string) $path);
-        if ($path === '') {
-            continue;
-        }
-        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
-        if (!in_array($path, $normalized, true)) {
-            $normalized[] = $path;
-        }
-    }
-
-    return $normalized;
-}
-
-function figo_backend_read_file_config(): array
-{
-    static $cached = null;
-    if (is_array($cached)) {
-        return $cached;
-    }
-
-    foreach (figo_backend_config_paths() as $path) {
-        if (!is_file($path)) {
-            continue;
-        }
-
-        $raw = @file_get_contents($path);
-        if (!is_string($raw) || trim($raw) === '') {
-            continue;
-        }
-
-        $decoded = json_decode($raw, true);
-        if (is_array($decoded)) {
-            $decoded['__source'] = $path;
-            $cached = $decoded;
-            return $cached;
-        }
-    }
-
-    $cached = [];
-    return $cached;
-}
-
 function figo_backend_internal_token(): string
 {
-    $fileConfig = figo_backend_read_file_config();
-    return figo_backend_first_non_empty([
+    $fileConfig = api_figo_read_config();
+    return api_first_non_empty([
         getenv('FIGO_INTERNAL_TOKEN'),
         getenv('FIGO_CHAT_INTERNAL_TOKEN'),
         $fileConfig['internalToken'] ?? null
@@ -220,8 +149,8 @@ function figo_backend_internal_token(): string
 
 function figo_backend_internal_token_header(): string
 {
-    $fileConfig = figo_backend_read_file_config();
-    $header = figo_backend_first_non_empty([
+    $fileConfig = api_figo_read_config();
+    $header = api_first_non_empty([
         getenv('FIGO_INTERNAL_TOKEN_HEADER'),
         $fileConfig['internalTokenHeader'] ?? null
     ]);
@@ -283,150 +212,6 @@ function figo_backend_read_internal_request_token(): string
     return '';
 }
 
-function figo_backend_parse_bool_value(string $raw): ?bool
-{
-    $value = strtolower(trim($raw));
-    if (in_array($value, ['1', 'true', 'yes', 'on'], true)) {
-        return true;
-    }
-    if (in_array($value, ['0', 'false', 'no', 'off'], true)) {
-        return false;
-    }
-    return null;
-}
-
-function figo_backend_optional_bool_option(array $candidates): ?bool
-{
-    foreach ($candidates as $candidate) {
-        if (!is_string($candidate) || trim($candidate) === '') {
-            continue;
-        }
-        $parsed = figo_backend_parse_bool_value($candidate);
-        if ($parsed !== null) {
-            return $parsed;
-        }
-    }
-    return null;
-}
-
-function figo_backend_ai_endpoint(): string
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $candidates = [
-        getenv('FIGO_AI_API_URL'),
-        getenv('FIGO_AI_ENDPOINT'),
-        getenv('FIGO_AI_URL'),
-        $fileConfig['aiEndpoint'] ?? null,
-        $fileConfig['aiUrl'] ?? null,
-        $aiNode['endpoint'] ?? null,
-        $aiNode['url'] ?? null
-    ];
-
-    return figo_backend_first_non_empty($candidates);
-}
-
-function figo_backend_ai_key(): string
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $candidates = [
-        getenv('FIGO_AI_API_KEY'),
-        getenv('FIGO_AI_KEY'),
-        $fileConfig['aiApiKey'] ?? null,
-        $fileConfig['aiKey'] ?? null,
-        $aiNode['apiKey'] ?? null,
-        $aiNode['key'] ?? null
-    ];
-
-    return figo_backend_first_non_empty($candidates);
-}
-
-function figo_backend_ai_key_header(): string
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $header = figo_backend_first_non_empty([
-        getenv('FIGO_AI_API_KEY_HEADER'),
-        getenv('FIGO_AI_KEY_HEADER'),
-        $fileConfig['aiApiKeyHeader'] ?? null,
-        $fileConfig['aiKeyHeader'] ?? null,
-        $aiNode['apiKeyHeader'] ?? null,
-        $aiNode['keyHeader'] ?? null
-    ]);
-
-    return $header !== '' ? $header : 'Authorization';
-}
-
-function figo_backend_ai_key_prefix(): string
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $prefix = figo_backend_first_non_empty([
-        getenv('FIGO_AI_API_KEY_PREFIX'),
-        getenv('FIGO_AI_KEY_PREFIX'),
-        $fileConfig['aiApiKeyPrefix'] ?? null,
-        $fileConfig['aiKeyPrefix'] ?? null,
-        $aiNode['apiKeyPrefix'] ?? null,
-        $aiNode['keyPrefix'] ?? null
-    ]);
-
-    return $prefix !== '' ? $prefix : 'Bearer';
-}
-
-function figo_backend_ai_timeout_seconds(): int
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $raw = figo_backend_first_non_empty([
-        getenv('FIGO_AI_TIMEOUT_SECONDS'),
-        $fileConfig['aiTimeoutSeconds'] ?? null,
-        isset($aiNode['timeoutSeconds']) ? (string) $aiNode['timeoutSeconds'] : null
-    ]);
-
-    $timeout = (int) $raw;
-    if ($timeout <= 0) {
-        $timeout = 15;
-    }
-    if ($timeout < 5) {
-        $timeout = 5;
-    }
-    if ($timeout > 45) {
-        $timeout = 45;
-    }
-    return $timeout;
-}
-
-function figo_backend_ai_max_tokens(): int
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $raw = figo_backend_first_non_empty([
-        getenv('FIGO_AI_MAX_TOKENS'),
-        $fileConfig['aiMaxTokens'] ?? null,
-        isset($aiNode['maxTokens']) ? (string) $aiNode['maxTokens'] : null
-    ]);
-
-    $maxTokens = (int) $raw;
-    if ($maxTokens <= 0) {
-        // Default conservador para reducir latencia p95 sin romper calidad.
-        $maxTokens = 256;
-    }
-    if ($maxTokens < 96) {
-        $maxTokens = 96;
-    }
-    if ($maxTokens > 1200) {
-        $maxTokens = 1200;
-    }
-    return $maxTokens;
-}
-
 function figo_backend_limit_text(string $text, int $maxLength = 900): string
 {
     $clean = trim(preg_replace('/\s+/', ' ', $text) ?? '');
@@ -485,44 +270,9 @@ function figo_backend_prepare_ai_context_messages(array $rawMessages): array
     return $prepared;
 }
 
-function figo_backend_ai_model(): string
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $model = figo_backend_first_non_empty([
-        getenv('FIGO_AI_MODEL'),
-        $fileConfig['aiModel'] ?? null,
-        $aiNode['model'] ?? null
-    ]);
-
-    return $model !== '' ? $model : 'auto';
-}
-
-function figo_backend_allow_local_fallback(): bool
-{
-    $fileConfig = figo_backend_read_file_config();
-    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
-
-    $explicit = figo_backend_optional_bool_option([
-        getenv('FIGO_BACKEND_ALLOW_LOCAL_FALLBACK'),
-        getenv('FIGO_AI_ALLOW_LOCAL_FALLBACK'),
-        isset($fileConfig['allowLocalFallback']) ? (string) $fileConfig['allowLocalFallback'] : null,
-        isset($fileConfig['aiAllowLocalFallback']) ? (string) $fileConfig['aiAllowLocalFallback'] : null,
-        isset($aiNode['allowLocalFallback']) ? (string) $aiNode['allowLocalFallback'] : null
-    ]);
-
-    if ($explicit !== null) {
-        return $explicit;
-    }
-
-    // Compatibilidad: si todavia no hay IA configurada, mantener continuidad.
-    return figo_backend_ai_endpoint() === '';
-}
-
 function figo_backend_ai_endpoint_host(): string
 {
-    $endpoint = figo_backend_ai_endpoint();
+    $endpoint = api_figo_env_ai_endpoint();
     if ($endpoint === '') {
         return '';
     }
@@ -555,7 +305,7 @@ function figo_backend_ai_provider(): string
 
 function figo_backend_probe_ai_endpoint(int $timeoutSeconds = 3): ?bool
 {
-    $endpoint = figo_backend_ai_endpoint();
+    $endpoint = api_figo_env_ai_endpoint();
     if ($endpoint === '') {
         return null;
     }
@@ -645,7 +395,7 @@ function figo_backend_extract_ai_content(array $decoded, string $raw): ?string
 
 function figo_backend_ai_response(string $userMessage, array $contextMessages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): ?string
 {
-    $endpoint = figo_backend_ai_endpoint();
+    $endpoint = api_figo_env_ai_endpoint();
     if ($endpoint === '') {
         return null;
     }
@@ -665,7 +415,7 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
         $messages[] = ['role' => 'user', 'content' => $userMessage];
     }
 
-    $maxTokens = figo_backend_ai_max_tokens();
+    $maxTokens = api_figo_env_ai_max_tokens();
     if ($requestedMaxTokens > 0) {
         $requestedMaxTokens = max(64, min(1200, $requestedMaxTokens));
         $maxTokens = min($maxTokens, $requestedMaxTokens);
@@ -677,7 +427,7 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
     }
 
     $payload = json_encode([
-        'model' => figo_backend_ai_model(),
+        'model' => api_figo_env_ai_model(),
         'messages' => $messages,
         'max_tokens' => $maxTokens,
         'temperature' => $temperature
@@ -688,11 +438,11 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
     }
 
     $headers = ['Content-Type: application/json', 'Accept: application/json'];
-    $apiKey = figo_backend_ai_key();
+    $apiKey = api_figo_env_ai_key();
     if ($apiKey !== '') {
-        $keyHeader = figo_backend_ai_key_header();
+        $keyHeader = api_figo_env_ai_key_header();
         if (strcasecmp($keyHeader, 'Authorization') === 0) {
-            $prefix = figo_backend_ai_key_prefix();
+            $prefix = api_figo_env_ai_key_prefix();
             $authValue = $apiKey;
             if ($prefix !== '' && stripos($authValue, $prefix . ' ') !== 0) {
                 $authValue = $prefix . ' ' . $authValue;
@@ -713,7 +463,7 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => $headers,
         CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_TIMEOUT => figo_backend_ai_timeout_seconds(),
+        CURLOPT_TIMEOUT => api_figo_env_ai_timeout_seconds(),
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2
@@ -862,8 +612,8 @@ function figo_backend_answer(string $userMessage): string
 
 function figo_backend_compose_response(string $userMessage, array $messages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): array
 {
-    $aiConfigured = figo_backend_ai_endpoint() !== '';
-    $allowFallback = figo_backend_allow_local_fallback();
+    $aiConfigured = api_figo_env_ai_endpoint() !== '';
+    $allowFallback = api_figo_env_allow_local_fallback();
     $aiProvider = figo_backend_ai_provider();
     $normalizedUserMessage = figo_backend_normalize_text($userMessage);
 
@@ -1109,8 +859,8 @@ $telegramChatId = figo_backend_telegram_chat_id();
 $telegramChatConfigured = $telegramChatId !== '';
 
 if ($method === 'GET') {
-    $aiEndpoint = figo_backend_ai_endpoint();
-    $fileConfig = figo_backend_read_file_config();
+    $aiEndpoint = api_figo_env_ai_endpoint();
+    $fileConfig = api_figo_read_config();
     $configSource = isset($fileConfig['__source']) && is_string($fileConfig['__source'])
         ? basename((string) $fileConfig['__source'])
         : 'environment';
@@ -1121,10 +871,10 @@ if ($method === 'GET') {
         'provider' => $aiEndpoint !== '' ? figo_backend_ai_provider() : 'pattern_matching',
         'aiProvider' => figo_backend_ai_provider(),
         'aiConfigured' => $aiEndpoint !== '',
-        'aiModel' => figo_backend_ai_model(),
+        'aiModel' => api_figo_env_ai_model(),
         'aiEndpointHost' => figo_backend_ai_endpoint_host(),
         'aiUpstreamReachable' => figo_backend_probe_ai_endpoint(3),
-        'allowLocalFallback' => figo_backend_allow_local_fallback(),
+        'allowLocalFallback' => api_figo_env_allow_local_fallback(),
         'internalTokenRequired' => figo_backend_internal_token() !== '',
         'internalTokenHeader' => figo_backend_internal_token_header(),
         'configSource' => $configSource,
@@ -1189,8 +939,8 @@ $content = isset($responsePlan['content']) && is_string($responsePlan['content']
 $provider = isset($responsePlan['provider']) ? (string) $responsePlan['provider'] : 'pattern_matching';
 $mode = isset($responsePlan['mode']) ? (string) $responsePlan['mode'] : 'local';
 $reason = isset($responsePlan['reason']) ? (string) $responsePlan['reason'] : '';
-$allowLocalFallback = figo_backend_allow_local_fallback();
-$aiConfigured = figo_backend_ai_endpoint() !== '';
+$allowLocalFallback = api_figo_env_allow_local_fallback();
+$aiConfigured = api_figo_env_ai_endpoint() !== '';
 
 if (($responsePlan['ok'] ?? false) !== true) {
     json_response([

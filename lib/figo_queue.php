@@ -5,35 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/storage.php';
 require_once __DIR__ . '/audit.php';
 require_once __DIR__ . '/metrics.php';
-
-function figo_queue_first_non_empty(array $values): string
-{
-    foreach ($values as $value) {
-        if (is_string($value) && trim($value) !== '') {
-            return trim($value);
-        }
-    }
-    return '';
-}
-
-function figo_queue_parse_bool($raw, bool $default = false): bool
-{
-    if (is_bool($raw)) {
-        return $raw;
-    }
-    if (!is_string($raw) && !is_int($raw) && !is_float($raw)) {
-        return $default;
-    }
-
-    $value = strtolower(trim((string) $raw));
-    if (in_array($value, ['1', 'true', 'yes', 'on'], true)) {
-        return true;
-    }
-    if (in_array($value, ['0', 'false', 'no', 'off'], true)) {
-        return false;
-    }
-    return $default;
-}
+require_once __DIR__ . '/figo_utils.php';
 
 function figo_queue_clamp_int($raw, int $default, int $min, int $max): int
 {
@@ -47,71 +19,9 @@ function figo_queue_clamp_int($raw, int $default, int $min, int $max): int
     return $value;
 }
 
-function figo_queue_read_file_config(): array
-{
-    static $cached = null;
-    if (is_array($cached)) {
-        return $cached;
-    }
-
-    $paths = [];
-    $customPath = getenv('FIGO_CHAT_CONFIG_PATH');
-    if (is_string($customPath) && trim($customPath) !== '') {
-        $paths[] = trim($customPath);
-    }
-    $paths[] = data_dir_path() . DIRECTORY_SEPARATOR . 'figo-config.json';
-    $paths[] = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'figo-config.json';
-    $paths[] = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'figo-config.json';
-
-    $normalized = [];
-    foreach ($paths as $path) {
-        $path = trim((string) $path);
-        if ($path === '') {
-            continue;
-        }
-        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
-        if (!in_array($path, $normalized, true)) {
-            $normalized[] = $path;
-        }
-    }
-
-    foreach ($normalized as $path) {
-        if (!is_file($path)) {
-            continue;
-        }
-        $raw = @file_get_contents($path);
-        if (!is_string($raw) || trim($raw) === '') {
-            continue;
-        }
-        $decoded = json_decode($raw, true);
-        if (is_array($decoded)) {
-            $decoded['__source'] = $path;
-            $cached = $decoded;
-            return $cached;
-        }
-    }
-
-    $cached = [];
-    return $cached;
-}
-
 function figo_queue_provider_mode(): string
 {
-    $fileConfig = figo_queue_read_file_config();
-    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
-        ? $fileConfig['openclaw']
-        : [];
-
-    $mode = strtolower(figo_queue_first_non_empty([
-        getenv('FIGO_PROVIDER_MODE'),
-        $fileConfig['providerMode'] ?? null,
-        $openclawNode['providerMode'] ?? null
-    ]));
-
-    if ($mode !== 'openclaw_queue') {
-        return 'legacy_proxy';
-    }
-    return $mode;
+    return api_figo_env_provider_mode();
 }
 
 function figo_queue_enabled(): bool
@@ -121,137 +31,37 @@ function figo_queue_enabled(): bool
 
 function figo_queue_gateway_endpoint(): string
 {
-    $fileConfig = figo_queue_read_file_config();
-    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
-        ? $fileConfig['openclaw']
-        : [];
-    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
-        ? $fileConfig['ai']
-        : [];
-
-    return figo_queue_first_non_empty([
-        $fileConfig['openclawGatewayEndpoint'] ?? null,
-        $openclawNode['endpoint'] ?? null,
-        $aiNode['endpoint'] ?? null,
-        getenv('FIGO_AI_API_URL'),
-        getenv('FIGO_AI_ENDPOINT'),
-        getenv('FIGO_AI_URL'),
-        getenv('OPENCLAW_GATEWAY_ENDPOINT'),
-        getenv('FIGO_OPENCLAW_GATEWAY_ENDPOINT'),
-    ]);
+    return api_figo_env_gateway_endpoint();
 }
 
 function figo_queue_gateway_api_key(): string
 {
-    $fileConfig = figo_queue_read_file_config();
-    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
-        ? $fileConfig['openclaw']
-        : [];
-    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
-        ? $fileConfig['ai']
-        : [];
-
-    return figo_queue_first_non_empty([
-        $fileConfig['openclawGatewayApiKey'] ?? null,
-        $openclawNode['apiKey'] ?? null,
-        $aiNode['apiKey'] ?? null,
-        getenv('FIGO_AI_API_KEY'),
-        getenv('FIGO_AI_KEY'),
-        getenv('OPENCLAW_GATEWAY_API_KEY'),
-        getenv('FIGO_OPENCLAW_GATEWAY_API_KEY'),
-    ]);
+    return api_figo_env_gateway_api_key();
 }
 
 function figo_queue_prefers_figo_ai_auth(): bool
 {
-    $figoAiEndpoint = figo_queue_first_non_empty([
-        getenv('FIGO_AI_API_URL'),
-        getenv('FIGO_AI_ENDPOINT'),
-        getenv('FIGO_AI_URL')
-    ]);
-
-    return $figoAiEndpoint !== '';
+    return api_figo_env_ai_endpoint() !== '';
 }
 
 function figo_queue_gateway_model(): string
 {
-    $fileConfig = figo_queue_read_file_config();
-    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
-        ? $fileConfig['openclaw']
-        : [];
-    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
-        ? $fileConfig['ai']
-        : [];
-
-    $model = figo_queue_first_non_empty([
-        $fileConfig['openclawGatewayModel'] ?? null,
-        $openclawNode['model'] ?? null,
-        $aiNode['model'] ?? null,
-        getenv('FIGO_AI_MODEL'),
-        getenv('OPENCLAW_GATEWAY_MODEL'),
-        getenv('FIGO_OPENCLAW_GATEWAY_MODEL'),
-    ]);
-
-    return $model !== '' ? $model : 'auto';
+    return api_figo_env_gateway_model();
 }
 
 function figo_queue_gateway_key_header(): string
 {
-    $fileConfig = figo_queue_read_file_config();
-    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
-        ? $fileConfig['openclaw']
-        : [];
-    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
-        ? $fileConfig['ai']
-        : [];
-
-    $header = figo_queue_first_non_empty([
-        $fileConfig['openclawGatewayKeyHeader'] ?? null,
-        $openclawNode['apiKeyHeader'] ?? null,
-        $aiNode['apiKeyHeader'] ?? null,
-        getenv('OPENCLAW_GATEWAY_KEY_HEADER'),
-        getenv('FIGO_OPENCLAW_GATEWAY_KEY_HEADER'),
-        getenv('FIGO_AI_API_KEY_HEADER'),
-        getenv('FIGO_AI_KEY_HEADER'),
-    ]);
-
-    return $header !== '' ? $header : 'Authorization';
+    return api_figo_env_gateway_key_header();
 }
 
 function figo_queue_gateway_key_prefix(): string
 {
-    $fileConfig = figo_queue_read_file_config();
-    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
-        ? $fileConfig['openclaw']
-        : [];
-    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
-        ? $fileConfig['ai']
-        : [];
-
-    $prefix = figo_queue_first_non_empty([
-        $fileConfig['openclawGatewayKeyPrefix'] ?? null,
-        $openclawNode['apiKeyPrefix'] ?? null,
-        $aiNode['apiKeyPrefix'] ?? null,
-        getenv('OPENCLAW_GATEWAY_KEY_PREFIX'),
-        getenv('FIGO_OPENCLAW_GATEWAY_KEY_PREFIX'),
-        getenv('FIGO_AI_API_KEY_PREFIX'),
-        getenv('FIGO_AI_KEY_PREFIX'),
-    ]);
-
-    return $prefix !== '' ? $prefix : 'Bearer';
+    return api_figo_env_gateway_key_prefix();
 }
 
 function figo_queue_allow_local_fallback(): bool
 {
-    $fileConfig = figo_queue_read_file_config();
-    return figo_queue_parse_bool(
-        figo_queue_first_non_empty([
-            getenv('FIGO_ALLOW_LOCAL_FALLBACK'),
-            getenv('FIGO_BACKEND_ALLOW_LOCAL_FALLBACK'),
-            isset($fileConfig['allowLocalFallback']) ? (string) $fileConfig['allowLocalFallback'] : ''
-        ]),
-        false
-    );
+    return api_figo_env_allow_local_fallback();
 }
 
 function figo_queue_queue_ttl_sec(): int
@@ -296,7 +106,7 @@ function figo_queue_poll_process_timeout_seconds(): int
 
 function figo_queue_allow_client_model(): bool
 {
-    return figo_queue_parse_bool(getenv('OPENCLAW_ALLOW_CLIENT_MODEL'), false);
+    return api_parse_bool(getenv('OPENCLAW_ALLOW_CLIENT_MODEL'), false);
 }
 
 function figo_queue_normalize_model_name($rawModel): string
@@ -586,7 +396,7 @@ function figo_queue_default_request(array $payload): array
 function figo_queue_extract_session_id(array $payload): string
 {
     $metadata = isset($payload['metadata']) && is_array($payload['metadata']) ? $payload['metadata'] : [];
-    $candidate = figo_queue_first_non_empty([
+    $candidate = api_first_non_empty([
         isset($metadata['sessionId']) ? (string) $metadata['sessionId'] : '',
         isset($payload['sessionId']) ? (string) $payload['sessionId'] : '',
         session_id(),

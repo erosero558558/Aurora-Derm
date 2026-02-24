@@ -180,66 +180,6 @@ function figo_fast_local_content(string $normalizedText): string
     return '';
 }
 
-function figo_config_paths(): array
-{
-    $paths = [];
-
-    $envPath = getenv('FIGO_CHAT_CONFIG_PATH');
-    if (is_string($envPath) && trim($envPath) !== '') {
-        $paths[] = trim($envPath);
-    }
-
-    $paths[] = data_dir_path() . DIRECTORY_SEPARATOR . 'figo-config.json';
-    $paths[] = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'figo-config.json';
-    $paths[] = __DIR__ . DIRECTORY_SEPARATOR . 'figo-config.json';
-
-    $normalized = [];
-    foreach ($paths as $path) {
-        $path = trim((string) $path);
-        if ($path === '') {
-            continue;
-        }
-
-        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
-        if (!in_array($path, $normalized, true)) {
-            $normalized[] = $path;
-        }
-    }
-
-    return $normalized;
-}
-
-function figo_read_file_config(): array
-{
-    foreach (figo_config_paths() as $path) {
-        if (!is_file($path)) {
-            continue;
-        }
-
-        $raw = @file_get_contents($path);
-        if (!is_string($raw) || trim($raw) === '') {
-            continue;
-        }
-
-        $decoded = json_decode($raw, true);
-        if (is_array($decoded)) {
-            $decoded['__source'] = $path;
-            return $decoded;
-        }
-    }
-
-    return [];
-}
-
-function figo_first_non_empty(array $values): string
-{
-    foreach ($values as $value) {
-        if (is_string($value) && trim($value) !== '') {
-            return trim($value);
-        }
-    }
-    return '';
-}
 
 function figo_endpoint_diagnostics(string $endpoint): array
 {
@@ -559,14 +499,14 @@ if ($method === 'OPTIONS') {
 }
 
 header('Content-Type: application/json; charset=utf-8');
-$fileConfig = figo_read_file_config();
+$fileConfig = api_figo_read_config();
 $providerMode = figo_queue_provider_mode();
 $openclawOverview = [];
 if ($providerMode === 'openclaw_queue') {
     $openclawOverview = figo_queue_status_overview();
 }
 
-$endpoint = figo_first_non_empty([
+$endpoint = api_first_non_empty([
     getenv('FIGO_CHAT_ENDPOINT'),
     getenv('FIGO_CHAT_URL'),
     getenv('FIGO_CHAT_API_URL'),
@@ -836,12 +776,12 @@ $headers = [
     'Accept: application/json'
 ];
 
-$internalToken = figo_first_non_empty([
+$internalToken = api_first_non_empty([
     getenv('FIGO_INTERNAL_TOKEN'),
     getenv('FIGO_CHAT_INTERNAL_TOKEN'),
     $fileConfig['internalToken'] ?? null
 ]);
-$internalTokenHeader = figo_first_non_empty([
+$internalTokenHeader = api_first_non_empty([
     getenv('FIGO_INTERNAL_TOKEN_HEADER'),
     $fileConfig['internalTokenHeader'] ?? null
 ]);
@@ -865,7 +805,7 @@ if ($internalToken !== '') {
     }
 }
 
-$authToken = figo_first_non_empty([
+$authToken = api_first_non_empty([
     getenv('FIGO_CHAT_TOKEN'),
     getenv('FIGO_CHAT_BEARER_TOKEN'),
     getenv('FIGO_TOKEN'),
@@ -878,7 +818,7 @@ if ($authToken !== '') {
     $headers[] = 'Authorization: Bearer ' . $authToken;
 }
 
-$apiKey = figo_first_non_empty([
+$apiKey = api_first_non_empty([
     getenv('FIGO_CHAT_APIKEY'),
     getenv('FIGO_CHAT_API_KEY'),
     getenv('FIGO_APIKEY'),
@@ -889,7 +829,7 @@ $apiKey = figo_first_non_empty([
     getenv('CHATBOT_API_KEY'),
     $fileConfig['apiKey'] ?? null
 ]);
-$apiKeyHeader = figo_first_non_empty([
+$apiKeyHeader = api_first_non_empty([
     getenv('FIGO_CHAT_APIKEY_HEADER'),
     getenv('FIGO_CHAT_API_KEY_HEADER'),
     getenv('FIGO_APIKEY_HEADER'),
@@ -904,7 +844,7 @@ if ($apiKey !== '' && $apiKeyHeader !== '') {
     $headers[] = $apiKeyHeader . ': ' . $apiKey;
 }
 
-$timeout = (int) figo_first_non_empty([
+$timeout = (int) api_first_non_empty([
     getenv('FIGO_CHAT_TIMEOUT_SECONDS'),
     getenv('FIGO_TIMEOUT_SECONDS'),
     getenv('CLAWBOT_TIMEOUT_SECONDS'),
@@ -920,7 +860,7 @@ if ($timeout > 45) {
     $timeout = 45;
 }
 
-$connectTimeout = (int) figo_first_non_empty([
+$connectTimeout = (int) api_first_non_empty([
     getenv('FIGO_CHAT_CONNECT_TIMEOUT_SECONDS'),
     getenv('FIGO_CONNECT_TIMEOUT_SECONDS'),
     isset($fileConfig['connectTimeout']) ? (string) $fileConfig['connectTimeout'] : ''

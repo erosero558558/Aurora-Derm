@@ -567,3 +567,307 @@ function api_merge_figo_config(array $existing, array $payload): array
 
     return $next;
 }
+
+function api_first_non_empty(array $values): string
+{
+    foreach ($values as $value) {
+        if (is_string($value) && trim($value) !== '') {
+            return trim($value);
+        }
+    }
+    return '';
+}
+
+function api_parse_bool($raw, bool $default = false): bool
+{
+    $parsed = api_parse_optional_bool($raw);
+    return $parsed !== null ? $parsed : $default;
+}
+
+function api_figo_read_config(): array
+{
+    static $cached = null;
+    if (is_array($cached)) {
+        return $cached;
+    }
+
+    $meta = api_read_figo_config_with_meta();
+    $config = $meta['config'];
+    if (isset($meta['path']) && is_string($meta['path']) && $meta['path'] !== '') {
+        $config['__source'] = $meta['path'];
+    }
+
+    $cached = $config;
+    return $cached;
+}
+
+function api_figo_env_ai_endpoint(): string
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    return api_first_non_empty([
+        getenv('FIGO_AI_API_URL'),
+        getenv('FIGO_AI_ENDPOINT'),
+        getenv('FIGO_AI_URL'),
+        $fileConfig['aiEndpoint'] ?? null,
+        $fileConfig['aiUrl'] ?? null,
+        $aiNode['endpoint'] ?? null,
+        $aiNode['url'] ?? null
+    ]);
+}
+
+function api_figo_env_ai_key(): string
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    return api_first_non_empty([
+        getenv('FIGO_AI_API_KEY'),
+        getenv('FIGO_AI_KEY'),
+        $fileConfig['aiApiKey'] ?? null,
+        $fileConfig['aiKey'] ?? null,
+        $aiNode['apiKey'] ?? null,
+        $aiNode['key'] ?? null
+    ]);
+}
+
+function api_figo_env_ai_key_header(): string
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    $header = api_first_non_empty([
+        getenv('FIGO_AI_API_KEY_HEADER'),
+        getenv('FIGO_AI_KEY_HEADER'),
+        $fileConfig['aiApiKeyHeader'] ?? null,
+        $fileConfig['aiKeyHeader'] ?? null,
+        $aiNode['apiKeyHeader'] ?? null,
+        $aiNode['keyHeader'] ?? null
+    ]);
+
+    return $header !== '' ? $header : 'Authorization';
+}
+
+function api_figo_env_ai_key_prefix(): string
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    $prefix = api_first_non_empty([
+        getenv('FIGO_AI_API_KEY_PREFIX'),
+        getenv('FIGO_AI_KEY_PREFIX'),
+        $fileConfig['aiApiKeyPrefix'] ?? null,
+        $fileConfig['aiKeyPrefix'] ?? null,
+        $aiNode['apiKeyPrefix'] ?? null,
+        $aiNode['keyPrefix'] ?? null
+    ]);
+
+    return $prefix !== '' ? $prefix : 'Bearer';
+}
+
+function api_figo_env_ai_timeout_seconds(): int
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    $raw = api_first_non_empty([
+        getenv('FIGO_AI_TIMEOUT_SECONDS'),
+        $fileConfig['aiTimeoutSeconds'] ?? null,
+        isset($aiNode['timeoutSeconds']) ? (string) $aiNode['timeoutSeconds'] : null
+    ]);
+
+    $timeout = (int) $raw;
+    if ($timeout <= 0) {
+        $timeout = 15;
+    }
+    if ($timeout < 5) {
+        $timeout = 5;
+    }
+    if ($timeout > 45) {
+        $timeout = 45;
+    }
+    return $timeout;
+}
+
+function api_figo_env_ai_max_tokens(): int
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    $raw = api_first_non_empty([
+        getenv('FIGO_AI_MAX_TOKENS'),
+        $fileConfig['aiMaxTokens'] ?? null,
+        isset($aiNode['maxTokens']) ? (string) $aiNode['maxTokens'] : null
+    ]);
+
+    $maxTokens = (int) $raw;
+    if ($maxTokens <= 0) {
+        // Default conservador
+        $maxTokens = 256;
+    }
+    if ($maxTokens < 96) {
+        $maxTokens = 96;
+    }
+    if ($maxTokens > 1200) {
+        $maxTokens = 1200;
+    }
+    return $maxTokens;
+}
+
+function api_figo_env_ai_model(): string
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    $model = api_first_non_empty([
+        getenv('FIGO_AI_MODEL'),
+        $fileConfig['aiModel'] ?? null,
+        $aiNode['model'] ?? null
+    ]);
+
+    return $model !== '' ? $model : 'auto';
+}
+
+function api_figo_env_allow_local_fallback(): bool
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    // Busca booleano explicito
+    foreach ([
+        getenv('FIGO_BACKEND_ALLOW_LOCAL_FALLBACK'),
+        getenv('FIGO_AI_ALLOW_LOCAL_FALLBACK'),
+        getenv('FIGO_ALLOW_LOCAL_FALLBACK'),
+        isset($fileConfig['allowLocalFallback']) ? (string) $fileConfig['allowLocalFallback'] : null,
+        isset($fileConfig['aiAllowLocalFallback']) ? (string) $fileConfig['aiAllowLocalFallback'] : null,
+        isset($aiNode['allowLocalFallback']) ? (string) $aiNode['allowLocalFallback'] : null
+    ] as $candidate) {
+        $parsed = api_parse_optional_bool($candidate);
+        if ($parsed !== null) {
+            return $parsed;
+        }
+    }
+
+    // Compatibilidad: si todavia no hay IA configurada, permitir fallback local.
+    return api_figo_env_ai_endpoint() === '';
+}
+
+function api_figo_env_provider_mode(): string
+{
+    $fileConfig = api_figo_read_config();
+    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
+        ? $fileConfig['openclaw'] : [];
+
+    $mode = strtolower(api_first_non_empty([
+        getenv('FIGO_PROVIDER_MODE'),
+        $fileConfig['providerMode'] ?? null,
+        $openclawNode['providerMode'] ?? null
+    ]));
+
+    if ($mode !== 'openclaw_queue') {
+        return 'legacy_proxy';
+    }
+    return $mode;
+}
+
+function api_figo_env_gateway_endpoint(): string
+{
+    $fileConfig = api_figo_read_config();
+    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
+        ? $fileConfig['openclaw'] : [];
+    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
+        ? $fileConfig['ai'] : [];
+
+    return api_first_non_empty([
+        $fileConfig['openclawGatewayEndpoint'] ?? null,
+        $openclawNode['endpoint'] ?? null,
+        $aiNode['endpoint'] ?? null,
+        getenv('FIGO_AI_API_URL'),
+        getenv('FIGO_AI_ENDPOINT'),
+        getenv('FIGO_AI_URL'),
+        getenv('OPENCLAW_GATEWAY_ENDPOINT'),
+        getenv('FIGO_OPENCLAW_GATEWAY_ENDPOINT'),
+    ]);
+}
+
+function api_figo_env_gateway_api_key(): string
+{
+    $fileConfig = api_figo_read_config();
+    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
+        ? $fileConfig['openclaw'] : [];
+    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
+        ? $fileConfig['ai'] : [];
+
+    return api_first_non_empty([
+        $fileConfig['openclawGatewayApiKey'] ?? null,
+        $openclawNode['apiKey'] ?? null,
+        $aiNode['apiKey'] ?? null,
+        getenv('FIGO_AI_API_KEY'),
+        getenv('FIGO_AI_KEY'),
+        getenv('OPENCLAW_GATEWAY_API_KEY'),
+        getenv('FIGO_OPENCLAW_GATEWAY_API_KEY'),
+    ]);
+}
+
+function api_figo_env_gateway_model(): string
+{
+    $fileConfig = api_figo_read_config();
+    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
+        ? $fileConfig['openclaw'] : [];
+    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
+        ? $fileConfig['ai'] : [];
+
+    $model = api_first_non_empty([
+        $fileConfig['openclawGatewayModel'] ?? null,
+        $openclawNode['model'] ?? null,
+        $aiNode['model'] ?? null,
+        getenv('FIGO_AI_MODEL'),
+        getenv('OPENCLAW_GATEWAY_MODEL'),
+        getenv('FIGO_OPENCLAW_GATEWAY_MODEL'),
+    ]);
+
+    return $model !== '' ? $model : 'auto';
+}
+
+function api_figo_env_gateway_key_header(): string
+{
+    $fileConfig = api_figo_read_config();
+    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
+        ? $fileConfig['openclaw'] : [];
+    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
+        ? $fileConfig['ai'] : [];
+
+    $header = api_first_non_empty([
+        $fileConfig['openclawGatewayKeyHeader'] ?? null,
+        $openclawNode['apiKeyHeader'] ?? null,
+        $aiNode['apiKeyHeader'] ?? null,
+        getenv('OPENCLAW_GATEWAY_KEY_HEADER'),
+        getenv('FIGO_OPENCLAW_GATEWAY_KEY_HEADER'),
+        getenv('FIGO_AI_API_KEY_HEADER'),
+        getenv('FIGO_AI_KEY_HEADER'),
+    ]);
+
+    return $header !== '' ? $header : 'Authorization';
+}
+
+function api_figo_env_gateway_key_prefix(): string
+{
+    $fileConfig = api_figo_read_config();
+    $openclawNode = isset($fileConfig['openclaw']) && is_array($fileConfig['openclaw'])
+        ? $fileConfig['openclaw'] : [];
+    $aiNode = isset($fileConfig['ai']) && is_array($fileConfig['ai'])
+        ? $fileConfig['ai'] : [];
+
+    $prefix = api_first_non_empty([
+        $fileConfig['openclawGatewayKeyPrefix'] ?? null,
+        $openclawNode['apiKeyPrefix'] ?? null,
+        $aiNode['apiKeyPrefix'] ?? null,
+        getenv('OPENCLAW_GATEWAY_KEY_PREFIX'),
+        getenv('FIGO_OPENCLAW_GATEWAY_KEY_PREFIX'),
+        getenv('FIGO_AI_API_KEY_PREFIX'),
+        getenv('FIGO_AI_KEY_PREFIX'),
+    ]);
+
+    return $prefix !== '' ? $prefix : 'Bearer';
+}
