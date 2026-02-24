@@ -11,6 +11,7 @@
  *   node agent-orchestrator.js handoffs <status|lint|create|close>
  *   node agent-orchestrator.js codex-check
  *   node agent-orchestrator.js codex <start|stop> <CDX-ID> [--block C1] [--to done]
+ *   node agent-orchestrator.js task <claim|start|finish> <AG-ID> [...]
  *   node agent-orchestrator.js sync
  *   node agent-orchestrator.js close <task_id> [--evidence path]
  *   node agent-orchestrator.js metrics
@@ -336,6 +337,56 @@ function writeBoard(board) {
     board.policy = board.policy || {};
     board.policy.updated_at = currentDate();
     writeFileSync(BOARD_PATH, serializeBoard(board), 'utf8');
+}
+
+function writeBoardAndSync(board) {
+    writeBoard(board);
+    cmdSync();
+}
+
+function detectDefaultOwner(currentValue = '') {
+    return String(
+        process.env.AGENT_OWNER ||
+            process.env.USERNAME ||
+            process.env.USER ||
+            currentValue ||
+            ''
+    ).trim();
+}
+
+function isCodexTaskId(taskId) {
+    return /^CDX-\d+$/.test(String(taskId || '').trim());
+}
+
+function assertNonCodexTaskForTaskCommand(taskId) {
+    if (isCodexTaskId(taskId)) {
+        throw new Error(
+            `Task ${taskId} es CDX-*; usa 'node agent-orchestrator.js codex <start|stop> ...' para mantener CODEX_ACTIVE sincronizado`
+        );
+    }
+}
+
+function getBlockingConflictsForTask(tasks, taskId, handoffs = []) {
+    const target = String(taskId || '').trim();
+    return analyzeConflicts(tasks, handoffs).blocking.filter(
+        (item) =>
+            String(item.left.id) === target || String(item.right.id) === target
+    );
+}
+
+function resolveTaskEvidencePath(taskId, flags = {}) {
+    if (flags.evidence) {
+        return resolve(ROOT, String(flags.evidence));
+    }
+    return resolve(EVIDENCE_DIR, `${taskId}.md`);
+}
+
+function toRelativeRepoPath(path) {
+    const normalizedRoot = ROOT.replace(/\\/g, '/');
+    const normalizedPath = String(path).replace(/\\/g, '/');
+    return normalizedPath.startsWith(`${normalizedRoot}/`)
+        ? normalizedPath.slice(normalizedRoot.length + 1)
+        : normalizedPath;
 }
 
 function buildCodexActiveComment(block) {
@@ -1367,6 +1418,156 @@ function cmdCodex(args) {
     }
 }
 
+function cmdTask(args) {
+    const subcommand = args[0];
+    const { positionals, flags } = parseFlags(args.slice(1));
+    const taskId = String(positionals[0] || flags.id || '').trim();
+
+    if (!subcommand || !['claim', 'start', 'finish'].includes(subcommand)) {
+        throw new Error(
+            'Uso: node agent-orchestrator.js task <claim|start|finish> <AG-001> [--owner x] [--executor y] [--status z] [--files a,b] [--evidence path]'
+        );
+    }
+
+    if (!taskId) {
+        throw new Error('Task command requiere task_id');
+    }
+
+    assertNonCodexTaskForTaskCommand(taskId);
+
+    const board = parseBoard();
+    const task = ensureTask(board, taskId);
+
+    if (subcommand === 'claim') {
+        const owner = detectDefaultOwner(task.owner);
+        const ownerOverride = flags.owner ? String(flags.owner).trim() : owner;
+        if (!ownerOverride) {
+            throw new Error(
+                'task claim requiere --owner o variable AGENT_OWNER/USERNAME/USER'
+            );
+        }
+        task.owner = ownerOverride;
+
+        if (flags.executor) {
+            task.executor = String(flags.executor).trim();
+        }
+        if (flags.status) {
+            const nextStatus = String(flags.status).trim();
+            if (!ALLOWED_STATUSES.has(nextStatus)) {
+                throw new Error(`Status invalido: ${nextStatus}`);
+            }
+            task.status = nextStatus;
+        }
+        if (flags.files) {
+            const files = parseCsvList(flags.files);
+            if (files.length === 0) {
+                throw new Error(
+                    'task claim --files requiere lista CSV no vacia'
+                );
+            }
+            task.files = files;
+        }
+
+        task.updated_at = currentDate();
+        writeBoardAndSync(board);
+        console.log(
+            `Task claim OK: ${taskId} owner=${task.owner} status=${task.status}`
+        );
+        return;
+    }
+
+    if (subcommand === 'start') {
+        const nextStatus = String(flags.status || 'in_progress').trim();
+        if (!ACTIVE_STATUSES.has(nextStatus)) {
+            throw new Error(
+                `task start requiere status activo (${Array.from(ACTIVE_STATUSES).join(', ')})`
+            );
+        }
+
+        if (flags.owner) {
+            task.owner = String(flags.owner).trim();
+        } else if (String(task.owner || '').trim() === '') {
+            task.owner = detectDefaultOwner(task.owner) || 'unassigned';
+        }
+        if (flags.executor) {
+            task.executor = String(flags.executor).trim();
+        }
+        if (flags.scope) {
+            task.scope = String(flags.scope).trim();
+        }
+        if (flags.files) {
+            const files = parseCsvList(flags.files);
+            if (files.length === 0) {
+                throw new Error(
+                    'task start --files requiere lista CSV no vacia'
+                );
+            }
+            task.files = files;
+        }
+
+        task.status = nextStatus;
+        task.updated_at = currentDate();
+
+        const handoffData = parseHandoffs();
+        const blockingConflicts = getBlockingConflictsForTask(
+            board.tasks,
+            taskId,
+            handoffData.handoffs
+        );
+        if (blockingConflicts.length > 0) {
+            const details = blockingConflicts
+                .map((item) => {
+                    const other =
+                        String(item.left.id) === taskId
+                            ? item.right
+                            : item.left;
+                    const files = item.overlap_files.length
+                        ? item.overlap_files.join(', ')
+                        : '(wildcard ambiguo)';
+                    return `${taskId} <-> ${other.id} :: ${files}`;
+                })
+                .join(' | ');
+            throw new Error(
+                `task start bloqueado por conflicto activo: ${details}`
+            );
+        }
+
+        writeBoardAndSync(board);
+        console.log(`Task start OK: ${taskId} -> ${nextStatus}`);
+        return;
+    }
+
+    if (subcommand === 'finish') {
+        const nextStatus = String(flags.to || flags.status || 'done').trim();
+        if (!['done', 'failed'].includes(nextStatus)) {
+            throw new Error(
+                "task finish solo permite estados terminales 'done' o 'failed'"
+            );
+        }
+
+        if (nextStatus === 'done') {
+            const evidencePath = resolveTaskEvidencePath(taskId, flags);
+            if (!existsSync(evidencePath)) {
+                throw new Error(
+                    `No existe evidencia requerida: ${evidencePath}`
+                );
+            }
+            task.acceptance_ref = toRelativeRepoPath(evidencePath);
+        }
+
+        task.status = nextStatus;
+        task.updated_at = currentDate();
+        writeBoardAndSync(board);
+
+        if (nextStatus === 'done') {
+            console.log(`Task finish OK: ${taskId} -> done`);
+        } else {
+            console.log(`Task finish OK: ${taskId} -> failed`);
+        }
+        return;
+    }
+}
+
 function cmdSync() {
     const board = parseBoard();
     const julesMeta = parseTaskMetaMap(JULES_PATH);
@@ -1433,6 +1634,7 @@ function main() {
         handoffs: () => cmdHandoffs(args),
         'codex-check': () => cmdCodexCheck(),
         codex: () => cmdCodex(args),
+        task: () => cmdTask(args),
         sync: () => cmdSync(),
         close: () => cmdClose(args),
         metrics: () => cmdMetrics(),

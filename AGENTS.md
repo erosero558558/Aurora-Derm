@@ -110,20 +110,26 @@ node agent-orchestrator.js handoffs close HO-001 --reason handoff_done
 node agent-orchestrator.js codex-check
 node agent-orchestrator.js codex start CDX-001 --block C1
 node agent-orchestrator.js codex stop CDX-001 --to review
+node agent-orchestrator.js task claim AG-003 --owner ernesto
+node agent-orchestrator.js task start AG-003 --status in_progress
+node agent-orchestrator.js task finish AG-003 --evidence verification/agent-runs/AG-003.md
 node agent-orchestrator.js sync
 node agent-orchestrator.js close <task_id>
 node agent-orchestrator.js metrics
 php bin/validate-agent-governance.php
+npm run agent:test
 npm run agent:gate
 ```
 
 Flujo recomendado:
 
 1. Reservar trabajo en board (`AGENT_BOARD.yaml`) o usar `codex start` / `handoffs create`.
-2. Ejecutar `npm run agent:gate` (o al menos `conflicts`, `handoffs lint`, `codex-check`).
-3. Ejecutar `node agent-orchestrator.js sync`.
-4. Ejecutar validaciones del cambio (`npm run lint`, tests aplicables).
-5. Confirmar evidencia y cerrar (`close`, `codex stop`, `handoffs close`) cuando aplique.
+   Para tareas no-Codex, preferir `task claim/start/finish` en lugar de editar `status/owner` a mano.
+2. Ejecutar `npm run agent:test` si cambiaste el orquestador/validadores.
+3. Ejecutar `npm run agent:gate` (o al menos `conflicts`, `handoffs lint`, `codex-check`).
+4. Ejecutar `node agent-orchestrator.js sync`.
+5. Ejecutar validaciones del cambio (`npm run lint`, tests aplicables).
+6. Confirmar evidencia y cerrar (`close`, `codex stop`, `handoffs close`) cuando aplique.
 
 ## Reglas de edicion
 

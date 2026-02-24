@@ -34,6 +34,9 @@ jobs:
             - name: Agent status snapshot
               run: node agent-orchestrator.js status
 
+            - name: Orchestrator CLI tests
+              run: npm run agent:test
+
             - name: Conflict gate
               run: node agent-orchestrator.js conflicts --strict
 
