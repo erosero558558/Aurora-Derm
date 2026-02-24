@@ -38,6 +38,9 @@
         "agent:metrics": "node agent-orchestrator.js metrics",
         "agent:validate": "php bin/validate-agent-governance.php",
         "agent:gate": "npm run agent:conflicts && npm run agent:handoffs:lint && npm run agent:codex-check && npm run agent:validate",
+        "agent:jules:dispatch": "node jules-dispatch.js dispatch",
+        "agent:jules:reconcile": "node jules-dispatch.js reconcile",
+        "agent:kimi:dispatch": "node kimi-run.js --dispatch --no-diff",
         "prepare": "husky"
     },
     "lint-staged": {

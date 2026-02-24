@@ -33,6 +33,13 @@ const KIMI_BIN =
 const WORK_DIR = resolve(__dirname);
 const TASKS_FILE = join(WORK_DIR, 'KIMI_TASKS.md');
 
+function parsePositiveIntEnv(name, fallback) {
+    const raw = process.env[name];
+    if (!raw) return fallback;
+    const parsed = Number.parseInt(String(raw), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 // ── Arg parsing ───────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
@@ -95,17 +102,17 @@ function updateTaskStatus(title, status) {
     const useCrlf = raw.includes('\r\n');
     const content = raw.replace(/\r\n/g, '\n');
     const tasks = parseTasks(content);
-    const task = tasks.find((t) => t.title.toLowerCase() === title.toLowerCase());
+    const task = tasks.find(
+        (t) => t.title.toLowerCase() === title.toLowerCase()
+    );
     if (!task) return;
 
-    const newRaw = task._raw.replace(
-        /<!-- TASK\n([\s\S]*?)-->/,
-        (_, meta) => {
-            const newMeta = meta.replace(/^status:\s*.+/m, `status: ${status}`);
-            return `<!-- TASK\n${newMeta}-->`;
-        }
-    );
-    let updated = content.slice(0, task._start) + newRaw + content.slice(task._end);
+    const newRaw = task._raw.replace(/<!-- TASK\n([\s\S]*?)-->/, (_, meta) => {
+        const newMeta = meta.replace(/^status:\s*.+/m, `status: ${status}`);
+        return `<!-- TASK\n${newMeta}-->`;
+    });
+    let updated =
+        content.slice(0, task._start) + newRaw + content.slice(task._end);
     if (useCrlf) updated = updated.replace(/\n/g, '\r\n');
     writeFileSync(TASKS_FILE, updated, 'utf8');
 }
@@ -115,22 +122,30 @@ function updateTaskStatus(title, status) {
 function runKimi(prompt) {
     if (!existsSync(KIMI_BIN)) {
         console.error(`ERROR: Kimi binary not found at:\n  ${KIMI_BIN}`);
-        console.error('Update KIMI_BIN in kimi-run.js or set KIMI_BIN env var.');
+        console.error(
+            'Update KIMI_BIN in kimi-run.js or set KIMI_BIN env var.'
+        );
         process.exit(1);
     }
 
     const kimiArgs = [
         '--quiet',
         '--yolo',
-        '--work-dir', WORK_DIR,
-        '--prompt', prompt,
+        '--work-dir',
+        WORK_DIR,
+        '--prompt',
+        prompt,
     ];
 
     if (flags.thinking) kimiArgs.push('--thinking');
     if (flags.model) kimiArgs.push('--model', flags.model);
 
-    console.log('\n── Running Kimi Code ─────────────────────────────────────────\n');
-    console.log(`Prompt: ${prompt.slice(0, 120)}${prompt.length > 120 ? '...' : ''}\n`);
+    console.log(
+        '\n── Running Kimi Code ─────────────────────────────────────────\n'
+    );
+    console.log(
+        `Prompt: ${prompt.slice(0, 120)}${prompt.length > 120 ? '...' : ''}\n`
+    );
 
     const result = spawnSync(KIMI_BIN, kimiArgs, {
         cwd: WORK_DIR,
@@ -146,19 +161,26 @@ function runKimi(prompt) {
 }
 
 function showDiff() {
-    console.log('\n── Git diff (changes by Kimi) ────────────────────────────────\n');
+    console.log(
+        '\n── Git diff (changes by Kimi) ────────────────────────────────\n'
+    );
     const diff = execSync('git diff --stat HEAD', {
         cwd: WORK_DIR,
         encoding: 'utf8',
     });
     if (diff.trim()) {
         console.log(diff);
-        const fullDiff = execSync('git diff HEAD', { cwd: WORK_DIR, encoding: 'utf8' });
+        const fullDiff = execSync('git diff HEAD', {
+            cwd: WORK_DIR,
+            encoding: 'utf8',
+        });
         // Print first 100 lines of diff for review
         const lines = fullDiff.split('\n').slice(0, 100);
         console.log(lines.join('\n'));
         if (fullDiff.split('\n').length > 100) {
-            console.log('\n... (truncated — run `git diff HEAD` to see all changes)');
+            console.log(
+                '\n... (truncated — run `git diff HEAD` to see all changes)'
+            );
         }
     } else {
         console.log('(no changes detected)');
@@ -177,7 +199,10 @@ function autoCommit(taskTitle) {
 
     execSync('git add -A', { cwd: WORK_DIR });
     const msg = `feat(kimi): ${taskTitle}\n\nCo-Authored-By: Kimi Code CLI <noreply@moonshot.ai>\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`;
-    execSync(`git commit -m ${JSON.stringify(msg)}`, { cwd: WORK_DIR, stdio: 'inherit' });
+    execSync(`git commit -m ${JSON.stringify(msg)}`, {
+        cwd: WORK_DIR,
+        stdio: 'inherit',
+    });
     console.log('\nCommit created.');
 }
 
@@ -191,7 +216,10 @@ function cmdList() {
     const tasks = parseTasks(readFileSync(TASKS_FILE, 'utf8'));
     console.log(`\n== KIMI_TASKS.md (${tasks.length} total) ==\n`);
     for (const t of tasks) {
-        const icon = { pending: '[ ]', running: '[~]', done: '[x]', failed: '[!]' }[t.status] || '[ ]';
+        const icon =
+            { pending: '[ ]', running: '[~]', done: '[x]', failed: '[!]' }[
+                t.status
+            ] || '[ ]';
         console.log(`${icon} ${t.title}`);
     }
     const pending = tasks.filter((t) => t.status === 'pending').length;
@@ -205,12 +233,21 @@ function cmdDispatch() {
     }
     const tasks = parseTasks(readFileSync(TASKS_FILE, 'utf8'));
     const pending = tasks.filter((t) => t.status === 'pending');
+    const maxDispatchPerRun = parsePositiveIntEnv(
+        'KIMI_MAX_DISPATCH_PER_RUN',
+        1
+    );
     if (pending.length === 0) {
         console.log('No pending tasks in KIMI_TASKS.md.');
         return;
     }
 
-    for (const task of pending) {
+    const queue = pending.slice(0, maxDispatchPerRun);
+    console.log(
+        `Dispatch budget: ${queue.length} task(s) (pending=${pending.length}, max=${maxDispatchPerRun}).`
+    );
+
+    for (const task of queue) {
         console.log(`\n== Task: ${task.title} ==`);
         updateTaskStatus(task.title, 'running');
         const ok = runKimi(task.prompt);

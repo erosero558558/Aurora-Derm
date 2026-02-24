@@ -7,6 +7,7 @@
  * Usage:
  *   JULES_API_KEY=xxx node jules-dispatch.js status
  *   JULES_API_KEY=xxx node jules-dispatch.js dispatch
+ *   JULES_API_KEY=xxx node jules-dispatch.js reconcile
  *   JULES_API_KEY=xxx node jules-dispatch.js watch
  *   JULES_API_KEY=xxx node jules-dispatch.js add   (deprecated; managed by AGENT_BOARD.yaml)
  */
@@ -55,9 +56,7 @@ function parseTasks(rawContent) {
         const title = titleMatch ? titleMatch[1].trim() : '(untitled)';
 
         // Prompt is everything after the H3 heading, trimmed
-        const prompt = body
-            .replace(/###\s+.+\n?/, '')
-            .trim();
+        const prompt = body.replace(/###\s+.+\n?/, '').trim();
 
         const status = (meta.status || 'pending').toLowerCase();
         // Skip format examples (status contains spaces/pipes, not a real task).
@@ -88,7 +87,9 @@ function updateTaskInFile(title, updates) {
     const useCrlf = raw.includes('\r\n');
     const content = raw.replace(/\r\n/g, '\n');
     const tasks = parseTasks(content);
-    const task = tasks.find((t) => t.title.toLowerCase() === title.toLowerCase());
+    const task = tasks.find(
+        (t) => t.title.toLowerCase() === title.toLowerCase()
+    );
     if (!task) return;
 
     const metaBlock = task._raw.match(/<!-- TASK\n([\s\S]*?)-->/)[1];
@@ -106,9 +107,17 @@ function updateTaskInFile(title, updates) {
     const newTaskOpenTag = `<!-- TASK\n${newMetaBlock}\n-->`;
 
     const newRaw = task._raw.replace(/<!-- TASK[\s\S]*?-->/, newTaskOpenTag);
-    let updated = content.slice(0, task._start) + newRaw + content.slice(task._end);
+    let updated =
+        content.slice(0, task._start) + newRaw + content.slice(task._end);
     if (useCrlf) updated = updated.replace(/\n/g, '\r\n');
     writeFileSync(TASKS_FILE, updated, 'utf8');
+}
+
+function parsePositiveIntEnv(name, fallback) {
+    const raw = process.env[name];
+    if (!raw) return fallback;
+    const parsed = Number.parseInt(String(raw), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 // ── API helpers ───────────────────────────────────────────────────────────────
@@ -183,7 +192,9 @@ async function cmdStatus() {
 
     const pendingLocal = localTasks.filter((t) => t.status === 'pending');
     if (pendingLocal.length > 0) {
-        console.log(`== Pending in JULES_TASKS.md (${pendingLocal.length}) ==\n`);
+        console.log(
+            `== Pending in JULES_TASKS.md (${pendingLocal.length}) ==\n`
+        );
         for (const t of pendingLocal) {
             console.log(`  [ ] ${t.title}`);
         }
@@ -195,6 +206,14 @@ async function cmdDispatch() {
     const content = readFileSync(TASKS_FILE, 'utf8');
     const localTasks = parseTasks(content);
     const pending = localTasks.filter((t) => t.status === 'pending');
+    const maxDispatchPerRun = parsePositiveIntEnv(
+        'JULES_MAX_DISPATCH_PER_RUN',
+        2
+    );
+    const maxActiveSessions = parsePositiveIntEnv(
+        'JULES_MAX_ACTIVE_SESSIONS',
+        12
+    );
 
     if (pending.length === 0) {
         console.log('No pending tasks in JULES_TASKS.md.');
@@ -202,9 +221,37 @@ async function cmdDispatch() {
     }
 
     const existing = await getSessions();
-    const existingTitles = new Set(existing.map((s) => (s.title || '').toLowerCase()));
+    const activeStates = new Set(['IN_PROGRESS', 'AWAITING_PLAN_APPROVAL']);
+    const activeSessions = existing.filter((s) =>
+        activeStates.has(String(s.state || ''))
+    ).length;
+    const availableSlots = Math.max(0, maxActiveSessions - activeSessions);
 
-    for (const task of pending) {
+    if (availableSlots <= 0) {
+        console.log(
+            `Dispatch paused: active sessions ${activeSessions}/${maxActiveSessions}.`
+        );
+        return;
+    }
+
+    const existingTitles = new Set(
+        existing.map((s) => (s.title || '').toLowerCase())
+    );
+    const dispatchBudget = Math.max(
+        0,
+        Math.min(maxDispatchPerRun, availableSlots, pending.length)
+    );
+
+    if (dispatchBudget === 0) {
+        console.log('Dispatch budget is 0 for this run.');
+        return;
+    }
+
+    console.log(
+        `Dispatch budget: ${dispatchBudget} task(s) (pending=${pending.length}, active=${activeSessions}/${maxActiveSessions}).`
+    );
+
+    for (const task of pending.slice(0, dispatchBudget)) {
         if (existingTitles.has(task.title.toLowerCase())) {
             console.log(`SKIP (already exists): ${task.title}`);
             updateTaskInFile(task.title, { status: 'dispatched' });
@@ -230,7 +277,9 @@ async function cmdDispatch() {
 }
 
 async function cmdWatch(intervalSec = 60) {
-    console.log(`Watching Jules sessions every ${intervalSec}s. Ctrl+C to stop.\n`);
+    console.log(
+        `Watching Jules sessions every ${intervalSec}s. Ctrl+C to stop.\n`
+    );
     const seen = new Set();
 
     const poll = async () => {
@@ -248,7 +297,9 @@ async function cmdWatch(intervalSec = 60) {
                     if (s.url) console.log(`        PR ready -> ${s.url}`);
                     // Mark as done in JULES_TASKS.md
                     const local = localTasks.find(
-                        (t) => t.title.toLowerCase() === (s.title || '').toLowerCase()
+                        (t) =>
+                            t.title.toLowerCase() ===
+                            (s.title || '').toLowerCase()
                     );
                     if (local && local.status !== 'done') {
                         updateTaskInFile(s.title, { status: 'done' });
@@ -267,6 +318,50 @@ async function cmdWatch(intervalSec = 60) {
     setInterval(poll, intervalSec * 1000);
 }
 
+async function cmdReconcile() {
+    const sessions = await getSessions();
+    const content = readFileSync(TASKS_FILE, 'utf8');
+    const localTasks = parseTasks(content);
+
+    let markedDone = 0;
+    let markedFailed = 0;
+    let markedDispatched = 0;
+
+    for (const session of sessions) {
+        const title = (session.title || '').trim();
+        if (!title) continue;
+
+        const local = localTasks.find(
+            (t) => t.title.toLowerCase() === title.toLowerCase()
+        );
+        if (!local) continue;
+
+        if (session.state === 'COMPLETED' && local.status !== 'done') {
+            updateTaskInFile(title, { status: 'done' });
+            markedDone++;
+            continue;
+        }
+
+        if (session.state === 'FAILED' && local.status !== 'failed') {
+            updateTaskInFile(title, { status: 'failed' });
+            markedFailed++;
+            continue;
+        }
+
+        if (
+            session.state === 'IN_PROGRESS' &&
+            (local.status === 'pending' || local.status === 'failed')
+        ) {
+            updateTaskInFile(title, { status: 'dispatched' });
+            markedDispatched++;
+        }
+    }
+
+    console.log(
+        `Reconcile complete. done=${markedDone} failed=${markedFailed} dispatched=${markedDispatched}`
+    );
+}
+
 async function cmdAdd() {
     console.error('`add` deshabilitado: JULES_TASKS.md es cola derivada.');
     console.error('Agregar tareas en AGENT_BOARD.yaml y ejecutar:');
@@ -282,12 +377,15 @@ const cmd = process.argv[2] || 'status';
 const cmds = {
     status: cmdStatus,
     dispatch: cmdDispatch,
+    reconcile: cmdReconcile,
     watch: cmdWatch,
     add: () => cmdAdd(process.argv[3], process.argv[4]),
 };
 
 if (!cmds[cmd]) {
-    console.error(`Unknown command: ${cmd}. Use: status | dispatch | watch | add`);
+    console.error(
+        `Unknown command: ${cmd}. Use: status | dispatch | reconcile | watch | add`
+    );
     process.exit(1);
 }
 

@@ -201,6 +201,32 @@ Comandos:
 - `npm run agent:sync`
 - `npm run agent:metrics`
 - `npm run agent:validate`
+- `npm run agent:jules:dispatch`
+- `npm run agent:jules:reconcile`
+- `npm run agent:kimi:dispatch`
+
+24/7 con GitHub Actions:
+
+- `.github/workflows/agent-autopilot.yml`
+    - corre cada 20 minutos
+    - sincroniza board/colas
+    - valida gobernanza y conflictos
+    - despacha/reconcilia Jules
+- `.github/workflows/agent-kimi-autopilot.yml`
+    - corre cada 30 minutos
+    - requiere runner self-hosted Windows con label `kimi`
+    - ejecuta `kimi-run.js --dispatch`
+
+Configuracion requerida:
+
+1. Secret:
+    - `JULES_API_KEY`
+2. Variables (Repository Variables):
+    - `ENABLE_KIMI_AUTOPILOT=true`
+    - `KIMI_BIN=C:\\ruta\\a\\kimi.exe` (si no esta en la ruta por defecto)
+    - `JULES_MAX_DISPATCH_PER_RUN=1`
+    - `JULES_MAX_ACTIVE_SESSIONS=6`
+    - `KIMI_MAX_DISPATCH_PER_RUN=1`
 
 ## OpenAPI preview local
 

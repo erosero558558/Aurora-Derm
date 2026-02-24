@@ -1,0 +1,67 @@
+name: Agent Autopilot
+
+on:
+    workflow_dispatch:
+    schedule:
+        - cron: '*/20 * * * *'
+
+concurrency:
+    group: agent-autopilot-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: write
+
+jobs:
+    autopilot-jules:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.2'
+
+            - name: Sync and governance validation
+              run: |
+                  node agent-orchestrator.js sync
+                  node agent-orchestrator.js conflicts --strict
+                  php bin/validate-agent-governance.php
+
+            - name: Dispatch pending Jules tasks
+              if: ${{ secrets.JULES_API_KEY != '' }}
+              env:
+                  JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+                  JULES_MAX_DISPATCH_PER_RUN: ${{ vars.JULES_MAX_DISPATCH_PER_RUN || '1' }}
+                  JULES_MAX_ACTIVE_SESSIONS: ${{ vars.JULES_MAX_ACTIVE_SESSIONS || '6' }}
+              run: node jules-dispatch.js dispatch
+
+            - name: Reconcile Jules task states
+              if: ${{ secrets.JULES_API_KEY != '' }}
+              env:
+                  JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+              run: node jules-dispatch.js reconcile
+
+            - name: Print status snapshot
+              run: node agent-orchestrator.js status
+
+            - name: Commit queue state changes
+              run: |
+                  if git diff --quiet -- AGENT_BOARD.yaml JULES_TASKS.md KIMI_TASKS.md; then
+                    echo "No queue changes to commit."
+                    exit 0
+                  fi
+
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add AGENT_BOARD.yaml JULES_TASKS.md KIMI_TASKS.md
+                  git commit -m "chore(agents): autopilot queue sync [skip ci]"
+                  git pull --rebase origin "${GITHUB_REF_NAME}"
+                  git push origin "HEAD:${GITHUB_REF_NAME}"

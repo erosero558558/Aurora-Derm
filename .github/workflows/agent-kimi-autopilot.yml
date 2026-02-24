@@ -1,0 +1,51 @@
+name: Kimi Autopilot
+
+on:
+    workflow_dispatch:
+    schedule:
+        - cron: '*/30 * * * *'
+
+concurrency:
+    group: kimi-autopilot-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: write
+
+jobs:
+    autopilot-kimi:
+        if: ${{ vars.ENABLE_KIMI_AUTOPILOT == 'true' }}
+        runs-on: [self-hosted, windows, kimi]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Sync and conflict gate
+              run: |
+                  node agent-orchestrator.js sync
+                  node agent-orchestrator.js conflicts --strict
+
+            - name: Dispatch Kimi queue
+              env:
+                  KIMI_BIN: ${{ vars.KIMI_BIN }}
+                  KIMI_MAX_DISPATCH_PER_RUN: ${{ vars.KIMI_MAX_DISPATCH_PER_RUN || '1' }}
+              run: node kimi-run.js --dispatch --no-diff
+
+            - name: Commit queue state changes
+              run: |
+                  if (git diff --quiet -- AGENT_BOARD.yaml KIMI_TASKS.md JULES_TASKS.md) {
+                    Write-Host "No queue changes to commit."
+                    exit 0
+                  }
+
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add AGENT_BOARD.yaml KIMI_TASKS.md JULES_TASKS.md
+                  git commit -m "chore(agents): kimi autopilot queue sync [skip ci]"
+                  git pull --rebase origin "$env:GITHUB_REF_NAME"
+                  git push origin "HEAD:$env:GITHUB_REF_NAME"
