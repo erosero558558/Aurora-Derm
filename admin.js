@@ -1085,7 +1085,9 @@ async function initPushNotifications() {
         await checkSubscriptionState();
     } catch (error) {
         setButtonsVisibility(false);
-        showToast('Push no configurado en servidor', 'info');
+        // Keep admin UX clean when push is not enabled in this environment.
+        // The controls stay hidden and the dashboard remains fully functional.
+        console.info('Push no configurado en servidor:', error?.message || error);
     }
 }
 
