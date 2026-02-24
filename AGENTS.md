@@ -119,6 +119,8 @@ node agent-orchestrator.js codex-check --json
 node agent-orchestrator.js codex start CDX-001 --block C1
 node agent-orchestrator.js codex stop CDX-001 --to review
 node agent-orchestrator.js task claim AG-003 --owner ernesto
+node agent-orchestrator.js task ls --active --json
+node agent-orchestrator.js task ls --executor codex --status in_progress --json
 node agent-orchestrator.js task start AG-003 --status in_progress
 node agent-orchestrator.js task finish AG-003 --evidence verification/agent-runs/AG-003.md
 node agent-orchestrator.js task start AG-003 --json
@@ -143,6 +145,7 @@ Flujo recomendado:
 
 1. Reservar trabajo en board (`AGENT_BOARD.yaml`) o usar `codex start` / `handoffs create`.
    Para tareas no-Codex, preferir `task claim/start/finish` en lugar de editar `status/owner` a mano.
+   Para inspeccionar backlog/activos sin abrir YAML, usar `task ls` con filtros (`--active`, `--status`, `--executor`, `--scope`).
 2. Ejecutar `npm run agent:test` si cambiaste el orquestador/validadores.
 3. Ejecutar `npm run agent:gate` (o al menos `conflicts`, `handoffs lint`, `codex-check`).
 4. Ejecutar `node agent-orchestrator.js sync`.

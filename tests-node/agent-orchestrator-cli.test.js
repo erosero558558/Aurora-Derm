@@ -501,6 +501,82 @@ test('task soporta --json en claim/start/finish con payload estable', (t) => {
     assert.equal(json.evidence_path, 'verification/agent-runs/AG-010.md');
 });
 
+test('task ls soporta filtros y --json con summary estable', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskStartConflictFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    let result = runCli(dir, ['task', 'ls', '--json']);
+    let json = parseJsonStdout(result);
+    assert.equal(json.command, 'task');
+    assert.equal(json.action, 'ls');
+    assert.equal(json.ok, true);
+    assert.equal(json.summary.total, 2);
+    assert.equal(json.summary.matched, 2);
+    assert.equal(json.summary.returned, 2);
+    assert.equal(Array.isArray(json.tasks), true);
+
+    result = runCli(dir, [
+        'task',
+        'ls',
+        '--json',
+        '--active',
+        '--executor',
+        'jules',
+    ]);
+    json = parseJsonStdout(result);
+    assert.equal(json.filters.active, true);
+    assert.equal(json.filters.executor, 'jules');
+    assert.equal(json.summary.matched, 1);
+    assert.equal(json.summary.returned, 1);
+    assert.equal(json.summary.matched_active, 1);
+    assert.equal(json.tasks[0].id, 'AG-020');
+    assert.equal(json.tasks[0].status, 'in_progress');
+
+    result = runCli(dir, [
+        'task',
+        'ls',
+        '--json',
+        '--status',
+        'done',
+        '--executor',
+        'kimi',
+        '--limit',
+        '1',
+    ]);
+    json = parseJsonStdout(result);
+    assert.deepEqual(json.filters.status, ['done']);
+    assert.equal(json.filters.executor, 'kimi');
+    assert.equal(json.filters.limit, 1);
+    assert.equal(json.summary.matched, 1);
+    assert.equal(json.summary.returned, 1);
+    assert.equal(json.tasks[0].id, 'AG-021');
+    assert.equal(json.tasks[0].executor, 'kimi');
+});
+
+test('task ls texto imprime matched y filtros', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCli(dir, ['task', 'ls', '--active', '--status', 'ready']);
+    assert.match(result.stdout, /== Task List ==/);
+    assert.match(result.stdout, /Matched:\s+1\/1/);
+    assert.match(result.stdout, /Filters: .*active=true/);
+    assert.match(result.stdout, /status=ready/);
+    assert.match(result.stdout, /AG-010 \[ready\]/);
+});
+
 test('close soporta --json y devuelve task + evidence_path', (t) => {
     const dir = createFixtureDir();
     t.after(() => cleanupFixtureDir(dir));

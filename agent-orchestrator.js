@@ -12,7 +12,7 @@
  *   node agent-orchestrator.js policy lint [--json]
  *   node agent-orchestrator.js codex-check
  *   node agent-orchestrator.js codex <start|stop> <CDX-ID> [--block C1] [--to done]
- *   node agent-orchestrator.js task <claim|start|finish> <AG-ID> [...]
+ *   node agent-orchestrator.js task <ls|claim|start|finish> [<AG-ID>] [...]
  *   node agent-orchestrator.js sync
  *   node agent-orchestrator.js close <task_id> [--evidence path]
  *   node agent-orchestrator.js metrics [--json] [--profile local|ci] [--write|--no-write] [--dry-run]
@@ -3234,12 +3234,141 @@ function cmdTask(args) {
     const subcommand = args[0];
     const { positionals, flags } = parseFlags(args.slice(1));
     const wantsJson = args.includes('--json');
+    const normalizedSubcommand = String(subcommand || '').trim();
     const taskId = String(positionals[0] || flags.id || '').trim();
 
-    if (!subcommand || !['claim', 'start', 'finish'].includes(subcommand)) {
+    if (
+        !normalizedSubcommand ||
+        !['ls', 'claim', 'start', 'finish'].includes(normalizedSubcommand)
+    ) {
         throw new Error(
-            'Uso: node agent-orchestrator.js task <claim|start|finish> <AG-001> [--owner x] [--executor y] [--status z] [--files a,b] [--evidence path]'
+            'Uso: node agent-orchestrator.js task <ls|claim|start|finish> [AG-001] [--owner x] [--executor y] [--status z] [--files a,b] [--evidence path] [--active]'
         );
+    }
+
+    if (normalizedSubcommand === 'ls') {
+        const board = parseBoard();
+        const limitRaw = String(flags.limit || '').trim();
+        const limit = limitRaw === '' ? null : Number(limitRaw);
+        if (limitRaw !== '' && (!Number.isFinite(limit) || limit <= 0)) {
+            throw new Error('task ls --limit debe ser numero > 0');
+        }
+
+        const statusFilter = flags.status ? parseCsvList(flags.status) : [];
+        const executorFilter = String(flags.executor || '')
+            .trim()
+            .toLowerCase();
+        const ownerFilter = String(flags.owner || '')
+            .trim()
+            .toLowerCase();
+        const scopeFilter = String(flags.scope || '')
+            .trim()
+            .toLowerCase();
+        const riskFilter = String(flags.risk || '')
+            .trim()
+            .toLowerCase();
+        const idFilter = String(flags.id || '')
+            .trim()
+            .toLowerCase();
+        const activeOnly = args.includes('--active');
+
+        const filtered = board.tasks.filter((task) => {
+            const id = String(task.id || '').trim();
+            const status = String(task.status || '').trim();
+            const executor = String(task.executor || '')
+                .trim()
+                .toLowerCase();
+            const owner = String(task.owner || '')
+                .trim()
+                .toLowerCase();
+            const scope = String(task.scope || '')
+                .trim()
+                .toLowerCase();
+            const risk = String(task.risk || '')
+                .trim()
+                .toLowerCase();
+
+            if (idFilter && id.toLowerCase() !== idFilter) return false;
+            if (activeOnly && !ACTIVE_STATUSES.has(status)) return false;
+            if (statusFilter.length > 0 && !statusFilter.includes(status))
+                return false;
+            if (executorFilter && executor !== executorFilter) return false;
+            if (ownerFilter && owner !== ownerFilter) return false;
+            if (scopeFilter && !scope.includes(scopeFilter)) return false;
+            if (riskFilter && risk !== riskFilter) return false;
+            return true;
+        });
+
+        filtered.sort((a, b) => {
+            const aUpdated = String(a.updated_at || '');
+            const bUpdated = String(b.updated_at || '');
+            const byUpdated = bUpdated.localeCompare(aUpdated);
+            if (byUpdated !== 0) return byUpdated;
+            return String(a.id || '').localeCompare(String(b.id || ''));
+        });
+
+        const limited =
+            Number.isFinite(limit) && limit !== null
+                ? filtered.slice(0, limit)
+                : filtered;
+
+        const report = {
+            version: 1,
+            ok: true,
+            command: 'task',
+            action: 'ls',
+            filters: {
+                active: activeOnly,
+                status: statusFilter,
+                executor: executorFilter || null,
+                owner: ownerFilter || null,
+                scope: scopeFilter || null,
+                risk: riskFilter || null,
+                id: idFilter || null,
+                limit: Number.isFinite(limit) && limit !== null ? limit : null,
+            },
+            summary: {
+                total: board.tasks.length,
+                matched: filtered.length,
+                returned: limited.length,
+                matched_active: filtered.filter((t) =>
+                    ACTIVE_STATUSES.has(String(t.status || ''))
+                ).length,
+                by_status: getStatusCounts(limited),
+                by_executor: getExecutorCounts(limited),
+            },
+            tasks: limited.map(toTaskJson),
+        };
+
+        if (wantsJson) {
+            console.log(JSON.stringify(report, null, 2));
+            return;
+        }
+
+        console.log('== Task List ==');
+        console.log(
+            `Matched: ${report.summary.matched}/${report.summary.total} (returned ${report.summary.returned})`
+        );
+        const filterParts = [];
+        if (activeOnly) filterParts.push('active=true');
+        if (statusFilter.length > 0)
+            filterParts.push(`status=${statusFilter.join(',')}`);
+        if (executorFilter) filterParts.push(`executor=${executorFilter}`);
+        if (ownerFilter) filterParts.push(`owner=${ownerFilter}`);
+        if (scopeFilter) filterParts.push(`scope~=${scopeFilter}`);
+        if (riskFilter) filterParts.push(`risk=${riskFilter}`);
+        if (idFilter) filterParts.push(`id=${idFilter}`);
+        if (report.filters.limit !== null) filterParts.push(`limit=${limit}`);
+        console.log(`Filters: ${filterParts.join(' | ') || '(none)'}`);
+        for (const task of limited) {
+            const filesCount = Array.isArray(task.files)
+                ? task.files.length
+                : 0;
+            console.log(
+                `- ${task.id} [${task.status}] exec=${task.executor} owner=${task.owner || 'n/a'} risk=${task.risk || 'n/a'} scope=${task.scope || 'n/a'} files=${filesCount}`
+            );
+        }
+        return;
     }
 
     if (!taskId) {
@@ -3251,7 +3380,7 @@ function cmdTask(args) {
     const board = parseBoard();
     const task = ensureTask(board, taskId);
 
-    if (subcommand === 'claim') {
+    if (normalizedSubcommand === 'claim') {
         const owner = detectDefaultOwner(task.owner);
         const ownerOverride = flags.owner ? String(flags.owner).trim() : owner;
         if (!ownerOverride) {
@@ -3305,7 +3434,7 @@ function cmdTask(args) {
         return;
     }
 
-    if (subcommand === 'start') {
+    if (normalizedSubcommand === 'start') {
         const nextStatus = String(flags.status || 'in_progress').trim();
         if (!ACTIVE_STATUSES.has(nextStatus)) {
             throw new Error(
@@ -3382,7 +3511,7 @@ function cmdTask(args) {
         return;
     }
 
-    if (subcommand === 'finish') {
+    if (normalizedSubcommand === 'finish') {
         const nextStatus = String(flags.to || flags.status || 'done').trim();
         if (!['done', 'failed'].includes(nextStatus)) {
             throw new Error(
