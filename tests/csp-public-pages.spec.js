@@ -28,9 +28,11 @@ test.describe('Public CSP policy', () => {
             expect(csp).toContain('https://static.cloudflareinsights.com');
 
             if (file === 'index.html') {
-                // index.html uses hashes instead of 'unsafe-inline'
+                // index.html uses hashes instead of 'unsafe-inline' for style-src
+                // but allows unsafe-inline for style-src-attr to support dynamic styles (animations)
                 expect(csp).toContain("style-src 'self'");
-                expect(csp).not.toContain("'unsafe-inline'");
+                expect(csp).not.toContain("style-src 'self' 'unsafe-inline'"); // Ensure unsafe-inline is NOT in style-src
+                expect(csp).toContain("style-src-attr 'self' 'unsafe-inline'"); // Ensure it IS in style-src-attr
                 expect(csp).toContain('sha256-'); // Contains at least one hash
                 expect(csp).toContain('https://fonts.googleapis.com');
                 expect(csp).toContain('https://cdnjs.cloudflare.com');
