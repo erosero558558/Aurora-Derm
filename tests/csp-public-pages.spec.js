@@ -26,9 +26,20 @@ test.describe('Public CSP policy', () => {
             expect(csp).toContain("script-src 'self'");
             expect(csp).toContain('https://browser.sentry-cdn.com');
             expect(csp).toContain('https://static.cloudflareinsights.com');
-            expect(csp).toContain(
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com"
-            );
+
+            if (file === 'index.html') {
+                // index.html uses hashes instead of 'unsafe-inline'
+                expect(csp).toContain("style-src 'self'");
+                expect(csp).not.toContain("'unsafe-inline'");
+                expect(csp).toContain('sha256-'); // Contains at least one hash
+                expect(csp).toContain('https://fonts.googleapis.com');
+                expect(csp).toContain('https://cdnjs.cloudflare.com');
+            } else {
+                expect(csp).toContain(
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com"
+                );
+            }
+
             expect(csp).toContain(
                 "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com"
             );
