@@ -108,3 +108,5 @@ Criterio de salida:
 - 2026-02-24: `CI` ahora omite jobs `security` y `unit-tests` cuando no hay cambios PHP/composer/tests relevantes (via `dorny/paths-filter`), reduciendo tiempo en commits de frontend/docs/workflows sin perder cobertura en cambios backend.
 - 2026-02-24: `Post-Deploy Gate` aplica `BENCH_RUNS_LIGHT` en pushes `non-runtime` y publica `BENCH_RUNS_EFFECTIVE` en el resumen para reducir tiempo de benchmark sin omitir verificacion backend base.
 - 2026-02-24: `CI` ahora omite job `build` cuando no hay cambios relevantes para bundle/despliegue (via `dorny/paths-filter`), evitando empaquetado innecesario en cambios de documentacion/workflows.
+- 2026-02-24: validacion manual de `phase2-concurrency-readonly`: run `22361662182` (`failure`) seguido de run `22361768420` (`success`) confirma inestabilidad intermitente en Fase 2 readonly.
+- 2026-02-24: `phase2-concurrency-readonly.yml` ahora publica siempre artefactos `playwright-report` y `test-results`, y reporta `steps.phase2.outcome` en summary para acelerar diagnostico de fallos intermitentes.

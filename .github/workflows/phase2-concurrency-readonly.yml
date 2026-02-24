@@ -42,7 +42,26 @@ jobs:
               run: npx playwright install --with-deps chromium
 
             - name: Ejecutar suite Fase 2 en modo no destructivo
+              id: phase2
               run: npm run test:phase2
+
+            - name: Publicar reporte Playwright
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: phase2-readonly-playwright-report
+                  path: playwright-report/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Publicar resultados crudos de pruebas
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: phase2-readonly-test-results
+                  path: test-results/
+                  if-no-files-found: warn
+                  retention-days: 14
 
             - name: Resumen
               if: ${{ always() }}
@@ -53,5 +72,6 @@ jobs:
                     echo "- Dominio: \`${TEST_BASE_URL}\`";
                     echo "- Escritura habilitada: \`${TEST_ENABLE_CALENDAR_WRITE}\`";
                     echo "- Require Google calendar: \`${TEST_REQUIRE_GOOGLE_CALENDAR}\`";
+                    echo "- Resultado suite: \`${{ steps.phase2.outcome }}\`";
                     echo "- Resultado: \`${{ job.status }}\`";
                   } >> "${GITHUB_STEP_SUMMARY}"
