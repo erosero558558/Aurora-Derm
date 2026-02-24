@@ -48,3 +48,19 @@ jobs:
 
             - name: Validate governance contract
               run: php bin/validate-agent-governance.php
+
+            - name: Build governance summary (JSON + Markdown)
+              if: always()
+              run: |
+                  mkdir -p verification
+                  node bin/agent-governance-summary.js --write-json verification/agent-governance-summary.json --write-md verification/agent-governance-summary.md --format markdown > /tmp/agent-governance-summary.md
+                  cat /tmp/agent-governance-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Upload governance summary artifact
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: agent-governance-summary
+                  path: |
+                      verification/agent-governance-summary.json
+                      verification/agent-governance-summary.md
