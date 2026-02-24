@@ -80,24 +80,33 @@ jobs:
             - name: Install Dependencies
               run: composer install --no-dev --optimize-autoloader --prefer-dist --no-progress
 
-            - name: Validar secretos requeridos (Staging)
+            - name: Detectar secretos de staging
+              id: staging_secrets
               shell: bash
               run: |
                   set -euo pipefail
+                  missing=0
                   if [ -z "${{ secrets.STAGING_FTP_SERVER }}" ]; then
-                    echo "::error::Falta el secret STAGING_FTP_SERVER"
-                    exit 1
+                    echo "::warning::Falta el secret STAGING_FTP_SERVER"
+                    missing=1
                   fi
                   if [ -z "${{ secrets.STAGING_FTP_USERNAME }}" ]; then
-                    echo "::error::Falta el secret STAGING_FTP_USERNAME"
-                    exit 1
+                    echo "::warning::Falta el secret STAGING_FTP_USERNAME"
+                    missing=1
                   fi
                   if [ -z "${{ secrets.STAGING_FTP_PASSWORD }}" ]; then
-                    echo "::error::Falta el secret STAGING_FTP_PASSWORD"
-                    exit 1
+                    echo "::warning::Falta el secret STAGING_FTP_PASSWORD"
+                    missing=1
+                  fi
+                  if [ "${missing}" -eq 1 ]; then
+                    echo "enabled=false" >> "$GITHUB_OUTPUT"
+                    echo "::notice::Staging canary deshabilitado por secretos faltantes. Continuara deploy de produccion."
+                  else
+                    echo "enabled=true" >> "$GITHUB_OUTPUT"
                   fi
 
             - name: Preflight red (Staging)
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -112,6 +121,7 @@ jobs:
                   fi
 
             - name: Preparar bundle de deploy (Staging)
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -138,7 +148,7 @@ jobs:
                     ./ _deploy_bundle/
 
             - name: Deploy a Staging (FTP/FTPS)
-              if: ${{ env.DEPLOY_PROTOCOL != 'sftp' }}
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' && env.DEPLOY_PROTOCOL != 'sftp' }}
               uses: SamKirkland/FTP-Deploy-Action@v4.3.6
               with:
                   server: ${{ secrets.STAGING_FTP_SERVER }}
@@ -155,7 +165,7 @@ jobs:
                   state-name: .ftp-deploy-sync-state-staging.json
 
             - name: Deploy a Staging (SFTP)
-              if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' && env.DEPLOY_PROTOCOL == 'sftp' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -175,7 +185,7 @@ jobs:
                   "
 
             - name: Smoke Tests (Staging)
-              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' && env.FTP_DRY_RUN != 'true' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -195,6 +205,13 @@ jobs:
                   curl -fsS "${STAGING_URL}/figo-chat.php" > /tmp/figo_staging.json
                   curl -IfsS "${STAGING_URL}/" > /tmp/home_staging.txt
                   echo "Staging Verified."
+
+            - name: Omitir canary no configurado
+              if: ${{ steps.staging_secrets.outputs.enabled != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  echo "Canary staging omitido: secretos STAGING_FTP_* no configurados."
 
     deploy-prod:
         needs: deploy-canary
