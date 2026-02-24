@@ -9,7 +9,7 @@ import { loadAvailabilityData } from './data.js';
 import { loadPublicReviews } from './engagement.js';
 import {
     state,
-    setCheckoutSessionActive,
+    setCheckoutSessionActive as setCheckoutSessionActiveState,
     setCheckoutSession,
     getCheckoutSession,
     setBookingViewTracked,

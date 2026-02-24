@@ -86,6 +86,23 @@ const getCurrentLang = () => state.currentLang;
 const getCurrentAppointment = () => state.currentAppointment;
 const setCurrentAppointment = (val) => { state.currentAppointment = val; };
 
+const getCheckoutSession = () => state.checkoutSession;
+const setCheckoutSession = (val) => { state.checkoutSession = val; };
+const setCheckoutSessionActive = (active) => {
+    if (state.checkoutSession) {
+        state.checkoutSession.active = active === true;
+    }
+};
+
+const getBookingViewTracked = () => state.bookingViewTracked;
+const setBookingViewTracked = (val) => { state.bookingViewTracked = val; };
+
+const getAvailabilityPrefetched = () => state.availabilityPrefetched;
+const setAvailabilityPrefetched = (val) => { state.availabilityPrefetched = val; };
+
+const getReviewsPrefetched = () => state.reviewsPrefetched;
+const setReviewsPrefetched = (val) => { state.reviewsPrefetched = val; };
+
 const getApiSlowNoticeLastAt = () => state.apiSlowNoticeLastAt;
 const setApiSlowNoticeLastAt = (val) => { state.apiSlowNoticeLastAt = val; };
 
@@ -1287,6 +1304,16 @@ function getAnalyticsEngineDeps() {
         loadAvailabilityData,
         loadPublicReviews,
         trackEventToServer: sendFunnelEventToServer,
+        // Inject state accessors
+        getCheckoutSession,
+        setCheckoutSession,
+    setCheckoutSessionActive: (active) => setCheckoutSessionActive(active),
+        getBookingViewTracked,
+        setBookingViewTracked,
+        getAvailabilityPrefetched,
+        setAvailabilityPrefetched,
+        getReviewsPrefetched,
+        setReviewsPrefetched,
     };
 }
 
