@@ -40,6 +40,91 @@ function figo_backend_contains_any(string $text, array $patterns): bool
     return false;
 }
 
+function figo_backend_is_clinic_scope(string $normalizedText): bool
+{
+    if ($normalizedText === '') {
+        return true;
+    }
+
+    return figo_backend_contains_any($normalizedText, [
+        '/\bpiel\b/',
+        '/\bdermat/',
+        '/\bacne\b/',
+        '/\bconsulta\b/',
+        '/\bcita\b/',
+        '/\bagendar\b/',
+        '/\breservar\b/',
+        '/\bdoctor\b/',
+        '/\bdoctora\b/',
+        '/\brosero\b/',
+        '/\bnarvaez\b/',
+        '/\bprecio\b/',
+        '/\bcosto\b/',
+        '/\bpago\b/',
+        '/\btransferencia\b/',
+        '/\btarjeta\b/',
+        '/\bwhatsapp\b/',
+        '/\btelefono\b/',
+        '/\bubicacion\b/',
+        '/\bdireccion\b/',
+        '/\bhorario\b/',
+        '/\blaser\b/',
+        '/\brejuvenec/',
+        '/\bcancer\b/',
+        '/\bservicio\b/',
+        '/\btratamiento\b/'
+    ]);
+}
+
+function figo_backend_should_fast_local_response(string $normalizedText): bool
+{
+    if ($normalizedText === '') {
+        return true;
+    }
+
+    if (preg_match('/^(hola|buenos dias|buenas tardes|buenas noches|hi|hello|gracias|ok|vale|listo|perfecto|genial)$/', $normalizedText) === 1) {
+        return true;
+    }
+
+    if (figo_backend_contains_any($normalizedText, [
+        '/\bping\b/',
+        '/\blatencia\b/',
+        '/\bprueba\b/',
+        '/\btest\b/'
+    ])) {
+        return true;
+    }
+
+    $isOutOfScope = figo_backend_contains_any($normalizedText, [
+        '/\bcapital\b/',
+        '/\bpresidente\b/',
+        '/\bdeporte\b/',
+        '/\bfutbol\b/',
+        '/\bpartido\b/',
+        '/\bclima\b/',
+        '/\btemperatura\b/',
+        '/\bnoticia\b/',
+        '/\bhistoria\b/',
+        '/\bgeografia\b/',
+        '/\bmatematica\b/',
+        '/\bprogramacion\b/',
+        '/\bcodigo\b/',
+        '/\btraduce\b/',
+        '/\btraduccion\b/',
+        '/\bpelicula\b/',
+        '/\bmusica\b/',
+        '/\bbitcoin\b/',
+        '/\bcriptomoneda\b/',
+        '/\bpolitica\b/'
+    ]);
+
+    if ($isOutOfScope && !figo_backend_is_clinic_scope($normalizedText)) {
+        return true;
+    }
+
+    return false;
+}
+
 function figo_backend_last_user_message(array $messages): string
 {
     for ($i = count($messages) - 1; $i >= 0; $i--) {
@@ -665,6 +750,34 @@ function figo_backend_answer(string $userMessage): string
         return 'Hola, soy Figo de Piel en Armonia. Puedo ayudarte con servicios, precios, pagos y reservas. En que te ayudo?';
     }
 
+    if (
+        figo_backend_contains_any($normalized, [
+            '/\bcapital\b/',
+            '/\bpresidente\b/',
+            '/\bdeporte\b/',
+            '/\bfutbol\b/',
+            '/\bpartido\b/',
+            '/\bclima\b/',
+            '/\bnoticia\b/',
+            '/\bhistoria\b/',
+            '/\bgeografia\b/',
+            '/\bmatematica\b/',
+            '/\bprogramacion\b/',
+            '/\bcodigo\b/',
+            '/\btraduce\b/',
+            '/\btraduccion\b/',
+            '/\bpelicula\b/',
+            '/\bmusica\b/',
+            '/\bbitcoin\b/',
+            '/\bcriptomoneda\b/',
+            '/\bpolitica\b/'
+        ]) && !figo_backend_is_clinic_scope($normalized)
+    ) {
+        return "Puedo ayudarte solo con temas de Piel en Armonia: servicios, precios, pagos, horarios y reservas.\n"
+            . "Si quieres, te guio para agendar cita o elegir tratamiento.\n"
+            . "Atencion inmediata: WhatsApp +593 98 245 3672.";
+    }
+
     if (figo_backend_contains_any($normalized, [
         '/\bpago\b/',
         '/\bpagar\b/',
@@ -752,6 +865,18 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
     $aiConfigured = figo_backend_ai_endpoint() !== '';
     $allowFallback = figo_backend_allow_local_fallback();
     $aiProvider = figo_backend_ai_provider();
+    $normalizedUserMessage = figo_backend_normalize_text($userMessage);
+
+    if (figo_backend_should_fast_local_response($normalizedUserMessage)) {
+        return [
+            'ok' => true,
+            'mode' => 'local',
+            'provider' => 'pattern_matching',
+            'reason' => 'fast_local_scope_guard',
+            'content' => figo_backend_answer($userMessage),
+            'status' => 200
+        ];
+    }
 
     $aiContent = null;
     if ($aiConfigured) {
