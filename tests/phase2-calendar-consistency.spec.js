@@ -366,6 +366,7 @@ test.describe('Fase 2: consistencia calendario', () => {
         });
 
         await page.goto('/');
+        await page.waitForFunction(() => window.PielBookingUiReady === true);
 
         const serviceSelect = page
             .locator('#serviceSelect, [name="service"]')
@@ -388,13 +389,20 @@ test.describe('Fase 2: consistencia calendario', () => {
 
         const timeSelect = page.locator('#timeSelect, [name="time"]').first();
         await expect(timeSelect).toBeVisible();
+        const sortedExpected = Array.from(new Set(expectedSlots)).sort();
         await expect
             .poll(async () => {
-                return await timeSelect
-                    .locator('option[value]:not([value=""])')
-                    .count();
+                return await timeSelect.evaluate((select) =>
+                    Array.from(
+                        new Set(
+                            Array.from(select.options)
+                                .map((option) => option.value)
+                                .filter((value) => /^\d{2}:\d{2}$/.test(value))
+                        )
+                    ).sort()
+                );
             })
-            .toBeGreaterThan(0);
+            .toEqual(sortedExpected);
 
         const webSlots = await timeSelect.evaluate((select) =>
             Array.from(select.options)
@@ -448,8 +456,6 @@ test.describe('Fase 2: consistencia calendario', () => {
 
         const sortedWeb = Array.from(new Set(webSlots)).sort();
         const sortedChat = Array.from(new Set(chatSlots)).sort();
-        const sortedExpected = Array.from(new Set(expectedSlots)).sort();
-
         expect(sortedWeb).toEqual(sortedExpected);
         expect(sortedChat).toEqual(sortedExpected);
         expect(sortedWeb).toEqual(sortedChat);
