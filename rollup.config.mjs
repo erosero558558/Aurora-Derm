@@ -1,4 +1,5 @@
 import resolve from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
 
 export default [
     // Admin App (code-split: appointments y availability se cargan bajo demanda)
@@ -9,9 +10,9 @@ export default [
             entryFileNames: 'admin.js',
             chunkFileNames: 'js/admin-chunks/[name]-[hash].js',
             format: 'es',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Booking UI
     {
@@ -19,9 +20,9 @@ export default [
         output: {
             file: 'js/engines/booking-ui.js',
             format: 'es',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
         // Removed external: ['booking-calendar-lazy'] to bundle it inline
     },
     // Booking Engine
@@ -30,9 +31,9 @@ export default [
         output: {
             file: 'js/engines/booking-engine.js',
             format: 'es',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Booking Calendar
     {
@@ -40,9 +41,9 @@ export default [
         output: {
             file: 'js/booking-calendar.js',
             format: 'es',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Chat UI Engine
     {
@@ -50,9 +51,9 @@ export default [
         output: {
             file: 'js/engines/chat-ui-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Chat Widget Engine
     {
@@ -60,9 +61,9 @@ export default [
         output: {
             file: 'js/engines/chat-widget-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Chat Booking Engine
     {
@@ -70,9 +71,9 @@ export default [
         output: {
             file: 'js/engines/chat-booking-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Figo Chat Engine
     {
@@ -80,9 +81,9 @@ export default [
         output: {
             file: 'js/engines/chat-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Analytics Engine
     {
@@ -90,9 +91,9 @@ export default [
         output: {
             file: 'js/engines/analytics-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Booking Utils Bundle
     {
@@ -100,9 +101,9 @@ export default [
         output: {
             file: 'js/engines/booking-utils.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Data Bundle
     {
@@ -110,9 +111,9 @@ export default [
         output: {
             file: 'js/engines/data-bundle.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // UI Bundle
     {
@@ -120,9 +121,9 @@ export default [
         output: {
             file: 'js/engines/ui-bundle.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Engagement Bundle
     {
@@ -130,9 +131,9 @@ export default [
         output: {
             file: 'js/engines/engagement-bundle.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: true
         },
-        plugins: [resolve()]
+        plugins: [resolve(), terser()]
     },
     // Main Script (ES module for code splitting; requires type="module" in HTML)
     {
@@ -142,9 +143,9 @@ export default [
             entryFileNames: 'script.js',
             chunkFileNames: 'js/chunks/[name]-[hash].js',
             format: 'es',
-            sourcemap: false,
+            sourcemap: true,
             banner: '/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in js/main.js and run npm run build */',
         },
-        plugins: [resolve()],
+        plugins: [resolve(), terser()],
     },
 ];
