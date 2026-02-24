@@ -435,3 +435,70 @@ test('agent-governance-summary soporta --strict y --fail-on-red con politicas di
     parsed = JSON.parse(result.stdout);
     assert.equal(parsed.overall.signal, 'RED');
 });
+
+test('agent-governance-summary soporta --from-json y --policy-check', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+    writeFixtureFilesWithChatFailure(dir);
+
+    const verificationDir = join(dir, 'verification');
+    require('fs').mkdirSync(verificationDir, { recursive: true });
+    writeFileSync(
+        join(verificationDir, 'agent-domain-health-history.json'),
+        `${JSON.stringify(
+            {
+                version: 1,
+                updated_at: '2026-02-23T10:00:00Z',
+                snapshots: [
+                    {
+                        date: '2026-02-23',
+                        captured_at: '2026-02-23T10:00:00Z',
+                        counts_by_signal: { GREEN: 3, YELLOW: 0, RED: 0 },
+                        domains: [
+                            { domain: 'calendar', signal: 'GREEN' },
+                            { domain: 'chat', signal: 'GREEN' },
+                            { domain: 'payments', signal: 'GREEN' },
+                        ],
+                    },
+                ],
+            },
+            null,
+            2
+        )}\n`,
+        'utf8'
+    );
+
+    const outJson = 'verification/agent-governance-summary.json';
+    const build = runSummary(dir, [
+        '--format',
+        'json',
+        '--write-json',
+        outJson,
+    ]);
+    assert.equal(build.status, 0, build.stderr || build.stdout);
+
+    let result = runSummary(dir, [
+        '--from-json',
+        outJson,
+        '--format',
+        'json',
+        '--policy-check',
+        'strict',
+    ]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    let parsed = JSON.parse(result.stdout);
+    assert.ok(parsed.policies);
+    assert.equal(parsed.policies.strict.pass, true);
+
+    result = runSummary(dir, [
+        '--from-json',
+        outJson,
+        '--format',
+        'json',
+        '--policy-check',
+        'fail_on_red',
+    ]);
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.policies.fail_on_red.pass, false);
+});

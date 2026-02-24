@@ -147,6 +147,7 @@ Nota:
 - El summary soporta `--profile local|ci` (default `local`); en `local` usa metrics read-only para no ensuciar el arbol local.
 - El summary soporta `--strict` (falla por blockers) y `--fail-on-red` (falla si el semaforo global queda en `RED`).
 - El JSON/Markdown del summary incluye evaluacion de politicas (`strict`, `fail_on_red`) para dashboards/PR review.
+- Para CI/automatizacion, preferir `agent-governance-summary --from-json <artifact> --policy-check <strict|fail_on_red>` en lugar de parseo inline.
 - `metrics` acepta `--profile local|ci` (por defecto escribe; `local` implica read-only salvo `--write`).
 - `metrics --dry-run` muestra preview de archivos runtime que escribiria y no persiste cambios.
 - El summary/PR comment incluye delta corto de conflictos (`blocking`/`handoff`) vs baseline usando `metrics --json`.

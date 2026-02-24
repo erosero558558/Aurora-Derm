@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { writeFileSync, mkdirSync, existsSync } = require('fs');
+const { writeFileSync, mkdirSync, existsSync, readFileSync } = require('fs');
 const { resolve, dirname } = require('path');
 const { spawnSync } = require('child_process');
 
@@ -213,6 +213,51 @@ function evaluatePolicyResults(report) {
             reason: signal !== 'RED' ? 'signal_not_red' : 'signal_red',
         },
     };
+}
+
+function ensurePolicies(report) {
+    if (!report || typeof report !== 'object') return report;
+    if (
+        report.policies &&
+        report.policies.strict &&
+        report.policies.fail_on_red
+    ) {
+        return report;
+    }
+    return {
+        ...report,
+        policies: evaluatePolicyResults(report),
+    };
+}
+
+function runPolicyCheck(report, policyName, { annotate = false } = {}) {
+    const key = String(policyName || '')
+        .trim()
+        .toLowerCase()
+        .replace(/-/g, '_');
+    if (!key) return { checked: false, pass: true, policy: null, reason: null };
+
+    const policies = report?.policies || {};
+    const policy = policies[key];
+    if (!policy || typeof policy.pass !== 'boolean') {
+        throw new Error(
+            `policy-check invalido (${policyName}). Use strict|fail_on_red`
+        );
+    }
+
+    const reason = String(policy.reason || 'n/a');
+    const msg = `Governance policy ${key} ${policy.pass ? 'PASS' : 'FAIL'} (${reason})`;
+    if (annotate) {
+        if (policy.pass) {
+            console.error(`::notice::${msg}`);
+        } else {
+            console.warn(`::warning::${msg}`);
+        }
+    } else {
+        console.error(msg);
+    }
+
+    return { checked: true, pass: policy.pass, policy: key, reason };
 }
 
 function summarize(resultMap) {
@@ -649,32 +694,42 @@ function writeMaybe(path, content) {
 }
 
 function main() {
-    if (!existsSync(ORCHESTRATOR)) {
-        throw new Error(`No existe orchestrator: ${ORCHESTRATOR}`);
-    }
-
     const metricsProfile = String(flags.profile || 'local')
         .trim()
         .toLowerCase();
     if (!['local', 'ci'].includes(metricsProfile)) {
         throw new Error(`--profile invalido (${metricsProfile}). Use local|ci`);
     }
+    const fromJsonPath = flags['from-json']
+        ? resolve(ROOT, String(flags['from-json']))
+        : null;
 
-    const commands = {
-        status: ['status', '--json'],
-        conflicts: ['conflicts', '--json'],
-        handoffsStatus: ['handoffs', 'status', '--json'],
-        handoffsLint: ['handoffs', 'lint', '--json'],
-        codexCheck: ['codex-check', '--json'],
-        metrics: ['metrics', '--json', '--profile', metricsProfile],
-    };
+    let report;
+    if (fromJsonPath) {
+        if (!existsSync(fromJsonPath)) {
+            throw new Error(`No existe --from-json: ${fromJsonPath}`);
+        }
+        report = JSON.parse(readFileSync(fromJsonPath, 'utf8'));
+        report = ensurePolicies(report);
+    } else {
+        if (!existsSync(ORCHESTRATOR)) {
+            throw new Error(`No existe orchestrator: ${ORCHESTRATOR}`);
+        }
+        const commands = {
+            status: ['status', '--json'],
+            conflicts: ['conflicts', '--json'],
+            handoffsStatus: ['handoffs', 'status', '--json'],
+            handoffsLint: ['handoffs', 'lint', '--json'],
+            codexCheck: ['codex-check', '--json'],
+            metrics: ['metrics', '--json', '--profile', metricsProfile],
+        };
 
-    const results = {};
-    for (const [key, args] of Object.entries(commands)) {
-        results[key] = runOrchestratorJson(args);
+        const results = {};
+        for (const [key, args] of Object.entries(commands)) {
+            results[key] = runOrchestratorJson(args);
+        }
+        report = summarize(results);
     }
-
-    const report = summarize(results);
     const markdown = toMarkdown(report);
     const jsonText = `${JSON.stringify(report, null, 2)}\n`;
 
@@ -688,6 +743,15 @@ function main() {
         process.stdout.write(jsonText);
     } else {
         throw new Error(`Formato no soportado: ${format}`);
+    }
+
+    if (flags['policy-check']) {
+        const check = runPolicyCheck(report, flags['policy-check'], {
+            annotate: Boolean(flags['annotate-policy']),
+        });
+        if (check.checked && !check.pass) {
+            process.exitCode = 1;
+        }
     }
     if (flags.strict && report.policies?.strict?.pass === false) {
         process.exitCode = 1;

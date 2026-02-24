@@ -65,26 +65,7 @@ jobs:
               if: always()
               continue-on-error: true
               run: |
-                  node - <<'NODE'
-                  const fs = require('fs');
-                  const path = 'verification/agent-governance-summary.json';
-                  if (!fs.existsSync(path)) {
-                    console.warn('::warning::Governance summary JSON not found; policy probe skipped.');
-                    process.exit(0);
-                  }
-                  const report = JSON.parse(fs.readFileSync(path, 'utf8'));
-                  const policy = report?.policies?.fail_on_red;
-                  if (!policy) {
-                    console.warn('::warning::Governance policy `fail_on_red` not available in summary JSON.');
-                    process.exit(0);
-                  }
-                  if (policy.pass) {
-                    console.log(`Governance fail_on_red policy PASS (${policy.reason || 'n/a'})`);
-                    process.exit(0);
-                  }
-                  console.warn(`::warning::Governance fail_on_red policy FAIL (${policy.reason || 'n/a'})`);
-                  process.exit(1);
-                  NODE
+                  node bin/agent-governance-summary.js --from-json verification/agent-governance-summary.json --format json --policy-check fail_on_red --annotate-policy > /dev/null
 
             - name: Upload governance summary artifact
               if: always()
