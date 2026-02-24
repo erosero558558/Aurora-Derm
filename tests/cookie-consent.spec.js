@@ -77,8 +77,26 @@ test.describe('Consentimiento de cookies', () => {
         await rejectBtn.click({ force: true });
         await page.waitForTimeout(1000);
 
-        const ga4Loaded = await page.evaluate(() => !!window._ga4Loaded);
-        expect(ga4Loaded).toBe(false);
+        const consentState = await page.evaluate(() => {
+            const raw = localStorage.getItem('pa_cookie_consent_v1');
+            return raw ? JSON.parse(raw) : null;
+        });
+        expect(consentState).not.toBeNull();
+        expect(consentState.status).toBe('rejected');
+
+        const hasGrantedConsent = await page.evaluate(() => {
+            const layer = Array.isArray(window.dataLayer) ? window.dataLayer : [];
+            return layer.some((entry) => {
+                const args = Array.from(entry || []);
+                const isConsentUpdate =
+                    args[0] === 'consent' && args[1] === 'update';
+                if (!isConsentUpdate || typeof args[2] !== 'object' || !args[2]) {
+                    return false;
+                }
+                return args[2].analytics_storage === 'granted';
+            });
+        });
+        expect(hasGrantedConsent).toBe(false);
     });
 
     test('GA4 se carga al aceptar cookies', async ({ page }) => {

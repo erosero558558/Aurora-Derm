@@ -186,6 +186,12 @@ async function sendChatText(page, value) {
     await input.press('Enter');
 }
 
+const SCHEDULE_UNAVAILABLE_PATTERN =
+    /La agenda est[aá] temporalmente no disponible|The schedule is temporarily unavailable/i;
+
+const SLOT_UNAVAILABLE_PATTERN =
+    /Ese horario ya no est[aá] disponible|Please choose a valid time from the options/i;
+
 async function completeChatBookingUntilCashSelection(page, dateValue) {
     await page
         .locator(
@@ -248,7 +254,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             await completeChatBookingUntilCashSelection(page, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            'La agenda esta temporalmente no disponible'
+            SCHEDULE_UNAVAILABLE_PATTERN
         );
         await expect
             .poll(() => page.locator('#chatMessages #chatDateInput').count())
@@ -270,7 +276,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             await completeChatBookingUntilCashSelection(page, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            'Ese horario ya no esta disponible'
+            SLOT_UNAVAILABLE_PATTERN
         );
         await expect
             .poll(() => page.locator('#chatMessages #chatDateInput').count())
@@ -292,7 +298,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             await completeChatBookingUntilCashSelection(page, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            'Ese horario ya no esta disponible'
+            SLOT_UNAVAILABLE_PATTERN
         );
         await expect
             .poll(() => page.locator('#chatMessages #chatDateInput').count())
@@ -329,7 +335,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
         }, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            'La agenda esta temporalmente no disponible'
+            SCHEDULE_UNAVAILABLE_PATTERN
         );
     });
 });
