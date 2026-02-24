@@ -279,7 +279,7 @@ async function completeChatBookingUntilCashSelection(page, dateValue) {
 }
 
 test.describe('Chat booking con agenda real: errores de calendario', () => {
-    test.fixme('calendar_unreachable devuelve mensaje claro y vuelve al paso de fecha', async ({
+    test('calendar_unreachable devuelve mensaje claro y vuelve al paso de fecha', async ({
         page,
     }) => {
         const { dateValue } = await mockApiWithAppointmentError(
@@ -301,7 +301,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             .toBeGreaterThan(beforeErrorDateInputCount);
     });
 
-    test.fixme('slot_unavailable devuelve mensaje de horario ocupado y vuelve a fecha', async ({
+    test('slot_unavailable devuelve mensaje de horario ocupado y vuelve a fecha', async ({
         page,
     }) => {
         const { dateValue } = await mockApiWithAppointmentError(
@@ -323,7 +323,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             .toBeGreaterThan(beforeErrorDateInputCount);
     });
 
-    test.fixme('slot_conflict devuelve mensaje de horario ocupado y vuelve a fecha', async ({
+    test('slot_conflict devuelve mensaje de horario ocupado y vuelve a fecha', async ({
         page,
     }) => {
         const { dateValue } = await mockApiWithAppointmentError(
@@ -345,7 +345,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             .toBeGreaterThan(beforeErrorDateInputCount);
     });
 
-    test.fixme('error de disponibilidad por mensaje muestra agenda no disponible', async ({
+    test('error de disponibilidad por mensaje muestra agenda no disponible', async ({
         page,
     }) => {
         const { dateValue } = await mockApiWithAvailabilityError(
