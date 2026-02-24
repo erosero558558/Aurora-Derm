@@ -37,9 +37,10 @@ Dominio: https://pielarmonia.com
 - Hardening workflows: override manual `require_google_calendar` habilitado en `Post-Deploy Gate` y `Production Monitor`.
 - Estado general: En curso. CI desbloqueado y pipeline activo tras fix de calendar runtime.
 - Chatbot: Operativo en Trinity/OpenRouter (cola OpenClaw deshabilitada por decision de producto).
-- Agenda real: implementada en codigo, pero produccion hoy reporta `calendarSource=store` y `calendarAuth=none`.
+- Agenda real: activa en produccion (`calendarSource=google`, `calendarAuth=oauth_refresh`, `calendarMode=live`).
 - Gate de produccion: push gate en verde + hash-strict manual en verde (2026-02-23 21:52 hora local del servidor / 2026-02-24 UTC).
 - Gate backend manual (skip hash) tras `4f32b2d`: falla por `availability` en `503 calendar_unreachable` cuando se exige Google estricto (`requiredGoogle=true`).
+- Validacion live 2026-02-23 23:34 (-05:00): `health.calendarRequired=true` y `health.calendarRequirementMet=true`; `availability`/`booked-slots` responden con `meta.source=google` y `meta.mode=live`.
 - Smoke: 19/19 OK. Latencias: figo-post p95=582ms, core p95=553ms. Error rate=0.
 - Umbral operativo `figo-post` endurecido a p95 <= `2500 ms` en gate/benchmark/workflow.
 - Gate hash estricto: validado en 3 corridas consecutivas (pre code-split).
@@ -147,15 +148,28 @@ Dominio: https://pielarmonia.com
 - Hallazgo principal: `Availability API` devuelve `503` con `code=calendar_unreachable` y meta `requiredGoogle=true`.
 - Contexto health en el mismo periodo: `calendarSource=store`, `calendarAuth=none`.
 
+15. Verificacion live de cutover Google en produccion
+- Comando: `Invoke-WebRequest` a `health`, `availability` y `booked-slots` (2026-02-23 23:34 -05:00).
+- Resultado: OK.
+- Evidencia:
+  - `health.calendarSource=google`
+  - `health.calendarAuth=oauth_refresh`
+  - `health.calendarMode=live`
+  - `health.calendarRequired=true`
+  - `health.calendarRequirementMet=true`
+  - `availability.meta.source=google`, `availability.meta.mode=live`
+  - `booked-slots.meta.source=google`, `booked-slots.meta.mode=live`
+
 ## Estado por fases del plan unico
 
 1. Fase 0 - Control unico y anti-bucle: Completada.
 - Un solo plan operativo activo.
 - Gate hibrido aplicado.
 
-2. Fase 1 - Agenda real Google (OAuth): En validacion de cutover productivo.
+2. Fase 1 - Agenda real Google (OAuth): En cierre de criterio estricto.
 - Disponibilidad y reserva con metadatos de calendario implementadas.
-- Pendiente activar modo Google real en produccion (health aun en `calendarSource=store`).
+- Cutover productivo activo y saludable (`calendarSource=google`, `calendarAuth=oauth_refresh`, `calendarMode=live`).
+- Pendiente de cierre: evidencia automatizada en verde de `TEST_REQUIRE_GOOGLE_CALENDAR=true npm run test:calendar-contract`.
 
 3. Fase 2 - Consistencia reserva/chat/reprogramacion: Completada en flujos criticos.
 - Duraciones por servicio verificadas (caso 60 min probado).
@@ -218,17 +232,18 @@ Dominio: https://pielarmonia.com
 - Evidencia: CI run `22334259615` = `success`; Post-Deploy Gate run `22334259617` = `success`.
 - Seguimiento: incidente cerrado tecnicamente; mantener monitoreo de latencia para evitar falsos negativos en gate.
 
-9. Cutover Google Calendar pendiente en produccion.
-- Evidencia health actual: `calendarSource=store`, `calendarAuth=none`.
-- Variables GitHub vigentes: `REQUIRE_GOOGLE_CALENDAR=false`, `PROD_MONITOR_ALLOW_STORE_CALENDAR=true`.
+9. Cutover Google Calendar activado en produccion (seguimiento de cierre).
+- Evidencia health actual (2026-02-23 23:34 -05:00): `calendarSource=google`, `calendarAuth=oauth_refresh`, `calendarMode=live`.
+- Evidencia adicional: `calendarRequired=true`, `calendarRequirementMet=true`.
+- Variables GitHub de control: validar y alinear a modo estricto si aun no estan aplicadas (`REQUIRE_GOOGLE_CALENDAR=true`, `PROD_MONITOR_ALLOW_STORE_CALENDAR=false`).
 - Override manual disponible: `workflow_dispatch` en `Post-Deploy Gate` y `Production Monitor` con `require_google_calendar=true`.
-- Impacto: pruebas con Google estricto fallan hasta completar credenciales OAuth en servidor.
+- Impacto residual: falta registrar corrida automatizada strict de contrato para cerrar formalmente Fase 1.
 
 ## Siguiente ejecucion recomendada
 
-1. Completar cutover de Google Calendar en servidor (`calendarSource=google`, `calendarAuth=oauth_refresh`).
-2. Cambiar variables de control a modo estricto: `REQUIRE_GOOGLE_CALENDAR=true` y `PROD_MONITOR_ALLOW_STORE_CALENDAR=false`.
-3. Re-ejecutar: `TEST_REQUIRE_GOOGLE_CALENDAR=true npm run test:calendar-contract`.
-4. Re-ejecutar gate post-deploy (`npm run gate:prod:backend` y `npm run gate:prod:hash-strict`) para validar que `availability` ya no responda `503`.
+1. Ejecutar `Post-Deploy Gate (Git Sync)` via `workflow_dispatch` con `require_google_calendar=true` y confirmar verde.
+2. Ejecutar `Production Monitor` via `workflow_dispatch` con `require_google_calendar=true` (sin `allow_store_calendar`) y confirmar verde.
+3. Registrar evidencia de `TEST_REQUIRE_GOOGLE_CALENDAR=true npm run test:calendar-contract` en verde (pipeline o runner con Node disponible).
+4. Si 1-3 estan en verde, cerrar Fase 1 en `PLAN_MAESTRO_OPERATIVO_2026.md` y reflejar snapshot final en este status.
 5. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
 6. Mantener monitoreo semanal de p95 `availability` para detectar picos transitorios.

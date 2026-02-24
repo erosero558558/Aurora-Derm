@@ -48,7 +48,7 @@ Entregables:
 - [x] Lock por slot con compensacion de calendario.
 - [x] Soporte env `PIELARMONIA_CALENDAR_AUTH_MODE=oauth_refresh_token`.
 - [x] `health` expone `calendarTokenHealthy`.
-- [ ] Cutover productivo activo (`health.calendarSource=google` y `health.calendarAuth=oauth_refresh`).
+- [x] Cutover productivo activo (`health.calendarSource=google` y `health.calendarAuth=oauth_refresh`).
 
 Criterio de salida:
 - [x] `npm run test:calendar-contract` en verde.
