@@ -1,4 +1,5 @@
 {
+    "license": "proprietary",
     "require": {
         "phpmailer/phpmailer": "^7.0",
         "predis/predis": "^3.4",
@@ -11,9 +12,9 @@
         "friendsofphp/php-cs-fixer": "^3.94"
     },
     "autoload": {
-        "psr-4": {
-            "": "lib/"
-        }
+        "classmap": [
+            "lib/"
+        ]
     },
     "scripts": {
         "lint": "php-cs-fixer fix --dry-run --diff",

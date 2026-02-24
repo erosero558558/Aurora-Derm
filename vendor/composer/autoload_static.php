@@ -350,10 +350,6 @@ class ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa
         ),
     );
 
-    public static $fallbackDirsPsr4 = array (
-        0 => __DIR__ . '/../..' . '/lib',
-    );
-
     public static $prefixesPsr0 = array (
         'J' =>
         array (
@@ -365,10 +361,27 @@ class ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa
     );
 
     public static $classMap = array (
+        'ApiConfig' => __DIR__ . '/../..' . '/lib/ApiConfig.php',
+        'ApiKernel' => __DIR__ . '/../..' . '/lib/ApiKernel.php',
+        'AppConfig' => __DIR__ . '/../..' . '/lib/AppConfig.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
+        'BookingCancelled' => __DIR__ . '/../..' . '/lib/events/BookingCancelled.php',
+        'BookingCreated' => __DIR__ . '/../..' . '/lib/events/BookingCreated.php',
+        'BookingRescheduled' => __DIR__ . '/../..' . '/lib/events/BookingRescheduled.php',
+        'BookingService' => __DIR__ . '/../..' . '/lib/BookingService.php',
         'CURLStringFile' => __DIR__ . '/..' . '/symfony/polyfill-php81/Resources/stubs/CURLStringFile.php',
+        'CalendarAvailabilityService' => __DIR__ . '/../..' . '/lib/calendar/CalendarAvailabilityService.php',
+        'CalendarBookingService' => __DIR__ . '/../..' . '/lib/calendar/CalendarBookingService.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Deprecated' => __DIR__ . '/..' . '/symfony/polyfill-php84/Resources/stubs/Deprecated.php',
+        'EmailListener' => __DIR__ . '/../..' . '/lib/listeners/EmailListener.php',
+        'Event' => __DIR__ . '/../..' . '/lib/events/Event.php',
+        'EventDispatcher' => __DIR__ . '/../..' . '/lib/events/EventDispatcher.php',
+        'FeatureFlags' => __DIR__ . '/../..' . '/lib/features.php',
+        'GoogleCalendarClient' => __DIR__ . '/../..' . '/lib/calendar/GoogleCalendarClient.php',
+        'GoogleTokenProvider' => __DIR__ . '/../..' . '/lib/calendar/GoogleTokenProvider.php',
+        'Metrics' => __DIR__ . '/../..' . '/lib/metrics.php',
+        'NoShowPredictor' => __DIR__ . '/../..' . '/lib/prediction.php',
         'Normalizer' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/Resources/stubs/Normalizer.php',
         'PHPUnit\\Event\\Application\\Finished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Application/Finished.php',
         'PHPUnit\\Event\\Application\\FinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Application/FinishedSubscriber.php',
@@ -1336,8 +1349,10 @@ class ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa
         'PharIo\\Version\\VersionConstraintValue' => __DIR__ . '/..' . '/phar-io/version/src/VersionConstraintValue.php',
         'PharIo\\Version\\VersionNumber' => __DIR__ . '/..' . '/phar-io/version/src/VersionNumber.php',
         'PhpToken' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
+        'PushService' => __DIR__ . '/../..' . '/lib/PushService.php',
         'ReflectionConstant' => __DIR__ . '/..' . '/symfony/polyfill-php84/Resources/stubs/ReflectionConstant.php',
         'ReturnTypeWillChange' => __DIR__ . '/..' . '/symfony/polyfill-php81/Resources/stubs/ReturnTypeWillChange.php',
+        'Router' => __DIR__ . '/../..' . '/lib/Router.php',
         'SebastianBergmann\\CliParser\\AmbiguousOptionException' => __DIR__ . '/..' . '/sebastian/cli-parser/src/exceptions/AmbiguousOptionException.php',
         'SebastianBergmann\\CliParser\\Exception' => __DIR__ . '/..' . '/sebastian/cli-parser/src/exceptions/Exception.php',
         'SebastianBergmann\\CliParser\\OptionDoesNotAllowArgumentException' => __DIR__ . '/..' . '/sebastian/cli-parser/src/exceptions/OptionDoesNotAllowArgumentException.php',
@@ -1542,6 +1557,8 @@ class ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa
         'SebastianBergmann\\Type\\VoidType' => __DIR__ . '/..' . '/sebastian/type/src/type/VoidType.php',
         'SebastianBergmann\\Version' => __DIR__ . '/..' . '/sebastian/version/src/Version.php',
         'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
+        'TOTP' => __DIR__ . '/../..' . '/lib/totp.php',
+        'TestingExitException' => __DIR__ . '/../..' . '/lib/http.php',
         'TheSeer\\Tokenizer\\Exception' => __DIR__ . '/..' . '/theseer/tokenizer/src/Exception.php',
         'TheSeer\\Tokenizer\\NamespaceUri' => __DIR__ . '/..' . '/theseer/tokenizer/src/NamespaceUri.php',
         'TheSeer\\Tokenizer\\NamespaceUriException' => __DIR__ . '/..' . '/theseer/tokenizer/src/NamespaceUriException.php',
@@ -1559,7 +1576,6 @@ class ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa::$prefixDirsPsr4;
-            $loader->fallbackDirsPsr4 = ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa::$fallbackDirsPsr4;
             $loader->prefixesPsr0 = ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa::$prefixesPsr0;
             $loader->classMap = ComposerStaticInit9cbc8d713265ff9b0a8a50f7a11fe4aa::$classMap;
 
