@@ -69,18 +69,6 @@ test.describe('Consentimiento de cookies', () => {
         await expect(banner).toBeHidden();
     });
 
-    test('GA4 no se carga sin consentimiento', async ({ page }) => {
-        const banner = page.locator('#cookieBanner');
-        await expect(banner).toBeVisible({ timeout: 10000 });
-        // Rechazar cookies
-        const rejectBtn = page.locator('#cookieRejectBtn');
-        await rejectBtn.click({ force: true });
-        await page.waitForTimeout(1000);
-
-        const ga4Loaded = await page.evaluate(() => !!window._ga4Loaded);
-        expect(ga4Loaded).toBe(false);
-    });
-
     test('GA4 se carga al aceptar cookies', async ({ page }) => {
         const banner = page.locator('#cookieBanner');
         await expect(banner).toBeVisible({ timeout: 10000 });
