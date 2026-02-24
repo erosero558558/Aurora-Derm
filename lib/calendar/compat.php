@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-if (!class_exists('GoogleTokenProvider')) {
-    class GoogleTokenProvider
+if (!class_exists('GoogleTokenProvider') && !class_exists('CompatGoogleTokenProvider')) {
+    class CompatGoogleTokenProvider
     {
         public static function fromEnv()
         {
@@ -30,10 +30,12 @@ if (!class_exists('GoogleTokenProvider')) {
             return 'none';
         }
     }
+
+    class_alias('CompatGoogleTokenProvider', 'GoogleTokenProvider');
 }
 
-if (!class_exists('GoogleCalendarClient')) {
-    class GoogleCalendarClient
+if (!class_exists('GoogleCalendarClient') && !class_exists('CompatGoogleCalendarClient')) {
+    class CompatGoogleCalendarClient
     {
         public static function fromEnv()
         {
@@ -77,10 +79,12 @@ if (!class_exists('GoogleCalendarClient')) {
             return '';
         }
     }
+
+    class_alias('CompatGoogleCalendarClient', 'GoogleCalendarClient');
 }
 
-if (!class_exists('CalendarAvailabilityService')) {
-    class CalendarAvailabilityService
+if (!class_exists('CalendarAvailabilityService') && !class_exists('CompatCalendarAvailabilityService')) {
+    class CompatCalendarAvailabilityService
     {
         private $client;
         private $timezone;
@@ -351,10 +355,12 @@ if (!class_exists('CalendarAvailabilityService')) {
             return $map;
         }
     }
+
+    class_alias('CompatCalendarAvailabilityService', 'CalendarAvailabilityService');
 }
 
-if (!class_exists('CalendarBookingService')) {
-    class CalendarBookingService
+if (!class_exists('CalendarBookingService') && !class_exists('CompatCalendarBookingService')) {
+    class CompatCalendarBookingService
     {
         private $availabilityService;
 
@@ -463,4 +469,6 @@ if (!class_exists('CalendarBookingService')) {
             }
         }
     }
+
+    class_alias('CompatCalendarBookingService', 'CalendarBookingService');
 }
