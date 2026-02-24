@@ -83,6 +83,12 @@ function readPlan(dir) {
     return readFileSync(join(dir, 'PLAN_MAESTRO_CODEX_2026.md'), 'utf8');
 }
 
+function readMetrics(dir) {
+    return JSON.parse(
+        readFileSync(join(dir, 'verification', 'agent-metrics.json'), 'utf8')
+    );
+}
+
 function baseHandoffs() {
     return `
 version: 1
@@ -492,6 +498,31 @@ test('close soporta --json y devuelve task + evidence_path', (t) => {
     assert.equal(json.task.id, 'AG-010');
     assert.equal(json.task.status, 'done');
     assert.equal(json.evidence_path, 'verification/agent-runs/AG-010.md');
+});
+
+test('metrics soporta --json, escribe archivo y expone delta/baseline handoff', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForConflictFixture({ codexStatus: 'in_progress' }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithCodexBlock({ status: 'in_progress' }),
+    });
+
+    const result = runCli(dir, ['metrics', '--json']);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.version, 1);
+    assert.equal(json.current.file_conflicts, 1);
+    assert.equal(json.current.file_conflicts_handoff, 0);
+    assert.equal(typeof json.baseline.file_conflicts_handoff, 'number');
+    assert.equal(typeof json.delta.file_conflicts, 'number');
+    assert.equal(typeof json.delta.file_conflicts_handoff, 'number');
+
+    const written = readMetrics(dir);
+    assert.equal(written.current.file_conflicts, 1);
+    assert.equal(written.current.file_conflicts_handoff, 0);
 });
 
 test('conflicts, handoffs y codex-check soportan --json con salida estable', (t) => {

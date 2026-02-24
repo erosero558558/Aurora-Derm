@@ -122,6 +122,7 @@ node agent-orchestrator.js sync
 node agent-orchestrator.js close <task_id>
 node agent-orchestrator.js close AG-003 --json
 node agent-orchestrator.js metrics
+node agent-orchestrator.js metrics --json
 php bin/validate-agent-governance.php
 npm run agent:test
 npm run agent:summary
@@ -142,6 +143,7 @@ Nota:
 
 - Preferir `--json` para dashboards, comentarios automáticos en PR y tooling externo; usar salida texto para operación manual.
 - `npm run agent:summary` genera resumen consolidado (Markdown/JSON) para CI/PR usando los comandos `--json`.
+- El summary/PR comment incluye delta corto de conflictos (`blocking`/`handoff`) vs baseline usando `metrics --json`.
 
 ## Reglas de edicion
 

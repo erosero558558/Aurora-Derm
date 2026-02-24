@@ -14,11 +14,11 @@
  *   node agent-orchestrator.js task <claim|start|finish> <AG-ID> [...]
  *   node agent-orchestrator.js sync
  *   node agent-orchestrator.js close <task_id> [--evidence path]
- *   node agent-orchestrator.js metrics
+ *   node agent-orchestrator.js metrics [--json]
  */
 
-const { readFileSync, writeFileSync, existsSync } = require('fs');
-const { resolve } = require('path');
+const { readFileSync, writeFileSync, existsSync, mkdirSync } = require('fs');
+const { resolve, dirname } = require('path');
 
 const ROOT = __dirname;
 const BOARD_PATH = resolve(ROOT, 'AGENT_BOARD.yaml');
@@ -871,7 +871,8 @@ function safeNumber(value, fallback = 0) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function cmdMetrics() {
+function cmdMetrics(args = []) {
+    const wantsJson = args.includes('--json');
     const board = parseBoard();
     const handoffData = parseHandoffs();
     const conflictAnalysis = analyzeConflicts(
@@ -902,6 +903,7 @@ function cmdMetrics() {
                   tasks_total: total,
                   tasks_with_rework: 0,
                   file_conflicts: blockingConflicts,
+                  file_conflicts_handoff: handoffConflicts,
                   non_critical_lead_time_hours_avg: null,
                   coordination_gate_red_rate_pct: null,
                   traceability_pct: 0,
@@ -942,6 +944,10 @@ function cmdMetrics() {
                 baseline.file_conflicts,
                 blockingConflicts
             ),
+            file_conflicts_handoff: safeNumber(
+                baseline.file_conflicts_handoff,
+                handoffConflicts
+            ),
             non_critical_lead_time_hours_avg:
                 baseline.non_critical_lead_time_hours_avg === null
                     ? null
@@ -963,13 +969,30 @@ function cmdMetrics() {
             coordination_gate_red_rate_pct: null,
             traceability_pct: traceability,
         },
+        delta: {
+            tasks_total: total - safeNumber(baseline.tasks_total, total),
+            file_conflicts:
+                blockingConflicts -
+                safeNumber(baseline.file_conflicts, blockingConflicts),
+            file_conflicts_handoff:
+                handoffConflicts -
+                safeNumber(baseline.file_conflicts_handoff, handoffConflicts),
+            traceability_pct:
+                traceability -
+                safeNumber(baseline.traceability_pct, traceability),
+        },
     };
 
+    mkdirSync(dirname(METRICS_PATH), { recursive: true });
     writeFileSync(
         METRICS_PATH,
         `${JSON.stringify(metrics, null, 4)}\n`,
         'utf8'
     );
+    if (wantsJson) {
+        console.log(JSON.stringify(metrics, null, 2));
+        return;
+    }
     console.log(`Metricas actualizadas en ${METRICS_PATH}`);
 }
 
@@ -1892,7 +1915,7 @@ function main() {
         task: () => cmdTask(args),
         sync: () => cmdSync(),
         close: () => cmdClose(args),
-        metrics: () => cmdMetrics(),
+        metrics: () => cmdMetrics(args),
     };
 
     if (!commands[command]) {

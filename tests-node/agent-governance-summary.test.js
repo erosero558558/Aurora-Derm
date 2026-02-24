@@ -140,7 +140,14 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.equal(parsed.conflicts.totals.blocking, 0);
     assert.equal(parsed.handoffs.lint.ok, true);
     assert.equal(parsed.codex_check.ok, true);
+    assert.equal(parsed.metrics.version, 1);
+    assert.equal(
+        typeof parsed.delta_summary.conflicts_blocking.delta,
+        'number'
+    );
+    assert.equal(typeof parsed.delta_summary.conflicts_handoff.delta, 'number');
     assert.equal(parsed.commands.status.exit_code, 0);
+    assert.equal(parsed.commands.metrics.exit_code, 0);
 
     const jsonPath = join(dir, outJson);
     const mdPath = join(dir, outMd);
@@ -152,4 +159,5 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.equal(writtenJson.version, 1);
     assert.match(writtenMd, /^## Agent Governance Summary/m);
     assert.match(writtenMd, /Overall:\s+OK/);
+    assert.match(writtenMd, /Delta vs Baseline \(Conflicts\/Handoffs\)/);
 });

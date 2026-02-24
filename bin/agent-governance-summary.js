@@ -69,6 +69,7 @@ function summarize(resultMap) {
     const handoffStatus = resultMap.handoffsStatus?.json || {};
     const handoffLint = resultMap.handoffsLint?.json || {};
     const codexCheck = resultMap.codexCheck?.json || {};
+    const metrics = resultMap.metrics?.json || {};
 
     const blockers = [];
     if (conflicts?.totals?.blocking > 0) blockers.push('conflicts');
@@ -82,6 +83,7 @@ function summarize(resultMap) {
         blockers.push('handoffs_lint_parse');
     if (resultMap.codexCheck?.json_parse_error)
         blockers.push('codex_check_parse');
+    if (resultMap.metrics?.json_parse_error) blockers.push('metrics_parse');
 
     const topBlocking = Array.isArray(conflicts.conflicts)
         ? conflicts.conflicts
@@ -99,6 +101,33 @@ function summarize(resultMap) {
               }))
         : [];
 
+    const baselineConflicts = Number(metrics?.baseline?.file_conflicts ?? 0);
+    const baselineHandoffConflicts = Number(
+        metrics?.baseline?.file_conflicts_handoff ?? 0
+    );
+    const currentConflicts = Number(metrics?.current?.file_conflicts ?? 0);
+    const currentHandoffConflicts = Number(
+        metrics?.current?.file_conflicts_handoff ?? 0
+    );
+    const deltaSummary = {
+        conflicts_blocking: {
+            baseline: baselineConflicts,
+            current: currentConflicts,
+            delta:
+                typeof metrics?.delta?.file_conflicts === 'number'
+                    ? metrics.delta.file_conflicts
+                    : currentConflicts - baselineConflicts,
+        },
+        conflicts_handoff: {
+            baseline: baselineHandoffConflicts,
+            current: currentHandoffConflicts,
+            delta:
+                typeof metrics?.delta?.file_conflicts_handoff === 'number'
+                    ? metrics.delta.file_conflicts_handoff
+                    : currentHandoffConflicts - baselineHandoffConflicts,
+        },
+    };
+
     return {
         version: 1,
         generated_at: new Date().toISOString(),
@@ -114,9 +143,18 @@ function summarize(resultMap) {
             lint: handoffLint || null,
         },
         codex_check: codexCheck || null,
+        metrics: metrics || null,
+        delta_summary: deltaSummary,
         top_blocking_conflicts: topBlocking,
         commands: resultMap,
     };
+}
+
+function fmtDelta(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 'n/a';
+    if (n > 0) return `+${n}`;
+    return `${n}`;
 }
 
 function toMarkdown(report) {
@@ -126,6 +164,7 @@ function toMarkdown(report) {
     const handoffStatus = report.handoffs?.status || {};
     const handoffLint = report.handoffs?.lint || {};
     const codexCheck = report.codex_check || {};
+    const delta = report.delta_summary || {};
 
     lines.push('## Agent Governance Summary');
     lines.push('');
@@ -137,6 +176,15 @@ function toMarkdown(report) {
                 ? report.overall.blockers.map((b) => `\`${b}\``).join(', ')
                 : 'none'
         }`
+    );
+    lines.push('');
+
+    lines.push('### Delta vs Baseline (Conflicts/Handoffs)');
+    lines.push(
+        `- Blocking conflicts: baseline=\`${delta.conflicts_blocking?.baseline ?? 'n/a'}\` -> current=\`${delta.conflicts_blocking?.current ?? 'n/a'}\` (delta \`${fmtDelta(delta.conflicts_blocking?.delta)}\`)`
+    );
+    lines.push(
+        `- Handoff conflicts: baseline=\`${delta.conflicts_handoff?.baseline ?? 'n/a'}\` -> current=\`${delta.conflicts_handoff?.current ?? 'n/a'}\` (delta \`${fmtDelta(delta.conflicts_handoff?.delta)}\`)`
     );
     lines.push('');
 
@@ -238,6 +286,7 @@ function main() {
         handoffsStatus: ['handoffs', 'status', '--json'],
         handoffsLint: ['handoffs', 'lint', '--json'],
         codexCheck: ['codex-check', '--json'],
+        metrics: ['metrics', '--json'],
     };
 
     const results = {};
