@@ -84,6 +84,7 @@ $checks = @(
 
 $results = @()
 $failures = @()
+$effectiveAllowStoreCalendar = [bool]$AllowStoreCalendar
 
 Write-Host "== Monitor Produccion =="
 Write-Host "Dominio: $base"
@@ -152,16 +153,23 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
             $calendarMode = ''
             $calendarReachable = $false
             $calendarConfigured = $false
+            $calendarRequired = $false
             $calendarLastErrorReason = ''
             $calendarLastErrorAt = ''
             try { $calendarSource = [string]$health.calendarSource } catch {}
             try { $calendarMode = [string]$health.calendarMode } catch {}
             try { $calendarReachable = [bool]$health.calendarReachable } catch { $calendarReachable = $false }
             try { $calendarConfigured = [bool]$health.calendarConfigured } catch { $calendarConfigured = $false }
+            try { $calendarRequired = [bool]$health.calendarRequired } catch { $calendarRequired = $false }
             try { $calendarLastErrorReason = [string]$health.calendarLastErrorReason } catch {}
             try { $calendarLastErrorAt = [string]$health.calendarLastErrorAt } catch {}
 
-            if (-not $AllowStoreCalendar -and $calendarSource -ne 'google') {
+            if ($calendarRequired -and $effectiveAllowStoreCalendar) {
+                $effectiveAllowStoreCalendar = $false
+                Write-Host '[WARN] health.calendarRequired=true; se fuerza validacion strict Google en monitor.'
+            }
+
+            if (-not $effectiveAllowStoreCalendar -and $calendarSource -ne 'google') {
                 $failures += "[FAIL] health.calendarSource=$calendarSource (esperado=google)"
             }
 
@@ -216,7 +224,7 @@ if ($null -ne $availabilityResult -and $availabilityResult.StatusCode -eq 200) {
             try { $mode = [string]$meta.mode } catch {}
             try { $duration = [int]$meta.durationMin } catch { $duration = 0 }
 
-            if (-not $AllowStoreCalendar -and $source -ne 'google') {
+            if (-not $effectiveAllowStoreCalendar -and $source -ne 'google') {
                 $failures += "[FAIL] availability.meta.source=$source (esperado=google)"
             }
             if (-not $AllowBlockedCalendar -and $mode -ne 'live') {
@@ -247,7 +255,7 @@ if ($null -ne $bookedResult -and $bookedResult.StatusCode -eq 200) {
             try { $mode = [string]$meta.mode } catch {}
             try { $duration = [int]$meta.durationMin } catch { $duration = 0 }
 
-            if (-not $AllowStoreCalendar -and $source -ne 'google') {
+            if (-not $effectiveAllowStoreCalendar -and $source -ne 'google') {
                 $failures += "[FAIL] booked-slots.meta.source=$source (esperado=google)"
             }
             if (-not $AllowBlockedCalendar -and $mode -ne 'live') {

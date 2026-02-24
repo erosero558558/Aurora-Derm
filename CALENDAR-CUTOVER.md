@@ -51,6 +51,7 @@ Efecto:
 
 - `post-deploy-gate` falla si `health.calendarSource != google`.
 - `Production Monitor` deja de permitir `store` automaticamente.
+- Hardening adicional: aunque `REQUIRE_GOOGLE_CALENDAR=false`, si `health.calendarRequired=true` el gate y monitor fuerzan validacion strict Google automaticamente.
 
 ## 3) Validacion tecnica
 
