@@ -1,24 +1,24 @@
-# Piel Armonía - Clínica Dermatológica y Estética
+﻿# Piel ArmonÃ­a - ClÃ­nica DermatolÃ³gica y EstÃ©tica
 
-Bienvenido al repositorio de Piel Armonía, el sitio web y sistema de gestión para la clínica dermatológica. Este proyecto incluye un sistema de reservas, un panel administrativo, integración con chatbot IA y más.
+Bienvenido al repositorio de Piel ArmonÃ­a, el sitio web y sistema de gestiÃ³n para la clÃ­nica dermatolÃ³gica. Este proyecto incluye un sistema de reservas, un panel administrativo, integraciÃ³n con chatbot IA y mÃ¡s.
 
-## 📋 Características
+## ðŸ“‹ CaracterÃ­sticas
 
-- **Sitio Web Moderno**: Diseño responsive con carga diferida de recursos (CSS/JS) para optimizar el rendimiento.
+- **Sitio Web Moderno**: DiseÃ±o responsive con carga diferida de recursos (CSS/JS) para optimizar el rendimiento.
 - **Sistema de Reservas**: Motor de reservas (`booking-engine.js`) integrado.
-- **Panel Administrativo**: Interfaz para gestionar citas, configuraciones y ver métricas (`admin.html`, `admin.js`).
-- **Chatbot IA**: Integración con Figo/Clawbot para asistencia automatizada (`chat-engine.js`, `figo-chat.php`).
-- **API Backend**: Endpoints RESTful en PHP para manejar la lógica de negocio (`api.php`).
-- **Autenticación**: Sistema de login seguro para administradores (`admin-auth.php`).
+- **Panel Administrativo**: Interfaz para gestionar citas, configuraciones y ver mÃ©tricas (`admin.html`, `admin.js`).
+- **Chatbot IA**: IntegraciÃ³n con Figo/Clawbot para asistencia automatizada (`chat-engine.js`, `figo-chat.php`).
+- **API Backend**: Endpoints RESTful en PHP para manejar la lÃ³gica de negocio (`api.php`).
+- **AutenticaciÃ³n**: Sistema de login seguro para administradores (`admin-auth.php`).
 - **Test E2E**: Pruebas automatizadas con Playwright.
 
-## 🚀 Requisitos
+## ðŸš€ Requisitos
 
 - **PHP 7.4** o superior.
 - **Node.js** (para ejecutar las pruebas con Playwright).
 - **Composer** (para dependencias de PHP, si aplica).
 
-## 🛠️ Instalación y Desarrollo Local
+## ðŸ› ï¸ InstalaciÃ³n y Desarrollo Local
 
 Para ejecutar el proyecto en tu entorno local:
 
@@ -30,9 +30,9 @@ Para ejecutar el proyecto en tu entorno local:
     ```
 
 2. **Configurar Variables de Entorno**:
-   Para el funcionamiento del panel administrativo y otras características, necesitas configurar algunas variables de entorno. Puedes ver los detalles en [SERVIDOR-LOCAL.md](SERVIDOR-LOCAL.md).
+   Para el funcionamiento del panel administrativo y otras caracterÃ­sticas, necesitas configurar algunas variables de entorno. Puedes ver los detalles en [SERVIDOR-LOCAL.md](SERVIDOR-LOCAL.md).
 
-    Ejemplo básico en PowerShell:
+    Ejemplo bÃ¡sico en PowerShell:
 
     ```powershell
     $env:PIELARMONIA_ADMIN_PASSWORD = "tu-clave-segura"
@@ -45,24 +45,25 @@ Para ejecutar el proyecto en tu entorno local:
     php -S localhost:8000
     ```
 
-4. **Acceder a la Aplicación**:
+4. **Acceder a la AplicaciÃ³n**:
     - Sitio Web: [http://localhost:8000](http://localhost:8000)
     - Panel Admin: [http://localhost:8000/admin.html](http://localhost:8000/admin.html)
     - Health Check: [http://localhost:8000/api.php?resource=health](http://localhost:8000/api.php?resource=health)
 
-## ⚙️ Configuración
+## âš™ï¸ ConfiguraciÃ³n
 
 Las variables de entorno principales son:
 
-- `PIELARMONIA_ADMIN_PASSWORD`: Contraseña para el acceso administrativo.
+- `PIELARMONIA_ADMIN_PASSWORD`: ContraseÃ±a para el acceso administrativo.
 - `PIELARMONIA_ADMIN_EMAIL`: Email para notificaciones administrativas.
 - `FIGO_CHAT_ENDPOINT`: URL del backend del chatbot (si se usa).
 - `PIELARMONIA_CRON_SECRET`: Token para ejecutar `cron.php` de forma segura.
 - `PIELARMONIA_BACKUP_OFFSITE_URL`: Endpoint opcional para replicar backups offsite.
 
-Para una lista completa y detalles sobre la configuración, consulta [SERVIDOR-LOCAL.md](SERVIDOR-LOCAL.md) y [DESPLIEGUE-PIELARMONIA.md](DESPLIEGUE-PIELARMONIA.md).
+Para una lista completa y detalles sobre la configuraciÃ³n, consulta [SERVIDOR-LOCAL.md](SERVIDOR-LOCAL.md) y [DESPLIEGUE-PIELARMONIA.md](DESPLIEGUE-PIELARMONIA.md).
+Para el cutover de agenda local a Google real, usa [CALENDAR-CUTOVER.md](CALENDAR-CUTOVER.md).
 
-## 🧪 Pruebas
+## ðŸ§ª Pruebas
 
 El proyecto utiliza Playwright para pruebas de extremo a extremo (E2E).
 
@@ -101,17 +102,18 @@ El proyecto utiliza Playwright para pruebas de extremo a extremo (E2E).
     npm run test:php
     ```
 
-    Para ver la interfaz gráfica de las pruebas:
+    Para ver la interfaz grÃ¡fica de las pruebas:
 
     ```bash
     npm run test:ui
     ```
 
-## 📦 Despliegue
+## ðŸ“¦ Despliegue
 
-Para instrucciones detalladas sobre cómo desplegar en producción, por favor revisa el archivo [DESPLIEGUE-PIELARMONIA.md](DESPLIEGUE-PIELARMONIA.md).
+Para instrucciones detalladas sobre cÃ³mo desplegar en producciÃ³n, por favor revisa el archivo [DESPLIEGUE-PIELARMONIA.md](DESPLIEGUE-PIELARMONIA.md).
+Para el cutover de agenda local a Google real, usa [CALENDAR-CUTOVER.md](CALENDAR-CUTOVER.md).
 
-Comandos rápidos post-deploy:
+Comandos rÃ¡pidos post-deploy:
 
 **Windows (PowerShell):**
 
@@ -135,19 +137,19 @@ Modo transicion (solo temporal): si el servidor aun no envia header CSP pero tu 
 
 - powershell -NoProfile -ExecutionPolicy Bypass -File .\GATE-POSTDEPLOY.ps1 -Domain "https://tu-dominio.com" -AllowMetaCspFallback
 
-## 📂 Estructura del Proyecto
+## ðŸ“‚ Estructura del Proyecto
 
 - `api.php`: Punto de entrada principal para la API.
 - `admin.html` / `admin.js`: Frontend del panel administrativo.
-- `index.html`: Página principal.
-- `booking-engine.js`: Lógica del sistema de reservas.
-- `chat-engine.js`: Lógica del cliente del chatbot.
+- `index.html`: PÃ¡gina principal.
+- `booking-engine.js`: LÃ³gica del sistema de reservas.
+- `chat-engine.js`: LÃ³gica del cliente del chatbot.
 - `data/`: Directorio para almacenamiento de datos (JSON, logs).
 - `tests/`: Scripts de prueba adicionales.
 
-## 📄 Licencia
+## ðŸ“„ Licencia
 
-Este proyecto es privado y propiedad de Piel Armonía.
+Este proyecto es privado y propiedad de Piel ArmonÃ­a.
 
 ## Deploy automatico por GitHub Actions
 
@@ -178,3 +180,5 @@ Ejecucion:
 - O `Actions -> Deploy Hosting (FTP/FTPS) -> Run workflow`.
 - Usa `dry_run = true` para validar sin subir.
 - Si falla `Timeout (control socket)`, prueba `protocol=ftp`, `server_port=21`.
+
+
