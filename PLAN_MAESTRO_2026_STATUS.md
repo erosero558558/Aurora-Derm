@@ -1,19 +1,21 @@
 # Plan Maestro 2026 - Estado Operativo
 
-Fecha de actualizacion: 2026-02-23 (sesion Claude tarde)
+Fecha de actualizacion: 2026-02-23 (sesion Claude noche)
 Dominio: https://pielarmonia.com
 
 ## Resumen rapido
 
-- Estado general: En curso, estable.
+- Estado general: En curso. CI bloqueado por cambios PHP de Codex (ver Nudo 8).
 - Chatbot: Operativo en Trinity/OpenRouter (cola OpenClaw deshabilitada por decision de producto).
 - Agenda real: Flujo create/reschedule/cancel validado contra Google Calendar en produccion.
-- Gate de produccion: Verde en modo bloqueante total (hash checks activos en `push`).
+- Gate de produccion: Hash-strict falla por deploy pendiente de script.js nuevo (esperado hasta que CI pase).
+- Smoke: 19/19 OK. Latencias: figo-post p95=582ms, core p95=553ms. Error rate=0.
 - Umbral operativo `figo-post` endurecido a p95 <= `2500 ms` en gate/benchmark/workflow.
-- Gate hash estricto: validado en 3 corridas consecutivas.
+- Gate hash estricto: validado en 3 corridas consecutivas (pre code-split).
 - Workflow post-deploy ajustado para ejecutar hashes bloqueantes en `push` de forma inmediata.
 - admin.js code split completado: 71KB -> 49.7KB (bajo target <50KB). Chunks: appointments + availability bajo demanda.
-- script.js code split completado: 111KB -> 85.9KB (-25KB). Chat shell extraido a js/chunks/shell-*.js (15.2KB, lazy). HTML actualizado a type="module". Commit: 842ee92.
+- script.js code split completado: 111KB -> 79.3KB (-29%). Chunks: shell (15.2KB lazy) + content-loader (7.2KB prefetch). HTML a type="module". Commits: 842ee92, d3cde08.
+- asset-reference-integrity test: regex extendida para rutas relativas (./js/chunks/*). Commit: b0b45a1.
 - PIELARMONIA_DEBUG_EXCEPTIONS: default explicitamente `false` en env.example.php.
 - Dependencias circulares JS: investigadas y confirmadas como inexistentes en codigo actual (state.js no tiene imports del proyecto).
 
@@ -85,7 +87,7 @@ Dominio: https://pielarmonia.com
 5. Fase 4 - UX movil y rendimiento critico: Completada.
 - Regresiones moviles: 4 passed (2026-02-23).
 - admin.js code split: 71KB -> 49.7KB (bajo target <50KB). Chunks bajo demanda: appointments + availability.
-- script.js (111KB): deuda tecnica pendiente en sesion dedicada.
+- script.js: 111KB -> 79.3KB (-29%). TARGET <80KB ALCANZADO. Commits: 842ee92, d3cde08.
 
 6. Fase 5 - Hardening final y hash gate estricto: Completada.
 - 3 corridas hash estrictas consecutivas en verde.
@@ -110,12 +112,15 @@ Dominio: https://pielarmonia.com
 - Pruebas: `101.47.4.223` en puertos `22`, `21`, `990` -> `TcpTestSucceeded=False`.
 - Implicacion: no hay canal remoto util para sincronizar artefactos (SSH/FTP/FTPS).
 
-5. script.js: 111KB -> 85.9KB (-25KB). Chat shell (15.2KB) extraido a js/chunks/shell-*.js (carga bajo demanda al primer uso del chat). Target <80KB, delta pendiente: ~6KB.
-- Accion: split adicional de warmup modules (reschedule, success-modal, engagement-forms) en sesion posterior si se requiere llegar a 80KB.
+5. script.js: 111KB -> 79.3KB (-29%). TARGET <80KB ALCANZADO. Commits: 842ee92, d3cde08.
+- Chunks lazy: shell (15.2KB al primer uso del chat) + content-loader (7.2KB prefetch paralelo).
+- HTML actualizado a type="module". Pipeline Rollup en formato ES con code splitting.
+- asset-reference-integrity test cubre chunks via regex extendida (b0b45a1).
+- PENDIENTE DEPLOY: script.js nuevo aun no en produccion (CI bloqueado, ver Nudo 8).
 
 6. Cobertura de tests: ~5-35% actual vs 80% objetivo.
 - Jules (Google AI) trabajando en scaffolding de tests (BookingServiceTest, RateLimiterTest, AuthSessionTest).
-- Pendiente integracion de su PR.
+- PR de Jules ya en main pero genera fallas CI: CalendarBookingService/CalendarAvailabilityService no encontradas en namespace Tests\Unit\Calendar (conflicto con compat.php de Codex).
 
 7. Monitoring/observabilidad: Sentry ACTIVO en produccion.
 - DSN backend (PHP) y DSN frontend (JS) configurados en env del servidor.
@@ -123,10 +128,17 @@ Dominio: https://pielarmonia.com
 - SDK carga lazy via monitoring-loader.js (async, no bloquea render).
 - Pendiente: confirmar primer evento recibido en dashboard de Sentry.
 
+8. CI bloqueado por cambios PHP de Codex (NUEVO - bloquea deploy).
+- Psalm: DuplicateClass en CalendarAvailabilityService, CalendarBookingService, GoogleCalendarClient, GoogleTokenProvider (definidas en archivos originales Y en lib/calendar/compat.php).
+- Psalm: RedundantFunctionCall en lib/PushService.php:32 y :51.
+- PHPUnit: 5 errores - clases del namespace Tests\Unit\Calendar no encontradas (interaccion Jules PR + compat.php).
+- Impacto: deploy-hosting.yml se salta porque CI no pasa. Remote script.js es el viejo IIFE (111KB).
+- Accion requerida: Codex debe resolver conflicto de definicion de clases en compat.php.
+
 ## Siguiente ejecucion recomendada
 
-1. Mantener corrida diaria de `npm run gate:prod:hash-strict` como control preventivo.
-2. Publicar dashboard semanal de `booking_confirmed`, error rate y p95 de `figo-post`.
-3. Integrar PR de Jules (tests unitarios) cuando este listo.
+1. PRIORITARIO: Codex debe resolver DuplicateClass en lib/calendar/compat.php para desbloquear CI y pipeline de deploy.
+2. Una vez CI verde: deploy automatico sube script.js nuevo (ES module, 79.3KB) + chunks a produccion.
+3. Post-deploy: correr `npm run gate:prod:hash-strict` para validar hashes.
 4. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
-5. Split adicional de script.js si se requiere <80KB: extraer warmup modules deferred (reschedule, success-modal, engagement-forms).
+5. Reporte semanal ejecutado: booking_confirmed=1, error_rate=0, figo-post p95=582ms. Verde.
