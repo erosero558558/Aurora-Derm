@@ -125,8 +125,23 @@ jobs:
               env:
                   TEST_LOCAL_SERVER: php
                   PIELARMONIA_ADMIN_PASSWORD: admin123
-            - name: Run Playwright Tests
-              run: npx playwright test --grep-invert "@visual"
+            - name: Run Playwright Tests (non-critical)
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mapfile -t spec_files < <(find tests -name "*.spec.js" \
+                    ! -name "calendar-google-contract.spec.js" \
+                    ! -name "phase2-calendar-consistency.spec.js" \
+                    ! -name "funnel-event-api.spec.js" \
+                    ! -name "funnel-retention-admin.spec.js" \
+                    ! -name "funnel-tracking.spec.js" | sort)
+
+                  if [ "${#spec_files[@]}" -eq 0 ]; then
+                    echo "::error::No se encontraron specs no criticos para Playwright."
+                    exit 1
+                  fi
+
+                  npx playwright test --grep-invert "@visual" "${spec_files[@]}"
               env:
                   TEST_LOCAL_SERVER: php
                   PIELARMONIA_ADMIN_PASSWORD: admin123
