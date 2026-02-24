@@ -51,52 +51,79 @@ git stash && git pull --rebase origin main && git stash pop && git push origin m
 
 ---
 
-## Sistema de dos agentes: Claude Code + Jules
+## Sistema de tres agentes: Claude Code + Jules + Kimi
 
 ### División de trabajo
 
-| Tarea | Asignada a |
-|---|---|
-| Decisiones de arquitectura | **Claude Code** |
-| Debugging interactivo / tiempo real | **Claude Code** |
-| Fixes pequeños y precisos | **Claude Code** |
-| Review de PRs de Jules | **Claude Code** |
-| Coordinación y priorización | **Claude Code** |
-| Tareas PHP aisladas y bien definidas | **Jules** |
-| Tests automatizados nuevos | **Jules** |
-| Refactoring de archivos grandes | **Jules** |
-| Documentación técnica (JSDoc, OpenAPI) | **Jules** |
-| Email templates, migrations, scripts | **Jules** |
-| Tareas del backlog de `JULES_TASKS.md` | **Jules** |
+| Tarea | Agente | Velocidad |
+|---|---|---|
+| Decisiones de arquitectura | **Claude Code** | Inmediata |
+| Debugging interactivo / tiempo real | **Claude Code** | Inmediata |
+| Fixes pequeños y precisos | **Claude Code** | Inmediata |
+| Review de PRs y coordinación | **Claude Code** | Inmediata |
+| Tareas PHP aisladas → PR en GitHub | **Jules** | Async (horas) |
+| Tests automatizados nuevos | **Jules** | Async (horas) |
+| Migrations, scripts, OpenAPI | **Jules** | Async (horas) |
+| Refactoring local sin PR | **Kimi** | Local (~minutos) |
+| Análisis y auditoría de código | **Kimi** | Local (~minutos) |
+| JSDoc / PHPDoc masivo | **Kimi** | Local (~minutos) |
+| Tareas del backlog de `JULES_TASKS.md` | **Jules** | Async |
+| Tareas del backlog de `KIMI_TASKS.md` | **Kimi** | Local |
 
-### Cómo agregar tareas para Jules
-1. Editar `JULES_TASKS.md` — agregar entrada en la sección `## Pendiente`
-2. Ejecutar: `JULES_API_KEY=xxx node jules-dispatch.js dispatch`
-3. Monitorear: `JULES_API_KEY=xxx node jules-dispatch.js watch`
-4. Jules abre un PR → CI corre automáticamente → revisar y mergear
+### Cuándo usar cada agente
 
-### Cuándo NO delegar a Jules
-- La tarea requiere decisiones de negocio no documentadas
-- Toca el flujo de pago o autenticación
-- Depende de estado de otra sesión Jules activa (pueden generar conflictos)
-- Requiere múltiples iteraciones interactivas
+```
+¿Necesita PR en GitHub?
+  ├─ Sí  → Jules (jules-dispatch.js dispatch)
+  └─ No  ┬─ ¿Requiere decisión interactiva?
+         │   ├─ Sí → Claude Code
+         │   └─ No → Kimi (kimi-run.js "prompt")
+```
+
+### Comandos rápidos
+
+```bash
+# Jules — async, crea PRs
+JULES_API_KEY=xxx node jules-dispatch.js dispatch   # despachar pendientes
+JULES_API_KEY=xxx node jules-dispatch.js status     # ver sesiones
+JULES_API_KEY=xxx node jules-dispatch.js watch      # monitorear
+
+# Kimi — local, modifica archivos directamente
+node kimi-run.js "Agrega PHPDoc a lib/audit.php"   # tarea inline
+node kimi-run.js --dispatch                         # correr KIMI_TASKS.md
+node kimi-run.js --list                             # ver estado
+node kimi-run.js --dispatch --commit                # correr y auto-commitear
+```
+
+### Cuándo NO delegar (ni a Jules ni a Kimi)
+- Toca el flujo de pago Stripe o autenticación
+- Requiere conocimiento de negocio no documentado
+- Hay sesiones activas que tocan los mismos archivos (riesgo de conflicto)
 
 ---
 
 ## Memoria importante
 
-- Los archivos `js/booking-calendar.js` y `js/engines/booking-utils.js` son regenerados por el build — no editarlos directamente
-- `window.debugLog` fue removido intencionalmente — si Codex o Jules lo re-añaden, restaurar desde HEAD
-- Vendor files (`vendor/composer/`) — si cambian sin un `composer install` explícito, restaurar desde HEAD
-- El SW tiene `CACHE_NAME` — bumpearlo cuando se modifiquen assets en precache
-- i18n: `state.js` usa `navigator.language` como fallback, `localStorage.language` como preferencia explícita
+- `js/booking-calendar.js` y `js/engines/booking-utils.js` son generados por el build — no editar directo
+- `window.debugLog` fue removido — si algún agente lo re-añade, restaurar: `git checkout HEAD -- <file>`
+- Vendor files (`vendor/composer/`) — si cambian sin `composer install` explícito, restaurar desde HEAD
+- El SW tiene `CACHE_NAME` — bumpearlo cuando cambien assets en precache
+- i18n: `state.js` usa `navigator.language` como fallback, `localStorage.language` como preferencia
 
 ---
 
-## Jules — fuente de verdad
+## Referencias rápidas
 
+### Jules
 - **Backlog**: `JULES_TASKS.md`
 - **Dispatcher**: `jules-dispatch.js`
-- **PRs de Jules**: etiquetados automáticamente con `jules` por `.github/workflows/jules-pr.yml`
+- **CI/labels**: `.github/workflows/jules-pr.yml`
 - **Source ID**: `github/erosero558558/piel-en-armonia`
-- **API key**: variable de entorno `JULES_API_KEY` (nunca commitear)
+- **API key**: env var `JULES_API_KEY` (nunca commitear)
+
+### Kimi
+- **Backlog**: `KIMI_TASKS.md`
+- **Runner**: `kimi-run.js`
+- **Binario**: `%APPDATA%\Code\User\globalStorage\moonshot-ai.kimi-code\bin\kimi\kimi.exe`
+- **Modelo**: `kimi-for-coding` (262k contexto, thinking mode disponible)
+- **Override bin**: env var `KIMI_BIN`
