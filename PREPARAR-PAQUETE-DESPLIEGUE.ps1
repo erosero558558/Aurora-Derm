@@ -103,6 +103,7 @@ $files = @(
     'privacidad.html',
     'cookies.html',
     'aviso-medico.html',
+    'telemedicina.html',
     'legal.css',
     'favicon.ico',
     'hero-woman.jpg',
@@ -124,7 +125,8 @@ if ($IncludeTooling) {
 }
 
 $directories = @(
-    'images/optimized'
+    'images/optimized',
+    'servicios'
 )
 
 $missing = New-Object 'System.Collections.Generic.List[string]'
