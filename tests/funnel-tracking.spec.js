@@ -84,10 +84,10 @@ async function mockApi(page) {
         }
 
         if (resource === 'appointments' && request.method() === 'POST') {
-            let body = {};
+            let body;
             try {
                 body = request.postDataJSON() || {};
-            } catch (e) {
+            } catch {
                 body = {};
             }
 
@@ -266,7 +266,7 @@ test.describe('Tracking del embudo de conversion', () => {
                     if (parsed && typeof parsed === 'object') {
                         window.__funnelEventsCaptured.push(parsed);
                     }
-                } catch (e) {
+                } catch {
                     // ignore malformed payloads
                 }
             };
@@ -316,7 +316,7 @@ test.describe('Tracking del embudo de conversion', () => {
                                 .then(capturePayload)
                                 .catch(() => undefined);
                         }
-                    } catch (e) {
+                    } catch {
                         // ignore capture failures
                     }
                     return true;

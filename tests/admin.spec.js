@@ -27,13 +27,7 @@ test.describe('Panel de administración', () => {
             await passwordInput.fill('');
             await loginBtn.click();
             await page.waitForTimeout(1000);
-            // No debería mostrar el dashboard
-            const dashboard = page
-                .locator(
-                    '#dashboard, [class*="dashboard"], [class*="admin-content"]'
-                )
-                .first();
-            // Login debería seguir visible
+            // No debería mostrar el dashboard; login debería seguir visible
             await expect(passwordInput).toBeVisible();
         }
     });
