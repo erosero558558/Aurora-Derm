@@ -572,6 +572,7 @@ END:VCALENDAR`;
 
     function initGA4() {
         if (window._ga4Loaded) return;
+        if (getCookieConsent() !== 'accepted') return;
 
         window._ga4Loaded = true;
         window.dataLayer = window.dataLayer || [];

@@ -498,6 +498,9 @@
     function initCalendar() {
         // This function satisfies the explicit user request example.
         // In our architecture, the logic is mainly in updateAvailableTimes which is called by UI events.
+        if (window.debugLog) {
+            window.debugLog('Booking calendar module loaded lazy.');
+        }
     }
 
     async function updateAvailableTimes(deps, elements) {

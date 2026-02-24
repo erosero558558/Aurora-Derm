@@ -196,10 +196,21 @@ const API_SLOW_NOTICE_COOLDOWN_MS = 25000;
 const THEME_STORAGE_KEY = 'themeMode';
 const VALID_THEME_MODES = new Set(['light', 'dark', 'system']);
 
+/**
+ * Logs messages to the console if debugging is enabled.
+ * This function is currently a no-op in production.
+ * @param {...any} args - The arguments to log.
+ */
 function debugLog() {
     // Debug logging removed
 }
 
+/**
+ * Escapes HTML characters in a string to prevent XSS attacks.
+ * Uses the ChatUiEngine if available, otherwise falls back to a DOM-based approach.
+ * @param {string} text - The text to escape.
+ * @returns {string} The escaped HTML string.
+ */
 function escapeHtml(text) {
     if (
         window.Piel &&
@@ -213,10 +224,19 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/**
+ * Returns a promise that resolves after a specified number of milliseconds.
+ * @param {number} ms - The number of milliseconds to wait.
+ * @returns {Promise<void>} A promise that resolves after the delay.
+ */
 function waitMs(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Checks if the user is on a constrained network connection (e.g., 2G or Data Saver mode).
+ * @returns {boolean} True if the connection is constrained, false otherwise.
+ */
 function isConstrainedNetworkConnection() {
     const connection =
         navigator.connection ||
@@ -230,6 +250,11 @@ function isConstrainedNetworkConnection() {
 }
 
 // ASSET VERSIONING
+
+/**
+ * Resolves the deployment asset version from the current script tag or the main script tag.
+ * @returns {string} The asset version string, or an empty string if not found.
+ */
 function resolveDeployAssetVersion() {
     try {
         if (
@@ -265,6 +290,11 @@ function resolveDeployAssetVersion() {
     return '';
 }
 
+/**
+ * Appends the deployment asset version to a URL as a query parameter.
+ * @param {string} url - The URL to modify.
+ * @returns {string} The URL with the asset version appended.
+ */
 function withDeployAssetVersion(url) {
     const cleanUrl = String(url || '').trim();
     if (cleanUrl === '') {
@@ -290,6 +320,13 @@ function withDeployAssetVersion(url) {
 }
 
 // TOAST NOTIFICATIONS SYSTEM
+
+/**
+ * Displays a toast notification.
+ * @param {string} message - The message to display.
+ * @param {'success'|'error'|'warning'|'info'} [type='info'] - The type of notification.
+ * @param {string} [title=''] - The title of the notification.
+ */
 function showToast(message, type = 'info', title = '') {
     // Create container if doesn't exist
     let container = document.getElementById('toastContainer');
@@ -346,6 +383,12 @@ function showToast(message, type = 'info', title = '') {
     }, 5000);
 }
 
+/**
+ * Retrieves a JSON value from localStorage.
+ * @param {string} key - The key to retrieve.
+ * @param {any} fallback - The fallback value if the key does not exist or is invalid JSON.
+ * @returns {any} The parsed JSON value or the fallback.
+ */
 function storageGetJSON(key, fallback) {
     try {
         const value = JSON.parse(localStorage.getItem(key) || 'null');
@@ -355,6 +398,11 @@ function storageGetJSON(key, fallback) {
     }
 }
 
+/**
+ * Stores a JSON value in localStorage.
+ * @param {string} key - The key to store.
+ * @param {any} value - The value to store.
+ */
 function storageSetJSON(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
@@ -1031,6 +1079,21 @@ async function changeLanguage(lang) {
     );
 }
 
+/**
+ * Makes an API request to the backend.
+ * Handles retries, timeouts, and slow connection notices automatically.
+ *
+ * @param {string} resource - The resource to request (e.g., 'appointments', 'availability').
+ * @param {Object} [options={}] - Request options.
+ * @param {'GET'|'POST'|'PUT'|'DELETE'} [options.method='GET'] - The HTTP method to use.
+ * @param {Object} [options.query] - Query parameters to append to the URL.
+ * @param {Object} [options.body] - The JSON body to send with the request.
+ * @param {number} [options.timeoutMs] - Custom timeout in milliseconds.
+ * @param {number} [options.retries] - Number of retries for the request. Defaults to `API_DEFAULT_RETRIES` for GET requests, 0 otherwise.
+ * @param {boolean} [options.silentSlowNotice=false] - If true, suppresses the "Connecting to server..." toast.
+ * @returns {Promise<any>} A promise that resolves with the JSON response payload.
+ * @throws {Error} Throws an error if the request fails after all retries. The error object may have `status`, `retryable`, and `code` properties.
+ */
 async function apiRequest(resource, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();
     const query = new URLSearchParams({ resource: resource });
@@ -2229,6 +2292,10 @@ function isFeatureEnabled(flag) {
 
 // Chat shell cargado bajo demanda (code splitting)
 let chatShellPromise = null;
+/**
+ * Loads the Chat Shell module on demand.
+ * @returns {Promise<Object>} A promise that resolves to the Chat Shell module.
+ */
 function loadChatShell() {
     if (!chatShellPromise) {
         chatShellPromise = import('./js/chunks/shell-C8roVGfp.js');
@@ -2257,6 +2324,10 @@ const DEFERRED_STYLESHEET_URL = withDeployAssetVersion(
 let deferredStylesheetPromise = null;
 let deferredStylesheetInitDone = false;
 
+/**
+ * Loads the deferred stylesheet if it hasn't been loaded yet.
+ * @returns {Promise<boolean>} A promise that resolves when the stylesheet is loaded.
+ */
 function loadDeferredStylesheet() {
     if (
         document.querySelector(
@@ -2284,6 +2355,10 @@ function loadDeferredStylesheet() {
     return deferredStylesheetPromise;
 }
 
+/**
+ * Initializes the loading of the deferred stylesheet with a delay.
+ * Prevents multiple initializations.
+ */
 function initDeferredStylesheetLoading() {
     if (deferredStylesheetInitDone || window.location.protocol === 'file:') {
         return;
@@ -2300,6 +2375,10 @@ function initDeferredStylesheetLoading() {
     });
 }
 
+/**
+ * Disables placeholder external links (href starting with "URL_")
+ * by removing the href attribute and adding a disabled class.
+ */
 function disablePlaceholderExternalLinks() {
     document.querySelectorAll('a[href^="URL_"]').forEach((anchor) => {
         anchor.removeAttribute('href');
@@ -2308,6 +2387,11 @@ function disablePlaceholderExternalLinks() {
     });
 }
 
+/**
+ * Resolves the source context of a WhatsApp link click.
+ * @param {Element} waLink - The WhatsApp link element that was clicked.
+ * @returns {string} The source identifier ('chatbot', 'quick_dock', 'footer', or element ID).
+ */
 function resolveWhatsappSource(waLink) {
     if (!waLink || !(waLink instanceof Element)) return 'unknown';
 
@@ -2327,6 +2411,9 @@ function resolveWhatsappSource(waLink) {
     return 'unknown';
 }
 
+/**
+ * Initializes lazy loading for the booking calendar engine when booking buttons are clicked.
+ */
 function initBookingCalendarLazyInit() {
     function wireBookingCalendarLazyLoad(element) {
         if (!element) {
@@ -2362,6 +2449,10 @@ function initBookingCalendarLazyInit() {
     });
 }
 
+/**
+ * Selects a service in the booking form programmatically and scrolls to the appointment section.
+ * @param {string} value - The value of the service to select.
+ */
 function fallbackSelectService(value) {
     const select = document.getElementById('serviceSelect');
     if (select) {
@@ -2381,6 +2472,11 @@ function fallbackSelectService(value) {
 }
 
 let chatActionFallbackBridgeBound = false;
+/**
+ * Initializes a bridge to handle chat-related actions triggered from the DOM
+ * (e.g., buttons with `data-action` attributes).
+ * Ensures handlers are bound only once.
+ */
 function initChatActionFallbackBridge() {
     if (chatActionFallbackBridgeBound) {
         return;

@@ -1808,6 +1808,12 @@ async function removeTimeSlot(dateStr, time) {
     }
 }
 
+/**
+ * Renders the specified section of the admin dashboard.
+ * Loads the necessary data and updates the UI.
+ *
+ * @param {string} section - The section ID to render (e.g., 'dashboard', 'appointments').
+ */
 async function renderSection(section) {
     const titles = {
         dashboard: 'Dashboard',
@@ -1849,6 +1855,9 @@ async function renderSection(section) {
     }
 }
 
+/**
+ * Shows the login screen and hides the dashboard.
+ */
 function showLogin() {
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('adminDashboard');
@@ -1856,6 +1865,10 @@ function showLogin() {
     if (dashboard) dashboard.classList.add('is-hidden');
 }
 
+/**
+ * Shows the dashboard and hides the login screen.
+ * Initializes data loading and push notifications.
+ */
 async function showDashboard() {
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('adminDashboard');
@@ -1865,6 +1878,12 @@ async function showDashboard() {
     await initPushNotifications();
 }
 
+/**
+ * Handles the login form submission.
+ * Supports standard password login and 2FA.
+ *
+ * @param {Event} event - The form submission event.
+ */
 async function handleLogin(event) {
     event.preventDefault();
 
@@ -1906,6 +1925,11 @@ async function handleLogin(event) {
     }
 }
 
+/**
+ * Checks authentication status on boot.
+ * If authenticated, shows the dashboard; otherwise, shows the login screen.
+ * Handles offline mode by loading local data.
+ */
 async function checkAuthAndBoot() {
     if (!navigator.onLine && getLocalData('appointments', null)) {
         showToast('Modo offline: mostrando datos locales', 'info');
@@ -1921,6 +1945,9 @@ async function checkAuthAndBoot() {
     showLogin();
 }
 
+/**
+ * Updates the current date display and refreshes the data.
+ */
 async function updateDate() {
     const dateEl = document.getElementById('currentDate');
     if (dateEl) {
@@ -1946,6 +1973,9 @@ async function updateDate() {
     await renderSection(section);
 }
 
+/**
+ * Exports the current application data (appointments, callbacks, reviews, availability) to a JSON file.
+ */
 function exportData() {
     const payload = {
         appointments: currentAppointments,
@@ -1969,6 +1999,12 @@ function exportData() {
     showToast('Datos exportados correctamente', 'success');
 }
 
+/**
+ * Imports application data from a JSON file.
+ * Replaces existing data with the imported data.
+ *
+ * @param {HTMLInputElement} input - The file input element containing the JSON file.
+ */
 async function importData(input) {
     const file = input.files && input.files[0];
     if (!file) return;
