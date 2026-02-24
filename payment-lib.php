@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/common.php';
 require_once __DIR__ . '/lib/business.php';
+require_once __DIR__ . '/lib/AppConfig.php';
 
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     try {
@@ -13,16 +14,11 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     }
 }
 
-const TRANSFER_PROOF_MAX_BYTES = 5242880; // 5 MB
+const TRANSFER_PROOF_MAX_BYTES = AppConfig::TRANSFER_PROOF_MAX_BYTES;
 
 function payment_currency(): string
 {
-    $raw = getenv('PIELARMONIA_PAYMENT_CURRENCY');
-    $currency = is_string($raw) && trim($raw) !== '' ? strtoupper(trim($raw)) : 'USD';
-    if (!preg_match('/^[A-Z]{3}$/', $currency)) {
-        return 'USD';
-    }
-    return $currency;
+    return AppConfig::getPaymentCurrency();
 }
 
 function payment_stripe_secret_key(): string
@@ -119,7 +115,7 @@ function stripe_create_payment_intent(array $appointment, string $idempotencyKey
         'amount' => $amountCents,
         'currency' => strtolower(payment_currency()),
         'automatic_payment_methods' => ['enabled' => true],
-        'description' => 'Reserva de cita - Piel en Armonía',
+        'description' => 'Reserva de cita - ' . AppConfig::BRAND_NAME,
         'metadata' => $metadata,
     ];
     if ($email !== '') {
@@ -167,20 +163,12 @@ function stripe_get_payment_intent(string $paymentIntentId): array
 
 function transfer_proof_upload_dir(): string
 {
-    $raw = getenv('PIELARMONIA_TRANSFER_UPLOAD_DIR');
-    if (is_string($raw) && trim($raw) !== '') {
-        return rtrim(trim($raw), DIRECTORY_SEPARATOR);
-    }
-    return __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transfer-proofs';
+    return AppConfig::getTransferProofUploadDir();
 }
 
 function transfer_proof_public_base_url(): string
 {
-    $raw = getenv('PIELARMONIA_TRANSFER_PUBLIC_BASE_URL');
-    if (is_string($raw) && trim($raw) !== '') {
-        return rtrim(trim($raw), '/');
-    }
-    return '/uploads/transfer-proofs';
+    return AppConfig::getTransferProofPublicBaseUrl();
 }
 
 function ensure_transfer_proof_dir(): bool

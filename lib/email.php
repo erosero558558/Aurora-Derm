@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/models.php';
+require_once __DIR__ . '/AppConfig.php';
 
 /**
  * Email sending logic.
@@ -16,14 +17,7 @@ require_once __DIR__ . '/models.php';
  */
 function smtp_config(): array
 {
-    return [
-        'host' => (string) (getenv('PIELARMONIA_SMTP_HOST') ?: 'smtp.gmail.com'),
-        'port' => (int) (getenv('PIELARMONIA_SMTP_PORT') ?: 587),
-        'user' => (string) (getenv('PIELARMONIA_SMTP_USER') ?: ''),
-        'pass' => (string) (getenv('PIELARMONIA_SMTP_PASS') ?: ''),
-        'from' => (string) (getenv('PIELARMONIA_EMAIL_FROM') ?: ''),
-        'from_name' => 'Piel en Armonía',
-    ];
+    return AppConfig::getSmtpConfig();
 }
 
 /**
@@ -119,12 +113,9 @@ function send_mail(string $to, string $subject, string $body, bool $isHtml = fal
     }
 
     // Fallback a mail() nativo
-    $from = getenv('PIELARMONIA_EMAIL_FROM');
-    if (!is_string($from) || $from === '') {
-        $from = 'no-reply@pielarmonia.com';
-    }
+    $from = AppConfig::getNoReplyEmail();
     $contentType = $isHtml ? 'text/html; charset=UTF-8' : 'text/plain; charset=UTF-8';
-    $headers = "From: Piel en Armonia <{$from}>\r\nContent-Type: {$contentType}";
+    $headers = "From: " . AppConfig::BRAND_NAME . " <{$from}>\r\nContent-Type: {$contentType}";
 
     $sent = @mail($to, $subject, $body, $headers);
     if (!$sent) {
@@ -165,9 +156,9 @@ function generate_ics_content(array $appointment): string
         ? get_doctor_label((string) ($appointment['doctor'] ?? ''))
         : (string) ($appointment['doctor'] ?? '');
 
-    $summary = 'Cita Piel en Armonia - ' . $serviceLabel;
+    $summary = 'Cita ' . AppConfig::BRAND_NAME . ' - ' . $serviceLabel;
     $description = "Servicio: {$serviceLabel}\\nDoctor: {$doctorLabel}\\n";
-    $location = 'Valparaiso 13-183 y Sodiro, Quito, Ecuador';
+    $location = AppConfig::ADDRESS;
 
     $lines = [
         'BEGIN:VCALENDAR',
@@ -217,12 +208,15 @@ function build_appointment_email_html(array $appointment): string
     $timeLabel = htmlspecialchars((string) ($appointment['time'] ?? ''), ENT_QUOTES, 'UTF-8');
     $token = trim((string) ($appointment['rescheduleToken'] ?? ''));
     $rescheduleUrl = $token !== ''
-        ? 'https://pielarmonia.com/?reschedule=' . rawurlencode($token)
-        : 'https://pielarmonia.com/#citas';
+        ? AppConfig::BASE_URL . '/?reschedule=' . rawurlencode($token)
+        : AppConfig::BASE_URL . '/#citas';
+
+    $brandName = AppConfig::BRAND_NAME;
+    $whatsapp = AppConfig::WHATSAPP_NUMBER;
 
     return '<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f5f8fc;padding:24px;">'
         . '<div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dde7f5;border-radius:12px;padding:24px;">'
-        . '<h2 style="margin:0 0 12px;color:#0a84ff;">Piel en Armonia - Cita confirmada</h2>'
+        . '<h2 style="margin:0 0 12px;color:#0a84ff;">' . $brandName . ' - Cita confirmada</h2>'
         . '<p>Hola <strong>' . $name . '</strong>, tu cita fue registrada correctamente.</p>'
         . '<table style="width:100%;border-collapse:collapse;margin:16px 0;">'
         . '<tr><td style="padding:8px 0;color:#5a6d85;">Servicio</td><td style="padding:8px 0;"><strong>' . $serviceLabel . '</strong></td></tr>'
@@ -232,7 +226,7 @@ function build_appointment_email_html(array $appointment): string
         . '</table>'
         . '<p>Adjuntamos un archivo de calendario (.ics) para agregar tu cita a Google Calendar, Apple Calendar u Outlook.</p>'
         . '<p><a href="' . htmlspecialchars($rescheduleUrl, ENT_QUOTES, 'UTF-8') . '" style="display:inline-block;background:#0a84ff;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;">Reprogramar cita</a></p>'
-        . '<p style="font-size:13px;color:#5a6d85;">Si tienes dudas, responde este correo o escribe por WhatsApp: +593 98 245 3672.</p>'
+        . '<p style="font-size:13px;color:#5a6d85;">Si tienes dudas, responde este correo o escribe por WhatsApp: ' . $whatsapp . '.</p>'
         . '</div></body></html>';
 }
 
@@ -248,7 +242,7 @@ function maybe_send_appointment_email(array $appointment): bool
         return false;
     }
 
-    $clinicName = 'Piel en Armonia';
+    $clinicName = AppConfig::BRAND_NAME;
     $subject = 'Confirmacion de cita - ' . $clinicName;
     $htmlBody = build_appointment_email_html($appointment);
     $icsContent = generate_ics_content($appointment);
@@ -272,11 +266,7 @@ function maybe_send_appointment_email(array $appointment): bool
  */
 function maybe_send_admin_notification(array $appointment): bool
 {
-    $adminEmail = getenv('PIELARMONIA_ADMIN_EMAIL');
-    if (!is_string($adminEmail) || trim($adminEmail) === '') {
-        $adminEmail = 'javier.rosero94@gmail.com';
-    }
-    $adminEmail = trim((string) $adminEmail);
+    $adminEmail = AppConfig::getAdminEmail();
     if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
         error_log('Piel en Armonía: PIELARMONIA_ADMIN_EMAIL invalido');
         return false;
@@ -285,7 +275,7 @@ function maybe_send_admin_notification(array $appointment): bool
     $serviceLabel = function_exists('get_service_label') ? get_service_label((string)($appointment['service'] ?? '')) : ($appointment['service'] ?? '-');
     $doctorLabel = function_exists('get_doctor_label') ? get_doctor_label((string)($appointment['doctor'] ?? '')) : ($appointment['doctor'] ?? '-');
 
-    $clinicName = 'Piel en Armonía';
+    $clinicName = AppConfig::BRAND_NAME;
     $subject = 'Nueva cita agendada - ' . $clinicName;
     $body = "Se ha agendado una nueva cita:\n\n";
     $body .= "Paciente: " . ($appointment['name'] ?? '-') . "\n";
@@ -333,7 +323,7 @@ function maybe_send_cancellation_email(array $appointment): bool
     $doctorLabel = function_exists('get_doctor_label') ? get_doctor_label((string)($appointment['doctor'] ?? '')) : ($appointment['doctor'] ?? '-');
     $dateLabel = function_exists('format_date_label') ? format_date_label((string)($appointment['date'] ?? '')) : ($appointment['date'] ?? '-');
 
-    $clinicName = 'Piel en Armonía';
+    $clinicName = AppConfig::BRAND_NAME;
     $subject = 'Cita cancelada - ' . $clinicName;
     $message = "Hola " . ($appointment['name'] ?? 'paciente') . ",\n\n";
     $message .= "Tu cita ha sido cancelada.\n\n";
@@ -342,7 +332,7 @@ function maybe_send_cancellation_email(array $appointment): bool
     $message .= "Doctor: " . $doctorLabel . "\n";
     $message .= "Fecha: " . $dateLabel . "\n";
     $message .= "Hora: " . ($appointment['time'] ?? '-') . "\n\n";
-    $message .= "Si deseas reprogramar, visita https://pielarmonia.com/#citas o escribenos por WhatsApp: +593 98 245 3672.\n\n";
+    $message .= "Si deseas reprogramar, visita " . AppConfig::BASE_URL . "/#citas o escribenos por WhatsApp: " . AppConfig::WHATSAPP_NUMBER . ".\n\n";
     $message .= "Gracias por confiar en nosotros.";
 
     return send_mail($to, $subject, $message);
@@ -355,15 +345,12 @@ function maybe_send_cancellation_email(array $appointment): bool
  */
 function maybe_send_callback_admin_notification(array $callback): bool
 {
-    $adminEmail = getenv('PIELARMONIA_ADMIN_EMAIL');
-    if (!is_string($adminEmail) || $adminEmail === '') {
-        return false;
-    }
+    $adminEmail = AppConfig::getAdminEmail();
     if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
         return false;
     }
 
-    $clinicName = 'Piel en Armonía';
+    $clinicName = AppConfig::BRAND_NAME;
     $subject = 'Nueva solicitud de llamada - ' . $clinicName;
     $body = "Un paciente solicita que le llamen:\n\n";
     $body .= "Teléfono: " . ($callback['telefono'] ?? '-') . "\n";
@@ -390,7 +377,7 @@ function maybe_send_reminder_email(array $appointment): bool
     $doctorLabel = function_exists('get_doctor_label') ? get_doctor_label((string)($appointment['doctor'] ?? '')) : ($appointment['doctor'] ?? '-');
     $dateLabel = function_exists('format_date_label') ? format_date_label((string)($appointment['date'] ?? '')) : ($appointment['date'] ?? '-');
 
-    $clinicName = 'Piel en Armonía';
+    $clinicName = AppConfig::BRAND_NAME;
     $subject = 'Recordatorio de cita - ' . $clinicName;
     $body = "Hola " . ($appointment['name'] ?? 'paciente') . ",\n\n";
     $body .= "Te recordamos que tienes una cita programada para mañana.\n\n";
@@ -402,12 +389,12 @@ function maybe_send_reminder_email(array $appointment): bool
     $token = $appointment['rescheduleToken'] ?? '';
     if ($token !== '') {
         $body .= "Si necesitas reprogramar, usa este enlace:\n";
-        $body .= "https://pielarmonia.com/?reschedule=" . $token . "\n\n";
+        $body .= AppConfig::BASE_URL . "/?reschedule=" . $token . "\n\n";
     }
 
     $body .= "Te esperamos. ¡Gracias por confiar en nosotros!\n";
-    $body .= "- Equipo Piel en Armonía\n";
-    $body .= "WhatsApp: +593 98 245 3672";
+    $body .= "- Equipo " . $clinicName . "\n";
+    $body .= "WhatsApp: " . AppConfig::WHATSAPP_NUMBER;
 
     return send_mail($to, $subject, $body);
 }
@@ -428,7 +415,7 @@ function maybe_send_reschedule_email(array $appointment): bool
     $doctorLabel = function_exists('get_doctor_label') ? get_doctor_label((string)($appointment['doctor'] ?? '')) : ($appointment['doctor'] ?? '-');
     $dateLabel = function_exists('format_date_label') ? format_date_label((string)($appointment['date'] ?? '')) : ($appointment['date'] ?? '-');
 
-    $clinicName = 'Piel en Armonía';
+    $clinicName = AppConfig::BRAND_NAME;
     $subject = 'Cita reprogramada - ' . $clinicName;
     $body = "Hola " . ($appointment['name'] ?? 'paciente') . ",\n\n";
     $body .= "Tu cita ha sido reprogramada exitosamente.\n\n";
@@ -440,12 +427,11 @@ function maybe_send_reschedule_email(array $appointment): bool
     $token = $appointment['rescheduleToken'] ?? '';
     if ($token !== '') {
         $body .= "Si necesitas reprogramar de nuevo:\n";
-        $body .= "https://pielarmonia.com/?reschedule=" . $token . "\n\n";
+        $body .= AppConfig::BASE_URL . "/?reschedule=" . $token . "\n\n";
     }
 
     $body .= "Te esperamos. ¡Gracias por confiar en nosotros!\n";
-    $body .= "- Equipo Piel en Armonía";
+    $body .= "- Equipo " . $clinicName;
 
     return send_mail($to, $subject, $body);
 }
-
