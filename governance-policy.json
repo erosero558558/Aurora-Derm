@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "domain_health": {
+        "priority_domains": ["calendar", "chat", "payments"],
+        "domain_weights": {
+            "calendar": 5,
+            "chat": 3,
+            "payments": 2,
+            "default": 1
+        },
+        "signal_scores": {
+            "GREEN": 100,
+            "YELLOW": 60,
+            "RED": 0
+        }
+    },
+    "summary": {
+        "thresholds": {
+            "domain_score_priority_yellow_below": 80
+        }
+    }
+}

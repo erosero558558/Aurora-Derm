@@ -371,6 +371,40 @@ test('agent-governance-summary alerta regresion de dominio GREEN->RED en PR summ
     assert.match(md, /`chat`: `GREEN` -> `RED`/);
 });
 
+test('agent-governance-summary lee governance-policy.json para umbral de semaforo', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+    writeFixtureFiles(dir);
+
+    writeFileSync(
+        join(dir, 'governance-policy.json'),
+        `${JSON.stringify(
+            {
+                version: 1,
+                summary: {
+                    thresholds: {
+                        domain_score_priority_yellow_below: 101,
+                    },
+                },
+            },
+            null,
+            2
+        )}\n`,
+        'utf8'
+    );
+
+    const result = runSummary(dir, ['--format', 'json']);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const parsed = JSON.parse(result.stdout);
+
+    assert.equal(parsed.overall.signal, 'YELLOW');
+    assert.ok(
+        parsed.overall.reasons.some((reason) =>
+            String(reason).startsWith('domain_score_priority:')
+        )
+    );
+});
+
 test('agent-governance-summary soporta --profile ci y persiste metrics runtime', (t) => {
     const dir = createFixtureDir();
     t.after(() => cleanupFixtureDir(dir));

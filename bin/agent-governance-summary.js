@@ -29,9 +29,67 @@ function parseFlags(argv) {
 const { flags } = parseFlags(process.argv.slice(2));
 const ROOT = resolve(flags.root || resolve(__dirname, '..'));
 const ORCHESTRATOR = resolve(ROOT, 'agent-orchestrator.js');
+const GOVERNANCE_POLICY_PATH = resolve(ROOT, 'governance-policy.json');
+const DEFAULT_GOVERNANCE_POLICY = {
+    version: 1,
+    domain_health: {
+        priority_domains: ['calendar', 'chat', 'payments'],
+        domain_weights: {
+            calendar: 5,
+            chat: 3,
+            payments: 2,
+            default: 1,
+        },
+        signal_scores: {
+            GREEN: 100,
+            YELLOW: 60,
+            RED: 0,
+        },
+    },
+    summary: {
+        thresholds: {
+            domain_score_priority_yellow_below: 80,
+        },
+    },
+};
+let GOVERNANCE_POLICY_CACHE = null;
 
 function ensureDirForFile(path) {
     mkdirSync(dirname(path), { recursive: true });
+}
+
+function shallowMerge(target, source) {
+    const out = { ...(target || {}) };
+    for (const [key, value] of Object.entries(source || {})) {
+        const existing = out[key];
+        if (
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            existing &&
+            typeof existing === 'object' &&
+            !Array.isArray(existing)
+        ) {
+            out[key] = shallowMerge(existing, value);
+        } else {
+            out[key] = value;
+        }
+    }
+    return out;
+}
+
+function getGovernancePolicy() {
+    if (GOVERNANCE_POLICY_CACHE) return GOVERNANCE_POLICY_CACHE;
+    let loaded = null;
+    if (existsSync(GOVERNANCE_POLICY_PATH)) {
+        try {
+            loaded = JSON.parse(readFileSync(GOVERNANCE_POLICY_PATH, 'utf8'));
+        } catch {
+            loaded = null;
+        }
+    }
+    GOVERNANCE_POLICY_CACHE = shallowMerge(DEFAULT_GOVERNANCE_POLICY, loaded);
+    return GOVERNANCE_POLICY_CACHE;
 }
 
 function runOrchestratorJson(args) {
@@ -71,6 +129,11 @@ function computeHealthSignal({
     domainHealth,
     domainHealthHistory,
 }) {
+    const governancePolicy = getGovernancePolicy();
+    const domainPriorityYellowThreshold = Number(
+        governancePolicy?.summary?.thresholds
+            ?.domain_score_priority_yellow_below ?? 80
+    );
     const reasons = [];
     const blockingConflicts = Number(conflicts?.totals?.blocking ?? 0);
     const blockingDelta = Number(deltaSummary?.conflicts_blocking?.delta ?? 0);
@@ -133,7 +196,10 @@ function computeHealthSignal({
     if (handoffDelta > 0) {
         reasons.push(`handoff_conflicts_delta:+${handoffDelta}`);
     }
-    if (Number.isFinite(priorityDomainScore) && priorityDomainScore < 80) {
+    if (
+        Number.isFinite(priorityDomainScore) &&
+        priorityDomainScore < domainPriorityYellowThreshold
+    ) {
         reasons.push(`domain_score_priority:${priorityDomainScore}%`);
     }
 
@@ -474,7 +540,13 @@ function toMarkdown(report) {
         domainHealthHistory.daily.length > 0 &&
         Array.isArray(domainHealthHistory.domains)
     ) {
-        const preferredDomains = ['calendar', 'chat', 'payments'];
+        const preferredDomains = Array.isArray(
+            getGovernancePolicy()?.domain_health?.priority_domains
+        )
+            ? getGovernancePolicy().domain_health.priority_domains.map((v) =>
+                  String(v)
+              )
+            : ['calendar', 'chat', 'payments'];
         const histDomains = [
             ...preferredDomains.filter((name) =>
                 domainHealthHistory.domains.includes(name)

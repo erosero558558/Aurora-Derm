@@ -28,6 +28,7 @@ const KIMI_PATH = resolve(ROOT, 'KIMI_TASKS.md');
 const CODEX_PLAN_PATH = resolve(ROOT, 'PLAN_MAESTRO_CODEX_2026.md');
 const EVIDENCE_DIR = resolve(ROOT, 'verification', 'agent-runs');
 const METRICS_PATH = resolve(ROOT, 'verification', 'agent-metrics.json');
+const GOVERNANCE_POLICY_PATH = resolve(ROOT, 'governance-policy.json');
 const CONTRIBUTION_HISTORY_PATH = resolve(
     ROOT,
     'verification',
@@ -38,18 +39,32 @@ const DOMAIN_HEALTH_HISTORY_PATH = resolve(
     'verification',
     'agent-domain-health-history.json'
 );
-const PRIORITY_DOMAINS = ['calendar', 'chat', 'payments'];
-const DOMAIN_HEALTH_WEIGHTS = {
+const DEFAULT_PRIORITY_DOMAINS = ['calendar', 'chat', 'payments'];
+const DEFAULT_DOMAIN_HEALTH_WEIGHTS = {
     calendar: 5,
     chat: 3,
     payments: 2,
     default: 1,
 };
-const DOMAIN_SIGNAL_SCORES = {
+const DEFAULT_DOMAIN_SIGNAL_SCORES = {
     GREEN: 100,
     YELLOW: 60,
     RED: 0,
 };
+const DEFAULT_GOVERNANCE_POLICY = {
+    version: 1,
+    domain_health: {
+        priority_domains: DEFAULT_PRIORITY_DOMAINS,
+        domain_weights: DEFAULT_DOMAIN_HEALTH_WEIGHTS,
+        signal_scores: DEFAULT_DOMAIN_SIGNAL_SCORES,
+    },
+    summary: {
+        thresholds: {
+            domain_score_priority_yellow_below: 80,
+        },
+    },
+};
+let GOVERNANCE_POLICY_CACHE = null;
 
 const ALLOWED_STATUSES = new Set([
     'backlog',
@@ -65,6 +80,40 @@ const ACTIVE_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
 
 function normalizeEol(value) {
     return value.replace(/\r\n/g, '\n');
+}
+
+function shallowMerge(target, source) {
+    const out = { ...(target || {}) };
+    for (const [key, value] of Object.entries(source || {})) {
+        const existing = out[key];
+        if (
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            existing &&
+            typeof existing === 'object' &&
+            !Array.isArray(existing)
+        ) {
+            out[key] = shallowMerge(existing, value);
+        } else {
+            out[key] = value;
+        }
+    }
+    return out;
+}
+
+function getGovernancePolicy() {
+    if (GOVERNANCE_POLICY_CACHE) return GOVERNANCE_POLICY_CACHE;
+    let loaded = null;
+    if (existsSync(GOVERNANCE_POLICY_PATH)) {
+        try {
+            loaded = JSON.parse(readFileSync(GOVERNANCE_POLICY_PATH, 'utf8'));
+        } catch {
+            loaded = null;
+        }
+    }
+    GOVERNANCE_POLICY_CACHE = shallowMerge(DEFAULT_GOVERNANCE_POLICY, loaded);
+    return GOVERNANCE_POLICY_CACHE;
 }
 
 function unquote(value) {
@@ -695,6 +744,19 @@ function inferTaskDomain(task) {
 }
 
 function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
+    const governancePolicy = getGovernancePolicy();
+    const domainHealthPolicy = governancePolicy?.domain_health || {};
+    const priorityDomains = Array.isArray(domainHealthPolicy.priority_domains)
+        ? domainHealthPolicy.priority_domains.map((d) => String(d))
+        : DEFAULT_PRIORITY_DOMAINS.slice();
+    const domainWeights = shallowMerge(
+        DEFAULT_DOMAIN_HEALTH_WEIGHTS,
+        domainHealthPolicy.domain_weights || {}
+    );
+    const signalScores = shallowMerge(
+        DEFAULT_DOMAIN_SIGNAL_SCORES,
+        domainHealthPolicy.signal_scores || {}
+    );
     const domainMap = new Map();
     const taskById = new Map();
 
@@ -721,7 +783,7 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
         return domainMap.get(key);
     }
 
-    for (const domain of PRIORITY_DOMAINS) {
+    for (const domain of priorityDomains) {
         ensureDomain(domain);
     }
 
@@ -818,9 +880,7 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
 
         return {
             ...row,
-            weight:
-                DOMAIN_HEALTH_WEIGHTS[row.domain] ??
-                DOMAIN_HEALTH_WEIGHTS.default,
+            weight: domainWeights[row.domain] ?? domainWeights.default,
             signal_score_pct: 0,
             weighted_score_points: 0,
             signal,
@@ -829,14 +889,13 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
     });
 
     for (const row of rows) {
-        row.signal_score_pct =
-            DOMAIN_SIGNAL_SCORES[row.signal] ?? DOMAIN_SIGNAL_SCORES.GREEN;
+        row.signal_score_pct = signalScores[row.signal] ?? signalScores.GREEN;
         row.weighted_score_points = Math.round(
             row.signal_score_pct * row.weight
         );
     }
 
-    const priorityIndex = new Map(PRIORITY_DOMAINS.map((d, i) => [d, i]));
+    const priorityIndex = new Map(priorityDomains.map((d, i) => [d, i]));
     rows.sort((a, b) => {
         const aPri = priorityIndex.has(a.domain)
             ? priorityIndex.get(a.domain)
@@ -868,7 +927,7 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
         0
     );
     const priorityRows = rows.filter((row) =>
-        PRIORITY_DOMAINS.includes(row.domain)
+        priorityDomains.includes(row.domain)
     );
     const priorityWeight = priorityRows.reduce(
         (acc, row) => acc + Number(row.weight || 0),
@@ -889,10 +948,10 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
 
     return {
         version: 1,
-        priority_domains: PRIORITY_DOMAINS.slice(),
+        priority_domains: priorityDomains.slice(),
         scoring: {
-            signal_scores: { ...DOMAIN_SIGNAL_SCORES },
-            domain_weights: { ...DOMAIN_HEALTH_WEIGHTS },
+            signal_scores: { ...signalScores },
+            domain_weights: { ...domainWeights },
             total_weight: totalWeight,
             total_weighted_points: totalWeightedPoints,
             overall_weighted_score_pct: overallWeightedScorePct,
@@ -900,6 +959,9 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
             priority_weighted_points: priorityWeightedPoints,
             priority_weighted_score_pct: priorityWeightedScorePct,
             primary_metric: 'priority_weighted_score_pct',
+            policy_source: existsSync(GOVERNANCE_POLICY_PATH)
+                ? 'governance-policy.json'
+                : 'defaults',
         },
         totals: {
             domains: rows.length,
