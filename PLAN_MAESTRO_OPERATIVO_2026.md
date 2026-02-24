@@ -93,12 +93,12 @@ Criterio de salida:
 ## Fase 5 - Cierre hardening y vuelta a hash estricto
 Estado: `IN_PROGRESS`
 Entregables:
-- [ ] Eliminar drift de hashes local/remoto.
-- [ ] Reactivar hash gate bloqueante.
+- [x] Eliminar drift de hashes local/remoto.
+- [x] Reactivar hash gate bloqueante.
 - [ ] Playbook de incidentes actualizado.
 
 Criterio de salida:
-- [ ] `npm run gate:prod` en verde en 3 corridas consecutivas.
+- [x] `npm run gate:prod` en verde en 3 corridas consecutivas (validado con corridas strict manuales 2026-02-23 21:59, 22:00 y 22:02 hora local servidor).
 
 ## Comandos oficiales del plan
 - Validacion backend bloqueante: `npm run gate:prod:backend`

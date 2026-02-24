@@ -1,4 +1,4 @@
-# Plan Maestro 2026 - Estado Operativo
+﻿# Plan Maestro 2026 - Estado Operativo
 
 > Nota de gobernanza (2026-02-24): este documento se mantiene como snapshot historico; la fuente unica de control operativo es `PLAN_MAESTRO_OPERATIVO_2026.md`.
 
@@ -10,6 +10,8 @@ Dominio: https://pielarmonia.com
 - Actualizacion 2026-02-24 (post-fix compat calendar): CI y Post-Deploy Gate en verde para commit `c4beac8`.
 - CI run `22334259615` (push a main): `success`.
 - Post-Deploy Gate run `22334259617` (push a main): `success`.
+- CI run `22334594766` (commit `916adde`): `success`.
+- Post-Deploy Gate run `22334594761` (commit `916adde`): `cancelled` por concurrencia del workflow.
 - Estado general: En curso. CI desbloqueado y pipeline activo tras fix de calendar runtime.
 - Chatbot: Operativo en Trinity/OpenRouter (cola OpenClaw deshabilitada por decision de producto).
 - Agenda real: implementada en codigo, pero produccion hoy reporta `calendarSource=store` y `calendarAuth=none`.
@@ -79,7 +81,18 @@ Dominio: https://pielarmonia.com
   - `figo-get` p95: `397.69 ms`
   - `figo-post` p95: `396.83 ms`
 
-9. Gate operativo completo (manual)
+9. Hash gate estricto manual (corrida con pico transitorio)
+- Comando: `powershell -NoProfile -ExecutionPolicy Bypass -File .\GATE-POSTDEPLOY.ps1 -Domain https://pielarmonia.com -ForceAssetHashChecks`
+- Resultado: FAIL puntual por benchmark (`availability` p95 `3397.23 ms` > `800 ms`), con hash/smoke en verde.
+
+10. Hash gate estricto manual (recuperacion y cierre consecutivo)
+- Comando: `powershell -NoProfile -ExecutionPolicy Bypass -File .\GATE-POSTDEPLOY.ps1 -Domain https://pielarmonia.com -ForceAssetHashChecks`
+- Corrida A (21:59 local servidor): OK. `availability` p95 `467.49 ms`.
+- Corrida B (22:00 local servidor): OK. `availability` p95 `377.60 ms`.
+- Corrida C (22:02 local servidor): OK. `availability` p95 `361.13 ms`.
+- Conclusion: 3 corridas strict consecutivas en verde post-incidente transitorio.
+
+11. Gate operativo completo (manual)
 - Comando: `npm run gate:prod`
 - Resultado: OK (`Gate OK: despliegue validado`).
 - Bench API (25 runs):
@@ -89,7 +102,7 @@ Dominio: https://pielarmonia.com
   - `figo-get` p95: `577.22 ms`
   - `figo-post` p95: `890.71 ms`
 
-10. Hash strict actual (manual)
+12. Hash strict actual (manual)
 - Comando: `npm run gate:prod:hash-strict`
 - Resultado: OK (`Gate OK: despliegue validado`).
 - Bench API (25 runs):
@@ -99,7 +112,7 @@ Dominio: https://pielarmonia.com
   - `figo-get` p95: `580.81 ms`
   - `figo-post` p95: `589.88 ms`
 
-11. Contrato Google forzado en produccion
+13. Contrato Google forzado en produccion
 - Comando: `TEST_BASE_URL=https://pielarmonia.com TEST_REQUIRE_GOOGLE_CALENDAR=true npm run test:calendar-contract`
 - Resultado: `2 failed, 1 passed`
 - Causa: `health.calendarSource != google`.
@@ -130,9 +143,10 @@ Dominio: https://pielarmonia.com
 - admin.js code split: 71KB -> 49.7KB (bajo target <50KB). Chunks bajo demanda: appointments + availability.
 - script.js: 111KB -> 79.3KB (-29%). TARGET <80KB ALCANZADO. Commits: 842ee92, d3cde08.
 
-6. Fase 5 - Hardening final y hash gate estricto: Completada.
-- 3 corridas hash estrictas consecutivas en verde.
+6. Fase 5 - Hardening final y hash gate estricto: En cierre operativo.
+- 3 corridas hash estrictas consecutivas en verde (post-incidente transitorio).
 - Workflow principal (`post-deploy-gate.yml`) con hashes bloqueantes en eventos `push`.
+- Pendiente documental: actualizar playbook de incidentes para marcar cierre formal de fase.
 
 ## Nudos reales pendientes (sin ruido)
 
@@ -157,7 +171,7 @@ Dominio: https://pielarmonia.com
 - Chunks lazy: shell (15.2KB al primer uso del chat) + content-loader (7.2KB prefetch paralelo).
 - HTML actualizado a type="module". Pipeline Rollup en formato ES con code splitting.
 - asset-reference-integrity test cubre chunks via regex extendida (b0b45a1).
-- DEPLOY VALIDADO: CI/Gate en verde y hashes strict confirmados.
+- DEPLOY VALIDADO: CI/Gate verdes + corridas strict manuales en verde; mantener vigilancia de picos transitorios de latencia.
 
 6. Cobertura de tests: ~5-35% actual vs 80% objetivo.
 - Jules (Google AI) trabajando en scaffolding de tests (BookingServiceTest, RateLimiterTest, AuthSessionTest).
@@ -172,7 +186,7 @@ Dominio: https://pielarmonia.com
 8. Incidente CI por calendar compat (RESUELTO 2026-02-24).
 - Accion aplicada: eliminacion de `lib/calendar/compat.php`, runtime nativo estricto y alineacion de test unitario de calendario.
 - Evidencia: CI run `22334259615` = `success`; Post-Deploy Gate run `22334259617` = `success`.
-- Seguimiento: cerrado con `npm run gate:prod:hash-strict` en verde.
+- Seguimiento: incidente cerrado tecnicamente; mantener monitoreo de latencia para evitar falsos negativos en gate.
 
 9. Cutover Google Calendar pendiente en produccion.
 - Evidencia health actual: `calendarSource=store`, `calendarAuth=none`.
@@ -184,4 +198,6 @@ Dominio: https://pielarmonia.com
 1. Completar cutover de Google Calendar en servidor (`calendarSource=google`, `calendarAuth=oauth_refresh`).
 2. Cambiar variables de control a modo estricto: `REQUIRE_GOOGLE_CALENDAR=true` y `PROD_MONITOR_ALLOW_STORE_CALENDAR=false`.
 3. Re-ejecutar: `TEST_REQUIRE_GOOGLE_CALENDAR=true npm run test:calendar-contract`.
-4. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
+4. Actualizar playbook de incidentes para cerrar formalmente Fase 5.
+5. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
+6. Mantener monitoreo semanal de p95 `availability` para detectar picos transitorios.
