@@ -29,7 +29,7 @@ Todo el texto hasta la siguiente tarea es el prompt.
 ## Tareas
 
 <!-- TASK
-status: dispatched
+status: done
 session: Add Jest tests for analytics engine
 dispatched: 2026-02-24
 -->
@@ -49,7 +49,7 @@ Add "test:js" script to package.json: "jest tests/js"
 <!-- /TASK -->
 
 <!-- TASK
-status: dispatched
+status: done
 session: Audit log: configurable retention and IP anonymization
 dispatched: 2026-02-24
 -->
@@ -68,9 +68,9 @@ Write a test in tests/AuditLogTest.php covering retention and anonymization.
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
-session:
-dispatched:
+status: dispatched
+session: sessions/9075640921639682759
+dispatched: 2026-02-24
 -->
 ### Backup integrity verification and at-rest encryption
 
@@ -91,9 +91,9 @@ Write a test in tests/BackupReceiverTest.php.
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
-session:
-dispatched:
+status: dispatched
+session: sessions/7818317313173207746
+dispatched: 2026-02-24
 -->
 ### PHP rate-limiter: sliding window and per-user limits
 
@@ -111,9 +111,9 @@ Write tests in tests/RateLimiterTest.php.
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
-session:
-dispatched:
+status: dispatched
+session: sessions/18089669206263561268
+dispatched: 2026-02-24
 -->
 ### OpenAPI 3.1 spec for api.php endpoints
 
@@ -135,9 +135,9 @@ with Swagger UI (npx @redocly/cli preview-docs docs/openapi.yaml).
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
-session:
-dispatched:
+status: dispatched
+session: sessions/12920626005819937870
+dispatched: 2026-02-24
 -->
 ### Email notification system: appointment confirmations
 

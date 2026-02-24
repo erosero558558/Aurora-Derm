@@ -31,7 +31,9 @@ if (!API_KEY) {
  * Each task is delimited by <!-- TASK ... --> ... <!-- /TASK -->
  * @returns {{ title: string, prompt: string, status: string, session: string, dispatched: string, raw: string, start: number, end: number }[]}
  */
-function parseTasks(content) {
+function parseTasks(rawContent) {
+    // Normalize line endings so the regex works on both CRLF and LF files.
+    const content = rawContent.replace(/\r\n/g, '\n');
     const tasks = [];
     const taskRegex = /<!-- TASK\n([\s\S]*?)-->([\s\S]*?)<!-- \/TASK -->/g;
     let match;
@@ -57,10 +59,15 @@ function parseTasks(content) {
             .replace(/###\s+.+\n?/, '')
             .trim();
 
+        const status = (meta.status || 'pending').toLowerCase();
+        // Skip format examples (status contains spaces/pipes, not a real task).
+        const VALID = new Set(['pending', 'dispatched', 'done', 'failed']);
+        if (!VALID.has(status)) continue;
+
         tasks.push({
             title,
             prompt,
-            status: (meta.status || 'pending').toLowerCase(),
+            status,
             session: meta.session || '',
             dispatched: meta.dispatched || '',
             _raw: match[0],
@@ -76,7 +83,10 @@ function parseTasks(content) {
  * Update a task's metadata in JULES_TASKS.md in-place.
  */
 function updateTaskInFile(title, updates) {
-    let content = readFileSync(TASKS_FILE, 'utf8');
+    const raw = readFileSync(TASKS_FILE, 'utf8');
+    // Normalize for parsing; write back with original line endings.
+    const useCrlf = raw.includes('\r\n');
+    const content = raw.replace(/\r\n/g, '\n');
     const tasks = parseTasks(content);
     const task = tasks.find((t) => t.title.toLowerCase() === title.toLowerCase());
     if (!task) return;
@@ -96,8 +106,9 @@ function updateTaskInFile(title, updates) {
     const newTaskOpenTag = `<!-- TASK\n${newMetaBlock}\n-->`;
 
     const newRaw = task._raw.replace(/<!-- TASK[\s\S]*?-->/, newTaskOpenTag);
-    content = content.slice(0, task._start) + newRaw + content.slice(task._end);
-    writeFileSync(TASKS_FILE, content, 'utf8');
+    let updated = content.slice(0, task._start) + newRaw + content.slice(task._end);
+    if (useCrlf) updated = updated.replace(/\n/g, '\r\n');
+    writeFileSync(TASKS_FILE, updated, 'utf8');
 }
 
 // ── API helpers ───────────────────────────────────────────────────────────────
