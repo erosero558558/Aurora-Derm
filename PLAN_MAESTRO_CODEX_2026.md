@@ -32,7 +32,7 @@ Objetivo:
 
 Entregables:
 - [x] Suite critica de agenda por dominio en CI.
-- [ ] Cobertura de codigos normalizados (`slot_conflict`, `calendar_unreachable`, etc.) en escenarios de error.
+- [x] Cobertura de codigos normalizados (`slot_conflict`, `calendar_unreachable`, etc.) en escenarios de error.
 - [ ] Pruebas de concurrencia no destructivas y destructivas controladas (workflow manual).
 
 Criterio de salida:
@@ -90,3 +90,4 @@ Criterio de salida:
 ## Evidencia por commit
 - 2026-02-24: plan inicial creado. C1 activado como unico bloque `IN_PROGRESS`.
 - 2026-02-24: agregado bloque `retention` en `funnel-metrics`, metricas de recurrencia/no-show en `metrics`, y gates criticos por dominio en CI.
+- 2026-02-24: agregado `tests/Integration/AppointmentErrorCodesTest.php` para proteger normalizacion de errores de agenda (`slot_conflict` en conflicto de slot y `calendar_unreachable` cuando Google es requerido).
