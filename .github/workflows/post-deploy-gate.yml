@@ -73,6 +73,11 @@ on:
                 required: false
                 default: false
                 type: boolean
+            require_google_calendar:
+                description: 'Forzar contrato de calendario estricto (source=google)'
+                required: false
+                default: false
+                type: boolean
 
 concurrency:
     group: post-deploy-gate-main
@@ -103,7 +108,7 @@ jobs:
             ASSET_HASH_WARNING_UNTIL_INPUT: ${{ github.event.inputs.asset_hash_warning_until || vars.ASSET_HASH_WARNING_UNTIL || '2026-03-08T23:59:59-05:00' }}
             SKIP_FIGO_POST_BENCH_INPUT: ${{ github.event.inputs.skip_figo_post_bench || 'false' }}
             ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME || 'PROD' }}
-            REQUIRE_GOOGLE_CALENDAR: ${{ vars.REQUIRE_GOOGLE_CALENDAR || 'false' }}
+            REQUIRE_GOOGLE_CALENDAR: ${{ github.event.inputs.require_google_calendar || vars.REQUIRE_GOOGLE_CALENDAR || 'false' }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4

@@ -25,6 +25,11 @@ on:
                 required: false
                 default: true
                 type: boolean
+            require_google_calendar:
+                description: 'Forzar validacion de calendario en modo Google estricto'
+                required: false
+                default: false
+                type: boolean
             allow_blocked_calendar:
                 description: 'Permitir calendarMode=blocked temporalmente'
                 required: false
@@ -56,7 +61,7 @@ jobs:
             ALLOW_STORE_CALENDAR: ${{ github.event.inputs.allow_store_calendar || vars.PROD_MONITOR_ALLOW_STORE_CALENDAR || 'true' }}
             ALLOW_BLOCKED_CALENDAR: ${{ github.event.inputs.allow_blocked_calendar || 'false' }}
             SKIP_BACKUP_CHECK: ${{ github.event.inputs.skip_backup_check || 'false' }}
-            REQUIRE_GOOGLE_CALENDAR: ${{ vars.REQUIRE_GOOGLE_CALENDAR || 'false' }}
+            REQUIRE_GOOGLE_CALENDAR: ${{ github.event.inputs.require_google_calendar || vars.REQUIRE_GOOGLE_CALENDAR || 'false' }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4

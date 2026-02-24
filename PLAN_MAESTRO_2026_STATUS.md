@@ -202,6 +202,7 @@ Dominio: https://pielarmonia.com
 9. Cutover Google Calendar pendiente en produccion.
 - Evidencia health actual: `calendarSource=store`, `calendarAuth=none`.
 - Variables GitHub vigentes: `REQUIRE_GOOGLE_CALENDAR=false`, `PROD_MONITOR_ALLOW_STORE_CALENDAR=true`.
+- Override manual disponible: `workflow_dispatch` en `Post-Deploy Gate` y `Production Monitor` con `require_google_calendar=true`.
 - Impacto: pruebas con Google estricto fallan hasta completar credenciales OAuth en servidor.
 
 ## Siguiente ejecucion recomendada

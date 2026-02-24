@@ -40,6 +40,7 @@ Antes del corte:
 
 - `REQUIRE_GOOGLE_CALENDAR=false`
 - `PROD_MONITOR_ALLOW_STORE_CALENDAR=true` (opcional)
+- Para validacion previa sin tocar vars globales: en `workflow_dispatch` usar `require_google_calendar=true` (Post-Deploy Gate / Production Monitor).
 
 Al hacer corte:
 
@@ -57,6 +58,7 @@ Efecto:
    - `Actions -> Production Monitor` con defaults.
 2. Contrato:
    - `Actions -> Post-Deploy Gate (Git Sync)` debe pasar.
+   - Si aun no cambiaste vars globales, ejecutar manual con `require_google_calendar=true`.
 3. Escritura real:
    - `Actions -> Calendar Write Smoke (Manual)` con `enable_write=true`.
    - Ese workflow ya corre en modo estricto Google (`TEST_REQUIRE_GOOGLE_CALENDAR=true`).
