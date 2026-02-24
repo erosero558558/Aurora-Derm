@@ -236,6 +236,9 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
         typeof parsed.overall.domain_regression_green_to_red,
         'number'
     );
+    assert.ok(parsed.policies);
+    assert.equal(parsed.policies.strict.pass, true);
+    assert.equal(parsed.policies.fail_on_red.pass, true);
     assert.equal(parsed.status.totals.tasks, 2);
     assert.equal(parsed.conflicts.totals.blocking, 0);
     assert.equal(parsed.handoffs.lint.ok, true);
@@ -278,6 +281,7 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /Score salud dominios \(priority\):/);
     assert.match(writtenMd, /Regresiones dominio GREEN->RED:/);
     assert.match(writtenMd, /Razones:\s+`stable`/);
+    assert.match(writtenMd, /Politicas:\s+strict=PASS/);
     assert.match(writtenMd, /Delta vs Baseline \(Conflicts\/Handoffs\)/);
     assert.match(writtenMd, /Semaforo Por Dominio/);
     assert.match(writtenMd, /Historico Salud por Dominio/);
@@ -352,6 +356,8 @@ test('agent-governance-summary alerta regresion de dominio GREEN->RED en PR summ
     assert.equal(parsed.overall.ok, true);
     assert.equal(parsed.overall.signal, 'RED');
     assert.ok(parsed.overall.domain_regression_green_to_red >= 1);
+    assert.equal(parsed.policies.strict.pass, true);
+    assert.equal(parsed.policies.fail_on_red.pass, false);
     assert.ok(parsed.domain_health_history);
     assert.ok(parsed.domain_health_history.regressions);
     assert.ok(

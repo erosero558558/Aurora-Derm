@@ -200,6 +200,21 @@ function formatPct(value) {
     return `${n}%`;
 }
 
+function evaluatePolicyResults(report) {
+    const overallOk = report?.overall?.ok === true;
+    const signal = String(report?.overall?.signal || '');
+    return {
+        strict: {
+            pass: overallOk,
+            reason: overallOk ? 'no_blockers' : 'blockers_present',
+        },
+        fail_on_red: {
+            pass: signal !== 'RED',
+            reason: signal !== 'RED' ? 'signal_not_red' : 'signal_red',
+        },
+    };
+}
+
 function summarize(resultMap) {
     const status = resultMap.status?.json || {};
     const conflicts = resultMap.conflicts?.json || {};
@@ -280,7 +295,7 @@ function summarize(resultMap) {
         domainHealthHistory,
     });
 
-    return {
+    const baseReport = {
         version: 1,
         generated_at: new Date().toISOString(),
         root: ROOT,
@@ -310,6 +325,10 @@ function summarize(resultMap) {
         delta_summary: deltaSummary,
         top_blocking_conflicts: topBlocking,
         commands: resultMap,
+    };
+    return {
+        ...baseReport,
+        policies: evaluatePolicyResults(baseReport),
     };
 }
 
@@ -373,6 +392,11 @@ function toMarkdown(report) {
                 : 'none'
         }`
     );
+    if (report.policies) {
+        lines.push(
+            `- Politicas: strict=${report.policies.strict?.pass ? 'PASS' : 'FAIL'} (${report.policies.strict?.reason || 'n/a'}), fail_on_red=${report.policies.fail_on_red?.pass ? 'PASS' : 'FAIL'} (${report.policies.fail_on_red?.reason || 'n/a'})`
+        );
+    }
     lines.push('');
 
     lines.push('### Delta vs Baseline (Conflicts/Handoffs)');
@@ -665,10 +689,10 @@ function main() {
     } else {
         throw new Error(`Formato no soportado: ${format}`);
     }
-    if (flags.strict && report.overall.ok === false) {
+    if (flags.strict && report.policies?.strict?.pass === false) {
         process.exitCode = 1;
     }
-    if (flags['fail-on-red'] && String(report.overall.signal) === 'RED') {
+    if (flags['fail-on-red'] && report.policies?.fail_on_red?.pass === false) {
         process.exitCode = 1;
     }
 }
