@@ -121,6 +121,18 @@ async function getTrackedEvents(page) {
     return page.evaluate(() => {
         const dl = Array.isArray(window.dataLayer) ? window.dataLayer : [];
         return dl
+            .map((item) => {
+                // Handle gtag arguments style: ['event', 'name', { params }]
+                if (
+                    item &&
+                    typeof item === 'object' &&
+                    item[0] === 'event' &&
+                    typeof item[1] === 'string'
+                ) {
+                    return { event: item[1], ...(item[2] || {}) };
+                }
+                return item;
+            })
             .filter(
                 (item) =>
                     item &&
