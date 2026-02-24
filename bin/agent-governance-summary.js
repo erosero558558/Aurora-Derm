@@ -139,6 +139,12 @@ function buildContributionDeltaMap(metrics) {
     );
 }
 
+function formatPct(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 'n/a';
+    return `${n}%`;
+}
+
 function summarize(resultMap) {
     const status = resultMap.status?.json || {};
     const conflicts = resultMap.conflicts?.json || {};
@@ -148,6 +154,9 @@ function summarize(resultMap) {
     const metrics = resultMap.metrics?.json || {};
     const contribution = status?.contribution ||
         metrics?.contribution || { executors: [], ranking: [] };
+    const domainHealth =
+        status?.domain_health || metrics?.domain_health || null;
+    const contributionHistory = metrics?.contribution_history || null;
 
     const blockers = [];
     if (conflicts?.totals?.blocking > 0) blockers.push('conflicts');
@@ -232,6 +241,8 @@ function summarize(resultMap) {
         codex_check: codexCheck || null,
         metrics: metrics || null,
         contribution: contribution || null,
+        contribution_history: contributionHistory || null,
+        domain_health: domainHealth || null,
         delta_summary: deltaSummary,
         top_blocking_conflicts: topBlocking,
         commands: resultMap,
@@ -254,6 +265,8 @@ function toMarkdown(report) {
     const codexCheck = report.codex_check || {};
     const delta = report.delta_summary || {};
     const contribution = report.contribution || {};
+    const contributionHistory = report.contribution_history || {};
+    const domainHealth = report.domain_health || {};
     const contributionDeltaMap = buildContributionDeltaMap(
         report.metrics || {}
     );
@@ -297,6 +310,22 @@ function toMarkdown(report) {
     );
     lines.push('');
 
+    if (
+        Array.isArray(domainHealth.ranking) &&
+        domainHealth.ranking.length > 0
+    ) {
+        lines.push('### Semaforo Por Dominio');
+        for (const row of domainHealth.ranking) {
+            const reasons = Array.isArray(row.reasons)
+                ? row.reasons.join(', ')
+                : 'n/a';
+            lines.push(
+                `- [${row.signal}] \`${row.domain}\`: tasks=\`${row.tasks_total}\`, active=\`${row.active_tasks}\`, done=\`${row.done_tasks}\`, blocking=\`${row.blocking_conflicts}\`, handoff=\`${row.handoff_conflicts}\` (${reasons})`
+            );
+        }
+        lines.push('');
+    }
+
     if (contribution.top_executor) {
         lines.push('### Aporte Por Agente');
         lines.push(
@@ -322,6 +351,50 @@ function toMarkdown(report) {
             lines.push(
                 `- [${signal}] #${row.rank} \`${row.executor}\`: done ponderado=\`${row.weighted_done_points_pct}%\` (delta \`${deltaWeightedDone}\`), tareas done=\`${row.done_tasks_pct}%\``
             );
+        }
+        lines.push('');
+    }
+
+    if (
+        Array.isArray(contributionHistory.daily) &&
+        contributionHistory.daily.length > 0 &&
+        Array.isArray(contributionHistory.executors)
+    ) {
+        const histExecutors = contributionHistory.executors.slice(0, 6);
+        lines.push(
+            `### Historico Aporte (${contributionHistory.window_days || 7}d)`
+        );
+        lines.push(
+            `- Snapshots: \`${contributionHistory.snapshots_total ?? 'n/a'}\` | Dias en ventana: \`${contributionHistory.daily.length}\``
+        );
+        lines.push('');
+        lines.push(
+            `| Fecha | Top | ${histExecutors.map((name) => `${name} done%`).join(' | ')} |`
+        );
+        lines.push(
+            `| --- | --- | ${histExecutors.map(() => '---').join(' | ')} |`
+        );
+        for (const day of contributionHistory.daily) {
+            const cols = histExecutors.map((executor) =>
+                formatPct(day.executors?.[executor]?.weighted_done_points_pct)
+            );
+            lines.push(
+                `| ${day.date} | ${day.top_executor || '-'} | ${cols.join(' | ')} |`
+            );
+        }
+        const weeklyDelta = contributionHistory.weekly_delta || {};
+        if (weeklyDelta.available && Array.isArray(weeklyDelta.rows)) {
+            lines.push('');
+            lines.push(
+                `- Delta ventana (${weeklyDelta.from_date} -> ${weeklyDelta.to_date}):`
+            );
+            for (const row of weeklyDelta.rows) {
+                lines.push(
+                    `  - \`${row.executor}\`: ${formatPpDelta(
+                        row.weighted_done_points_pct_delta
+                    )}`
+                );
+            }
         }
         lines.push('');
     }

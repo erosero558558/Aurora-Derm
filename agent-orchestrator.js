@@ -28,6 +28,12 @@ const KIMI_PATH = resolve(ROOT, 'KIMI_TASKS.md');
 const CODEX_PLAN_PATH = resolve(ROOT, 'PLAN_MAESTRO_CODEX_2026.md');
 const EVIDENCE_DIR = resolve(ROOT, 'verification', 'agent-runs');
 const METRICS_PATH = resolve(ROOT, 'verification', 'agent-metrics.json');
+const CONTRIBUTION_HISTORY_PATH = resolve(
+    ROOT,
+    'verification',
+    'agent-contribution-history.json'
+);
+const PRIORITY_DOMAINS = ['calendar', 'chat', 'payments'];
 
 const ALLOWED_STATUSES = new Set([
     'backlog',
@@ -636,6 +642,340 @@ function buildExecutorContribution(tasks) {
     };
 }
 
+function inferTaskDomain(task) {
+    const scope = normalizePathToken(task?.scope || '');
+    const files = Array.isArray(task?.files)
+        ? task.files.map((item) => normalizePathToken(item))
+        : [];
+    const corpus = [scope, ...files].join(' ');
+
+    if (
+        corpus.includes('calendar') ||
+        corpus.includes('availability') ||
+        corpus.includes('booked-slots')
+    ) {
+        return 'calendar';
+    }
+    if (
+        corpus.includes('chat') ||
+        corpus.includes('figo') ||
+        corpus.includes('telegram')
+    ) {
+        return 'chat';
+    }
+    if (
+        corpus.includes('payment') ||
+        corpus.includes('payments') ||
+        corpus.includes('stripe')
+    ) {
+        return 'payments';
+    }
+
+    if (scope) {
+        const first = scope.split(/[/:]/)[0].trim();
+        if (first) return first;
+    }
+    return 'other';
+}
+
+function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
+    const domainMap = new Map();
+    const taskById = new Map();
+
+    function ensureDomain(domain) {
+        const key = String(domain || 'other').trim() || 'other';
+        if (!domainMap.has(key)) {
+            domainMap.set(key, {
+                domain: key,
+                tasks_total: 0,
+                active_tasks: 0,
+                done_tasks: 0,
+                blocked_tasks: 0,
+                failed_tasks: 0,
+                ready_tasks: 0,
+                review_tasks: 0,
+                in_progress_tasks: 0,
+                blocking_conflicts: 0,
+                handoff_conflicts: 0,
+                active_expired_handoffs: 0,
+                reasons: [],
+                signal: 'GREEN',
+            });
+        }
+        return domainMap.get(key);
+    }
+
+    for (const domain of PRIORITY_DOMAINS) {
+        ensureDomain(domain);
+    }
+
+    for (const task of tasks || []) {
+        const domain = inferTaskDomain(task);
+        const row = ensureDomain(domain);
+        const status = String(task.status || '');
+
+        row.tasks_total += 1;
+        if (ACTIVE_STATUSES.has(status)) row.active_tasks += 1;
+        if (status === 'done') row.done_tasks += 1;
+        if (status === 'blocked') row.blocked_tasks += 1;
+        if (status === 'failed') row.failed_tasks += 1;
+        if (status === 'ready') row.ready_tasks += 1;
+        if (status === 'review') row.review_tasks += 1;
+        if (status === 'in_progress') row.in_progress_tasks += 1;
+
+        taskById.set(String(task.id || ''), { task, domain });
+    }
+
+    for (const conflict of conflictAnalysis?.all || []) {
+        const leftDomain = inferTaskDomain(conflict.left);
+        const rightDomain = inferTaskDomain(conflict.right);
+        const domains = new Set([leftDomain, rightDomain]);
+        for (const domain of domains) {
+            const row = ensureDomain(domain);
+            if (conflict.exempted_by_handoff) {
+                row.handoff_conflicts += 1;
+            } else {
+                row.blocking_conflicts += 1;
+            }
+        }
+    }
+
+    for (const handoff of handoffs || []) {
+        if (String(handoff.status || '').toLowerCase() !== 'active') continue;
+        if (!isExpired(handoff.expires_at)) continue;
+
+        const from = taskById.get(String(handoff.from_task || ''));
+        const to = taskById.get(String(handoff.to_task || ''));
+        const domains = new Set([
+            from?.domain || 'other',
+            to?.domain || 'other',
+        ]);
+        for (const domain of domains) {
+            ensureDomain(domain).active_expired_handoffs += 1;
+        }
+    }
+
+    const rows = Array.from(domainMap.values()).map((row) => {
+        const reasons = [];
+        let signal = 'GREEN';
+
+        if (row.blocking_conflicts > 0) {
+            signal = 'RED';
+            reasons.push(`blocking_conflicts:${row.blocking_conflicts}`);
+        }
+        if (row.failed_tasks > 0) {
+            signal = 'RED';
+            reasons.push(`failed_tasks:${row.failed_tasks}`);
+        }
+        if (row.blocked_tasks > 0 && signal !== 'RED') {
+            signal = 'YELLOW';
+            reasons.push(`blocked_tasks:${row.blocked_tasks}`);
+        } else if (row.blocked_tasks > 0) {
+            reasons.push(`blocked_tasks:${row.blocked_tasks}`);
+        }
+        if (row.active_expired_handoffs > 0 && signal !== 'RED') {
+            signal = 'YELLOW';
+            reasons.push(
+                `active_expired_handoffs:${row.active_expired_handoffs}`
+            );
+        } else if (row.active_expired_handoffs > 0) {
+            reasons.push(
+                `active_expired_handoffs:${row.active_expired_handoffs}`
+            );
+        }
+        if (row.handoff_conflicts > 0 && signal === 'GREEN') {
+            signal = 'YELLOW';
+            reasons.push(`handoff_conflicts:${row.handoff_conflicts}`);
+        } else if (row.handoff_conflicts > 0) {
+            reasons.push(`handoff_conflicts:${row.handoff_conflicts}`);
+        }
+        if (signal === 'GREEN' && row.active_tasks > 0 && row.tasks_total > 0) {
+            signal = 'YELLOW';
+            reasons.push(`active_tasks:${row.active_tasks}`);
+        }
+        if (row.tasks_total === 0) {
+            reasons.push('no_tasks');
+        }
+        if (reasons.length === 0) {
+            reasons.push('stable');
+        }
+
+        return {
+            ...row,
+            signal,
+            reasons,
+        };
+    });
+
+    const priorityIndex = new Map(PRIORITY_DOMAINS.map((d, i) => [d, i]));
+    rows.sort((a, b) => {
+        const aPri = priorityIndex.has(a.domain)
+            ? priorityIndex.get(a.domain)
+            : 999;
+        const bPri = priorityIndex.has(b.domain)
+            ? priorityIndex.get(b.domain)
+            : 999;
+        return (
+            aPri - bPri ||
+            b.tasks_total - a.tasks_total ||
+            String(a.domain).localeCompare(String(b.domain))
+        );
+    });
+
+    const bySignal = rows.reduce(
+        (acc, row) => {
+            acc[row.signal] = (acc[row.signal] || 0) + 1;
+            return acc;
+        },
+        { GREEN: 0, YELLOW: 0, RED: 0 }
+    );
+
+    return {
+        version: 1,
+        priority_domains: PRIORITY_DOMAINS.slice(),
+        totals: {
+            domains: rows.length,
+            by_signal: bySignal,
+        },
+        domains: Object.fromEntries(rows.map((row) => [row.domain, row])),
+        ranking: rows,
+    };
+}
+
+function loadContributionHistory() {
+    if (!existsSync(CONTRIBUTION_HISTORY_PATH)) return null;
+    try {
+        return JSON.parse(readFileSync(CONTRIBUTION_HISTORY_PATH, 'utf8'));
+    } catch {
+        return null;
+    }
+}
+
+function sanitizeContributionSnapshotExecutors(contribution) {
+    const rows = Array.isArray(contribution?.executors)
+        ? contribution.executors
+        : [];
+    return rows
+        .map((row) => ({
+            executor: String(row.executor || ''),
+            weighted_done_points_pct: Number(row.weighted_done_points_pct || 0),
+            done_tasks_pct: Number(row.done_tasks_pct || 0),
+            active_tasks_pct: Number(row.active_tasks_pct || 0),
+            weighted_active_points_pct: Number(
+                row.weighted_active_points_pct || 0
+            ),
+        }))
+        .sort((a, b) => String(a.executor).localeCompare(String(b.executor)));
+}
+
+function upsertContributionHistory(history, contribution) {
+    const base = history && typeof history === 'object' ? history : {};
+    const snapshots = Array.isArray(base.snapshots)
+        ? base.snapshots.slice()
+        : [];
+    const nowIso = new Date().toISOString();
+    const date = nowIso.slice(0, 10);
+    const snapshot = {
+        date,
+        captured_at: nowIso,
+        top_executor: contribution?.top_executor
+            ? String(contribution.top_executor.executor || '')
+            : null,
+        executors: sanitizeContributionSnapshotExecutors(contribution),
+    };
+
+    const next = snapshots.filter((item) => String(item.date || '') !== date);
+    next.push(snapshot);
+    next.sort((a, b) =>
+        String(a.date || '').localeCompare(String(b.date || ''))
+    );
+
+    return {
+        version: 1,
+        updated_at: nowIso,
+        snapshots: next.slice(-365),
+    };
+}
+
+function buildContributionHistorySummary(history, days = 7) {
+    const snapshots = Array.isArray(history?.snapshots)
+        ? history.snapshots
+        : [];
+    const ordered = snapshots
+        .filter((item) => item && typeof item === 'object' && item.date)
+        .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const recent = ordered.slice(-Math.max(1, Number(days) || 7));
+
+    const executorSet = new Set();
+    for (const item of recent) {
+        for (const row of Array.isArray(item.executors) ? item.executors : []) {
+            executorSet.add(String(row.executor || ''));
+        }
+    }
+    const executors = Array.from(executorSet).filter(Boolean).sort();
+
+    const daily = recent.map((item) => {
+        const byExecutor = {};
+        for (const row of Array.isArray(item.executors) ? item.executors : []) {
+            byExecutor[String(row.executor || '')] = {
+                weighted_done_points_pct: Number(
+                    row.weighted_done_points_pct || 0
+                ),
+                done_tasks_pct: Number(row.done_tasks_pct || 0),
+                active_tasks_pct: Number(row.active_tasks_pct || 0),
+            };
+        }
+        return {
+            date: String(item.date),
+            captured_at: String(item.captured_at || ''),
+            top_executor: item.top_executor ? String(item.top_executor) : null,
+            executors: byExecutor,
+        };
+    });
+
+    let weeklyDelta = { available: false, rows: [] };
+    if (daily.length >= 2) {
+        const first = daily[0];
+        const last = daily[daily.length - 1];
+        const union = Array.from(
+            new Set([
+                ...Object.keys(first.executors),
+                ...Object.keys(last.executors),
+            ])
+        ).sort();
+        weeklyDelta = {
+            available: true,
+            from_date: first.date,
+            to_date: last.date,
+            rows: union.map((executor) => {
+                const firstVal = Number(
+                    first.executors[executor]?.weighted_done_points_pct || 0
+                );
+                const lastVal = Number(
+                    last.executors[executor]?.weighted_done_points_pct || 0
+                );
+                return {
+                    executor,
+                    weighted_done_points_pct_from: firstVal,
+                    weighted_done_points_pct_to: lastVal,
+                    weighted_done_points_pct_delta:
+                        Math.round((lastVal - firstVal) * 10) / 10,
+                };
+            }),
+        };
+    }
+
+    return {
+        version: 1,
+        source_file: 'verification/agent-contribution-history.json',
+        window_days: Math.max(1, Number(days) || 7),
+        snapshots_total: ordered.length,
+        daily,
+        executors,
+        weekly_delta: weeklyDelta,
+    };
+}
+
 function loadMetricsSnapshot() {
     if (!existsSync(METRICS_PATH)) return null;
     try {
@@ -1037,6 +1377,11 @@ function cmdStatus(args) {
         contribution,
         contributionBaseline
     );
+    const domainHealth = buildDomainHealth(
+        board.tasks,
+        conflictAnalysis,
+        handoffData.handoffs
+    );
     const data = {
         version: board.version,
         policy: board.policy,
@@ -1047,6 +1392,7 @@ function cmdStatus(args) {
         },
         contribution,
         contribution_trend: contributionTrend,
+        domain_health: domainHealth,
         conflicts: conflictAnalysis.blocking.length,
         conflicts_breakdown: {
             blocking: conflictAnalysis.blocking.length,
@@ -1076,6 +1422,15 @@ function cmdStatus(args) {
     console.log('Por ejecutor:');
     for (const [executor, count] of Object.entries(data.totals.byExecutor)) {
         console.log(`- ${executor}: ${count}`);
+    }
+    if (Array.isArray(data.domain_health?.ranking)) {
+        console.log('');
+        console.log('Semaforo por dominio:');
+        for (const row of data.domain_health.ranking) {
+            console.log(
+                `- [${row.signal}] ${row.domain}: tasks=${row.tasks_total}, active=${row.active_tasks}, blocking=${row.blocking_conflicts}, handoff=${row.handoff_conflicts}`
+            );
+        }
     }
     if (data.contribution.top_executor) {
         const executorsByName = new Map(
@@ -1135,6 +1490,11 @@ function cmdMetrics(args = []) {
         (task) => task.status === 'in_progress'
     ).length;
     const contribution = buildExecutorContribution(board.tasks);
+    const domainHealth = buildDomainHealth(
+        board.tasks,
+        conflictAnalysis,
+        handoffData.handoffs
+    );
 
     let existing = null;
     if (existsSync(METRICS_PATH)) {
@@ -1150,6 +1510,15 @@ function cmdMetrics(args = []) {
     const contributionDelta = buildContributionTrend(
         contribution,
         baselineContribution
+    );
+    const existingHistory = loadContributionHistory();
+    const nextContributionHistory = upsertContributionHistory(
+        existingHistory,
+        contribution
+    );
+    const contributionHistorySummary = buildContributionHistorySummary(
+        nextContributionHistory,
+        7
     );
 
     const baseline =
@@ -1228,6 +1597,8 @@ function cmdMetrics(args = []) {
         contribution,
         baseline_contribution: baselineContribution,
         contribution_delta: contributionDelta,
+        contribution_history: contributionHistorySummary,
+        domain_health: domainHealth,
         delta: {
             tasks_total: total - safeNumber(baseline.tasks_total, total),
             file_conflicts:
@@ -1246,6 +1617,11 @@ function cmdMetrics(args = []) {
     writeFileSync(
         METRICS_PATH,
         `${JSON.stringify(metrics, null, 4)}\n`,
+        'utf8'
+    );
+    writeFileSync(
+        CONTRIBUTION_HISTORY_PATH,
+        `${JSON.stringify(nextContributionHistory, null, 4)}\n`,
         'utf8'
     );
     if (wantsJson) {

@@ -89,6 +89,15 @@ function readMetrics(dir) {
     );
 }
 
+function readContributionHistory(dir) {
+    return JSON.parse(
+        readFileSync(
+            join(dir, 'verification', 'agent-contribution-history.json'),
+            'utf8'
+        )
+    );
+}
+
 function baseHandoffs() {
     return `
 version: 1
@@ -522,12 +531,23 @@ test('metrics soporta --json, escribe archivo y expone delta/baseline handoff', 
     assert.ok(json.contribution);
     assert.ok(json.baseline_contribution);
     assert.ok(json.contribution_delta);
+    assert.ok(json.domain_health);
+    assert.ok(json.contribution_history);
+    assert.equal(Array.isArray(json.domain_health.ranking), true);
+    assert.equal(Array.isArray(json.contribution_history.daily), true);
     assert.equal(Array.isArray(json.baseline_contribution.executors), true);
     assert.equal(Array.isArray(json.contribution_delta.rows), true);
 
     const written = readMetrics(dir);
     assert.equal(written.current.file_conflicts, 1);
     assert.equal(written.current.file_conflicts_handoff, 0);
+    assert.ok(written.contribution_history);
+
+    const history = readContributionHistory(dir);
+    assert.equal(history.version, 1);
+    assert.equal(Array.isArray(history.snapshots), true);
+    assert.equal(history.snapshots.length, 1);
+    assert.equal(typeof history.snapshots[0].date, 'string');
 });
 
 test('status --json expone porcentajes de aporte por agente y ranking', (t) => {
@@ -553,6 +573,12 @@ test('status --json expone porcentajes de aporte por agente y ranking', (t) => {
     assert.ok(Array.isArray(json.contribution.ranking));
     assert.equal(json.contribution.ranking.length >= 1, true);
     assert.equal(Object.hasOwn(json, 'contribution_trend'), true);
+    assert.ok(json.domain_health);
+    assert.equal(Array.isArray(json.domain_health.ranking), true);
+    assert.equal(
+        json.domain_health.ranking.some((row) => row.domain === 'payments'),
+        true
+    );
     assert.equal(typeof json.contribution.executors[0].tasks_pct, 'number');
     assert.equal(
         typeof json.contribution.executors[0].done_tasks_pct,
@@ -602,6 +628,8 @@ test('status texto muestra leaderboard con semaforo y delta vs baseline cuando h
     );
 
     const result = runCli(dir, ['status']);
+    assert.match(result.stdout, /Semaforo por dominio:/);
+    assert.match(result.stdout, /\[GREEN\]\s+payments:/);
     assert.match(result.stdout, /Aporte \(ranking por completado ponderado\)/);
     assert.match(result.stdout, /Baseline de comparacion:\s+metrics/);
     assert.match(result.stdout, /\[GREEN\]\s+#1 kimi/);
