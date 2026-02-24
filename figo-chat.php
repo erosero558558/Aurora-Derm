@@ -406,6 +406,68 @@ function figo_check_failfast_window(): array
     ];
 }
 
+function figo_metric_label(string $value, string $fallback): string
+{
+    $value = strtolower(trim($value));
+    if ($value === '') {
+        return $fallback;
+    }
+
+    $value = preg_replace('/[^a-z0-9_:\.-]+/i', '_', $value);
+    if (!is_string($value) || trim($value) === '') {
+        return $fallback;
+    }
+
+    $value = substr($value, 0, 64);
+    return $value !== '' ? $value : $fallback;
+}
+
+function figo_record_post_metrics(float $startedAt, string $providerMode, array $payload, int $statusCode): void
+{
+    if (!class_exists('Metrics')) {
+        return;
+    }
+
+    $durationSec = max(0.0005, microtime(true) - $startedAt);
+    $mode = figo_metric_label((string) ($payload['mode'] ?? ''), $statusCode >= 400 ? 'degraded' : 'live');
+    $source = figo_metric_label((string) ($payload['source'] ?? ''), 'none');
+    $reason = figo_metric_label((string) ($payload['reason'] ?? ''), $statusCode >= 400 ? ('http_' . $statusCode) : 'none');
+    $provider = figo_metric_label($providerMode, 'legacy_proxy');
+    $statusClass = ((int) floor(max(100, $statusCode) / 100)) . 'xx';
+
+    Metrics::observe(
+        'figo_chat_post_duration_seconds',
+        $durationSec,
+        [
+            'providerMode' => $provider,
+            'mode' => $mode,
+            'source' => $source,
+        ],
+        [0.05, 0.1, 0.2, 0.4, 0.8, 1.5, 2.5, 5.0, 10.0]
+    );
+
+    Metrics::increment('figo_chat_post_total', [
+        'providerMode' => $provider,
+        'mode' => $mode,
+        'source' => $source,
+        'statusClass' => $statusClass,
+        'reason' => $reason,
+    ]);
+
+    if ($statusCode >= 400) {
+        Metrics::increment('figo_chat_post_errors_total', [
+            'providerMode' => $provider,
+            'reason' => $reason,
+        ]);
+    }
+}
+
+function figo_json_post_response(array $payload, int $statusCode, float $startedAt, string $providerMode): void
+{
+    figo_record_post_metrics($startedAt, $providerMode, $payload, $statusCode);
+    json_response($payload, $statusCode);
+}
+
 figo_apply_cors();
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -540,6 +602,7 @@ if ($method !== 'POST') {
 
 start_secure_session();
 require_rate_limit('figo-chat', 15, 60);
+$postRequestStartedAt = microtime(true);
 
 $payload = require_json_body();
 $messages = isset($payload['messages']) && is_array($payload['messages'])
@@ -550,13 +613,13 @@ if ($messages === []) {
     audit_log_event('figo.invalid_request', [
         'reason' => 'messages_required'
     ]);
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => $diagnosticMode,
         'source' => 'none',
         'reason' => 'messages_required',
         'error' => 'messages es obligatorio'
-    ], 400);
+    ], 400, $postRequestStartedAt, $providerMode);
 }
 
 $model = isset($payload['model']) && is_string($payload['model']) && trim($payload['model']) !== ''
@@ -615,7 +678,7 @@ if ($providerMode === 'openclaw_queue') {
         if (!isset($bridgePayload['pollUrl']) || !is_string($bridgePayload['pollUrl']) || trim($bridgePayload['pollUrl']) === '') {
             $bridgePayload['pollUrl'] = '/check-ai-response.php?jobId=' . rawurlencode((string) $bridgePayload['jobId']);
         }
-        json_response($bridgePayload, 200);
+        figo_json_post_response($bridgePayload, 200, $postRequestStartedAt, $providerMode);
     }
 
     if (isset($bridgePayload['choices'][0]['message']['content']) && is_string($bridgePayload['choices'][0]['message']['content'])) {
@@ -626,7 +689,7 @@ if ($providerMode === 'openclaw_queue') {
         $bridgePayload['source'] = isset($bridgePayload['source']) && is_string($bridgePayload['source']) && trim($bridgePayload['source']) !== ''
             ? (string) $bridgePayload['source']
             : 'openclaw_gateway';
-        json_response($bridgePayload, 200);
+        figo_json_post_response($bridgePayload, 200, $postRequestStartedAt, $providerMode);
     }
 
     // Sin fallback silencioso cuando OpenClaw no responde.
@@ -639,18 +702,23 @@ if ($providerMode === 'openclaw_queue') {
     if (!isset($bridgePayload['mode'])) {
         $bridgePayload['mode'] = 'failed';
     }
-    json_response($bridgePayload, $bridgeStatus >= 100 ? $bridgeStatus : 503);
+    figo_json_post_response(
+        $bridgePayload,
+        $bridgeStatus >= 100 ? $bridgeStatus : 503,
+        $postRequestStartedAt,
+        $providerMode
+    );
 }
 
 $encodedPayload = json_encode($upstreamPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 if (!is_string($encodedPayload)) {
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => $diagnosticMode,
         'source' => 'none',
         'reason' => 'payload_encode_failed',
         'error' => 'No se pudo serializar el payload'
-    ], 500);
+    ], 500, $postRequestStartedAt, $providerMode);
 }
 
 $headers = [
@@ -771,7 +839,7 @@ if ($endpoint === '') {
     );
     $fallback['degraded'] = true;
     $fallback['hint'] = 'Configura FIGO_CHAT_ENDPOINT o figo-config.json';
-    json_response($fallback);
+    figo_json_post_response($fallback, 200, $postRequestStartedAt, $providerMode);
 }
 
 if ($recursiveConfigDetected) {
@@ -792,16 +860,16 @@ if ($recursiveConfigDetected) {
         );
         $fallback['degraded'] = true;
         $fallback['error'] = 'Configuracion circular detectada en FIGO_CHAT_ENDPOINT';
-        json_response($fallback);
+        figo_json_post_response($fallback, 200, $postRequestStartedAt, $providerMode);
     }
 
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => 'degraded',
         'source' => 'none',
         'reason' => 'recursive_config',
         'error' => 'Configuracion circular detectada en FIGO_CHAT_ENDPOINT'
-    ], 503);
+    ], 503, $postRequestStartedAt, $providerMode);
 }
 
 $curlAvailable = function_exists('curl_init') && function_exists('curl_setopt_array') && function_exists('curl_exec');
@@ -817,16 +885,16 @@ if (!$curlAvailable) {
         );
         $fallback['degraded'] = true;
         $fallback['error'] = 'cURL no disponible en el servidor';
-        json_response($fallback);
+        figo_json_post_response($fallback, 200, $postRequestStartedAt, $providerMode);
     }
 
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => 'degraded',
         'source' => 'none',
         'reason' => 'curl_unavailable',
         'error' => 'cURL no disponible en el servidor'
-    ], 503);
+    ], 503, $postRequestStartedAt, $providerMode);
 }
 
 $failfast = figo_check_failfast_window();
@@ -851,28 +919,28 @@ if (($failfast['active'] ?? false) === true) {
         $fallback['degraded'] = true;
         $fallback['retryAfterSec'] = max(1, $retryAfter);
         $fallback['error'] = 'Backend Figo temporalmente no disponible';
-        json_response($fallback);
+        figo_json_post_response($fallback, 200, $postRequestStartedAt, $providerMode);
     }
 
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => 'degraded',
         'source' => 'none',
         'reason' => 'upstream_temporarily_unavailable',
         'error' => 'Backend Figo temporalmente no disponible',
         'retryAfterSec' => max(1, $retryAfter)
-    ], 503);
+    ], 503, $postRequestStartedAt, $providerMode);
 }
 
 $ch = curl_init($endpoint);
 if ($ch === false) {
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => 'degraded',
         'source' => 'none',
         'reason' => 'curl_init_failed',
         'error' => 'No se pudo inicializar la conexion de chat'
-    ], 500);
+    ], 500, $postRequestStartedAt, $providerMode);
 }
 
 curl_setopt_array($ch, [
@@ -924,16 +992,16 @@ if (!is_string($rawResponse)) {
         );
         $fallback['degraded'] = true;
         $fallback['error'] = 'No se pudo conectar con el backend Figo';
-        json_response($fallback);
+        figo_json_post_response($fallback, 200, $postRequestStartedAt, $providerMode);
     }
 
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => 'degraded',
         'source' => 'none',
         'reason' => 'upstream_connection_failed',
         'error' => 'No se pudo conectar con el backend Figo'
-    ], 503);
+    ], 503, $postRequestStartedAt, $providerMode);
 }
 
 if ($httpCode >= 400) {
@@ -954,17 +1022,17 @@ if ($httpCode >= 400) {
             $httpCode
         );
         $fallback['degraded'] = true;
-        json_response($fallback);
+        figo_json_post_response($fallback, 200, $postRequestStartedAt, $providerMode);
     }
 
-    json_response([
+    figo_json_post_response([
         'ok' => false,
         'mode' => 'degraded',
         'source' => 'none',
         'reason' => 'upstream_http_error',
         'error' => 'El bot Figo devolvio un error',
         'status' => $httpCode
-    ], 503);
+    ], 503, $postRequestStartedAt, $providerMode);
 }
 
 $decoded = json_decode($rawResponse, true);
@@ -989,7 +1057,7 @@ if (figo_is_upstream_technical_fallback($content)) {
         $httpCode
     );
     $fallback['degraded'] = true;
-    json_response($fallback);
+    figo_json_post_response($fallback, 200, $postRequestStartedAt, $providerMode);
 }
 if ($content === '') {
     $content = 'En este momento no pude generar una respuesta. ¿Deseas que te conecte por WhatsApp?';
@@ -1008,7 +1076,7 @@ audit_log_event('figo.success', [
     'endpointHost' => $endpointDiagnostics['endpointHost']
 ]);
 
-json_response(figo_finalize_completion([
+$successPayload = figo_finalize_completion([
     'id' => $id,
     'object' => 'chat.completion',
     'created' => time(),
@@ -1021,4 +1089,6 @@ json_response(figo_finalize_completion([
         ],
         'finish_reason' => 'stop'
         ]]
-], 'live', 'upstream', '', true, false, $httpCode));
+], 'live', 'upstream', '', true, false, $httpCode);
+
+figo_json_post_response($successPayload, 200, $postRequestStartedAt, $providerMode);
