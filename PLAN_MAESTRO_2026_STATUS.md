@@ -16,6 +16,9 @@ Dominio: https://pielarmonia.com
 - Post-Deploy Gate run `22334952341` (commit `e1a243d`): `success`.
 - CI run `22335119857` (commit `4f32b2d`): `success`.
 - Post-Deploy Gate run `22335119858` (commit `4f32b2d`): `cancelled` por concurrencia del workflow.
+- CI run `22335524920` (commit `5b7c036`): `success`.
+- Post-Deploy Gate run `22335524921` (commit `5b7c036`): `success`.
+- Hardening workflows: override manual `require_google_calendar` habilitado en `Post-Deploy Gate` y `Production Monitor`.
 - Estado general: En curso. CI desbloqueado y pipeline activo tras fix de calendar runtime.
 - Chatbot: Operativo en Trinity/OpenRouter (cola OpenClaw deshabilitada por decision de producto).
 - Agenda real: implementada en codigo, pero produccion hoy reporta `calendarSource=store` y `calendarAuth=none`.
