@@ -35,6 +35,7 @@ import { initUiEffectsWarmup, initModalUxEngineWarmup } from './ui.js';
 import { initRescheduleEngineWarmup } from './reschedule.js';
 import { initSuccessModalEngineWarmup } from './success-modal.js';
 import { initEngagementFormsEngineWarmup } from './engagement.js';
+import { loadFeatureFlags, isFeatureEnabled } from './features.js';
 // content-loader.js prefetch: empieza a descargar al instante (antes de DOMContentLoaded)
 // para que cuando se necesite en el handler ya este en cache.
 const _contentLoaderMod = import('./content-loader.js');
@@ -43,6 +44,12 @@ const _contentLoaderMod = import('./content-loader.js');
 window.Piel = window.Piel || {};
 window.Piel.deployVersion =
     window.Piel.deployVersion || resolveDeployAssetVersion();
+
+// Feature flags: fetch early (non-blocking), expose on window.Piel
+loadFeatureFlags().then((flags) => {
+    window.Piel.features = flags;
+});
+window.Piel.isFeatureEnabled = isFeatureEnabled;
 
 // Deferred Stylesheet
 const DEFERRED_STYLESHEET_URL = withDeployAssetVersion(

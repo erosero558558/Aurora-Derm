@@ -2191,6 +2191,39 @@ function initGalleryInteractionsWarmup() {
     scheduleDeferredTask(warmup, { idleTimeout: 2500, fallbackDelay: 1500 });
 }
 
+/**
+ * Feature flags client — reads from /api.php?action=features.
+ * Fetches once and caches. Falls back to all-false on error.
+ */
+
+let _cache = null;
+let _promise = null;
+
+async function loadFeatureFlags() {
+    if (_cache !== null) return _cache;
+    if (_promise) return _promise;
+
+    _promise = fetch('/api.php?action=features', {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+    })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json) => {
+            _cache = json && json.ok && json.data ? json.data : {};
+            return _cache;
+        })
+        .catch(() => {
+            _cache = {};
+            return _cache;
+        });
+
+    return _promise;
+}
+
+function isFeatureEnabled(flag) {
+    return _cache ? Boolean(_cache[flag]) : false;
+}
+
 // Chat shell cargado bajo demanda (code splitting)
 let chatShellPromise = null;
 function loadChatShell() {
@@ -2207,6 +2240,12 @@ const _contentLoaderMod = import('./js/chunks/content-loader-DSXmymH4.js');
 window.Piel = window.Piel || {};
 window.Piel.deployVersion =
     window.Piel.deployVersion || resolveDeployAssetVersion();
+
+// Feature flags: fetch early (non-blocking), expose on window.Piel
+loadFeatureFlags().then((flags) => {
+    window.Piel.features = flags;
+});
+window.Piel.isFeatureEnabled = isFeatureEnabled;
 
 // Deferred Stylesheet
 const DEFERRED_STYLESHEET_URL = withDeployAssetVersion(
