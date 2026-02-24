@@ -500,7 +500,7 @@ function figo_backend_extract_ai_content(array $decoded, string $raw): ?string
     return null;
 }
 
-function figo_backend_ai_response(string $userMessage, array $contextMessages = []): ?string
+function figo_backend_ai_response(string $userMessage, array $contextMessages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): ?string
 {
     $endpoint = figo_backend_ai_endpoint();
     if ($endpoint === '') {
@@ -510,7 +510,7 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
     $messages = [['role' => 'system', 'content' => figo_backend_ai_system_prompt()]];
 
     if ($contextMessages !== []) {
-        foreach (array_slice($contextMessages, -10) as $msg) {
+        foreach (array_slice($contextMessages, -8) as $msg) {
             if (is_array($msg) && isset($msg['role'], $msg['content'])) {
                 $messages[] = ['role' => (string) $msg['role'], 'content' => (string) $msg['content']];
             }
@@ -519,11 +519,22 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
         $messages[] = ['role' => 'user', 'content' => $userMessage];
     }
 
+    $maxTokens = figo_backend_ai_max_tokens();
+    if ($requestedMaxTokens > 0) {
+        $requestedMaxTokens = max(64, min(1200, $requestedMaxTokens));
+        $maxTokens = min($maxTokens, $requestedMaxTokens);
+    }
+
+    $temperature = 0.7;
+    if ($requestedTemperature !== null) {
+        $temperature = max(0.0, min(1.0, $requestedTemperature));
+    }
+
     $payload = json_encode([
         'model' => figo_backend_ai_model(),
         'messages' => $messages,
-        'max_tokens' => figo_backend_ai_max_tokens(),
-        'temperature' => 0.7
+        'max_tokens' => $maxTokens,
+        'temperature' => $temperature
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     if (!is_string($payload)) {
@@ -675,7 +686,7 @@ function figo_backend_answer(string $userMessage): string
         . "Si necesitas atencion directa: WhatsApp +593 98 245 3672.";
 }
 
-function figo_backend_compose_response(string $userMessage, array $messages = []): array
+function figo_backend_compose_response(string $userMessage, array $messages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): array
 {
     $aiConfigured = figo_backend_ai_endpoint() !== '';
     $allowFallback = figo_backend_allow_local_fallback();
@@ -683,7 +694,12 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
 
     $aiContent = null;
     if ($aiConfigured) {
-        $aiContent = figo_backend_ai_response($userMessage, $messages);
+        $aiContent = figo_backend_ai_response(
+            $userMessage,
+            $messages,
+            $requestedMaxTokens,
+            $requestedTemperature
+        );
     }
 
     if (is_string($aiContent) && trim($aiContent) !== '') {
@@ -973,9 +989,16 @@ if ($messages === []) {
 $model = isset($payload['model']) && is_string($payload['model']) && trim($payload['model']) !== ''
     ? trim($payload['model'])
     : 'figo-assistant';
+$requestedMaxTokens = isset($payload['max_tokens']) ? (int) $payload['max_tokens'] : 0;
+$requestedTemperature = isset($payload['temperature']) ? (float) $payload['temperature'] : null;
 
 $userMessage = figo_backend_last_user_message($messages);
-$responsePlan = figo_backend_compose_response($userMessage, $messages);
+$responsePlan = figo_backend_compose_response(
+    $userMessage,
+    $messages,
+    $requestedMaxTokens,
+    $requestedTemperature
+);
 $content = isset($responsePlan['content']) && is_string($responsePlan['content']) ? $responsePlan['content'] : figo_backend_ai_unavailable_message();
 $provider = isset($responsePlan['provider']) ? (string) $responsePlan['provider'] : 'pattern_matching';
 $mode = isset($responsePlan['mode']) ? (string) $responsePlan['mode'] : 'local';
