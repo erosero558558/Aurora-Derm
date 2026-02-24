@@ -337,7 +337,7 @@ class AnalyticsController
             return $labels;
         }
 
-        $matchCount = preg_match_all('/([a-zA-Z_][a-zA-Z0-9_]*)="((?:[^"\\]|\\.)*)"/', $rawLabels, $matches, PREG_SET_ORDER);
+        $matchCount = preg_match_all('/([a-zA-Z_][a-zA-Z0-9_]*)="((?:[^"\\\\]|\\\\.)*)"/', $rawLabels, $matches, PREG_SET_ORDER);
         if (!is_int($matchCount) || $matchCount < 1) {
             return $labels;
         }

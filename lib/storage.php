@@ -62,6 +62,52 @@ function storage_default_store_payload(): array
     ];
 }
 
+function normalize_store_records_with_numeric_id(array $records, string $namespace): array
+{
+    $normalized = [];
+    $seen = [];
+
+    foreach ($records as $index => $record) {
+        if (!is_array($record)) {
+            continue;
+        }
+
+        $rawId = $record['id'] ?? null;
+        $id = 0;
+        if (is_int($rawId) && $rawId > 0) {
+            $id = $rawId;
+        } elseif (is_string($rawId) && preg_match('/^\d+$/', $rawId)) {
+            $id = (int) $rawId;
+        }
+
+        if ($id <= 0) {
+            $seedParts = [
+                $namespace,
+                is_scalar($rawId) ? (string) $rawId : '',
+                isset($record['date']) ? (string) $record['date'] : '',
+                isset($record['time']) ? (string) $record['time'] : '',
+                isset($record['email']) ? (string) $record['email'] : '',
+                (string) $index,
+            ];
+            $seed = implode('|', $seedParts);
+            $id = (int) sprintf('%u', crc32($seed));
+            if ($id <= 0) {
+                $id = $index + 1;
+            }
+        }
+
+        while (isset($seen[$id])) {
+            $id++;
+        }
+
+        $seen[$id] = true;
+        $record['id'] = $id;
+        $normalized[] = $record;
+    }
+
+    return $normalized;
+}
+
 function normalize_store_payload($rawStore): array
 {
     $store = is_array($rawStore) ? $rawStore : [];
@@ -73,6 +119,10 @@ function normalize_store_payload($rawStore): array
     $updatedAt = isset($store['updatedAt']) && is_string($store['updatedAt']) && trim($store['updatedAt']) !== ''
         ? trim($store['updatedAt'])
         : local_date('c');
+
+    $appointments = normalize_store_records_with_numeric_id($appointments, 'appointments');
+    $callbacks = normalize_store_records_with_numeric_id($callbacks, 'callbacks');
+    $reviews = normalize_store_records_with_numeric_id($reviews, 'reviews');
 
     return [
         'appointments' => array_values($appointments),
@@ -528,6 +578,7 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
         error_log('Migration failed: invalid JSON');
         return false;
     }
+    $data = normalize_store_payload($data);
 
     $pdo = get_db_connection($sqlitePath);
     if (!$pdo) {
@@ -952,4 +1003,3 @@ function write_store(array $store, bool $emitHttpErrors = true): bool
         return false;
     }
 }
-
