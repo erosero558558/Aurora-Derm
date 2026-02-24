@@ -141,6 +141,9 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.equal(parsed.handoffs.lint.ok, true);
     assert.equal(parsed.codex_check.ok, true);
     assert.equal(parsed.metrics.version, 1);
+    assert.ok(parsed.contribution);
+    assert.ok(Array.isArray(parsed.contribution.ranking));
+    assert.ok(parsed.contribution.top_executor);
     assert.equal(
         typeof parsed.delta_summary.conflicts_blocking.delta,
         'number'
@@ -160,4 +163,5 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /^## Agent Governance Summary/m);
     assert.match(writtenMd, /Overall:\s+OK/);
     assert.match(writtenMd, /Delta vs Baseline \(Conflicts\/Handoffs\)/);
+    assert.match(writtenMd, /Aporte Por Agente/);
 });

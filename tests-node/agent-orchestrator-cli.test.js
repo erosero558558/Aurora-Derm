@@ -519,10 +519,95 @@ test('metrics soporta --json, escribe archivo y expone delta/baseline handoff', 
     assert.equal(typeof json.baseline.file_conflicts_handoff, 'number');
     assert.equal(typeof json.delta.file_conflicts, 'number');
     assert.equal(typeof json.delta.file_conflicts_handoff, 'number');
+    assert.ok(json.contribution);
+    assert.ok(json.baseline_contribution);
+    assert.ok(json.contribution_delta);
+    assert.equal(Array.isArray(json.baseline_contribution.executors), true);
+    assert.equal(Array.isArray(json.contribution_delta.rows), true);
 
     const written = readMetrics(dir);
     assert.equal(written.current.file_conflicts, 1);
     assert.equal(written.current.file_conflicts_handoff, 0);
+});
+
+test('status --json expone porcentajes de aporte por agente y ranking', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskStartConflictFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCli(dir, ['status', '--json']);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.version, '1');
+    assert.ok(json.contribution);
+    assert.equal(
+        json.contribution.scoring.primary_metric,
+        'weighted_done_points_pct'
+    );
+    assert.ok(Array.isArray(json.contribution.executors));
+    assert.ok(Array.isArray(json.contribution.ranking));
+    assert.equal(json.contribution.ranking.length >= 1, true);
+    assert.equal(Object.hasOwn(json, 'contribution_trend'), true);
+    assert.equal(typeof json.contribution.executors[0].tasks_pct, 'number');
+    assert.equal(
+        typeof json.contribution.executors[0].done_tasks_pct,
+        'number'
+    );
+    assert.equal(
+        typeof json.contribution.executors[0].weighted_done_points_pct,
+        'number'
+    );
+});
+
+test('status texto muestra leaderboard con semaforo y delta vs baseline cuando hay metrics', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskStartConflictFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    require('fs').mkdirSync(join(dir, 'verification'), { recursive: true });
+    writeFileSync(
+        join(dir, 'verification', 'agent-metrics.json'),
+        `${JSON.stringify(
+            {
+                version: 1,
+                baseline_contribution: {
+                    executors: [
+                        {
+                            executor: 'jules',
+                            weighted_done_points_pct: 100,
+                            done_tasks_pct: 100,
+                        },
+                        {
+                            executor: 'kimi',
+                            weighted_done_points_pct: 0,
+                            done_tasks_pct: 0,
+                        },
+                    ],
+                },
+            },
+            null,
+            2
+        )}\n`,
+        'utf8'
+    );
+
+    const result = runCli(dir, ['status']);
+    assert.match(result.stdout, /Aporte \(ranking por completado ponderado\)/);
+    assert.match(result.stdout, /Baseline de comparacion:\s+metrics/);
+    assert.match(result.stdout, /\[GREEN\]\s+#1 kimi/);
+    assert.match(result.stdout, /delta \+100pp vs baseline/);
+    assert.match(result.stdout, /\[YELLOW\]\s+#2 jules/);
+    assert.match(result.stdout, /delta -100pp vs baseline/);
 });
 
 test('conflicts, handoffs y codex-check soportan --json con salida estable', (t) => {

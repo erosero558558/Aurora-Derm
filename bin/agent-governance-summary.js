@@ -70,6 +70,8 @@ function summarize(resultMap) {
     const handoffLint = resultMap.handoffsLint?.json || {};
     const codexCheck = resultMap.codexCheck?.json || {};
     const metrics = resultMap.metrics?.json || {};
+    const contribution = status?.contribution ||
+        metrics?.contribution || { executors: [], ranking: [] };
 
     const blockers = [];
     if (conflicts?.totals?.blocking > 0) blockers.push('conflicts');
@@ -144,6 +146,7 @@ function summarize(resultMap) {
         },
         codex_check: codexCheck || null,
         metrics: metrics || null,
+        contribution: contribution || null,
         delta_summary: deltaSummary,
         top_blocking_conflicts: topBlocking,
         commands: resultMap,
@@ -165,6 +168,7 @@ function toMarkdown(report) {
     const handoffLint = report.handoffs?.lint || {};
     const codexCheck = report.codex_check || {};
     const delta = report.delta_summary || {};
+    const contribution = report.contribution || {};
 
     lines.push('## Agent Governance Summary');
     lines.push('');
@@ -187,6 +191,22 @@ function toMarkdown(report) {
         `- Handoff conflicts: baseline=\`${delta.conflicts_handoff?.baseline ?? 'n/a'}\` -> current=\`${delta.conflicts_handoff?.current ?? 'n/a'}\` (delta \`${fmtDelta(delta.conflicts_handoff?.delta)}\`)`
     );
     lines.push('');
+
+    if (contribution.top_executor) {
+        lines.push('### Aporte Por Agente');
+        lines.push(
+            `- Top contributor: \`${contribution.top_executor.executor}\` con \`${contribution.top_executor.weighted_done_points_pct}%\` del completado ponderado`
+        );
+        const rows = Array.isArray(contribution.ranking)
+            ? contribution.ranking.slice(0, 10)
+            : [];
+        for (const row of rows) {
+            lines.push(
+                `- #${row.rank} \`${row.executor}\`: done ponderado=\`${row.weighted_done_points_pct}%\`, tareas done=\`${row.done_tasks_pct}%\``
+            );
+        }
+        lines.push('');
+    }
 
     lines.push('### Status');
     lines.push(

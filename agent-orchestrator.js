@@ -525,6 +525,210 @@ function getExecutorCounts(tasks) {
     }, {});
 }
 
+function percent(part, total) {
+    if (!Number.isFinite(total) || total <= 0) return 0;
+    return Math.round((Number(part || 0) / total) * 1000) / 10;
+}
+
+function riskWeight(task) {
+    const risk = String(task?.risk || '').toLowerCase();
+    if (risk === 'high') return 3;
+    if (risk === 'medium') return 2;
+    return 1;
+}
+
+function buildExecutorContribution(tasks) {
+    const totals = {
+        tasks: tasks.length,
+        done_tasks: 0,
+        active_tasks: 0,
+        weighted_points_total: 0,
+        weighted_done_points_total: 0,
+        weighted_active_points_total: 0,
+    };
+
+    const map = new Map();
+    for (const task of tasks) {
+        const executor = String(task.executor || 'unknown');
+        const status = String(task.status || '');
+        const weight = riskWeight(task);
+        const isDone = status === 'done';
+        const isActive = ACTIVE_STATUSES.has(status);
+
+        totals.weighted_points_total += weight;
+        if (isDone) totals.done_tasks += 1;
+        if (isActive) totals.active_tasks += 1;
+        if (isDone) totals.weighted_done_points_total += weight;
+        if (isActive) totals.weighted_active_points_total += weight;
+
+        if (!map.has(executor)) {
+            map.set(executor, {
+                executor,
+                tasks: 0,
+                done_tasks: 0,
+                active_tasks: 0,
+                weighted_points: 0,
+                weighted_done_points: 0,
+                weighted_active_points: 0,
+            });
+        }
+
+        const row = map.get(executor);
+        row.tasks += 1;
+        row.weighted_points += weight;
+        if (isDone) {
+            row.done_tasks += 1;
+            row.weighted_done_points += weight;
+        }
+        if (isActive) {
+            row.active_tasks += 1;
+            row.weighted_active_points += weight;
+        }
+    }
+
+    const executors = Array.from(map.values())
+        .map((row) => ({
+            ...row,
+            tasks_pct: percent(row.tasks, totals.tasks),
+            done_tasks_pct: percent(row.done_tasks, totals.done_tasks),
+            active_tasks_pct: percent(row.active_tasks, totals.active_tasks),
+            weighted_points_pct: percent(
+                row.weighted_points,
+                totals.weighted_points_total
+            ),
+            weighted_done_points_pct: percent(
+                row.weighted_done_points,
+                totals.weighted_done_points_total
+            ),
+            weighted_active_points_pct: percent(
+                row.weighted_active_points,
+                totals.weighted_active_points_total
+            ),
+        }))
+        .sort((a, b) => {
+            return (
+                b.weighted_done_points - a.weighted_done_points ||
+                b.done_tasks - a.done_tasks ||
+                b.weighted_active_points - a.weighted_active_points ||
+                b.tasks - a.tasks ||
+                String(a.executor).localeCompare(String(b.executor))
+            );
+        });
+
+    const ranking = executors.map((row, idx) => ({
+        rank: idx + 1,
+        executor: row.executor,
+        weighted_done_points: row.weighted_done_points,
+        weighted_done_points_pct: row.weighted_done_points_pct,
+        done_tasks: row.done_tasks,
+        done_tasks_pct: row.done_tasks_pct,
+    }));
+
+    return {
+        scoring: {
+            primary_metric: 'weighted_done_points_pct',
+            risk_weights: { low: 1, medium: 2, high: 3 },
+        },
+        totals,
+        executors,
+        ranking,
+        top_executor: ranking[0] || null,
+    };
+}
+
+function loadMetricsSnapshot() {
+    if (!existsSync(METRICS_PATH)) return null;
+    try {
+        return JSON.parse(readFileSync(METRICS_PATH, 'utf8'));
+    } catch {
+        return null;
+    }
+}
+
+function normalizeContributionBaseline(metricsSnapshot) {
+    if (!metricsSnapshot || typeof metricsSnapshot !== 'object') return null;
+    if (
+        metricsSnapshot.baseline_contribution &&
+        Array.isArray(metricsSnapshot.baseline_contribution.executors)
+    ) {
+        return metricsSnapshot.baseline_contribution;
+    }
+    if (
+        metricsSnapshot.contribution &&
+        Array.isArray(metricsSnapshot.contribution.executors)
+    ) {
+        return metricsSnapshot.contribution;
+    }
+    return null;
+}
+
+function buildContributionTrend(currentContribution, baselineContribution) {
+    if (
+        !currentContribution ||
+        !Array.isArray(currentContribution.executors) ||
+        !baselineContribution ||
+        !Array.isArray(baselineContribution.executors)
+    ) {
+        return null;
+    }
+
+    const baselineByExecutor = new Map(
+        baselineContribution.executors.map((row) => [
+            String(row.executor || ''),
+            row,
+        ])
+    );
+
+    const rows = currentContribution.executors.map((row) => {
+        const baseline =
+            baselineByExecutor.get(String(row.executor || '')) || {};
+        const weightedDonePctCurrent = Number(
+            row.weighted_done_points_pct || 0
+        );
+        const weightedDonePctBaseline = Number(
+            baseline.weighted_done_points_pct || 0
+        );
+        const donePctCurrent = Number(row.done_tasks_pct || 0);
+        const donePctBaseline = Number(baseline.done_tasks_pct || 0);
+
+        return {
+            executor: String(row.executor || ''),
+            weighted_done_points_pct_current: weightedDonePctCurrent,
+            weighted_done_points_pct_baseline: weightedDonePctBaseline,
+            weighted_done_points_pct_delta:
+                Math.round(
+                    (weightedDonePctCurrent - weightedDonePctBaseline) * 10
+                ) / 10,
+            done_tasks_pct_current: donePctCurrent,
+            done_tasks_pct_baseline: donePctBaseline,
+            done_tasks_pct_delta:
+                Math.round((donePctCurrent - donePctBaseline) * 10) / 10,
+        };
+    });
+
+    return {
+        baseline_source: 'metrics',
+        rows,
+    };
+}
+
+function getContributionSignal(row) {
+    const weightedDone = Number(row.weighted_done_points_pct || 0);
+    const active = Number(row.active_tasks || 0);
+    const rank = Number(row.rank || 999);
+
+    if (rank === 1 && weightedDone > 0) return 'GREEN';
+    if (weightedDone > 0 || active > 0) return 'YELLOW';
+    return 'RED';
+}
+
+function formatPpDelta(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 'n/a';
+    if (n > 0) return `+${n}pp`;
+    return `${n}pp`;
+}
+
 function parseTaskMetaMap(path) {
     if (!existsSync(path)) return new Map();
     const raw = normalizeEol(readFileSync(path, 'utf8'));
@@ -826,6 +1030,13 @@ function cmdStatus(args) {
         board.tasks,
         handoffData.handoffs
     );
+    const contribution = buildExecutorContribution(board.tasks);
+    const metricsSnapshot = loadMetricsSnapshot();
+    const contributionBaseline = normalizeContributionBaseline(metricsSnapshot);
+    const contributionTrend = buildContributionTrend(
+        contribution,
+        contributionBaseline
+    );
     const data = {
         version: board.version,
         policy: board.policy,
@@ -834,6 +1045,8 @@ function cmdStatus(args) {
             byStatus: getStatusCounts(board.tasks),
             byExecutor: getExecutorCounts(board.tasks),
         },
+        contribution,
+        contribution_trend: contributionTrend,
         conflicts: conflictAnalysis.blocking.length,
         conflicts_breakdown: {
             blocking: conflictAnalysis.blocking.length,
@@ -864,6 +1077,41 @@ function cmdStatus(args) {
     for (const [executor, count] of Object.entries(data.totals.byExecutor)) {
         console.log(`- ${executor}: ${count}`);
     }
+    if (data.contribution.top_executor) {
+        const executorsByName = new Map(
+            data.contribution.executors.map((row) => [row.executor, row])
+        );
+        const trendByExecutor = new Map(
+            Array.isArray(data.contribution_trend?.rows)
+                ? data.contribution_trend.rows.map((row) => [row.executor, row])
+                : []
+        );
+        console.log('');
+        console.log('Aporte (ranking por completado ponderado):');
+        if (data.contribution_trend) {
+            console.log(
+                `- Baseline de comparacion: ${data.contribution_trend.baseline_source}`
+            );
+        } else {
+            console.log(
+                '- Baseline de comparacion: n/a (ejecuta `node agent-orchestrator.js metrics` para fijarlo)'
+            );
+        }
+        for (const row of data.contribution.ranking) {
+            const fullRow = executorsByName.get(row.executor) || row;
+            const trendRow = trendByExecutor.get(row.executor);
+            const signal = getContributionSignal({
+                ...fullRow,
+                rank: row.rank,
+            });
+            const weightedDoneDelta = trendRow
+                ? formatPpDelta(trendRow.weighted_done_points_pct_delta)
+                : 'n/a';
+            console.log(
+                `- [${signal}] #${row.rank} ${row.executor}: ${row.weighted_done_points_pct}% (done ponderado, delta ${weightedDoneDelta} vs baseline), ${row.done_tasks_pct}% (tareas done)`
+            );
+        }
+    }
 }
 
 function safeNumber(value, fallback = 0) {
@@ -886,6 +1134,7 @@ function cmdMetrics(args = []) {
     const inProgress = board.tasks.filter(
         (task) => task.status === 'in_progress'
     ).length;
+    const contribution = buildExecutorContribution(board.tasks);
 
     let existing = null;
     if (existsSync(METRICS_PATH)) {
@@ -895,6 +1144,13 @@ function cmdMetrics(args = []) {
             existing = null;
         }
     }
+
+    const baselineContribution =
+        normalizeContributionBaseline(existing) || contribution;
+    const contributionDelta = buildContributionTrend(
+        contribution,
+        baselineContribution
+    );
 
     const baseline =
         existing && existing.baseline
@@ -969,6 +1225,9 @@ function cmdMetrics(args = []) {
             coordination_gate_red_rate_pct: null,
             traceability_pct: traceability,
         },
+        contribution,
+        baseline_contribution: baselineContribution,
+        contribution_delta: contributionDelta,
         delta: {
             tasks_total: total - safeNumber(baseline.tasks_total, total),
             file_conflicts:
