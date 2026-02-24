@@ -10,6 +10,7 @@ declare(strict_types=1);
  * - CLAUDE.md references AGENTS.md as source of truth.
  * - AGENT_BOARD.yaml shape and allowed values.
  * - AGENT_HANDOFFS.yaml schema and handoff constraints.
+ * - governance-policy.json schema and thresholds.
  * - Codex mirror integrity between PLAN_MAESTRO_CODEX_2026.md and AGENT_BOARD.yaml.
  * - No duplicate task_id between derived queues.
  * - No critical-scope task assigned to disallowed executor.
@@ -20,6 +21,7 @@ $agentsPath = $root . '/AGENTS.md';
 $claudePath = $root . '/CLAUDE.md';
 $boardPath = $root . '/AGENT_BOARD.yaml';
 $handoffsPath = $root . '/AGENT_HANDOFFS.yaml';
+$governancePolicyPath = $root . '/governance-policy.json';
 $julesPath = $root . '/JULES_TASKS.md';
 $kimiPath = $root . '/KIMI_TASKS.md';
 $codexPlanPath = $root . '/PLAN_MAESTRO_CODEX_2026.md';
@@ -390,6 +392,7 @@ $agents = readFileStrict($agentsPath, $errors);
 $claude = readFileStrict($claudePath, $errors);
 $boardRaw = readFileStrict($boardPath, $errors);
 $handoffsRaw = readFileStrict($handoffsPath, $errors);
+$governancePolicyRaw = readFileStrict($governancePolicyPath, $errors);
 $julesRaw = readFileStrict($julesPath, $errors);
 $kimiRaw = readFileStrict($kimiPath, $errors);
 $codexPlanRaw = readFileStrict($codexPlanPath, $errors);
@@ -502,6 +505,100 @@ if ($handoffsRaw !== '') {
 
 if ((string) ($handoffs['version'] ?? '') !== '1') {
     $errors[] = 'AGENT_HANDOFFS.yaml debe declarar version: 1';
+}
+
+$governancePolicy = null;
+if ($governancePolicyRaw !== '') {
+    $decodedPolicy = json_decode($governancePolicyRaw, true);
+    if (!is_array($decodedPolicy)) {
+        $errors[] = 'governance-policy.json no contiene un objeto JSON valido';
+    } else {
+        $governancePolicy = $decodedPolicy;
+    }
+}
+
+if (is_array($governancePolicy)) {
+    if ((int) ($governancePolicy['version'] ?? 0) !== 1) {
+        $errors[] = 'governance-policy.json debe declarar version=1';
+    }
+
+    $domainHealth = $governancePolicy['domain_health'] ?? null;
+    if (!is_array($domainHealth)) {
+        $errors[] = 'governance-policy.json requiere objeto domain_health';
+    } else {
+        $priorityDomains = $domainHealth['priority_domains'] ?? null;
+        if (!is_array($priorityDomains) || count($priorityDomains) === 0) {
+            $errors[] = 'governance-policy.json requiere domain_health.priority_domains como lista no vacia';
+        } else {
+            $seenDomains = [];
+            foreach ($priorityDomains as $rawDomain) {
+                $domain = trim((string) $rawDomain);
+                if ($domain === '') {
+                    $errors[] = 'governance-policy.json contiene dominio vacio en domain_health.priority_domains';
+                    continue;
+                }
+                $key = strtolower($domain);
+                if (isset($seenDomains[$key])) {
+                    $errors[] = "governance-policy.json tiene dominio duplicado en priority_domains: {$domain}";
+                }
+                $seenDomains[$key] = true;
+            }
+        }
+
+        $domainWeights = $domainHealth['domain_weights'] ?? null;
+        if (!is_array($domainWeights)) {
+            $errors[] = 'governance-policy.json requiere domain_health.domain_weights como objeto';
+        } else {
+            if (!array_key_exists('default', $domainWeights)) {
+                $errors[] = 'governance-policy.json requiere domain_health.domain_weights.default';
+            }
+            foreach ($domainWeights as $weightKey => $rawWeight) {
+                if (!is_numeric($rawWeight) || (float) $rawWeight <= 0) {
+                    $errors[] = "governance-policy.json tiene peso invalido en domain_weights.{$weightKey}";
+                }
+            }
+        }
+
+        $signalScores = $domainHealth['signal_scores'] ?? null;
+        if (!is_array($signalScores)) {
+            $errors[] = 'governance-policy.json requiere domain_health.signal_scores como objeto';
+        } else {
+            foreach (['GREEN', 'YELLOW', 'RED'] as $signalKey) {
+                if (!array_key_exists($signalKey, $signalScores)) {
+                    $errors[] = "governance-policy.json requiere signal_scores.{$signalKey}";
+                } elseif (!is_numeric($signalScores[$signalKey])) {
+                    $errors[] = "governance-policy.json tiene signal_scores.{$signalKey} no numerico";
+                }
+            }
+
+            if (
+                array_key_exists('GREEN', $signalScores) &&
+                array_key_exists('YELLOW', $signalScores) &&
+                array_key_exists('RED', $signalScores) &&
+                is_numeric($signalScores['GREEN']) &&
+                is_numeric($signalScores['YELLOW']) &&
+                is_numeric($signalScores['RED'])
+            ) {
+                $greenScore = (float) $signalScores['GREEN'];
+                $yellowScore = (float) $signalScores['YELLOW'];
+                $redScore = (float) $signalScores['RED'];
+                if (!($greenScore >= $yellowScore && $yellowScore >= $redScore)) {
+                    $errors[] = 'governance-policy.json requiere GREEN >= YELLOW >= RED en domain_health.signal_scores';
+                }
+            }
+        }
+    }
+
+    $summary = $governancePolicy['summary'] ?? null;
+    $thresholds = is_array($summary) ? ($summary['thresholds'] ?? null) : null;
+    if (!is_array($thresholds)) {
+        $errors[] = 'governance-policy.json requiere summary.thresholds';
+    } else {
+        $yellowThreshold = $thresholds['domain_score_priority_yellow_below'] ?? null;
+        if (!is_numeric($yellowThreshold) || (float) $yellowThreshold < 0) {
+            $errors[] = 'governance-policy.json tiene threshold invalido: summary.thresholds.domain_score_priority_yellow_below';
+        }
+    }
 }
 
 $handoffIds = [];
