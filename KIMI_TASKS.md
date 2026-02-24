@@ -30,12 +30,12 @@ Prompt...
 ## Tareas
 
 <!-- TASK
-status: pending
+status: done
 task_id: AG-005
 risk: low
 scope: audit
 files: js/engines,docs/dead-code-audit.md
-acceptance_ref: verification/agent-runs/AG-005.md
+acceptance_ref: docs/dead-code-audit.md
 dispatched_by: agent-orchestrator
 -->
 ### Audit dead code in js engines

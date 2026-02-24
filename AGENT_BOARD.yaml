@@ -70,12 +70,12 @@ tasks:
     title: Audit dead code in js engines
     owner: ernesto
     executor: kimi
-    status: ready
+    status: done
     risk: low
     scope: audit
     files: ["js/engines", "docs/dead-code-audit.md"]
     acceptance: "Reporte en markdown con codigo muerto, logs y TODO/FIXME."
-    acceptance_ref: ""
+    acceptance_ref: "docs/dead-code-audit.md"
     depends_on: []
     prompt: "Auditar js/engines y generar docs/dead-code-audit.md sin tocar logica de JS."
     created_at: 2026-02-24
