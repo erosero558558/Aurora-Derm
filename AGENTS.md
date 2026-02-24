@@ -103,18 +103,24 @@ Comandos canonicos:
 ```bash
 node agent-orchestrator.js status
 node agent-orchestrator.js conflicts
+node agent-orchestrator.js conflicts --json
 node agent-orchestrator.js handoffs status
 node agent-orchestrator.js handoffs lint
+node agent-orchestrator.js handoffs status --json
+node agent-orchestrator.js handoffs lint --json
 node agent-orchestrator.js handoffs create --from AG-001 --to CDX-001 --files path/a,path/b --reason soporte --approved-by ernesto
 node agent-orchestrator.js handoffs close HO-001 --reason handoff_done
 node agent-orchestrator.js codex-check
+node agent-orchestrator.js codex-check --json
 node agent-orchestrator.js codex start CDX-001 --block C1
 node agent-orchestrator.js codex stop CDX-001 --to review
 node agent-orchestrator.js task claim AG-003 --owner ernesto
 node agent-orchestrator.js task start AG-003 --status in_progress
 node agent-orchestrator.js task finish AG-003 --evidence verification/agent-runs/AG-003.md
+node agent-orchestrator.js task start AG-003 --json
 node agent-orchestrator.js sync
 node agent-orchestrator.js close <task_id>
+node agent-orchestrator.js close AG-003 --json
 node agent-orchestrator.js metrics
 php bin/validate-agent-governance.php
 npm run agent:test
@@ -130,6 +136,10 @@ Flujo recomendado:
 4. Ejecutar `node agent-orchestrator.js sync`.
 5. Ejecutar validaciones del cambio (`npm run lint`, tests aplicables).
 6. Confirmar evidencia y cerrar (`close`, `codex stop`, `handoffs close`) cuando aplique.
+
+Nota:
+
+- Preferir `--json` para dashboards, comentarios automáticos en PR y tooling externo; usar salida texto para operación manual.
 
 ## Reglas de edicion
 

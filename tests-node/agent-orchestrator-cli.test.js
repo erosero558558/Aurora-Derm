@@ -65,6 +65,16 @@ function runCli(dir, args, expectedStatus = 0) {
     return result;
 }
 
+function parseJsonStdout(result) {
+    try {
+        return JSON.parse(result.stdout);
+    } catch (error) {
+        throw new Error(
+            `No se pudo parsear JSON de stdout.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}\nError: ${error.message}`
+        );
+    }
+}
+
 function readBoard(dir) {
     return readFileSync(join(dir, 'AGENT_BOARD.yaml'), 'utf8');
 }
@@ -416,4 +426,109 @@ test('task start bloquea activar una tarea si genera conflicto blocking', (t) =>
     const result = runCli(dir, ['task', 'start', 'AG-021'], 1);
     assert.match(result.stderr, /task start bloqueado por conflicto activo/i);
     assert.match(result.stderr, /AG-021 <-> AG-020/i);
+});
+
+test('task soporta --json en claim/start/finish con payload estable', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    let result = runCli(dir, [
+        'task',
+        'claim',
+        'AG-010',
+        '--owner',
+        'ernesto',
+        '--json',
+    ]);
+    let json = parseJsonStdout(result);
+    assert.equal(json.command, 'task');
+    assert.equal(json.action, 'claim');
+    assert.equal(json.ok, true);
+    assert.equal(json.task.id, 'AG-010');
+    assert.equal(json.task.owner, 'ernesto');
+
+    result = runCli(dir, ['task', 'start', 'AG-010', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.action, 'start');
+    assert.equal(json.task.status, 'in_progress');
+
+    const evidenceDir = join(dir, 'verification', 'agent-runs');
+    require('fs').mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(join(evidenceDir, 'AG-010.md'), '# evidence\n', 'utf8');
+
+    result = runCli(dir, ['task', 'finish', 'AG-010', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.action, 'finish');
+    assert.equal(json.task.status, 'done');
+    assert.equal(json.evidence_path, 'verification/agent-runs/AG-010.md');
+});
+
+test('close soporta --json y devuelve task + evidence_path', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const evidenceDir = join(dir, 'verification', 'agent-runs');
+    require('fs').mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(join(evidenceDir, 'AG-010.md'), '# evidence\n', 'utf8');
+
+    const result = runCli(dir, ['close', 'AG-010', '--json']);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.command, 'close');
+    assert.equal(json.action, 'close');
+    assert.equal(json.ok, true);
+    assert.equal(json.task.id, 'AG-010');
+    assert.equal(json.task.status, 'done');
+    assert.equal(json.evidence_path, 'verification/agent-runs/AG-010.md');
+});
+
+test('conflicts, handoffs y codex-check soportan --json con salida estable', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForConflictFixture({ codexStatus: 'in_progress' }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithCodexBlock({ status: 'review' }), // drift para codex-check
+    });
+
+    let result = runCli(dir, ['conflicts', '--strict', '--json'], 1);
+    let json = parseJsonStdout(result);
+    assert.equal(json.version, 1);
+    assert.equal(json.strict, true);
+    assert.equal(json.totals.blocking, 1);
+    assert.equal(json.totals.handoff, 0);
+    assert.equal(Array.isArray(json.conflicts), true);
+    assert.equal(json.conflicts[0].exempted_by_handoff, false);
+
+    result = runCli(dir, ['handoffs', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.summary.total, 0);
+    assert.equal(json.summary.active, 0);
+    assert.equal(Array.isArray(json.handoffs), true);
+
+    result = runCli(dir, ['handoffs', 'lint', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.equal(json.error_count, 0);
+
+    result = runCli(dir, ['codex-check', '--json'], 1);
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.ok(json.error_count >= 1);
+    assert.match(json.errors.join(' | '), /status desalineado/i);
+    assert.equal(json.plan_block.task_id, 'CDX-001');
+    assert.equal(json.board_task_for_plan_block.id, 'CDX-001');
 });

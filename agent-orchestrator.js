@@ -339,9 +339,10 @@ function writeBoard(board) {
     writeFileSync(BOARD_PATH, serializeBoard(board), 'utf8');
 }
 
-function writeBoardAndSync(board) {
+function writeBoardAndSync(board, options = {}) {
+    const { silentSync = false } = options;
     writeBoard(board);
-    cmdSync();
+    syncDerivedQueues({ silent: silentSync });
 }
 
 function detectDefaultOwner(currentValue = '') {
@@ -387,6 +388,21 @@ function toRelativeRepoPath(path) {
     return normalizedPath.startsWith(`${normalizedRoot}/`)
         ? normalizedPath.slice(normalizedRoot.length + 1)
         : normalizedPath;
+}
+
+function toTaskJson(task) {
+    return {
+        id: String(task.id || ''),
+        title: String(task.title || ''),
+        owner: String(task.owner || ''),
+        executor: String(task.executor || ''),
+        status: String(task.status || ''),
+        risk: String(task.risk || ''),
+        scope: String(task.scope || ''),
+        files: Array.isArray(task.files) ? task.files : [],
+        acceptance_ref: String(task.acceptance_ref || ''),
+        updated_at: String(task.updated_at || ''),
+    };
 }
 
 function buildCodexActiveComment(block) {
@@ -780,6 +796,29 @@ function detectConflicts(tasks, handoffs = []) {
     return analyzeConflicts(tasks, handoffs).blocking;
 }
 
+function toConflictJsonRecord(item) {
+    return {
+        left: {
+            id: String(item.left.id || ''),
+            executor: String(item.left.executor || ''),
+            status: String(item.left.status || ''),
+            scope: String(item.left.scope || ''),
+        },
+        right: {
+            id: String(item.right.id || ''),
+            executor: String(item.right.executor || ''),
+            status: String(item.right.status || ''),
+            scope: String(item.right.scope || ''),
+        },
+        overlap_files: Array.isArray(item.overlap_files)
+            ? item.overlap_files
+            : [],
+        ambiguous_wildcard_overlap: Boolean(item.ambiguous_wildcard_overlap),
+        handoff_ids: Array.isArray(item.handoff_ids) ? item.handoff_ids : [],
+        exempted_by_handoff: Boolean(item.exempted_by_handoff),
+    };
+}
+
 function cmdStatus(args) {
     const board = parseBoard();
     const handoffData = parseHandoffs();
@@ -936,9 +975,29 @@ function cmdMetrics() {
 
 function cmdConflicts(args) {
     const strict = args.includes('--strict');
+    const wantsJson = args.includes('--json');
     const board = parseBoard();
     const handoffData = parseHandoffs();
     const analysis = analyzeConflicts(board.tasks, handoffData.handoffs);
+
+    const report = {
+        version: 1,
+        strict,
+        totals: {
+            pairs: analysis.all.length,
+            blocking: analysis.blocking.length,
+            handoff: analysis.handoffCovered.length,
+        },
+        conflicts: analysis.all.map(toConflictJsonRecord),
+    };
+
+    if (wantsJson) {
+        console.log(JSON.stringify(report, null, 2));
+        if (strict && analysis.blocking.length > 0) {
+            process.exitCode = 1;
+        }
+        return;
+    }
 
     if (analysis.all.length === 0) {
         console.log('Sin conflictos de archivos entre tareas activas.');
@@ -1091,7 +1150,10 @@ function getHandoffLintErrors() {
 }
 
 function cmdHandoffs(args) {
-    const subcommand = args[0] || 'status';
+    const firstArg = String(args[0] || '');
+    const subcommand =
+        !firstArg || firstArg.startsWith('--') ? 'status' : firstArg;
+    const wantsJson = args.includes('--json');
     const handoffData = parseHandoffs();
 
     if (subcommand === 'status') {
@@ -1105,6 +1167,20 @@ function cmdHandoffs(args) {
         const expiredActive = active.filter((item) =>
             isExpired(item.expires_at)
         );
+        const report = {
+            version: 1,
+            summary: {
+                total,
+                active: active.length,
+                closed: closed.length,
+                active_expired: expiredActive.length,
+            },
+            handoffs: handoffData.handoffs,
+        };
+        if (wantsJson) {
+            console.log(JSON.stringify(report, null, 2));
+            return;
+        }
         console.log('== Agent Handoffs ==');
         console.log(`Total: ${total}`);
         console.log(`Active: ${active.length}`);
@@ -1115,6 +1191,19 @@ function cmdHandoffs(args) {
 
     if (subcommand === 'lint') {
         const errors = getHandoffLintErrors();
+        const report = {
+            version: 1,
+            ok: errors.length === 0,
+            error_count: errors.length,
+            errors,
+        };
+        if (wantsJson) {
+            console.log(JSON.stringify(report, null, 2));
+            if (errors.length > 0) {
+                process.exitCode = 1;
+            }
+            return;
+        }
         if (errors.length === 0) {
             console.log('OK: handoffs validos.');
             return;
@@ -1211,6 +1300,22 @@ function cmdHandoffs(args) {
             );
         }
 
+        if (wantsJson) {
+            console.log(
+                JSON.stringify(
+                    {
+                        version: 1,
+                        ok: true,
+                        action: 'create',
+                        handoff,
+                    },
+                    null,
+                    2
+                )
+            );
+            return;
+        }
+
         console.log(`Handoff creado: ${handoff.id}`);
         console.log(
             `${handoff.from_task} -> ${handoff.to_task} :: ${handoff.files.join(', ')} (expira ${handoff.expires_at})`
@@ -1238,6 +1343,21 @@ function cmdHandoffs(args) {
         handoff.closed_at = isoNow();
         handoff.close_reason = closeReason;
         writeFileSync(HANDOFFS_PATH, serializeHandoffs(handoffs), 'utf8');
+        if (wantsJson) {
+            console.log(
+                JSON.stringify(
+                    {
+                        version: 1,
+                        ok: true,
+                        action: 'close',
+                        handoff,
+                    },
+                    null,
+                    2
+                )
+            );
+            return;
+        }
         console.log(`Handoff cerrado: ${handoffId}`);
         return;
     }
@@ -1247,7 +1367,7 @@ function cmdHandoffs(args) {
     );
 }
 
-function cmdCodexCheck() {
+function buildCodexCheckReport() {
     const board = parseBoard();
     const blocks = parseCodexActiveBlocks();
     const errors = [];
@@ -1328,11 +1448,73 @@ function cmdCodexCheck() {
         }
     }
 
-    if (errors.length > 0) {
-        throw new Error(`Codex mirror invalido:\n- ${errors.join('\n- ')}`);
+    const activeBlock = blocks[0] || null;
+    const activeBlockTaskId = activeBlock
+        ? String(activeBlock.task_id || '').trim()
+        : '';
+    const activeBlockTask = activeBlockTaskId
+        ? board.tasks.find((item) => String(item.id) === activeBlockTaskId) ||
+          null
+        : null;
+
+    return {
+        version: 1,
+        ok: errors.length === 0,
+        error_count: errors.length,
+        errors,
+        summary: {
+            codex_tasks_total: codexTasks.length,
+            codex_in_progress: codexInProgress.length,
+            codex_active: activeCodexTasks.length,
+            plan_blocks: blocks.length,
+        },
+        codex_task_ids: codexTasks.map((task) => String(task.id)),
+        codex_in_progress_ids: codexInProgress.map((task) => String(task.id)),
+        codex_active_ids: activeCodexTasks.map((task) => String(task.id)),
+        plan_block: activeBlock
+            ? {
+                  block: String(activeBlock.block || ''),
+                  task_id: String(activeBlock.task_id || ''),
+                  status: String(activeBlock.status || ''),
+                  files: Array.isArray(activeBlock.files)
+                      ? activeBlock.files
+                      : [],
+                  updated_at: String(activeBlock.updated_at || ''),
+              }
+            : null,
+        board_task_for_plan_block: activeBlockTask
+            ? {
+                  id: String(activeBlockTask.id || ''),
+                  executor: String(activeBlockTask.executor || ''),
+                  status: String(activeBlockTask.status || ''),
+                  files: Array.isArray(activeBlockTask.files)
+                      ? activeBlockTask.files
+                      : [],
+              }
+            : null,
+    };
+}
+
+function cmdCodexCheck(args = []) {
+    const wantsJson = args.includes('--json');
+    const report = buildCodexCheckReport();
+
+    if (wantsJson) {
+        console.log(JSON.stringify(report, null, 2));
+        if (!report.ok) {
+            process.exitCode = 1;
+        }
+        return report;
+    }
+
+    if (!report.ok) {
+        throw new Error(
+            `Codex mirror invalido:\n- ${report.errors.join('\n- ')}`
+        );
     }
 
     console.log('OK: espejo Codex valido.');
+    return report;
 }
 
 function cmdCodex(args) {
@@ -1387,7 +1569,7 @@ function cmdCodex(args) {
             files: task.files || [],
             updated_at: currentDate(),
         });
-        cmdCodexCheck();
+        cmdCodexCheck([]);
         console.log(`Codex start OK: ${taskId} (${block})`);
         return;
     }
@@ -1413,7 +1595,7 @@ function cmdCodex(args) {
         } else {
             writeCodexActiveBlock(null);
         }
-        cmdCodexCheck();
+        cmdCodexCheck([]);
         console.log(`Codex stop OK: ${taskId} -> ${nextStatus}`);
     }
 }
@@ -1421,6 +1603,7 @@ function cmdCodex(args) {
 function cmdTask(args) {
     const subcommand = args[0];
     const { positionals, flags } = parseFlags(args.slice(1));
+    const wantsJson = args.includes('--json');
     const taskId = String(positionals[0] || flags.id || '').trim();
 
     if (!subcommand || !['claim', 'start', 'finish'].includes(subcommand)) {
@@ -1469,7 +1652,23 @@ function cmdTask(args) {
         }
 
         task.updated_at = currentDate();
-        writeBoardAndSync(board);
+        writeBoardAndSync(board, { silentSync: wantsJson });
+        if (wantsJson) {
+            console.log(
+                JSON.stringify(
+                    {
+                        version: 1,
+                        ok: true,
+                        command: 'task',
+                        action: 'claim',
+                        task: toTaskJson(task),
+                    },
+                    null,
+                    2
+                )
+            );
+            return;
+        }
         console.log(
             `Task claim OK: ${taskId} owner=${task.owner} status=${task.status}`
         );
@@ -1532,7 +1731,23 @@ function cmdTask(args) {
             );
         }
 
-        writeBoardAndSync(board);
+        writeBoardAndSync(board, { silentSync: wantsJson });
+        if (wantsJson) {
+            console.log(
+                JSON.stringify(
+                    {
+                        version: 1,
+                        ok: true,
+                        command: 'task',
+                        action: 'start',
+                        task: toTaskJson(task),
+                    },
+                    null,
+                    2
+                )
+            );
+            return;
+        }
         console.log(`Task start OK: ${taskId} -> ${nextStatus}`);
         return;
     }
@@ -1545,8 +1760,9 @@ function cmdTask(args) {
             );
         }
 
+        let evidencePath = null;
         if (nextStatus === 'done') {
-            const evidencePath = resolveTaskEvidencePath(taskId, flags);
+            evidencePath = resolveTaskEvidencePath(taskId, flags);
             if (!existsSync(evidencePath)) {
                 throw new Error(
                     `No existe evidencia requerida: ${evidencePath}`
@@ -1557,7 +1773,27 @@ function cmdTask(args) {
 
         task.status = nextStatus;
         task.updated_at = currentDate();
-        writeBoardAndSync(board);
+        writeBoardAndSync(board, { silentSync: wantsJson });
+
+        if (wantsJson) {
+            console.log(
+                JSON.stringify(
+                    {
+                        version: 1,
+                        ok: true,
+                        command: 'task',
+                        action: 'finish',
+                        task: toTaskJson(task),
+                        evidence_path: evidencePath
+                            ? toRelativeRepoPath(evidencePath)
+                            : null,
+                    },
+                    null,
+                    2
+                )
+            );
+            return;
+        }
 
         if (nextStatus === 'done') {
             console.log(`Task finish OK: ${taskId} -> done`);
@@ -1568,7 +1804,8 @@ function cmdTask(args) {
     }
 }
 
-function cmdSync() {
+function syncDerivedQueues(options = {}) {
+    const { silent = false } = options;
     const board = parseBoard();
     const julesMeta = parseTaskMetaMap(JULES_PATH);
     const kimiMeta = parseTaskMetaMap(KIMI_PATH);
@@ -1582,24 +1819,28 @@ function cmdSync() {
     writeFileSync(JULES_PATH, julesContent, 'utf8');
     writeFileSync(KIMI_PATH, kimiContent, 'utf8');
 
-    console.log(
-        `Sync completado: ${julesTasks.length} tareas Jules, ${kimiTasks.length} tareas Kimi.`
-    );
+    if (!silent) {
+        console.log(
+            `Sync completado: ${julesTasks.length} tareas Jules, ${kimiTasks.length} tareas Kimi.`
+        );
+    }
+}
+
+function cmdSync() {
+    syncDerivedQueues({ silent: false });
 }
 
 function cmdClose(args) {
-    const taskId = args[0];
+    const { positionals, flags } = parseFlags(args);
+    const wantsJson = args.includes('--json');
+    const taskId = String(positionals[0] || flags.id || '').trim();
     if (!taskId) {
         throw new Error(
-            'Uso: node agent-orchestrator.js close <task_id> [--evidence path]'
+            'Uso: node agent-orchestrator.js close <task_id> [--evidence path] [--json]'
         );
     }
 
-    const evidenceFlagIdx = args.findIndex((arg) => arg === '--evidence');
-    const evidencePath =
-        evidenceFlagIdx !== -1 && args[evidenceFlagIdx + 1]
-            ? resolve(ROOT, args[evidenceFlagIdx + 1])
-            : resolve(EVIDENCE_DIR, `${taskId}.md`);
+    const evidencePath = resolveTaskEvidencePath(taskId, flags);
 
     if (!existsSync(evidencePath)) {
         throw new Error(`No existe evidencia requerida: ${evidencePath}`);
@@ -1613,15 +1854,29 @@ function cmdClose(args) {
 
     task.status = 'done';
     task.updated_at = currentDate();
-    const normalizedRoot = ROOT.replace(/\\/g, '/');
-    const normalizedEvidence = evidencePath.replace(/\\/g, '/');
-    task.acceptance_ref = normalizedEvidence.startsWith(`${normalizedRoot}/`)
-        ? normalizedEvidence.slice(normalizedRoot.length + 1)
-        : normalizedEvidence;
+    task.acceptance_ref = toRelativeRepoPath(evidencePath);
     board.policy.updated_at = currentDate();
 
     writeFileSync(BOARD_PATH, serializeBoard(board), 'utf8');
-    cmdSync();
+    syncDerivedQueues({ silent: wantsJson });
+
+    if (wantsJson) {
+        console.log(
+            JSON.stringify(
+                {
+                    version: 1,
+                    ok: true,
+                    command: 'close',
+                    action: 'close',
+                    task: toTaskJson(task),
+                    evidence_path: toRelativeRepoPath(evidencePath),
+                },
+                null,
+                2
+            )
+        );
+        return;
+    }
 
     console.log(`Tarea cerrada: ${taskId}`);
 }
@@ -1632,7 +1887,7 @@ function main() {
         status: () => cmdStatus(args),
         conflicts: () => cmdConflicts(args),
         handoffs: () => cmdHandoffs(args),
-        'codex-check': () => cmdCodexCheck(),
+        'codex-check': () => cmdCodexCheck(args),
         codex: () => cmdCodex(args),
         task: () => cmdTask(args),
         sync: () => cmdSync(),
