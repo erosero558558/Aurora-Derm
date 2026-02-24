@@ -24,8 +24,8 @@ async function mockApi(page) {
             return jsonResponse(route, {
                 ok: true,
                 data: {
-                    [dateValue]: ['10:00', '11:00', '15:00']
-                }
+                    [dateValue]: ['10:00', '11:00', '15:00'],
+                },
             });
         }
 
@@ -120,14 +120,31 @@ async function dismissCookieBannerIfVisible(page) {
 async function getTrackedEvents(page) {
     return page.evaluate(() => {
         const dl = Array.isArray(window.dataLayer) ? window.dataLayer : [];
-        return dl
-            .filter(
-                (item) =>
-                    item &&
+        return dl.flatMap((item) => {
+            if (
+                item &&
+                typeof item === 'object' &&
+                typeof item.event === 'string'
+            ) {
+                return [{ ...item }];
+            }
+
+            const tuple =
+                Array.isArray(item) ||
+                (item &&
                     typeof item === 'object' &&
-                    typeof item.event === 'string'
-            )
-            .map((item) => ({ ...item }));
+                    typeof item.length === 'number')
+                    ? Array.from(item)
+                    : null;
+
+            if (tuple && tuple[0] === 'event' && typeof tuple[1] === 'string') {
+                const payload =
+                    tuple[2] && typeof tuple[2] === 'object' ? tuple[2] : {};
+                return [{ event: tuple[1], ...payload }];
+            }
+
+            return [];
+        });
     });
 }
 
@@ -162,12 +179,15 @@ async function fillBookingFormAndOpenPayment(page) {
         if (form) form.dispatchEvent(new Event('focusin', { bubbles: true }));
 
         // Force load explicitly if warmup is delayed
-        if (window.PielBookingEngine && typeof window.PielBookingEngine.loadBookingUi === 'function') {
-             window.PielBookingEngine.loadBookingUi();
+        if (
+            window.PielBookingEngine &&
+            typeof window.PielBookingEngine.loadBookingUi === 'function'
+        ) {
+            window.PielBookingEngine.loadBookingUi();
         } else if (window.loadDeferredModule) {
-             // Fallback if main bundle not fully exposed globally
-             const event = new Event('pointerdown');
-             window.dispatchEvent(event);
+            // Fallback if main bundle not fully exposed globally
+            const event = new Event('pointerdown');
+            window.dispatchEvent(event);
         }
     });
 
@@ -191,11 +211,15 @@ async function fillBookingFormAndOpenPayment(page) {
     // We capture the request to ensure we wait for it
     await Promise.all([
         // eslint-disable-next-line playwright/missing-playwright-await
-        page.waitForResponse(
-            resp => resp.url().includes('booked-slots') && resp.status() === 200,
-            { timeout: 5000 }
-        ).catch(() => null),
-        dateInput.fill(dateValue)
+        page
+            .waitForResponse(
+                (resp) =>
+                    resp.url().includes('booked-slots') &&
+                    resp.status() === 200,
+                { timeout: 5000 }
+            )
+            .catch(() => null),
+        dateInput.fill(dateValue),
     ]);
 
     // Select the first available option
@@ -237,12 +261,12 @@ async function fillBookingFormAndOpenPayment(page) {
 
 test.describe('Tracking del embudo de conversion', () => {
     test.beforeEach(async ({ page }) => {
-        page.on('console', msg => {
+        page.on('console', (msg) => {
             if (msg.type() === 'error') {
                 console.log(`[Browser Console Error] ${msg.text()}`);
             }
         });
-        page.on('pageerror', err => {
+        page.on('pageerror', (err) => {
             console.log(`[Browser Page Error] ${err.message}`);
         });
 
@@ -337,52 +361,54 @@ test.describe('Tracking del embudo de conversion', () => {
         page,
     }) => {
         await fillBookingFormAndOpenPayment(page);
-        const events = await getTrackedEvents(page);
-        const funnelEvents = await getFunnelEvents(page);
 
-        expect(events).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    event: 'booking_step_completed',
-                    step: 'service_selected',
-                    source: 'booking_form',
-                }),
-                expect.objectContaining({
-                    event: 'booking_step_completed',
-                    step: 'form_submitted',
-                    source: 'booking_form',
-                }),
-                expect.objectContaining({
-                    event: 'start_checkout',
-                    checkout_entry: 'booking_form',
-                }),
-            ])
-        );
-
-        expect(funnelEvents).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    event: 'booking_step_completed',
-                    params: expect.objectContaining({
+        await expect
+            .poll(async () => getTrackedEvents(page), { timeout: 15000 })
+            .toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        event: 'booking_step_completed',
                         step: 'service_selected',
                         source: 'booking_form',
                     }),
-                }),
-                expect.objectContaining({
-                    event: 'booking_step_completed',
-                    params: expect.objectContaining({
+                    expect.objectContaining({
+                        event: 'booking_step_completed',
                         step: 'form_submitted',
                         source: 'booking_form',
                     }),
-                }),
-                expect.objectContaining({
-                    event: 'start_checkout',
-                    params: expect.objectContaining({
+                    expect.objectContaining({
+                        event: 'start_checkout',
                         checkout_entry: 'booking_form',
                     }),
-                }),
-            ])
-        );
+                ])
+            );
+
+        await expect
+            .poll(async () => getFunnelEvents(page), { timeout: 15000 })
+            .toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        event: 'booking_step_completed',
+                        params: expect.objectContaining({
+                            step: 'service_selected',
+                            source: 'booking_form',
+                        }),
+                    }),
+                    expect.objectContaining({
+                        event: 'booking_step_completed',
+                        params: expect.objectContaining({
+                            step: 'form_submitted',
+                            source: 'booking_form',
+                        }),
+                    }),
+                    expect.objectContaining({
+                        event: 'start_checkout',
+                        params: expect.objectContaining({
+                            checkout_entry: 'booking_form',
+                        }),
+                    }),
+                ])
+            );
     });
 
     test('emite checkout_abandon con paso y origen al cerrar modal', async ({
@@ -406,14 +432,36 @@ test.describe('Tracking del embudo de conversion', () => {
             .toBe(false);
         await page.waitForTimeout(250);
 
-        const events = await getTrackedEvents(page);
-        const funnelEvents = await getFunnelEvents(page);
-        const abandonEvent = events.find(
-            (item) => item.event === 'checkout_abandon'
-        );
-        const abandonFunnelEvent = funnelEvents.find(
-            (item) => item && item.event === 'checkout_abandon'
-        );
+        let abandonEvent = null;
+        let abandonFunnelEvent = null;
+
+        await expect
+            .poll(
+                async () => {
+                    const events = await getTrackedEvents(page);
+                    abandonEvent =
+                        events.find(
+                            (item) => item.event === 'checkout_abandon'
+                        ) || null;
+                    return abandonEvent !== null;
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true);
+
+        await expect
+            .poll(
+                async () => {
+                    const funnelEvents = await getFunnelEvents(page);
+                    abandonFunnelEvent =
+                        funnelEvents.find(
+                            (item) => item && item.event === 'checkout_abandon'
+                        ) || null;
+                    return abandonFunnelEvent !== null;
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true);
 
         expect(abandonEvent).toBeTruthy();
         expect(abandonEvent.checkout_step).toBe('payment_modal_closed');
@@ -458,35 +506,36 @@ test.describe('Tracking del embudo de conversion', () => {
             .click();
         await page.waitForTimeout(600);
 
-        const events = await getTrackedEvents(page);
-        const funnelEvents = await getFunnelEvents(page);
-
-        expect(events).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    event: 'chat_started',
-                }),
-                expect.objectContaining({
-                    event: 'booking_step_completed',
-                    step: 'chat_booking_started',
-                    source: 'chatbot',
-                }),
-            ])
-        );
-
-        expect(funnelEvents).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    event: 'chat_started',
-                }),
-                expect.objectContaining({
-                    event: 'booking_step_completed',
-                    params: expect.objectContaining({
+        await expect
+            .poll(async () => getTrackedEvents(page), { timeout: 15000 })
+            .toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        event: 'chat_started',
+                    }),
+                    expect.objectContaining({
+                        event: 'booking_step_completed',
                         step: 'chat_booking_started',
                         source: 'chatbot',
                     }),
-                }),
-            ])
-        );
+                ])
+            );
+
+        await expect
+            .poll(async () => getFunnelEvents(page), { timeout: 15000 })
+            .toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        event: 'chat_started',
+                    }),
+                    expect.objectContaining({
+                        event: 'booking_step_completed',
+                        params: expect.objectContaining({
+                            step: 'chat_booking_started',
+                            source: 'chatbot',
+                        }),
+                    }),
+                ])
+            );
     });
 });
