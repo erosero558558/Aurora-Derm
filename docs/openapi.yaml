@@ -1,4 +1,5 @@
-openapi: 3.0.0
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 info:
     title: Piel en Armonía API
     description: |
@@ -8,7 +9,7 @@ info:
         This API uses a legacy routing mechanism via the `resource` query parameter.
         All endpoints are accessed via `api.php`.
         Example: The logical resource `/health` is accessed via `GET /api.php?resource=health`.
-    version: 1.0.0
+    version: 2026-02
 servers:
     - url: https://pielarmonia.com
       description: Production Server
@@ -67,7 +68,7 @@ components:
                         type: string
                 status:
                     type: string
-                    enum: [confirmed, pending, cancelled, completed]
+                    enum: [confirmed, pending, cancelled, completed, no_show]
                 paymentMethod:
                     type: string
                     enum: [card, transfer, cash, unpaid]
@@ -81,6 +82,16 @@ components:
                             pending_transfer_review,
                             failed,
                         ]
+                doctorAssigned:
+                    type: string
+                calendarProvider:
+                    type: string
+                calendarId:
+                    type: string
+                calendarEventId:
+                    type: string
+                slotDurationMin:
+                    type: integer
             required:
                 - service
                 - date
@@ -144,6 +155,57 @@ components:
                     example: '09:00'
             description: Map of date strings (YYYY-MM-DD) to arrays of available time slots.
 
+        CalendarMeta:
+            type: object
+            properties:
+                source:
+                    type: string
+                    description: Data source for availability resolution.
+                    enum: [google, store, fallback, configured, empty]
+                mode:
+                    type: string
+                    description: Calendar operation mode.
+                    enum: [live, blocked]
+                timezone:
+                    type: string
+                    example: America/Guayaquil
+                doctor:
+                    type: string
+                    enum: [rosero, narvaez, indiferente]
+                service:
+                    type: string
+                    enum:
+                        [
+                            consulta,
+                            telefono,
+                            video,
+                            acne,
+                            cancer,
+                            laser,
+                            rejuvenecimiento,
+                        ]
+                durationMin:
+                    type: integer
+                generatedAt:
+                    type: string
+                    format: date-time
+            additionalProperties: true
+
+        ApiError:
+            type: object
+            required: [ok, error]
+            properties:
+                ok:
+                    type: boolean
+                    const: false
+                error:
+                    type: string
+                code:
+                    type: string
+                meta:
+                    type: object
+                    additionalProperties: true
+
 paths:
     /api.php?resource=health:
         get:
@@ -164,8 +226,49 @@ paths:
                                         type: string
                                     storageReady:
                                         type: boolean
+                                    timingMs:
+                                        type: integer
                                     version:
                                         type: string
+                                    dataDirWritable:
+                                        type: boolean
+                                    dataDirSource:
+                                        type: string
+                                    storeEncrypted:
+                                        type: boolean
+                                    figoConfigured:
+                                        type: boolean
+                                    figoRecursiveConfig:
+                                        type: boolean
+                                    calendarConfigured:
+                                        type: boolean
+                                    calendarReachable:
+                                        type: boolean
+                                    calendarMode:
+                                        type: string
+                                        enum: [live, blocked]
+                                    calendarSource:
+                                        type: string
+                                        enum: [google, store]
+                                    calendarAuth:
+                                        type: string
+                                        enum:
+                                            [
+                                                none,
+                                                service_account,
+                                                oauth_refresh,
+                                            ]
+                                    calendarLastSuccessAt:
+                                        type: string
+                                        format: date-time
+                                    calendarTokenHealthy:
+                                        type: boolean
+                                    checks:
+                                        type: object
+                                        additionalProperties: true
+                                    timestamp:
+                                        type: string
+                                        format: date-time
 
     /api.php?resource=payment-config:
         get:
@@ -194,8 +297,39 @@ paths:
     /api.php?resource=availability:
         get:
             summary: Get Availability Slots
-            description: Returns configured availability slots.
-            tags: [Appointments]
+            description: Returns availability with provider metadata and service duration.
+            tags: [Availability]
+            parameters:
+                - in: query
+                  name: doctor
+                  schema:
+                      type: string
+                      enum: [rosero, narvaez, indiferente]
+                - in: query
+                  name: service
+                  schema:
+                      type: string
+                      enum:
+                          [
+                              consulta,
+                              telefono,
+                              video,
+                              acne,
+                              cancer,
+                              laser,
+                              rejuvenecimiento,
+                          ]
+                - in: query
+                  name: dateFrom
+                  schema:
+                      type: string
+                      format: date
+                - in: query
+                  name: days
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 45
             responses:
                 '200':
                     description: Success
@@ -208,10 +342,30 @@ paths:
                                         type: boolean
                                     data:
                                         $ref: '#/components/schemas/Availability'
+                                    meta:
+                                        $ref: '#/components/schemas/CalendarMeta'
+                '400':
+                    description: Invalid query params.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+                '503':
+                    description: Calendar upstream unavailable in blocked mode.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiError'
+                                    - type: object
+                                      properties:
+                                          code:
+                                              type: string
+                                              enum: [calendar_unreachable]
         post:
             summary: Update Availability
             description: Updates the availability configuration. Requires Admin authentication.
-            tags: [Appointments, Admin]
+            tags: [Availability, Admin]
             security:
                 - cookieAuth: []
                 - csrfToken: []
@@ -227,6 +381,12 @@ paths:
             responses:
                 '200':
                     description: Updated successfully
+                '403':
+                    description: Availability is read-only while Google Calendar mode is enabled.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
 
     /api.php?resource=booked-slots:
         get:
@@ -244,6 +404,21 @@ paths:
                   name: doctor
                   schema:
                       type: string
+                      enum: [rosero, narvaez, indiferente]
+                - in: query
+                  name: service
+                  schema:
+                      type: string
+                      enum:
+                          [
+                              consulta,
+                              telefono,
+                              video,
+                              acne,
+                              cancer,
+                              laser,
+                              rejuvenecimiento,
+                          ]
             responses:
                 '200':
                     description: Success
@@ -258,6 +433,26 @@ paths:
                                         type: array
                                         items:
                                             type: string
+                                    meta:
+                                        $ref: '#/components/schemas/CalendarMeta'
+                '400':
+                    description: Invalid query params.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+                '503':
+                    description: Calendar upstream unavailable in blocked mode.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiError'
+                                    - type: object
+                                      properties:
+                                          code:
+                                              type: string
+                                              enum: [calendar_unreachable]
 
     /api.php?resource=reviews:
         get:
@@ -326,6 +521,52 @@ paths:
             responses:
                 '201':
                     description: Created
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    data:
+                                        $ref: '#/components/schemas/Appointment'
+                                    emailSent:
+                                        type: boolean
+                '400':
+                    description: Validation error.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+                '409':
+                    description: Slot conflict.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiError'
+                                    - type: object
+                                      properties:
+                                          code:
+                                              type: string
+                                              enum: [slot_conflict]
+                '503':
+                    description: Google/store unavailable in blocked mode.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiError'
+                                    - type: object
+                                      properties:
+                                          code:
+                                              type: string
+                                              enum:
+                                                  [
+                                                      calendar_unreachable,
+                                                      booking_store_failed,
+                                                      slot_lock_failed,
+                                                  ]
         patch:
             summary: Update Appointment
             description: Update an existing appointment. Requires Admin authentication.
@@ -349,6 +590,8 @@ paths:
             responses:
                 '200':
                     description: Updated
+                '404':
+                    description: Appointment not found.
 
     /api.php?resource=callbacks:
         get:
@@ -406,6 +649,72 @@ paths:
                 '200':
                     description: Updated
 
+    /api.php?resource=funnel-event:
+        post:
+            summary: Record Funnel Event
+            description: Tracks conversion funnel and chat interaction events.
+            tags: [Analytics]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [event]
+                            properties:
+                                event:
+                                    type: string
+                                    enum:
+                                        [
+                                            view_booking,
+                                            start_checkout,
+                                            payment_method_selected,
+                                            payment_success,
+                                            booking_confirmed,
+                                            checkout_abandon,
+                                            booking_step_completed,
+                                            booking_error,
+                                            checkout_error,
+                                            chat_started,
+                                            chat_handoff_whatsapp,
+                                            whatsapp_click,
+                                        ]
+                                source:
+                                    type: string
+                                params:
+                                    type: object
+                                    additionalProperties: true
+            responses:
+                '202':
+                    description: Event accepted.
+                '400':
+                    description: Invalid event payload.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+
+    /api.php?resource=funnel-metrics:
+        get:
+            summary: Get Funnel Metrics
+            description: Returns aggregated funnel and retention metrics for admin dashboard.
+            tags: [Analytics, Admin]
+            security:
+                - cookieAuth: []
+            responses:
+                '200':
+                    description: Metrics snapshot.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    data:
+                                        type: object
+                                        additionalProperties: true
+
     /api.php?resource=payment-intent:
         post:
             summary: Create Payment Intent
@@ -431,6 +740,30 @@ paths:
                                         type: string
                                     paymentIntentId:
                                         type: string
+                                    amount:
+                                        type: integer
+                                    currency:
+                                        type: string
+                                    publishableKey:
+                                        type: string
+                '400':
+                    description: Validation error.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+                '409':
+                    description: Slot conflict.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+                '503':
+                    description: Payment gateway or calendar unavailable.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
 
     /api.php?resource=payment-verify:
         post:
@@ -459,6 +792,14 @@ paths:
                                     paid:
                                         type: boolean
                                     status:
+                                        type: string
+                                    id:
+                                        type: string
+                                    amount:
+                                        type: integer
+                                    amountReceived:
+                                        type: integer
+                                    currency:
                                         type: string
 
     /api.php?resource=transfer-proof:
@@ -519,6 +860,43 @@ paths:
             responses:
                 '200':
                     description: Success
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    data:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: integer
+                                            service:
+                                                type: string
+                                            doctor:
+                                                type: string
+                                            date:
+                                                type: string
+                                                format: date
+                                            time:
+                                                type: string
+                                            name:
+                                                type: string
+                                            status:
+                                                type: string
+                '400':
+                    description: Invalid token.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+                '404':
+                    description: Appointment not found or cancelled.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
         patch:
             summary: Reschedule Appointment
             description: Reschedule an appointment using a token.
@@ -540,6 +918,70 @@ paths:
             responses:
                 '200':
                     description: Success
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    data:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: integer
+                                            date:
+                                                type: string
+                                                format: date
+                                            time:
+                                                type: string
+                                            doctor:
+                                                type: string
+                                            doctorAssigned:
+                                                type: string
+                                            calendarProvider:
+                                                type: string
+                                            calendarId:
+                                                type: string
+                                            calendarEventId:
+                                                type: string
+                                            slotDurationMin:
+                                                type: integer
+                '400':
+                    description: Invalid request payload.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiError'
+                '409':
+                    description: Slot conflict.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiError'
+                                    - type: object
+                                      properties:
+                                          code:
+                                              type: string
+                                              enum: [slot_conflict]
+                '503':
+                    description: Calendar/store unavailable in blocked mode.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiError'
+                                    - type: object
+                                      properties:
+                                          code:
+                                              type: string
+                                              enum:
+                                                  [
+                                                      calendar_unreachable,
+                                                      reschedule_store_failed,
+                                                      slot_lock_failed,
+                                                  ]
 
     /api.php?resource=data:
         get:

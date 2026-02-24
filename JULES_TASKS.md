@@ -39,9 +39,10 @@ scope: platform
 files: backup-receiver.php,verify-backup.php,lib/backup.php,tests/BackupReceiverTest.php,env.example.php,docs/RUNBOOKS.md
 acceptance_ref: tests/BackupReceiverTest.php
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Backup integrity verification and at-rest encryption
 
 Implementar checksum SHA-256 por header, cifrado AES-256-CBC y prueba de integridad con test.
@@ -56,9 +57,10 @@ scope: backend
 files: lib/ratelimit.php,tests/RateLimiterTest.php,tests/Security/RateLimiterTest.php,tests/Unit/Security/RateLimiterTest.php,env.example.php
 acceptance_ref: tests/RateLimiterTest.php
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### PHP rate-limiter sliding window and per-user limits
 
 Actualizar rate-limiter a sliding window, incluir limite por user token y pruebas de regresion.
@@ -66,16 +68,17 @@ Actualizar rate-limiter a sliding window, incluir limite por user token y prueba
 <!-- /TASK -->
 
 <!-- TASK
-status: dispatched
+status: done
 task_id: AG-003
 risk: low
 scope: docs
 files: docs/openapi.yaml,README.md
-acceptance_ref: verification/agent-runs/AG-003.md
+acceptance_ref: docs/openapi.yaml,README.md
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### OpenAPI 3.1 specification for public API resources
 
 Generar OpenAPI 3.1 para api.php recursos principales y documentar como visualizarla localmente.
@@ -90,9 +93,10 @@ scope: backend
 files: lib/mailer.php,templates/email,tests/MailerTest.php
 acceptance_ref: verification/agent-runs/AG-004.md
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Email notification system for appointment confirmations
 
 Implementar wrapper PHPMailer para confirmaciones y recordatorios con templates HTML y test.

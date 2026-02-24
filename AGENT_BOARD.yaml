@@ -40,12 +40,12 @@ tasks:
     title: OpenAPI 3.1 specification for public API resources
     owner: ernesto
     executor: jules
-    status: in_progress
+    status: done
     risk: low
     scope: docs
     files: ["docs/openapi.yaml", "README.md"]
     acceptance: "Especificacion OpenAPI 3.1 completa y utilizable en preview local."
-    acceptance_ref: ""
+    acceptance_ref: "docs/openapi.yaml,README.md"
     depends_on: []
     prompt: "Generar OpenAPI 3.1 para api.php recursos principales y documentar como visualizarla localmente."
     created_at: 2026-02-24

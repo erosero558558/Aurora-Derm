@@ -171,8 +171,8 @@ Configura en GitHub (repo -> Settings -> Secrets and variables -> Actions):
 - Variables opcionales: `FTP_PROTOCOL`, `FTP_SERVER_PORT`, `FTP_SECURITY`, `FTP_SERVER_DIR`, `PROD_URL`, `SSH_HOST`, `SSH_PORT`, `SSH_REPO_DIR`
 - Secrets opcionales para SSH dedicado: `SSH_USERNAME`, `SSH_PASSWORD` (si no se definen, usa `FTP_USERNAME/FTP_PASSWORD`)
 - Variable de corte a agenda real: `REQUIRE_GOOGLE_CALENDAR`
-  - `false` (default actual): contrato de calendario permite entorno `store` durante rollout.
-  - `true` (cutover): el gate falla si `health.calendarSource != google`.
+    - `false` (default actual): contrato de calendario permite entorno `store` durante rollout.
+    - `true` (cutover): el gate falla si `health.calendarSource != google`.
 
 Ejecucion:
 
@@ -202,4 +202,15 @@ Comandos:
 - `npm run agent:metrics`
 - `npm run agent:validate`
 
+## OpenAPI preview local
 
+El contrato API vive en `docs/openapi.yaml` (OpenAPI 3.1).
+
+Opciones rapidas para previsualizar:
+
+1. Swagger Editor online:
+    - abre https://editor.swagger.io/
+    - importa `docs/openapi.yaml`
+2. Redoc local con Docker:
+    - `docker run --rm -p 8081:80 -v ${PWD}/docs:/usr/share/nginx/html redocly/redoc`
+    - abre `http://localhost:8081/redoc.html`
