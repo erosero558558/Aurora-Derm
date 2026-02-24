@@ -111,6 +111,21 @@ tasks:
     created_at: 2026-02-24
     updated_at: 2026-02-24
 
+  - id: AG-008
+    title: Kimi autopilot smoke task (no-op)
+    owner: ernesto
+    executor: kimi
+    status: ready
+    risk: low
+    scope: ops
+    files: ["KIMI_TASKS.md"]
+    acceptance: "La tarea se ejecuta por Kimi Autopilot y marca estado de cola sin cambios funcionales."
+    acceptance_ref: ""
+    depends_on: []
+    prompt: "Smoke test: no hagas cambios de codigo. Solo confirma ejecucion y finaliza sin modificar archivos."
+    created_at: 2026-02-24
+    updated_at: 2026-02-24
+
   - id: CDX-001
     title: Codex governance coexistence guardrails (C4 support)
     owner: ernesto

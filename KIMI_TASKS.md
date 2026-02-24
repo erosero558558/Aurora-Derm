@@ -73,3 +73,18 @@ dispatched_by: agent-orchestrator
 Agregar PHPDoc faltantes en librerias core sin modificar comportamiento funcional.
 
 <!-- /TASK -->
+
+<!-- TASK
+status: pending
+task_id: AG-008
+risk: low
+scope: ops
+files: KIMI_TASKS.md
+acceptance_ref: verification/agent-runs/AG-008.md
+dispatched_by: agent-orchestrator
+-->
+### Kimi autopilot smoke task (no-op)
+
+Smoke test: no hagas cambios de codigo. Solo confirma ejecucion y finaliza sin modificar archivos.
+
+<!-- /TASK -->
