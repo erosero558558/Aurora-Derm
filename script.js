@@ -2,184 +2,116 @@
 // Prefer explicit user choice; fall back to browser language; default to Spanish.
 const _savedLang = localStorage.getItem('language');
 const _browserLang = (navigator.language || navigator.userLanguage || '').startsWith('en') ? 'en' : 'es';
-let currentLang = _savedLang || _browserLang;
-let currentThemeMode = localStorage.getItem('themeMode') || 'system';
-let currentAppointment = null;
-let checkoutSession = {
-    active: false,
-    completed: false,
-    startedAt: 0,
-    service: '',
-    doctor: '',
-};
-let apiSlowNoticeLastAt = 0;
-const bookedSlotsCache = new Map();
-let reviewsCache = [];
-let paymentConfig = {
-    enabled: false,
-    provider: 'stripe',
-    publishableKey: '',
-    currency: 'USD',
-};
-let paymentConfigLoaded = false;
-let paymentConfigLoadedAt = 0;
-let stripeSdkPromise = null;
-let chatbotOpen = false;
-let conversationContext = [];
-
-function getCurrentLang() {
-    return currentLang;
-}
-function setCurrentLang(lang) {
-    currentLang = lang;
-}
-
-function getCurrentThemeMode() {
-    return currentThemeMode;
-}
-function setCurrentThemeMode(mode) {
-    currentThemeMode = mode;
-}
-
-function getCurrentAppointment() {
-    return currentAppointment;
-}
-function setCurrentAppointment(appt) {
-    currentAppointment = appt;
-}
-
-function getCheckoutSession() {
-    return checkoutSession;
-}
-function setCheckoutSession(session) {
-    checkoutSession = session;
-}
-
-function getApiSlowNoticeLastAt() {
-    return apiSlowNoticeLastAt;
-}
-function setApiSlowNoticeLastAt(val) {
-    apiSlowNoticeLastAt = val;
-}
-
-function getReviewsCache() {
-    return reviewsCache;
-}
-function setReviewsCache(val) {
-    reviewsCache = val;
-}
-
-function getPaymentConfig() {
-    return paymentConfig;
-}
-function setPaymentConfig(val) {
-    paymentConfig = val;
-}
-
-function getPaymentConfigLoaded() {
-    return paymentConfigLoaded;
-}
-function setPaymentConfigLoaded(val) {
-    paymentConfigLoaded = val;
-}
-
-function getPaymentConfigLoadedAt() {
-    return paymentConfigLoadedAt;
-}
-function setPaymentConfigLoadedAt(val) {
-    paymentConfigLoadedAt = val;
-}
-
-function getStripeSdkPromise() {
-    return stripeSdkPromise;
-}
-function setStripeSdkPromise(val) {
-    stripeSdkPromise = val;
-}
-
-function getChatbotOpen() {
-    return chatbotOpen;
-}
-function setChatbotOpen(val) {
-    chatbotOpen = val;
-}
-
-function getConversationContext() {
-    return conversationContext;
-}
-function setConversationContext(val) {
-    conversationContext = val;
-}
-
-function getChatHistory() {
-    try {
-        const raw = localStorage.getItem('chatHistory');
-        const saved = raw ? JSON.parse(raw) : [];
-        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-        const valid = saved.filter(
-            (m) => m.time && new Date(m.time).getTime() > cutoff
-        );
-        if (valid.length !== saved.length) {
-            try {
-                localStorage.setItem('chatHistory', JSON.stringify(valid));
-            } catch {
-                // noop
-            }
-        }
-        return valid;
-    } catch {
-        return [];
-    }
-}
-function setChatHistory(history) {
-    try {
-        localStorage.setItem('chatHistory', JSON.stringify(history));
-    } catch {
-        // noop
-    }
-}
-
-const stateAccessors = {
-    currentLang: [getCurrentLang, setCurrentLang],
-    currentThemeMode: [getCurrentThemeMode, setCurrentThemeMode],
-    currentAppointment: [getCurrentAppointment, setCurrentAppointment],
-    checkoutSession: [getCheckoutSession, setCheckoutSession],
-    reviewsCache: [getReviewsCache, setReviewsCache],
-    chatbotOpen: [getChatbotOpen, setChatbotOpen],
-    conversationContext: [getConversationContext, setConversationContext],
-};
 
 const internalState = {
-    bookedSlotsCache,
+    currentLang: _savedLang || _browserLang,
+    currentThemeMode: localStorage.getItem('themeMode') || 'system',
+    currentAppointment: null,
+    checkoutSession: {
+        active: false,
+        completed: false,
+        startedAt: 0,
+        service: '',
+        doctor: '',
+    },
+    bookingViewTracked: false,
+    chatStartedTracked: false,
+    availabilityPrefetched: false,
+    reviewsPrefetched: false,
+    apiSlowNoticeLastAt: 0,
+    availabilityCache: {},
+    availabilityCacheLoadedAt: 0,
+    availabilityCachePromise: null,
+    bookedSlotsCache: new Map(),
+    reviewsCache: [],
+    paymentConfig: {
+        enabled: false,
+        provider: 'stripe',
+        publishableKey: '',
+        currency: 'USD',
+    },
+    paymentConfigLoaded: false,
+    paymentConfigLoadedAt: 0,
+    stripeSdkPromise: null,
+    chatbotOpen: false,
+    conversationContext: [],
+    // chatHistory is virtual, handled by proxy
 };
 
 const handler = {
     get(target, prop, receiver) {
         if (prop === 'chatHistory') {
-            return getChatHistory();
-        }
-        if (Object.prototype.hasOwnProperty.call(stateAccessors, prop)) {
-            return stateAccessors[prop][0]();
+            try {
+                const raw = localStorage.getItem('chatHistory');
+                const saved = raw ? JSON.parse(raw) : [];
+                const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+                const valid = saved.filter(
+                    (m) => m.time && new Date(m.time).getTime() > cutoff
+                );
+                if (valid.length !== saved.length) {
+                    try {
+                        localStorage.setItem('chatHistory', JSON.stringify(valid));
+                    } catch {
+                        // noop
+                    }
+                }
+                return valid;
+            } catch {
+                return [];
+            }
         }
         return Reflect.get(target, prop, receiver);
     },
     set(target, prop, value, receiver) {
         if (prop === 'chatHistory') {
-            setChatHistory(value);
+            try {
+                localStorage.setItem('chatHistory', JSON.stringify(value));
+            } catch {
+                // noop
+            }
             return true;
         }
         if (prop === 'bookedSlotsCache') {
             return false;
         }
-        if (Object.prototype.hasOwnProperty.call(stateAccessors, prop)) {
-            stateAccessors[prop][1](value);
-            return true;
-        }
         return Reflect.set(target, prop, value, receiver);
-    },
+    }
 };
 
 const state = new Proxy(internalState, handler);
+
+// Compatibility exports
+const getCurrentLang = () => state.currentLang;
+
+const getCurrentAppointment = () => state.currentAppointment;
+const setCurrentAppointment = (val) => { state.currentAppointment = val; };
+
+const getApiSlowNoticeLastAt = () => state.apiSlowNoticeLastAt;
+const setApiSlowNoticeLastAt = (val) => { state.apiSlowNoticeLastAt = val; };
+
+const getReviewsCache = () => state.reviewsCache;
+const setReviewsCache = (val) => { state.reviewsCache = val; };
+
+const getPaymentConfig = () => state.paymentConfig;
+const setPaymentConfig = (val) => { state.paymentConfig = val; };
+
+const getPaymentConfigLoaded = () => state.paymentConfigLoaded;
+const setPaymentConfigLoaded = (val) => { state.paymentConfigLoaded = val; };
+
+const getPaymentConfigLoadedAt = () => state.paymentConfigLoadedAt;
+const setPaymentConfigLoadedAt = (val) => { state.paymentConfigLoadedAt = val; };
+
+const getStripeSdkPromise = () => state.stripeSdkPromise;
+const setStripeSdkPromise = (val) => { state.stripeSdkPromise = val; };
+
+const getChatbotOpen = () => state.chatbotOpen;
+const setChatbotOpen = (val) => { state.chatbotOpen = val; };
+
+const getConversationContext = () => state.conversationContext;
+const setConversationContext = (val) => { state.conversationContext = val; };
+
+const getChatHistory = () => state.chatHistory;
+const setChatHistory = (val) => { state.chatHistory = val; };
 
 const API_ENDPOINT = '/api.php';
 const CLINIC_ADDRESS = 'Dr. Cecilio Caiza e hijas, Quito, Ecuador';

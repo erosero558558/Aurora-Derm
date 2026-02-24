@@ -1,244 +1,148 @@
 // Prefer explicit user choice; fall back to browser language; default to Spanish.
 const _savedLang = localStorage.getItem('language');
 const _browserLang = (navigator.language || navigator.userLanguage || '').startsWith('en') ? 'en' : 'es';
-let currentLang = _savedLang || _browserLang;
-let currentThemeMode = localStorage.getItem('themeMode') || 'system';
-let currentAppointment = null;
-let checkoutSession = {
-    active: false,
-    completed: false,
-    startedAt: 0,
-    service: '',
-    doctor: '',
-};
-let bookingViewTracked = false;
-let chatStartedTracked = false;
-let availabilityPrefetched = false;
-let reviewsPrefetched = false;
-let apiSlowNoticeLastAt = 0;
-let availabilityCache = {};
-let availabilityCacheLoadedAt = 0;
-let availabilityCachePromise = null;
-const bookedSlotsCache = new Map();
-let reviewsCache = [];
-let paymentConfig = {
-    enabled: false,
-    provider: 'stripe',
-    publishableKey: '',
-    currency: 'USD',
-};
-let paymentConfigLoaded = false;
-let paymentConfigLoadedAt = 0;
-let stripeSdkPromise = null;
-let chatbotOpen = false;
-let conversationContext = [];
-
-export function getCurrentLang() {
-    return currentLang;
-}
-export function setCurrentLang(lang) {
-    currentLang = lang;
-}
-
-export function getCurrentThemeMode() {
-    return currentThemeMode;
-}
-export function setCurrentThemeMode(mode) {
-    currentThemeMode = mode;
-}
-
-export function getCurrentAppointment() {
-    return currentAppointment;
-}
-export function setCurrentAppointment(appt) {
-    currentAppointment = appt;
-}
-
-export function getCheckoutSession() {
-    return checkoutSession;
-}
-export function setCheckoutSession(session) {
-    checkoutSession = session;
-}
-export function setCheckoutSessionActive(active) {
-    checkoutSession.active = active === true;
-}
-
-export function getBookingViewTracked() {
-    return bookingViewTracked;
-}
-export function setBookingViewTracked(val) {
-    bookingViewTracked = val;
-}
-
-export function getChatStartedTracked() {
-    return chatStartedTracked;
-}
-export function setChatStartedTracked(val) {
-    chatStartedTracked = val;
-}
-
-export function getAvailabilityPrefetched() {
-    return availabilityPrefetched;
-}
-export function setAvailabilityPrefetched(val) {
-    availabilityPrefetched = val;
-}
-
-export function getReviewsPrefetched() {
-    return reviewsPrefetched;
-}
-export function setReviewsPrefetched(val) {
-    reviewsPrefetched = val;
-}
-
-export function getApiSlowNoticeLastAt() {
-    return apiSlowNoticeLastAt;
-}
-export function setApiSlowNoticeLastAt(val) {
-    apiSlowNoticeLastAt = val;
-}
-
-export function getAvailabilityCache() {
-    return availabilityCache;
-}
-export function setAvailabilityCache(val) {
-    availabilityCache = val;
-}
-
-export function getAvailabilityCacheLoadedAt() {
-    return availabilityCacheLoadedAt;
-}
-export function setAvailabilityCacheLoadedAt(val) {
-    availabilityCacheLoadedAt = val;
-}
-
-export function getAvailabilityCachePromise() {
-    return availabilityCachePromise;
-}
-export function setAvailabilityCachePromise(val) {
-    availabilityCachePromise = val;
-}
-
-export function getBookedSlotsCache() {
-    return bookedSlotsCache;
-}
-
-export function getReviewsCache() {
-    return reviewsCache;
-}
-export function setReviewsCache(val) {
-    reviewsCache = val;
-}
-
-export function getPaymentConfig() {
-    return paymentConfig;
-}
-export function setPaymentConfig(val) {
-    paymentConfig = val;
-}
-
-export function getPaymentConfigLoaded() {
-    return paymentConfigLoaded;
-}
-export function setPaymentConfigLoaded(val) {
-    paymentConfigLoaded = val;
-}
-
-export function getPaymentConfigLoadedAt() {
-    return paymentConfigLoadedAt;
-}
-export function setPaymentConfigLoadedAt(val) {
-    paymentConfigLoadedAt = val;
-}
-
-export function getStripeSdkPromise() {
-    return stripeSdkPromise;
-}
-export function setStripeSdkPromise(val) {
-    stripeSdkPromise = val;
-}
-
-export function getChatbotOpen() {
-    return chatbotOpen;
-}
-export function setChatbotOpen(val) {
-    chatbotOpen = val;
-}
-
-export function getConversationContext() {
-    return conversationContext;
-}
-export function setConversationContext(val) {
-    conversationContext = val;
-}
-
-export function getChatHistory() {
-    try {
-        const raw = localStorage.getItem('chatHistory');
-        const saved = raw ? JSON.parse(raw) : [];
-        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-        const valid = saved.filter(
-            (m) => m.time && new Date(m.time).getTime() > cutoff
-        );
-        if (valid.length !== saved.length) {
-            try {
-                localStorage.setItem('chatHistory', JSON.stringify(valid));
-            } catch {
-                // noop
-            }
-        }
-        return valid;
-    } catch {
-        return [];
-    }
-}
-export function setChatHistory(history) {
-    try {
-        localStorage.setItem('chatHistory', JSON.stringify(history));
-    } catch {
-        // noop
-    }
-}
-
-const stateAccessors = {
-    currentLang: [getCurrentLang, setCurrentLang],
-    currentThemeMode: [getCurrentThemeMode, setCurrentThemeMode],
-    currentAppointment: [getCurrentAppointment, setCurrentAppointment],
-    checkoutSession: [getCheckoutSession, setCheckoutSession],
-    reviewsCache: [getReviewsCache, setReviewsCache],
-    chatbotOpen: [getChatbotOpen, setChatbotOpen],
-    conversationContext: [getConversationContext, setConversationContext],
-};
 
 const internalState = {
-    bookedSlotsCache,
+    currentLang: _savedLang || _browserLang,
+    currentThemeMode: localStorage.getItem('themeMode') || 'system',
+    currentAppointment: null,
+    checkoutSession: {
+        active: false,
+        completed: false,
+        startedAt: 0,
+        service: '',
+        doctor: '',
+    },
+    bookingViewTracked: false,
+    chatStartedTracked: false,
+    availabilityPrefetched: false,
+    reviewsPrefetched: false,
+    apiSlowNoticeLastAt: 0,
+    availabilityCache: {},
+    availabilityCacheLoadedAt: 0,
+    availabilityCachePromise: null,
+    bookedSlotsCache: new Map(),
+    reviewsCache: [],
+    paymentConfig: {
+        enabled: false,
+        provider: 'stripe',
+        publishableKey: '',
+        currency: 'USD',
+    },
+    paymentConfigLoaded: false,
+    paymentConfigLoadedAt: 0,
+    stripeSdkPromise: null,
+    chatbotOpen: false,
+    conversationContext: [],
+    // chatHistory is virtual, handled by proxy
 };
 
 const handler = {
     get(target, prop, receiver) {
         if (prop === 'chatHistory') {
-            return getChatHistory();
-        }
-        if (Object.prototype.hasOwnProperty.call(stateAccessors, prop)) {
-            return stateAccessors[prop][0]();
+            try {
+                const raw = localStorage.getItem('chatHistory');
+                const saved = raw ? JSON.parse(raw) : [];
+                const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+                const valid = saved.filter(
+                    (m) => m.time && new Date(m.time).getTime() > cutoff
+                );
+                if (valid.length !== saved.length) {
+                    try {
+                        localStorage.setItem('chatHistory', JSON.stringify(valid));
+                    } catch {
+                        // noop
+                    }
+                }
+                return valid;
+            } catch {
+                return [];
+            }
         }
         return Reflect.get(target, prop, receiver);
     },
     set(target, prop, value, receiver) {
         if (prop === 'chatHistory') {
-            setChatHistory(value);
+            try {
+                localStorage.setItem('chatHistory', JSON.stringify(value));
+            } catch {
+                // noop
+            }
             return true;
         }
         if (prop === 'bookedSlotsCache') {
             return false;
         }
-        if (Object.prototype.hasOwnProperty.call(stateAccessors, prop)) {
-            stateAccessors[prop][1](value);
-            return true;
-        }
         return Reflect.set(target, prop, value, receiver);
-    },
+    }
 };
 
 export const state = new Proxy(internalState, handler);
+
+// Compatibility exports
+export const getCurrentLang = () => state.currentLang;
+export const setCurrentLang = (val) => { state.currentLang = val; };
+
+export const getCurrentThemeMode = () => state.currentThemeMode;
+export const setCurrentThemeMode = (val) => { state.currentThemeMode = val; };
+
+export const getCurrentAppointment = () => state.currentAppointment;
+export const setCurrentAppointment = (val) => { state.currentAppointment = val; };
+
+export const getCheckoutSession = () => state.checkoutSession;
+export const setCheckoutSession = (val) => { state.checkoutSession = val; };
+export const setCheckoutSessionActive = (active) => {
+    if (state.checkoutSession) {
+        state.checkoutSession.active = active === true;
+    }
+};
+
+export const getBookingViewTracked = () => state.bookingViewTracked;
+export const setBookingViewTracked = (val) => { state.bookingViewTracked = val; };
+
+export const getChatStartedTracked = () => state.chatStartedTracked;
+export const setChatStartedTracked = (val) => { state.chatStartedTracked = val; };
+
+export const getAvailabilityPrefetched = () => state.availabilityPrefetched;
+export const setAvailabilityPrefetched = (val) => { state.availabilityPrefetched = val; };
+
+export const getReviewsPrefetched = () => state.reviewsPrefetched;
+export const setReviewsPrefetched = (val) => { state.reviewsPrefetched = val; };
+
+export const getApiSlowNoticeLastAt = () => state.apiSlowNoticeLastAt;
+export const setApiSlowNoticeLastAt = (val) => { state.apiSlowNoticeLastAt = val; };
+
+export const getAvailabilityCache = () => state.availabilityCache;
+export const setAvailabilityCache = (val) => { state.availabilityCache = val; };
+
+export const getAvailabilityCacheLoadedAt = () => state.availabilityCacheLoadedAt;
+export const setAvailabilityCacheLoadedAt = (val) => { state.availabilityCacheLoadedAt = val; };
+
+export const getAvailabilityCachePromise = () => state.availabilityCachePromise;
+export const setAvailabilityCachePromise = (val) => { state.availabilityCachePromise = val; };
+
+export const getBookedSlotsCache = () => state.bookedSlotsCache;
+
+export const getReviewsCache = () => state.reviewsCache;
+export const setReviewsCache = (val) => { state.reviewsCache = val; };
+
+export const getPaymentConfig = () => state.paymentConfig;
+export const setPaymentConfig = (val) => { state.paymentConfig = val; };
+
+export const getPaymentConfigLoaded = () => state.paymentConfigLoaded;
+export const setPaymentConfigLoaded = (val) => { state.paymentConfigLoaded = val; };
+
+export const getPaymentConfigLoadedAt = () => state.paymentConfigLoadedAt;
+export const setPaymentConfigLoadedAt = (val) => { state.paymentConfigLoadedAt = val; };
+
+export const getStripeSdkPromise = () => state.stripeSdkPromise;
+export const setStripeSdkPromise = (val) => { state.stripeSdkPromise = val; };
+
+export const getChatbotOpen = () => state.chatbotOpen;
+export const setChatbotOpen = (val) => { state.chatbotOpen = val; };
+
+export const getConversationContext = () => state.conversationContext;
+export const setConversationContext = (val) => { state.conversationContext = val; };
+
+export const getChatHistory = () => state.chatHistory;
+export const setChatHistory = (val) => { state.chatHistory = val; };
