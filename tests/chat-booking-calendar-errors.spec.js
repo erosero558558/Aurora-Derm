@@ -3,6 +3,22 @@ const { test, expect } = require('@playwright/test');
 
 test.use({ serviceWorkers: 'block' });
 
+const CALENDAR_UNREACHABLE_MESSAGE = new RegExp(
+    [
+        'La agenda esta temporalmente no disponible',
+        'The schedule is temporarily unavailable',
+    ].join('|'),
+    'i'
+);
+
+const SLOT_UNAVAILABLE_MESSAGE = new RegExp(
+    [
+        'Ese horario ya no esta disponible',
+        'That slot is no longer available',
+    ].join('|'),
+    'i'
+);
+
 function toLocalDateKey(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -24,7 +40,12 @@ function nextDate(daysAhead = 4) {
     return toLocalDateKey(date);
 }
 
-async function mockApiWithAppointmentError(page, errorCode, statusCode, message) {
+async function mockApiWithAppointmentError(
+    page,
+    errorCode,
+    statusCode,
+    message
+) {
     const dateValue = nextDate(4);
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
@@ -42,11 +63,16 @@ async function mockApiWithAppointmentError(page, errorCode, statusCode, message)
                     source: 'google',
                     mode: 'live',
                     timezone: 'America/Guayaquil',
-                    doctor: String(url.searchParams.get('doctor') || 'indiferente'),
-                    service: String(url.searchParams.get('service') || 'consulta'),
+                    doctor: String(
+                        url.searchParams.get('doctor') || 'indiferente'
+                    ),
+                    service: String(
+                        url.searchParams.get('service') || 'consulta'
+                    ),
                     durationMin:
-                        String(url.searchParams.get('service') || 'consulta') ===
-                        'laser'
+                        String(
+                            url.searchParams.get('service') || 'consulta'
+                        ) === 'laser'
                             ? 60
                             : 30,
                     generatedAt: new Date().toISOString(),
@@ -62,11 +88,16 @@ async function mockApiWithAppointmentError(page, errorCode, statusCode, message)
                     source: 'google',
                     mode: 'live',
                     timezone: 'America/Guayaquil',
-                    doctor: String(url.searchParams.get('doctor') || 'indiferente'),
-                    service: String(url.searchParams.get('service') || 'consulta'),
+                    doctor: String(
+                        url.searchParams.get('doctor') || 'indiferente'
+                    ),
+                    service: String(
+                        url.searchParams.get('service') || 'consulta'
+                    ),
                     durationMin:
-                        String(url.searchParams.get('service') || 'consulta') ===
-                        'laser'
+                        String(
+                            url.searchParams.get('service') || 'consulta'
+                        ) === 'laser'
                             ? 60
                             : 30,
                     generatedAt: new Date().toISOString(),
@@ -132,8 +163,12 @@ async function mockApiWithAvailabilityError(page, message) {
                     source: 'google',
                     mode: 'live',
                     timezone: 'America/Guayaquil',
-                    doctor: String(url.searchParams.get('doctor') || 'indiferente'),
-                    service: String(url.searchParams.get('service') || 'consulta'),
+                    doctor: String(
+                        url.searchParams.get('doctor') || 'indiferente'
+                    ),
+                    service: String(
+                        url.searchParams.get('service') || 'consulta'
+                    ),
                     durationMin: 30,
                     generatedAt: new Date().toISOString(),
                 },
@@ -161,6 +196,7 @@ async function mockApiWithAvailabilityError(page, message) {
 
 async function openChatAndStartBooking(page) {
     await page.addInitScript(() => {
+        localStorage.setItem('language', 'es');
         localStorage.setItem(
             'pa_cookie_consent_v1',
             JSON.stringify({
@@ -171,13 +207,21 @@ async function openChatAndStartBooking(page) {
     });
 
     await page.goto('/');
-    await page.locator('#chatbotWidget .chatbot-toggle').click();
+    const chatbotWidget = page.locator('#chatbotWidget');
+    await expect(chatbotWidget).toBeVisible({ timeout: 15000 });
+    await expect(chatbotWidget).not.toHaveClass(/deferred-content/, {
+        timeout: 15000,
+    });
+
+    const toggle = page.locator('#chatbotWidget .chatbot-toggle');
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await toggle.click();
     await expect(page.locator('#chatbotContainer')).toHaveClass(/active/);
-    await page
-        .locator(
-            '#quickOptions [data-action="quick-message"][data-value="appointment"]'
-        )
-        .click();
+    const appointmentQuickAction = page.locator(
+        '#quickOptions [data-action="quick-message"][data-value="appointment"]'
+    );
+    await expect(appointmentQuickAction).toBeVisible({ timeout: 10000 });
+    await appointmentQuickAction.click();
 }
 
 async function sendChatText(page, value) {
@@ -185,12 +229,6 @@ async function sendChatText(page, value) {
     await input.fill(value);
     await input.press('Enter');
 }
-
-const SCHEDULE_UNAVAILABLE_PATTERN =
-    /La agenda est[aá] temporalmente no disponible|The schedule is temporarily unavailable/i;
-
-const SLOT_UNAVAILABLE_PATTERN =
-    /Ese horario ya no est[aá] disponible|Please choose a valid time from the options/i;
 
 async function completeChatBookingUntilCashSelection(page, dateValue) {
     await page
@@ -224,7 +262,9 @@ async function completeChatBookingUntilCashSelection(page, dateValue) {
     await sendChatText(page, 'Paciente Test Agenda Real');
     await expect(page.locator('#chatMessages')).toContainText(/email/i);
     await sendChatText(page, 'agenda-real-test@example.com');
-    await expect(page.locator('#chatMessages')).toContainText(/telefono|phone/i);
+    await expect(page.locator('#chatMessages')).toContainText(
+        /telefono|phone/i
+    );
     await sendChatText(page, '+593987654321');
 
     const cashButton = page
@@ -254,7 +294,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             await completeChatBookingUntilCashSelection(page, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            SCHEDULE_UNAVAILABLE_PATTERN
+            CALENDAR_UNREACHABLE_MESSAGE
         );
         await expect
             .poll(() => page.locator('#chatMessages #chatDateInput').count())
@@ -276,7 +316,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             await completeChatBookingUntilCashSelection(page, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            SLOT_UNAVAILABLE_PATTERN
+            SLOT_UNAVAILABLE_MESSAGE
         );
         await expect
             .poll(() => page.locator('#chatMessages #chatDateInput').count())
@@ -298,7 +338,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
             await completeChatBookingUntilCashSelection(page, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            SLOT_UNAVAILABLE_PATTERN
+            SLOT_UNAVAILABLE_MESSAGE
         );
         await expect
             .poll(() => page.locator('#chatMessages #chatDateInput').count())
@@ -335,7 +375,7 @@ test.describe('Chat booking con agenda real: errores de calendario', () => {
         }, dateValue);
 
         await expect(page.locator('#chatMessages')).toContainText(
-            SCHEDULE_UNAVAILABLE_PATTERN
+            CALENDAR_UNREACHABLE_MESSAGE
         );
     });
 });

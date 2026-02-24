@@ -1,6 +1,38 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
+async function getConsentModeCalls(page) {
+    return page.evaluate(() => {
+        const dl = Array.isArray(window.dataLayer) ? window.dataLayer : [];
+        return dl.flatMap((item) => {
+            const tuple =
+                Array.isArray(item) ||
+                (item &&
+                    typeof item === 'object' &&
+                    typeof item.length === 'number')
+                    ? Array.from(item)
+                    : null;
+
+            if (
+                !tuple ||
+                tuple[0] !== 'consent' ||
+                typeof tuple[1] !== 'string' ||
+                !tuple[2] ||
+                typeof tuple[2] !== 'object'
+            ) {
+                return [];
+            }
+
+            return [
+                {
+                    mode: tuple[1],
+                    ...tuple[2],
+                },
+            ];
+        });
+    });
+}
+
 test.describe('Consentimiento de cookies', () => {
     test.beforeEach(async ({ page }) => {
         // Limpiar localStorage para que aparezca el banner
@@ -69,34 +101,37 @@ test.describe('Consentimiento de cookies', () => {
         await expect(banner).toBeHidden();
     });
 
-    test('GA4 no se carga sin consentimiento', async ({ page }) => {
+    test('Consent Mode mantiene analytics_storage denied al rechazar cookies', async ({
+        page,
+    }) => {
         const banner = page.locator('#cookieBanner');
         await expect(banner).toBeVisible({ timeout: 10000 });
-        // Rechazar cookies
         const rejectBtn = page.locator('#cookieRejectBtn');
         await rejectBtn.click({ force: true });
-        await page.waitForTimeout(1000);
 
-        const consentState = await page.evaluate(() => {
-            const raw = localStorage.getItem('pa_cookie_consent_v1');
-            return raw ? JSON.parse(raw) : null;
-        });
-        expect(consentState).not.toBeNull();
-        expect(consentState.status).toBe('rejected');
+        const ga4Loaded = await page.evaluate(() => !!window._ga4Loaded);
+        expect(ga4Loaded).toBe(true);
 
-        const hasGrantedConsent = await page.evaluate(() => {
-            const layer = Array.isArray(window.dataLayer) ? window.dataLayer : [];
-            return layer.some((entry) => {
-                const args = Array.from(entry || []);
-                const isConsentUpdate =
-                    args[0] === 'consent' && args[1] === 'update';
-                if (!isConsentUpdate || typeof args[2] !== 'object' || !args[2]) {
-                    return false;
-                }
-                return args[2].analytics_storage === 'granted';
-            });
-        });
-        expect(hasGrantedConsent).toBe(false);
+        let consentCalls = [];
+        await expect
+            .poll(async () => {
+                consentCalls = await getConsentModeCalls(page);
+                return consentCalls.length;
+            })
+            .toBeGreaterThan(0);
+
+        expect(consentCalls).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    mode: 'default',
+                    analytics_storage: 'denied',
+                }),
+                expect.objectContaining({
+                    mode: 'update',
+                    analytics_storage: 'denied',
+                }),
+            ])
+        );
     });
 
     test('GA4 se carga al aceptar cookies', async ({ page }) => {
@@ -104,9 +139,21 @@ test.describe('Consentimiento de cookies', () => {
         await expect(banner).toBeVisible({ timeout: 10000 });
         const acceptBtn = page.locator('#cookieAcceptBtn');
         await acceptBtn.click({ force: true });
-        await page.waitForTimeout(2000);
 
-        const ga4Loaded = await page.evaluate(() => !!window._ga4Loaded);
-        expect(ga4Loaded).toBe(true);
+        await expect
+            .poll(() => page.evaluate(() => !!window._ga4Loaded))
+            .toBe(true);
+
+        let consentCalls = [];
+        await expect
+            .poll(async () => {
+                consentCalls = await getConsentModeCalls(page);
+                return consentCalls.filter(
+                    (item) =>
+                        item.mode === 'update' &&
+                        item.analytics_storage === 'granted'
+                ).length;
+            })
+            .toBeGreaterThan(0);
     });
 });
