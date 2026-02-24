@@ -2,7 +2,7 @@
 
 > Nota de gobernanza (2026-02-24): este documento se mantiene como snapshot historico; la fuente unica de control operativo es `PLAN_MAESTRO_OPERATIVO_2026.md`.
 
-Fecha de actualizacion: 2026-02-24 (sesion Codex post-fix compat)
+Fecha de actualizacion: 2026-02-24 (sesion Codex post-fix compat + validacion strict)
 Dominio: https://pielarmonia.com
 
 ## Resumen rapido
@@ -12,7 +12,7 @@ Dominio: https://pielarmonia.com
 - Post-Deploy Gate run `22334259617` (push a main): `success`.
 - Estado general: En curso. CI desbloqueado y pipeline activo tras fix de calendar runtime.
 - Chatbot: Operativo en Trinity/OpenRouter (cola OpenClaw deshabilitada por decision de producto).
-- Agenda real: Flujo create/reschedule/cancel validado contra Google Calendar en produccion.
+- Agenda real: implementada en codigo, pero produccion hoy reporta `calendarSource=store` y `calendarAuth=none`.
 - Gate de produccion: push gate en verde + hash-strict manual en verde (2026-02-23 21:52 hora local del servidor / 2026-02-24 UTC).
 - Smoke: 19/19 OK. Latencias: figo-post p95=582ms, core p95=553ms. Error rate=0.
 - Umbral operativo `figo-post` endurecido a p95 <= `2500 ms` en gate/benchmark/workflow.
@@ -79,15 +79,40 @@ Dominio: https://pielarmonia.com
   - `figo-get` p95: `397.69 ms`
   - `figo-post` p95: `396.83 ms`
 
+9. Gate operativo completo (manual)
+- Comando: `npm run gate:prod`
+- Resultado: OK (`Gate OK: despliegue validado`).
+- Bench API (25 runs):
+  - `health` p95: `541.12 ms`
+  - `reviews` p95: `529.15 ms`
+  - `availability` p95: `553.77 ms`
+  - `figo-get` p95: `577.22 ms`
+  - `figo-post` p95: `890.71 ms`
+
+10. Hash strict actual (manual)
+- Comando: `npm run gate:prod:hash-strict`
+- Resultado: OK (`Gate OK: despliegue validado`).
+- Bench API (25 runs):
+  - `health` p95: `541.12 ms`
+  - `reviews` p95: `538.41 ms`
+  - `availability` p95: `553.77 ms`
+  - `figo-get` p95: `580.81 ms`
+  - `figo-post` p95: `589.88 ms`
+
+11. Contrato Google forzado en produccion
+- Comando: `TEST_BASE_URL=https://pielarmonia.com TEST_REQUIRE_GOOGLE_CALENDAR=true npm run test:calendar-contract`
+- Resultado: `2 failed, 1 passed`
+- Causa: `health.calendarSource != google`.
+
 ## Estado por fases del plan unico
 
 1. Fase 0 - Control unico y anti-bucle: Completada.
 - Un solo plan operativo activo.
 - Gate hibrido aplicado.
 
-2. Fase 1 - Agenda real Google (OAuth): Completada operativamente.
-- Disponibilidad y reserva con metadatos de calendario.
-- Bloqueo y manejo de errores de calendario validados.
+2. Fase 1 - Agenda real Google (OAuth): En validacion de cutover productivo.
+- Disponibilidad y reserva con metadatos de calendario implementadas.
+- Pendiente activar modo Google real en produccion (health aun en `calendarSource=store`).
 
 3. Fase 2 - Consistencia reserva/chat/reprogramacion: Completada en flujos criticos.
 - Duraciones por servicio verificadas (caso 60 min probado).
@@ -132,7 +157,7 @@ Dominio: https://pielarmonia.com
 - Chunks lazy: shell (15.2KB al primer uso del chat) + content-loader (7.2KB prefetch paralelo).
 - HTML actualizado a type="module". Pipeline Rollup en formato ES con code splitting.
 - asset-reference-integrity test cubre chunks via regex extendida (b0b45a1).
-- DEPLOY EN VALIDACION: CI/Gate ya verdes post-fix; pendiente confirmacion final de hash estricto y version de assets en host.
+- DEPLOY VALIDADO: CI/Gate en verde y hashes strict confirmados.
 
 6. Cobertura de tests: ~5-35% actual vs 80% objetivo.
 - Jules (Google AI) trabajando en scaffolding de tests (BookingServiceTest, RateLimiterTest, AuthSessionTest).
@@ -147,11 +172,16 @@ Dominio: https://pielarmonia.com
 8. Incidente CI por calendar compat (RESUELTO 2026-02-24).
 - Accion aplicada: eliminacion de `lib/calendar/compat.php`, runtime nativo estricto y alineacion de test unitario de calendario.
 - Evidencia: CI run `22334259615` = `success`; Post-Deploy Gate run `22334259617` = `success`.
-- Seguimiento: ejecutar `gate:prod:hash-strict` manual para cerrar Fase 5 con criterio estricto de hashes.
+- Seguimiento: cerrado con `npm run gate:prod:hash-strict` en verde.
+
+9. Cutover Google Calendar pendiente en produccion.
+- Evidencia health actual: `calendarSource=store`, `calendarAuth=none`.
+- Variables GitHub vigentes: `REQUIRE_GOOGLE_CALENDAR=false`, `PROD_MONITOR_ALLOW_STORE_CALENDAR=true`.
+- Impacto: pruebas con Google estricto fallan hasta completar credenciales OAuth en servidor.
 
 ## Siguiente ejecucion recomendada
 
-1. Ejecutar 2 corridas adicionales de hash estricto para cierre formal consecutivo de Fase 5.
-2. Confirmar despliegue del `script.js` ES module y chunks asociados en produccion.
-3. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
-4. Reporte semanal ejecutado: booking_confirmed=1, error_rate=0, figo-post p95=582ms. Verde.
+1. Completar cutover de Google Calendar en servidor (`calendarSource=google`, `calendarAuth=oauth_refresh`).
+2. Cambiar variables de control a modo estricto: `REQUIRE_GOOGLE_CALENDAR=true` y `PROD_MONITOR_ALLOW_STORE_CALENDAR=false`.
+3. Re-ejecutar: `TEST_REQUIRE_GOOGLE_CALENDAR=true npm run test:calendar-contract`.
+4. Confirmar primer evento en Sentry dashboard (Sentry ya activo en produccion).
