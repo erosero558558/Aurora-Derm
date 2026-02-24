@@ -11,6 +11,11 @@ concurrency:
     group: agent-governance-${{ github.ref }}
     cancel-in-progress: true
 
+permissions:
+    contents: read
+    issues: write
+    pull-requests: write
+
 jobs:
     governance:
         runs-on: ubuntu-latest
@@ -64,3 +69,44 @@ jobs:
                   path: |
                       verification/agent-governance-summary.json
                       verification/agent-governance-summary.md
+
+            - name: Comment governance summary on PR
+              if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+              continue-on-error: true
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const path = 'verification/agent-governance-summary.md';
+                      const marker = '<!-- agent-governance-summary -->';
+                      let summaryMd = 'Resumen de gobernanza no disponible (artifact faltante).';
+                      if (fs.existsSync(path)) {
+                        summaryMd = fs.readFileSync(path, 'utf8').trim();
+                      }
+                      const body = `${marker}\n${summaryMd}`;
+                      const issue_number = context.issue.number;
+                      const { owner, repo } = context.repo;
+                      const comments = await github.paginate(
+                        github.rest.issues.listComments,
+                        { owner, repo, issue_number, per_page: 100 }
+                      );
+                      const existing = comments.find((c) =>
+                        c.user?.type === 'Bot' && typeof c.body === 'string' && c.body.includes(marker)
+                      );
+                      if (existing) {
+                        await github.rest.issues.updateComment({
+                          owner,
+                          repo,
+                          comment_id: existing.id,
+                          body,
+                        });
+                        core.info(`Updated governance summary comment: ${existing.id}`);
+                      } else {
+                        const created = await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number,
+                          body,
+                        });
+                        core.info(`Created governance summary comment: ${created.data.id}`);
+                      }
