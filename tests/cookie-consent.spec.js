@@ -101,7 +101,7 @@ test.describe('Consentimiento de cookies', () => {
         await expect(banner).toBeHidden();
     });
 
-    test.fixme('Consent Mode mantiene analytics_storage denied al rechazar cookies', async ({
+    test('Consent Mode mantiene analytics_storage denied al rechazar cookies', async ({
         page,
     }) => {
         const banner = page.locator('#cookieBanner');
@@ -109,9 +109,8 @@ test.describe('Consentimiento de cookies', () => {
         const rejectBtn = page.locator('#cookieRejectBtn');
         await rejectBtn.click({ force: true });
 
-        const ga4Loaded = await page.evaluate(() => !!window._ga4Loaded);
-        expect(ga4Loaded).toBe(true);
-
+        // Verify consent mode via dataLayer (set by our cookie-consent code, not GTM).
+        // Does not require the external GTM container to load.
         let consentCalls = [];
         await expect
             .poll(async () => {
