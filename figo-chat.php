@@ -334,6 +334,78 @@ function figo_degraded_mode_enabled(): bool
     return in_array($value, ['1', 'true', 'yes', 'on'], true);
 }
 
+function figo_failfast_window_seconds(): int
+{
+    $raw = getenv('FIGO_UPSTREAM_FAILFAST_SECONDS');
+    $value = is_string($raw) ? (int) trim($raw) : 0;
+    if ($value <= 0) {
+        $value = 15;
+    }
+    return max(1, min(300, $value));
+}
+
+function figo_upstream_state_path(): string
+{
+    $cacheDir = data_dir_path() . DIRECTORY_SEPARATOR . 'cache';
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0775, true);
+    }
+    return $cacheDir . DIRECTORY_SEPARATOR . 'figo-upstream-state.json';
+}
+
+function figo_read_upstream_state(): array
+{
+    $path = figo_upstream_state_path();
+    if (!is_file($path)) {
+        return [];
+    }
+    $raw = @file_get_contents($path);
+    if (!is_string($raw) || trim($raw) === '') {
+        return [];
+    }
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function figo_write_upstream_state(bool $up, string $reason = ''): void
+{
+    $payload = [
+        'up' => $up,
+        'reason' => trim($reason),
+        'updatedAt' => gmdate('c'),
+        'lastFailureAt' => $up ? 0 : time(),
+    ];
+    @file_put_contents(
+        figo_upstream_state_path(),
+        (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+    );
+}
+
+function figo_check_failfast_window(): array
+{
+    $state = figo_read_upstream_state();
+    if (!is_array($state) || ($state['up'] ?? true) !== false) {
+        return ['active' => false, 'retryAfterSec' => 0, 'reason' => ''];
+    }
+
+    $lastFailureAt = isset($state['lastFailureAt']) ? (int) $state['lastFailureAt'] : 0;
+    if ($lastFailureAt <= 0) {
+        return ['active' => false, 'retryAfterSec' => 0, 'reason' => ''];
+    }
+
+    $window = figo_failfast_window_seconds();
+    $elapsed = time() - $lastFailureAt;
+    if ($elapsed >= $window) {
+        return ['active' => false, 'retryAfterSec' => 0, 'reason' => ''];
+    }
+
+    return [
+        'active' => true,
+        'retryAfterSec' => max(1, $window - $elapsed),
+        'reason' => trim((string) ($state['reason'] ?? 'upstream_recent_failure')),
+    ];
+}
+
 figo_apply_cors();
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -670,6 +742,21 @@ if ($timeout > 45) {
     $timeout = 45;
 }
 
+$connectTimeout = (int) figo_first_non_empty([
+    getenv('FIGO_CHAT_CONNECT_TIMEOUT_SECONDS'),
+    getenv('FIGO_CONNECT_TIMEOUT_SECONDS'),
+    isset($fileConfig['connectTimeout']) ? (string) $fileConfig['connectTimeout'] : ''
+]);
+if ($connectTimeout <= 0) {
+    $connectTimeout = max(2, min(6, $timeout - 1));
+}
+if ($connectTimeout >= $timeout) {
+    $connectTimeout = max(2, $timeout - 1);
+}
+if ($connectTimeout > 15) {
+    $connectTimeout = 15;
+}
+
 if ($endpoint === '') {
     audit_log_event('figo.fallback', [
         'reason' => 'endpoint_missing'
@@ -742,6 +829,41 @@ if (!$curlAvailable) {
     ], 503);
 }
 
+$failfast = figo_check_failfast_window();
+if (($failfast['active'] ?? false) === true) {
+    $retryAfter = (int) ($failfast['retryAfterSec'] ?? 1);
+    $reason = (string) ($failfast['reason'] ?? 'upstream_recent_failure');
+    audit_log_event('figo.upstream_failfast', [
+        'reason' => $reason,
+        'retryAfterSec' => $retryAfter,
+    ]);
+    header('Retry-After: ' . max(1, $retryAfter));
+
+    if (figo_degraded_mode_enabled()) {
+        $fallback = figo_finalize_completion(
+            figo_build_fallback_completion($model, $messages),
+            'degraded',
+            'fallback',
+            'upstream_failfast',
+            true,
+            false
+        );
+        $fallback['degraded'] = true;
+        $fallback['retryAfterSec'] = max(1, $retryAfter);
+        $fallback['error'] = 'Backend Figo temporalmente no disponible';
+        json_response($fallback);
+    }
+
+    json_response([
+        'ok' => false,
+        'mode' => 'degraded',
+        'source' => 'none',
+        'reason' => 'upstream_temporarily_unavailable',
+        'error' => 'Backend Figo temporalmente no disponible',
+        'retryAfterSec' => max(1, $retryAfter)
+    ], 503);
+}
+
 $ch = curl_init($endpoint);
 if ($ch === false) {
     json_response([
@@ -759,11 +881,26 @@ curl_setopt_array($ch, [
     CURLOPT_HTTPHEADER => $headers,
     CURLOPT_POSTFIELDS => $encodedPayload,
     CURLOPT_TIMEOUT => $timeout,
-    CURLOPT_CONNECTTIMEOUT => 10,
+    CURLOPT_CONNECTTIMEOUT => $connectTimeout,
     CURLOPT_SSL_VERIFYPEER => true,
     CURLOPT_SSL_VERIFYHOST => 2,
     CURLOPT_MAXFILESIZE => 1048576 // 1 MB limite de respuesta
 ]);
+if (defined('CURLOPT_TCP_KEEPALIVE')) {
+    curl_setopt($ch, CURLOPT_TCP_KEEPALIVE, 1);
+}
+if (defined('CURLOPT_TCP_KEEPIDLE')) {
+    curl_setopt($ch, CURLOPT_TCP_KEEPIDLE, 30);
+}
+if (defined('CURLOPT_TCP_KEEPINTVL')) {
+    curl_setopt($ch, CURLOPT_TCP_KEEPINTVL, 15);
+}
+if (defined('CURLOPT_DNS_CACHE_TIMEOUT')) {
+    curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 120);
+}
+if (defined('CURLOPT_HTTP_VERSION') && defined('CURL_HTTP_VERSION_2TLS')) {
+    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
+}
 
 $rawResponse = curl_exec($ch);
 $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -771,6 +908,7 @@ $curlErr = curl_error($ch);
 curl_close($ch);
 
 if (!is_string($rawResponse)) {
+    figo_write_upstream_state(false, 'curl_failed');
     error_log('Piel en Armonía figo-chat: fallo conexion cURL (codigo: ' . $curlErr . ')');
     audit_log_event('figo.upstream_error', [
         'reason' => 'curl_failed'
@@ -799,6 +937,7 @@ if (!is_string($rawResponse)) {
 }
 
 if ($httpCode >= 400) {
+    figo_write_upstream_state(false, 'http_' . $httpCode);
     error_log('Piel en Armonía figo-chat: upstream devolvio HTTP ' . $httpCode);
     audit_log_event('figo.upstream_error', [
         'reason' => 'http_error',
@@ -855,6 +994,8 @@ if (figo_is_upstream_technical_fallback($content)) {
 if ($content === '') {
     $content = 'En este momento no pude generar una respuesta. ¿Deseas que te conecte por WhatsApp?';
 }
+
+figo_write_upstream_state(true, '');
 
 try {
     $id = 'figo-' . bin2hex(random_bytes(8));

@@ -42,6 +42,11 @@
 // putenv('FIGO_CHAT_TOKEN=TOKEN_ROTADO_DESDE_BOTFATHER');
 // Opcional: forzar fallback local cuando el backend falle. Por defecto es auto (live si upstream esta sano).
 // putenv('FIGO_CHAT_DEGRADED_MODE=true');
+// Ventana fail-fast (segundos) para cortar rapido cuando upstream viene fallando.
+// Reduce latencia en cascada durante caidas temporales.
+// putenv('FIGO_UPSTREAM_FAILFAST_SECONDS=15');
+// Timeout de conexion cURL al backend de chat (default auto entre 2 y 6s).
+// putenv('FIGO_CHAT_CONNECT_TIMEOUT_SECONDS=4');
 // Si usas backend local (figo-backend.php) con puente Telegram:
 // putenv('FIGO_CHAT_ENDPOINT=https://pielarmonia.com/figo-backend.php');
 // putenv('FIGO_TELEGRAM_BOT_TOKEN=TOKEN_BOTFATHER_ROTADO');
