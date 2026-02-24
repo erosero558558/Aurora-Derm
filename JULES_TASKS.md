@@ -32,12 +32,12 @@ Prompt...
 ## Tareas
 
 <!-- TASK
-status: dispatched
+status: done
 task_id: AG-001
 risk: high
 scope: platform
-files: backup-receiver.php,verify-backup.php,tests/BackupReceiverTest.php
-acceptance_ref: verification/agent-runs/AG-001.md
+files: backup-receiver.php,verify-backup.php,lib/backup.php,tests/BackupReceiverTest.php,env.example.php,docs/RUNBOOKS.md
+acceptance_ref: tests/BackupReceiverTest.php
 dispatched_by: agent-orchestrator
 session: 
 dispatched: 

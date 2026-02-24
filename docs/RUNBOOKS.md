@@ -158,10 +158,20 @@ Para rÃ©plica remota real:
 
 - Publica `backup-receiver.php` en el servidor destino.
 - Configura `PIELARMONIA_BACKUP_RECEIVER_TOKEN` en destino.
+- Configura en destino:
+  - `PIELARMONIA_BACKUP_RECEIVER_REQUIRE_CHECKSUM=true`
+  - `PIELARMONIA_BACKUP_RECEIVER_ENCRYPTION_KEY=<clave_rotada>`
+  - `PIELARMONIA_BACKUP_RECEIVER_RETENTION_DAYS=30`
 - Configura en origen:
   `PIELARMONIA_BACKUP_OFFSITE_URL=https://DESTINO/backup-receiver.php`
   `PIELARMONIA_BACKUP_OFFSITE_TOKEN=<mismo_token>`
 - Usa `CONFIGURAR-BACKUP-OFFSITE.ps1` para generar token y comandos.
+
+Validacion manual del ultimo backup cifrado en destino:
+
+```bash
+curl -s "https://DESTINO/verify-backup.php" -H "Authorization: Bearer BACKUP_RECEIVER_TOKEN"
+```
 
 ### 3.3 RevisiÃ³n de AuditorÃ­a
 
@@ -247,4 +257,3 @@ Una vez revertido el cambio, ejecutar las siguientes validaciones:
 
 3.  **Logs:**
     - [ ] Verificar que no hay nuevos errores fatales en `php.log` o `error_log`.
-

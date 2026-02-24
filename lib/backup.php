@@ -29,6 +29,375 @@ if (!defined('BACKUP_LOCAL_REPLICA_DIRNAME')) {
     define('BACKUP_LOCAL_REPLICA_DIRNAME', 'offsite-local');
 }
 
+if (!defined('BACKUP_RECEIVER_RETENTION_DAYS_DEFAULT')) {
+    define('BACKUP_RECEIVER_RETENTION_DAYS_DEFAULT', 30);
+}
+
+if (!defined('BACKUP_RECEIVER_RETENTION_DAYS_MAX')) {
+    define('BACKUP_RECEIVER_RETENTION_DAYS_MAX', 3650);
+}
+
+if (!defined('BACKUP_RECEIVER_CLEANUP_MAX_FILES_DEFAULT')) {
+    define('BACKUP_RECEIVER_CLEANUP_MAX_FILES_DEFAULT', 500);
+}
+
+if (!defined('BACKUP_RECEIVER_ENVELOPE_PREFIX')) {
+    define('BACKUP_RECEIVER_ENVELOPE_PREFIX', 'BKPv1:');
+}
+
+if (!defined('BACKUP_RECEIVER_ENCRYPTION_ALGO')) {
+    define('BACKUP_RECEIVER_ENCRYPTION_ALGO', 'aes-256-cbc');
+}
+
+function backup_receiver_storage_root(): string
+{
+    return data_dir_path() . DIRECTORY_SEPARATOR . 'offsite-receiver';
+}
+
+function backup_receiver_checksum_required(): bool
+{
+    $raw = getenv('PIELARMONIA_BACKUP_RECEIVER_REQUIRE_CHECKSUM');
+    if (!is_string($raw) || trim($raw) === '') {
+        return true;
+    }
+    return parse_bool($raw);
+}
+
+function backup_receiver_retention_days(): int
+{
+    $raw = getenv('PIELARMONIA_BACKUP_RECEIVER_RETENTION_DAYS');
+    $days = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : BACKUP_RECEIVER_RETENTION_DAYS_DEFAULT;
+    if ($days < 1) {
+        $days = 1;
+    }
+    if ($days > BACKUP_RECEIVER_RETENTION_DAYS_MAX) {
+        $days = BACKUP_RECEIVER_RETENTION_DAYS_MAX;
+    }
+    return $days;
+}
+
+function backup_receiver_cleanup_max_files(): int
+{
+    $raw = getenv('PIELARMONIA_BACKUP_RECEIVER_CLEANUP_MAX_FILES');
+    $maxFiles = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : BACKUP_RECEIVER_CLEANUP_MAX_FILES_DEFAULT;
+    if ($maxFiles < 50) {
+        $maxFiles = 50;
+    }
+    if ($maxFiles > 10000) {
+        $maxFiles = 10000;
+    }
+    return $maxFiles;
+}
+
+function backup_receiver_normalize_sha256(string $value): string
+{
+    $candidate = strtolower(trim($value));
+    if ($candidate === '') {
+        return '';
+    }
+
+    if (preg_match('/\b([a-f0-9]{64})\b/i', $candidate, $matches) !== 1) {
+        return '';
+    }
+
+    return strtolower((string) ($matches[1] ?? ''));
+}
+
+function backup_receiver_checksum_matches(string $provided, string $computed): bool
+{
+    $providedNormalized = backup_receiver_normalize_sha256($provided);
+    $computedNormalized = backup_receiver_normalize_sha256($computed);
+    if ($providedNormalized === '' || $computedNormalized === '') {
+        return false;
+    }
+    return hash_equals($computedNormalized, $providedNormalized);
+}
+
+function backup_receiver_encryption_key(): string
+{
+    static $resolved = null;
+    if (is_string($resolved)) {
+        return $resolved;
+    }
+
+    $raw = backup_first_non_empty_string([
+        getenv('PIELARMONIA_BACKUP_RECEIVER_ENCRYPTION_KEY'),
+        getenv('PIELARMONIA_DATA_ENCRYPTION_KEY'),
+        getenv('PIELARMONIA_DATA_KEY')
+    ]);
+
+    if ($raw === '') {
+        $resolved = '';
+        return $resolved;
+    }
+
+    if (strpos($raw, 'base64:') === 0) {
+        $decoded = base64_decode(substr($raw, 7), true);
+        if (is_string($decoded) && $decoded !== '') {
+            $raw = $decoded;
+        }
+    }
+
+    if (strlen($raw) !== 32) {
+        $raw = hash('sha256', $raw, true);
+    }
+
+    $resolved = substr($raw, 0, 32);
+    return $resolved;
+}
+
+function backup_receiver_encrypt_payload(string $plain): array
+{
+    if ($plain === '') {
+        return [
+            'ok' => false,
+            'reason' => 'empty_payload',
+            'ciphertext' => '',
+            'sha256' => ''
+        ];
+    }
+
+    $key = backup_receiver_encryption_key();
+    if ($key === '') {
+        return [
+            'ok' => false,
+            'reason' => 'encryption_key_missing',
+            'ciphertext' => '',
+            'sha256' => ''
+        ];
+    }
+
+    if (!function_exists('openssl_encrypt')) {
+        return [
+            'ok' => false,
+            'reason' => 'openssl_not_available',
+            'ciphertext' => '',
+            'sha256' => ''
+        ];
+    }
+
+    try {
+        $iv = random_bytes(16);
+    } catch (Throwable $e) {
+        return [
+            'ok' => false,
+            'reason' => 'iv_generation_failed',
+            'ciphertext' => '',
+            'sha256' => ''
+        ];
+    }
+
+    $cipher = openssl_encrypt($plain, BACKUP_RECEIVER_ENCRYPTION_ALGO, $key, OPENSSL_RAW_DATA, $iv);
+    if (!is_string($cipher) || $cipher === '') {
+        return [
+            'ok' => false,
+            'reason' => 'encrypt_failed',
+            'ciphertext' => '',
+            'sha256' => ''
+        ];
+    }
+
+    $mac = hash_hmac('sha256', $iv . $cipher, $key, true);
+    $packed = $iv . $mac . $cipher;
+    $payload = BACKUP_RECEIVER_ENVELOPE_PREFIX . base64_encode($packed);
+
+    return [
+        'ok' => true,
+        'reason' => '',
+        'ciphertext' => $payload,
+        'sha256' => hash('sha256', $plain)
+    ];
+}
+
+function backup_receiver_decrypt_payload(string $encoded): array
+{
+    if (strpos($encoded, BACKUP_RECEIVER_ENVELOPE_PREFIX) !== 0) {
+        return [
+            'ok' => false,
+            'reason' => 'invalid_envelope',
+            'plain' => '',
+            'sha256' => ''
+        ];
+    }
+
+    $key = backup_receiver_encryption_key();
+    if ($key === '') {
+        return [
+            'ok' => false,
+            'reason' => 'encryption_key_missing',
+            'plain' => '',
+            'sha256' => ''
+        ];
+    }
+
+    if (!function_exists('openssl_decrypt')) {
+        return [
+            'ok' => false,
+            'reason' => 'openssl_not_available',
+            'plain' => '',
+            'sha256' => ''
+        ];
+    }
+
+    $base64 = substr($encoded, strlen(BACKUP_RECEIVER_ENVELOPE_PREFIX));
+    $packed = base64_decode($base64, true);
+    if (!is_string($packed) || strlen($packed) <= 48) {
+        return [
+            'ok' => false,
+            'reason' => 'invalid_payload',
+            'plain' => '',
+            'sha256' => ''
+        ];
+    }
+
+    $iv = substr($packed, 0, 16);
+    $mac = substr($packed, 16, 32);
+    $cipher = substr($packed, 48);
+    $expectedMac = hash_hmac('sha256', $iv . $cipher, $key, true);
+    if (!hash_equals($expectedMac, $mac)) {
+        return [
+            'ok' => false,
+            'reason' => 'integrity_check_failed',
+            'plain' => '',
+            'sha256' => ''
+        ];
+    }
+
+    $plain = openssl_decrypt($cipher, BACKUP_RECEIVER_ENCRYPTION_ALGO, $key, OPENSSL_RAW_DATA, $iv);
+    if (!is_string($plain)) {
+        return [
+            'ok' => false,
+            'reason' => 'decrypt_failed',
+            'plain' => '',
+            'sha256' => ''
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'reason' => '',
+        'plain' => $plain,
+        'sha256' => hash('sha256', $plain)
+    ];
+}
+
+function backup_receiver_verify_stored_file(string $path): array
+{
+    $result = [
+        'ok' => false,
+        'reason' => '',
+        'path' => $path,
+        'file' => basename($path),
+        'sizeBytes' => 0,
+        'sha256' => '',
+        'metaSha256' => '',
+        'metaMatch' => false
+    ];
+
+    if (!is_file($path) || !is_readable($path)) {
+        $result['reason'] = 'file_not_readable';
+        return $result;
+    }
+
+    $size = @filesize($path);
+    if (is_int($size) && $size >= 0) {
+        $result['sizeBytes'] = $size;
+    }
+
+    $raw = @file_get_contents($path);
+    if (!is_string($raw) || $raw === '') {
+        $result['reason'] = 'file_empty';
+        return $result;
+    }
+
+    $decoded = backup_receiver_decrypt_payload($raw);
+    if (($decoded['ok'] ?? false) !== true) {
+        $result['reason'] = (string) ($decoded['reason'] ?? 'decrypt_failed');
+        return $result;
+    }
+
+    $plainSha = (string) ($decoded['sha256'] ?? '');
+    $result['sha256'] = $plainSha;
+
+    $metaPath = $path . '.meta.json';
+    if (is_file($metaPath) && is_readable($metaPath)) {
+        $metaRaw = @file_get_contents($metaPath);
+        if (is_string($metaRaw) && $metaRaw !== '') {
+            $meta = json_decode($metaRaw, true);
+            if (is_array($meta)) {
+                $metaSha = backup_receiver_normalize_sha256((string) ($meta['sha256'] ?? ''));
+                $result['metaSha256'] = $metaSha;
+                if ($metaSha !== '') {
+                    $result['metaMatch'] = backup_receiver_checksum_matches($metaSha, $plainSha);
+                }
+            }
+        }
+    }
+
+    if ($result['metaSha256'] !== '' && !$result['metaMatch']) {
+        $result['reason'] = 'metadata_checksum_mismatch';
+        return $result;
+    }
+
+    $result['ok'] = true;
+    $result['reason'] = '';
+    return $result;
+}
+
+function backup_receiver_cleanup_retention(string $storageRoot): array
+{
+    $retentionDays = backup_receiver_retention_days();
+    $maxFiles = backup_receiver_cleanup_max_files();
+    $threshold = time() - ($retentionDays * 86400);
+
+    $result = [
+        'ok' => true,
+        'retentionDays' => $retentionDays,
+        'removed' => 0,
+        'scanned' => 0,
+        'errors' => 0
+    ];
+
+    if (!is_dir($storageRoot)) {
+        return $result;
+    }
+
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($storageRoot, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+    } catch (Throwable $e) {
+        $result['ok'] = false;
+        return $result;
+    }
+
+    foreach ($iterator as $item) {
+        if ($result['scanned'] >= $maxFiles) {
+            break;
+        }
+        $result['scanned']++;
+
+        if (!$item instanceof SplFileInfo || !$item->isFile()) {
+            continue;
+        }
+
+        $mtime = $item->getMTime();
+        if (!is_int($mtime) || $mtime > $threshold) {
+            continue;
+        }
+
+        $path = $item->getPathname();
+        if (@unlink($path)) {
+            $result['removed']++;
+        } else {
+            $result['errors']++;
+        }
+    }
+
+    return $result;
+}
+
 function backup_health_max_age_hours(): int
 {
     $raw = getenv('PIELARMONIA_BACKUP_MAX_AGE_HOURS');
@@ -850,6 +1219,13 @@ function backup_upload_file(string $filePath, array $metadata = []): array
         'Accept: application/json'
     ];
 
+    $payloadSha256 = @hash_file('sha256', $filePath);
+    if (is_string($payloadSha256) && backup_receiver_normalize_sha256($payloadSha256) !== '') {
+        $headers[] = 'X-Backup-SHA256: ' . strtolower($payloadSha256);
+    } else {
+        $payloadSha256 = '';
+    }
+
     $token = backup_offsite_token();
     $tokenHeader = backup_offsite_token_header();
     if ($token !== '' && $tokenHeader !== '') {
@@ -863,6 +1239,9 @@ function backup_upload_file(string $filePath, array $metadata = []): array
     $meta['filename'] = basename($filePath);
     $meta['generatedAt'] = local_date('c');
     $meta['runtimeVersion'] = app_runtime_version();
+    if (is_string($payloadSha256) && $payloadSha256 !== '') {
+        $meta['sha256'] = strtolower($payloadSha256);
+    }
 
     $postFields = [
         'backup' => new CURLFile($filePath, 'application/octet-stream', basename($filePath)),

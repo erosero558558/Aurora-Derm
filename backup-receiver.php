@@ -69,6 +69,24 @@ function backup_receiver_safe_filename(string $name): string
     return $safe;
 }
 
+function backup_receiver_extract_checksum(): string
+{
+    $candidates = [
+        isset($_SERVER['HTTP_X_BACKUP_SHA256']) ? (string) $_SERVER['HTTP_X_BACKUP_SHA256'] : '',
+        isset($_SERVER['HTTP_X_FILE_SHA256']) ? (string) $_SERVER['HTTP_X_FILE_SHA256'] : '',
+        isset($_SERVER['HTTP_CONTENT_SHA256']) ? (string) $_SERVER['HTTP_CONTENT_SHA256'] : ''
+    ];
+
+    foreach ($candidates as $candidate) {
+        $normalized = backup_receiver_normalize_sha256($candidate);
+        if ($normalized !== '') {
+            return $normalized;
+        }
+    }
+
+    return '';
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
     backup_receiver_json(['ok' => true, 'service' => 'backup-receiver']);
 }
@@ -149,7 +167,7 @@ if ($extension === '' || !in_array($extension, $allowedExt, true)) {
     ], 400);
 }
 
-$storageRoot = data_dir_path() . DIRECTORY_SEPARATOR . 'offsite-receiver';
+$storageRoot = backup_receiver_storage_root();
 $dateDir = gmdate('Y') . DIRECTORY_SEPARATOR . gmdate('m') . DIRECTORY_SEPARATOR . gmdate('d');
 $targetDir = $storageRoot . DIRECTORY_SEPARATOR . $dateDir;
 if (!is_dir($targetDir) && !@mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
@@ -159,22 +177,68 @@ if (!is_dir($targetDir) && !@mkdir($targetDir, 0775, true) && !is_dir($targetDir
     ], 500);
 }
 
+$computedSha = hash_file('sha256', $tmpPath);
+if (!is_string($computedSha) || backup_receiver_normalize_sha256($computedSha) === '') {
+    backup_receiver_json([
+        'ok' => false,
+        'error' => 'No se pudo calcular checksum del backup'
+    ], 500);
+}
+
+$providedSha = backup_receiver_extract_checksum();
+if (backup_receiver_checksum_required() && $providedSha === '') {
+    backup_receiver_json([
+        'ok' => false,
+        'error' => 'Checksum SHA-256 requerido',
+        'code' => 'checksum_required'
+    ], 400);
+}
+
+if ($providedSha !== '' && !backup_receiver_checksum_matches($providedSha, $computedSha)) {
+    audit_log_event('backup.receiver.checksum_mismatch', [
+        'providedSha256' => $providedSha,
+        'computedSha256' => strtolower($computedSha),
+        'originalName' => $originalName
+    ]);
+    backup_receiver_json([
+        'ok' => false,
+        'error' => 'Checksum invalido',
+        'code' => 'checksum_mismatch'
+    ], 422);
+}
+
+$rawPayload = @file_get_contents($tmpPath);
+if (!is_string($rawPayload) || $rawPayload === '') {
+    backup_receiver_json([
+        'ok' => false,
+        'error' => 'No se pudo leer backup temporal'
+    ], 500);
+}
+
+$encrypted = backup_receiver_encrypt_payload($rawPayload);
+if (($encrypted['ok'] ?? false) !== true) {
+    backup_receiver_json([
+        'ok' => false,
+        'error' => 'No se pudo cifrar backup',
+        'reason' => (string) ($encrypted['reason'] ?? 'encrypt_failed')
+    ], 500);
+}
+
 try {
     $suffix = bin2hex(random_bytes(4));
 } catch (Throwable $e) {
     $suffix = substr(md5((string) microtime(true)), 0, 8);
 }
 
-$storedName = 'backup-' . gmdate('Ymd-His') . '-' . $suffix . '-' . $originalName;
+$storedName = 'backup-' . gmdate('Ymd-His') . '-' . $suffix . '-' . $originalName . '.enc';
 $storedPath = $targetDir . DIRECTORY_SEPARATOR . $storedName;
-if (!@move_uploaded_file($tmpPath, $storedPath)) {
+if (@file_put_contents($storedPath, (string) ($encrypted['ciphertext'] ?? ''), LOCK_EX) === false) {
     backup_receiver_json([
         'ok' => false,
-        'error' => 'No se pudo guardar backup'
+        'error' => 'No se pudo guardar backup cifrado'
     ], 500);
 }
 
-$sha256 = hash_file('sha256', $storedPath);
 $metadataRaw = isset($_POST['metadata']) ? (string) $_POST['metadata'] : '';
 $metadata = [];
 if ($metadataRaw !== '') {
@@ -190,8 +254,11 @@ $metaPayload = [
     'userAgent' => (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
     'originalName' => $originalName,
     'storedName' => $storedName,
+    'storedEncoding' => 'BKPv1:aes-256-cbc+hmac-sha256',
     'sizeBytes' => (int) @filesize($storedPath),
-    'sha256' => is_string($sha256) ? $sha256 : '',
+    'sha256' => strtolower($computedSha),
+    'providedChecksum' => $providedSha,
+    'checksumVerified' => $providedSha === '' ? !backup_receiver_checksum_required() : true,
     'metadata' => $metadata
 ];
 @file_put_contents(
@@ -204,8 +271,11 @@ audit_log_event('backup.receiver.stored', [
     'storedName' => $storedName,
     'sizeBytes' => (int) ($metaPayload['sizeBytes'] ?? 0),
     'sha256' => (string) ($metaPayload['sha256'] ?? ''),
+    'checksumVerified' => (bool) ($metaPayload['checksumVerified'] ?? false),
     'source' => isset($metadata['source']) ? (string) $metadata['source'] : ''
 ]);
+
+$cleanup = backup_receiver_cleanup_retention($storageRoot);
 
 backup_receiver_json([
     'ok' => true,
@@ -213,5 +283,8 @@ backup_receiver_json([
     'storedName' => $storedName,
     'sizeBytes' => (int) ($metaPayload['sizeBytes'] ?? 0),
     'sha256' => (string) ($metaPayload['sha256'] ?? ''),
+    'checksumVerified' => (bool) ($metaPayload['checksumVerified'] ?? false),
+    'encrypted' => true,
+    'cleanup' => $cleanup,
     'receivedAt' => (string) ($metaPayload['receivedAt'] ?? gmdate('c'))
 ], 201);

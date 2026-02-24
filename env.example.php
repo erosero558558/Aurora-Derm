@@ -123,6 +123,14 @@
 // putenv('PIELARMONIA_BACKUP_RECEIVER_TOKEN=token_largo_rotado');
 // Limite de subida en MB para backup-receiver.php (default 50)
 // putenv('PIELARMONIA_BACKUP_RECEIVER_MAX_MB=50');
+// Requerir checksum SHA-256 por header X-Backup-SHA256 (default true)
+// putenv('PIELARMONIA_BACKUP_RECEIVER_REQUIRE_CHECKSUM=true');
+// Retencion de backups recibidos en dias (default 30)
+// putenv('PIELARMONIA_BACKUP_RECEIVER_RETENTION_DAYS=30');
+// Maximo de archivos escaneados por corrida de limpieza (default 500)
+// putenv('PIELARMONIA_BACKUP_RECEIVER_CLEANUP_MAX_FILES=500');
+// Clave de cifrado para backup-receiver.php (si no se define, usa PIELARMONIA_DATA_ENCRYPTION_KEY)
+// putenv('PIELARMONIA_BACKUP_RECEIVER_ENCRYPTION_KEY=clave_larga_rotada_o_base64:...');
 
 // ── Base de Datos (opcional) ────────────────────────
 // putenv('PIELARMONIA_DB_HOST=127.0.0.1');
