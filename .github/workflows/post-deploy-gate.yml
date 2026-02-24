@@ -133,8 +133,12 @@ jobs:
 
                   try {
                     $changedFiles = New-Object System.Collections.Generic.List[string]
+                    $beforeSha = ''
+                    $afterSha = ''
                     if (Test-Path $env:GITHUB_EVENT_PATH) {
                       $eventPayload = Get-Content -Raw $env:GITHUB_EVENT_PATH | ConvertFrom-Json
+                      $beforeSha = [string]($eventPayload.before ?? '')
+                      $afterSha = [string]($eventPayload.after ?? '')
                       if ($null -ne $eventPayload.commits) {
                         foreach ($commit in $eventPayload.commits) {
                           foreach ($field in @('added', 'modified', 'removed')) {
@@ -145,6 +149,30 @@ jobs:
                                   $changedFiles.Add([string]$entry)
                                 }
                               }
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    # Fallback: resolver cambios por rango git when payload does not include file lists.
+                    if (($changedFiles | Measure-Object).Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($beforeSha) -and -not [string]::IsNullOrWhiteSpace($afterSha)) {
+                      $gitAvailable = $null -ne (Get-Command git -ErrorAction SilentlyContinue)
+                      if ($gitAvailable) {
+                        if ($beforeSha -eq ('0' * 40)) {
+                          $fallbackFiles = & git show --pretty="" --name-only $afterSha 2>$null
+                        } else {
+                          $fallbackFiles = & git diff --name-only $beforeSha $afterSha 2>$null
+                          if ($LASTEXITCODE -ne 0) {
+                            & git fetch --no-tags --depth=100 origin $beforeSha $afterSha 2>$null
+                            $fallbackFiles = & git diff --name-only $beforeSha $afterSha 2>$null
+                          }
+                        }
+
+                        if ($fallbackFiles -is [System.Array]) {
+                          foreach ($file in $fallbackFiles) {
+                            if (![string]::IsNullOrWhiteSpace([string]$file)) {
+                              $changedFiles.Add([string]$file)
                             }
                           }
                         }
