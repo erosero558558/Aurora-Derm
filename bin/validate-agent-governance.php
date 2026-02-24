@@ -9,6 +9,8 @@ declare(strict_types=1);
  * - AGENTS.md as canonical policy marker.
  * - CLAUDE.md references AGENTS.md as source of truth.
  * - AGENT_BOARD.yaml shape and allowed values.
+ * - AGENT_HANDOFFS.yaml schema and handoff constraints.
+ * - Codex mirror integrity between PLAN_MAESTRO_CODEX_2026.md and AGENT_BOARD.yaml.
  * - No duplicate task_id between derived queues.
  * - No critical-scope task assigned to disallowed executor.
  */
@@ -17,8 +19,10 @@ $root = dirname(__DIR__);
 $agentsPath = $root . '/AGENTS.md';
 $claudePath = $root . '/CLAUDE.md';
 $boardPath = $root . '/AGENT_BOARD.yaml';
+$handoffsPath = $root . '/AGENT_HANDOFFS.yaml';
 $julesPath = $root . '/JULES_TASKS.md';
 $kimiPath = $root . '/KIMI_TASKS.md';
+$codexPlanPath = $root . '/PLAN_MAESTRO_CODEX_2026.md';
 
 $errors = [];
 
@@ -196,11 +200,199 @@ function parseTaskBlocks(string $content): array
     return $tasks;
 }
 
+/**
+ * @return array{version:mixed, handoffs:array<int,array<string,mixed>>}
+ */
+function parseHandoffsYaml(string $content): array
+{
+    $lines = explode("\n", $content);
+    $data = [
+        'version' => 1,
+        'handoffs' => [],
+    ];
+    $inHandoffs = false;
+    $handoff = null;
+
+    foreach ($lines as $lineRaw) {
+        $line = str_replace("\t", '    ', $lineRaw);
+        $trimmed = trim($line);
+        if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+            continue;
+        }
+
+        if (!$inHandoffs && preg_match('/^version:\s*(.+)$/', $line, $m) === 1) {
+            $data['version'] = parseScalar((string) $m[1]);
+            continue;
+        }
+
+        if ($trimmed === 'handoffs:') {
+            $inHandoffs = true;
+            if (is_array($handoff)) {
+                $data['handoffs'][] = $handoff;
+                $handoff = null;
+            }
+            continue;
+        }
+
+        if (!$inHandoffs) {
+            continue;
+        }
+
+        if (preg_match('/^\s{2}-\s+id:\s*(.+)$/', $line, $m) === 1) {
+            if (is_array($handoff)) {
+                $data['handoffs'][] = $handoff;
+            }
+            $handoff = ['id' => parseScalar((string) $m[1])];
+            continue;
+        }
+
+        if (
+            is_array($handoff) &&
+            preg_match('/^\s{4}([a-zA-Z_][\w-]*):\s*(.*)$/', $line, $m) === 1
+        ) {
+            $handoff[(string) $m[1]] = parseScalar((string) $m[2]);
+        }
+    }
+
+    if (is_array($handoff)) {
+        $data['handoffs'][] = $handoff;
+    }
+
+    foreach ($data['handoffs'] as &$item) {
+        if (!is_array($item['files'] ?? null)) {
+            $item['files'] = isset($item['files']) ? [(string) $item['files']] : [];
+        }
+        $item['status'] = strtolower(trim((string) ($item['status'] ?? '')));
+    }
+    unset($item);
+
+    return $data;
+}
+
+/**
+ * @return array<int,array<string,mixed>>
+ */
+function parseCodexActiveBlocks(string $content): array
+{
+    $blocks = [];
+    if (
+        preg_match_all('/<!--\s*CODEX_ACTIVE\s*\n([\s\S]*?)-->/', $content, $matches, PREG_SET_ORDER) !== 1 &&
+        empty($matches)
+    ) {
+        return $blocks;
+    }
+
+    foreach ($matches as $match) {
+        $block = [];
+        $body = (string) ($match[1] ?? '');
+        foreach (explode("\n", $body) as $line) {
+            if (preg_match('/^\s*([a-zA-Z_][\w-]*):\s*(.*)\s*$/', $line, $m) === 1) {
+                $block[(string) $m[1]] = parseScalar((string) $m[2]);
+            }
+        }
+        if (!is_array($block['files'] ?? null)) {
+            $block['files'] = isset($block['files']) ? [(string) $block['files']] : [];
+        }
+        $blocks[] = $block;
+    }
+
+    return $blocks;
+}
+
+function normalizePathToken(string $value): string
+{
+    $normalized = str_replace('\\', '/', trim($value));
+    $normalized = preg_replace('/^\.\//', '', $normalized) ?? $normalized;
+    return strtolower($normalized);
+}
+
+function hasWildcard(string $value): bool
+{
+    return strpos($value, '*') !== false;
+}
+
+function wildcardToRegex(string $pattern): string
+{
+    $quoted = preg_quote($pattern, '/');
+    return '/^' . str_replace('\*', '.*', $quoted) . '$/i';
+}
+
+/**
+ * @return array{any_overlap:bool, overlap_files:array<int,string>, ambiguous_wildcard_overlap:bool}
+ */
+function analyzeFileOverlap(array $filesA, array $filesB): array
+{
+    $overlapFiles = [];
+    $seen = [];
+    $anyOverlap = false;
+    $ambiguous = false;
+
+    foreach ($filesA as $rawA) {
+        foreach ($filesB as $rawB) {
+            $a = normalizePathToken((string) $rawA);
+            $b = normalizePathToken((string) $rawB);
+            if ($a === '' || $b === '') {
+                continue;
+            }
+            if ($a === $b) {
+                $anyOverlap = true;
+                if (!isset($seen[$a])) {
+                    $seen[$a] = true;
+                    $overlapFiles[] = $a;
+                }
+                continue;
+            }
+
+            $aWild = hasWildcard($a);
+            $bWild = hasWildcard($b);
+
+            if (!$aWild && $bWild && preg_match(wildcardToRegex($b), $a) === 1) {
+                $anyOverlap = true;
+                if (!isset($seen[$a])) {
+                    $seen[$a] = true;
+                    $overlapFiles[] = $a;
+                }
+                continue;
+            }
+
+            if ($aWild && !$bWild && preg_match(wildcardToRegex($a), $b) === 1) {
+                $anyOverlap = true;
+                if (!isset($seen[$b])) {
+                    $seen[$b] = true;
+                    $overlapFiles[] = $b;
+                }
+                continue;
+            }
+
+            if ($aWild && $bWild) {
+                if (preg_match(wildcardToRegex($a), $b) === 1 || preg_match(wildcardToRegex($b), $a) === 1) {
+                    $anyOverlap = true;
+                    $ambiguous = true;
+                }
+            }
+        }
+    }
+
+    sort($overlapFiles);
+    return [
+        'any_overlap' => $anyOverlap,
+        'overlap_files' => $overlapFiles,
+        'ambiguous_wildcard_overlap' => $ambiguous,
+    ];
+}
+
+function isActiveStatus(string $status): bool
+{
+    return in_array($status, ['ready', 'in_progress', 'review', 'blocked'], true);
+}
+
 $agents = readFileStrict($agentsPath, $errors);
 $claude = readFileStrict($claudePath, $errors);
 $boardRaw = readFileStrict($boardPath, $errors);
+$handoffsRaw = readFileStrict($handoffsPath, $errors);
 $julesRaw = readFileStrict($julesPath, $errors);
 $kimiRaw = readFileStrict($kimiPath, $errors);
+$codexPlanRaw = readFileStrict($codexPlanPath, $errors);
 
 if ($agents !== '') {
     if (!str_contains($agents, 'CANONICAL_AGENT_POLICY: AGENTS.md')) {
@@ -292,6 +484,201 @@ foreach ($board['tasks'] as $idx => $task) {
     }
     if (!is_array($task['depends_on'] ?? null)) {
         $errors[] = "Task {$id} debe definir depends_on como lista YAML inline.";
+    }
+}
+
+$taskMap = [];
+foreach ($board['tasks'] as $task) {
+    $taskMap[(string) ($task['id'] ?? '')] = $task;
+}
+
+$handoffs = [
+    'version' => 1,
+    'handoffs' => [],
+];
+if ($handoffsRaw !== '') {
+    $handoffs = parseHandoffsYaml($handoffsRaw);
+}
+
+if ((string) ($handoffs['version'] ?? '') !== '1') {
+    $errors[] = 'AGENT_HANDOFFS.yaml debe declarar version: 1';
+}
+
+$handoffIds = [];
+foreach (($handoffs['handoffs'] ?? []) as $handoff) {
+    $handoffId = trim((string) ($handoff['id'] ?? ''));
+    if ($handoffId === '') {
+        $errors[] = 'AGENT_HANDOFFS.yaml contiene handoff sin id';
+        continue;
+    }
+    if (isset($handoffIds[$handoffId])) {
+        $errors[] = "AGENT_HANDOFFS.yaml tiene handoff duplicado: {$handoffId}";
+    }
+    $handoffIds[$handoffId] = true;
+
+    if (preg_match('/^HO-\d+$/', $handoffId) !== 1) {
+        $errors[] = "Handoff {$handoffId} tiene id invalido (esperado HO-###)";
+    }
+
+    $handoffStatus = strtolower(trim((string) ($handoff['status'] ?? '')));
+    if (!in_array($handoffStatus, ['active', 'closed'], true)) {
+        $errors[] = "Handoff {$handoffId} tiene status invalido: {$handoffStatus}";
+    }
+
+    $fromTaskId = trim((string) ($handoff['from_task'] ?? ''));
+    $toTaskId = trim((string) ($handoff['to_task'] ?? ''));
+    $fromTask = $taskMap[$fromTaskId] ?? null;
+    $toTask = $taskMap[$toTaskId] ?? null;
+
+    if ($fromTaskId === '' || $fromTask === null) {
+        $errors[] = "Handoff {$handoffId} referencia from_task inexistente: {$fromTaskId}";
+    }
+    if ($toTaskId === '' || $toTask === null) {
+        $errors[] = "Handoff {$handoffId} referencia to_task inexistente: {$toTaskId}";
+    }
+    if ($fromTaskId !== '' && $fromTaskId === $toTaskId) {
+        $errors[] = "Handoff {$handoffId} no puede usar el mismo task en from_task y to_task";
+    }
+
+    $handoffFiles = $handoff['files'] ?? null;
+    if (!is_array($handoffFiles) || count($handoffFiles) === 0) {
+        $errors[] = "Handoff {$handoffId} debe definir files como lista no vacia";
+        $handoffFiles = [];
+    }
+    foreach ($handoffFiles as $rawFile) {
+        $file = trim((string) $rawFile);
+        if ($file === '') {
+            $errors[] = "Handoff {$handoffId} contiene file vacio";
+            continue;
+        }
+        if (str_contains($file, '*')) {
+            $errors[] = "Handoff {$handoffId} no permite wildcards en files ({$file})";
+        }
+        if (in_array($file, ['.', './', '/'], true)) {
+            $errors[] = "Handoff {$handoffId} define file demasiado amplio ({$file})";
+        }
+    }
+
+    $createdAt = trim((string) ($handoff['created_at'] ?? ''));
+    $expiresAt = trim((string) ($handoff['expires_at'] ?? ''));
+    $createdTs = strtotime($createdAt);
+    $expiresTs = strtotime($expiresAt);
+    if ($createdAt === '' || $createdTs === false) {
+        $errors[] = "Handoff {$handoffId} tiene created_at invalido";
+    }
+    if ($expiresAt === '' || $expiresTs === false) {
+        $errors[] = "Handoff {$handoffId} tiene expires_at invalido";
+    }
+    if ($createdTs !== false && $expiresTs !== false) {
+        if ($expiresTs <= $createdTs) {
+            $errors[] = "Handoff {$handoffId} requiere expires_at > created_at";
+        }
+        if (($expiresTs - $createdTs) > (48 * 3600)) {
+            $errors[] = "Handoff {$handoffId} excede TTL maximo de 48h";
+        }
+    }
+
+    if ($handoffStatus === 'active') {
+        if ($expiresTs !== false && $expiresTs <= time()) {
+            $errors[] = "Handoff {$handoffId} esta activo pero expirado";
+        }
+        if (is_array($fromTask) && !isActiveStatus((string) ($fromTask['status'] ?? ''))) {
+            $errors[] = "Handoff {$handoffId} requiere from_task activo ({$fromTaskId})";
+        }
+        if (is_array($toTask) && !isActiveStatus((string) ($toTask['status'] ?? ''))) {
+            $errors[] = "Handoff {$handoffId} requiere to_task activo ({$toTaskId})";
+        }
+    }
+
+    if (is_array($fromTask) && is_array($toTask)) {
+        $overlap = analyzeFileOverlap(
+            is_array($fromTask['files'] ?? null) ? $fromTask['files'] : [],
+            is_array($toTask['files'] ?? null) ? $toTask['files'] : []
+        );
+        $overlapSet = array_fill_keys($overlap['overlap_files'], true);
+        foreach ($handoffFiles as $rawFile) {
+            $normalizedFile = normalizePathToken((string) $rawFile);
+            if ($normalizedFile !== '' && !isset($overlapSet[$normalizedFile])) {
+                $errors[] = "Handoff {$handoffId} incluye file fuera del solape real: {$rawFile}";
+            }
+        }
+    }
+}
+
+$codexBlocks = $codexPlanRaw !== '' ? parseCodexActiveBlocks($codexPlanRaw) : [];
+$codexTasks = [];
+$codexInProgress = [];
+$codexActive = [];
+foreach ($board['tasks'] as $task) {
+    $id = (string) ($task['id'] ?? '');
+    if (!str_starts_with($id, 'CDX-')) {
+        continue;
+    }
+    $codexTasks[] = $task;
+    if (preg_match('/^CDX-\d+$/', $id) !== 1) {
+        $errors[] = "Task Codex con id invalido: {$id} (esperado CDX-###)";
+    }
+    $status = (string) ($task['status'] ?? '');
+    if ($status === 'in_progress') {
+        $codexInProgress[] = $id;
+    }
+    if (isActiveStatus($status)) {
+        $codexActive[] = $id;
+    }
+}
+
+if (count($codexInProgress) > 1) {
+    $errors[] = 'Mas de una tarea CDX in_progress: ' . implode(', ', $codexInProgress);
+}
+
+if (count($codexBlocks) > 1) {
+    $errors[] = 'PLAN_MAESTRO_CODEX_2026.md contiene mas de un bloque CODEX_ACTIVE';
+}
+
+if (count($codexBlocks) === 0) {
+    if (!empty($codexActive)) {
+        $errors[] = 'Hay tareas CDX activas sin bloque CODEX_ACTIVE: ' . implode(', ', $codexActive);
+    }
+} elseif (count($codexBlocks) === 1) {
+    $block = $codexBlocks[0];
+    $blockTaskId = trim((string) ($block['task_id'] ?? ''));
+    $blockStatus = trim((string) ($block['status'] ?? ''));
+    $blockFiles = is_array($block['files'] ?? null) ? $block['files'] : [];
+    $boardTask = $taskMap[$blockTaskId] ?? null;
+
+    if ($blockTaskId === '') {
+        $errors[] = 'CODEX_ACTIVE.task_id vacio en PLAN_MAESTRO_CODEX_2026.md';
+    } elseif (preg_match('/^CDX-\d+$/', $blockTaskId) !== 1) {
+        $errors[] = "CODEX_ACTIVE.task_id invalido: {$blockTaskId}";
+    }
+
+    if ($boardTask === null) {
+        $errors[] = "CODEX_ACTIVE.task_id no existe en AGENT_BOARD.yaml: {$blockTaskId}";
+    } else {
+        if ((string) ($boardTask['executor'] ?? '') !== 'codex') {
+            $errors[] = "Task {$blockTaskId} del espejo Codex debe tener executor=codex";
+        }
+        if ($blockStatus !== (string) ($boardTask['status'] ?? '')) {
+            $errors[] = "Task {$blockTaskId} tiene status desalineado entre CODEX_ACTIVE y AGENT_BOARD";
+        }
+
+        $boardFilesSet = [];
+        foreach ((array) ($boardTask['files'] ?? []) as $rawBoardFile) {
+            $boardFilesSet[normalizePathToken((string) $rawBoardFile)] = true;
+        }
+        foreach ($blockFiles as $rawBlockFile) {
+            $normalized = normalizePathToken((string) $rawBlockFile);
+            if ($normalized === '') {
+                continue;
+            }
+            if (!isset($boardFilesSet[$normalized])) {
+                $errors[] = "Task {$blockTaskId} no reserva en AGENT_BOARD file de CODEX_ACTIVE: {$rawBlockFile}";
+            }
+        }
+    }
+
+    if (isActiveStatus($blockStatus) && empty($codexActive)) {
+        $errors[] = 'CODEX_ACTIVE indica status activo pero no hay tareas CDX activas en AGENT_BOARD';
     }
 }
 

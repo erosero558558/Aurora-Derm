@@ -97,6 +97,9 @@ Comandos canonicos:
 ```bash
 node agent-orchestrator.js status
 node agent-orchestrator.js conflicts
+node agent-orchestrator.js handoffs status
+node agent-orchestrator.js handoffs lint
+node agent-orchestrator.js codex-check
 node agent-orchestrator.js sync
 node agent-orchestrator.js close <task_id>
 node agent-orchestrator.js metrics
@@ -117,13 +120,25 @@ Flujo recomendado:
 3. No commitear secretos.
 4. No cerrar tareas sin evidencia.
 
+## Convivencia de lineas (Orquestador + Codex)
+
+- `AGENT_BOARD.yaml` sigue siendo el tablero canonico de locks/ejecucion para todos los agentes, incluida la linea Codex.
+- `PLAN_MAESTRO_CODEX_2026.md` sigue siendo la fuente de estrategia/evidencia de la linea Codex.
+- Toda ejecucion activa de Codex debe tener tarea espejo `CDX-*` en `AGENT_BOARD.yaml` con `executor: codex`.
+- Solo una tarea `CDX-*` puede estar `in_progress` a la vez.
+- El bloqueo por solape se decide por `files` en tareas activas del board (`ready`, `in_progress`, `review`, `blocked`).
+- Excepcion permitida: handoff temporal y explicito en `AGENT_HANDOFFS.yaml` (TTL + archivos acotados).
+- Si hay drift entre el bloque `CODEX_ACTIVE` del plan Codex y el task `CDX-*` espejo, CI debe fallar.
+
 ## CI y gobernanza
 
 CI valida automaticamente:
 - Consistencia `AGENTS.md` vs `CLAUDE.md`.
 - Integridad de `AGENT_BOARD.yaml`.
+- Integridad de `AGENT_HANDOFFS.yaml`.
 - Duplicados entre colas derivadas.
 - Asignacion de tareas criticas a ejecutor permitido.
 - Solape de archivos entre tareas activas.
+- Integridad del espejo Codex (`PLAN_MAESTRO_CODEX_2026.md` <-> `AGENT_BOARD.yaml`).
 
 Si falla la gobernanza, el pipeline debe bloquear merge.

@@ -37,5 +37,11 @@ jobs:
             - name: Conflict gate
               run: node agent-orchestrator.js conflicts --strict
 
+            - name: Handoffs lint
+              run: node agent-orchestrator.js handoffs lint
+
+            - name: Codex mirror check
+              run: node agent-orchestrator.js codex-check
+
             - name: Validate governance contract
               run: php bin/validate-agent-governance.php

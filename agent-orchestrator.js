@@ -8,6 +8,8 @@
  * Commands:
  *   node agent-orchestrator.js status [--json]
  *   node agent-orchestrator.js conflicts [--strict]
+ *   node agent-orchestrator.js handoffs <status|lint>
+ *   node agent-orchestrator.js codex-check
  *   node agent-orchestrator.js sync
  *   node agent-orchestrator.js close <task_id> [--evidence path]
  *   node agent-orchestrator.js metrics
@@ -18,8 +20,10 @@ const { resolve } = require('path');
 
 const ROOT = __dirname;
 const BOARD_PATH = resolve(ROOT, 'AGENT_BOARD.yaml');
+const HANDOFFS_PATH = resolve(ROOT, 'AGENT_HANDOFFS.yaml');
 const JULES_PATH = resolve(ROOT, 'JULES_TASKS.md');
 const KIMI_PATH = resolve(ROOT, 'KIMI_TASKS.md');
+const CODEX_PLAN_PATH = resolve(ROOT, 'PLAN_MAESTRO_CODEX_2026.md');
 const EVIDENCE_DIR = resolve(ROOT, 'verification', 'agent-runs');
 const METRICS_PATH = resolve(ROOT, 'verification', 'agent-metrics.json');
 
@@ -156,6 +160,93 @@ function parseBoard() {
     }
 
     return board;
+}
+
+function parseHandoffs() {
+    if (!existsSync(HANDOFFS_PATH)) {
+        return { version: 1, handoffs: [] };
+    }
+
+    const lines = normalizeEol(readFileSync(HANDOFFS_PATH, 'utf8')).split('\n');
+    const data = {
+        version: 1,
+        handoffs: [],
+    };
+
+    let inHandoffs = false;
+    let handoff = null;
+
+    for (const rawLine of lines) {
+        const line = rawLine.replace(/\t/g, '    ');
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+
+        const versionMatch = line.match(/^version:\s*(.+)$/);
+        if (versionMatch && !inHandoffs) {
+            data.version = parseScalar(versionMatch[1]);
+            continue;
+        }
+
+        if (trimmed === 'handoffs:') {
+            inHandoffs = true;
+            if (handoff) {
+                data.handoffs.push(handoff);
+                handoff = null;
+            }
+            continue;
+        }
+
+        if (!inHandoffs) continue;
+
+        const handoffStart = line.match(/^\s{2}-\s+id:\s*(.+)$/);
+        if (handoffStart) {
+            if (handoff) data.handoffs.push(handoff);
+            handoff = { id: parseScalar(handoffStart[1]) };
+            continue;
+        }
+
+        const prop = line.match(/^\s{4}([a-zA-Z_][\w-]*):\s*(.*)$/);
+        if (handoff && prop) {
+            handoff[prop[1]] = parseScalar(prop[2]);
+        }
+    }
+
+    if (handoff) data.handoffs.push(handoff);
+
+    for (const item of data.handoffs) {
+        if (!Array.isArray(item.files)) item.files = item.files ? [String(item.files)] : [];
+        item.status = String(item.status || '').trim().toLowerCase();
+    }
+
+    return data;
+}
+
+function parseCodexActiveBlocks() {
+    if (!existsSync(CODEX_PLAN_PATH)) {
+        return [];
+    }
+
+    const raw = normalizeEol(readFileSync(CODEX_PLAN_PATH, 'utf8'));
+    const regex = /<!--\s*CODEX_ACTIVE\s*\n([\s\S]*?)-->/g;
+    const blocks = [];
+    let match;
+
+    while ((match = regex.exec(raw)) !== null) {
+        const block = {};
+        for (const line of match[1].split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            const prop = trimmed.match(/^([a-zA-Z_][\w-]*):\s*(.*)$/);
+            if (!prop) continue;
+            block[prop[1]] = parseScalar(prop[2]);
+        }
+        if (!Array.isArray(block.files)) {
+            block.files = block.files ? [String(block.files)] : [];
+        }
+        blocks.push(block);
+    }
+
+    return blocks;
 }
 
 function quote(value) {
@@ -335,42 +426,155 @@ function wildcardToRegex(pattern) {
     return new RegExp(`^${escaped}$`, 'i');
 }
 
-function filesOverlap(filesA, filesB) {
-    for (const rawA of filesA) {
-        for (const rawB of filesB) {
-            const a = String(rawA || '').trim().toLowerCase();
-            const b = String(rawB || '').trim().toLowerCase();
-            if (!a || !b) continue;
-            if (a === b) return true;
-
-            const aWild = a.includes('*');
-            const bWild = b.includes('*');
-            if (aWild && wildcardToRegex(a).test(b)) return true;
-            if (bWild && wildcardToRegex(b).test(a)) return true;
-        }
-    }
-    return false;
+function normalizePathToken(value) {
+    return String(value || '')
+        .trim()
+        .replace(/\\/g, '/')
+        .replace(/^\.\//, '')
+        .toLowerCase();
 }
 
-function detectConflicts(tasks) {
-    const active = tasks.filter((task) => ACTIVE_STATUSES.has(task.status));
-    const conflicts = [];
+function hasWildcard(value) {
+    return String(value || '').includes('*');
+}
 
-    for (let i = 0; i < active.length; i++) {
-        for (let j = i + 1; j < active.length; j++) {
-            if (filesOverlap(active[i].files, active[j].files)) {
-                conflicts.push({
-                    left: active[i],
-                    right: active[j],
-                });
+function analyzeFileOverlap(filesA, filesB) {
+    const overlapFiles = new Set();
+    let ambiguousWildcardOverlap = false;
+    let anyOverlap = false;
+
+    for (const rawA of filesA || []) {
+        for (const rawB of filesB || []) {
+            const a = normalizePathToken(rawA);
+            const b = normalizePathToken(rawB);
+            if (!a || !b) continue;
+
+            if (a === b) {
+                anyOverlap = true;
+                overlapFiles.add(a);
+                continue;
+            }
+
+            const aWild = hasWildcard(a);
+            const bWild = hasWildcard(b);
+
+            if (!aWild && bWild && wildcardToRegex(b).test(a)) {
+                anyOverlap = true;
+                overlapFiles.add(a);
+                continue;
+            }
+
+            if (aWild && !bWild && wildcardToRegex(a).test(b)) {
+                anyOverlap = true;
+                overlapFiles.add(b);
+                continue;
+            }
+
+            if (aWild && bWild) {
+                // Pattern-vs-pattern overlap is conservatively treated as ambiguous.
+                if (wildcardToRegex(a).test(b) || wildcardToRegex(b).test(a)) {
+                    anyOverlap = true;
+                    ambiguousWildcardOverlap = true;
+                }
             }
         }
     }
-    return conflicts;
+
+    return {
+        anyOverlap,
+        ambiguousWildcardOverlap,
+        overlapFiles: Array.from(overlapFiles).sort(),
+    };
+}
+
+function filesOverlap(filesA, filesB) {
+    return analyzeFileOverlap(filesA, filesB).anyOverlap;
+}
+
+function isExpired(dateValue) {
+    const parsed = Date.parse(String(dateValue || ''));
+    if (!Number.isFinite(parsed)) return true;
+    return parsed <= Date.now();
+}
+
+function isActiveHandoff(handoff) {
+    return String(handoff.status || '').toLowerCase() === 'active' && !isExpired(handoff.expires_at);
+}
+
+function sameTaskPair(handoff, leftTask, rightTask) {
+    const fromTask = String(handoff.from_task || '');
+    const toTask = String(handoff.to_task || '');
+    const leftId = String(leftTask.id || '');
+    const rightId = String(rightTask.id || '');
+    return (
+        (fromTask === leftId && toTask === rightId) ||
+        (fromTask === rightId && toTask === leftId)
+    );
+}
+
+function analyzeConflicts(tasks, handoffs = []) {
+    const activeTasks = tasks.filter((task) => ACTIVE_STATUSES.has(task.status));
+    const activeHandoffs = (handoffs || []).filter(isActiveHandoff);
+    const all = [];
+    const blocking = [];
+    const handoffCovered = [];
+
+    for (let i = 0; i < activeTasks.length; i++) {
+        for (let j = i + 1; j < activeTasks.length; j++) {
+            const left = activeTasks[i];
+            const right = activeTasks[j];
+            const overlap = analyzeFileOverlap(left.files, right.files);
+            if (!overlap.anyOverlap) continue;
+
+            const matchingHandoffs = activeHandoffs.filter((handoff) =>
+                sameTaskPair(handoff, left, right)
+            );
+            const overlapSet = new Set(overlap.overlapFiles);
+            const coveredFiles = new Set();
+
+            for (const handoff of matchingHandoffs) {
+                for (const rawFile of handoff.files || []) {
+                    const file = normalizePathToken(rawFile);
+                    if (overlapSet.has(file)) {
+                        coveredFiles.add(file);
+                    }
+                }
+            }
+
+            const fullyCovered =
+                !overlap.ambiguousWildcardOverlap &&
+                overlap.overlapFiles.length > 0 &&
+                overlap.overlapFiles.every((file) => coveredFiles.has(file));
+
+            const record = {
+                left,
+                right,
+                overlap_files: overlap.overlapFiles,
+                ambiguous_wildcard_overlap: overlap.ambiguousWildcardOverlap,
+                handoff_ids: matchingHandoffs.map((handoff) => String(handoff.id || '')),
+                exempted_by_handoff: fullyCovered,
+            };
+
+            all.push(record);
+            if (fullyCovered) {
+                handoffCovered.push(record);
+            } else {
+                blocking.push(record);
+            }
+        }
+    }
+
+    return { all, blocking, handoffCovered };
+}
+
+function detectConflicts(tasks, handoffs = []) {
+    return analyzeConflicts(tasks, handoffs).blocking;
 }
 
 function cmdStatus(args) {
     const board = parseBoard();
+    const handoffData = parseHandoffs();
+    const conflictAnalysis = analyzeConflicts(board.tasks, handoffData.handoffs);
     const data = {
         version: board.version,
         policy: board.policy,
@@ -379,7 +583,12 @@ function cmdStatus(args) {
             byStatus: getStatusCounts(board.tasks),
             byExecutor: getExecutorCounts(board.tasks),
         },
-        conflicts: detectConflicts(board.tasks).length,
+        conflicts: conflictAnalysis.blocking.length,
+        conflicts_breakdown: {
+            blocking: conflictAnalysis.blocking.length,
+            handoff: conflictAnalysis.handoffCovered.length,
+            total_pairs: conflictAnalysis.all.length,
+        },
     };
 
     if (args.includes('--json')) {
@@ -390,7 +599,8 @@ function cmdStatus(args) {
     console.log('== Agent Orchestrator Status ==');
     console.log(`Version board: ${data.version}`);
     console.log(`Total tasks: ${data.totals.tasks}`);
-    console.log(`Conflicts activos: ${data.conflicts}`);
+    console.log(`Conflicts activos (blocking): ${data.conflicts}`);
+    console.log(`Conflicts eximidos por handoff: ${data.conflicts_breakdown.handoff}`);
     console.log('');
     console.log('Por estado:');
     for (const [status, count] of Object.entries(data.totals.byStatus)) {
@@ -410,7 +620,10 @@ function safeNumber(value, fallback = 0) {
 
 function cmdMetrics() {
     const board = parseBoard();
-    const conflicts = detectConflicts(board.tasks).length;
+    const handoffData = parseHandoffs();
+    const conflictAnalysis = analyzeConflicts(board.tasks, handoffData.handoffs);
+    const blockingConflicts = conflictAnalysis.blocking.length;
+    const handoffConflicts = conflictAnalysis.handoffCovered.length;
     const total = board.tasks.length;
     const done = board.tasks.filter((task) => task.status === 'done').length;
     const inProgress = board.tasks.filter((task) => task.status === 'in_progress').length;
@@ -427,7 +640,7 @@ function cmdMetrics() {
     const baseline = existing && existing.baseline ? existing.baseline : {
         tasks_total: total,
         tasks_with_rework: 0,
-        file_conflicts: conflicts,
+        file_conflicts: blockingConflicts,
         non_critical_lead_time_hours_avg: null,
         coordination_gate_red_rate_pct: null,
         traceability_pct: 0,
@@ -456,7 +669,7 @@ function cmdMetrics() {
         baseline: {
             tasks_total: safeNumber(baseline.tasks_total, total),
             tasks_with_rework: safeNumber(baseline.tasks_with_rework, 0),
-            file_conflicts: safeNumber(baseline.file_conflicts, conflicts),
+            file_conflicts: safeNumber(baseline.file_conflicts, blockingConflicts),
             non_critical_lead_time_hours_avg:
                 baseline.non_critical_lead_time_hours_avg === null
                     ? null
@@ -472,7 +685,8 @@ function cmdMetrics() {
             tasks_in_progress: inProgress,
             tasks_done: done,
             tasks_with_rework: 0,
-            file_conflicts: conflicts,
+            file_conflicts: blockingConflicts,
+            file_conflicts_handoff: handoffConflicts,
             non_critical_lead_time_hours_avg: null,
             coordination_gate_red_rate_pct: null,
             traceability_pct: traceability,
@@ -486,23 +700,243 @@ function cmdMetrics() {
 function cmdConflicts(args) {
     const strict = args.includes('--strict');
     const board = parseBoard();
-    const conflicts = detectConflicts(board.tasks);
+    const handoffData = parseHandoffs();
+    const analysis = analyzeConflicts(board.tasks, handoffData.handoffs);
 
-    if (conflicts.length === 0) {
+    if (analysis.all.length === 0) {
         console.log('Sin conflictos de archivos entre tareas activas.');
         return;
     }
 
-    console.log(`Conflictos detectados: ${conflicts.length}`);
-    for (const item of conflicts) {
+    console.log(`Conflictos detectados (total pares): ${analysis.all.length}`);
+    console.log(`- Blocking: ${analysis.blocking.length}`);
+    console.log(`- Eximidos por handoff: ${analysis.handoffCovered.length}`);
+
+    for (const item of analysis.all) {
+        const kind = item.exempted_by_handoff ? 'HANDOFF' : 'BLOCKING';
+        const overlapFiles = item.overlap_files.length
+            ? item.overlap_files.join(', ')
+            : '(solo wildcard ambiguo)';
         console.log(
-            `- ${item.left.id} (${item.left.executor}) <-> ${item.right.id} (${item.right.executor})`
+            `- [${kind}] ${item.left.id} (${item.left.executor}) <-> ${item.right.id} (${item.right.executor}) :: ${overlapFiles}`
         );
+        if (item.handoff_ids.length > 0) {
+            console.log(`  handoffs: ${item.handoff_ids.join(', ')}`);
+        }
+        if (item.ambiguous_wildcard_overlap) {
+            console.log('  note: wildcard overlap ambiguo, no eximible automaticamente');
+        }
     }
 
-    if (strict) {
+    if (strict && analysis.blocking.length > 0) {
         process.exitCode = 1;
     }
+}
+
+function getHandoffLintErrors() {
+    const errors = [];
+    const board = parseBoard();
+    const handoffData = parseHandoffs();
+    const handoffs = Array.isArray(handoffData.handoffs) ? handoffData.handoffs : [];
+    const byId = new Map(board.tasks.map((task) => [String(task.id), task]));
+    const seenHandoffIds = new Set();
+
+    if (String(handoffData.version) !== '1') {
+        errors.push(`AGENT_HANDOFFS.yaml version invalida: ${handoffData.version}`);
+    }
+
+    for (const handoff of handoffs) {
+        const id = String(handoff.id || '').trim();
+        if (!id) {
+            errors.push('handoff sin id');
+            continue;
+        }
+        if (!/^HO-\d+$/.test(id)) {
+            errors.push(`${id}: formato de id invalido (esperado HO-###)`);
+        }
+        if (seenHandoffIds.has(id)) {
+            errors.push(`${id}: id duplicado`);
+        }
+        seenHandoffIds.add(id);
+
+        const status = String(handoff.status || '').toLowerCase();
+        if (!['active', 'closed'].includes(status)) {
+            errors.push(`${id}: status invalido (${status || 'vacio'})`);
+        }
+
+        const fromTaskId = String(handoff.from_task || '');
+        const toTaskId = String(handoff.to_task || '');
+        const fromTask = byId.get(fromTaskId);
+        const toTask = byId.get(toTaskId);
+        if (!fromTask) errors.push(`${id}: from_task inexistente (${fromTaskId || 'vacio'})`);
+        if (!toTask) errors.push(`${id}: to_task inexistente (${toTaskId || 'vacio'})`);
+        if (fromTaskId && toTaskId && fromTaskId === toTaskId) {
+            errors.push(`${id}: from_task y to_task no pueden ser iguales`);
+        }
+
+        const files = Array.isArray(handoff.files) ? handoff.files : [];
+        if (files.length === 0) {
+            errors.push(`${id}: files debe contener al menos un path`);
+        }
+        for (const rawFile of files) {
+            const file = String(rawFile || '').trim();
+            if (!file) {
+                errors.push(`${id}: files contiene path vacio`);
+                continue;
+            }
+            if (file.includes('*')) {
+                errors.push(`${id}: handoff no permite wildcards (${file})`);
+            }
+            if (file === '/' || file === '.' || file === './') {
+                errors.push(`${id}: handoff demasiado amplio (${file})`);
+            }
+        }
+
+        const createdMs = Date.parse(String(handoff.created_at || ''));
+        const expiresMs = Date.parse(String(handoff.expires_at || ''));
+        if (!Number.isFinite(createdMs)) {
+            errors.push(`${id}: created_at invalido`);
+        }
+        if (!Number.isFinite(expiresMs)) {
+            errors.push(`${id}: expires_at invalido`);
+        }
+        if (Number.isFinite(createdMs) && Number.isFinite(expiresMs)) {
+            if (expiresMs <= createdMs) {
+                errors.push(`${id}: expires_at debe ser mayor que created_at`);
+            }
+            const hours = (expiresMs - createdMs) / (1000 * 60 * 60);
+            if (hours > 48) {
+                errors.push(`${id}: TTL excede 48h (${hours.toFixed(1)}h)`);
+            }
+        }
+
+        if (status === 'active') {
+            if (isExpired(handoff.expires_at)) {
+                errors.push(`${id}: handoff activo pero expirado`);
+            }
+            if (fromTask && !ACTIVE_STATUSES.has(fromTask.status)) {
+                errors.push(`${id}: from_task no esta activo (${fromTask.id}:${fromTask.status})`);
+            }
+            if (toTask && !ACTIVE_STATUSES.has(toTask.status)) {
+                errors.push(`${id}: to_task no esta activo (${toTask.id}:${toTask.status})`);
+            }
+        }
+
+        if (fromTask && toTask && files.length > 0) {
+            const overlap = analyzeFileOverlap(fromTask.files, toTask.files);
+            const overlapSet = new Set(overlap.overlapFiles);
+            for (const rawFile of files) {
+                const file = normalizePathToken(rawFile);
+                if (file && !overlapSet.has(file)) {
+                    errors.push(
+                        `${id}: file ${rawFile} no pertenece al solape concreto entre ${fromTask.id} y ${toTask.id}`
+                    );
+                }
+            }
+        }
+    }
+
+    return errors;
+}
+
+function cmdHandoffs(args) {
+    const subcommand = args[0] || 'status';
+    const handoffData = parseHandoffs();
+
+    if (subcommand === 'status') {
+        const total = handoffData.handoffs.length;
+        const active = handoffData.handoffs.filter((item) => String(item.status) === 'active');
+        const closed = handoffData.handoffs.filter((item) => String(item.status) === 'closed');
+        const expiredActive = active.filter((item) => isExpired(item.expires_at));
+        console.log('== Agent Handoffs ==');
+        console.log(`Total: ${total}`);
+        console.log(`Active: ${active.length}`);
+        console.log(`Closed: ${closed.length}`);
+        console.log(`Active expirados: ${expiredActive.length}`);
+        return;
+    }
+
+    if (subcommand === 'lint') {
+        const errors = getHandoffLintErrors();
+        if (errors.length === 0) {
+            console.log('OK: handoffs validos.');
+            return;
+        }
+        console.log(`Errores de handoff: ${errors.length}`);
+        for (const error of errors) console.log(`- ${error}`);
+        process.exitCode = 1;
+        return;
+    }
+
+    throw new Error('Uso: node agent-orchestrator.js handoffs <status|lint>');
+}
+
+function cmdCodexCheck() {
+    const board = parseBoard();
+    const blocks = parseCodexActiveBlocks();
+    const errors = [];
+    const codexTasks = board.tasks.filter((task) => /^CDX-\d+$/.test(String(task.id || '')));
+    const codexInProgress = codexTasks.filter((task) => task.status === 'in_progress');
+    const activeCodexTasks = codexTasks.filter((task) => ACTIVE_STATUSES.has(task.status));
+
+    if (codexInProgress.length > 1) {
+        errors.push(`Mas de un CDX in_progress (${codexInProgress.map((t) => t.id).join(', ')})`);
+    }
+
+    if (blocks.length > 1) {
+        errors.push(`Mas de un bloque CODEX_ACTIVE en ${CODEX_PLAN_PATH}`);
+    }
+
+    if (blocks.length === 0) {
+        if (activeCodexTasks.length > 0) {
+            errors.push(
+                `Hay tareas CDX activas sin bloque CODEX_ACTIVE: ${activeCodexTasks
+                    .map((task) => task.id)
+                    .join(', ')}`
+            );
+        }
+    } else {
+        const block = blocks[0];
+        const taskId = String(block.task_id || '').trim();
+        const blockStatus = String(block.status || '').trim();
+        const blockFiles = Array.isArray(block.files) ? block.files.map(normalizePathToken) : [];
+        const task = board.tasks.find((item) => String(item.id) === taskId);
+
+        if (!taskId) {
+            errors.push('CODEX_ACTIVE.task_id vacio');
+        }
+        if (!/^CDX-\d+$/.test(taskId)) {
+            errors.push(`CODEX_ACTIVE.task_id invalido (${taskId || 'vacio'})`);
+        }
+        if (!task) {
+            errors.push(`CODEX_ACTIVE.task_id no existe en board: ${taskId || 'vacio'}`);
+        } else {
+            if (String(task.executor) !== 'codex') {
+                errors.push(`${task.id}: executor debe ser codex (actual: ${task.executor})`);
+            }
+            if (blockStatus !== String(task.status)) {
+                errors.push(
+                    `${task.id}: status desalineado plan(${blockStatus || 'vacio'}) != board(${task.status})`
+                );
+            }
+            const boardFiles = new Set((task.files || []).map(normalizePathToken));
+            for (const file of blockFiles) {
+                if (!boardFiles.has(file)) {
+                    errors.push(`${task.id}: file del bloque CODEX_ACTIVE no reservado en board (${file})`);
+                }
+            }
+        }
+
+        if (activeCodexTasks.length === 0 && ACTIVE_STATUSES.has(blockStatus)) {
+            errors.push('CODEX_ACTIVE indica tarea activa pero no hay CDX activo en board');
+        }
+    }
+
+    if (errors.length > 0) {
+        throw new Error(`Codex mirror invalido:\n- ${errors.join('\n- ')}`);
+    }
+
+    console.log('OK: espejo Codex valido.');
 }
 
 function cmdSync() {
@@ -564,6 +998,8 @@ function main() {
     const commands = {
         status: () => cmdStatus(args),
         conflicts: () => cmdConflicts(args),
+        handoffs: () => cmdHandoffs(args),
+        'codex-check': () => cmdCodexCheck(),
         sync: () => cmdSync(),
         close: () => cmdClose(args),
         metrics: () => cmdMetrics(),

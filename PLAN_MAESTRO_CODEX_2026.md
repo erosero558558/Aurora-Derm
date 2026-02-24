@@ -4,6 +4,14 @@ Inicio: 2026-02-24
 Cadencia: por commit (cada commit deja evidencia verificable)
 Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite por control)
 
+<!-- CODEX_ACTIVE
+block: C1
+task_id: CDX-001
+status: in_progress
+files: ["AGENTS.md", "AGENT_BOARD.yaml", "AGENT_HANDOFFS.yaml", "PLAN_MAESTRO_CODEX_2026.md", "agent-orchestrator.js", "bin/validate-agent-governance.php", ".github/workflows/agent-governance.yml"]
+updated_at: 2026-02-24
+-->
+
 ## Proposito
 
 - Blindar confiabilidad de reserva/chat/reprogramacion.
@@ -142,3 +150,4 @@ Criterio de salida:
 - 2026-02-24: extendido `tests/Integration/AppointmentErrorCodesTest.php` con cobertura de `booked-slots` para paths `calendar_bad_request` (fecha faltante) y `calendar_unreachable` (Google requerido), protegiendo normalizacion de codigos en agenda; validado con `php -d xdebug.mode=coverage vendor/bin/phpunit tests/Integration/AppointmentErrorCodesTest.php` (`4 tests`, `14 assertions`).
 - 2026-02-24: corregido `tests/funnel-tracking.spec.js` para normalizar eventos GA4 en formato `gtag('event', ...)` dentro de `window.dataLayer`, evitando falso rojo en `Run Critical Funnel Gate` cuando el tracker no emite objetos directos; validado con `npm run test:critical:funnel` (`6 passed`).
 - 2026-02-24: estabilizadas pruebas no criticas `tests/chat-booking-calendar-errors.spec.js` (espera de hidratacion + mensajes ES/EN + idioma `es` fijado) y `tests/cookie-consent.spec.js` (aserciones alineadas a Google Consent Mode v2 con `dataLayer`/`consent` en lugar de `window._ga4Loaded=false`); validado localmente con Playwright (`10 passed`).
+- 2026-02-24: implementada convivencia Orquestador+Codex sin solapes con task espejo `CDX-001` en `AGENT_BOARD.yaml`, `AGENT_HANDOFFS.yaml`, bloque `CODEX_ACTIVE`, `handoffs lint` + `codex-check` en `agent-orchestrator.js`, validacion espejo/handoffs en `bin/validate-agent-governance.php` y gate CI actualizado (`agent-governance.yml`); validado con `agent-orchestrator.js` (`conflicts/handoffs/codex-check`) y `php bin/validate-agent-governance.php`.

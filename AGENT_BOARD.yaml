@@ -110,3 +110,18 @@ tasks:
     prompt: "Agregar PHPDoc faltantes en librerias core sin modificar comportamiento funcional."
     created_at: 2026-02-24
     updated_at: 2026-02-24
+
+  - id: CDX-001
+    title: Codex governance coexistence guardrails (C4 support)
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: codex-governance
+    files: ["AGENTS.md", "AGENT_BOARD.yaml", "AGENT_HANDOFFS.yaml", "PLAN_MAESTRO_CODEX_2026.md", "agent-orchestrator.js", "bin/validate-agent-governance.php", ".github/workflows/agent-governance.yml"]
+    acceptance: "Convivencia Codex/orquestador con espejo de tarea, handoffs y gates de gobernanza bloqueantes en CI."
+    acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"
+    depends_on: []
+    prompt: "Implementar guardrails de convivencia entre AGENT_BOARD y Plan Codex (handoffs, codex-check, conflict gate con excepciones temporales) alineado al bloque C4."
+    created_at: 2026-02-24
+    updated_at: 2026-02-24
