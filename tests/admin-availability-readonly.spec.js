@@ -190,4 +190,26 @@ test.describe('Admin disponibilidad: modo Google solo lectura', () => {
             'Solo lectura'
         );
     });
+
+    test('muestra el mes actual y evita hardcode de calendario', async ({
+        page,
+    }) => {
+        await setupAdminApiMocks(page, 'google');
+        await openAvailabilitySection(page);
+
+        const label = page.locator('#calendarMonth').first();
+        await expect(label).toBeVisible();
+
+        const currentMonth = new Intl.DateTimeFormat('es-EC', {
+            month: 'long',
+        })
+            .format(new Date())
+            .toLowerCase();
+        const currentYear = String(new Date().getFullYear());
+        const text = (((await label.textContent()) || '').trim()).toLowerCase();
+
+        expect(text).toContain(currentMonth);
+        expect(text).toContain(currentYear);
+        expect(text).not.toContain('enero 2024');
+    });
 });
