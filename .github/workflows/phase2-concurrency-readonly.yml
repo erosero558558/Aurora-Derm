@@ -1,0 +1,57 @@
+name: Phase 2 Concurrency Readonly (Manual)
+
+on:
+    workflow_dispatch:
+        inputs:
+            domain:
+                description: 'Dominio objetivo'
+                required: false
+                default: 'https://pielarmonia.com'
+                type: string
+            require_google_calendar:
+                description: 'Exigir calendario Google activo'
+                required: false
+                default: true
+                type: boolean
+
+permissions:
+    contents: read
+
+jobs:
+    phase2-concurrency-readonly:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        env:
+            TEST_BASE_URL: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
+            TEST_ENABLE_CALENDAR_WRITE: 'false'
+            TEST_REQUIRE_GOOGLE_CALENDAR: ${{ github.event.inputs.require_google_calendar || 'true' }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Instalar Playwright (chromium)
+              run: npx playwright install --with-deps chromium
+
+            - name: Ejecutar suite Fase 2 en modo no destructivo
+              run: npm run test:phase2
+
+            - name: Resumen
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Phase 2 concurrency readonly";
+                    echo "- Dominio: \`${TEST_BASE_URL}\`";
+                    echo "- Escritura habilitada: \`${TEST_ENABLE_CALENDAR_WRITE}\`";
+                    echo "- Require Google calendar: \`${TEST_REQUIRE_GOOGLE_CALENDAR}\`";
+                    echo "- Resultado: \`${{ job.status }}\`";
+                  } >> "${GITHUB_STEP_SUMMARY}"
