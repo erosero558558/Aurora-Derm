@@ -1,0 +1,118 @@
+name: Phase 2 Flakiness Probe (Readonly)
+
+on:
+    workflow_dispatch:
+        inputs:
+            domain:
+                description: 'Dominio objetivo'
+                required: false
+                default: 'https://pielarmonia.com'
+                type: string
+            runs:
+                description: 'Cantidad de repeticiones de test:phase2'
+                required: false
+                default: 3
+                type: number
+            max_failures:
+                description: 'Maximo de fallas permitidas antes de marcar rojo'
+                required: false
+                default: 0
+                type: number
+            require_google_calendar:
+                description: 'Exigir calendario Google activo'
+                required: false
+                default: true
+                type: boolean
+    schedule:
+        - cron: '15 13 * * 1'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: phase2-flakiness-probe
+    cancel-in-progress: false
+
+jobs:
+    probe:
+        runs-on: ubuntu-latest
+        timeout-minutes: 45
+        env:
+            TEST_BASE_URL: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
+            TEST_ENABLE_CALENDAR_WRITE: 'false'
+            TEST_REQUIRE_GOOGLE_CALENDAR: ${{ github.event.inputs.require_google_calendar || 'true' }}
+            PHASE2_RUNS: ${{ github.event.inputs.runs || '3' }}
+            PHASE2_MAX_FAILURES: ${{ github.event.inputs.max_failures || '0' }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Instalar Playwright (chromium)
+              run: npx playwright install --with-deps chromium
+
+            - name: Ejecutar sonda de flakiness (readonly)
+              id: probe
+              shell: bash
+              run: |
+                  set -uo pipefail
+                  runs="${PHASE2_RUNS}"
+                  max_failures="${PHASE2_MAX_FAILURES}"
+                  passes=0
+                  failures=0
+                  details=""
+
+                  if ! [[ "${runs}" =~ ^[0-9]+$ ]] || [ "${runs}" -le 0 ]; then
+                    echo "::error::PHASE2_RUNS invalido: ${runs}"
+                    exit 1
+                  fi
+                  if ! [[ "${max_failures}" =~ ^[0-9]+$ ]]; then
+                    echo "::error::PHASE2_MAX_FAILURES invalido: ${max_failures}"
+                    exit 1
+                  fi
+
+                  for attempt in $(seq 1 "${runs}"); do
+                    echo "==> Intento ${attempt}/${runs}"
+                    if npm run test:phase2; then
+                      passes=$((passes + 1))
+                      details="${details}\n- intento ${attempt}: pass"
+                    else
+                      failures=$((failures + 1))
+                      details="${details}\n- intento ${attempt}: fail"
+                    fi
+                  done
+
+                  echo "passes=${passes}" >> "${GITHUB_OUTPUT}"
+                  echo "failures=${failures}" >> "${GITHUB_OUTPUT}"
+                  echo "details<<EOF" >> "${GITHUB_OUTPUT}"
+                  printf "%b\n" "${details}" >> "${GITHUB_OUTPUT}"
+                  echo "EOF" >> "${GITHUB_OUTPUT}"
+
+                  if [ "${failures}" -gt "${max_failures}" ]; then
+                    echo "::error::Sonda phase2: failures=${failures} > max_failures=${max_failures}"
+                    exit 1
+                  fi
+
+            - name: Resumen de sonda
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Phase 2 flakiness probe (readonly)";
+                    echo "- Dominio: \`${TEST_BASE_URL}\`";
+                    echo "- Runs: \`${PHASE2_RUNS}\`";
+                    echo "- Max failures: \`${PHASE2_MAX_FAILURES}\`";
+                    echo "- Require Google calendar: \`${TEST_REQUIRE_GOOGLE_CALENDAR}\`";
+                    echo "- Passes: \`${{ steps.probe.outputs.passes || '0' }}\`";
+                    echo "- Failures: \`${{ steps.probe.outputs.failures || '0' }}\`";
+                    echo "${{ steps.probe.outputs.details }}";
+                    echo "- Resultado: \`${{ job.status }}\`";
+                  } >> "${GITHUB_STEP_SUMMARY}"
