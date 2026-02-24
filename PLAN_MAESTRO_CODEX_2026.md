@@ -111,3 +111,4 @@ Criterio de salida:
 - 2026-02-24: validacion manual de `phase2-concurrency-readonly`: run `22361662182` (`failure`) seguido de run `22361768420` (`success`) confirma inestabilidad intermitente en Fase 2 readonly.
 - 2026-02-24: `phase2-concurrency-readonly.yml` ahora publica siempre artefactos `playwright-report` y `test-results`, y reporta `steps.phase2.outcome` en summary para acelerar diagnostico de fallos intermitentes.
 - 2026-02-24: ajustado `phase2-concurrency-readonly.yml` para forzar salidas persistentes (`--reporter=line,json,html`, `PLAYWRIGHT_JSON_OUTPUT_NAME`, `--output=test-results/phase2-readonly`) tras observar run `22361858905` exitoso sin artefactos adjuntos (`total_count=0`).
+- 2026-02-24: validacion post-ajuste en run `22361957390` (`success`) con `ARTIFACT_TOTAL=2` (`phase2-readonly-playwright-report`, `phase2-readonly-test-results`), confirmando diagnostico reproducible en workflow manual.
