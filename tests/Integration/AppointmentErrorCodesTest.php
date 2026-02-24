@@ -167,6 +167,8 @@ class AppointmentErrorCodesTest extends TestCase
 
         $firstPayload = $this->buildValidPayload($futureDate, '10:00');
         $secondPayload = $this->buildValidPayload($futureDate, '10:30');
+        $firstPayload['id'] = 910001;
+        $secondPayload['id'] = 910002;
         $secondPayload['email'] = 'paciente.error.test.2@example.com';
         $secondPayload['phone'] = '+593999000112';
 
