@@ -81,6 +81,8 @@ module.exports = [
             'playwright/no-conditional-expect': 'warn',
             'playwright/no-wait-for-timeout': 'warn',
             'playwright/no-useless-not': 'warn',
+            // All test.skip() calls are conditional runtime guards (auth, feature-flag).
+            'playwright/no-skipped-test': 'off',
         },
     },
 ];

@@ -4,7 +4,7 @@ import { state } from './state.js';
 import { THEME_STORAGE_KEY, VALID_THEME_MODES } from './config.js';
 
 const UI_BUNDLE_URL = withDeployAssetVersion(
-    '/js/engines/ui-bundle.js?v=20260220-consolidated1'
+    '/js/engines/ui-bundle.js'
 );
 const systemThemeQuery = window.matchMedia
     ? window.matchMedia('(prefers-color-scheme: dark)')

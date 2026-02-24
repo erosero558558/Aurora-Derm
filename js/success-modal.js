@@ -10,7 +10,7 @@ import { getCurrentLang, getCurrentAppointment } from './state.js';
 import { CLINIC_ADDRESS } from './config.js';
 
 const UI_BUNDLE_URL = withDeployAssetVersion(
-    '/js/engines/ui-bundle.js?v=20260220-consolidated1'
+    '/js/engines/ui-bundle.js'
 );
 
 function getSuccessModalEngineDeps() {

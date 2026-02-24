@@ -21,7 +21,7 @@ import {
 } from './data.js';
 
 const ENGAGEMENT_BUNDLE_URL = withDeployAssetVersion(
-    '/js/engines/engagement-bundle.js?v=20260220-consolidated1'
+    '/js/engines/engagement-bundle.js'
 );
 
 // REVIEWS ENGINE
