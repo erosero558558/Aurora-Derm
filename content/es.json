@@ -59,6 +59,15 @@
     "btn_whatsapp": "Usar WhatsApp",
     "tele_phone_title": "Llamada Telefónica",
     "tele_phone_desc": "Para seguimiento o dudas puntuales.",
+    "tele_feature1": "Funciona en cualquier celular",
+    "tele_feature2": "Sin internet necesario",
+    "tele_feature3": "Perfecto para adultos mayores",
+    "tele_feature4": "Videollamada HD",
+    "tele_feature5": "Envía fotos de tu piel",
+    "tele_feature6": "Chat incluido",
+    "tele_feature7": "Sin apps ni registro",
+    "tele_feature8": "Pantalla más grande",
+    "tele_feature9": "Ideal para compartir pantalla",
     "btn_call": "Solicitar llamada",
     "callback_title": "¿Prefieres que te llamemos?",
     "callback_desc": "Déjanos tu número y el doctor te llamará en los próximos minutos.",
@@ -225,5 +234,11 @@
     "payment_card_help": "Tus datos se cifran y se procesan de forma segura con Stripe.",
     "label_transfer_proof": "Comprobante (JPG, PNG, WEBP o PDF)",
     "payment_transfer_eta": "Validamos transferencias en horario de atencion. Te confirmamos por WhatsApp.",
-    "payment_policy_link": "Ver politica de cancelacion, reembolso y reprogramacion"
+    "payment_policy_link": "Ver politica de cancelacion, reembolso y reprogramacion",
+    "reviews_count": "Reseñas verificadas",
+    "review_1": "\"Soy una señora de 78 años y pude llamar al doctor sin ningún problema. Muy amable y profesional. Me aclaró todas las dudas sobre mi piel.\"",
+    "review_2": "\"La videollamada por WhatsApp fue súper fácil. No tuve que instalar nada nuevo. El doctor fue muy paciente y explicó todo en detalle.\"",
+    "review_3": "\"Solicité una llamada de regreso y el doctor me contactó en 10 minutos. Excelente servicio. Mi acné ha mejorado notablemente.\"",
+    "label_expiry": "Vencimiento",
+    "label_cvv": "CVV"
 }

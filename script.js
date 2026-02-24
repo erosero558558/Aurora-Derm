@@ -1,5 +1,8 @@
 /* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in js/main.js and run npm run build */
-let currentLang = localStorage.getItem('language') || 'es';
+// Prefer explicit user choice; fall back to browser language; default to Spanish.
+const _savedLang = localStorage.getItem('language');
+const _browserLang = (navigator.language || navigator.userLanguage || '').startsWith('en') ? 'en' : 'es';
+let currentLang = _savedLang || _browserLang;
 let currentThemeMode = localStorage.getItem('themeMode') || 'system';
 let currentAppointment = null;
 let checkoutSession = {

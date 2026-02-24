@@ -509,8 +509,14 @@ function formatAbandonReasonLabel(label) {
     const raw = String(label || '').trim().toLowerCase();
     const labels = {
         user_closed: 'Usuario cerro el flujo',
+        chat_cancel: 'Usuario cancelo en chat',
         timeout: 'Tiempo de espera agotado',
         payment_failed: 'Pago fallido',
+        calendar_unreachable: 'Agenda Google no disponible',
+        slot_conflict: 'Horario ya ocupado',
+        slot_unavailable: 'Horario ya ocupado',
+        availability_error: 'Error consultando horarios',
+        appointment_create_failed: 'Error registrando cita',
         validation_error: 'Error de validacion',
         unknown: 'No identificado'
     };
@@ -526,10 +532,30 @@ function formatAbandonReasonLabel(label) {
 
 function formatErrorCodeLabel(label) {
     const raw = String(label || '').trim().toLowerCase();
-    if (raw === '') {
-        return 'No identificado';
+    const labels = {
+        calendar_unreachable: 'Agenda Google no disponible',
+        calendar_auth_failed: 'Token Google invalido',
+        calendar_token_rejected: 'Token Google rechazado',
+        slot_conflict: 'Horario ocupado',
+        slot_unavailable: 'Horario ocupado',
+        appointment_create_failed: 'Error registrando cita',
+        availability_error: 'Error consultando horarios',
+        payment_failed: 'Fallo de pago',
+        validation_error: 'Error de validacion',
+        unknown: 'No identificado'
+    };
+
+    if (labels[raw]) {
+        return labels[raw];
     }
-    return raw.replace(/_/g, ' ');
+    if (raw === '') {
+        return labels.unknown;
+    }
+    const prettified = raw.replace(/_/g, ' ').trim();
+    if (prettified === '') {
+        return labels.unknown;
+    }
+    return prettified.charAt(0).toUpperCase() + prettified.slice(1);
 }
 
 function renderFunnelList(elementId, rows, formatLabel, emptyMessage) {
