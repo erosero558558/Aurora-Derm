@@ -3,7 +3,7 @@
     "period": {
         "timezone": "America/Guayaquil",
         "window_days": 7,
-        "updated_at": "2026-02-24T19:01:29.697Z"
+        "updated_at": "2026-02-24T19:59:59.018Z"
     },
     "targets": {
         "rework_reduction_pct": 40,
@@ -23,11 +23,11 @@
     "current": {
         "tasks_total": 7,
         "tasks_in_progress": 4,
-        "tasks_done": 0,
+        "tasks_done": 3,
         "tasks_with_rework": 0,
         "file_conflicts": 0,
         "non_critical_lead_time_hours_avg": null,
         "coordination_gate_red_rate_pct": null,
-        "traceability_pct": 0
+        "traceability_pct": 43
     }
 }
