@@ -101,6 +101,13 @@
 
 // ── Cron (recordatorios automáticos) ────────────────
 // putenv('PIELARMONIA_CRON_SECRET=un_token_secreto_largo');
+// ── Rate limit (IP + usuario) ────────────────────────
+// Habilita limite adicional por usuario/token (default true).
+// putenv('PIELARMONIA_RATE_LIMIT_PER_USER_ENABLED=true');
+// Max requests por usuario/token en la ventana (default = maxRequests del endpoint).
+// putenv('PIELARMONIA_RATE_LIMIT_USER_MAX_REQUESTS=10');
+// Ventana por usuario/token en segundos (default = windowSeconds del endpoint).
+// putenv('PIELARMONIA_RATE_LIMIT_USER_WINDOW_SECONDS=60');
 
 // ── Backups (salud + replicacion offsite) ───────────
 // Edad maxima (horas) del ultimo backup para health check (1-168, default 24)

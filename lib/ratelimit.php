@@ -40,6 +40,119 @@ function rate_limit_client_ip(): string
 }
 
 /**
+ * Resolves a stable user identifier from headers/session for per-user limits.
+ */
+function rate_limit_user_identifier(): string
+{
+    $candidates = [];
+
+    $headerCandidates = [
+        $_SERVER['HTTP_X_USER_ID'] ?? null,
+        $_SERVER['HTTP_X_PATIENT_ID'] ?? null,
+        $_SERVER['HTTP_X_SESSION_ID'] ?? null
+    ];
+
+    foreach ($headerCandidates as $candidate) {
+        if (is_string($candidate) && trim($candidate) !== '') {
+            $candidates[] = trim($candidate);
+        }
+    }
+
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
+    if (is_string($authHeader) && trim($authHeader) !== '') {
+        $authHeader = trim($authHeader);
+        if (preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches) === 1) {
+            $token = trim((string) ($matches[1] ?? ''));
+            if ($token !== '') {
+                $candidates[] = 'bearer:' . hash('sha256', $token);
+            }
+        } else {
+            $candidates[] = 'auth:' . hash('sha256', $authHeader);
+        }
+    }
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $sessionCandidates = [
+            $_SESSION['user_id'] ?? null,
+            $_SESSION['patient_id'] ?? null,
+            $_SESSION['admin_logged_in'] ?? null
+        ];
+
+        foreach ($sessionCandidates as $candidate) {
+            if (is_bool($candidate)) {
+                if ($candidate === true) {
+                    $candidates[] = 'session:admin';
+                }
+                continue;
+            }
+            if (is_int($candidate) || is_string($candidate)) {
+                $value = trim((string) $candidate);
+                if ($value !== '') {
+                    $candidates[] = 'session:' . $value;
+                }
+            }
+        }
+    }
+
+    foreach ($candidates as $candidate) {
+        if (!is_string($candidate) || trim($candidate) === '') {
+            continue;
+        }
+        if (strlen($candidate) > 256) {
+            $candidate = substr($candidate, 0, 256);
+        }
+        return $candidate;
+    }
+
+    return '';
+}
+
+/**
+ * Returns true when per-user limits are enabled.
+ */
+function rate_limit_user_limits_enabled(): bool
+{
+    $raw = getenv('PIELARMONIA_RATE_LIMIT_PER_USER_ENABLED');
+    if (!is_string($raw) || trim($raw) === '') {
+        return true;
+    }
+    return parse_bool($raw);
+}
+
+/**
+ * Returns max requests used by per-user limits.
+ */
+function rate_limit_user_max_requests(int $fallback): int
+{
+    $raw = getenv('PIELARMONIA_RATE_LIMIT_USER_MAX_REQUESTS');
+    $value = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : $fallback;
+    return max(1, $value);
+}
+
+/**
+ * Returns window seconds used by per-user limits.
+ */
+function rate_limit_user_window_seconds(int $fallback): int
+{
+    $raw = getenv('PIELARMONIA_RATE_LIMIT_USER_WINDOW_SECONDS');
+    $value = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : $fallback;
+    return max(1, $value);
+}
+
+/**
+ * Emits structured audit events for rate-limit decisions when available.
+ *
+ * @param array<string,mixed> $details
+ */
+function rate_limit_emit_event(string $event, array $details = []): void
+{
+    if (function_exists('audit_log_event')) {
+        audit_log_event($event, $details);
+        return;
+    }
+}
+
+/**
  * Builds a stable hash key for an action and IP pair.
  */
 function rate_limit_key(string $action, ?string $ip = null): string
@@ -156,8 +269,26 @@ function is_rate_limited(string $action, int $maxRequests = 10, int $windowSecon
     $filePath = rate_limit_file_path($action);
     $entries = rate_limit_read_entries($filePath);
     $entries = rate_limit_filter_window($entries, $now, $windowSeconds);
+    if (count($entries) >= $maxRequests) {
+        return true;
+    }
 
-    return count($entries) >= $maxRequests;
+    if (!rate_limit_user_limits_enabled()) {
+        return false;
+    }
+
+    $userId = rate_limit_user_identifier();
+    if ($userId === '') {
+        return false;
+    }
+
+    $userMaxRequests = rate_limit_user_max_requests($maxRequests);
+    $userWindowSeconds = rate_limit_user_window_seconds($windowSeconds);
+    $userFilePath = rate_limit_file_path($action . ':user', $userId);
+    $userEntries = rate_limit_read_entries($userFilePath);
+    $userEntries = rate_limit_filter_window($userEntries, $now, $userWindowSeconds);
+
+    return count($userEntries) >= $userMaxRequests;
 }
 
 /**
@@ -174,16 +305,68 @@ function check_rate_limit(string $action, int $maxRequests = 10, int $windowSeco
 
     $entries = rate_limit_read_entries($filePath);
     $entries = rate_limit_filter_window($entries, $now, $windowSeconds);
+    $clientIp = rate_limit_client_ip();
 
     if (count($entries) >= $maxRequests) {
         rate_limit_write_entries($filePath, $entries);
+        rate_limit_emit_event('ratelimit.blocked', [
+            'action' => $action,
+            'scope' => 'ip',
+            'ip' => $clientIp,
+            'count' => count($entries),
+            'maxRequests' => $maxRequests,
+            'windowSeconds' => $windowSeconds
+        ]);
         return false;
+    }
+
+    $userId = '';
+    $userFilePath = '';
+    $userMaxRequests = 0;
+    $userWindowSeconds = 0;
+    if (rate_limit_user_limits_enabled()) {
+        $userId = rate_limit_user_identifier();
+        if ($userId !== '') {
+            $userMaxRequests = rate_limit_user_max_requests($maxRequests);
+            $userWindowSeconds = rate_limit_user_window_seconds($windowSeconds);
+            $userFilePath = rate_limit_file_path($action . ':user', $userId);
+            $userEntries = rate_limit_read_entries($userFilePath);
+            $userEntries = rate_limit_filter_window($userEntries, $now, $userWindowSeconds);
+
+            if (count($userEntries) >= $userMaxRequests) {
+                rate_limit_write_entries($userFilePath, $userEntries);
+                rate_limit_emit_event('ratelimit.blocked', [
+                    'action' => $action,
+                    'scope' => 'user',
+                    'ip' => $clientIp,
+                    'user' => $userId,
+                    'count' => count($userEntries),
+                    'maxRequests' => $userMaxRequests,
+                    'windowSeconds' => $userWindowSeconds
+                ]);
+                return false;
+            }
+
+            $userEntries[] = $now;
+            rate_limit_write_entries($userFilePath, $userEntries);
+        }
     }
 
     $entries[] = $now;
     rate_limit_write_entries($filePath, $entries);
 
     rate_limit_cleanup_random_shard($rateDir, $now);
+
+    rate_limit_emit_event('ratelimit.allowed', [
+        'action' => $action,
+        'scope' => $userId !== '' ? 'ip+user' : 'ip',
+        'ip' => $clientIp,
+        'user' => $userId,
+        'remainingIp' => max(0, $maxRequests - count($entries)),
+        'remainingUser' => $userId !== '' ? max(0, $userMaxRequests - count($userEntries)) : null,
+        'windowSeconds' => $windowSeconds,
+        'userWindowSeconds' => $userWindowSeconds > 0 ? $userWindowSeconds : null
+    ]);
 
     return true;
 }
@@ -196,6 +379,20 @@ function reset_rate_limit(string $action): void
     $filePath = rate_limit_file_path($action);
     if (is_file($filePath)) {
         @unlink($filePath);
+    }
+
+    if (!rate_limit_user_limits_enabled()) {
+        return;
+    }
+
+    $userId = rate_limit_user_identifier();
+    if ($userId === '') {
+        return;
+    }
+
+    $userFilePath = rate_limit_file_path($action . ':user', $userId);
+    if (is_file($userFilePath)) {
+        @unlink($userFilePath);
     }
 }
 

@@ -25,12 +25,12 @@ tasks:
     title: PHP rate-limiter sliding window and per-user limits
     owner: ernesto
     executor: jules
-    status: in_progress
+    status: done
     risk: medium
     scope: backend
-    files: ["lib/ratelimit.php", "tests/RateLimiterTest.php"]
+    files: ["lib/ratelimit.php", "tests/RateLimiterTest.php", "tests/Security/RateLimiterTest.php", "tests/Unit/Security/RateLimiterTest.php", "env.example.php"]
     acceptance: "Aplicar sliding window real, limites por usuario e instrumentacion de eventos."
-    acceptance_ref: ""
+    acceptance_ref: "tests/RateLimiterTest.php"
     depends_on: []
     prompt: "Actualizar rate-limiter a sliding window, incluir limite por user token y pruebas de regresion."
     created_at: 2026-02-24

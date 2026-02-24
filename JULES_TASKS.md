@@ -49,12 +49,12 @@ Implementar checksum SHA-256 por header, cifrado AES-256-CBC y prueba de integri
 <!-- /TASK -->
 
 <!-- TASK
-status: dispatched
+status: done
 task_id: AG-002
 risk: medium
 scope: backend
-files: lib/ratelimit.php,tests/RateLimiterTest.php
-acceptance_ref: verification/agent-runs/AG-002.md
+files: lib/ratelimit.php,tests/RateLimiterTest.php,tests/Security/RateLimiterTest.php,tests/Unit/Security/RateLimiterTest.php,env.example.php
+acceptance_ref: tests/RateLimiterTest.php
 dispatched_by: agent-orchestrator
 session: 
 dispatched: 
