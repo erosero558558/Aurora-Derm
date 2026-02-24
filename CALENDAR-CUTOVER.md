@@ -8,6 +8,7 @@ Configura:
 
 ```php
 putenv('PIELARMONIA_AVAILABILITY_SOURCE=google');
+putenv('PIELARMONIA_REQUIRE_GOOGLE_CALENDAR=true');
 putenv('PIELARMONIA_CALENDAR_BLOCK_ON_FAILURE=true');
 putenv('PIELARMONIA_CALENDAR_AUTH_MODE=oauth_refresh_token');
 
@@ -26,6 +27,12 @@ Duraciones:
 ```php
 putenv('PIELARMONIA_SERVICE_DURATION_MAP=consulta:30,telefono:30,video:30,acne:30,cancer:30,laser:60,rejuvenecimiento:60');
 ```
+
+Nota de hardening:
+- Con `PIELARMONIA_REQUIRE_GOOGLE_CALENDAR=true`, si por error el servidor queda en `source=store`, la API bloquea:
+  - `GET availability` / `GET booked-slots` con `503 calendar_unreachable`
+  - `POST appointments` / `PATCH reschedule` con `503 calendar_unreachable`
+- Esto evita reservas falsas cuando el cutover no esta activo en Google.
 
 ## 2) Variables de GitHub Actions (repo variables)
 
