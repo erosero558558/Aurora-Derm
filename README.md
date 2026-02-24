@@ -213,7 +213,7 @@ Comandos:
     - valida gobernanza y conflictos
     - despacha/reconcilia Jules
 - `.github/workflows/agent-kimi-autopilot.yml`
-    - corre cada 60 minutos
+    - corre cada 20 minutos
     - requiere runner self-hosted Windows con label `kimi`
     - ejecuta `kimi-run.js --dispatch`
 
@@ -233,7 +233,7 @@ Presupuesto recomendado con tus planes:
 - Jules (Google AI Pro 100 tareas/dia):
     - cron cada 15 min + max 1 dispatch/run = hasta 96 tareas/dia.
 - Kimi (Allegretto):
-    - cron cada 60 min + max 1 dispatch/run = hasta 24 tareas/dia (modo conservador).
+    - cron cada 20 min + max 1 dispatch/run = hasta 72 tareas/dia (3x boost).
 
 ## OpenAPI preview local
 

@@ -15,6 +15,10 @@ permissions:
 jobs:
     autopilot-jules:
         runs-on: ubuntu-latest
+        env:
+            JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+            JULES_MAX_DISPATCH_PER_RUN: ${{ vars.JULES_MAX_DISPATCH_PER_RUN || '1' }}
+            JULES_MAX_ACTIVE_SESSIONS: ${{ vars.JULES_MAX_ACTIVE_SESSIONS || '6' }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -36,18 +40,22 @@ jobs:
                   php bin/validate-agent-governance.php
 
             - name: Dispatch pending Jules tasks
-              if: ${{ secrets.JULES_API_KEY != '' }}
-              env:
-                  JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-                  JULES_MAX_DISPATCH_PER_RUN: ${{ vars.JULES_MAX_DISPATCH_PER_RUN || '1' }}
-                  JULES_MAX_ACTIVE_SESSIONS: ${{ vars.JULES_MAX_ACTIVE_SESSIONS || '6' }}
-              run: node jules-dispatch.js dispatch
+              shell: bash
+              run: |
+                  if [ -z "${JULES_API_KEY:-}" ]; then
+                    echo "JULES_API_KEY no configurado. Se omite dispatch."
+                    exit 0
+                  fi
+                  node jules-dispatch.js dispatch
 
             - name: Reconcile Jules task states
-              if: ${{ secrets.JULES_API_KEY != '' }}
-              env:
-                  JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-              run: node jules-dispatch.js reconcile
+              shell: bash
+              run: |
+                  if [ -z "${JULES_API_KEY:-}" ]; then
+                    echo "JULES_API_KEY no configurado. Se omite reconcile."
+                    exit 0
+                  fi
+                  node jules-dispatch.js reconcile
 
             - name: Print status snapshot
               run: node agent-orchestrator.js status
