@@ -683,7 +683,8 @@ if ($method !== 'POST') {
 }
 
 start_secure_session();
-require_rate_limit('figo-chat', 15, 60);
+// Límite más alto para evitar falsos 429 en tests y ráfagas cortas de UI/polling.
+require_rate_limit('figo-chat', 60, 60);
 $postRequestStartedAt = microtime(true);
 
 $payload = require_json_body();

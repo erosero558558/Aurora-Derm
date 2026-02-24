@@ -165,9 +165,15 @@ function reset_rate_limit(string $action): void
 function require_rate_limit(string $action, int $maxRequests = 10, int $windowSeconds = 60): void
 {
     if (!check_rate_limit($action, $maxRequests, $windowSeconds)) {
-        header('Retry-After: ' . (string) max(1, $windowSeconds));
+        $retryAfterSec = max(1, $windowSeconds);
+        header('Retry-After: ' . (string) $retryAfterSec);
         json_response([
             'ok' => false,
+            'mode' => 'rate_limited',
+            'source' => 'ratelimit',
+            'reason' => 'rate_limited',
+            'code' => 'rate_limited',
+            'retryAfterSec' => $retryAfterSec,
             'error' => 'Demasiadas solicitudes. Intenta de nuevo en unos minutos.'
         ], 429);
     }
