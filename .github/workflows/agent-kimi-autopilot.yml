@@ -3,7 +3,7 @@ name: Kimi Autopilot
 on:
     workflow_dispatch:
     schedule:
-        - cron: '*/30 * * * *'
+        - cron: '0 * * * *'
 
 concurrency:
     group: kimi-autopilot-${{ github.ref }}
