@@ -92,7 +92,11 @@ function normalize_store_records_with_numeric_id(array $records, string $namespa
             $seed = implode('|', $seedParts);
             $id = (int) sprintf('%u', crc32($seed));
             if ($id <= 0) {
-                $id = $index + 1;
+                $fallbackIndex =
+                    (is_int($index) || (is_string($index) && preg_match('/^\d+$/', $index)))
+                        ? (int) $index
+                        : count($normalized);
+                $id = $fallbackIndex + 1;
             }
         }
 
