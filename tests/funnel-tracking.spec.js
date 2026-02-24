@@ -247,6 +247,15 @@ test.describe('Tracking del embudo de conversion', () => {
         });
 
         await page.addInitScript(() => {
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = function (command, eventName, params) {
+                if (command === 'event') {
+                    window.dataLayer.push({
+                        event: eventName,
+                        ...params,
+                    });
+                }
+            };
             localStorage.setItem(
                 'pa_cookie_consent_v1',
                 JSON.stringify({
