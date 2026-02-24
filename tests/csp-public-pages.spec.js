@@ -28,12 +28,19 @@ test.describe('Public CSP policy', () => {
             expect(csp).toContain('https://static.cloudflareinsights.com');
 
             if (file === 'index.html') {
-                // index.html uses hashes instead of 'unsafe-inline' for style-src
-                // but allows unsafe-inline for style-src-attr to support dynamic styles (animations)
-                expect(csp).toContain("style-src 'self'");
-                expect(csp).not.toContain("style-src 'self' 'unsafe-inline'"); // Ensure unsafe-inline is NOT in style-src
-                expect(csp).toContain("style-src-attr 'self' 'unsafe-inline'"); // Ensure it IS in style-src-attr
+                // index.html uses:
+                // style-src 'self' 'unsafe-inline' ... (for attributes fallback)
+                // style-src-elem 'self' 'sha256-...' ... (for elements, overriding style-src)
+
+                expect(csp).toContain("style-src 'self' 'unsafe-inline'");
+                expect(csp).toContain("style-src-elem 'self'");
                 expect(csp).toContain('sha256-'); // Contains at least one hash
+                // Verify style-src-elem does NOT contain unsafe-inline
+                // We need to parse the directives a bit more carefully or check the string.
+                // A simple check:
+                const styleSrcElem = csp.match(/style-src-elem ([^;]+)/)[1];
+                expect(styleSrcElem).not.toContain("'unsafe-inline'");
+
                 expect(csp).toContain('https://fonts.googleapis.com');
                 expect(csp).toContain('https://cdnjs.cloudflare.com');
             } else {
