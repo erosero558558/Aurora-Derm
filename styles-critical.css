@@ -1,8 +1,25 @@
-﻿/* ========================================
+/* ========================================
    PIEL EN ARMONIA - CRITICAL CSS
    Above-the-fold and core interaction styles.
    Deferred styles are loaded from styles-deferred.css.
    ======================================== */
+
+@font-face {
+    font-family: 'Fraunces';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: optional;
+    src: url('fonts/fraunces.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 100 800;
+    font-display: optional;
+    src: url('fonts/plus-jakarta-sans.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /* build-sync: 20260219-sync1 */
 :root {
@@ -850,6 +867,8 @@ html[data-theme='dark'] .hero-trust-bar .separator {
         height: 136px;
     }
 }
+
+/* ========================================
    HERO FINAL OVERRIDES (LEGIBILIDAD)
    ======================================== */
 .hero-title span:not(.gradient-text) {
@@ -966,8 +985,6 @@ html[data-theme='dark'] .contact-chip.whatsapp {
 }
 
 /* ========================================
-
-/* ========================================
    PRICING FALLBACK (Critical)
    ======================================== */
 .pricing-container {
@@ -997,4 +1014,44 @@ html[data-theme='dark'] .contact-chip.whatsapp {
     gap: 12px;
     padding: 12px 0;
     border-bottom: 1px dashed rgba(160, 178, 204, 0.45);
+}
+
+/* ========================================
+   CHAT VIEWPORT GUARDRAILS
+   ======================================== */
+@media (max-width: 1100px) {
+    .chatbot-widget {
+        right: 12px !important;
+        bottom: calc(82px + var(--safe-bottom)) !important;
+        z-index: 2300 !important;
+    }
+    .chatbot-container {
+        left: 8px !important;
+        right: 8px !important;
+        width: auto !important;
+        max-width: none !important;
+        bottom: calc(146px + var(--safe-bottom)) !important;
+        height: min(68dvh, 560px) !important;
+        max-height: calc(
+            100dvh - 170px - var(--safe-bottom)
+        ) !important;
+        margin: 0 !important;
+        transform-origin: bottom center !important;
+        animation: none !important;
+    }
+}
+@media (max-width: 640px) {
+    .chatbot-widget {
+        right: 10px !important;
+        bottom: calc(76px + var(--safe-bottom)) !important;
+    }
+    .chatbot-container {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        height: calc(100dvh - 78px - var(--safe-bottom)) !important;
+        max-height: none !important;
+        border-radius: 18px 18px 0 0 !important;
+        animation: none !important;
+    }
 }

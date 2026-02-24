@@ -1,0 +1,373 @@
+/* ========================================
+   TELEMEDICINA SPECIFIC STYLES
+   ======================================== */
+
+/* Service Cards with Tax Info */
+.service-price-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 0 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--ui-border);
+    align-self: stretch;
+}
+
+/* Override deferred .service-price block styles when inside new container */
+.service-price-container .service-price {
+    width: auto;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    margin-bottom: 0;
+    font-size: 1rem;
+    color: var(--ui-ink);
+}
+
+.service-tax-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--ui-success);
+    background: rgba(37, 177, 106, 0.1);
+    padding: 3px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.service-card[data-service-tax='0.15'] .service-tax-badge {
+    color: var(--ui-accent);
+    background: rgba(2, 132, 199, 0.1);
+}
+
+.service-price-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background: var(--ui-surface-soft);
+    border-radius: var(--ui-radius-sm);
+    font-size: 0.8rem;
+    align-self: stretch;
+}
+
+.price-base {
+    color: var(--ui-ink-soft);
+}
+
+.price-tax {
+    color: var(--ui-accent);
+}
+
+.price-total {
+    font-weight: 600;
+    color: var(--ui-ink);
+    font-size: 0.9rem;
+}
+
+.service-card .price-note {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--ui-ink-soft);
+    font-style: italic;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+/* Services Disclaimers */
+.services-disclaimers {
+    max-width: 900px;
+    margin: 48px auto 0;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.disclaimer-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--ui-surface);
+    border-radius: var(--ui-radius);
+    border-left: 3px solid var(--ui-accent);
+    box-shadow: var(--ui-shadow-sm);
+}
+
+.disclaimer-item i {
+    color: var(--ui-accent);
+    font-size: 1.1rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.disclaimer-item p {
+    font-size: 0.85rem;
+    color: var(--ui-ink-soft);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.disclaimer-item strong {
+    color: var(--ui-ink);
+    font-weight: 600;
+}
+
+/* Checkout Breakdown with Tax */
+.checkout-breakdown {
+    background: var(--ui-surface);
+    border-radius: var(--ui-radius);
+    padding: 24px;
+    margin: 16px 0;
+    border: 2px solid var(--ui-border);
+}
+
+.checkout-breakdown.requires-quote {
+    border-color: var(--ui-accent);
+    background: linear-gradient(
+        135deg,
+        var(--ui-surface) 0%,
+        #f0f9ff 100%
+    );
+}
+
+.checkout-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.checkout-service-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--ui-ink);
+    margin: 0 0 4px;
+}
+
+.checkout-service-note {
+    font-size: 0.85rem;
+    color: var(--ui-ink-soft);
+    font-style: italic;
+}
+
+.checkout-pricing {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checkout-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.checkout-label {
+    font-size: 0.95rem;
+    color: var(--ui-ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkout-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ui-ink);
+}
+
+.checkout-value.checkout-strike {
+    text-decoration: line-through;
+    color: var(--ui-ink-soft);
+    font-weight: 400;
+}
+
+.checkout-value.checkout-discount-value {
+    color: var(--ui-success);
+}
+
+.checkout-value.checkout-total-amount {
+    font-size: 1.4rem;
+    color: var(--ui-accent);
+}
+
+.checkout-tax .checkout-label,
+.checkout-tax-zero .checkout-label {
+    color: var(--ui-ink);
+}
+
+.tax-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(2, 132, 199, 0.1);
+    color: var(--ui-accent);
+}
+
+.tax-badge-zero {
+    background: rgba(37, 177, 106, 0.1);
+    color: var(--ui-success);
+}
+
+.checkout-divider {
+    height: 1px;
+    background: var(--ui-border);
+    margin: 8px 0;
+}
+
+.checkout-total {
+    padding-top: 12px;
+    border-top: 2px solid var(--ui-border);
+}
+
+.checkout-quote-notice {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 16px;
+    background: #fef3c7;
+    border-radius: var(--ui-radius-sm);
+    border-left: 4px solid #f59e0b;
+}
+
+.checkout-quote-notice i {
+    color: #f59e0b;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.checkout-quote-notice strong {
+    display: block;
+    color: #92400e;
+    margin-bottom: 4px;
+}
+
+.checkout-quote-notice p {
+    font-size: 0.85rem;
+    color: #78350f;
+    margin: 0;
+}
+
+.checkout-disclaimers {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--ui-border);
+}
+
+.disclaimer-text {
+    font-size: 0.85rem;
+    color: var(--ui-ink-soft);
+    margin: 8px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.disclaimer-text i {
+    color: var(--ui-accent);
+    margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+    .services-disclaimers {
+        grid-template-columns: 1fr;
+        margin-top: 32px;
+    }
+
+    .disclaimer-item {
+        padding: 12px;
+    }
+
+    .checkout-breakdown {
+        padding: 16px;
+    }
+
+    .checkout-value.checkout-total-amount {
+        font-size: 1.2rem;
+    }
+}
+
+/* Responsive Pricing */
+@media (max-width: 768px) {
+    .pricing-container {
+        padding: 0 16px;
+        gap: 24px;
+    }
+
+    .pricing-category {
+        padding: 24px 20px;
+    }
+
+    .pricing-category-title {
+        font-size: 1.25rem;
+    }
+
+    .pricing-item {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .pricing-amount {
+        font-size: 1.2rem;
+    }
+
+    .pricing-grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .pricing-disclaimer {
+        flex-direction: column;
+        margin: 32px 16px 0;
+        padding: 20px;
+    }
+}
+
+/* Emergency mobile hardening for narrow viewports */
+@media (max-width: 900px) {
+    html,
+    body {
+        overflow-x: clip !important;
+    }
+
+    .chatbot-container {
+        left: 8px !important;
+        right: 8px !important;
+        width: auto !important;
+        max-width: none !important;
+        bottom: calc(146px + var(--safe-bottom)) !important;
+        transform: none !important;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr !important;
+        justify-items: center !important;
+        text-align: center !important;
+    }
+
+    .footer-links,
+    .footer-legal,
+    .footer-contact,
+    .footer-bottom {
+        text-align: center !important;
+        justify-items: center !important;
+    }
+
+    .footer-links a,
+    .footer-legal a,
+    .footer-contact a {
+        justify-content: center !important;
+        margin-inline: auto !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .chatbot-container {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+}
