@@ -43,6 +43,7 @@
         "agent:summary:local": "node bin/agent-governance-summary.js --profile local",
         "agent:summary:ci": "node bin/agent-governance-summary.js --profile ci",
         "agent:metrics": "node agent-orchestrator.js metrics",
+        "agent:metrics:baseline": "node agent-orchestrator.js metrics baseline",
         "agent:validate": "php bin/validate-agent-governance.php",
         "agent:gate": "npm run agent:test && npm run agent:conflicts && npm run agent:handoffs:lint && npm run agent:policy:lint && npm run agent:codex-check && npm run agent:validate",
         "agent:jules:dispatch": "node jules-dispatch.js dispatch",

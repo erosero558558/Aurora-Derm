@@ -16,6 +16,7 @@
  *   node agent-orchestrator.js sync
  *   node agent-orchestrator.js close <task_id> [--evidence path]
  *   node agent-orchestrator.js metrics [--json] [--profile local|ci] [--write|--no-write] [--dry-run]
+ *   node agent-orchestrator.js metrics baseline <show|set|reset> [--from current] [--json]
  */
 
 const { readFileSync, writeFileSync, existsSync, mkdirSync } = require('fs');
@@ -2128,7 +2129,193 @@ function safeNumber(value, fallback = 0) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function loadMetricsSnapshotStrict() {
+    if (!existsSync(METRICS_PATH)) {
+        throw new Error(
+            `No existe ${METRICS_PATH}. Ejecuta \`node agent-orchestrator.js metrics\` primero.`
+        );
+    }
+    try {
+        return JSON.parse(readFileSync(METRICS_PATH, 'utf8'));
+    } catch (error) {
+        throw new Error(
+            `No se pudo parsear ${METRICS_PATH}: ${error.message || error}`
+        );
+    }
+}
+
+function baselineFromCurrentMetricsSnapshot(metrics) {
+    const current = metrics?.current || {};
+    const baseline = {
+        tasks_total: safeNumber(current.tasks_total, 0),
+        tasks_with_rework: safeNumber(current.tasks_with_rework, 0),
+        file_conflicts: safeNumber(current.file_conflicts, 0),
+        file_conflicts_handoff: safeNumber(current.file_conflicts_handoff, 0),
+        non_critical_lead_time_hours_avg:
+            current.non_critical_lead_time_hours_avg === null
+                ? null
+                : safeNumber(current.non_critical_lead_time_hours_avg, 0),
+        coordination_gate_red_rate_pct:
+            current.coordination_gate_red_rate_pct === null
+                ? null
+                : safeNumber(current.coordination_gate_red_rate_pct, 0),
+        traceability_pct: safeNumber(current.traceability_pct, 0),
+    };
+
+    const contribution =
+        metrics?.contribution && Array.isArray(metrics?.contribution?.executors)
+            ? metrics.contribution
+            : null;
+
+    return {
+        baseline,
+        baseline_contribution: contribution,
+    };
+}
+
+function recalcMetricsDeltaWithBaseline(metrics) {
+    const next = { ...(metrics || {}) };
+    const current = next.current || {};
+    const baseline = next.baseline || {};
+    const contribution = next.contribution || null;
+    const baselineContribution = normalizeContributionBaseline(next);
+
+    next.delta = {
+        tasks_total:
+            safeNumber(current.tasks_total, 0) -
+            safeNumber(baseline.tasks_total, 0),
+        file_conflicts:
+            safeNumber(current.file_conflicts, 0) -
+            safeNumber(baseline.file_conflicts, 0),
+        file_conflicts_handoff:
+            safeNumber(current.file_conflicts_handoff, 0) -
+            safeNumber(baseline.file_conflicts_handoff, 0),
+        traceability_pct:
+            safeNumber(current.traceability_pct, 0) -
+            safeNumber(baseline.traceability_pct, 0),
+    };
+
+    if (
+        contribution &&
+        Array.isArray(contribution.executors) &&
+        baselineContribution &&
+        Array.isArray(baselineContribution.executors)
+    ) {
+        next.contribution_delta = buildContributionTrend(
+            contribution,
+            baselineContribution
+        );
+    }
+
+    return next;
+}
+
+function writeMetricsSnapshotFile(metrics) {
+    mkdirSync(dirname(METRICS_PATH), { recursive: true });
+    writeFileSync(
+        METRICS_PATH,
+        `${JSON.stringify(metrics, null, 4)}\n`,
+        'utf8'
+    );
+}
+
+function cmdMetricsBaseline(args = []) {
+    const { positionals, flags } = parseFlags(args);
+    const wantsJson = args.includes('--json');
+    const subcommand = String(positionals[0] || '').trim() || 'show';
+
+    if (!['show', 'set', 'reset'].includes(subcommand)) {
+        throw new Error(
+            'Uso: node agent-orchestrator.js metrics baseline <show|set|reset> [--from current] [--json]'
+        );
+    }
+
+    if (subcommand === 'show') {
+        const metrics = loadMetricsSnapshotStrict();
+        const report = {
+            version: 1,
+            ok: true,
+            action: 'show',
+            metrics_path: 'verification/agent-metrics.json',
+            baseline: metrics.baseline || null,
+            baseline_contribution: normalizeContributionBaseline(metrics),
+            baseline_meta: metrics.baseline_meta || null,
+        };
+        if (wantsJson) {
+            console.log(JSON.stringify(report, null, 2));
+            return;
+        }
+        console.log('Metrics baseline (agent-metrics.json):');
+        console.log(`- tasks_total: ${report.baseline?.tasks_total ?? 'n/a'}`);
+        console.log(
+            `- file_conflicts: ${report.baseline?.file_conflicts ?? 'n/a'}`
+        );
+        console.log(
+            `- file_conflicts_handoff: ${report.baseline?.file_conflicts_handoff ?? 'n/a'}`
+        );
+        console.log(
+            `- traceability_pct: ${report.baseline?.traceability_pct ?? 'n/a'}`
+        );
+        console.log(
+            `- baseline_meta: ${
+                report.baseline_meta
+                    ? `${report.baseline_meta.source || 'n/a'} @ ${report.baseline_meta.updated_at || 'n/a'}`
+                    : 'n/a'
+            }`
+        );
+        return;
+    }
+
+    let source = String(flags.from || 'current').trim() || 'current';
+    source = source.toLowerCase();
+    if (source !== 'current') {
+        throw new Error(
+            `metrics baseline ${subcommand}: --from invalido (${source}). Use current`
+        );
+    }
+
+    const metrics = loadMetricsSnapshotStrict();
+    const next = { ...metrics };
+    const normalized = baselineFromCurrentMetricsSnapshot(metrics);
+    next.baseline = normalized.baseline;
+    if (normalized.baseline_contribution) {
+        next.baseline_contribution = normalized.baseline_contribution;
+    }
+    next.baseline_meta = {
+        source: 'current',
+        action: subcommand,
+        updated_at: new Date().toISOString(),
+    };
+
+    const finalMetrics = recalcMetricsDeltaWithBaseline(next);
+    writeMetricsSnapshotFile(finalMetrics);
+
+    const report = {
+        version: 1,
+        ok: true,
+        action: subcommand,
+        source: 'current',
+        metrics_path: 'verification/agent-metrics.json',
+        baseline: finalMetrics.baseline,
+        baseline_contribution: normalizeContributionBaseline(finalMetrics),
+        baseline_meta: finalMetrics.baseline_meta || null,
+        delta: finalMetrics.delta || null,
+    };
+
+    if (wantsJson) {
+        console.log(JSON.stringify(report, null, 2));
+        return;
+    }
+    console.log(
+        `Metrics baseline ${subcommand} OK (source=current) en verification/agent-metrics.json`
+    );
+}
+
 function cmdMetrics(args = []) {
+    if (String(args[0] || '').trim() === 'baseline') {
+        cmdMetricsBaseline(args.slice(1));
+        return;
+    }
     const { flags } = parseFlags(args);
     const wantsJson = args.includes('--json');
     const profile = String(flags.profile || '')

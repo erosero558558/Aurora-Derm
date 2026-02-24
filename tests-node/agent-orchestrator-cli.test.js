@@ -715,6 +715,87 @@ test('metrics --dry-run muestra preview de archivos y no persiste runtime', (t) 
     );
 });
 
+test('metrics baseline show/set/reset controla baseline explicito en agent-metrics.json', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForConflictFixture({ codexStatus: 'in_progress' }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithCodexBlock({ status: 'in_progress' }),
+    });
+
+    runCli(dir, ['metrics', '--json']); // crea snapshot inicial con baseline implicito
+
+    let show = runCli(dir, ['metrics', 'baseline', 'show', '--json']);
+    let showJson = parseJsonStdout(show);
+    assert.equal(showJson.ok, true);
+    assert.equal(showJson.action, 'show');
+    assert.equal(showJson.baseline.tasks_total, 2);
+    assert.equal(showJson.baseline.file_conflicts, 1);
+
+    // Simula drift del baseline para verificar set/reset.
+    const metrics = readMetrics(dir);
+    metrics.baseline.tasks_total = 999;
+    metrics.baseline.file_conflicts = 999;
+    metrics.baseline.traceability_pct = 0;
+    metrics.baseline_contribution = {
+        executors: [
+            {
+                executor: 'codex',
+                weighted_done_points_pct: 100,
+                done_tasks_pct: 100,
+            },
+        ],
+    };
+    writeFileSync(
+        join(dir, 'verification', 'agent-metrics.json'),
+        `${JSON.stringify(metrics, null, 4)}\n`,
+        'utf8'
+    );
+
+    let setResult = runCli(dir, [
+        'metrics',
+        'baseline',
+        'set',
+        '--from',
+        'current',
+        '--json',
+    ]);
+    let setJson = parseJsonStdout(setResult);
+    assert.equal(setJson.ok, true);
+    assert.equal(setJson.action, 'set');
+    assert.equal(setJson.source, 'current');
+    assert.equal(setJson.baseline.tasks_total, 2);
+    assert.equal(setJson.baseline.file_conflicts, 1);
+    assert.equal(setJson.delta.tasks_total, 0);
+    assert.equal(setJson.delta.file_conflicts, 0);
+    assert.ok(setJson.baseline_meta);
+    assert.equal(setJson.baseline_meta.source, 'current');
+
+    let written = readMetrics(dir);
+    assert.equal(written.baseline.tasks_total, written.current.tasks_total);
+    assert.equal(
+        written.baseline.file_conflicts,
+        written.current.file_conflicts
+    );
+    assert.equal(written.delta.tasks_total, 0);
+    assert.equal(written.delta.file_conflicts, 0);
+    assert.ok(written.baseline_meta);
+    assert.equal(written.baseline_meta.action, 'set');
+
+    const resetResult = runCli(dir, ['metrics', 'baseline', 'reset', '--json']);
+    const resetJson = parseJsonStdout(resetResult);
+    assert.equal(resetJson.ok, true);
+    assert.equal(resetJson.action, 'reset');
+    assert.equal(resetJson.source, 'current');
+
+    written = readMetrics(dir);
+    assert.equal(written.baseline.tasks_total, written.current.tasks_total);
+    assert.equal(written.delta.tasks_total, 0);
+    assert.equal(written.baseline_meta.action, 'reset');
+});
+
 test('status --json expone porcentajes de aporte por agente y ranking', (t) => {
     const dir = createFixtureDir();
     t.after(() => cleanupFixtureDir(dir));

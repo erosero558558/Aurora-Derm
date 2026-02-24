@@ -127,10 +127,15 @@ node agent-orchestrator.js close <task_id>
 node agent-orchestrator.js close AG-003 --json
 node agent-orchestrator.js metrics
 node agent-orchestrator.js metrics --json
+node agent-orchestrator.js metrics baseline show
+node agent-orchestrator.js metrics baseline show --json
+node agent-orchestrator.js metrics baseline set --from current --json
+node agent-orchestrator.js metrics baseline reset --json
 php bin/validate-agent-governance.php
 npm run agent:test
 npm run agent:summary
 npm run agent:policy:lint
+npm run agent:metrics:baseline -- show --json
 npm run agent:gate
 ```
 
@@ -156,6 +161,7 @@ Nota:
 - Para CI/automatizacion, preferir `agent-governance-summary --from-json <artifact> --policy-check <strict|fail_on_red>` en lugar de parseo inline.
 - `metrics` acepta `--profile local|ci` (por defecto escribe; `local` implica read-only salvo `--write`).
 - `metrics --dry-run` muestra preview de archivos runtime que escribiria y no persiste cambios.
+- `metrics baseline <show|set|reset>` permite gestionar baseline explicito en `verification/agent-metrics.json` (recomendado usar `set --from current` tras cambios estructurales del board/politica).
 - El summary/PR comment incluye delta corto de conflictos (`blocking`/`handoff`) vs baseline usando `metrics --json`.
 - El summary/PR comment incluye semaforo (`GREEN/YELLOW/RED`) y razones de estado para lectura rapida.
 - La politica de pesos/umbrales de gobernanza vive en `governance-policy.json` (p. ej. pesos por dominio y threshold de score para `YELLOW` en summary).
