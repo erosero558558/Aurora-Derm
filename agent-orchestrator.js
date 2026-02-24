@@ -39,6 +39,17 @@ const DOMAIN_HEALTH_HISTORY_PATH = resolve(
     'agent-domain-health-history.json'
 );
 const PRIORITY_DOMAINS = ['calendar', 'chat', 'payments'];
+const DOMAIN_HEALTH_WEIGHTS = {
+    calendar: 5,
+    chat: 3,
+    payments: 2,
+    default: 1,
+};
+const DOMAIN_SIGNAL_SCORES = {
+    GREEN: 100,
+    YELLOW: 60,
+    RED: 0,
+};
 
 const ALLOWED_STATUSES = new Set([
     'backlog',
@@ -807,10 +818,23 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
 
         return {
             ...row,
+            weight:
+                DOMAIN_HEALTH_WEIGHTS[row.domain] ??
+                DOMAIN_HEALTH_WEIGHTS.default,
+            signal_score_pct: 0,
+            weighted_score_points: 0,
             signal,
             reasons,
         };
     });
+
+    for (const row of rows) {
+        row.signal_score_pct =
+            DOMAIN_SIGNAL_SCORES[row.signal] ?? DOMAIN_SIGNAL_SCORES.GREEN;
+        row.weighted_score_points = Math.round(
+            row.signal_score_pct * row.weight
+        );
+    }
 
     const priorityIndex = new Map(PRIORITY_DOMAINS.map((d, i) => [d, i]));
     rows.sort((a, b) => {
@@ -835,9 +859,48 @@ function buildDomainHealth(tasks, conflictAnalysis, handoffs = []) {
         { GREEN: 0, YELLOW: 0, RED: 0 }
     );
 
+    const totalWeight = rows.reduce(
+        (acc, row) => acc + Number(row.weight || 0),
+        0
+    );
+    const totalWeightedPoints = rows.reduce(
+        (acc, row) => acc + Number(row.weighted_score_points || 0),
+        0
+    );
+    const priorityRows = rows.filter((row) =>
+        PRIORITY_DOMAINS.includes(row.domain)
+    );
+    const priorityWeight = priorityRows.reduce(
+        (acc, row) => acc + Number(row.weight || 0),
+        0
+    );
+    const priorityWeightedPoints = priorityRows.reduce(
+        (acc, row) => acc + Number(row.weighted_score_points || 0),
+        0
+    );
+    const overallWeightedScorePct =
+        totalWeight > 0
+            ? Math.round((totalWeightedPoints / totalWeight) * 10) / 10
+            : 100;
+    const priorityWeightedScorePct =
+        priorityWeight > 0
+            ? Math.round((priorityWeightedPoints / priorityWeight) * 10) / 10
+            : 100;
+
     return {
         version: 1,
         priority_domains: PRIORITY_DOMAINS.slice(),
+        scoring: {
+            signal_scores: { ...DOMAIN_SIGNAL_SCORES },
+            domain_weights: { ...DOMAIN_HEALTH_WEIGHTS },
+            total_weight: totalWeight,
+            total_weighted_points: totalWeightedPoints,
+            overall_weighted_score_pct: overallWeightedScorePct,
+            priority_weight: priorityWeight,
+            priority_weighted_points: priorityWeightedPoints,
+            priority_weighted_score_pct: priorityWeightedScorePct,
+            primary_metric: 'priority_weighted_score_pct',
+        },
         totals: {
             domains: rows.length,
             by_signal: bySignal,
@@ -1088,6 +1151,10 @@ function buildDomainHealthHistorySummary(history, days = 7) {
     });
 
     let windowDelta = { available: false, rows: [] };
+    let regressions = {
+        green_to_red: [],
+        worsened_signal: [],
+    };
     if (daily.length >= 2) {
         const first = daily[0];
         const last = daily[daily.length - 1];
@@ -1124,6 +1191,36 @@ function buildDomainHealthHistorySummary(history, days = 7) {
                 };
             }),
         };
+
+        const severity = { GREEN: 0, YELLOW: 1, RED: 2 };
+        regressions = {
+            green_to_red: windowDelta.rows
+                .filter(
+                    (row) =>
+                        row.signal_from === 'GREEN' && row.signal_to === 'RED'
+                )
+                .map((row) => ({
+                    domain: row.domain,
+                    from_date: first.date,
+                    to_date: last.date,
+                    signal_from: row.signal_from,
+                    signal_to: row.signal_to,
+                    blocking_conflicts_delta: row.blocking_conflicts_delta,
+                })),
+            worsened_signal: windowDelta.rows
+                .filter((row) => {
+                    const from = severity[row.signal_from] ?? 0;
+                    const to = severity[row.signal_to] ?? 0;
+                    return to > from;
+                })
+                .map((row) => ({
+                    domain: row.domain,
+                    from_date: first.date,
+                    to_date: last.date,
+                    signal_from: row.signal_from,
+                    signal_to: row.signal_to,
+                })),
+        };
     }
 
     return {
@@ -1134,6 +1231,7 @@ function buildDomainHealthHistorySummary(history, days = 7) {
         domains,
         daily,
         window_delta: windowDelta,
+        regressions,
     };
 }
 
@@ -1587,6 +1685,14 @@ function cmdStatus(args) {
     if (Array.isArray(data.domain_health?.ranking)) {
         console.log('');
         console.log('Semaforo por dominio:');
+        if (data.domain_health?.scoring) {
+            console.log(
+                `- Score dominios (ponderado priority): ${data.domain_health.scoring.priority_weighted_score_pct}%`
+            );
+            console.log(
+                `- Score dominios (ponderado global): ${data.domain_health.scoring.overall_weighted_score_pct}%`
+            );
+        }
         for (const row of data.domain_health.ranking) {
             console.log(
                 `- [${row.signal}] ${row.domain}: tasks=${row.tasks_total}, active=${row.active_tasks}, blocking=${row.blocking_conflicts}, handoff=${row.handoff_conflicts}`

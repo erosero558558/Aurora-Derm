@@ -544,8 +544,18 @@ test('metrics soporta --json, escribe archivo y expone delta/baseline handoff', 
     assert.ok(json.contribution_history);
     assert.ok(json.domain_health_history);
     assert.equal(Array.isArray(json.domain_health.ranking), true);
+    assert.ok(json.domain_health.scoring);
+    assert.equal(
+        typeof json.domain_health.scoring.priority_weighted_score_pct,
+        'number'
+    );
     assert.equal(Array.isArray(json.contribution_history.daily), true);
     assert.equal(Array.isArray(json.domain_health_history.daily), true);
+    assert.ok(json.domain_health_history.regressions);
+    assert.equal(
+        Array.isArray(json.domain_health_history.regressions.green_to_red),
+        true
+    );
     assert.equal(Array.isArray(json.baseline_contribution.executors), true);
     assert.equal(Array.isArray(json.contribution_delta.rows), true);
 
@@ -592,6 +602,7 @@ test('status --json expone porcentajes de aporte por agente y ranking', (t) => {
     assert.equal(Object.hasOwn(json, 'contribution_trend'), true);
     assert.ok(json.domain_health);
     assert.equal(Array.isArray(json.domain_health.ranking), true);
+    assert.ok(json.domain_health.scoring);
     assert.equal(
         json.domain_health.ranking.some((row) => row.domain === 'payments'),
         true
@@ -646,6 +657,7 @@ test('status texto muestra leaderboard con semaforo y delta vs baseline cuando h
 
     const result = runCli(dir, ['status']);
     assert.match(result.stdout, /Semaforo por dominio:/);
+    assert.match(result.stdout, /Score dominios \(ponderado priority\):/);
     assert.match(result.stdout, /\[GREEN\]\s+payments:/);
     assert.match(result.stdout, /Aporte \(ranking por completado ponderado\)/);
     assert.match(result.stdout, /Baseline de comparacion:\s+metrics/);

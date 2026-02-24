@@ -68,6 +68,8 @@ function computeHealthSignal({
     deltaSummary,
     handoffStatus,
     conflicts,
+    domainHealth,
+    domainHealthHistory,
 }) {
     const reasons = [];
     const blockingConflicts = Number(conflicts?.totals?.blocking ?? 0);
@@ -79,6 +81,17 @@ function computeHealthSignal({
     const activeExpiredHandoffs = Number(
         handoffStatus?.summary?.active_expired ?? 0
     );
+    const priorityDomainScore = Number(
+        domainHealth?.scoring?.priority_weighted_score_pct ?? NaN
+    );
+    const overallDomainScore = Number(
+        domainHealth?.scoring?.overall_weighted_score_pct ?? NaN
+    );
+    const greenToRedRegressions = Array.isArray(
+        domainHealthHistory?.regressions?.green_to_red
+    )
+        ? domainHealthHistory.regressions.green_to_red
+        : [];
 
     if (Array.isArray(blockers) && blockers.length > 0) {
         reasons.push(`blockers:${blockers.join(',')}`);
@@ -89,9 +102,26 @@ function computeHealthSignal({
     if (blockingDelta > 0) {
         reasons.push(`blocking_conflicts_delta:+${blockingDelta}`);
     }
+    if (greenToRedRegressions.length > 0) {
+        reasons.push(
+            `domain_regression_green_to_red:${greenToRedRegressions.length}`
+        );
+    }
 
     if (reasons.length > 0) {
-        return { signal: 'RED', reasons };
+        return {
+            signal: 'RED',
+            reasons,
+            domain_weighted_score_pct: Number.isFinite(priorityDomainScore)
+                ? priorityDomainScore
+                : null,
+            domain_weighted_score_global_pct: Number.isFinite(
+                overallDomainScore
+            )
+                ? overallDomainScore
+                : null,
+            domain_regression_green_to_red: greenToRedRegressions.length,
+        };
     }
 
     if (activeExpiredHandoffs > 0) {
@@ -103,12 +133,37 @@ function computeHealthSignal({
     if (handoffDelta > 0) {
         reasons.push(`handoff_conflicts_delta:+${handoffDelta}`);
     }
-
-    if (reasons.length > 0) {
-        return { signal: 'YELLOW', reasons };
+    if (Number.isFinite(priorityDomainScore) && priorityDomainScore < 80) {
+        reasons.push(`domain_score_priority:${priorityDomainScore}%`);
     }
 
-    return { signal: 'GREEN', reasons: ['stable'] };
+    if (reasons.length > 0) {
+        return {
+            signal: 'YELLOW',
+            reasons,
+            domain_weighted_score_pct: Number.isFinite(priorityDomainScore)
+                ? priorityDomainScore
+                : null,
+            domain_weighted_score_global_pct: Number.isFinite(
+                overallDomainScore
+            )
+                ? overallDomainScore
+                : null,
+            domain_regression_green_to_red: greenToRedRegressions.length,
+        };
+    }
+
+    return {
+        signal: 'GREEN',
+        reasons: ['stable'],
+        domain_weighted_score_pct: Number.isFinite(priorityDomainScore)
+            ? priorityDomainScore
+            : null,
+        domain_weighted_score_global_pct: Number.isFinite(overallDomainScore)
+            ? overallDomainScore
+            : null,
+        domain_regression_green_to_red: greenToRedRegressions.length,
+    };
 }
 
 function getContributionSignal(row) {
@@ -221,6 +276,8 @@ function summarize(resultMap) {
         deltaSummary,
         handoffStatus,
         conflicts,
+        domainHealth,
+        domainHealthHistory,
     });
 
     return {
@@ -232,6 +289,11 @@ function summarize(resultMap) {
             blockers,
             signal: health.signal,
             reasons: health.reasons,
+            domain_weighted_score_pct: health.domain_weighted_score_pct,
+            domain_weighted_score_global_pct:
+                health.domain_weighted_score_global_pct,
+            domain_regression_green_to_red:
+                health.domain_regression_green_to_red,
         },
         status: status || null,
         conflicts: conflicts || null,
@@ -287,6 +349,15 @@ function toMarkdown(report) {
     lines.push(`- Generated: \`${report.generated_at}\``);
     lines.push(`- Overall: ${report.overall.ok ? 'OK' : 'BLOCKED'}`);
     lines.push(`- Semaforo: \`${report.overall.signal || 'n/a'}\``);
+    lines.push(
+        `- Score salud dominios (priority): \`${report.overall.domain_weighted_score_pct ?? 'n/a'}\``
+    );
+    lines.push(
+        `- Score salud dominios (global): \`${report.overall.domain_weighted_score_global_pct ?? 'n/a'}\``
+    );
+    lines.push(
+        `- Regresiones dominio GREEN->RED: \`${report.overall.domain_regression_green_to_red ?? 0}\``
+    );
     lines.push(
         `- Blockers: ${
             report.overall.blockers.length > 0
@@ -376,6 +447,19 @@ function toMarkdown(report) {
                     `  - \`${row.domain}\`: signal \`${row.signal_from}\` -> \`${row.signal_to}\`, blocking delta \`${fmtDelta(row.blocking_conflicts_delta)}\``
                 );
             }
+        }
+        lines.push('');
+    }
+
+    if (
+        Array.isArray(domainHealthHistory?.regressions?.green_to_red) &&
+        domainHealthHistory.regressions.green_to_red.length > 0
+    ) {
+        lines.push('### Alertas de Regresion de Dominio');
+        for (const row of domainHealthHistory.regressions.green_to_red) {
+            lines.push(
+                `- \`${row.domain}\`: \`${row.signal_from}\` -> \`${row.signal_to}\` (${row.from_date} -> ${row.to_date}), blocking delta \`${fmtDelta(row.blocking_conflicts_delta)}\``
+            );
         }
         lines.push('');
     }

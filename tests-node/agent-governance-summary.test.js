@@ -103,6 +103,94 @@ Relacion con Operativo 2026:
     );
 }
 
+function writeFixtureFilesWithChatFailure(dir) {
+    const board = `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  updated_at: ${DATE}
+tasks:
+  - id: AG-001
+    title: "Fixture task"
+    owner: ernesto
+    executor: jules
+    status: done
+    risk: low
+    scope: docs
+    files: ["README.md"]
+    acceptance: "Fixture"
+    acceptance_ref: "README.md"
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+
+  - id: AG-002
+    title: "Chat failure fixture"
+    owner: ernesto
+    executor: kimi
+    status: failed
+    risk: high
+    scope: chat
+    files: ["src/apps/chat/engine.js"]
+    acceptance: "Fixture"
+    acceptance_ref: "verification/agent-runs/AG-002.md"
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+
+  - id: CDX-001
+    title: "Codex fixture"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: codex-governance
+    files: ["AGENTS.md", "agent-orchestrator.js"]
+    acceptance: "Fixture"
+    acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`;
+
+    const handoffs = `
+version: 1
+handoffs: []
+`;
+
+    const plan = `
+# Plan Maestro Codex 2026 (Fixture)
+
+<!-- CODEX_ACTIVE
+block: C1
+task_id: CDX-001
+status: in_progress
+files: ["AGENTS.md", "agent-orchestrator.js"]
+updated_at: ${DATE}
+-->
+
+Relacion con Operativo 2026:
+- Fixture.
+`;
+
+    writeFileSync(join(dir, 'AGENT_BOARD.yaml'), `${board.trim()}\n`, 'utf8');
+    writeFileSync(
+        join(dir, 'AGENT_HANDOFFS.yaml'),
+        `${handoffs.trim()}\n`,
+        'utf8'
+    );
+    writeFileSync(
+        join(dir, 'PLAN_MAESTRO_CODEX_2026.md'),
+        `${plan.trim()}\n`,
+        'utf8'
+    );
+}
+
 function runSummary(dir, args = []) {
     const result = spawnSync(
         process.execPath,
@@ -139,6 +227,15 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.equal(parsed.overall.signal, 'GREEN');
     assert.equal(Array.isArray(parsed.overall.reasons), true);
     assert.match(parsed.overall.reasons.join(' | '), /stable/i);
+    assert.equal(typeof parsed.overall.domain_weighted_score_pct, 'number');
+    assert.equal(
+        typeof parsed.overall.domain_weighted_score_global_pct,
+        'number'
+    );
+    assert.equal(
+        typeof parsed.overall.domain_regression_green_to_red,
+        'number'
+    );
     assert.equal(parsed.status.totals.tasks, 2);
     assert.equal(parsed.conflicts.totals.blocking, 0);
     assert.equal(parsed.handoffs.lint.ok, true);
@@ -172,6 +269,8 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /^## Agent Governance Summary/m);
     assert.match(writtenMd, /Overall:\s+OK/);
     assert.match(writtenMd, /Semaforo:\s+`GREEN`/);
+    assert.match(writtenMd, /Score salud dominios \(priority\):/);
+    assert.match(writtenMd, /Regresiones dominio GREEN->RED:/);
     assert.match(writtenMd, /Razones:\s+`stable`/);
     assert.match(writtenMd, /Delta vs Baseline \(Conflicts\/Handoffs\)/);
     assert.match(writtenMd, /Semaforo Por Dominio/);
@@ -179,4 +278,83 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /Aporte Por Agente/);
     assert.match(writtenMd, /Historico Aporte/);
     assert.match(writtenMd, /\[GREEN\].*jules|\[GREEN\].*codex/);
+});
+
+test('agent-governance-summary alerta regresion de dominio GREEN->RED en PR summary', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+    writeFixtureFilesWithChatFailure(dir);
+
+    const verificationDir = join(dir, 'verification');
+    require('fs').mkdirSync(verificationDir, { recursive: true });
+    writeFileSync(
+        join(verificationDir, 'agent-domain-health-history.json'),
+        `${JSON.stringify(
+            {
+                version: 1,
+                updated_at: '2026-02-23T10:00:00Z',
+                snapshots: [
+                    {
+                        date: '2026-02-23',
+                        captured_at: '2026-02-23T10:00:00Z',
+                        counts_by_signal: { GREEN: 3, YELLOW: 0, RED: 0 },
+                        domains: [
+                            {
+                                domain: 'calendar',
+                                signal: 'GREEN',
+                                tasks_total: 0,
+                                active_tasks: 0,
+                                done_tasks: 0,
+                                blocking_conflicts: 0,
+                                handoff_conflicts: 0,
+                                active_expired_handoffs: 0,
+                            },
+                            {
+                                domain: 'chat',
+                                signal: 'GREEN',
+                                tasks_total: 1,
+                                active_tasks: 0,
+                                done_tasks: 1,
+                                blocking_conflicts: 0,
+                                handoff_conflicts: 0,
+                                active_expired_handoffs: 0,
+                            },
+                            {
+                                domain: 'payments',
+                                signal: 'GREEN',
+                                tasks_total: 0,
+                                active_tasks: 0,
+                                done_tasks: 0,
+                                blocking_conflicts: 0,
+                                handoff_conflicts: 0,
+                                active_expired_handoffs: 0,
+                            },
+                        ],
+                    },
+                ],
+            },
+            null,
+            2
+        )}\n`,
+        'utf8'
+    );
+
+    const result = runSummary(dir, ['--format', 'json']);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const parsed = JSON.parse(result.stdout);
+
+    assert.equal(parsed.overall.ok, true);
+    assert.equal(parsed.overall.signal, 'RED');
+    assert.ok(parsed.overall.domain_regression_green_to_red >= 1);
+    assert.ok(parsed.domain_health_history);
+    assert.ok(parsed.domain_health_history.regressions);
+    assert.ok(
+        parsed.domain_health_history.regressions.green_to_red.some(
+            (row) => row.domain === 'chat'
+        )
+    );
+
+    const md = runSummary(dir, ['--format', 'markdown']).stdout;
+    assert.match(md, /Alertas de Regresion de Dominio/);
+    assert.match(md, /`chat`: `GREEN` -> `RED`/);
 });
