@@ -136,6 +136,9 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     const parsed = JSON.parse(result.stdout);
     assert.equal(parsed.version, 1);
     assert.equal(parsed.overall.ok, true);
+    assert.equal(parsed.overall.signal, 'GREEN');
+    assert.equal(Array.isArray(parsed.overall.reasons), true);
+    assert.match(parsed.overall.reasons.join(' | '), /stable/i);
     assert.equal(parsed.status.totals.tasks, 2);
     assert.equal(parsed.conflicts.totals.blocking, 0);
     assert.equal(parsed.handoffs.lint.ok, true);
@@ -162,6 +165,9 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.equal(writtenJson.version, 1);
     assert.match(writtenMd, /^## Agent Governance Summary/m);
     assert.match(writtenMd, /Overall:\s+OK/);
+    assert.match(writtenMd, /Semaforo:\s+`GREEN`/);
+    assert.match(writtenMd, /Razones:\s+`stable`/);
     assert.match(writtenMd, /Delta vs Baseline \(Conflicts\/Handoffs\)/);
     assert.match(writtenMd, /Aporte Por Agente/);
+    assert.match(writtenMd, /\[GREEN\].*jules|\[GREEN\].*codex/);
 });

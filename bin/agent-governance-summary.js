@@ -63,6 +63,82 @@ function runOrchestratorJson(args) {
     };
 }
 
+function computeHealthSignal({
+    blockers,
+    deltaSummary,
+    handoffStatus,
+    conflicts,
+}) {
+    const reasons = [];
+    const blockingConflicts = Number(conflicts?.totals?.blocking ?? 0);
+    const blockingDelta = Number(deltaSummary?.conflicts_blocking?.delta ?? 0);
+    const handoffConflicts = Number(
+        deltaSummary?.conflicts_handoff?.current ?? 0
+    );
+    const handoffDelta = Number(deltaSummary?.conflicts_handoff?.delta ?? 0);
+    const activeExpiredHandoffs = Number(
+        handoffStatus?.summary?.active_expired ?? 0
+    );
+
+    if (Array.isArray(blockers) && blockers.length > 0) {
+        reasons.push(`blockers:${blockers.join(',')}`);
+    }
+    if (blockingConflicts > 0) {
+        reasons.push(`blocking_conflicts:${blockingConflicts}`);
+    }
+    if (blockingDelta > 0) {
+        reasons.push(`blocking_conflicts_delta:+${blockingDelta}`);
+    }
+
+    if (reasons.length > 0) {
+        return { signal: 'RED', reasons };
+    }
+
+    if (activeExpiredHandoffs > 0) {
+        reasons.push(`handoffs_active_expired:${activeExpiredHandoffs}`);
+    }
+    if (handoffConflicts > 0) {
+        reasons.push(`handoff_conflicts:${handoffConflicts}`);
+    }
+    if (handoffDelta > 0) {
+        reasons.push(`handoff_conflicts_delta:+${handoffDelta}`);
+    }
+
+    if (reasons.length > 0) {
+        return { signal: 'YELLOW', reasons };
+    }
+
+    return { signal: 'GREEN', reasons: ['stable'] };
+}
+
+function getContributionSignal(row) {
+    const rank = Number(row?.rank ?? 999);
+    const weightedDone = Number(row?.weighted_done_points_pct ?? 0);
+    const activeTasks = Number(row?.active_tasks ?? 0);
+
+    if (rank === 1 && weightedDone > 0) return 'GREEN';
+    if (weightedDone > 0 || activeTasks > 0) return 'YELLOW';
+    return 'RED';
+}
+
+function formatPpDelta(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 'n/a';
+    if (n > 0) return `+${n}pp`;
+    return `${n}pp`;
+}
+
+function buildContributionDeltaMap(metrics) {
+    if (!metrics || !Array.isArray(metrics?.contribution_delta?.rows))
+        return new Map();
+    return new Map(
+        metrics.contribution_delta.rows.map((row) => [
+            String(row.executor || ''),
+            row,
+        ])
+    );
+}
+
 function summarize(resultMap) {
     const status = resultMap.status?.json || {};
     const conflicts = resultMap.conflicts?.json || {};
@@ -130,6 +206,13 @@ function summarize(resultMap) {
         },
     };
 
+    const health = computeHealthSignal({
+        blockers,
+        deltaSummary,
+        handoffStatus,
+        conflicts,
+    });
+
     return {
         version: 1,
         generated_at: new Date().toISOString(),
@@ -137,6 +220,8 @@ function summarize(resultMap) {
         overall: {
             ok: blockers.length === 0,
             blockers,
+            signal: health.signal,
+            reasons: health.reasons,
         },
         status: status || null,
         conflicts: conflicts || null,
@@ -169,15 +254,35 @@ function toMarkdown(report) {
     const codexCheck = report.codex_check || {};
     const delta = report.delta_summary || {};
     const contribution = report.contribution || {};
+    const contributionDeltaMap = buildContributionDeltaMap(
+        report.metrics || {}
+    );
+    const contributionRowsByExecutor = new Map(
+        Array.isArray(contribution.executors)
+            ? contribution.executors.map((row) => [
+                  String(row.executor || ''),
+                  row,
+              ])
+            : []
+    );
 
     lines.push('## Agent Governance Summary');
     lines.push('');
     lines.push(`- Generated: \`${report.generated_at}\``);
     lines.push(`- Overall: ${report.overall.ok ? 'OK' : 'BLOCKED'}`);
+    lines.push(`- Semaforo: \`${report.overall.signal || 'n/a'}\``);
     lines.push(
         `- Blockers: ${
             report.overall.blockers.length > 0
                 ? report.overall.blockers.map((b) => `\`${b}\``).join(', ')
+                : 'none'
+        }`
+    );
+    lines.push(
+        `- Razones: ${
+            Array.isArray(report.overall.reasons) &&
+            report.overall.reasons.length > 0
+                ? report.overall.reasons.map((r) => `\`${r}\``).join(', ')
                 : 'none'
         }`
     );
@@ -201,8 +306,21 @@ function toMarkdown(report) {
             ? contribution.ranking.slice(0, 10)
             : [];
         for (const row of rows) {
+            const detail =
+                contributionRowsByExecutor.get(String(row.executor || '')) ||
+                {};
+            const deltaRow = contributionDeltaMap.get(
+                String(row.executor || '')
+            );
+            const deltaWeightedDone = deltaRow
+                ? formatPpDelta(deltaRow.weighted_done_points_pct_delta)
+                : 'n/a';
+            const signal = getContributionSignal({
+                ...row,
+                active_tasks: detail.active_tasks,
+            });
             lines.push(
-                `- #${row.rank} \`${row.executor}\`: done ponderado=\`${row.weighted_done_points_pct}%\`, tareas done=\`${row.done_tasks_pct}%\``
+                `- [${signal}] #${row.rank} \`${row.executor}\`: done ponderado=\`${row.weighted_done_points_pct}%\` (delta \`${deltaWeightedDone}\`), tareas done=\`${row.done_tasks_pct}%\``
             );
         }
         lines.push('');
