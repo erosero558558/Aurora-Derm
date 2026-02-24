@@ -83,7 +83,7 @@ Generar OpenAPI 3.1 para api.php recursos principales y documentar como visualiz
 <!-- /TASK -->
 
 <!-- TASK
-status: dispatched
+status: done
 task_id: AG-004
 risk: medium
 scope: backend
