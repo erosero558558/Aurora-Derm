@@ -13,10 +13,10 @@
         apiUrl: '/figo-chat.php',
         model: 'figo-assistant',
         // Limite pragmático para bajar p95 sin degradar utilidad clínica.
-        maxTokens: 320,
+        maxTokens: 256,
         temperature: 0.7,
     };
-    const CHAT_CONTEXT_MAX_ITEMS = 16;
+    const CHAT_CONTEXT_MAX_ITEMS = 14;
     const OPENCLAW_POLL_MAX_MS = 30000;
 
     let deps = null;
@@ -489,7 +489,7 @@ FLUJO DE PAGO REAL DEL SITIO:
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'system', content: FIGO_EXPERT_PROMPT },
             { role: 'system', content: getChatRuntimeContext() },
-            ...conversationContext.slice(-8),
+            ...conversationContext.slice(-6),
         ];
     }
 

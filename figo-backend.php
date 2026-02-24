@@ -331,7 +331,7 @@ function figo_backend_ai_max_tokens(): int
     $maxTokens = (int) $raw;
     if ($maxTokens <= 0) {
         // Default conservador para reducir latencia p95 sin romper calidad.
-        $maxTokens = 320;
+        $maxTokens = 256;
     }
     if ($maxTokens < 96) {
         $maxTokens = 96;
@@ -340,6 +340,64 @@ function figo_backend_ai_max_tokens(): int
         $maxTokens = 1200;
     }
     return $maxTokens;
+}
+
+function figo_backend_limit_text(string $text, int $maxLength = 900): string
+{
+    $clean = trim(preg_replace('/\s+/', ' ', $text) ?? '');
+    if ($clean === '') {
+        return '';
+    }
+
+    if ($maxLength <= 0) {
+        return $clean;
+    }
+
+    if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+        if (mb_strlen($clean, 'UTF-8') > $maxLength) {
+            return rtrim((string) mb_substr($clean, 0, $maxLength, 'UTF-8')) . '...';
+        }
+        return $clean;
+    }
+
+    if (strlen($clean) > $maxLength) {
+        return rtrim(substr($clean, 0, $maxLength)) . '...';
+    }
+
+    return $clean;
+}
+
+function figo_backend_prepare_ai_context_messages(array $rawMessages): array
+{
+    $prepared = [];
+    foreach ($rawMessages as $msg) {
+        if (!is_array($msg)) {
+            continue;
+        }
+
+        $role = strtolower(trim((string) ($msg['role'] ?? '')));
+        if (!in_array($role, ['user', 'assistant'], true)) {
+            continue;
+        }
+
+        $content = isset($msg['content']) && is_string($msg['content'])
+            ? figo_backend_limit_text((string) $msg['content'], 700)
+            : '';
+        if ($content === '') {
+            continue;
+        }
+
+        $prepared[] = [
+            'role' => $role,
+            'content' => $content
+        ];
+    }
+
+    if (count($prepared) > 6) {
+        $prepared = array_slice($prepared, -6);
+    }
+
+    return $prepared;
 }
 
 function figo_backend_ai_model(): string
@@ -509,11 +567,14 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
 
     $messages = [['role' => 'system', 'content' => figo_backend_ai_system_prompt()]];
 
-    if ($contextMessages !== []) {
-        foreach (array_slice($contextMessages, -8) as $msg) {
-            if (is_array($msg) && isset($msg['role'], $msg['content'])) {
-                $messages[] = ['role' => (string) $msg['role'], 'content' => (string) $msg['content']];
-            }
+    $preparedContext = figo_backend_prepare_ai_context_messages($contextMessages);
+    if ($preparedContext !== []) {
+        foreach ($preparedContext as $msg) {
+            $messages[] = $msg;
+        }
+        $lastRole = (string) ($preparedContext[count($preparedContext) - 1]['role'] ?? '');
+        if ($lastRole !== 'user' && trim($userMessage) !== '') {
+            $messages[] = ['role' => 'user', 'content' => figo_backend_limit_text($userMessage, 700)];
         }
     } else {
         $messages[] = ['role' => 'user', 'content' => $userMessage];
