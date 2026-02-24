@@ -41,7 +41,62 @@ function test_strlen(string $value): int
     return strlen($value);
 }
 
-echo "Running tests for normalize_review...\n";
+// ── parse_bool ────────────────────────────────────────────────────────────────
+echo "Running tests for parse_bool...\n";
+
+run_test('parse_bool(true)', function () { assert_equals(true, parse_bool(true)); });
+run_test('parse_bool(false)', function () { assert_equals(false, parse_bool(false)); });
+run_test('parse_bool("1")', function () { assert_equals(true, parse_bool('1')); });
+run_test('parse_bool("true")', function () { assert_equals(true, parse_bool('true')); });
+run_test('parse_bool("True")', function () { assert_equals(true, parse_bool('True')); });
+run_test('parse_bool("TRUE")', function () { assert_equals(true, parse_bool('TRUE')); });
+run_test('parse_bool("yes")', function () { assert_equals(true, parse_bool('yes')); });
+run_test('parse_bool("on")', function () { assert_equals(true, parse_bool('on')); });
+run_test('parse_bool("0")', function () { assert_equals(false, parse_bool('0')); });
+run_test('parse_bool("false")', function () { assert_equals(false, parse_bool('false')); });
+run_test('parse_bool("no")', function () { assert_equals(false, parse_bool('no')); });
+run_test('parse_bool("off")', function () { assert_equals(false, parse_bool('off')); });
+run_test('parse_bool("")', function () { assert_equals(false, parse_bool('')); });
+run_test('parse_bool("random")', function () { assert_equals(false, parse_bool('random')); });
+run_test('parse_bool(1)', function () { assert_equals(true, parse_bool(1)); });
+run_test('parse_bool(0)', function () { assert_equals(false, parse_bool(0)); });
+run_test('parse_bool(2)', function () { assert_equals(false, parse_bool(2)); });
+run_test('parse_bool(-1)', function () { assert_equals(false, parse_bool(-1)); });
+run_test('parse_bool(null)', function () { assert_equals(false, parse_bool(null)); });
+run_test('parse_bool([])', function () { assert_equals(false, parse_bool([])); });
+run_test('parse_bool(new stdClass())', function () { assert_equals(false, parse_bool(new stdClass())); });
+run_test('parse_bool(1.0)', function () { assert_equals(false, parse_bool(1.0)); });
+
+// ── truncate_field ────────────────────────────────────────────────────────────
+echo "\nRunning tests for truncate_field...\n";
+
+run_test('truncate_field: shorter than max', function () {
+    assert_equals('hello', truncate_field('hello', 10));
+});
+run_test('truncate_field: equal to max', function () {
+    assert_equals('hello', truncate_field('hello', 5));
+});
+run_test('truncate_field: longer than max', function () {
+    assert_equals('hello', truncate_field('hello world', 5));
+});
+run_test('truncate_field: empty string', function () {
+    assert_equals('', truncate_field('', 10));
+});
+run_test('truncate_field: multibyte shorter than max', function () {
+    assert_equals('café', truncate_field('café', 10));
+});
+run_test('truncate_field: multibyte truncation', function () {
+    assert_equals('caf', truncate_field('café', 3));
+});
+run_test('truncate_field: emoji counts as 1 char', function () {
+    assert_equals('👋', truncate_field('👋 world', 1));
+});
+run_test('truncate_field: zero length returns empty', function () {
+    assert_equals('', truncate_field('anything', 0));
+});
+
+// ── normalize_review ──────────────────────────────────────────────────────────
+echo "\nRunning tests for normalize_review...\n";
 
 // Test 1: Happy Path
 run_test('Happy Path', function () {
