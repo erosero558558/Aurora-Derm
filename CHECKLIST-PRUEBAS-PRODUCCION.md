@@ -202,7 +202,6 @@ Fecha de ejecucion sugerida: completar al desplegar.
 
 - no debe existir `sk-...` hardcodeado.
 - no debe existir `admin123` como fallback.
-- `proxy.php` debe responder `410` (deshabilitado).
 
 2. Verifica admin sin sesion:
 

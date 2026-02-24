@@ -78,7 +78,6 @@ Notas:
 - `.htaccess` ahora aplica Brotli/gzip y politicas de cache: estaticos con `max-age`, API critica con `no-store`.
 - `index.php` ahora entrega la home con cabeceras de seguridad (incluye CSP) cuando el servidor enruta `/` a PHP.
 - Si ya existe `figo-chat.php` en tu servidor, mantenlo publicado.
-- `proxy.php` queda deshabilitado por seguridad (retorna 410).
 
 ## Requisitos de servidor
 

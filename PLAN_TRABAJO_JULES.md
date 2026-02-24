@@ -49,7 +49,7 @@ grep -n "DEBUG\|debugLog\|window.debug" *.js
 
 ---
 
-### ✅ TAREA 1.2: Eliminar proxy.php Deprecado
+### ✅ TAREA 1.2: Eliminar proxy.php Deprecado (Completado)
 **Archivo:** `proxy.php`  
 **Tiempo:** 30 minutos | **Riesgo:** Bajo (ya marcado como deprecated)
 

@@ -23,15 +23,15 @@
 
 ## 🔴 P0 - CRÍTICOS (Seguridad/Core)
 
-### 1. **Proxy.php Deprecado** 🔴
+### 1. **Proxy.php Deprecado** ✅ (Eliminado)
 
 ```php
 // proxy.php línea 5
 /**
  * Deprecated endpoint.
  */
-Estado: Marcado como deprecado pero sigue en producción
-Acción: Migrar uso a endpoints nuevos y eliminar
+Estado: Eliminado del codebase y referencias actualizadas.
+Acción: Completada.
 ```
 
 ### 2. **Debug Expuesto en Código** 🔴

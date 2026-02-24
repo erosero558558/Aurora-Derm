@@ -12,7 +12,6 @@ test.describe('Service worker policy hardening', () => {
         expect(source).toContain("'/api.php'");
         expect(source).toContain("'/figo-chat.php'");
         expect(source).toContain("'/figo-backend.php'");
-        expect(source).toContain("'/proxy.php'");
     });
 
     test('sw pre-caches versioned critical bundles', () => {

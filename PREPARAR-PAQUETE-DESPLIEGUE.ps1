@@ -98,7 +98,6 @@ $files = @(
     'payment-lib.php',
     'figo-chat.php',
     'figo-backend.php',
-    'proxy.php',
     'terminos.html',
     'privacidad.html',
     'cookies.html',

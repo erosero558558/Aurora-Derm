@@ -32,7 +32,6 @@ const NETWORK_ONLY_PREFIXES = [
     '/figo-ai-bridge.php',
     '/check-ai-response.php',
     '/figo-backend.php',
-    '/proxy.php',
     '/admin-auth.php',
     '/stripe-webhook.php',
 ];

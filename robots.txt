@@ -4,7 +4,6 @@ Disallow: /api.php
 Disallow: /admin.html
 Disallow: /admin-auth.php
 Disallow: /figo-chat.php
-Disallow: /proxy.php
 Disallow: /cron.php
 Disallow: /data/
 Disallow: /uploads/
