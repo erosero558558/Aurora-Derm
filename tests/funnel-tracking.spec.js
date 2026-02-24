@@ -129,9 +129,10 @@ async function getTrackedEvents(page) {
                 ) {
                     return { ...item };
                 }
-                // Handle gtag('event', 'name', params) pushed as arguments array
+                // Handle gtag('event', 'name', params) pushed as arguments array or Arguments object
                 if (
-                    Array.isArray(item) &&
+                    item &&
+                    typeof item === 'object' &&
                     item[0] === 'event' &&
                     typeof item[1] === 'string'
                 ) {
