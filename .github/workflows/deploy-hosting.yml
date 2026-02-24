@@ -220,12 +220,14 @@ jobs:
         timeout-minutes: 20
         env:
             # Production Configuration
+            DEPLOY_METHOD: ${{ vars.DEPLOY_METHOD || 'git-sync' }}
             DEPLOY_PROTOCOL: ${{ github.event.inputs.protocol || vars.FTP_PROTOCOL || 'ftps' }}
             FTP_SERVER_PORT: ${{ github.event.inputs.server_port || vars.FTP_SERVER_PORT || '21' }}
             FTP_SECURITY: ${{ github.event.inputs.security || vars.FTP_SECURITY || 'strict' }}
             FTP_SERVER_DIR: ${{ github.event.inputs.server_dir || vars.FTP_SERVER_DIR || '/public_html/' }}
             FTP_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
             FTP_CLEAN_SLATE: ${{ github.event.inputs.clean_slate || 'false' }}
+            GIT_SYNC_WAIT_SEC: ${{ vars.GIT_SYNC_WAIT_SEC || '75' }}
             PROD_URL: ${{ vars.PROD_URL || 'https://pielarmonia.com' }}
 
         steps:
@@ -242,6 +244,7 @@ jobs:
               run: composer install --no-dev --optimize-autoloader --prefer-dist --no-progress
 
             - name: Validar secretos requeridos (Prod)
+              if: ${{ env.DEPLOY_METHOD != 'git-sync' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -259,6 +262,7 @@ jobs:
                   fi
 
             - name: Preflight red (Prod)
+              if: ${{ env.DEPLOY_METHOD != 'git-sync' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -273,6 +277,7 @@ jobs:
                   fi
 
             - name: Preparar bundle de deploy (Prod)
+              if: ${{ env.DEPLOY_METHOD != 'git-sync' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -299,7 +304,7 @@ jobs:
                     ./ _deploy_bundle/
 
             - name: Deploy a Produccion (FTP/FTPS)
-              if: ${{ env.DEPLOY_PROTOCOL != 'sftp' }}
+              if: ${{ env.DEPLOY_METHOD != 'git-sync' && env.DEPLOY_PROTOCOL != 'sftp' }}
               uses: SamKirkland/FTP-Deploy-Action@v4.3.6
               with:
                   server: ${{ secrets.FTP_SERVER }}
@@ -316,7 +321,7 @@ jobs:
                   state-name: .ftp-deploy-sync-state.json
 
             - name: Deploy a Produccion (SFTP)
-              if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
+              if: ${{ env.DEPLOY_METHOD != 'git-sync' && env.DEPLOY_PROTOCOL == 'sftp' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -334,6 +339,14 @@ jobs:
                     mirror -R --delete --verbose _deploy_bundle/ ${FTP_SERVER_DIR}
                     bye
                   "
+
+            - name: Esperar sincronizacion Git del hosting (modo git-sync)
+              if: ${{ env.DEPLOY_METHOD == 'git-sync' && env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  echo "Modo deploy git-sync activo. Esperando ${GIT_SYNC_WAIT_SEC}s para sincronizacion remota."
+                  sleep "${GIT_SYNC_WAIT_SEC}"
 
             - name: Smoke Tests (Prod)
               if: ${{ env.FTP_DRY_RUN != 'true' }}
