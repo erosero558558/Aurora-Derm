@@ -47,10 +47,11 @@ function read_store(): array
     return $mock_store;
 }
 
-function write_store(array $store): void
+function write_store(array $store): bool
 {
     global $mock_store;
     $mock_store = $store;
+    return true;
 }
 
 function require_rate_limit($key, $limit, $window): void
@@ -221,7 +222,7 @@ run_test('appointment_slot_taken doctor logic', function () {
 
 run_test('AppointmentController::store validation failure', function () {
     global $mock_payload;
-    $mock_payload = []; // Empty
+    $mock_payload = ['service' => 'consulta']; // Partial payload to pass service check
 
     try {
         AppointmentController::store(['store' => read_store()]);
