@@ -17,6 +17,7 @@ class AppointmentErrorCodesTest extends TestCase
     {
         unset($GLOBALS['__TEST_JSON_BODY']);
         unset($GLOBALS['__TEST_RESPONSE']);
+        $_GET = [];
 
         $this->tempDir = sys_get_temp_dir() . '/test_appointment_errors_' . bin2hex(random_bytes(6));
         if (!is_dir($this->tempDir)) {
@@ -52,6 +53,7 @@ class AppointmentErrorCodesTest extends TestCase
 
         unset($GLOBALS['__TEST_JSON_BODY']);
         unset($GLOBALS['__TEST_RESPONSE']);
+        $_GET = [];
         $this->removeDirectory($this->tempDir);
     }
 
@@ -139,6 +141,44 @@ class AppointmentErrorCodesTest extends TestCase
         try {
             \AppointmentController::store(['store' => \read_store()]);
             $this->fail('Expected TestingExitException for calendar requirement failure');
+        } catch (\TestingExitException $e) {
+            $this->assertSame(503, $e->status);
+            $this->assertFalse((bool) ($e->payload['ok'] ?? true));
+            $this->assertSame('calendar_unreachable', (string) ($e->payload['code'] ?? ''));
+        }
+    }
+
+    public function testBookedSlotsRejectsMissingDateWithCalendarBadRequest(): void
+    {
+        $_GET = [
+            'doctor' => 'rosero',
+            'service' => 'consulta',
+        ];
+
+        try {
+            \AppointmentController::bookedSlots(['store' => \read_store()]);
+            $this->fail('Expected TestingExitException for missing date');
+        } catch (\TestingExitException $e) {
+            $this->assertSame(400, $e->status);
+            $this->assertFalse((bool) ($e->payload['ok'] ?? true));
+            $this->assertSame('calendar_bad_request', (string) ($e->payload['code'] ?? ''));
+        }
+    }
+
+    public function testBookedSlotsKeepsCalendarUnreachableWhenGoogleIsRequired(): void
+    {
+        putenv('PIELARMONIA_REQUIRE_GOOGLE_CALENDAR=true');
+        $futureDate = date('Y-m-d', strtotime('+4 day'));
+
+        $_GET = [
+            'date' => $futureDate,
+            'doctor' => 'rosero',
+            'service' => 'consulta',
+        ];
+
+        try {
+            \AppointmentController::bookedSlots(['store' => \read_store()]);
+            $this->fail('Expected TestingExitException for booked-slots calendar requirement failure');
         } catch (\TestingExitException $e) {
             $this->assertSame(503, $e->status);
             $this->assertFalse((bool) ($e->payload['ok'] ?? true));
