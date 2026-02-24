@@ -98,6 +98,88 @@ function figo_is_upstream_technical_fallback(string $content): bool
     return $matches >= 2;
 }
 
+function figo_normalize_text(string $text): string
+{
+    $text = strtolower(trim($text));
+    if ($text === '') {
+        return '';
+    }
+
+    if (function_exists('iconv')) {
+        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+        if (is_string($ascii) && $ascii !== '') {
+            $text = $ascii;
+        }
+    }
+
+    $text = preg_replace('/\s+/', ' ', $text);
+    return is_string($text) ? $text : '';
+}
+
+function figo_last_user_message(array $messages): string
+{
+    for ($i = count($messages) - 1; $i >= 0; $i--) {
+        $message = $messages[$i] ?? null;
+        if (!is_array($message)) {
+            continue;
+        }
+        $role = isset($message['role']) && is_string($message['role'])
+            ? strtolower(trim((string) $message['role']))
+            : '';
+        $content = isset($message['content']) && is_string($message['content'])
+            ? trim((string) $message['content'])
+            : '';
+        if ($role === 'user' && $content !== '') {
+            return $content;
+        }
+    }
+    return '';
+}
+
+function figo_contains_any_pattern(string $text, array $patterns): bool
+{
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $text) === 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function figo_fast_local_content(string $normalizedText): string
+{
+    if ($normalizedText === '') {
+        return 'Soy Figo. Puedo ayudarte con servicios, precios, pagos, horarios y reservas de Piel en Armonia.';
+    }
+
+    if (preg_match('/^(hola|buenos dias|buenas tardes|buenas noches|hello|hi|gracias|ok|vale|listo|perfecto)$/', $normalizedText) === 1) {
+        return 'Hola, soy Figo de Piel en Armonia. Te ayudo con servicios, precios y reservas de cita.';
+    }
+
+    if (figo_contains_any_pattern($normalizedText, [
+        '/\bping\b/',
+        '/\blatencia\b/',
+        '/\btest\b/',
+        '/\bprueba\b/'
+    ])) {
+        return 'Estoy activo y respondiendo. Puedo ayudarte con servicios, precios, pagos y reservas de cita.';
+    }
+
+    if (figo_contains_any_pattern($normalizedText, [
+        '/\bcapital\b/',
+        '/\bpresidente\b/',
+        '/\bfutbol\b/',
+        '/\bclima\b/',
+        '/\bnoticia\b/',
+        '/\bbitcoin\b/',
+        '/\bcriptomoneda\b/'
+    ])) {
+        return 'Me enfoco en Piel en Armonia. Puedo ayudarte con citas, servicios, precios, pagos y ubicacion de la clinica.';
+    }
+
+    return '';
+}
+
 function figo_config_paths(): array
 {
     $paths = [];
@@ -625,6 +707,33 @@ if ($messages === []) {
 $model = isset($payload['model']) && is_string($payload['model']) && trim($payload['model']) !== ''
     ? trim($payload['model'])
     : 'figo-assistant';
+
+$lastUserMessage = figo_last_user_message($messages);
+$fastLocalContent = figo_fast_local_content(figo_normalize_text($lastUserMessage));
+if ($fastLocalContent !== '') {
+    try {
+        $id = 'figo-fast-' . bin2hex(random_bytes(8));
+    } catch (Throwable $e) {
+        $id = 'figo-fast-' . substr(md5((string) microtime(true)), 0, 16);
+    }
+
+    $fastPayload = figo_finalize_completion([
+        'id' => $id,
+        'object' => 'chat.completion',
+        'created' => time(),
+        'model' => $model,
+        'choices' => [[
+            'index' => 0,
+            'message' => [
+                'role' => 'assistant',
+                'content' => $fastLocalContent
+            ],
+            'finish_reason' => 'stop'
+        ]]
+    ], 'live', 'local_fastpath', 'fast_local_scope_guard', true, false, 200);
+    $fastPayload['fastPath'] = true;
+    figo_json_post_response($fastPayload, 200, $postRequestStartedAt, $providerMode);
+}
 
 $maxTokens = isset($payload['max_tokens']) ? (int) $payload['max_tokens'] : 1000;
 if ($maxTokens < 64) {
