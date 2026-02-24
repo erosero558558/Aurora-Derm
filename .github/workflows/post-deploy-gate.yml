@@ -103,6 +103,7 @@ jobs:
             ASSET_HASH_WARNING_UNTIL_INPUT: ${{ github.event.inputs.asset_hash_warning_until || vars.ASSET_HASH_WARNING_UNTIL || '2026-03-08T23:59:59-05:00' }}
             SKIP_FIGO_POST_BENCH_INPUT: ${{ github.event.inputs.skip_figo_post_bench || 'false' }}
             ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME || 'PROD' }}
+            REQUIRE_GOOGLE_CALENDAR: ${{ vars.REQUIRE_GOOGLE_CALENDAR || 'false' }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -193,6 +194,7 @@ jobs:
               shell: pwsh
               env:
                   TEST_BASE_URL: ${{ env.TARGET_DOMAIN }}
+                  TEST_REQUIRE_GOOGLE_CALENDAR: ${{ env.REQUIRE_GOOGLE_CALENDAR }}
               run: npm run test:calendar-contract
 
             - name: Resumen
@@ -210,6 +212,7 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input force asset hashes: ``$env:FORCE_ASSET_HASH_CHECKS_INPUT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Asset hash warning until: ``$env:ASSET_HASH_WARNING_UNTIL_INPUT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input skip figo-post bench: ``$env:SKIP_FIGO_POST_BENCH_INPUT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Require Google calendar: ``$env:REQUIRE_GOOGLE_CALENDAR``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Resultado: ``${{ steps.gate.outcome }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Contrato calendario: ejecutado con ``npm run test:calendar-contract``"
 

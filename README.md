@@ -168,6 +168,9 @@ Configura en GitHub (repo -> Settings -> Secrets and variables -> Actions):
 - Secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`
 - Variables opcionales: `FTP_PROTOCOL`, `FTP_SERVER_PORT`, `FTP_SECURITY`, `FTP_SERVER_DIR`, `PROD_URL`, `SSH_HOST`, `SSH_PORT`, `SSH_REPO_DIR`
 - Secrets opcionales para SSH dedicado: `SSH_USERNAME`, `SSH_PASSWORD` (si no se definen, usa `FTP_USERNAME/FTP_PASSWORD`)
+- Variable de corte a agenda real: `REQUIRE_GOOGLE_CALENDAR`
+  - `false` (default actual): contrato de calendario permite entorno `store` durante rollout.
+  - `true` (cutover): el gate falla si `health.calendarSource != google`.
 
 Ejecucion:
 

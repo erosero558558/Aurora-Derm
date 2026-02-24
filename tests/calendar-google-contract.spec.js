@@ -2,6 +2,14 @@
 const { test, expect } = require('@playwright/test');
 const { skipIfPhpRuntimeMissing } = require('./helpers/php-backend');
 
+function requireGoogleCalendar() {
+    return (
+        String(process.env.TEST_REQUIRE_GOOGLE_CALENDAR || 'false')
+            .toLowerCase()
+            .trim() === 'true'
+    );
+}
+
 function assertCalendarMeta(meta, expectedService, expectedDoctor, expectedDuration) {
     expect(meta).toBeTruthy();
     expect(typeof meta).toBe('object');
@@ -33,8 +41,21 @@ async function getHealthPayload(request) {
     return body;
 }
 
-test.describe('Contrato Google Calendar', () => {
-    test('health expone estado de calendario extendido', async ({ request }) => {
+function enforceOrSkipGoogleMode(testInfo, health) {
+    const googleActive = String(health.calendarSource) === 'google';
+    if (requireGoogleCalendar()) {
+        expect(
+            googleActive,
+            'TEST_REQUIRE_GOOGLE_CALENDAR=true pero health.calendarSource != google'
+        ).toBe(true);
+        return;
+    }
+
+    testInfo.skip(!googleActive, 'La fuente de agenda no es Google en este entorno.');
+}
+
+test.describe('Google Calendar contract', () => {
+    test('health exposes extended calendar state', async ({ request }) => {
         await skipIfPhpRuntimeMissing(test, request);
         const body = await getHealthPayload(request);
 
@@ -56,15 +77,13 @@ test.describe('Contrato Google Calendar', () => {
         expect(typeof body.calendarTokenHealthy).toBe('boolean');
     });
 
-    test('availability mantiene contrato con service/doctor y duración', async ({
-        request,
-    }) => {
+    test('availability keeps calendar contract with service and doctor', async (
+        { request },
+        testInfo
+    ) => {
         await skipIfPhpRuntimeMissing(test, request);
         const health = await getHealthPayload(request);
-        test.skip(
-            String(health.calendarSource) !== 'google',
-            'La fuente de agenda no es Google en este entorno.'
-        );
+        enforceOrSkipGoogleMode(testInfo, health);
 
         const consultaResponse = await request.get(
             '/api.php?resource=availability&doctor=indiferente&service=consulta&days=7'
@@ -103,15 +122,13 @@ test.describe('Contrato Google Calendar', () => {
         }
     });
 
-    test('booked-slots incluye metadatos de calendario por service/doctor', async ({
-        request,
-    }) => {
+    test('booked-slots includes calendar metadata by service and doctor', async (
+        { request },
+        testInfo
+    ) => {
         await skipIfPhpRuntimeMissing(test, request);
         const health = await getHealthPayload(request);
-        test.skip(
-            String(health.calendarSource) !== 'google',
-            'La fuente de agenda no es Google en este entorno.'
-        );
+        enforceOrSkipGoogleMode(testInfo, health);
 
         const today = new Date().toISOString().split('T')[0];
         const response = await request.get(

@@ -84,6 +84,12 @@ en modo estricto (`RequireStableDataDir`, `RequireBackupHealthy`, `RequireBackup
 Si falla (push/schedule), crea o actualiza un issue de incidente automaticamente.
 Si luego recupera en una corrida exitosa, cierra ese issue automaticamente.
 
+Variable recomendada para fase de agenda real:
+
+- `REQUIRE_GOOGLE_CALENDAR` (repo variable)
+  - `false`: permite rollout con agenda `store` sin romper contrato.
+  - `true`: exige `health.calendarSource=google` en `test:calendar-contract`.
+
 ## 6) Monitoreo continuo de produccion
 
 Workflow:
@@ -103,6 +109,7 @@ Se puede correr manual con overrides:
 - `domain`
 - `max_latency_ms`
 - `allow_degraded_figo`
+- `allow_store_calendar`
 - `skip_backup_check`
 
 Si falla en ejecucion programada, crea/actualiza un issue de incidente automaticamente.
