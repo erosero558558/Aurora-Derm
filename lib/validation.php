@@ -139,13 +139,96 @@ function map_appointment_status(string $status): string
 }
 
 /**
+ * Validates date format (YYYY-MM-DD).
+ */
+function validate_date_format(string $date): bool
+{
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1;
+}
+
+/**
+ * Validates time format (HH:MM).
+ */
+function validate_time_format(string $time): bool
+{
+    return preg_match('/^\d{2}:\d{2}$/', $time) === 1;
+}
+
+/**
+ * Validates if a date and time are in the future.
+ * Handles the logic:
+ * - Date must not be in the past.
+ * - If date is today, time must be at least 1 hour in the future.
+ *
+ * @return array ['ok' => bool, 'error' => string|null]
+ */
+function validate_future_date(string $date, string $time): array
+{
+    if ($date === '' || $time === '') {
+        return ['ok' => false, 'error' => 'Fecha y hora son obligatorias'];
+    }
+
+    if (!validate_date_format($date)) {
+        return ['ok' => false, 'error' => 'Formato de fecha inválido (YYYY-MM-DD)'];
+    }
+
+    if (!validate_time_format($time)) {
+        return ['ok' => false, 'error' => 'Formato de hora inválido (HH:MM)'];
+    }
+
+    $today = local_date('Y-m-d');
+    if ($date < $today) {
+        return ['ok' => false, 'error' => 'No se puede agendar en una fecha pasada'];
+    }
+
+    if ($date === $today) {
+        $nowMinutes = (int) local_date('H') * 60 + (int) local_date('i');
+        $parts = explode(':', $time);
+        $slotMinutes = (int) ($parts[0] ?? 0) * 60 + (int) ($parts[1] ?? 0);
+        // Allow booking only 1 hour ahead
+        if ($slotMinutes <= $nowMinutes + 60) {
+            return ['ok' => false, 'error' => 'Ese horario ya pasó o es muy pronto. Selecciona una hora con al menos 1 hora de anticipación, o elige otra fecha.'];
+        }
+    }
+
+    return ['ok' => true, 'error' => null];
+}
+
+/**
+ * Validates if a service is in the allowed list.
+ */
+function validate_service_exists(string $service, array $validServices): bool
+{
+    $normalized = strtolower(trim($service));
+    if ($normalized === '') {
+        return false;
+    }
+    return in_array($normalized, $validServices, true);
+}
+
+/**
+ * Validates if a doctor is in the allowed list.
+ */
+function validate_doctor_exists(string $doctor, array $validDoctors): bool
+{
+    $normalized = strtolower(trim($doctor));
+    if ($normalized === '') {
+        return false;
+    }
+    return in_array($normalized, $validDoctors, true);
+}
+
+/**
  * Validates an appointment payload.
  *
  * @param array $payload The raw appointment data.
- * @param array $availability Optional availability data to validate against.
+ * @param array $options Optional validation options:
+ *                       - availability: array of slots by date
+ *                       - validServices: array of allowed service IDs
+ *                       - validDoctors: array of allowed doctor IDs
  * @return array ['ok' => bool, 'error' => string|null]
  */
-function validate_appointment_payload(array $payload, array $availability = []): array
+function validate_appointment_payload(array $payload, array $options = []): array
 {
     // Basic required fields
     $name = trim((string)($payload['name'] ?? ''));
@@ -171,35 +254,66 @@ function validate_appointment_payload(array $payload, array $availability = []):
     $date = (string)($payload['date'] ?? '');
     $time = (string)($payload['time'] ?? '');
 
-    if ($date === '' || $time === '') {
-        return ['ok' => false, 'error' => 'Fecha y hora son obligatorias'];
+    $dateCheck = validate_future_date($date, $time);
+    if (!$dateCheck['ok']) {
+        return $dateCheck;
     }
 
-    if ($date < local_date('Y-m-d')) {
-        return ['ok' => false, 'error' => 'No se puede agendar en una fecha pasada'];
-    }
-
-    // Si es hoy, la hora debe ser al menos 1 hora en el futuro
-    if ($date === local_date('Y-m-d')) {
-        $nowMinutes = (int) local_date('H') * 60 + (int) local_date('i');
-        $parts = explode(':', $time);
-        $slotMinutes = (int) ($parts[0] ?? 0) * 60 + (int) ($parts[1] ?? 0);
-        if ($slotMinutes <= $nowMinutes + 60) {
-            return ['ok' => false, 'error' => 'Ese horario ya pasó o es muy pronto. Selecciona una hora con al menos 1 hora de anticipación, o elige otra fecha.'];
+    if (isset($options['validServices']) && is_array($options['validServices'])) {
+        $service = (string)($payload['service'] ?? '');
+        if (!validate_service_exists($service, $options['validServices'])) {
+            return ['ok' => false, 'error' => 'Servicio inválido'];
         }
     }
 
-    // Validar que el horario exista en la disponibilidad configurada
-    $availableSlots = isset($availability[$date]) && is_array($availability[$date])
-        ? $availability[$date]
-        : [];
-    if (count($availableSlots) === 0) {
-        return ['ok' => false, 'error' => 'No hay agenda disponible para la fecha seleccionada'];
+    if (isset($options['validDoctors']) && is_array($options['validDoctors'])) {
+        $doctor = (string)($payload['doctor'] ?? '');
+        // "indiferente" usually handled by caller, but if strictly checking list:
+        if ($doctor !== '' && $doctor !== 'indiferente' && !validate_doctor_exists($doctor, $options['validDoctors'])) {
+             return ['ok' => false, 'error' => 'Doctor inválido'];
+        }
     }
 
-    if (!in_array($time, $availableSlots, true)) {
-        return ['ok' => false, 'error' => 'Ese horario no está disponible para la fecha seleccionada'];
+    // Availability check if provided
+    // Backward compatibility: check if $options is availability array (legacy second param)
+    // Or if 'availability' key is present
+    $availability = [];
+    if (isset($options['availability']) && is_array($options['availability'])) {
+        $availability = $options['availability'];
+    } elseif (!empty($options) && !isset($options['validServices']) && !isset($options['validDoctors']) && isset($options[$date])) {
+         // Heuristic: if options looks like availability map (key is date)
+         $availability = $options;
+    }
+
+    if (!empty($availability)) {
+        $availableSlots = isset($availability[$date]) && is_array($availability[$date])
+            ? $availability[$date]
+            : [];
+        if (count($availableSlots) === 0) {
+            return ['ok' => false, 'error' => 'No hay agenda disponible para la fecha seleccionada'];
+        }
+
+        if (!in_array($time, $availableSlots, true)) {
+            return ['ok' => false, 'error' => 'Ese horario no está disponible para la fecha seleccionada'];
+        }
     }
 
     return ['ok' => true, 'error' => null];
+}
+
+/**
+ * Validates a reschedule payload.
+ *
+ * @param string $token
+ * @param string $newDate
+ * @param string $newTime
+ * @return array ['ok' => bool, 'error' => string|null]
+ */
+function validate_reschedule_payload(string $token, string $newDate, string $newTime): array
+{
+    if ($token === '' || strlen($token) < 16) {
+        return ['ok' => false, 'error' => 'Token inválido'];
+    }
+
+    return validate_future_date($newDate, $newTime);
 }

@@ -31,7 +31,7 @@ class AppointmentController
                 'code' => 'calendar_bad_request',
             ], 400);
         }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        if (!validate_date_format($date)) {
             json_response([
                 'ok' => false,
                 'error' => 'Fecha invalida. Usa formato YYYY-MM-DD',

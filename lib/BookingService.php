@@ -18,43 +18,23 @@ class BookingService
     public function create(array $store, array $payload): array
     {
         $appointment = normalize_appointment($payload);
+
+        $validation = validate_appointment_payload($appointment, [
+            'validServices' => array_keys(get_services_config()),
+            'validDoctors' => ['rosero', 'narvaez']
+        ]);
+
+        if (!$validation['ok']) {
+            return ['ok' => false, 'error' => $validation['error'], 'code' => 400];
+        }
+
         $service = strtolower(trim((string) ($appointment['service'] ?? '')));
-        if ($service === '' || get_service_config($service) === null) {
-            return ['ok' => false, 'error' => 'Servicio invalido', 'code' => 400];
-        }
         $appointment['service'] = $service;
-
-        if ($appointment['name'] === '' || $appointment['email'] === '' || $appointment['phone'] === '') {
-            return ['ok' => false, 'error' => 'Nombre, email y telefono son obligatorios', 'code' => 400];
-        }
-
-        if (!validate_email($appointment['email'])) {
-            return ['ok' => false, 'error' => 'El formato del email no es valido', 'code' => 400];
-        }
-
-        if (!validate_phone($appointment['phone'])) {
-            return ['ok' => false, 'error' => 'El formato del telefono no es valido', 'code' => 400];
-        }
-
-        if (!isset($appointment['privacyConsent']) || $appointment['privacyConsent'] !== true) {
-            return ['ok' => false, 'error' => 'Debes aceptar el tratamiento de datos para reservar la cita', 'code' => 400];
-        }
-
-        if ($appointment['date'] === '' || $appointment['time'] === '') {
-            return ['ok' => false, 'error' => 'Fecha y hora son obligatorias', 'code' => 400];
-        }
-
-        if ($appointment['date'] < local_date('Y-m-d')) {
-            return ['ok' => false, 'error' => 'No se puede agendar en una fecha pasada', 'code' => 400];
-        }
 
         $calendarBooking = CalendarBookingService::fromEnv();
         $requestedDoctor = strtolower(trim((string) ($appointment['doctor'] ?? '')));
         if ($requestedDoctor === '') {
             $requestedDoctor = 'indiferente';
-        }
-        if (!in_array($requestedDoctor, ['rosero', 'narvaez', 'indiferente'], true)) {
-            return ['ok' => false, 'error' => 'Doctor invalido', 'code' => 400];
         }
 
         $googleRequirement = $calendarBooking->ensureGoogleRequirement($requestedDoctor, $appointment['service']);
@@ -269,17 +249,9 @@ class BookingService
 
     public function reschedule(array $store, string $token, string $newDate, string $newTime): array
     {
-        if ($token === '' || strlen($token) < 16) {
-            return ['ok' => false, 'error' => 'Token invalido', 'code' => 400];
-        }
-        if ($newDate === '' || $newTime === '') {
-            return ['ok' => false, 'error' => 'Fecha y hora son obligatorias', 'code' => 400];
-        }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
-            return ['ok' => false, 'error' => 'Formato de fecha invalido', 'code' => 400];
-        }
-        if ($newDate < local_date('Y-m-d')) {
-            return ['ok' => false, 'error' => 'No puedes reprogramar a una fecha pasada', 'code' => 400];
+        $validation = validate_reschedule_payload($token, $newDate, $newTime);
+        if (!$validation['ok']) {
+            return ['ok' => false, 'error' => $validation['error'], 'code' => 400];
         }
 
         $calendarBooking = CalendarBookingService::fromEnv();
