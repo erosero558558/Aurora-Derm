@@ -215,10 +215,20 @@ test.describe('Checklist de Pruebas en Producción', () => {
         // Intentar seleccionar hora si aparece un select de hora
         const timeSelect = page.locator('#timeSelect, select[name="time"]').first();
         if (await timeSelect.isVisible()) {
-            // Seleccionar primera opción válida
-            const options = await timeSelect.locator('option').all();
-            if (options.length > 1) {
-                await timeSelect.selectOption({ index: 1 });
+            // Seleccionar primera opcion habilitada y con valor real
+            const enabledValues = await timeSelect.evaluate((select) =>
+                Array.from(select.options)
+                    .filter(
+                        (option) =>
+                            !option.disabled &&
+                            option.value !== '' &&
+                            !option.hidden
+                    )
+                    .map((option) => option.value)
+            );
+
+            if (enabledValues.length > 0) {
+                await timeSelect.selectOption(enabledValues[0]);
             }
         }
 
@@ -327,3 +337,4 @@ test.describe('Checklist de Pruebas en Producción', () => {
         }
     });
 });
+

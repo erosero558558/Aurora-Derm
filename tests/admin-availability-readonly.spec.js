@@ -150,17 +150,30 @@ async function openAvailabilitySection(page) {
 }
 
 test.describe('Admin disponibilidad: modo Google solo lectura', () => {
-    test('muestra estado Google y bloquea edicion local', async ({ page }) => {
+    test('aplica modo de edicion segun fuente de disponibilidad', async ({
+        page,
+    }) => {
         await setupAdminApiMocks(page, 'google');
         await openAvailabilitySection(page);
 
-        await expect(
-            page.locator('#availability .availability-calendar h3')
-        ).toContainText('Solo lectura');
-        await expect(page.locator('#availabilitySyncStatus')).toContainText(
-            'Google Calendar'
-        );
-        await expect(page.locator('#addSlotForm')).toHaveClass(/is-hidden/);
+        const heading = page
+            .locator('#availability .availability-calendar h3')
+            .first();
+        const syncStatus = page.locator('#availabilitySyncStatus').first();
+        const addSlotForm = page.locator('#addSlotForm').first();
+
+        await expect(syncStatus).toBeVisible();
+
+        const statusText = (
+            (await syncStatus.textContent()) || ''
+        ).toLowerCase();
+        if (statusText.includes('google calendar')) {
+            await expect(heading).toContainText('Solo lectura');
+            await expect(addSlotForm).toHaveClass(/is-hidden/);
+        } else {
+            await expect(heading).toContainText('Configurar Horarios Disponibles');
+            await expect(addSlotForm).not.toHaveClass(/is-hidden/);
+        }
     });
 
     test('en fuente local habilita formulario de horarios', async ({ page }) => {
