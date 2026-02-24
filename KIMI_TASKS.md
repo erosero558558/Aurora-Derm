@@ -75,7 +75,7 @@ Agregar PHPDoc faltantes en librerias core sin modificar comportamiento funciona
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: failed
 task_id: AG-008
 risk: low
 scope: ops
