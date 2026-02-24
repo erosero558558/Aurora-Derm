@@ -163,6 +163,31 @@ function trackChatBookingStep(step, payload = {}, options = {}) {
     });
 }
 
+function normalizeAnalyticsErrorCode(value, fallback = 'unknown') {
+    if (deps && typeof deps.normalizeAnalyticsLabel === 'function') {
+        return deps.normalizeAnalyticsLabel(value, fallback);
+    }
+
+    const normalized = String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 64);
+
+    return normalized || fallback;
+}
+
+function trackChatCheckoutError(payload = {}) {
+    if (!deps || typeof deps.trackEvent !== 'function') {
+        return;
+    }
+
+    deps.trackEvent('checkout_error', {
+        source: 'chatbot',
+        ...payload,
+    });
+}
+
 function startChatBooking() {
     chatBooking = { step: 'service', completedSteps: {} };
     if (deps && typeof deps.trackEvent === 'function') {
@@ -188,7 +213,8 @@ function cancelChatBooking(silent = false) {
         deps.trackEvent('checkout_abandon', {
             source: 'chatbot',
             reason: 'chat_cancel',
-            step: chatBooking.step || 'unknown',
+            checkout_step: chatBooking.step || 'unknown',
+            payment_method: chatBooking.paymentMethod || 'unknown',
         });
     }
     chatBooking = null;
@@ -444,6 +470,16 @@ async function processChatBookingStep(userInput) {
                               'I could not load the schedule. Please try again.'
                           )
                 );
+                trackChatCheckoutError({
+                    stage: 'availability_lookup',
+                    payment_method: chatBooking.paymentMethod || 'unknown',
+                    error_code: isCalendarUnavailable
+                        ? 'calendar_unreachable'
+                        : normalizeAnalyticsErrorCode(
+                              error && error.code ? error.code : 'availability_error',
+                              'availability_error'
+                          ),
+                });
                 chatBooking.step = 'date';
             }
             break;
@@ -710,6 +746,11 @@ async function finalizeChatBooking() {
             }
 
             if (isCalendarUnavailableError(error)) {
+                trackChatCheckoutError({
+                    stage: 'appointment_create',
+                    payment_method: 'cash',
+                    error_code: 'calendar_unreachable',
+                });
                 addBotMessage(
                     t(
                         'La agenda esta temporalmente no disponible. Intenta de nuevo en unos minutos o agenda por WhatsApp.<br><br>',
@@ -728,6 +769,11 @@ async function finalizeChatBooking() {
             }
 
             if (isSlotUnavailableError(error)) {
+                trackChatCheckoutError({
+                    stage: 'appointment_create',
+                    payment_method: 'cash',
+                    error_code: 'slot_conflict',
+                });
                 addBotMessage(
                     t(
                         'Ese horario ya no esta disponible. Elige una nueva fecha u hora para continuar.<br><br>',
@@ -754,6 +800,14 @@ async function finalizeChatBooking() {
                     `Could not register your appointment: ${escapeHtml(safeError)}. Try again or use the <a href="#citas" data-action="minimize-chat">booking form</a>.`
                 )
             );
+            trackChatCheckoutError({
+                stage: 'appointment_create',
+                payment_method: 'cash',
+                error_code: normalizeAnalyticsErrorCode(
+                    error && error.code ? error.code : safeError,
+                    'appointment_create_failed'
+                ),
+            });
             if (deps && typeof deps.setCheckoutStep === 'function') {
                 deps.setCheckoutStep('payment_error', {
                     checkoutEntry: 'chatbot',
