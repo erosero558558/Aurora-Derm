@@ -161,6 +161,7 @@ async function mockApiWithAvailabilityError(page, message) {
 
 async function openChatAndStartBooking(page) {
     await page.addInitScript(() => {
+        localStorage.setItem('language', 'es');
         localStorage.setItem(
             'pa_cookie_consent_v1',
             JSON.stringify({
