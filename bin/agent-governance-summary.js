@@ -157,6 +157,7 @@ function summarize(resultMap) {
     const domainHealth =
         status?.domain_health || metrics?.domain_health || null;
     const contributionHistory = metrics?.contribution_history || null;
+    const domainHealthHistory = metrics?.domain_health_history || null;
 
     const blockers = [];
     if (conflicts?.totals?.blocking > 0) blockers.push('conflicts');
@@ -243,6 +244,7 @@ function summarize(resultMap) {
         contribution: contribution || null,
         contribution_history: contributionHistory || null,
         domain_health: domainHealth || null,
+        domain_health_history: domainHealthHistory || null,
         delta_summary: deltaSummary,
         top_blocking_conflicts: topBlocking,
         commands: resultMap,
@@ -267,6 +269,7 @@ function toMarkdown(report) {
     const contribution = report.contribution || {};
     const contributionHistory = report.contribution_history || {};
     const domainHealth = report.domain_health || {};
+    const domainHealthHistory = report.domain_health_history || {};
     const contributionDeltaMap = buildContributionDeltaMap(
         report.metrics || {}
     );
@@ -322,6 +325,57 @@ function toMarkdown(report) {
             lines.push(
                 `- [${row.signal}] \`${row.domain}\`: tasks=\`${row.tasks_total}\`, active=\`${row.active_tasks}\`, done=\`${row.done_tasks}\`, blocking=\`${row.blocking_conflicts}\`, handoff=\`${row.handoff_conflicts}\` (${reasons})`
             );
+        }
+        lines.push('');
+    }
+
+    if (
+        Array.isArray(domainHealthHistory.daily) &&
+        domainHealthHistory.daily.length > 0 &&
+        Array.isArray(domainHealthHistory.domains)
+    ) {
+        const preferredDomains = ['calendar', 'chat', 'payments'];
+        const histDomains = [
+            ...preferredDomains.filter((name) =>
+                domainHealthHistory.domains.includes(name)
+            ),
+            ...domainHealthHistory.domains.filter(
+                (name) => !preferredDomains.includes(name)
+            ),
+        ].slice(0, 6);
+
+        lines.push(
+            `### Historico Salud por Dominio (${domainHealthHistory.window_days || 7}d)`
+        );
+        lines.push(
+            `- Snapshots: \`${domainHealthHistory.snapshots_total ?? 'n/a'}\` | Dias en ventana: \`${domainHealthHistory.daily.length}\``
+        );
+        lines.push('');
+        lines.push(
+            `| Fecha | G/Y/R | ${histDomains.map((d) => `${d} signal`).join(' | ')} |`
+        );
+        lines.push(
+            `| --- | --- | ${histDomains.map(() => '---').join(' | ')} |`
+        );
+        for (const day of domainHealthHistory.daily) {
+            const counts = day.counts_by_signal || {};
+            const gyr = `${Number(counts.GREEN || 0)}/${Number(counts.YELLOW || 0)}/${Number(counts.RED || 0)}`;
+            const cols = histDomains.map(
+                (domain) => day.domains?.[domain]?.signal || 'n/a'
+            );
+            lines.push(`| ${day.date} | ${gyr} | ${cols.join(' | ')} |`);
+        }
+        const windowDelta = domainHealthHistory.window_delta || {};
+        if (windowDelta.available && Array.isArray(windowDelta.rows)) {
+            lines.push('');
+            lines.push(
+                `- Delta ventana (${windowDelta.from_date} -> ${windowDelta.to_date}):`
+            );
+            for (const row of windowDelta.rows) {
+                lines.push(
+                    `  - \`${row.domain}\`: signal \`${row.signal_from}\` -> \`${row.signal_to}\`, blocking delta \`${fmtDelta(row.blocking_conflicts_delta)}\``
+                );
+            }
         }
         lines.push('');
     }

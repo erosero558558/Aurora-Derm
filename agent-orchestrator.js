@@ -33,6 +33,11 @@ const CONTRIBUTION_HISTORY_PATH = resolve(
     'verification',
     'agent-contribution-history.json'
 );
+const DOMAIN_HEALTH_HISTORY_PATH = resolve(
+    ROOT,
+    'verification',
+    'agent-domain-health-history.json'
+);
 const PRIORITY_DOMAINS = ['calendar', 'chat', 'payments'];
 
 const ALLOWED_STATUSES = new Set([
@@ -976,6 +981,162 @@ function buildContributionHistorySummary(history, days = 7) {
     };
 }
 
+function loadDomainHealthHistory() {
+    if (!existsSync(DOMAIN_HEALTH_HISTORY_PATH)) return null;
+    try {
+        return JSON.parse(readFileSync(DOMAIN_HEALTH_HISTORY_PATH, 'utf8'));
+    } catch {
+        return null;
+    }
+}
+
+function sanitizeDomainHealthSnapshot(domainHealth) {
+    const rows = Array.isArray(domainHealth?.ranking)
+        ? domainHealth.ranking
+        : [];
+    return rows
+        .map((row) => ({
+            domain: String(row.domain || ''),
+            signal: String(row.signal || 'GREEN'),
+            tasks_total: Number(row.tasks_total || 0),
+            active_tasks: Number(row.active_tasks || 0),
+            done_tasks: Number(row.done_tasks || 0),
+            blocking_conflicts: Number(row.blocking_conflicts || 0),
+            handoff_conflicts: Number(row.handoff_conflicts || 0),
+            active_expired_handoffs: Number(row.active_expired_handoffs || 0),
+        }))
+        .sort((a, b) => String(a.domain).localeCompare(String(b.domain)));
+}
+
+function upsertDomainHealthHistory(history, domainHealth) {
+    const base = history && typeof history === 'object' ? history : {};
+    const snapshots = Array.isArray(base.snapshots)
+        ? base.snapshots.slice()
+        : [];
+    const nowIso = new Date().toISOString();
+    const date = nowIso.slice(0, 10);
+    const snapshotRows = sanitizeDomainHealthSnapshot(domainHealth);
+    const countsBySignal = snapshotRows.reduce(
+        (acc, row) => {
+            acc[row.signal] = (acc[row.signal] || 0) + 1;
+            return acc;
+        },
+        { GREEN: 0, YELLOW: 0, RED: 0 }
+    );
+    const snapshot = {
+        date,
+        captured_at: nowIso,
+        counts_by_signal: countsBySignal,
+        domains: snapshotRows,
+    };
+
+    const next = snapshots.filter((item) => String(item.date || '') !== date);
+    next.push(snapshot);
+    next.sort((a, b) =>
+        String(a.date || '').localeCompare(String(b.date || ''))
+    );
+
+    return {
+        version: 1,
+        updated_at: nowIso,
+        snapshots: next.slice(-365),
+    };
+}
+
+function buildDomainHealthHistorySummary(history, days = 7) {
+    const snapshots = Array.isArray(history?.snapshots)
+        ? history.snapshots
+        : [];
+    const ordered = snapshots
+        .filter((item) => item && typeof item === 'object' && item.date)
+        .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const recent = ordered.slice(-Math.max(1, Number(days) || 7));
+
+    const domainSet = new Set();
+    for (const item of recent) {
+        for (const row of Array.isArray(item.domains) ? item.domains : []) {
+            domainSet.add(String(row.domain || ''));
+        }
+    }
+    const domains = Array.from(domainSet).filter(Boolean).sort();
+
+    const daily = recent.map((item) => {
+        const byDomain = {};
+        for (const row of Array.isArray(item.domains) ? item.domains : []) {
+            byDomain[String(row.domain || '')] = {
+                signal: String(row.signal || 'GREEN'),
+                tasks_total: Number(row.tasks_total || 0),
+                active_tasks: Number(row.active_tasks || 0),
+                done_tasks: Number(row.done_tasks || 0),
+                blocking_conflicts: Number(row.blocking_conflicts || 0),
+                handoff_conflicts: Number(row.handoff_conflicts || 0),
+                active_expired_handoffs: Number(
+                    row.active_expired_handoffs || 0
+                ),
+            };
+        }
+        return {
+            date: String(item.date),
+            captured_at: String(item.captured_at || ''),
+            counts_by_signal: item.counts_by_signal || {
+                GREEN: 0,
+                YELLOW: 0,
+                RED: 0,
+            },
+            domains: byDomain,
+        };
+    });
+
+    let windowDelta = { available: false, rows: [] };
+    if (daily.length >= 2) {
+        const first = daily[0];
+        const last = daily[daily.length - 1];
+        const union = Array.from(
+            new Set([
+                ...Object.keys(first.domains),
+                ...Object.keys(last.domains),
+            ])
+        ).sort();
+        windowDelta = {
+            available: true,
+            from_date: first.date,
+            to_date: last.date,
+            rows: union.map((domain) => {
+                const firstBlocking = Number(
+                    first.domains[domain]?.blocking_conflicts || 0
+                );
+                const lastBlocking = Number(
+                    last.domains[domain]?.blocking_conflicts || 0
+                );
+                const firstSignal = String(
+                    first.domains[domain]?.signal || 'GREEN'
+                );
+                const lastSignal = String(
+                    last.domains[domain]?.signal || 'GREEN'
+                );
+                return {
+                    domain,
+                    signal_from: firstSignal,
+                    signal_to: lastSignal,
+                    blocking_conflicts_from: firstBlocking,
+                    blocking_conflicts_to: lastBlocking,
+                    blocking_conflicts_delta: lastBlocking - firstBlocking,
+                };
+            }),
+        };
+    }
+
+    return {
+        version: 1,
+        source_file: 'verification/agent-domain-health-history.json',
+        window_days: Math.max(1, Number(days) || 7),
+        snapshots_total: ordered.length,
+        domains,
+        daily,
+        window_delta: windowDelta,
+    };
+}
+
 function loadMetricsSnapshot() {
     if (!existsSync(METRICS_PATH)) return null;
     try {
@@ -1520,6 +1681,15 @@ function cmdMetrics(args = []) {
         nextContributionHistory,
         7
     );
+    const existingDomainHistory = loadDomainHealthHistory();
+    const nextDomainHealthHistory = upsertDomainHealthHistory(
+        existingDomainHistory,
+        domainHealth
+    );
+    const domainHealthHistorySummary = buildDomainHealthHistorySummary(
+        nextDomainHealthHistory,
+        7
+    );
 
     const baseline =
         existing && existing.baseline
@@ -1599,6 +1769,7 @@ function cmdMetrics(args = []) {
         contribution_delta: contributionDelta,
         contribution_history: contributionHistorySummary,
         domain_health: domainHealth,
+        domain_health_history: domainHealthHistorySummary,
         delta: {
             tasks_total: total - safeNumber(baseline.tasks_total, total),
             file_conflicts:
@@ -1622,6 +1793,11 @@ function cmdMetrics(args = []) {
     writeFileSync(
         CONTRIBUTION_HISTORY_PATH,
         `${JSON.stringify(nextContributionHistory, null, 4)}\n`,
+        'utf8'
+    );
+    writeFileSync(
+        DOMAIN_HEALTH_HISTORY_PATH,
+        `${JSON.stringify(nextDomainHealthHistory, null, 4)}\n`,
         'utf8'
     );
     if (wantsJson) {

@@ -147,8 +147,10 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.ok(parsed.contribution);
     assert.ok(parsed.domain_health);
     assert.ok(parsed.contribution_history);
+    assert.ok(parsed.domain_health_history);
     assert.equal(Array.isArray(parsed.domain_health.ranking), true);
     assert.equal(Array.isArray(parsed.contribution_history.daily), true);
+    assert.equal(Array.isArray(parsed.domain_health_history.daily), true);
     assert.ok(Array.isArray(parsed.contribution.ranking));
     assert.ok(parsed.contribution.top_executor);
     assert.equal(
@@ -173,6 +175,7 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /Razones:\s+`stable`/);
     assert.match(writtenMd, /Delta vs Baseline \(Conflicts\/Handoffs\)/);
     assert.match(writtenMd, /Semaforo Por Dominio/);
+    assert.match(writtenMd, /Historico Salud por Dominio/);
     assert.match(writtenMd, /Aporte Por Agente/);
     assert.match(writtenMd, /Historico Aporte/);
     assert.match(writtenMd, /\[GREEN\].*jules|\[GREEN\].*codex/);
