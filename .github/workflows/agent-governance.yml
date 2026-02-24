@@ -58,8 +58,33 @@ jobs:
               if: always()
               run: |
                   mkdir -p verification
-                  node bin/agent-governance-summary.js --write-json verification/agent-governance-summary.json --write-md verification/agent-governance-summary.md --format markdown > /tmp/agent-governance-summary.md
+                  node bin/agent-governance-summary.js --profile local --write-json verification/agent-governance-summary.json --write-md verification/agent-governance-summary.md --format markdown > /tmp/agent-governance-summary.md
                   cat /tmp/agent-governance-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Evaluate governance red-signal policy (non-blocking)
+              if: always()
+              continue-on-error: true
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = 'verification/agent-governance-summary.json';
+                  if (!fs.existsSync(path)) {
+                    console.warn('::warning::Governance summary JSON not found; policy probe skipped.');
+                    process.exit(0);
+                  }
+                  const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+                  const policy = report?.policies?.fail_on_red;
+                  if (!policy) {
+                    console.warn('::warning::Governance policy `fail_on_red` not available in summary JSON.');
+                    process.exit(0);
+                  }
+                  if (policy.pass) {
+                    console.log(`Governance fail_on_red policy PASS (${policy.reason || 'n/a'})`);
+                    process.exit(0);
+                  }
+                  console.warn(`::warning::Governance fail_on_red policy FAIL (${policy.reason || 'n/a'})`);
+                  process.exit(1);
+                  NODE
 
             - name: Upload governance summary artifact
               if: always()
