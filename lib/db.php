@@ -153,7 +153,17 @@ function ensure_db_schema(): void
         "CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(date)",
         "CREATE INDEX IF NOT EXISTS idx_appointments_email ON appointments(email)",
         "CREATE INDEX IF NOT EXISTS idx_appointments_rescheduleToken ON appointments(rescheduleToken)",
-        "CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating)"
+        "CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating)",
+        "CREATE TABLE IF NOT EXISTS cron_failures (
+            id INTEGER PRIMARY KEY,
+            task_name TEXT,
+            payload TEXT,
+            attempt_count INTEGER DEFAULT 0,
+            next_retry_at DATETIME,
+            last_error TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_cron_failures_retry ON cron_failures(next_retry_at)"
     ];
 
     foreach ($queries as $sql) {
