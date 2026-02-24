@@ -63,43 +63,20 @@ jobs:
               id: probe
               shell: bash
               run: |
-                  set -uo pipefail
-                  runs="${PHASE2_RUNS}"
-                  max_failures="${PHASE2_MAX_FAILURES}"
-                  passes=0
-                  failures=0
-                  details=""
+                  set -euo pipefail
+                  node bin/run-phase2-flakiness.js \
+                    --runs="${PHASE2_RUNS}" \
+                    --max-failures="${PHASE2_MAX_FAILURES}" \
+                    --command="npm run test:phase2" \
+                    --json-out="verification/runtime/phase2-flakiness-last.json"
 
-                  if ! [[ "${runs}" =~ ^[0-9]+$ ]] || [ "${runs}" -le 0 ]; then
-                    echo "::error::PHASE2_RUNS invalido: ${runs}"
-                    exit 1
-                  fi
-                  if ! [[ "${max_failures}" =~ ^[0-9]+$ ]]; then
-                    echo "::error::PHASE2_MAX_FAILURES invalido: ${max_failures}"
-                    exit 1
-                  fi
-
-                  for attempt in $(seq 1 "${runs}"); do
-                    echo "==> Intento ${attempt}/${runs}"
-                    if npm run test:phase2; then
-                      passes=$((passes + 1))
-                      details="${details}\n- intento ${attempt}: pass"
-                    else
-                      failures=$((failures + 1))
-                      details="${details}\n- intento ${attempt}: fail"
-                    fi
-                  done
-
-                  echo "passes=${passes}" >> "${GITHUB_OUTPUT}"
-                  echo "failures=${failures}" >> "${GITHUB_OUTPUT}"
-                  echo "details<<EOF" >> "${GITHUB_OUTPUT}"
-                  printf "%b\n" "${details}" >> "${GITHUB_OUTPUT}"
-                  echo "EOF" >> "${GITHUB_OUTPUT}"
-
-                  if [ "${failures}" -gt "${max_failures}" ]; then
-                    echo "::error::Sonda phase2: failures=${failures} > max_failures=${max_failures}"
-                    exit 1
-                  fi
+            - name: Publicar artefacto de flakiness
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: phase2-flakiness-report
+                  path: verification/runtime/phase2-flakiness-last.json
+                  if-no-files-found: warn
 
             - name: Resumen de sonda
               if: ${{ always() }}
@@ -113,6 +90,8 @@ jobs:
                     echo "- Require Google calendar: \`${TEST_REQUIRE_GOOGLE_CALENDAR}\`";
                     echo "- Passes: \`${{ steps.probe.outputs.passes || '0' }}\`";
                     echo "- Failures: \`${{ steps.probe.outputs.failures || '0' }}\`";
+                    echo "- Classification: \`${{ steps.probe.outputs.classification || 'unknown' }}\`";
+                    echo "- JSON report: \`${{ steps.probe.outputs.json_path || 'verification/runtime/phase2-flakiness-last.json' }}\`";
                     echo "${{ steps.probe.outputs.details }}";
                     echo "- Resultado: \`${{ job.status }}\`";
                   } >> "${GITHUB_STEP_SUMMARY}"

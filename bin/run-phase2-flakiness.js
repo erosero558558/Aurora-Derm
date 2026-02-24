@@ -4,13 +4,13 @@ const { spawnSync } = require('child_process');
 const { mkdirSync, writeFileSync } = require('fs');
 const { dirname, resolve } = require('path');
 
-function parseIntArg(name, fallback) {
+function parseIntArg(name, fallback, minValue = 1) {
     const prefix = `--${name}=`;
     const match = process.argv.find((arg) => arg.startsWith(prefix));
     if (!match) return fallback;
     const raw = match.slice(prefix.length).trim();
     const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
+    if (!Number.isFinite(parsed) || parsed < minValue) {
         throw new Error(`Argumento invalido --${name}: ${raw}`);
     }
     return parsed;
@@ -49,8 +49,8 @@ function classifyFailures(failures, maxFailures) {
 }
 
 function main() {
-    const runs = parseIntArg('runs', 3);
-    const maxFailures = parseIntArg('max-failures', 0);
+    const runs = parseIntArg('runs', 3, 1);
+    const maxFailures = parseIntArg('max-failures', 0, 0);
     const command = parseStringArg('command', 'npm run test:phase2');
     const jsonOut = resolve(
         parseStringArg(
