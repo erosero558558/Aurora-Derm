@@ -13,6 +13,21 @@ import {
 } from './state.js';
 import { showToast, waitMs } from './utils.js';
 
+/**
+ * Makes an API request to the backend.
+ * Handles retries, timeouts, and slow connection notices automatically.
+ *
+ * @param {string} resource - The resource to request (e.g., 'appointments', 'availability').
+ * @param {Object} [options={}] - Request options.
+ * @param {'GET'|'POST'|'PUT'|'DELETE'} [options.method='GET'] - The HTTP method to use.
+ * @param {Object} [options.query] - Query parameters to append to the URL.
+ * @param {Object} [options.body] - The JSON body to send with the request.
+ * @param {number} [options.timeoutMs] - Custom timeout in milliseconds.
+ * @param {number} [options.retries] - Number of retries for the request. Defaults to `API_DEFAULT_RETRIES` for GET requests, 0 otherwise.
+ * @param {boolean} [options.silentSlowNotice=false] - If true, suppresses the "Connecting to server..." toast.
+ * @returns {Promise<any>} A promise that resolves with the JSON response payload.
+ * @throws {Error} Throws an error if the request fails after all retries. The error object may have `status`, `retryable`, and `code` properties.
+ */
 export async function apiRequest(resource, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();
     const query = new URLSearchParams({ resource: resource });

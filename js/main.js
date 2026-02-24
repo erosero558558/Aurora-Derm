@@ -25,6 +25,10 @@ import { initReviewsEngineWarmup } from './engagement.js';
 import { initGalleryInteractionsWarmup } from './gallery.js';
 // Chat shell cargado bajo demanda (code splitting)
 let chatShellPromise = null;
+/**
+ * Loads the Chat Shell module on demand.
+ * @returns {Promise<Object>} A promise that resolves to the Chat Shell module.
+ */
 function loadChatShell() {
     if (!chatShellPromise) {
         chatShellPromise = import('../src/apps/chat/shell.js');
@@ -58,6 +62,10 @@ const DEFERRED_STYLESHEET_URL = withDeployAssetVersion(
 let deferredStylesheetPromise = null;
 let deferredStylesheetInitDone = false;
 
+/**
+ * Loads the deferred stylesheet if it hasn't been loaded yet.
+ * @returns {Promise<boolean>} A promise that resolves when the stylesheet is loaded.
+ */
 function loadDeferredStylesheet() {
     if (
         document.querySelector(
@@ -86,6 +94,10 @@ function loadDeferredStylesheet() {
     return deferredStylesheetPromise;
 }
 
+/**
+ * Initializes the loading of the deferred stylesheet with a delay.
+ * Prevents multiple initializations.
+ */
 function initDeferredStylesheetLoading() {
     if (deferredStylesheetInitDone || window.location.protocol === 'file:') {
         return;
@@ -102,6 +114,10 @@ function initDeferredStylesheetLoading() {
     });
 }
 
+/**
+ * Disables placeholder external links (href starting with "URL_")
+ * by removing the href attribute and adding a disabled class.
+ */
 function disablePlaceholderExternalLinks() {
     document.querySelectorAll('a[href^="URL_"]').forEach((anchor) => {
         anchor.removeAttribute('href');
@@ -110,6 +126,11 @@ function disablePlaceholderExternalLinks() {
     });
 }
 
+/**
+ * Resolves the source context of a WhatsApp link click.
+ * @param {Element} waLink - The WhatsApp link element that was clicked.
+ * @returns {string} The source identifier ('chatbot', 'quick_dock', 'footer', or element ID).
+ */
 function resolveWhatsappSource(waLink) {
     if (!waLink || !(waLink instanceof Element)) return 'unknown';
 
@@ -129,6 +150,9 @@ function resolveWhatsappSource(waLink) {
     return 'unknown';
 }
 
+/**
+ * Initializes lazy loading for the booking calendar engine when booking buttons are clicked.
+ */
 function initBookingCalendarLazyInit() {
     function wireBookingCalendarLazyLoad(element) {
         if (!element) {
@@ -164,6 +188,10 @@ function initBookingCalendarLazyInit() {
     });
 }
 
+/**
+ * Selects a service in the booking form programmatically and scrolls to the appointment section.
+ * @param {string} value - The value of the service to select.
+ */
 function fallbackSelectService(value) {
     const select = document.getElementById('serviceSelect');
     if (select) {
@@ -183,6 +211,11 @@ function fallbackSelectService(value) {
 }
 
 let chatActionFallbackBridgeBound = false;
+/**
+ * Initializes a bridge to handle chat-related actions triggered from the DOM
+ * (e.g., buttons with `data-action` attributes).
+ * Ensures handlers are bound only once.
+ */
 function initChatActionFallbackBridge() {
     if (chatActionFallbackBridgeBound) {
         return;

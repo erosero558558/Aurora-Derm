@@ -1,10 +1,21 @@
 import { state } from './state.js';
 import { COOKIE_CONSENT_KEY } from './config.js';
 
+/**
+ * Logs messages to the console if debugging is enabled.
+ * This function is currently a no-op in production.
+ * @param {...any} args - The arguments to log.
+ */
 export function debugLog() {
     // Debug logging removed
 }
 
+/**
+ * Escapes HTML characters in a string to prevent XSS attacks.
+ * Uses the ChatUiEngine if available, otherwise falls back to a DOM-based approach.
+ * @param {string} text - The text to escape.
+ * @returns {string} The escaped HTML string.
+ */
 export function escapeHtml(text) {
     if (
         window.Piel &&
@@ -18,16 +29,32 @@ export function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/**
+ * Returns a promise that resolves after a specified number of milliseconds.
+ * @param {number} ms - The number of milliseconds to wait.
+ * @returns {Promise<void>} A promise that resolves after the delay.
+ */
 export function waitMs(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Formats a date string into a localized date string (es-EC).
+ * @param {string} dateStr - The date string to format.
+ * @returns {string} The formatted date string, or the original string if invalid.
+ */
 export function formatDate(dateStr) {
     const date = new Date(dateStr);
     if (Number.isNaN(date.getTime())) return dateStr;
     return date.toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/**
+ * Creates a debounced function that delays invoking `func` until after `wait` milliseconds have elapsed since the last time the debounced function was invoked.
+ * @param {Function} func - The function to debounce.
+ * @param {number} wait - The number of milliseconds to delay.
+ * @returns {Function} The debounced function.
+ */
 export function debounce(func, wait) {
     let timeout;
     return function(...args) {
@@ -37,6 +64,10 @@ export function debounce(func, wait) {
     };
 }
 
+/**
+ * Checks if the user is on a constrained network connection (e.g., 2G or Data Saver mode).
+ * @returns {boolean} True if the connection is constrained, false otherwise.
+ */
 export function isConstrainedNetworkConnection() {
     const connection =
         navigator.connection ||
@@ -50,6 +81,11 @@ export function isConstrainedNetworkConnection() {
 }
 
 // ASSET VERSIONING
+
+/**
+ * Resolves the deployment asset version from the current script tag or the main script tag.
+ * @returns {string} The asset version string, or an empty string if not found.
+ */
 export function resolveDeployAssetVersion() {
     try {
         if (
@@ -85,6 +121,11 @@ export function resolveDeployAssetVersion() {
     return '';
 }
 
+/**
+ * Appends the deployment asset version to a URL as a query parameter.
+ * @param {string} url - The URL to modify.
+ * @returns {string} The URL with the asset version appended.
+ */
 export function withDeployAssetVersion(url) {
     const cleanUrl = String(url || '').trim();
     if (cleanUrl === '') {
@@ -110,6 +151,13 @@ export function withDeployAssetVersion(url) {
 }
 
 // TOAST NOTIFICATIONS SYSTEM
+
+/**
+ * Displays a toast notification.
+ * @param {string} message - The message to display.
+ * @param {'success'|'error'|'warning'|'info'} [type='info'] - The type of notification.
+ * @param {string} [title=''] - The title of the notification.
+ */
 export function showToast(message, type = 'info', title = '') {
     // Create container if doesn't exist
     let container = document.getElementById('toastContainer');
@@ -166,6 +214,12 @@ export function showToast(message, type = 'info', title = '') {
     }, 5000);
 }
 
+/**
+ * Retrieves a JSON value from localStorage.
+ * @param {string} key - The key to retrieve.
+ * @param {any} fallback - The fallback value if the key does not exist or is invalid JSON.
+ * @returns {any} The parsed JSON value or the fallback.
+ */
 export function storageGetJSON(key, fallback) {
     try {
         const value = JSON.parse(localStorage.getItem(key) || 'null');
@@ -175,6 +229,11 @@ export function storageGetJSON(key, fallback) {
     }
 }
 
+/**
+ * Stores a JSON value in localStorage.
+ * @param {string} key - The key to store.
+ * @param {any} value - The value to store.
+ */
 export function storageSetJSON(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
@@ -183,6 +242,11 @@ export function storageSetJSON(key, value) {
     }
 }
 
+/**
+ * Generates initials from a name string.
+ * @param {string} name - The name to generate initials from.
+ * @returns {string} The initials (up to 2 characters).
+ */
 export function getInitials(name) {
     const parts = String(name || 'Paciente')
         .split(' ')
@@ -192,6 +256,11 @@ export function getInitials(name) {
     return parts.map((part) => part[0].toUpperCase()).join('');
 }
 
+/**
+ * Returns a relative date label (e.g., "Today", "2 days ago").
+ * @param {string} dateText - The date string to process.
+ * @returns {string} The relative date label localized based on current language.
+ */
 export function getRelativeDateLabel(dateText) {
     const date = new Date(dateText);
     if (Number.isNaN(date.getTime())) {
@@ -211,6 +280,11 @@ export function getRelativeDateLabel(dateText) {
     return date.toLocaleDateString('en-US');
 }
 
+/**
+ * Generates HTML for a star rating.
+ * @param {number|string} rating - The rating value (1-5).
+ * @returns {string} The HTML string for the star rating.
+ */
 export function renderStars(rating) {
     const value = Math.max(1, Math.min(5, Number(rating) || 0));
     let html = '';
@@ -220,6 +294,10 @@ export function renderStars(rating) {
     return html;
 }
 
+/**
+ * Retrieves the current cookie consent status.
+ * @returns {string} The consent status ('accepted', 'rejected', or empty string).
+ */
 export function getCookieConsent() {
     if (
         window.Piel &&
@@ -238,6 +316,10 @@ export function getCookieConsent() {
     }
 }
 
+/**
+ * Sets the cookie consent status in localStorage.
+ * @param {'accepted'|'rejected'} status - The consent status to set.
+ */
 export function setCookieConsent(status) {
     // This function might be overridden by consent engine usage in other modules, but basic utility here.
     const normalized = status === 'accepted' ? 'accepted' : 'rejected';

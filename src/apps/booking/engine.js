@@ -9,6 +9,36 @@ let stripeElements = null;
 let stripeCardElement = null;
 let stripeMounted = false;
 
+/**
+ * Initializes the Booking Engine with necessary dependencies.
+ * Also sets up payment listeners if the DOM is ready or when it becomes ready.
+ *
+ * @param {Object} inputDeps - The dependencies required by the engine.
+ * @param {Function} inputDeps.getCurrentLang - Function to get the current language code.
+ * @param {Function} inputDeps.getCurrentAppointment - Function to get the current appointment object.
+ * @param {Function} inputDeps.setCurrentAppointment - Function to set the current appointment object.
+ * @param {Function} inputDeps.setCheckoutSessionActive - Function to set the checkout session active state.
+ * @param {Function} inputDeps.setCheckoutStep - Function to track checkout steps.
+ * @param {Function} inputDeps.showToast - Function to display toast notifications.
+ * @param {Function} inputDeps.trackEvent - Function to track analytics events.
+ * @param {Function} inputDeps.normalizeAnalyticsLabel - Function to normalize analytics labels.
+ * @param {Function} inputDeps.debugLog - Function for debug logging.
+ * @param {Function} inputDeps.getCaptchaToken - Function to retrieve a CAPTCHA token.
+ * @param {Function} inputDeps.loadPaymentConfig - Function to load payment configuration.
+ * @param {Function} inputDeps.loadStripeSdk - Function to load the Stripe SDK.
+ * @param {Function} inputDeps.getCheckoutSession - Function to get the current checkout session.
+ * @param {Function} inputDeps.startCheckoutSession - Function to start a checkout session.
+ * @param {Function} inputDeps.maybeTrackCheckoutAbandon - Function to track checkout abandonment.
+ * @param {Function} inputDeps.buildAppointmentPayload - Function to build the appointment payload.
+ * @param {Function} inputDeps.stripTransientAppointmentFields - Function to remove transient fields from the appointment.
+ * @param {Function} inputDeps.createPaymentIntent - Function to create a payment intent.
+ * @param {Function} inputDeps.verifyPaymentIntent - Function to verify a payment intent.
+ * @param {Function} inputDeps.createAppointmentRecord - Function to create the appointment record.
+ * @param {Function} inputDeps.uploadTransferProof - Function to upload transfer proof.
+ * @param {Function} inputDeps.completeCheckoutSession - Function to mark the checkout session as complete.
+ * @param {Function} inputDeps.showSuccessModal - Function to show the success modal.
+ * @returns {Object} The API object exposed by the engine.
+ */
 function init(inputDeps) {
     if (initialized) {
         return api;
@@ -253,6 +283,12 @@ async function mountStripeCardElement() {
     }
 }
 
+/**
+ * Opens the payment modal and prepares the payment interface.
+ * Initializes the checkout session if needed.
+ *
+ * @param {Object} [appointmentData] - Optional appointment data to update current state.
+ */
 function openPaymentModal(appointmentData) {
     const modal = document.getElementById('paymentModal');
     if (!modal) return;
@@ -312,6 +348,13 @@ function openPaymentModal(appointmentData) {
     refreshCardPaymentAvailability().catch(() => undefined);
 }
 
+/**
+ * Closes the payment modal and cleans up the UI.
+ *
+ * @param {Object} [options={}] - Options for closing.
+ * @param {boolean} [options.skipAbandonTrack=false] - If true, skips tracking abandonment.
+ * @param {string} [options.reason='modal_close'] - Reason for closing the modal.
+ */
 function closePaymentModal(options = {}) {
     const skipAbandonTrack = options && options.skipAbandonTrack === true;
     const abandonReason = options && typeof options.reason === 'string' ? options.reason : 'modal_close';
@@ -453,6 +496,11 @@ async function processCashPaymentFlow() {
     return requireFn('createAppointmentRecord')(payload, { allowLocalFallback: false });
 }
 
+/**
+ * Orchestrates the payment processing flow based on the selected method.
+ * Handles validation, API calls, error handling, and success feedback.
+ * @returns {Promise<void>}
+ */
 async function processPayment() {
     if (isPaymentProcessing) return;
     isPaymentProcessing = true;
