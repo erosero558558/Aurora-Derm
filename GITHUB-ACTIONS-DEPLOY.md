@@ -112,5 +112,10 @@ Se puede correr manual con overrides:
 - `allow_store_calendar`
 - `skip_backup_check`
 
+Comportamiento de corte:
+
+- Si `REQUIRE_GOOGLE_CALENDAR=true`, el monitor fuerza modo estricto y deja de permitir `store`
+  aunque `allow_store_calendar` venga habilitado por defecto.
+
 Si falla en ejecucion programada, crea/actualiza un issue de incidente automaticamente.
 Cuando recupera en una corrida programada exitosa, cierra el issue automaticamente.

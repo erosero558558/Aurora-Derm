@@ -56,6 +56,7 @@ jobs:
             ALLOW_STORE_CALENDAR: ${{ github.event.inputs.allow_store_calendar || vars.PROD_MONITOR_ALLOW_STORE_CALENDAR || 'true' }}
             ALLOW_BLOCKED_CALENDAR: ${{ github.event.inputs.allow_blocked_calendar || 'false' }}
             SKIP_BACKUP_CHECK: ${{ github.event.inputs.skip_backup_check || 'false' }}
+            REQUIRE_GOOGLE_CALENDAR: ${{ vars.REQUIRE_GOOGLE_CALENDAR || 'false' }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -65,6 +66,9 @@ jobs:
               run: |
                   $maxLatency = [int]$env:MAX_LATENCY_MS
                   if ($maxLatency -lt 500) { $maxLatency = 500 }
+
+                  $requireGoogleCalendar = [string]$env:REQUIRE_GOOGLE_CALENDAR
+                  $forceGoogle = $requireGoogleCalendar.ToLowerInvariant() -eq 'true'
 
                   $monitorArgs = @{
                     Domain = $env:TARGET_DOMAIN
@@ -76,6 +80,9 @@ jobs:
                   }
                   if ($env:ALLOW_STORE_CALENDAR -eq 'true') {
                     $monitorArgs.AllowStoreCalendar = $true
+                  }
+                  if ($forceGoogle -and $monitorArgs.ContainsKey('AllowStoreCalendar')) {
+                    $monitorArgs.Remove('AllowStoreCalendar')
                   }
                   if ($env:ALLOW_BLOCKED_CALENDAR -eq 'true') {
                     $monitorArgs.AllowBlockedCalendar = $true
@@ -97,6 +104,7 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_store_calendar: ``$env:ALLOW_STORE_CALENDAR``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_blocked_calendar: ``$env:ALLOW_BLOCKED_CALENDAR``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- skip_backup_check: ``$env:SKIP_BACKUP_CHECK``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- require_google_calendar: ``$env:REQUIRE_GOOGLE_CALENDAR``"
 
             - name: Crear/actualizar incidente (solo schedule)
               if: ${{ failure() && github.event_name == 'schedule' }}
