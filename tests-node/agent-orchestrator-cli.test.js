@@ -65,6 +65,30 @@ function runCli(dir, args, expectedStatus = 0) {
     return result;
 }
 
+function runCliWithEnv(dir, args, envPatch, expectedStatus = 0) {
+    const result = spawnSync(
+        process.execPath,
+        [join(dir, 'agent-orchestrator.js'), ...args],
+        {
+            cwd: dir,
+            encoding: 'utf8',
+            env: { ...process.env, ...(envPatch || {}) },
+        }
+    );
+
+    if (result.error) {
+        throw result.error;
+    }
+
+    assert.equal(
+        result.status,
+        expectedStatus,
+        `Unexpected exit for ${args.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+    );
+
+    return result;
+}
+
 function parseJsonStdout(result) {
     try {
         return JSON.parse(result.stdout);
@@ -575,6 +599,120 @@ test('task ls texto imprime matched y filtros', (t) => {
     assert.match(result.stdout, /Filters: .*active=true/);
     assert.match(result.stdout, /status=ready/);
     assert.match(result.stdout, /AG-010 \[ready\]/);
+});
+
+test('task ls --mine usa owner detectado por entorno', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskStartConflictFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCliWithEnv(dir, ['task', 'ls', '--json', '--mine'], {
+        AGENT_OWNER: 'ernesto',
+    });
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.filters.mine, true);
+    assert.equal(json.filters.owner, 'ernesto');
+    assert.equal(json.summary.matched, 1);
+    assert.equal(json.tasks[0].id, 'AG-020');
+});
+
+test('task create crea AG siguiente y sincroniza colas derivadas', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCliWithEnv(
+        dir,
+        [
+            'task',
+            'create',
+            '--title',
+            'Nueva tarea fixture',
+            '--executor',
+            'kimi',
+            '--status',
+            'ready',
+            '--risk',
+            'low',
+            '--scope',
+            'docs',
+            '--files',
+            'docs/nueva-tarea.md,docs/otra.md',
+            '--json',
+        ],
+        { AGENT_OWNER: 'ernesto' }
+    );
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.command, 'task');
+    assert.equal(json.action, 'create');
+    assert.equal(json.ok, true);
+    assert.equal(json.task.id, 'AG-011');
+    assert.equal(json.task.owner, 'ernesto');
+    assert.equal(json.task.executor, 'kimi');
+    assert.equal(json.task.status, 'ready');
+
+    const board = readBoard(dir);
+    assert.match(board, /- id: AG-011/);
+    assert.match(board, /title: "Nueva tarea fixture"/);
+    assert.match(board, /executor: kimi/);
+    assert.match(board, /status: ready/);
+    assert.match(board, /files: \["docs\/nueva-tarea\.md", "docs\/otra\.md"\]/);
+
+    assert.equal(
+        typeof readFileSync(join(dir, 'JULES_TASKS.md'), 'utf8'),
+        'string'
+    );
+    assert.equal(
+        typeof readFileSync(join(dir, 'KIMI_TASKS.md'), 'utf8'),
+        'string'
+    );
+});
+
+test('task create bloquea crear tarea activa con conflicto blocking', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskStartConflictFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCli(
+        dir,
+        [
+            'task',
+            'create',
+            '--title',
+            'Conflicting task',
+            '--executor',
+            'jules',
+            '--status',
+            'in_progress',
+            '--risk',
+            'medium',
+            '--scope',
+            'backend',
+            '--files',
+            'tests/MailerTest.php,docs/notes.md',
+        ],
+        1
+    );
+
+    assert.match(result.stderr, /task create bloqueado por conflicto activo/i);
+    assert.match(result.stderr, /tests\/MailerTest\.php/i);
 });
 
 test('close soporta --json y devuelve task + evidence_path', (t) => {

@@ -702,6 +702,16 @@ function nextHandoffId(handoffs) {
     return `HO-${String(max + 1).padStart(3, '0')}`;
 }
 
+function nextAgentTaskId(tasks) {
+    let max = 0;
+    for (const task of tasks || []) {
+        const match = String(task?.id || '').match(/^AG-(\d+)$/);
+        if (!match) continue;
+        max = Math.max(max, Number(match[1]));
+    }
+    return `AG-${String(max + 1).padStart(3, '0')}`;
+}
+
 function quote(value) {
     return `"${String(value).replace(/"/g, '\\"')}"`;
 }
@@ -3239,10 +3249,12 @@ function cmdTask(args) {
 
     if (
         !normalizedSubcommand ||
-        !['ls', 'claim', 'start', 'finish'].includes(normalizedSubcommand)
+        !['ls', 'create', 'claim', 'start', 'finish'].includes(
+            normalizedSubcommand
+        )
     ) {
         throw new Error(
-            'Uso: node agent-orchestrator.js task <ls|claim|start|finish> [AG-001] [--owner x] [--executor y] [--status z] [--files a,b] [--evidence path] [--active]'
+            'Uso: node agent-orchestrator.js task <ls|create|claim|start|finish> [AG-001] [--owner x] [--executor y] [--status z] [--files a,b] [--evidence path] [--active|--mine]'
         );
     }
 
@@ -3258,7 +3270,17 @@ function cmdTask(args) {
         const executorFilter = String(flags.executor || '')
             .trim()
             .toLowerCase();
-        const ownerFilter = String(flags.owner || '')
+        const mineOnly = args.includes('--mine');
+        if (mineOnly && flags.owner) {
+            throw new Error('task ls no permite combinar --mine con --owner');
+        }
+        const mineOwner = mineOnly ? detectDefaultOwner() : '';
+        if (mineOnly && !mineOwner) {
+            throw new Error(
+                'task ls --mine requiere AGENT_OWNER/USERNAME/USER disponible'
+            );
+        }
+        const ownerFilter = String(flags.owner || mineOwner || '')
             .trim()
             .toLowerCase();
         const scopeFilter = String(flags.scope || '')
@@ -3322,6 +3344,7 @@ function cmdTask(args) {
                 status: statusFilter,
                 executor: executorFilter || null,
                 owner: ownerFilter || null,
+                mine: mineOnly,
                 scope: scopeFilter || null,
                 risk: riskFilter || null,
                 id: idFilter || null,
@@ -3355,6 +3378,7 @@ function cmdTask(args) {
             filterParts.push(`status=${statusFilter.join(',')}`);
         if (executorFilter) filterParts.push(`executor=${executorFilter}`);
         if (ownerFilter) filterParts.push(`owner=${ownerFilter}`);
+        if (mineOnly) filterParts.push('mine=true');
         if (scopeFilter) filterParts.push(`scope~=${scopeFilter}`);
         if (riskFilter) filterParts.push(`risk=${riskFilter}`);
         if (idFilter) filterParts.push(`id=${idFilter}`);
@@ -3368,6 +3392,143 @@ function cmdTask(args) {
                 `- ${task.id} [${task.status}] exec=${task.executor} owner=${task.owner || 'n/a'} risk=${task.risk || 'n/a'} scope=${task.scope || 'n/a'} files=${filesCount}`
             );
         }
+        return;
+    }
+
+    if (normalizedSubcommand === 'create') {
+        const board = parseBoard();
+        const requestedId = String(flags.id || '').trim();
+        const newId = requestedId || nextAgentTaskId(board.tasks);
+
+        if (!/^AG-\d+$/.test(newId)) {
+            throw new Error(
+                `task create requiere id AG-### (actual: ${newId || 'vacio'})`
+            );
+        }
+        if (board.tasks.some((item) => String(item.id || '') === newId)) {
+            throw new Error(`task create: id duplicado ${newId}`);
+        }
+
+        const title = String(flags.title || '').trim();
+        if (!title) {
+            throw new Error('task create requiere --title');
+        }
+
+        const executor = String(flags.executor || '')
+            .trim()
+            .toLowerCase();
+        const allowedExecutors = new Set([
+            'codex',
+            'claude',
+            'jules',
+            'kimi',
+            'ci',
+        ]);
+        if (!executor) {
+            throw new Error('task create requiere --executor');
+        }
+        if (!allowedExecutors.has(executor)) {
+            throw new Error(`task create: executor invalido (${executor})`);
+        }
+
+        const status = String(flags.status || 'backlog').trim();
+        if (!ALLOWED_STATUSES.has(status)) {
+            throw new Error(`task create: status invalido (${status})`);
+        }
+
+        const risk = String(flags.risk || 'medium')
+            .trim()
+            .toLowerCase();
+        if (!['low', 'medium', 'high'].includes(risk)) {
+            throw new Error(`task create: risk invalido (${risk})`);
+        }
+
+        const files = parseCsvList(flags.files || '');
+        if (files.length === 0) {
+            throw new Error(
+                'task create requiere --files con lista CSV no vacia'
+            );
+        }
+
+        const owner = String(
+            flags.owner || detectDefaultOwner() || 'unassigned'
+        ).trim();
+        const scope = String(flags.scope || 'general').trim();
+        const acceptance = String(flags.acceptance || title).trim();
+        const acceptanceRef = String(
+            flags['acceptance-ref'] || flags.acceptance_ref || ''
+        ).trim();
+        const dependsOn = parseCsvList(
+            flags['depends-on'] || flags.depends_on || ''
+        );
+        const prompt = String(flags.prompt || title).trim();
+        const today = currentDate();
+
+        const task = {
+            id: newId,
+            title,
+            owner,
+            executor,
+            status,
+            risk,
+            scope,
+            files,
+            acceptance,
+            acceptance_ref: acceptanceRef,
+            depends_on: dependsOn,
+            prompt,
+            created_at: today,
+            updated_at: today,
+        };
+
+        board.tasks.push(task);
+
+        if (ACTIVE_STATUSES.has(status)) {
+            const handoffData = parseHandoffs();
+            const blockingConflicts = getBlockingConflictsForTask(
+                board.tasks,
+                newId,
+                handoffData.handoffs
+            );
+            if (blockingConflicts.length > 0) {
+                const details = blockingConflicts
+                    .map((item) => {
+                        const other =
+                            String(item.left.id) === newId
+                                ? item.right
+                                : item.left;
+                        const filesText = item.overlap_files.length
+                            ? item.overlap_files.join(', ')
+                            : '(wildcard ambiguo)';
+                        return `${newId} <-> ${other.id} :: ${filesText}`;
+                    })
+                    .join(' | ');
+                throw new Error(
+                    `task create bloqueado por conflicto activo: ${details}`
+                );
+            }
+        }
+
+        writeBoardAndSync(board, { silentSync: wantsJson });
+
+        if (wantsJson) {
+            console.log(
+                JSON.stringify(
+                    {
+                        version: 1,
+                        ok: true,
+                        command: 'task',
+                        action: 'create',
+                        task: toTaskJson(task),
+                    },
+                    null,
+                    2
+                )
+            );
+            return;
+        }
+
+        console.log(`Task create OK: ${newId} [${status}] exec=${executor}`);
         return;
     }
 
