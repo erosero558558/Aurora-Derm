@@ -16,7 +16,7 @@ import {
 import { getCaptchaToken } from './captcha.js';
 
 const DATA_ENGINE_URL = withDeployAssetVersion(
-    '/js/engines/data-engine.js?v=figo-data-20260219-phase1'
+    '/js/engines/data-bundle.js?v=20260225-data-consolidation1'
 );
 
 function getDataEngineDeps() {
@@ -33,13 +33,13 @@ export function loadDataEngine() {
     return loadDeferredModule({
         cacheKey: 'data-engine',
         src: DATA_ENGINE_URL,
-        scriptDataAttribute: 'data-data-engine',
+        scriptDataAttribute: 'data-data-bundle',
         resolveModule: () => window.Piel && window.Piel.DataEngine,
         isModuleReady: (module) =>
             !!(module && typeof module.init === 'function'),
         onModuleReady: (module) => module.init(getDataEngineDeps()),
         missingApiError: 'data-engine loaded without API',
-        loadError: 'No se pudo cargar data-engine.js',
+        loadError: 'No se pudo cargar data-bundle.js (data-engine)',
         logLabel: 'Data engine',
     });
 }

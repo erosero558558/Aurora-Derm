@@ -17,7 +17,7 @@ function renderPublicReviews(reviews) {
 }
 
 const DATA_BUNDLE_URL = withDeployAssetVersion(
-    '/js/engines/data-bundle.js'
+    '/js/engines/data-bundle.js?v=20260225-data-consolidation1'
 );
 
 function getI18nEngineDeps() {
