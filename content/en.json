@@ -174,7 +174,7 @@
     "label_phone": "Phone",
     "placeholder_phone": "+593 9XXXXXXXX",
     "summary_subtotal": "Subtotal",
-    "summary_iva": "VAT (12%)",
+    "summary_iva": "VAT (15%)",
     "summary_total": "Total",
     "summary_includes": "Includes: evaluation + diagnosis + plan",
     "summary_excludes": "Excludes: additional procedures (informed beforehand)",
