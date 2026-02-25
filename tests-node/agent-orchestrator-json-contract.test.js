@@ -234,6 +234,56 @@ test('JSON contract minimo estable para metrics --json', () => {
     }
 });
 
+test('JSON contract minimo estable para metrics baseline show/set/reset', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+
+        const seeded = runJson(dir, ['metrics', '--profile', 'ci']);
+        assertVersionLike(seeded.version);
+
+        const show = runJson(dir, ['metrics', 'baseline', 'show']);
+        assertVersionLike(show.version);
+        assert.equal(show.ok, true);
+        assert.equal(show.action, 'show');
+        assert.equal(typeof show.metrics_path, 'string');
+        assert.equal(typeof show.baseline, 'object');
+        assert.equal(typeof show.baseline_contribution, 'object');
+
+        const set = runJson(dir, [
+            'metrics',
+            'baseline',
+            'set',
+            '--from',
+            'current',
+        ]);
+        assertVersionLike(set.version);
+        assert.equal(set.ok, true);
+        assert.equal(set.action, 'set');
+        assert.equal(set.source, 'current');
+        assert.equal(typeof set.baseline, 'object');
+        assert.equal(typeof set.baseline_meta, 'object');
+        assert.equal(typeof set.delta, 'object');
+
+        const reset = runJson(dir, [
+            'metrics',
+            'baseline',
+            'reset',
+            '--from',
+            'current',
+        ]);
+        assertVersionLike(reset.version);
+        assert.equal(reset.ok, true);
+        assert.equal(reset.action, 'reset');
+        assert.equal(reset.source, 'current');
+        assert.equal(typeof reset.baseline, 'object');
+        assert.equal(typeof reset.baseline_meta, 'object');
+        assert.equal(typeof reset.delta, 'object');
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
 test('JSON contract minimo estable para task ls/create/claim/start/finish', () => {
     const dir = createFixtureDir();
     try {

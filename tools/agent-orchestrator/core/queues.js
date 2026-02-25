@@ -41,8 +41,8 @@ function boardToQueueStatus(taskStatus, executor) {
 function renderQueueFile(executor, tasks, existingMeta) {
     const header =
         executor === 'jules'
-            ? '# JULES_TASKS.md â€” Cola derivada desde AGENT_BOARD.yaml'
-            : '# KIMI_TASKS.md â€” Cola derivada desde AGENT_BOARD.yaml';
+            ? '# JULES_TASKS.md - Cola derivada desde AGENT_BOARD.yaml'
+            : '# KIMI_TASKS.md - Cola derivada desde AGENT_BOARD.yaml';
     const runnerHint =
         executor === 'jules'
             ? 'JULES_API_KEY=xxx node jules-dispatch.js dispatch'
