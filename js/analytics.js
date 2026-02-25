@@ -49,6 +49,38 @@ const FUNNEL_SERVER_ALLOWED_PARAMS = new Set([
 const FUNNEL_EVENT_DEDUP_MS = 1200;
 const funnelEventLastSentAt = new Map();
 
+function getExperimentContext() {
+    if (!window.Piel || typeof window.Piel.getExperimentContext !== 'function') {
+        return null;
+    }
+    try {
+        const context = window.Piel.getExperimentContext();
+        return context && typeof context === 'object' ? context : null;
+    } catch (_error) {
+        return null;
+    }
+}
+
+function withExperimentParams(params = {}) {
+    const enriched = params && typeof params === 'object' ? { ...params } : {};
+    const context = getExperimentContext();
+    if (!context) {
+        return enriched;
+    }
+
+    const heroVariant = normalizeFunnelLabelClient(context.heroVariant, '');
+    if (heroVariant && !Object.prototype.hasOwnProperty.call(enriched, 'ab_variant')) {
+        enriched.ab_variant = heroVariant;
+    }
+
+    const contextSource = normalizeFunnelLabelClient(context.source, '');
+    if (contextSource && !Object.prototype.hasOwnProperty.call(enriched, 'source')) {
+        enriched.source = contextSource;
+    }
+
+    return enriched;
+}
+
 function normalizeFunnelLabelClient(value, fallback = 'unknown') {
     if (value === null || value === undefined) {
         return fallback;
@@ -97,7 +129,7 @@ function sendFunnelEventToServer(eventName, params = {}) {
         return;
     }
 
-    const serverParams = buildFunnelServerParams(params);
+    const serverParams = buildFunnelServerParams(withExperimentParams(params));
     const dedupKey = [
         normalizedEvent,
         serverParams.step || '',
@@ -166,9 +198,10 @@ export function loadAnalyticsEngine() {
 }
 
 export function trackEvent(eventName, params = {}) {
-    sendFunnelEventToServer(eventName, params);
+    const enrichedParams = withExperimentParams(params);
+    sendFunnelEventToServer(eventName, enrichedParams);
     runDeferredModule(loadAnalyticsEngine, (engine) =>
-        engine.trackEvent(eventName, params)
+        engine.trackEvent(eventName, enrichedParams)
     );
 }
 

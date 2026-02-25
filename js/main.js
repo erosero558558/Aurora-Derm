@@ -84,6 +84,169 @@ window.Piel = window.Piel || {};
 window.Piel.deployVersion =
     window.Piel.deployVersion || resolveDeployAssetVersion();
 
+const HERO_EXPERIMENT_STORAGE_KEY = 'pa_hero_variant_v1';
+const HERO_VARIANT_CONTROL = 'control';
+const HERO_VARIANT_FOCUS_AGENDA = 'focus_agenda';
+const HERO_VARIANTS = [HERO_VARIANT_CONTROL, HERO_VARIANT_FOCUS_AGENDA];
+
+const HERO_COPY = {
+    [HERO_VARIANT_CONTROL]: {
+        es: {
+            subtitle:
+                'Dermatologia especializada con tecnologia de vanguardia. Tratamientos personalizados para que tu piel luzca saludable y radiante.',
+            primaryCta: 'Reservar Consulta',
+        },
+        en: {
+            subtitle:
+                'Specialized dermatology with cutting-edge technology. Personalized treatments to keep your skin healthy and radiant.',
+            primaryCta: 'Book Consultation',
+        },
+    },
+    [HERO_VARIANT_FOCUS_AGENDA]: {
+        es: {
+            subtitle:
+                'Agenda tu valoracion dermatologica en minutos, con atencion humana y seguimiento real.',
+            primaryCta: 'Agenda tu cita hoy',
+        },
+        en: {
+            subtitle:
+                'Schedule your dermatology assessment in minutes with real specialist follow-up.',
+            primaryCta: 'Book Your Visit Today',
+        },
+    },
+};
+
+let heroVariant = null;
+let heroExperimentTracked = false;
+
+function normalizeHeroVariant(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return HERO_VARIANTS.includes(normalized) ? normalized : '';
+}
+
+function pickHeroVariant() {
+    try {
+        const saved = normalizeHeroVariant(
+            localStorage.getItem(HERO_EXPERIMENT_STORAGE_KEY)
+        );
+        if (HERO_VARIANTS.includes(saved)) {
+            return saved;
+        }
+    } catch (_error) {
+        // no-op
+    }
+
+    let selected;
+    try {
+        const randomArray = new Uint32Array(1);
+        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+            window.crypto.getRandomValues(randomArray);
+            selected =
+                randomArray[0] % 2 === 0
+                    ? HERO_VARIANT_CONTROL
+                    : HERO_VARIANT_FOCUS_AGENDA;
+        } else {
+            selected =
+                Math.random() < 0.5
+                    ? HERO_VARIANT_CONTROL
+                    : HERO_VARIANT_FOCUS_AGENDA;
+        }
+        localStorage.setItem(HERO_EXPERIMENT_STORAGE_KEY, selected);
+    } catch (_error) {
+        selected =
+            Math.random() < 0.5
+                ? HERO_VARIANT_CONTROL
+                : HERO_VARIANT_FOCUS_AGENDA;
+    }
+
+    return selected || HERO_VARIANT_CONTROL;
+}
+
+function getHeroVariant() {
+    if (!heroVariant) {
+        heroVariant = pickHeroVariant() || HERO_VARIANT_CONTROL;
+    }
+    return heroVariant;
+}
+
+function getHeroExperimentContext() {
+    const variant = getHeroVariant();
+    return {
+        heroVariant: variant,
+        source: `hero_${variant}`,
+        checkoutEntry:
+            variant === HERO_VARIANT_CONTROL
+                ? 'booking_form'
+                : `booking_form_${variant}`,
+    };
+}
+
+window.Piel.getExperimentContext = getHeroExperimentContext;
+
+function applyHeroExperimentCopy() {
+    const variant = getHeroVariant();
+    const lang = state.currentLang === 'en' ? 'en' : 'es';
+    const copyByVariant = HERO_COPY[variant] || HERO_COPY[HERO_VARIANT_CONTROL];
+    const copy = copyByVariant[lang] || copyByVariant.es;
+
+    const subtitleEl = document.querySelector(
+        '.hero-subtitle[data-i18n="hero_subtitle"]'
+    );
+    if (subtitleEl && copy.subtitle) {
+        subtitleEl.textContent = copy.subtitle;
+    }
+
+    const primaryCtaEl = document.querySelector(
+        '.hero-actions .btn-primary[data-i18n="hero_cta_primary"]'
+    );
+    if (primaryCtaEl && copy.primaryCta) {
+        primaryCtaEl.textContent = copy.primaryCta;
+    }
+
+    document.documentElement.setAttribute('data-hero-variant', variant);
+}
+
+function initHeroExperimentTracking() {
+    const bindCtaEvent = (selector, step) => {
+        const button = document.querySelector(selector);
+        if (!button || button.dataset.heroExperimentBound === 'true') {
+            return;
+        }
+        button.dataset.heroExperimentBound = 'true';
+        button.addEventListener('click', () => {
+            const variant = getHeroVariant();
+            trackEvent('booking_step_completed', {
+                source: `hero_${variant}`,
+                step,
+            });
+        });
+    };
+
+    bindCtaEvent(
+        '.hero-actions .btn-primary[data-i18n="hero_cta_primary"]',
+        'hero_primary_cta_click'
+    );
+    bindCtaEvent(
+        '.hero-actions .btn-secondary[data-i18n="hero_cta_secondary"]',
+        'hero_secondary_cta_click'
+    );
+
+    if (!heroExperimentTracked) {
+        heroExperimentTracked = true;
+        trackEvent('booking_step_completed', {
+            source: `hero_${getHeroVariant()}`,
+            step: 'hero_variant_assigned',
+        });
+    }
+}
+
+function initHeroExperiment() {
+    getHeroVariant();
+    applyHeroExperimentCopy();
+    initHeroExperimentTracking();
+    document.addEventListener('piel:language-changed', applyHeroExperimentCopy);
+}
+
 // Feature flags: fetch early (non-blocking), expose on window.Piel
 loadFeatureFlags().then((flags) => {
     window.Piel.features = flags;
@@ -324,7 +487,10 @@ document.addEventListener('DOMContentLoaded', function () {
     initActionRouterEngine();
     initDeferredStylesheetLoading();
     initThemeMode();
-    changeLanguage(state.currentLang);
+    changeLanguage(state.currentLang)
+        .then(() => applyHeroExperimentCopy())
+        .catch(() => applyHeroExperimentCopy());
+    initHeroExperiment();
     initGA4();
     initBookingFunnelObserver();
     initDeferredSectionPrefetch();
@@ -435,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const targetPosition = target.offsetTop - navHeight - 20;
 
         if (href === '#citas') {
-            markBookingViewed('cta_click');
+            markBookingViewed(`cta_click_${getHeroVariant()}`);
         }
 
         window.scrollTo({

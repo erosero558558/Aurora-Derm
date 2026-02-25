@@ -3,6 +3,12 @@
 let deps = null;
 let initialized = false;
 const completedFormSteps = Object.create(null);
+const formEngagementState = {
+    started: false,
+    submitted: false,
+    abandonedTracked: false,
+    lastStep: '',
+};
 
 function getLang() {
     return deps && typeof deps.getCurrentLang === 'function'
@@ -132,6 +138,9 @@ function trackFormStep(step, payload = {}, options = {}) {
         return;
     }
 
+    formEngagementState.started = true;
+    formEngagementState.lastStep = step;
+
     const once = options && options.once !== false;
     if (once && completedFormSteps[step]) {
         return;
@@ -155,6 +164,25 @@ function trackFormStep(step, payload = {}, options = {}) {
             ...payload,
         });
     }
+}
+
+function trackFormAbandon(reason = 'form_exit') {
+    if (
+        !deps ||
+        typeof deps.trackEvent !== 'function' ||
+        !formEngagementState.started ||
+        formEngagementState.submitted ||
+        formEngagementState.abandonedTracked
+    ) {
+        return;
+    }
+
+    formEngagementState.abandonedTracked = true;
+    deps.trackEvent('checkout_abandon', {
+        checkout_entry: 'booking_form',
+        checkout_step: formEngagementState.lastStep || 'booking_form',
+        reason,
+    });
 }
 
 function hasClinicalContext(formData) {
@@ -194,6 +222,10 @@ export function init(inputDeps) {
     }
 
     initialized = true;
+    formEngagementState.started = false;
+    formEngagementState.submitted = false;
+    formEngagementState.abandonedTracked = false;
+    formEngagementState.lastStep = '';
 
     async function updateAvailableTimes() {
         try {
@@ -494,6 +526,7 @@ export function init(inputDeps) {
                 doctor: appointment.doctor || '',
                 checkout_entry: 'booking_form',
             });
+            formEngagementState.submitted = true;
             deps.openPaymentModal(appointment);
         } catch (error) {
             deps.trackEvent('booking_error', {
@@ -517,6 +550,16 @@ export function init(inputDeps) {
                 submitBtn.innerHTML = originalContent;
             }
         }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            trackFormAbandon('form_visibility_hidden');
+        }
+    });
+
+    window.addEventListener('pagehide', () => {
+        trackFormAbandon('form_page_hide');
     });
 
     return { init };

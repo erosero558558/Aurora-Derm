@@ -1,6 +1,9 @@
-name: Calendar Write Smoke (Manual)
+name: Calendar Write Smoke
 
 on:
+    schedule:
+        # Diario 09:10 America/Guayaquil (14:10 UTC)
+        - cron: '10 14 * * *'
     workflow_dispatch:
         inputs:
             domain:
@@ -22,8 +25,8 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 20
         env:
-            TEST_BASE_URL: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
-            TEST_ENABLE_CALENDAR_WRITE: ${{ github.event.inputs.enable_write || 'false' }}
+            TEST_BASE_URL: ${{ github.event_name == 'schedule' && 'https://pielarmonia.com' || github.event.inputs.domain || 'https://pielarmonia.com' }}
+            TEST_ENABLE_CALENDAR_WRITE: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.enable_write || 'false' }}
             TEST_REQUIRE_GOOGLE_CALENDAR: 'true'
             TEST_ADMIN_PASSWORD: ${{ secrets.PIELARMONIA_ADMIN_PASSWORD }}
         steps:
@@ -34,6 +37,10 @@ jobs:
               shell: bash
               run: |
                   set -euo pipefail
+                  if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
+                    echo "Scheduled run: enable_write=true por politica."
+                    exit 0
+                  fi
                   if [ "${TEST_ENABLE_CALENDAR_WRITE}" != "true" ]; then
                     echo "::error::Debes ejecutar con enable_write=true para permitir escritura real."
                     exit 1

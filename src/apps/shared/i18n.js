@@ -133,6 +133,10 @@ async function changeLanguage(lang) {
         renderPublicReviewsSafe(cachedReviews);
     }
 
+    document.dispatchEvent(new CustomEvent('piel:language-changed', {
+        detail: { lang: nextLang }
+    }));
+
     return nextLang;
 }
 
