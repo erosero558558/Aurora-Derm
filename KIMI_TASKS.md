@@ -142,7 +142,7 @@ En templates/partials/tele-head-links.html reemplaza <link rel='stylesheet' href
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: running
 task_id: AG-031
 risk: medium
 scope: ci orchestration
@@ -158,7 +158,7 @@ Stabilize CI signal intake for transient branch failures
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: running
 task_id: AG-033
 risk: medium
 scope: gate reliability

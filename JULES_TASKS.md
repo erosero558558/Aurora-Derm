@@ -230,7 +230,7 @@ Resolver señal workflow:ci:codex/prod-readiness-workflows-20260225. Verificar c
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: dispatched
 task_id: AG-032
 risk: low
 scope: autopilot reliability
