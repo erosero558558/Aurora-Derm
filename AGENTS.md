@@ -52,6 +52,27 @@ La tarea cambia comportamiento runtime?
   No -> lint/tests minimos por tipo de cambio.
 ```
 
+## Politica de velocidad operativa (Directo vs Orquestador)
+
+Objetivo: evitar sobrecosto de coordinacion en tareas pequenas y urgentes.
+
+Usar ejecucion directa (sin ciclo completo de orquestacion) cuando:
+
+- Hay incidente de produccion activo (`[ALERTA PROD]`) y el fix es acotado (1-3 archivos).
+- Existe causa raiz clara en logs y un solo executor puede cerrar end-to-end.
+- El tiempo estimado de fix+validacion es menor que correr `intake+score+dispatch+reconcile`.
+
+Usar orquestacion completa cuando:
+
+- Hay trabajo paralelo multiagente o backlog con dependencias.
+- Hay probabilidad de solape de archivos entre tareas activas.
+- Se requiere reparto asincrono (Jules/Kimi) o seguimiento continuo 24/7.
+
+Regla de SLA:
+
+- Incidente urgente: priorizar camino directo para reducir MTTR.
+- Tareas no urgentes: priorizar orquestacion para reducir retrabajo.
+
 ## Zonas criticas con guardrails
 
 Las siguientes zonas no se ejecutan en modo ciego:
