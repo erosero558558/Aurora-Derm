@@ -2,17 +2,35 @@
 
 function createGitHubSignalsRuntime(options = {}) {
     const processObj = options.processObj || process;
+    const execSync = options.execSyncImpl || require('child_process').execSync;
     const fetchImpl =
         options.fetchImpl || (typeof fetch === 'function' ? fetch : null);
     const defaultRepository = String(options.defaultRepository || '').trim();
 
+    function getTokenFromGhCli() {
+        try {
+            const token = String(
+                execSync('gh auth token', {
+                    encoding: 'utf8',
+                    stdio: ['ignore', 'pipe', 'ignore'],
+                    timeout: 3000,
+                }) || ''
+            ).trim();
+            return token || '';
+        } catch (error) {
+            return '';
+        }
+    }
+
     function getGitHubToken(flags = {}) {
-        return String(
+        const envToken = String(
             flags.token ||
                 processObj.env.GITHUB_TOKEN ||
                 processObj.env.GH_TOKEN ||
                 ''
         ).trim();
+        if (envToken) return envToken;
+        return getTokenFromGhCli();
     }
 
     function getGitHubRepository(flags = {}) {

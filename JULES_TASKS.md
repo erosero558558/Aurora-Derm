@@ -158,18 +158,18 @@ Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo segu
 <!-- /TASK -->
 
 <!-- TASK
-status: done
+status: pending
 task_id: AG-018
 risk: medium
-scope: ops
-files: .github/workflows/ci.yml
-acceptance_ref: docs/agent-runs/AG-018.md
+scope: chat
+files: figo-chat.php,figo-backend.php,src/apps/chat/engine.js,src/apps/chat/ui-engine.js
+acceptance_ref: verification/agent-runs/AG-018.md
 dispatched_by: agent-orchestrator
 session: sessions/6593824734303087673
 dispatched: 2026-02-25
 -->
 
-### Resolver fallo workflow: CI: feat(governance): add board leases doctor events and wip warnings
+### Resolver fallo workflow: CI: ci(c1): add staging figo-contract and chat smoke gate; close AG-021
 
 Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
 
@@ -208,5 +208,23 @@ dispatched: 2026-02-25
 ### Resolver fallo workflow: Agent Autopilot: Agent Autopilot
 
 Resolver señal workflow:agent-autopilot:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
+
+<!-- /TASK -->
+
+<!-- TASK
+status: pending
+task_id: AG-029
+risk: medium
+scope: ops
+files: .github/workflows/ci.yml
+acceptance_ref: verification/agent-runs/AG-029.md
+dispatched_by: agent-orchestrator
+session:
+dispatched:
+-->
+
+### Resolver fallo workflow: CI: CI
+
+Resolver señal workflow:ci:codex/prod-readiness-workflows-20260225. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
 
 <!-- /TASK -->
