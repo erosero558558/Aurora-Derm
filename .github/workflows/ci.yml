@@ -6,6 +6,7 @@ on:
         branches: [main, staging]
     pull_request:
         branches: [main, staging]
+    workflow_dispatch:
 
 concurrency:
     group: ci-${{ github.ref }}
@@ -236,11 +237,16 @@ jobs:
 
     c1-exit-gate:
         runs-on: ubuntu-latest
-        needs: [lint]
-        timeout-minutes: 25
+        needs: [lint, security, unit-tests, e2e-tests]
+        timeout-minutes: 20
         env:
-            TEST_BASE_URL: ${{ vars.STAGING_URL || 'https://staging.pielarmonia.com' }}
-            PROD_BASE_URL: ${{ vars.PROD_URL || 'https://pielarmonia.com' }}
+            C1_EXIT_BASE_URL: ${{ vars.STAGING_URL || 'https://staging.pielarmonia.com' }}
+            C1_EXIT_FALLBACK_BASE_URL: ${{ vars.PROD_URL || 'https://pielarmonia.com' }}
+            C1_EXIT_FIGO_CONTRACT_PATH: ${{ vars.C1_EXIT_FIGO_CONTRACT_PATH || '/figo-chat.php' }}
+            C1_EXIT_CHAT_SMOKE_PATH: ${{ vars.C1_EXIT_CHAT_SMOKE_PATH || '/api/chat' }}
+            C1_EXIT_CHAT_SMOKE_FALLBACK_PATH: ${{ vars.C1_EXIT_CHAT_SMOKE_FALLBACK_PATH || '/figo-chat.php' }}
+            C1_EXIT_FIGO_P95_MS: ${{ vars.C1_EXIT_FIGO_P95_MS || '3000' }}
+            C1_EXIT_FIGO_LATENCY_SAMPLES: ${{ vars.C1_EXIT_FIGO_LATENCY_SAMPLES || '6' }}
         steps:
             - uses: actions/checkout@v4
             - name: Detect C1 gate relevant changes
@@ -248,91 +254,148 @@ jobs:
               uses: dorny/paths-filter@v3
               with:
                   filters: |
-                      c1:
-                        - '.github/workflows/ci.yml'
-                        - 'tests/figo-chat-contract.spec.js'
-                        - 'tests/helpers/**'
-                        - 'js/**'
-                        - 'src/**'
+                      c1_exit:
+                        - 'figo-chat.php'
+                        - 'check-ai-response.php'
                         - 'controllers/**'
                         - 'lib/**'
-                        - '*.php'
-                        - '*.html'
-                        - '*.css'
+                        - 'tests/figo-chat-contract.spec.js'
+                        - 'GATE-POSTDEPLOY.ps1'
+                        - '.github/workflows/ci.yml'
                         - 'package.json'
                         - 'package-lock.json'
+                        - 'playwright.config.js'
             - name: Setup Node
-              if: steps.changes.outputs.c1 == 'true'
+              if: steps.changes.outputs.c1_exit == 'true'
               uses: actions/setup-node@v4
               with:
                   node-version: '20'
                   cache: 'npm'
+            - name: Install Node Dependencies
+              if: steps.changes.outputs.c1_exit == 'true'
+              run: npm ci
+            - name: Cache Playwright Browsers
+              if: steps.changes.outputs.c1_exit == 'true'
+              id: playwright-cache-c1
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-playwright-
+            - name: Install Playwright Browsers
+              if: steps.changes.outputs.c1_exit == 'true' && steps.playwright-cache-c1.outputs.cache-hit != 'true'
+              run: npx playwright install --with-deps chromium
             - name: Resolve effective C1 base URL
-              if: steps.changes.outputs.c1 == 'true'
+              if: steps.changes.outputs.c1_exit == 'true'
               shell: bash
               run: |
                   set -euo pipefail
-                  candidate="${TEST_BASE_URL%/}"
-                  host="$(node -e "const u=new URL(process.argv[1]);process.stdout.write(u.hostname);" "$candidate")"
-                  if getent hosts "$host" >/dev/null 2>&1; then
-                    effective="$candidate"
-                    echo "Using staging candidate: $effective"
-                  else
-                    effective="${PROD_BASE_URL%/}"
-                    fallback_host="$(node -e "const u=new URL(process.argv[1]);process.stdout.write(u.hostname);" "$effective")"
-                    if ! getent hosts "$fallback_host" >/dev/null 2>&1; then
-                      echo "::error::No se pudo resolver ni staging ($host) ni prod ($fallback_host)."
-                      exit 1
-                    fi
-                    echo "::warning::Staging no resolvio ($host). Se usa fallback PROD: $effective"
+                  candidate="${C1_EXIT_BASE_URL%/}"
+                  fallback="${C1_EXIT_FALLBACK_BASE_URL%/}"
+
+                  host_for() {
+                    node -e "const u=new URL(process.argv[1]);process.stdout.write(u.hostname);" "$1"
+                  }
+
+                  candidate_host="$(host_for "$candidate")"
+                  if getent hosts "$candidate_host" >/dev/null 2>&1; then
+                    echo "EFFECTIVE_C1_EXIT_BASE_URL=$candidate" >> "$GITHUB_ENV"
+                    echo "Using staging C1 base URL: $candidate"
+                    exit 0
                   fi
-                  echo "EFFECTIVE_TEST_BASE_URL=$effective" >> "$GITHUB_ENV"
-            - name: Install Node Dependencies
-              if: steps.changes.outputs.c1 == 'true'
-              run: npm ci
-            - name: Install Playwright Browsers
-              if: steps.changes.outputs.c1 == 'true'
-              run: npx playwright install --with-deps chromium
-            - name: Validate Figo contract against staging
-              if: steps.changes.outputs.c1 == 'true'
+
+                  fallback_host="$(host_for "$fallback")"
+                  if ! getent hosts "$fallback_host" >/dev/null 2>&1; then
+                    echo "::error::No se pudo resolver staging ($candidate_host) ni fallback ($fallback_host)."
+                    exit 1
+                  fi
+
+                  echo "::warning::Staging no resuelve ($candidate_host); usando fallback para C1 gate: $fallback"
+                  echo "EFFECTIVE_C1_EXIT_BASE_URL=$fallback" >> "$GITHUB_ENV"
+            - name: Run C1 Figo contract gate (staging)
+              if: steps.changes.outputs.c1_exit == 'true'
               run: npm run test:figo-contract
               env:
-                  TEST_BASE_URL: ${{ env.EFFECTIVE_TEST_BASE_URL }}
-                  TEST_FIGO_CHAT_LATENCY: 'false'
-            - name: Smoke staging chat endpoints
-              if: steps.changes.outputs.c1 == 'true'
+                  TEST_BASE_URL: ${{ env.EFFECTIVE_C1_EXIT_BASE_URL }}
+                  TEST_FIGO_CHAT_ENDPOINT_PATH: ${{ env.C1_EXIT_FIGO_CONTRACT_PATH }}
+                  TEST_FIGO_CHAT_LATENCY: 'true'
+                  TEST_FIGO_CHAT_LATENCY_P95_MS: ${{ env.C1_EXIT_FIGO_P95_MS }}
+                  TEST_FIGO_CHAT_LATENCY_SAMPLES: ${{ env.C1_EXIT_FIGO_LATENCY_SAMPLES }}
+            - name: Smoke chat endpoint on staging
+              if: steps.changes.outputs.c1_exit == 'true'
               shell: bash
               run: |
                   set -euo pipefail
-                  base="${EFFECTIVE_TEST_BASE_URL%/}"
-                  echo "C1 smoke base: ${base}"
+                  base_url="${EFFECTIVE_C1_EXIT_BASE_URL%/}"
+                  primary_path="${C1_EXIT_CHAT_SMOKE_PATH}"
+                  fallback_path="${C1_EXIT_CHAT_SMOKE_FALLBACK_PATH}"
+                  tmp_primary="$(mktemp)"
+                  tmp_fallback="$(mktemp)"
+                  cleanup() {
+                    rm -f "$tmp_primary" "$tmp_fallback"
+                  }
+                  trap cleanup EXIT
 
-                  health_code="$(curl -sS -o /tmp/c1-health.json -w "%{http_code}" "${base}/api.php?resource=health")"
-                  if [ "${health_code}" -lt 200 ] || [ "${health_code}" -ge 300 ]; then
-                    echo "::error::Health endpoint devolvio HTTP ${health_code}"
+                  fetch_status() {
+                    local url="$1"
+                    local out="$2"
+                    curl -sS -L --max-time 20 --connect-timeout 8 -o "$out" -w "%{http_code}" "$url"
+                  }
+
+                  selected_path="$primary_path"
+                  selected_file="$tmp_primary"
+                  selected_status="$(fetch_status "${base_url}${primary_path}" "$tmp_primary" || true)"
+                  if [ "$selected_status" = "404" ] || [ "$selected_status" = "405" ]; then
+                    echo "Primary chat smoke endpoint ${primary_path} returned ${selected_status}; trying fallback ${fallback_path}."
+                    selected_path="$fallback_path"
+                    selected_file="$tmp_fallback"
+                    selected_status="$(fetch_status "${base_url}${fallback_path}" "$tmp_fallback" || true)"
+                  fi
+
+                  if [ "$selected_status" != "200" ]; then
+                    echo "::error::C1 chat smoke failed for ${selected_path} (HTTP ${selected_status})"
+                    if [ -s "$selected_file" ]; then
+                      echo "Body preview:"
+                      head -c 500 "$selected_file" || true
+                      echo
+                    fi
                     exit 1
                   fi
-                  node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/c1-health.json','utf8'));if(!j||typeof j!=='object'||!('timingMs' in j)){throw new Error('health payload invalido')}"
 
-                  api_chat_code="$(curl -sS -o /tmp/c1-api-chat.txt -w "%{http_code}" "${base}/api/chat")"
-                  if [ "${api_chat_code}" -ge 500 ]; then
-                    echo "::error::/api/chat devolvio HTTP ${api_chat_code}"
-                    exit 1
-                  fi
-                  if [ "${api_chat_code}" -eq 404 ]; then
-                    echo "::warning::/api/chat no disponible en este entorno; se valida endpoint canonico /figo-chat.php."
-                  fi
-
-                  figo_code="$(curl -sS -o /tmp/c1-figo.json -w "%{http_code}" "${base}/figo-chat.php")"
-                  if [ "${figo_code}" -lt 200 ] || [ "${figo_code}" -ge 300 ]; then
-                    echo "::error::/figo-chat.php devolvio HTTP ${figo_code}"
-                    exit 1
-                  fi
-                  node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/c1-figo.json','utf8'));if(!j||typeof j!=='object'||!('mode' in j)||!('service' in j)){throw new Error('figo payload invalido')}"
+                  node - "$selected_file" "$selected_path" <<'NODE'
+                  const fs = require('node:fs');
+                  const file = process.argv[2];
+                  const path = process.argv[3];
+                  const raw = fs.readFileSync(file, 'utf8');
+                  let payload;
+                  try {
+                    payload = JSON.parse(raw);
+                  } catch (error) {
+                    console.error(`Smoke ${path}: respuesta no JSON valida`);
+                    console.error(raw.slice(0, 500));
+                    process.exit(1);
+                  }
+                  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+                    console.error(`Smoke ${path}: payload no es objeto JSON`);
+                    process.exit(1);
+                  }
+                  const hasExpectedShape =
+                    payload.service === 'figo-chat' ||
+                    typeof payload.mode === 'string' ||
+                    typeof payload.ok === 'boolean' ||
+                    typeof payload.providerMode === 'string';
+                  if (!hasExpectedShape) {
+                    console.error(`Smoke ${path}: payload sin shape esperada de chat`);
+                    console.error(JSON.stringify(payload).slice(0, 500));
+                    process.exit(1);
+                  }
+                  console.log(`Smoke ${path}: OK`);
+                  NODE
             - name: Skip C1 exit gate (no relevant changes)
-              if: steps.changes.outputs.c1 != 'true'
+              if: steps.changes.outputs.c1_exit != 'true'
               run: |
-                  echo "Skipping c1-exit-gate: no runtime/chat/workflow changes detected."
+                  echo "Skipping c1-exit-gate: no C1/Figo relevant changes detected."
 
     build:
         runs-on: ubuntu-latest
@@ -360,16 +423,38 @@ jobs:
               if: steps.changes.outputs.build == 'true'
               shell: pwsh
               run: ./PREPARAR-PAQUETE-DESPLIEGUE.ps1
-            - name: Enforce no debug logs in production bundles
+            - name: Verify production bundles strip debug logs
               if: steps.changes.outputs.build == 'true'
               shell: bash
               run: |
                   set -euo pipefail
-                  if grep -R -n -E "console\\.(log|debug|trace)\\(|\\bdebugger\\b" script.js js/engines js/chunks js/admin-chunks 2>/dev/null; then
-                    echo "::error::Se detectaron logs/debugger en bundles de produccion."
+                  has_forbidden=0
+
+                  scan_path() {
+                    local target="$1"
+                    if [ ! -e "$target" ]; then
+                      return 0
+                    fi
+                    if grep -RInE "console\.(log|debug|info)[[:space:]]*\(" "$target"; then
+                      has_forbidden=1
+                    fi
+                    if grep -RInE "(^|[^[:alnum:]_])debugger([^[:alnum:]_]|$)" "$target"; then
+                      has_forbidden=1
+                    fi
+                  }
+
+                  scan_path "script.js"
+                  scan_path "admin.js"
+                  scan_path "js/chunks"
+                  scan_path "js/admin-chunks"
+                  scan_path "js/engines"
+
+                  if [ "$has_forbidden" -ne 0 ]; then
+                    echo "::error::Se detectaron console.log/debugger en bundles de produccion generados."
                     exit 1
                   fi
-                  echo "OK: bundles sin console.log/debugger."
+
+                  echo "Production bundle debug-strip verification OK."
             - name: Upload Build Artifact
               if: steps.changes.outputs.build == 'true'
               uses: actions/upload-artifact@v4

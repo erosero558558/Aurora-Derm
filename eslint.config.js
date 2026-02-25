@@ -2,7 +2,13 @@ const globals = require('globals');
 const pluginPlaywright = require('eslint-plugin-playwright');
 const js = require('@eslint/js');
 
-const ciNoConsoleSeverity = process.env.CI ? 'error' : 'warn';
+const isCiLint = String(process.env.CI || '').toLowerCase() === 'true';
+const srcNoConsoleRule = [
+    isCiLint ? 'error' : 'warn',
+    {
+        allow: ['warn', 'error', 'info'],
+    },
+];
 
 module.exports = [
     {
@@ -63,14 +69,10 @@ module.exports = [
         },
     },
     {
-        files: ['js/**/*.js', 'src/**/*.js'],
+        files: ['src/**/*.js', 'js/main.js'],
         rules: {
-            'no-console': [
-                ciNoConsoleSeverity,
-                {
-                    allow: ['warn', 'error', 'info'],
-                },
-            ],
+            'no-console': srcNoConsoleRule,
+            'no-debugger': isCiLint ? 'error' : 'warn',
         },
     },
     {

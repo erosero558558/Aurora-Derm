@@ -6,7 +6,12 @@ declare(strict_types=1);
  * HTTP helper functions.
  */
 
-if (!class_exists('TestingExitException')) {
+if (defined('PIELARMONIA_HTTP_HELPERS_LOADED')) {
+    return;
+}
+define('PIELARMONIA_HTTP_HELPERS_LOADED', true);
+
+if (!class_exists('TestingExitException', false)) {
     class TestingExitException extends Exception
     {
         public $payload;

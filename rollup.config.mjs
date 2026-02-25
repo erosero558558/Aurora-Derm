@@ -2,19 +2,33 @@ import resolve from '@rollup/plugin-node-resolve';
 import strip from '@rollup/plugin-strip';
 import terser from '@rollup/plugin-terser';
 
+const stripDebugFromBundles =
+    String(process.env.ROLLUP_STRIP_DEBUG || 'true').toLowerCase() !== 'false';
+
 const minify = terser({
-    compress: { passes: 2 },
+    compress: {
+        passes: 2,
+        drop_debugger: stripDebugFromBundles,
+        // Preserve warn/error by default; strip noisy debug calls from production bundles.
+        pure_funcs: stripDebugFromBundles
+            ? ['console.log', 'console.debug', 'console.info']
+            : [],
+    },
     mangle: true,
     format: { comments: false },
 });
 const stripDebug = strip({
     include: ['**/*.js', '**/*.mjs'],
     exclude: ['**/node_modules/**'],
-    functions: ['console.log', 'console.debug', 'console.trace'],
-    debugger: true,
+    functions: stripDebugFromBundles
+        ? ['console.log', 'console.debug', 'console.info', 'console.trace']
+        : [],
+    debugger: stripDebugFromBundles,
     sourceMap: false,
 });
-const productionPlugins = [resolve(), stripDebug, minify];
+const productionPlugins = stripDebugFromBundles
+    ? [resolve(), stripDebug, minify]
+    : [resolve(), minify];
 
 export default [
     // Admin App (code-split: appointments y availability se cargan bajo demanda)

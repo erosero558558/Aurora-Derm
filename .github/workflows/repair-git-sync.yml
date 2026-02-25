@@ -178,6 +178,7 @@ jobs:
               run: sleep 35
 
             - name: Verificar produccion despues de repair
+              id: verify_after_repair
               shell: pwsh
               run: |
                   ./VERIFICAR-DESPLIEGUE.ps1 `
@@ -186,6 +187,8 @@ jobs:
                     -AssetHashRetryDelaySec 6
 
             - name: Smoke rapido post-repair
+              id: smoke_post_repair
+              if: ${{ always() }}
               shell: pwsh
               run: |
                   ./SMOKE-PRODUCCION.ps1 -Domain $env:TARGET_DOMAIN -AllowFigoRateLimit
@@ -193,6 +196,10 @@ jobs:
             - name: Crear/actualizar incidente de repair
               if: ${{ failure() && github.event_name != 'workflow_dispatch' }}
               uses: actions/github-script@v7
+              env:
+                  SSH_REPAIR_OUTCOME: ${{ steps.ssh_repair.outcome }}
+                  VERIFY_OUTCOME: ${{ steps.verify_after_repair.outcome }}
+                  SMOKE_OUTCOME: ${{ steps.smoke_post_repair.outcome }}
               with:
                   script: |
                       const owner = context.repo.owner;
@@ -205,8 +212,16 @@ jobs:
                         '',
                         `- Fecha: ${now}`,
                         `- Run: ${runUrl}`,
-                        `- Trigger: ${context.eventName}`
+                        `- Trigger: ${context.eventName}`,
+                        `- ssh_repair: ${process.env.SSH_REPAIR_OUTCOME || 'n/a'}`,
+                        `- verify_after_repair: ${process.env.VERIFY_OUTCOME || 'n/a'}`,
+                        `- smoke_post_repair: ${process.env.SMOKE_OUTCOME || 'n/a'}`
                       ].join('\n');
+
+                      const verifyOnlyHashDrift = process.env.VERIFY_OUTCOME === 'failure' && process.env.SMOKE_OUTCOME === 'success';
+                      const bodyWithHint = verifyOnlyHashDrift
+                        ? `${body}\n\nDiagnostico inicial: verify fallo pero smoke paso. Posible drift de assets/hash o sincronizacion parcial, no necesariamente outage de aplicacion.`
+                        : body;
 
                       const openIssues = await github.paginate(github.rest.issues.listForRepo, {
                         owner,
@@ -221,7 +236,7 @@ jobs:
                           owner,
                           repo,
                           issue_number: existing.number,
-                          body
+                          body: bodyWithHint
                         });
                         await github.rest.issues.addLabels({
                           owner,
@@ -234,7 +249,51 @@ jobs:
                           owner,
                           repo,
                           title,
-                          body,
+                          body: bodyWithHint,
                           labels: ['production-alert']
                         });
                       }
+
+            - name: Cerrar incidente de repair al recuperar
+              if: ${{ success() && github.event_name != 'workflow_dispatch' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Repair git sync fallando';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por workflow de repair git sync.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue cerrado: #${existing.number}`);

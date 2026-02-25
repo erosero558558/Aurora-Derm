@@ -1,5 +1,5 @@
 // @ts-check
-/* eslint-disable playwright/no-conditional-in-test, playwright/no-conditional-expect, playwright/no-skipped-test */
+/* eslint-disable playwright/no-conditional-in-test, playwright/no-conditional-expect */
 const { test, expect } = require('@playwright/test');
 const { skipIfPhpRuntimeMissing } = require('./helpers/php-backend');
 
@@ -8,8 +8,16 @@ function getEnv(name, fallback = '') {
     return typeof value === 'string' ? value.trim() : fallback;
 }
 
+function getChatEndpointPath() {
+    const raw = getEnv('TEST_FIGO_CHAT_ENDPOINT_PATH', '/figo-chat.php');
+    if (!raw) return '/figo-chat.php';
+    return raw.startsWith('/') ? raw : `/${raw}`;
+}
+
 function toBoolean(raw, fallback = false) {
-    const value = String(raw || '').trim().toLowerCase();
+    const value = String(raw || '')
+        .trim()
+        .toLowerCase();
     if (['1', 'true', 'yes', 'on'].includes(value)) return true;
     if (['0', 'false', 'no', 'off'].includes(value)) return false;
     return fallback;
@@ -29,12 +37,12 @@ async function readJsonSafe(response) {
 function hasCompletionPayload(payload) {
     return Boolean(
         payload &&
-            Array.isArray(payload.choices) &&
-            payload.choices.length > 0 &&
-            payload.choices[0] &&
-            payload.choices[0].message &&
-            typeof payload.choices[0].message.content === 'string' &&
-            payload.choices[0].message.content.trim() !== ''
+        Array.isArray(payload.choices) &&
+        payload.choices.length > 0 &&
+        payload.choices[0] &&
+        payload.choices[0].message &&
+        typeof payload.choices[0].message.content === 'string' &&
+        payload.choices[0].message.content.trim() !== ''
     );
 }
 
@@ -49,15 +57,19 @@ function assertFailureContract(payload, statusCode) {
 }
 
 test.describe('Figo chat contract', () => {
-    test('GET /figo-chat.php expone estado diagnostico consistente', async ({
+    test('GET figo chat endpoint expone estado diagnostico consistente', async ({
         request,
     }) => {
         await skipIfPhpRuntimeMissing(test, request);
-        const response = await request.get('/figo-chat.php');
+        const endpointPath = getChatEndpointPath();
+        const response = await request.get(endpointPath);
         expect(response.status()).toBe(200);
 
         const { parsed, text } = await readJsonSafe(response);
-        expect(parsed, `GET /figo-chat.php no devolvio JSON valido: ${text}`).toBeTruthy();
+        expect(
+            parsed,
+            `GET ${endpointPath} no devolvio JSON valido: ${text}`
+        ).toBeTruthy();
 
         expect(parsed.ok).toBe(true);
         expect(parsed.service).toBe('figo-chat');
@@ -76,12 +88,13 @@ test.describe('Figo chat contract', () => {
         }
     });
 
-    test('POST /figo-chat.php responde completion o error explicito (sin silencio)', async ({
+    test('POST figo chat endpoint responde completion o error explicito (sin silencio)', async ({
         request,
     }) => {
         await skipIfPhpRuntimeMissing(test, request);
+        const endpointPath = getChatEndpointPath();
 
-        const response = await request.post('/figo-chat.php', {
+        const response = await request.post(endpointPath, {
             data: {
                 model: 'figo-assistant',
                 messages: [
@@ -99,7 +112,10 @@ test.describe('Figo chat contract', () => {
 
         const statusCode = response.status();
         const { parsed, text } = await readJsonSafe(response);
-        expect(parsed, `POST /figo-chat.php no devolvio JSON valido: ${text}`).toBeTruthy();
+        expect(
+            parsed,
+            `POST ${endpointPath} no devolvio JSON valido: ${text}`
+        ).toBeTruthy();
 
         if (statusCode >= 400) {
             assertFailureContract(parsed, statusCode);
@@ -130,16 +146,26 @@ test.describe('Figo chat contract', () => {
         }
     });
 
-    test('POST /figo-chat.php cumple p95 de latencia cuando se habilita benchmark', async ({
+    test('POST figo chat endpoint cumple p95 de latencia cuando se habilita benchmark', async ({
         request,
     }) => {
         await skipIfPhpRuntimeMissing(test, request);
+        const endpointPath = getChatEndpointPath();
 
         const enabled = toBoolean(getEnv('TEST_FIGO_CHAT_LATENCY', 'false'));
-        test.skip(!enabled, 'Benchmark de latencia deshabilitado (TEST_FIGO_CHAT_LATENCY=false).');
+        test.skip(
+            !enabled,
+            'Benchmark de latencia deshabilitado (TEST_FIGO_CHAT_LATENCY=false).'
+        );
 
-        const samples = Number.parseInt(getEnv('TEST_FIGO_CHAT_LATENCY_SAMPLES', '6'), 10);
-        const maxP95Ms = Number.parseInt(getEnv('TEST_FIGO_CHAT_LATENCY_P95_MS', '2500'), 10);
+        const samples = Number.parseInt(
+            getEnv('TEST_FIGO_CHAT_LATENCY_SAMPLES', '6'),
+            10
+        );
+        const maxP95Ms = Number.parseInt(
+            getEnv('TEST_FIGO_CHAT_LATENCY_P95_MS', '2500'),
+            10
+        );
         const safeSamples = Number.isFinite(samples)
             ? Math.min(Math.max(samples, 3), 12)
             : 6;
@@ -147,7 +173,7 @@ test.describe('Figo chat contract', () => {
 
         for (let i = 0; i < safeSamples; i += 1) {
             const started = Date.now();
-            const response = await request.post('/figo-chat.php', {
+            const response = await request.post(endpointPath, {
                 data: {
                     model: 'figo-assistant',
                     messages: [
@@ -165,7 +191,10 @@ test.describe('Figo chat contract', () => {
             latencies.push(elapsed);
 
             const { parsed, text } = await readJsonSafe(response);
-            expect(parsed, `Respuesta no JSON en muestra ${i + 1}: ${text}`).toBeTruthy();
+            expect(
+                parsed,
+                `Respuesta no JSON en muestra ${i + 1}: ${text}`
+            ).toBeTruthy();
             if (response.status() >= 400) {
                 assertFailureContract(parsed, response.status());
             } else if (String(parsed.mode || '') !== 'queued') {

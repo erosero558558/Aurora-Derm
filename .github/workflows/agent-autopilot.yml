@@ -11,6 +11,9 @@ concurrency:
 
 permissions:
     contents: write
+    issues: read
+    actions: read
+    pull-requests: read
 
 jobs:
     autopilot-jules:
@@ -37,15 +40,28 @@ jobs:
               with:
                   php-version: '8.2'
 
-            - name: Sync and governance validation
+            - name: Intake and queue sync
               run: |
                   node agent-orchestrator.js intake
                   node agent-orchestrator.js score
                   node agent-orchestrator.js sync
+
+            - name: Governance validation
+              run: |
                   node agent-orchestrator.js stale --strict
                   node agent-orchestrator.js conflicts --strict
                   node agent-orchestrator.js budget --strict --agent jules
                   php bin/validate-agent-governance.php
+
+            - name: Governance snapshot on failure
+              if: ${{ failure() }}
+              continue-on-error: true
+              run: |
+                  node agent-orchestrator.js intake --json || true
+                  node agent-orchestrator.js stale --json || true
+                  node agent-orchestrator.js conflicts --json || true
+                  node agent-orchestrator.js budget --json || true
+                  node agent-orchestrator.js status --json || true
 
             - name: Dispatch pending Jules tasks
               shell: bash

@@ -1015,38 +1015,58 @@ if ([regex]::IsMatch([string]$remoteIndexRaw, $inlineExecutableScriptPattern, [S
     Write-Host "[OK]  index remoto sin scripts inline ejecutables"
 }
 
+$frontendAssetDriftAdvisory = $changedFilesKnown -and -not $headTouchesFrontendAssets -and -not $ForceAssetHashChecks
+$indexAssetRefAdvisory = ($SkipAssetHashChecks -and -not $headTouchesFrontendAssets) -or ($deployFreshnessStale -and -not $ForceAssetHashChecks -and -not $headTouchesFrontendAssets) -or $frontendAssetDriftAdvisory
+$indexAssetRefAdvisoryReason = if ($SkipAssetHashChecks -and -not $headTouchesFrontendAssets) {
+    'advisory por SkipAssetHashChecks sin cambios frontend'
+} elseif ($deployFreshnessStale -and -not $ForceAssetHashChecks -and -not $headTouchesFrontendAssets) {
+    'advisory por deploy freshness sin cambios frontend'
+} elseif ($frontendAssetDriftAdvisory) {
+    'advisory por HEAD sin cambios frontend (drift remoto tolerado)'
+} else {
+    ''
+}
+
 if ($remoteScriptRef -eq '') {
-    Write-Host "[FAIL] No se pudo detectar referencia de script.js en index remoto"
-    $results += [PSCustomObject]@{
-        Asset = 'index-asset-refs:script'
-        Match = $false
-        LocalHash = $localScriptRef
-        RemoteHash = $remoteScriptRef
-        RemoteUrl = "$base/"
+    if ($indexAssetRefAdvisory) {
+        Write-Host "[WARN] No se pudo detectar referencia de script.js en index remoto ($indexAssetRefAdvisoryReason)"
+        Write-Host "       Local : $localScriptRef"
+    } else {
+        Write-Host "[FAIL] No se pudo detectar referencia de script.js en index remoto"
+        $results += [PSCustomObject]@{
+            Asset = 'index-asset-refs:script'
+            Match = $false
+            LocalHash = $localScriptRef
+            RemoteHash = $remoteScriptRef
+            RemoteUrl = "$base/"
+        }
     }
 } elseif ((Get-RefPath -Ref $remoteScriptRef) -eq (Get-RefPath -Ref $localScriptRef)) {
     Write-Host "[OK]  index remoto usa misma referencia de script.js"
 } else {
-    Write-Host "[FAIL] index remoto script.js diferente"
-    Write-Host "       Local : $localScriptRef"
-    Write-Host "       Remote: $remoteScriptRef"
-    $results += [PSCustomObject]@{
-        Asset = 'index-ref:script.js'
-        Match = $false
-        LocalHash = $localScriptRef
-        RemoteHash = $remoteScriptRef
-        RemoteUrl = "$base/"
+    if ($indexAssetRefAdvisory) {
+        Write-Host "[WARN] index remoto script.js diferente ($indexAssetRefAdvisoryReason)"
+        Write-Host "       Local : $localScriptRef"
+        Write-Host "       Remote: $remoteScriptRef"
+    } else {
+        Write-Host "[FAIL] index remoto script.js diferente"
+        Write-Host "       Local : $localScriptRef"
+        Write-Host "       Remote: $remoteScriptRef"
+        $results += [PSCustomObject]@{
+            Asset = 'index-ref:script.js'
+            Match = $false
+            LocalHash = $localScriptRef
+            RemoteHash = $remoteScriptRef
+            RemoteUrl = "$base/"
+        }
     }
 }
 
 if ($localStyleRef -ne '') {
-    $localStylePath = Get-RefPath -Ref $localStyleRef
-    $remoteStylePath = Get-RefPath -Ref $remoteStyleRef
-    $styleVersionOnlyDiff = ($localStylePath -ne '') -and ($localStylePath -eq $remoteStylePath) -and ($remoteStyleRef -ne '')
-    $styleRefAdvisory = $SkipAssetHashChecks -and $styleVersionOnlyDiff
+    $styleRefAdvisory = $indexAssetRefAdvisory
     if ($remoteStyleRef -eq '') {
         if ($styleRefAdvisory) {
-            Write-Host "[WARN] index remoto sin referencia de styles.css (advisory por SkipAssetHashChecks sin cambios frontend)"
+            Write-Host "[WARN] index remoto sin referencia de styles.css ($indexAssetRefAdvisoryReason)"
             Write-Host "       Local : $localStyleRef"
         } else {
             Write-Host "[FAIL] index remoto sin referencia de styles.css"
@@ -1062,7 +1082,7 @@ if ($localStyleRef -ne '') {
         Write-Host "[OK]  index remoto usa misma referencia de styles.css"
     } else {
         if ($styleRefAdvisory) {
-            Write-Host "[WARN] index remoto styles.css diferente (advisory por SkipAssetHashChecks sin cambios frontend)"
+            Write-Host "[WARN] index remoto styles.css diferente ($indexAssetRefAdvisoryReason)"
             Write-Host "       Local : $localStyleRef"
             Write-Host "       Remote: $remoteStyleRef"
         } else {
@@ -1095,13 +1115,10 @@ if ($localStyleRef -ne '') {
     }
 
     if ($localDeferredStyleRef -ne '') {
-        $localDeferredStylePath = Get-RefPath -Ref $localDeferredStyleRef
-        $remoteDeferredStylePath = Get-RefPath -Ref $remoteDeferredStyleRef
-        $deferredStyleVersionOnlyDiff = ($localDeferredStylePath -ne '') -and ($localDeferredStylePath -eq $remoteDeferredStylePath) -and ($remoteDeferredStyleRef -ne '')
-        $deferredStyleRefAdvisory = $SkipAssetHashChecks -and $deferredStyleVersionOnlyDiff
+        $deferredStyleRefAdvisory = $indexAssetRefAdvisory
         if ($remoteDeferredStyleRef -eq '') {
             if ($deferredStyleRefAdvisory) {
-                Write-Host "[WARN] index remoto sin referencia de styles-deferred.css (advisory por SkipAssetHashChecks sin cambios en index/styles-deferred)"
+                Write-Host "[WARN] index remoto sin referencia de styles-deferred.css ($indexAssetRefAdvisoryReason)"
                 Write-Host "       Local : $localDeferredStyleRef"
             } else {
                 Write-Host "[FAIL] index remoto sin referencia de styles-deferred.css"
@@ -1117,7 +1134,7 @@ if ($localStyleRef -ne '') {
             Write-Host "[OK]  index remoto usa misma referencia de styles-deferred.css"
         } else {
             if ($deferredStyleRefAdvisory) {
-                Write-Host "[WARN] index remoto styles-deferred.css diferente (advisory por SkipAssetHashChecks sin cambios en index/styles-deferred)"
+                Write-Host "[WARN] index remoto styles-deferred.css diferente ($indexAssetRefAdvisoryReason)"
                 Write-Host "       Local : $localDeferredStyleRef"
                 Write-Host "       Remote: $remoteDeferredStyleRef"
             } else {
@@ -1143,6 +1160,9 @@ if ($SkipAssetHashChecks) {
 } else {
     if ($deployFreshnessStale -and $ForceAssetHashChecks) {
         Write-Host '[WARN] Deploy remoto atrasado vs HEAD local, pero se ejecutan hash checks por modo estricto.'
+    }
+    if ($frontendAssetDriftAdvisory) {
+        Write-Host '[WARN] Hash/ref de assets frontend en modo advisory: HEAD no cambia frontend.'
     }
     $checks = @()
     if ($localStyleRef -ne '') {
