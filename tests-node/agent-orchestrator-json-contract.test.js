@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
     mkdtempSync,
+    mkdirSync,
     writeFileSync,
     copyFileSync,
     cpSync,
@@ -132,6 +133,28 @@ function runJson(dir, args) {
     return parsed;
 }
 
+function assertTaskJsonShape(task) {
+    assert.equal(typeof task, 'object');
+    assert.equal(typeof task.id, 'string');
+    assert.equal(typeof task.title, 'string');
+    assert.equal(typeof task.owner, 'string');
+    assert.equal(typeof task.executor, 'string');
+    assert.equal(typeof task.status, 'string');
+    assert.equal(typeof task.risk, 'string');
+    assert.equal(typeof task.scope, 'string');
+    assert.equal(Array.isArray(task.files), true);
+}
+
+function assertTaskFullJsonShape(task) {
+    assertTaskJsonShape(task);
+    assert.equal(typeof task.acceptance, 'string');
+    assert.equal(typeof task.acceptance_ref, 'string');
+    assert.equal(Array.isArray(task.depends_on), true);
+    assert.equal(typeof task.prompt, 'string');
+    assert.equal(typeof task.created_at, 'string');
+    assert.equal(typeof task.updated_at, 'string');
+}
+
 function assertVersionLike(value) {
     const t = typeof value;
     assert.equal(t === 'number' || t === 'string', true);
@@ -179,6 +202,96 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check', 
         assert.equal(typeof codexCheck.summary, 'object');
         assert.equal(Array.isArray(codexCheck.codex_task_ids), true);
         assert.equal(Array.isArray(codexCheck.diagnostics), true);
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
+test('JSON contract minimo estable para task ls/create/claim/start/finish', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+
+        const listBefore = runJson(dir, ['task', 'ls']);
+        assertVersionLike(listBefore.version);
+        assert.equal(typeof listBefore.command, 'string');
+        assert.equal(typeof listBefore.action, 'string');
+        assert.equal(typeof listBefore.summary, 'object');
+        assert.equal(Array.isArray(listBefore.tasks), true);
+
+        const created = runJson(dir, [
+            'task',
+            'create',
+            '--title',
+            'Task contrato JSON',
+            '--executor',
+            'kimi',
+            '--files',
+            'docs/contract-json.md',
+            '--scope',
+            'docs',
+            '--risk',
+            'low',
+            '--status',
+            'backlog',
+        ]);
+        assertVersionLike(created.version);
+        assert.equal(created.action, 'create');
+        assert.equal(typeof created.persisted, 'boolean');
+        assert.equal(created.persisted, true);
+        assertTaskJsonShape(created.task);
+        assertTaskFullJsonShape(created.task_full);
+        const taskId = created.task.id;
+        assert.match(taskId, /^AG-\d+$/);
+
+        const claimed = runJson(dir, [
+            'task',
+            'claim',
+            taskId,
+            '--owner',
+            'ernesto',
+        ]);
+        assertVersionLike(claimed.version);
+        assert.equal(claimed.action, 'claim');
+        assertTaskJsonShape(claimed.task);
+        assert.equal(claimed.task.id, taskId);
+
+        const started = runJson(dir, [
+            'task',
+            'start',
+            taskId,
+            '--status',
+            'in_progress',
+        ]);
+        assertVersionLike(started.version);
+        assert.equal(started.action, 'start');
+        assertTaskJsonShape(started.task);
+        assert.equal(started.task.id, taskId);
+
+        const evidenceDir = join(dir, 'verification', 'agent-runs');
+        mkdirSync(evidenceDir, { recursive: true });
+        const evidenceRel = `verification/agent-runs/${taskId}.md`;
+        writeFileSync(join(dir, evidenceRel), `# ${taskId}\n`, 'utf8');
+
+        const finished = runJson(dir, [
+            'task',
+            'finish',
+            taskId,
+            '--evidence',
+            evidenceRel,
+        ]);
+        assertVersionLike(finished.version);
+        assert.equal(finished.action, 'finish');
+        assertTaskJsonShape(finished.task);
+        assert.equal(typeof finished.evidence_path, 'string');
+        assert.match(finished.evidence_path, new RegExp(`${taskId}\\.md$`));
+
+        const listAfter = runJson(dir, ['task', 'ls', '--id', taskId]);
+        assertVersionLike(listAfter.version);
+        assert.equal(Array.isArray(listAfter.tasks), true);
+        assert.equal(listAfter.tasks.length, 1);
+        assertTaskJsonShape(listAfter.tasks[0]);
+        assert.equal(listAfter.tasks[0].id, taskId);
     } finally {
         cleanupFixtureDir(dir);
     }
