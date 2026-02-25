@@ -81,6 +81,8 @@ jobs:
                   fi
 
             - name: Forzar sincronizacion git remota
+              id: ssh_repair
+              continue-on-error: true
               uses: appleboy/ssh-action@v1.2.0
               with:
                   host: ${{ env.SSH_HOST }}
@@ -160,6 +162,16 @@ jobs:
                       echo "HEAD remoto sincronizado:"
                       git -C "$TARGET_REPO" rev-parse --short HEAD
                       git -C "$TARGET_REPO" log -1 --format="%h %ci %s"
+
+            - name: Reportar estado del repair SSH
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  if [ "${{ steps.ssh_repair.outcome }}" = "success" ]; then
+                    echo "[OK] Repair SSH ejecutado correctamente."
+                  else
+                    echo "::warning::Repair SSH fallo (timeout o conectividad). Continuando con verify/smoke para validar estado real."
+                  fi
 
             - name: Esperar propagacion de cache
               shell: bash
