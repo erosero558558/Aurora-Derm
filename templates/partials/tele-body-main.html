@@ -1322,6 +1322,21 @@
                 <div class="appointment-form-container">
                     <form id="appointmentForm" class="appointment-form">
                         <h3 data-i18n="form_title">Nueva Cita</h3>
+                        <p class="booking-form-meta" data-i18n="booking_form_intro">
+                            Completa tus datos para validar disponibilidad en tiempo real y pasar al pago seguro.
+                        </p>
+                        <div class="booking-steps" aria-label="Pasos de reserva">
+                            <span class="booking-step-pill" data-i18n="booking_step_availability">1. Disponibilidad</span>
+                            <span class="booking-step-pill" data-i18n="booking_step_payment">2. Pago</span>
+                            <span class="booking-step-pill" data-i18n="booking_step_confirmation">3. Confirmaci&oacute;n</span>
+                        </div>
+                        <div
+                            id="bookingInlineFeedback"
+                            class="booking-inline-feedback is-hidden"
+                            role="status"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        ></div>
 
                         <div class="form-group">
                             <label data-i18n="label_service"
@@ -1608,6 +1623,9 @@
                                 <span id="totalPrice">$0.00</span>
                             </div>
                         </div>
+                        <p class="price-summary-hint" id="priceHint" data-i18n="booking_price_hint">
+                            El total estimado se actualiza cuando eliges el tipo de consulta.
+                        </p>
 
                         <button type="submit" class="btn btn-primary btn-full">
                             <i class="fas fa-calendar-check"></i>
@@ -1615,8 +1633,10 @@
                                 >Continuar al Pago</span
                             >
                         </button>
+                        <p class="booking-submit-note" data-i18n="booking_submit_note">
+                            Al continuar validamos la agenda en tiempo real antes de abrir el pago.
+                        </p>
                     </form>
                 </div>
             </div>
         </section>
-

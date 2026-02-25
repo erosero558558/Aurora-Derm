@@ -20,6 +20,115 @@ function t(esText, enText) {
     return getLang() === 'es' ? esText : enText;
 }
 
+function getBookingFeedbackEl() {
+    return document.getElementById('bookingInlineFeedback');
+}
+
+function setBookingFeedback(message, type = 'info') {
+    const feedback = getBookingFeedbackEl();
+    if (!feedback) return;
+
+    const normalizedType =
+        type === 'error' || type === 'success' ? type : 'info';
+    feedback.textContent = String(message || '').trim();
+    feedback.className = `booking-inline-feedback booking-inline-feedback--${normalizedType}`;
+    feedback.setAttribute(
+        'role',
+        normalizedType === 'error' ? 'alert' : 'status'
+    );
+    feedback.setAttribute(
+        'aria-live',
+        normalizedType === 'error' ? 'assertive' : 'polite'
+    );
+    feedback.classList.toggle('is-hidden', feedback.textContent === '');
+}
+
+function clearBookingFeedback() {
+    const feedback = getBookingFeedbackEl();
+    if (!feedback) return;
+    feedback.textContent = '';
+    feedback.className = 'booking-inline-feedback is-hidden';
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-live', 'polite');
+}
+
+function findFieldByName(form, fieldName) {
+    if (!form || !fieldName) return null;
+    return form.querySelector(`[name="${fieldName}"]`);
+}
+
+function getFieldErrorContainer(field) {
+    if (!field) return null;
+    return field.closest('.form-group') || field.closest('.form-consent');
+}
+
+function clearFieldErrorState(field) {
+    if (!field) return;
+    field.removeAttribute('aria-invalid');
+    const container = getFieldErrorContainer(field);
+    if (container) {
+        container.classList.remove('has-error');
+    }
+}
+
+function markFieldErrorState(field) {
+    if (!field) return;
+    field.setAttribute('aria-invalid', 'true');
+    const container = getFieldErrorContainer(field);
+    if (container) {
+        container.classList.add('has-error');
+    }
+}
+
+function clearBookingValidationState(form) {
+    if (!form) return;
+    form.querySelectorAll('[aria-invalid="true"]').forEach((field) => {
+        field.removeAttribute('aria-invalid');
+    });
+    form.querySelectorAll('.has-error').forEach((node) => {
+        node.classList.remove('has-error');
+    });
+}
+
+function focusFieldForCorrection(field) {
+    if (!field || typeof field.focus !== 'function') return;
+    try {
+        field.focus({ preventScroll: true });
+    } catch (_) {
+        field.focus();
+    }
+    if (typeof field.scrollIntoView === 'function') {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function bindInlineErrorReset(form) {
+    if (!form || form.dataset.bookingInlineResetBound === 'true') {
+        return;
+    }
+
+    const clearField = (event) => {
+        const target = event && event.target;
+        if (!(target instanceof Element)) return;
+        if (!form.contains(target)) return;
+        if (!target.matches('input, select, textarea, button[type="submit"]')) {
+            return;
+        }
+        clearFieldErrorState(target);
+        const feedback = getBookingFeedbackEl();
+        if (
+            feedback &&
+            feedback.classList.contains('booking-inline-feedback--error')
+        ) {
+            clearBookingFeedback();
+        }
+    };
+
+    form.addEventListener('input', clearField);
+    form.addEventListener('change', clearField);
+    form.dataset.bookingInlineResetBound = 'true';
+}
+
 function isCalendarUnavailableError(error) {
     if (!error) return false;
     const code = String(error.code || '').toLowerCase();
@@ -399,6 +508,7 @@ export function init(inputDeps) {
         });
     }
     ensureReschedulePolicyHint(appointmentForm);
+    bindInlineErrorReset(appointmentForm);
 
     if (serviceSelect.value) {
         serviceSelect.dispatchEvent(new Event('change'));
@@ -406,14 +516,44 @@ export function init(inputDeps) {
 
     appointmentForm.addEventListener('submit', async function (e) {
         e.preventDefault();
+        clearBookingFeedback();
+        clearBookingValidationState(this);
+
+        if (!this.checkValidity()) {
+            if (typeof this.reportValidity === 'function') {
+                this.reportValidity();
+            }
+            const invalidField = this.querySelector(':invalid');
+            if (invalidField) {
+                markFieldErrorState(invalidField);
+                focusFieldForCorrection(invalidField);
+            }
+            setBookingFeedback(
+                t(
+                    'Revisa los campos obligatorios antes de continuar.',
+                    'Please review the required fields before continuing.'
+                ),
+                'error'
+            );
+            return;
+        }
 
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalContent = submitBtn ? submitBtn.innerHTML : '';
         if (submitBtn) {
             submitBtn.disabled = true;
+            submitBtn.dataset.loading = 'true';
             submitBtn.innerHTML =
-                '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+                '<i class="fas fa-spinner fa-spin"></i> Validando agenda...';
         }
+        this.setAttribute('aria-busy', 'true');
+        setBookingFeedback(
+            t(
+                'Validando disponibilidad en tiempo real. Esto toma unos segundos.',
+                'Checking real-time availability. This takes a few seconds.'
+            ),
+            'info'
+        );
 
         try {
             const formData = new FormData(this);
@@ -422,24 +562,28 @@ export function init(inputDeps) {
             const privacyConsent = formData.get('privacyConsent') === 'on';
 
             if (!privacyConsent) {
-                throw new Error(
+                const error = new Error(
                     t(
                         'Debes aceptar el tratamiento de datos para continuar.',
                         'You must accept data processing to continue.'
                     )
                 );
+                error.fieldName = 'privacyConsent';
+                throw error;
             }
 
             const normalizedPhone = normalizeEcuadorPhone(
                 formData.get('phone')
             );
             if (!hasValidPhoneLength(normalizedPhone)) {
-                throw new Error(
+                const error = new Error(
                     t(
                         'Ingresa un telefono valido (ejemplo: +593 9XXXXXXXX).',
                         'Enter a valid phone number (example: +593 9XXXXXXXX).'
                     )
                 );
+                error.fieldName = 'phone';
+                throw error;
             }
 
             const appointment = {
@@ -505,13 +649,17 @@ export function init(inputDeps) {
                 appointment.service || 'consulta'
             );
             if (bookedSlots.includes(appointment.time)) {
-                deps.showToast(
-                    t(
-                        'Este horario ya fue reservado. Por favor selecciona otro.',
-                        'This time slot was just booked. Please choose another.'
-                    ),
-                    'error'
+                const slotTakenMessage = t(
+                    'Este horario ya fue reservado. Elige otro para continuar.',
+                    'This time slot was just booked. Please choose another one.'
                 );
+                setBookingFeedback(slotTakenMessage, 'error');
+                const timeField = findFieldByName(this, 'time');
+                if (timeField) {
+                    markFieldErrorState(timeField);
+                    focusFieldForCorrection(timeField);
+                }
+                deps.showToast(slotTakenMessage, 'error');
                 await updateAvailableTimes();
                 return;
             }
@@ -527,8 +675,27 @@ export function init(inputDeps) {
                 checkout_entry: 'booking_form',
             });
             formEngagementState.submitted = true;
+            setBookingFeedback(
+                t(
+                    'Horario validado. Continuamos al paso de pago.',
+                    'Time slot validated. Continuing to the payment step.'
+                ),
+                'success'
+            );
             deps.openPaymentModal(appointment);
         } catch (error) {
+            const message =
+                (error && error.message) ||
+                t(
+                    'No se pudo preparar la reserva. Intenta nuevamente.',
+                    'Could not prepare booking. Please try again.'
+                );
+            const fieldName = error && error.fieldName;
+            const field = fieldName ? findFieldByName(this, fieldName) : null;
+            if (field) {
+                markFieldErrorState(field);
+                focusFieldForCorrection(field);
+            }
             deps.trackEvent('booking_error', {
                 stage: 'booking_form',
                 error_code: deps.normalizeAnalyticsLabel(
@@ -536,17 +703,13 @@ export function init(inputDeps) {
                     'booking_prepare_failed'
                 ),
             });
-            deps.showToast(
-                (error && error.message) ||
-                    t(
-                        'No se pudo preparar la reserva. Intenta nuevamente.',
-                        'Could not prepare booking. Please try again.'
-                    ),
-                'error'
-            );
+            setBookingFeedback(message, 'error');
+            deps.showToast(message, 'error');
         } finally {
+            this.removeAttribute('aria-busy');
             if (submitBtn) {
                 submitBtn.disabled = false;
+                delete submitBtn.dataset.loading;
                 submitBtn.innerHTML = originalContent;
             }
         }
