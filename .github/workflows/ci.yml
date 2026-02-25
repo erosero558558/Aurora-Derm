@@ -339,6 +339,16 @@ jobs:
               if: steps.changes.outputs.build == 'true'
               shell: pwsh
               run: ./PREPARAR-PAQUETE-DESPLIEGUE.ps1
+            - name: Enforce no debug logs in production bundles
+              if: steps.changes.outputs.build == 'true'
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  if grep -R -n -E "console\\.(log|debug|trace)\\(|\\bdebugger\\b" script.js js/engines js/chunks js/admin-chunks 2>/dev/null; then
+                    echo "::error::Se detectaron logs/debugger en bundles de produccion."
+                    exit 1
+                  fi
+                  echo "OK: bundles sin console.log/debugger."
             - name: Upload Build Artifact
               if: steps.changes.outputs.build == 'true'
               uses: actions/upload-artifact@v4

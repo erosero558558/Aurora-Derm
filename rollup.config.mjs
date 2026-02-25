@@ -1,7 +1,20 @@
 import resolve from '@rollup/plugin-node-resolve';
+import strip from '@rollup/plugin-strip';
 import terser from '@rollup/plugin-terser';
 
-const minify = terser({ compress: { passes: 2 }, mangle: true, format: { comments: false } });
+const minify = terser({
+    compress: { passes: 2 },
+    mangle: true,
+    format: { comments: false },
+});
+const stripDebug = strip({
+    include: ['**/*.js', '**/*.mjs'],
+    exclude: ['**/node_modules/**'],
+    functions: ['console.log', 'console.debug', 'console.trace'],
+    debugger: true,
+    sourceMap: false,
+});
+const productionPlugins = [resolve(), stripDebug, minify];
 
 export default [
     // Admin App (code-split: appointments y availability se cargan bajo demanda)
@@ -12,9 +25,9 @@ export default [
             entryFileNames: 'admin.js',
             chunkFileNames: 'js/admin-chunks/[name]-[hash].js',
             format: 'es',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Booking UI
     {
@@ -22,9 +35,9 @@ export default [
         output: {
             file: 'js/engines/booking-ui.js',
             format: 'es',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
         // Removed external: ['booking-calendar-lazy'] to bundle it inline
     },
     // Booking Engine
@@ -33,9 +46,9 @@ export default [
         output: {
             file: 'js/engines/booking-engine.js',
             format: 'es',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Booking Calendar
     {
@@ -43,9 +56,9 @@ export default [
         output: {
             file: 'js/booking-calendar.js',
             format: 'es',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Chat UI Engine
     {
@@ -53,9 +66,9 @@ export default [
         output: {
             file: 'js/engines/chat-ui-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Chat Widget Engine
     {
@@ -63,9 +76,9 @@ export default [
         output: {
             file: 'js/engines/chat-widget-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Chat Booking Engine
     {
@@ -73,9 +86,9 @@ export default [
         output: {
             file: 'js/engines/chat-booking-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Figo Chat Engine
     {
@@ -83,9 +96,9 @@ export default [
         output: {
             file: 'js/engines/chat-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Analytics Engine
     {
@@ -93,9 +106,9 @@ export default [
         output: {
             file: 'js/engines/analytics-engine.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Booking Utils Bundle
     {
@@ -103,9 +116,9 @@ export default [
         output: {
             file: 'js/engines/booking-utils.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Data Bundle
     {
@@ -113,9 +126,9 @@ export default [
         output: {
             file: 'js/engines/data-bundle.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // UI Bundle
     {
@@ -123,9 +136,9 @@ export default [
         output: {
             file: 'js/engines/ui-bundle.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Engagement Bundle
     {
@@ -133,9 +146,9 @@ export default [
         output: {
             file: 'js/engines/engagement-bundle.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Engagement Forms Bundle
     {
@@ -143,9 +156,9 @@ export default [
         output: {
             file: 'js/engines/engagement-forms-bundle.js',
             format: 'iife',
-            sourcemap: false
+            sourcemap: false,
         },
-        plugins: [resolve(), minify]
+        plugins: productionPlugins,
     },
     // Main Script (ES module for code splitting; requires type="module" in HTML)
     {
@@ -158,6 +171,6 @@ export default [
             sourcemap: false,
             banner: '/* GENERATED FILE - DO NOT EDIT DIRECTLY - Edit source in js/main.js and run npm run build */',
         },
-        plugins: [resolve(), minify],
+        plugins: productionPlugins,
     },
 ];

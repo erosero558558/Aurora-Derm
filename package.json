@@ -68,6 +68,7 @@
         "@eslint/js": "^10.0.1",
         "@playwright/test": "^1.58.2",
         "@rollup/plugin-node-resolve": "^16.0.3",
+        "@rollup/plugin-strip": "^3.0.4",
         "@rollup/plugin-terser": "^0.4.4",
         "cssnano": "^7.1.2",
         "eslint": "^10.0.0",

@@ -2,6 +2,8 @@ const globals = require('globals');
 const pluginPlaywright = require('eslint-plugin-playwright');
 const js = require('@eslint/js');
 
+const ciNoConsoleSeverity = process.env.CI ? 'error' : 'warn';
+
 module.exports = [
     {
         ignores: [
@@ -10,8 +12,8 @@ module.exports = [
             'node_modules/**',
             'playwright-report/**',
             'test-results/**',
-            'verification/**'
-        ]
+            'verification/**',
+        ],
     },
     js.configs.recommended,
     {
@@ -23,7 +25,7 @@ module.exports = [
             'js/admin-chunks/**',
             'js/engines/**',
             'js/booking-calendar.js',
-        ]
+        ],
     },
     {
         files: ['**/*.js', '**/*.mjs'],
@@ -35,11 +37,14 @@ module.exports = [
             },
         },
         rules: {
-            'no-unused-vars': ['warn', {
-                varsIgnorePattern: '^_',
-                argsIgnorePattern: '^_',
-                caughtErrorsIgnorePattern: '^_',
-            }],
+            'no-unused-vars': [
+                'warn',
+                {
+                    varsIgnorePattern: '^_',
+                    argsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                },
+            ],
             'no-console': 'off',
             'no-undef': 'warn',
             'no-useless-assignment': 'warn',
@@ -55,6 +60,17 @@ module.exports = [
             globals: {
                 ...globals.node,
             },
+        },
+    },
+    {
+        files: ['js/**/*.js', 'src/**/*.js'],
+        rules: {
+            'no-console': [
+                ciNoConsoleSeverity,
+                {
+                    allow: ['warn', 'error', 'info'],
+                },
+            ],
         },
     },
     {
