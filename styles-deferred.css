@@ -494,6 +494,208 @@
     font-size: 0.86rem;
 }
 
+.telemedicine-conversion-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 18px;
+    margin-bottom: 18px;
+    align-items: start;
+}
+
+.tele-quick-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.tele-quick-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 16px 16px 15px;
+    border-radius: 16px;
+    border: 1px solid rgba(209, 222, 242, 0.92);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 12px 28px rgba(10, 22, 42, 0.06);
+}
+
+.tele-quick-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(
+        145deg,
+        rgba(24, 118, 219, 0.12),
+        rgba(38, 175, 255, 0.1)
+    );
+    color: var(--ui-accent);
+    font-size: 0.95rem;
+}
+
+.tele-quick-copy h3 {
+    margin: 0 0 4px;
+    font-size: 0.98rem;
+    line-height: 1.3;
+    color: var(--ui-ink);
+}
+
+.tele-quick-copy p {
+    margin: 0;
+    color: var(--ui-ink-soft);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.tele-decision-panel {
+    border-radius: var(--ui-radius-lg);
+    border: 1px solid rgba(178, 203, 233, 0.88);
+    background:
+        radial-gradient(
+            420px 180px at 100% 0%,
+            rgba(39, 161, 255, 0.08),
+            transparent 70%
+        ),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), #f8fbff 100%);
+    box-shadow: 0 18px 42px rgba(10, 22, 42, 0.08);
+    padding: 22px 22px 20px;
+}
+
+.tele-kicker {
+    margin: 0 0 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #1769bb;
+}
+
+.tele-kicker::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #2a86e8;
+    box-shadow: 0 0 0 4px rgba(42, 134, 232, 0.12);
+}
+
+.tele-decision-panel h3 {
+    margin: 0 0 8px;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    color: var(--ui-ink);
+}
+
+.tele-decision-copy {
+    margin: 0 0 12px;
+    color: var(--ui-ink-soft);
+    line-height: 1.55;
+    font-size: 0.94rem;
+}
+
+.tele-prep-steps {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 8px;
+    color: #24384f;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.tele-prep-steps li::marker {
+    font-weight: 700;
+    color: var(--ui-accent);
+}
+
+.tele-inline-note {
+    margin: 12px 0 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(172, 202, 235, 0.82);
+    background: rgba(232, 243, 255, 0.56);
+    color: #1f3e61;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.tele-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tele-cta-row .btn {
+    min-height: 42px;
+}
+
+.tele-cta-whatsapp {
+    border-color: rgba(31, 167, 95, 0.26);
+    color: #0f6e41;
+    background: rgba(31, 167, 95, 0.1);
+}
+
+.tele-cta-whatsapp:hover {
+    background: rgba(31, 167, 95, 0.16);
+    border-color: rgba(31, 167, 95, 0.36);
+}
+
+.telemedicine-price-note {
+    margin: 0 auto 18px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(239, 246, 255, 0.9);
+    border: 1px solid rgba(202, 220, 244, 0.95);
+    color: #35516e;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 1040px) {
+    .telemedicine-conversion-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+
+@media (max-width: 700px) {
+    .tele-quick-card {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .tele-decision-panel {
+        padding: 18px 16px 16px;
+        border-radius: 18px;
+    }
+
+    .tele-decision-panel h3 {
+        font-size: 1.12rem;
+    }
+
+    .tele-cta-row {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .tele-cta-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .telemedicine-price-note {
+        margin-bottom: 16px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-size: 0.86rem;
+    }
+}
+
 .telemedicine-options {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2040,7 +2242,10 @@ html[data-theme='dark'] .team-card,
 html[data-theme='dark'] .gallery-item,
 html[data-theme='dark'] .clinic-info,
 html[data-theme='dark'] .review-card,
-html[data-theme='dark'] .appointment-form-container {
+html[data-theme='dark'] .appointment-form-container,
+html[data-theme='dark'] .tele-quick-card,
+html[data-theme='dark'] .tele-decision-panel,
+html[data-theme='dark'] .telemedicine-price-note {
     background: rgba(15, 26, 44, 0.9);
     border-color: rgba(122, 156, 207, 0.35);
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
@@ -2053,7 +2258,9 @@ html[data-theme='dark'] .gallery-info h4,
 html[data-theme='dark'] .rating-number,
 html[data-theme='dark'] .review-meta h4,
 html[data-theme='dark'] .clinic-item strong,
-html[data-theme='dark'] .appointment-form h3 {
+html[data-theme='dark'] .appointment-form h3,
+html[data-theme='dark'] .tele-quick-copy h3,
+html[data-theme='dark'] .tele-decision-panel h3 {
     color: #e9f1ff;
 }
 
@@ -2065,7 +2272,10 @@ html[data-theme='dark'] .rating-count,
 html[data-theme='dark'] .review-text,
 html[data-theme='dark'] .clinic-desc,
 html[data-theme='dark'] .clinic-item p,
-html[data-theme='dark'] .review-date {
+html[data-theme='dark'] .review-date,
+html[data-theme='dark'] .tele-quick-copy p,
+html[data-theme='dark'] .tele-decision-copy,
+html[data-theme='dark'] .telemedicine-price-note {
     color: #aac1e2;
 }
 
@@ -2083,6 +2293,41 @@ html[data-theme='dark'] .price-note {
 
 html[data-theme='dark'] .tele-features li {
     color: #c4d8f7;
+}
+
+html[data-theme='dark'] .tele-prep-steps {
+    color: #d4e3f8;
+}
+
+html[data-theme='dark'] .tele-kicker {
+    color: #9fd1ff;
+}
+
+html[data-theme='dark'] .tele-kicker::before {
+    background: #6cb7ff;
+    box-shadow: 0 0 0 4px rgba(108, 183, 255, 0.18);
+}
+
+html[data-theme='dark'] .tele-inline-note {
+    background: rgba(27, 46, 73, 0.76);
+    border-color: rgba(114, 154, 214, 0.35);
+    color: #d1e6ff;
+}
+
+html[data-theme='dark'] .tele-quick-icon {
+    background: rgba(38, 83, 140, 0.5);
+    color: #8bc7ff;
+}
+
+html[data-theme='dark'] .tele-cta-whatsapp {
+    background: rgba(25, 117, 74, 0.24);
+    border-color: rgba(51, 179, 115, 0.28);
+    color: #8ef0bc;
+}
+
+html[data-theme='dark'] .tele-cta-whatsapp:hover {
+    background: rgba(25, 117, 74, 0.34);
+    border-color: rgba(70, 196, 134, 0.38);
 }
 
 html[data-theme='dark'] .tele-price,
