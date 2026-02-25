@@ -4,30 +4,10 @@
 const { writeFileSync, mkdirSync, existsSync, readFileSync } = require('fs');
 const { resolve, dirname } = require('path');
 const { spawnSync } = require('child_process');
+const coreFlags = require('../tools/agent-orchestrator/core/flags');
+const corePolicy = require('../tools/agent-orchestrator/core/policy');
 const domainMetrics = require('../tools/agent-orchestrator/domain/metrics');
-
-function parseFlags(argv) {
-    const flags = {};
-    const positionals = [];
-    for (let i = 0; i < argv.length; i++) {
-        const arg = String(argv[i]);
-        if (!arg.startsWith('--')) {
-            positionals.push(arg);
-            continue;
-        }
-        const key = arg.slice(2);
-        const next = argv[i + 1];
-        if (next === undefined || String(next).startsWith('--')) {
-            flags[key] = true;
-            continue;
-        }
-        flags[key] = String(next);
-        i += 1;
-    }
-    return { flags, positionals };
-}
-
-const { flags } = parseFlags(process.argv.slice(2));
+const { flags } = coreFlags.parseFlags(process.argv.slice(2));
 const ROOT = resolve(flags.root || resolve(__dirname, '..'));
 const ORCHESTRATOR = resolve(ROOT, 'agent-orchestrator.js');
 const GOVERNANCE_POLICY_PATH = resolve(ROOT, 'governance-policy.json');
@@ -75,44 +55,20 @@ const DEFAULT_GOVERNANCE_POLICY = {
         },
     },
 };
-let GOVERNANCE_POLICY_CACHE = null;
+const GOVERNANCE_POLICY_CACHE_REF = { current: null };
 
 function ensureDirForFile(path) {
     mkdirSync(dirname(path), { recursive: true });
 }
 
-function shallowMerge(target, source) {
-    const out = { ...(target || {}) };
-    for (const [key, value] of Object.entries(source || {})) {
-        const existing = out[key];
-        if (
-            value &&
-            typeof value === 'object' &&
-            !Array.isArray(value) &&
-            existing &&
-            typeof existing === 'object' &&
-            !Array.isArray(existing)
-        ) {
-            out[key] = shallowMerge(existing, value);
-        } else {
-            out[key] = value;
-        }
-    }
-    return out;
-}
-
 function getGovernancePolicy() {
-    if (GOVERNANCE_POLICY_CACHE) return GOVERNANCE_POLICY_CACHE;
-    let loaded = null;
-    if (existsSync(GOVERNANCE_POLICY_PATH)) {
-        try {
-            loaded = JSON.parse(readFileSync(GOVERNANCE_POLICY_PATH, 'utf8'));
-        } catch {
-            loaded = null;
-        }
-    }
-    GOVERNANCE_POLICY_CACHE = shallowMerge(DEFAULT_GOVERNANCE_POLICY, loaded);
-    return GOVERNANCE_POLICY_CACHE;
+    return corePolicy.getGovernancePolicy({
+        cacheRef: GOVERNANCE_POLICY_CACHE_REF,
+        existsSync,
+        readFileSync,
+        policyPath: GOVERNANCE_POLICY_PATH,
+        defaultPolicy: DEFAULT_GOVERNANCE_POLICY,
+    });
 }
 
 function runOrchestratorJson(args) {

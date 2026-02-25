@@ -34,6 +34,14 @@ const domainTaskCreate = require('./tools/agent-orchestrator/domain/task-create'
 const domainDiagnostics = require('./tools/agent-orchestrator/domain/diagnostics');
 const domainMetrics = require('./tools/agent-orchestrator/domain/metrics');
 const domainStatus = require('./tools/agent-orchestrator/domain/status');
+const statusCommandHandlers = require('./tools/agent-orchestrator/commands/status');
+const conflictsCommandHandlers = require('./tools/agent-orchestrator/commands/conflicts');
+const policyCommandHandlers = require('./tools/agent-orchestrator/commands/policy');
+const handoffsCommandHandlers = require('./tools/agent-orchestrator/commands/handoffs');
+const codexCommandHandlers = require('./tools/agent-orchestrator/commands/codex');
+const metricsCommandHandlers = require('./tools/agent-orchestrator/commands/metrics');
+const syncCommandHandlers = require('./tools/agent-orchestrator/commands/sync');
+const closeCommandHandlers = require('./tools/agent-orchestrator/commands/close');
 const taskCommandHandlers = require('./tools/agent-orchestrator/commands/task');
 
 const ROOT = __dirname;
@@ -886,76 +894,30 @@ function buildTaskCreateWarnDiagnostics(input = {}) {
 }
 
 function cmdStatus(args) {
-    const wantsJson = args.includes('--json');
-    const wantsExplainRed = args.includes('--explain-red');
-    const board = parseBoard();
-    const handoffData = parseHandoffs();
-    const conflictAnalysis = analyzeConflicts(
-        board.tasks,
-        handoffData.handoffs
-    );
-    const contribution = buildExecutorContribution(board.tasks);
-    const metricsSnapshot = loadMetricsSnapshot();
-    const contributionBaseline = normalizeContributionBaseline(metricsSnapshot);
-    const contributionTrend = buildContributionTrend(
-        contribution,
-        contributionBaseline
-    );
-    const domainHealth = buildDomainHealth(
-        board.tasks,
-        conflictAnalysis,
-        handoffData.handoffs
-    );
-    const handoffLintErrors = wantsExplainRed ? getHandoffLintErrors() : [];
-    const codexCheckReport = wantsExplainRed ? buildCodexCheckReport() : null;
-    const domainHealthHistory = wantsExplainRed
-        ? buildDomainHealthHistorySummary(loadDomainHealthHistory(), 7)
-        : null;
-    const data = domainStatus.buildStatusReport({
-        board,
-        conflictAnalysis,
-        contribution,
-        contributionTrend,
-        domainHealth,
-        byStatus: getStatusCounts(board.tasks),
-        byExecutor: getExecutorCounts(board.tasks),
+    statusCommandHandlers.handleStatusCommand({
+        args,
+        parseBoard,
+        parseHandoffs,
+        analyzeConflicts,
+        buildExecutorContribution,
+        loadMetricsSnapshot,
+        normalizeContributionBaseline,
+        buildContributionTrend,
+        buildDomainHealth,
+        getHandoffLintErrors,
+        buildCodexCheckReport,
+        buildDomainHealthHistorySummary,
+        loadDomainHealthHistory,
+        getStatusCounts,
+        getExecutorCounts,
+        buildStatusRedExplanation,
+        printJson: coreOutput.printJson,
+        renderStatusText: domainStatus.renderStatusText,
+        getContributionSignal,
+        formatPpDelta,
+        summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
+        buildWarnFirstDiagnostics,
     });
-
-    if (wantsExplainRed) {
-        data.red_explanation = buildStatusRedExplanation({
-            conflictAnalysis,
-            handoffData,
-            handoffLintErrors,
-            codexCheckReport,
-            domainHealth,
-            domainHealthHistory,
-        });
-    }
-
-    Object.assign(
-        data,
-        domainDiagnostics.summarizeDiagnostics(
-            buildWarnFirstDiagnostics({
-                source: 'status',
-                board,
-                handoffData,
-                conflictAnalysis,
-                metricsSnapshot,
-            })
-        )
-    );
-
-    if (wantsJson) {
-        coreOutput.printJson(data);
-        return;
-    }
-    process.stdout.write(
-        domainStatus.renderStatusText(data, {
-            wantsExplainRed,
-            getContributionSignal,
-            formatPpDelta,
-        })
-    );
 }
 
 function safeNumber(value, fallback = 0) {
@@ -1054,462 +1016,74 @@ function writeMetricsSnapshotFile(metrics) {
 }
 
 function cmdMetricsBaseline(args = []) {
-    const { positionals, flags } = parseFlags(args);
-    const wantsJson = args.includes('--json');
-    const subcommand = String(positionals[0] || '').trim() || 'show';
-
-    if (!['show', 'set', 'reset'].includes(subcommand)) {
-        throw new Error(
-            'Uso: node agent-orchestrator.js metrics baseline <show|set|reset> [--from current] [--json]'
-        );
-    }
-
-    if (subcommand === 'show') {
-        const metrics = loadMetricsSnapshotStrict();
-        const report = {
-            version: 1,
-            ok: true,
-            action: 'show',
-            metrics_path: 'verification/agent-metrics.json',
-            baseline: metrics.baseline || null,
-            baseline_contribution: normalizeContributionBaseline(metrics),
-            baseline_meta: metrics.baseline_meta || null,
-        };
-        if (wantsJson) {
-            console.log(JSON.stringify(report, null, 2));
-            return;
-        }
-        console.log('Metrics baseline (agent-metrics.json):');
-        console.log(`- tasks_total: ${report.baseline?.tasks_total ?? 'n/a'}`);
-        console.log(
-            `- file_conflicts: ${report.baseline?.file_conflicts ?? 'n/a'}`
-        );
-        console.log(
-            `- file_conflicts_handoff: ${report.baseline?.file_conflicts_handoff ?? 'n/a'}`
-        );
-        console.log(
-            `- traceability_pct: ${report.baseline?.traceability_pct ?? 'n/a'}`
-        );
-        console.log(
-            `- baseline_meta: ${
-                report.baseline_meta
-                    ? `${report.baseline_meta.source || 'n/a'} @ ${report.baseline_meta.updated_at || 'n/a'}`
-                    : 'n/a'
-            }`
-        );
-        return;
-    }
-
-    let source = String(flags.from || 'current').trim() || 'current';
-    source = source.toLowerCase();
-    if (source !== 'current') {
-        throw new Error(
-            `metrics baseline ${subcommand}: --from invalido (${source}). Use current`
-        );
-    }
-
-    const metrics = loadMetricsSnapshotStrict();
-    const next = { ...metrics };
-    const normalized = baselineFromCurrentMetricsSnapshot(metrics);
-    next.baseline = normalized.baseline;
-    if (normalized.baseline_contribution) {
-        next.baseline_contribution = normalized.baseline_contribution;
-    }
-    next.baseline_meta = {
-        source: 'current',
-        action: subcommand,
-        updated_at: new Date().toISOString(),
-    };
-
-    const finalMetrics = recalcMetricsDeltaWithBaseline(next);
-    writeMetricsSnapshotFile(finalMetrics);
-
-    const report = {
-        version: 1,
-        ok: true,
-        action: subcommand,
-        source: 'current',
-        metrics_path: 'verification/agent-metrics.json',
-        baseline: finalMetrics.baseline,
-        baseline_contribution: normalizeContributionBaseline(finalMetrics),
-        baseline_meta: finalMetrics.baseline_meta || null,
-        delta: finalMetrics.delta || null,
-    };
-
-    if (wantsJson) {
-        console.log(JSON.stringify(report, null, 2));
-        return;
-    }
-    console.log(
-        `Metrics baseline ${subcommand} OK (source=current) en verification/agent-metrics.json`
-    );
+    return metricsCommandHandlers.handleMetricsBaselineCommand({
+        args,
+        parseFlags,
+        loadMetricsSnapshotStrict,
+        normalizeContributionBaseline,
+        baselineFromCurrentMetricsSnapshot,
+        recalcMetricsDeltaWithBaseline,
+        writeMetricsSnapshotFile,
+    });
 }
 
 function cmdMetrics(args = []) {
-    if (String(args[0] || '').trim() === 'baseline') {
-        cmdMetricsBaseline(args.slice(1));
-        return;
-    }
-    const { flags } = parseFlags(args);
-    const wantsJson = args.includes('--json');
-    const profile = String(flags.profile || '')
-        .trim()
-        .toLowerCase();
-    const hasNoWriteFlag = args.includes('--no-write');
-    const hasWriteFlag = args.includes('--write');
-    const hasDryRunFlag = args.includes('--dry-run');
-
-    if (profile && !['local', 'ci'].includes(profile)) {
-        throw new Error(
-            `metrics: --profile invalido (${profile}). Use local|ci`
-        );
-    }
-    if (hasNoWriteFlag && hasWriteFlag) {
-        throw new Error(
-            'metrics: no usar --write y --no-write al mismo tiempo'
-        );
-    }
-    if (hasDryRunFlag && hasWriteFlag) {
-        throw new Error('metrics: --dry-run no se puede combinar con --write');
-    }
-
-    let noWrite = false;
-    if (profile === 'local') noWrite = true;
-    if (profile === 'ci') noWrite = false;
-    if (hasNoWriteFlag) noWrite = true;
-    if (hasWriteFlag) noWrite = false;
-    if (hasDryRunFlag) noWrite = true;
-    const board = parseBoard();
-    const handoffData = parseHandoffs();
-    const conflictAnalysis = analyzeConflicts(
-        board.tasks,
-        handoffData.handoffs
-    );
-    const blockingConflicts = conflictAnalysis.blocking.length;
-    const handoffConflicts = conflictAnalysis.handoffCovered.length;
-    const total = board.tasks.length;
-    const done = board.tasks.filter((task) => task.status === 'done').length;
-    const inProgress = board.tasks.filter(
-        (task) => task.status === 'in_progress'
-    ).length;
-    const contribution = buildExecutorContribution(board.tasks);
-    const domainHealth = buildDomainHealth(
-        board.tasks,
-        conflictAnalysis,
-        handoffData.handoffs
-    );
-
-    let existing = null;
-    if (existsSync(METRICS_PATH)) {
-        try {
-            existing = JSON.parse(readFileSync(METRICS_PATH, 'utf8'));
-        } catch {
-            existing = null;
-        }
-    }
-
-    const baselineContribution =
-        normalizeContributionBaseline(existing) || contribution;
-    const contributionDelta = buildContributionTrend(
-        contribution,
-        baselineContribution
-    );
-    const existingHistory = loadContributionHistory();
-    const nextContributionHistory = upsertContributionHistory(
-        existingHistory,
-        contribution
-    );
-    const contributionHistorySummary = buildContributionHistorySummary(
-        nextContributionHistory,
-        7
-    );
-    const existingDomainHistory = loadDomainHealthHistory();
-    const nextDomainHealthHistory = upsertDomainHealthHistory(
-        existingDomainHistory,
-        domainHealth
-    );
-    const domainHealthHistorySummary = buildDomainHealthHistorySummary(
-        nextDomainHealthHistory,
-        7
-    );
-
-    const baseline =
-        existing && existing.baseline
-            ? existing.baseline
-            : {
-                  tasks_total: total,
-                  tasks_with_rework: 0,
-                  file_conflicts: blockingConflicts,
-                  file_conflicts_handoff: handoffConflicts,
-                  non_critical_lead_time_hours_avg: null,
-                  coordination_gate_red_rate_pct: null,
-                  traceability_pct: 0,
-              };
-
-    const traceability =
-        total === 0
-            ? 100
-            : Math.round(
-                  (board.tasks.filter(
-                      (task) => String(task.acceptance_ref || '').trim() !== ''
-                  ).length /
-                      total) *
-                      100
-              );
-
-    const outputFiles = [
-        'verification/agent-metrics.json',
-        'verification/agent-contribution-history.json',
-        'verification/agent-domain-health-history.json',
-    ];
-
-    const metrics = {
-        version: 1,
-        period: {
-            timezone: 'America/Guayaquil',
-            window_days: 7,
-            updated_at: new Date().toISOString(),
-        },
-        targets:
-            existing && existing.targets
-                ? existing.targets
-                : {
-                      rework_reduction_pct: 40,
-                      file_conflict_rate_pct_max: 5,
-                      non_critical_lead_time_hours_max: 24,
-                      coordination_gate_red_rate_pct_max: 10,
-                      traceability_pct: 100,
-                  },
-        baseline: {
-            tasks_total: safeNumber(baseline.tasks_total, total),
-            tasks_with_rework: safeNumber(baseline.tasks_with_rework, 0),
-            file_conflicts: safeNumber(
-                baseline.file_conflicts,
-                blockingConflicts
-            ),
-            file_conflicts_handoff: safeNumber(
-                baseline.file_conflicts_handoff,
-                handoffConflicts
-            ),
-            non_critical_lead_time_hours_avg:
-                baseline.non_critical_lead_time_hours_avg === null
-                    ? null
-                    : safeNumber(baseline.non_critical_lead_time_hours_avg, 0),
-            coordination_gate_red_rate_pct:
-                baseline.coordination_gate_red_rate_pct === null
-                    ? null
-                    : safeNumber(baseline.coordination_gate_red_rate_pct, 0),
-            traceability_pct: safeNumber(baseline.traceability_pct, 0),
-        },
-        current: {
-            tasks_total: total,
-            tasks_in_progress: inProgress,
-            tasks_done: done,
-            tasks_with_rework: 0,
-            file_conflicts: blockingConflicts,
-            file_conflicts_handoff: handoffConflicts,
-            non_critical_lead_time_hours_avg: null,
-            coordination_gate_red_rate_pct: null,
-            traceability_pct: traceability,
-        },
-        contribution,
-        baseline_contribution: baselineContribution,
-        contribution_delta: contributionDelta,
-        contribution_history: contributionHistorySummary,
-        domain_health: domainHealth,
-        domain_health_history: domainHealthHistorySummary,
-        io: {
-            profile: profile || 'default',
-            no_write: noWrite,
-            dry_run: hasDryRunFlag,
-            write_mode: hasDryRunFlag
-                ? 'dry-run'
-                : noWrite
-                  ? 'no-write'
-                  : 'write',
-            persisted: !noWrite && !hasDryRunFlag,
-            output_files: outputFiles,
-        },
-        delta: {
-            tasks_total: total - safeNumber(baseline.tasks_total, total),
-            file_conflicts:
-                blockingConflicts -
-                safeNumber(baseline.file_conflicts, blockingConflicts),
-            file_conflicts_handoff:
-                handoffConflicts -
-                safeNumber(baseline.file_conflicts_handoff, handoffConflicts),
-            traceability_pct:
-                traceability -
-                safeNumber(baseline.traceability_pct, traceability),
-        },
-    };
-
-    if (!noWrite) {
-        mkdirSync(dirname(METRICS_PATH), { recursive: true });
-        writeFileSync(
-            METRICS_PATH,
-            `${JSON.stringify(metrics, null, 4)}\n`,
-            'utf8'
-        );
-        writeFileSync(
-            CONTRIBUTION_HISTORY_PATH,
-            `${JSON.stringify(nextContributionHistory, null, 4)}\n`,
-            'utf8'
-        );
-        writeFileSync(
-            DOMAIN_HEALTH_HISTORY_PATH,
-            `${JSON.stringify(nextDomainHealthHistory, null, 4)}\n`,
-            'utf8'
-        );
-    }
-    if (wantsJson) {
-        console.log(JSON.stringify(metrics, null, 2));
-        return;
-    }
-    if (hasDryRunFlag) {
-        console.log(
-            `Metricas calculadas (dry-run, profile=${profile || 'default'}).`
-        );
-        console.log('Archivos de salida (preview):');
-        for (const file of outputFiles) {
-            console.log(`- ${file}`);
-        }
-        return;
-    }
-    if (noWrite) {
-        console.log(
-            `Metricas calculadas (no-write, profile=${profile || 'default'}).`
-        );
-        return;
-    }
-    console.log(
-        `Metricas actualizadas en ${METRICS_PATH} (profile=${profile || 'default'})`
-    );
+    return metricsCommandHandlers.handleMetricsCommand({
+        args,
+        handleMetricsBaselineCommand:
+            metricsCommandHandlers.handleMetricsBaselineCommand,
+        loadMetricsSnapshotStrict,
+        baselineFromCurrentMetricsSnapshot,
+        recalcMetricsDeltaWithBaseline,
+        writeMetricsSnapshotFile,
+        parseFlags,
+        parseBoard,
+        parseHandoffs,
+        analyzeConflicts,
+        buildExecutorContribution,
+        buildDomainHealth,
+        existsSync,
+        readFileSync,
+        METRICS_PATH,
+        normalizeContributionBaseline,
+        buildContributionTrend,
+        loadContributionHistory,
+        upsertContributionHistory,
+        buildContributionHistorySummary,
+        loadDomainHealthHistory,
+        upsertDomainHealthHistory,
+        buildDomainHealthHistorySummary,
+        safeNumber,
+        mkdirSync,
+        dirname,
+        writeFileSync,
+        CONTRIBUTION_HISTORY_PATH,
+        DOMAIN_HEALTH_HISTORY_PATH,
+    });
 }
 
 function cmdConflicts(args) {
-    const strict = args.includes('--strict');
-    const wantsJson = args.includes('--json');
-    const board = parseBoard();
-    const handoffData = parseHandoffs();
-    const analysis = analyzeConflicts(board.tasks, handoffData.handoffs);
-
-    const report = {
-        version: 1,
-        strict,
-        totals: {
-            pairs: analysis.all.length,
-            blocking: analysis.blocking.length,
-            handoff: analysis.handoffCovered.length,
-        },
-        conflicts: analysis.all.map(toConflictJsonRecord),
-    };
-    const reportWithDiagnostics = attachDiagnostics(
-        report,
-        buildWarnFirstDiagnostics({
-            source: 'conflicts',
-            board,
-            handoffData,
-            conflictAnalysis: analysis,
-        })
-    );
-
-    if (wantsJson) {
-        console.log(JSON.stringify(reportWithDiagnostics, null, 2));
-        if (strict && analysis.blocking.length > 0) {
-            process.exitCode = 1;
-        }
-        return;
-    }
-
-    if (analysis.all.length === 0) {
-        console.log('Sin conflictos de archivos entre tareas activas.');
-        return;
-    }
-
-    console.log(`Conflictos detectados (total pares): ${analysis.all.length}`);
-    console.log(`- Blocking: ${analysis.blocking.length}`);
-    console.log(`- Eximidos por handoff: ${analysis.handoffCovered.length}`);
-
-    for (const item of analysis.all) {
-        const kind = item.exempted_by_handoff ? 'HANDOFF' : 'BLOCKING';
-        const overlapFiles = item.overlap_files.length
-            ? item.overlap_files.join(', ')
-            : '(solo wildcard ambiguo)';
-        console.log(
-            `- [${kind}] ${item.left.id} (${item.left.executor}) <-> ${item.right.id} (${item.right.executor}) :: ${overlapFiles}`
-        );
-        if (item.handoff_ids.length > 0) {
-            console.log(`  handoffs: ${item.handoff_ids.join(', ')}`);
-        }
-        if (item.ambiguous_wildcard_overlap) {
-            console.log(
-                '  note: wildcard overlap ambiguo, no eximible automaticamente'
-            );
-        }
-    }
-
-    if (strict && analysis.blocking.length > 0) {
-        process.exitCode = 1;
-    }
+    conflictsCommandHandlers.handleConflictsCommand({
+        args,
+        parseBoard,
+        parseHandoffs,
+        analyzeConflicts,
+        toConflictJsonRecord,
+        attachDiagnostics,
+        buildWarnFirstDiagnostics,
+    });
 }
 
 function cmdPolicy(args = []) {
-    const subcommand = String(args[0] || '').trim() || 'lint';
-    const wantsJson = args.includes('--json');
-
-    if (subcommand !== 'lint') {
-        throw new Error('Uso: node agent-orchestrator.js policy lint [--json]');
-    }
-
-    let rawPolicy;
-    let report;
-    try {
-        rawPolicy = readGovernancePolicyStrict();
-        report = validateGovernancePolicy(rawPolicy);
-    } catch (error) {
-        report = {
-            version: 1,
-            ok: false,
-            error_count: 1,
-            warning_count: 0,
-            errors: [String(error.message || error)],
-            warnings: [],
-            effective: null,
-            source: {
-                path: 'governance-policy.json',
-                exists: existsSync(GOVERNANCE_POLICY_PATH),
-            },
-        };
-    }
-
-    const reportWithDiagnostics = attachDiagnostics(
-        report,
-        buildWarnFirstDiagnostics({
-            source: 'policy',
-            policyReport: report,
-        })
-    );
-
-    if (wantsJson) {
-        console.log(JSON.stringify(reportWithDiagnostics, null, 2));
-        if (!report.ok) process.exitCode = 1;
-        return reportWithDiagnostics;
-    }
-
-    if (!report.ok) {
-        throw new Error(
-            `Governance policy invalida:\n- ${report.errors.join('\n- ')}`
-        );
-    }
-
-    console.log('OK: governance-policy.json valido.');
-    if (report.warning_count > 0) {
-        for (const warning of report.warnings) {
-            console.log(`WARN: ${warning}`);
-        }
-    }
-    return report;
+    return policyCommandHandlers.handlePolicyCommand({
+        args,
+        readGovernancePolicyStrict,
+        validateGovernancePolicy,
+        existsSync,
+        governancePolicyPath: GOVERNANCE_POLICY_PATH,
+        attachDiagnostics,
+        buildWarnFirstDiagnostics,
+    });
 }
 
 function getHandoffLintErrors() {
@@ -1631,235 +1205,27 @@ function getHandoffLintErrors() {
 }
 
 function cmdHandoffs(args) {
-    const firstArg = String(args[0] || '');
-    const subcommand =
-        !firstArg || firstArg.startsWith('--') ? 'status' : firstArg;
-    const wantsJson = args.includes('--json');
-    const handoffData = parseHandoffs();
-
-    if (subcommand === 'status') {
-        const total = handoffData.handoffs.length;
-        const active = handoffData.handoffs.filter(
-            (item) => String(item.status) === 'active'
-        );
-        const closed = handoffData.handoffs.filter(
-            (item) => String(item.status) === 'closed'
-        );
-        const expiredActive = active.filter((item) =>
-            isExpired(item.expires_at)
-        );
-        const report = {
-            version: 1,
-            summary: {
-                total,
-                active: active.length,
-                closed: closed.length,
-                active_expired: expiredActive.length,
-            },
-            handoffs: handoffData.handoffs,
-        };
-        const reportWithDiagnostics = attachDiagnostics(
-            report,
-            buildWarnFirstDiagnostics({
-                source: 'handoffs.status',
-                handoffData,
-            })
-        );
-        if (wantsJson) {
-            console.log(JSON.stringify(reportWithDiagnostics, null, 2));
-            return;
-        }
-        console.log('== Agent Handoffs ==');
-        console.log(`Total: ${total}`);
-        console.log(`Active: ${active.length}`);
-        console.log(`Closed: ${closed.length}`);
-        console.log(`Active expirados: ${expiredActive.length}`);
-        return;
-    }
-
-    if (subcommand === 'lint') {
-        const errors = getHandoffLintErrors();
-        const report = {
-            version: 1,
-            ok: errors.length === 0,
-            error_count: errors.length,
-            errors,
-        };
-        const reportWithDiagnostics = attachDiagnostics(
-            report,
-            buildWarnFirstDiagnostics({
-                source: 'handoffs.lint',
-                handoffData,
-            })
-        );
-        if (wantsJson) {
-            console.log(JSON.stringify(reportWithDiagnostics, null, 2));
-            if (errors.length > 0) {
-                process.exitCode = 1;
-            }
-            return;
-        }
-        if (errors.length === 0) {
-            console.log('OK: handoffs validos.');
-            return;
-        }
-        console.log(`Errores de handoff: ${errors.length}`);
-        for (const error of errors) console.log(`- ${error}`);
-        process.exitCode = 1;
-        return;
-    }
-
-    if (subcommand === 'create') {
-        const { flags } = parseFlags(args.slice(1));
-        const board = parseBoard();
-        const handoffs = parseHandoffs();
-
-        const fromTaskId = String(flags.from || flags.from_task || '').trim();
-        const toTaskId = String(flags.to || flags.to_task || '').trim();
-        const reason = String(flags.reason || '').trim();
-        const approvedBy = String(
-            flags['approved-by'] || flags.approved_by || ''
-        ).trim();
-        const files = parseCsvList(flags.files || '');
-        const ttlHours = Number(flags['ttl-hours'] || flags.ttl_hours || 24);
-
-        if (!fromTaskId || !toTaskId) {
-            throw new Error(
-                'Uso: node agent-orchestrator.js handoffs create --from AG-001 --to CDX-001 --files path1,path2 --reason motivo --approved-by ernesto [--ttl-hours 24]'
-            );
-        }
-        if (!reason) {
-            throw new Error('handoffs create requiere --reason');
-        }
-        if (!approvedBy) {
-            throw new Error('handoffs create requiere --approved-by');
-        }
-        if (files.length === 0) {
-            throw new Error('handoffs create requiere --files con lista CSV');
-        }
-        if (!Number.isFinite(ttlHours) || ttlHours <= 0 || ttlHours > 48) {
-            throw new Error('--ttl-hours debe estar en rango 1..48');
-        }
-
-        const fromTask = ensureTask(board, fromTaskId);
-        const toTask = ensureTask(board, toTaskId);
-        if (
-            !ACTIVE_STATUSES.has(fromTask.status) ||
-            !ACTIVE_STATUSES.has(toTask.status)
-        ) {
-            throw new Error(
-                `Ambas tareas deben estar activas (from=${fromTask.status}, to=${toTask.status})`
-            );
-        }
-
-        const overlap = analyzeFileOverlap(fromTask.files, toTask.files);
-        if (!overlap.anyOverlap) {
-            throw new Error(
-                `No hay solape de archivos entre ${fromTaskId} y ${toTaskId}`
-            );
-        }
-        if (overlap.ambiguousWildcardOverlap) {
-            throw new Error(
-                'No se puede crear handoff automatico con overlap ambiguo por wildcards; usa files concretos'
-            );
-        }
-        const overlapSet = new Set(overlap.overlapFiles);
-        const normalizedFiles = files.map(normalizePathToken);
-        for (let i = 0; i < normalizedFiles.length; i++) {
-            if (!overlapSet.has(normalizedFiles[i])) {
-                throw new Error(
-                    `File fuera del solape real: ${files[i]} (solape: ${overlap.overlapFiles.join(', ') || 'ninguno'})`
-                );
-            }
-        }
-
-        const handoff = {
-            id: nextHandoffId(handoffs.handoffs),
-            status: 'active',
-            from_task: fromTaskId,
-            to_task: toTaskId,
-            reason,
-            files,
-            approved_by: approvedBy,
-            created_at: isoNow(),
-            expires_at: plusHoursIso(ttlHours),
-        };
-
-        handoffs.handoffs.push(handoff);
-        writeFileSync(HANDOFFS_PATH, serializeHandoffs(handoffs), 'utf8');
-
-        const errors = getHandoffLintErrors();
-        if (errors.length > 0) {
-            throw new Error(
-                `Handoff creado pero invalido:\n- ${errors.join('\n- ')}`
-            );
-        }
-
-        if (wantsJson) {
-            console.log(
-                JSON.stringify(
-                    {
-                        version: 1,
-                        ok: true,
-                        action: 'create',
-                        handoff,
-                    },
-                    null,
-                    2
-                )
-            );
-            return;
-        }
-
-        console.log(`Handoff creado: ${handoff.id}`);
-        console.log(
-            `${handoff.from_task} -> ${handoff.to_task} :: ${handoff.files.join(', ')} (expira ${handoff.expires_at})`
-        );
-        return;
-    }
-
-    if (subcommand === 'close') {
-        const { positionals, flags } = parseFlags(args.slice(1));
-        const handoffId = String(positionals[0] || flags.id || '').trim();
-        const closeReason = String(flags.reason || 'closed_manual').trim();
-        if (!handoffId) {
-            throw new Error(
-                'Uso: node agent-orchestrator.js handoffs close <HO-001> [--reason motivo]'
-            );
-        }
-        const handoffs = parseHandoffs();
-        const handoff = handoffs.handoffs.find(
-            (item) => String(item.id) === handoffId
-        );
-        if (!handoff) {
-            throw new Error(`No existe handoff ${handoffId}`);
-        }
-        handoff.status = 'closed';
-        handoff.closed_at = isoNow();
-        handoff.close_reason = closeReason;
-        writeFileSync(HANDOFFS_PATH, serializeHandoffs(handoffs), 'utf8');
-        if (wantsJson) {
-            console.log(
-                JSON.stringify(
-                    {
-                        version: 1,
-                        ok: true,
-                        action: 'close',
-                        handoff,
-                    },
-                    null,
-                    2
-                )
-            );
-            return;
-        }
-        console.log(`Handoff cerrado: ${handoffId}`);
-        return;
-    }
-
-    throw new Error(
-        'Uso: node agent-orchestrator.js handoffs <status|lint|create|close>'
-    );
+    return handoffsCommandHandlers.handleHandoffsCommand({
+        args,
+        parseHandoffs,
+        isExpired,
+        attachDiagnostics,
+        buildWarnFirstDiagnostics,
+        getHandoffLintErrors,
+        parseFlags,
+        parseBoard,
+        parseCsvList,
+        ensureTask,
+        ACTIVE_STATUSES,
+        analyzeFileOverlap,
+        normalizePathToken,
+        nextHandoffId,
+        isoNow,
+        plusHoursIso,
+        HANDOFFS_PATH,
+        serializeHandoffs,
+        writeFileSync,
+    });
 }
 
 function buildCodexCheckReport() {
@@ -1991,116 +1357,31 @@ function buildCodexCheckReport() {
 }
 
 function cmdCodexCheck(args = []) {
-    const wantsJson = args.includes('--json');
-    const report = buildCodexCheckReport();
-    const reportWithDiagnostics = attachDiagnostics(
-        report,
-        buildWarnFirstDiagnostics({
-            source: 'codex-check',
-            board: parseBoard(),
-            handoffData: parseHandoffs(),
-        })
-    );
-
-    if (wantsJson) {
-        console.log(JSON.stringify(reportWithDiagnostics, null, 2));
-        if (!report.ok) {
-            process.exitCode = 1;
-        }
-        return reportWithDiagnostics;
-    }
-
-    if (!report.ok) {
-        throw new Error(
-            `Codex mirror invalido:\n- ${report.errors.join('\n- ')}`
-        );
-    }
-
-    console.log('OK: espejo Codex valido.');
-    return report;
+    return codexCommandHandlers.handleCodexCheckCommand({
+        args,
+        buildCodexCheckReport,
+        attachDiagnostics,
+        buildWarnFirstDiagnostics,
+        parseBoard,
+        parseHandoffs,
+    });
 }
 
 function cmdCodex(args) {
-    const subcommand = args[0];
-    const { positionals, flags } = parseFlags(args.slice(1));
-    const taskId = String(positionals[0] || flags.id || '').trim();
-    if (!subcommand || !['start', 'stop'].includes(subcommand)) {
-        throw new Error(
-            'Uso: node agent-orchestrator.js codex <start|stop> <CDX-001> [--block C1] [--to review|done|blocked]'
-        );
-    }
-    if (!taskId) {
-        throw new Error('Codex command requiere task_id (CDX-###)');
-    }
-    if (!/^CDX-\d+$/.test(taskId)) {
-        throw new Error(`task_id Codex invalido: ${taskId}`);
-    }
-
-    const board = parseBoard();
-    const task = ensureTask(board, taskId);
-    if (String(task.executor) !== 'codex') {
-        throw new Error(`Task ${taskId} no pertenece a executor codex`);
-    }
-
-    if (subcommand === 'start') {
-        const block = String(flags.block || 'C1').trim();
-        const filesOverride = flags.files ? parseCsvList(flags.files) : null;
-        const codexTasks = board.tasks.filter(
-            (item) =>
-                /^CDX-\d+$/.test(String(item.id || '')) &&
-                item.id !== taskId &&
-                item.status === 'in_progress'
-        );
-        if (codexTasks.length > 0) {
-            throw new Error(
-                `No se puede iniciar ${taskId}; ya hay CDX in_progress: ${codexTasks
-                    .map((item) => item.id)
-                    .join(', ')}`
-            );
-        }
-
-        if (filesOverride && filesOverride.length > 0) {
-            task.files = filesOverride;
-        }
-        task.status = 'in_progress';
-        task.updated_at = currentDate();
-        writeBoard(board);
-        writeCodexActiveBlock({
-            block,
-            task_id: taskId,
-            status: 'in_progress',
-            files: task.files || [],
-            updated_at: currentDate(),
-        });
-        cmdCodexCheck([]);
-        console.log(`Codex start OK: ${taskId} (${block})`);
-        return;
-    }
-
-    if (subcommand === 'stop') {
-        const nextStatus = String(flags.to || 'review').trim();
-        if (!ALLOWED_STATUSES.has(nextStatus)) {
-            throw new Error(`Status destino invalido: ${nextStatus}`);
-        }
-        task.status = nextStatus;
-        task.updated_at = currentDate();
-        writeBoard(board);
-
-        if (ACTIVE_STATUSES.has(nextStatus)) {
-            const existingBlock = parseCodexActiveBlocks()[0] || {};
-            writeCodexActiveBlock({
-                block: String(flags.block || existingBlock.block || 'C1'),
-                task_id: taskId,
-                status: nextStatus,
-                files: task.files || [],
-                updated_at: currentDate(),
-            });
-        } else {
-            writeCodexActiveBlock(null);
-        }
-        cmdCodexCheck([]);
-        console.log(`Codex stop OK: ${taskId} -> ${nextStatus}`);
-    }
+    return codexCommandHandlers.handleCodexCommand({
+        args,
+        parseFlags,
+        ensureTask,
+        parseBoard,
+        ACTIVE_STATUSES,
+        ALLOWED_STATUSES,
+        parseCsvList,
+        currentDate,
+        writeBoard,
+        writeCodexActiveBlock,
+        parseCodexActiveBlocks,
+        runCodexCheck: () => cmdCodexCheck([]),
+    });
 }
 
 async function cmdTask(args) {
@@ -2170,58 +1451,26 @@ function syncDerivedQueues(options = {}) {
 }
 
 function cmdSync() {
-    syncDerivedQueues({ silent: false });
+    syncCommandHandlers.handleSyncCommand({
+        syncDerivedQueues,
+    });
 }
 
 function cmdClose(args) {
-    const { positionals, flags } = parseFlags(args);
-    const wantsJson = args.includes('--json');
-    const taskId = String(positionals[0] || flags.id || '').trim();
-    if (!taskId) {
-        throw new Error(
-            'Uso: node agent-orchestrator.js close <task_id> [--evidence path] [--json]'
-        );
-    }
-
-    const evidencePath = resolveTaskEvidencePath(taskId, flags);
-
-    if (!existsSync(evidencePath)) {
-        throw new Error(`No existe evidencia requerida: ${evidencePath}`);
-    }
-
-    const board = parseBoard();
-    const task = board.tasks.find((item) => String(item.id) === String(taskId));
-    if (!task) {
-        throw new Error(`No existe task_id ${taskId} en AGENT_BOARD.yaml`);
-    }
-
-    task.status = 'done';
-    task.updated_at = currentDate();
-    task.acceptance_ref = toRelativeRepoPath(evidencePath);
-    board.policy.updated_at = currentDate();
-
-    writeFileSync(BOARD_PATH, serializeBoard(board), 'utf8');
-    syncDerivedQueues({ silent: wantsJson });
-
-    if (wantsJson) {
-        console.log(
-            JSON.stringify(
-                {
-                    version: 1,
-                    ok: true,
-                    command: 'close',
-                    action: 'close',
-                    task: toTaskJson(task),
-                    evidence_path: toRelativeRepoPath(evidencePath),
-                },
-                null,
-                2
-            )
-        );
-        return;
-    }
-
-    console.log(`Tarea cerrada: ${taskId}`);
+    closeCommandHandlers.handleCloseCommand({
+        args,
+        parseFlags,
+        resolveTaskEvidencePath,
+        existsSync,
+        parseBoard,
+        currentDate,
+        toRelativeRepoPath,
+        BOARD_PATH,
+        serializeBoard,
+        writeFileSync,
+        syncDerivedQueues,
+        toTaskJson,
+    });
 }
 
 async function main() {
