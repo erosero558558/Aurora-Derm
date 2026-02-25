@@ -230,11 +230,17 @@ function applyTaskLeaseLifecycle(task, prevTask, options = {}) {
     }
 
     if (terminalStatuses.has(status) && leasePolicy.auto_clear_on_terminal) {
-        const clearResult = clearTaskLease(task, {
-            nowIso,
-            reason: `terminal:${status}`,
-        });
-        leaseAction = clearResult.action;
+        const hadLease = Boolean(String(task.lease_id || '').trim());
+        const hasClearedMark = Boolean(
+            String(task.lease_cleared_at || '').trim()
+        );
+        if (statusChanged || hadLease || !hasClearedMark) {
+            const clearResult = clearTaskLease(task, {
+                nowIso,
+                reason: `terminal:${status}`,
+            });
+            leaseAction = clearResult.action;
+        }
     } else if (leasePolicy.tracked_statuses.includes(status)) {
         const missingLease = !String(task.lease_id || '').trim();
         if (statusChanged || forceRenew || missingLease) {
