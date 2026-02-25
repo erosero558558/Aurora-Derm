@@ -9,7 +9,10 @@ test.describe('Booking Engine Unit Tests', () => {
 
         // Read the engine script content
         const enginePath = path.resolve(__dirname, '../../src/apps/booking/engine.js');
-        const content = fs.readFileSync(enginePath, 'utf8');
+        let content = fs.readFileSync(enginePath, 'utf8');
+
+        // Expose api to window for testing purposes since it was removed from source
+        content = content.replace('export default api;', 'window.PielBookingEngine = api; export default api;');
 
         // Inject the engine script
         await page.addScriptTag({
