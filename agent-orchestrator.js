@@ -22,6 +22,12 @@
 const { readFileSync, writeFileSync, existsSync, mkdirSync } = require('fs');
 const readline = require('readline');
 const { resolve, dirname } = require('path');
+const coreFlags = require('./tools/agent-orchestrator/core/flags');
+const coreParsers = require('./tools/agent-orchestrator/core/parsers');
+const coreSerializers = require('./tools/agent-orchestrator/core/serializers');
+const corePolicy = require('./tools/agent-orchestrator/core/policy');
+const coreTime = require('./tools/agent-orchestrator/core/time');
+const coreOutput = require('./tools/agent-orchestrator/core/output');
 
 const ROOT = __dirname;
 const BOARD_PATH = resolve(ROOT, 'AGENT_BOARD.yaml');
@@ -67,7 +73,7 @@ const DEFAULT_GOVERNANCE_POLICY = {
         },
     },
 };
-let GOVERNANCE_POLICY_CACHE = null;
+const GOVERNANCE_POLICY_CACHE_REF = { current: null };
 
 const ALLOWED_STATUSES = new Set([
     'backlog',
@@ -119,507 +125,104 @@ const TASK_CREATE_TEMPLATES = {
 };
 
 function normalizeEol(value) {
-    return value.replace(/\r\n/g, '\n');
+    return coreParsers.normalizeEol(value);
 }
 
 function shallowMerge(target, source) {
-    const out = { ...(target || {}) };
-    for (const [key, value] of Object.entries(source || {})) {
-        const existing = out[key];
-        if (
-            value &&
-            typeof value === 'object' &&
-            !Array.isArray(value) &&
-            existing &&
-            typeof existing === 'object' &&
-            !Array.isArray(existing)
-        ) {
-            out[key] = shallowMerge(existing, value);
-        } else {
-            out[key] = value;
-        }
-    }
-    return out;
+    return corePolicy.shallowMerge(target, source);
 }
 
 function getGovernancePolicy() {
-    if (GOVERNANCE_POLICY_CACHE) return GOVERNANCE_POLICY_CACHE;
-    let loaded = null;
-    if (existsSync(GOVERNANCE_POLICY_PATH)) {
-        try {
-            loaded = JSON.parse(readFileSync(GOVERNANCE_POLICY_PATH, 'utf8'));
-        } catch {
-            loaded = null;
-        }
-    }
-    GOVERNANCE_POLICY_CACHE = shallowMerge(DEFAULT_GOVERNANCE_POLICY, loaded);
-    return GOVERNANCE_POLICY_CACHE;
+    return corePolicy.getGovernancePolicy({
+        cacheRef: GOVERNANCE_POLICY_CACHE_REF,
+        existsSync,
+        readFileSync,
+        policyPath: GOVERNANCE_POLICY_PATH,
+        defaultPolicy: DEFAULT_GOVERNANCE_POLICY,
+    });
 }
 
 function readGovernancePolicyStrict() {
-    if (!existsSync(GOVERNANCE_POLICY_PATH)) {
-        throw new Error(`No existe ${GOVERNANCE_POLICY_PATH}`);
-    }
-    return JSON.parse(readFileSync(GOVERNANCE_POLICY_PATH, 'utf8'));
+    return corePolicy.readGovernancePolicyStrict({
+        existsSync,
+        readFileSync,
+        policyPath: GOVERNANCE_POLICY_PATH,
+    });
 }
 
 function validateGovernancePolicy(rawPolicy) {
-    const errors = [];
-    const warnings = [];
-    const merged = shallowMerge(DEFAULT_GOVERNANCE_POLICY, rawPolicy || {});
-
-    const version = Number(merged?.version);
-    if (!Number.isFinite(version) || version !== 1) {
-        errors.push(
-            `version invalida (${merged?.version ?? 'vacio'}), esperado 1`
-        );
-    }
-
-    const priorityDomains = Array.isArray(
-        merged?.domain_health?.priority_domains
-    )
-        ? merged.domain_health.priority_domains.map((v) => String(v).trim())
-        : null;
-    if (!priorityDomains || priorityDomains.length === 0) {
-        errors.push('domain_health.priority_domains debe ser array no vacio');
-    } else {
-        const seen = new Set();
-        for (const domain of priorityDomains) {
-            if (!domain) {
-                errors.push(
-                    'domain_health.priority_domains contiene dominio vacio'
-                );
-                continue;
-            }
-            const key = domain.toLowerCase();
-            if (seen.has(key)) {
-                errors.push(
-                    `domain_health.priority_domains duplicado (${domain})`
-                );
-            }
-            seen.add(key);
-        }
-    }
-
-    const domainWeights = merged?.domain_health?.domain_weights;
-    if (
-        !domainWeights ||
-        typeof domainWeights !== 'object' ||
-        Array.isArray(domainWeights)
-    ) {
-        errors.push('domain_health.domain_weights debe ser objeto');
-    } else {
-        const defaultWeight = Number(domainWeights.default);
-        if (!Number.isFinite(defaultWeight) || defaultWeight <= 0) {
-            errors.push(
-                `domain_health.domain_weights.default invalido (${domainWeights.default ?? 'vacio'})`
-            );
-        }
-        for (const [key, rawValue] of Object.entries(domainWeights)) {
-            const weight = Number(rawValue);
-            if (!Number.isFinite(weight) || weight <= 0) {
-                errors.push(
-                    `domain_health.domain_weights.${key} invalido (${rawValue})`
-                );
-            }
-        }
-        for (const domain of priorityDomains || []) {
-            if (
-                !Object.prototype.hasOwnProperty.call(
-                    domainWeights,
-                    String(domain)
-                )
-            ) {
-                warnings.push(
-                    `domain_health.domain_weights sin peso explicito para ${domain} (usa default)`
-                );
-            }
-        }
-    }
-
-    const signalScores = merged?.domain_health?.signal_scores;
-    if (
-        !signalScores ||
-        typeof signalScores !== 'object' ||
-        Array.isArray(signalScores)
-    ) {
-        errors.push('domain_health.signal_scores debe ser objeto');
-    } else {
-        const green = Number(signalScores.GREEN);
-        const yellow = Number(signalScores.YELLOW);
-        const red = Number(signalScores.RED);
-        for (const [name, value] of [
-            ['GREEN', green],
-            ['YELLOW', yellow],
-            ['RED', red],
-        ]) {
-            if (!Number.isFinite(value)) {
-                errors.push(
-                    `domain_health.signal_scores.${name} invalido (${signalScores[name]})`
-                );
-            }
-        }
-        if (
-            Number.isFinite(green) &&
-            Number.isFinite(yellow) &&
-            Number.isFinite(red) &&
-            !(green >= yellow && yellow >= red)
-        ) {
-            errors.push(
-                'domain_health.signal_scores debe cumplir GREEN >= YELLOW >= RED'
-            );
-        }
-    }
-
-    const threshold = Number(
-        merged?.summary?.thresholds?.domain_score_priority_yellow_below
-    );
-    if (!Number.isFinite(threshold) || threshold < 0) {
-        errors.push(
-            `summary.thresholds.domain_score_priority_yellow_below invalido (${merged?.summary?.thresholds?.domain_score_priority_yellow_below ?? 'vacio'})`
-        );
-    }
-
-    return {
-        version: 1,
-        ok: errors.length === 0,
-        error_count: errors.length,
-        warning_count: warnings.length,
-        errors,
-        warnings,
-        effective: {
-            version,
-            domain_health: {
-                priority_domains: Array.isArray(priorityDomains)
-                    ? priorityDomains
-                    : [],
-                domain_weights:
-                    domainWeights &&
-                    typeof domainWeights === 'object' &&
-                    !Array.isArray(domainWeights)
-                        ? domainWeights
-                        : {},
-                signal_scores:
-                    signalScores &&
-                    typeof signalScores === 'object' &&
-                    !Array.isArray(signalScores)
-                        ? signalScores
-                        : {},
-            },
-            summary: {
-                thresholds: {
-                    domain_score_priority_yellow_below: Number.isFinite(
-                        threshold
-                    )
-                        ? threshold
-                        : null,
-                },
-            },
-        },
-        source: {
-            path: 'governance-policy.json',
-            exists: existsSync(GOVERNANCE_POLICY_PATH),
-        },
-    };
+    return corePolicy.validateGovernancePolicy(rawPolicy, {
+        defaultPolicy: DEFAULT_GOVERNANCE_POLICY,
+        policyPath: 'governance-policy.json',
+        policyExists: existsSync(GOVERNANCE_POLICY_PATH),
+    });
 }
 
 function unquote(value) {
-    const trimmed = value.trim();
-    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-        return trimmed.slice(1, -1).replace(/\\"/g, '"');
-    }
-    return trimmed;
+    return coreParsers.unquote(value);
 }
 
 function parseInlineArray(value) {
-    const trimmed = value.trim();
-    if (trimmed === '[]') return [];
-    if (!trimmed.startsWith('[') || !trimmed.endsWith(']')) {
-        return [unquote(trimmed)];
-    }
-
-    const body = trimmed.slice(1, -1).trim();
-    if (!body) return [];
-
-    return body
-        .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
-        .map((entry) => unquote(entry))
-        .map((entry) => entry.trim())
-        .filter(Boolean);
+    return coreParsers.parseInlineArray(value);
 }
 
 function parseScalar(value) {
-    const trimmed = value.trim();
-    if (!trimmed) return '';
-    if (trimmed === 'true') return true;
-    if (trimmed === 'false') return false;
-    if (trimmed === '[]') return [];
-    if (trimmed.startsWith('[') && trimmed.endsWith(']'))
-        return parseInlineArray(trimmed);
-    if (trimmed.startsWith('"') && trimmed.endsWith('"'))
-        return unquote(trimmed);
-    return trimmed;
+    return coreParsers.parseScalar(value);
 }
 
 function parseBoard() {
     if (!existsSync(BOARD_PATH)) {
         throw new Error(`No existe ${BOARD_PATH}`);
     }
-
-    const lines = normalizeEol(readFileSync(BOARD_PATH, 'utf8')).split('\n');
-    const board = {
-        version: 1,
-        policy: {},
-        tasks: [],
-    };
-
-    let inPolicy = false;
-    let inTasks = false;
-    let task = null;
-
-    for (const rawLine of lines) {
-        const line = rawLine.replace(/\t/g, '    ');
-        const trimmed = line.trim();
-
-        if (!trimmed || trimmed.startsWith('#')) continue;
-
-        if (trimmed === 'policy:') {
-            inPolicy = true;
-            inTasks = false;
-            continue;
-        }
-
-        if (trimmed === 'tasks:') {
-            inTasks = true;
-            inPolicy = false;
-            if (task) {
-                board.tasks.push(task);
-                task = null;
-            }
-            continue;
-        }
-
-        const versionMatch = line.match(/^version:\s*(.+)$/);
-        if (versionMatch && !inPolicy && !inTasks) {
-            board.version = parseScalar(versionMatch[1]);
-            continue;
-        }
-
-        if (inPolicy) {
-            const policyMatch = line.match(/^\s{2}([a-zA-Z_][\w-]*):\s*(.*)$/);
-            if (policyMatch) {
-                board.policy[policyMatch[1]] = parseScalar(policyMatch[2]);
-            }
-            continue;
-        }
-
-        if (inTasks) {
-            const taskStart = line.match(/^\s{2}-\s+id:\s*(.+)$/);
-            if (taskStart) {
-                if (task) board.tasks.push(task);
-                task = { id: parseScalar(taskStart[1]) };
-                continue;
-            }
-
-            const taskProp = line.match(/^\s{4}([a-zA-Z_][\w-]*):\s*(.*)$/);
-            if (task && taskProp) {
-                task[taskProp[1]] = parseScalar(taskProp[2]);
-            }
-        }
-    }
-
-    if (task) board.tasks.push(task);
-
-    for (const item of board.tasks) {
-        if (!Array.isArray(item.files))
-            item.files = item.files ? [String(item.files)] : [];
-        if (!Array.isArray(item.depends_on)) {
-            item.depends_on = item.depends_on ? [String(item.depends_on)] : [];
-        }
-        item.status = String(item.status || '').trim();
-        if (!ALLOWED_STATUSES.has(item.status)) {
-            throw new Error(
-                `Estado no permitido en ${item.id}: ${item.status}`
-            );
-        }
-    }
-
-    return board;
+    return coreParsers.parseBoardContent(readFileSync(BOARD_PATH, 'utf8'), {
+        allowedStatuses: ALLOWED_STATUSES,
+    });
 }
 
 function parseHandoffs() {
     if (!existsSync(HANDOFFS_PATH)) {
         return { version: 1, handoffs: [] };
     }
-
-    const lines = normalizeEol(readFileSync(HANDOFFS_PATH, 'utf8')).split('\n');
-    const data = {
-        version: 1,
-        handoffs: [],
-    };
-
-    let inHandoffs = false;
-    let handoff = null;
-
-    for (const rawLine of lines) {
-        const line = rawLine.replace(/\t/g, '    ');
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
-
-        const versionMatch = line.match(/^version:\s*(.+)$/);
-        if (versionMatch && !inHandoffs) {
-            data.version = parseScalar(versionMatch[1]);
-            continue;
-        }
-
-        if (trimmed === 'handoffs:') {
-            inHandoffs = true;
-            if (handoff) {
-                data.handoffs.push(handoff);
-                handoff = null;
-            }
-            continue;
-        }
-
-        if (!inHandoffs) continue;
-
-        const handoffStart = line.match(/^\s{2}-\s+id:\s*(.+)$/);
-        if (handoffStart) {
-            if (handoff) data.handoffs.push(handoff);
-            handoff = { id: parseScalar(handoffStart[1]) };
-            continue;
-        }
-
-        const prop = line.match(/^\s{4}([a-zA-Z_][\w-]*):\s*(.*)$/);
-        if (handoff && prop) {
-            handoff[prop[1]] = parseScalar(prop[2]);
-        }
-    }
-
-    if (handoff) data.handoffs.push(handoff);
-
-    for (const item of data.handoffs) {
-        if (!Array.isArray(item.files))
-            item.files = item.files ? [String(item.files)] : [];
-        item.status = String(item.status || '')
-            .trim()
-            .toLowerCase();
-    }
-
-    return data;
+    return coreParsers.parseHandoffsContent(
+        readFileSync(HANDOFFS_PATH, 'utf8')
+    );
 }
 
 function parseCodexActiveBlocks() {
     if (!existsSync(CODEX_PLAN_PATH)) {
         return [];
     }
-
-    const raw = normalizeEol(readFileSync(CODEX_PLAN_PATH, 'utf8'));
-    const regex = /<!--\s*CODEX_ACTIVE\s*\n([\s\S]*?)-->/g;
-    const blocks = [];
-    let match;
-
-    while ((match = regex.exec(raw)) !== null) {
-        const block = {};
-        for (const line of match[1].split('\n')) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            const prop = trimmed.match(/^([a-zA-Z_][\w-]*):\s*(.*)$/);
-            if (!prop) continue;
-            block[prop[1]] = parseScalar(prop[2]);
-        }
-        if (!Array.isArray(block.files)) {
-            block.files = block.files ? [String(block.files)] : [];
-        }
-        blocks.push(block);
-    }
-
-    return blocks;
+    return coreParsers.parseCodexActiveBlocksContent(
+        readFileSync(CODEX_PLAN_PATH, 'utf8')
+    );
 }
 
 function serializeHandoffs(data) {
-    const safe = data || { version: 1, handoffs: [] };
-    const lines = [];
-    lines.push(`version: ${safe.version || 1}`);
-    lines.push('handoffs:');
-
-    const handoffs = Array.isArray(safe.handoffs) ? safe.handoffs : [];
-    for (const handoff of handoffs) {
-        lines.push(`  - id: ${handoff.id}`);
-        lines.push(`    status: ${handoff.status || 'active'}`);
-        lines.push(`    from_task: ${handoff.from_task || ''}`);
-        lines.push(`    to_task: ${handoff.to_task || ''}`);
-        lines.push(`    reason: ${handoff.reason || ''}`);
-        lines.push(`    files: ${serializeArrayInline(handoff.files || [])}`);
-        lines.push(`    approved_by: ${handoff.approved_by || ''}`);
-        lines.push(`    created_at: ${handoff.created_at || ''}`);
-        lines.push(`    expires_at: ${handoff.expires_at || ''}`);
-        if (handoff.closed_at) {
-            lines.push(`    closed_at: ${handoff.closed_at}`);
-        }
-        if (handoff.close_reason) {
-            lines.push(`    close_reason: ${quote(handoff.close_reason)}`);
-        }
-    }
-
-    return `${lines.join('\n').trimEnd()}\n`;
+    return coreSerializers.serializeHandoffs(data);
 }
 
 function parseFlags(args) {
-    const positionals = [];
-    const flags = {};
-    for (let i = 0; i < args.length; i++) {
-        const arg = String(args[i]);
-        if (!arg.startsWith('--')) {
-            positionals.push(arg);
-            continue;
-        }
-        const key = arg.slice(2);
-        const next = args[i + 1];
-        if (next === undefined || String(next).startsWith('--')) {
-            flags[key] = true;
-            continue;
-        }
-        flags[key] = String(next);
-        i += 1;
-    }
-    return { positionals, flags };
+    return coreFlags.parseFlags(args);
 }
 
 function parseCsvList(value) {
-    if (!value) return [];
-    return String(value)
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
+    return coreFlags.parseCsvList(value);
 }
 
 function isTruthyFlagValue(value) {
-    if (value === true) return true;
-    const raw = String(value || '')
-        .trim()
-        .toLowerCase();
-    if (!raw) return false;
-    if (['1', 'true', 'yes', 'y', 'on'].includes(raw)) return true;
-    if (['0', 'false', 'no', 'n', 'off'].includes(raw)) return false;
-    return true;
+    return coreFlags.isTruthyFlagValue(value);
 }
 
 function isFlagEnabled(flags, ...keys) {
-    for (const key of keys) {
-        if (!Object.prototype.hasOwnProperty.call(flags || {}, key)) continue;
-        return isTruthyFlagValue(flags[key]);
-    }
-    return false;
+    return coreFlags.isFlagEnabled(flags, ...keys);
 }
 
 function isoNow() {
-    return new Date().toISOString();
+    return coreTime.isoNow();
 }
 
 function plusHoursIso(hours) {
-    const safeHours = Number.isFinite(Number(hours)) ? Number(hours) : 24;
-    return new Date(Date.now() + safeHours * 60 * 60 * 1000).toISOString();
+    return coreTime.plusHoursIso(hours);
 }
 
 function ensureTask(board, taskId) {
@@ -1275,52 +878,21 @@ function nextAgentTaskId(tasks) {
 }
 
 function quote(value) {
-    return `"${String(value).replace(/"/g, '\\"')}"`;
+    return coreSerializers.quote(value);
 }
 
 function serializeArrayInline(values) {
-    if (!Array.isArray(values) || values.length === 0) return '[]';
-    return `[${values.map((v) => quote(v)).join(', ')}]`;
+    return coreSerializers.serializeArrayInline(values);
 }
 
 function serializeBoard(board) {
-    const lines = [];
-    lines.push(`version: ${board.version}`);
-    lines.push('policy:');
-    lines.push(`  canonical: ${board.policy.canonical || 'AGENTS.md'}`);
-    lines.push(
-        `  autonomy: ${board.policy.autonomy || 'semi_autonomous_guardrails'}`
-    );
-    lines.push(`  kpi: ${board.policy.kpi || 'reduce_rework'}`);
-    lines.push(`  updated_at: ${board.policy.updated_at || currentDate()}`);
-    lines.push('');
-    lines.push('tasks:');
-
-    for (const task of board.tasks) {
-        lines.push(`  - id: ${task.id}`);
-        lines.push(`    title: ${quote(task.title || '')}`);
-        lines.push(`    owner: ${task.owner || 'unassigned'}`);
-        lines.push(`    executor: ${task.executor || 'codex'}`);
-        lines.push(`    status: ${task.status || 'backlog'}`);
-        lines.push(`    risk: ${task.risk || 'medium'}`);
-        lines.push(`    scope: ${task.scope || 'general'}`);
-        lines.push(`    files: ${serializeArrayInline(task.files || [])}`);
-        lines.push(`    acceptance: ${quote(task.acceptance || '')}`);
-        lines.push(`    acceptance_ref: ${quote(task.acceptance_ref || '')}`);
-        lines.push(
-            `    depends_on: ${serializeArrayInline(task.depends_on || [])}`
-        );
-        lines.push(`    prompt: ${quote(task.prompt || task.title || '')}`);
-        lines.push(`    created_at: ${task.created_at || currentDate()}`);
-        lines.push(`    updated_at: ${task.updated_at || currentDate()}`);
-        lines.push('');
-    }
-
-    return `${lines.join('\n').trimEnd()}\n`;
+    return coreSerializers.serializeBoard(board, {
+        currentDate,
+    });
 }
 
 function currentDate() {
-    return new Date().toISOString().slice(0, 10);
+    return coreTime.currentDate();
 }
 
 function getStatusCounts(tasks) {
@@ -2586,7 +2158,7 @@ function cmdStatus(args) {
     }
 
     if (wantsJson) {
-        console.log(JSON.stringify(data, null, 2));
+        coreOutput.printJson(data);
         return;
     }
 

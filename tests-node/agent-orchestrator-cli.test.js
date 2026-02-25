@@ -8,6 +8,7 @@ const {
     writeFileSync,
     readFileSync,
     copyFileSync,
+    cpSync,
     existsSync,
     rmSync,
 } = require('fs');
@@ -17,11 +18,15 @@ const { spawnSync } = require('child_process');
 
 const REPO_ROOT = resolve(__dirname, '..');
 const ORCHESTRATOR_SOURCE = join(REPO_ROOT, 'agent-orchestrator.js');
+const ORCHESTRATOR_TOOLS_DIR = join(REPO_ROOT, 'tools', 'agent-orchestrator');
 const DATE = '2026-02-24';
 
 function createFixtureDir() {
     const dir = mkdtempSync(join(tmpdir(), 'agent-orchestrator-test-'));
     copyFileSync(ORCHESTRATOR_SOURCE, join(dir, 'agent-orchestrator.js'));
+    cpSync(ORCHESTRATOR_TOOLS_DIR, join(dir, 'tools', 'agent-orchestrator'), {
+        recursive: true,
+    });
     return dir;
 }
 
