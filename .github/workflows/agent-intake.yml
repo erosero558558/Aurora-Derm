@@ -57,6 +57,9 @@ jobs:
             - name: Reconcile queue and merged PR evidence
               run: node agent-orchestrator.js reconcile --strict
 
+            - name: Legacy board drift auto-normalize (terminal tasks)
+              run: node bin/board-legacy-drift-guard.js --write --json
+
             - name: Governance validation
               run: php bin/validate-agent-governance.php
 

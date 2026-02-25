@@ -49,9 +49,10 @@ function writeFixtureFiles(dir, { board, handoffs, plan }) {
 }
 
 function runCli(dir, args, expectedStatus = 0) {
+    const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const result = spawnSync(
         process.execPath,
-        [join(dir, 'agent-orchestrator.js'), ...args],
+        [join(dir, 'agent-orchestrator.js'), ...finalArgs],
         {
             cwd: dir,
             encoding: 'utf8',
@@ -65,16 +66,17 @@ function runCli(dir, args, expectedStatus = 0) {
     assert.equal(
         result.status,
         expectedStatus,
-        `Unexpected exit for ${args.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+        `Unexpected exit for ${finalArgs.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
     );
 
     return result;
 }
 
 function runCliWithEnv(dir, args, envPatch, expectedStatus = 0) {
+    const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const result = spawnSync(
         process.execPath,
-        [join(dir, 'agent-orchestrator.js'), ...args],
+        [join(dir, 'agent-orchestrator.js'), ...finalArgs],
         {
             cwd: dir,
             encoding: 'utf8',
@@ -89,7 +91,7 @@ function runCliWithEnv(dir, args, envPatch, expectedStatus = 0) {
     assert.equal(
         result.status,
         expectedStatus,
-        `Unexpected exit for ${args.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+        `Unexpected exit for ${finalArgs.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
     );
 
     return result;
@@ -102,9 +104,10 @@ function runCliWithInput(
     expectedStatus = 0,
     envPatch = null
 ) {
+    const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const result = spawnSync(
         process.execPath,
-        [join(dir, 'agent-orchestrator.js'), ...args],
+        [join(dir, 'agent-orchestrator.js'), ...finalArgs],
         {
             cwd: dir,
             encoding: 'utf8',
@@ -120,10 +123,59 @@ function runCliWithInput(
     assert.equal(
         result.status,
         expectedStatus,
-        `Unexpected exit for ${args.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+        `Unexpected exit for ${finalArgs.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
     );
 
     return result;
+}
+
+function readBoardRevisionFromFixture(dir) {
+    const boardPath = join(dir, 'AGENT_BOARD.yaml');
+    if (!existsSync(boardPath)) return 0;
+    const raw = readFileSync(boardPath, 'utf8');
+    const match = raw.match(/^\s*revision:\s*(\d+)\s*$/m);
+    if (!match) return 0;
+    const parsed = Number(match[1]);
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function isMutatingCommandArgs(args = []) {
+    const command = String(args[0] || '')
+        .trim()
+        .toLowerCase();
+    const subcommand = String(args[1] || '')
+        .trim()
+        .toLowerCase();
+
+    if (command === 'close') return true;
+    if (command === 'codex') {
+        return ['start', 'stop'].includes(subcommand);
+    }
+    if (command === 'leases') {
+        return ['heartbeat', 'clear'].includes(subcommand);
+    }
+    if (command === 'handoffs') {
+        return ['create', 'close'].includes(subcommand);
+    }
+    if (command === 'task') {
+        if (['claim', 'start', 'finish'].includes(subcommand)) return true;
+        if (subcommand !== 'create') return false;
+        if (args.includes('--preview') || args.includes('--dry-run')) {
+            return false;
+        }
+        if (args.includes('--validate-only')) return false;
+        return true;
+    }
+    return false;
+}
+
+function withExpectedRevisionArgIfNeeded(dir, args = []) {
+    const hasExplicitExpectRev =
+        args.includes('--expect-rev') || args.includes('--expect_rev');
+    if (hasExplicitExpectRev) return args;
+    if (!isMutatingCommandArgs(args)) return args;
+    const revision = readBoardRevisionFromFixture(dir);
+    return [...args, '--expect-rev', String(revision)];
 }
 
 function parseJsonStdout(result) {

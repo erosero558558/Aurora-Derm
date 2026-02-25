@@ -195,6 +195,7 @@ async function handleTaskCommand(ctx) {
             attachDiagnostics,
             buildBoardWipLimitDiagnostics,
             getLastBoardWriteMeta,
+            parseExpectedBoardRevisionFlag,
             printJson,
         });
         return;
@@ -395,11 +396,21 @@ function getTaskWriteLeaseMeta(getLastBoardWriteMeta, taskId) {
 
 function parseExpectedRevisionFromFlags(
     flags = {},
-    parseExpectedBoardRevisionFlag
+    parseExpectedBoardRevisionFlag,
+    options = {}
 ) {
+    const { required = false, commandLabel = 'comando mutante' } = options;
     if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
     const parsed = parseExpectedBoardRevisionFlag(flags);
     if (parsed instanceof Error) throw parsed;
+    if (required && (parsed === null || parsed === undefined)) {
+        const error = new Error(
+            `${commandLabel} requiere --expect-rev para evitar carreras de AGENT_BOARD.yaml`
+        );
+        error.code = 'expect_rev_required';
+        error.error_code = 'expect_rev_required';
+        throw error;
+    }
     return parsed;
 }
 
@@ -586,7 +597,8 @@ function handleTaskClaim(ctx) {
     task.updated_at = currentDate();
     const expectRevision = parseExpectedRevisionFromFlags(
         flags,
-        parseExpectedBoardRevisionFlag
+        parseExpectedBoardRevisionFlag,
+        { required: true, commandLabel: 'task claim' }
     );
     try {
         writeBoardAndSync(board, {
@@ -728,7 +740,8 @@ function handleTaskStart(ctx) {
 
     const expectRevision = parseExpectedRevisionFromFlags(
         flags,
-        parseExpectedBoardRevisionFlag
+        parseExpectedBoardRevisionFlag,
+        { required: true, commandLabel: 'task start' }
     );
     try {
         writeBoardAndSync(board, {
@@ -820,7 +833,8 @@ function handleTaskFinish(ctx) {
     task.updated_at = currentDate();
     const expectRevision = parseExpectedRevisionFromFlags(
         flags,
-        parseExpectedBoardRevisionFlag
+        parseExpectedBoardRevisionFlag,
+        { required: true, commandLabel: 'task finish' }
     );
     try {
         writeBoardAndSync(board, {
@@ -1297,7 +1311,8 @@ async function handleTaskCreate(ctx) {
 
         const expectRevision = parseExpectedRevisionFromFlags(
             flags,
-            parseExpectedBoardRevisionFlag
+            parseExpectedBoardRevisionFlag,
+            { required: true, commandLabel: 'task create --apply' }
         );
         try {
             writeBoardAndSync(board, {
@@ -1695,7 +1710,8 @@ async function handleTaskCreate(ctx) {
     if (!previewMode && !validateOnly) {
         const expectRevision = parseExpectedRevisionFromFlags(
             flags,
-            parseExpectedBoardRevisionFlag
+            parseExpectedBoardRevisionFlag,
+            { required: true, commandLabel: 'task create' }
         );
         try {
             writeBoardAndSync(board, {

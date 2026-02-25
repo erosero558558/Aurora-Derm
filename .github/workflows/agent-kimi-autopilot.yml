@@ -33,6 +33,7 @@ jobs:
                   node agent-orchestrator.js intake
                   node agent-orchestrator.js score
                   node agent-orchestrator.js sync
+                  node bin/board-legacy-drift-guard.js --write --json
                   node agent-orchestrator.js stale --strict
                   node agent-orchestrator.js conflicts --strict
                   node agent-orchestrator.js budget --strict --agent kimi

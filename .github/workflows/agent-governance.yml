@@ -22,6 +22,45 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
+            - name: Guard AGENT_BOARD direct push without PR
+              if: ${{ github.event_name == 'push' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const before = context.payload.before;
+                      const after = context.sha;
+                      if (!before || before === '0000000000000000000000000000000000000000') {
+                        core.info('Push inicial sin base comparable; se omite guard de direct push para AGENT_BOARD.yaml.');
+                        return;
+                      }
+
+                      const compare = await github.rest.repos.compareCommits({
+                        owner,
+                        repo,
+                        base: before,
+                        head: after,
+                      });
+                      const files = Array.isArray(compare.data.files) ? compare.data.files : [];
+                      const boardTouched = files.some((f) => f.filename === 'AGENT_BOARD.yaml');
+                      if (!boardTouched) {
+                        core.info('AGENT_BOARD.yaml no cambio en este push.');
+                        return;
+                      }
+
+                      const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                        owner,
+                        repo,
+                        commit_sha: after,
+                      });
+                      const linked = Array.isArray(prs.data) ? prs.data : [];
+                      if (linked.length === 0) {
+                        core.setFailed('AGENT_BOARD.yaml cambio por push directo sin PR asociado. Usa flujo por Pull Request.');
+                        return;
+                      }
+                      core.info(`AGENT_BOARD.yaml cambio con PR asociado (#${linked[0].number}).`);
+
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
@@ -30,6 +69,9 @@ jobs:
 
             - name: Install dependencies
               run: npm ci
+
+            - name: Legacy board drift guard (check)
+              run: node bin/board-legacy-drift-guard.js --check --json
 
             - name: Dual Codex check (JSON)
               run: node agent-orchestrator.js codex-check --json

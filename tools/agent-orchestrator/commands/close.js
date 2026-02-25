@@ -2,11 +2,21 @@
 
 function parseExpectedRevisionFromFlags(
     flags = {},
-    parseExpectedBoardRevisionFlag
+    parseExpectedBoardRevisionFlag,
+    options = {}
 ) {
+    const { required = false, commandLabel = 'comando mutante' } = options;
     if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
     const parsed = parseExpectedBoardRevisionFlag(flags);
     if (parsed instanceof Error) throw parsed;
+    if (required && (parsed === null || parsed === undefined)) {
+        const error = new Error(
+            `${commandLabel} requiere --expect-rev para evitar carreras de AGENT_BOARD.yaml`
+        );
+        error.code = 'expect_rev_required';
+        error.error_code = 'expect_rev_required';
+        throw error;
+    }
     return parsed;
 }
 
@@ -94,7 +104,8 @@ function handleCloseCommand(ctx) {
     if (typeof writeBoardAndSync === 'function') {
         const expectRevision = parseExpectedRevisionFromFlags(
             flags,
-            parseExpectedBoardRevisionFlag
+            parseExpectedBoardRevisionFlag,
+            { required: true, commandLabel: 'close' }
         );
         try {
             writeBoardAndSync(board, {

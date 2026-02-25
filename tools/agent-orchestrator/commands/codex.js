@@ -2,11 +2,21 @@
 
 function parseExpectedRevisionFromFlags(
     flags = {},
-    parseExpectedBoardRevisionFlag
+    parseExpectedBoardRevisionFlag,
+    options = {}
 ) {
+    const { required = false, commandLabel = 'comando mutante' } = options;
     if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
     const parsed = parseExpectedBoardRevisionFlag(flags);
     if (parsed instanceof Error) throw parsed;
+    if (required && (parsed === null || parsed === undefined)) {
+        const error = new Error(
+            `${commandLabel} requiere --expect-rev para evitar carreras de AGENT_BOARD.yaml`
+        );
+        error.code = 'expect_rev_required';
+        error.error_code = 'expect_rev_required';
+        throw error;
+    }
     return parsed;
 }
 
@@ -91,7 +101,8 @@ function handleCodexCommand(ctx) {
         const filesOverride = flags.files ? parseCsvList(flags.files) : null;
         const expectRevision = parseExpectedRevisionFromFlags(
             flags,
-            parseExpectedBoardRevisionFlag
+            parseExpectedBoardRevisionFlag,
+            { required: true, commandLabel: 'codex start' }
         );
         const taskInstance = String(task.codex_instance || 'codex_backend_ops')
             .trim()
@@ -157,7 +168,8 @@ function handleCodexCommand(ctx) {
     const nextStatus = String(flags.to || 'review').trim();
     const expectRevision = parseExpectedRevisionFromFlags(
         flags,
-        parseExpectedBoardRevisionFlag
+        parseExpectedBoardRevisionFlag,
+        { required: true, commandLabel: 'codex stop' }
     );
     if (!ALLOWED_STATUSES.has(nextStatus)) {
         throw new Error(`Status destino invalido: ${nextStatus}`);

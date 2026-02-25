@@ -227,6 +227,8 @@ npm run agent:policy:lint
 npm run agent:metrics:baseline -- show --json
 npm run agent:leases
 npm run agent:board:doctor
+npm run agent:board:legacy:check
+npm run agent:board:legacy:normalize
 npm run agent:gate
 ```
 
@@ -242,6 +244,12 @@ Flujo recomendado:
 4. Ejecutar `node agent-orchestrator.js sync`.
 5. Ejecutar validaciones del cambio (`npm run lint`, tests aplicables).
 6. Confirmar evidencia y cerrar (`close`, `codex stop`, `handoffs close`) cuando aplique.
+
+Candado de concurrencia:
+
+- Toda mutacion de board/handoffs por CLI requiere `--expect-rev <n>` (claim/start/create/apply/finish/close/codex start-stop/leases/handoffs create-close).
+- Si no se envia `--expect-rev`, el comando debe fallar con `error_code=expect_rev_required`.
+- Obtener revision actual desde `AGENT_BOARD.yaml.policy.revision` o `node agent-orchestrator.js status --json`.
 
 Runbook operativo dual Codex:
 
@@ -324,5 +332,7 @@ CI valida automaticamente:
 - Asignacion de tareas criticas a ejecutor permitido.
 - Solape de archivos entre tareas activas.
 - Integridad del espejo Codex (`PLAN_MAESTRO_CODEX_2026.md` <-> `AGENT_BOARD.yaml`).
+- Push directo a `main/staging` con cambio en `AGENT_BOARD.yaml` sin PR asociado (bloqueante).
+- Drift legacy de dual-lane en `AGENT_BOARD.yaml` (detector/normalizador en gobernanza).
 
 Si falla la gobernanza, el pipeline debe bloquear merge.
