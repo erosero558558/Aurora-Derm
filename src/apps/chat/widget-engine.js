@@ -6,6 +6,8 @@
 
 let deps = null;
 let chatStartedTracked = false;
+let viewportListenersBound = false;
+const MOBILE_CHAT_BREAKPOINT = 900;
 
 const QUICK_MESSAGES = {
     services: 'Que servicios ofrecen?',
@@ -19,6 +21,8 @@ const QUICK_MESSAGES = {
 
 function init(inputDeps) {
     deps = inputDeps || {};
+    bindViewportListenersOnce();
+    syncChatViewportLayout();
     return window.Piel && window.Piel.ChatWidgetEngine;
 }
 
@@ -103,6 +107,78 @@ function startChatBookingSafe() {
     }
 }
 
+function isMobileViewport() {
+    if (typeof window.matchMedia === 'function') {
+        return window.matchMedia(
+            `(max-width: ${MOBILE_CHAT_BREAKPOINT}px)`
+        ).matches;
+    }
+    return window.innerWidth <= MOBILE_CHAT_BREAKPOINT;
+}
+
+function getVisibleHeaderBottom() {
+    let maxBottom = 0;
+    const selectors = ['.language-bar', '.nav'];
+
+    selectors.forEach((selector) => {
+        const el = document.querySelector(selector);
+        if (!el) {
+            return;
+        }
+        const rect = el.getBoundingClientRect();
+        if (!Number.isFinite(rect.bottom)) {
+            return;
+        }
+        maxBottom = Math.max(maxBottom, rect.bottom);
+    });
+
+    return Math.ceil(Math.max(maxBottom, 96));
+}
+
+function syncChatViewportLayout() {
+    const root = document.documentElement;
+    const body = document.body;
+    if (!root || !body) {
+        return;
+    }
+
+    if (isMobileViewport()) {
+        root.style.setProperty(
+            '--chat-mobile-top-offset',
+            `${getVisibleHeaderBottom() + 10}px`
+        );
+    } else {
+        root.style.removeProperty('--chat-mobile-top-offset');
+    }
+
+    body.classList.toggle(
+        'chatbot-mobile-open',
+        isMobileViewport() && getChatbotOpen()
+    );
+}
+
+function bindViewportListenersOnce() {
+    if (viewportListenersBound) {
+        return;
+    }
+    viewportListenersBound = true;
+
+    const onViewportChange = () => {
+        syncChatViewportLayout();
+    };
+
+    window.addEventListener('resize', onViewportChange, { passive: true });
+    window.addEventListener('orientationchange', onViewportChange, {
+        passive: true,
+    });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onViewportChange, {
+            passive: true,
+        });
+    }
+}
+
 function shouldUseRealAI() {
     if (localStorage.getItem('forceAI') === 'true') {
         return true;
@@ -170,9 +246,11 @@ function toggleChatbot() {
 
     if (!nextOpen) {
         container.classList.remove('active');
+        syncChatViewportLayout();
         return;
     }
 
+    syncChatViewportLayout();
     container.classList.add('active');
     hideTeaser();
 
@@ -204,6 +282,7 @@ function minimizeChatbot() {
         container.classList.remove('active');
     }
     setChatbotOpen(false);
+    syncChatViewportLayout();
 }
 
 function handleChatKeypress(event) {

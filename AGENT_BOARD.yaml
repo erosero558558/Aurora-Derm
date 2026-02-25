@@ -145,12 +145,12 @@ tasks:
     title: "Mobile UX phase 4: fix chat/header overlap and spacing consistency"
     owner: ernes
     executor: kimi
-    status: ready
+    status: done
     risk: medium
     scope: mobile-ux
     files: ["index.html", "styles-deferred.css", "src/apps/chat/ui-engine.js", "src/apps/chat/widget-engine.js"]
     acceptance: "Layout movil usable en 360x800/390x844/412x915 sin solapes de chat, header ni CTA dock."
-    acceptance_ref: "FINAL_ANALYSIS_REPORT.md"
+    acceptance_ref: "verification/agent-runs/AG-009.md"
     depends_on: []
     prompt: "Corregir solapes y espaciado en mobile-first sin romper desktop."
     created_at: 2026-02-25

@@ -90,12 +90,12 @@ Smoke test: no hagas cambios de codigo. Solo confirma ejecucion y finaliza sin m
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: done
 task_id: AG-009
 risk: medium
 scope: mobile-ux
 files: index.html,styles-deferred.css,src/apps/chat/ui-engine.js,src/apps/chat/widget-engine.js
-acceptance_ref: FINAL_ANALYSIS_REPORT.md
+acceptance_ref: verification/agent-runs/AG-009.md
 dispatched_by: agent-orchestrator
 -->
 ### Mobile UX phase 4: fix chat/header overlap and spacing consistency

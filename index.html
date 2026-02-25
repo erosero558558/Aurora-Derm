@@ -1863,6 +1863,40 @@
                     animation: none !important;
                 }
             }
+            @media (max-width: 900px) {
+                :root {
+                    --chat-mobile-top-offset: 112px;
+                }
+                body.chatbot-mobile-open {
+                    overflow: hidden;
+                }
+                body.chatbot-mobile-open .quick-dock,
+                body.chatbot-mobile-open .cookie-banner {
+                    opacity: 0;
+                    pointer-events: none;
+                    transform: translateY(10px);
+                }
+                body.chatbot-mobile-open .chatbot-container,
+                body.chatbot-mobile-open #chatbotContainer,
+                body.chatbot-mobile-open #chatbotContainer.active {
+                    left: 8px !important;
+                    right: 8px !important;
+                    top: var(--chat-mobile-top-offset) !important;
+                    bottom: calc(8px + var(--safe-bottom)) !important;
+                    height: auto !important;
+                    max-height: none !important;
+                    width: auto !important;
+                    border-radius: 18px !important;
+                    animation: none !important;
+                }
+            }
+            @media (max-width: 640px) {
+                body.chatbot-mobile-open .chatbot-container,
+                body.chatbot-mobile-open #chatbotContainer,
+                body.chatbot-mobile-open #chatbotContainer.active {
+                    border-radius: 16px !important;
+                }
+            }
         </style>
         <link
             rel="preload"
