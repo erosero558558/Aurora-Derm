@@ -32,6 +32,8 @@ class ReviewController
         $store = $context['store'];
         require_rate_limit('reviews', 3, 60);
         $payload = require_json_body();
+        // Security: ensure we generate a new ID for new reviews
+        unset($payload['id']);
         $review = normalize_review($payload);
         if ($review['name'] === '' || $review['text'] === '') {
             json_response([
