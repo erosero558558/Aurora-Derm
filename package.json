@@ -17,7 +17,7 @@
         "test:php": "php tests/run-php-tests.php",
         "lint": "npm run lint:js && npm run lint:php",
         "lint:js": "eslint .",
-        "lint:php": "find . -name '*.php' -not -path './vendor/*' -exec php -l {} \\;",
+        "lint:php": "node bin/lint-php-syntax.js",
         "build": "rollup -c && npm run build:html",
         "build:html": "node bin/build-html.js templates/index.template.html index.html && node bin/build-html.js templates/telemedicina.template.html telemedicina.html",
         "bundle:deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File ./PREPARAR-PAQUETE-DESPLIEGUE.ps1 -IncludeTooling",
