@@ -3,7 +3,7 @@ policy:
   canonical: AGENTS.md
   autonomy: semi_autonomous_guardrails
   kpi: reduce_rework
-  revision: 34
+  revision: 37
   updated_at: 2026-02-25
 
 tasks:
@@ -1160,5 +1160,39 @@ tasks:
     evidence_ref: "signal_resolved:auto"
     depends_on: []
     prompt: "Reduce post-deploy gate false failures from transient network delays"
+    created_at: 2026-02-25
+    updated_at: 2026-02-25
+
+  - id: AG-034
+    title: "Record Fase 6 weekly KPI hardening evidence in board"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-25T17:52:22.997Z"
+    risk: low
+    scope: docs
+    files: ["AGENT_BOARD.yaml", "verification/agent-runs/AG-034.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-25T17:52:22.997Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Record Fase 6 weekly KPI hardening evidence in board"
+    acceptance_ref: "verification/agent-runs/AG-034.md"
+    evidence_ref: "verification/agent-runs/AG-034.md"
+    depends_on: []
+    prompt: "Record Fase 6 weekly KPI hardening evidence in board"
     created_at: 2026-02-25
     updated_at: 2026-02-25
