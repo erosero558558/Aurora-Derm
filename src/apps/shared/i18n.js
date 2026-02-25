@@ -21,6 +21,15 @@ function init(inputDeps) {
     return window.PielI18nEngine;
 }
 
+function t(key, defaultVal) {
+    const lang = document.documentElement.lang || 'es';
+    const langPack = translations[lang] || translations.es || {};
+    if (Object.prototype.hasOwnProperty.call(langPack, key)) {
+        return langPack[key];
+    }
+    return defaultVal !== undefined ? defaultVal : key;
+}
+
 function debugLogSafe() {
     if (deps && typeof deps.debugLog === 'function') {
         deps.debugLog.apply(null, arguments);
@@ -143,5 +152,6 @@ async function changeLanguage(lang) {
 window.PielI18nEngine = {
     init,
     ensureEnglishTranslations,
-    changeLanguage
+    changeLanguage,
+    t
 };

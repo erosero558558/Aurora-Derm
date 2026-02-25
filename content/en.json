@@ -249,5 +249,22 @@
     "payment_card_help": "Your card data is encrypted and processed securely with Stripe.",
     "label_transfer_proof": "Receipt (JPG, PNG, WEBP or PDF)",
     "payment_transfer_eta": "We validate bank transfers during business hours and confirm by WhatsApp.",
-    "payment_policy_link": "View cancellation, refund and rescheduling policy"
+    "payment_policy_link": "View cancellation, refund and rescheduling policy",
+    "booking_error_technical": "There was a temporary technical problem registering the appointment. Please try again.",
+    "payment_error_unavailable": "Card payment temporarily unavailable",
+    "payment_error_init_form": "Could not initialize the card form",
+    "payment_error_card_unavailable": "Card payment not available at this moment.",
+    "payment_error_card_name_required": "Enter the cardholder's name.",
+    "payment_error_init_charge": "Could not start card payment.",
+    "payment_error_complete": "Could not complete card payment.",
+    "payment_error_unconfirmed": "The payment was not confirmed by the gateway.",
+    "payment_error_verify": "We could not verify the payment. Please try again.",
+    "payment_error_transfer_ref_required": "Enter the transfer reference number.",
+    "payment_error_transfer_proof_required": "Attach the transfer receipt.",
+    "payment_error_transfer_proof_size": "The receipt exceeds the 5 MB limit.",
+    "booking_error_form_incomplete": "Please complete the appointment form first.",
+    "payment_success_card": "Payment approved and appointment registered.",
+    "payment_success_cash": "Appointment registered successfully.",
+    "payment_error_slot_taken": "The payment was approved, but the slot has just been taken. Write to us on WhatsApp to resolve it immediately: 098 245 3672.",
+    "payment_error_card_load_failed": "Could not load the card form"
 }

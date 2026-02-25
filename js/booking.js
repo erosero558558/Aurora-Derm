@@ -1,4 +1,5 @@
 import { withDeployAssetVersion, showToast, debugLog } from './utils.js';
+import { t } from './i18n.js';
 import {
     loadDeferredModule,
     runDeferredModule,
@@ -158,6 +159,7 @@ function getBookingEngineDeps() {
         debugLog,
         trackEvent,
         normalizeAnalyticsLabel,
+        t,
     };
 }
 

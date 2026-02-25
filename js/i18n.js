@@ -75,3 +75,11 @@ export async function changeLanguage(lang) {
         engine.changeLanguage(lang)
     );
 }
+
+export function t(key, defaultVal) {
+    const engine = (window.Piel && window.Piel.I18nEngine) || window.PielI18nEngine;
+    if (engine && typeof engine.t === 'function') {
+        return engine.t(key, defaultVal);
+    }
+    return defaultVal !== undefined ? defaultVal : key;
+}

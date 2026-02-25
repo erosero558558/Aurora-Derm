@@ -25,7 +25,8 @@ test.describe('Booking Engine Unit Tests', () => {
         const result = await page.evaluate(() => {
             const deps = {
                 loadPaymentConfig: () => Promise.resolve({ enabled: true }),
-                getCurrentLang: () => 'es'
+                getCurrentLang: () => 'es',
+                t: (key, def) => def // Mock translation
             };
             return window.PielBookingEngine.init(deps);
         });
@@ -47,7 +48,8 @@ test.describe('Booking Engine Unit Tests', () => {
                 // Mock createPaymentIntent to throw a technical error
                 createPaymentIntent: () => { throw new Error('Fatal error: Call to undefined function on line 20'); },
                 buildAppointmentPayload: () => ({}),
-                stripTransientAppointmentFields: () => ({})
+                stripTransientAppointmentFields: () => ({}),
+                t: (key, def) => def // Mock translation
             };
 
             // Mock Stripe global

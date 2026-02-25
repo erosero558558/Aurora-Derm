@@ -249,5 +249,22 @@
     "review_2": "\"La videollamada por WhatsApp fue súper fácil. No tuve que instalar nada nuevo. El doctor fue muy paciente y explicó todo en detalle.\"",
     "review_3": "\"Solicité una llamada de regreso y el doctor me contactó en 10 minutos. Excelente servicio. Mi acné ha mejorado notablemente.\"",
     "label_expiry": "Vencimiento",
-    "label_cvv": "CVV"
+    "label_cvv": "CVV",
+    "booking_error_technical": "Hubo un problema tecnico temporal al registrar la cita. Intenta nuevamente.",
+    "payment_error_unavailable": "Pago con tarjeta temporalmente no disponible",
+    "payment_error_init_form": "No se pudo inicializar el formulario de tarjeta",
+    "payment_error_card_unavailable": "Pago con tarjeta no disponible en este momento.",
+    "payment_error_card_name_required": "Ingresa el nombre del titular de la tarjeta.",
+    "payment_error_init_charge": "No se pudo iniciar el cobro con tarjeta.",
+    "payment_error_complete": "No se pudo completar el pago con tarjeta.",
+    "payment_error_unconfirmed": "El pago no fue confirmado por la pasarela.",
+    "payment_error_verify": "No pudimos verificar el pago. Intenta nuevamente.",
+    "payment_error_transfer_ref_required": "Ingresa el numero de referencia de la transferencia.",
+    "payment_error_transfer_proof_required": "Adjunta el comprobante de transferencia.",
+    "payment_error_transfer_proof_size": "El comprobante supera el limite de 5 MB.",
+    "booking_error_form_incomplete": "Primero completa el formulario de cita.",
+    "payment_success_card": "Pago aprobado y cita registrada.",
+    "payment_success_cash": "Cita registrada correctamente.",
+    "payment_error_slot_taken": "El pago fue aprobado, pero el horario acaba de ocuparse. Escribenos por WhatsApp para resolverlo de inmediato: 098 245 3672.",
+    "payment_error_card_load_failed": "No se pudo cargar el formulario de tarjeta"
 }
