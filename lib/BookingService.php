@@ -137,12 +137,12 @@ class BookingService
                 }
             }
 
-            if (!function_exists('payment_gateway_enabled') || !payment_gateway_enabled()) {
+            if (!$this->isPaymentGatewayEnabled()) {
                 return ['ok' => false, 'error' => 'La pasarela de pago no esta disponible', 'code' => 503];
             }
 
             try {
-                $intent = stripe_get_payment_intent($paymentIntentId);
+                $intent = $this->getPaymentIntent($paymentIntentId);
             } catch (RuntimeException $e) {
                 return ['ok' => false, 'error' => 'No se pudo validar el pago en este momento', 'code' => 502];
             }
@@ -381,7 +381,7 @@ class BookingService
     {
         $intentStatus = (string) ($intent['status'] ?? '');
         $tenantId = (string) ($appointment['tenantId'] ?? get_current_tenant_id());
-        $expectedAmount = payment_expected_amount_cents(
+        $expectedAmount = $this->getPaymentExpectedAmount(
             (string) ($appointment['service'] ?? ''),
             (string) ($appointment['date'] ?? ''),
             (string) ($appointment['time'] ?? ''),
@@ -389,8 +389,8 @@ class BookingService
         );
         $intentAmount = isset($intent['amount']) ? (int) $intent['amount'] : 0;
         $amountReceived = isset($intent['amount_received']) ? (int) $intent['amount_received'] : 0;
-        $intentCurrency = strtoupper((string) ($intent['currency'] ?? payment_currency()));
-        $expectedCurrency = strtoupper(payment_currency());
+        $intentCurrency = strtoupper((string) ($intent['currency'] ?? $this->getPaymentCurrency()));
+        $expectedCurrency = strtoupper($this->getPaymentCurrency());
         $intentMetadata = isset($intent['metadata']) && is_array($intent['metadata']) ? $intent['metadata'] : [];
         $metadataSite = trim((string) ($intentMetadata['site'] ?? ''));
         $metadataService = trim((string) ($intentMetadata['service'] ?? ''));
@@ -458,5 +458,26 @@ class BookingService
         $result = array_keys($normalized);
         sort($result, SORT_STRING);
         return $result;
+    }
+
+    // Protected wrappers for mocking in tests
+    protected function isPaymentGatewayEnabled(): bool
+    {
+        return function_exists('payment_gateway_enabled') && payment_gateway_enabled();
+    }
+
+    protected function getPaymentIntent(string $id): array
+    {
+        return stripe_get_payment_intent($id);
+    }
+
+    protected function getPaymentExpectedAmount(string $service, ?string $date, ?string $time, string $tenantId): int
+    {
+        return payment_expected_amount_cents($service, $date, $time, $tenantId);
+    }
+
+    protected function getPaymentCurrency(): string
+    {
+        return payment_currency();
     }
 }
