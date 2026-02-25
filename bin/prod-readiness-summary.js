@@ -1056,6 +1056,204 @@ function computePlanMasterProgress({
     };
 }
 
+function computeSuggestedActions({
+    workflows,
+    openProdAlerts,
+    weeklyLocalReport,
+    weeklyKpiHistory,
+    planMasterProgress,
+    productionStability,
+}) {
+    const actions = [];
+    const workflowLabels = {
+        ci: 'CI',
+        postDeployGate: 'Post-Deploy Gate',
+        deployHosting: 'Deploy Hosting',
+    };
+    const workflowCommands = {
+        ci: null,
+        postDeployGate:
+            "gh workflow run '.github/workflows/post-deploy-gate.yml' --ref main",
+        deployHosting:
+            "gh workflow run '.github/workflows/deploy-hosting.yml' --ref main",
+    };
+
+    const pushAction = (action) => {
+        if (!action || !action.id) return;
+        if (actions.some((item) => item.id === action.id)) return;
+        actions.push(action);
+    };
+
+    if (openProdAlerts?.available && Number(openProdAlerts.count) > 0) {
+        pushAction({
+            id: 'ACT-P0-PROD-ALERTS',
+            priority: 'P0',
+            blocking: true,
+            title: 'Atender alertas PROD abiertas',
+            reason: `${openProdAlerts.count} issue(s) [ALERTA PROD] siguen abiertos`,
+            command: "gh issue list --state open --search '[ALERTA PROD]'",
+            url: openProdAlerts.issues[0]?.url || null,
+        });
+    }
+
+    for (const key of ['ci', 'postDeployGate', 'deployHosting']) {
+        const wrapper = workflows?.[key];
+        const label = workflowLabels[key] || key;
+        if (!wrapper?.available) {
+            pushAction({
+                id: `ACT-P1-WF-${key.toUpperCase()}-UNAVAILABLE`,
+                priority: 'P1',
+                blocking: false,
+                title: `Recuperar lectura de workflow (${label})`,
+                reason:
+                    wrapper?.error || 'No se pudo consultar el workflow via gh',
+                command: 'gh auth status',
+                url: null,
+            });
+            continue;
+        }
+        if (!wrapper.latest) {
+            pushAction({
+                id: `ACT-P1-WF-${key.toUpperCase()}-MISSING`,
+                priority: 'P1',
+                blocking: false,
+                title: `Verificar ausencia de runs (${label})`,
+                reason: 'No hay runs recientes en main para este workflow',
+                command: null,
+                url: null,
+            });
+            continue;
+        }
+        const run = wrapper.latest;
+        if (run.status !== 'completed') {
+            pushAction({
+                id: `ACT-P1-WF-${key.toUpperCase()}-INPROGRESS`,
+                priority: 'P1',
+                blocking: false,
+                title: `Monitorear workflow en progreso (${label})`,
+                reason: `Run ${run.id} sigue en estado ${run.status}`,
+                command: `gh run watch ${run.id}`,
+                url: run.url || null,
+            });
+            continue;
+        }
+        if (run.conclusion !== 'success') {
+            pushAction({
+                id: `ACT-P0-WF-${key.toUpperCase()}-FAILED`,
+                priority: 'P0',
+                blocking: true,
+                title: `Recuperar workflow fallido (${label})`,
+                reason: `Run ${run.id} termino en ${run.conclusion || 'unknown'}`,
+                command:
+                    workflowCommands[key] ||
+                    `gh run view ${run.id} --log-failed`,
+                url: run.url || null,
+            });
+        }
+    }
+
+    if (weeklyLocalReport?.found && !weeklyLocalReport.error) {
+        const weeklyCritical = Number(
+            weeklyLocalReport.warningCounts?.critical || 0
+        );
+        const weeklyNonCritical = Number(
+            weeklyLocalReport.warningCounts?.nonCritical || 0
+        );
+        if (weeklyCritical > 0) {
+            pushAction({
+                id: 'ACT-P0-WEEKLY-KPI-CRITICAL',
+                priority: 'P0',
+                blocking: true,
+                title: 'Revisar warnings criticos del Weekly KPI',
+                reason: `${weeklyCritical} warning(s) criticos en reporte semanal (${weeklyLocalReport.source || 'n/a'})`,
+                command: 'npm run prod:readiness:summary',
+                url: weeklyLocalReport.reportRun?.url || null,
+            });
+        } else if (weeklyNonCritical > 0) {
+            pushAction({
+                id: 'ACT-P2-WEEKLY-KPI-NONCRITICAL',
+                priority: 'P2',
+                blocking: false,
+                title: 'Monitorear warnings no criticos del Weekly KPI',
+                reason: `${weeklyNonCritical} warning(s) no criticos (latencia/guardrails)`,
+                command: 'npm run prod:readiness:summary',
+                url: weeklyLocalReport.reportRun?.url || null,
+            });
+        }
+    }
+
+    const pace = weeklyKpiHistory?.phase6SchedulePace || null;
+    if (pace?.signal === 'at_risk') {
+        pushAction({
+            id: 'ACT-P1-F6-AT-RISK',
+            priority: 'P1',
+            blocking: false,
+            title: 'Preparar seguimiento del proximo ciclo semanal (Fase 6)',
+            reason: `phase6_schedule_pace=at_risk (${pace.reason || 'n/a'})`,
+            command: 'npm run prod:readiness:summary',
+            url: workflows?.weeklyKpi?.latest?.url || null,
+        });
+    } else if (
+        pace?.signal === 'on_track' &&
+        Number(weeklyKpiHistory?.scheduleCyclesRemaining || 0) > 0
+    ) {
+        pushAction({
+            id: 'ACT-P2-F6-WAIT-NEXT-SCHEDULE',
+            priority: 'P2',
+            blocking: false,
+            title: 'Esperar y capturar proximo schedule del Weekly KPI',
+            reason: `Faltan ${weeklyKpiHistory.scheduleCyclesRemaining} ciclo(s) schedule para cerrar Fase 6`,
+            command: 'npm run prod:readiness:summary',
+            url: null,
+        });
+    }
+
+    const sentryPending = Array.isArray(planMasterProgress?.pending)
+        ? planMasterProgress.pending.find((item) => item.id === 'PM-SENTRY-001')
+        : null;
+    if (sentryPending && sentryPending.status !== 'done') {
+        pushAction({
+            id: 'ACT-P3-SENTRY-EVIDENCE',
+            priority: 'P3',
+            blocking: false,
+            title: 'Cerrar evidencia Sentry (backend/frontend)',
+            reason: 'Pendiente externo/manual de confirmacion de eventos',
+            command: 'npm run verify:sentry:events',
+            url: null,
+        });
+    }
+
+    if (
+        actions.length === 0 &&
+        productionStability &&
+        productionStability.signal === 'GREEN'
+    ) {
+        pushAction({
+            id: 'ACT-P2-MONITOR',
+            priority: 'P2',
+            blocking: false,
+            title: 'Mantener monitoreo y capturar evidencia semanal',
+            reason: 'Estado estable; continuar con operacion semanal y cierre de pendientes no criticos',
+            command: 'npm run prod:readiness:summary',
+            url: null,
+        });
+    }
+
+    const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 };
+    actions.sort((a, b) => {
+        const pa = priorityOrder[a.priority] ?? 99;
+        const pb = priorityOrder[b.priority] ?? 99;
+        if (pa !== pb) return pa - pb;
+        return String(a.id).localeCompare(String(b.id));
+    });
+
+    return {
+        count: actions.length,
+        blockingCount: actions.filter((item) => item.blocking).length,
+        items: actions,
+    };
+}
+
 function markdownWorkflowLine(label, wrapper) {
     if (!wrapper || !wrapper.available) {
         return `- ${label}: unavailable`;
@@ -1299,6 +1497,33 @@ function toMarkdown(summary) {
     }
     lines.push('');
 
+    lines.push('## Suggested Actions');
+    lines.push('');
+    if (
+        !summary.suggestedActions ||
+        !Array.isArray(summary.suggestedActions.items) ||
+        summary.suggestedActions.items.length === 0
+    ) {
+        lines.push('- none');
+    } else {
+        lines.push(
+            `- count: ${summary.suggestedActions.count} (blocking: ${summary.suggestedActions.blockingCount})`
+        );
+        for (const action of summary.suggestedActions.items) {
+            lines.push(
+                `- [${action.priority}] ${action.id}: ${action.title}${action.blocking ? ' [blocking]' : ''}`
+            );
+            lines.push(`  reason: ${action.reason}`);
+            if (action.command) {
+                lines.push(`  command: ${action.command}`);
+            }
+            if (action.url) {
+                lines.push(`  url: ${action.url}`);
+            }
+        }
+    }
+    lines.push('');
+
     lines.push('## Usage');
     lines.push('');
     lines.push('- Command: `npm run prod:readiness:summary`');
@@ -1405,6 +1630,14 @@ function main() {
         weeklyLocalReport,
         weeklyKpiHistory,
     });
+    const suggestedActions = computeSuggestedActions({
+        workflows,
+        openProdAlerts,
+        weeklyLocalReport,
+        weeklyKpiHistory,
+        planMasterProgress,
+        productionStability,
+    });
 
     const summary = {
         generatedAt: new Date().toISOString(),
@@ -1417,6 +1650,7 @@ function main() {
         weeklyHistoryLimit,
         productionStability,
         planMasterProgress,
+        suggestedActions,
         workflows,
         weeklyKpiHistory,
         openProdAlerts,
