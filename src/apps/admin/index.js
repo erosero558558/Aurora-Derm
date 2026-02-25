@@ -35,6 +35,11 @@ import {
 } from './modules/availability.js';
 
 const ADMIN_NAV_COMPACT_BREAKPOINT = 1024;
+const SIDEBAR_FOCUSABLE_SELECTOR = [
+    'a[href]',
+    'button:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+].join(',');
 
 function getNavItems() {
     return Array.from(document.querySelectorAll('.nav-item[data-section]'));
@@ -56,6 +61,12 @@ function getActiveSection() {
 
 function isCompactAdminViewport() {
     return window.innerWidth <= ADMIN_NAV_COMPACT_BREAKPOINT;
+}
+
+function isSidebarOpen() {
+    return Boolean(
+        document.getElementById('adminSidebar')?.classList.contains('is-open')
+    );
 }
 
 function setNavActive(section) {
@@ -88,6 +99,100 @@ function getSidebarShellElements() {
     };
 }
 
+function getSidebarFocusableElements() {
+    const sidebar = document.getElementById('adminSidebar');
+    if (!sidebar) return [];
+
+    return Array.from(
+        sidebar.querySelectorAll(SIDEBAR_FOCUSABLE_SELECTOR)
+    ).filter(
+        (element) =>
+            element instanceof HTMLElement &&
+            !element.hasAttribute('disabled') &&
+            !element.hasAttribute('aria-hidden')
+    );
+}
+
+function syncSidebarOverlayA11yState(isOpen) {
+    const sidebar = document.getElementById('adminSidebar');
+    const mainContent = document.getElementById('adminMainContent');
+    const compactViewport = isCompactAdminViewport();
+    const overlayOpen = Boolean(compactViewport && isOpen);
+
+    if (sidebar) {
+        sidebar.setAttribute(
+            'aria-hidden',
+            String(!overlayOpen && compactViewport)
+        );
+    }
+
+    if (mainContent) {
+        if (overlayOpen) {
+            mainContent.setAttribute('aria-hidden', 'true');
+        } else {
+            mainContent.removeAttribute('aria-hidden');
+        }
+    }
+}
+
+function focusSidebarPrimaryTarget() {
+    const sidebar = document.getElementById('adminSidebar');
+    if (!sidebar) return;
+
+    const activeNavItem = sidebar.querySelector('.nav-item.active');
+    if (activeNavItem instanceof HTMLElement) {
+        activeNavItem.scrollIntoView({ block: 'nearest' });
+        activeNavItem.focus();
+        return;
+    }
+
+    const focusableElements = getSidebarFocusableElements();
+    if (focusableElements[0] instanceof HTMLElement) {
+        focusableElements[0].focus();
+        return;
+    }
+
+    sidebar.focus();
+}
+
+function trapSidebarFocus(event) {
+    if (event.key !== 'Tab') return;
+    if (!isCompactAdminViewport() || !isSidebarOpen()) return;
+
+    const sidebar = document.getElementById('adminSidebar');
+    if (!sidebar) return;
+
+    const focusableElements = getSidebarFocusableElements();
+    if (focusableElements.length === 0) {
+        event.preventDefault();
+        sidebar.focus();
+        return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement;
+    const isFocusInsideSidebar =
+        activeElement instanceof HTMLElement && sidebar.contains(activeElement);
+
+    if (!isFocusInsideSidebar) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+        return;
+    }
+
+    if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+        return;
+    }
+
+    if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+    }
+}
+
 function setSidebarOpen(isOpen) {
     const { sidebar, backdrop, toggleBtn } = getSidebarShellElements();
     if (!sidebar || !backdrop || !toggleBtn) return;
@@ -98,6 +203,11 @@ function setSidebarOpen(isOpen) {
     backdrop.setAttribute('aria-hidden', String(!shouldOpen));
     document.body.classList.toggle('admin-sidebar-open', shouldOpen);
     toggleBtn.setAttribute('aria-expanded', String(shouldOpen));
+    syncSidebarOverlayA11yState(shouldOpen);
+
+    if (shouldOpen) {
+        focusSidebarPrimaryTarget();
+    }
 }
 
 function closeSidebar({ restoreFocus = false } = {}) {
@@ -547,6 +657,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         ?.addEventListener('click', () => closeSidebar({ restoreFocus: true }));
 
     window.addEventListener('keydown', (event) => {
+        trapSidebarFocus(event);
+
         if (event.key !== 'Escape') return;
         closeSidebar({ restoreFocus: true });
     });
@@ -554,6 +666,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!isCompactAdminViewport()) {
             closeSidebar();
         }
+        syncSidebarOverlayA11yState(isSidebarOpen());
     });
     window.addEventListener('hashchange', async () => {
         const dashboard = document.getElementById('adminDashboard');
@@ -579,5 +692,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await renderSection(getActiveSection());
     });
 
+    syncSidebarOverlayA11yState(false);
     await checkAuthAndBoot();
 });

@@ -393,7 +393,7 @@ function R(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function x(e) {
+function H(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -408,7 +408,7 @@ function x(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function H(e) {
+function x(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -622,13 +622,13 @@ function O() {
                 F(
                     'funnelSourceList',
                     e.eventSourceBreakdown,
-                    x,
+                    H,
                     'Sin datos de origen'
                 ),
                 F(
                     'funnelAbandonReasonList',
                     e.checkoutAbandonByReason,
-                    H,
+                    x,
                     'Sin datos de motivo'
                 ),
                 F(
@@ -1120,25 +1120,35 @@ async function he() {
         throw new Error('Disponibilidad en solo lectura (Google Calendar).');
     await h('availability', { method: 'POST', body: { availability: a } });
 }
-function ye() {
+const ye = [
+    'a[href]',
+    'button:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+].join(',');
+function ve() {
     return Array.from(document.querySelectorAll('.nav-item[data-section]'));
 }
-function ve() {
-    const e = window.location.hash.replace(/^#/, '').trim();
-    return new Set(ye().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
-}
 function we() {
+    const e = window.location.hash.replace(/^#/, '').trim();
+    return new Set(ve().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
+}
+function Se() {
     return (
         document.querySelector('.nav-item.active')?.dataset.section ||
-        ve() ||
+        we() ||
         'dashboard'
     );
 }
-function Se() {
+function ke() {
     return window.innerWidth <= 1024;
 }
-function ke(e) {
-    ye().forEach((t) => {
+function Ee() {
+    return Boolean(
+        document.getElementById('adminSidebar')?.classList.contains('is-open')
+    );
+}
+function Ce(e) {
+    ve().forEach((t) => {
         const n = t.dataset.section === e;
         (t.classList.toggle('active', n),
             n
@@ -1146,31 +1156,67 @@ function ke(e) {
                 : t.removeAttribute('aria-current'));
     });
 }
-function Ee() {
+function Be() {
     return {
         sidebar: document.getElementById('adminSidebar'),
         backdrop: document.getElementById('adminSidebarBackdrop'),
         toggleBtn: document.getElementById('adminMenuToggle'),
     };
 }
-function Ce(e) {
-    const { sidebar: t, backdrop: n, toggleBtn: a } = Ee();
+function Le() {
+    const e = document.getElementById('adminSidebar');
+    return e
+        ? Array.from(e.querySelectorAll(ye)).filter(
+              (e) =>
+                  e instanceof HTMLElement &&
+                  !e.hasAttribute('disabled') &&
+                  !e.hasAttribute('aria-hidden')
+          )
+        : [];
+}
+function $e(e) {
+    const t = document.getElementById('adminSidebar'),
+        n = document.getElementById('adminMainContent'),
+        a = ke(),
+        o = Boolean(a && e);
+    (t && t.setAttribute('aria-hidden', String(!o && a)),
+        n &&
+            (o
+                ? n.setAttribute('aria-hidden', 'true')
+                : n.removeAttribute('aria-hidden')));
+}
+function Ie(e) {
+    const { sidebar: t, backdrop: n, toggleBtn: a } = Be();
     if (!t || !n || !a) return;
-    const o = Boolean(e && Se());
+    const o = Boolean(e && ke());
     (t.classList.toggle('is-open', o),
         n.classList.toggle('is-hidden', !o),
         n.setAttribute('aria-hidden', String(!o)),
         document.body.classList.toggle('admin-sidebar-open', o),
-        a.setAttribute('aria-expanded', String(o)));
+        a.setAttribute('aria-expanded', String(o)),
+        $e(o),
+        o &&
+            (function () {
+                const e = document.getElementById('adminSidebar');
+                if (!e) return;
+                const t = e.querySelector('.nav-item.active');
+                if (t instanceof HTMLElement)
+                    return (
+                        t.scrollIntoView({ block: 'nearest' }),
+                        void t.focus()
+                    );
+                const n = Le();
+                n[0] instanceof HTMLElement ? n[0].focus() : e.focus();
+            })());
 }
-function Be({ restoreFocus: e = !1 } = {}) {
-    const { toggleBtn: t } = Ee(),
+function Ae({ restoreFocus: e = !1 } = {}) {
+    const { toggleBtn: t } = Be(),
         n = document
             .getElementById('adminSidebar')
             ?.classList.contains('is-open');
-    (Ce(!1), e && n && t && t.focus());
+    (Ie(!1), e && n && t && t.focus());
 }
-async function Le(e, t = {}) {
+async function Te(e, t = {}) {
     const {
             refresh: n = !0,
             updateHash: a = !0,
@@ -1178,7 +1224,7 @@ async function Le(e, t = {}) {
             closeMobileNav: i = !0,
         } = t,
         r = e || 'dashboard';
-    if ((ke(r), i && Be(), n))
+    if ((Ce(r), i && Ae(), n))
         try {
             await M();
         } catch (e) {
@@ -1187,7 +1233,7 @@ async function Le(e, t = {}) {
                 'warning'
             );
         }
-    (await $e(r),
+    (await De(r),
         a &&
             (function (e) {
                 const t = `#${e}`;
@@ -1209,7 +1255,7 @@ async function Le(e, t = {}) {
                     }));
             })(r));
 }
-async function $e(e) {
+async function De(e) {
     const t = document.getElementById('pageTitle');
     (t &&
         (t.textContent =
@@ -1333,13 +1379,13 @@ async function $e(e) {
             })();
     }
 }
-async function Ie() {
+async function Ne() {
     const e = document.getElementById('loginScreen'),
         t = document.getElementById('adminDashboard');
     (e && e.classList.add('is-hidden'),
         t && t.classList.remove('is-hidden'),
-        ke(ve()),
-        Be(),
+        Ce(we()),
+        Ae(),
         await (async function () {
             const e = document.getElementById('currentDate');
             if (e) {
@@ -1359,8 +1405,8 @@ async function Ie() {
                     'warning'
                 );
             }
-            const t = we();
-            await $e(t);
+            const t = Se();
+            await De(t);
         })(),
         await (async function () {
             if (G) return;
@@ -1388,7 +1434,7 @@ async function Ie() {
             }
         })());
 }
-async function Ae(e) {
+async function Me(e) {
     e.preventDefault();
     const t = document.getElementById('group2FA');
     if (t && !t.classList.contains('is-hidden')) {
@@ -1399,7 +1445,7 @@ async function Ae(e) {
             })(e);
             (t.csrfToken && g(t.csrfToken),
                 w('Bienvenido al panel de administracion', 'success'),
-                await Ie());
+                await Ne());
         } catch {
             w('Codigo incorrecto o sesion expirada', 'error');
         }
@@ -1424,12 +1470,12 @@ async function Ae(e) {
         }
         (e.csrfToken && g(e.csrfToken),
             w('Bienvenido al panel de administracion', 'success'),
-            await Ie());
+            await Ne());
     } catch {
         w('Contrasena incorrecta', 'error');
     }
 }
-function Te() {
+function _e() {
     document.addEventListener('click', async (o) => {
         const i = o.target.closest('[data-action]');
         if (!i) return;
@@ -1842,13 +1888,13 @@ function Te() {
     r && r.addEventListener('change', z);
 }
 document.addEventListener('DOMContentLoaded', async () => {
-    Te();
+    _e();
     const e = document.getElementById('loginForm');
-    (e && e.addEventListener('submit', Ae),
-        ye().forEach((e) => {
+    (e && e.addEventListener('submit', Me),
+        ve().forEach((e) => {
             e.addEventListener('click', async (t) => {
                 (t.preventDefault(),
-                    await Le(e.dataset.section || 'dashboard'));
+                    await Te(e.dataset.section || 'dashboard'));
             });
         }),
         document
@@ -1856,25 +1902,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             ?.addEventListener('click', () => {
                 const e = document.getElementById('adminSidebar'),
                     t = e?.classList.contains('is-open');
-                Ce(!t);
+                Ie(!t);
             }),
         document
             .getElementById('adminMenuClose')
-            ?.addEventListener('click', () => Be({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => Ae({ restoreFocus: !0 })),
         document
             .getElementById('adminSidebarBackdrop')
-            ?.addEventListener('click', () => Be({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => Ae({ restoreFocus: !0 })),
         window.addEventListener('keydown', (e) => {
-            'Escape' === e.key && Be({ restoreFocus: !0 });
+            (!(function (e) {
+                if ('Tab' !== e.key) return;
+                if (!ke() || !Ee()) return;
+                const t = document.getElementById('adminSidebar');
+                if (!t) return;
+                const n = Le();
+                if (0 === n.length) return (e.preventDefault(), void t.focus());
+                const a = n[0],
+                    o = n[n.length - 1],
+                    i = document.activeElement;
+                i instanceof HTMLElement && t.contains(i)
+                    ? e.shiftKey && i === a
+                        ? (e.preventDefault(), o.focus())
+                        : e.shiftKey ||
+                          i !== o ||
+                          (e.preventDefault(), a.focus())
+                    : (e.preventDefault(), (e.shiftKey ? o : a).focus());
+            })(e),
+                'Escape' === e.key && Ae({ restoreFocus: !0 }));
         }),
         window.addEventListener('resize', () => {
-            Se() || Be();
+            (ke() || Ae(), $e(Ee()));
         }),
         window.addEventListener('hashchange', async () => {
             const e = document.getElementById('adminDashboard');
             e &&
                 !e.classList.contains('is-hidden') &&
-                (await Le(ve(), {
+                (await Te(we(), {
                     refresh: !1,
                     updateHash: !1,
                     focus: !1,
@@ -1917,7 +1981,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         (await h('import', { method: 'POST', body: a }),
                             await M());
                         const o = document.querySelector('.nav-item.active');
-                        (await $e(o?.dataset.section || 'dashboard'),
+                        (await De(o?.dataset.section || 'dashboard'),
                             w(
                                 `Datos importados: ${a.appointments.length} citas`,
                                 'success'
@@ -1930,13 +1994,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('online', async () => {
             (w('Conexion restaurada. Actualizando datos...', 'success'),
                 await M(),
-                await $e(we()));
+                await De(Se()));
         }),
+        $e(!1),
         await (async function () {
             if (!navigator.onLine && D('appointments', null))
                 return (
                     w('Modo offline: mostrando datos locales', 'info'),
-                    void (await Ie())
+                    void (await Ne())
                 );
             (await (async function () {
                 try {
@@ -1948,11 +2013,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return (w('No se pudo verificar la sesion', 'warning'), !1);
                 }
             })())
-                ? await Ie()
+                ? await Ne()
                 : (function () {
                       const e = document.getElementById('loginScreen'),
                           t = document.getElementById('adminDashboard');
-                      (Be(),
+                      (Ae(),
                           e && e.classList.remove('is-hidden'),
                           t && t.classList.add('is-hidden'));
                   })();
