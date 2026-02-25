@@ -37,6 +37,8 @@ jobs:
               uses: actions/checkout@v4
               with:
                   fetch-depth: 2
+              with:
+                  fetch-depth: 2
 
             - name: Esperar sincronizacion Git del hosting
               if: ${{ github.event_name == 'push' }}
