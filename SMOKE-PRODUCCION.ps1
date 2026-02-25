@@ -33,6 +33,24 @@ if ([string]::IsNullOrWhiteSpace($tmpRoot)) {
     $tmpRoot = '.'
 }
 $tmpFile = Join-Path $tmpRoot 'pielarmonia-smoke-body.tmp'
+$curlCommand = $null
+try {
+    $curlExe = Get-Command 'curl.exe' -ErrorAction SilentlyContinue
+    if ($curlExe) {
+        $curlCommand = $curlExe.Source
+    }
+} catch {}
+if (-not $curlCommand) {
+    try {
+        $curlNative = Get-Command 'curl' -CommandType Application -ErrorAction SilentlyContinue
+        if ($curlNative) {
+            $curlCommand = $curlNative.Source
+        }
+    } catch {}
+}
+if (-not $curlCommand) {
+    $curlCommand = 'curl'
+}
 
 function Get-RefFromIndex {
     param(
@@ -279,7 +297,7 @@ function Invoke-Check {
     $rawStatus = ''
     $curlError = ''
     try {
-        $rawStatus = (& curl.exe @args 2>&1 | Out-String).Trim()
+        $rawStatus = (& $curlCommand @args 2>&1 | Out-String).Trim()
     } catch {
         $curlError = $_.Exception.Message
     }
