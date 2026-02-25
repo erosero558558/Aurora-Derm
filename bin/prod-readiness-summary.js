@@ -9,8 +9,11 @@ const {
     writeFileSync,
     readdirSync,
     statSync,
+    mkdtempSync,
+    rmSync,
 } = require('fs');
-const { dirname, resolve, basename } = require('path');
+const { dirname, resolve, basename, join } = require('path');
+const { tmpdir } = require('os');
 
 const ROOT = resolve(__dirname, '..');
 const DEFAULT_JSON_OUT = 'verification/runtime/prod-readiness-summary.json';
@@ -50,7 +53,7 @@ function safeJsonParse(text, fallback = null) {
     }
 }
 
-function runGhJson(args, { allowFailure = true } = {}) {
+function runGh(args, { allowFailure = true } = {}) {
     const result = spawnSync('gh', args, {
         cwd: ROOT,
         encoding: 'utf8',
@@ -60,14 +63,12 @@ function runGhJson(args, { allowFailure = true } = {}) {
     const stdout = String(result.stdout || '');
     const stderr = String(result.stderr || '');
     const ok = result.status === 0;
-    const json = ok ? safeJsonParse(stdout, null) : null;
     const response = {
         ok,
         exitCode: typeof result.status === 'number' ? result.status : 1,
         command: `gh ${args.join(' ')}`,
         stdout,
         stderr,
-        json,
         error:
             ok || allowFailure
                 ? null
@@ -78,6 +79,14 @@ function runGhJson(args, { allowFailure = true } = {}) {
         throw new Error(response.error);
     }
     return response;
+}
+
+function runGhJson(args, { allowFailure = true } = {}) {
+    const response = runGh(args, { allowFailure });
+    return {
+        ...response,
+        json: response.ok ? safeJsonParse(response.stdout, null) : null,
+    };
 }
 
 function toIso(value) {
@@ -232,31 +241,7 @@ function findLatestWeeklyReportJson(outputDir) {
     return candidates[0] || null;
 }
 
-function readLatestWeeklyReport(outputDir) {
-    const latest = findLatestWeeklyReportJson(outputDir);
-    if (!latest) {
-        return {
-            found: false,
-            source: 'local',
-            outputDir,
-            path: null,
-            error: null,
-        };
-    }
-
-    let payload;
-    try {
-        payload = JSON.parse(readFileSync(latest.fullPath, 'utf8'));
-    } catch (error) {
-        return {
-            found: true,
-            source: 'local',
-            outputDir,
-            path: latest.fullPath,
-            error: `No se pudo parsear JSON: ${error.message}`,
-        };
-    }
-
+function parseWeeklyReportPayload(payload, meta = {}) {
     const warningCounts = payload.warningCounts || {};
     const warningsBySeverity = payload.warningsBySeverity || {};
     const latency = payload.latency || {};
@@ -290,13 +275,18 @@ function readLatestWeeklyReport(outputDir) {
 
     return {
         found: true,
-        source: 'local',
-        outputDir,
-        path: latest.fullPath,
-        fileName: basename(latest.fullPath),
-        mtime: new Date(latest.mtimeMs).toISOString(),
+        source: meta.source || 'local',
+        outputDir: meta.outputDir || null,
+        path: meta.path || null,
+        fileName: meta.fileName || (meta.path ? basename(meta.path) : null),
+        mtime:
+            meta.mtimeIso ||
+            (Number.isFinite(meta.mtimeMs)
+                ? new Date(meta.mtimeMs).toISOString()
+                : null),
         generatedAt: toIso(payload.generatedAt),
         domain: payload.domain || null,
+        reportRun: meta.reportRun || null,
         warningCounts: {
             total: totalCount,
             critical: criticalCount,
@@ -382,6 +372,244 @@ function readLatestWeeklyReport(outputDir) {
                     : null,
         },
         error: null,
+    };
+}
+
+function readWeeklyReportFromFile(filePath, meta = {}) {
+    let payload;
+    try {
+        payload = JSON.parse(readFileSync(filePath, 'utf8'));
+    } catch (error) {
+        return {
+            found: true,
+            source: meta.source || 'local',
+            outputDir: meta.outputDir || null,
+            path: filePath,
+            fileName: basename(filePath),
+            reportRun: meta.reportRun || null,
+            error: `No se pudo parsear JSON: ${error.message}`,
+        };
+    }
+
+    return parseWeeklyReportPayload(payload, {
+        ...meta,
+        path: filePath,
+    });
+}
+
+function readLatestWeeklyReport(outputDir) {
+    const latest = findLatestWeeklyReportJson(outputDir);
+    if (!latest) {
+        return {
+            found: false,
+            source: 'local',
+            outputDir,
+            path: null,
+            error: null,
+        };
+    }
+
+    return readWeeklyReportFromFile(latest.fullPath, {
+        source: 'local',
+        outputDir,
+        fileName: latest.name,
+        mtimeMs: latest.mtimeMs,
+    });
+}
+
+function findWeeklyReportJsonRecursive(rootDir) {
+    const stack = [rootDir];
+    const matches = [];
+    while (stack.length > 0) {
+        const current = stack.pop();
+        let entries;
+        try {
+            entries = readdirSync(current, { withFileTypes: true });
+        } catch (_error) {
+            continue;
+        }
+        for (const entry of entries) {
+            const fullPath = join(current, entry.name);
+            if (entry.isDirectory()) {
+                stack.push(fullPath);
+                continue;
+            }
+            if (/^weekly-report-\d{8}\.json$/i.test(entry.name)) {
+                let mtimeMs;
+                try {
+                    mtimeMs = statSync(fullPath).mtimeMs;
+                } catch (_error) {
+                    mtimeMs = 0;
+                }
+                matches.push({ fullPath, name: entry.name, mtimeMs });
+            }
+        }
+    }
+    matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
+    return matches[0] || null;
+}
+
+function downloadWeeklyReportArtifact(runId) {
+    const tempBase = mkdtempSync(join(tmpdir(), 'prod-readiness-weekly-'));
+    const res = runGh(
+        [
+            'run',
+            'download',
+            String(runId),
+            '-n',
+            'weekly-kpi-report',
+            '-D',
+            tempBase,
+        ],
+        { allowFailure: true }
+    );
+    if (!res.ok) {
+        try {
+            rmSync(tempBase, { recursive: true, force: true });
+        } catch (_error) {
+            // best effort
+        }
+        return {
+            ok: false,
+            error: res.stderr || res.stdout || `gh exit ${res.exitCode}`,
+            tempDir: null,
+            file: null,
+        };
+    }
+
+    const file = findWeeklyReportJsonRecursive(tempBase);
+    if (!file) {
+        try {
+            rmSync(tempBase, { recursive: true, force: true });
+        } catch (_error) {
+            // best effort
+        }
+        return {
+            ok: false,
+            error: 'Artifact weekly-kpi-report no contiene weekly-report-*.json',
+            tempDir: null,
+            file: null,
+        };
+    }
+
+    return {
+        ok: true,
+        error: null,
+        tempDir: tempBase,
+        file,
+    };
+}
+
+function readWeeklyReportFromRemoteArtifact(
+    weeklyRunWrapper,
+    fallbackOutputDir
+) {
+    if (
+        !weeklyRunWrapper ||
+        !weeklyRunWrapper.available ||
+        !weeklyRunWrapper.latest ||
+        !weeklyRunWrapper.latest.id
+    ) {
+        return {
+            found: false,
+            source: 'remote_artifact',
+            outputDir: fallbackOutputDir || null,
+            path: null,
+            error: 'No hay run de Weekly KPI disponible para descargar artifact',
+        };
+    }
+
+    const run = weeklyRunWrapper.latest;
+    const downloaded = downloadWeeklyReportArtifact(run.id);
+    if (!downloaded.ok) {
+        return {
+            found: false,
+            source: 'remote_artifact',
+            outputDir: fallbackOutputDir || null,
+            path: null,
+            reportRun: {
+                id: run.id,
+                url: run.url || null,
+                conclusion: run.conclusion || null,
+                status: run.status || null,
+                updatedAt: run.updatedAt || null,
+            },
+            error: downloaded.error,
+        };
+    }
+
+    try {
+        return readWeeklyReportFromFile(downloaded.file.fullPath, {
+            source: 'remote_artifact',
+            outputDir: fallbackOutputDir || null,
+            fileName: downloaded.file.name,
+            mtimeMs: downloaded.file.mtimeMs,
+            reportRun: {
+                id: run.id,
+                url: run.url || null,
+                conclusion: run.conclusion || null,
+                status: run.status || null,
+                updatedAt: run.updatedAt || null,
+                headSha: run.headSha || null,
+            },
+        });
+    } finally {
+        try {
+            rmSync(downloaded.tempDir, { recursive: true, force: true });
+        } catch (_error) {
+            // best effort
+        }
+    }
+}
+
+function readWeeklyReportPreferred({ mode, weeklyDir, weeklyKpiRun }) {
+    const normalizedMode = String(mode || 'auto')
+        .trim()
+        .toLowerCase();
+    if (!['auto', 'local', 'remote'].includes(normalizedMode)) {
+        throw new Error(
+            `Argumento invalido --weekly-source: ${mode}. Usa auto|local|remote`
+        );
+    }
+
+    if (normalizedMode === 'local') {
+        return readLatestWeeklyReport(weeklyDir);
+    }
+
+    const remoteReport = readWeeklyReportFromRemoteArtifact(
+        weeklyKpiRun,
+        weeklyDir
+    );
+    if (normalizedMode === 'remote') {
+        return remoteReport;
+    }
+
+    if (remoteReport.found && !remoteReport.error) {
+        return remoteReport;
+    }
+
+    const localReport = readLatestWeeklyReport(weeklyDir);
+    if (localReport.found && !localReport.error) {
+        return {
+            ...localReport,
+            fallbackFromRemoteError: remoteReport.error || null,
+            fallbackAttempted: true,
+        };
+    }
+
+    if (!remoteReport.found && !localReport.found) {
+        return {
+            ...localReport,
+            source: 'auto',
+            fallbackAttempted: true,
+            fallbackFromRemoteError: remoteReport.error || null,
+        };
+    }
+
+    return {
+        ...(remoteReport.found ? remoteReport : localReport),
+        fallbackAttempted: true,
+        fallbackFromRemoteError: remoteReport.error || null,
     };
 }
 
@@ -602,17 +830,37 @@ function toMarkdown(summary) {
     }
     lines.push('');
 
-    lines.push('## Weekly KPI (latest local report)');
+    lines.push('## Weekly KPI (latest report; remote artifact preferred)');
     lines.push('');
     if (!weeklyLocalReport || !weeklyLocalReport.found) {
         lines.push('- status: not_found');
+        lines.push(`- source: ${weeklyLocalReport?.source || 'n/a'}`);
+        if (weeklyLocalReport?.error) {
+            lines.push(`- error: ${weeklyLocalReport.error}`);
+        }
     } else if (weeklyLocalReport.error) {
         lines.push(`- status: error`);
+        lines.push(`- source: ${weeklyLocalReport.source || 'n/a'}`);
         lines.push(`- error: ${weeklyLocalReport.error}`);
         if (weeklyLocalReport.path) {
             lines.push(`- path: ${weeklyLocalReport.path}`);
         }
     } else {
+        lines.push(`- source: ${weeklyLocalReport.source || 'n/a'}`);
+        if (weeklyLocalReport.reportRun?.id) {
+            lines.push(`- source_run_id: ${weeklyLocalReport.reportRun.id}`);
+        }
+        if (weeklyLocalReport.reportRun?.url) {
+            lines.push(`- source_run_url: ${weeklyLocalReport.reportRun.url}`);
+        }
+        if (weeklyLocalReport.fallbackAttempted) {
+            lines.push('- source_fallback_attempted: true');
+        }
+        if (weeklyLocalReport.fallbackFromRemoteError) {
+            lines.push(
+                `- source_fallback_remote_error: ${weeklyLocalReport.fallbackFromRemoteError}`
+            );
+        }
         lines.push(`- path: ${weeklyLocalReport.path}`);
         lines.push(`- generatedAt: ${weeklyLocalReport.generatedAt || 'n/a'}`);
         lines.push(`- mtime: ${weeklyLocalReport.mtime || 'n/a'}`);
@@ -696,12 +944,13 @@ function relativePath(path) {
 
 function usage() {
     return [
-        'Uso: node bin/prod-readiness-summary.js [--branch=main] [--weekly-dir=verification/weekly]',
+        'Uso: node bin/prod-readiness-summary.js [--branch=main] [--weekly-source=auto] [--weekly-dir=verification/weekly]',
         '',
         'Opcionales:',
         `  --json-out=PATH     Reporte JSON (default ${DEFAULT_JSON_OUT})`,
         `  --md-out=PATH       Reporte Markdown (default ${DEFAULT_MD_OUT})`,
         '  --branch=BRANCH     Rama para consultar workflows via gh (default main)',
+        '  --weekly-source=MODE  Fuente del Weekly KPI: auto|remote|local (default auto)',
         '  --weekly-dir=PATH   Directorio de reportes semanales locales (default verification/weekly)',
         '  --runs-limit=N      Reservado para versiones futuras (default 1)',
         '  --print-json        Imprime JSON en stdout',
@@ -718,6 +967,7 @@ function main() {
     }
 
     const branch = parseStringArg('branch', 'main');
+    const weeklySource = parseStringArg('weekly-source', 'auto');
     const weeklyDir = parseStringArg('weekly-dir', 'verification/weekly');
     parseIntArg('runs-limit', 1, 1); // reservado; valida formato y deja contrato listo
     const jsonOut = resolve(ROOT, parseStringArg('json-out', DEFAULT_JSON_OUT));
@@ -758,7 +1008,11 @@ function main() {
         ),
     };
     const openProdAlerts = fetchOpenProdAlerts();
-    const weeklyLocalReport = readLatestWeeklyReport(weeklyDir);
+    const weeklyLocalReport = readWeeklyReportPreferred({
+        mode: weeklySource,
+        weeklyDir,
+        weeklyKpiRun: workflows.weeklyKpi,
+    });
     const productionStability = computeProductionStability({
         workflows,
         openProdAlerts,
@@ -777,6 +1031,7 @@ function main() {
             branch,
         },
         branch,
+        weeklySourceMode: weeklySource,
         productionStability,
         planMasterProgress,
         workflows,
