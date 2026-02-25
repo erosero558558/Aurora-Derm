@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 73
+  revision: 75
   updated_at: 2026-02-25
 
 tasks:
@@ -1344,8 +1344,8 @@ tasks:
     title: "C1: cerrar flakiness residual en agenda/chat/reprogramacion"
     owner: ernes
     executor: codex
-    status: ready
-    status_since_at: "2026-02-25T21:45:05.740Z"
+    status: done
+    status_since_at: "2026-02-25T22:21:15.560Z"
     risk: high
     scope: calendar
     codex_instance: codex_backend_ops
@@ -1366,8 +1366,8 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_cleared_at: "2026-02-25T22:21:15.560Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
     acceptance: "Suite critica C1 estable sin flakiness repetido y con evidencia reproducible"
@@ -1382,8 +1382,8 @@ tasks:
     title: "C3: cerrar observabilidad accionable y playbook de diagnostico <15m"
     owner: ernes
     executor: codex
-    status: ready
-    status_since_at: "2026-02-25T21:45:23.605Z"
+    status: done
+    status_since_at: "2026-02-25T22:24:08.288Z"
     risk: high
     scope: observability
     codex_instance: codex_backend_ops
@@ -1404,8 +1404,8 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_cleared_at: "2026-02-25T22:24:08.288Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
     acceptance: "C3 completo con severidad accionable, playbook operativo y verificacion automatica en pipeline"
