@@ -1040,7 +1040,10 @@ if ($remoteScriptRef -eq '') {
 }
 
 if ($localStyleRef -ne '') {
-    $styleRefAdvisory = $SkipAssetHashChecks -and -not $headTouchesFrontendAssets
+    $localStylePath = Get-RefPath -Ref $localStyleRef
+    $remoteStylePath = Get-RefPath -Ref $remoteStyleRef
+    $styleVersionOnlyDiff = ($localStylePath -ne '') -and ($localStylePath -eq $remoteStylePath) -and ($remoteStyleRef -ne '')
+    $styleRefAdvisory = $SkipAssetHashChecks -and $styleVersionOnlyDiff
     if ($remoteStyleRef -eq '') {
         if ($styleRefAdvisory) {
             Write-Host "[WARN] index remoto sin referencia de styles.css (advisory por SkipAssetHashChecks sin cambios frontend)"
@@ -1092,27 +1095,42 @@ if ($localStyleRef -ne '') {
     }
 
     if ($localDeferredStyleRef -ne '') {
+        $localDeferredStylePath = Get-RefPath -Ref $localDeferredStyleRef
+        $remoteDeferredStylePath = Get-RefPath -Ref $remoteDeferredStyleRef
+        $deferredStyleVersionOnlyDiff = ($localDeferredStylePath -ne '') -and ($localDeferredStylePath -eq $remoteDeferredStylePath) -and ($remoteDeferredStyleRef -ne '')
+        $deferredStyleRefAdvisory = $SkipAssetHashChecks -and $deferredStyleVersionOnlyDiff
         if ($remoteDeferredStyleRef -eq '') {
-            Write-Host "[FAIL] index remoto sin referencia de styles-deferred.css"
-            $results += [PSCustomObject]@{
-                Asset = 'index-asset-refs:styles-deferred.css'
-                Match = $false
-                LocalHash = $localDeferredStyleRef
-                RemoteHash = ''
-                RemoteUrl = "$base/"
+            if ($deferredStyleRefAdvisory) {
+                Write-Host "[WARN] index remoto sin referencia de styles-deferred.css (advisory por SkipAssetHashChecks sin cambios en index/styles-deferred)"
+                Write-Host "       Local : $localDeferredStyleRef"
+            } else {
+                Write-Host "[FAIL] index remoto sin referencia de styles-deferred.css"
+                $results += [PSCustomObject]@{
+                    Asset = 'index-asset-refs:styles-deferred.css'
+                    Match = $false
+                    LocalHash = $localDeferredStyleRef
+                    RemoteHash = ''
+                    RemoteUrl = "$base/"
+                }
             }
         } elseif ($remoteDeferredStyleRef -eq $localDeferredStyleRef) {
             Write-Host "[OK]  index remoto usa misma referencia de styles-deferred.css"
         } else {
-            Write-Host "[FAIL] index remoto styles-deferred.css diferente"
-            Write-Host "       Local : $localDeferredStyleRef"
-            Write-Host "       Remote: $remoteDeferredStyleRef"
-            $results += [PSCustomObject]@{
-                Asset = 'index-ref:styles-deferred.css'
-                Match = $false
-                LocalHash = $localDeferredStyleRef
-                RemoteHash = $remoteDeferredStyleRef
-                RemoteUrl = "$base/"
+            if ($deferredStyleRefAdvisory) {
+                Write-Host "[WARN] index remoto styles-deferred.css diferente (advisory por SkipAssetHashChecks sin cambios en index/styles-deferred)"
+                Write-Host "       Local : $localDeferredStyleRef"
+                Write-Host "       Remote: $remoteDeferredStyleRef"
+            } else {
+                Write-Host "[FAIL] index remoto styles-deferred.css diferente"
+                Write-Host "       Local : $localDeferredStyleRef"
+                Write-Host "       Remote: $remoteDeferredStyleRef"
+                $results += [PSCustomObject]@{
+                    Asset = 'index-ref:styles-deferred.css'
+                    Match = $false
+                    LocalHash = $localDeferredStyleRef
+                    RemoteHash = $remoteDeferredStyleRef
+                    RemoteUrl = "$base/"
+                }
             }
         }
     }
