@@ -15,7 +15,24 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $base = $Domain.TrimEnd('/')
-$tmpFile = Join-Path $env:TEMP 'pielarmonia-smoke-body.tmp'
+$tmpRoot = [string]$env:TEMP
+if ([string]::IsNullOrWhiteSpace($tmpRoot)) {
+    $tmpRoot = [string]$env:TMPDIR
+}
+if ([string]::IsNullOrWhiteSpace($tmpRoot)) {
+    $tmpRoot = [string]$env:RUNNER_TEMP
+}
+if ([string]::IsNullOrWhiteSpace($tmpRoot)) {
+    try {
+        $tmpRoot = [System.IO.Path]::GetTempPath()
+    } catch {
+        $tmpRoot = '.'
+    }
+}
+if ([string]::IsNullOrWhiteSpace($tmpRoot)) {
+    $tmpRoot = '.'
+}
+$tmpFile = Join-Path $tmpRoot 'pielarmonia-smoke-body.tmp'
 
 function Get-RefFromIndex {
     param(
