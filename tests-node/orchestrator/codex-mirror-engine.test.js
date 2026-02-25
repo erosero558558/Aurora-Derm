@@ -5,6 +5,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+    buildCodexActiveComment,
+    upsertCodexActiveBlock,
     buildCodexCheckReport,
 } = require('../../tools/agent-orchestrator/domain/codex-mirror');
 const {
@@ -12,6 +14,51 @@ const {
 } = require('../../tools/agent-orchestrator/domain/conflicts');
 
 const ACTIVE_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
+
+test('codex-mirror helpers construyen y upsertan bloque CODEX_ACTIVE', () => {
+    const comment = buildCodexActiveComment(
+        {
+            block: 'C1',
+            task_id: 'CDX-001',
+            status: 'in_progress',
+            files: ['AGENTS.md', 'agent-orchestrator.js'],
+        },
+        {
+            serializeArrayInline: (values) => `["${values.join('", "')}"]`,
+            currentDate: () => '2026-02-25',
+        }
+    );
+
+    assert.match(comment, /<!-- CODEX_ACTIVE/);
+    assert.match(comment, /task_id: CDX-001/);
+    assert.match(comment, /updated_at: 2026-02-25/);
+
+    const raw = `# Plan\n\nRelacion con Operativo 2026:\n- x\n`;
+    const next = upsertCodexActiveBlock(
+        raw,
+        {
+            block: 'C1',
+            task_id: 'CDX-001',
+            status: 'in_progress',
+            files: ['AGENTS.md'],
+            updated_at: '2026-02-25',
+        },
+        {
+            buildComment: (block) =>
+                buildCodexActiveComment(block, {
+                    serializeArrayInline: (values) =>
+                        `["${values.join('", "')}"]`,
+                    currentDate: () => '2026-02-25',
+                }),
+        }
+    );
+
+    assert.match(next, /CODEX_ACTIVE/);
+    assert.match(next, /Relacion con Operativo 2026:/);
+
+    const removed = upsertCodexActiveBlock(next, null);
+    assert.equal(/CODEX_ACTIVE/.test(removed), false);
+});
 
 test('codex-mirror engine valida espejo alineado', () => {
     const report = buildCodexCheckReport(

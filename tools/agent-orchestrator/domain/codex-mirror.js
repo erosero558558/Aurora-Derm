@@ -1,5 +1,51 @@
 'use strict';
 
+function buildCodexActiveComment(block, deps = {}) {
+    const {
+        serializeArrayInline = (values) =>
+            JSON.stringify(Array.isArray(values) ? values : []),
+        currentDate = () => '',
+    } = deps;
+    if (!block) return '';
+    const lines = [];
+    lines.push('<!-- CODEX_ACTIVE');
+    lines.push(`block: ${block.block || 'C1'}`);
+    lines.push(`task_id: ${block.task_id}`);
+    lines.push(`status: ${block.status}`);
+    lines.push(`files: ${serializeArrayInline(block.files || [])}`);
+    lines.push(`updated_at: ${block.updated_at || currentDate()}`);
+    lines.push('-->');
+    return lines.join('\n');
+}
+
+function upsertCodexActiveBlock(planRaw, block, deps = {}) {
+    const {
+        buildComment = (b) => buildCodexActiveComment(b, deps),
+        anchorText = 'Relacion con Operativo 2026:',
+    } = deps;
+    const regex = /<!--\s*CODEX_ACTIVE\s*\n[\s\S]*?-->\s*/g;
+    const withoutBlocks = String(planRaw || '').replace(regex, '');
+    if (!block) {
+        return withoutBlocks.replace(/\n{3,}/g, '\n\n');
+    }
+
+    const comment = `${buildComment(block)}\n\n`;
+    const anchorIndex = withoutBlocks.indexOf(anchorText);
+    if (anchorIndex === -1) {
+        return `${comment}${withoutBlocks}`.replace(/\n{3,}/g, '\n\n');
+    }
+    const lineEnd = withoutBlocks.indexOf('\n', anchorIndex);
+    if (lineEnd === -1) {
+        return `${withoutBlocks}\n\n${comment}`.replace(/\n{3,}/g, '\n\n');
+    }
+    return (
+        withoutBlocks.slice(0, lineEnd + 1) +
+        '\n' +
+        comment +
+        withoutBlocks.slice(lineEnd + 1)
+    ).replace(/\n{3,}/g, '\n\n');
+}
+
 function buildCodexCheckReport(input = {}, deps = {}) {
     const {
         board,
@@ -134,5 +180,7 @@ function buildCodexCheckReport(input = {}, deps = {}) {
 }
 
 module.exports = {
+    buildCodexActiveComment,
+    upsertCodexActiveBlock,
     buildCodexCheckReport,
 };
