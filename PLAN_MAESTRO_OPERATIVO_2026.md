@@ -153,6 +153,13 @@ Evidencia parcial (retencion + conversion/funnel):
 - Validacion remota en `main` (post-merge conversion): `Weekly KPI Report` run `22408343562` -> `success` (artifact con `conversion.bookingConfirmedRatePct=100`, `conversionTrend.bookingConfirmedRateDeltaPct=null`, `warnings=[]`).
 - Validacion remota en `main` (post-merge funnel temprano): `Weekly KPI Report` run `22408612570` -> `success` (artifact con `conversion.viewBooking=305`, `conversion.startCheckoutRatePct=0.33`, `conversionTrend.startCheckoutRateDeltaPct=null`; warning no bloqueante `core_p95_alto_995.16ms`).
 
+### Disciplina de ejecucion (Codex, 2026-02-25)
+
+- Modo por bloques: 45-90 min por objetivo, `1 PR` por bloque (cambio tecnico + evidencia/docs si aplica).
+- Validacion remota por hitos: checks locales durante el bloque; `CI/PR checks` y workflows manuales solo al cierre del bloque.
+- Evitar micro-PRs de sincronizacion (`plan/status/board`) inmediatamente despues del PR tecnico; cerrar evidencia en lote en el mismo PR o en un unico PR de cierre de sesion.
+- `Weekly KPI Report` manual: ejecutar una sola vez por bloque que modifique el reporte semanal (no por subcambio).
+
 ## Comandos oficiales del plan
 
 - Validacion backend bloqueante: `npm run gate:prod:backend`

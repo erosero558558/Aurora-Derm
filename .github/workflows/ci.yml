@@ -17,30 +17,68 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - name: Detect lint relevant changes
+              id: changes
+              uses: dorny/paths-filter@v3
+              with:
+                  filters: |
+                      lint:
+                        - 'controllers/**'
+                        - 'lib/**'
+                        - 'tests/**'
+                        - 'js/**'
+                        - 'src/**'
+                        - '*.php'
+                        - '*.html'
+                        - '*.css'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'composer.json'
+                        - 'composer.lock'
+                        - 'eslint.config.js'
+                        - 'phpunit.xml'
+                        - 'psalm.xml'
+                        - 'rollup.config.mjs'
+                        - 'playwright.config.js'
+                        - '.github/workflows/ci.yml'
+                        - 'prometheus.docker.yml'
+                        - 'prometheus.rules.yml'
+                        - 'bin/validate-plan-operativo.php'
+                        - 'PLAN_MAESTRO_OPERATIVO_2026.md'
             - name: Setup PHP
+              if: steps.changes.outputs.lint == 'true'
               uses: shivammathur/setup-php@v2
               with:
                   php-version: '8.2'
             - name: Setup Node
+              if: steps.changes.outputs.lint == 'true'
               uses: actions/setup-node@v4
               with:
                   node-version: '20'
                   cache: 'npm'
             - name: Install dependencies
+              if: steps.changes.outputs.lint == 'true'
               run: npm ci
             - name: Lint JS
+              if: steps.changes.outputs.lint == 'true'
               run: npm run lint:js
             - name: Lint PHP
+              if: steps.changes.outputs.lint == 'true'
               run: npm run lint:php
             - name: Validate Plan Operativo anti-loop
+              if: steps.changes.outputs.lint == 'true'
               run: php bin/validate-plan-operativo.php
             - name: Agent Orchestrator status
+              if: steps.changes.outputs.lint == 'true'
               run: node agent-orchestrator.js status
             - name: Agent conflict gate
+              if: steps.changes.outputs.lint == 'true'
               run: node agent-orchestrator.js conflicts --strict
             - name: Validate Agent Governance
+              if: steps.changes.outputs.lint == 'true'
               run: php bin/validate-agent-governance.php
             - name: Lint Prometheus Config
+              if: steps.changes.outputs.lint == 'true'
               run: |
                   docker run --rm \
                     -v $(pwd)/prometheus.docker.yml:/etc/prometheus/prometheus.yml \
@@ -48,6 +86,11 @@ jobs:
                     --entrypoint promtool \
                     prom/prometheus:latest \
                     check config /etc/prometheus/prometheus.yml
+            - name: Skip lint (no relevant changes)
+              if: steps.changes.outputs.lint != 'true'
+              run: |
+                  echo "Skipping lint: no lint-relevant source/config/workflow changes detected."
+                  echo "Docs/board/evidence-only changes should still be covered by Agent Governance checks."
 
     security:
         runs-on: ubuntu-latest
