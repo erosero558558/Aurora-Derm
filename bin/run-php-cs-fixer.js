@@ -151,6 +151,48 @@ function buildPhpCsFixerArgs(argv) {
 }
 
 const fixerPath = resolve(root, 'vendor', 'bin', 'php-cs-fixer');
+function isComposerAutoloadBootstrapError(output) {
+    const text = String(output || '');
+    return (
+        text.includes('ComposerAutoloaderInit') &&
+        text.includes('vendor\\autoload.php')
+    );
+}
+
+function probePhpCsFixerBootstrap(phpCommand) {
+    const probe = spawnSync(phpCommand, [fixerPath, '--version'], {
+        cwd: root,
+        encoding: 'utf8',
+        shell: false,
+    });
+
+    const combined = `${probe.stdout || ''}\n${probe.stderr || ''}`;
+    if (!probe.error && probe.status === 0) {
+        return { ok: true };
+    }
+    if (isComposerAutoloadBootstrapError(combined)) {
+        return {
+            ok: false,
+            skipLocal: true,
+            reason: 'composer_autoload_bootstrap_error',
+            output: combined.trim(),
+        };
+    }
+    return {
+        ok: false,
+        skipLocal: false,
+        reason: 'probe_failed',
+        status: probe.status,
+        output: combined.trim(),
+    };
+}
+
+function firstNonEmptyLine(text) {
+    return String(text || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .find(Boolean);
+}
 
 function main(argv = process.argv.slice(2)) {
     const args = Array.isArray(argv) ? argv : [];
@@ -168,6 +210,23 @@ function main(argv = process.argv.slice(2)) {
             phpRuntime.tried.length > 0 ? phpRuntime.tried.join(', ') : 'php';
         fail(
             `PHP no esta disponible. Configura PATH o define PHP_BIN (ej: setx PHP_BIN "C:\\\\ruta\\\\php.exe"). Candidatos probados: ${tried}`
+        );
+    }
+
+    const fixerBootstrap = probePhpCsFixerBootstrap(phpRuntime.command);
+    if (!fixerBootstrap.ok) {
+        if (fixerBootstrap.skipLocal && process.env.CI !== 'true') {
+            console.warn(
+                'WARN: php-cs-fixer no disponible por autoload de Composer inconsistente; se omite en hook local.'
+            );
+            const detail = firstNonEmptyLine(fixerBootstrap.output);
+            if (detail) {
+                console.warn(detail);
+            }
+            process.exit(0);
+        }
+        fail(
+            `php-cs-fixer no arranca (${fixerBootstrap.reason || 'unknown'}). ${fixerBootstrap.output || ''}`.trim()
         );
     }
 
@@ -189,5 +248,8 @@ module.exports = {
     hasOption,
     findPhpCsFixerConfig,
     resolvePhpBinary,
+    probePhpCsFixerBootstrap,
+    isComposerAutoloadBootstrapError,
+    firstNonEmptyLine,
     main,
 };

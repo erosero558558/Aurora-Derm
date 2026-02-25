@@ -14,18 +14,50 @@ require_once __DIR__ . '/../api-lib.php';
 
 echo "Testing appointment indexing...\n";
 
+function cleanup_test_dir(string $dir): void
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+
+    // Windows can keep SQLite file handles a bit longer; retry cleanup briefly.
+    for ($attempt = 0; $attempt < 5; $attempt++) {
+        $allDeleted = true;
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($files as $fileinfo) {
+            $path = $fileinfo->getRealPath();
+            if ($path === false) {
+                continue;
+            }
+            clearstatcache(true, $path);
+            $ok = $fileinfo->isDir() ? @rmdir($path) : @unlink($path);
+            if (!$ok && file_exists($path)) {
+                $allDeleted = false;
+            }
+        }
+
+        clearstatcache(true, $dir);
+        if (@rmdir($dir) || !is_dir($dir)) {
+            return;
+        }
+
+        if ($allDeleted) {
+            usleep(100000);
+        } else {
+            usleep(200000);
+        }
+    }
+
+    throw new RuntimeException("Failed to cleanup test directory: {$dir}");
+}
+
 // Ensure clean state
 if (file_exists($tempDir)) {
-    // recursively delete
-    $files = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::CHILD_FIRST
-    );
-    foreach ($files as $fileinfo) {
-        $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-        $todo($fileinfo->getRealPath());
-    }
-    rmdir($tempDir);
+    cleanup_test_dir($tempDir);
 }
 mkdir($tempDir);
 
@@ -95,15 +127,9 @@ if (!isset($newIndex['2023-10-29'])) {
 echo "[PASS] Index updated correctly.\n";
 
 // Cleanup
-// recursively delete
-$files = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS),
-    RecursiveIteratorIterator::CHILD_FIRST
-);
-foreach ($files as $fileinfo) {
-    $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-    $todo($fileinfo->getRealPath());
+if (function_exists('close_db_connection')) {
+    close_db_connection();
 }
-rmdir($tempDir);
+cleanup_test_dir($tempDir);
 
 echo "All tests passed.\n";
