@@ -226,6 +226,43 @@ class CalendarAvailabilityService
         ];
     }
 
+    public function warmUpAvailability(array $requests): void
+    {
+        if (!$this->isGoogleActive() || !$this->client->isConfigured()) {
+            return;
+        }
+
+        $specs = [];
+        foreach ($requests as $key => $req) {
+            $doctor = strtolower(trim((string) ($req['doctor'] ?? 'indiferente')));
+            $dateFrom = trim((string) ($req['dateFrom'] ?? ''));
+            $days = (int) ($req['days'] ?? 1);
+            $fresh = isset($req['fresh']) && $req['fresh'] === true;
+
+            if ($dateFrom === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+                continue;
+            }
+
+            $dateTo = $this->addDays($dateFrom, $days);
+            $calendarIds = $this->resolveCalendarIdsForDoctor($doctor);
+
+            if (count($calendarIds) === 0) {
+                continue;
+            }
+
+            $specs[$key] = [
+                'calendarIds' => $calendarIds,
+                'timeMinIso' => $this->toIsoStart($dateFrom),
+                'timeMaxIso' => $this->toIsoStart($dateTo),
+                'bypassCache' => $fresh,
+            ];
+        }
+
+        if (count($specs) > 0) {
+            $this->client->freeBusyMulti($specs);
+        }
+    }
+
     public function getBookedSlots(array $store, string $date, string $doctor, string $service = 'consulta'): array
     {
         $date = trim($date);
