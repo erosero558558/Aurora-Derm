@@ -1,4 +1,8 @@
-import { createOnceTask, scheduleDeferredTask, loadDeferredModule } from './loader.js';
+import {
+    createOnceTask,
+    scheduleDeferredTask,
+    loadDeferredModule,
+} from './loader.js';
 import {
     resolveDeployAssetVersion,
     withDeployAssetVersion,
@@ -119,8 +123,22 @@ const HERO_COPY = {
 let heroVariant = null;
 let heroExperimentTracked = false;
 
+function prefersReducedMotion() {
+    try {
+        return !!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (_error) {
+        return false;
+    }
+}
+
+function getPreferredScrollBehavior() {
+    return prefersReducedMotion() ? 'auto' : 'smooth';
+}
+
 function normalizeHeroVariant(value) {
-    const normalized = String(value || '').trim().toLowerCase();
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase();
     return HERO_VARIANTS.includes(normalized) ? normalized : '';
 }
 
@@ -139,7 +157,10 @@ function pickHeroVariant() {
     let selected;
     try {
         const randomArray = new Uint32Array(1);
-        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+        if (
+            window.crypto &&
+            typeof window.crypto.getRandomValues === 'function'
+        ) {
             window.crypto.getRandomValues(randomArray);
             selected =
                 randomArray[0] % 2 === 0
@@ -358,7 +379,9 @@ function initBookingCalendarLazyInit() {
         }
 
         element.addEventListener('click', function () {
-            const BOOKING_UTILS_URL = withDeployAssetVersion('/js/engines/booking-utils.js');
+            const BOOKING_UTILS_URL = withDeployAssetVersion(
+                '/js/engines/booking-utils.js'
+            );
             loadDeferredModule({
                 cacheKey: 'booking-utils-calendar',
                 src: BOOKING_UTILS_URL,
@@ -366,13 +389,18 @@ function initBookingCalendarLazyInit() {
                 resolveModule: () =>
                     window.PielBookingCalendarEngine ||
                     (window.Piel && window.Piel.BookingCalendarEngine),
-            }).then(function (moduleRef) {
-                if (moduleRef && typeof moduleRef.initCalendar === 'function') {
-                    moduleRef.initCalendar();
-                }
-            }).catch(function () {
-                // noop
-            });
+            })
+                .then(function (moduleRef) {
+                    if (
+                        moduleRef &&
+                        typeof moduleRef.initCalendar === 'function'
+                    ) {
+                        moduleRef.initCalendar();
+                    }
+                })
+                .catch(function () {
+                    // noop
+                });
         });
     }
 
@@ -398,11 +426,13 @@ function fallbackSelectService(value) {
         markBookingViewed('service_select');
         const appointmentSection = document.getElementById('citas');
         if (appointmentSection) {
-            const navHeight = document.querySelector('.nav')?.offsetHeight || 80;
-            const targetPosition = appointmentSection.offsetTop - navHeight - 20;
+            const navHeight =
+                document.querySelector('.nav')?.offsetHeight || 80;
+            const targetPosition =
+                appointmentSection.offsetTop - navHeight - 20;
             window.scrollTo({
                 top: targetPosition,
-                behavior: 'smooth',
+                behavior: getPreferredScrollBehavior(),
             });
         }
     }
@@ -427,7 +457,9 @@ function initChatActionFallbackBridge() {
         const actionEl = target.closest('[data-action]');
         if (!actionEl) return;
 
-        const action = String(actionEl.getAttribute('data-action') || '').trim();
+        const action = String(
+            actionEl.getAttribute('data-action') || ''
+        ).trim();
         const value = actionEl.getAttribute('data-value') || '';
 
         switch (action) {
@@ -499,76 +531,82 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(({ loadDeferredContent }) => loadDeferredContent())
         .catch(() => false)
         .then(() => {
-        showConsentBanner();
+            showConsentBanner();
 
-        const initHighPriorityWarmups = createOnceTask(() => {
-            initEnglishBundleWarmup();
-            initDataEngineWarmup();
-            initBookingEngineWarmup();
-            initBookingUiWarmup();
-            loadChatShell().then((shell) => {
-                shell.initChatUiEngineWarmup();
-                shell.initChatWidgetEngineWarmup();
-            }).catch(() => undefined);
-        });
-
-        const initLowPriorityWarmups = createOnceTask(() => {
-            loadEngagementRuntime()
-                .then((mod) => {
-                    mod.initReviewsEngineWarmup();
-                    mod.initEngagementFormsEngineWarmup();
-                })
-                .catch(() => undefined);
-            loadGalleryRuntime()
-                .then((mod) => mod.initGalleryInteractionsWarmup())
-                .catch(() => undefined);
-            loadChatShell().then((shell) => {
-                shell.initChatEngineWarmup();
-                shell.initChatBookingEngineWarmup();
-            }).catch(() => undefined);
-            loadUiRuntime()
-                .then((mod) => {
-                    mod.initUiEffectsWarmup();
-                    mod.initModalUxEngineWarmup();
-                })
-                .catch(() => undefined);
-            loadRescheduleRuntime()
-                .then((mod) => mod.initRescheduleEngineWarmup())
-                .catch(() => undefined);
-            loadSuccessModalRuntime()
-                .then((mod) => mod.initSuccessModalEngineWarmup())
-                .catch(() => undefined);
-        });
-
-        const initDeferredWarmups = createOnceTask(() => {
-            initHighPriorityWarmups();
-            initLowPriorityWarmups();
-            initBookingUiWarmup();
-        });
-
-        window.addEventListener('pointerdown', initDeferredWarmups, {
-            once: true,
-            passive: true,
-        });
-        window.addEventListener('keydown', initDeferredWarmups, { once: true });
-
-        scheduleDeferredTask(initHighPriorityWarmups, {
-            idleTimeout: 1400,
-            fallbackDelay: 500,
-            skipOnConstrained: false,
-            constrainedDelay: 900,
-        });
-
-        const chatInput = document.getElementById('chatInput');
-        if (chatInput) {
-            chatInput.addEventListener('keypress', async (e) => {
-                (await loadChatShell()).handleChatKeypress(e);
+            const initHighPriorityWarmups = createOnceTask(() => {
+                initEnglishBundleWarmup();
+                initDataEngineWarmup();
+                initBookingEngineWarmup();
+                initBookingUiWarmup();
+                loadChatShell()
+                    .then((shell) => {
+                        shell.initChatUiEngineWarmup();
+                        shell.initChatWidgetEngineWarmup();
+                    })
+                    .catch(() => undefined);
             });
-        }
 
-        // Gallery lazy load is already initialized below in the legacy fallback block.
-        initBookingCalendarLazyInit();
-    });
+            const initLowPriorityWarmups = createOnceTask(() => {
+                loadEngagementRuntime()
+                    .then((mod) => {
+                        mod.initReviewsEngineWarmup();
+                        mod.initEngagementFormsEngineWarmup();
+                    })
+                    .catch(() => undefined);
+                loadGalleryRuntime()
+                    .then((mod) => mod.initGalleryInteractionsWarmup())
+                    .catch(() => undefined);
+                loadChatShell()
+                    .then((shell) => {
+                        shell.initChatEngineWarmup();
+                        shell.initChatBookingEngineWarmup();
+                    })
+                    .catch(() => undefined);
+                loadUiRuntime()
+                    .then((mod) => {
+                        mod.initUiEffectsWarmup();
+                        mod.initModalUxEngineWarmup();
+                    })
+                    .catch(() => undefined);
+                loadRescheduleRuntime()
+                    .then((mod) => mod.initRescheduleEngineWarmup())
+                    .catch(() => undefined);
+                loadSuccessModalRuntime()
+                    .then((mod) => mod.initSuccessModalEngineWarmup())
+                    .catch(() => undefined);
+            });
+
+            const initDeferredWarmups = createOnceTask(() => {
+                initHighPriorityWarmups();
+                initLowPriorityWarmups();
+                initBookingUiWarmup();
+            });
+
+            window.addEventListener('pointerdown', initDeferredWarmups, {
+                once: true,
+                passive: true,
+            });
+            window.addEventListener('keydown', initDeferredWarmups, {
+                once: true,
+            });
+
+            scheduleDeferredTask(initHighPriorityWarmups, {
+                idleTimeout: 1400,
+                fallbackDelay: 500,
+                skipOnConstrained: false,
+                constrainedDelay: 900,
+            });
+
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', async (e) => {
+                    (await loadChatShell()).handleChatKeypress(e);
+                });
+            }
+
+            // Gallery lazy load is already initialized below in the legacy fallback block.
+            initBookingCalendarLazyInit();
+        });
 
     window.addEventListener('pagehide', () => {
         maybeTrackCheckoutAbandon('page_hide');
@@ -606,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.scrollTo({
             top: targetPosition,
-            behavior: 'smooth',
+            behavior: getPreferredScrollBehavior(),
         });
     });
 
@@ -641,21 +679,24 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const galleryObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                const src = img.dataset.src;
-                const srcset = img.dataset.srcset;
+    const galleryObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.dataset.src;
+                    const srcset = img.dataset.srcset;
 
-                if (srcset) img.srcset = srcset;
-                img.src = src;
-                img.classList.add('loaded');
+                    if (srcset) img.srcset = srcset;
+                    img.src = src;
+                    img.classList.add('loaded');
 
-                galleryObserver.unobserve(img);
-            }
-        });
-    }, { rootMargin: '200px' });
+                    galleryObserver.unobserve(img);
+                }
+            });
+        },
+        { rootMargin: '200px' }
+    );
 
     lazyImages.forEach((img) => {
         galleryObserver.observe(img);
@@ -670,7 +711,7 @@ window.addEventListener('online', () => {
 });
 
 // Push Notifications (Stub)
-window.subscribeToPushNotifications = async function() {
+window.subscribeToPushNotifications = async function () {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         debugLog('Push not supported');
         return;
@@ -681,7 +722,7 @@ window.subscribeToPushNotifications = async function() {
         const publicVapidKey = 'B...';
         const _subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: publicVapidKey
+            applicationServerKey: publicVapidKey,
         });
     } catch (error) {
         debugLog('Push subscription error:', error);

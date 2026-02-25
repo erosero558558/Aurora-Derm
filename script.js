@@ -7,8 +7,8 @@ let n = e || t,
     i = null,
     a = { active: !1, completed: !1, startedAt: 0, service: '', doctor: '' },
     r = 0;
-const s = new Map();
-let c = [],
+const c = new Map();
+let s = [],
     l = {
         enabled: !1,
         provider: 'stripe',
@@ -26,14 +26,14 @@ function p() {
 function f() {
     return i;
 }
-function y(e) {
+function w(e) {
     i = e;
 }
-function w() {
-    return c;
+function y() {
+    return s;
 }
 function b(e) {
-    c = e;
+    s = e;
 }
 function k() {
     return l;
@@ -106,7 +106,7 @@ const D = {
                 o = e;
             },
         ],
-        currentAppointment: [f, y],
+        currentAppointment: [f, w],
         checkoutSession: [
             function () {
                 return a;
@@ -115,12 +115,12 @@ const D = {
                 a = e;
             },
         ],
-        reviewsCache: [w, b],
+        reviewsCache: [y, b],
         chatbotOpen: [j, L],
         conversationContext: [_, T],
     },
     R = new Proxy(
-        { bookedSlotsCache: s },
+        { bookedSlotsCache: c },
         {
             get: (e, t, n) =>
                 'chatHistory' === t
@@ -224,8 +224,8 @@ function Q(e) {
         resolveModule: i,
         isModuleReady: a = (e) => !!e,
         onModuleReady: r,
-        missingApiError: s = 'Deferred module loaded without expected API',
-        loadError: c = 'No se pudo cargar el modulo diferido',
+        missingApiError: c = 'Deferred module loaded without expected API',
+        loadError: s = 'No se pudo cargar el modulo diferido',
         logLabel: l = '',
     } = e || {};
     if (!t || !n || !o || 'function' != typeof i)
@@ -250,11 +250,11 @@ function Q(e) {
                 }
                 (() => {
                     const n = u();
-                    n ? e(n) : t(new Error(s));
+                    n ? e(n) : t(new Error(c));
                 })();
             })
             .catch((e) => {
-                t(new Error(c));
+                t(new Error(s));
             });
     }).catch((e) => {
         throw (J.delete(t), e);
@@ -364,12 +364,12 @@ function re() {
         logLabel: 'Theme engine',
     });
 }
-function se(e) {
+function ce(e) {
     oe(re, (t) => t.setThemeMode(e));
 }
-let ce = null;
+let se = null;
 function le(e) {
-    (ce || (ce = import('./js/chunks/engagement-CxyxLpwi.js')), ce)
+    (se || (se = import('./js/chunks/engagement-CxyxLpwi.js')), se)
         .then((t) => t.renderPublicReviews(e))
         .catch(() => {});
 }
@@ -418,10 +418,10 @@ async function he(e, t = {}) {
     void 0 !== t.body &&
         ((a.headers['Content-Type'] = 'application/json'),
         (a.body = JSON.stringify(t.body)));
-    const s = Number.isFinite(t.timeoutMs)
+    const c = Number.isFinite(t.timeoutMs)
             ? Math.max(1500, Number(t.timeoutMs))
             : 9e3,
-        c = Number.isInteger(t.retries)
+        s = Number.isInteger(t.retries)
             ? Math.max(0, Number(t.retries))
             : 'GET' === n
               ? 1
@@ -433,9 +433,9 @@ async function he(e, t = {}) {
         return ((i.status = t), (i.retryable = n), (i.code = o), i);
     }
     let g = null;
-    for (let e = 0; e <= c; e += 1) {
+    for (let e = 0; e <= s; e += 1) {
         const t = new AbortController(),
-            n = setTimeout(() => t.abort(), s);
+            n = setTimeout(() => t.abort(), c);
         let o = null;
         l &&
             (o = setTimeout(() => {
@@ -492,7 +492,7 @@ async function he(e, t = {}) {
                             !0,
                             'network_error'
                         ))();
-            if (((g = n), !(e < c && !0 === n.retryable))) throw n;
+            if (((g = n), !(e < s && !0 === n.retryable))) throw n;
             const o = 450 * (e + 1);
             await F(o);
         } finally {
@@ -532,10 +532,10 @@ function pe() {
 async function fe() {
     return oe(pe, (e) => e.loadPaymentConfig());
 }
-async function ye() {
+async function we() {
     return oe(pe, (e) => e.loadStripeSdk());
 }
-async function we(e) {
+async function ye(e) {
     return oe(pe, (t) => t.createPaymentIntent(e));
 }
 async function be(e) {
@@ -944,8 +944,8 @@ function tt() {
                 completeCheckoutSession: at,
                 maybeTrackCheckoutAbandon: rt,
                 loadPaymentConfig: fe,
-                loadStripeSdk: ye,
-                createPaymentIntent: we,
+                loadStripeSdk: we,
+                createPaymentIntent: ye,
                 verifyPaymentIntent: be,
                 buildAppointmentPayload: et,
                 stripTransientAppointmentFields: Ze,
@@ -986,7 +986,7 @@ function at(e) {
 function rt(e = 'unknown') {
     oe(Fe, (t) => t.maybeTrackCheckoutAbandon(e));
 }
-function st() {
+function ct() {
     return Q({
         cacheKey: 'booking-utils-calendar',
         src: Qe,
@@ -998,8 +998,8 @@ function st() {
         logLabel: 'Booking Calendar engine',
     });
 }
-async function ct(e) {
-    return oe(st, (t) => t.updateAvailableTimes(ut(), e));
+async function st(e) {
+    return oe(ct, (t) => t.updateAvailableTimes(ut(), e));
 }
 function lt() {
     return ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00'];
@@ -1008,7 +1008,7 @@ function ut() {
     return {
         loadAvailabilityData: je,
         getBookedSlots: Le,
-        updateAvailableTimes: ct,
+        updateAvailableTimes: st,
         getDefaultTimeSlots: lt,
         showToast: V,
         getCurrentLang: () => R.currentLang,
@@ -1024,7 +1024,7 @@ function ut() {
         normalizeAnalyticsLabel: Ve,
         openPaymentModal: ht,
         debugLog: K,
-        setCurrentAppointment: y,
+        setCurrentAppointment: w,
     };
 }
 function dt(e) {
@@ -1113,12 +1113,12 @@ async function pt() {
     );
 }
 let ft = null;
-function yt() {
+function wt() {
     return (ft || (ft = import('./js/chunks/ui-C4GEqQxn.js')), ft);
 }
-let wt = null;
+let yt = null;
 function bt() {
-    return (wt || (wt = import('./js/chunks/engagement-CxyxLpwi.js')), wt);
+    return (yt || (yt = import('./js/chunks/engagement-CxyxLpwi.js')), yt);
 }
 let kt = null,
     vt = null;
@@ -1126,17 +1126,17 @@ function Pt() {
     return (vt || (vt = import('./js/chunks/reschedule-CiSqh0C5.js')), vt);
 }
 function Et(e) {
-    yt()
+    wt()
         .then((t) => t.toggleMobileMenu(e))
         .catch(() => {});
 }
 function Ct() {
-    yt()
+    wt()
         .then((e) => e.startWebVideo())
         .catch(() => {});
 }
 function St() {
-    yt()
+    wt()
         .then((e) => e.closeVideoModal())
         .catch(() => {});
 }
@@ -1195,7 +1195,7 @@ function Dt() {
         isModuleReady: (e) => !(!e || 'function' != typeof e.init),
         onModuleReady: (e) =>
             e.init({
-                setThemeMode: se,
+                setThemeMode: ce,
                 changeLanguage: ge,
                 toggleMobileMenu: Et,
                 startWebVideo: Ct,
@@ -1319,6 +1319,18 @@ const Gt = 'pa_hero_variant_v1',
 let Xt = null,
     Zt = !1;
 function en() {
+    return (function () {
+        try {
+            return !!window.matchMedia('(prefers-reduced-motion: reduce)')
+                .matches;
+        } catch (e) {
+            return !1;
+        }
+    })()
+        ? 'auto'
+        : 'smooth';
+}
+function tn() {
     return (
         Xt ||
             (Xt =
@@ -1349,8 +1361,8 @@ function en() {
         Xt
     );
 }
-function tn() {
-    const e = en(),
+function nn() {
+    const e = tn(),
         t = 'en' === R.currentLang ? 'en' : 'es',
         n = Yt[e] || Yt[Ht],
         o = n[t] || n.es,
@@ -1363,7 +1375,7 @@ function tn() {
         document.documentElement.setAttribute('data-hero-variant', e));
 }
 ((window.Piel.getExperimentContext = function () {
-    const e = en();
+    const e = tn();
     return {
         heroVariant: e,
         source: `hero_${e}`,
@@ -1390,10 +1402,10 @@ function tn() {
     (window.Piel.isFeatureEnabled = function (e) {
         return !!Ot && Boolean(Ot[e]);
     }));
-const nn = $('/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1');
-let on = null,
-    an = !1;
-let rn = !1;
+const on = $('/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1');
+let an = null,
+    rn = !1;
+let cn = !1;
 (document.addEventListener('DOMContentLoaded', function () {
     (document.querySelectorAll('a[href^="URL_"]').forEach((e) => {
         (e.removeAttribute('href'),
@@ -1401,8 +1413,8 @@ let rn = !1;
             e.classList.add('is-disabled-link'));
     }),
         Nt(),
-        rn ||
-            ((rn = !0),
+        cn ||
+            ((cn = !0),
             document.addEventListener('click', async function (e) {
                 const t = e.target instanceof Element ? e.target : null;
                 if (!t) return;
@@ -1459,7 +1471,7 @@ let rn = !1;
                                             t = n.offsetTop - e - 20;
                                         window.scrollTo({
                                             top: t,
-                                            behavior: 'smooth',
+                                            behavior: en(),
                                         });
                                     }
                                 }
@@ -1477,20 +1489,20 @@ let rn = !1;
             () => {},
             (e) => {}
         ),
-        an ||
+        rn ||
             'file:' === window.location.protocol ||
-            ((an = !0),
+            ((rn = !0),
             Y(
                 () => {
                     (document.querySelector(
                         'link[data-deferred-stylesheet="true"], link[rel="stylesheet"][href*="styles-deferred.css"]'
                     )
                         ? Promise.resolve(!0)
-                        : on ||
-                          ((on = new Promise((e, t) => {
+                        : an ||
+                          ((an = new Promise((e, t) => {
                               const n = document.createElement('link');
                               ((n.rel = 'stylesheet'),
-                                  (n.href = nn),
+                                  (n.href = on),
                                   (n.dataset.deferredStylesheet = 'true'),
                                   (n.onload = () => e(!0)),
                                   (n.onerror = () =>
@@ -1501,9 +1513,9 @@ let rn = !1;
                                       )),
                                   document.head.appendChild(n));
                           }).catch((e) => {
-                              throw ((on = null), e);
+                              throw ((an = null), e);
                           })),
-                          on)
+                          an)
                     ).catch(() => {});
                 },
                 {
@@ -1515,10 +1527,10 @@ let rn = !1;
             )),
         oe(re, (e) => e.initThemeMode()),
         ge(R.currentLang)
-            .then(() => tn())
-            .catch(() => tn()),
-        en(),
+            .then(() => nn())
+            .catch(() => nn()),
         tn(),
+        nn(),
         (function () {
             const e = (e, t) => {
                 const n = document.querySelector(e);
@@ -1527,7 +1539,7 @@ let rn = !1;
                     ((n.dataset.heroExperimentBound = 'true'),
                     n.addEventListener('click', () => {
                         $e('booking_step_completed', {
-                            source: `hero_${en()}`,
+                            source: `hero_${tn()}`,
                             step: t,
                         });
                     }));
@@ -1543,11 +1555,11 @@ let rn = !1;
                 Zt ||
                     ((Zt = !0),
                     $e('booking_step_completed', {
-                        source: `hero_${en()}`,
+                        source: `hero_${tn()}`,
                         step: 'hero_variant_assigned',
                     })));
         })(),
-        document.addEventListener('piel:language-changed', tn),
+        document.addEventListener('piel:language-changed', nn),
         oe(Nt, (e) => e.initGA4()),
         oe(Fe, (e) => e.initBookingFunnelObserver()),
         oe(Fe, (e) => e.initDeferredSectionPrefetch()),
@@ -1695,9 +1707,9 @@ let rn = !1;
         if (!a) return;
         t.preventDefault();
         const r = e ? e.offsetHeight : 0,
-            s = a.offsetTop - r - 20;
-        ('#citas' === i && Ge(`cta_click_${en()}`),
-            window.scrollTo({ top: s, behavior: 'smooth' }));
+            c = a.offsetTop - r - 20;
+        ('#citas' === i && Ge(`cta_click_${tn()}`),
+            window.scrollTo({ top: c, behavior: en() }));
     }),
         document.addEventListener('click', function (e) {
             const t = e.target instanceof Element ? e.target : null;
@@ -1775,7 +1787,7 @@ export {
     je as F,
     te as G,
     b as H,
-    w as I,
+    y as I,
     Ie as J,
     Te as K,
     z as L,
@@ -1799,7 +1811,7 @@ export {
     _ as n,
     K as o,
     R as p,
-    y as q,
+    w as q,
     oe as r,
     V as s,
     $e as t,

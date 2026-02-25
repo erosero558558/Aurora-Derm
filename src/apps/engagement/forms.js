@@ -43,12 +43,36 @@ function applySelectedRating(rating) {
     });
 }
 
+function getCallbackStatusNode() {
+    const node = document.getElementById('callbackStatus');
+    return node instanceof HTMLElement ? node : null;
+}
+
+function announceCallbackStatus(message) {
+    const statusNode = getCallbackStatusNode();
+    if (!statusNode) {
+        return;
+    }
+
+    const nextMessage = String(message || '').trim();
+    statusNode.textContent = '';
+    if (!nextMessage) {
+        return;
+    }
+
+    const applyText = () => {
+        statusNode.textContent = nextMessage;
+    };
+    if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+        window.requestAnimationFrame(applyText);
+        return;
+    }
+    setTimeout(applyText, 0);
+}
+
 function bindCallbackForm() {
     const callbackForm = document.getElementById('callbackForm');
-    if (
-        !callbackForm ||
-        callbackForm.dataset.callbackEngineBound === 'true'
-    ) {
+    if (!callbackForm || callbackForm.dataset.callbackEngineBound === 'true') {
         return;
     }
     callbackForm.dataset.callbackEngineBound = 'true';
@@ -58,6 +82,10 @@ function bindCallbackForm() {
 
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalContent = submitBtn ? submitBtn.innerHTML : '';
+        this.setAttribute('aria-busy', 'true');
+        announceCallbackStatus(
+            t('Enviando solicitud de llamada...', 'Sending callback request...')
+        );
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.innerHTML =
@@ -88,6 +116,12 @@ function bindCallbackForm() {
                     'success'
                 );
             }
+            announceCallbackStatus(
+                t(
+                    'Solicitud enviada. Te llamaremos pronto.',
+                    'Request sent. We will call you soon.'
+                )
+            );
             this.reset();
         } catch (_e) {
             if (deps && typeof deps.showToast === 'function') {
@@ -99,7 +133,14 @@ function bindCallbackForm() {
                     'error'
                 );
             }
+            announceCallbackStatus(
+                t(
+                    'No se pudo enviar tu solicitud. Intenta de nuevo.',
+                    'We could not send your request. Try again.'
+                )
+            );
         } finally {
+            this.removeAttribute('aria-busy');
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalContent;
@@ -110,9 +151,7 @@ function bindCallbackForm() {
 
 function bindReviewForm() {
     const reviewForm = document.getElementById('reviewForm');
-    const reviewStars = Array.from(
-        document.querySelectorAll('.star-rating i')
-    );
+    const reviewStars = Array.from(document.querySelectorAll('.star-rating i'));
     if (!reviewForm || reviewForm.dataset.reviewEngineBound === 'true') {
         stars = reviewStars;
         return;
@@ -162,12 +201,10 @@ function bindReviewForm() {
             const currentReviews =
                 deps && typeof deps.getReviewsCache === 'function'
                     ? deps.getReviewsCache()
-                        : [];
+                    : [];
             const mergedReviews = [
                 savedReview,
-                ...currentReviews.filter(
-                    (item) => item.id !== savedReview.id
-                ),
+                ...currentReviews.filter((item) => item.id !== savedReview.id),
             ];
 
             if (deps && typeof deps.setReviewsCache === 'function') {
@@ -179,10 +216,7 @@ function bindReviewForm() {
 
             if (deps && typeof deps.showToast === 'function') {
                 deps.showToast(
-                    t(
-                        'Gracias por tu reseña.',
-                        'Thank you for your review.'
-                    ),
+                    t('Gracias por tu reseña.', 'Thank you for your review.'),
                     'success'
                 );
             }
