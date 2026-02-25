@@ -52,6 +52,28 @@ const DEFAULT_GOVERNANCE_POLICY = {
             domain_score_priority_yellow_below: 80,
         },
     },
+    enforcement: {
+        branch_profiles: {
+            pull_request: { fail_on_red: 'warn' },
+            main: { fail_on_red: 'warn' },
+            staging: { fail_on_red: 'warn' },
+            workflow_dispatch: { fail_on_red: 'warn' },
+        },
+        warning_policies: {
+            active_broad_glob: { severity: 'warning', enabled: true },
+            handoff_expiring_soon: {
+                severity: 'warning',
+                enabled: true,
+                hours_threshold: 4,
+            },
+            metrics_baseline_missing: { severity: 'warning', enabled: true },
+            from_files_fallback_default_scope: {
+                severity: 'warning',
+                enabled: true,
+            },
+            policy_unknown_keys: { severity: 'warning', enabled: true },
+        },
+    },
 };
 let GOVERNANCE_POLICY_CACHE = null;
 
@@ -252,6 +274,23 @@ function buildContributionDeltaMap(metrics) {
     );
 }
 
+function collectDiagnostics(sources) {
+    const out = [];
+    for (const source of sources) {
+        const list = Array.isArray(source?.diagnostics)
+            ? source.diagnostics
+            : [];
+        for (const item of list) out.push(item);
+    }
+    let warnings = 0;
+    let errors = 0;
+    for (const item of out) {
+        if (String(item?.severity || '').toLowerCase() === 'error') errors += 1;
+        else warnings += 1;
+    }
+    return { diagnostics: out, warnings_count: warnings, errors_count: errors };
+}
+
 function formatPct(value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return 'n/a';
@@ -382,6 +421,7 @@ function summarize(resultMap) {
     const conflicts = resultMap.conflicts?.json || {};
     const handoffStatus = resultMap.handoffsStatus?.json || {};
     const handoffLint = resultMap.handoffsLint?.json || {};
+    const policyLint = resultMap.policy?.json || {};
     const codexCheck = resultMap.codexCheck?.json || {};
     const metrics = resultMap.metrics?.json || {};
     const contribution = status?.contribution ||
@@ -403,7 +443,9 @@ function summarize(resultMap) {
         blockers.push('handoffs_lint_parse');
     if (resultMap.codexCheck?.json_parse_error)
         blockers.push('codex_check_parse');
+    if (resultMap.policy?.json_parse_error) blockers.push('policy_parse');
     if (resultMap.metrics?.json_parse_error) blockers.push('metrics_parse');
+    if (policyLint && policyLint.ok === false) blockers.push('policy_lint');
 
     const topBlocking = Array.isArray(conflicts.conflicts)
         ? conflicts.conflicts
@@ -456,6 +498,14 @@ function summarize(resultMap) {
         domainHealth,
         domainHealthHistory,
     });
+    const diagnosticsSummary = collectDiagnostics([
+        status,
+        conflicts,
+        handoffStatus,
+        handoffLint,
+        policyLint,
+        codexCheck,
+    ]);
 
     const baseReport = {
         version: 1,
@@ -478,6 +528,7 @@ function summarize(resultMap) {
             status: handoffStatus || null,
             lint: handoffLint || null,
         },
+        policy: policyLint || null,
         codex_check: codexCheck || null,
         metrics: metrics || null,
         contribution: contribution || null,
@@ -486,6 +537,9 @@ function summarize(resultMap) {
         domain_health_history: domainHealthHistory || null,
         delta_summary: deltaSummary,
         top_blocking_conflicts: topBlocking,
+        diagnostics: diagnosticsSummary.diagnostics,
+        warnings_count: diagnosticsSummary.warnings_count,
+        errors_count: diagnosticsSummary.errors_count,
         commands: resultMap,
     };
     return {
@@ -507,6 +561,7 @@ function toMarkdown(report) {
     const conflicts = report.conflicts || {};
     const handoffStatus = report.handoffs?.status || {};
     const handoffLint = report.handoffs?.lint || {};
+    const policyLint = report.policy || {};
     const codexCheck = report.codex_check || {};
     const delta = report.delta_summary || {};
     const contribution = report.contribution || {};
@@ -530,6 +585,9 @@ function toMarkdown(report) {
     lines.push(`- Generated: \`${report.generated_at}\``);
     lines.push(`- Overall: ${report.overall.ok ? 'OK' : 'BLOCKED'}`);
     lines.push(`- Semaforo: \`${report.overall.signal || 'n/a'}\``);
+    lines.push(
+        `- Diagnostics warn-first: warnings=\`${report.warnings_count ?? 0}\`, errors=\`${report.errors_count ?? 0}\``
+    );
     lines.push(
         `- Score salud dominios (priority): \`${report.overall.domain_weighted_score_pct ?? 'n/a'}\``
     );
@@ -763,6 +821,9 @@ function toMarkdown(report) {
         `- Handoffs lint: ${handoffLint.ok === true ? 'OK' : handoffLint.ok === false ? `FAIL (${handoffLint.error_count || 0})` : 'n/a'}`
     );
     lines.push(
+        `- Policy lint: ${policyLint.ok === true ? 'OK' : policyLint.ok === false ? `FAIL (${policyLint.error_count || 0})` : 'n/a'}`
+    );
+    lines.push(
         `- Codex mirror: ${codexCheck.ok === true ? 'OK' : codexCheck.ok === false ? `FAIL (${codexCheck.error_count || 0})` : 'n/a'}`
     );
     lines.push(
@@ -796,6 +857,24 @@ function toMarkdown(report) {
         lines.push('### Handoff Lint Errors');
         for (const error of handoffLint.errors.slice(0, 10)) {
             lines.push(`- ${error}`);
+        }
+        lines.push('');
+    }
+
+    if (Array.isArray(policyLint.errors) && policyLint.errors.length > 0) {
+        lines.push('### Policy Lint Errors');
+        for (const error of policyLint.errors.slice(0, 10)) {
+            lines.push(`- ${error}`);
+        }
+        lines.push('');
+    }
+
+    if (Array.isArray(report.diagnostics) && report.diagnostics.length > 0) {
+        lines.push('### Warn-first Diagnostics');
+        for (const diag of report.diagnostics.slice(0, 20)) {
+            lines.push(
+                `- [${String(diag.severity || 'warning').toUpperCase()}] \`${diag.code || 'unknown'}\` (${diag.source || 'n/a'}): ${diag.message || ''}`
+            );
         }
         lines.push('');
     }
@@ -900,6 +979,7 @@ function main() {
             conflicts: ['conflicts', '--json'],
             handoffsStatus: ['handoffs', 'status', '--json'],
             handoffsLint: ['handoffs', 'lint', '--json'],
+            policy: ['policy', 'lint', '--json'],
             codexCheck: ['codex-check', '--json'],
             metrics: ['metrics', '--json', '--profile', metricsProfile],
         };

@@ -79,6 +79,28 @@ const DEFAULT_GOVERNANCE_POLICY = {
             domain_score_priority_yellow_below: 80,
         },
     },
+    enforcement: {
+        branch_profiles: {
+            pull_request: { fail_on_red: 'warn' },
+            main: { fail_on_red: 'warn' },
+            staging: { fail_on_red: 'warn' },
+            workflow_dispatch: { fail_on_red: 'warn' },
+        },
+        warning_policies: {
+            active_broad_glob: { severity: 'warning', enabled: true },
+            handoff_expiring_soon: {
+                severity: 'warning',
+                enabled: true,
+                hours_threshold: 4,
+            },
+            metrics_baseline_missing: { severity: 'warning', enabled: true },
+            from_files_fallback_default_scope: {
+                severity: 'warning',
+                enabled: true,
+            },
+            policy_unknown_keys: { severity: 'warning', enabled: true },
+        },
+    },
 };
 const GOVERNANCE_POLICY_CACHE_REF = { current: null };
 
@@ -832,6 +854,30 @@ function buildStatusRedExplanation({
     );
 }
 
+function buildWarnFirstDiagnostics({
+    source,
+    board = null,
+    handoffData = null,
+    conflictAnalysis = null,
+    metricsSnapshot = null,
+    policyReport = null,
+}) {
+    return domainDiagnostics.buildWarnFirstDiagnostics({
+        source,
+        policy: getGovernancePolicy(),
+        board,
+        handoffData,
+        conflictAnalysis,
+        metricsSnapshot,
+        policyReport,
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
+function attachDiagnostics(report, diagnostics) {
+    return domainDiagnostics.attachDiagnostics(report, diagnostics);
+}
+
 function cmdStatus(args) {
     const wantsJson = args.includes('--json');
     const wantsExplainRed = args.includes('--explain-red');
@@ -878,6 +924,19 @@ function cmdStatus(args) {
             domainHealthHistory,
         });
     }
+
+    Object.assign(
+        data,
+        domainDiagnostics.summarizeDiagnostics(
+            buildWarnFirstDiagnostics({
+                source: 'status',
+                board,
+                handoffData,
+                conflictAnalysis,
+                metricsSnapshot,
+            })
+        )
+    );
 
     if (wantsJson) {
         coreOutput.printJson(data);
@@ -1338,9 +1397,18 @@ function cmdConflicts(args) {
         },
         conflicts: analysis.all.map(toConflictJsonRecord),
     };
+    const reportWithDiagnostics = attachDiagnostics(
+        report,
+        buildWarnFirstDiagnostics({
+            source: 'conflicts',
+            board,
+            handoffData,
+            conflictAnalysis: analysis,
+        })
+    );
 
     if (wantsJson) {
-        console.log(JSON.stringify(report, null, 2));
+        console.log(JSON.stringify(reportWithDiagnostics, null, 2));
         if (strict && analysis.blocking.length > 0) {
             process.exitCode = 1;
         }
@@ -1408,10 +1476,18 @@ function cmdPolicy(args = []) {
         };
     }
 
+    const reportWithDiagnostics = attachDiagnostics(
+        report,
+        buildWarnFirstDiagnostics({
+            source: 'policy',
+            policyReport: report,
+        })
+    );
+
     if (wantsJson) {
-        console.log(JSON.stringify(report, null, 2));
+        console.log(JSON.stringify(reportWithDiagnostics, null, 2));
         if (!report.ok) process.exitCode = 1;
-        return report;
+        return reportWithDiagnostics;
     }
 
     if (!report.ok) {
@@ -1575,8 +1651,15 @@ function cmdHandoffs(args) {
             },
             handoffs: handoffData.handoffs,
         };
+        const reportWithDiagnostics = attachDiagnostics(
+            report,
+            buildWarnFirstDiagnostics({
+                source: 'handoffs.status',
+                handoffData,
+            })
+        );
         if (wantsJson) {
-            console.log(JSON.stringify(report, null, 2));
+            console.log(JSON.stringify(reportWithDiagnostics, null, 2));
             return;
         }
         console.log('== Agent Handoffs ==');
@@ -1595,8 +1678,15 @@ function cmdHandoffs(args) {
             error_count: errors.length,
             errors,
         };
+        const reportWithDiagnostics = attachDiagnostics(
+            report,
+            buildWarnFirstDiagnostics({
+                source: 'handoffs.lint',
+                handoffData,
+            })
+        );
         if (wantsJson) {
-            console.log(JSON.stringify(report, null, 2));
+            console.log(JSON.stringify(reportWithDiagnostics, null, 2));
             if (errors.length > 0) {
                 process.exitCode = 1;
             }
@@ -1896,13 +1986,21 @@ function buildCodexCheckReport() {
 function cmdCodexCheck(args = []) {
     const wantsJson = args.includes('--json');
     const report = buildCodexCheckReport();
+    const reportWithDiagnostics = attachDiagnostics(
+        report,
+        buildWarnFirstDiagnostics({
+            source: 'codex-check',
+            board: parseBoard(),
+            handoffData: parseHandoffs(),
+        })
+    );
 
     if (wantsJson) {
-        console.log(JSON.stringify(report, null, 2));
+        console.log(JSON.stringify(reportWithDiagnostics, null, 2));
         if (!report.ok) {
             process.exitCode = 1;
         }
-        return report;
+        return reportWithDiagnostics;
     }
 
     if (!report.ok) {

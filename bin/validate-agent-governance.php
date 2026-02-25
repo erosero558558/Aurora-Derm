@@ -599,6 +599,54 @@ if (is_array($governancePolicy)) {
             $errors[] = 'governance-policy.json tiene threshold invalido: summary.thresholds.domain_score_priority_yellow_below';
         }
     }
+
+    $enforcement = $governancePolicy['enforcement'] ?? null;
+    if ($enforcement !== null) {
+        if (!is_array($enforcement)) {
+            $errors[] = 'governance-policy.json requiere enforcement como objeto';
+        } else {
+            $branchProfiles = $enforcement['branch_profiles'] ?? null;
+            if (!is_array($branchProfiles)) {
+                $errors[] = 'governance-policy.json requiere enforcement.branch_profiles como objeto';
+            } else {
+                foreach ($branchProfiles as $branchName => $branchCfg) {
+                    if (!is_array($branchCfg)) {
+                        $errors[] = "governance-policy.json requiere enforcement.branch_profiles.{$branchName} como objeto";
+                        continue;
+                    }
+                    $failOnRed = trim((string) ($branchCfg['fail_on_red'] ?? ''));
+                    if (!in_array($failOnRed, ['warn', 'error', 'ignore'], true)) {
+                        $errors[] = "governance-policy.json tiene fail_on_red invalido en enforcement.branch_profiles.{$branchName}";
+                    }
+                }
+            }
+
+            $warningPolicies = $enforcement['warning_policies'] ?? null;
+            if (!is_array($warningPolicies)) {
+                $errors[] = 'governance-policy.json requiere enforcement.warning_policies como objeto';
+            } else {
+                foreach ($warningPolicies as $warningKey => $warningCfg) {
+                    if (!is_array($warningCfg)) {
+                        $errors[] = "governance-policy.json requiere enforcement.warning_policies.{$warningKey} como objeto";
+                        continue;
+                    }
+                    if (!array_key_exists('enabled', $warningCfg) || !is_bool($warningCfg['enabled'])) {
+                        $errors[] = "governance-policy.json requiere enforcement.warning_policies.{$warningKey}.enabled boolean";
+                    }
+                    $severity = trim((string) ($warningCfg['severity'] ?? ''));
+                    if (!in_array($severity, ['warning', 'error'], true)) {
+                        $errors[] = "governance-policy.json tiene severity invalido en enforcement.warning_policies.{$warningKey}";
+                    }
+                    if (array_key_exists('hours_threshold', $warningCfg)) {
+                        $hoursThreshold = $warningCfg['hours_threshold'];
+                        if (!is_numeric($hoursThreshold) || (float) $hoursThreshold <= 0) {
+                            $errors[] = "governance-policy.json tiene hours_threshold invalido en enforcement.warning_policies.{$warningKey}";
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 $handoffIds = [];

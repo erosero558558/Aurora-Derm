@@ -108,6 +108,228 @@ function buildStatusRedExplanation(input = {}, deps = {}) {
     };
 }
 
+function hoursUntil(dateValue, nowMs = Date.now()) {
+    const expiresMs = Date.parse(String(dateValue || ''));
+    if (!Number.isFinite(expiresMs)) return null;
+    return (expiresMs - nowMs) / (1000 * 60 * 60);
+}
+
+function getWarnPolicyMap(policy) {
+    const warningPolicies = policy?.enforcement?.warning_policies;
+    return warningPolicies && typeof warningPolicies === 'object'
+        ? warningPolicies
+        : {};
+}
+
+function warnPolicyEnabled(warnPolicyMap, key) {
+    const cfg = warnPolicyMap?.[key];
+    return cfg && typeof cfg === 'object' ? cfg.enabled !== false : false;
+}
+
+function warnPolicySeverity(warnPolicyMap, key) {
+    const severity = String(warnPolicyMap?.[key]?.severity || 'warning')
+        .trim()
+        .toLowerCase();
+    return severity === 'error' ? 'error' : 'warning';
+}
+
+function isBroadGlobPath(file) {
+    const value = String(file || '').trim();
+    if (!value) return false;
+    return (
+        value === '*' ||
+        value === '**' ||
+        value === './*' ||
+        value === './**' ||
+        value.endsWith('/**') ||
+        value.endsWith('\\**')
+    );
+}
+
+function makeDiagnostic(input = {}) {
+    return {
+        code: String(input.code || 'warn.unknown'),
+        severity: String(input.severity || 'warning'),
+        source: String(input.source || 'governance'),
+        message: String(input.message || ''),
+        ...(Array.isArray(input.task_ids) ? { task_ids: input.task_ids } : {}),
+        ...(Array.isArray(input.handoff_ids)
+            ? { handoff_ids: input.handoff_ids }
+            : {}),
+        ...(Array.isArray(input.files) ? { files: input.files } : {}),
+        ...(input.meta && typeof input.meta === 'object'
+            ? { meta: input.meta }
+            : {}),
+    };
+}
+
+function summarizeDiagnostics(diagnostics = []) {
+    const list = Array.isArray(diagnostics) ? diagnostics : [];
+    let warnings = 0;
+    let errors = 0;
+    for (const item of list) {
+        if (String(item?.severity || '').toLowerCase() === 'error') errors += 1;
+        else warnings += 1;
+    }
+    return {
+        diagnostics: list,
+        warnings_count: warnings,
+        errors_count: errors,
+    };
+}
+
+function attachDiagnostics(report, diagnostics = []) {
+    const base = report && typeof report === 'object' ? report : {};
+    return {
+        ...base,
+        ...summarizeDiagnostics(diagnostics),
+    };
+}
+
+function buildWarnFirstDiagnostics(input = {}) {
+    const {
+        source = 'status',
+        policy = null,
+        board = null,
+        handoffData = null,
+        metricsSnapshot = null,
+        policyReport = null,
+        activeStatuses = new Set(),
+        now = new Date(),
+    } = input;
+    const diagnostics = [];
+    const warnPolicyMap = getWarnPolicyMap(policy);
+    const nowMs = now instanceof Date ? now.getTime() : Date.now();
+
+    if (warnPolicyEnabled(warnPolicyMap, 'active_broad_glob')) {
+        const tasks = Array.isArray(board?.tasks) ? board.tasks : [];
+        const activeWithBroadGlobs = tasks
+            .filter((task) => activeStatuses.has(String(task.status || '')))
+            .map((task) => {
+                const broadFiles = (
+                    Array.isArray(task.files) ? task.files : []
+                ).filter(isBroadGlobPath);
+                return broadFiles.length > 0
+                    ? { taskId: String(task.id || ''), broadFiles }
+                    : null;
+            })
+            .filter(Boolean);
+        if (activeWithBroadGlobs.length > 0) {
+            diagnostics.push(
+                makeDiagnostic({
+                    code: 'warn.board.active_broad_glob',
+                    severity: warnPolicySeverity(
+                        warnPolicyMap,
+                        'active_broad_glob'
+                    ),
+                    source,
+                    message: `Tareas activas con globs amplios: ${activeWithBroadGlobs
+                        .map((r) => r.taskId)
+                        .join(', ')}`,
+                    task_ids: activeWithBroadGlobs.map((r) => r.taskId),
+                    files: Array.from(
+                        new Set(
+                            activeWithBroadGlobs.flatMap((r) => r.broadFiles)
+                        )
+                    ),
+                })
+            );
+        }
+    }
+
+    if (warnPolicyEnabled(warnPolicyMap, 'handoff_expiring_soon')) {
+        const thresholdHours = Number(
+            warnPolicyMap?.handoff_expiring_soon?.hours_threshold ?? 4
+        );
+        const handoffs = Array.isArray(handoffData?.handoffs)
+            ? handoffData.handoffs
+            : [];
+        const expiringSoon = handoffs
+            .filter(
+                (handoff) =>
+                    String(handoff.status || '').toLowerCase() === 'active'
+            )
+            .map((handoff) => ({
+                id: String(handoff.id || ''),
+                hours_left: hoursUntil(handoff.expires_at, nowMs),
+                expires_at: String(handoff.expires_at || ''),
+            }))
+            .filter(
+                (row) =>
+                    Number.isFinite(row.hours_left) &&
+                    row.hours_left > 0 &&
+                    row.hours_left <= thresholdHours
+            )
+            .sort((a, b) => a.hours_left - b.hours_left);
+
+        if (expiringSoon.length > 0) {
+            diagnostics.push(
+                makeDiagnostic({
+                    code: 'warn.handoff.expiring_soon',
+                    severity: warnPolicySeverity(
+                        warnPolicyMap,
+                        'handoff_expiring_soon'
+                    ),
+                    source,
+                    message: `Handoffs activos expiran pronto (<=${thresholdHours}h): ${expiringSoon
+                        .map((h) => h.id)
+                        .join(', ')}`,
+                    handoff_ids: expiringSoon.map((h) => h.id),
+                    meta: { hours_threshold: thresholdHours },
+                })
+            );
+        }
+    }
+
+    if (warnPolicyEnabled(warnPolicyMap, 'metrics_baseline_missing')) {
+        const baselineMissing =
+            !metricsSnapshot ||
+            typeof metricsSnapshot !== 'object' ||
+            !metricsSnapshot.baseline;
+        if (baselineMissing) {
+            diagnostics.push(
+                makeDiagnostic({
+                    code: 'warn.metrics.baseline_missing',
+                    severity: warnPolicySeverity(
+                        warnPolicyMap,
+                        'metrics_baseline_missing'
+                    ),
+                    source,
+                    message:
+                        'No hay baseline explicito en verification/agent-metrics.json',
+                })
+            );
+        }
+    }
+
+    if (warnPolicyEnabled(warnPolicyMap, 'policy_unknown_keys')) {
+        const unknownKeyWarnings = Array.isArray(policyReport?.warnings)
+            ? policyReport.warnings.filter((w) =>
+                  /unknown key/i.test(String(w || ''))
+              )
+            : [];
+        if (unknownKeyWarnings.length > 0) {
+            diagnostics.push(
+                makeDiagnostic({
+                    code: 'warn.policy.unknown_keys',
+                    severity: warnPolicySeverity(
+                        warnPolicyMap,
+                        'policy_unknown_keys'
+                    ),
+                    source,
+                    message: `governance-policy.json contiene keys desconocidas (${unknownKeyWarnings.length})`,
+                    meta: { warnings: unknownKeyWarnings.slice(0, 10) },
+                })
+            );
+        }
+    }
+
+    return diagnostics;
+}
+
 module.exports = {
     buildStatusRedExplanation,
+    buildWarnFirstDiagnostics,
+    summarizeDiagnostics,
+    attachDiagnostics,
 };
