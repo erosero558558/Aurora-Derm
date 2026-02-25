@@ -3,7 +3,7 @@ policy:
   canonical: AGENTS.md
   autonomy: semi_autonomous_guardrails
   kpi: reduce_rework
-  revision: 25
+  revision: 28
   updated_at: 2026-02-25
 
 tasks:
@@ -895,8 +895,8 @@ tasks:
     title: "Resolver fallo workflow: Agent Autopilot: Agent Autopilot"
     owner: ernes
     executor: jules
-    status: ready
-    status_since_at: "2026-02-25T07:25:57.440Z"
+    status: done
+    status_since_at: "2026-02-25T07:28:26.561Z"
     risk: medium
     scope: ops
     files: [".github/workflows/agent-autopilot.yml"]
@@ -913,13 +913,13 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T06:46:19.170Z"
+    lease_cleared_at: "2026-02-25T07:28:26.561Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal workflow:agent-autopilot:main con evidencia verificable."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-026.md"
+    evidence_ref: "signal_resolved:auto"
     depends_on: []
     prompt: "Resolver señal workflow:agent-autopilot:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
