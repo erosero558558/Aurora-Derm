@@ -375,6 +375,82 @@ Fixture con drift.
     }
 });
 
+test('JSON contract minimo estable para errores de intake/dispatch/reconcile', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+
+        const intake = runJsonExpectStatus(
+            dir,
+            ['intake', '--strict', '--no-write', '--repo', 'invalid'],
+            1
+        );
+        assertVersionLike(intake.version);
+        assert.equal(intake.command, 'intake');
+        assert.equal(intake.ok, false);
+        assert.equal(typeof intake.error, 'string');
+        assert.equal(intake.error_code, 'invalid_repository');
+        assert.equal(intake.repository, 'invalid');
+
+        const dispatch = runJsonExpectStatus(dir, ['dispatch'], 1);
+        assertVersionLike(dispatch.version);
+        assert.equal(dispatch.command, 'dispatch');
+        assert.equal(dispatch.ok, false);
+        assert.equal(typeof dispatch.error, 'string');
+        assert.equal(dispatch.error_code, 'invalid_agent');
+
+        writeFileSync(
+            join(dir, 'AGENT_BOARD.yaml'),
+            `version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  updated_at: ${DATE}
+tasks:
+  - id: AG-001
+    title: "Done without evidence"
+    owner: ernesto
+    executor: jules
+    status: done
+    risk: low
+    scope: docs
+    files: ["README.md"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`,
+            'utf8'
+        );
+        writeFileSync(
+            join(dir, 'AGENT_SIGNALS.yaml'),
+            `version: 1
+updated_at: ${DATE}
+signals: []
+`,
+            'utf8'
+        );
+
+        const reconcile = runJsonExpectStatus(
+            dir,
+            ['reconcile', '--strict'],
+            1
+        );
+        assertVersionLike(reconcile.version);
+        assert.equal(reconcile.command, 'reconcile');
+        assert.equal(reconcile.ok, false);
+        assert.equal(typeof reconcile.error, 'string');
+        assert.equal(reconcile.error_code, 'done_without_evidence');
+        assert.equal(Array.isArray(reconcile.done_without_evidence), true);
+        assert.equal(reconcile.done_without_evidence.includes('AG-001'), true);
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
 test('JSON contract minimo estable para metrics --json', () => {
     const dir = createFixtureDir();
     try {

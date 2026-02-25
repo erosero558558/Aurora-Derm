@@ -1295,29 +1295,6 @@ function detectKimiRateLimitActive({ board, signals }) {
 
 // â”€â”€â”€ New commands: intake / score / stale / budget / dispatch / reconcile â”€â”€â”€â”€
 
-async function cmdIntake(args = []) {
-    return runtimeIntake.intake(args);
-}
-
-function cmdScore(args = []) {
-    return runtimeIntake.score(args);
-}
-
-function cmdStale(args = []) {
-    return runtimeIntake.stale(args);
-}
-
-function cmdBudget(args = []) {
-    return runtimeIntake.budget(args);
-}
-
-function cmdDispatch(args = []) {
-    return runtimeIntake.dispatch(args);
-}
-
-async function cmdReconcile(args = []) {
-    return runtimeIntake.reconcile(args);
-}
 const runtimeIntake = runtimeIntakeCommands.createRuntimeIntakeCommands({
     parseFlags,
     isFlagEnabled,
@@ -1385,12 +1362,12 @@ async function main() {
     const commands = {
         status: () => cmdStatus(args),
         conflicts: () => governanceRuntime.conflicts(args),
-        intake: () => cmdIntake(args),
-        score: () => cmdScore(args),
-        reconcile: () => cmdReconcile(args),
-        stale: () => cmdStale(args),
-        budget: () => cmdBudget(args),
-        dispatch: () => cmdDispatch(args),
+        intake: () => runtimeIntake.intake(args),
+        score: () => runtimeIntake.score(args),
+        reconcile: () => runtimeIntake.reconcile(args),
+        stale: () => runtimeIntake.stale(args),
+        budget: () => runtimeIntake.budget(args),
+        dispatch: () => runtimeIntake.dispatch(args),
         handoffs: () => governanceRuntime.handoffs(args),
         policy: () => governanceRuntime.policy(args),
         'codex-check': () => governanceRuntime.codexCheck(args),

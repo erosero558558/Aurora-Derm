@@ -5,6 +5,21 @@ function createRuntimeIntakeCommands(ctx = {}) {
     const printJson =
         ctx.printJson ||
         ((value) => console.log(JSON.stringify(value, null, 2)));
+    function isValidRepositorySlug(value) {
+        return /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(String(value || ''));
+    }
+    function printJsonError(command, message, extra = {}) {
+        const payload = {
+            version: 1,
+            ok: false,
+            command,
+            error: String(message || 'unknown_error'),
+            ...extra,
+        };
+        printJson(payload);
+        proc.exitCode = 1;
+        return payload;
+    }
 
     return {
         async intake(args = []) {
@@ -19,6 +34,19 @@ function createRuntimeIntakeCommands(ctx = {}) {
             let normalizedIncomingSignals = [];
             let source = 'local_only';
             let repository = ctx.getGitHubRepository(flags);
+            if (!isValidRepositorySlug(repository)) {
+                if (wantsJson) {
+                    return printJsonError(
+                        'intake',
+                        `repository invalido: ${repository}`,
+                        {
+                            error_code: 'invalid_repository',
+                            repository,
+                        }
+                    );
+                }
+                throw new Error(`repository invalido: ${repository}`);
+            }
 
             try {
                 const githubSignals = await ctx.collectGitHubSignals(flags);
@@ -283,6 +311,13 @@ function createRuntimeIntakeCommands(ctx = {}) {
                 .trim()
                 .toLowerCase();
             if (!['jules', 'kimi', 'codex'].includes(agent)) {
+                if (wantsJson) {
+                    return printJsonError(
+                        'dispatch',
+                        'dispatch requiere --agent jules|kimi|codex',
+                        { error_code: 'invalid_agent' }
+                    );
+                }
                 throw new Error('dispatch requiere --agent jules|kimi|codex');
             }
             const board = ctx.parseBoard();
@@ -412,6 +447,20 @@ function createRuntimeIntakeCommands(ctx = {}) {
                     !String(t.evidence_ref || t.acceptance_ref || '').trim()
             );
             if (strict && doneWithoutEvidence.length > 0) {
+                if (wantsJson) {
+                    return printJsonError(
+                        'reconcile',
+                        `reconcile: tareas done sin evidencia_ref (${doneWithoutEvidence.map((t) => t.id).join(', ')})`,
+                        {
+                            pull_request_evidence_applied: prEvidenceApplied,
+                            merged_pull_requests_scanned: pulls.length,
+                            done_without_evidence: doneWithoutEvidence.map(
+                                (t) => t.id
+                            ),
+                            error_code: 'done_without_evidence',
+                        }
+                    );
+                }
                 throw new Error(
                     `reconcile: tareas done sin evidencia_ref (${doneWithoutEvidence.map((t) => t.id).join(', ')})`
                 );
