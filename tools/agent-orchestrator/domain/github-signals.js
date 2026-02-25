@@ -6,6 +6,11 @@ function createGitHubSignalsRuntime(options = {}) {
     const fetchImpl =
         options.fetchImpl || (typeof fetch === 'function' ? fetch : null);
     const defaultRepository = String(options.defaultRepository || '').trim();
+    const defaultSignalBranches = String(
+        options.defaultSignalBranches ||
+            processObj.env.AGENT_GITHUB_SIGNAL_BRANCHES ||
+            'main'
+    ).trim();
 
     function getTokenFromGhCli() {
         try {
@@ -17,7 +22,7 @@ function createGitHubSignalsRuntime(options = {}) {
                 }) || ''
             ).trim();
             return token || '';
-        } catch (error) {
+        } catch (_error) {
             return '';
         }
     }
@@ -35,6 +40,21 @@ function createGitHubSignalsRuntime(options = {}) {
 
     function getGitHubRepository(flags = {}) {
         return String(flags.repo || defaultRepository).trim();
+    }
+
+    function getSignalBranches(flags = {}) {
+        const raw = String(
+            flags.branches || flags.branchesCsv || defaultSignalBranches || ''
+        )
+            .split(',')
+            .map((item) =>
+                String(item || '')
+                    .trim()
+                    .toLowerCase()
+            )
+            .filter(Boolean);
+        if (raw.includes('*')) return null;
+        return new Set(raw.length ? raw : ['main']);
     }
 
     async function fetchGitHubJson(path, token) {
@@ -104,19 +124,31 @@ function createGitHubSignalsRuntime(options = {}) {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
         const sourceRef = `workflow:${workflowSlug || 'workflow'}:${branch || 'main'}`;
+        const conclusion = String(run?.conclusion || '').toLowerCase();
         const critical =
             workflowLabel.toLowerCase().includes('post-deploy') ||
             workflowLabel.toLowerCase().includes('production monitor') ||
             workflowLabel.toLowerCase().includes('repair git sync');
+        let status;
+        if (conclusion === 'failure') {
+            status = 'failing';
+        } else if (
+            conclusion === 'cancelled' ||
+            conclusion === 'skipped' ||
+            conclusion === 'success'
+        ) {
+            status = 'resolved';
+        } else if (String(run?.status || '').toLowerCase() === 'completed') {
+            status = 'resolved';
+        } else {
+            status = String(run?.status || 'active').toLowerCase();
+        }
         return {
             source: 'workflow',
             source_ref: sourceRef,
             fingerprint: sourceRef,
             title: `${workflowLabel}: ${String(run?.display_title || '').trim()}`.trim(),
-            status:
-                String(run.conclusion || '').toLowerCase() === 'failure'
-                    ? 'failing'
-                    : String(run.status || 'open').toLowerCase(),
+            status,
             url: String(run.html_url || run.url || ''),
             labels: [`workflow:${workflowLabel}`],
             severity: critical ? 'high' : 'medium',
@@ -130,6 +162,7 @@ function createGitHubSignalsRuntime(options = {}) {
     async function collectGitHubSignals(flags = {}) {
         const token = getGitHubToken(flags);
         const repository = getGitHubRepository(flags);
+        const allowedBranches = getSignalBranches(flags);
         if (!token) {
             return {
                 repository,
@@ -156,16 +189,46 @@ function createGitHubSignalsRuntime(options = {}) {
                       .filter((i) => !i.pull_request)
                       .map(issueToSignal)
                 : [],
-            workflows: Array.isArray(runsPayload?.workflow_runs)
-                ? runsPayload.workflow_runs
-                      .filter(
-                          (r) =>
-                              String(r?.conclusion || '').toLowerCase() ===
-                              'failure'
-                      )
-                      .slice(0, 25)
-                      .map(runToSignal)
-                : [],
+            workflows: (() => {
+                if (!Array.isArray(runsPayload?.workflow_runs)) return [];
+                const latestBySourceRef = new Map();
+                for (const run of runsPayload.workflow_runs) {
+                    const branch = String(run?.head_branch || '').toLowerCase();
+                    if (allowedBranches && !allowedBranches.has(branch)) {
+                        continue;
+                    }
+                    const signal = runToSignal(run);
+                    const sourceRef = String(signal.source_ref || '').trim();
+                    if (!sourceRef) continue;
+                    const seen = latestBySourceRef.get(sourceRef);
+                    const runTs = Date.parse(
+                        String(run?.updated_at || run?.created_at || '')
+                    );
+                    const seenTs = Date.parse(
+                        String(
+                            seen?.__runMeta?.updated_at ||
+                                seen?.__runMeta?.created_at ||
+                                ''
+                        )
+                    );
+                    if (!seen || (Number.isFinite(runTs) && runTs > seenTs)) {
+                        latestBySourceRef.set(sourceRef, {
+                            ...signal,
+                            __runMeta: {
+                                updated_at: String(
+                                    run?.updated_at || run?.created_at || ''
+                                ),
+                                created_at: String(run?.created_at || ''),
+                            },
+                        });
+                    }
+                }
+                return Array.from(latestBySourceRef.values()).map((signal) => {
+                    const next = { ...signal };
+                    delete next.__runMeta;
+                    return next;
+                });
+            })(),
         };
     }
 

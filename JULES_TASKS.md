@@ -158,12 +158,12 @@ Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo segu
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: done
 task_id: AG-018
 risk: medium
 scope: chat
 files: figo-chat.php,figo-backend.php,src/apps/chat/engine.js,src/apps/chat/ui-engine.js
-acceptance_ref: verification/agent-runs/AG-018.md
+acceptance_ref: signal_resolved:auto
 dispatched_by: agent-orchestrator
 session: sessions/6593824734303087673
 dispatched: 2026-02-25
@@ -212,12 +212,12 @@ Resolver señal workflow:agent-autopilot:main. Verificar causa raíz, aplicar fi
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: done
 task_id: AG-029
 risk: medium
 scope: ops
 files: .github/workflows/ci.yml
-acceptance_ref: verification/agent-runs/AG-029.md
+acceptance_ref: signal_resolved:auto
 dispatched_by: agent-orchestrator
 session:
 dispatched:

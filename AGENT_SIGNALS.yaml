@@ -1,5 +1,5 @@
 version: 1
-updated_at: 2026-02-25T06:22:48.941Z
+updated_at: 2026-02-25T06:31:07.902Z
 signals:
   - id: SIG-001
     fingerprint: "issue:issue#279"
@@ -12,7 +12,7 @@ signals:
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/issues/279"
     detected_at: "2026-02-24T23:54:38Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: []
   - id: SIG-002
     fingerprint: "issue:issue#263"
@@ -25,7 +25,7 @@ signals:
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/issues/263"
     detected_at: "2026-02-24T05:28:45Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: []
   - id: SIG-003
     fingerprint: "workflow:run#22379873691"
@@ -38,7 +38,7 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379873691"
     detected_at: "2026-02-25T02:45:14Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:CI"]
   - id: SIG-004
     fingerprint: "workflow:run#22379426844"
@@ -51,7 +51,7 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379426844"
     detected_at: "2026-02-25T02:26:25Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:CI"]
   - id: SIG-005
     fingerprint: "workflow:run#22379136316"
@@ -64,7 +64,7 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379136316"
     detected_at: "2026-02-25T02:14:39Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:CI"]
   - id: SIG-006
     fingerprint: "workflow:run#22379059437"
@@ -77,33 +77,33 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379059437"
     detected_at: "2026-02-25T02:11:35Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:CI"]
   - id: SIG-007
     fingerprint: "workflow:ci:main"
     source: workflow
     source_ref: "workflow:ci:main"
-    title: "CI: ci(c1): add staging figo-contract and chat smoke gate; close AG-021"
+    title: "CI: feat(orchestrator): enable local GitHub intake via gh token fallback"
     severity: medium
     critical: false
-    status: failing
+    status: resolved
     runtime_impact: low
-    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22384329134"
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22385051729"
     detected_at: "2026-02-25T02:51:54Z"
-    updated_at: "2026-02-25T05:58:32Z"
+    updated_at: "2026-02-25T06:26:50Z"
     labels: ["workflow:CI"]
   - id: SIG-008
     fingerprint: "workflow:agent-governance:main"
     source: workflow
     source_ref: "workflow:agent-governance:main"
-    title: "Agent Governance: feat(board): queue P1-P3 tech debt tasks (AG-019, AG-020, AG-021)"
+    title: "Agent Governance: feat(orchestrator): enable local GitHub intake via gh token fallback"
     severity: medium
     critical: false
     status: resolved
     runtime_impact: low
-    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22381013664"
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22385051723"
     detected_at: "2026-02-25T03:35:08Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:26:26Z"
     labels: ["workflow:Agent Governance"]
   - id: SIG-009
     fingerprint: "issue:issue#282"
@@ -116,7 +116,7 @@ signals:
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/issues/282"
     detected_at: "2026-02-25T04:14:29Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["production-alert"]
   - id: SIG-010
     fingerprint: "issue:issue#281"
@@ -129,7 +129,7 @@ signals:
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/issues/281"
     detected_at: "2026-02-25T04:11:32Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: []
   - id: SIG-011
     fingerprint: "workflow:agent-autopilot:main"
@@ -142,20 +142,20 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22381918604"
     detected_at: "2026-02-25T04:15:44Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:Agent Autopilot"]
   - id: SIG-012
     fingerprint: "workflow:post-deploy-gate-git-sync:main"
     source: workflow
     source_ref: "workflow:post-deploy-gate-git-sync:main"
-    title: "Post-Deploy Gate (Git Sync): fix(orchestrator): prioritize github signals and prevent overlap task…"
+    title: "Post-Deploy Gate (Git Sync): feat(orchestrator): enable local GitHub intake via gh token fallback"
     severity: high
     critical: true
     status: resolved
     runtime_impact: high
-    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22382234234"
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22385051743"
     detected_at: "2026-02-25T04:13:02Z"
-    updated_at: "2026-02-25T06:22:48.941Z"
+    updated_at: "2026-02-25T06:29:08Z"
     labels: ["workflow:Post-Deploy Gate (Git Sync)"]
   - id: SIG-013
     fingerprint: "workflow:repair-git-sync-self-heal:main"
@@ -164,11 +164,11 @@ signals:
     title: "Repair Git Sync (Self-Heal): Repair Git Sync (Self-Heal)"
     severity: high
     critical: true
-    status: failing
+    status: resolved
     runtime_impact: high
-    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22383767803"
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22385135530"
     detected_at: "2026-02-25T04:11:38Z"
-    updated_at: "2026-02-25T05:37:25Z"
+    updated_at: "2026-02-25T06:29:11Z"
     labels: ["workflow:Repair Git Sync (Self-Heal)"]
   - id: SIG-014
     fingerprint: "workflow:ci:codex/prod-readiness-workflows-20260225"
@@ -177,11 +177,11 @@ signals:
     title: "CI: CI"
     severity: medium
     critical: false
-    status: failing
+    status: resolved
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22384721088"
     detected_at: "2026-02-25T06:13:14Z"
-    updated_at: "2026-02-25T06:14:35Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:CI"]
   - id: SIG-015
     fingerprint: "workflow:repair-git-sync-self-heal:codex/prod-readiness-workflows-20260225"
@@ -190,11 +190,11 @@ signals:
     title: "Repair Git Sync (Self-Heal): Repair Git Sync (Self-Heal)"
     severity: high
     critical: true
-    status: failing
+    status: resolved
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22384473246"
     detected_at: "2026-02-25T06:03:03Z"
-    updated_at: "2026-02-25T06:06:08Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:Repair Git Sync (Self-Heal)"]
   - id: SIG-016
     fingerprint: "workflow:post-deploy-gate-git-sync:codex/prod-readiness-workflows-20260225"
@@ -203,9 +203,35 @@ signals:
     title: "Post-Deploy Gate (Git Sync): Post-Deploy Gate (Git Sync)"
     severity: high
     critical: true
-    status: failing
+    status: resolved
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22384295980"
     detected_at: "2026-02-25T05:55:49Z"
-    updated_at: "2026-02-25T06:00:11Z"
+    updated_at: "2026-02-25T06:31:07.902Z"
     labels: ["workflow:Post-Deploy Gate (Git Sync)"]
+  - id: SIG-017
+    fingerprint: "workflow:close-resolved-production-issues:main"
+    source: workflow
+    source_ref: "workflow:close-resolved-production-issues:main"
+    title: "Close Resolved Production Issues: Close Resolved Production Issues"
+    severity: medium
+    critical: false
+    status: resolved
+    runtime_impact: low
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22385135536"
+    detected_at: "2026-02-25T06:29:10Z"
+    updated_at: "2026-02-25T06:29:17Z"
+    labels: ["workflow:Close Resolved Production Issues"]
+  - id: SIG-018
+    fingerprint: "workflow:deploy-hosting-canary-pipeline:main"
+    source: workflow
+    source_ref: "workflow:deploy-hosting-canary-pipeline:main"
+    title: "Deploy Hosting (Canary Pipeline): Deploy Hosting (Canary Pipeline)"
+    severity: medium
+    critical: false
+    status: resolved
+    runtime_impact: low
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22385077156"
+    detected_at: "2026-02-25T06:26:52Z"
+    updated_at: "2026-02-25T06:28:40Z"
+    labels: ["workflow:Deploy Hosting (Canary Pipeline)"]
