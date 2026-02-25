@@ -16,7 +16,7 @@ on:
                 default: '15'
                 type: string
             fail_on_warnings:
-                description: 'Fallar workflow si hay warnings de KPI'
+                description: 'Fallar workflow si hay warnings criticos de KPI'
                 required: false
                 default: true
                 type: boolean
@@ -60,7 +60,7 @@ jobs:
                   $benchRuns = [int]$env:BENCH_RUNS
                   if ($benchRuns -lt 5) { $benchRuns = 5 }
                   if ($env:FAIL_ON_WARNINGS -eq 'true') {
-                    & ./REPORTE-SEMANAL-PRODUCCION.ps1 -Domain $env:TARGET_DOMAIN -BenchRuns $benchRuns -FailOnWarnings
+                    & ./REPORTE-SEMANAL-PRODUCCION.ps1 -Domain $env:TARGET_DOMAIN -BenchRuns $benchRuns -FailOnCriticalWarnings
                   } else {
                     & ./REPORTE-SEMANAL-PRODUCCION.ps1 -Domain $env:TARGET_DOMAIN -BenchRuns $benchRuns
                   }
@@ -79,6 +79,10 @@ jobs:
                     "report_md_path=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "warnings_count=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "warnings_list=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "warnings_critical_count=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "warnings_critical_list=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "warnings_non_critical_count=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "warnings_non_critical_list=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "conversion_view_booking=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "conversion_start_checkout=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "conversion_start_checkout_rate_pct=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -102,6 +106,10 @@ jobs:
                   $jsonPath = $latestJson.FullName
                   $mdPath = [System.IO.Path]::ChangeExtension($jsonPath, '.md')
                   $warningsCount = 0
+                  $warningsCriticalCount = 0
+                  $warningsNonCriticalCount = 0
+                  $warningsCriticalList = 'none'
+                  $warningsNonCriticalList = 'none'
 
                   try {
                     $payload = Get-Content -Path $jsonPath -Raw | ConvertFrom-Json -Depth 10
@@ -109,6 +117,24 @@ jobs:
                       $warningsCount = @($payload.warnings).Count
                     }
                     $warningsList = if ($payload.warnings) { (@($payload.warnings) -join ', ') } else { 'none' }
+                    if ($null -ne $payload.warningCounts) {
+                      if ($null -ne $payload.warningCounts.critical) { $warningsCriticalCount = [int]$payload.warningCounts.critical }
+                      if ($null -ne $payload.warningCounts.nonCritical) { $warningsNonCriticalCount = [int]$payload.warningCounts.nonCritical }
+                    } elseif ($null -ne $payload.warningsBySeverity) {
+                      $warningsCriticalCount = if ($payload.warningsBySeverity.critical) { @($payload.warningsBySeverity.critical).Count } else { 0 }
+                      $warningsNonCriticalCount = if ($payload.warningsBySeverity.nonCritical) { @($payload.warningsBySeverity.nonCritical).Count } else { 0 }
+                    } elseif ($payload.warnings) {
+                      # Fallback conservador para reportes viejos sin severidad.
+                      $warningsCriticalCount = @($payload.warnings).Count
+                      $warningsNonCriticalCount = 0
+                    }
+                    if ($null -ne $payload.warningsBySeverity) {
+                      $warningsCriticalList = if ($payload.warningsBySeverity.critical) { (@($payload.warningsBySeverity.critical) -join ', ') } else { 'none' }
+                      $warningsNonCriticalList = if ($payload.warningsBySeverity.nonCritical) { (@($payload.warningsBySeverity.nonCritical) -join ', ') } else { 'none' }
+                    } else {
+                      $warningsCriticalList = $warningsList
+                      $warningsNonCriticalList = 'none'
+                    }
 
                     $retention = $payload.retention
                     $retentionTrend = $payload.retentionTrend
@@ -154,6 +180,10 @@ jobs:
                   } catch {
                     $warningsCount = -1
                     $warningsList = 'n/a'
+                    $warningsCriticalCount = -1
+                    $warningsNonCriticalCount = -1
+                    $warningsCriticalList = 'n/a'
+                    $warningsNonCriticalList = 'n/a'
                     $conversionViewBooking = 'n/a'
                     $conversionStartCheckout = 'n/a'
                     $conversionStartCheckoutRate = 'n/a'
@@ -177,6 +207,10 @@ jobs:
                   "report_md_path=$mdPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "warnings_count=$warningsCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "warnings_list=$warningsList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "warnings_critical_count=$warningsCriticalCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "warnings_critical_list=$warningsCriticalList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "warnings_non_critical_count=$warningsNonCriticalCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "warnings_non_critical_list=$warningsNonCriticalList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "conversion_view_booking=$conversionViewBooking" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "conversion_start_checkout=$conversionStartCheckout" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "conversion_start_checkout_rate_pct=$conversionStartCheckoutRate" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -214,9 +248,13 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Weekly KPI report"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Dominio: ``$env:TARGET_DOMAIN``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Bench runs: ``$env:BENCH_RUNS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Fail on warnings: ``$env:FAIL_ON_WARNINGS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Fail on warnings (critical-only gate): ``$env:FAIL_ON_WARNINGS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings count: ``${{ steps.report.outputs.warnings_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings critical: ``${{ steps.report.outputs.warnings_critical_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings non_critical: ``${{ steps.report.outputs.warnings_non_critical_count }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings: ``${{ steps.report.outputs.warnings_list }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings critical list: ``${{ steps.report.outputs.warnings_critical_list }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings non_critical list: ``${{ steps.report.outputs.warnings_non_critical_list }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Agent metrics file: ``verification/agent-metrics.json``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Conversion"
@@ -242,7 +280,7 @@ jobs:
                   }
 
             - name: Crear/actualizar incidente semanal
-              if: ${{ failure() && github.event_name == 'schedule' }}
+              if: ${{ github.event_name == 'schedule' && (steps.report.outputs.warnings_critical_count == '-1' || steps.report.outputs.warnings_critical_count != '0') }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -252,12 +290,17 @@ jobs:
                       const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
                       const now = new Date().toISOString();
                       const body = [
-                        'El workflow `Weekly KPI Report` fallo o detecto warnings en ejecucion programada.',
+                        'El workflow `Weekly KPI Report` fallo o detecto warnings criticos en ejecucion programada.',
                         '',
                         `- Fecha: ${now}`,
                         `- Run: ${runUrl}`,
                         `- Workflow: ${context.workflow}`,
-                        `- Branch: ${context.ref}`
+                        `- Branch: ${context.ref}`,
+                        `- warnings_count: ${{ steps.report.outputs.warnings_count }}`,
+                        `- warnings_critical_count: ${{ steps.report.outputs.warnings_critical_count }}`,
+                        `- warnings_non_critical_count: ${{ steps.report.outputs.warnings_non_critical_count }}`,
+                        `- warnings_critical_list: ${{ steps.report.outputs.warnings_critical_list }}`,
+                        `- warnings_non_critical_list: ${{ steps.report.outputs.warnings_non_critical_list }}`
                       ].join('\n');
 
                       const openIssues = await github.paginate(github.rest.issues.listForRepo, {
@@ -287,7 +330,7 @@ jobs:
                       }
 
             - name: Cerrar incidente semanal al recuperar
-              if: ${{ success() && github.event_name == 'schedule' }}
+              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.warnings_critical_count == '0' }}
               uses: actions/github-script@v7
               with:
                   script: |

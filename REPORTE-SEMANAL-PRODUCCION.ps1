@@ -15,7 +15,8 @@ param(
     [double]$StartCheckoutRateMinWarnPct = 0.25,
     [double]$StartCheckoutRateDropWarnPct = 0.2,
     [int]$StartCheckoutWarnMinViewBooking = 100,
-    [switch]$FailOnWarnings
+    [switch]$FailOnWarnings,
+    [switch]$FailOnCriticalWarnings
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,6 +56,49 @@ function Read-JsonFileSafe {
     } catch {
         return $null
     }
+}
+
+function Get-WarningSeverity {
+    param([string]$WarningCode)
+
+    if ([string]::IsNullOrWhiteSpace($WarningCode)) {
+        return 'critical'
+    }
+
+    if (
+        $WarningCode -eq 'calendar_unreachable' -or
+        $WarningCode -eq 'calendar_token_unhealthy' -or
+        $WarningCode -eq 'sentry_backend_no_configurado' -or
+        $WarningCode -eq 'sentry_frontend_no_configurado'
+    ) {
+        return 'critical'
+    }
+
+    foreach ($prefix in @(
+        'error_rate_alta_',
+        'calendar_source_',
+        'calendar_mode_'
+    )) {
+        if ($WarningCode.StartsWith($prefix)) {
+            return 'critical'
+        }
+    }
+
+    foreach ($prefix in @(
+        'core_p95_alto_',
+        'figo_post_p95_alto_',
+        'no_show_rate_alta_',
+        'recurrence_rate_',
+        'conversion_rate_',
+        'start_checkout_rate_'
+    )) {
+        if ($WarningCode.StartsWith($prefix)) {
+            return 'non_critical'
+        }
+    }
+
+    # Default conservador: si aparece un warning nuevo no clasificado, tratarlo como critico.
+    return 'critical'
 }
 
 function Invoke-JsonGet {
@@ -766,6 +810,19 @@ if (
 ) {
     $warnings.Add("start_checkout_rate_caida_${startCheckoutRateDeltaPct}pct")
 }
+$warningsCritical = New-Object System.Collections.Generic.List[string]
+$warningsNonCritical = New-Object System.Collections.Generic.List[string]
+foreach ($warningCode in $warnings) {
+    $warningSeverity = Get-WarningSeverity -WarningCode $warningCode
+    if ($warningSeverity -eq 'non_critical') {
+        $warningsNonCritical.Add($warningCode)
+    } else {
+        $warningsCritical.Add($warningCode)
+    }
+}
+$warningCountsTotal = $warnings.Count
+$warningCountsCritical = $warningsCritical.Count
+$warningCountsNonCritical = $warningsNonCritical.Count
 $warningBlock = if ($warnings.Count -eq 0) {
     '- none'
 } else {
@@ -845,6 +902,10 @@ $markdown = @"
 $($benchTable -join "`n")
 
 ## Warnings
+
+- warnings_total: $warningCountsTotal
+- warnings_critical: $warningCountsCritical
+- warnings_non_critical: $warningCountsNonCritical
 
 $warningBlock
 "@
@@ -930,6 +991,17 @@ $reportPayload = [ordered]@{
         figoPostP95TargetMs = $FigoPostP95MaxMs
         bench = $benchResults
     }
+    warningCounts = [ordered]@{
+        total = $warningCountsTotal
+        critical = $warningCountsCritical
+        nonCritical = $warningCountsNonCritical
+    }
+    warningsBySeverity = [ordered]@{
+        critical = @($warningsCritical)
+        nonCritical = @($warningsNonCritical)
+    }
+    warningsCritical = @($warningsCritical)
+    warningsNonCritical = @($warningsNonCritical)
     warnings = @($warnings)
 }
 $reportPayload | ConvertTo-Json -Depth 10 | Set-Content -Path $reportJsonPath -Encoding UTF8
@@ -941,9 +1013,17 @@ Write-Host "start_checkout_rate_pct=$startCheckoutRatePct booking_confirmed=$boo
 Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurrence_rate_pct=$retentionRecurrenceRatePct sentry_backend=$sentryBackendConfigured sentry_frontend=$sentryFrontendConfigured"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow
+    Write-Host "Warnings by severity: critical=$warningCountsCritical non_critical=$warningCountsNonCritical" -ForegroundColor Yellow
     if ($FailOnWarnings) {
         Write-Host 'FailOnWarnings activo: reporte marcado como fallido.' -ForegroundColor Red
         exit 2
+    }
+    if ($FailOnCriticalWarnings -and $warningCountsCritical -gt 0) {
+        Write-Host 'FailOnCriticalWarnings activo: reporte marcado como fallido por warnings criticos.' -ForegroundColor Red
+        exit 2
+    }
+    if ($FailOnCriticalWarnings -and $warningCountsCritical -eq 0) {
+        Write-Host 'FailOnCriticalWarnings activo: solo se detectaron warnings no criticos.' -ForegroundColor Yellow
     }
 } else {
     Write-Host 'Warnings: none' -ForegroundColor Green
