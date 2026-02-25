@@ -5,7 +5,19 @@ import {
 } from './loader.js';
 import { observeOnceWhenVisible } from './loader.js';
 import { loadAvailabilityData } from './data.js';
-import { loadPublicReviews } from './engagement.js';
+
+let engagementRuntimePromise = null;
+function loadEngagementRuntime() {
+    if (!engagementRuntimePromise) {
+        engagementRuntimePromise = import('./engagement.js');
+    }
+    return engagementRuntimePromise;
+}
+
+function loadPublicReviews(options = {}) {
+    return loadEngagementRuntime()
+        .then((mod) => mod.loadPublicReviews(options));
+}
 
 const ANALYTICS_ENGINE_URL = withDeployAssetVersion(
     '/js/engines/analytics-engine.js?v=figo-analytics-20260219-phase2-funnelstep1'

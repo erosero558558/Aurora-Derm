@@ -2,18 +2,94 @@ import { withDeployAssetVersion, debugLog } from './utils.js';
 import { loadDeferredModule, runDeferredModule } from './loader.js';
 import { setThemeMode } from './theme.js';
 import { changeLanguage } from './i18n.js';
-import { toggleMobileMenu, startWebVideo, closeVideoModal } from './ui.js';
-import { openReviewModal, closeReviewModal } from './engagement.js';
 import {
     closePaymentModal,
     processPayment,
     markBookingViewed,
 } from './booking.js';
-import { closeSuccessModal } from './success-modal.js';
-import { closeRescheduleModal, submitReschedule } from './reschedule.js';
 // Chat shell cargado bajo demanda (code splitting)
 function loadChatShell() {
     return import('../src/apps/chat/shell.js');
+}
+
+let uiRuntimePromise = null;
+function loadUiRuntime() {
+    if (!uiRuntimePromise) {
+        uiRuntimePromise = import('./ui.js');
+    }
+    return uiRuntimePromise;
+}
+
+let engagementRuntimePromise = null;
+function loadEngagementRuntime() {
+    if (!engagementRuntimePromise) {
+        engagementRuntimePromise = import('./engagement.js');
+    }
+    return engagementRuntimePromise;
+}
+
+let successModalRuntimePromise = null;
+function loadSuccessModalRuntime() {
+    if (!successModalRuntimePromise) {
+        successModalRuntimePromise = import('./success-modal.js');
+    }
+    return successModalRuntimePromise;
+}
+
+let rescheduleRuntimePromise = null;
+function loadRescheduleRuntime() {
+    if (!rescheduleRuntimePromise) {
+        rescheduleRuntimePromise = import('./reschedule.js');
+    }
+    return rescheduleRuntimePromise;
+}
+
+function toggleMobileMenu(forceClose) {
+    loadUiRuntime()
+        .then((mod) => mod.toggleMobileMenu(forceClose))
+        .catch(() => undefined);
+}
+
+function startWebVideo() {
+    loadUiRuntime()
+        .then((mod) => mod.startWebVideo())
+        .catch(() => undefined);
+}
+
+function closeVideoModal() {
+    loadUiRuntime()
+        .then((mod) => mod.closeVideoModal())
+        .catch(() => undefined);
+}
+
+function openReviewModal() {
+    loadEngagementRuntime()
+        .then((mod) => mod.openReviewModal())
+        .catch(() => undefined);
+}
+
+function closeReviewModal() {
+    loadEngagementRuntime()
+        .then((mod) => mod.closeReviewModal())
+        .catch(() => undefined);
+}
+
+function closeSuccessModal() {
+    loadSuccessModalRuntime()
+        .then((mod) => mod.closeSuccessModal())
+        .catch(() => undefined);
+}
+
+function closeRescheduleModal() {
+    loadRescheduleRuntime()
+        .then((mod) => mod.closeRescheduleModal())
+        .catch(() => undefined);
+}
+
+function submitReschedule() {
+    loadRescheduleRuntime()
+        .then((mod) => mod.submitReschedule())
+        .catch(() => undefined);
 }
 function chatAction(name) {
     return async (...args) => {

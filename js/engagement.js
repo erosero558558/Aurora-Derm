@@ -20,8 +20,11 @@ import {
     createReviewRecord,
 } from './data.js';
 
-const ENGAGEMENT_BUNDLE_URL = withDeployAssetVersion(
+const ENGAGEMENT_REVIEWS_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/engagement-bundle.js'
+);
+const ENGAGEMENT_FORMS_BUNDLE_URL = withDeployAssetVersion(
+    '/js/engines/engagement-forms-bundle.js'
 );
 
 // REVIEWS ENGINE
@@ -36,8 +39,8 @@ function getReviewsEngineDeps() {
 
 export function loadReviewsEngine() {
     return loadDeferredModule({
-        cacheKey: 'engagement-bundle',
-        src: ENGAGEMENT_BUNDLE_URL,
+        cacheKey: 'engagement-reviews-bundle',
+        src: ENGAGEMENT_REVIEWS_BUNDLE_URL,
         scriptDataAttribute: 'data-engagement-bundle',
         resolveModule: () => window.Piel && window.Piel.ReviewsEngine,
         isModuleReady: (module) =>
@@ -96,21 +99,19 @@ function getEngagementFormsEngineDeps() {
 }
 
 export function loadEngagementFormsEngine() {
-    return loadReviewsEngine().then(() =>
-        loadDeferredModule({
-            cacheKey: 'engagement-forms-engine',
-            src: ENGAGEMENT_BUNDLE_URL,
-            scriptDataAttribute: 'data-engagement-bundle',
-            resolveModule: () => window.Piel && window.Piel.EngagementFormsEngine,
-            isModuleReady: (module) =>
-                !!(module && typeof module.init === 'function'),
-            onModuleReady: (module) =>
-                module.init(getEngagementFormsEngineDeps()),
-            missingApiError: 'engagement-forms-engine loaded without API',
-            loadError: 'No se pudo cargar engagement-forms-engine.js',
-            logLabel: 'Engagement forms engine',
-        })
-    );
+    return loadDeferredModule({
+        cacheKey: 'engagement-forms-engine',
+        src: ENGAGEMENT_FORMS_BUNDLE_URL,
+        scriptDataAttribute: 'data-engagement-forms-bundle',
+        resolveModule: () => window.Piel && window.Piel.EngagementFormsEngine,
+        isModuleReady: (module) =>
+            !!(module && typeof module.init === 'function'),
+        onModuleReady: (module) =>
+            module.init(getEngagementFormsEngineDeps()),
+        missingApiError: 'engagement-forms-engine loaded without API',
+        loadError: 'No se pudo cargar engagement-forms-engine.js',
+        logLabel: 'Engagement forms engine',
+    });
 }
 
 export function initEngagementFormsEngineWarmup() {

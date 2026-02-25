@@ -23,7 +23,6 @@ import {
     loadAnalyticsEngine,
     markBookingViewed,
 } from './analytics.js';
-import { showSuccessModal } from './success-modal.js';
 import {
     createAppointmentRecord,
     uploadTransferProof,
@@ -42,6 +41,22 @@ const BOOKING_UI_URL = withDeployAssetVersion(
 );
 const BOOKING_UTILS_URL = withDeployAssetVersion('/js/engines/booking-utils.js');
 const CASE_PHOTO_UPLOAD_CONCURRENCY = 2;
+let successModalRuntimePromise = null;
+
+function loadSuccessModalRuntime() {
+    if (!successModalRuntimePromise) {
+        successModalRuntimePromise = import('./success-modal.js');
+    }
+    return successModalRuntimePromise;
+}
+
+function showSuccessModal(emailSent = false) {
+    loadSuccessModalRuntime()
+        .then((mod) => mod.showSuccessModal(emailSent))
+        .catch(() =>
+            showToast('No se pudo abrir la confirmacion de cita.', 'error')
+        );
+}
 
 function stripTransientAppointmentFields(appointment) {
     const payload = { ...appointment };

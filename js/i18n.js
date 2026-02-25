@@ -1,7 +1,20 @@
 import { withDeployAssetVersion, showToast, debugLog } from './utils.js';
 import { loadDeferredModule, withDeferredModule } from './loader.js';
 import { state } from './state.js';
-import { renderPublicReviews } from './engagement.js';
+
+let engagementRuntimePromise = null;
+function loadEngagementRuntime() {
+    if (!engagementRuntimePromise) {
+        engagementRuntimePromise = import('./engagement.js');
+    }
+    return engagementRuntimePromise;
+}
+
+function renderPublicReviews(reviews) {
+    loadEngagementRuntime()
+        .then((mod) => mod.renderPublicReviews(reviews))
+        .catch(() => undefined);
+}
 
 const DATA_BUNDLE_URL = withDeployAssetVersion(
     '/js/engines/data-bundle.js'

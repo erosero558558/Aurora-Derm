@@ -21,8 +21,6 @@ import {
     initBookingUiWarmup,
     markBookingViewed,
 } from './booking.js';
-import { initReviewsEngineWarmup } from './engagement.js';
-import { initGalleryInteractionsWarmup } from './gallery.js';
 // Chat shell cargado bajo demanda (code splitting)
 let chatShellPromise = null;
 /**
@@ -35,10 +33,47 @@ function loadChatShell() {
     }
     return chatShellPromise;
 }
-import { initUiEffectsWarmup, initModalUxEngineWarmup } from './ui.js';
-import { initRescheduleEngineWarmup } from './reschedule.js';
-import { initSuccessModalEngineWarmup } from './success-modal.js';
-import { initEngagementFormsEngineWarmup } from './engagement.js';
+
+let engagementRuntimePromise = null;
+function loadEngagementRuntime() {
+    if (!engagementRuntimePromise) {
+        engagementRuntimePromise = import('./engagement.js');
+    }
+    return engagementRuntimePromise;
+}
+
+let galleryRuntimePromise = null;
+function loadGalleryRuntime() {
+    if (!galleryRuntimePromise) {
+        galleryRuntimePromise = import('./gallery.js');
+    }
+    return galleryRuntimePromise;
+}
+
+let uiRuntimePromise = null;
+function loadUiRuntime() {
+    if (!uiRuntimePromise) {
+        uiRuntimePromise = import('./ui.js');
+    }
+    return uiRuntimePromise;
+}
+
+let rescheduleRuntimePromise = null;
+function loadRescheduleRuntime() {
+    if (!rescheduleRuntimePromise) {
+        rescheduleRuntimePromise = import('./reschedule.js');
+    }
+    return rescheduleRuntimePromise;
+}
+
+let successModalRuntimePromise = null;
+function loadSuccessModalRuntime() {
+    if (!successModalRuntimePromise) {
+        successModalRuntimePromise = import('./success-modal.js');
+    }
+    return successModalRuntimePromise;
+}
+
 import { loadFeatureFlags, isFeatureEnabled } from './features.js';
 // content-loader.js prefetch: empieza a descargar al instante (antes de DOMContentLoaded)
 // para que cuando se necesite en el handler ya este en cache.
@@ -312,17 +347,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const initLowPriorityWarmups = createOnceTask(() => {
-            initReviewsEngineWarmup();
-            initGalleryInteractionsWarmup();
+            loadEngagementRuntime()
+                .then((mod) => {
+                    mod.initReviewsEngineWarmup();
+                    mod.initEngagementFormsEngineWarmup();
+                })
+                .catch(() => undefined);
+            loadGalleryRuntime()
+                .then((mod) => mod.initGalleryInteractionsWarmup())
+                .catch(() => undefined);
             loadChatShell().then((shell) => {
                 shell.initChatEngineWarmup();
                 shell.initChatBookingEngineWarmup();
             }).catch(() => undefined);
-            initUiEffectsWarmup();
-            initRescheduleEngineWarmup();
-            initSuccessModalEngineWarmup();
-            initEngagementFormsEngineWarmup();
-            initModalUxEngineWarmup();
+            loadUiRuntime()
+                .then((mod) => {
+                    mod.initUiEffectsWarmup();
+                    mod.initModalUxEngineWarmup();
+                })
+                .catch(() => undefined);
+            loadRescheduleRuntime()
+                .then((mod) => mod.initRescheduleEngineWarmup())
+                .catch(() => undefined);
+            loadSuccessModalRuntime()
+                .then((mod) => mod.initSuccessModalEngineWarmup())
+                .catch(() => undefined);
         });
 
         const initDeferredWarmups = createOnceTask(() => {

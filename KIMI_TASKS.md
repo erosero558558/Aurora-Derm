@@ -105,12 +105,12 @@ Corregir solapes y espaciado en mobile-first sin romper desktop.
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: done
 task_id: AG-011
 risk: medium
 scope: performance
 files: js/main.js,rollup.config.mjs,src/bundles/ui.js,src/bundles/engagement.js
-acceptance_ref: FINAL_ANALYSIS_REPORT.md
+acceptance_ref: verification/agent-runs/AG-011.md
 dispatched_by: agent-orchestrator
 -->
 ### Performance phase 4: split non-critical JS and lazy-init below-the-fold modules

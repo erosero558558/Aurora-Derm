@@ -175,12 +175,12 @@ tasks:
     title: "Performance phase 4: split non-critical JS and lazy-init below-the-fold modules"
     owner: ernes
     executor: kimi
-    status: ready
+    status: done
     risk: medium
     scope: performance
     files: ["js/main.js", "rollup.config.mjs", "src/bundles/ui.js", "src/bundles/engagement.js"]
     acceptance: "Reducir peso inicial y mover inicializaciones no criticas a carga diferida sin regresion funcional."
-    acceptance_ref: "FINAL_ANALYSIS_REPORT.md"
+    acceptance_ref: "verification/agent-runs/AG-011.md"
     depends_on: []
     prompt: "Aplicar particion adicional de JS no critico y verificar que no rompa interacciones clave."
     created_at: 2026-02-25

@@ -137,6 +137,16 @@ export default [
         },
         plugins: [resolve(), minify]
     },
+    // Engagement Forms Bundle
+    {
+        input: 'src/bundles/engagement-forms.js',
+        output: {
+            file: 'js/engines/engagement-forms-bundle.js',
+            format: 'iife',
+            sourcemap: false
+        },
+        plugins: [resolve(), minify]
+    },
     // Main Script (ES module for code splitting; requires type="module" in HTML)
     {
         input: 'js/main.js',
