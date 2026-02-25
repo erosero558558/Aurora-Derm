@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+    nextHandoffId,
     getHandoffLintErrors,
 } = require('../../tools/agent-orchestrator/domain/handoffs');
 const {
@@ -13,6 +14,14 @@ const {
 } = require('../../tools/agent-orchestrator/domain/conflicts');
 
 const ACTIVE_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
+
+test('handoffs-engine nextHandoffId calcula siguiente correlativo', () => {
+    assert.equal(
+        nextHandoffId([{ id: 'HO-001' }, { id: 'HO-009' }, { id: 'X-1' }]),
+        'HO-010'
+    );
+    assert.equal(nextHandoffId([]), 'HO-001');
+});
 
 test('handoffs-engine valida subset de solape real y estado activo', () => {
     const errors = getHandoffLintErrors(

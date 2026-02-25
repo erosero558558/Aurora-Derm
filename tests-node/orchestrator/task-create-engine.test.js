@@ -35,6 +35,18 @@ test('task-create engine resuelve template valido e invalido', () => {
     );
 });
 
+test('task-create engine nextAgentTaskId calcula siguiente correlativo', () => {
+    assert.equal(
+        taskCreate.nextAgentTaskId([
+            { id: 'AG-001' },
+            { id: 'AG-010' },
+            { id: 'CDX-001' },
+        ]),
+        'AG-011'
+    );
+    assert.equal(taskCreate.nextAgentTaskId([]), 'AG-001');
+});
+
 test('task-create engine infiere scope/risk y suggested_executor desde files', () => {
     const inferred = taskCreate.inferTaskCreateFromFiles(
         ['lib/calendar/CalendarBookingService.php'],

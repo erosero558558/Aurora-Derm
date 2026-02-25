@@ -508,23 +508,11 @@ function writeCodexActiveBlock(block) {
 }
 
 function nextHandoffId(handoffs) {
-    let max = 0;
-    for (const handoff of handoffs || []) {
-        const match = String(handoff.id || '').match(/^HO-(\d+)$/);
-        if (!match) continue;
-        max = Math.max(max, Number(match[1]));
-    }
-    return `HO-${String(max + 1).padStart(3, '0')}`;
+    return domainHandoffs.nextHandoffId(handoffs);
 }
 
 function nextAgentTaskId(tasks) {
-    let max = 0;
-    for (const task of tasks || []) {
-        const match = String(task?.id || '').match(/^AG-(\d+)$/);
-        if (!match) continue;
-        max = Math.max(max, Number(match[1]));
-    }
-    return `AG-${String(max + 1).padStart(3, '0')}`;
+    return domainTaskCreate.nextAgentTaskId(tasks);
 }
 
 function quote(value) {

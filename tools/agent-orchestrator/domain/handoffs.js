@@ -1,5 +1,15 @@
 'use strict';
 
+function nextHandoffId(handoffs) {
+    let max = 0;
+    for (const handoff of handoffs || []) {
+        const match = String(handoff?.id || '').match(/^HO-(\d+)$/);
+        if (!match) continue;
+        max = Math.max(max, Number(match[1]));
+    }
+    return `HO-${String(max + 1).padStart(3, '0')}`;
+}
+
 function getHandoffLintErrors(input = {}, deps = {}) {
     const { board, handoffData } = input;
     const {
@@ -125,5 +135,6 @@ function getHandoffLintErrors(input = {}, deps = {}) {
 }
 
 module.exports = {
+    nextHandoffId,
     getHandoffLintErrors,
 };
