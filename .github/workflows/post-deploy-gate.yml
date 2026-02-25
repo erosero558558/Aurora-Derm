@@ -318,6 +318,7 @@ jobs:
                   Write-Host "REQUIRE_GOOGLE_CALENDAR_EFFECTIVE=$effectiveValue"
 
             - name: Validar contrato Google Calendar (no destructivo)
+              id: calendar_contract
               if: ${{ steps.gate.outcome == 'success' && env.POSTDEPLOY_CHANGE_CLASS != 'non-runtime' }}
               shell: pwsh
               env:
@@ -326,6 +327,7 @@ jobs:
               run: npm run test:calendar-contract
 
             - name: Validar contrato Figo Chat (sin fallback silencioso)
+              id: figo_contract
               if: ${{ steps.gate.outcome == 'success' && env.RUN_FIGO_CONTRACT == 'true' && env.POSTDEPLOY_CHANGE_CLASS != 'non-runtime' }}
               shell: pwsh
               env:
@@ -354,6 +356,9 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input skip figo-post bench: ``$env:SKIP_FIGO_POST_BENCH_INPUT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Change class: ``$env:POSTDEPLOY_CHANGE_CLASS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Effective wait seconds: ``$env:POSTDEPLOY_EFFECTIVE_WAIT_SECONDS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo platform: ``${{ steps.gate.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo agenda(calendar): ``${{ steps.calendar_contract.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo chat(figo): ``${{ steps.figo_contract.outcome }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Require Google calendar (input/vars): ``$env:REQUIRE_GOOGLE_CALENDAR``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Require Google calendar (effective): ``$env:REQUIRE_GOOGLE_CALENDAR_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Contrato figo-chat habilitado: ``$env:RUN_FIGO_CONTRACT``"

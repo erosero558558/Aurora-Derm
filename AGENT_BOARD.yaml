@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 76
+  revision: 78
   updated_at: 2026-02-25
 
 tasks:
@@ -1755,5 +1755,43 @@ tasks:
     evidence_ref: ""
     depends_on: ["AG-044"]
     prompt: "Consolidar cierre frontend en lote (board+planes+evidencia) tras terminar bloques FE/QA para evitar PRs fragmentados de documentacion."
+    created_at: 2026-02-25
+    updated_at: 2026-02-25
+
+  - id: AG-046
+    title: "C4: cerrar guardrails release warning->blocking y fallback operativo"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-25T22:34:12.456Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/post-deploy-fast.yml", ".github/workflows/nightly-stability.yml", ".github/workflows/post-deploy-gate.yml", "docs/RUNBOOKS.md", "PLAN_MAESTRO_CODEX_2026.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-25T22:34:12.456Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "C4: cerrar guardrails release warning->blocking y fallback operativo"
+    acceptance_ref: "verification/agent-runs/AG-046.md"
+    evidence_ref: "verification/agent-runs/AG-046.md"
+    depends_on: []
+    prompt: "C4: cerrar guardrails release warning->blocking y fallback operativo"
     created_at: 2026-02-25
     updated_at: 2026-02-25

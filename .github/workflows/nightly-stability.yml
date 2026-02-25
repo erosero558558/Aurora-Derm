@@ -48,9 +48,20 @@ jobs:
               shell: pwsh
               run: npx playwright install chromium
 
-            - name: Gate completo + suites criticas
+            - name: Gate completo
+              id: gate_full
               shell: pwsh
-              run: npm run nightly:stability
+              run: npm run gate:prod
+
+            - name: Suite critica agenda
+              id: agenda_critical
+              shell: pwsh
+              run: npm run test:critical:agenda
+
+            - name: Suite critica funnel
+              id: funnel_critical
+              shell: pwsh
+              run: npm run test:critical:funnel
 
             - name: Resumen
               if: ${{ always() }}
@@ -60,4 +71,7 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Dominio: ``$env:TARGET_DOMAIN``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Hora objetivo: ``23:00 America/Guayaquil``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Flujo: ``gate:prod`` + ``test:critical:agenda`` + ``test:critical:funnel``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo platform: ``${{ steps.gate_full.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo agenda: ``${{ steps.agenda_critical.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo funnel: ``${{ steps.funnel_critical.outcome }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Resultado: ``${{ job.status }}``"

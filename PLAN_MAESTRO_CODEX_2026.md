@@ -79,7 +79,7 @@ Criterio de salida:
 
 ## C3 - Observabilidad accionable
 
-Estado: `PENDING`
+Estado: `COMPLETED`
 Objetivo:
 
 - Detectar y clasificar incidentes de reserva/chat con menor tiempo de diagnostico.
@@ -105,13 +105,13 @@ Objetivo:
 Entregables:
 
 - [x] Gates explicitos por dominio (agenda/funnel/chat/pagos) con nombres claros en CI.
-- [ ] Workflows destructivos solo en `workflow_dispatch` con guardrails fuertes.
+- [x] Workflows destructivos solo en `workflow_dispatch` con guardrails fuertes.
 - [x] Reglas claras de warning -> blocking segun impacto.
 
 Criterio de salida:
 
-- [ ] Pipeline con semaforos por dominio.
-- [ ] Fallback operativo documentado para picos transitorios sin relajar seguridad.
+- [x] Pipeline con semaforos por dominio.
+- [x] Fallback operativo documentado para picos transitorios sin relajar seguridad.
 
 ## Contratos publicos
 
@@ -162,3 +162,4 @@ Criterio de salida:
 - 2026-02-25: activado protocolo backend-only para esta instancia Codex (dominio fijo `codex_backend_ops`) y creadas tareas iniciales de ejecucion `AG-035` (C1 flakiness agenda/chat/reprogramacion) y `AG-036` (C3 observabilidad accionable), ambas en `status=ready`, `domain_lane=backend_ops`, `lane_lock=strict`, `cross_domain=false`.
 - 2026-02-25: cerrada evidencia de estabilidad C1 en `verification/agent-runs/AG-035.md` con `run-phase2-flakiness` (`runs=5`, `passes=5`, `failures=0`, `classification=stable`) y `npm run test:critical:agenda` en verde (`2 passed`, `3 skipped`).
 - 2026-02-25: cerrada evidencia C3 en `verification/agent-runs/AG-036.md` con reporte semanal de produccion (`verification/weekly/ag036/weekly-report-20260225.json`) validando `triagePlaybook.targetMinutes=15`, `calendarMode=live`, `releaseGuardrails.decision=pass` y p95 dentro de objetivo (`core=684.98`, `figo-post=1811.85`).
+- 2026-02-25: cerrado C4 con semaforos por dominio en summaries de `post-deploy-fast.yml`, `post-deploy-gate.yml` y `nightly-stability.yml` (`platform/agenda/chat/funnel`) y fallback operativo documentado en `docs/RUNBOOKS.md` seccion `1.5 Politica warning -> blocking y fallback operativo`.

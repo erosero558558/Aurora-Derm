@@ -57,6 +57,29 @@ Para cerrar formalmente hardening y reactivar el gate estricto:
 4.  Si una corrida falla solo por p95 puntual (con hash + smoke en verde), tratar como pico transitorio y recomenzar el conteo de corridas consecutivas desde el siguiente OK.
 5.  Registrar evidencia (fecha/hora, p95 por endpoint y resultado) en `PLAN_MAESTRO_2026_STATUS.md`.
 6.  Actualizar el estado de fase en `PLAN_MAESTRO_OPERATIVO_2026.md`.
+
+### 1.5 Politica warning -> blocking y fallback operativo
+
+Objetivo: mantener deploy diurno rapido sin perder control de riesgo.
+
+Reglas:
+
+1.  Fast lane (`post-deploy-fast.yml`) bloquea solo por fallas de health/smoke/contrato critico.
+2.  Full gate (`post-deploy-gate.yml`) se usa para regression completa y decision final en casos de duda.
+3.  Nightly (`nightly-stability.yml`) valida dominios `platform`, `agenda`, `funnel` y publica semaforos por dominio.
+4.  Si hay warning no critico aislado (pico transitorio), se permite continuar solo si:
+    - smoke y health estan en verde;
+    - no hay warning critico;
+    - existe rerun de confirmacion o evidencia de recuperacion.
+5.  Si hay warning critico (`calendar_unreachable`, `calendar_token_unhealthy`, errores de seguridad o contrato critico), la decision es `block`.
+
+Fallback operativo ante pico transitorio:
+
+1.  Ejecutar `npm run gate:prod:fast` para confirmar estado base.
+2.  Ejecutar `npm run gate:prod:strict` para confirmar si el warning persiste.
+3.  Si persiste, abrir incidente `[ALERTA PROD]` y detener release hasta resolver causa raiz.
+4.  Si desaparece, registrar evento como transitorio con timestamp y metrica afectada.
+
 ---
 
 ## 2. Respuesta a Incidentes (Emergency Response)
@@ -113,6 +136,7 @@ Para cerrar formalmente hardening y reactivar el gate estricto:
     - ejecutar benchmark dedicado para aislar el endpoint;
     - verificar estado de infraestructura/hosting y saturacion de red;
     - abrir incidente operativo y no cerrar fase.
+
 ---
 
 ## 3. Tareas Rutinarias (Routine Tasks)
@@ -159,9 +183,9 @@ Para rÃ©plica remota real:
 - Publica `backup-receiver.php` en el servidor destino.
 - Configura `PIELARMONIA_BACKUP_RECEIVER_TOKEN` en destino.
 - Configura en destino:
-  - `PIELARMONIA_BACKUP_RECEIVER_REQUIRE_CHECKSUM=true`
-  - `PIELARMONIA_BACKUP_RECEIVER_ENCRYPTION_KEY=<clave_rotada>`
-  - `PIELARMONIA_BACKUP_RECEIVER_RETENTION_DAYS=30`
+    - `PIELARMONIA_BACKUP_RECEIVER_REQUIRE_CHECKSUM=true`
+    - `PIELARMONIA_BACKUP_RECEIVER_ENCRYPTION_KEY=<clave_rotada>`
+    - `PIELARMONIA_BACKUP_RECEIVER_RETENTION_DAYS=30`
 - Configura en origen:
   `PIELARMONIA_BACKUP_OFFSITE_URL=https://DESTINO/backup-receiver.php`
   `PIELARMONIA_BACKUP_OFFSITE_TOKEN=<mismo_token>`
