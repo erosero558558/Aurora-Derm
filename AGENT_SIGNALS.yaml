@@ -1,5 +1,5 @@
 version: 1
-updated_at: 2026-02-25T03:29:46.421Z
+updated_at: 2026-02-25T03:43:35.999Z
 signals:
   - id: SIG-001
     fingerprint: "issue:issue#279"
@@ -8,11 +8,11 @@ signals:
     title: "[ALERTA PROD] Monitor de produccion fallando"
     severity: critical
     critical: true
-    status: closed
+    status: open
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/issues/279"
     detected_at: "2026-02-24T23:54:38Z"
-    updated_at: "2026-02-25T03:29:46.421Z"
+    updated_at: "2026-02-24T23:54:38Z"
     labels: []
   - id: SIG-002
     fingerprint: "issue:issue#263"
@@ -21,11 +21,11 @@ signals:
     title: "[ALERTA PROD] Repair git sync fallando"
     severity: critical
     critical: true
-    status: closed
+    status: open
     runtime_impact: high
     url: "https://github.com/erosero558558/piel-en-armonia/issues/263"
     detected_at: "2026-02-24T05:28:45Z"
-    updated_at: "2026-02-25T03:29:46.421Z"
+    updated_at: "2026-02-25T01:39:56Z"
     labels: []
   - id: SIG-003
     fingerprint: "workflow:run#22379873691"
@@ -38,7 +38,7 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379873691"
     detected_at: "2026-02-25T02:45:14Z"
-    updated_at: "2026-02-25T03:29:46.421Z"
+    updated_at: "2026-02-25T03:43:35.999Z"
     labels: ["workflow:CI"]
   - id: SIG-004
     fingerprint: "workflow:run#22379426844"
@@ -51,7 +51,7 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379426844"
     detected_at: "2026-02-25T02:26:25Z"
-    updated_at: "2026-02-25T03:29:46.421Z"
+    updated_at: "2026-02-25T03:43:35.999Z"
     labels: ["workflow:CI"]
   - id: SIG-005
     fingerprint: "workflow:run#22379136316"
@@ -64,7 +64,7 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379136316"
     detected_at: "2026-02-25T02:14:39Z"
-    updated_at: "2026-02-25T03:29:46.421Z"
+    updated_at: "2026-02-25T03:43:35.999Z"
     labels: ["workflow:CI"]
   - id: SIG-006
     fingerprint: "workflow:run#22379059437"
@@ -77,18 +77,31 @@ signals:
     runtime_impact: low
     url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379059437"
     detected_at: "2026-02-25T02:11:35Z"
-    updated_at: "2026-02-25T03:29:46.421Z"
+    updated_at: "2026-02-25T03:43:35.999Z"
     labels: ["workflow:CI"]
   - id: SIG-007
     fingerprint: "workflow:ci:main"
     source: workflow
     source_ref: "workflow:ci:main"
-    title: "CI: refactor(orchestrator): extract contribution metrics engine"
+    title: "CI: test(governance): add queue core coverage and metrics baseline contracts"
     severity: medium
     critical: false
-    status: resolved
+    status: failing
     runtime_impact: low
-    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22379059437"
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22380737971"
     detected_at: "2026-02-25T02:51:54Z"
-    updated_at: "2026-02-25T03:29:46.421Z"
+    updated_at: "2026-02-25T03:24:03Z"
     labels: ["workflow:CI"]
+  - id: SIG-008
+    fingerprint: "workflow:agent-governance:main"
+    source: workflow
+    source_ref: "workflow:agent-governance:main"
+    title: "Agent Governance: feat(board): queue P1-P3 tech debt tasks (AG-019, AG-020, AG-021)"
+    severity: medium
+    critical: false
+    status: failing
+    runtime_impact: low
+    url: "https://github.com/erosero558558/piel-en-armonia/actions/runs/22381013664"
+    detected_at: "2026-02-25T03:35:08Z"
+    updated_at: "2026-02-25T03:35:38Z"
+    labels: ["workflow:Agent Governance"]

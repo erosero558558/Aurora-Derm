@@ -85,3 +85,17 @@ test('intake normalizeTaskForScoring escala a codex tras 2 intentos', () => {
     assert.equal(typeof task.priority_score, 'number');
     assert.ok(task.priority_score >= 0 && task.priority_score <= 100);
 });
+
+test('intake inferWorkflowFileFromSignal mapea agent-governance al workflow correcto', () => {
+    const files = intake.inferFilesFromSignal(
+        {
+            source: 'workflow',
+            source_ref: 'workflow:agent-governance:main',
+            title: 'Agent Governance: failing run',
+            labels: ['workflow:Agent Governance'],
+        },
+        'ops'
+    );
+
+    assert.deepEqual(files, ['.github/workflows/agent-governance.yml']);
+});

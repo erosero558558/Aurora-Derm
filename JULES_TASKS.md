@@ -1,4 +1,4 @@
-# JULES_TASKS.md — Cola derivada desde AGENT_BOARD.yaml
+# JULES_TASKS.md - Cola derivada desde AGENT_BOARD.yaml
 
 > Archivo generado por `node agent-orchestrator.js sync`.
 > No editar manualmente; los cambios se sobrescriben.
@@ -151,7 +151,7 @@ Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo segu
 <!-- /TASK -->
 
 <!-- TASK
-status: done
+status: pending
 task_id: AG-018
 risk: medium
 scope: ops
@@ -161,8 +161,25 @@ dispatched_by: agent-orchestrator
 session: 
 dispatched: 
 -->
-### Resolver fallo workflow: CI: refactor(orchestrator): extract contribution metrics engine
+### Resolver fallo workflow: CI: test(governance): add queue core coverage and metrics baseline contracts
 
 Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
+
+<!-- /TASK -->
+
+<!-- TASK
+status: dispatched
+task_id: AG-022
+risk: medium
+scope: ops
+files: .github/workflows/agent-governance.yml
+acceptance_ref: verification/agent-runs/AG-022.md
+dispatched_by: agent-orchestrator
+session: 
+dispatched: 
+-->
+### Resolver fallo workflow: Agent Governance: feat(board): queue P1-P3 tech debt tasks (AG-019, AG-020, AG-021)
+
+Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
 
 <!-- /TASK -->

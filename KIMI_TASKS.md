@@ -1,4 +1,4 @@
-# KIMI_TASKS.md — Cola derivada desde AGENT_BOARD.yaml
+# KIMI_TASKS.md - Cola derivada desde AGENT_BOARD.yaml
 
 > Archivo generado por `node agent-orchestrator.js sync`.
 > No editar manualmente; los cambios se sobrescriben.

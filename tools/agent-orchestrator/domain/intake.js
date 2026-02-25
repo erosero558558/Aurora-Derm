@@ -159,9 +159,73 @@ function inferFilesByScope(scope) {
     }
 }
 
+function normalizeWorkflowSlug(value) {
+    return String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function mapWorkflowSlugToFile(slugRaw) {
+    const slug = normalizeWorkflowSlug(slugRaw);
+    if (!slug) return '';
+
+    if (slug === 'ci') return '.github/workflows/ci.yml';
+    if (slug === 'agent-governance') return '.github/workflows/agent-governance.yml';
+    if (slug === 'agent-intake') return '.github/workflows/agent-intake.yml';
+    if (slug === 'agent-autopilot') return '.github/workflows/agent-autopilot.yml';
+    if (slug === 'kimi-autopilot' || slug === 'agent-kimi-autopilot') {
+        return '.github/workflows/agent-kimi-autopilot.yml';
+    }
+    if (slug === 'post-deploy-gate') return '.github/workflows/post-deploy-gate.yml';
+    if (
+        slug === 'production-monitor' ||
+        slug === 'prod-monitor'
+    ) {
+        return '.github/workflows/prod-monitor.yml';
+    }
+    if (slug === 'repair-git-sync') return '.github/workflows/repair-git-sync.yml';
+    if (slug === 'jules-pr-automation' || slug === 'jules-pr') {
+        return '.github/workflows/jules-pr.yml';
+    }
+    if (slug === 'calendar-write-smoke' || slug === 'calendar-write-smoke-manual') {
+        return '.github/workflows/calendar-write-smoke.yml';
+    }
+    return '';
+}
+
+function inferWorkflowFileFromSignal(signal) {
+    const sourceRef = String(signal?.source_ref || signal?.sourceRef || '').trim();
+    const labels = Array.isArray(signal?.labels) ? signal.labels : [];
+    const candidates = [];
+
+    if (sourceRef.toLowerCase().startsWith('workflow:')) {
+        const parts = sourceRef.split(':');
+        if (parts.length >= 2) candidates.push(parts[1]);
+    }
+
+    for (const label of labels) {
+        const normalized = String(label || '').trim();
+        if (!normalized.toLowerCase().startsWith('workflow:')) continue;
+        candidates.push(normalized.slice('workflow:'.length));
+    }
+
+    for (const candidate of candidates) {
+        const mapped = mapWorkflowSlugToFile(candidate);
+        if (mapped) return mapped;
+    }
+    return '';
+}
+
 function inferFilesFromSignal(signal, scope) {
     const corpus = `${String(signal?.title || '')} ${Array.isArray(signal?.labels) ? signal.labels.join(' ') : ''}`.toLowerCase();
     if (String(scope || '').toLowerCase() === 'ops') {
+        const workflowFile = inferWorkflowFileFromSignal(signal);
+        if (workflowFile) {
+            return [workflowFile];
+        }
         if (corpus.includes('git sync')) {
             return ['.github/workflows/repair-git-sync.yml'];
         }
@@ -394,4 +458,5 @@ module.exports = {
     normalizePathScopeFromText,
     inferFilesByScope,
     inferFilesFromSignal,
+    inferWorkflowFileFromSignal,
 };

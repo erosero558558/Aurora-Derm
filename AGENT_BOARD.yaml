@@ -310,22 +310,22 @@ tasks:
     title: "Resolver alerta: [ALERTA PROD] Monitor de produccion fallando"
     owner: ernes
     executor: codex
-    status: done
+    status: ready
     risk: high
     scope: ops
     files: [".github/workflows/prod-monitor.yml"]
     source_signal: issue
     source_ref: "issue#279"
-    priority_score: 80
-    sla_due_at: "2026-02-25T06:56:24.270Z"
+    priority_score: 95
+    sla_due_at: "2026-02-25T07:43:37.482Z"
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal issue#279 con evidencia verificable."
-    acceptance_ref: "verification/agent-runs/AG-012.md"
-    evidence_ref: "verification/agent-runs/AG-012.md"
+    acceptance_ref: ""
+    evidence_ref: ""
     depends_on: []
     prompt: "Resolver señal issue#279. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -335,22 +335,22 @@ tasks:
     title: "Resolver alerta: [ALERTA PROD] Repair git sync fallando"
     owner: ernes
     executor: codex
-    status: done
+    status: ready
     risk: high
     scope: ops
     files: [".github/workflows/repair-git-sync.yml"]
     source_signal: issue
     source_ref: "issue#263"
-    priority_score: 80
-    sla_due_at: "2026-02-25T06:56:24.270Z"
+    priority_score: 95
+    sla_due_at: "2026-02-25T07:43:37.482Z"
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal issue#263 con evidencia verificable."
-    acceptance_ref: "verification/agent-runs/AG-013.md"
-    evidence_ref: "verification/agent-runs/AG-013.md"
+    acceptance_ref: ""
+    evidence_ref: ""
     depends_on: []
     prompt: "Resolver señal issue#263. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -457,25 +457,25 @@ tasks:
     updated_at: 2026-02-25
 
   - id: AG-018
-    title: "Resolver fallo workflow: CI: refactor(orchestrator): extract contribution metrics engine"
+    title: "Resolver fallo workflow: CI: test(governance): add queue core coverage and metrics baseline contracts"
     owner: ernes
     executor: jules
-    status: done
+    status: ready
     risk: medium
     scope: ops
     files: [".github/workflows/ci.yml"]
     source_signal: workflow
     source_ref: "workflow:ci:main"
     priority_score: 60
-    sla_due_at: "2026-02-27T02:56:24.270Z"
+    sla_due_at: "2026-02-27T03:43:37.482Z"
     last_attempt_at: ""
     attempts: 0
-    blocked_reason: ""
+    blocked_reason: "file_overlap:AG-022"
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal workflow:ci:main con evidencia verificable."
-    acceptance_ref: "verification/agent-runs/AG-018.md"
-    evidence_ref: "verification/agent-runs/AG-018.md"
+    acceptance_ref: ""
+    evidence_ref: ""
     depends_on: []
     prompt: "Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -491,7 +491,7 @@ tasks:
     files: ["src/apps/analytics/engine.js", "src/bundles/data-engine.js", "src/bundles/data-bundle.js", "rollup.config.mjs"]
     source_signal: manual
     source_ref: "tech-debt-audit-2026-02-24"
-    priority_score: 70
+    priority_score: 72
     sla_due_at: "2026-03-07T00:00:00.000Z"
     last_attempt_at: ""
     attempts: 0
@@ -500,11 +500,11 @@ tasks:
     critical_zone: false
     acceptance: "Un único bundle canónico de datos sin duplicación. Bundle size no incrementa. Tests pasan."
     acceptance_ref: "tests-node/"
-    evidence_ref: ""
+    evidence_ref: "tests-node/"
     depends_on: []
     prompt: "Auditar src/bundles/data-engine.js y src/bundles/data-bundle.js. Identificar exports duplicados. Consolidar en un único módulo canónico actualizado en rollup.config.mjs. Agregar test de no-regresión de tamaño de bundle."
     created_at: 2026-02-24
-    updated_at: 2026-02-24
+    updated_at: 2026-02-25
 
   - id: AG-020
     title: "Tech debt P2: add compile-time gate to strip debug/console.log from production bundles"
@@ -516,7 +516,7 @@ tasks:
     files: ["rollup.config.mjs", "eslint.config.js", ".github/workflows/ci.yml"]
     source_signal: manual
     source_ref: "tech-debt-audit-2026-02-24"
-    priority_score: 55
+    priority_score: 47
     sla_due_at: "2026-03-10T00:00:00.000Z"
     last_attempt_at: ""
     attempts: 0
@@ -525,11 +525,11 @@ tasks:
     critical_zone: false
     acceptance: "CI falla si console.log o debugger aparece en src/ fuera de zonas marcadas. Bundles de produccion no contienen logs de debug."
     acceptance_ref: ".github/workflows/ci.yml"
-    evidence_ref: ""
+    evidence_ref: ".github/workflows/ci.yml"
     depends_on: ["AG-019"]
     prompt: "Configurar @rollup/plugin-strip o similar para eliminar console.log/debugger en builds de produccion. Agregar regla ESLint no-console (warn en dev, error en CI). Documentar escape hatch para logs intencionales."
     created_at: 2026-02-24
-    updated_at: 2026-02-24
+    updated_at: 2026-02-25
 
   - id: AG-021
     title: "Tech debt P3: automate C1 exit gates in CI (smoke + Playwright figo-contract)"
@@ -541,7 +541,7 @@ tasks:
     files: [".github/workflows/ci.yml", "tests/figo-chat-contract.spec.js", "GATE-POSTDEPLOY.ps1"]
     source_signal: manual
     source_ref: "tech-debt-audit-2026-02-24"
-    priority_score: 65
+    priority_score: 72
     sla_due_at: "2026-03-05T00:00:00.000Z"
     last_attempt_at: ""
     attempts: 0
@@ -550,8 +550,33 @@ tasks:
     critical_zone: true
     acceptance: "CI workflow ejecuta figo-contract y smoke contra staging antes de allow-merge. Gate falla si latencia Figo > 3s o contrato falla."
     acceptance_ref: ".github/workflows/ci.yml"
-    evidence_ref: ""
+    evidence_ref: ".github/workflows/ci.yml"
     depends_on: []
     prompt: "Agregar job 'c1-exit-gate' en ci.yml que: (1) ejecuta npx playwright test tests/figo-chat-contract.spec.js contra BASE_URL=staging, (2) ejecuta smoke check de endpoint /api/chat, (3) bloquea merge si cualquiera falla. Asegurar que el job tiene acceso a secrets necesarios y que no duplica el job de governance."
     created_at: 2026-02-24
-    updated_at: 2026-02-24
+    updated_at: 2026-02-25
+
+  - id: AG-022
+    title: "Resolver fallo workflow: Agent Governance: feat(board): queue P1-P3 tech debt tasks (AG-019, AG-020, AG-021)"
+    owner: ernes
+    executor: jules
+    status: in_progress
+    risk: medium
+    scope: ops
+    files: [".github/workflows/agent-governance.yml"]
+    source_signal: workflow
+    source_ref: "workflow:agent-governance:main"
+    priority_score: 60
+    sla_due_at: "2026-02-27T03:43:37.482Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Cerrar señal workflow:agent-governance:main con evidencia verificable."
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
+    created_at: 2026-02-25
+    updated_at: 2026-02-25
