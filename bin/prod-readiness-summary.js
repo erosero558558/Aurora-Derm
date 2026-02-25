@@ -1268,6 +1268,7 @@ function computeSuggestedActions({
     weeklyKpiHistory,
     planMasterProgress,
     productionStability,
+    executionEfficiency,
 }) {
     const actions = [];
     const workflowLabels = {
@@ -1424,6 +1425,24 @@ function computeSuggestedActions({
             title: 'Cerrar evidencia Sentry (backend/frontend)',
             reason: 'Pendiente externo/manual de confirmacion de eventos',
             command: 'npm run verify:sentry:events',
+            url: null,
+        });
+    }
+
+    if (executionEfficiency?.signal === 'YELLOW') {
+        const mergedPrsCount = Number(
+            executionEfficiency?.mergedPrs?.count || 0
+        );
+        const manualRunsCount = Number(
+            executionEfficiency?.workflowRuns?.byEvent?.workflow_dispatch || 0
+        );
+        pushAction({
+            id: 'ACT-P2-EFFICIENCY-BATCHING',
+            priority: 'P2',
+            blocking: false,
+            title: 'Reducir fragmentacion en el siguiente bloque (batching)',
+            reason: `Ventana ${executionEfficiency.windowHours || 24}h con merged_prs=${mergedPrsCount} y manual_runs=${manualRunsCount}`,
+            command: 'npm run prod:readiness:summary -- --efficiency-hours=24',
             url: null,
         });
     }
@@ -1898,6 +1917,11 @@ function main() {
         weeklyLocalReport,
         weeklyKpiHistory,
     });
+    const executionEfficiency = computeExecutionEfficiency({
+        branch,
+        workflows,
+        windowHours: efficiencyHours,
+    });
     const suggestedActions = computeSuggestedActions({
         workflows,
         openProdAlerts,
@@ -1905,11 +1929,7 @@ function main() {
         weeklyKpiHistory,
         planMasterProgress,
         productionStability,
-    });
-    const executionEfficiency = computeExecutionEfficiency({
-        branch,
-        workflows,
-        windowHours: efficiencyHours,
+        executionEfficiency,
     });
 
     const summary = {
