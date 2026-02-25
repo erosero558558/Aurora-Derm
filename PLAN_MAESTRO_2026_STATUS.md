@@ -9,6 +9,7 @@ Dominio: https://pielarmonia.com
 
 - Actualizacion 2026-02-24 (post-fix compat calendar): CI y Post-Deploy Gate en verde para commit `c4beac8`.
 - Actualizacion 2026-02-25 (weekly KPI hardening): guardrails de conversion y funnel temprano en `main`, con validaciones remotas `Weekly KPI Report` runs `22408343562` y `22408612570`.
+- Ajuste operativo 2026-02-25: se adopta modo de ejecucion por bloques (45-90 min) con validacion remota por hitos para reducir fragmentacion y tiempo muerto de checks.
 - CI run `22334259615` (push a main): `success`.
 - Post-Deploy Gate run `22334259617` (push a main): `success`.
 - CI run `22334594766` (commit `916adde`): `success`.
