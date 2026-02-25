@@ -185,6 +185,47 @@ function fetchLatestWorkflowRun({ workflowRef, label }, branch) {
     };
 }
 
+function fetchRecentWorkflowRuns({ workflowRef, label }, branch, limit = 12) {
+    const normalizedLimit =
+        Number.isFinite(Number(limit)) && Number(limit) > 0
+            ? String(Math.trunc(Number(limit)))
+            : '12';
+    const res = runGhJson(
+        [
+            'run',
+            'list',
+            '--workflow',
+            workflowRef,
+            '--branch',
+            branch,
+            '--limit',
+            normalizedLimit,
+            '--json',
+            'databaseId,displayTitle,workflowName,status,conclusion,url,createdAt,updatedAt,headBranch,headSha,event',
+        ],
+        { allowFailure: true }
+    );
+
+    if (!res.ok) {
+        return {
+            workflowName: label,
+            workflowRef,
+            available: false,
+            error: res.stderr || res.stdout || `gh exit ${res.exitCode}`,
+            runs: [],
+        };
+    }
+
+    const list = Array.isArray(res.json) ? res.json : [];
+    return {
+        workflowName: label,
+        workflowRef,
+        available: true,
+        error: null,
+        runs: list.map((item) => mapRun(item)).filter(Boolean),
+    };
+}
+
 function fetchOpenProdAlerts() {
     const res = runGhJson(
         [
@@ -635,6 +676,64 @@ function coerceRunHealth(runWrapper) {
     };
 }
 
+function countConsecutiveRunsByPredicate(runs, predicate) {
+    let count = 0;
+    for (const run of Array.isArray(runs) ? runs : []) {
+        if (!predicate(run)) break;
+        count += 1;
+    }
+    return count;
+}
+
+function computeWeeklyKpiHistory(weeklyRunsWrapper) {
+    if (!weeklyRunsWrapper || !weeklyRunsWrapper.available) {
+        return {
+            available: false,
+            error: weeklyRunsWrapper?.error || 'unavailable',
+            recentLimit: 0,
+            totalRecentRuns: 0,
+            anyEventSuccessStreak: 0,
+            scheduleRunsCount: 0,
+            scheduleSuccessStreak: 0,
+            scheduleCyclesTarget: 2,
+            scheduleCyclesRemaining: 2,
+            latestScheduleRun: null,
+            recentRuns: [],
+        };
+    }
+
+    const recentRuns = Array.isArray(weeklyRunsWrapper.runs)
+        ? weeklyRunsWrapper.runs
+        : [];
+    const scheduleRuns = recentRuns.filter((run) => run.event === 'schedule');
+    const anyEventSuccessStreak = countConsecutiveRunsByPredicate(
+        recentRuns,
+        (run) => run.status === 'completed' && run.conclusion === 'success'
+    );
+    const scheduleSuccessStreak = countConsecutiveRunsByPredicate(
+        scheduleRuns,
+        (run) => run.status === 'completed' && run.conclusion === 'success'
+    );
+    const scheduleCyclesTarget = 2;
+
+    return {
+        available: true,
+        error: null,
+        recentLimit: recentRuns.length,
+        totalRecentRuns: recentRuns.length,
+        anyEventSuccessStreak,
+        scheduleRunsCount: scheduleRuns.length,
+        scheduleSuccessStreak,
+        scheduleCyclesTarget,
+        scheduleCyclesRemaining: Math.max(
+            0,
+            scheduleCyclesTarget - scheduleSuccessStreak
+        ),
+        latestScheduleRun: scheduleRuns[0] || null,
+        recentRuns: recentRuns.slice(0, 8),
+    };
+}
+
 function computeProductionStability({
     workflows,
     openProdAlerts,
@@ -692,6 +791,7 @@ function computePlanMasterProgress({
     workflows,
     openProdAlerts,
     weeklyLocalReport,
+    weeklyKpiHistory,
 }) {
     const pending = [];
     pending.push({
@@ -711,20 +811,44 @@ function computePlanMasterProgress({
         weeklyLocalReport && weeklyLocalReport.found && !weeklyLocalReport.error
             ? Number(weeklyLocalReport.warningCounts?.nonCritical || 0)
             : null;
+    const scheduleStreak = Number(weeklyKpiHistory?.scheduleSuccessStreak || 0);
+    const anyEventStreak = Number(weeklyKpiHistory?.anyEventSuccessStreak || 0);
+    const scheduleTarget = Number(weeklyKpiHistory?.scheduleCyclesTarget || 2);
+    const scheduleRemaining = Number(
+        weeklyKpiHistory?.scheduleCyclesRemaining ?? scheduleTarget
+    );
+    const latestScheduleRun = weeklyKpiHistory?.latestScheduleRun || null;
+    const f6Status =
+        scheduleStreak >= scheduleTarget
+            ? 'done'
+            : scheduleStreak >= 1 || anyEventStreak >= 1
+              ? 'in_progress_timebox'
+              : 'pending';
+    let f6Notes =
+        'Requiere corridas semanales programadas en main y evidencia de estabilidad.';
+    if (weeklyKpiHistory?.available) {
+        f6Notes =
+            `schedule_success_streak=${scheduleStreak}/${scheduleTarget}; ` +
+            `schedule_cycles_remaining=${scheduleRemaining}; ` +
+            `any_event_success_streak=${anyEventStreak}.`;
+        if (latestScheduleRun) {
+            f6Notes += ` Latest schedule run ${latestScheduleRun.id} => ${latestScheduleRun.conclusion || latestScheduleRun.status}.`;
+        } else {
+            f6Notes +=
+                ' Aun no hay runs `schedule` recientes del Weekly KPI en main (solo validaciones manuales).';
+        }
+    }
+    if (weeklyRun && weeklyRun.conclusion === 'success') {
+        f6Notes +=
+            ` Ultimo run observado: ${weeklyRun.id} (event=${weeklyRun.event || 'n/a'}); ` +
+            `warnings_critical_report=${weeklyCriticalWarnings ?? 'n/a'} warnings_non_critical_report=${weeklyNonCriticalWarnings ?? 'n/a'}.`;
+    }
     pending.push({
         id: 'PM-F6-001',
         title: 'Fase 6: completar 2 ciclos semanales sin warnings criticos',
-        status:
-            weeklyRun &&
-            weeklyRun.conclusion === 'success' &&
-            weeklyCriticalWarnings === 0
-                ? 'in_progress_timebox'
-                : 'pending',
+        status: f6Status,
         owner: 'ops',
-        notes:
-            weeklyRun && weeklyRun.conclusion === 'success'
-                ? `Hay al menos 1 corrida en verde (run ${weeklyRun.id}); warnings_critical_local=${weeklyCriticalWarnings ?? 'n/a'} warnings_non_critical_local=${weeklyNonCriticalWarnings ?? 'n/a'}.`
-                : 'Requiere corridas semanales programadas en main y evidencia de estabilidad.',
+        notes: f6Notes,
     });
 
     if (openProdAlerts.available && openProdAlerts.count > 0) {
@@ -739,7 +863,7 @@ function computePlanMasterProgress({
 
     return {
         pending,
-        pendingCount: pending.length,
+        pendingCount: pending.filter((item) => item.status !== 'done').length,
         blockingCount: pending.filter((item) => item.status === 'blocking')
             .length,
     };
@@ -764,6 +888,7 @@ function toMarkdown(summary) {
         workflows,
         openProdAlerts,
         weeklyLocalReport,
+        weeklyKpiHistory,
     } = summary;
     lines.push('# Prod Readiness Summary');
     lines.push('');
@@ -812,6 +937,38 @@ function toMarkdown(summary) {
             workflows.repairGitSync
         )
     );
+    lines.push('');
+
+    lines.push('## Weekly KPI Streak (main)');
+    lines.push('');
+    if (!weeklyKpiHistory || !weeklyKpiHistory.available) {
+        lines.push(`- unavailable: ${weeklyKpiHistory?.error || 'n/a'}`);
+    } else {
+        lines.push(
+            `- recent_runs_evaluated: ${weeklyKpiHistory.totalRecentRuns}`
+        );
+        lines.push(
+            `- any_event_success_streak: ${weeklyKpiHistory.anyEventSuccessStreak}`
+        );
+        lines.push(
+            `- schedule_runs_seen: ${weeklyKpiHistory.scheduleRunsCount}`
+        );
+        lines.push(
+            `- schedule_success_streak: ${weeklyKpiHistory.scheduleSuccessStreak}/${weeklyKpiHistory.scheduleCyclesTarget}`
+        );
+        lines.push(
+            `- schedule_cycles_remaining: ${weeklyKpiHistory.scheduleCyclesRemaining}`
+        );
+        if (weeklyKpiHistory.latestScheduleRun) {
+            lines.push(
+                `- latest_schedule_run: ${weeklyKpiHistory.latestScheduleRun.id} (${weeklyKpiHistory.latestScheduleRun.conclusion || weeklyKpiHistory.latestScheduleRun.status}) ${weeklyKpiHistory.latestScheduleRun.url || ''}`.trim()
+            );
+        } else {
+            lines.push(
+                '- latest_schedule_run: none (solo manual/workflow_dispatch recientes)'
+            );
+        }
+    }
     lines.push('');
 
     lines.push('## Prod Alerts');
@@ -944,13 +1101,14 @@ function relativePath(path) {
 
 function usage() {
     return [
-        'Uso: node bin/prod-readiness-summary.js [--branch=main] [--weekly-source=auto] [--weekly-dir=verification/weekly]',
+        'Uso: node bin/prod-readiness-summary.js [--branch=main] [--weekly-source=auto] [--weekly-history-limit=12] [--weekly-dir=verification/weekly]',
         '',
         'Opcionales:',
         `  --json-out=PATH     Reporte JSON (default ${DEFAULT_JSON_OUT})`,
         `  --md-out=PATH       Reporte Markdown (default ${DEFAULT_MD_OUT})`,
         '  --branch=BRANCH     Rama para consultar workflows via gh (default main)',
         '  --weekly-source=MODE  Fuente del Weekly KPI: auto|remote|local (default auto)',
+        '  --weekly-history-limit=N  Runs recientes de Weekly KPI para streak (default 12)',
         '  --weekly-dir=PATH   Directorio de reportes semanales locales (default verification/weekly)',
         '  --runs-limit=N      Reservado para versiones futuras (default 1)',
         '  --print-json        Imprime JSON en stdout',
@@ -968,6 +1126,7 @@ function main() {
 
     const branch = parseStringArg('branch', 'main');
     const weeklySource = parseStringArg('weekly-source', 'auto');
+    const weeklyHistoryLimit = parseIntArg('weekly-history-limit', 12, 1);
     const weeklyDir = parseStringArg('weekly-dir', 'verification/weekly');
     parseIntArg('runs-limit', 1, 1); // reservado; valida formato y deja contrato listo
     const jsonOut = resolve(ROOT, parseStringArg('json-out', DEFAULT_JSON_OUT));
@@ -1007,6 +1166,15 @@ function main() {
             branch
         ),
     };
+    const weeklyKpiRunsRecent = fetchRecentWorkflowRuns(
+        {
+            workflowRef: '.github/workflows/weekly-kpi-report.yml',
+            label: 'Weekly KPI Report',
+        },
+        branch,
+        weeklyHistoryLimit
+    );
+    const weeklyKpiHistory = computeWeeklyKpiHistory(weeklyKpiRunsRecent);
     const openProdAlerts = fetchOpenProdAlerts();
     const weeklyLocalReport = readWeeklyReportPreferred({
         mode: weeklySource,
@@ -1022,6 +1190,7 @@ function main() {
         workflows,
         openProdAlerts,
         weeklyLocalReport,
+        weeklyKpiHistory,
     });
 
     const summary = {
@@ -1032,9 +1201,11 @@ function main() {
         },
         branch,
         weeklySourceMode: weeklySource,
+        weeklyHistoryLimit,
         productionStability,
         planMasterProgress,
         workflows,
+        weeklyKpiHistory,
         openProdAlerts,
         weeklyLocalReport,
         paths: {
