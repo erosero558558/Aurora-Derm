@@ -29,6 +29,7 @@
         "gate:prod:strict": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-POSTDEPLOY.ps1 -Domain https://pielarmonia.com -RequireStableDataDir -RequireBackupHealthy -RequireBackupReceiverReady -RequireCronReady",
         "monitor:prod": "powershell -NoProfile -ExecutionPolicy Bypass -File ./MONITOR-PRODUCCION.ps1 -Domain https://pielarmonia.com",
         "report:weekly:prod": "powershell -NoProfile -ExecutionPolicy Bypass -File ./REPORTE-SEMANAL-PRODUCCION.ps1 -Domain https://pielarmonia.com",
+        "verify:sentry:events": "node bin/verify-sentry-events.js",
         "format": "prettier --write .",
         "agent:sync": "node agent-orchestrator.js sync",
         "agent:status": "node agent-orchestrator.js status",
