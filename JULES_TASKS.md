@@ -151,7 +151,7 @@ Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo segu
 <!-- /TASK -->
 
 <!-- TASK
-status: dispatched
+status: pending
 task_id: AG-018
 risk: medium
 scope: ops
@@ -185,7 +185,7 @@ Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar f
 <!-- /TASK -->
 
 <!-- TASK
-status: done
+status: pending
 task_id: AG-026
 risk: medium
 scope: ops

@@ -3,7 +3,7 @@ policy:
   canonical: AGENTS.md
   autonomy: semi_autonomous_guardrails
   kpi: reduce_rework
-  revision: 2
+  revision: 4
   updated_at: 2026-02-25
 
 tasks:
@@ -29,7 +29,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -63,7 +63,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -97,7 +97,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -131,7 +131,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -165,7 +165,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -199,7 +199,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -233,7 +233,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -267,7 +267,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -301,7 +301,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -335,7 +335,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -369,7 +369,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -403,7 +403,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -437,7 +437,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
@@ -471,7 +471,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
@@ -505,7 +505,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -539,7 +539,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -573,7 +573,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -607,7 +607,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -675,7 +675,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T00:20:00-05:00"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -777,7 +777,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -811,7 +811,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -845,7 +845,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
@@ -879,7 +879,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:25:58.791Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
@@ -929,8 +929,8 @@ tasks:
     title: "Resolver fallo workflow: Post-Deploy Gate (Git Sync): fix(orchestrator): prioritize github signals and prevent overlap task…"
     owner: ernes
     executor: codex
-    status: ready
-    status_since_at: "2026-02-25T05:25:58.791Z"
+    status: done
+    status_since_at: "2026-02-25T05:49:40.562Z"
     risk: high
     scope: ops
     files: [".github/workflows/post-deploy-gate.yml"]
@@ -947,13 +947,13 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:03:23.037Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal workflow:post-deploy-gate-git-sync:main con evidencia verificable."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "docs/agent-runs/AG-027.md"
+    evidence_ref: "docs/agent-runs/AG-027.md"
     depends_on: []
     prompt: "Resolver señal workflow:post-deploy-gate-git-sync:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -963,8 +963,8 @@ tasks:
     title: "Resolver fallo workflow: Repair Git Sync (Self-Heal): Repair Git Sync (Self-Heal)"
     owner: ernes
     executor: codex
-    status: ready
-    status_since_at: "2026-02-25T05:25:58.791Z"
+    status: done
+    status_since_at: "2026-02-25T05:49:56.551Z"
     risk: high
     scope: ops
     files: [".github/workflows/repair-git-sync.yml"]
@@ -981,13 +981,13 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-25T05:03:23.037Z"
+    lease_cleared_at: "2026-02-25T05:49:56.551Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal workflow:repair-git-sync-self-heal:main con evidencia verificable."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "docs/agent-runs/AG-028.md"
+    evidence_ref: "docs/agent-runs/AG-028.md"
     depends_on: []
     prompt: "Resolver señal workflow:repair-git-sync-self-heal:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
