@@ -398,6 +398,8 @@ $changedFiles = Get-HeadChangedFiles
 $changedFilesKnown = ($null -ne $changedFiles)
 $headTouchesFrontendAssets = $true
 $headTouchesScriptFamily = $true
+$headTouchesAdminScriptFamily = $false
+$headTouchesAdminHtml = $false
 $headTouchesStyles = $true
 $headTouchesDeferredStyles = $true
 $headTouchesIndex = $true
@@ -407,7 +409,9 @@ $headTouchesEngineAssets = $false
 if ($changedFilesKnown) {
     $headTouchesFrontendAssets = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @(
         '^index\.html$',
+        '^admin\.html$',
         '^script\.js$',
+        '^admin\.js$',
         '^styles\.css$',
         '^styles-deferred\.css$',
         '^js/engines/',
@@ -418,11 +422,19 @@ if ($changedFilesKnown) {
     )
     $headTouchesScriptFamily = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @(
         '^script\.js$',
+        '^admin\.js$',
         '^js/main\.js$',
         '^js/(loader|state|utils|main)\.js$',
         '^src/bundles/ui\.js$',
         '^rollup\.config\.mjs$'
     )
+    $headTouchesAdminScriptFamily = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @(
+        '^admin\.js$',
+        '^src/apps/admin/',
+        '^src/bundles/admin\.js$',
+        '^rollup\.config\.mjs$'
+    )
+    $headTouchesAdminHtml = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @('^admin\.html$')
     $changedEngineAssets = @(
         $changedFiles | Where-Object { $_ -match '^js/engines/.+\.js$' }
     )
@@ -561,6 +573,12 @@ try {
         $engineProbePath = [string]$changedEngineAssets[0]
         $deployFreshnessProbeName = "engine:$engineProbePath"
         $deployFreshnessProbeUrl = Get-Url -Base $base -Ref $engineProbePath
+    } elseif ($headTouchesAdminScriptFamily) {
+        $deployFreshnessProbeName = 'admin-script'
+        $deployFreshnessProbeUrl = "$base/admin.js"
+    } elseif ($headTouchesAdminHtml) {
+        $deployFreshnessProbeName = 'admin-index'
+        $deployFreshnessProbeUrl = "$base/admin.html"
     } elseif (-not $headTouchesScriptFamily) {
         if ($headTouchesDeferredStyles -and -not [string]::IsNullOrWhiteSpace($indexDeferredStylesRemoteUrl)) {
             $deployFreshnessProbeName = 'styles-deferred'
