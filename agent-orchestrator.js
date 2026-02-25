@@ -30,6 +30,7 @@ const coreTime = require('./tools/agent-orchestrator/core/time');
 const coreOutput = require('./tools/agent-orchestrator/core/output');
 const domainConflicts = require('./tools/agent-orchestrator/domain/conflicts');
 const domainTaskGuards = require('./tools/agent-orchestrator/domain/task-guards');
+const domainTaskCreate = require('./tools/agent-orchestrator/domain/task-create');
 const domainDiagnostics = require('./tools/agent-orchestrator/domain/diagnostics');
 
 const ROOT = __dirname;
@@ -263,239 +264,55 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
 }
 
 function resolveTaskCreateTemplate(templateNameRaw) {
-    const templateName = String(templateNameRaw || '')
-        .trim()
-        .toLowerCase();
-    if (!templateName) return null;
-    const template = TASK_CREATE_TEMPLATES[templateName];
-    if (!template) {
-        throw new Error(
-            `task create: template invalido (${templateName}); disponibles: ${Object.keys(
-                TASK_CREATE_TEMPLATES
-            ).join(', ')}`
-        );
-    }
-    return { name: templateName, ...template };
+    return domainTaskCreate.resolveTaskCreateTemplate(templateNameRaw, {
+        templates: TASK_CREATE_TEMPLATES,
+    });
 }
 
 function inferTaskCreateFromFiles(files) {
-    const normalizedFiles = Array.isArray(files)
-        ? files.map((item) => normalizePathToken(item)).filter(Boolean)
-        : [];
-    if (normalizedFiles.length === 0) return null;
-
-    const criticalMatches = [];
-    for (const keyword of CRITICAL_SCOPE_KEYWORDS) {
-        if (normalizedFiles.some((file) => file.includes(keyword))) {
-            criticalMatches.push(keyword);
-        }
-    }
-
-    let scope = null;
-    if (criticalMatches.length > 0) {
-        scope = criticalMatches[0];
-    } else {
-        const domain = inferTaskDomain({ scope: '', files: normalizedFiles });
-        if (domain && domain !== 'other') {
-            scope = domain;
-        } else {
-            const firstTopLevel = String(normalizedFiles[0] || '')
-                .split('/')[0]
-                .trim();
-            scope = firstTopLevel || 'general';
-        }
-    }
-
-    const allDocsLike = normalizedFiles.every(
-        (file) =>
-            file.startsWith('docs/') ||
-            file.endsWith('.md') ||
-            file.endsWith('.txt')
-    );
-
-    const hasHighRiskPathSignals = normalizedFiles.some((file) => {
-        return (
-            file.startsWith('.github/workflows/') ||
-            file.includes('/deploy') ||
-            file.includes('deploy/') ||
-            file.includes('/auth') ||
-            file.includes('/security') ||
-            file.includes('/calendar') ||
-            file.includes('/payments') ||
-            file.includes('/payment') ||
-            file.includes('stripe') ||
-            file.endsWith('env.php') ||
-            file.includes('/secrets') ||
-            file.includes('/secret') ||
-            file.includes('/backup') ||
-            file.includes('/restore')
-        );
+    return domainTaskCreate.inferTaskCreateFromFiles(files, {
+        normalizePathToken,
+        criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+        inferTaskDomain,
+        findCriticalScopeKeyword,
+        criticalScopeAllowedExecutors: CRITICAL_SCOPE_ALLOWED_EXECUTORS,
     });
-
-    let risk = 'medium';
-    if (criticalMatches.length > 0 || hasHighRiskPathSignals) {
-        risk = 'high';
-    } else if (allDocsLike) {
-        risk = 'low';
-    }
-
-    const criticalScope = findCriticalScopeKeyword(scope);
-    const suggestedExecutor = criticalScope ? 'codex' : null;
-
-    return {
-        scope,
-        risk,
-        critical_scope: criticalScope,
-        suggested_executor: suggestedExecutor,
-        allowed_executors_for_scope: criticalScope
-            ? Array.from(CRITICAL_SCOPE_ALLOWED_EXECUTORS)
-            : null,
-        reasons: {
-            critical_keywords: criticalMatches,
-            all_docs_like: allDocsLike,
-            high_risk_path_signals: hasHighRiskPathSignals,
-        },
-    };
 }
 
 function buildTaskCreateInferenceExplainLines(context = {}) {
-    const lines = [];
-    const {
-        fromFilesEnabled = false,
-        fileInference = null,
-        scopeSource = 'default',
-        riskSource = 'default',
-        executorSource = 'default',
-        task = null,
-        templateName = null,
-    } = context;
-
-    if (templateName) {
-        lines.push(`template=${templateName}`);
-    } else {
-        lines.push('template=(none)');
-    }
-
-    if (!fromFilesEnabled) {
-        lines.push('from-files=disabled');
-        lines.push(
-            `scope=${task?.scope || 'n/a'} (source=${scopeSource}), risk=${task?.risk || 'n/a'} (source=${riskSource}), executor=${task?.executor || 'n/a'} (source=${executorSource})`
-        );
-        return lines;
-    }
-
-    if (!fileInference) {
-        lines.push('from-files=enabled sin inferencia (files vacio/no valido)');
-        lines.push(
-            `scope=${task?.scope || 'n/a'} (source=${scopeSource}), risk=${task?.risk || 'n/a'} (source=${riskSource}), executor=${task?.executor || 'n/a'} (source=${executorSource})`
-        );
-        return lines;
-    }
-
-    lines.push('from-files=enabled');
-    lines.push(
-        `inference.scope=${fileInference.scope || 'n/a'} (${fileInference.critical_scope ? `critical:${fileInference.critical_scope}` : 'non-critical'})`
-    );
-    lines.push(
-        `inference.risk=${fileInference.risk || 'n/a'} (docs_like=${Boolean(fileInference?.reasons?.all_docs_like)}, high_risk_signals=${Boolean(fileInference?.reasons?.high_risk_path_signals)})`
-    );
-    if (fileInference.suggested_executor) {
-        lines.push(
-            `inference.suggested_executor=${fileInference.suggested_executor} (allowed=${Array.isArray(fileInference.allowed_executors_for_scope) ? fileInference.allowed_executors_for_scope.join(',') : 'n/a'})`
-        );
-    } else {
-        lines.push('inference.suggested_executor=(none)');
-    }
-    lines.push(
-        `resolved.scope=${task?.scope || 'n/a'} (source=${scopeSource}), resolved.risk=${task?.risk || 'n/a'} (source=${riskSource}), resolved.executor=${task?.executor || 'n/a'} (source=${executorSource})`
-    );
-    return lines;
+    return domainTaskCreate.buildTaskCreateInferenceExplainLines(context);
 }
 
 function createPromptInterface(wantsJson = false) {
-    return readline.createInterface({
-        input: process.stdin,
-        output: wantsJson ? process.stderr : process.stdout,
+    return domainTaskCreate.createPromptInterface(wantsJson, {
+        readline,
+        stdin: process.stdin,
+        stdout: process.stdout,
+        stderr: process.stderr,
     });
 }
 
 function askLine(rl, promptText) {
-    return new Promise((resolve) => {
-        rl.question(promptText, (answer) => resolve(String(answer || '')));
-    });
+    return domainTaskCreate.askLine(rl, promptText);
 }
 
 async function collectTaskCreateInteractiveFlags(
     flags = {},
     wantsJson = false
 ) {
-    const merged = { ...(flags || {}) };
-    const promptWriter = wantsJson ? process.stderr : process.stdout;
-    const promptSteps = async (ask) => {
-        if (!String(merged.title || '').trim()) {
-            merged.title = (await ask('Titulo: ')).trim();
+    return domainTaskCreate.collectTaskCreateInteractiveFlags(
+        flags,
+        wantsJson,
+        {
+            processObj: process,
+            readFileSync,
+            readline,
+            stdout: process.stdout,
+            stderr: process.stderr,
+            createPromptInterface,
+            askLine,
         }
-
-        if (!String(merged.template || '').trim()) {
-            const answer = (
-                await ask('Template (docs|bugfix|critical, enter=none): ')
-            ).trim();
-            if (answer) merged.template = answer;
-        }
-
-        if (!String(merged.files || '').trim()) {
-            merged.files = (await ask('Files CSV: ')).trim();
-        }
-
-        if (
-            !Object.prototype.hasOwnProperty.call(merged, 'from-files') &&
-            !Object.prototype.hasOwnProperty.call(merged, 'from_files')
-        ) {
-            const answer = (
-                await ask('Inferir scope/risk desde files? (y/N): ')
-            )
-                .trim()
-                .toLowerCase();
-            if (['y', 'yes', 'si', 's', '1', 'true'].includes(answer)) {
-                merged['from-files'] = true;
-            }
-        }
-
-        const optionalPrompts = [
-            ['executor', 'Executor (enter=auto/template): '],
-            ['status', 'Status (enter=auto): '],
-            ['risk', 'Risk low|medium|high (enter=auto): '],
-            ['scope', 'Scope (enter=auto): '],
-            ['depends-on', 'Depends_on CSV (enter=none): '],
-        ];
-        for (const [key, label] of optionalPrompts) {
-            if (String(merged[key] || '').trim()) continue;
-            const answer = (await ask(label)).trim();
-            if (answer) merged[key] = answer;
-        }
-    };
-
-    if (!process.stdin.isTTY) {
-        const bufferedInput = readFileSync(0, 'utf8');
-        const lines = String(bufferedInput || '').split(/\r?\n/);
-        let cursor = 0;
-        await promptSteps(async (label) => {
-            promptWriter.write(label);
-            if (cursor >= lines.length) return '';
-            const answer = lines[cursor];
-            cursor += 1;
-            return answer;
-        });
-        return merged;
-    }
-
-    const rl = createPromptInterface(wantsJson);
-    try {
-        await promptSteps((label) => askLine(rl, label));
-    } finally {
-        rl.close();
-    }
-    return merged;
+    );
 }
 
 function writeBoard(board) {
@@ -590,182 +407,41 @@ function toTaskFullJson(task) {
 }
 
 function normalizeTaskForCreateApply(rawTask) {
-    if (!rawTask || typeof rawTask !== 'object') {
-        throw new Error(
-            'task create --apply requiere payload.task_full o payload.task valido'
-        );
-    }
-    const task = {
-        id: String(rawTask.id || '').trim(),
-        title: String(rawTask.title || '').trim(),
-        owner: String(rawTask.owner || 'unassigned').trim() || 'unassigned',
-        executor: String(rawTask.executor || '')
-            .trim()
-            .toLowerCase(),
-        status: String(rawTask.status || '').trim(),
-        risk: String(rawTask.risk || '')
-            .trim()
-            .toLowerCase(),
-        scope: String(rawTask.scope || '').trim(),
-        files: Array.isArray(rawTask.files)
-            ? rawTask.files.map((v) => String(v || '').trim()).filter(Boolean)
-            : [],
-        acceptance: String(rawTask.acceptance || rawTask.title || '').trim(),
-        acceptance_ref: String(rawTask.acceptance_ref || '').trim(),
-        depends_on: Array.isArray(rawTask.depends_on)
-            ? rawTask.depends_on
-                  .map((v) => String(v || '').trim())
-                  .filter(Boolean)
-            : [],
-        prompt: String(rawTask.prompt || rawTask.title || '').trim(),
-        created_at:
-            String(rawTask.created_at || currentDate()).trim() || currentDate(),
-        updated_at:
-            String(rawTask.updated_at || currentDate()).trim() || currentDate(),
-    };
-
-    if (!/^AG-\d+$/.test(task.id)) {
-        throw new Error(
-            `task create --apply requiere task.id AG-### (actual: ${task.id || 'vacio'})`
-        );
-    }
-    if (!task.title) {
-        throw new Error('task create --apply requiere task.title');
-    }
-    if (!task.executor) {
-        throw new Error('task create --apply requiere task.executor');
-    }
-    if (!ALLOWED_TASK_EXECUTORS.has(task.executor)) {
-        throw new Error(
-            `task create --apply: executor invalido (${task.executor})`
-        );
-    }
-    if (!ALLOWED_STATUSES.has(task.status)) {
-        throw new Error(
-            `task create --apply: status invalido (${task.status})`
-        );
-    }
-    if (!['low', 'medium', 'high'].includes(task.risk)) {
-        throw new Error(`task create --apply: risk invalido (${task.risk})`);
-    }
-    if (task.files.length === 0) {
-        throw new Error('task create --apply requiere task.files no vacio');
-    }
-
-    return task;
-}
-
-function loadTaskCreateApplyPayload(applyPathRaw, options = {}) {
-    const modeLabel = String(options.modeLabel || 'task create --apply');
-    const applyPath = String(applyPathRaw || '').trim();
-    if (!applyPath || applyPath === 'true') {
-        throw new Error(
-            `${modeLabel} requiere ruta al JSON de preview (ej: --apply verification/task-preview.json o - para stdin)`
-        );
-    }
-
-    let rawJson = '';
-    let resolvedPath = null;
-    if (applyPath === '-') {
-        rawJson = readFileSync(0, 'utf8');
-    } else {
-        resolvedPath = resolve(ROOT, applyPath);
-        if (!existsSync(resolvedPath)) {
-            throw new Error(`No existe archivo de apply: ${resolvedPath}`);
-        }
-        rawJson = readFileSync(resolvedPath, 'utf8');
-    }
-
-    let payload;
-    try {
-        payload = JSON.parse(rawJson);
-    } catch (error) {
-        throw new Error(
-            `JSON invalido en ${modeLabel} (${applyPath}): ${error.message}`
-        );
-    }
-    if (
-        String(payload?.command || '') !== 'task' ||
-        String(payload?.action || '') !== 'create'
-    ) {
-        throw new Error(`${modeLabel} requiere JSON generado por task create`);
-    }
-    if (
-        !(
-            payload?.preview === true ||
-            payload?.dry_run === true ||
-            payload?.persisted === false
-        )
-    ) {
-        throw new Error(
-            `${modeLabel} requiere payload de preview/dry-run (persisted=false)`
-        );
-    }
-    return {
-        path: applyPath,
-        resolved_path: resolvedPath,
-        payload,
-    };
-}
-
-function summarizeBlockingConflictsForTask(taskId, conflicts) {
-    const safeTaskId = String(taskId || '').trim();
-    return (Array.isArray(conflicts) ? conflicts : []).map((item) => {
-        const leftId = String(item?.left?.id || '');
-        const other = leftId === safeTaskId ? item?.right : item?.left;
-        const overlapFiles = Array.isArray(item?.overlap_files)
-            ? item.overlap_files
-            : [];
-        return {
-            other_id: String(other?.id || ''),
-            overlap_files: overlapFiles,
-            overlap_files_text: overlapFiles.length
-                ? overlapFiles.join(', ')
-                : '(wildcard ambiguo)',
-        };
+    return domainTaskCreate.normalizeTaskForCreateApply(rawTask, {
+        currentDate,
+        allowedTaskExecutors: ALLOWED_TASK_EXECUTORS,
+        allowedStatuses: ALLOWED_STATUSES,
     });
 }
 
+function loadTaskCreateApplyPayload(applyPathRaw, options = {}) {
+    return domainTaskCreate.loadTaskCreateApplyPayload(applyPathRaw, {
+        ...options,
+        rootPath: ROOT,
+        existsSync,
+        readFileSync,
+    });
+}
+
+function summarizeBlockingConflictsForTask(taskId, conflicts) {
+    return domainTaskCreate.summarizeBlockingConflictsForTask(
+        taskId,
+        conflicts
+    );
+}
+
 function formatBlockingConflictSummary(taskId, conflicts) {
-    return summarizeBlockingConflictsForTask(taskId, conflicts)
-        .map(
-            (row) =>
-                `${taskId} <-> ${row.other_id} :: ${row.overlap_files_text}`
-        )
-        .join(' | ');
+    return domainTaskCreate.formatBlockingConflictSummary(taskId, conflicts);
 }
 
 function buildTaskCreatePreviewDiff(existingTask, previewTask) {
-    if (!existingTask || !previewTask) return [];
-    const before = toTaskFullJson(existingTask);
-    const after = toTaskFullJson(previewTask);
-    const keys = [
-        'title',
-        'owner',
-        'executor',
-        'status',
-        'risk',
-        'scope',
-        'files',
-        'acceptance',
-        'acceptance_ref',
-        'depends_on',
-        'prompt',
-    ];
-    const diffs = [];
-    for (const key of keys) {
-        const left = before[key];
-        const right = after[key];
-        const leftJson = JSON.stringify(left);
-        const rightJson = JSON.stringify(right);
-        if (leftJson === rightJson) continue;
-        diffs.push({
-            field: key,
-            before: left,
-            after: right,
-        });
-    }
-    return diffs;
+    return domainTaskCreate.buildTaskCreatePreviewDiff(
+        existingTask,
+        previewTask,
+        {
+            toTaskFullJson,
+        }
+    );
 }
 
 function buildCodexActiveComment(block) {
