@@ -39,9 +39,10 @@ scope: platform
 files: backup-receiver.php,verify-backup.php,lib/backup.php,tests/BackupReceiverTest.php,env.example.php,docs/RUNBOOKS.md
 acceptance_ref: tests/BackupReceiverTest.php
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Backup integrity verification and at-rest encryption
 
 Implementar checksum SHA-256 por header, cifrado AES-256-CBC y prueba de integridad con test.
@@ -56,9 +57,10 @@ scope: backend
 files: lib/ratelimit.php,tests/RateLimiterTest.php,tests/Security/RateLimiterTest.php,tests/Unit/Security/RateLimiterTest.php,env.example.php
 acceptance_ref: tests/RateLimiterTest.php
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### PHP rate-limiter sliding window and per-user limits
 
 Actualizar rate-limiter a sliding window, incluir limite por user token y pruebas de regresion.
@@ -73,9 +75,10 @@ scope: docs
 files: docs/openapi.yaml,README.md
 acceptance_ref: docs/openapi.yaml,README.md
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### OpenAPI 3.1 specification for public API resources
 
 Generar OpenAPI 3.1 para api.php recursos principales y documentar como visualizarla localmente.
@@ -90,9 +93,10 @@ scope: backend
 files: lib/mailer.php,templates/email,tests/MailerTest.php
 acceptance_ref: verification/agent-runs/AG-004.md
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Email notification system for appointment confirmations
 
 Implementar wrapper PHPMailer para confirmaciones y recordatorios con templates HTML y test.
@@ -107,9 +111,10 @@ scope: ops
 files: .github/workflows/ci.yml
 acceptance_ref: signal_resolved:auto
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Resolver fallo workflow: CI: refactor(governance): extract remaining commands and add php contract…
 
 Resolver señal run#22379873691. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -124,9 +129,10 @@ scope: ops
 files: .github/workflows/ci.yml
 acceptance_ref: signal_resolved:auto
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Resolver fallo workflow: CI: feat(governance): add warn-first diagnostics and policy enforcement c…
 
 Resolver señal run#22379426844. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -141,9 +147,10 @@ scope: ops
 files: .github/workflows/ci.yml
 acceptance_ref: signal_resolved:auto
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Resolver fallo workflow: CI: refactor(orchestrator): extract contribution metrics engine
 
 Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -151,16 +158,17 @@ Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo segu
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: done
 task_id: AG-018
 risk: medium
 scope: ops
 files: .github/workflows/ci.yml
-acceptance_ref: verification/agent-runs/AG-018.md
+acceptance_ref: docs/agent-runs/AG-018.md
 dispatched_by: agent-orchestrator
 session: sessions/6593824734303087673
 dispatched: 2026-02-25
 -->
+
 ### Resolver fallo workflow: CI: feat(governance): add board leases doctor events and wip warnings
 
 Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -175,9 +183,10 @@ scope: ops
 files: .github/workflows/agent-governance.yml
 acceptance_ref: signal_resolved:auto
 dispatched_by: agent-orchestrator
-session: 
-dispatched: 
+session:
+dispatched:
 -->
+
 ### Resolver fallo workflow: Agent Governance: feat(board): queue P1-P3 tech debt tasks (AG-019, AG-020, AG-021)
 
 Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -185,16 +194,17 @@ Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar f
 <!-- /TASK -->
 
 <!-- TASK
-status: pending
+status: done
 task_id: AG-026
 risk: medium
 scope: ops
 files: .github/workflows/agent-autopilot.yml
-acceptance_ref: verification/agent-runs/AG-026.md
+acceptance_ref: docs/agent-runs/AG-026.md
 dispatched_by: agent-orchestrator
 session: sessions/8161501925126400906
 dispatched: 2026-02-25
 -->
+
 ### Resolver fallo workflow: Agent Autopilot: Agent Autopilot
 
 Resolver señal workflow:agent-autopilot:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
