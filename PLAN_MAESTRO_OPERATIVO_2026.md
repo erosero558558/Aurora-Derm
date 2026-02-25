@@ -141,13 +141,17 @@ Criterio de salida:
 
 - [ ] Dos ciclos semanales consecutivos con `REPORTE-SEMANAL-PRODUCCION.ps1` sin warnings criticos de agenda/observabilidad.
 
-Evidencia parcial (retencion consolidada):
+Evidencia parcial (retencion + conversion/funnel):
 
 - `REPORTE-SEMANAL-PRODUCCION.ps1` publica `retention` + `retentionTrend` en JSON/Markdown semanal (incluye `noShowRatePct`, `recurrenceRatePct`, deltas vs reporte previo).
 - `REPORTE-SEMANAL-PRODUCCION.ps1` incorpora guardrails de retencion configurables (warning por `no_show` alto, `recurrence` baja y caida semanal de recurrencia con sample minimo).
+- `REPORTE-SEMANAL-PRODUCCION.ps1` publica `conversion` + `conversionTrend` en JSON/Markdown semanal (incluye `startCheckoutRatePct`, `bookingConfirmedRatePct`, deltas vs reporte previo y thresholds de muestra minima).
+- `REPORTE-SEMANAL-PRODUCCION.ps1` incorpora guardrails de funnel temprano (`viewBooking -> startCheckout`) y conversion final (`startCheckout -> bookingConfirmed`) con warnings configurables por tasa baja/caida semanal.
 - `npm run report:weekly:prod` (2026-02-25) -> `Warnings: none`, con salida `retention_no_show_rate_pct=0` y `retention_recurrence_rate_pct=50`.
-- `.github/workflows/weekly-kpi-report.yml` resume metricas de retencion y deltas en `GITHUB_STEP_SUMMARY` para operacion semanal.
+- `.github/workflows/weekly-kpi-report.yml` resume metricas de retencion, conversion y deltas (`view_booking`, `start_checkout_rate_pct`, `booking_confirmed_rate_pct`) en `GITHUB_STEP_SUMMARY` para operacion semanal.
 - Validacion remota del workflow semanal (rama de validacion): `Weekly KPI Report` run `22407607517` -> `success` (retention/latency/warnings expuestos en resumen; artifact `weekly-kpi-report` generado).
+- Validacion remota en `main` (post-merge conversion): `Weekly KPI Report` run `22408343562` -> `success` (artifact con `conversion.bookingConfirmedRatePct=100`, `conversionTrend.bookingConfirmedRateDeltaPct=null`, `warnings=[]`).
+- Validacion remota en `main` (post-merge funnel temprano): `Weekly KPI Report` run `22408612570` -> `success` (artifact con `conversion.viewBooking=305`, `conversion.startCheckoutRatePct=0.33`, `conversionTrend.startCheckoutRateDeltaPct=null`; warning no bloqueante `core_p95_alto_995.16ms`).
 
 ## Comandos oficiales del plan
 
