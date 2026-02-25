@@ -17,6 +17,40 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $base = $Domain.TrimEnd('/')
+$script:CurlBinary = $null
+
+function Get-CurlBinary {
+    if (-not [string]::IsNullOrWhiteSpace($script:CurlBinary)) {
+        return $script:CurlBinary
+    }
+
+    foreach ($candidate in @('curl.exe', 'curl')) {
+        $command = Get-Command $candidate -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($null -ne $command -and -not [string]::IsNullOrWhiteSpace($command.Source)) {
+            $script:CurlBinary = $command.Source
+            return $script:CurlBinary
+        }
+    }
+
+    throw 'No se encontro curl/curl.exe en el entorno de ejecucion.'
+}
+
+function Invoke-CurlDownload {
+    param(
+        [string]$Url,
+        [string]$OutputPath,
+        [int]$MaxTimeSec = 20,
+        [int]$ConnectTimeoutSec = 8
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Url) -or [string]::IsNullOrWhiteSpace($OutputPath)) {
+        throw 'Invoke-CurlDownload requiere Url y OutputPath.'
+    }
+
+    $curlBinary = Get-CurlBinary
+    & $curlBinary -sS -L --max-time $MaxTimeSec --connect-timeout $ConnectTimeoutSec -o $OutputPath $Url | Out-Null
+    return ($LASTEXITCODE -eq 0)
+}
 
 function Get-RefFromIndex {
     param(
@@ -121,8 +155,7 @@ function Get-RemoteSha256 {
 
     $tmp = New-TemporaryFile
     try {
-        curl.exe -sS -L --max-time 20 --connect-timeout 8 -o $tmp $Url | Out-Null
-        if ($LASTEXITCODE -ne 0) {
+        if (-not (Invoke-CurlDownload -Url $Url -OutputPath $tmp -MaxTimeSec 20 -ConnectTimeoutSec 8)) {
             throw "No se pudo descargar $Url"
         }
 
@@ -226,8 +259,7 @@ function Get-RemoteText {
 
     $tmp = New-TemporaryFile
     try {
-        curl.exe -sS -L --max-time 20 --connect-timeout 8 -o $tmp $Url | Out-Null
-        if ($LASTEXITCODE -ne 0) {
+        if (-not (Invoke-CurlDownload -Url $Url -OutputPath $tmp -MaxTimeSec 20 -ConnectTimeoutSec 8)) {
             return ''
         }
         return [string](Get-Content -Path $tmp -Raw)
@@ -467,8 +499,7 @@ $remoteIndexCandidates = @("$base/", "$base/index.html")
 foreach ($candidateUrl in $remoteIndexCandidates) {
     $remoteIndexTmp = New-TemporaryFile
     try {
-        curl.exe -sS -L --max-time 20 --connect-timeout 8 -o $remoteIndexTmp $candidateUrl | Out-Null
-        if ($LASTEXITCODE -ne 0) {
+        if (-not (Invoke-CurlDownload -Url $candidateUrl -OutputPath $remoteIndexTmp -MaxTimeSec 20 -ConnectTimeoutSec 8)) {
             continue
         }
         $candidateHtml = [string](Get-Content -Path $remoteIndexTmp -Raw)
@@ -1009,27 +1040,39 @@ if ($remoteScriptRef -eq '') {
 }
 
 if ($localStyleRef -ne '') {
+    $styleRefAdvisory = $SkipAssetHashChecks -and -not $headTouchesFrontendAssets
     if ($remoteStyleRef -eq '') {
-        Write-Host "[FAIL] index remoto sin referencia de styles.css"
-        $results += [PSCustomObject]@{
-            Asset = 'index-asset-refs:styles.css'
-            Match = $false
-            LocalHash = $localStyleRef
-            RemoteHash = ''
-            RemoteUrl = "$base/"
+        if ($styleRefAdvisory) {
+            Write-Host "[WARN] index remoto sin referencia de styles.css (advisory por SkipAssetHashChecks sin cambios frontend)"
+            Write-Host "       Local : $localStyleRef"
+        } else {
+            Write-Host "[FAIL] index remoto sin referencia de styles.css"
+            $results += [PSCustomObject]@{
+                Asset = 'index-asset-refs:styles.css'
+                Match = $false
+                LocalHash = $localStyleRef
+                RemoteHash = ''
+                RemoteUrl = "$base/"
+            }
         }
     } elseif ($remoteStyleRef -eq $localStyleRef) {
         Write-Host "[OK]  index remoto usa misma referencia de styles.css"
     } else {
-        Write-Host "[FAIL] index remoto styles.css diferente"
-        Write-Host "       Local : $localStyleRef"
-        Write-Host "       Remote: $remoteStyleRef"
-        $results += [PSCustomObject]@{
-            Asset = 'index-ref:styles.css'
-            Match = $false
-            LocalHash = $localStyleRef
-            RemoteHash = $remoteStyleRef
-            RemoteUrl = "$base/"
+        if ($styleRefAdvisory) {
+            Write-Host "[WARN] index remoto styles.css diferente (advisory por SkipAssetHashChecks sin cambios frontend)"
+            Write-Host "       Local : $localStyleRef"
+            Write-Host "       Remote: $remoteStyleRef"
+        } else {
+            Write-Host "[FAIL] index remoto styles.css diferente"
+            Write-Host "       Local : $localStyleRef"
+            Write-Host "       Remote: $remoteStyleRef"
+            $results += [PSCustomObject]@{
+                Asset = 'index-ref:styles.css'
+                Match = $false
+                LocalHash = $localStyleRef
+                RemoteHash = $remoteStyleRef
+                RemoteUrl = "$base/"
+            }
         }
     }
 } else {
