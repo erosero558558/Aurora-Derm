@@ -131,6 +131,11 @@ $mainScriptPattern = '#<script([^>]+src=["\'])script\.js(?:\?[^"\']*)?(["\'][^>]
 $mainScriptReplacement = '<script$1script.js?v=' . $assetVersion . '$2></script>';
 $indexHtml = (string) preg_replace($mainScriptPattern, $mainScriptReplacement, $indexHtml, 1);
 
+// Inyecta la misma versión en el link de styles.css para invalidar cache CSS junto con JS.
+$cssLinkPattern = '#<link([^>]+href=["\'])styles\.css(?:\?[^"\']*)?(["\'][^>]*)>#i';
+$cssLinkReplacement = '<link$1styles.css?v=' . $assetVersion . '$2>';
+$indexHtml = (string) preg_replace($cssLinkPattern, $cssLinkReplacement, $indexHtml, 1);
+
 // Inyecta bootstrap antes del script principal (idempotente tras limpieza).
 $mainScriptInsertPattern = '#<script[^>]+src=["\']script\.js(?:\?[^"\']*)?["\'][^>]*></script>#i';
 $mainScriptInsertCount = 0;

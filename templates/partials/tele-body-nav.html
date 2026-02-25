@@ -1,0 +1,172 @@
+    <body>
+        <!-- Language Selector -->
+        <div class="language-bar">
+            <div class="language-options">
+                <div
+                    class="theme-options"
+                    role="group"
+                    aria-label="Modo de tema"
+                >
+                    <button
+                        type="button"
+                        class="theme-btn"
+                        data-theme-mode="light"
+                        data-action="set-theme"
+                        data-value="light"
+                        aria-label="Modo claro"
+                    >
+                        <i class="fas fa-sun" aria-hidden="true"></i>
+                        <span data-i18n="theme_light">Claro</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="theme-btn"
+                        data-theme-mode="dark"
+                        data-action="set-theme"
+                        data-value="dark"
+                        aria-label="Modo oscuro"
+                    >
+                        <i class="fas fa-moon" aria-hidden="true"></i>
+                        <span data-i18n="theme_dark">Oscuro</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="theme-btn active"
+                        data-theme-mode="system"
+                        data-action="set-theme"
+                        data-value="system"
+                        aria-label="Modo sistema"
+                    >
+                        <i
+                            class="fas fa-circle-half-stroke"
+                            aria-hidden="true"
+                        ></i>
+                        <span data-i18n="theme_system">Sistema</span>
+                    </button>
+                </div>
+                <div class="lang-switch" role="group" aria-label="Idioma">
+                    <button
+                        type="button"
+                        class="lang-btn active"
+                        data-lang="es"
+                        data-action="set-language"
+                        data-value="es"
+                    >
+                        ES
+                    </button>
+                    <button
+                        type="button"
+                        class="lang-btn"
+                        data-lang="en"
+                        data-action="set-language"
+                        data-value="en"
+                    >
+                        EN
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="nav" id="nav">
+            <div class="nav-content">
+                <a href="#" class="nav-logo">
+                    <i class="fas fa-spa"></i>
+                    <span data-i18n="brand">Piel en Armonía</span>
+                </a>
+                <ul class="nav-links">
+                    <li><a href="#inicio" data-i18n="nav_home">Inicio</a></li>
+                    <li>
+                        <a href="#servicios" data-i18n="nav_services"
+                            >Servicios</a
+                        >
+                    </li>
+                    <li>
+                        <a href="#telemedicina" data-i18n="nav_telemedicine"
+                            >Telemedicina</a
+                        >
+                    </li>
+                    <li><a href="#equipo" data-i18n="nav_team">Equipo</a></li>
+                    <li>
+                        <a href="#galeria" data-i18n="nav_gallery"
+                            >Resultados</a
+                        >
+                    </li>
+                    <li>
+                        <a href="#consultorio" data-i18n="nav_clinic"
+                            >Consultorio</a
+                        >
+                    </li>
+                    <li>
+                        <a href="#resenas" data-i18n="nav_reviews">Reseñas</a>
+                    </li>
+                </ul>
+                <div class="nav-actions">
+                    <a href="#citas" class="nav-cta" data-i18n="nav_book"
+                        >Reservar Cita</a
+                    >
+                </div>
+                <button
+                    type="button"
+                    class="nav-mobile-toggle"
+                    data-action="toggle-mobile-menu"
+                >
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <button
+                type="button"
+                class="mobile-close"
+                data-action="toggle-mobile-menu"
+            >
+                <i class="fas fa-times"></i>
+            </button>
+            <a
+                href="#inicio"
+                data-action="toggle-mobile-menu"
+                data-i18n="nav_home"
+                >Inicio</a
+            >
+            <a
+                href="#servicios"
+                data-action="toggle-mobile-menu"
+                data-i18n="nav_services"
+                >Servicios</a
+            >
+            <a
+                href="#telemedicina"
+                data-action="toggle-mobile-menu"
+                data-i18n="nav_telemedicine"
+                >Telemedicina</a
+            >
+            <a
+                href="#equipo"
+                data-action="toggle-mobile-menu"
+                data-i18n="nav_team"
+                >Equipo</a
+            >
+            <a
+                href="#galeria"
+                data-action="toggle-mobile-menu"
+                data-i18n="nav_gallery"
+                >Resultados</a
+            >
+            <a
+                href="#consultorio"
+                data-action="toggle-mobile-menu"
+                data-i18n="nav_clinic"
+                >Consultorio</a
+            >
+            <a
+                href="#citas"
+                data-action="toggle-mobile-menu"
+                class="mobile-cta"
+                data-i18n="nav_book"
+                >Reservar Cita</a
+            >
+        </div>
+
