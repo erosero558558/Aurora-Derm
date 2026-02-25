@@ -617,7 +617,7 @@ tasks:
     source_signal: issue
     source_ref: "issue#282"
     priority_score: 95
-    sla_due_at: "2026-02-25T08:30:30.475Z"
+    sla_due_at: "2026-02-25T08:31:26.528Z"
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
@@ -642,7 +642,7 @@ tasks:
     source_signal: issue
     source_ref: "issue#281"
     priority_score: 95
-    sla_due_at: "2026-02-25T08:30:30.475Z"
+    sla_due_at: "2026-02-25T08:31:26.528Z"
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
@@ -667,7 +667,7 @@ tasks:
     source_signal: workflow
     source_ref: "workflow:agent-autopilot:main"
     priority_score: 60
-    sla_due_at: "2026-02-27T04:30:30.475Z"
+    sla_due_at: "2026-02-27T04:31:26.528Z"
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
@@ -692,7 +692,7 @@ tasks:
     source_signal: workflow
     source_ref: "workflow:post-deploy-gate-git-sync:main"
     priority_score: 80
-    sla_due_at: "2026-02-25T16:30:30.475Z"
+    sla_due_at: "2026-02-25T16:31:26.528Z"
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
@@ -717,7 +717,7 @@ tasks:
     source_signal: workflow
     source_ref: "workflow:repair-git-sync-self-heal:main"
     priority_score: 80
-    sla_due_at: "2026-02-25T16:30:30.475Z"
+    sla_due_at: "2026-02-25T16:31:26.528Z"
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""

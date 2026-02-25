@@ -185,7 +185,7 @@ Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar f
 <!-- /TASK -->
 
 <!-- TASK
-status: dispatched
+status: pending
 task_id: AG-026
 risk: medium
 scope: ops
