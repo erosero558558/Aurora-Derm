@@ -1199,6 +1199,75 @@ function computeProductionStability({
     };
 }
 
+function computeReleaseReadiness({
+    productionStability,
+    planMasterProgress,
+    suggestedActions,
+}) {
+    const blockingReasons = [];
+    const followups = [];
+    const blockingPlanItems = Array.isArray(planMasterProgress?.pending)
+        ? planMasterProgress.pending.filter(
+              (item) => item.status === 'blocking'
+          )
+        : [];
+    const allPlanItems = Array.isArray(planMasterProgress?.pending)
+        ? planMasterProgress.pending
+        : [];
+    const blockingActions = Array.isArray(suggestedActions?.items)
+        ? suggestedActions.items.filter((item) => item.blocking)
+        : [];
+    const nonBlockingActions = Array.isArray(suggestedActions?.items)
+        ? suggestedActions.items.filter((item) => !item.blocking)
+        : [];
+
+    let signal = 'GREEN';
+    if (productionStability?.signal === 'RED') {
+        signal = 'RED';
+        blockingReasons.push('production_stability:red');
+    }
+    if (blockingPlanItems.length > 0) {
+        signal = 'RED';
+        blockingReasons.push(
+            `plan_master_blocking:${blockingPlanItems.length}`
+        );
+    }
+    if (blockingActions.length > 0) {
+        signal = 'RED';
+        blockingReasons.push(
+            `suggested_actions_blocking:${blockingActions.length}`
+        );
+    }
+
+    if (signal === 'GREEN') {
+        if (productionStability?.signal === 'YELLOW') {
+            followups.push('production_stability:non_blocking_attention');
+        }
+        for (const item of allPlanItems) {
+            if (item.status !== 'blocking') {
+                followups.push(`pending:${item.id}`);
+            }
+        }
+        for (const action of nonBlockingActions) {
+            followups.push(`action:${action.id}`);
+        }
+    }
+
+    return {
+        signal,
+        summary:
+            signal === 'RED'
+                ? 'blocked'
+                : followups.length > 0
+                  ? 'ready_with_followups'
+                  : 'ready',
+        blockingCount: blockingReasons.length,
+        blockingReasons,
+        followupCount: followups.length,
+        followups: followups.slice(0, 20),
+    };
+}
+
 function computePlanMasterProgress({
     workflows,
     openProdAlerts,
@@ -1543,6 +1612,9 @@ function toMarkdown(summary) {
     lines.push(`- generatedAt: ${generatedAt}`);
     lines.push(`- branch: ${branch}`);
     lines.push(`- production_stability: ${summary.productionStability.signal}`);
+    if (summary.releaseReadiness) {
+        lines.push(`- release_readiness: ${summary.releaseReadiness.signal}`);
+    }
     lines.push(
         `- plan_master_pending_count: ${summary.planMasterProgress.pendingCount}`
     );
@@ -1550,6 +1622,40 @@ function toMarkdown(summary) {
         `- plan_master_blocking_count: ${summary.planMasterProgress.blockingCount}`
     );
     lines.push('');
+
+    if (summary.releaseReadiness) {
+        lines.push('## Release Readiness');
+        lines.push('');
+        lines.push(`- signal: ${summary.releaseReadiness.signal}`);
+        lines.push(`- summary: ${summary.releaseReadiness.summary}`);
+        lines.push(
+            `- blocking_count: ${summary.releaseReadiness.blockingCount}`
+        );
+        if (
+            Array.isArray(summary.releaseReadiness.blockingReasons) &&
+            summary.releaseReadiness.blockingReasons.length > 0
+        ) {
+            lines.push(
+                `- blocking_reasons: ${summary.releaseReadiness.blockingReasons.join(', ')}`
+            );
+        } else {
+            lines.push('- blocking_reasons: none');
+        }
+        lines.push(
+            `- followup_count: ${summary.releaseReadiness.followupCount}`
+        );
+        if (
+            Array.isArray(summary.releaseReadiness.followups) &&
+            summary.releaseReadiness.followups.length > 0
+        ) {
+            lines.push(
+                `- followups: ${summary.releaseReadiness.followups.join(', ')}`
+            );
+        } else {
+            lines.push('- followups: none');
+        }
+        lines.push('');
+    }
 
     lines.push('## Production Stability');
     lines.push('');
@@ -1964,6 +2070,11 @@ function main() {
         productionStability,
         executionEfficiency,
     });
+    const releaseReadiness = computeReleaseReadiness({
+        productionStability,
+        planMasterProgress,
+        suggestedActions,
+    });
 
     const summary = {
         generatedAt: new Date().toISOString(),
@@ -1976,6 +2087,7 @@ function main() {
         weeklyHistoryLimit,
         efficiencyHours,
         productionStability,
+        releaseReadiness,
         planMasterProgress,
         suggestedActions,
         executionEfficiency,
