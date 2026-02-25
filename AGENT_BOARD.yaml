@@ -585,7 +585,7 @@ tasks:
     title: "Resolver fallo workflow: Agent Governance: feat(board): queue P1-P3 tech debt tasks (AG-019, AG-020, AG-021)"
     owner: ernes
     executor: jules
-    status: in_progress
+    status: done
     risk: medium
     scope: ops
     files: [".github/workflows/agent-governance.yml"]
@@ -599,9 +599,109 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal workflow:agent-governance:main con evidencia verificable."
+    acceptance_ref: "signal_resolved:auto"
+    evidence_ref: "signal_resolved:auto"
+    depends_on: []
+    prompt: "Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
+    created_at: 2026-02-25
+    updated_at: 2026-02-25
+
+  - id: AG-024
+    title: "Resolver alerta: [ALERTA PROD] Repair git sync fallando"
+    owner: ernes
+    executor: codex
+    status: ready
+    risk: high
+    scope: ops
+    files: [".github/workflows/repair-git-sync.yml"]
+    source_signal: issue
+    source_ref: "issue#282"
+    priority_score: 95
+    sla_due_at: "2026-02-25T08:15:56.944Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "Cerrar señal issue#282 con evidencia verificable."
     acceptance_ref: ""
     evidence_ref: ""
     depends_on: []
-    prompt: "Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
+    prompt: "Resolver señal issue#282. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
+    created_at: 2026-02-25
+    updated_at: 2026-02-25
+
+  - id: AG-025
+    title: "Resolver alerta: [ALERTA PROD] Gate post-deploy fallando"
+    owner: ernes
+    executor: codex
+    status: ready
+    risk: high
+    scope: ops
+    files: [".github/workflows/post-deploy-gate.yml"]
+    source_signal: issue
+    source_ref: "issue#281"
+    priority_score: 95
+    sla_due_at: "2026-02-25T08:15:56.944Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "Cerrar señal issue#281 con evidencia verificable."
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Resolver señal issue#281. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
+    created_at: 2026-02-25
+    updated_at: 2026-02-25
+
+  - id: AG-026
+    title: "Resolver fallo workflow: Repair Git Sync (Self-Heal): Repair Git Sync (Self-Heal)"
+    owner: ernes
+    executor: codex
+    status: ready
+    risk: high
+    scope: ops
+    files: [".github/workflows/repair-git-sync.yml"]
+    source_signal: workflow
+    source_ref: "workflow:repair-git-sync-self-heal:main"
+    priority_score: 80
+    sla_due_at: "2026-02-25T16:15:56.944Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "Cerrar señal workflow:repair-git-sync-self-heal:main con evidencia verificable."
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Resolver señal workflow:repair-git-sync-self-heal:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
+    created_at: 2026-02-25
+    updated_at: 2026-02-25
+
+  - id: AG-027
+    title: "Resolver fallo workflow: Post-Deploy Gate (Git Sync): refactor(governance): extract signal io helpers and add runtime error…"
+    owner: ernes
+    executor: codex
+    status: ready
+    risk: high
+    scope: ops
+    files: [".github/workflows/repair-git-sync.yml"]
+    source_signal: workflow
+    source_ref: "workflow:post-deploy-gate-git-sync:main"
+    priority_score: 80
+    sla_due_at: "2026-02-25T16:15:56.944Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "Cerrar señal workflow:post-deploy-gate-git-sync:main con evidencia verificable."
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Resolver señal workflow:post-deploy-gate-git-sync:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
     updated_at: 2026-02-25

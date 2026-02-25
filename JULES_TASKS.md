@@ -168,12 +168,12 @@ Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seg
 <!-- /TASK -->
 
 <!-- TASK
-status: dispatched
+status: done
 task_id: AG-022
 risk: medium
 scope: ops
 files: .github/workflows/agent-governance.yml
-acceptance_ref: verification/agent-runs/AG-022.md
+acceptance_ref: signal_resolved:auto
 dispatched_by: agent-orchestrator
 session: 
 dispatched: 
