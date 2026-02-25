@@ -1241,7 +1241,7 @@ if ($nonFrontendAdvisoryMode) {
 }
 
 if ($SkipAssetHashChecks) {
-    if ($autoSkipAssetHashChecksForNonFrontend) {
+    if ($autoSkipAssetHashChecksForNonFrontend -or $nonFrontendAdvisoryMode) {
         Write-Host '[INFO] Se omite verificacion de hashes de assets (cambio actual sin frontend).'
     } else {
         Write-Host '[WARN] Se omite verificacion de hashes de assets (SkipAssetHashChecks).'
