@@ -480,3 +480,78 @@ tasks:
     prompt: "Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
     updated_at: 2026-02-25
+
+  - id: AG-019
+    title: "Tech debt P1: consolidate data-engine and data-bundle overlap"
+    owner: ernes
+    executor: codex
+    status: backlog
+    risk: medium
+    scope: tooling
+    files: ["src/apps/analytics/engine.js", "src/bundles/data-engine.js", "src/bundles/data-bundle.js", "rollup.config.mjs"]
+    source_signal: manual
+    source_ref: "tech-debt-audit-2026-02-24"
+    priority_score: 70
+    sla_due_at: "2026-03-07T00:00:00.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: medium
+    critical_zone: false
+    acceptance: "Un único bundle canónico de datos sin duplicación. Bundle size no incrementa. Tests pasan."
+    acceptance_ref: "tests-node/"
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Auditar src/bundles/data-engine.js y src/bundles/data-bundle.js. Identificar exports duplicados. Consolidar en un único módulo canónico actualizado en rollup.config.mjs. Agregar test de no-regresión de tamaño de bundle."
+    created_at: 2026-02-24
+    updated_at: 2026-02-24
+
+  - id: AG-020
+    title: "Tech debt P2: add compile-time gate to strip debug/console.log from production bundles"
+    owner: ernes
+    executor: codex
+    status: backlog
+    risk: low
+    scope: tooling
+    files: ["rollup.config.mjs", "eslint.config.js", ".github/workflows/ci.yml"]
+    source_signal: manual
+    source_ref: "tech-debt-audit-2026-02-24"
+    priority_score: 55
+    sla_due_at: "2026-03-10T00:00:00.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "CI falla si console.log o debugger aparece en src/ fuera de zonas marcadas. Bundles de produccion no contienen logs de debug."
+    acceptance_ref: ".github/workflows/ci.yml"
+    evidence_ref: ""
+    depends_on: ["AG-019"]
+    prompt: "Configurar @rollup/plugin-strip o similar para eliminar console.log/debugger en builds de produccion. Agregar regla ESLint no-console (warn en dev, error en CI). Documentar escape hatch para logs intencionales."
+    created_at: 2026-02-24
+    updated_at: 2026-02-24
+
+  - id: AG-021
+    title: "Tech debt P3: automate C1 exit gates in CI (smoke + Playwright figo-contract)"
+    owner: ernes
+    executor: jules
+    status: backlog
+    risk: medium
+    scope: ops
+    files: [".github/workflows/ci.yml", "tests/figo-chat-contract.spec.js", "GATE-POSTDEPLOY.ps1"]
+    source_signal: manual
+    source_ref: "tech-debt-audit-2026-02-24"
+    priority_score: 65
+    sla_due_at: "2026-03-05T00:00:00.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "CI workflow ejecuta figo-contract y smoke contra staging antes de allow-merge. Gate falla si latencia Figo > 3s o contrato falla."
+    acceptance_ref: ".github/workflows/ci.yml"
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Agregar job 'c1-exit-gate' en ci.yml que: (1) ejecuta npx playwright test tests/figo-chat-contract.spec.js contra BASE_URL=staging, (2) ejecuta smoke check de endpoint /api/chat, (3) bloquea merge si cualquiera falla. Asegurar que el job tiene acceso a secrets necesarios y que no duplica el job de governance."
+    created_at: 2026-02-24
+    updated_at: 2026-02-24
