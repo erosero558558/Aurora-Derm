@@ -567,6 +567,43 @@ try {
             }
         }
     }
+
+    $cspHeaderValues = @()
+    if ($null -ne $homeResp.Headers['Content-Security-Policy']) {
+        $rawCsp = $homeResp.Headers['Content-Security-Policy']
+        if ($rawCsp -is [System.Array]) {
+            $cspHeaderValues = @($rawCsp | ForEach-Object { [string]$_ })
+        } else {
+            $cspHeaderValues = @(([string]$rawCsp) -split "(\r?\n)+" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        }
+    }
+
+    if ($cspHeaderValues.Count -gt 1) {
+        Write-Host "[WARN] Se detectaron multiples cabeceras CSP ($($cspHeaderValues.Count)). Validando coherencia minima..."
+        $requiredCspOrigins = @(
+            'https://static.cloudflareinsights.com',
+            'https://cloudflareinsights.com'
+        )
+        foreach ($origin in $requiredCspOrigins) {
+            $missingIn = @()
+            for ($i = 0; $i -lt $cspHeaderValues.Count; $i++) {
+                if (-not $cspHeaderValues[$i].Contains($origin)) {
+                    $missingIn += ($i + 1)
+                }
+            }
+
+            if ($missingIn.Count -gt 0) {
+                Write-Host "[FAIL] CSP inconsistente: falta '$origin' en cabecera(s) #$($missingIn -join ', ')"
+                $results += [PSCustomObject]@{
+                    Asset = "header:csp-consistency:$origin"
+                    Match = $false
+                    LocalHash = 'required'
+                    RemoteHash = "missing_in_headers_$($missingIn -join '-')"
+                    RemoteUrl = "$base/"
+                }
+            }
+        }
+    }
 } catch {
     Write-Host "[FAIL] No se pudieron validar headers de seguridad: $($_.Exception.Message)"
     $results += [PSCustomObject]@{
