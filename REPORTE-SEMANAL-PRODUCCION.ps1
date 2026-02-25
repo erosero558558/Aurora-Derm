@@ -902,6 +902,20 @@ foreach ($item in $warningDetails) {
 $warningCountsTotal = $warnings.Count
 $warningCountsCritical = $warningsCritical.Count
 $warningCountsNonCritical = $warningsNonCritical.Count
+$releaseDecision = 'pass'
+$releaseReason = 'no_warnings'
+if ($warningCountsCritical -gt 0) {
+    $releaseDecision = 'block'
+    $releaseReason = 'critical_warnings'
+} elseif ($warningCountsNonCritical -gt 0) {
+    $releaseDecision = 'warn'
+    $releaseReason = 'non_critical_warnings'
+}
+$releaseAction = switch ($releaseDecision) {
+    'block' { 'Stop release and execute incident runbook immediately.' }
+    'warn' { 'Allow release with monitoring and follow-up hardening task.' }
+    default { 'Release allowed.' }
+}
 $warningBlock = if ($warnings.Count -eq 0) {
     '- none'
 } else {
@@ -1016,6 +1030,12 @@ $warningDetailBlock
 - minute_0_5: run `npm run gate:prod:fast` and check health/availability/chat status.
 - minute_5_10: pick first critical warning and follow `runbookRef`.
 - minute_10_15: if still degraded, escalate and open/refresh incident issue `[ALERTA PROD]`.
+
+## Release Guardrails
+
+- release_decision: $releaseDecision
+- release_reason: $releaseReason
+- release_action: $releaseAction
 "@
 
 Set-Content -Path $reportMdPath -Value $markdown -Encoding UTF8
@@ -1104,6 +1124,13 @@ $reportPayload = [ordered]@{
         critical = $warningCountsCritical
         nonCritical = $warningCountsNonCritical
     }
+    releaseGuardrails = [ordered]@{
+        decision = $releaseDecision
+        reason = $releaseReason
+        action = $releaseAction
+        criticalWarnings = @($warningsCritical)
+        nonCriticalWarnings = @($warningsNonCritical)
+    }
     warningsBySeverity = [ordered]@{
         critical = @($warningsCritical)
         nonCritical = @($warningsNonCritical)
@@ -1131,6 +1158,7 @@ Write-Host "Reporte markdown: $reportMdPath"
 Write-Host "Reporte json: $reportJsonPath"
 Write-Host "start_checkout_rate_pct=$startCheckoutRatePct booking_confirmed=$bookingConfirmed booking_confirmed_rate_pct=$bookingConfirmedRatePct error_rate_pct=$errorRatePct core_p95_max_ms=$coreP95Max figo_post_p95_ms=$figoPostP95"
 Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurrence_rate_pct=$retentionRecurrenceRatePct sentry_backend=$sentryBackendConfigured sentry_frontend=$sentryFrontendConfigured"
+Write-Host "release_decision=$releaseDecision release_reason=$releaseReason"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow
     Write-Host "Warnings by severity: critical=$warningCountsCritical non_critical=$warningCountsNonCritical" -ForegroundColor Yellow

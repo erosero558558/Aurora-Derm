@@ -94,7 +94,7 @@ Entregables:
 
 - [x] Gates explicitos por dominio (agenda/funnel/chat/pagos) con nombres claros en CI.
 - [ ] Workflows destructivos solo en `workflow_dispatch` con guardrails fuertes.
-- [ ] Reglas claras de warning -> blocking segun impacto.
+- [x] Reglas claras de warning -> blocking segun impacto.
 
 Criterio de salida:
 
@@ -146,3 +146,4 @@ Criterio de salida:
 - 2026-02-24: endurecida sonda `phase2-flakiness-probe.yml` con runner dedicado `bin/run-phase2-flakiness.js` (reporte JSON + clasificacion `stable|intermittent|unstable` + artefacto `phase2-flakiness-report`) para convertir C1 en senal reproducible y trazable por ejecucion.
 - 2026-02-25: activado modo de operacion de estabilidad en 2 carriles (`post-deploy-fast.yml` para push diario y `nightly-stability.yml` para regresion pesada), con nuevo `gate:prod:fast` (verify+smoke sin benchmark) y `nightly:stability`; validado en produccion con `gate:prod:fast` exitoso (`DurationSec=14.1`, health/smoke OK, benchmark omitido en fast lane).
 - 2026-02-25: `REPORTE-SEMANAL-PRODUCCION.ps1` ahora expone `warningDetails` (code/severity/impact/runbookRef), `warningsByImpact` y `triagePlaybook` (SLA 15 min) en JSON/markdown para C3 sin cambios breaking.
+- 2026-02-25: `REPORTE-SEMANAL-PRODUCCION.ps1` agrega `releaseGuardrails` (`decision: pass|warn|block`, `reason`, `action`) para hacer explicita la regla warning->blocking en C4.
