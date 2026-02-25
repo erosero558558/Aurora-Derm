@@ -750,6 +750,7 @@ test('task create soporta --template docs y permite override de defaults', (t) =
     assert.equal(json.task.risk, 'low');
     assert.equal(json.task.scope, 'docs');
     assert.equal(json.task.executor, 'jules'); // explicit flag overrides template
+    assert.equal(json.executor_source, 'flag');
 
     const board = readBoard(dir);
     assert.match(board, /executor: jules/);
@@ -787,9 +788,50 @@ test('task create --from-files infiere scope/risk y puede sobreescribir template
     assert.equal(json.from_files, true);
     assert.equal(json.file_inference.scope, 'calendar');
     assert.equal(json.file_inference.risk, 'high');
+    assert.equal(json.file_inference.suggested_executor, 'codex');
     assert.equal(json.task.scope, 'calendar');
     assert.equal(json.task.risk, 'high');
     assert.equal(json.task.executor, 'codex');
+    assert.equal(json.executor_source, 'flag');
+});
+
+test('task create --from-files autoajusta executor para scope critico si no se pasa --executor', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCli(dir, [
+        'task',
+        'create',
+        '--title',
+        'Calendar task auto executor',
+        '--template',
+        'docs',
+        '--from-files',
+        '--files',
+        'lib/calendar/GoogleCalendarClient.php',
+        '--json',
+    ]);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.template, 'docs');
+    assert.equal(json.from_files, true);
+    assert.equal(json.file_inference.scope, 'calendar');
+    assert.equal(json.file_inference.critical_scope, 'calendar');
+    assert.equal(json.file_inference.suggested_executor, 'codex');
+    assert.deepEqual(json.file_inference.allowed_executors_for_scope, [
+        'codex',
+        'claude',
+    ]);
+    assert.equal(json.task.scope, 'calendar');
+    assert.equal(json.task.risk, 'high');
+    assert.equal(json.task.executor, 'codex');
+    assert.equal(json.executor_source, 'from_files_auto');
 });
 
 test('task create bloquea crear tarea activa con conflicto blocking', (t) => {
@@ -996,6 +1038,7 @@ test('task create --interactive solicita campos minimos y mantiene JSON limpio',
     assert.equal(json.from_files, true);
     assert.equal(json.file_inference.scope, 'docs');
     assert.equal(json.file_inference.risk, 'low');
+    assert.equal(json.executor_source, 'template');
     assert.equal(result.stdout.trim().startsWith('{'), true);
     assert.match(result.stderr, /Titulo:/);
     assert.match(result.stderr, /Inferir scope\/risk/);

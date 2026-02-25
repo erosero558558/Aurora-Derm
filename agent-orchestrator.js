@@ -778,9 +778,17 @@ function inferTaskCreateFromFiles(files) {
         risk = 'low';
     }
 
+    const criticalScope = findCriticalScopeKeyword(scope);
+    const suggestedExecutor = criticalScope ? 'codex' : null;
+
     return {
         scope,
         risk,
+        critical_scope: criticalScope,
+        suggested_executor: suggestedExecutor,
+        allowed_executors_for_scope: criticalScope
+            ? Array.from(CRITICAL_SCOPE_ALLOWED_EXECUTORS)
+            : null,
         reasons: {
             critical_keywords: criticalMatches,
             all_docs_like: allDocsLike,
@@ -3723,15 +3731,9 @@ async function cmdTask(args) {
             throw new Error('task create requiere --title');
         }
 
-        const executor = String(flags.executor || template?.executor || '')
+        const explicitExecutor = String(flags.executor || '')
             .trim()
             .toLowerCase();
-        if (!executor) {
-            throw new Error('task create requiere --executor');
-        }
-        if (!ALLOWED_TASK_EXECUTORS.has(executor)) {
-            throw new Error(`task create: executor invalido (${executor})`);
-        }
 
         const status = String(
             flags.status || template?.status || 'backlog'
@@ -3781,6 +3783,42 @@ async function cmdTask(args) {
                 )})`
             );
         }
+
+        let executorSource = 'default';
+        let executor = String(template?.executor || '')
+            .trim()
+            .toLowerCase();
+        if (explicitExecutor) {
+            executor = explicitExecutor;
+            executorSource = 'flag';
+        } else if (!executor) {
+            executor = '';
+        } else {
+            executorSource = 'template';
+        }
+
+        const inferredCriticalScope = fileInference?.critical_scope
+            ? String(fileInference.critical_scope)
+            : null;
+        if (
+            !explicitExecutor &&
+            inferredCriticalScope &&
+            fileInference?.suggested_executor &&
+            !CRITICAL_SCOPE_ALLOWED_EXECUTORS.has(executor)
+        ) {
+            executor = String(fileInference.suggested_executor)
+                .trim()
+                .toLowerCase();
+            executorSource = 'from_files_auto';
+        }
+
+        if (!executor) {
+            throw new Error('task create requiere --executor');
+        }
+        if (!ALLOWED_TASK_EXECUTORS.has(executor)) {
+            throw new Error(`task create: executor invalido (${executor})`);
+        }
+
         const acceptance = String(flags.acceptance || title).trim();
         const acceptanceRef = String(
             flags['acceptance-ref'] || flags.acceptance_ref || ''
@@ -3851,6 +3889,7 @@ async function cmdTask(args) {
                         template: template?.name || null,
                         from_files: fromFilesEnabled,
                         file_inference: fileInference,
+                        executor_source: executorSource,
                         task: toTaskJson(task),
                     },
                     null,
@@ -3861,7 +3900,7 @@ async function cmdTask(args) {
         }
 
         console.log(
-            `Task create OK: ${newId} [${status}] exec=${executor}${template ? ` template=${template.name}` : ''}${fromFilesEnabled ? ' from-files=true' : ''}`
+            `Task create OK: ${newId} [${status}] exec=${executor}${template ? ` template=${template.name}` : ''}${fromFilesEnabled ? ' from-files=true' : ''}${executorSource !== 'flag' ? ` executor-source=${executorSource}` : ''}`
         );
         return;
     }
