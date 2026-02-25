@@ -47,6 +47,7 @@ jobs:
                   node agent-orchestrator.js score
                   node agent-orchestrator.js stale --strict
                   node agent-orchestrator.js conflicts --strict
+                  node agent-orchestrator.js budget --strict --agent jules
 
             - name: Dispatch Jules queue from orchestrator
               run: node agent-orchestrator.js dispatch --agent jules

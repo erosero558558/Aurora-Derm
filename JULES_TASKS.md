@@ -156,7 +156,7 @@ task_id: AG-018
 risk: medium
 scope: ops
 files: .github/workflows/ci.yml
-acceptance_ref: signal_resolved:auto
+acceptance_ref: verification/agent-runs/AG-018.md
 dispatched_by: agent-orchestrator
 session: 
 dispatched: 

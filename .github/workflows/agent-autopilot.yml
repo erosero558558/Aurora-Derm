@@ -18,7 +18,7 @@ jobs:
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-            JULES_MAX_DISPATCH_PER_RUN: ${{ vars.JULES_MAX_DISPATCH_PER_RUN || '1' }}
+            JULES_MAX_DISPATCH_PER_RUN: ${{ vars.JULES_MAX_DISPATCH_PER_RUN || '2' }}
             JULES_MAX_ACTIVE_SESSIONS: ${{ vars.JULES_MAX_ACTIVE_SESSIONS || '6' }}
         steps:
             - name: Checkout
@@ -41,6 +41,7 @@ jobs:
                   node agent-orchestrator.js sync
                   node agent-orchestrator.js stale --strict
                   node agent-orchestrator.js conflicts --strict
+                  node agent-orchestrator.js budget --strict --agent jules
                   php bin/validate-agent-governance.php
 
             - name: Dispatch pending Jules tasks

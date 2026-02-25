@@ -973,6 +973,100 @@ function currentDate() {
     return coreTime.currentDate();
 }
 
+function hasRateLimitToken(valueRaw) {
+    const value = String(valueRaw || '').toLowerCase();
+    return (
+        value.includes('429') ||
+        value.includes('rate limit') ||
+        value.includes('rate_limit') ||
+        value.includes('too many requests')
+    );
+}
+
+function detectKimiRateLimitActive({ board, signals, date }) {
+    const signalList = Array.isArray(signals) ? signals : [];
+    for (const signal of signalList) {
+        if (!isActiveSignalStatus(signal?.status)) continue;
+        const title = String(signal?.title || '');
+        const labelCorpus = Array.isArray(signal?.labels)
+            ? signal.labels.map((item) => String(item)).join(' ')
+            : '';
+        if (
+            hasRateLimitToken(title) ||
+            hasRateLimitToken(labelCorpus)
+        ) {
+            return true;
+        }
+        if (
+            title.toLowerCase().includes('kimi') &&
+            labelCorpus.toLowerCase().includes('workflow')
+        ) {
+            return true;
+        }
+    }
+
+    const tasks = Array.isArray(board?.tasks) ? board.tasks : [];
+    for (const task of tasks) {
+        if (String(task?.executor || '').toLowerCase() !== 'kimi') continue;
+        const lastAttemptAt = String(task?.last_attempt_at || '');
+        if (date && !lastAttemptAt.startsWith(date)) continue;
+        if (hasRateLimitToken(task?.blocked_reason)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function buildBudgetSnapshot({ board, signals, date }) {
+    const today = String(date || currentDate());
+    const baseLimits = {
+        jules: Number.parseInt(process.env.JULES_DAILY_LIMIT || '80', 10),
+        kimi: Number.parseInt(process.env.KIMI_DAILY_LIMIT || '180', 10),
+        codex: Number.parseInt(process.env.CODEX_DAILY_LIMIT || '999', 10),
+    };
+
+    const kimiRateLimited = detectKimiRateLimitActive({
+        board,
+        signals,
+        date: today,
+    });
+    const effectiveLimits = {
+        ...baseLimits,
+        kimi: kimiRateLimited ? Math.min(baseLimits.kimi, 120) : baseLimits.kimi,
+    };
+
+    const usage = { jules: 0, kimi: 0, codex: 0 };
+    const tasks = Array.isArray(board?.tasks) ? board.tasks : [];
+    for (const task of tasks) {
+        const lastAttemptAt = String(task?.last_attempt_at || '');
+        const executor = String(task?.executor || '').toLowerCase();
+        if (!lastAttemptAt.startsWith(today)) continue;
+        if (!Object.prototype.hasOwnProperty.call(usage, executor)) continue;
+        const attempts = Number.parseInt(String(task?.attempts || '0'), 10);
+        usage[executor] += Number.isFinite(attempts) && attempts > 0 ? attempts : 0;
+    }
+
+    const remaining = {
+        jules: effectiveLimits.jules - usage.jules,
+        kimi: effectiveLimits.kimi - usage.kimi,
+        codex: effectiveLimits.codex - usage.codex,
+    };
+    const exceeded = Object.keys(remaining).filter(
+        (agent) => remaining[agent] < 0
+    );
+
+    return {
+        date: today,
+        limits: effectiveLimits,
+        limits_base: baseLimits,
+        usage,
+        remaining,
+        exceeded,
+        kimi_rate_limited: kimiRateLimited,
+    };
+}
+
 function getStatusCounts(tasks) {
     return tasks.reduce((acc, task) => {
         acc[task.status] = (acc[task.status] || 0) + 1;
@@ -1728,7 +1822,10 @@ async function cmdIntake(args = []) {
         normalizedIncomingSignals,
         { nowIso }
     );
-    applySignalStateTransitions(mergedSignals, normalizedIncomingSignals, nowIso);
+    const allowSignalTransitions = source === 'github_api';
+    if (allowSignalTransitions) {
+        applySignalStateTransitions(mergedSignals, normalizedIncomingSignals, nowIso);
+    }
     const intakeResult = upsertTasksFromSignals(board, mergedSignals, {
         nowIso,
         owner: detectDefaultOwner('orchestrator'),
@@ -2008,43 +2105,28 @@ function cmdBudget(args = []) {
     const agentFilter = String(flags.agent || 'all')
         .trim()
         .toLowerCase();
-    const today = currentDate();
     const board = parseBoard();
-
-    const limits = {
-        jules: Number.parseInt(process.env.JULES_DAILY_LIMIT || '80', 10),
-        kimi: Number.parseInt(process.env.KIMI_DAILY_LIMIT || '180', 10),
-        codex: Number.parseInt(process.env.CODEX_DAILY_LIMIT || '999', 10),
-    };
-
-    const usage = { jules: 0, kimi: 0, codex: 0 };
-    for (const task of board.tasks) {
-        const attemptAt = String(task.last_attempt_at || '');
-        const executor = String(task.executor || '').toLowerCase();
-        if (!attemptAt.startsWith(today)) continue;
-        if (Object.prototype.hasOwnProperty.call(usage, executor)) {
-            usage[executor] += Number.parseInt(String(task.attempts || '0'), 10) || 0;
-        }
-    }
-
-    const remaining = {
-        jules: limits.jules - usage.jules,
-        kimi: limits.kimi - usage.kimi,
-        codex: limits.codex - usage.codex,
-    };
+    const signals = parseSignals();
+    const snapshot = buildBudgetSnapshot({
+        board,
+        signals: signals.signals || [],
+        date: currentDate(),
+    });
 
     const agents = ['jules', 'kimi', 'codex'].filter(
         (item) => agentFilter === 'all' || item === agentFilter
     );
-    const exceeded = agents.filter((item) => remaining[item] < 0);
+    const exceeded = agents.filter((item) => snapshot.remaining[item] < 0);
     const report = {
         version: 1,
         ok: exceeded.length === 0,
         command: 'budget',
-        date: today,
-        limits,
-        usage,
-        remaining,
+        date: snapshot.date,
+        limits: snapshot.limits,
+        limits_base: snapshot.limits_base,
+        usage: snapshot.usage,
+        remaining: snapshot.remaining,
+        kimi_rate_limited: snapshot.kimi_rate_limited,
         exceeded,
     };
 
@@ -2059,8 +2141,11 @@ function cmdBudget(args = []) {
     console.log('== Agent Budget ==');
     for (const agent of agents) {
         console.log(
-            `- ${agent}: used=${usage[agent]} limit=${limits[agent]} remaining=${remaining[agent]}`
+            `- ${agent}: used=${snapshot.usage[agent]} limit=${snapshot.limits[agent]} remaining=${snapshot.remaining[agent]}`
         );
+    }
+    if (snapshot.kimi_rate_limited) {
+        console.log('- kimi adaptive limit activo por rate-limit detectado (120/día).');
     }
     if (strict && !report.ok) {
         throw new Error(`budget excedido: ${exceeded.join(', ')}`);
@@ -2081,6 +2166,12 @@ function cmdDispatch(args = []) {
     const nowIso = new Date().toISOString();
     const nowDate = currentDate();
     const board = parseBoard();
+    const signals = parseSignals();
+    const budgetSnapshot = buildBudgetSnapshot({
+        board,
+        signals: signals.signals || [],
+        date: nowDate,
+    });
     const runnable = board.tasks
         .filter(
             (task) =>
@@ -2098,10 +2189,14 @@ function cmdDispatch(args = []) {
             ? process.env.JULES_MAX_DISPATCH_PER_RUN
             : process.env.KIMI_MAX_DISPATCH_PER_RUN;
     const perRunLimit = Number.parseInt(String(envPerRun || defaultPerRun), 10);
-    const selected = runnable.slice(
+    const requestedLimit =
+        Number.isFinite(perRunLimit) && perRunLimit > 0 ? perRunLimit : defaultPerRun;
+    const remainingBudget = Math.max(
         0,
-        Number.isFinite(perRunLimit) && perRunLimit > 0 ? perRunLimit : defaultPerRun
+        Number(budgetSnapshot.remaining[agent] || 0)
     );
+    const effectiveLimit = Math.max(0, Math.min(requestedLimit, remainingBudget));
+    const selected = runnable.slice(0, effectiveLimit);
 
     for (const task of selected) {
         task.last_attempt_at = nowIso;
@@ -2114,7 +2209,7 @@ function cmdDispatch(args = []) {
     let runnerStdout = '';
     let runnerStderr = '';
 
-    if (agent === 'jules') {
+    if (agent === 'jules' && selected.length > 0) {
         const result = runScriptCommand('jules-dispatch.js', ['dispatch'], {
             captureOutput: true,
             env: {
@@ -2124,7 +2219,7 @@ function cmdDispatch(args = []) {
         runnerExitCode = Number(result.status || 0);
         runnerStdout = String(result.stdout || '');
         runnerStderr = String(result.stderr || '');
-    } else if (agent === 'kimi') {
+    } else if (agent === 'kimi' && selected.length > 0) {
         const result = runScriptCommand(
             'kimi-run.js',
             ['--dispatch', '--no-diff'],
@@ -2139,7 +2234,10 @@ function cmdDispatch(args = []) {
         runnerStdout = String(result.stdout || '');
         runnerStderr = String(result.stderr || '');
     } else {
-        runnerStdout = 'codex dispatch is manual by design';
+        runnerStdout =
+            selected.length > 0
+                ? 'codex dispatch is manual by design'
+                : `dispatch skipped: ${agent} sin presupuesto disponible`;
     }
 
     if (runnerExitCode === 0) {
@@ -2162,6 +2260,10 @@ function cmdDispatch(args = []) {
         agent,
         selected_tasks: selected.map((task) => task.id),
         selected_count: selected.length,
+        requested_limit: requestedLimit,
+        effective_limit: effectiveLimit,
+        budget_remaining: remainingBudget,
+        budget_kimi_rate_limited: budgetSnapshot.kimi_rate_limited,
         runner_exit_code: runnerExitCode,
         runner_stdout: runnerStdout.trim(),
         runner_stderr: runnerStderr.trim(),
