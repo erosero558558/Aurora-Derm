@@ -12,6 +12,7 @@ class CalendarAvailabilityService
     private int $slotStepMin;
     private array $durationMap;
     private int $maxDays;
+    private ?DateTimeZone $cachedTimezone = null;
 
     public function __construct(
         GoogleCalendarClient $client,
@@ -204,11 +205,19 @@ class CalendarAvailabilityService
         foreach ($template as $date => $slots) {
             $slotLookup = array_fill_keys($slots, true);
             $availableSlots = [];
+
+            // Reusable DateTime object for performance
+            try {
+                $dt = new DateTime($date . ' 00:00:00', $this->getTimezoneObj());
+            } catch (Throwable $e) {
+                $dt = null;
+            }
+
             foreach ($slots as $slot) {
                 if (!$this->supportsDurationFromTemplate($date, $slot, $durationMin, $slotLookup)) {
                     continue;
                 }
-                if ($this->isSlotAvailableForDoctor($doctor, $date, $slot, $durationMin, $busyByCalendar)) {
+                if ($this->isSlotAvailableForDoctor($doctor, $date, $slot, $durationMin, $busyByCalendar, $dt)) {
                     $availableSlots[] = $slot;
                 }
             }
@@ -312,12 +321,20 @@ class CalendarAvailabilityService
 
         $busyByCalendar = $this->extractBusyRangesByCalendar($freeBusy['data'] ?? []);
         $booked = [];
+
+        // Reusable DateTime object for performance
+        try {
+            $dt = new DateTime($date . ' 00:00:00', $this->getTimezoneObj());
+        } catch (Throwable $e) {
+            $dt = null;
+        }
+
         foreach ($slots as $slot) {
             if (!$this->supportsDurationFromTemplate($date, $slot, $durationMin, $slotLookup)) {
                 $booked[] = $slot;
                 continue;
             }
-            if (!$this->isSlotAvailableForDoctor($doctor, $date, $slot, $durationMin, $busyByCalendar)) {
+            if (!$this->isSlotAvailableForDoctor($doctor, $date, $slot, $durationMin, $busyByCalendar, $dt)) {
                 $booked[] = $slot;
             }
         }
@@ -380,6 +397,14 @@ class CalendarAvailabilityService
     public function getClient(): GoogleCalendarClient
     {
         return $this->client;
+    }
+
+    private function getTimezoneObj(): DateTimeZone
+    {
+        if ($this->cachedTimezone === null) {
+            $this->cachedTimezone = new DateTimeZone($this->timezone);
+        }
+        return $this->cachedTimezone;
     }
 
     public function googleRequiredBlockedResult(string $doctor, string $service): array
@@ -519,6 +544,13 @@ class CalendarAvailabilityService
         $appointments = isset($store['appointments']) && is_array($store['appointments']) ? $store['appointments'] : [];
         $busyRanges = [];
 
+        // Reusable DateTime object for performance
+        try {
+            $dt = new DateTime($date . ' 00:00:00', $this->getTimezoneObj());
+        } catch (Throwable $e) {
+            $dt = null;
+        }
+
         foreach ($appointments as $appointment) {
             $status = map_appointment_status((string) ($appointment['status'] ?? 'confirmed'));
             if ($status === 'cancelled') {
@@ -539,7 +571,7 @@ class CalendarAvailabilityService
                 continue;
             }
 
-            $startTs = $this->dateTimeToTimestamp($date, $time);
+            $startTs = $this->dateTimeToTimestamp($date, $time, $dt);
             if ($startTs <= 0) {
                 continue;
             }
@@ -567,7 +599,7 @@ class CalendarAvailabilityService
                 continue;
             }
 
-            $candidateStart = $this->dateTimeToTimestamp($date, $slotTime);
+            $candidateStart = $this->dateTimeToTimestamp($date, $slotTime, $dt);
             if ($candidateStart <= 0) {
                 $booked[] = $slotTime;
                 continue;
@@ -619,7 +651,7 @@ class CalendarAvailabilityService
 
     private function addDays(string $date, int $days): string
     {
-        $tz = new DateTimeZone($this->timezone);
+        $tz = $this->getTimezoneObj();
         $dt = new DateTime($date . ' 00:00:00', $tz);
         if ($days !== 0) {
             $dt->modify(($days > 0 ? '+' : '') . $days . ' day');
@@ -629,7 +661,7 @@ class CalendarAvailabilityService
 
     private function toIsoStart(string $date): string
     {
-        $tz = new DateTimeZone($this->timezone);
+        $tz = $this->getTimezoneObj();
         $dt = new DateTime($date . ' 00:00:00', $tz);
         return $dt->format(DateTimeInterface::ATOM);
     }
@@ -685,25 +717,26 @@ class CalendarAvailabilityService
         string $date,
         string $slot,
         int $durationMin,
-        array $busyByCalendar
+        array $busyByCalendar,
+        ?DateTime $dt = null
     ): bool {
         if ($doctor === 'rosero' || $doctor === 'narvaez') {
             $calendarId = $this->client->getCalendarIdForDoctor($doctor);
-            return $calendarId !== '' && !$this->slotOverlapsBusy($date, $slot, $durationMin, $busyByCalendar[(string) $calendarId] ?? []);
+            return $calendarId !== '' && !$this->slotOverlapsBusy($date, $slot, $durationMin, $busyByCalendar[(string) $calendarId] ?? [], $dt);
         }
 
         $roseroCalendar = $this->client->getCalendarIdForDoctor('rosero');
         $narvaezCalendar = $this->client->getCalendarIdForDoctor('narvaez');
         $roseroFree = $roseroCalendar !== ''
-            && !$this->slotOverlapsBusy($date, $slot, $durationMin, $busyByCalendar[(string) $roseroCalendar] ?? []);
+            && !$this->slotOverlapsBusy($date, $slot, $durationMin, $busyByCalendar[(string) $roseroCalendar] ?? [], $dt);
         $narvaezFree = $narvaezCalendar !== ''
-            && !$this->slotOverlapsBusy($date, $slot, $durationMin, $busyByCalendar[(string) $narvaezCalendar] ?? []);
+            && !$this->slotOverlapsBusy($date, $slot, $durationMin, $busyByCalendar[(string) $narvaezCalendar] ?? [], $dt);
         return $roseroFree || $narvaezFree;
     }
 
-    private function slotOverlapsBusy(string $date, string $slot, int $durationMin, array $busyRanges): bool
+    private function slotOverlapsBusy(string $date, string $slot, int $durationMin, array $busyRanges, ?DateTime $dt = null): bool
     {
-        $startTs = $this->dateTimeToTimestamp($date, $slot);
+        $startTs = $this->dateTimeToTimestamp($date, $slot, $dt);
         if ($startTs <= 0) {
             return true;
         }
@@ -722,10 +755,16 @@ class CalendarAvailabilityService
         return false;
     }
 
-    private function dateTimeToTimestamp(string $date, string $time): int
+    private function dateTimeToTimestamp(string $date, string $time, ?DateTime $reusableDt = null): int
     {
         try {
-            $tz = new DateTimeZone($this->timezone);
+            if ($reusableDt !== null) {
+                [$h, $m] = explode(':', $time);
+                $reusableDt->setTime((int) $h, (int) $m);
+                return $reusableDt->getTimestamp();
+            }
+
+            $tz = $this->getTimezoneObj();
             $dt = new DateTime($date . ' ' . $time . ':00', $tz);
             return $dt->getTimestamp();
         } catch (Throwable $e) {
