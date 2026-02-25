@@ -270,18 +270,21 @@ function resolve_data_dir(): array
     return $resolved;
 }
 
-function data_dir_path(): string
-{
-    $resolved = resolve_data_dir();
-    return (string) ($resolved['path'] ?? DATA_DIR);
+if (!function_exists('data_dir_path')) {
+    function data_dir_path(): string
+    {
+        $resolved = resolve_data_dir();
+        return (string) ($resolved['path'] ?? DATA_DIR);
+    }
 }
 
-function data_dir_source(): string
-{
-    $resolved = resolve_data_dir();
-    return (string) ($resolved['source'] ?? 'unknown');
+if (!function_exists('data_dir_source')) {
+    function data_dir_source(): string
+    {
+        $resolved = resolve_data_dir();
+        return (string) ($resolved['source'] ?? 'unknown');
+    }
 }
-
 function data_file_path(): string
 {
     return data_dir_path() . DIRECTORY_SEPARATOR . 'store.sqlite';
@@ -727,85 +730,87 @@ function ensure_data_file(): bool
     return true;
 }
 
-function read_store(): array
-{
-    if (!ensure_data_file()) {
-        return normalize_store_payload(storage_default_store_payload());
+if (!function_exists('read_store')) {
+    function read_store(): array
+    {
+        if (!ensure_data_file()) {
+            return normalize_store_payload(storage_default_store_payload());
+        }
+
+        $pdo = get_db_connection(data_file_path());
+        if (!$pdo) {
+            return storage_json_fallback_enabled()
+                ? read_store_json_fallback()
+                : normalize_store_payload(storage_default_store_payload());
+        }
+
+        try {
+            $store = [
+                'appointments' => [],
+                'callbacks' => [],
+                'reviews' => [],
+                'availability' => [],
+                'updatedAt' => local_date('c'),
+                'idx_appointments_date' => []
+            ];
+
+            // Fetch Appointments
+            $stmt = $pdo->query("SELECT json_data FROM appointments");
+            while ($row = $stmt->fetch()) {
+                $data = json_decode($row['json_data'], true);
+                if (is_array($data)) {
+                    $store['appointments'][] = $data;
+                }
+            }
+
+            // Fetch Reviews
+            $stmt = $pdo->query("SELECT json_data FROM reviews");
+            while ($row = $stmt->fetch()) {
+                $data = json_decode($row['json_data'], true);
+                if (is_array($data)) {
+                    $store['reviews'][] = $data;
+                }
+            }
+
+            // Fetch Callbacks
+            $stmt = $pdo->query("SELECT json_data FROM callbacks");
+            while ($row = $stmt->fetch()) {
+                $data = json_decode($row['json_data'], true);
+                if (is_array($data)) {
+                    $store['callbacks'][] = $data;
+                }
+            }
+
+            // Fetch Availability
+            $stmt = $pdo->query("SELECT date, time FROM availability");
+            while ($row = $stmt->fetch()) {
+                $date = $row['date'];
+                $time = $row['time'];
+                if (!isset($store['availability'][$date])) {
+                    $store['availability'][$date] = [];
+                }
+                $store['availability'][$date][] = $time;
+            }
+
+            // Fetch Metadata
+            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'updatedAt'");
+            $row = $stmt->fetch();
+            if ($row) {
+                $store['updatedAt'] = $row['value'];
+            }
+
+            // Build index
+            $store['idx_appointments_date'] = build_appointment_index($store['appointments']);
+
+            return $store;
+        } catch (PDOException $e) {
+            error_log('Read Store Error: ' . $e->getMessage());
+            return storage_json_fallback_enabled()
+                ? read_store_json_fallback()
+                : normalize_store_payload(storage_default_store_payload());
+        }
     }
-
-    $pdo = get_db_connection(data_file_path());
-    if (!$pdo) {
-        return storage_json_fallback_enabled()
-            ? read_store_json_fallback()
-            : normalize_store_payload(storage_default_store_payload());
-    }
-
-    try {
-        $store = [
-            'appointments' => [],
-            'callbacks' => [],
-            'reviews' => [],
-            'availability' => [],
-            'updatedAt' => local_date('c'),
-            'idx_appointments_date' => []
-        ];
-
-        // Fetch Appointments
-        $stmt = $pdo->query("SELECT json_data FROM appointments");
-        while ($row = $stmt->fetch()) {
-            $data = json_decode($row['json_data'], true);
-            if (is_array($data)) {
-                $store['appointments'][] = $data;
-            }
-        }
-
-        // Fetch Reviews
-        $stmt = $pdo->query("SELECT json_data FROM reviews");
-        while ($row = $stmt->fetch()) {
-            $data = json_decode($row['json_data'], true);
-            if (is_array($data)) {
-                $store['reviews'][] = $data;
-            }
-        }
-
-        // Fetch Callbacks
-        $stmt = $pdo->query("SELECT json_data FROM callbacks");
-        while ($row = $stmt->fetch()) {
-            $data = json_decode($row['json_data'], true);
-            if (is_array($data)) {
-                $store['callbacks'][] = $data;
-            }
-        }
-
-        // Fetch Availability
-        $stmt = $pdo->query("SELECT date, time FROM availability");
-        while ($row = $stmt->fetch()) {
-            $date = $row['date'];
-            $time = $row['time'];
-            if (!isset($store['availability'][$date])) {
-                $store['availability'][$date] = [];
-            }
-            $store['availability'][$date][] = $time;
-        }
-
-        // Fetch Metadata
-        $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'updatedAt'");
-        $row = $stmt->fetch();
-        if ($row) {
-            $store['updatedAt'] = $row['value'];
-        }
-
-        // Build index
-        $store['idx_appointments_date'] = build_appointment_index($store['appointments']);
-
-        return $store;
-    } catch (PDOException $e) {
-        error_log('Read Store Error: ' . $e->getMessage());
-        return storage_json_fallback_enabled()
-            ? read_store_json_fallback()
-            : normalize_store_payload(storage_default_store_payload());
-    }
-}
+} // end if (!function_exists('read_store'))
 
 function acquire_store_lock($fp, int $timeoutMs = STORE_LOCK_TIMEOUT_MS): bool
 {
@@ -813,203 +818,207 @@ function acquire_store_lock($fp, int $timeoutMs = STORE_LOCK_TIMEOUT_MS): bool
     return true;
 }
 
-function with_store_lock(callable $callback): array
-{
-    $lockFile = data_dir_path() . DIRECTORY_SEPARATOR . 'store.lock';
-    $fp = @fopen($lockFile, 'c+');
-    if (!is_resource($fp)) {
-        return ['ok' => false, 'error' => 'No se pudo obtener lock de store', 'code' => 503];
-    }
-
-    $deadline = microtime(true) + (STORE_LOCK_TIMEOUT_MS / 1000.0);
-    $locked = false;
-    while (microtime(true) < $deadline) {
-        if (flock($fp, LOCK_EX | LOCK_NB)) {
-            $locked = true;
-            break;
+if (!function_exists('with_store_lock')) {
+    function with_store_lock(callable $callback): array
+    {
+        $lockFile = data_dir_path() . DIRECTORY_SEPARATOR . 'store.lock';
+        $fp = @fopen($lockFile, 'c+');
+        if (!is_resource($fp)) {
+            return ['ok' => false, 'error' => 'No se pudo obtener lock de store', 'code' => 503];
         }
-        usleep(STORE_LOCK_RETRY_DELAY_US);
-    }
 
-    if (!$locked) {
-        fclose($fp);
-        return ['ok' => false, 'error' => 'Store ocupado, intenta de nuevo', 'code' => 503];
-    }
-
-    try {
-        $result = $callback();
-        return ['ok' => true, 'result' => $result];
-    } catch (Throwable $e) {
-         return ['ok' => false, 'error' => $e->getMessage(), 'code' => 500];
-    } finally {
-        flock($fp, LOCK_UN);
-        fclose($fp);
-    }
-}
-
-function write_store(array $store, bool $emitHttpErrors = true): bool
-{
-    if (!ensure_data_file()) {
-        if (write_store_json_fallback($store)) {
-            return true;
-        }
-        if ($emitHttpErrors && function_exists('json_response')) {
-            json_response(['ok' => false, 'error' => 'Storage error'], 500);
-        }
-        return false;
-    }
-
-    $store = normalize_store_payload($store);
-    $dbPath = data_file_path();
-    $pdo = get_db_connection($dbPath);
-    if (!$pdo) {
-        if (write_store_json_fallback($store)) {
-            return true;
-        }
-        if ($emitHttpErrors && function_exists('json_response')) {
-            json_response(['ok' => false, 'error' => 'DB Connection error'], 500);
-        }
-        return false;
-    }
-
-    // Backup
-    create_store_backup_locked($dbPath);
-
-    try {
-        $pdo->beginTransaction();
-
-        $updatedAt = local_date('c');
-
-        // Sync Appointments
-        // Strategy: Get all IDs.
-        $existingIds = $pdo->query("SELECT id FROM appointments")->fetchAll(PDO::FETCH_COLUMN);
-        $existingIds = array_flip($existingIds); // id => index
-
-        $incomingIds = [];
-        $stmtUpsert = $pdo->prepare("INSERT OR REPLACE INTO appointments (id, date, time, doctor, service, name, email, phone, status, paymentMethod, paymentStatus, paymentIntentId, rescheduleToken, json_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-        foreach ($store['appointments'] as $appt) {
-            if (!isset($appt['id'])) {
-                continue;
+        $deadline = microtime(true) + (STORE_LOCK_TIMEOUT_MS / 1000.0);
+        $locked = false;
+        while (microtime(true) < $deadline) {
+            if (flock($fp, LOCK_EX | LOCK_NB)) {
+                $locked = true;
+                break;
             }
-            $id = $appt['id'];
-            $incomingIds[$id] = true;
-
-            $stmtUpsert->execute([
-                $id,
-                $appt['date'] ?? '',
-                $appt['time'] ?? '',
-                $appt['doctor'] ?? '',
-                $appt['service'] ?? '',
-                $appt['name'] ?? '',
-                $appt['email'] ?? '',
-                $appt['phone'] ?? '',
-                $appt['status'] ?? 'confirmed',
-                $appt['paymentMethod'] ?? '',
-                $appt['paymentStatus'] ?? '',
-                $appt['paymentIntentId'] ?? '',
-                $appt['rescheduleToken'] ?? '',
-                json_encode($appt, JSON_UNESCAPED_UNICODE)
-            ]);
+            usleep(STORE_LOCK_RETRY_DELAY_US);
         }
 
-        // Delete missing
-        $toDelete = array_diff_key($existingIds, $incomingIds);
-        if (!empty($toDelete)) {
-            $keys = array_keys($toDelete);
-            $placeholders = implode(',', array_fill(0, count($keys), '?'));
-            $stmt = $pdo->prepare("DELETE FROM appointments WHERE id IN ($placeholders)");
-            $stmt->execute($keys);
+        if (!$locked) {
+            fclose($fp);
+            return ['ok' => false, 'error' => 'Store ocupado, intenta de nuevo', 'code' => 503];
         }
 
-        // Sync Reviews
-        $existingIds = $pdo->query("SELECT id FROM reviews")->fetchAll(PDO::FETCH_COLUMN);
-        $existingIds = array_flip($existingIds);
-        $incomingIds = [];
-        $stmtUpsert = $pdo->prepare("INSERT OR REPLACE INTO reviews (id, name, rating, text, date, verified, json_data) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        try {
+            $result = $callback();
+            return ['ok' => true, 'result' => $result];
+        } catch (Throwable $e) {
+            return ['ok' => false, 'error' => $e->getMessage(), 'code' => 500];
+        } finally {
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        }
+    }
+} // end if (!function_exists('with_store_lock'))
 
-        foreach ($store['reviews'] as $review) {
-            if (!isset($review['id'])) {
-                continue;
+if (!function_exists('write_store')) {
+    function write_store(array $store, bool $emitHttpErrors = true): bool
+    {
+        if (!ensure_data_file()) {
+            if (write_store_json_fallback($store)) {
+                return true;
             }
-            $id = $review['id'];
-            $incomingIds[$id] = true;
-            $stmtUpsert->execute([
-                $id,
-                $review['name'] ?? '',
-                $review['rating'] ?? 0,
-                $review['text'] ?? '',
-                $review['date'] ?? '',
-                isset($review['verified']) && $review['verified'] ? 1 : 0,
-                json_encode($review, JSON_UNESCAPED_UNICODE)
-            ]);
-        }
-        $toDelete = array_diff_key($existingIds, $incomingIds);
-        if (!empty($toDelete)) {
-            $keys = array_keys($toDelete);
-            $placeholders = implode(',', array_fill(0, count($keys), '?'));
-            $stmt = $pdo->prepare("DELETE FROM reviews WHERE id IN ($placeholders)");
-            $stmt->execute($keys);
-        }
-
-        // Sync Callbacks
-        $existingIds = $pdo->query("SELECT id FROM callbacks")->fetchAll(PDO::FETCH_COLUMN);
-        $existingIds = array_flip($existingIds);
-        $incomingIds = [];
-        $stmtUpsert = $pdo->prepare("INSERT OR REPLACE INTO callbacks (id, telefono, preferencia, fecha, status, json_data) VALUES (?, ?, ?, ?, ?, ?)");
-
-        foreach ($store['callbacks'] as $cb) {
-            if (!isset($cb['id'])) {
-                continue;
+            if ($emitHttpErrors && function_exists('json_response')) {
+                json_response(['ok' => false, 'error' => 'Storage error'], 500);
             }
-            $id = $cb['id'];
-            $incomingIds[$id] = true;
-            $stmtUpsert->execute([
-                $id,
-                $cb['telefono'] ?? '',
-                $cb['preferencia'] ?? '',
-                $cb['fecha'] ?? '',
-                $cb['status'] ?? 'pendiente',
-                json_encode($cb, JSON_UNESCAPED_UNICODE)
-            ]);
-        }
-        $toDelete = array_diff_key($existingIds, $incomingIds);
-        if (!empty($toDelete)) {
-            $keys = array_keys($toDelete);
-            $placeholders = implode(',', array_fill(0, count($keys), '?'));
-            $stmt = $pdo->prepare("DELETE FROM callbacks WHERE id IN ($placeholders)");
-            $stmt->execute($keys);
+            return false;
         }
 
-        // Sync Availability (Full Replace)
-        $pdo->exec("DELETE FROM availability");
-        $stmtInsert = $pdo->prepare("INSERT INTO availability (date, time, doctor) VALUES (?, ?, ?)");
-        if (isset($store['availability']) && is_array($store['availability'])) {
-            foreach ($store['availability'] as $date => $times) {
-                if (!is_array($times)) {
+        $store = normalize_store_payload($store);
+        $dbPath = data_file_path();
+        $pdo = get_db_connection($dbPath);
+        if (!$pdo) {
+            if (write_store_json_fallback($store)) {
+                return true;
+            }
+            if ($emitHttpErrors && function_exists('json_response')) {
+                json_response(['ok' => false, 'error' => 'DB Connection error'], 500);
+            }
+            return false;
+        }
+
+        // Backup
+        create_store_backup_locked($dbPath);
+
+        try {
+            $pdo->beginTransaction();
+
+            $updatedAt = local_date('c');
+
+            // Sync Appointments
+            // Strategy: Get all IDs.
+            $existingIds = $pdo->query("SELECT id FROM appointments")->fetchAll(PDO::FETCH_COLUMN);
+            $existingIds = array_flip($existingIds); // id => index
+
+            $incomingIds = [];
+            $stmtUpsert = $pdo->prepare("INSERT OR REPLACE INTO appointments (id, date, time, doctor, service, name, email, phone, status, paymentMethod, paymentStatus, paymentIntentId, rescheduleToken, json_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            foreach ($store['appointments'] as $appt) {
+                if (!isset($appt['id'])) {
                     continue;
                 }
-                foreach ($times as $time) {
-                    $stmtInsert->execute([$date, $time, 'global']);
+                $id = $appt['id'];
+                $incomingIds[$id] = true;
+
+                $stmtUpsert->execute([
+                    $id,
+                    $appt['date'] ?? '',
+                    $appt['time'] ?? '',
+                    $appt['doctor'] ?? '',
+                    $appt['service'] ?? '',
+                    $appt['name'] ?? '',
+                    $appt['email'] ?? '',
+                    $appt['phone'] ?? '',
+                    $appt['status'] ?? 'confirmed',
+                    $appt['paymentMethod'] ?? '',
+                    $appt['paymentStatus'] ?? '',
+                    $appt['paymentIntentId'] ?? '',
+                    $appt['rescheduleToken'] ?? '',
+                    json_encode($appt, JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+
+            // Delete missing
+            $toDelete = array_diff_key($existingIds, $incomingIds);
+            if (!empty($toDelete)) {
+                $keys = array_keys($toDelete);
+                $placeholders = implode(',', array_fill(0, count($keys), '?'));
+                $stmt = $pdo->prepare("DELETE FROM appointments WHERE id IN ($placeholders)");
+                $stmt->execute($keys);
+            }
+
+            // Sync Reviews
+            $existingIds = $pdo->query("SELECT id FROM reviews")->fetchAll(PDO::FETCH_COLUMN);
+            $existingIds = array_flip($existingIds);
+            $incomingIds = [];
+            $stmtUpsert = $pdo->prepare("INSERT OR REPLACE INTO reviews (id, name, rating, text, date, verified, json_data) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+            foreach ($store['reviews'] as $review) {
+                if (!isset($review['id'])) {
+                    continue;
+                }
+                $id = $review['id'];
+                $incomingIds[$id] = true;
+                $stmtUpsert->execute([
+                    $id,
+                    $review['name'] ?? '',
+                    $review['rating'] ?? 0,
+                    $review['text'] ?? '',
+                    $review['date'] ?? '',
+                    isset($review['verified']) && $review['verified'] ? 1 : 0,
+                    json_encode($review, JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+            $toDelete = array_diff_key($existingIds, $incomingIds);
+            if (!empty($toDelete)) {
+                $keys = array_keys($toDelete);
+                $placeholders = implode(',', array_fill(0, count($keys), '?'));
+                $stmt = $pdo->prepare("DELETE FROM reviews WHERE id IN ($placeholders)");
+                $stmt->execute($keys);
+            }
+
+            // Sync Callbacks
+            $existingIds = $pdo->query("SELECT id FROM callbacks")->fetchAll(PDO::FETCH_COLUMN);
+            $existingIds = array_flip($existingIds);
+            $incomingIds = [];
+            $stmtUpsert = $pdo->prepare("INSERT OR REPLACE INTO callbacks (id, telefono, preferencia, fecha, status, json_data) VALUES (?, ?, ?, ?, ?, ?)");
+
+            foreach ($store['callbacks'] as $cb) {
+                if (!isset($cb['id'])) {
+                    continue;
+                }
+                $id = $cb['id'];
+                $incomingIds[$id] = true;
+                $stmtUpsert->execute([
+                    $id,
+                    $cb['telefono'] ?? '',
+                    $cb['preferencia'] ?? '',
+                    $cb['fecha'] ?? '',
+                    $cb['status'] ?? 'pendiente',
+                    json_encode($cb, JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+            $toDelete = array_diff_key($existingIds, $incomingIds);
+            if (!empty($toDelete)) {
+                $keys = array_keys($toDelete);
+                $placeholders = implode(',', array_fill(0, count($keys), '?'));
+                $stmt = $pdo->prepare("DELETE FROM callbacks WHERE id IN ($placeholders)");
+                $stmt->execute($keys);
+            }
+
+            // Sync Availability (Full Replace)
+            $pdo->exec("DELETE FROM availability");
+            $stmtInsert = $pdo->prepare("INSERT INTO availability (date, time, doctor) VALUES (?, ?, ?)");
+            if (isset($store['availability']) && is_array($store['availability'])) {
+                foreach ($store['availability'] as $date => $times) {
+                    if (!is_array($times)) {
+                        continue;
+                    }
+                    foreach ($times as $time) {
+                        $stmtInsert->execute([$date, $time, 'global']);
+                    }
                 }
             }
-        }
 
-        // Metadata
-        $stmt = $pdo->prepare("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)");
-        $stmt->execute(['updatedAt', $updatedAt]);
+            // Metadata
+            $stmt = $pdo->prepare("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)");
+            $stmt->execute(['updatedAt', $updatedAt]);
 
-        $pdo->commit();
-        return true;
-    } catch (PDOException $e) {
-        $pdo->rollBack();
-        error_log('Write Store Error: ' . $e->getMessage());
-        if (write_store_json_fallback($store)) {
+            $pdo->commit();
             return true;
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            error_log('Write Store Error: ' . $e->getMessage());
+            if (write_store_json_fallback($store)) {
+                return true;
+            }
+            if ($emitHttpErrors && function_exists('json_response')) {
+                json_response(['ok' => false, 'error' => 'Write error'], 500);
+            }
+            return false;
         }
-        if ($emitHttpErrors && function_exists('json_response')) {
-            json_response(['ok' => false, 'error' => 'Write error'], 500);
-        }
-        return false;
     }
-}
+} // end if (!function_exists('write_store'))

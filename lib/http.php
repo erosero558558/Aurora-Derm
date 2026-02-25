@@ -76,6 +76,7 @@ function require_json_body(): array
             'ok' => false,
             'error' => 'El JSON enviado no es válido'
         ], 400);
+        return []; // Unreachable in production (json_response exits); satisfies return type
     }
     return $data;
 }
