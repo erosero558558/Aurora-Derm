@@ -1,5 +1,32 @@
 'use strict';
 
+function parseExpectedRevisionFromFlags(
+    flags = {},
+    parseExpectedBoardRevisionFlag
+) {
+    if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
+    const parsed = parseExpectedBoardRevisionFlag(flags);
+    if (parsed instanceof Error) throw parsed;
+    return parsed;
+}
+
+function printCloseJsonError(error) {
+    const payload = {
+        version: 1,
+        ok: false,
+        command: 'close',
+        error: String(error?.message || error || 'close_failed'),
+        error_code: String(error?.error_code || error?.code || 'close_failed'),
+    };
+    if (payload.error_code === 'board_revision_mismatch') {
+        payload.expected_revision = Number(error?.expected_revision);
+        payload.actual_revision = Number(error?.actual_revision);
+    }
+    console.log(JSON.stringify(payload, null, 2));
+    process.exitCode = 1;
+    return payload;
+}
+
 function handleCloseCommand(ctx) {
     const {
         args,
@@ -16,6 +43,7 @@ function handleCloseCommand(ctx) {
         writeBoardAndSync,
         getLastBoardWriteMeta,
         toTaskJson,
+        parseExpectedBoardRevisionFlag,
     } = ctx;
     const { positionals, flags } = parseFlags(args);
     const wantsJson = args.includes('--json');
@@ -42,11 +70,23 @@ function handleCloseCommand(ctx) {
     task.acceptance_ref = toRelativeRepoPath(evidencePath);
     board.policy.updated_at = currentDate();
     if (typeof writeBoardAndSync === 'function') {
-        writeBoardAndSync(board, {
-            silentSync: wantsJson,
-            command: 'close',
-            actor: task.owner || task.executor || '',
-        });
+        const expectRevision = parseExpectedRevisionFromFlags(
+            flags,
+            parseExpectedBoardRevisionFlag
+        );
+        try {
+            writeBoardAndSync(board, {
+                silentSync: wantsJson,
+                command: 'close',
+                actor: task.owner || task.executor || '',
+                expectRevision,
+            });
+        } catch (error) {
+            if (wantsJson) {
+                return printCloseJsonError(error);
+            }
+            throw error;
+        }
     } else {
         writeFileSync(BOARD_PATH, serializeBoard(board), 'utf8');
         syncDerivedQueues({ silent: wantsJson });

@@ -52,6 +52,7 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
             canonical: 'AGENTS.md',
             autonomy: 'semi_autonomous_guardrails',
             kpi: 'reduce_rework',
+            revision: 7,
             updated_at: '2026-02-25',
         },
         tasks: [
@@ -79,6 +80,7 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
     });
 
     assert.match(yaml, /^version: 1/m);
+    assert.match(yaml, /revision:\s+7/);
     assert.match(yaml, /title:\s+"Task \\"uno\\""/);
     assert.match(yaml, /files:\s+\["agent-orchestrator\.js"\]/);
 
@@ -86,6 +88,7 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
         allowedStatuses: new Set(['ready']),
     });
     assert.equal(parsed.tasks.length, 1);
+    assert.equal(parsed.policy.revision, '7');
     assert.equal(parsed.tasks[0].title, 'Task "uno"');
     assert.deepEqual(parsed.tasks[0].files, ['agent-orchestrator.js']);
 });

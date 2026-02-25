@@ -452,6 +452,40 @@ function getTaskLeaseSummary(task, options = {}) {
     return domainBoardLeases.getTaskLeaseSummary(task, options);
 }
 
+function parseBoardRevisionValue(value) {
+    const n = Number(String(value ?? '').trim());
+    return Number.isInteger(n) && n >= 0 ? n : 0;
+}
+
+function createBoardRevisionMismatchError(expectedRevision, actualRevision) {
+    const error = new Error(
+        `board revision mismatch: expected ${expectedRevision}, actual ${actualRevision}`
+    );
+    error.code = 'board_revision_mismatch';
+    error.error_code = 'board_revision_mismatch';
+    error.expected_revision = expectedRevision;
+    error.actual_revision = actualRevision;
+    return error;
+}
+
+function parseExpectedBoardRevisionFlag(flags = {}) {
+    const raw =
+        flags['expect-rev'] !== undefined
+            ? flags['expect-rev']
+            : flags.expect_rev;
+    if (raw === undefined || raw === true || String(raw).trim() === '') {
+        return null;
+    }
+    const parsed = Number(String(raw).trim());
+    if (!Number.isInteger(parsed) || parsed < 0) {
+        const error = new Error('--expect-rev debe ser entero >= 0');
+        error.code = 'invalid_expect_rev';
+        error.error_code = 'invalid_expect_rev';
+        return error;
+    }
+    return parsed;
+}
+
 function buildBoardWipLimitDiagnostics(board, options = {}) {
     const {
         taskIds = null,
@@ -547,8 +581,28 @@ function getLastBoardWriteMeta() {
 }
 
 function writeBoard(board, options = {}) {
-    const { command = 'board_write', source = 'cli', actor = '' } = options;
+    const {
+        command = 'board_write',
+        source = 'cli',
+        actor = '',
+        expectRevision = null,
+    } = options;
     const prevBoard = existsSync(BOARD_PATH) ? parseBoard() : null;
+    const prevRevision = parseBoardRevisionValue(prevBoard?.policy?.revision);
+    if (expectRevision !== null && expectRevision !== undefined) {
+        const expected = Number(expectRevision);
+        if (!Number.isInteger(expected) || expected < 0) {
+            const error = new Error('--expect-rev debe ser entero >= 0');
+            error.code = 'invalid_expect_rev';
+            error.error_code = 'invalid_expect_rev';
+            throw error;
+        }
+        if (expected !== prevRevision) {
+            throw createBoardRevisionMismatchError(expected, prevRevision);
+        }
+    }
+    board.policy = board.policy || {};
+    board.policy.revision = prevRevision + 1;
     const nowIsoValue = isoNow();
     const lifecycle = applyBoardLeasesBeforeWrite(board, {
         prevBoard,
@@ -582,6 +636,14 @@ function writeBoard(board, options = {}) {
     }
     LAST_BOARD_WRITE_META = {
         now_iso: nowIsoValue,
+        revision: {
+            previous: prevRevision,
+            written: parseBoardRevisionValue(writtenBoard?.policy?.revision),
+            expected:
+                expectRevision === null || expectRevision === undefined
+                    ? null
+                    : Number(expectRevision),
+        },
         lifecycle,
         board_events: boardEvents,
     };
@@ -1123,6 +1185,7 @@ function cmdLeases(args) {
         renewTaskLease: domainBoardLeases.renewTaskLease,
         clearTaskLease: domainBoardLeases.clearTaskLease,
         normalizeBoardLeasesPolicy,
+        parseExpectedBoardRevisionFlag,
         summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
         makeDiagnostic: domainDiagnostics.makeDiagnostic,
         printJson: coreOutput.printJson,
@@ -1198,6 +1261,7 @@ async function cmdTask(args) {
         buildTaskCreateWarnDiagnostics,
         attachDiagnostics,
         getLastBoardWriteMeta,
+        parseExpectedBoardRevisionFlag,
         buildBoardWipLimitDiagnostics,
         printJson: coreOutput.printJson,
     });
@@ -1242,6 +1306,7 @@ function cmdClose(args) {
         writeBoardAndSync,
         getLastBoardWriteMeta,
         toTaskJson,
+        parseExpectedBoardRevisionFlag,
     });
 }
 
@@ -1449,7 +1514,9 @@ function upsertTasksFromSignals(board, signals, options = {}) {
 
                     if (String(suggestedTask.sla_due_at || '').trim()) {
                         if (
-                            !String(overlapActiveTask.sla_due_at || '').trim() ||
+                            !String(
+                                overlapActiveTask.sla_due_at || ''
+                            ).trim() ||
                             String(suggestedTask.sla_due_at) <
                                 String(overlapActiveTask.sla_due_at)
                         ) {
@@ -1467,9 +1534,13 @@ function upsertTasksFromSignals(board, signals, options = {}) {
                     if (
                         (overlapActiveTask.critical_zone ||
                             overlapActiveTask.runtime_impact === 'high' ||
-                            findCriticalScopeKeyword(overlapActiveTask.scope)) &&
+                            findCriticalScopeKeyword(
+                                overlapActiveTask.scope
+                            )) &&
                         !['codex', 'claude'].includes(
-                            String(overlapActiveTask.executor || '').toLowerCase()
+                            String(
+                                overlapActiveTask.executor || ''
+                            ).toLowerCase()
                         )
                     ) {
                         overlapActiveTask.executor = 'codex';
@@ -1642,6 +1713,7 @@ const runtimeIntake = runtimeIntakeCommands.createRuntimeIntakeCommands({
     getGitHubToken,
     fetchGitHubJson,
     attachDiagnostics,
+    parseExpectedBoardRevisionFlag,
     buildBoardWipLimitDiagnostics,
 });
 const governanceRuntime =
@@ -1675,6 +1747,7 @@ const governanceRuntime =
         serializeHandoffs,
         writeFileSync,
         appendHandoffBoardEvent,
+        parseExpectedBoardRevisionFlag,
         buildCodexCheckReport,
         ALLOWED_STATUSES,
         currentDate,

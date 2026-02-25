@@ -1,5 +1,33 @@
 'use strict';
 
+function parseExpectedRevisionFromFlags(
+    flags = {},
+    parseExpectedBoardRevisionFlag
+) {
+    if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
+    const parsed = parseExpectedBoardRevisionFlag(flags);
+    if (parsed instanceof Error) throw parsed;
+    return parsed;
+}
+
+function printLeasesJsonError(printJson, error, action = null) {
+    const payload = {
+        version: 1,
+        ok: false,
+        command: 'leases',
+        ...(action ? { action } : {}),
+        error: String(error?.message || error || 'leases_failed'),
+        error_code: String(error?.error_code || error?.code || 'leases_failed'),
+    };
+    if (payload.error_code === 'board_revision_mismatch') {
+        payload.expected_revision = Number(error?.expected_revision);
+        payload.actual_revision = Number(error?.actual_revision);
+    }
+    printJson(payload);
+    process.exitCode = 1;
+    return payload;
+}
+
 function handleLeasesCommand(ctx) {
     const {
         args = [],
@@ -15,6 +43,7 @@ function handleLeasesCommand(ctx) {
         renewTaskLease,
         clearTaskLease,
         normalizeBoardLeasesPolicy,
+        parseExpectedBoardRevisionFlag,
         summarizeDiagnostics,
         makeDiagnostic,
         printJson = (v) => console.log(JSON.stringify(v, null, 2)),
@@ -139,7 +168,18 @@ function handleLeasesCommand(ctx) {
             reason: 'leases_heartbeat',
         });
         task.updated_at = currentDate();
-        writeBoardAndSync(board, { silentSync: wantsJson });
+        const expectRevision = parseExpectedRevisionFromFlags(
+            flags,
+            parseExpectedBoardRevisionFlag
+        );
+        try {
+            writeBoardAndSync(board, { silentSync: wantsJson, expectRevision });
+        } catch (error) {
+            if (wantsJson) {
+                return printLeasesJsonError(printJson, error, 'heartbeat');
+            }
+            throw error;
+        }
         const report = {
             version: 1,
             ok: true,
@@ -168,7 +208,18 @@ function handleLeasesCommand(ctx) {
         reason,
     });
     task.updated_at = currentDate();
-    writeBoardAndSync(board, { silentSync: wantsJson });
+    const expectRevision = parseExpectedRevisionFromFlags(
+        flags,
+        parseExpectedBoardRevisionFlag
+    );
+    try {
+        writeBoardAndSync(board, { silentSync: wantsJson, expectRevision });
+    } catch (error) {
+        if (wantsJson) {
+            return printLeasesJsonError(printJson, error, 'clear');
+        }
+        throw error;
+    }
     const report = {
         version: 1,
         ok: true,

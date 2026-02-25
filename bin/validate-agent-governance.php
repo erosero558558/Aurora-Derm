@@ -535,6 +535,13 @@ if (empty($board['tasks'])) {
     $errors[] = 'AGENT_BOARD.yaml no contiene tareas.';
 }
 
+if (array_key_exists('revision', $board['policy'])) {
+    $boardRevisionRaw = trim((string) $board['policy']['revision']);
+    if ($boardRevisionRaw === '' || preg_match('/^\d+$/', $boardRevisionRaw) !== 1) {
+        $errors[] = 'AGENT_BOARD.yaml policy.revision debe ser entero >= 0';
+    }
+}
+
 $taskIds = [];
 foreach ($board['tasks'] as $idx => $task) {
     $position = $idx + 1;

@@ -60,6 +60,7 @@ function serializeBoard(board, options = {}) {
         `  autonomy: ${board.policy.autonomy || 'semi_autonomous_guardrails'}`
     );
     lines.push(`  kpi: ${board.policy.kpi || 'reduce_rework'}`);
+    lines.push(`  revision: ${normalizeTaskInt(board.policy.revision, 0)}`);
     lines.push(`  updated_at: ${board.policy.updated_at || getDate()}`);
     lines.push('');
     lines.push('tasks:');

@@ -627,6 +627,87 @@ tasks:
     }
 });
 
+test('JSON contract minimo estable para board_revision_mismatch (--expect-rev)', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+
+        const taskClaim = runJsonExpectStatus(
+            dir,
+            ['task', 'claim', 'AG-001', '--owner', 'otro', '--expect-rev', '9'],
+            1
+        );
+        assertVersionLike(taskClaim.version);
+        assert.equal(taskClaim.ok, false);
+        assert.equal(taskClaim.command, 'task');
+        assert.equal(taskClaim.action, 'claim');
+        assert.equal(taskClaim.error_code, 'board_revision_mismatch');
+        assert.equal(typeof taskClaim.expected_revision, 'number');
+        assert.equal(typeof taskClaim.actual_revision, 'number');
+
+        const leasesHeartbeat = runJsonExpectStatus(
+            dir,
+            [
+                'leases',
+                'heartbeat',
+                'CDX-001',
+                '--ttl-hours',
+                '1',
+                '--expect-rev',
+                '9',
+            ],
+            1
+        );
+        assertVersionLike(leasesHeartbeat.version);
+        assert.equal(leasesHeartbeat.ok, false);
+        assert.equal(leasesHeartbeat.command, 'leases');
+        assert.equal(leasesHeartbeat.action, 'heartbeat');
+        assert.equal(leasesHeartbeat.error_code, 'board_revision_mismatch');
+        assert.equal(typeof leasesHeartbeat.expected_revision, 'number');
+        assert.equal(typeof leasesHeartbeat.actual_revision, 'number');
+
+        const handoffClose = runJsonExpectStatus(
+            dir,
+            ['handoffs', 'close', 'HO-999', '--expect-rev', '9'],
+            1
+        );
+        assertVersionLike(handoffClose.version);
+        assert.equal(handoffClose.ok, false);
+        assert.equal(handoffClose.command, 'handoffs');
+        assert.equal(handoffClose.error_code, 'board_revision_mismatch');
+        assert.equal(typeof handoffClose.expected_revision, 'number');
+        assert.equal(typeof handoffClose.actual_revision, 'number');
+
+        const evidenceDir = join(dir, 'verification', 'agent-runs');
+        mkdirSync(evidenceDir, { recursive: true });
+        writeFileSync(
+            join(evidenceDir, 'AG-001.md'),
+            '# AG-001 fixture evidence\n',
+            'utf8'
+        );
+        const closeCmd = runJsonExpectStatus(
+            dir,
+            [
+                'close',
+                'AG-001',
+                '--evidence',
+                'verification/agent-runs/AG-001.md',
+                '--expect-rev',
+                '9',
+            ],
+            1
+        );
+        assertVersionLike(closeCmd.version);
+        assert.equal(closeCmd.ok, false);
+        assert.equal(closeCmd.command, 'close');
+        assert.equal(closeCmd.error_code, 'board_revision_mismatch');
+        assert.equal(typeof closeCmd.expected_revision, 'number');
+        assert.equal(typeof closeCmd.actual_revision, 'number');
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
 test('JSON contract minimo estable para board doctor --strict (falla con payload JSON)', () => {
     const dir = createFixtureDir();
     try {

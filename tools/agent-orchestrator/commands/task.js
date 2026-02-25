@@ -41,6 +41,7 @@ async function handleTaskCommand(ctx) {
         buildTaskCreateWarnDiagnostics,
         attachDiagnostics,
         getLastBoardWriteMeta,
+        parseExpectedBoardRevisionFlag,
         buildBoardWipLimitDiagnostics,
         printJson,
     } = ctx;
@@ -119,6 +120,7 @@ async function handleTaskCommand(ctx) {
             attachDiagnostics,
             buildBoardWipLimitDiagnostics,
             getLastBoardWriteMeta,
+            parseExpectedBoardRevisionFlag,
             printJson,
         });
         return;
@@ -151,6 +153,7 @@ async function handleTaskCommand(ctx) {
             attachDiagnostics,
             buildBoardWipLimitDiagnostics,
             getLastBoardWriteMeta,
+            parseExpectedBoardRevisionFlag,
             printJson,
         });
         return;
@@ -195,6 +198,7 @@ async function handleTaskCommand(ctx) {
             writeBoardAndSync,
             toTaskJson,
             getLastBoardWriteMeta,
+            parseExpectedBoardRevisionFlag,
             printJson,
         });
     }
@@ -373,6 +377,34 @@ function getTaskWriteLeaseMeta(getLastBoardWriteMeta, taskId) {
     );
 }
 
+function parseExpectedRevisionFromFlags(
+    flags = {},
+    parseExpectedBoardRevisionFlag
+) {
+    if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
+    const parsed = parseExpectedBoardRevisionFlag(flags);
+    if (parsed instanceof Error) throw parsed;
+    return parsed;
+}
+
+function printTaskJsonError(printJson, error, action = null) {
+    const payload = {
+        version: 1,
+        ok: false,
+        command: 'task',
+        ...(action ? { action } : {}),
+        error: String(error?.message || error || 'task_failed'),
+        error_code: String(error?.error_code || error?.code || 'task_failed'),
+    };
+    if (payload.error_code === 'board_revision_mismatch') {
+        payload.expected_revision = Number(error?.expected_revision);
+        payload.actual_revision = Number(error?.actual_revision);
+    }
+    printJson(payload);
+    process.exitCode = 1;
+    return payload;
+}
+
 function handleTaskClaim(ctx) {
     const {
         flags,
@@ -394,6 +426,7 @@ function handleTaskClaim(ctx) {
         attachDiagnostics,
         buildBoardWipLimitDiagnostics,
         getLastBoardWriteMeta,
+        parseExpectedBoardRevisionFlag,
         printJson,
     } = ctx;
 
@@ -451,11 +484,24 @@ function handleTaskClaim(ctx) {
     }
 
     task.updated_at = currentDate();
-    writeBoardAndSync(board, {
-        silentSync: wantsJson,
-        command: 'task claim',
-        actor: task.owner || task.executor || '',
-    });
+    const expectRevision = parseExpectedRevisionFromFlags(
+        flags,
+        parseExpectedBoardRevisionFlag
+    );
+    try {
+        writeBoardAndSync(board, {
+            silentSync: wantsJson,
+            command: 'task claim',
+            actor: task.owner || task.executor || '',
+            expectRevision,
+        });
+    } catch (error) {
+        if (wantsJson) {
+            printTaskJsonError(printJson, error, 'claim');
+            return;
+        }
+        throw error;
+    }
     const leaseMeta = getTaskWriteLeaseMeta(getLastBoardWriteMeta, taskId);
     const wipDiagnostics =
         typeof buildBoardWipLimitDiagnostics === 'function'
@@ -512,6 +558,7 @@ function handleTaskStart(ctx) {
         attachDiagnostics,
         buildBoardWipLimitDiagnostics,
         getLastBoardWriteMeta,
+        parseExpectedBoardRevisionFlag,
         printJson,
     } = ctx;
 
@@ -568,11 +615,24 @@ function handleTaskStart(ctx) {
         );
     }
 
-    writeBoardAndSync(board, {
-        silentSync: wantsJson,
-        command: 'task start',
-        actor: task.owner || task.executor || '',
-    });
+    const expectRevision = parseExpectedRevisionFromFlags(
+        flags,
+        parseExpectedBoardRevisionFlag
+    );
+    try {
+        writeBoardAndSync(board, {
+            silentSync: wantsJson,
+            command: 'task start',
+            actor: task.owner || task.executor || '',
+            expectRevision,
+        });
+    } catch (error) {
+        if (wantsJson) {
+            printTaskJsonError(printJson, error, 'start');
+            return;
+        }
+        throw error;
+    }
     const leaseMeta = getTaskWriteLeaseMeta(getLastBoardWriteMeta, taskId);
     const wipDiagnostics =
         typeof buildBoardWipLimitDiagnostics === 'function'
@@ -621,6 +681,7 @@ function handleTaskFinish(ctx) {
         writeBoardAndSync,
         toTaskJson,
         getLastBoardWriteMeta,
+        parseExpectedBoardRevisionFlag,
         printJson,
     } = ctx;
 
@@ -646,11 +707,24 @@ function handleTaskFinish(ctx) {
 
     task.status = nextStatus;
     task.updated_at = currentDate();
-    writeBoardAndSync(board, {
-        silentSync: wantsJson,
-        command: 'task finish',
-        actor: task.owner || task.executor || '',
-    });
+    const expectRevision = parseExpectedRevisionFromFlags(
+        flags,
+        parseExpectedBoardRevisionFlag
+    );
+    try {
+        writeBoardAndSync(board, {
+            silentSync: wantsJson,
+            command: 'task finish',
+            actor: task.owner || task.executor || '',
+            expectRevision,
+        });
+    } catch (error) {
+        if (wantsJson) {
+            printTaskJsonError(printJson, error, 'finish');
+            return;
+        }
+        throw error;
+    }
     const leaseMeta = getTaskWriteLeaseMeta(getLastBoardWriteMeta, taskId);
 
     if (wantsJson) {
@@ -709,6 +783,7 @@ async function handleTaskCreate(ctx) {
         buildTaskCreateWarnDiagnostics,
         attachDiagnostics,
         getLastBoardWriteMeta,
+        parseExpectedBoardRevisionFlag,
         printJson,
     } = ctx;
     let { flags } = ctx;
@@ -1086,11 +1161,24 @@ async function handleTaskCreate(ctx) {
             }
         }
 
-        writeBoardAndSync(board, {
-            silentSync: wantsJson,
-            command: 'task create apply',
-            actor: task.owner || task.executor || '',
-        });
+        const expectRevision = parseExpectedRevisionFromFlags(
+            flags,
+            parseExpectedBoardRevisionFlag
+        );
+        try {
+            writeBoardAndSync(board, {
+                silentSync: wantsJson,
+                command: 'task create apply',
+                actor: task.owner || task.executor || '',
+                expectRevision,
+            });
+        } catch (error) {
+            if (wantsJson) {
+                printTaskJsonError(printJson, error, 'create');
+                return;
+            }
+            throw error;
+        }
         const leaseMeta = getTaskWriteLeaseMeta(getLastBoardWriteMeta, task.id);
 
         const applyPayload = {
@@ -1419,11 +1507,24 @@ async function handleTaskCreate(ctx) {
     }
 
     if (!previewMode && !validateOnly) {
-        writeBoardAndSync(board, {
-            silentSync: wantsJson,
-            command: 'task create',
-            actor: task.owner || task.executor || '',
-        });
+        const expectRevision = parseExpectedRevisionFromFlags(
+            flags,
+            parseExpectedBoardRevisionFlag
+        );
+        try {
+            writeBoardAndSync(board, {
+                silentSync: wantsJson,
+                command: 'task create',
+                actor: task.owner || task.executor || '',
+                expectRevision,
+            });
+        } catch (error) {
+            if (wantsJson) {
+                printTaskJsonError(printJson, error, 'create');
+                return;
+            }
+            throw error;
+        }
     }
     const leaseMeta =
         !previewMode && !validateOnly

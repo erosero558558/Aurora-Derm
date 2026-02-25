@@ -50,6 +50,8 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 appendHandoffBoardEvent: ctx.appendHandoffBoardEvent,
                 currentDate: ctx.currentDate,
                 parseBoardForEvents: ctx.parseBoard,
+                parseExpectedBoardRevisionFlag:
+                    ctx.parseExpectedBoardRevisionFlag,
             });
         },
 
@@ -77,6 +79,8 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 writeBoard: ctx.writeBoard,
                 writeCodexActiveBlock: ctx.writeCodexActiveBlock,
                 parseCodexActiveBlocks: ctx.parseCodexActiveBlocks,
+                parseExpectedBoardRevisionFlag:
+                    ctx.parseExpectedBoardRevisionFlag,
                 buildBoardWipLimitDiagnostics:
                     ctx.buildBoardWipLimitDiagnostics,
                 runCodexCheck: () => runner.codexCheck([]),

@@ -144,19 +144,23 @@ node agent-orchestrator.js policy lint
 node agent-orchestrator.js policy lint --json
 node agent-orchestrator.js handoffs create --from AG-001 --to CDX-001 --files path/a,path/b --reason soporte --approved-by ernesto
 node agent-orchestrator.js handoffs close HO-001 --reason handoff_done
+node agent-orchestrator.js handoffs close HO-001 --reason handoff_done --expect-rev 12 --json
 node agent-orchestrator.js leases status
 node agent-orchestrator.js leases status --json
 node agent-orchestrator.js leases heartbeat AG-003 --ttl-hours 4 --json
+node agent-orchestrator.js leases heartbeat AG-003 --ttl-hours 4 --expect-rev 12 --json
 node agent-orchestrator.js leases clear AG-003 --reason manual_release --json
 node agent-orchestrator.js codex-check
 node agent-orchestrator.js codex-check --json
 node agent-orchestrator.js codex start CDX-001 --block C1
+node agent-orchestrator.js codex start CDX-001 --block C1 --expect-rev 12
 node agent-orchestrator.js codex stop CDX-001 --to review
 node agent-orchestrator.js board doctor
 node agent-orchestrator.js board doctor --json --profile ci
 node agent-orchestrator.js board events tail --json
 node agent-orchestrator.js board events stats --days 7 --json
 node agent-orchestrator.js task claim AG-003 --owner ernesto
+node agent-orchestrator.js task claim AG-003 --owner ernesto --expect-rev 12 --json
 node agent-orchestrator.js task ls --active --json
 node agent-orchestrator.js task ls --mine --active --json
 node agent-orchestrator.js task ls --executor codex --status in_progress --json
@@ -176,11 +180,13 @@ node agent-orchestrator.js task create --apply verification/task-create-preview.
 node agent-orchestrator.js task create preview-file diff verification/task-create-preview.json --json --format compact
 node agent-orchestrator.js task create --apply verification/task-create-preview.json --force-id-remap --to backlog --claim-owner ernesto --json
 node agent-orchestrator.js task start AG-003 --status in_progress
+node agent-orchestrator.js task start AG-003 --status in_progress --expect-rev 12 --json
 node agent-orchestrator.js task finish AG-003 --evidence verification/agent-runs/AG-003.md
 node agent-orchestrator.js task start AG-003 --json
 node agent-orchestrator.js sync
 node agent-orchestrator.js close <task_id>
 node agent-orchestrator.js close AG-003 --json
+node agent-orchestrator.js close AG-003 --evidence verification/agent-runs/AG-003.md --expect-rev 12 --json
 node agent-orchestrator.js metrics
 node agent-orchestrator.js metrics --json
 node agent-orchestrator.js metrics baseline show
@@ -252,6 +258,8 @@ Nota:
 - `leases status --json` y `board doctor --json` incluyen `diagnostics` + `warnings_count/errors_count`; `board doctor` agrega `checks` y `leases` para diagnostico semantico del board (warn-first).
 - `task claim/start --json` y `dispatch --json` pueden incluir warnings WIP (`warn.board.wip_limit_*`) en `diagnostics` sin cambiar exit code.
 - Operaciones mutantes del board generan trazabilidad append-only en `verification/agent-board-events.jsonl` (consultable con `board events tail/stats`).
+- Operaciones mutantes del board aceptan `--expect-rev <n>` (optimistic concurrency) en `task`, `codex`, `handoffs`, `leases` y `close`; si el board cambio desde la lectura, el comando falla con `error_code=board_revision_mismatch` en `--json`.
+- `AGENT_BOARD.yaml` mantiene `policy.revision` como contador aditivo de escrituras del board (incrementa en cada write mutante exitoso).
 - `task create --json` incluye `diagnostics` + `warnings_count/errors_count` (p. ej. `warn.task.from_files_fallback_default_scope` cuando `--from-files` cae en `scope=general`).
 - El summary/PR comment agrega seccion `Warn-first Diagnostics` consolidando warnings de gobernanza (globs amplios activos, handoffs por expirar, baseline faltante, keys desconocidas de policy).
 - La seccion `enforcement` en `governance-policy.json` gobierna severidad/enable de warnings y perfiles de rama (`fail_on_red`), con validacion en Node y contrato PHP.

@@ -1,5 +1,15 @@
 'use strict';
 
+function parseExpectedRevisionFromFlags(
+    flags = {},
+    parseExpectedBoardRevisionFlag
+) {
+    if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
+    const parsed = parseExpectedBoardRevisionFlag(flags);
+    if (parsed instanceof Error) throw parsed;
+    return parsed;
+}
+
 function handleCodexCheckCommand(ctx) {
     const {
         args = [],
@@ -51,6 +61,7 @@ function handleCodexCommand(ctx) {
         writeBoard,
         writeCodexActiveBlock,
         parseCodexActiveBlocks,
+        parseExpectedBoardRevisionFlag,
         buildBoardWipLimitDiagnostics,
         runCodexCheck,
     } = ctx;
@@ -78,6 +89,10 @@ function handleCodexCommand(ctx) {
     if (subcommand === 'start') {
         const block = String(flags.block || 'C1').trim();
         const filesOverride = flags.files ? parseCsvList(flags.files) : null;
+        const expectRevision = parseExpectedRevisionFromFlags(
+            flags,
+            parseExpectedBoardRevisionFlag
+        );
         const codexTasks = board.tasks.filter(
             (item) =>
                 /^CDX-\d+$/.test(String(item.id || '')) &&
@@ -100,6 +115,7 @@ function handleCodexCommand(ctx) {
         writeBoard(board, {
             command: 'codex start',
             actor: task.owner || task.executor || '',
+            expectRevision,
         });
         const wipDiagnostics =
             typeof buildBoardWipLimitDiagnostics === 'function'
@@ -126,6 +142,10 @@ function handleCodexCommand(ctx) {
     }
 
     const nextStatus = String(flags.to || 'review').trim();
+    const expectRevision = parseExpectedRevisionFromFlags(
+        flags,
+        parseExpectedBoardRevisionFlag
+    );
     if (!ALLOWED_STATUSES.has(nextStatus)) {
         throw new Error(`Status destino invalido: ${nextStatus}`);
     }
@@ -134,6 +154,7 @@ function handleCodexCommand(ctx) {
     writeBoard(board, {
         command: 'codex stop',
         actor: task.owner || task.executor || '',
+        expectRevision,
     });
 
     if (ACTIVE_STATUSES.has(nextStatus)) {
