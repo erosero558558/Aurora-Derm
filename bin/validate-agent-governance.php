@@ -725,6 +725,54 @@ if (is_array($governancePolicy)) {
             $errors[] = 'governance-policy.json tiene threshold invalido: summary.thresholds.domain_score_priority_yellow_below';
         }
     }
+
+    $enforcement = $governancePolicy['enforcement'] ?? null;
+    if ($enforcement !== null) {
+        if (!is_array($enforcement)) {
+            $errors[] = 'governance-policy.json requiere enforcement como objeto';
+        } else {
+            $branchProfiles = $enforcement['branch_profiles'] ?? null;
+            if (!is_array($branchProfiles)) {
+                $errors[] = 'governance-policy.json requiere enforcement.branch_profiles como objeto';
+            } else {
+                foreach ($branchProfiles as $branchName => $branchCfg) {
+                    if (!is_array($branchCfg)) {
+                        $errors[] = "governance-policy.json requiere enforcement.branch_profiles.{$branchName} como objeto";
+                        continue;
+                    }
+                    $failOnRed = trim((string) ($branchCfg['fail_on_red'] ?? ''));
+                    if (!in_array($failOnRed, ['warn', 'error', 'ignore'], true)) {
+                        $errors[] = "governance-policy.json tiene fail_on_red invalido en enforcement.branch_profiles.{$branchName}";
+                    }
+                }
+            }
+
+            $warningPolicies = $enforcement['warning_policies'] ?? null;
+            if (!is_array($warningPolicies)) {
+                $errors[] = 'governance-policy.json requiere enforcement.warning_policies como objeto';
+            } else {
+                foreach ($warningPolicies as $warningKey => $warningCfg) {
+                    if (!is_array($warningCfg)) {
+                        $errors[] = "governance-policy.json requiere enforcement.warning_policies.{$warningKey} como objeto";
+                        continue;
+                    }
+                    if (!array_key_exists('enabled', $warningCfg) || !is_bool($warningCfg['enabled'])) {
+                        $errors[] = "governance-policy.json requiere enforcement.warning_policies.{$warningKey}.enabled boolean";
+                    }
+                    $severity = trim((string) ($warningCfg['severity'] ?? ''));
+                    if (!in_array($severity, ['warning', 'error'], true)) {
+                        $errors[] = "governance-policy.json tiene severity invalido en enforcement.warning_policies.{$warningKey}";
+                    }
+                    if (array_key_exists('hours_threshold', $warningCfg)) {
+                        $hoursThreshold = $warningCfg['hours_threshold'];
+                        if (!is_numeric($hoursThreshold) || (float) $hoursThreshold <= 0) {
+                            $errors[] = "governance-policy.json tiene hours_threshold invalido en enforcement.warning_policies.{$warningKey}";
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 $handoffIds = [];
@@ -813,19 +861,9 @@ foreach (($handoffs['handoffs'] ?? []) as $handoff) {
         }
     }
 
-    if (is_array($fromTask) && is_array($toTask)) {
-        $overlap = analyzeFileOverlap(
-            is_array($fromTask['files'] ?? null) ? $fromTask['files'] : [],
-            is_array($toTask['files'] ?? null) ? $toTask['files'] : []
-        );
-        $overlapSet = array_fill_keys($overlap['overlap_files'], true);
-        foreach ($handoffFiles as $rawFile) {
-            $normalizedFile = normalizePathToken((string) $rawFile);
-            if ($normalizedFile !== '' && !isset($overlapSet[$normalizedFile])) {
-                $errors[] = "Handoff {$handoffId} incluye file fuera del solape real: {$rawFile}";
-            }
-        }
-    }
+    // Nota H6: la validacion de solape real (subset de files del handoff contra el
+    // overlap concreto entre tareas) queda canonica en Node (`handoffs lint`).
+    // Este contrato PHP se mantiene en checks estructurales/conservadores.
 }
 
 $codexBlocks = $codexPlanRaw !== '' ? parseCodexActiveBlocks($codexPlanRaw) : [];
@@ -885,19 +923,8 @@ if (count($codexBlocks) === 0) {
             $errors[] = "Task {$blockTaskId} tiene status desalineado entre CODEX_ACTIVE y AGENT_BOARD";
         }
 
-        $boardFilesSet = [];
-        foreach ((array) ($boardTask['files'] ?? []) as $rawBoardFile) {
-            $boardFilesSet[normalizePathToken((string) $rawBoardFile)] = true;
-        }
-        foreach ($blockFiles as $rawBlockFile) {
-            $normalized = normalizePathToken((string) $rawBlockFile);
-            if ($normalized === '') {
-                continue;
-            }
-            if (!isset($boardFilesSet[$normalized])) {
-                $errors[] = "Task {$blockTaskId} no reserva en AGENT_BOARD file de CODEX_ACTIVE: {$rawBlockFile}";
-            }
-        }
+        // Nota H6: la comparacion detallada de files entre CODEX_ACTIVE y AGENT_BOARD
+        // queda canonica en Node (`codex-check`). PHP conserva existencia/estatus/executor.
     }
 
     if (isActiveStatus($blockStatus) && empty($codexActive)) {

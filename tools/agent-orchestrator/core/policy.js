@@ -52,6 +52,17 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
     const errors = [];
     const warnings = [];
     const merged = shallowMerge(defaultPolicy || {}, rawPolicy || {});
+    const sourcePolicy =
+        rawPolicy && typeof rawPolicy === 'object' ? rawPolicy : {};
+
+    function warnUnknownKeys(obj, allowedKeys, pathPrefix) {
+        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+        for (const key of Object.keys(obj)) {
+            if (!allowedKeys.includes(key)) {
+                warnings.push(`${pathPrefix}.${key} unknown key`);
+            }
+        }
+    }
 
     const version = Number(merged?.version);
     if (!Number.isFinite(version) || version !== 1) {
@@ -165,6 +176,137 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
         );
     }
 
+    const enforcement = merged?.enforcement;
+    if (enforcement !== undefined) {
+        if (
+            !enforcement ||
+            typeof enforcement !== 'object' ||
+            Array.isArray(enforcement)
+        ) {
+            errors.push('enforcement debe ser objeto');
+        } else {
+            const branchProfiles = enforcement.branch_profiles;
+            const warningPolicies = enforcement.warning_policies;
+            if (
+                !branchProfiles ||
+                typeof branchProfiles !== 'object' ||
+                Array.isArray(branchProfiles)
+            ) {
+                errors.push('enforcement.branch_profiles debe ser objeto');
+            } else {
+                for (const [branchName, branchCfg] of Object.entries(
+                    branchProfiles
+                )) {
+                    if (
+                        !branchCfg ||
+                        typeof branchCfg !== 'object' ||
+                        Array.isArray(branchCfg)
+                    ) {
+                        errors.push(
+                            `enforcement.branch_profiles.${branchName} debe ser objeto`
+                        );
+                        continue;
+                    }
+                    const failOnRed = String(
+                        branchCfg.fail_on_red || ''
+                    ).trim();
+                    if (!['warn', 'error', 'ignore'].includes(failOnRed)) {
+                        errors.push(
+                            `enforcement.branch_profiles.${branchName}.fail_on_red invalido (${branchCfg.fail_on_red ?? 'vacio'})`
+                        );
+                    }
+                    warnUnknownKeys(
+                        sourcePolicy?.enforcement?.branch_profiles?.[
+                            branchName
+                        ],
+                        ['fail_on_red'],
+                        `enforcement.branch_profiles.${branchName}`
+                    );
+                }
+            }
+            if (
+                !warningPolicies ||
+                typeof warningPolicies !== 'object' ||
+                Array.isArray(warningPolicies)
+            ) {
+                errors.push('enforcement.warning_policies debe ser objeto');
+            } else {
+                for (const [policyName, policyCfg] of Object.entries(
+                    warningPolicies
+                )) {
+                    if (
+                        !policyCfg ||
+                        typeof policyCfg !== 'object' ||
+                        Array.isArray(policyCfg)
+                    ) {
+                        errors.push(
+                            `enforcement.warning_policies.${policyName} debe ser objeto`
+                        );
+                        continue;
+                    }
+                    if (typeof policyCfg.enabled !== 'boolean') {
+                        errors.push(
+                            `enforcement.warning_policies.${policyName}.enabled debe ser boolean`
+                        );
+                    }
+                    const severity = String(policyCfg.severity || '').trim();
+                    if (!['warning', 'error'].includes(severity)) {
+                        errors.push(
+                            `enforcement.warning_policies.${policyName}.severity invalido (${policyCfg.severity ?? 'vacio'})`
+                        );
+                    }
+                    if (
+                        Object.prototype.hasOwnProperty.call(
+                            policyCfg,
+                            'hours_threshold'
+                        )
+                    ) {
+                        const hoursThreshold = Number(
+                            policyCfg.hours_threshold
+                        );
+                        if (
+                            !Number.isFinite(hoursThreshold) ||
+                            hoursThreshold <= 0
+                        ) {
+                            errors.push(
+                                `enforcement.warning_policies.${policyName}.hours_threshold invalido (${policyCfg.hours_threshold})`
+                            );
+                        }
+                    }
+                    warnUnknownKeys(
+                        sourcePolicy?.enforcement?.warning_policies?.[
+                            policyName
+                        ],
+                        ['enabled', 'severity', 'hours_threshold'],
+                        `enforcement.warning_policies.${policyName}`
+                    );
+                }
+            }
+            warnUnknownKeys(
+                sourcePolicy?.enforcement,
+                ['branch_profiles', 'warning_policies'],
+                'enforcement'
+            );
+        }
+    }
+
+    warnUnknownKeys(
+        sourcePolicy,
+        ['version', 'domain_health', 'summary', 'enforcement'],
+        'root'
+    );
+    warnUnknownKeys(
+        sourcePolicy?.domain_health,
+        ['priority_domains', 'domain_weights', 'signal_scores'],
+        'domain_health'
+    );
+    warnUnknownKeys(sourcePolicy?.summary, ['thresholds'], 'summary');
+    warnUnknownKeys(
+        sourcePolicy?.summary?.thresholds,
+        ['domain_score_priority_yellow_below'],
+        'summary.thresholds'
+    );
+
     return {
         version: 1,
         ok: errors.length === 0,
@@ -200,6 +342,26 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                         : null,
                 },
             },
+            enforcement:
+                enforcement &&
+                typeof enforcement === 'object' &&
+                !Array.isArray(enforcement)
+                    ? {
+                          branch_profiles:
+                              enforcement.branch_profiles &&
+                              typeof enforcement.branch_profiles === 'object' &&
+                              !Array.isArray(enforcement.branch_profiles)
+                                  ? enforcement.branch_profiles
+                                  : {},
+                          warning_policies:
+                              enforcement.warning_policies &&
+                              typeof enforcement.warning_policies ===
+                                  'object' &&
+                              !Array.isArray(enforcement.warning_policies)
+                                  ? enforcement.warning_policies
+                                  : {},
+                      }
+                    : { branch_profiles: {}, warning_policies: {} },
         },
         source: {
             path: 'governance-policy.json',

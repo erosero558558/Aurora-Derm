@@ -840,6 +840,44 @@ test('task create --from-files autoajusta executor para scope critico si no se p
     assert.equal(json.executor_source, 'from_files_auto');
 });
 
+test('task create --from-files agrega diagnostics cuando cae en scope general por fallback', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCli(dir, [
+        'task',
+        'create',
+        '--title',
+        'Fallback scope task',
+        '--from-files',
+        '--preview',
+        '--files',
+        '/',
+        '--executor',
+        'kimi',
+        '--json',
+    ]);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.from_files, true);
+    assert.equal(json.file_inference.scope, 'general');
+    assert.equal(json.scope_source, 'from_files');
+    assert.equal(Array.isArray(json.diagnostics), true);
+    assert.equal(json.warnings_count >= 1, true);
+    assert.equal(
+        json.diagnostics.some(
+            (d) => d.code === 'warn.task.from_files_fallback_default_scope'
+        ),
+        true
+    );
+});
+
 test('task create --preview/--dry-run no escribe board ni colas derivadas', (t) => {
     const dir = createFixtureDir();
     t.after(() => cleanupFixtureDir(dir));

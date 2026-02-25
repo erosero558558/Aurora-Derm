@@ -154,3 +154,137 @@ test('metrics-engine contribution signal y pp delta mantienen semantica', () => 
     assert.equal(metrics.formatPpDelta(-1), '-1pp');
     assert.equal(metrics.formatPpDelta('x'), 'n/a');
 });
+
+test('metrics-engine buildDomainHealth calcula semaforo y score por dominio', () => {
+    const tasks = [
+        {
+            id: 'AG-001',
+            scope: 'calendar',
+            files: ['lib/calendar/CalendarBookingService.php'],
+            status: 'in_progress',
+        },
+        {
+            id: 'AG-002',
+            scope: 'chat',
+            files: ['tests/chat-flow-errors.spec.js'],
+            status: 'done',
+        },
+        {
+            id: 'AG-003',
+            scope: 'payments',
+            files: ['payments/stripe.php'],
+            status: 'failed',
+        },
+    ];
+    const conflicts = {
+        all: [
+            {
+                left: tasks[0],
+                right: tasks[1],
+                exempted_by_handoff: true,
+            },
+            {
+                left: tasks[0],
+                right: tasks[2],
+                exempted_by_handoff: false,
+            },
+        ],
+    };
+    const handoffs = [
+        {
+            id: 'HO-001',
+            status: 'active',
+            from_task: 'AG-001',
+            to_task: 'AG-002',
+            expires_at: '2026-02-24T00:00:00.000Z',
+        },
+    ];
+
+    const report = metrics.buildDomainHealth(tasks, conflicts, handoffs, {
+        getGovernancePolicy: () => ({
+            domain_health: {
+                priority_domains: ['calendar', 'chat', 'payments'],
+                domain_weights: {
+                    calendar: 5,
+                    chat: 3,
+                    payments: 2,
+                    default: 1,
+                },
+                signal_scores: { GREEN: 100, YELLOW: 60, RED: 0 },
+            },
+        }),
+        shallowMerge: (a, b) => ({ ...(a || {}), ...(b || {}) }),
+        defaultPriorityDomains: ['calendar', 'chat', 'payments'],
+        defaultDomainHealthWeights: {
+            calendar: 5,
+            chat: 3,
+            payments: 2,
+            default: 1,
+        },
+        defaultDomainSignalScores: { GREEN: 100, YELLOW: 60, RED: 0 },
+        activeStatuses: ACTIVE_STATUSES,
+        isExpired: () => true,
+        normalizePathToken: (v) =>
+            String(v || '')
+                .replace(/\\/g, '/')
+                .toLowerCase(),
+        policyExists: true,
+    });
+
+    assert.equal(report.scoring.policy_source, 'governance-policy.json');
+    assert.equal(report.domains.calendar.signal, 'RED');
+    assert.equal(report.domains.chat.signal, 'YELLOW');
+    assert.equal(report.domains.payments.signal, 'RED');
+    assert.equal(report.totals.by_signal.RED >= 2, true);
+    assert.equal(
+        report.ranking
+            .slice(0, 3)
+            .map((r) => r.domain)
+            .join(','),
+        'calendar,chat,payments'
+    );
+});
+
+test('metrics-engine domain health history summary detecta regresion GREEN->RED', () => {
+    let history = metrics.upsertDomainHealthHistory(
+        null,
+        {
+            ranking: [
+                {
+                    domain: 'calendar',
+                    signal: 'GREEN',
+                    tasks_total: 1,
+                    active_tasks: 0,
+                    done_tasks: 1,
+                    blocking_conflicts: 0,
+                    handoff_conflicts: 0,
+                    active_expired_handoffs: 0,
+                },
+            ],
+        },
+        { nowIso: '2026-02-24T10:00:00.000Z' }
+    );
+    history = metrics.upsertDomainHealthHistory(
+        history,
+        {
+            ranking: [
+                {
+                    domain: 'calendar',
+                    signal: 'RED',
+                    tasks_total: 1,
+                    active_tasks: 1,
+                    done_tasks: 0,
+                    blocking_conflicts: 1,
+                    handoff_conflicts: 0,
+                    active_expired_handoffs: 0,
+                },
+            ],
+        },
+        { nowIso: '2026-02-25T10:00:00.000Z' }
+    );
+
+    const summary = metrics.buildDomainHealthHistorySummary(history, 7);
+    assert.equal(summary.window_delta.available, true);
+    assert.equal(summary.regressions.green_to_red.length, 1);
+    assert.equal(summary.regressions.green_to_red[0].domain, 'calendar');
+});

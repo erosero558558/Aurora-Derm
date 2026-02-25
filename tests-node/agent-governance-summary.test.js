@@ -19,6 +19,7 @@ const { spawnSync } = require('child_process');
 const REPO_ROOT = resolve(__dirname, '..');
 const ORCHESTRATOR_SOURCE = join(REPO_ROOT, 'agent-orchestrator.js');
 const ORCHESTRATOR_TOOLS_DIR = join(REPO_ROOT, 'tools', 'agent-orchestrator');
+const GOVERNANCE_POLICY_SOURCE = join(REPO_ROOT, 'governance-policy.json');
 const SUMMARY_SCRIPT = join(REPO_ROOT, 'bin', 'agent-governance-summary.js');
 const DATE = '2026-02-24';
 
@@ -28,6 +29,7 @@ function createFixtureDir() {
     cpSync(ORCHESTRATOR_TOOLS_DIR, join(dir, 'tools', 'agent-orchestrator'), {
         recursive: true,
     });
+    copyFileSync(GOVERNANCE_POLICY_SOURCE, join(dir, 'governance-policy.json'));
     return dir;
 }
 
@@ -209,6 +211,64 @@ function runSummary(dir, args = []) {
     return result;
 }
 
+function assertSummaryJsonContractShape(parsed) {
+    assert.equal(typeof parsed, 'object');
+    assert.equal(parsed.version, 1);
+
+    assert.equal(typeof parsed.overall, 'object');
+    assert.equal(typeof parsed.overall.ok, 'boolean');
+    assert.equal(typeof parsed.overall.signal, 'string');
+    assert.equal(Array.isArray(parsed.overall.reasons), true);
+    assert.equal(Array.isArray(parsed.overall.blockers), true);
+
+    assert.equal(typeof parsed.policies, 'object');
+    assert.equal(typeof parsed.policies.strict, 'object');
+    assert.equal(typeof parsed.policies.strict.pass, 'boolean');
+    assert.equal(typeof parsed.policies.strict.reason, 'string');
+    assert.equal(typeof parsed.policies.fail_on_red, 'object');
+    assert.equal(typeof parsed.policies.fail_on_red.pass, 'boolean');
+    assert.equal(typeof parsed.policies.fail_on_red.reason, 'string');
+
+    assert.equal(typeof parsed.delta_summary, 'object');
+    assert.equal(typeof parsed.delta_summary.conflicts_blocking, 'object');
+    assert.equal(
+        typeof parsed.delta_summary.conflicts_blocking.delta,
+        'number'
+    );
+    assert.equal(typeof parsed.delta_summary.conflicts_handoff, 'object');
+    assert.equal(typeof parsed.delta_summary.conflicts_handoff.delta, 'number');
+
+    assert.equal(Array.isArray(parsed.diagnostics), true);
+    assert.equal(typeof parsed.warnings_count, 'number');
+    assert.equal(typeof parsed.errors_count, 'number');
+
+    assert.equal(typeof parsed.commands, 'object');
+    for (const key of [
+        'status',
+        'conflicts',
+        'handoffsStatus',
+        'handoffsLint',
+        'policy',
+        'codexCheck',
+        'metrics',
+    ]) {
+        assert.equal(typeof parsed.commands[key], 'object');
+        assert.equal(typeof parsed.commands[key].exit_code, 'number');
+        assert.equal(typeof parsed.commands[key].command, 'string');
+    }
+
+    assert.equal(typeof parsed.status, 'object');
+    assert.equal(typeof parsed.conflicts, 'object');
+    assert.equal(typeof parsed.handoffs, 'object');
+    assert.equal(typeof parsed.handoffs.status, 'object');
+    assert.equal(typeof parsed.handoffs.lint, 'object');
+    assert.equal(typeof parsed.policy, 'object');
+    assert.equal(typeof parsed.codex_check, 'object');
+    assert.equal(typeof parsed.metrics, 'object');
+    assert.equal(typeof parsed.domain_health, 'object');
+    assert.equal(typeof parsed.contribution, 'object');
+}
+
 test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) => {
     const dir = createFixtureDir();
     t.after(() => cleanupFixtureDir(dir));
@@ -247,6 +307,7 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.equal(parsed.status.totals.tasks, 2);
     assert.equal(parsed.conflicts.totals.blocking, 0);
     assert.equal(parsed.handoffs.lint.ok, true);
+    assert.equal(parsed.policy.ok, true);
     assert.equal(parsed.codex_check.ok, true);
     assert.equal(parsed.metrics.version, 1);
     assert.ok(parsed.contribution);
@@ -263,7 +324,11 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
         'number'
     );
     assert.equal(typeof parsed.delta_summary.conflicts_handoff.delta, 'number');
+    assert.equal(Array.isArray(parsed.diagnostics), true);
+    assert.equal(typeof parsed.warnings_count, 'number');
+    assert.equal(typeof parsed.errors_count, 'number');
     assert.equal(parsed.commands.status.exit_code, 0);
+    assert.equal(parsed.commands.policy.exit_code, 0);
     assert.equal(parsed.commands.metrics.exit_code, 0);
     assert.match(
         parsed.commands.metrics.command,
@@ -287,12 +352,26 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /Regresiones dominio GREEN->RED:/);
     assert.match(writtenMd, /Razones:\s+`stable`/);
     assert.match(writtenMd, /Politicas:\s+strict=PASS/);
+    assert.match(writtenMd, /Diagnostics warn-first:/);
     assert.match(writtenMd, /Delta vs Baseline \(Conflicts\/Handoffs\)/);
     assert.match(writtenMd, /Semaforo Por Dominio/);
     assert.match(writtenMd, /Historico Salud por Dominio/);
     assert.match(writtenMd, /Aporte Por Agente/);
     assert.match(writtenMd, /Historico Aporte/);
+    assert.match(writtenMd, /Warn-first Diagnostics/);
     assert.match(writtenMd, /\[GREEN\].*jules|\[GREEN\].*codex/);
+});
+
+test('agent-governance-summary mantiene contrato JSON minimo estable', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+    writeFixtureFiles(dir);
+
+    const result = runSummary(dir, ['--format', 'json']);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const parsed = JSON.parse(result.stdout);
+    assertSummaryJsonContractShape(parsed);
 });
 
 test('agent-governance-summary alerta regresion de dominio GREEN->RED en PR summary', (t) => {

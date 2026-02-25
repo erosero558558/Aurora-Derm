@@ -38,6 +38,8 @@ async function handleTaskCommand(ctx) {
         CRITICAL_SCOPE_KEYWORDS,
         CRITICAL_SCOPE_ALLOWED_EXECUTORS,
         buildTaskCreateInferenceExplainLines,
+        buildTaskCreateWarnDiagnostics,
+        attachDiagnostics,
         printJson,
     } = ctx;
 
@@ -111,6 +113,8 @@ async function handleTaskCommand(ctx) {
             currentDate,
             writeBoardAndSync,
             buildTaskCreateInferenceExplainLines,
+            buildTaskCreateWarnDiagnostics,
+            attachDiagnostics,
             printJson,
         });
         return;
@@ -613,6 +617,8 @@ async function handleTaskCreate(ctx) {
         currentDate,
         writeBoardAndSync,
         buildTaskCreateInferenceExplainLines,
+        buildTaskCreateWarnDiagnostics,
+        attachDiagnostics,
         printJson,
     } = ctx;
     let { flags } = ctx;
@@ -1300,8 +1306,19 @@ async function handleTaskCreate(ctx) {
         writeBoardAndSync(board, { silentSync: wantsJson });
     }
 
+    const taskCreateDiagnostics = buildTaskCreateWarnDiagnostics({
+        fromFilesEnabled,
+        fileInference,
+        scopeSource,
+        task,
+    });
+    const createPayloadWithDiagnostics = attachDiagnostics(
+        createPayload,
+        taskCreateDiagnostics
+    );
+
     if (wantsJson) {
-        printJson(createPayload);
+        printJson(createPayloadWithDiagnostics);
         return;
     }
 
@@ -1315,6 +1332,11 @@ async function handleTaskCreate(ctx) {
     console.log(
         `Task create ${validateOnly ? 'VALIDATE OK' : previewMode ? 'PREVIEW' : 'OK'}: ${newId} [${status}] exec=${executor}${template ? ` template=${template.name}` : ''}${fromFilesEnabled ? ' from-files=true' : ''}${executorSource !== 'flag' ? ` executor-source=${executorSource}` : ''}${previewMode || validateOnly ? ' (no-write)' : ''}`
     );
+    for (const diag of taskCreateDiagnostics) {
+        console.log(
+            `WARN [${String(diag.code || '').trim() || 'warn.unknown'}]: ${diag.message || ''}`
+        );
+    }
 }
 
 module.exports = {

@@ -4,6 +4,16 @@ const { readFileSync, existsSync } = require('fs');
 const readline = require('readline');
 const { resolve } = require('path');
 
+function nextAgentTaskId(tasks) {
+    let max = 0;
+    for (const task of tasks || []) {
+        const match = String(task?.id || '').match(/^AG-(\d+)$/);
+        if (!match) continue;
+        max = Math.max(max, Number(match[1]));
+    }
+    return `AG-${String(max + 1).padStart(3, '0')}`;
+}
+
 function resolveTaskCreateTemplate(templateNameRaw, options = {}) {
     const templates = options.templates || {};
     const templateName = String(templateNameRaw || '')
@@ -494,6 +504,7 @@ function buildTaskCreatePreviewDiff(existingTask, previewTask, options = {}) {
 }
 
 module.exports = {
+    nextAgentTaskId,
     resolveTaskCreateTemplate,
     inferTaskCreateFromFiles,
     buildTaskCreateInferenceExplainLines,

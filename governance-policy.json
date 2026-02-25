@@ -18,5 +18,44 @@
         "thresholds": {
             "domain_score_priority_yellow_below": 80
         }
+    },
+    "enforcement": {
+        "branch_profiles": {
+            "pull_request": {
+                "fail_on_red": "warn"
+            },
+            "main": {
+                "fail_on_red": "warn"
+            },
+            "staging": {
+                "fail_on_red": "warn"
+            },
+            "workflow_dispatch": {
+                "fail_on_red": "warn"
+            }
+        },
+        "warning_policies": {
+            "active_broad_glob": {
+                "severity": "warning",
+                "enabled": true
+            },
+            "handoff_expiring_soon": {
+                "severity": "warning",
+                "enabled": true,
+                "hours_threshold": 4
+            },
+            "metrics_baseline_missing": {
+                "severity": "warning",
+                "enabled": true
+            },
+            "from_files_fallback_default_scope": {
+                "severity": "warning",
+                "enabled": true
+            },
+            "policy_unknown_keys": {
+                "severity": "warning",
+                "enabled": true
+            }
+        }
     }
 }
