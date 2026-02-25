@@ -29,6 +29,8 @@ const corePolicy = require('./tools/agent-orchestrator/core/policy');
 const coreTime = require('./tools/agent-orchestrator/core/time');
 const coreOutput = require('./tools/agent-orchestrator/core/output');
 const domainConflicts = require('./tools/agent-orchestrator/domain/conflicts');
+const domainHandoffs = require('./tools/agent-orchestrator/domain/handoffs');
+const domainCodexMirror = require('./tools/agent-orchestrator/domain/codex-mirror');
 const domainTaskGuards = require('./tools/agent-orchestrator/domain/task-guards');
 const domainTaskCreate = require('./tools/agent-orchestrator/domain/task-create');
 const domainDiagnostics = require('./tools/agent-orchestrator/domain/diagnostics');
@@ -1087,121 +1089,18 @@ function cmdPolicy(args = []) {
 }
 
 function getHandoffLintErrors() {
-    const errors = [];
-    const board = parseBoard();
-    const handoffData = parseHandoffs();
-    const handoffs = Array.isArray(handoffData.handoffs)
-        ? handoffData.handoffs
-        : [];
-    const byId = new Map(board.tasks.map((task) => [String(task.id), task]));
-    const seenHandoffIds = new Set();
-
-    if (String(handoffData.version) !== '1') {
-        errors.push(
-            `AGENT_HANDOFFS.yaml version invalida: ${handoffData.version}`
-        );
-    }
-
-    for (const handoff of handoffs) {
-        const id = String(handoff.id || '').trim();
-        if (!id) {
-            errors.push('handoff sin id');
-            continue;
+    return domainHandoffs.getHandoffLintErrors(
+        {
+            board: parseBoard(),
+            handoffData: parseHandoffs(),
+        },
+        {
+            analyzeFileOverlap,
+            normalizePathToken,
+            isExpired,
+            activeStatuses: ACTIVE_STATUSES,
         }
-        if (!/^HO-\d+$/.test(id)) {
-            errors.push(`${id}: formato de id invalido (esperado HO-###)`);
-        }
-        if (seenHandoffIds.has(id)) {
-            errors.push(`${id}: id duplicado`);
-        }
-        seenHandoffIds.add(id);
-
-        const status = String(handoff.status || '').toLowerCase();
-        if (!['active', 'closed'].includes(status)) {
-            errors.push(`${id}: status invalido (${status || 'vacio'})`);
-        }
-
-        const fromTaskId = String(handoff.from_task || '');
-        const toTaskId = String(handoff.to_task || '');
-        const fromTask = byId.get(fromTaskId);
-        const toTask = byId.get(toTaskId);
-        if (!fromTask)
-            errors.push(
-                `${id}: from_task inexistente (${fromTaskId || 'vacio'})`
-            );
-        if (!toTask)
-            errors.push(`${id}: to_task inexistente (${toTaskId || 'vacio'})`);
-        if (fromTaskId && toTaskId && fromTaskId === toTaskId) {
-            errors.push(`${id}: from_task y to_task no pueden ser iguales`);
-        }
-
-        const files = Array.isArray(handoff.files) ? handoff.files : [];
-        if (files.length === 0) {
-            errors.push(`${id}: files debe contener al menos un path`);
-        }
-        for (const rawFile of files) {
-            const file = String(rawFile || '').trim();
-            if (!file) {
-                errors.push(`${id}: files contiene path vacio`);
-                continue;
-            }
-            if (file.includes('*')) {
-                errors.push(`${id}: handoff no permite wildcards (${file})`);
-            }
-            if (file === '/' || file === '.' || file === './') {
-                errors.push(`${id}: handoff demasiado amplio (${file})`);
-            }
-        }
-
-        const createdMs = Date.parse(String(handoff.created_at || ''));
-        const expiresMs = Date.parse(String(handoff.expires_at || ''));
-        if (!Number.isFinite(createdMs)) {
-            errors.push(`${id}: created_at invalido`);
-        }
-        if (!Number.isFinite(expiresMs)) {
-            errors.push(`${id}: expires_at invalido`);
-        }
-        if (Number.isFinite(createdMs) && Number.isFinite(expiresMs)) {
-            if (expiresMs <= createdMs) {
-                errors.push(`${id}: expires_at debe ser mayor que created_at`);
-            }
-            const hours = (expiresMs - createdMs) / (1000 * 60 * 60);
-            if (hours > 48) {
-                errors.push(`${id}: TTL excede 48h (${hours.toFixed(1)}h)`);
-            }
-        }
-
-        if (status === 'active') {
-            if (isExpired(handoff.expires_at)) {
-                errors.push(`${id}: handoff activo pero expirado`);
-            }
-            if (fromTask && !ACTIVE_STATUSES.has(fromTask.status)) {
-                errors.push(
-                    `${id}: from_task no esta activo (${fromTask.id}:${fromTask.status})`
-                );
-            }
-            if (toTask && !ACTIVE_STATUSES.has(toTask.status)) {
-                errors.push(
-                    `${id}: to_task no esta activo (${toTask.id}:${toTask.status})`
-                );
-            }
-        }
-
-        if (fromTask && toTask && files.length > 0) {
-            const overlap = analyzeFileOverlap(fromTask.files, toTask.files);
-            const overlapSet = new Set(overlap.overlapFiles);
-            for (const rawFile of files) {
-                const file = normalizePathToken(rawFile);
-                if (file && !overlapSet.has(file)) {
-                    errors.push(
-                        `${id}: file ${rawFile} no pertenece al solape concreto entre ${fromTask.id} y ${toTask.id}`
-                    );
-                }
-            }
-        }
-    }
-
-    return errors;
+    );
 }
 
 function cmdHandoffs(args) {
@@ -1229,131 +1128,17 @@ function cmdHandoffs(args) {
 }
 
 function buildCodexCheckReport() {
-    const board = parseBoard();
-    const blocks = parseCodexActiveBlocks();
-    const errors = [];
-    const codexTasks = board.tasks.filter((task) =>
-        /^CDX-\d+$/.test(String(task.id || ''))
-    );
-    const codexInProgress = codexTasks.filter(
-        (task) => task.status === 'in_progress'
-    );
-    const activeCodexTasks = codexTasks.filter((task) =>
-        ACTIVE_STATUSES.has(task.status)
-    );
-
-    if (codexInProgress.length > 1) {
-        errors.push(
-            `Mas de un CDX in_progress (${codexInProgress.map((t) => t.id).join(', ')})`
-        );
-    }
-
-    if (blocks.length > 1) {
-        errors.push(`Mas de un bloque CODEX_ACTIVE en ${CODEX_PLAN_PATH}`);
-    }
-
-    if (blocks.length === 0) {
-        if (activeCodexTasks.length > 0) {
-            errors.push(
-                `Hay tareas CDX activas sin bloque CODEX_ACTIVE: ${activeCodexTasks
-                    .map((task) => task.id)
-                    .join(', ')}`
-            );
-        }
-    } else {
-        const block = blocks[0];
-        const taskId = String(block.task_id || '').trim();
-        const blockStatus = String(block.status || '').trim();
-        const blockFiles = Array.isArray(block.files)
-            ? block.files.map(normalizePathToken)
-            : [];
-        const task = board.tasks.find((item) => String(item.id) === taskId);
-
-        if (!taskId) {
-            errors.push('CODEX_ACTIVE.task_id vacio');
-        }
-        if (!/^CDX-\d+$/.test(taskId)) {
-            errors.push(`CODEX_ACTIVE.task_id invalido (${taskId || 'vacio'})`);
-        }
-        if (!task) {
-            errors.push(
-                `CODEX_ACTIVE.task_id no existe en board: ${taskId || 'vacio'}`
-            );
-        } else {
-            if (String(task.executor) !== 'codex') {
-                errors.push(
-                    `${task.id}: executor debe ser codex (actual: ${task.executor})`
-                );
-            }
-            if (blockStatus !== String(task.status)) {
-                errors.push(
-                    `${task.id}: status desalineado plan(${blockStatus || 'vacio'}) != board(${task.status})`
-                );
-            }
-            const boardFiles = new Set(
-                (task.files || []).map(normalizePathToken)
-            );
-            for (const file of blockFiles) {
-                if (!boardFiles.has(file)) {
-                    errors.push(
-                        `${task.id}: file del bloque CODEX_ACTIVE no reservado en board (${file})`
-                    );
-                }
-            }
-        }
-
-        if (activeCodexTasks.length === 0 && ACTIVE_STATUSES.has(blockStatus)) {
-            errors.push(
-                'CODEX_ACTIVE indica tarea activa pero no hay CDX activo en board'
-            );
-        }
-    }
-
-    const activeBlock = blocks[0] || null;
-    const activeBlockTaskId = activeBlock
-        ? String(activeBlock.task_id || '').trim()
-        : '';
-    const activeBlockTask = activeBlockTaskId
-        ? board.tasks.find((item) => String(item.id) === activeBlockTaskId) ||
-          null
-        : null;
-
-    return {
-        version: 1,
-        ok: errors.length === 0,
-        error_count: errors.length,
-        errors,
-        summary: {
-            codex_tasks_total: codexTasks.length,
-            codex_in_progress: codexInProgress.length,
-            codex_active: activeCodexTasks.length,
-            plan_blocks: blocks.length,
+    return domainCodexMirror.buildCodexCheckReport(
+        {
+            board: parseBoard(),
+            blocks: parseCodexActiveBlocks(),
+            codexPlanPath: CODEX_PLAN_PATH,
         },
-        codex_task_ids: codexTasks.map((task) => String(task.id)),
-        codex_in_progress_ids: codexInProgress.map((task) => String(task.id)),
-        codex_active_ids: activeCodexTasks.map((task) => String(task.id)),
-        plan_block: activeBlock
-            ? {
-                  block: String(activeBlock.block || ''),
-                  task_id: String(activeBlock.task_id || ''),
-                  status: String(activeBlock.status || ''),
-                  files: Array.isArray(activeBlock.files)
-                      ? activeBlock.files
-                      : [],
-                  updated_at: String(activeBlock.updated_at || ''),
-              }
-            : null,
-        board_task_for_plan_block: activeBlockTask
-            ? {
-                  id: String(activeBlockTask.id || ''),
-                  executor: String(activeBlockTask.executor || ''),
-                  status: String(activeBlockTask.status || ''),
-                  files: Array.isArray(activeBlockTask.files)
-                      ? activeBlockTask.files
-                      : [],
-              }
-            : null,
-    };
+        {
+            normalizePathToken,
+            activeStatuses: ACTIVE_STATUSES,
+        }
+    );
 }
 
 function cmdCodexCheck(args = []) {
