@@ -30,10 +30,40 @@ class ValidationTest extends TestCase
         $result = validate_future_date('2025-01-01', 'invalid');
         $this->assertFalse($result['ok']);
 
-        // Today, but past time
-        // This is tricky to test deterministically without mocking local_date or time()
-        // but local_date uses date() which uses system time.
-        // We can skip "today" tests or just test the 1 hour buffer if possible.
+        // Test Same-Day Booking logic with mocked time
+        $mockDate = '2025-06-15';
+        $mockTime = '10:00'; // Current time is 10:00
+
+        // 1. Booking in the past (same day)
+        // 09:00 < 10:00 -> Fail
+        $result = validate_future_date($mockDate, '09:00', $mockDate, $mockTime);
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('ya pasó', $result['error']);
+
+        // 2. Booking exact same time
+        // 10:00 == 10:00 -> Fail (need 1h buffer)
+        $result = validate_future_date($mockDate, '10:00', $mockDate, $mockTime);
+        $this->assertFalse($result['ok']);
+
+        // 3. Booking 30 mins later
+        // 10:30 < 11:00 -> Fail
+        $result = validate_future_date($mockDate, '10:30', $mockDate, $mockTime);
+        $this->assertFalse($result['ok']);
+
+        // 4. Booking exactly 1 hour later
+        // 11:00 == 10:00 + 1h -> Fail (logic says <= 60 mins)
+        $result = validate_future_date($mockDate, '11:00', $mockDate, $mockTime);
+        $this->assertFalse($result['ok']);
+
+        // 5. Booking 1 hour and 1 min later
+        // 11:01 > 11:00 -> Pass
+        $result = validate_future_date($mockDate, '11:01', $mockDate, $mockTime);
+        $this->assertTrue($result['ok']);
+
+        // 6. Booking 2 hours later
+        // 12:00 > 11:00 -> Pass
+        $result = validate_future_date($mockDate, '12:00', $mockDate, $mockTime);
+        $this->assertTrue($result['ok']);
     }
 
     public function testValidateServiceExists(): void

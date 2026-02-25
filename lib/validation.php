@@ -162,7 +162,7 @@ function validate_time_format(string $time): bool
  *
  * @return array ['ok' => bool, 'error' => string|null]
  */
-function validate_future_date(string $date, string $time): array
+function validate_future_date(string $date, string $time, ?string $currentDate = null, ?string $currentTime = null): array
 {
     if ($date === '' || $time === '') {
         return ['ok' => false, 'error' => 'Fecha y hora son obligatorias'];
@@ -176,13 +176,19 @@ function validate_future_date(string $date, string $time): array
         return ['ok' => false, 'error' => 'Formato de hora inválido (HH:MM)'];
     }
 
-    $today = local_date('Y-m-d');
+    $today = $currentDate ?? local_date('Y-m-d');
     if ($date < $today) {
         return ['ok' => false, 'error' => 'No se puede agendar en una fecha pasada'];
     }
 
     if ($date === $today) {
-        $nowMinutes = (int) local_date('H') * 60 + (int) local_date('i');
+        if ($currentTime !== null) {
+            $partsNow = explode(':', $currentTime);
+            $nowMinutes = (int) ($partsNow[0] ?? 0) * 60 + (int) ($partsNow[1] ?? 0);
+        } else {
+            $nowMinutes = (int) local_date('H') * 60 + (int) local_date('i');
+        }
+
         $parts = explode(':', $time);
         $slotMinutes = (int) ($parts[0] ?? 0) * 60 + (int) ($parts[1] ?? 0);
         // Allow booking only 1 hour ahead
