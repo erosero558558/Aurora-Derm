@@ -97,7 +97,7 @@ Criterio de salida:
 
 ## C4 - Guardrails de release y CI
 
-Estado: `PENDING`
+Estado: `COMPLETED`
 Objetivo:
 
 - Evitar que cambios de bajo nivel rompan deploy o comportamiento critico.
