@@ -78,6 +78,7 @@ jobs:
                     "report_json_path=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "report_md_path=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "warnings_count=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "warnings_list=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_no_show_rate_pct=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_recurrence_rate_pct=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_no_show_rate_delta_pct=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -85,6 +86,9 @@ jobs:
                     "retention_appointments_total=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_unique_patients=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_recurrent_patients=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "latency_core_p95_max_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "latency_figo_post_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "latency_availability_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     exit 0
                   }
 
@@ -97,9 +101,11 @@ jobs:
                     if ($payload.warnings) {
                       $warningsCount = @($payload.warnings).Count
                     }
+                    $warningsList = if ($payload.warnings) { (@($payload.warnings) -join ', ') } else { 'none' }
 
                     $retention = $payload.retention
                     $retentionTrend = $payload.retentionTrend
+                    $latency = $payload.latency
                     $noShowRate = if ($null -ne $retention) { $retention.noShowRatePct } else { 'n/a' }
                     $recurrenceRate = if ($null -ne $retention) { $retention.recurrenceRatePct } else { 'n/a' }
                     $appointmentsTotal = if ($null -ne $retention) { $retention.appointmentsTotal } else { 'n/a' }
@@ -107,8 +113,16 @@ jobs:
                     $recurrentPatients = if ($null -ne $retention) { $retention.recurrentPatients } else { 'n/a' }
                     $noShowRateDelta = if ($null -ne $retentionTrend -and $null -ne $retentionTrend.noShowRateDeltaPct) { $retentionTrend.noShowRateDeltaPct } else { 'n/a' }
                     $recurrenceRateDelta = if ($null -ne $retentionTrend -and $null -ne $retentionTrend.recurrenceRateDeltaPct) { $retentionTrend.recurrenceRateDeltaPct } else { 'n/a' }
+                    $coreP95MaxMs = if ($null -ne $latency) { $latency.coreP95MaxMs } else { 'n/a' }
+                    $figoPostP95Ms = if ($null -ne $latency) { $latency.figoPostP95Ms } else { 'n/a' }
+                    $availabilityBench = $null
+                    if ($null -ne $latency -and $latency.bench) {
+                      $availabilityBench = @($latency.bench | Where-Object { $_.Name -eq 'availability' } | Select-Object -First 1)[0]
+                    }
+                    $availabilityP95Ms = if ($null -ne $availabilityBench) { $availabilityBench.P95Ms } else { 'n/a' }
                   } catch {
                     $warningsCount = -1
+                    $warningsList = 'n/a'
                     $noShowRate = 'n/a'
                     $recurrenceRate = 'n/a'
                     $appointmentsTotal = 'n/a'
@@ -116,11 +130,15 @@ jobs:
                     $recurrentPatients = 'n/a'
                     $noShowRateDelta = 'n/a'
                     $recurrenceRateDelta = 'n/a'
+                    $coreP95MaxMs = 'n/a'
+                    $figoPostP95Ms = 'n/a'
+                    $availabilityP95Ms = 'n/a'
                   }
 
                   "report_json_path=$jsonPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "report_md_path=$mdPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "warnings_count=$warningsCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "warnings_list=$warningsList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_no_show_rate_pct=$noShowRate" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_recurrence_rate_pct=$recurrenceRate" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_no_show_rate_delta_pct=$noShowRateDelta" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -128,6 +146,9 @@ jobs:
                   "retention_appointments_total=$appointmentsTotal" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_unique_patients=$uniquePatients" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_recurrent_patients=$recurrentPatients" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "latency_core_p95_max_ms=$coreP95MaxMs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "latency_figo_post_p95_ms=$figoPostP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "latency_availability_p95_ms=$availabilityP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
             - name: Publicar artefactos
               if: ${{ always() && steps.report.outputs.report_json_path != '' }}
@@ -150,7 +171,13 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Bench runs: ``$env:BENCH_RUNS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Fail on warnings: ``$env:FAIL_ON_WARNINGS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings count: ``${{ steps.report.outputs.warnings_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings: ``${{ steps.report.outputs.warnings_list }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Agent metrics file: ``verification/agent-metrics.json``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Latency"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- core_p95_max_ms: ``${{ steps.report.outputs.latency_core_p95_max_ms }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- availability_p95_ms: ``${{ steps.report.outputs.latency_availability_p95_ms }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- figo_post_p95_ms: ``${{ steps.report.outputs.latency_figo_post_p95_ms }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Retention"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- appointments_total: ``${{ steps.report.outputs.retention_appointments_total }}``"
