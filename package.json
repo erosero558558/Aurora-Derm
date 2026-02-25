@@ -33,6 +33,7 @@
         "monitor:prod": "powershell -NoProfile -ExecutionPolicy Bypass -File ./MONITOR-PRODUCCION.ps1 -Domain https://pielarmonia.com",
         "report:weekly:prod": "powershell -NoProfile -ExecutionPolicy Bypass -File ./REPORTE-SEMANAL-PRODUCCION.ps1 -Domain https://pielarmonia.com",
         "verify:sentry:events": "node bin/verify-sentry-events.js",
+        "prod:readiness:summary": "node bin/prod-readiness-summary.js",
         "format": "prettier --write .",
         "agent:sync": "node agent-orchestrator.js sync",
         "agent:status": "node agent-orchestrator.js status",

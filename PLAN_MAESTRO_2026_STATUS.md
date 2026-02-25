@@ -325,3 +325,4 @@ Dominio: https://pielarmonia.com
 1. Confirmar primer evento en Sentry dashboard/API (backend + frontend) usando `npm run verify:sentry:events` o workflow `Sentry Events Verify (Manual)`.
 2. Registrar evidencia de Sentry (timestamp/eventID por proyecto) en este status y/o `verification/agent-runs/`.
 3. Mantener monitoreo semanal de p95 `availability` y revisar warnings no bloqueantes en `Weekly KPI Report` (ej. `core_p95_alto_*`) para separar ruido de latencia vs regresion de conversion/funnel.
+4. Usar `npm run prod:readiness:summary` para vista unica (gates criticos, workflows recientes, alertas prod, warnings semanales locales y pendientes reales) con salida en `verification/runtime/prod-readiness-summary.{md,json}`.
