@@ -624,22 +624,6 @@ function formatPpDelta(value) {
     return domainMetrics.formatPpDelta(value);
 }
 
-function parseTaskMetaMap(path) {
-    return coreQueues.parseTaskMetaMap(path, {
-        exists: existsSync,
-        readFile: readFileSync,
-        normalize: normalizeEol,
-    });
-}
-
-function boardToQueueStatus(taskStatus, executor) {
-    return coreQueues.boardToQueueStatus(taskStatus, executor);
-}
-
-function renderQueueFile(executor, tasks, existingMeta) {
-    return coreQueues.renderQueueFile(executor, tasks, existingMeta);
-}
-
 function wildcardToRegex(pattern) {
     return domainConflicts.wildcardToRegex(pattern);
 }
@@ -771,98 +755,32 @@ function cmdStatus(args) {
 }
 
 function safeNumber(value, fallback = 0) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
+    return domainMetrics.safeNumber(value, fallback);
 }
 
 function loadMetricsSnapshotStrict() {
-    if (!existsSync(METRICS_PATH)) {
-        throw new Error(
-            `No existe ${METRICS_PATH}. Ejecuta \`node agent-orchestrator.js metrics\` primero.`
-        );
-    }
-    try {
-        return JSON.parse(readFileSync(METRICS_PATH, 'utf8'));
-    } catch (error) {
-        throw new Error(
-            `No se pudo parsear ${METRICS_PATH}: ${error.message || error}`
-        );
-    }
+    return domainMetrics.loadMetricsSnapshotStrict({
+        existsSync,
+        readFileSync,
+        metricsPath: METRICS_PATH,
+    });
 }
 
 function baselineFromCurrentMetricsSnapshot(metrics) {
-    const current = metrics?.current || {};
-    const baseline = {
-        tasks_total: safeNumber(current.tasks_total, 0),
-        tasks_with_rework: safeNumber(current.tasks_with_rework, 0),
-        file_conflicts: safeNumber(current.file_conflicts, 0),
-        file_conflicts_handoff: safeNumber(current.file_conflicts_handoff, 0),
-        non_critical_lead_time_hours_avg:
-            current.non_critical_lead_time_hours_avg === null
-                ? null
-                : safeNumber(current.non_critical_lead_time_hours_avg, 0),
-        coordination_gate_red_rate_pct:
-            current.coordination_gate_red_rate_pct === null
-                ? null
-                : safeNumber(current.coordination_gate_red_rate_pct, 0),
-        traceability_pct: safeNumber(current.traceability_pct, 0),
-    };
-
-    const contribution =
-        metrics?.contribution && Array.isArray(metrics?.contribution?.executors)
-            ? metrics.contribution
-            : null;
-
-    return {
-        baseline,
-        baseline_contribution: contribution,
-    };
+    return domainMetrics.baselineFromCurrentMetricsSnapshot(metrics);
 }
 
 function recalcMetricsDeltaWithBaseline(metrics) {
-    const next = { ...(metrics || {}) };
-    const current = next.current || {};
-    const baseline = next.baseline || {};
-    const contribution = next.contribution || null;
-    const baselineContribution = normalizeContributionBaseline(next);
-
-    next.delta = {
-        tasks_total:
-            safeNumber(current.tasks_total, 0) -
-            safeNumber(baseline.tasks_total, 0),
-        file_conflicts:
-            safeNumber(current.file_conflicts, 0) -
-            safeNumber(baseline.file_conflicts, 0),
-        file_conflicts_handoff:
-            safeNumber(current.file_conflicts_handoff, 0) -
-            safeNumber(baseline.file_conflicts_handoff, 0),
-        traceability_pct:
-            safeNumber(current.traceability_pct, 0) -
-            safeNumber(baseline.traceability_pct, 0),
-    };
-
-    if (
-        contribution &&
-        Array.isArray(contribution.executors) &&
-        baselineContribution &&
-        Array.isArray(baselineContribution.executors)
-    ) {
-        next.contribution_delta = buildContributionTrend(
-            contribution,
-            baselineContribution
-        );
-    }
-
-    return next;
+    return domainMetrics.recalcMetricsDeltaWithBaseline(metrics);
 }
 
 function writeMetricsSnapshotFile(metrics) {
-    mkdirSync(dirname(METRICS_PATH), { recursive: true });
-    writeFileSync(
-        METRICS_PATH,
-        `${JSON.stringify(metrics, null, 4)}\n`,
-        'utf8'
-    );
+    return domainMetrics.writeMetricsSnapshotFile(metrics, {
+        mkdirSync,
+        dirname,
+        writeFileSync,
+        metricsPath: METRICS_PATH,
+    });
 }
 
 function cmdMetricsBaseline(args = []) {
@@ -1064,8 +982,13 @@ async function cmdTask(args) {
 function syncDerivedQueues(options = {}) {
     return coreIo.syncDerivedQueuesFiles(options, {
         parseBoard,
-        parseTaskMetaMap,
-        renderQueueFile,
+        parseTaskMetaMap: (path) =>
+            coreQueues.parseTaskMetaMap(path, {
+                exists: existsSync,
+                readFile: readFileSync,
+                normalize: normalizeEol,
+            }),
+        renderQueueFile: coreQueues.renderQueueFile,
         julesPath: JULES_PATH,
         kimiPath: KIMI_PATH,
         writeFile: writeFileSync,

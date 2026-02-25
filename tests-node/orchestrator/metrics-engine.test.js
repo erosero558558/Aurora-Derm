@@ -288,3 +288,75 @@ test('metrics-engine domain health history summary detecta regresion GREEN->RED'
     assert.equal(summary.regressions.green_to_red.length, 1);
     assert.equal(summary.regressions.green_to_red[0].domain, 'calendar');
 });
+
+test('metrics-engine helpers de baseline/snapshot mantienen contrato y usan deps', () => {
+    const snapshot = {
+        current: {
+            tasks_total: '10',
+            tasks_with_rework: '2',
+            file_conflicts: '1',
+            file_conflicts_handoff: '3',
+            non_critical_lead_time_hours_avg: null,
+            coordination_gate_red_rate_pct: null,
+            traceability_pct: '80',
+        },
+        contribution: {
+            executors: [
+                {
+                    executor: 'codex',
+                    weighted_done_points_pct: 100,
+                    done_tasks_pct: 100,
+                },
+            ],
+        },
+    };
+
+    const baseline = metrics.baselineFromCurrentMetricsSnapshot(snapshot);
+    assert.equal(baseline.baseline.tasks_total, 10);
+    assert.equal(baseline.baseline.file_conflicts_handoff, 3);
+    assert.equal(typeof baseline.baseline_contribution, 'object');
+
+    const recalculated = metrics.recalcMetricsDeltaWithBaseline({
+        ...snapshot,
+        baseline: {
+            tasks_total: 8,
+            file_conflicts: 0,
+            file_conflicts_handoff: 1,
+            traceability_pct: 70,
+        },
+        baseline_contribution: snapshot.contribution,
+    });
+    assert.equal(recalculated.delta.tasks_total, 2);
+    assert.equal(recalculated.delta.file_conflicts, 1);
+    assert.equal(recalculated.delta.file_conflicts_handoff, 2);
+    assert.equal(recalculated.delta.traceability_pct, 10);
+    assert.equal(typeof recalculated.contribution_delta, 'object');
+
+    const writes = [];
+    const mkdirs = [];
+    const loaded = metrics.loadMetricsSnapshotStrict({
+        existsSync: () => true,
+        readFileSync: () => '{"version":1}',
+        metricsPath: 'verification/agent-metrics.json',
+    });
+    assert.equal(loaded.version, 1);
+
+    metrics.writeMetricsSnapshotFile(
+        { version: 1 },
+        {
+            mkdirSync: (...args) => mkdirs.push(args),
+            dirname: (p) => `DIR:${p}`,
+            writeFileSync: (...args) => writes.push(args),
+            metricsPath: 'verification/agent-metrics.json',
+        }
+    );
+    assert.deepEqual(mkdirs[0], [
+        'DIR:verification/agent-metrics.json',
+        { recursive: true },
+    ]);
+    assert.deepEqual(writes[0], [
+        'verification/agent-metrics.json',
+        '{\n    "version": 1\n}\n',
+        'utf8',
+    ]);
+});

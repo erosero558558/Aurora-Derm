@@ -111,6 +111,10 @@ Relacion con Operativo 2026:
 }
 
 function runJson(dir, args) {
+    return runJsonExpectStatus(dir, args, 0);
+}
+
+function runJsonExpectStatus(dir, args, expectedStatus) {
     const result = spawnSync(
         process.execPath,
         [join(dir, 'agent-orchestrator.js'), ...args, '--json'],
@@ -122,8 +126,8 @@ function runJson(dir, args) {
 
     assert.equal(
         result.status,
-        0,
-        `Unexpected exit for ${args.join(' ')} --json\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+        expectedStatus,
+        `Unexpected exit for ${args.join(' ')} --json (expected ${expectedStatus})\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
     );
 
     let parsed;
@@ -202,6 +206,76 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check', 
         assert.equal(typeof codexCheck.summary, 'object');
         assert.equal(Array.isArray(codexCheck.codex_task_ids), true);
         assert.equal(Array.isArray(codexCheck.diagnostics), true);
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
+test('JSON contract minimo estable para errores de handoffs lint y policy lint', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+
+        writeFileSync(
+            join(dir, 'AGENT_HANDOFFS.yaml'),
+            `version: 1
+handoffs:
+  - id: HO-001
+    status: active
+    from_task: AG-001
+    to_task: CDX-001
+    reason: fixture_invalid
+    files: ["*"]
+    approved_by: ernesto
+    created_at: 2026-02-25T10:00:00.000Z
+    expires_at: 2026-02-25T14:00:00.000Z
+`,
+            'utf8'
+        );
+
+        const handoffsLint = runJsonExpectStatus(dir, ['handoffs', 'lint'], 1);
+        assertVersionLike(handoffsLint.version);
+        assert.equal(handoffsLint.ok, false);
+        assert.equal(typeof handoffsLint.error_count, 'number');
+        assert.equal(handoffsLint.error_count > 0, true);
+        assert.equal(Array.isArray(handoffsLint.errors), true);
+        assert.equal(Array.isArray(handoffsLint.diagnostics), true);
+        assert.equal(typeof handoffsLint.warnings_count, 'number');
+        assert.equal(typeof handoffsLint.errors_count, 'number');
+
+        writeFileSync(
+            join(dir, 'governance-policy.json'),
+            JSON.stringify(
+                {
+                    version: 1,
+                    domain_health: {
+                        priority_domains: ['calendar'],
+                        domain_weights: { default: -1 },
+                        signal_scores: { GREEN: 100, YELLOW: 60, RED: 0 },
+                    },
+                    summary: {
+                        thresholds: { domain_score_priority_yellow_below: 80 },
+                    },
+                },
+                null,
+                2
+            ),
+            'utf8'
+        );
+
+        const policyLint = runJsonExpectStatus(dir, ['policy', 'lint'], 1);
+        assertVersionLike(policyLint.version);
+        assert.equal(policyLint.ok, false);
+        assert.equal(typeof policyLint.error_count, 'number');
+        assert.equal(policyLint.error_count > 0, true);
+        assert.equal(Array.isArray(policyLint.errors), true);
+        assert.equal(Array.isArray(policyLint.warnings), true);
+        assert.equal(Array.isArray(policyLint.diagnostics), true);
+        assert.equal(typeof policyLint.source, 'object');
+        assert.equal(typeof policyLint.source.path, 'string');
+        assert.equal(typeof policyLint.source.exists, 'boolean');
+        assert.equal(typeof policyLint.warnings_count, 'number');
+        assert.equal(typeof policyLint.errors_count, 'number');
     } finally {
         cleanupFixtureDir(dir);
     }

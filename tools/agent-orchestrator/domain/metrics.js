@@ -1,5 +1,10 @@
 'use strict';
 
+function safeNumber(value, fallback = 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 function percent(part, total) {
     if (!Number.isFinite(total) || total <= 0) return 0;
     return Math.round((Number(part || 0) / total) * 1000) / 10;
@@ -794,7 +799,120 @@ function buildDomainHealthHistorySummary(history, days = 7) {
     };
 }
 
+function loadMetricsSnapshotStrict(options = {}) {
+    const { existsSync, readFileSync, metricsPath } = options;
+    if (
+        typeof existsSync !== 'function' ||
+        typeof readFileSync !== 'function'
+    ) {
+        throw new Error(
+            'loadMetricsSnapshotStrict requiere existsSync y readFileSync'
+        );
+    }
+    if (!metricsPath) {
+        throw new Error('loadMetricsSnapshotStrict requiere metricsPath');
+    }
+    if (!existsSync(metricsPath)) {
+        throw new Error(
+            `No existe ${metricsPath}. Ejecuta \`node agent-orchestrator.js metrics\` primero.`
+        );
+    }
+    try {
+        return JSON.parse(readFileSync(metricsPath, 'utf8'));
+    } catch (error) {
+        throw new Error(
+            `No se pudo parsear ${metricsPath}: ${error.message || error}`
+        );
+    }
+}
+
+function baselineFromCurrentMetricsSnapshot(metrics) {
+    const current = metrics?.current || {};
+    const baseline = {
+        tasks_total: safeNumber(current.tasks_total, 0),
+        tasks_with_rework: safeNumber(current.tasks_with_rework, 0),
+        file_conflicts: safeNumber(current.file_conflicts, 0),
+        file_conflicts_handoff: safeNumber(current.file_conflicts_handoff, 0),
+        non_critical_lead_time_hours_avg:
+            current.non_critical_lead_time_hours_avg === null
+                ? null
+                : safeNumber(current.non_critical_lead_time_hours_avg, 0),
+        coordination_gate_red_rate_pct:
+            current.coordination_gate_red_rate_pct === null
+                ? null
+                : safeNumber(current.coordination_gate_red_rate_pct, 0),
+        traceability_pct: safeNumber(current.traceability_pct, 0),
+    };
+
+    const contribution =
+        metrics?.contribution && Array.isArray(metrics?.contribution?.executors)
+            ? metrics.contribution
+            : null;
+
+    return {
+        baseline,
+        baseline_contribution: contribution,
+    };
+}
+
+function recalcMetricsDeltaWithBaseline(metrics) {
+    const next = { ...(metrics || {}) };
+    const current = next.current || {};
+    const baseline = next.baseline || {};
+    const contribution = next.contribution || null;
+    const baselineContribution = normalizeContributionBaseline(next);
+
+    next.delta = {
+        tasks_total:
+            safeNumber(current.tasks_total, 0) -
+            safeNumber(baseline.tasks_total, 0),
+        file_conflicts:
+            safeNumber(current.file_conflicts, 0) -
+            safeNumber(baseline.file_conflicts, 0),
+        file_conflicts_handoff:
+            safeNumber(current.file_conflicts_handoff, 0) -
+            safeNumber(baseline.file_conflicts_handoff, 0),
+        traceability_pct:
+            safeNumber(current.traceability_pct, 0) -
+            safeNumber(baseline.traceability_pct, 0),
+    };
+
+    if (
+        contribution &&
+        Array.isArray(contribution.executors) &&
+        baselineContribution &&
+        Array.isArray(baselineContribution.executors)
+    ) {
+        next.contribution_delta = buildContributionTrend(
+            contribution,
+            baselineContribution
+        );
+    }
+
+    return next;
+}
+
+function writeMetricsSnapshotFile(metrics, options = {}) {
+    const { mkdirSync, dirname, writeFileSync, metricsPath } = options;
+    if (
+        typeof mkdirSync !== 'function' ||
+        typeof dirname !== 'function' ||
+        typeof writeFileSync !== 'function'
+    ) {
+        throw new Error(
+            'writeMetricsSnapshotFile requiere mkdirSync, dirname y writeFileSync'
+        );
+    }
+    if (!metricsPath) {
+        throw new Error('writeMetricsSnapshotFile requiere metricsPath');
+    }
+    mkdirSync(dirname(metricsPath), { recursive: true });
+    writeFileSync(metricsPath, `${JSON.stringify(metrics, null, 4)}\n`, 'utf8');
+    return metrics;
+}
+
 module.exports = {
+    safeNumber,
     percent,
     riskWeight,
     buildExecutorContribution,
@@ -810,4 +928,8 @@ module.exports = {
     sanitizeDomainHealthSnapshot,
     upsertDomainHealthHistory,
     buildDomainHealthHistorySummary,
+    loadMetricsSnapshotStrict,
+    baselineFromCurrentMetricsSnapshot,
+    recalcMetricsDeltaWithBaseline,
+    writeMetricsSnapshotFile,
 };
