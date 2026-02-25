@@ -133,6 +133,11 @@ const ALLOWED_STATUSES = new Set([
 ]);
 
 const ACTIVE_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
+const TERMINAL_STATUSES = new Set(['done', 'failed']);
+
+function isTerminalTaskStatus(statusRaw) {
+    return TERMINAL_STATUSES.has(String(statusRaw || '').trim().toLowerCase());
+}
 const ALLOWED_TASK_EXECUTORS = new Set([
     'codex',
     'claude',
@@ -1212,11 +1217,405 @@ function cmdClose(args) {
     });
 }
 
+// ─── Signal / Intake helpers ─────────────────────────────────────────────────
+
+function getGitHubToken(flags = {}) {
+    return String(flags.token || process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '').trim();
+}
+
+function getGitHubRepository(flags = {}) {
+    return String(flags.repo || DEFAULT_GITHUB_REPOSITORY).trim();
+}
+
+async function fetchGitHubJson(path, token) {
+    if (!token) throw new Error('GITHUB_TOKEN/GH_TOKEN requerido para consultar GitHub API');
+    const url = String(path || '').startsWith('http') ? String(path) : `https://api.github.com${path}`;
+    const response = await fetch(url, {
+        headers: {
+            Accept: 'application/vnd.github+json',
+            Authorization: `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28',
+            'User-Agent': 'pielarmonia-agent-orchestrator',
+        },
+    });
+    if (!response.ok) throw new Error(`GitHub API ${response.status}: ${await response.text()}`);
+    return response.json();
+}
+
+function issueToSignal(issue) {
+    const labels = Array.isArray(issue?.labels)
+        ? issue.labels.map((l) => (typeof l === 'string' ? l : l?.name ? String(l.name) : '')).filter(Boolean)
+        : [];
+    return {
+        source: 'issue',
+        source_ref: `issue#${issue.number}`,
+        title: String(issue.title || `Issue ${issue.number}`),
+        status: String(issue.state || 'open').toLowerCase(),
+        url: String(issue.html_url || issue.url || ''),
+        labels,
+        critical: String(issue.title || '').toLowerCase().includes('[alerta prod]') ||
+            labels.some((l) => ['prod-alert', 'critical', 'incident'].includes(String(l).toLowerCase())),
+        detected_at: String(issue.created_at || ''),
+        updated_at: String(issue.updated_at || issue.created_at || ''),
+    };
+}
+
+function runToSignal(run) {
+    const workflowLabel = String(run?.workflow_name || run?.name || 'workflow').trim();
+    const branch = String(run?.head_branch || 'main').trim();
+    const workflowSlug = workflowLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const sourceRef = `workflow:${workflowSlug || 'workflow'}:${branch || 'main'}`;
+    const critical = workflowLabel.toLowerCase().includes('post-deploy') ||
+        workflowLabel.toLowerCase().includes('production monitor') ||
+        workflowLabel.toLowerCase().includes('repair git sync');
+    return {
+        source: 'workflow', source_ref: sourceRef, fingerprint: sourceRef,
+        title: `${workflowLabel}: ${String(run?.display_title || '').trim()}`.trim(),
+        status: String(run.conclusion || '').toLowerCase() === 'failure' ? 'failing' : String(run.status || 'open').toLowerCase(),
+        url: String(run.html_url || run.url || ''),
+        labels: [`workflow:${workflowLabel}`],
+        severity: critical ? 'high' : 'medium', critical,
+        runtime_impact: critical ? 'high' : 'low',
+        detected_at: String(run.created_at || ''),
+        updated_at: String(run.updated_at || run.created_at || ''),
+    };
+}
+
+async function collectGitHubSignals(flags = {}) {
+    const token = getGitHubToken(flags);
+    const repository = getGitHubRepository(flags);
+    if (!token) return { repository, issues: [], workflows: [], source: 'local_only' };
+    const [issuesPayload, runsPayload] = await Promise.all([
+        fetchGitHubJson(`/repos/${repository}/issues?state=open&per_page=100`, token),
+        fetchGitHubJson(`/repos/${repository}/actions/runs?status=completed&per_page=50`, token),
+    ]);
+    return {
+        repository, source: 'github_api',
+        issues: Array.isArray(issuesPayload) ? issuesPayload.filter((i) => !i.pull_request).map(issueToSignal) : [],
+        workflows: Array.isArray(runsPayload?.workflow_runs)
+            ? runsPayload.workflow_runs.filter((r) => String(r?.conclusion || '').toLowerCase() === 'failure').slice(0, 25).map(runToSignal)
+            : [],
+    };
+}
+
+function isActiveSignalStatus(statusRaw) {
+    const s = String(statusRaw || '').toLowerCase().trim();
+    return s === 'open' || s === 'failing' || s === 'active';
+}
+
+function applySignalStateTransitions(mergedSignals, incomingSignals, nowIso) {
+    const fps = new Set((incomingSignals || []).map((i) => String(i.fingerprint || '').trim()).filter(Boolean));
+    for (const signal of mergedSignals || []) {
+        const fp = String(signal.fingerprint || '').trim();
+        if (!fp || fps.has(fp)) continue;
+        const src = String(signal.source || '').toLowerCase();
+        if (src === 'workflow') { signal.status = 'resolved'; signal.updated_at = nowIso; }
+        else if (src === 'issue') { signal.status = 'closed'; signal.updated_at = nowIso; }
+    }
+}
+
+function upsertTasksFromSignals(board, signals, options = {}) {
+    const nowIso = String(options.nowIso || new Date().toISOString());
+    const owner = String(options.owner || detectDefaultOwner('orchestrator'));
+    let created = 0; let reopened = 0; let refreshed = 0;
+    const activeSignalRefs = new Set();
+
+    for (const signal of signals || []) {
+        if (!isActiveSignalStatus(signal.status)) continue;
+        const sourceSignal = String(signal.source || 'manual').toLowerCase();
+        const sourceRef = String(signal.source_ref || '').trim();
+        if (!sourceRef) continue;
+        activeSignalRefs.add(`${sourceSignal}:${sourceRef}`);
+        const existing = board.tasks.find(
+            (t) => String(t.source_ref || '').trim() === sourceRef &&
+                   String(t.source_signal || 'manual').toLowerCase() === sourceSignal
+        );
+        const suggestedTask = domainIntake.buildTaskFromSignal(signal, { nowIso, owner });
+        if (!existing) { board.tasks.push({ ...suggestedTask, id: nextAgentTaskId(board.tasks) }); created += 1; continue; }
+        if (isTerminalTaskStatus(existing.status)) {
+            existing.status = 'ready'; existing.acceptance_ref = ''; existing.evidence_ref = ''; existing.blocked_reason = '';
+            reopened += 1;
+        } else { refreshed += 1; }
+        Object.assign(existing, {
+            title: suggestedTask.title, risk: suggestedTask.risk, scope: suggestedTask.scope,
+            files: suggestedTask.files, priority_score: suggestedTask.priority_score,
+            sla_due_at: suggestedTask.sla_due_at, runtime_impact: suggestedTask.runtime_impact,
+            critical_zone: suggestedTask.critical_zone, source_signal: suggestedTask.source_signal,
+            source_ref: suggestedTask.source_ref, prompt: suggestedTask.prompt,
+            updated_at: String(nowIso).slice(0, 10),
+        });
+        if ((existing.critical_zone || existing.runtime_impact === 'high' || findCriticalScopeKeyword(existing.scope)) &&
+            !['codex', 'claude'].includes(String(existing.executor || '').toLowerCase())) {
+            existing.executor = 'codex';
+        }
+    }
+
+    for (const task of board.tasks || []) {
+        const sourceSignal = String(task.source_signal || '').toLowerCase();
+        const sourceRef = String(task.source_ref || '').trim();
+        if (!sourceSignal || !sourceRef || !['issue', 'workflow'].includes(sourceSignal)) continue;
+        if (isTerminalTaskStatus(task.status) || activeSignalRefs.has(`${sourceSignal}:${sourceRef}`)) continue;
+        task.status = 'done'; task.blocked_reason = ''; task.updated_at = String(nowIso).slice(0, 10);
+        task.evidence_ref = 'signal_resolved:auto';
+        if (!String(task.acceptance_ref || '').trim()) task.acceptance_ref = task.evidence_ref;
+    }
+    return { created, reopened, refreshed };
+}
+
+function buildStaleReport(board, signals) {
+    const activeSignals = (signals || []).filter((s) => isActiveSignalStatus(s.status));
+    const criticalSignals = activeSignals.filter((s) => Boolean(s.critical));
+    const readyOrInProgress = (board.tasks || []).filter((t) => {
+        const s = String(t.status || '').trim(); return s === 'ready' || s === 'in_progress';
+    });
+    const invalidCriticalIdle = criticalSignals.length > 0 && readyOrInProgress.length === 0;
+    return {
+        version: 1, ok: !invalidCriticalIdle,
+        counts: {
+            active_signals: activeSignals.length,
+            critical_active_signals: criticalSignals.length,
+            active_tasks: (board.tasks || []).filter((t) => ACTIVE_STATUSES.has(String(t.status || ''))).length,
+            ready_or_in_progress_tasks: readyOrInProgress.length,
+        },
+        invalid_reasons: invalidCriticalIdle ? ['critical_signals_without_ready_or_in_progress_tasks'] : [],
+        critical_signals: criticalSignals.slice(0, 10).map((s) => ({
+            id: String(s.id || ''), source_ref: String(s.source_ref || ''),
+            title: String(s.title || ''), severity: String(s.severity || ''), status: String(s.status || ''),
+        })),
+    };
+}
+
+// ─── Rate-limit detection ────────────────────────────────────────────────────
+
+function hasRateLimitToken(valueRaw) {
+    const v = String(valueRaw || '').toLowerCase();
+    return v.includes('429') || v.includes('rate limit') || v.includes('rate_limit') || v.includes('too many requests');
+}
+
+function detectKimiRateLimitActive({ board, signals }) {
+    for (const signal of (Array.isArray(signals) ? signals : [])) {
+        if (!isActiveSignalStatus(signal?.status)) continue;
+        const title = String(signal?.title || '');
+        const labelCorpus = Array.isArray(signal?.labels) ? signal.labels.map((l) => String(l)).join(' ') : '';
+        if (hasRateLimitToken(title) || hasRateLimitToken(labelCorpus)) return true;
+        if (title.toLowerCase().includes('kimi') && labelCorpus.toLowerCase().includes('workflow')) return true;
+    }
+    for (const task of (Array.isArray(board?.tasks) ? board.tasks : [])) {
+        if (String(task?.executor || '').toLowerCase() !== 'kimi') continue;
+        if (hasRateLimitToken(task?.blocked_reason)) return true;
+    }
+    return false;
+}
+
+// ─── New commands: intake / score / stale / budget / dispatch / reconcile ────
+
+async function cmdIntake(args = []) {
+    const { flags } = parseFlags(args);
+    const wantsJson = args.includes('--json');
+    const strict = args.includes('--strict');
+    const noWrite = isFlagEnabled(flags, 'no-write', 'dry-run');
+    const nowIso = new Date().toISOString();
+    const board = parseBoard();
+    const existingSignals = parseSignals();
+    let incomingSignals = []; let normalizedIncomingSignals = [];
+    let source = 'local_only'; let repository = getGitHubRepository(flags);
+
+    try {
+        const githubSignals = await collectGitHubSignals(flags);
+        incomingSignals = [...(githubSignals.issues || []), ...(githubSignals.workflows || [])];
+        source = githubSignals.source; repository = githubSignals.repository || repository;
+    } catch (error) { source = 'github_api_error'; if (strict) throw error; }
+
+    normalizedIncomingSignals = incomingSignals.map((i) => domainIntake.normalizeSignal(i, { nowIso }));
+    const mergedSignals = domainIntake.mergeSignals(existingSignals.signals || [], normalizedIncomingSignals, { nowIso });
+    applySignalStateTransitions(mergedSignals, normalizedIncomingSignals, nowIso);
+    const intakeResult = upsertTasksFromSignals(board, mergedSignals, { nowIso, owner: detectDefaultOwner('orchestrator') });
+
+    if (!noWrite) {
+        writeSignals({ version: 1, updated_at: nowIso, signals: mergedSignals });
+        writeBoardAndSync(board, { silentSync: wantsJson });
+    }
+
+    const staleReport = buildStaleReport(board, mergedSignals);
+    const report = {
+        version: 1, ok: !strict || staleReport.ok, command: 'intake',
+        source, repository, no_write: noWrite,
+        intake: {
+            incoming_signals: incomingSignals.length,
+            incoming_signals_normalized: normalizedIncomingSignals.length,
+            total_signals: mergedSignals.length,
+            created_tasks: intakeResult.created,
+            reopened_tasks: intakeResult.reopened,
+            refreshed_tasks: intakeResult.refreshed,
+        },
+        stale: staleReport,
+    };
+    if (wantsJson) { coreOutput.printJson(report); if (strict && !staleReport.ok) process.exitCode = 1; return; }
+    console.log('== Agent Intake ==');
+    console.log(`Source: ${source}`);
+    console.log(`Repository: ${repository}`);
+    console.log(`Incoming signals: ${incomingSignals.length}`);
+    console.log(`Total signals: ${mergedSignals.length}`);
+    console.log(`Tasks: created=${intakeResult.created}, reopened=${intakeResult.reopened}, refreshed=${intakeResult.refreshed}`);
+    if (strict && !staleReport.ok) throw new Error(`Intake stale gate fallido: ${staleReport.invalid_reasons.join(', ')}`);
+}
+
+function cmdScore(args = []) {
+    const wantsJson = args.includes('--json');
+    const { flags } = parseFlags(args);
+    const noWrite = isFlagEnabled(flags, 'no-write', 'dry-run');
+    const nowTs = Date.now(); const nowDate = currentDate();
+    const board = parseBoard();
+    let changed = 0; let escalated = 0; let overdueBoosted = 0;
+
+    for (const task of board.tasks) {
+        const before = JSON.stringify(toTaskJson(task));
+        const normalized = domainIntake.normalizeTaskForScoring(task, { nowTs });
+        task.priority_score = normalized.priority_score; task.sla_due_at = normalized.sla_due_at;
+        task.attempts = normalized.attempts; task.runtime_impact = normalized.runtime_impact;
+        task.critical_zone = normalized.critical_zone; task.blocked_reason = normalized.blocked_reason;
+        if (findCriticalScopeKeyword(task.scope) && !['codex', 'claude'].includes(String(task.executor || '').toLowerCase()))
+            task.executor = 'codex';
+        if (normalized.executor === 'codex' && String(task.executor || '').toLowerCase() !== 'codex') {
+            task.executor = 'codex';
+            task.status = isTerminalTaskStatus(task.status) ? 'ready' : task.status;
+            escalated += 1;
+        }
+        const dueTs = Date.parse(String(task.sla_due_at || ''));
+        if (Number.isFinite(dueTs) && dueTs < nowTs && !isTerminalTaskStatus(task.status) && Number(task.priority_score || 0) < 100) {
+            task.priority_score = 100; overdueBoosted += 1;
+        }
+        task.updated_at = nowDate;
+        if (JSON.stringify(toTaskJson(task)) !== before) changed += 1;
+    }
+    if (!noWrite && changed > 0) writeBoardAndSync(board, { silentSync: wantsJson });
+    const report = { version: 1, ok: true, command: 'score', no_write: noWrite, changed_tasks: changed, escalated_to_codex: escalated, overdue_boosted: overdueBoosted };
+    if (wantsJson) { coreOutput.printJson(report); return; }
+    console.log('== Agent Score ==');
+    console.log(`Tasks changed: ${changed}`);
+    console.log(`Escalated to codex: ${escalated}`);
+    console.log(`Overdue boosted: ${overdueBoosted}`);
+}
+
+function cmdStale(args = []) {
+    const wantsJson = args.includes('--json');
+    const strict = args.includes('--strict');
+    const board = parseBoard(); const signals = parseSignals();
+    const report = buildStaleReport(board, signals.signals || []);
+    const result = { version: 1, ok: report.ok, command: 'stale', ...report };
+    if (wantsJson) { coreOutput.printJson(result); if (strict && !report.ok) process.exitCode = 1; return; }
+    console.log('== Agent Stale Check ==');
+    console.log(`Signals activos: ${report.counts.active_signals} (critical=${report.counts.critical_active_signals})`);
+    console.log(`Tasks ready/in_progress: ${report.counts.ready_or_in_progress_tasks}`);
+    if (strict && !report.ok) throw new Error(`stale gate fallido: ${report.invalid_reasons.join(', ')}`);
+}
+
+function cmdBudget(args = []) {
+    const wantsJson = args.includes('--json');
+    const { flags } = parseFlags(args);
+    const strict = args.includes('--strict');
+    const agentFilter = String(flags.agent || 'all').trim().toLowerCase();
+    const today = currentDate(); const board = parseBoard();
+    const limits = {
+        jules: Number.parseInt(process.env.JULES_DAILY_LIMIT || '80', 10),
+        kimi: Number.parseInt(process.env.KIMI_DAILY_LIMIT || '180', 10),
+        codex: Number.parseInt(process.env.CODEX_DAILY_LIMIT || '999', 10),
+    };
+    const usage = { jules: 0, kimi: 0, codex: 0 };
+    for (const task of board.tasks) {
+        const attemptAt = String(task.last_attempt_at || '');
+        const executor = String(task.executor || '').toLowerCase();
+        if (!attemptAt.startsWith(today)) continue;
+        if (Object.prototype.hasOwnProperty.call(usage, executor))
+            usage[executor] += Number.parseInt(String(task.attempts || '0'), 10) || 0;
+    }
+    const remaining = { jules: limits.jules - usage.jules, kimi: limits.kimi - usage.kimi, codex: limits.codex - usage.codex };
+    const agents = ['jules', 'kimi', 'codex'].filter((a) => agentFilter === 'all' || a === agentFilter);
+    const exceeded = agents.filter((a) => remaining[a] < 0);
+    const report = { version: 1, ok: exceeded.length === 0, command: 'budget', date: today, limits, usage, remaining, exceeded };
+    if (wantsJson) { coreOutput.printJson(report); if (strict && !report.ok) process.exitCode = 1; return; }
+    console.log('== Agent Budget ==');
+    for (const agent of agents) console.log(`- ${agent}: used=${usage[agent]} limit=${limits[agent]} remaining=${remaining[agent]}`);
+    if (strict && !report.ok) throw new Error(`budget excedido: ${exceeded.join(', ')}`);
+}
+
+function cmdDispatch(args = []) {
+    const wantsJson = args.includes('--json');
+    const { flags } = parseFlags(args);
+    const agent = String(flags.agent || '').trim().toLowerCase();
+    if (!['jules', 'kimi', 'codex'].includes(agent)) throw new Error('dispatch requiere --agent jules|kimi|codex');
+    const board = parseBoard(); const signals = parseSignals();
+    if (agent === 'kimi' && detectKimiRateLimitActive({ board, signals: signals.signals || [] })) {
+        console.log('WARN: Kimi rate-limit activo detectado — dispatch bloqueado.'); return;
+    }
+    const nowDate = currentDate();
+    const defaultPerRun = 2;
+    const envPerRun = agent === 'jules' ? process.env.JULES_MAX_DISPATCH_PER_RUN : agent === 'kimi' ? process.env.KIMI_MAX_DISPATCH_PER_RUN : null;
+    const perRunLimit = Number.parseInt(String(envPerRun || defaultPerRun), 10);
+    const runnable = board.tasks
+        .filter((t) => String(t.executor || '').toLowerCase() === agent && String(t.status || '') === 'ready')
+        .sort((a, b) => Number(b.priority_score || 0) - Number(a.priority_score || 0))
+        .slice(0, perRunLimit);
+    const dispatched = [];
+    for (const task of runnable) { task.status = 'in_progress'; task.updated_at = nowDate; dispatched.push(task.id); }
+    if (dispatched.length > 0) writeBoardAndSync(board, { silentSync: wantsJson });
+    const report = { version: 1, ok: true, command: 'dispatch', agent, dispatched };
+    if (wantsJson) { coreOutput.printJson(report); return; }
+    console.log(`== Agent Dispatch (${agent}) ==`);
+    console.log(`Dispatched: ${dispatched.join(', ') || 'none'}`);
+}
+
+async function cmdReconcile(args = []) {
+    const { flags } = parseFlags(args);
+    const wantsJson = args.includes('--json');
+    const strict = args.includes('--strict');
+    const nowDate = currentDate(); const board = parseBoard();
+    let prEvidenceApplied = 0; let pulls = [];
+    try {
+        const token = getGitHubToken(flags);
+        const repo = getGitHubRepository(flags);
+        if (token) {
+            const prNumber = flags['pr-number'] ? Number(flags['pr-number']) : null;
+            const runsPayload = await fetchGitHubJson(`/repos/${repo}/pulls?state=closed&per_page=30`, token);
+            const merged = (Array.isArray(runsPayload) ? runsPayload : []).filter((pr) => pr.merged_at && (!prNumber || pr.number === prNumber));
+            for (const pr of merged) {
+                const taskIds = [...String(pr.body || '').matchAll(/\b(AG-\d{3})\b/g)].map((m) => m[1]);
+                if (taskIds.length > 0) pulls.push({ number: pr.number, task_ids: taskIds });
+            }
+        }
+    } catch (error) { if (strict) throw error; }
+    for (const pull of pulls) {
+        for (const taskId of pull.task_ids) {
+            const task = board.tasks.find((t) => String(t.id || '') === String(taskId));
+            if (!task) continue;
+            task.status = 'done'; task.updated_at = nowDate; task.evidence_ref = `pr#${pull.number}`;
+            if (!String(task.acceptance_ref || '').trim()) task.acceptance_ref = task.evidence_ref;
+            prEvidenceApplied += 1;
+        }
+    }
+    const doneWithoutEvidence = board.tasks.filter(
+        (t) => String(t.status || '') === 'done' && !String(t.evidence_ref || t.acceptance_ref || '').trim()
+    );
+    if (strict && doneWithoutEvidence.length > 0) throw new Error(`reconcile: tareas done sin evidencia_ref (${doneWithoutEvidence.map((t) => t.id).join(', ')})`);
+    writeBoardAndSync(board, { silentSync: wantsJson });
+    const report = { version: 1, ok: doneWithoutEvidence.length === 0, command: 'reconcile', pull_request_evidence_applied: prEvidenceApplied, merged_pull_requests_scanned: pulls.length, done_without_evidence: doneWithoutEvidence.map((t) => t.id) };
+    if (wantsJson) { coreOutput.printJson(report); if (strict && !report.ok) process.exitCode = 1; return; }
+    console.log('== Agent Reconcile ==');
+    console.log(`PR evidence applied: ${prEvidenceApplied}`);
+    if (!report.ok) console.log(`WARN: done sin evidencia -> ${report.done_without_evidence.join(', ')}`);
+}
+
 async function main() {
     const [command = 'status', ...args] = process.argv.slice(2);
     const commands = {
         status: () => cmdStatus(args),
         conflicts: () => cmdConflicts(args),
+        intake: () => cmdIntake(args),
+        score: () => cmdScore(args),
+        reconcile: () => cmdReconcile(args),
+        stale: () => cmdStale(args),
+        budget: () => cmdBudget(args),
+        dispatch: () => cmdDispatch(args),
         handoffs: () => cmdHandoffs(args),
         policy: () => cmdPolicy(args),
         'codex-check': () => cmdCodexCheck(args),

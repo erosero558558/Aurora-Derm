@@ -43,11 +43,7 @@
         "agent:codex": "node agent-orchestrator.js codex",
         "agent:codex-check": "node agent-orchestrator.js codex-check",
         "agent:task": "node agent-orchestrator.js task",
-<<<<<<< HEAD
-        "agent:test": "node --test tests-node/agent-orchestrator-cli.test.js tests-node/agent-governance-summary.test.js tests-node/run-php-cs-fixer-wrapper.test.js tests-node/orchestrator/conflicts-engine.test.js tests-node/orchestrator/task-guards.test.js tests-node/orchestrator/task-create-engine.test.js tests-node/orchestrator/metrics-engine.test.js tests-node/orchestrator/intake-engine.test.js",
-=======
-        "agent:test": "node --test tests-node/agent-orchestrator-cli.test.js tests-node/agent-orchestrator-json-contract.test.js tests-node/agent-governance-summary.test.js tests-node/run-php-cs-fixer-wrapper.test.js tests-node/php-governance-contract.test.js tests-node/orchestrator/core-io.test.js tests-node/orchestrator/core-parsers.test.js tests-node/orchestrator/core-serializers.test.js tests-node/orchestrator/conflicts-engine.test.js tests-node/orchestrator/handoffs-engine.test.js tests-node/orchestrator/codex-mirror-engine.test.js tests-node/orchestrator/task-guards.test.js tests-node/orchestrator/task-create-engine.test.js tests-node/orchestrator/metrics-engine.test.js tests-node/orchestrator/status-engine.test.js tests-node/orchestrator/diagnostics.test.js tests-node/orchestrator/policy-config.test.js",
->>>>>>> origin/main
+        "agent:test": "node --test tests-node/agent-orchestrator-cli.test.js tests-node/agent-orchestrator-json-contract.test.js tests-node/agent-governance-summary.test.js tests-node/run-php-cs-fixer-wrapper.test.js tests-node/php-governance-contract.test.js tests-node/orchestrator/core-io.test.js tests-node/orchestrator/core-parsers.test.js tests-node/orchestrator/core-serializers.test.js tests-node/orchestrator/conflicts-engine.test.js tests-node/orchestrator/handoffs-engine.test.js tests-node/orchestrator/codex-mirror-engine.test.js tests-node/orchestrator/task-guards.test.js tests-node/orchestrator/task-create-engine.test.js tests-node/orchestrator/metrics-engine.test.js tests-node/orchestrator/status-engine.test.js tests-node/orchestrator/diagnostics.test.js tests-node/orchestrator/policy-config.test.js tests-node/orchestrator/intake-engine.test.js",
         "agent:summary": "node bin/agent-governance-summary.js",
         "agent:summary:local": "node bin/agent-governance-summary.js --profile local",
         "agent:summary:ci": "node bin/agent-governance-summary.js --profile ci",
