@@ -520,6 +520,13 @@
     box-shadow: 0 12px 28px rgba(10, 22, 42, 0.06);
 }
 
+.tele-quick-card:focus-within {
+    border-color: rgba(2, 132, 199, 0.36);
+    box-shadow:
+        0 0 0 3px rgba(2, 132, 199, 0.12),
+        0 12px 28px rgba(10, 22, 42, 0.08);
+}
+
 .tele-quick-icon {
     width: 40px;
     height: 40px;
@@ -561,6 +568,13 @@
         linear-gradient(180deg, rgba(255, 255, 255, 0.94), #f8fbff 100%);
     box-shadow: 0 18px 42px rgba(10, 22, 42, 0.08);
     padding: 22px 22px 20px;
+}
+
+.tele-decision-panel:focus-within {
+    border-color: rgba(83, 169, 255, 0.45);
+    box-shadow:
+        0 0 0 3px rgba(83, 169, 255, 0.12),
+        0 18px 42px rgba(10, 22, 42, 0.08);
 }
 
 .tele-kicker {
@@ -718,6 +732,13 @@
     box-shadow: var(--ui-shadow-md);
 }
 
+.tele-card:focus-within {
+    border-color: rgba(2, 132, 199, 0.45);
+    box-shadow:
+        0 0 0 3px rgba(2, 132, 199, 0.16),
+        var(--ui-shadow-md);
+}
+
 .tele-card.featured {
     border-color: #aecaee;
     background: linear-gradient(160deg, #f7fbff 0%, #ecf4ff 66%, #eefcf4 100%);
@@ -819,6 +840,13 @@
     border: 1px solid rgba(147, 180, 223, 0.34);
     box-shadow: var(--ui-shadow-lg);
     padding: 34px;
+}
+
+.callback-box:focus-within {
+    border-color: rgba(125, 186, 255, 0.62);
+    box-shadow:
+        0 0 0 3px rgba(82, 156, 255, 0.14),
+        var(--ui-shadow-lg);
 }
 
 .callback-content {
@@ -2249,6 +2277,34 @@ html[data-theme='dark'] .telemedicine-price-note {
     background: rgba(15, 26, 44, 0.9);
     border-color: rgba(122, 156, 207, 0.35);
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .tele-quick-card:focus-within {
+    border-color: rgba(123, 193, 255, 0.46);
+    box-shadow:
+        0 0 0 3px rgba(83, 169, 255, 0.14),
+        0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .tele-decision-panel:focus-within {
+    border-color: rgba(124, 194, 255, 0.5);
+    box-shadow:
+        0 0 0 3px rgba(83, 169, 255, 0.14),
+        0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .tele-card:focus-within {
+    border-color: rgba(124, 194, 255, 0.55);
+    box-shadow:
+        0 0 0 3px rgba(83, 169, 255, 0.18),
+        0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .callback-box:focus-within {
+    border-color: rgba(140, 191, 246, 0.62);
+    box-shadow:
+        0 0 0 3px rgba(99, 158, 235, 0.18),
+        var(--ui-shadow-lg);
 }
 
 html[data-theme='dark'] .service-card h3,

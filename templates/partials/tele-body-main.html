@@ -548,12 +548,12 @@
         </section>
 
         <!-- Telemedicine Section -->
-        <section class="section section-light" id="telemedicina">
+        <section class="section section-light" id="telemedicina" aria-labelledby="telemedicineSectionTitle" aria-describedby="telemedicineSectionSubtitle telemedicinePriceNote">
             <div class="section-header">
-                <h2 class="section-title" data-i18n="telemedicine_title">
+                <h2 class="section-title" id="telemedicineSectionTitle" data-i18n="telemedicine_title">
                     Consulta desde cualquier lugar
                 </h2>
-                <p class="section-subtitle" data-i18n="telemedicine_subtitle">
+                <p class="section-subtitle" id="telemedicineSectionSubtitle" data-i18n="telemedicine_subtitle">
                     Tres formas simples de conectarte con tu dermatólogo
                 </p>
             </div>
@@ -604,11 +604,11 @@
                     </div>
                 </div>
 
-                <div class="tele-decision-panel">
+                <div class="tele-decision-panel" role="region" aria-labelledby="telemedicinePrepTitle">
                     <p class="tele-kicker" data-i18n="tele_quick_kicker">
                         Consulta online sin complicaciones
                     </p>
-                    <h3 data-i18n="tele_prep_title">
+                    <h3 id="telemedicinePrepTitle" data-i18n="tele_prep_title">
                         Preparate en menos de 2 minutos
                     </h3>
                     <p class="tele-decision-copy" data-i18n="tele_prep_subtitle">
@@ -652,7 +652,7 @@
                 </div>
             </div>
 
-            <p class="telemedicine-price-note" data-i18n="telemedicine_price_note">
+            <p class="telemedicine-price-note" id="telemedicinePriceNote" role="note" data-i18n="telemedicine_price_note">
                 Valores por consulta online. Si se requiere examen presencial,
                 se informa antes de confirmar.
             </p>
@@ -789,22 +789,26 @@
                     <div class="callback-icon">
                         <i class="fas fa-headset"></i>
                     </div>
-                    <h3 data-i18n="callback_title">
+                    <h3 id="callbackFormTitle" data-i18n="callback_title">
                         ¿Prefieres que te llamemos?
                     </h3>
-                    <p data-i18n="callback_desc">
+                    <p id="callbackFormDescription" data-i18n="callback_desc">
                         Déjanos tu número y te llamaremos en los próximos
                         minutos (en horario de atención).
                     </p>
-                    <form id="callbackForm" class="callback-form">
+                    <form id="callbackForm" class="callback-form" aria-labelledby="callbackFormTitle" aria-describedby="callbackFormDescription callbackStatus">
+                        <label class="sr-only" for="callbackPhone" data-i18n="label_phone">Telefono</label>
                         <input
+                            id="callbackPhone"
                             type="tel"
                             name="telefono"
                             placeholder="+593 98 000 0000"
                             required
                             inputmode="tel"
+                            autocomplete="tel"
                         />
-                        <select name="preferencia" required>
+                        <label class="sr-only" for="callbackPreference" data-i18n="callback_when">Cuando prefieres?</label>
+                        <select id="callbackPreference" name="preferencia" required>
                             <option value="" data-i18n="callback_when">
                                 ¿Cuándo prefieres?
                             </option>
@@ -828,6 +832,7 @@
                             >
                         </button>
                     </form>
+                    <p id="callbackStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
                 </div>
             </div>
         </section>
