@@ -265,6 +265,45 @@ function mapRun(raw) {
     };
 }
 
+function isSkippedCompletedRun(run) {
+    return Boolean(
+        run &&
+        run.status === 'completed' &&
+        String(run.conclusion || '').toLowerCase() === 'skipped'
+    );
+}
+
+function selectRepresentativeWorkflowRun(runs) {
+    const list = Array.isArray(runs) ? runs.filter(Boolean) : [];
+    const latest = list[0] || null;
+    if (!latest) {
+        return {
+            latest: null,
+            latestEffective: null,
+            latestSkippedFallback: false,
+        };
+    }
+    if (!isSkippedCompletedRun(latest)) {
+        return {
+            latest,
+            latestEffective: latest,
+            latestSkippedFallback: false,
+        };
+    }
+    const latestNonSkipped =
+        list.find((run) => !isSkippedCompletedRun(run)) || null;
+    return {
+        latest,
+        latestEffective: latestNonSkipped || latest,
+        latestSkippedFallback: Boolean(latestNonSkipped),
+    };
+}
+
+function getWorkflowRunForHealth(wrapper) {
+    if (!wrapper) return null;
+    return wrapper.latestEffective || wrapper.latest || null;
+}
+
 function fetchLatestWorkflowRun({ workflowRef, label }, branch) {
     const res = runGhJson(
         [
@@ -275,7 +314,7 @@ function fetchLatestWorkflowRun({ workflowRef, label }, branch) {
             '--branch',
             branch,
             '--limit',
-            '1',
+            '6',
             '--json',
             'databaseId,displayTitle,workflowName,status,conclusion,url,createdAt,updatedAt,headBranch,headSha,event',
         ],
@@ -291,12 +330,17 @@ function fetchLatestWorkflowRun({ workflowRef, label }, branch) {
         };
     }
     const list = Array.isArray(res.json) ? res.json : [];
+    const mappedRuns = list.map((item) => mapRun(item)).filter(Boolean);
+    const selected = selectRepresentativeWorkflowRun(mappedRuns);
     return {
         workflowName: label,
         workflowRef,
         available: true,
         error: null,
-        latest: mapRun(list[0] || null),
+        latest: selected.latest,
+        latestEffective: selected.latestEffective,
+        latestSkippedFallback: selected.latestSkippedFallback,
+        recentRunsSample: mappedRuns.slice(0, 6),
     };
 }
 
@@ -660,12 +704,8 @@ function readWeeklyReportFromRemoteArtifact(
     weeklyRunWrapper,
     fallbackOutputDir
 ) {
-    if (
-        !weeklyRunWrapper ||
-        !weeklyRunWrapper.available ||
-        !weeklyRunWrapper.latest ||
-        !weeklyRunWrapper.latest.id
-    ) {
+    const run = getWorkflowRunForHealth(weeklyRunWrapper);
+    if (!weeklyRunWrapper || !weeklyRunWrapper.available || !run || !run.id) {
         return {
             found: false,
             source: 'remote_artifact',
@@ -674,8 +714,6 @@ function readWeeklyReportFromRemoteArtifact(
             error: 'No hay run de Weekly KPI disponible para descargar artifact',
         };
     }
-
-    const run = weeklyRunWrapper.latest;
     const downloaded = downloadWeeklyReportArtifact(run.id);
     if (!downloaded.ok) {
         return {
@@ -773,21 +811,22 @@ function coerceRunHealth(runWrapper) {
     if (!runWrapper || !runWrapper.available) {
         return { signal: 'YELLOW', reason: 'unavailable' };
     }
-    if (!runWrapper.latest) {
+    const run = getWorkflowRunForHealth(runWrapper);
+    if (!run) {
         return { signal: 'YELLOW', reason: 'missing' };
     }
-    if (runWrapper.latest.status !== 'completed') {
+    if (run.status !== 'completed') {
         return {
             signal: 'YELLOW',
-            reason: `status:${runWrapper.latest.status}`,
+            reason: `status:${run.status}`,
         };
     }
-    if (runWrapper.latest.conclusion === 'success') {
+    if (run.conclusion === 'success') {
         return { signal: 'GREEN', reason: 'success' };
     }
     return {
         signal: 'RED',
-        reason: `conclusion:${runWrapper.latest.conclusion || 'unknown'}`,
+        reason: `conclusion:${run.conclusion || 'unknown'}`,
     };
 }
 
@@ -979,7 +1018,7 @@ function computePlanMasterProgress({
         notes: 'Pendiente por acceso/token Sentry para evidencia de dashboard/API.',
     });
 
-    const weeklyRun = workflows.weeklyKpi?.latest || null;
+    const weeklyRun = getWorkflowRunForHealth(workflows.weeklyKpi) || null;
     const weeklyCriticalWarnings =
         weeklyLocalReport && weeklyLocalReport.found && !weeklyLocalReport.error
             ? Number(weeklyLocalReport.warningCounts?.critical || 0)
@@ -1112,7 +1151,8 @@ function computeSuggestedActions({
             });
             continue;
         }
-        if (!wrapper.latest) {
+        const run = getWorkflowRunForHealth(wrapper);
+        if (!run) {
             pushAction({
                 id: `ACT-P1-WF-${key.toUpperCase()}-MISSING`,
                 priority: 'P1',
@@ -1124,7 +1164,6 @@ function computeSuggestedActions({
             });
             continue;
         }
-        const run = wrapper.latest;
         if (run.status !== 'completed') {
             pushAction({
                 id: `ACT-P1-WF-${key.toUpperCase()}-INPROGRESS`,
@@ -1191,7 +1230,7 @@ function computeSuggestedActions({
             title: 'Preparar seguimiento del proximo ciclo semanal (Fase 6)',
             reason: `phase6_schedule_pace=at_risk (${pace.reason || 'n/a'})`,
             command: 'npm run prod:readiness:summary',
-            url: workflows?.weeklyKpi?.latest?.url || null,
+            url: getWorkflowRunForHealth(workflows?.weeklyKpi)?.url || null,
         });
     } else if (
         pace?.signal === 'on_track' &&
@@ -1258,11 +1297,17 @@ function markdownWorkflowLine(label, wrapper) {
     if (!wrapper || !wrapper.available) {
         return `- ${label}: unavailable`;
     }
-    if (!wrapper.latest) {
+    const run = getWorkflowRunForHealth(wrapper);
+    if (!run) {
         return `- ${label}: no runs found`;
     }
-    const run = wrapper.latest;
-    return `- ${label}: ${run.conclusion || run.status || 'unknown'} (run ${run.id}, ${run.ageLabel}, ${run.durationLabel}) ${run.url || ''}`.trim();
+    const fallbackNote =
+        wrapper.latest &&
+        wrapper.latestEffective &&
+        wrapper.latest.id !== wrapper.latestEffective.id
+            ? ` [latest actual skipped: ${wrapper.latest.id}]`
+            : '';
+    return `- ${label}: ${run.conclusion || run.status || 'unknown'} (run ${run.id}, ${run.ageLabel}, ${run.durationLabel})${fallbackNote} ${run.url || ''}`.trim();
 }
 
 function toMarkdown(summary) {
