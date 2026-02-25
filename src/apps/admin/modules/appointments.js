@@ -26,9 +26,48 @@ function getWeekRange() {
     };
 }
 
+function countAppointmentsForToday(items) {
+    const today = new Date().toISOString().split('T')[0];
+    return items.filter((item) => item.date === today).length;
+}
+
+function countPendingTransfers(items) {
+    return items.filter(
+        (item) => item.paymentStatus === 'pending_transfer_review'
+    ).length;
+}
+
+function renderAppointmentsToolbarMeta(visibleAppointments) {
+    const metaEl = document.getElementById('appointmentsToolbarMeta');
+    if (!metaEl) return;
+
+    const visible = Array.isArray(visibleAppointments)
+        ? visibleAppointments
+        : [];
+    const all = Array.isArray(currentAppointments) ? currentAppointments : [];
+    const visibleCount = visible.length;
+    const allCount = all.length;
+    const pendingTransferVisible = countPendingTransfers(visible);
+    const todayVisible = countAppointmentsForToday(visible);
+
+    const chips = [
+        `<span class="toolbar-chip is-accent">Mostrando ${escapeHtml(String(visibleCount))}${allCount !== visibleCount ? ` de ${escapeHtml(String(allCount))}` : ''}</span>`,
+        `<span class="toolbar-chip">Hoy: ${escapeHtml(String(todayVisible))}</span>`,
+    ];
+
+    if (pendingTransferVisible > 0) {
+        chips.push(
+            `<span class="toolbar-chip is-warning">Por validar: ${escapeHtml(String(pendingTransferVisible))}</span>`
+        );
+    }
+
+    metaEl.innerHTML = chips.join('');
+}
+
 export function renderAppointments(appointments) {
     const tbody = document.getElementById('appointmentsTableBody');
     if (!tbody) return;
+    renderAppointmentsToolbarMeta(appointments);
 
     if (appointments.length === 0) {
         tbody.innerHTML = `
@@ -52,57 +91,99 @@ export function renderAppointments(appointments) {
     });
 
     tbody.innerHTML = sorted
-        .map(
-            (a) => `
-        <tr>
-            <td>
-                <strong>${escapeHtml(a.name)}</strong><br>
-                <small>${escapeHtml(a.email)}</small>
+        .map((appointment) => {
+            const status = String(appointment.status || 'confirmed');
+            const paymentStatus = String(appointment.paymentStatus || '');
+            const isPaymentReview = paymentStatus === 'pending_transfer_review';
+            const isCancelled = status === 'cancelled';
+            const isNoShow = status === 'no_show' || status === 'noshow';
+            const rowClassName = [
+                'appointment-row',
+                isPaymentReview ? 'is-payment-review' : '',
+                isCancelled ? 'is-cancelled' : '',
+                isNoShow ? 'is-noshow' : '',
+            ]
+                .filter(Boolean)
+                .join(' ');
+
+            const doctorAssignedLine = appointment.doctorAssigned
+                ? `<br><small>Asignado: ${escapeHtml(getDoctorName(appointment.doctorAssigned))}</small>`
+                : '';
+            const transferReferenceLine = appointment.transferReference
+                ? `<br><small>Ref: ${escapeHtml(appointment.transferReference)}</small>`
+                : '';
+            const transferProofHref = sanitizePublicHref(
+                appointment.transferProofUrl
+            );
+            const transferProofLine = transferProofHref
+                ? `<br><a class="appointment-proof-link" href="${escapeHtml(
+                      transferProofHref
+                  )}" target="_blank" rel="noopener noreferrer"><i class="fas fa-file-arrow-up" aria-hidden="true"></i> Ver comprobante</a>`
+                : '';
+            const normalizedPhone = String(appointment.phone || '').replace(
+                /\D/g,
+                ''
+            );
+
+            return `
+        <tr class="${rowClassName}">
+            <td data-label="Paciente" class="appointment-cell-main">
+                <strong>${escapeHtml(appointment.name)}</strong><br>
+                <small>${escapeHtml(appointment.email)}</small>
+                <div class="appointment-inline-meta">
+                    <span class="toolbar-chip">${escapeHtml(
+                        String(appointment.phone || 'Sin telefono')
+                    )}</span>
+                </div>
             </td>
-            <td>${escapeHtml(getServiceName(a.service))}</td>
-            <td>${escapeHtml(getDoctorName(a.doctor))}${a.doctorAssigned ? '<br><small>Asignado: ' + escapeHtml(getDoctorName(a.doctorAssigned)) + '</small>' : ''}</td>
-            <td>${escapeHtml(formatDate(a.date))}</td>
-            <td>${escapeHtml(a.time)}</td>
-            <td>
-                <strong>${escapeHtml(a.price || '$0.00')}</strong><br>
-                <small>${escapeHtml(getPaymentMethodText(a.paymentMethod))} - ${escapeHtml(getPaymentStatusText(a.paymentStatus))}</small>
-                ${a.transferReference ? `<br><small>Ref: ${escapeHtml(a.transferReference)}</small>` : ''}
-                ${sanitizePublicHref(a.transferProofUrl) ? `<br><a href="${escapeHtml(sanitizePublicHref(a.transferProofUrl))}" target="_blank" rel="noopener noreferrer">Ver comprobante</a>` : ''}
+            <td data-label="Servicio">${escapeHtml(getServiceName(appointment.service))}</td>
+            <td data-label="Doctor">${escapeHtml(getDoctorName(appointment.doctor))}${doctorAssignedLine}</td>
+            <td data-label="Fecha">${escapeHtml(formatDate(appointment.date))}</td>
+            <td data-label="Hora">${escapeHtml(appointment.time)}</td>
+            <td data-label="Pago" class="appointment-payment-cell">
+                <strong>${escapeHtml(appointment.price || '$0.00')}</strong>
+                <small>${escapeHtml(getPaymentMethodText(appointment.paymentMethod))} - ${escapeHtml(getPaymentStatusText(paymentStatus))}</small>
+                ${transferReferenceLine}
+                ${transferProofLine}
             </td>
-            <td>
-                <span class="status-badge status-${escapeHtml(a.status || 'confirmed')}">
-                    ${escapeHtml(getStatusText(a.status || 'confirmed'))}
+            <td data-label="Estado">
+                <span class="status-badge status-${escapeHtml(status)}">
+                    ${escapeHtml(getStatusText(status))}
                 </span>
             </td>
-            <td>
+            <td data-label="Acciones">
                 <div class="table-actions">
                     ${
-                        a.paymentStatus === 'pending_transfer_review'
+                        isPaymentReview
                             ? `
-                    <button type="button" class="btn-icon success" data-action="approve-transfer" data-id="${Number(a.id) || 0}" title="Aprobar transferencia">
+                    <button type="button" class="btn-icon success" data-action="approve-transfer" data-id="${Number(appointment.id) || 0}" title="Aprobar transferencia">
                         <i class="fas fa-check"></i>
                     </button>
-                    <button type="button" class="btn-icon danger" data-action="reject-transfer" data-id="${Number(a.id) || 0}" title="Rechazar transferencia">
+                    <button type="button" class="btn-icon danger" data-action="reject-transfer" data-id="${Number(appointment.id) || 0}" title="Rechazar transferencia">
                         <i class="fas fa-ban"></i>
                     </button>
                     `
                             : ''
                     }
-                    <a href="tel:${escapeHtml(a.phone)}" class="btn-icon" title="Llamar" aria-label="Llamar a ${escapeHtml(a.name)}">
+                    <a href="tel:${escapeHtml(
+                        appointment.phone
+                    )}" class="btn-icon" title="Llamar" aria-label="Llamar a ${escapeHtml(appointment.name)}">
                         <i class="fas fa-phone"></i>
                     </a>
-                    <a href="https://wa.me/${escapeHtml(String(a.phone || '').replace(/\\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp" aria-label="Abrir WhatsApp de ${escapeHtml(a.name)}">
+                    <a href="https://wa.me/${escapeHtml(
+                        normalizedPhone
+                    )}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp" aria-label="Abrir WhatsApp de ${escapeHtml(appointment.name)}">
                         <i class="fab fa-whatsapp"></i>
                     </a>
-                    <button type="button" class="btn-icon danger" data-action="cancel-appointment" data-id="${Number(a.id) || 0}" title="Cancelar">
+                    <button type="button" class="btn-icon danger" data-action="cancel-appointment" data-id="${Number(appointment.id) || 0}" title="Cancelar">
                         <i class="fas fa-times"></i>
                     </button>
                     ${
-                        (a.status || 'confirmed') !== 'cancelled' &&
-                        (a.status || 'confirmed') !== 'completed' &&
-                        (a.status || 'confirmed') !== 'no_show'
+                        status !== 'cancelled' &&
+                        status !== 'completed' &&
+                        status !== 'no_show'
                             ? `
-                    <button type="button" class="btn-icon warning" data-action="mark-no-show" data-id="${Number(a.id) || 0}" title="Marcar no asistio">
+                    <button type="button" class="btn-icon warning" data-action="mark-no-show" data-id="${Number(appointment.id) || 0}" title="Marcar no asistio">
                         <i class="fas fa-user-slash"></i>
                     </button>
                     `
@@ -111,8 +192,8 @@ export function renderAppointments(appointments) {
                 </div>
             </td>
         </tr>
-    `
-        )
+    `;
+        })
         .join('');
 }
 

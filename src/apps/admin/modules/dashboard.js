@@ -4,7 +4,7 @@ import {
     currentReviews,
     currentFunnelMetrics,
     currentHealthStatus,
-    getEmptyFunnelMetrics
+    getEmptyFunnelMetrics,
 } from './state.js';
 import {
     escapeHtml,
@@ -13,7 +13,7 @@ import {
     toPositiveNumber,
     getServiceName,
     getPreferenceText,
-    normalizeCallbackStatus
+    normalizeCallbackStatus,
 } from './ui.js';
 
 function normalizeFunnelRows(rows) {
@@ -23,14 +23,16 @@ function normalizeFunnelRows(rows) {
     return rows
         .map((row) => ({
             label: String(row && row.label ? row.label : 'unknown'),
-            count: toPositiveNumber(row && row.count ? row.count : 0)
+            count: toPositiveNumber(row && row.count ? row.count : 0),
         }))
         .filter((row) => row.count > 0)
         .sort((a, b) => b.count - a.count);
 }
 
 function formatFunnelStepLabel(label) {
-    const raw = String(label || '').trim().toLowerCase();
+    const raw = String(label || '')
+        .trim()
+        .toLowerCase();
     const labels = {
         service_selected: 'Servicio seleccionado',
         doctor_selected: 'Doctor seleccionado',
@@ -55,7 +57,7 @@ function formatFunnelStepLabel(label) {
         payment: 'Metodo de pago',
         confirmation: 'Confirmacion',
         payment_method_selected: 'Metodo de pago',
-        unknown: 'Paso no identificado'
+        unknown: 'Paso no identificado',
     };
 
     if (labels[raw]) {
@@ -70,11 +72,13 @@ function formatFunnelStepLabel(label) {
 }
 
 function formatFunnelEntryLabel(label) {
-    const raw = String(label || '').trim().toLowerCase();
+    const raw = String(label || '')
+        .trim()
+        .toLowerCase();
     const labels = {
         booking_form: 'Formulario web',
         chatbot: 'Chatbot',
-        unknown: 'No identificado'
+        unknown: 'No identificado',
     };
     if (labels[raw]) {
         return labels[raw];
@@ -87,13 +91,15 @@ function formatFunnelEntryLabel(label) {
 }
 
 function formatPaymentMethodLabel(label) {
-    const raw = String(label || '').trim().toLowerCase();
+    const raw = String(label || '')
+        .trim()
+        .toLowerCase();
     const labels = {
         card: 'Tarjeta',
         transfer: 'Transferencia',
         cash: 'Efectivo',
         unpaid: 'Sin definir',
-        unknown: 'No identificado'
+        unknown: 'No identificado',
     };
     if (labels[raw]) {
         return labels[raw];
@@ -106,13 +112,15 @@ function formatPaymentMethodLabel(label) {
 }
 
 function formatEventSourceLabel(label) {
-    const raw = String(label || '').trim().toLowerCase();
+    const raw = String(label || '')
+        .trim()
+        .toLowerCase();
     const labels = {
         web: 'Web',
         booking_form: 'Formulario web',
         chatbot: 'Chatbot',
         admin: 'Panel admin',
-        unknown: 'No identificado'
+        unknown: 'No identificado',
     };
     if (labels[raw]) {
         return labels[raw];
@@ -125,7 +133,9 @@ function formatEventSourceLabel(label) {
 }
 
 function formatAbandonReasonLabel(label) {
-    const raw = String(label || '').trim().toLowerCase();
+    const raw = String(label || '')
+        .trim()
+        .toLowerCase();
     const labels = {
         user_closed: 'Usuario cerro el flujo',
         chat_cancel: 'Usuario cancelo en chat',
@@ -137,7 +147,7 @@ function formatAbandonReasonLabel(label) {
         availability_error: 'Error consultando horarios',
         appointment_create_failed: 'Error registrando cita',
         validation_error: 'Error de validacion',
-        unknown: 'No identificado'
+        unknown: 'No identificado',
     };
     if (labels[raw]) {
         return labels[raw];
@@ -150,7 +160,9 @@ function formatAbandonReasonLabel(label) {
 }
 
 function formatErrorCodeLabel(label) {
-    const raw = String(label || '').trim().toLowerCase();
+    const raw = String(label || '')
+        .trim()
+        .toLowerCase();
     const labels = {
         calendar_unreachable: 'Agenda Google no disponible',
         calendar_auth_failed: 'Token Google invalido',
@@ -161,7 +173,7 @@ function formatErrorCodeLabel(label) {
         availability_error: 'Error consultando horarios',
         payment_failed: 'Fallo de pago',
         validation_error: 'Error de validacion',
-        unknown: 'No identificado'
+        unknown: 'No identificado',
     };
 
     if (labels[raw]) {
@@ -190,66 +202,100 @@ function renderFunnelList(elementId, rows, formatLabel, emptyMessage) {
     }
 
     const total = safeRows.reduce((sum, row) => sum + row.count, 0);
-    listEl.innerHTML = safeRows.map((row) => {
-        const sharePct = total > 0 ? formatPercent((row.count / total) * 100) : '0%';
-        return `
+    listEl.innerHTML = safeRows
+        .map((row) => {
+            const sharePct =
+                total > 0 ? formatPercent((row.count / total) * 100) : '0%';
+            return `
             <div class="funnel-row">
                 <span class="funnel-row-label">${escapeHtml(formatLabel(row.label))}</span>
                 <span class="funnel-row-count">${escapeHtml(formatCount(row.count))} (${escapeHtml(sharePct)})</span>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 }
 
 function renderFunnelMetrics() {
-    const metrics = currentFunnelMetrics && typeof currentFunnelMetrics === 'object'
-        ? currentFunnelMetrics
-        : getEmptyFunnelMetrics();
-    const summary = metrics.summary && typeof metrics.summary === 'object'
-        ? metrics.summary
-        : {};
+    const metrics =
+        currentFunnelMetrics && typeof currentFunnelMetrics === 'object'
+            ? currentFunnelMetrics
+            : getEmptyFunnelMetrics();
+    const summary =
+        metrics.summary && typeof metrics.summary === 'object'
+            ? metrics.summary
+            : {};
 
     const viewBooking = toPositiveNumber(summary.viewBooking);
     const startCheckout = toPositiveNumber(summary.startCheckout);
     const bookingConfirmed = toPositiveNumber(summary.bookingConfirmed);
     const checkoutAbandon = toPositiveNumber(summary.checkoutAbandon);
-    toPositiveNumber(summary.startRatePct) || (viewBooking > 0 ? (startCheckout / viewBooking) * 100 : 0);
-    const confirmedRatePct = toPositiveNumber(summary.confirmedRatePct) || (startCheckout > 0 ? (bookingConfirmed / startCheckout) * 100 : 0);
-    const abandonRatePct = toPositiveNumber(summary.abandonRatePct) || (startCheckout > 0 ? (checkoutAbandon / startCheckout) * 100 : 0);
+    toPositiveNumber(summary.startRatePct) ||
+        (viewBooking > 0 ? (startCheckout / viewBooking) * 100 : 0);
+    const confirmedRatePct =
+        toPositiveNumber(summary.confirmedRatePct) ||
+        (startCheckout > 0 ? (bookingConfirmed / startCheckout) * 100 : 0);
+    const abandonRatePct =
+        toPositiveNumber(summary.abandonRatePct) ||
+        (startCheckout > 0 ? (checkoutAbandon / startCheckout) * 100 : 0);
 
     const viewBookingEl = document.getElementById('funnelViewBooking');
     if (viewBookingEl) viewBookingEl.textContent = formatCount(viewBooking);
 
     const startCheckoutEl = document.getElementById('funnelStartCheckout');
-    if (startCheckoutEl) startCheckoutEl.textContent = formatCount(startCheckout);
+    if (startCheckoutEl)
+        startCheckoutEl.textContent = formatCount(startCheckout);
 
-    const bookingConfirmedEl = document.getElementById('funnelBookingConfirmed');
-    if (bookingConfirmedEl) bookingConfirmedEl.textContent = formatCount(bookingConfirmed);
+    const bookingConfirmedEl = document.getElementById(
+        'funnelBookingConfirmed'
+    );
+    if (bookingConfirmedEl)
+        bookingConfirmedEl.textContent = formatCount(bookingConfirmed);
 
     const funnelAbandonRateEl = document.getElementById('funnelAbandonRate');
-    if (funnelAbandonRateEl) funnelAbandonRateEl.textContent = formatPercent(abandonRatePct);
+    if (funnelAbandonRateEl)
+        funnelAbandonRateEl.textContent = formatPercent(abandonRatePct);
 
-    const checkoutConversionRateEl = document.getElementById('checkoutConversionRate');
-    if (checkoutConversionRateEl) checkoutConversionRateEl.textContent = formatPercent(confirmedRatePct);
+    const checkoutConversionRateEl = document.getElementById(
+        'checkoutConversionRate'
+    );
+    if (checkoutConversionRateEl)
+        checkoutConversionRateEl.textContent = formatPercent(confirmedRatePct);
 
-    const bookingErrorCount = toPositiveNumber(metrics.events && metrics.events.booking_error);
-    const checkoutErrorCount = toPositiveNumber(metrics.events && metrics.events.checkout_error);
+    const bookingErrorCount = toPositiveNumber(
+        metrics.events && metrics.events.booking_error
+    );
+    const checkoutErrorCount = toPositiveNumber(
+        metrics.events && metrics.events.checkout_error
+    );
     const totalErrorCount = bookingErrorCount + checkoutErrorCount;
-    const bookingErrorRatePct = startCheckout > 0 ? (totalErrorCount / startCheckout) * 100 : 0;
+    const bookingErrorRatePct =
+        startCheckout > 0 ? (totalErrorCount / startCheckout) * 100 : 0;
     const bookingErrorRateEl = document.getElementById('bookingErrorRate');
     if (bookingErrorRateEl) {
         bookingErrorRateEl.textContent = formatPercent(bookingErrorRatePct);
     }
 
-    const calendarHealthStatusEl = document.getElementById('calendarHealthStatus');
+    const calendarHealthStatusEl = document.getElementById(
+        'calendarHealthStatus'
+    );
     if (calendarHealthStatusEl) {
-        const health = currentHealthStatus && typeof currentHealthStatus === 'object'
-            ? currentHealthStatus
-            : null;
-        const source = health && health.calendarSource ? String(health.calendarSource) : 'desconocido';
-        const mode = health && health.calendarMode ? String(health.calendarMode) : 'desconocido';
+        const health =
+            currentHealthStatus && typeof currentHealthStatus === 'object'
+                ? currentHealthStatus
+                : null;
+        const source =
+            health && health.calendarSource
+                ? String(health.calendarSource)
+                : 'desconocido';
+        const mode =
+            health && health.calendarMode
+                ? String(health.calendarMode)
+                : 'desconocido';
         const reachable = health ? Boolean(health.calendarReachable) : false;
-        const tokenHealthy = health ? Boolean(health.calendarTokenHealthy) : false;
+        const tokenHealthy = health
+            ? Boolean(health.calendarTokenHealthy)
+            : false;
 
         let label = `Agenda ${source}: ${mode}`;
         if (source === 'google') {
@@ -308,7 +354,8 @@ function renderFunnelMetrics() {
 }
 
 export function loadDashboardData() {
-    document.getElementById('totalAppointments').textContent = currentAppointments.length;
+    document.getElementById('totalAppointments').textContent =
+        currentAppointments.length;
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -333,7 +380,8 @@ export function loadDashboardData() {
         }
     }
 
-    document.getElementById('todayAppointments').textContent = todayAppointments.length;
+    document.getElementById('todayAppointments').textContent =
+        todayAppointments.length;
     const noShowEl = document.getElementById('totalNoShows');
     if (noShowEl) {
         noShowEl.textContent = formatCount(totalNoShows);
@@ -345,25 +393,36 @@ export function loadDashboardData() {
             pendingCallbacks.push(c);
         }
     }
-    document.getElementById('pendingCallbacks').textContent = pendingCallbacks.length;
+    document.getElementById('pendingCallbacks').textContent =
+        pendingCallbacks.length;
 
     let avgRating = 0;
     if (currentReviews.length > 0) {
-        avgRating = (currentReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / currentReviews.length).toFixed(1);
+        avgRating = (
+            currentReviews.reduce(
+                (sum, r) => sum + (Number(r.rating) || 0),
+                0
+            ) / currentReviews.length
+        ).toFixed(1);
     }
     document.getElementById('avgRating').textContent = avgRating;
 
-    document.getElementById('appointmentsBadge').textContent = pendingTransfers > 0
-        ? `${confirmedCount} (${pendingTransfers} por validar)`
-        : confirmedCount;
-    document.getElementById('callbacksBadge').textContent = pendingCallbacks.length;
+    document.getElementById('appointmentsBadge').textContent =
+        pendingTransfers > 0
+            ? `${confirmedCount} (${pendingTransfers} por validar)`
+            : confirmedCount;
+    document.getElementById('callbacksBadge').textContent =
+        pendingCallbacks.length;
     document.getElementById('reviewsBadge').textContent = currentReviews.length;
 
     const todayList = document.getElementById('todayAppointmentsList');
     if (todayAppointments.length === 0) {
-        todayList.innerHTML = '<p class="empty-message">No hay citas para hoy</p>';
+        todayList.innerHTML =
+            '<p class="empty-message">No hay citas para hoy</p>';
     } else {
-        todayList.innerHTML = todayAppointments.map(a => `
+        todayList.innerHTML = todayAppointments
+            .map(
+                (a) => `
             <div class="upcoming-item">
                 <div class="upcoming-time">
                     <span class="time">${escapeHtml(a.time)}</span>
@@ -376,20 +435,25 @@ export function loadDashboardData() {
                     <a href="tel:${escapeHtml(a.phone)}" class="btn-icon" title="Llamar">
                         <i class="fas fa-phone"></i>
                     </a>
-                    <a href="https://wa.me/${escapeHtml(String(a.phone || '').replace(/\\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp">
+                    <a href="https://wa.me/${escapeHtml(String(a.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp">
                         <i class="fab fa-whatsapp"></i>
                     </a>
                 </div>
             </div>
-        `).join('');
+        `
+            )
+            .join('');
     }
 
     const callbacksList = document.getElementById('recentCallbacksList');
     const recentCallbacks = currentCallbacks.slice(-5).reverse();
     if (recentCallbacks.length === 0) {
-        callbacksList.innerHTML = '<p class="empty-message">No hay callbacks pendientes</p>';
+        callbacksList.innerHTML =
+            '<p class="empty-message">No hay callbacks pendientes</p>';
     } else {
-        callbacksList.innerHTML = recentCallbacks.map(c => `
+        callbacksList.innerHTML = recentCallbacks
+            .map(
+                (c) => `
             <div class="upcoming-item">
                 <div class="upcoming-info">
                     <span class="name">${escapeHtml(c.telefono)}</span>
@@ -401,7 +465,9 @@ export function loadDashboardData() {
                     </a>
                 </div>
             </div>
-        `).join('');
+        `
+            )
+            .join('');
     }
 
     renderFunnelMetrics();
