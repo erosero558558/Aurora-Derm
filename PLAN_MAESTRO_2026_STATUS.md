@@ -2,12 +2,13 @@
 
 > Nota de gobernanza (2026-02-24): este documento se mantiene como snapshot historico; la fuente unica de control operativo es `PLAN_MAESTRO_OPERATIVO_2026.md`.
 
-Fecha de actualizacion: 2026-02-24 (sesion Codex post-fix compat + validacion strict)
+Fecha de actualizacion: 2026-02-25 (sesion Codex hardening KPI semanal: conversion + funnel)
 Dominio: https://pielarmonia.com
 
 ## Resumen rapido
 
 - Actualizacion 2026-02-24 (post-fix compat calendar): CI y Post-Deploy Gate en verde para commit `c4beac8`.
+- Actualizacion 2026-02-25 (weekly KPI hardening): guardrails de conversion y funnel temprano en `main`, con validaciones remotas `Weekly KPI Report` runs `22408343562` y `22408612570`.
 - CI run `22334259615` (push a main): `success`.
 - Post-Deploy Gate run `22334259617` (push a main): `success`.
 - CI run `22334594766` (commit `916adde`): `success`.
@@ -242,6 +243,9 @@ Dominio: https://pielarmonia.com
 - Eventos funnel y contrato API validados.
 - Dashboard operacional semanal automatizado (`npm run report:weekly:prod`).
 - Alertas operativas semanales en GitHub Actions (`weekly-kpi-report.yml`).
+- Reporte semanal endurecido en `main` (2026-02-25): guardrails configurables de conversion final (`startCheckout -> bookingConfirmed`) y funnel temprano (`viewBooking -> startCheckout`) con deltas semanales y sample minimo.
+- `weekly-kpi-report.yml` resume en `GITHUB_STEP_SUMMARY` metricas de conversion/funnel (`view_booking`, `start_checkout_rate_pct`, `booking_confirmed_rate_pct`) y sus deltas.
+- Evidencia remota en `main`: `Weekly KPI Report` run `22408343562` (conversion) y run `22408612570` (funnel temprano) en verde; artifact semanal con campos `conversion` y `conversionTrend`.
 - Abandon reason analysis: backend agrega por step y por reason, dashboard renderiza funnelAbandonReasonList y funnelAbandonList.
 - Tests funnel confirmados: 3 passed (2026-02-23).
 
@@ -319,4 +323,4 @@ Dominio: https://pielarmonia.com
 
 1. Confirmar primer evento en Sentry dashboard/API (backend + frontend) usando `npm run verify:sentry:events` o workflow `Sentry Events Verify (Manual)`.
 2. Registrar evidencia de Sentry (timestamp/eventID por proyecto) en este status y/o `verification/agent-runs/`.
-3. Mantener monitoreo semanal de p95 `availability` para detectar picos transitorios.
+3. Mantener monitoreo semanal de p95 `availability` y revisar warnings no bloqueantes en `Weekly KPI Report` (ej. `core_p95_alto_*`) para separar ruido de latencia vs regresion de conversion/funnel.
