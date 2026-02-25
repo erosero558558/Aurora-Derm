@@ -1,0 +1,116 @@
+name: Sentry Events Verify (Manual)
+
+on:
+    workflow_dispatch:
+        inputs:
+            org:
+                description: 'Sentry org slug (opcional si existe repo var/secret SENTRY_ORG)'
+                required: false
+                default: ''
+                type: string
+            backend_project:
+                description: 'Proyecto backend'
+                required: false
+                default: 'pielarmonia-backend'
+                type: string
+            frontend_project:
+                description: 'Proyecto frontend'
+                required: false
+                default: 'pielarmonia-frontend'
+                type: string
+            lookback_hours:
+                description: 'Ventana de busqueda (horas)'
+                required: false
+                default: 168
+                type: number
+            max_event_age_hours:
+                description: 'Edad maxima del ultimo evento (0 desactiva validacion de edad)'
+                required: false
+                default: 0
+                type: number
+            allow_missing:
+                description: 'No fallar si falta evento en backend o frontend (solo diagnostico)'
+                required: false
+                default: false
+                type: boolean
+
+permissions:
+    contents: read
+
+jobs:
+    verify-sentry-events:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        env:
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+            SENTRY_ORG: ${{ github.event.inputs.org || vars.SENTRY_ORG || secrets.SENTRY_ORG }}
+            SENTRY_BACKEND_PROJECT: ${{ github.event.inputs.backend_project || 'pielarmonia-backend' }}
+            SENTRY_FRONTEND_PROJECT: ${{ github.event.inputs.frontend_project || 'pielarmonia-frontend' }}
+            SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL || 'https://sentry.io' }}
+            SENTRY_MAX_EVENT_AGE_HOURS: ${{ github.event.inputs.max_event_age_hours || '0' }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Validar configuracion minima
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  if [ -z "${SENTRY_AUTH_TOKEN}" ]; then
+                    echo "::error::Falta secret SENTRY_AUTH_TOKEN"
+                    exit 1
+                  fi
+                  if [ -z "${SENTRY_ORG}" ]; then
+                    echo "::error::Falta SENTRY_ORG (input org o repo var/secret SENTRY_ORG)"
+                    exit 1
+                  fi
+
+            - name: Ejecutar verificacion Sentry (backend/frontend)
+              id: verify
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  args=(
+                    --lookback-hours="${{ github.event.inputs.lookback_hours || '168' }}"
+                    --json-out="verification/runtime/sentry-events-last.json"
+                  )
+                  if [ "${{ github.event.inputs.allow_missing || 'false' }}" = "true" ]; then
+                    args+=(--allow-missing)
+                  fi
+
+                  npm run verify:sentry:events -- "${args[@]}"
+
+            - name: Publicar artefacto Sentry
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: sentry-events-report
+                  path: verification/runtime/sentry-events-last.json
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Resumen
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Sentry events verify";
+                    echo "- Org: \`${SENTRY_ORG:-missing}\`";
+                    echo "- Backend project: \`${SENTRY_BACKEND_PROJECT}\`";
+                    echo "- Frontend project: \`${SENTRY_FRONTEND_PROJECT}\`";
+                    echo "- Lookback hours: \`${{ github.event.inputs.lookback_hours || '168' }}\`";
+                    echo "- Max event age hours: \`${{ github.event.inputs.max_event_age_hours || '0' }}\`";
+                    echo "- Allow missing: \`${{ github.event.inputs.allow_missing || 'false' }}\`";
+                    echo "- Resultado step verify: \`${{ steps.verify.outcome || 'not-run' }}\`";
+                    echo "- Resultado job: \`${{ job.status }}\`";
+                    if [ -f verification/runtime/sentry-events-last.json ]; then
+                      echo "";
+                      echo "### Reporte rapido";
+                      node -e "const fs=require('fs'); const d=JSON.parse(fs.readFileSync('verification/runtime/sentry-events-last.json','utf8')); const fmt=(r)=>{ if(!r||!r.found) return 'SIN EVENTOS'; const x=r.latest||{}; return `${x.eventID||x.id||'n/a'} @ ${x.date||'n/a'}${typeof x.ageHours==='number'?` (${x.ageHours}h)`:''}`; }; console.log(`- Backend: ${fmt(d.backend)}`); console.log(`- Frontend: ${fmt(d.frontend)}`); if(Array.isArray(d.missingProjects)&&d.missingProjects.length) console.log(`- Missing: ${d.missingProjects.join(', ')}`); if(Array.isArray(d.staleProjects)&&d.staleProjects.length) console.log(`- Stale: ${d.staleProjects.map((x)=>`${x.project} (${x.ageHours}h > ${x.maxAgeHours}h)`).join(', ')}`);"
+                    fi
+                  } >> "${GITHUB_STEP_SUMMARY}"

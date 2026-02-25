@@ -150,6 +150,7 @@ Criterio de salida:
 - Consistencia fase 2 (concurrencia + paridad web/chat): `npm run test:phase2`
 - Concurrencia real Fase 2 (manual en produccion): workflow `Phase 2 Concurrency Write (Manual)` con `enable_write=true`
 - Verificacion Sentry (backend/frontend): `npm run verify:sentry:events` (requiere token/API env)
+- Verificacion Sentry (manual GitHub Actions): workflow `Sentry Events Verify (Manual)`
 - Errores chat agenda: `npm run test:chat-booking-calendar-errors`
 - Smoke produccion: `npm run smoke:prod`
 

@@ -203,9 +203,13 @@ async function main() {
     );
     const allowMissing = hasFlag('allow-missing');
     const maxAgeHoursRaw = String(process.env.SENTRY_MAX_EVENT_AGE_HOURS || '');
-    const maxAgeHours = maxAgeHoursRaw
+    const parsedMaxAgeHours = maxAgeHoursRaw
         ? Number.parseFloat(maxAgeHoursRaw)
         : null;
+    const maxAgeHours =
+        Number.isFinite(parsedMaxAgeHours) && parsedMaxAgeHours > 0
+            ? parsedMaxAgeHours
+            : null;
 
     if (!backendProject) {
         throw new Error('SENTRY_BACKEND_PROJECT vacio');

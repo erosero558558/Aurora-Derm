@@ -299,6 +299,7 @@ Dominio: https://pielarmonia.com
 - SDK carga lazy via monitoring-loader.js (async, no bloquea render).
 - Pendiente: confirmar primer evento recibido en dashboard/API de Sentry.
 - Soporte local listo: `npm run verify:sentry:events` (requiere `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` y projects).
+- Soporte remoto listo: workflow manual `Sentry Events Verify (Manual)` (`.github/workflows/sentry-events-verify.yml`) con artifact `sentry-events-report`.
 
 8. Incidente CI por calendar compat (RESUELTO 2026-02-24).
 
@@ -316,6 +317,6 @@ Dominio: https://pielarmonia.com
 
 ## Siguiente ejecucion recomendada
 
-1. Confirmar primer evento en Sentry dashboard/API (backend + frontend) usando `npm run verify:sentry:events`.
+1. Confirmar primer evento en Sentry dashboard/API (backend + frontend) usando `npm run verify:sentry:events` o workflow `Sentry Events Verify (Manual)`.
 2. Registrar evidencia de Sentry (timestamp/eventID por proyecto) en este status y/o `verification/agent-runs/`.
 3. Mantener monitoreo semanal de p95 `availability` para detectar picos transitorios.
