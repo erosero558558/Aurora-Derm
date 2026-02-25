@@ -17,8 +17,7 @@
 .reviews-actions,
 .appointment-container,
 .footer-content,
-.footer-bottom,
-.hero-content {
+.footer-bottom {
     width: min(1140px, calc(100% - 40px));
     margin-left: auto;
     margin-right: auto;

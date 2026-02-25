@@ -309,6 +309,13 @@
                 </picture>
             </div>
             <div class="hero-content">
+                <div class="hero-trust-bar" aria-label="Resumen de confianza y disponibilidad">
+                    <span class="hero-trust-item" data-i18n="hero_trust_fast">Respuesta rápida por WhatsApp</span>
+                    <span class="separator" aria-hidden="true">•</span>
+                    <span class="hero-trust-item" data-i18n="hero_trust_booking">Reserva en minutos</span>
+                    <span class="separator" aria-hidden="true">•</span>
+                    <span class="hero-trust-item" data-i18n="hero_trust_online">Atención presencial y online</span>
+                </div>
                 <h1 class="hero-title">
                     <span class="gradient-text" data-i18n="hero_title1">Tu piel.</span>
                     <span data-i18n="hero_title2">En las mejores manos.</span>
@@ -318,18 +325,18 @@
                     Tratamientos personalizados para que tu piel luzca saludable
                     y radiante.
                 </p>
-                <div class="hero-actions">
-                    <a href="#citas" class="btn btn-primary" data-i18n="hero_cta_primary">Reservar Consulta</a>
-                    <a href="#telemedicina" class="btn btn-secondary" data-i18n="hero_cta_secondary">Consulta Online</a>
+                <div class="hero-actions" role="group" aria-label="Acciones principales">
+                    <a href="#citas" class="btn btn-primary" data-i18n="hero_cta_primary" data-qa="hero-cta-primary">Reservar Consulta</a>
+                    <a href="#telemedicina" class="btn btn-secondary" data-i18n="hero_cta_secondary" data-qa="hero-cta-secondary">Consulta Online</a>
                 </div>
 
                 <!-- Quick Contact Bar -->
-                <div class="hero-contact-bar">
-                    <a href="tel:+593982453672" class="contact-chip">
+                <div class="hero-contact-bar" aria-label="Canales de contacto rápido">
+                    <a href="tel:+593982453672" class="contact-chip" data-qa="hero-contact-phone">
                         <i class="fas fa-phone"></i>
                         <span>+593 98 245 3672</span>
                     </a>
-                    <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer" class="contact-chip whatsapp">
+                    <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer" class="contact-chip whatsapp" data-qa="hero-contact-whatsapp">
                         <i class="fab fa-whatsapp"></i>
                         <span>WhatsApp</span>
                     </a>
@@ -360,7 +367,6 @@
                 </div>
             </div>
         </section>
-
         <!-- Apple-Style Feature Showcase -->
         <section class="section section-light deferred-content" id="showcase">
             <div class="deferred-shell-fallback">

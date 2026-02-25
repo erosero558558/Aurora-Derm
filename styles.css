@@ -484,8 +484,11 @@ img {
     z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    padding: 178px 0 118px;
+    width: min(1140px, calc(100% - 40px));
+    margin-left: auto;
+    margin-right: auto;
+    gap: 22px;
+    padding: 168px 0 112px;
 }
 .hero-trust-bar {
     display: flex;
@@ -495,8 +498,20 @@ img {
     font-size: 0.9rem;
     font-weight: 600;
     color: #4b5e7d;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
     line-height: 1.4;
+    width: fit-content;
+    max-width: 100%;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(10px);
+}
+.hero-trust-item {
+    display: inline-flex;
+    align-items: center;
 }
 .hero-trust-bar span {
     white-space: nowrap;
@@ -514,6 +529,21 @@ html[data-theme='dark'] .hero-trust-bar .separator {
     .hero-trust-bar {
         justify-content: center;
         font-size: 0.82rem;
+        width: min(100%, 360px);
+        padding: 9px 12px;
+        row-gap: 6px;
+        border-radius: 16px;
+    }
+    .hero-trust-bar span {
+        white-space: normal;
+    }
+    .hero-trust-bar .separator {
+        display: none;
+    }
+    .hero-trust-item {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
     }
 }
 .hero-title {
@@ -549,6 +579,7 @@ html[data-theme='dark'] .hero-trust-bar .separator {
     font-size: clamp(1rem, 2vw, 1.25rem);
     line-height: 1.62;
     color: #424245;
+    text-wrap: pretty;
     animation: fadeIn 0.6s var(--ui-ease-sony) backwards;
     animation-delay: 0.2s;
 }
@@ -562,10 +593,24 @@ html[data-theme='dark'] .hero-trust-bar .separator {
 .hero-actions .btn {
     min-height: 52px;
     padding: 0 22px;
+    min-width: 186px;
     font-size: 0.96rem;
+    font-weight: 700;
+    justify-content: center;
+}
+.hero-actions .btn-primary {
+    box-shadow: 0 14px 28px rgba(10, 132, 255, 0.22);
+}
+.hero-actions .btn-secondary {
+    backdrop-filter: blur(8px);
+}
+.hero-actions .btn:focus-visible,
+.contact-chip:focus-visible {
+    outline: 3px solid rgba(10, 132, 255, 0.35);
+    outline-offset: 2px;
 }
 .hero-contact-bar {
-    margin-top: 8px;
+    margin-top: 4px;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
@@ -585,6 +630,8 @@ html[data-theme='dark'] .hero-trust-bar .separator {
     text-decoration: none;
     font-weight: 600;
     min-height: 46px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(8px);
     transition:
         transform var(--ui-ease),
         border-color var(--ui-ease),
@@ -609,6 +656,8 @@ html[data-theme='dark'] .hero-trust-bar .separator {
     border-radius: 16px;
     padding: 14px 16px;
     background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(10px);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -1423,6 +1472,9 @@ html[data-theme='dark'] .cookie-link {
         width: 100%;
         min-height: 50px;
         font-size: 0.97rem;
+    }
+    .hero-actions .btn {
+        min-width: 0;
     }
     .message-content {
         max-width: 88%;
