@@ -3,7 +3,7 @@ policy:
   canonical: AGENTS.md
   autonomy: semi_autonomous_guardrails
   kpi: reduce_rework
-  revision: 55
+  revision: 56
   updated_at: 2026-02-25
 
 tasks:
