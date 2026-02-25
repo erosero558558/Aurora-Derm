@@ -49,6 +49,7 @@ const syncCommandHandlers = require('./tools/agent-orchestrator/commands/sync');
 const closeCommandHandlers = require('./tools/agent-orchestrator/commands/close');
 const taskCommandHandlers = require('./tools/agent-orchestrator/commands/task');
 const domainIntake = require('./tools/agent-orchestrator/domain/intake');
+const runtimeGovernanceCommands = require('./tools/agent-orchestrator/commands/runtime-governance');
 
 const ROOT = __dirname;
 const BOARD_PATH = resolve(ROOT, 'AGENT_BOARD.yaml');
@@ -856,30 +857,6 @@ function cmdMetrics(args = []) {
     });
 }
 
-function cmdConflicts(args) {
-    conflictsCommandHandlers.handleConflictsCommand({
-        args,
-        parseBoard,
-        parseHandoffs,
-        analyzeConflicts,
-        toConflictJsonRecord,
-        attachDiagnostics,
-        buildWarnFirstDiagnostics,
-    });
-}
-
-function cmdPolicy(args = []) {
-    return policyCommandHandlers.handlePolicyCommand({
-        args,
-        readGovernancePolicyStrict,
-        validateGovernancePolicy,
-        existsSync,
-        governancePolicyPath: GOVERNANCE_POLICY_PATH,
-        attachDiagnostics,
-        buildWarnFirstDiagnostics,
-    });
-}
-
 function getHandoffLintErrors() {
     return domainHandoffs.getHandoffLintErrors(
         {
@@ -895,30 +872,6 @@ function getHandoffLintErrors() {
     );
 }
 
-function cmdHandoffs(args) {
-    return handoffsCommandHandlers.handleHandoffsCommand({
-        args,
-        parseHandoffs,
-        isExpired,
-        attachDiagnostics,
-        buildWarnFirstDiagnostics,
-        getHandoffLintErrors,
-        parseFlags,
-        parseBoard,
-        parseCsvList,
-        ensureTask,
-        ACTIVE_STATUSES,
-        analyzeFileOverlap,
-        normalizePathToken,
-        nextHandoffId,
-        isoNow,
-        plusHoursIso,
-        HANDOFFS_PATH,
-        serializeHandoffs,
-        writeFileSync,
-    });
-}
-
 function buildCodexCheckReport() {
     return domainCodexMirror.buildCodexCheckReport(
         {
@@ -931,34 +884,6 @@ function buildCodexCheckReport() {
             activeStatuses: ACTIVE_STATUSES,
         }
     );
-}
-
-function cmdCodexCheck(args = []) {
-    return codexCommandHandlers.handleCodexCheckCommand({
-        args,
-        buildCodexCheckReport,
-        attachDiagnostics,
-        buildWarnFirstDiagnostics,
-        parseBoard,
-        parseHandoffs,
-    });
-}
-
-function cmdCodex(args) {
-    return codexCommandHandlers.handleCodexCommand({
-        args,
-        parseFlags,
-        ensureTask,
-        parseBoard,
-        ACTIVE_STATUSES,
-        ALLOWED_STATUSES,
-        parseCsvList,
-        currentDate,
-        writeBoard,
-        writeCodexActiveBlock,
-        parseCodexActiveBlocks,
-        runCodexCheck: () => cmdCodexCheck([]),
-    });
 }
 
 async function cmdTask(args) {
@@ -1045,7 +970,7 @@ function cmdClose(args) {
     });
 }
 
-// ─── Signal / Intake helpers ─────────────────────────────────────────────────
+// â”€â”€â”€ Signal / Intake helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function getGitHubToken(flags = {}) {
     return String(flags.token || process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '').trim();
@@ -1213,7 +1138,7 @@ function buildStaleReport(board, signals) {
     };
 }
 
-// ─── Rate-limit detection ────────────────────────────────────────────────────
+// â”€â”€â”€ Rate-limit detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function hasRateLimitToken(valueRaw) {
     const v = String(valueRaw || '').toLowerCase();
@@ -1235,7 +1160,7 @@ function detectKimiRateLimitActive({ board, signals }) {
     return false;
 }
 
-// ─── New commands: intake / score / stale / budget / dispatch / reconcile ────
+// â”€â”€â”€ New commands: intake / score / stale / budget / dispatch / reconcile â”€â”€â”€â”€
 
 async function cmdIntake(args = []) {
     const { flags } = parseFlags(args);
@@ -1374,7 +1299,7 @@ function cmdDispatch(args = []) {
     if (!['jules', 'kimi', 'codex'].includes(agent)) throw new Error('dispatch requiere --agent jules|kimi|codex');
     const board = parseBoard(); const signals = parseSignals();
     if (agent === 'kimi' && detectKimiRateLimitActive({ board, signals: signals.signals || [] })) {
-        console.log('WARN: Kimi rate-limit activo detectado — dispatch bloqueado.'); return;
+        console.log('WARN: Kimi rate-limit activo detectado â€” dispatch bloqueado.'); return;
     }
     const nowDate = currentDate();
     const defaultPerRun = 2;
@@ -1432,22 +1357,59 @@ async function cmdReconcile(args = []) {
     console.log(`PR evidence applied: ${prEvidenceApplied}`);
     if (!report.ok) console.log(`WARN: done sin evidencia -> ${report.done_without_evidence.join(', ')}`);
 }
+const governanceRuntime =
+    runtimeGovernanceCommands.createRuntimeGovernanceCommands({
+        conflictsCommandHandlers,
+        policyCommandHandlers,
+        handoffsCommandHandlers,
+        codexCommandHandlers,
+        parseBoard,
+        parseHandoffs,
+        analyzeConflicts,
+        toConflictJsonRecord,
+        attachDiagnostics,
+        buildWarnFirstDiagnostics,
+        readGovernancePolicyStrict,
+        validateGovernancePolicy,
+        existsSync,
+        governancePolicyPath: GOVERNANCE_POLICY_PATH,
+        isExpired,
+        getHandoffLintErrors,
+        parseFlags,
+        parseCsvList,
+        ensureTask,
+        ACTIVE_STATUSES,
+        analyzeFileOverlap,
+        normalizePathToken,
+        nextHandoffId,
+        isoNow,
+        plusHoursIso,
+        HANDOFFS_PATH,
+        serializeHandoffs,
+        writeFileSync,
+        buildCodexCheckReport,
+        ALLOWED_STATUSES,
+        currentDate,
+        writeBoard,
+        writeCodexActiveBlock,
+        parseCodexActiveBlocks,
+    });
 
 async function main() {
     const [command = 'status', ...args] = process.argv.slice(2);
     const commands = {
         status: () => cmdStatus(args),
-        conflicts: () => cmdConflicts(args),
+        conflicts: () => governanceRuntime.conflicts(args),
         intake: () => cmdIntake(args),
         score: () => cmdScore(args),
         reconcile: () => cmdReconcile(args),
         stale: () => cmdStale(args),
         budget: () => cmdBudget(args),
         dispatch: () => cmdDispatch(args),
-        handoffs: () => cmdHandoffs(args),
-        policy: () => cmdPolicy(args),
-        'codex-check': () => cmdCodexCheck(args),
-        codex: () => cmdCodex(args),
+        handoffs: () => governanceRuntime.handoffs(args),
+        policy: () => governanceRuntime.policy(args),
+        'codex-check': () => governanceRuntime.codexCheck(args),
+        codex: () => governanceRuntime.codex(args),
         task: () => cmdTask(args),
         sync: () => cmdSync(),
         close: () => cmdClose(args),
