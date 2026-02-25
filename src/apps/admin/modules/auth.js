@@ -5,8 +5,9 @@ import { showToast } from './ui.js';
 export async function checkAuth() {
     try {
         const payload = await authRequest('status');
+        if (payload.csrfToken) setCsrfToken(payload.csrfToken);
+
         if (payload.authenticated) {
-            if (payload.csrfToken) setCsrfToken(payload.csrfToken);
             return true;
         } else {
             return false;

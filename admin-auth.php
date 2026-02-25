@@ -20,13 +20,15 @@ if ($method === 'GET' && $action === 'status') {
         'authenticated' => $isAuth
     ]);
     $resp = ['ok' => true, 'authenticated' => $isAuth];
-    if ($isAuth) {
-        $resp['csrfToken'] = generate_csrf_token();
-    }
+    // Always return CSRF token to allow login
+    $resp['csrfToken'] = generate_csrf_token();
     json_response($resp);
 }
 
 if ($method === 'POST' && $action === 'login') {
+    // CSRF Protection
+    require_csrf();
+
     // Limite de intentos globales por IP para el endpoint de login.
     require_rate_limit(ADMIN_LOGIN_ACTION, 12, 300);
 
@@ -92,6 +94,9 @@ if ($method === 'POST' && $action === 'login') {
 }
 
 if ($method === 'POST' && $action === 'login-2fa') {
+    // CSRF Protection
+    require_csrf();
+
     require_rate_limit('admin-login-2fa', 6, 300);
 
     if (!isset($_SESSION['admin_partial_login']) || ($_SESSION['admin_partial_login'] !== true)) {
