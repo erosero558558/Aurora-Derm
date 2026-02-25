@@ -96,11 +96,11 @@ function w(e, t = 'info', n = '') {
                 setTimeout(() => o.remove(), 300));
         }, 5e3));
 }
-function k(e) {
+function S(e) {
     const t = Number(e);
     return Number.isFinite(t) ? `${t.toFixed(1)}%` : '0%';
 }
-function S(e) {
+function k(e) {
     const t = Number(e);
     return !Number.isFinite(t) || t < 0
         ? '0'
@@ -111,14 +111,6 @@ function E(e) {
     return !Number.isFinite(t) || t < 0 ? 0 : t;
 }
 function C(e) {
-    const t = String(e || '').trim();
-    return '' === t
-        ? ''
-        : t.startsWith('/') || /^https?:\/\//i.test(t)
-          ? t
-          : '';
-}
-function B(e) {
     return (
         {
             consulta: 'Consulta Dermatológica',
@@ -131,7 +123,7 @@ function B(e) {
         }[e] || e
     );
 }
-function L(e) {
+function B(e) {
     return (
         {
             rosero: 'Dr. Rosero',
@@ -140,7 +132,7 @@ function L(e) {
         }[e] || e
     );
 }
-function $(e) {
+function L(e) {
     return (
         {
             confirmed: 'Confirmada',
@@ -152,7 +144,7 @@ function $(e) {
         }[e] || e
     );
 }
-function I(e) {
+function $(e) {
     return (
         {
             card: 'Tarjeta',
@@ -168,7 +160,7 @@ function I(e) {
         'Sin definir'
     );
 }
-function A(e) {
+function I(e) {
     return (
         {
             paid: 'Pagado',
@@ -187,7 +179,7 @@ function A(e) {
         'Pendiente'
     );
 }
-function D(e) {
+function A(e) {
     return (
         {
             ahora: 'Lo antes posible',
@@ -207,7 +199,7 @@ function T(e) {
           ? 'contactado'
           : 'pendiente';
 }
-function N(e, t) {
+function D(e, t) {
     try {
         const n = JSON.parse(localStorage.getItem(e) || 'null');
         return null === n ? t : n;
@@ -215,12 +207,12 @@ function N(e, t) {
         return t;
     }
 }
-function M(e, t) {
+function N(e, t) {
     try {
         localStorage.setItem(e, JSON.stringify(t));
     } catch (e) {}
 }
-async function _() {
+async function M() {
     try {
         const [e, t] = await Promise.all([
                 h('data'),
@@ -228,18 +220,18 @@ async function _() {
             ]),
             n = e.data || {},
             a = Array.isArray(n.appointments) ? n.appointments : [];
-        (c(a), M('appointments', a));
+        (c(a), N('appointments', a));
         const o = Array.isArray(n.callbacks)
             ? n.callbacks.map((e) => ({ ...e, status: T(e.status) }))
             : [];
-        (d(o), M('callbacks', o));
+        (d(o), N('callbacks', o));
         const i = Array.isArray(n.reviews) ? n.reviews : [];
-        (l(i), M('reviews', i));
+        (l(i), N('reviews', i));
         const r =
             n.availability && 'object' == typeof n.availability
                 ? n.availability
                 : {};
-        (u(r), M('availability', r));
+        (u(r), N('availability', r));
         const s =
             n.availabilityMeta && 'object' == typeof n.availabilityMeta
                 ? n.availabilityMeta
@@ -250,7 +242,7 @@ async function _() {
                   };
         if (
             (m(s),
-            M('availability-meta', s),
+            N('availability-meta', s),
             n.funnelMetrics && 'object' == typeof n.funnelMetrics)
         )
             p(n.funnelMetrics);
@@ -292,13 +284,13 @@ async function _() {
                       },
                   });
         }
-        t && t.ok ? (f(t), M('health-status', t)) : f(null);
+        t && t.ok ? (f(t), N('health-status', t)) : f(null);
     } catch (e) {
-        (c(N('appointments', [])),
-            d(N('callbacks', []).map((e) => ({ ...e, status: T(e.status) }))),
-            l(N('reviews', [])),
-            u(N('availability', {})),
-            m(N('availability-meta', {})),
+        (c(D('appointments', [])),
+            d(D('callbacks', []).map((e) => ({ ...e, status: T(e.status) }))),
+            l(D('reviews', [])),
+            u(D('availability', {})),
+            m(D('availability-meta', {})),
             p({
                 summary: {
                     viewBooking: 0,
@@ -332,14 +324,14 @@ async function _() {
                     recurrenceRatePct: 0,
                 },
             }),
-            f(N('health-status', null)),
+            f(D('health-status', null)),
             w(
                 'No se pudo conectar al backend. Usando datos locales.',
                 'warning'
             ));
     }
 }
-function P(e) {
+function _(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -373,7 +365,7 @@ function P(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function R(e) {
+function P(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -386,7 +378,7 @@ function R(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function x(e) {
+function R(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -401,7 +393,7 @@ function x(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function H(e) {
+function x(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -416,7 +408,7 @@ function H(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function j(e) {
+function H(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -437,7 +429,7 @@ function j(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function F(e) {
+function j(e) {
     const t = String(e || '')
             .trim()
             .toLowerCase(),
@@ -458,7 +450,7 @@ function F(e) {
     const a = t.replace(/_/g, ' ').trim();
     return '' === a ? n.unknown : a.charAt(0).toUpperCase() + a.slice(1);
 }
-function O(e, t, n, a) {
+function F(e, t, n, a) {
     const o = document.getElementById(e);
     if (!o) return;
     const i = (function (e) {
@@ -477,12 +469,12 @@ function O(e, t, n, a) {
     const r = i.reduce((e, t) => e + t.count, 0);
     o.innerHTML = i
         .map((e) => {
-            const t = r > 0 ? k((e.count / r) * 100) : '0%';
-            return `\n            <div class="funnel-row">\n                <span class="funnel-row-label">${v(n(e.label))}</span>\n                <span class="funnel-row-count">${v(S(e.count))} (${v(t)})</span>\n            </div>\n        `;
+            const t = r > 0 ? S((e.count / r) * 100) : '0%';
+            return `\n            <div class="funnel-row">\n                <span class="funnel-row-label">${v(n(e.label))}</span>\n                <span class="funnel-row-count">${v(k(e.count))} (${v(t)})</span>\n            </div>\n        `;
         })
         .join('');
 }
-function U() {
+function O() {
     document.getElementById('totalAppointments').textContent = e.length;
     const a = new Date().toISOString().split('T')[0],
         o = [];
@@ -497,7 +489,7 @@ function U() {
     }
     document.getElementById('todayAppointments').textContent = o.length;
     const l = document.getElementById('totalNoShows');
-    l && (l.textContent = S(d));
+    l && (l.textContent = k(d));
     const u = [];
     for (const e of t) 'pendiente' === T(e.status) && u.push(e);
     document.getElementById('pendingCallbacks').textContent = u.length;
@@ -517,7 +509,7 @@ function U() {
         : (p.innerHTML = o
               .map(
                   (e) =>
-                      `\n            <div class="upcoming-item">\n                <div class="upcoming-time">\n                    <span class="time">${v(e.time)}</span>\n                </div>\n                <div class="upcoming-info">\n                    <span class="name">${v(e.name)}</span>\n                    <span class="service">${v(B(e.service))}</span>\n                </div>\n                <div class="upcoming-actions">\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(String(e.phone || '').replace(/\\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                </div>\n            </div>\n        `
+                      `\n            <div class="upcoming-item">\n                <div class="upcoming-time">\n                    <span class="time">${v(e.time)}</span>\n                </div>\n                <div class="upcoming-info">\n                    <span class="name">${v(e.name)}</span>\n                    <span class="service">${v(C(e.service))}</span>\n                </div>\n                <div class="upcoming-actions">\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(String(e.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                </div>\n            </div>\n        `
               )
               .join(''));
     const f = document.getElementById('recentCallbacksList'),
@@ -528,7 +520,7 @@ function U() {
         : (f.innerHTML = g
               .map(
                   (e) =>
-                      `\n            <div class="upcoming-item">\n                <div class="upcoming-info">\n                    <span class="name">${v(e.telefono)}</span>\n                    <span class="service">${v(D(e.preferencia))}</span>\n                </div>\n                <div class="upcoming-actions">\n                    <a href="tel:${v(e.telefono)}" class="btn-icon" title="Llamar">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                </div>\n            </div>\n        `
+                      `\n            <div class="upcoming-item">\n                <div class="upcoming-info">\n                    <span class="name">${v(e.telefono)}</span>\n                    <span class="service">${v(A(e.preferencia))}</span>\n                </div>\n                <div class="upcoming-actions">\n                    <a href="tel:${v(e.telefono)}" class="btn-icon" title="Llamar">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                </div>\n            </div>\n        `
               )
               .join('')),
         (function () {
@@ -577,20 +569,20 @@ function U() {
             const c = E(t.confirmedRatePct) || (a > 0 ? (o / a) * 100 : 0),
                 d = E(t.abandonRatePct) || (a > 0 ? (s / a) * 100 : 0),
                 l = document.getElementById('funnelViewBooking');
-            l && (l.textContent = S(n));
+            l && (l.textContent = k(n));
             const u = document.getElementById('funnelStartCheckout');
-            u && (u.textContent = S(a));
+            u && (u.textContent = k(a));
             const m = document.getElementById('funnelBookingConfirmed');
-            m && (m.textContent = S(o));
+            m && (m.textContent = k(o));
             const p = document.getElementById('funnelAbandonRate');
-            p && (p.textContent = k(d));
+            p && (p.textContent = S(d));
             const f = document.getElementById('checkoutConversionRate');
-            f && (f.textContent = k(c));
+            f && (f.textContent = S(c));
             const g = E(e.events && e.events.booking_error),
                 b = E(e.events && e.events.checkout_error),
                 h = a > 0 ? ((g + b) / a) * 100 : 0,
                 y = document.getElementById('bookingErrorRate');
-            y && (y.textContent = k(h));
+            y && (y.textContent = S(h));
             const v = document.getElementById('calendarHealthStatus');
             if (v) {
                 const e = r && 'object' == typeof r ? r : null,
@@ -609,51 +601,51 @@ function U() {
                     (v.textContent = i));
             }
             document.getElementById('funnelAbandonList') &&
-                (O(
+                (F(
                     'funnelAbandonList',
                     e.checkoutAbandonByStep,
-                    P,
+                    _,
                     'Sin datos de abandono'
                 ),
-                O(
+                F(
                     'funnelEntryList',
                     e.checkoutEntryBreakdown,
-                    R,
+                    P,
                     'Sin datos de entrada'
                 ),
-                O(
+                F(
                     'funnelPaymentMethodList',
                     e.paymentMethodBreakdown,
-                    x,
+                    R,
                     'Sin datos de pago'
                 ),
-                O(
+                F(
                     'funnelSourceList',
                     e.eventSourceBreakdown,
-                    H,
+                    x,
                     'Sin datos de origen'
                 ),
-                O(
+                F(
                     'funnelAbandonReasonList',
                     e.checkoutAbandonByReason,
-                    j,
+                    H,
                     'Sin datos de motivo'
                 ),
-                O(
+                F(
                     'funnelStepList',
                     e.bookingStepBreakdown,
-                    P,
+                    _,
                     'Sin datos de pasos'
                 ),
-                O(
+                F(
                     'funnelErrorCodeList',
                     e.errorCodeBreakdown,
-                    F,
+                    j,
                     'Sin datos de error'
                 ));
         })());
 }
-function q(e) {
+function U(e) {
     const t = document.getElementById('callbacksGrid');
     t &&
         (0 !== e.length
@@ -662,26 +654,26 @@ function q(e) {
                       const t = T(e.status),
                           n = Number(e.id) || 0,
                           a = encodeURIComponent(String(e.fecha || ''));
-                      return `\n            <div class="callback-card ${t}">\n                <div class="callback-header">\n                    <span class="callback-phone">${v(e.telefono)}</span>\n                    <span class="status-badge status-${t}">\n                        ${'pendiente' === t ? 'Pendiente' : 'Contactado'}\n                    </span>\n                </div>\n                <span class="callback-preference">\n                    <i class="fas fa-clock"></i>\n                    ${v(D(e.preferencia))}\n                </span>\n                <p class="callback-time">\n                    <i class="fas fa-calendar"></i>\n                    ${v(new Date(e.fecha).toLocaleString('es-EC'))}\n                </p>\n                <div class="callback-actions">\n                    <a href="tel:${v(e.telefono)}" class="btn btn-phone btn-sm" aria-label="Llamar al callback ${v(e.telefono)}">\n                        <i class="fas fa-phone"></i>\n                        Llamar\n                    </a>\n                    ${'pendiente' === t ? `\n                        <button type="button" class="btn btn-primary btn-sm" data-action="mark-contacted" data-callback-id="${n}" data-callback-date="${a}">\n                            <i class="fas fa-check"></i>\n                            Marcar contactado\n                        </button>\n                    ` : ''}\n                </div>\n            </div>\n        `;
+                      return `\n            <div class="callback-card ${t}">\n                <div class="callback-header">\n                    <span class="callback-phone">${v(e.telefono)}</span>\n                    <span class="status-badge status-${t}">\n                        ${'pendiente' === t ? 'Pendiente' : 'Contactado'}\n                    </span>\n                </div>\n                <span class="callback-preference">\n                    <i class="fas fa-clock"></i>\n                    ${v(A(e.preferencia))}\n                </span>\n                <p class="callback-time">\n                    <i class="fas fa-calendar"></i>\n                    ${v(new Date(e.fecha).toLocaleString('es-EC'))}\n                </p>\n                <div class="callback-actions">\n                    <a href="tel:${v(e.telefono)}" class="btn btn-phone btn-sm" aria-label="Llamar al callback ${v(e.telefono)}">\n                        <i class="fas fa-phone"></i>\n                        Llamar\n                    </a>\n                    ${'pendiente' === t ? `\n                        <button type="button" class="btn btn-primary btn-sm" data-action="mark-contacted" data-callback-id="${n}" data-callback-date="${a}">\n                            <i class="fas fa-check"></i>\n                            Marcar contactado\n                        </button>\n                    ` : ''}\n                </div>\n            </div>\n        `;
                   })
                   .join(''))
             : (t.innerHTML =
                   '\n            <div class="card-empty-state">\n                <i class="fas fa-phone-slash" aria-hidden="true"></i>\n                <strong>No hay callbacks registrados</strong>\n                <p>Las solicitudes de llamada apareceran aqui para seguimiento rapido.</p>\n            </div>\n        '));
 }
-function z() {
-    q(t);
+function q() {
+    U(t);
 }
-function G() {
+function z() {
     const e = document.getElementById('callbackFilter').value;
     let n = [...t];
     ('pending' === e
         ? (n = n.filter((e) => 'pendiente' === T(e.status)))
         : 'contacted' === e &&
           (n = n.filter((e) => 'contactado' === T(e.status))),
-        q(n));
+        U(n));
 }
-let W = !1;
-function V(e, t = 'muted') {
+let G = !1;
+function W(e, t = 'muted') {
     const n = document.getElementById('pushStatusIndicator');
     n &&
         (n.classList.remove(
@@ -693,7 +685,7 @@ function V(e, t = 'muted') {
         n.classList.add(`status-pill-${t}`),
         (n.textContent = `Push: ${e}`));
 }
-function J(e) {
+function V(e) {
     const t = (e + '='.repeat((4 - (e.length % 4)) % 4))
             .replace(/-/g, '+')
             .replace(/_/g, '/'),
@@ -702,19 +694,19 @@ function J(e) {
     for (let e = 0; e < n.length; e += 1) a[e] = n.charCodeAt(e);
     return a;
 }
-function K() {
+function J() {
     return {
         subscribeBtn: document.getElementById('subscribePushBtn'),
         testBtn: document.getElementById('testPushBtn'),
     };
 }
-function Y(e) {
-    const { subscribeBtn: t, testBtn: n } = K();
+function K(e) {
+    const { subscribeBtn: t, testBtn: n } = J();
     (t && (t.classList.toggle('is-hidden', !e), (t.disabled = !e)),
         n && (n.classList.toggle('is-hidden', !e), (n.disabled = !e)));
 }
-function X(e) {
-    const { subscribeBtn: t } = K();
+function Y(e) {
+    const { subscribeBtn: t } = J();
     if (t) {
         if (e)
             return (
@@ -731,23 +723,23 @@ function X(e) {
                 '<i class="fas fa-bell"></i> Activar Notificaciones'));
     }
 }
-async function Z() {
+async function X() {
     const e = await h('push-config'),
         t = String(e.publicKey || '');
     if (!t) throw new Error('VAPID public key no disponible');
     return t;
 }
-async function Q() {
+async function Z() {
     const e = await navigator.serviceWorker.ready,
         t = await e.pushManager.getSubscription();
     return (
-        X(Boolean(t)),
-        V(t ? 'activo' : 'disponible', t ? 'ok' : 'muted'),
+        Y(Boolean(t)),
+        W(t ? 'activo' : 'disponible', t ? 'ok' : 'muted'),
         t
     );
 }
-async function ee() {
-    const { subscribeBtn: e } = K();
+async function Q() {
+    const { subscribeBtn: e } = J();
     if (!e) return;
     const t = String(e.dataset.action || 'subscribe'),
         n = e.innerHTML;
@@ -765,18 +757,18 @@ async function ee() {
                       }),
                       await t.unsubscribe());
               })(),
-              V('disponible', 'muted'),
+              W('disponible', 'muted'),
               w('Notificaciones desactivadas', 'info'))
             : (await (async function () {
                   if ('granted' !== (await Notification.requestPermission()))
                       throw new Error('Permiso de notificaciones denegado');
-                  const e = await Z(),
+                  const e = await X(),
                       t = await navigator.serviceWorker.ready,
                       n = await t.pushManager.getSubscription();
                   if (n) return n;
                   const a = await t.pushManager.subscribe({
                       userVisibleOnly: !0,
-                      applicationServerKey: J(e),
+                      applicationServerKey: V(e),
                   });
                   return (
                       await h('push-subscribe', {
@@ -786,23 +778,23 @@ async function ee() {
                       a
                   );
               })(),
-              V('activo', 'ok'),
+              W('activo', 'ok'),
               w('Notificaciones activadas', 'success'));
     } catch (e) {
-        (V('error', 'error'),
+        (W('error', 'error'),
             w(`Push: ${e.message || 'error desconocido'}`, 'error'));
     } finally {
         ((e.disabled = !1),
-            await Q().catch(() => {
-                X(!1);
+            await Z().catch(() => {
+                Y(!1);
             }),
             'subscribe' !== e.dataset.action &&
                 'unsubscribe' !== e.dataset.action &&
                 (e.innerHTML = n));
     }
 }
-async function te() {
-    const { testBtn: e } = K();
+async function ee() {
+    const { testBtn: e } = J();
     if (!e) return;
     const t = e.querySelector('i'),
         n = t ? t.className : '';
@@ -822,54 +814,119 @@ async function te() {
         (t && (t.className = n), (e.disabled = !1));
     }
 }
-function ne(e) {
-    const t = document.getElementById('appointmentsTableBody');
-    if (!t) return;
-    if (0 === e.length)
-        return void (t.innerHTML =
+function te(t) {
+    const n = document.getElementById('appointmentsTableBody');
+    if (!n) return;
+    if (
+        ((function (t) {
+            const n = document.getElementById('appointmentsToolbarMeta');
+            if (!n) return;
+            const a = Array.isArray(t) ? t : [],
+                o = Array.isArray(e) ? e : [],
+                i = a.length,
+                r = o.length,
+                s = a.filter(
+                    (e) => 'pending_transfer_review' === e.paymentStatus
+                ).length,
+                c = (function (e) {
+                    const t = new Date().toISOString().split('T')[0];
+                    return e.filter((e) => e.date === t).length;
+                })(a),
+                d = [
+                    `<span class="toolbar-chip is-accent">Mostrando ${v(String(i))}${r !== i ? ` de ${v(String(r))}` : ''}</span>`,
+                    `<span class="toolbar-chip">Hoy: ${v(String(c))}</span>`,
+                ];
+            (s > 0 &&
+                d.push(
+                    `<span class="toolbar-chip is-warning">Por validar: ${v(String(s))}</span>`
+                ),
+                (n.innerHTML = d.join('')));
+        })(t),
+        0 === t.length)
+    )
+        return void (n.innerHTML =
             '\n            <tr class="table-empty-row">\n                <td colspan="8">\n                    <div class="table-empty-state">\n                        <i class="fas fa-calendar-check" aria-hidden="true"></i>\n                        <strong>No hay citas registradas</strong>\n                        <p>Cuando ingresen reservas nuevas apareceran aqui con acciones rapidas.</p>\n                    </div>\n                </td>\n            </tr>\n        ');
-    const n = [...e].sort((e, t) => {
+    const a = [...t].sort((e, t) => {
         const n = (e.date || '') + ' ' + (e.time || '');
         return ((t.date || '') + ' ' + (t.time || '')).localeCompare(n);
     });
-    t.innerHTML = n
-        .map(
-            (e) =>
-                `\n        <tr>\n            <td>\n                <strong>${v(e.name)}</strong><br>\n                <small>${v(e.email)}</small>\n            </td>\n            <td>${v(B(e.service))}</td>\n            <td>${v(L(e.doctor))}${e.doctorAssigned ? '<br><small>Asignado: ' + v(L(e.doctorAssigned)) + '</small>' : ''}</td>\n            <td>${v(
-                    (function (e) {
-                        const t = new Date(e);
-                        return Number.isNaN(t.getTime())
-                            ? e
-                            : t.toLocaleDateString('es-EC', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric',
-                              });
-                    })(e.date)
-                )}</td>\n            <td>${v(e.time)}</td>\n            <td>\n                <strong>${v(e.price || '$0.00')}</strong><br>\n                <small>${v(I(e.paymentMethod))} - ${v(A(e.paymentStatus))}</small>\n                ${e.transferReference ? `<br><small>Ref: ${v(e.transferReference)}</small>` : ''}\n                ${C(e.transferProofUrl) ? `<br><a href="${v(C(e.transferProofUrl))}" target="_blank" rel="noopener noreferrer">Ver comprobante</a>` : ''}\n            </td>\n            <td>\n                <span class="status-badge status-${v(e.status || 'confirmed')}">\n                    ${v($(e.status || 'confirmed'))}\n                </span>\n            </td>\n            <td>\n                <div class="table-actions">\n                    ${'pending_transfer_review' === e.paymentStatus ? `\n                    <button type="button" class="btn-icon success" data-action="approve-transfer" data-id="${Number(e.id) || 0}" title="Aprobar transferencia">\n                        <i class="fas fa-check"></i>\n                    </button>\n                    <button type="button" class="btn-icon danger" data-action="reject-transfer" data-id="${Number(e.id) || 0}" title="Rechazar transferencia">\n                        <i class="fas fa-ban"></i>\n                    </button>\n                    ` : ''}\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar" aria-label="Llamar a ${v(e.name)}">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(String(e.phone || '').replace(/\\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp" aria-label="Abrir WhatsApp de ${v(e.name)}">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                    <button type="button" class="btn-icon danger" data-action="cancel-appointment" data-id="${Number(e.id) || 0}" title="Cancelar">\n                        <i class="fas fa-times"></i>\n                    </button>\n                    ${'cancelled' !== (e.status || 'confirmed') && 'completed' !== (e.status || 'confirmed') && 'no_show' !== (e.status || 'confirmed') ? `\n                    <button type="button" class="btn-icon warning" data-action="mark-no-show" data-id="${Number(e.id) || 0}" title="Marcar no asistio">\n                        <i class="fas fa-user-slash"></i>\n                    </button>\n                    ` : ''}\n                </div>\n            </td>\n        </tr>\n    `
-        )
+    n.innerHTML = a
+        .map((e) => {
+            const t = String(e.status || 'confirmed'),
+                n = String(e.paymentStatus || ''),
+                a = 'pending_transfer_review' === n,
+                o = [
+                    'appointment-row',
+                    a ? 'is-payment-review' : '',
+                    'cancelled' === t ? 'is-cancelled' : '',
+                    'no_show' === t || 'noshow' === t ? 'is-noshow' : '',
+                ]
+                    .filter(Boolean)
+                    .join(' '),
+                i = e.doctorAssigned
+                    ? `<br><small>Asignado: ${v(B(e.doctorAssigned))}</small>`
+                    : '',
+                r = e.transferReference
+                    ? `<br><small>Ref: ${v(e.transferReference)}</small>`
+                    : '',
+                s = (function (e) {
+                    const t = String(e || '').trim();
+                    return '' === t
+                        ? ''
+                        : t.startsWith('/') || /^https?:\/\//i.test(t)
+                          ? t
+                          : '';
+                })(e.transferProofUrl),
+                c = s
+                    ? `<br><a class="appointment-proof-link" href="${v(s)}" target="_blank" rel="noopener noreferrer"><i class="fas fa-file-arrow-up" aria-hidden="true"></i> Ver comprobante</a>`
+                    : '',
+                d = String(e.phone || '').replace(/\D/g, '');
+            return `\n        <tr class="${o}">\n            <td data-label="Paciente" class="appointment-cell-main">\n                <strong>${v(e.name)}</strong><br>\n                <small>${v(e.email)}</small>\n                <div class="appointment-inline-meta">\n                    <span class="toolbar-chip">${v(String(e.phone || 'Sin telefono'))}</span>\n                </div>\n            </td>\n            <td data-label="Servicio">${v(C(e.service))}</td>\n            <td data-label="Doctor">${v(B(e.doctor))}${i}</td>\n            <td data-label="Fecha">${v(
+                (function (e) {
+                    const t = new Date(e);
+                    return Number.isNaN(t.getTime())
+                        ? e
+                        : t.toLocaleDateString('es-EC', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                          });
+                })(e.date)
+            )}</td>\n            <td data-label="Hora">${v(e.time)}</td>\n            <td data-label="Pago" class="appointment-payment-cell">\n                <strong>${v(e.price || '$0.00')}</strong>\n                <small>${v($(e.paymentMethod))} - ${v(I(n))}</small>\n                ${r}\n                ${c}\n            </td>\n            <td data-label="Estado">\n                <span class="status-badge status-${v(t)}">\n                    ${v(L(t))}\n                </span>\n            </td>\n            <td data-label="Acciones">\n                <div class="table-actions">\n                    ${a ? `\n                    <button type="button" class="btn-icon success" data-action="approve-transfer" data-id="${Number(e.id) || 0}" title="Aprobar transferencia">\n                        <i class="fas fa-check"></i>\n                    </button>\n                    <button type="button" class="btn-icon danger" data-action="reject-transfer" data-id="${Number(e.id) || 0}" title="Rechazar transferencia">\n                        <i class="fas fa-ban"></i>\n                    </button>\n                    ` : ''}\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar" aria-label="Llamar a ${v(e.name)}">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(d)}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp" aria-label="Abrir WhatsApp de ${v(e.name)}">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                    <button type="button" class="btn-icon danger" data-action="cancel-appointment" data-id="${Number(e.id) || 0}" title="Cancelar">\n                        <i class="fas fa-times"></i>\n                    </button>\n                    ${'cancelled' !== t && 'completed' !== t && 'no_show' !== t ? `\n                    <button type="button" class="btn-icon warning" data-action="mark-no-show" data-id="${Number(e.id) || 0}" title="Marcar no asistio">\n                        <i class="fas fa-user-slash"></i>\n                    </button>\n                    ` : ''}\n                </div>\n            </td>\n        </tr>\n    `;
+        })
         .join('');
 }
-function ae() {
-    ne(e);
+function ne() {
+    te(e);
 }
-function oe(e) {
+function ae(e) {
     let t = String(e ?? '');
     return (/^[=+\-@]/.test(t) && (t = "'" + t), `"${t.replace(/"/g, '""')}"`);
 }
-let ie = null,
-    re = new Date(),
-    se = !1;
-function ce(e) {
+let oe = null,
+    ie = new Date(),
+    re = !1;
+function se(e) {
     return `${e.getFullYear()}-${String(e.getMonth() + 1).padStart(2, '0')}-${String(e.getDate()).padStart(2, '0')}`;
 }
-function de(e) {
+function ce(e) {
     const t = String(e || '').trim();
     if (!t) return 'n/d';
     const n = new Date(t);
     return Number.isNaN(n.getTime()) ? 'n/d' : n.toLocaleString('es-EC');
 }
-function le() {
+function de(e) {
+    const t = document.getElementById('availabilityHelperText');
+    t && (t.textContent = String(e || '').trim());
+}
+function le(e) {
+    const t = document.getElementById('timeSlotsCountBadge');
+    if (!t) return;
+    const n =
+        Number.isFinite(Number(e)) && Number(e) > 0 ? Math.round(Number(e)) : 0;
+    t.textContent = `${n} horario${1 === n ? '' : 's'}`;
+}
+function ue() {
     const {
         statusEl: e,
         detailsEl: t,
@@ -909,9 +966,9 @@ function le() {
         c = !1 === o.calendarTokenHealthy ? 'no' : 'si',
         d = !1 === o.calendarConfigured ? 'no' : 'si',
         l = !1 === o.calendarReachable ? 'no' : 'si',
-        u = de(o.generatedAt),
-        m = de(o.calendarLastSuccessAt),
-        p = de(o.calendarLastErrorAt),
+        u = ce(o.generatedAt),
+        m = ce(o.calendarLastSuccessAt),
+        p = ce(o.calendarLastErrorAt),
         f = String(o.calendarLastErrorReason || '').trim();
     if ('google' === a) {
         const n = 'blocked' === i ? 'bloqueado' : 'live';
@@ -925,9 +982,15 @@ function le() {
                 (e += ` | Ultimo error: <strong>${v(p)}</strong> (${v(f)})`),
                 (t.innerHTML = e));
         }
+        de(
+            'Modo solo lectura: gestiona horarios directamente en Google Calendar.'
+        );
     } else
         ((e.innerHTML = 'Fuente: <strong>Configuracion local</strong>'),
-            t && (t.innerHTML = `Snapshot: <strong>${v(u)}</strong>`));
+            t && (t.innerHTML = `Snapshot: <strong>${v(u)}</strong>`),
+            de(
+                'Selecciona un dia para revisar horarios y agregar o eliminar slots.'
+            ));
     if (
         ((function (e) {
             const t = document.querySelector(
@@ -966,21 +1029,21 @@ function le() {
         b('narvaez', 'Dra. Narvaez'),
     ].join(' | ');
 }
-function ue() {
+function me() {
     const e = document.getElementById('selectedDate');
-    e && (e.textContent = 'Selecciona una fecha');
+    (e && (e.textContent = 'Selecciona una fecha'), le(0));
     const t = document.getElementById('timeSlotsList');
     t &&
         (t.innerHTML =
             '<p class="empty-message">Selecciona una fecha para ver los horarios</p>');
 }
-function me() {
-    const e = document.getElementById('addSlotForm');
-    e && e.classList.toggle('is-hidden', se);
-}
 function pe() {
-    const e = re.getFullYear(),
-        t = re.getMonth(),
+    const e = document.getElementById('addSlotForm');
+    e && e.classList.toggle('is-hidden', re);
+}
+function fe() {
+    const e = ie.getFullYear(),
+        t = ie.getMonth(),
         n = new Date(e, t, 1).getDay(),
         o = new Date(e, t + 1, 0).getDate(),
         i = new Date(e, t, 0).getDate();
@@ -1004,13 +1067,13 @@ function pe() {
             r.appendChild(n));
     }
     for (let n = 1; n <= o; n += 1) {
-        const o = ce(new Date(e, t, n)),
+        const o = se(new Date(e, t, n)),
             i = document.createElement('div');
         ((i.className = 'calendar-day'),
             (i.textContent = n),
-            ie === o && i.classList.add('selected'),
+            oe === o && i.classList.add('selected'),
             a[o] && a[o].length > 0 && i.classList.add('has-slots'),
-            i.addEventListener('click', () => fe(o)),
+            i.addEventListener('click', () => ge(o)),
             r.appendChild(i));
     }
     const s = 42 - (n + o);
@@ -1021,8 +1084,8 @@ function pe() {
             r.appendChild(t));
     }
 }
-function fe(e) {
-    ((ie = e), pe());
+function ge(e) {
+    ((oe = e), fe());
     const t = new Date(e);
     ((document.getElementById('selectedDate').textContent =
         t.toLocaleDateString('es-EC', {
@@ -1033,49 +1096,49 @@ function fe(e) {
         })),
         document
             .getElementById('addSlotForm')
-            .classList.toggle('is-hidden', se),
-        ge(e));
+            .classList.toggle('is-hidden', re),
+        be(e));
 }
-function ge(e) {
+function be(e) {
     const t = a[e] || [],
         n = document.getElementById('timeSlotsList');
-    if (0 === t.length)
+    if ((le(t.length), 0 === t.length))
         return void (n.innerHTML =
-            '<p class="empty-message">No hay horarios configurados</p>');
+            '<p class="empty-message">No hay horarios configurados para este dia</p>');
     const o = encodeURIComponent(String(e || ''));
     n.innerHTML = t
         .slice()
         .sort()
         .map(
             (e) =>
-                `\n        <div class="time-slot-item">\n            <span class="time">${v(e)}</span>\n            <div class="slot-actions">\n                ${se ? '<span class="selected-date">Solo lectura</span>' : `<button type="button" class="btn-icon danger" data-action="remove-time-slot" data-date="${o}" data-time="${encodeURIComponent(String(e || ''))}">\n                    <i class="fas fa-trash"></i>\n                </button>`}\n            </div>\n        </div>\n    `
+                `\n        <div class="time-slot-item${re ? ' is-readonly' : ''}">\n            <span class="time">${v(e)}</span>\n            <div class="slot-actions">\n                ${re ? '<span class="slot-readonly-tag">Solo lectura</span>' : `<button type="button" class="btn-icon danger" data-action="remove-time-slot" data-date="${o}" data-time="${encodeURIComponent(String(e || ''))}">\n                    <i class="fas fa-trash"></i>\n                </button>`}\n            </div>\n        </div>\n    `
         )
         .join('');
 }
-async function be() {
-    if (se)
+async function he() {
+    if (re)
         throw new Error('Disponibilidad en solo lectura (Google Calendar).');
     await h('availability', { method: 'POST', body: { availability: a } });
 }
-function he() {
+function ye() {
     return Array.from(document.querySelectorAll('.nav-item[data-section]'));
 }
-function ye() {
-    const e = window.location.hash.replace(/^#/, '').trim();
-    return new Set(he().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
-}
 function ve() {
+    const e = window.location.hash.replace(/^#/, '').trim();
+    return new Set(ye().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
+}
+function we() {
     return (
         document.querySelector('.nav-item.active')?.dataset.section ||
-        ye() ||
+        ve() ||
         'dashboard'
     );
 }
-function we() {
+function Se() {
     return window.innerWidth <= 1024;
 }
 function ke(e) {
-    he().forEach((t) => {
+    ye().forEach((t) => {
         const n = t.dataset.section === e;
         (t.classList.toggle('active', n),
             n
@@ -1083,31 +1146,31 @@ function ke(e) {
                 : t.removeAttribute('aria-current'));
     });
 }
-function Se() {
+function Ee() {
     return {
         sidebar: document.getElementById('adminSidebar'),
         backdrop: document.getElementById('adminSidebarBackdrop'),
         toggleBtn: document.getElementById('adminMenuToggle'),
     };
 }
-function Ee(e) {
-    const { sidebar: t, backdrop: n, toggleBtn: a } = Se();
+function Ce(e) {
+    const { sidebar: t, backdrop: n, toggleBtn: a } = Ee();
     if (!t || !n || !a) return;
-    const o = Boolean(e && we());
+    const o = Boolean(e && Se());
     (t.classList.toggle('is-open', o),
         n.classList.toggle('is-hidden', !o),
         n.setAttribute('aria-hidden', String(!o)),
         document.body.classList.toggle('admin-sidebar-open', o),
         a.setAttribute('aria-expanded', String(o)));
 }
-function Ce({ restoreFocus: e = !1 } = {}) {
-    const { toggleBtn: t } = Se(),
+function Be({ restoreFocus: e = !1 } = {}) {
+    const { toggleBtn: t } = Ee(),
         n = document
             .getElementById('adminSidebar')
             ?.classList.contains('is-open');
-    (Ee(!1), e && n && t && t.focus());
+    (Ce(!1), e && n && t && t.focus());
 }
-async function Be(e, t = {}) {
+async function Le(e, t = {}) {
     const {
             refresh: n = !0,
             updateHash: a = !0,
@@ -1115,16 +1178,16 @@ async function Be(e, t = {}) {
             closeMobileNav: i = !0,
         } = t,
         r = e || 'dashboard';
-    if ((ke(r), i && Ce(), n))
+    if ((ke(r), i && Be(), n))
         try {
-            await _();
+            await M();
         } catch (e) {
             w(
                 `No se pudo actualizar datos en vivo: ${e?.message || 'error desconocido'}`,
                 'warning'
             );
         }
-    (await Le(r),
+    (await $e(r),
         a &&
             (function (e) {
                 const t = `#${e}`;
@@ -1146,7 +1209,7 @@ async function Be(e, t = {}) {
                     }));
             })(r));
 }
-async function Le(e) {
+async function $e(e) {
     const t = document.getElementById('pageTitle');
     (t &&
         (t.textContent =
@@ -1164,13 +1227,13 @@ async function Le(e) {
     switch ((i && i.classList.add('active'), e)) {
         case 'dashboard':
         default:
-            U();
+            O();
             break;
         case 'appointments':
-            ae();
+            ne();
             break;
         case 'callbacks':
-            z();
+            q();
             break;
         case 'reviews':
             !(function () {
@@ -1250,33 +1313,33 @@ async function Le(e) {
                             };
                         (u(t),
                             m(r),
-                            (se = 'google' === String(r.source || '')),
-                            le(),
-                            me(),
-                            ie && !a[ie] && ((ie = null), ue()));
+                            (re = 'google' === String(r.source || '')),
+                            ue(),
+                            pe(),
+                            oe && !a[oe] && ((oe = null), me()));
                     } catch (e) {
                         (console.error('Error refreshing availability:', e),
                             w(
                                 `Error al actualizar disponibilidad: ${e?.message || 'error desconocido'}`,
                                 'error'
                             ),
-                            (se = 'google' === String(o.source || '')),
-                            le(),
-                            me());
+                            (re = 'google' === String(o.source || '')),
+                            ue(),
+                            pe());
                     }
                 })(),
-                    pe(),
-                    ie || ue());
+                    fe(),
+                    oe || me());
             })();
     }
 }
-async function $e() {
+async function Ie() {
     const e = document.getElementById('loginScreen'),
         t = document.getElementById('adminDashboard');
     (e && e.classList.add('is-hidden'),
         t && t.classList.remove('is-hidden'),
-        ke(ye()),
-        Ce(),
+        ke(ve()),
+        Be(),
         await (async function () {
             const e = document.getElementById('currentDate');
             if (e) {
@@ -1289,20 +1352,20 @@ async function $e() {
                 e.textContent = new Date().toLocaleDateString('es-EC', t);
             }
             try {
-                await _();
+                await M();
             } catch (e) {
                 w(
                     `No se pudo actualizar datos en vivo: ${e?.message || 'error desconocido'}`,
                     'warning'
                 );
             }
-            const t = ve();
-            await Le(t);
+            const t = we();
+            await $e(t);
         })(),
         await (async function () {
-            if (W) return;
-            W = !0;
-            const { subscribeBtn: e, testBtn: t } = K();
+            if (G) return;
+            G = !0;
+            const { subscribeBtn: e, testBtn: t } = J();
             if (e && t) {
                 if (
                     'undefined' == typeof window ||
@@ -1310,22 +1373,22 @@ async function $e() {
                     !('PushManager' in window) ||
                     'undefined' == typeof Notification
                 )
-                    return (Y(!1), void V('no soportado', 'warn'));
+                    return (K(!1), void W('no soportado', 'warn'));
                 try {
                     (await navigator.serviceWorker.register('/sw.js'),
-                        await Z(),
-                        Y(!0),
-                        V('disponible', 'muted'),
-                        e.addEventListener('click', ee),
-                        t.addEventListener('click', te),
-                        await Q());
+                        await X(),
+                        K(!0),
+                        W('disponible', 'muted'),
+                        e.addEventListener('click', Q),
+                        t.addEventListener('click', ee),
+                        await Z());
                 } catch (e) {
-                    (Y(!1), V('sin configurar', 'warn'));
+                    (K(!1), W('sin configurar', 'warn'));
                 }
             }
         })());
 }
-async function Ie(e) {
+async function Ae(e) {
     e.preventDefault();
     const t = document.getElementById('group2FA');
     if (t && !t.classList.contains('is-hidden')) {
@@ -1336,7 +1399,7 @@ async function Ie(e) {
             })(e);
             (t.csrfToken && g(t.csrfToken),
                 w('Bienvenido al panel de administracion', 'success'),
-                await $e());
+                await Ie());
         } catch {
             w('Codigo incorrecto o sesion expirada', 'error');
         }
@@ -1361,12 +1424,12 @@ async function Ie(e) {
         }
         (e.csrfToken && g(e.csrfToken),
             w('Bienvenido al panel de administracion', 'success'),
-            await $e());
+            await Ie());
     } catch {
         w('Contrasena incorrecta', 'error');
     }
 }
-function Ae() {
+function Te() {
     document.addEventListener('click', async (o) => {
         const i = o.target.closest('[data-action]');
         if (!i) return;
@@ -1427,15 +1490,15 @@ function Ae() {
                                     Number(e.id) || 0,
                                     e.date || '',
                                     e.time || '',
-                                    oe(e.name || ''),
-                                    oe(e.email || ''),
-                                    oe(e.phone || ''),
-                                    oe(B(e.service)),
-                                    oe(L(e.doctor)),
+                                    ae(e.name || ''),
+                                    ae(e.email || ''),
+                                    ae(e.phone || ''),
+                                    ae(C(e.service)),
+                                    ae(B(e.doctor)),
                                     e.price || '',
-                                    oe($(e.status || 'confirmed')),
-                                    oe(A(e.paymentStatus)),
-                                    oe(I(e.paymentMethod)),
+                                    ae(L(e.status || 'confirmed')),
+                                    ae(I(e.paymentStatus)),
+                                    ae($(e.paymentMethod)),
                                 ]),
                                 n = [
                                     [
@@ -1472,19 +1535,19 @@ function Ae() {
                     return (
                         o.preventDefault(),
                         (s = Number(i.dataset.delta || 0)),
-                        re.setMonth(re.getMonth() + s),
-                        void pe()
+                        ie.setMonth(ie.getMonth() + s),
+                        void fe()
                     );
                 if ('add-time-slot' === r)
                     return (
                         o.preventDefault(),
                         void (await (async function () {
-                            if (se)
+                            if (re)
                                 return void w(
                                     'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
                                     'warning'
                                 );
-                            if (!ie)
+                            if (!oe)
                                 return void w(
                                     'Selecciona una fecha primero',
                                     'warning'
@@ -1492,14 +1555,14 @@ function Ae() {
                             const e =
                                 document.getElementById('newSlotTime').value;
                             if (e)
-                                if ((a[ie] || (a[ie] = []), a[ie].includes(e)))
+                                if ((a[oe] || (a[oe] = []), a[oe].includes(e)))
                                     w('Este horario ya existe', 'warning');
                                 else
                                     try {
-                                        (a[ie].push(e),
-                                            await be(),
-                                            ge(ie),
-                                            pe(),
+                                        (a[oe].push(e),
+                                            await he(),
+                                            be(oe),
+                                            fe(),
                                             (document.getElementById(
                                                 'newSlotTime'
                                             ).value = ''),
@@ -1517,7 +1580,7 @@ function Ae() {
                     return (
                         o.preventDefault(),
                         void (await (async function (e, t) {
-                            if (se)
+                            if (re)
                                 w(
                                     'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
                                     'warning'
@@ -1527,9 +1590,9 @@ function Ae() {
                                     ((a[e] = (a[e] || []).filter(
                                         (e) => e !== t
                                     )),
-                                        await be(),
-                                        ge(e),
-                                        pe(),
+                                        await he(),
+                                        be(e),
+                                        fe(),
                                         w('Horario eliminado', 'success'));
                                 } catch (e) {
                                     w(
@@ -1562,9 +1625,9 @@ function Ae() {
                                                     new Date().toISOString(),
                                             },
                                         }),
-                                            await _(),
-                                            ae(),
-                                            U(),
+                                            await M(),
+                                            ne(),
+                                            O(),
                                             w(
                                                 'Transferencia aprobada',
                                                 'success'
@@ -1596,9 +1659,9 @@ function Ae() {
                                                 paymentStatus: 'failed',
                                             },
                                         }),
-                                            await _(),
-                                            ae(),
-                                            U(),
+                                            await M(),
+                                            ne(),
+                                            O(),
                                             w(
                                                 'Transferencia rechazada',
                                                 'warning'
@@ -1626,9 +1689,9 @@ function Ae() {
                                                 status: 'cancelled',
                                             },
                                         }),
-                                            await _(),
-                                            ae(),
-                                            U(),
+                                            await M(),
+                                            ne(),
+                                            O(),
                                             w(
                                                 'Cita cancelada correctamente',
                                                 'success'
@@ -1653,9 +1716,9 @@ function Ae() {
                                             method: 'PATCH',
                                             body: { id: e, status: 'no_show' },
                                         }),
-                                            await _(),
-                                            ae(),
-                                            U(),
+                                            await M(),
+                                            ne(),
+                                            O(),
                                             w(
                                                 'Cita marcada como no asistio',
                                                 'success'
@@ -1687,9 +1750,9 @@ function Ae() {
                                             status: 'contactado',
                                         },
                                     }),
-                                    await _(),
-                                    z(),
-                                    U(),
+                                    await M(),
+                                    q(),
+                                    O(),
                                     w('Marcado como contactado', 'success'));
                             } catch (e) {
                                 w(
@@ -1751,7 +1814,7 @@ function Ae() {
                             (e) => 'pending_transfer_review' === e.paymentStatus
                         );
                 }
-                ne(n);
+                te(n);
             })();
         });
     const i = document.getElementById('searchAppointments');
@@ -1761,7 +1824,7 @@ function Ae() {
                 const t = document
                     .getElementById('searchAppointments')
                     .value.toLowerCase();
-                ne(
+                te(
                     e.filter(
                         (e) =>
                             String(e.name || '')
@@ -1776,16 +1839,16 @@ function Ae() {
             })();
         });
     const r = document.getElementById('callbackFilter');
-    r && r.addEventListener('change', G);
+    r && r.addEventListener('change', z);
 }
 document.addEventListener('DOMContentLoaded', async () => {
-    Ae();
+    Te();
     const e = document.getElementById('loginForm');
-    (e && e.addEventListener('submit', Ie),
-        he().forEach((e) => {
+    (e && e.addEventListener('submit', Ae),
+        ye().forEach((e) => {
             e.addEventListener('click', async (t) => {
                 (t.preventDefault(),
-                    await Be(e.dataset.section || 'dashboard'));
+                    await Le(e.dataset.section || 'dashboard'));
             });
         }),
         document
@@ -1793,25 +1856,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             ?.addEventListener('click', () => {
                 const e = document.getElementById('adminSidebar'),
                     t = e?.classList.contains('is-open');
-                Ee(!t);
+                Ce(!t);
             }),
         document
             .getElementById('adminMenuClose')
-            ?.addEventListener('click', () => Ce({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => Be({ restoreFocus: !0 })),
         document
             .getElementById('adminSidebarBackdrop')
-            ?.addEventListener('click', () => Ce({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => Be({ restoreFocus: !0 })),
         window.addEventListener('keydown', (e) => {
-            'Escape' === e.key && Ce({ restoreFocus: !0 });
+            'Escape' === e.key && Be({ restoreFocus: !0 });
         }),
         window.addEventListener('resize', () => {
-            we() || Ce();
+            Se() || Be();
         }),
         window.addEventListener('hashchange', async () => {
             const e = document.getElementById('adminDashboard');
             e &&
                 !e.classList.contains('is-hidden') &&
-                (await Be(ye(), {
+                (await Le(ve(), {
                     refresh: !1,
                     updateHash: !1,
                     focus: !1,
@@ -1852,9 +1915,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     : {},
                         };
                         (await h('import', { method: 'POST', body: a }),
-                            await _());
+                            await M());
                         const o = document.querySelector('.nav-item.active');
-                        (await Le(o?.dataset.section || 'dashboard'),
+                        (await $e(o?.dataset.section || 'dashboard'),
                             w(
                                 `Datos importados: ${a.appointments.length} citas`,
                                 'success'
@@ -1866,14 +1929,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         ),
         window.addEventListener('online', async () => {
             (w('Conexion restaurada. Actualizando datos...', 'success'),
-                await _(),
-                await Le(ve()));
+                await M(),
+                await $e(we()));
         }),
         await (async function () {
-            if (!navigator.onLine && N('appointments', null))
+            if (!navigator.onLine && D('appointments', null))
                 return (
                     w('Modo offline: mostrando datos locales', 'info'),
-                    void (await $e())
+                    void (await Ie())
                 );
             (await (async function () {
                 try {
@@ -1885,11 +1948,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return (w('No se pudo verificar la sesion', 'warning'), !1);
                 }
             })())
-                ? await $e()
+                ? await Ie()
                 : (function () {
                       const e = document.getElementById('loginScreen'),
                           t = document.getElementById('adminDashboard');
-                      (Ce(),
+                      (Be(),
                           e && e.classList.remove('is-hidden'),
                           t && t.classList.add('is-hidden'));
                   })();

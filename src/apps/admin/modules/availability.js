@@ -20,8 +20,7 @@ function toLocalDateKey(date) {
 
 function ensureStatusElements() {
     const panel = document.querySelector('#availability .time-slots-config');
-    if (!panel)
-        return { statusEl: null, detailsEl: null, linksEl: null };
+    if (!panel) return { statusEl: null, detailsEl: null, linksEl: null };
 
     let statusEl = document.getElementById('availabilitySyncStatus');
     if (!statusEl) {
@@ -62,23 +61,50 @@ function formatStatusTime(isoValue) {
     return parsed.toLocaleString('es-EC');
 }
 
+function setAvailabilityHelperText(message) {
+    const helperEl = document.getElementById('availabilityHelperText');
+    if (!helperEl) return;
+    helperEl.textContent = String(message || '').trim();
+}
+
+function setTimeSlotsCountBadge(count) {
+    const badgeEl = document.getElementById('timeSlotsCountBadge');
+    if (!badgeEl) return;
+    const normalizedCount =
+        Number.isFinite(Number(count)) && Number(count) > 0
+            ? Math.round(Number(count))
+            : 0;
+    badgeEl.textContent = `${normalizedCount} horario${normalizedCount === 1 ? '' : 's'}`;
+}
+
 function renderStatus() {
     const { statusEl, detailsEl, linksEl } = ensureStatusElements();
     if (!statusEl) return;
 
     const source = String(currentAvailabilityMeta.source || 'store');
     const mode = String(currentAvailabilityMeta.mode || 'live');
-    const timezone = String(currentAvailabilityMeta.timezone || 'America/Guayaquil');
+    const timezone = String(
+        currentAvailabilityMeta.timezone || 'America/Guayaquil'
+    );
     const calendarAuth = String(currentAvailabilityMeta.calendarAuth || 'n/d');
-    const tokenHealthy = currentAvailabilityMeta.calendarTokenHealthy === false ? 'no' : 'si';
-    const configured = currentAvailabilityMeta.calendarConfigured === false ? 'no' : 'si';
-    const reachable = currentAvailabilityMeta.calendarReachable === false ? 'no' : 'si';
-    const generatedLabel = formatStatusTime(currentAvailabilityMeta.generatedAt);
+    const tokenHealthy =
+        currentAvailabilityMeta.calendarTokenHealthy === false ? 'no' : 'si';
+    const configured =
+        currentAvailabilityMeta.calendarConfigured === false ? 'no' : 'si';
+    const reachable =
+        currentAvailabilityMeta.calendarReachable === false ? 'no' : 'si';
+    const generatedLabel = formatStatusTime(
+        currentAvailabilityMeta.generatedAt
+    );
     const lastSuccessLabel = formatStatusTime(
         currentAvailabilityMeta.calendarLastSuccessAt
     );
-    const lastErrorLabel = formatStatusTime(currentAvailabilityMeta.calendarLastErrorAt);
-    const lastErrorReason = String(currentAvailabilityMeta.calendarLastErrorReason || '').trim();
+    const lastErrorLabel = formatStatusTime(
+        currentAvailabilityMeta.calendarLastErrorAt
+    );
+    const lastErrorReason = String(
+        currentAvailabilityMeta.calendarLastErrorReason || ''
+    ).trim();
 
     if (source === 'google') {
         const modeLabel = mode === 'blocked' ? 'bloqueado' : 'live';
@@ -90,11 +116,17 @@ function renderStatus() {
             }
             detailsEl.innerHTML = details;
         }
+        setAvailabilityHelperText(
+            'Modo solo lectura: gestiona horarios directamente en Google Calendar.'
+        );
     } else {
         statusEl.innerHTML = `Fuente: <strong>Configuracion local</strong>`;
         if (detailsEl) {
             detailsEl.innerHTML = `Snapshot: <strong>${escapeHtml(generatedLabel)}</strong>`;
         }
+        setAvailabilityHelperText(
+            'Selecciona un dia para revisar horarios y agregar o eliminar slots.'
+        );
     }
     updateSectionHeadings(source);
 
@@ -136,7 +168,9 @@ function updateSectionHeadings(source) {
                 : 'Configurar Horarios Disponibles';
     }
 
-    const dayTitle = document.querySelector('#availability .time-slots-config h3');
+    const dayTitle = document.querySelector(
+        '#availability .time-slots-config h3'
+    );
     if (dayTitle) {
         dayTitle.textContent =
             source === 'google'
@@ -150,9 +184,11 @@ function clearSelectedDateState() {
     if (selectedLabel) {
         selectedLabel.textContent = 'Selecciona una fecha';
     }
+    setTimeSlotsCountBadge(0);
     const list = document.getElementById('timeSlotsList');
     if (list) {
-        list.innerHTML = '<p class="empty-message">Selecciona una fecha para ver los horarios</p>';
+        list.innerHTML =
+            '<p class="empty-message">Selecciona una fecha para ver los horarios</p>';
     }
 }
 
@@ -192,7 +228,9 @@ async function refreshAvailabilitySnapshot() {
             source: String(snapshotMeta.source || baseMeta.source || 'store'),
             mode: String(snapshotMeta.mode || baseMeta.mode || 'live'),
             timezone: String(
-                snapshotMeta.timezone || baseMeta.timezone || 'America/Guayaquil'
+                snapshotMeta.timezone ||
+                    baseMeta.timezone ||
+                    'America/Guayaquil'
             ),
             generatedAt: String(
                 snapshotMeta.generatedAt ||
@@ -216,7 +254,8 @@ async function refreshAvailabilitySnapshot() {
             `Error al actualizar disponibilidad: ${error?.message || 'error desconocido'}`,
             'error'
         );
-        availabilityReadOnly = String(currentAvailabilityMeta.source || '') === 'google';
+        availabilityReadOnly =
+            String(currentAvailabilityMeta.source || '') === 'google';
         renderStatus();
         toggleReadOnlyUi();
     }
@@ -301,24 +340,26 @@ function selectDate(dateStr) {
     selectedDate = dateStr;
     renderAvailabilityCalendar();
     const date = new Date(dateStr);
-    document.getElementById('selectedDate').textContent = date.toLocaleDateString(
-        'es-EC',
-        {
+    document.getElementById('selectedDate').textContent =
+        date.toLocaleDateString('es-EC', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
             year: 'numeric',
-        }
-    );
-    document.getElementById('addSlotForm').classList.toggle('is-hidden', availabilityReadOnly);
+        });
+    document
+        .getElementById('addSlotForm')
+        .classList.toggle('is-hidden', availabilityReadOnly);
     loadTimeSlots(dateStr);
 }
 
 function loadTimeSlots(dateStr) {
     const slots = currentAvailability[dateStr] || [];
     const list = document.getElementById('timeSlotsList');
+    setTimeSlotsCountBadge(slots.length);
     if (slots.length === 0) {
-        list.innerHTML = '<p class="empty-message">No hay horarios configurados</p>';
+        list.innerHTML =
+            '<p class="empty-message">No hay horarios configurados para este dia</p>';
         return;
     }
 
@@ -329,12 +370,12 @@ function loadTimeSlots(dateStr) {
         .sort()
         .map(
             (time) => `
-        <div class="time-slot-item">
+        <div class="time-slot-item${availabilityReadOnly ? ' is-readonly' : ''}">
             <span class="time">${escapeHtml(time)}</span>
             <div class="slot-actions">
                 ${
                     availabilityReadOnly
-                        ? '<span class="selected-date">Solo lectura</span>'
+                        ? '<span class="slot-readonly-tag">Solo lectura</span>'
                         : `<button type="button" class="btn-icon danger" data-action="remove-time-slot" data-date="${encodedDate}" data-time="${encodeURIComponent(String(time || ''))}">
                     <i class="fas fa-trash"></i>
                 </button>`
@@ -358,7 +399,10 @@ async function saveAvailability() {
 
 export async function addTimeSlot() {
     if (availabilityReadOnly) {
-        showToast('Disponibilidad en solo lectura: gestionala desde Google Calendar.', 'warning');
+        showToast(
+            'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
+            'warning'
+        );
         return;
     }
     if (!selectedDate) {
@@ -394,11 +438,16 @@ export async function addTimeSlot() {
 
 export async function removeTimeSlot(dateStr, time) {
     if (availabilityReadOnly) {
-        showToast('Disponibilidad en solo lectura: gestionala desde Google Calendar.', 'warning');
+        showToast(
+            'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
+            'warning'
+        );
         return;
     }
     try {
-        currentAvailability[dateStr] = (currentAvailability[dateStr] || []).filter((t) => t !== time);
+        currentAvailability[dateStr] = (
+            currentAvailability[dateStr] || []
+        ).filter((t) => t !== time);
         await saveAvailability();
         loadTimeSlots(dateStr);
         renderAvailabilityCalendar();

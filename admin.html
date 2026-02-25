@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260225-adminux1" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260225-adminux2" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -481,6 +481,13 @@
                                 </option>
                             </select>
                         </div>
+                        <div
+                            class="toolbar-meta"
+                            id="appointmentsToolbarMeta"
+                            aria-live="polite"
+                        >
+                            <span class="toolbar-chip">Cargando citas...</span>
+                        </div>
                         <button
                             type="button"
                             class="btn btn-secondary btn-sm"
@@ -588,8 +595,23 @@
 
                         <div class="time-slots-config">
                             <h3>Horarios del Día</h3>
-                            <p class="selected-date" id="selectedDate">
-                                Selecciona una fecha
+                            <div class="selected-date-row">
+                                <p class="selected-date" id="selectedDate">
+                                    Selecciona una fecha
+                                </p>
+                                <span
+                                    class="slot-count-badge"
+                                    id="timeSlotsCountBadge"
+                                    aria-live="polite"
+                                >
+                                    0 horarios
+                                </span>
+                            </div>
+                            <p
+                                class="availability-helper"
+                                id="availabilityHelperText"
+                            >
+                                Selecciona un dia para revisar horarios y cambios.
                             </p>
 
                             <div class="time-slots-list" id="timeSlotsList">
@@ -633,6 +655,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260225-adminux1" type="module"></script>
+        <script src="admin.js?v=admin-20260225-adminux2" type="module"></script>
     </body>
 </html>
