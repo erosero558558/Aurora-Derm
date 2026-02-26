@@ -56,6 +56,7 @@ class HealthController
             $calendarAuth,
             $calendarTokenSnapshot
         );
+        $servicesCatalog = self::collectServiceCatalogSnapshot();
         $sentryBackendConfigured = trim((string) getenv('PIELARMONIA_SENTRY_DSN')) !== '';
         $sentryFrontendConfigured = trim((string) getenv('PIELARMONIA_SENTRY_DSN_PUBLIC')) !== '';
         $redisStatus = getenv('PIELARMONIA_REDIS_HOST') ? 'configured' : 'disabled';
@@ -129,6 +130,10 @@ class HealthController
             'calendarTokenHealthy' => $calendarTokenHealthy,
             'sentryBackendConfigured' => $sentryBackendConfigured,
             'sentryFrontendConfigured' => $sentryFrontendConfigured,
+            'servicesCatalogSource' => (string) ($servicesCatalog['source'] ?? 'unknown'),
+            'servicesCatalogVersion' => (string) ($servicesCatalog['version'] ?? 'unknown'),
+            'servicesCatalogCount' => (int) ($servicesCatalog['servicesCount'] ?? 0),
+            'servicesCatalogConfigured' => (bool) ($servicesCatalog['configured'] ?? false),
             'idempotencyRequestsWithKey' => (int) ($idempotencySnapshot['requestsWithKey'] ?? 0),
             'idempotencyConflictRatePct' => (float) ($idempotencySnapshot['conflictRatePct'] ?? 0.0),
         ]);
@@ -159,6 +164,10 @@ class HealthController
             'calendarLastErrorReason' => $calendarLastErrorReason,
             'sentryBackendConfigured' => $sentryBackendConfigured,
             'sentryFrontendConfigured' => $sentryFrontendConfigured,
+            'servicesCatalogSource' => (string) ($servicesCatalog['source'] ?? 'unknown'),
+            'servicesCatalogVersion' => (string) ($servicesCatalog['version'] ?? 'unknown'),
+            'servicesCatalogCount' => (int) ($servicesCatalog['servicesCount'] ?? 0),
+            'servicesCatalogConfigured' => (bool) ($servicesCatalog['configured'] ?? false),
             'idempotency' => $idempotencySnapshot,
             'checks' => [
                 'storage' => [
@@ -189,12 +198,89 @@ class HealthController
                     'sentryBackendConfigured' => $sentryBackendConfigured,
                     'sentryFrontendConfigured' => $sentryFrontendConfigured,
                 ],
+                'servicesCatalog' => [
+                    'source' => (string) ($servicesCatalog['source'] ?? 'unknown'),
+                    'version' => (string) ($servicesCatalog['version'] ?? 'unknown'),
+                    'timezone' => (string) ($servicesCatalog['timezone'] ?? 'America/Guayaquil'),
+                    'servicesCount' => (int) ($servicesCatalog['servicesCount'] ?? 0),
+                    'configured' => (bool) ($servicesCatalog['configured'] ?? false),
+                ],
                 'idempotency' => $idempotencySnapshot,
                 'backup' => $backupCheck,
                 'storeCounts' => $storeCounts
             ],
             'timestamp' => local_date('c')
         ]);
+    }
+
+    /**
+     * @return array{source:string,version:string,timezone:string,servicesCount:int,configured:bool}
+     */
+    private static function collectServiceCatalogSnapshot(): array
+    {
+        $catalogPath = self::resolveServiceCatalogPath();
+        if ($catalogPath === '' || !is_file($catalogPath)) {
+            return [
+                'source' => 'missing',
+                'version' => 'missing',
+                'timezone' => 'America/Guayaquil',
+                'servicesCount' => 0,
+                'configured' => false,
+            ];
+        }
+
+        $raw = @file_get_contents($catalogPath);
+        if (!is_string($raw) || trim($raw) === '') {
+            return [
+                'source' => 'invalid',
+                'version' => 'invalid',
+                'timezone' => 'America/Guayaquil',
+                'servicesCount' => 0,
+                'configured' => false,
+            ];
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return [
+                'source' => 'invalid',
+                'version' => 'invalid',
+                'timezone' => 'America/Guayaquil',
+                'servicesCount' => 0,
+                'configured' => false,
+            ];
+        }
+
+        $services = $decoded['services'] ?? [];
+        if (!is_array($services)) {
+            $services = [];
+        }
+
+        $version = (string) ($decoded['version'] ?? 'unknown');
+        if (trim($version) === '') {
+            $version = 'unknown';
+        }
+        $timezone = (string) ($decoded['timezone'] ?? 'America/Guayaquil');
+        if (trim($timezone) === '') {
+            $timezone = 'America/Guayaquil';
+        }
+
+        return [
+            'source' => 'file',
+            'version' => $version,
+            'timezone' => $timezone,
+            'servicesCount' => count($services),
+            'configured' => true,
+        ];
+    }
+
+    private static function resolveServiceCatalogPath(): string
+    {
+        $override = getenv('PIELARMONIA_SERVICES_CATALOG_FILE');
+        if (is_string($override) && trim($override) !== '') {
+            return trim($override);
+        }
+        return __DIR__ . '/../content/services.json';
     }
 
     private static function resolveCalendarReachable(

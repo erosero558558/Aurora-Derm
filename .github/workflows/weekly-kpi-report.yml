@@ -390,6 +390,17 @@ jobs:
                     "service_funnel_incident_reason_codes=report_missing,service_funnel_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "service_funnel_incident_severity=critical" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "service_funnel_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_source=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_version=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_count=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_configured=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_count_int=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_data_valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_incident_required=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_incident_recovered=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_incident_reason_codes=report_missing,services_catalog_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_incident_severity=critical" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "services_catalog_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_core_p95_max_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_figo_post_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_availability_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -522,6 +533,11 @@ jobs:
                     } else {
                       'none'
                     }
+                    $servicesCatalog = $payload.servicesCatalog
+                    $servicesCatalogSource = if ($null -ne $servicesCatalog -and $null -ne $servicesCatalog.source) { [string]$servicesCatalog.source } else { 'n/a' }
+                    $servicesCatalogVersion = if ($null -ne $servicesCatalog -and $null -ne $servicesCatalog.version) { [string]$servicesCatalog.version } else { 'n/a' }
+                    $servicesCatalogCount = if ($null -ne $servicesCatalog -and $null -ne $servicesCatalog.servicesCount) { [string]$servicesCatalog.servicesCount } else { '0' }
+                    $servicesCatalogConfigured = if ($null -ne $servicesCatalog -and $null -ne $servicesCatalog.configured) { [string]$servicesCatalog.configured } else { 'false' }
                     $coreP95MaxMs = if ($null -ne $latency) { $latency.coreP95MaxMs } else { 'n/a' }
                     $figoPostP95Ms = if ($null -ne $latency) { $latency.figoPostP95Ms } else { 'n/a' }
                     $availabilityBench = $null
@@ -564,6 +580,10 @@ jobs:
                     $serviceFunnelRows = 'n/a'
                     $serviceFunnelAlertCount = 'n/a'
                     $serviceFunnelAlertList = 'n/a'
+                    $servicesCatalogSource = 'n/a'
+                    $servicesCatalogVersion = 'n/a'
+                    $servicesCatalogCount = 'n/a'
+                    $servicesCatalogConfigured = 'n/a'
                     $coreP95MaxMs = 'n/a'
                     $figoPostP95Ms = 'n/a'
                     $availabilityP95Ms = 'n/a'
@@ -698,6 +718,53 @@ jobs:
                   "service_funnel_incident_reason_codes=$serviceFunnelIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "service_funnel_incident_severity=$serviceFunnelIncidentSeverity" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "service_funnel_signal_key=$serviceFunnelSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_source=$servicesCatalogSource" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_version=$servicesCatalogVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_count=$servicesCatalogCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_configured=$servicesCatalogConfigured" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  $servicesCatalogCountInt = -1
+                  $tmpServicesCatalogCount = 0
+                  if ([int]::TryParse([string]$servicesCatalogCount, [ref]$tmpServicesCatalogCount)) {
+                    $servicesCatalogCountInt = $tmpServicesCatalogCount
+                  }
+                  $servicesCatalogDataValid = if ([string]::IsNullOrWhiteSpace($servicesCatalogSource) -or $servicesCatalogSource -eq 'n/a') { 'false' } else { 'true' }
+                  $servicesCatalogConfiguredBool = "$servicesCatalogConfigured".ToLowerInvariant() -eq 'true'
+                  $servicesCatalogReasonCodes = New-Object System.Collections.Generic.List[string]
+                  if ($reportStale -eq 'true') { $servicesCatalogReasonCodes.Add('report_stale') | Out-Null }
+                  if ($servicesCatalogDataValid -ne 'true') {
+                    $servicesCatalogReasonCodes.Add('services_catalog_invalid') | Out-Null
+                  } elseif ($servicesCatalogSource -ne 'file') {
+                    $servicesCatalogReasonCodes.Add("services_catalog_source_$servicesCatalogSource") | Out-Null
+                  }
+                  if (-not $servicesCatalogConfiguredBool) {
+                    $servicesCatalogReasonCodes.Add('services_catalog_not_configured') | Out-Null
+                  }
+                  if ($servicesCatalogCountInt -eq -1) {
+                    $servicesCatalogReasonCodes.Add('services_catalog_count_invalid') | Out-Null
+                  } elseif ($servicesCatalogCountInt -le 0) {
+                    $servicesCatalogReasonCodes.Add('services_catalog_empty') | Out-Null
+                  }
+                  if ($servicesCatalogReasonCodes.Count -eq 0) {
+                    $servicesCatalogReasonCodes.Add('none') | Out-Null
+                  }
+                  $servicesCatalogIncidentRequired = if ($servicesCatalogReasonCodes.Count -gt 1 -or @($servicesCatalogReasonCodes)[0] -ne 'none') { 'true' } else { 'false' }
+                  $servicesCatalogIncidentRecovered = if ($servicesCatalogIncidentRequired -eq 'false' -and $reportStale -ne 'true') { 'true' } else { 'false' }
+                  $servicesCatalogIncidentReasonCodes = @($servicesCatalogReasonCodes) -join ','
+                  $servicesCatalogIncidentSeverity = if (
+                    $reportStale -eq 'true' -or
+                    $servicesCatalogDataValid -ne 'true' -or
+                    $servicesCatalogSource -eq 'missing' -or
+                    $servicesCatalogSource -eq 'invalid' -or
+                    $servicesCatalogSource -eq 'unknown'
+                  ) { 'critical' } elseif ($servicesCatalogIncidentRequired -eq 'true') { 'warning' } else { 'warning' }
+                  $servicesCatalogSignalKey = "count:$servicesCatalogCountInt|cfg:$servicesCatalogConfiguredBool|stale:$reportStale|reasons:$servicesCatalogIncidentReasonCodes|src:$servicesCatalogSource"
+                  "services_catalog_count_int=$servicesCatalogCountInt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_data_valid=$servicesCatalogDataValid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_incident_required=$servicesCatalogIncidentRequired" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_incident_recovered=$servicesCatalogIncidentRecovered" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_incident_reason_codes=$servicesCatalogIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_incident_severity=$servicesCatalogIncidentSeverity" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "services_catalog_signal_key=$servicesCatalogSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_core_p95_max_ms=$coreP95MaxMs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_figo_post_p95_ms=$figoPostP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_availability_p95_ms=$availabilityP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -781,7 +848,8 @@ jobs:
                         '[ALERTA PROD] Weekly KPI report con warnings',
                         '[ALERTA PROD] Weekly KPI SLA operativo degradado',
                         '[ALERTA PROD] Weekly KPI retencion degradada',
-                        '[ALERTA PROD] Weekly KPI service funnel degradado'
+                        '[ALERTA PROD] Weekly KPI service funnel degradado',
+                        '[ALERTA PROD] Weekly KPI services catalog degradado'
                       ]);
                       const prodIncidents = allIssues.filter((issue) => {
                         if (issue.pull_request) return false;
@@ -914,6 +982,15 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_incident_reason_codes: ``${{ steps.report.outputs.service_funnel_incident_reason_codes }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_incident_severity: ``${{ steps.report.outputs.service_funnel_incident_severity }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_signal_key: ``${{ steps.report.outputs.service_funnel_signal_key }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_source: ``${{ steps.report.outputs.services_catalog_source }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_version: ``${{ steps.report.outputs.services_catalog_version }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_count: ``${{ steps.report.outputs.services_catalog_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_configured: ``${{ steps.report.outputs.services_catalog_configured }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_incident_required: ``${{ steps.report.outputs.services_catalog_incident_required }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_incident_recovered: ``${{ steps.report.outputs.services_catalog_incident_recovered }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_incident_reason_codes: ``${{ steps.report.outputs.services_catalog_incident_reason_codes }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_incident_severity: ``${{ steps.report.outputs.services_catalog_incident_severity }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_signal_key: ``${{ steps.report.outputs.services_catalog_signal_key }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Latency"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- core_p95_max_ms: ``${{ steps.report.outputs.latency_core_p95_max_ms }}``"
@@ -1641,3 +1718,158 @@ jobs:
                         state: 'closed'
                       });
                       core.info(`Issue de service funnel cerrado: #${existing.number}`);
+
+            - name: Crear/actualizar incidente semanal de services catalog
+              if: ${{ github.event_name == 'schedule' && steps.report.outputs.services_catalog_incident_required == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI services catalog degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = '${{ steps.report.outputs.services_catalog_signal_key }}';
+                      const signalMarker = `<!-- services-catalog-signal:${signal} -->`;
+                      const incidentSeverity = '${{ steps.report.outputs.services_catalog_incident_severity }}' || 'warning';
+                      const severityLabel = incidentSeverity === 'critical' ? 'severity:critical' : 'severity:warning';
+                      const baseLabels = ['production-alert', 'weekly-kpi', 'services-catalog', severityLabel];
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const buildMergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+                      const incidentBody = [
+                        'El workflow `Weekly KPI Report` detecto degradacion en el catalogo de servicios (`servicesCatalog`).',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- services_catalog_source: ${{ steps.report.outputs.services_catalog_source }}`,
+                        `- services_catalog_version: ${{ steps.report.outputs.services_catalog_version }}`,
+                        `- services_catalog_count: ${{ steps.report.outputs.services_catalog_count }}`,
+                        `- services_catalog_configured: ${{ steps.report.outputs.services_catalog_configured }}`,
+                        `- report_generated_at_utc: ${{ steps.report.outputs.report_generated_at_utc }}`,
+                        `- report_age_hours: ${{ steps.report.outputs.report_age_hours }}`,
+                        `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                        `- services_catalog_incident_reason_codes: ${{ steps.report.outputs.services_catalog_incident_reason_codes }}`,
+                        `- services_catalog_incident_severity: ${{ steps.report.outputs.services_catalog_incident_severity }}`,
+                        `- services_catalog_signal_key: ${{ steps.report.outputs.services_catalog_signal_key }}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const mergedLabels = buildMergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), mergedLabels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels: mergedLabels
+                            });
+                            core.info(`Issue de services catalog actualizo labels de severidad: #${existing.number}`);
+                          }
+                          core.info(`Issue de services catalog ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: incidentBody,
+                          labels: mergedLabels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente de services catalog actualizado por cambio de senal semanal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- services_catalog_source: ${{ steps.report.outputs.services_catalog_source }}`,
+                            `- services_catalog_version: ${{ steps.report.outputs.services_catalog_version }}`,
+                            `- services_catalog_count: ${{ steps.report.outputs.services_catalog_count }}`,
+                            `- services_catalog_incident_reason_codes: ${{ steps.report.outputs.services_catalog_incident_reason_codes }}`,
+                            `- services_catalog_incident_severity: ${{ steps.report.outputs.services_catalog_incident_severity }}`,
+                            `- services_catalog_signal_key: ${{ steps.report.outputs.services_catalog_signal_key }}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue de services catalog actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body: incidentBody,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue de services catalog creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente semanal de services catalog al recuperar
+              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.services_catalog_incident_recovered == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI services catalog degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente de services catalog abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por reporte semanal de services catalog.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue de services catalog cerrado: #${existing.number}`);

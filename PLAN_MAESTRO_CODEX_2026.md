@@ -171,6 +171,26 @@ Criterio de salida:
 - [x] Contrato de filtros y paginacion protegido por pruebas de integracion verdes.
 - [x] Sin regresiones en analytics/retention existentes.
 
+## C8 - Salud operativa de catalogo (health + weekly incident)
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Convertir el estado del catalogo de servicios en senal operativa explicita en `health` y en el KPI semanal, con incidente dedicado.
+
+Entregables:
+
+- [x] `GET /api.php?resource=health` expone `servicesCatalogSource`, `servicesCatalogVersion`, `servicesCatalogCount`, `servicesCatalogConfigured`.
+- [x] `checks.servicesCatalog` disponible con metadatos de fuente/version/cantidad.
+- [x] `REPORTE-SEMANAL-PRODUCCION.ps1` incorpora warnings `services_catalog_*`, seccion markdown y bloque `servicesCatalog` en JSON.
+- [x] `weekly-kpi-report.yml` emite outputs normalizados `services_catalog_*` y abre/cierra incidente dedicado.
+
+Criterio de salida:
+
+- [x] Reporte semanal no falla y serializa `servicesCatalog` correctamente.
+- [x] Incidente semanal dedicado `[ALERTA PROD] Weekly KPI services catalog degradado` habilitado con severidad.
+- [x] Contrato de workflow validado por tests Node.
+
 ## Contratos publicos
 
 - No se introducen cambios breaking en contratos HTTP existentes.
@@ -228,3 +248,4 @@ Criterio de salida:
 - 2026-02-26: cerrado C5 backend con trazabilidad de conversion por servicio en `controllers/AnalyticsController.php` (eventos `view_service_*` y `start_booking_from_service`, breakdowns `serviceCategory/serviceDetail/serviceBookingIntent/serviceCheckout/serviceConfirmed`, y matriz `serviceFunnel`), con cobertura en `tests/Integration/AnalyticsServiceFunnelMetricsTest.php`; validado con `php -d xdebug.mode=coverage vendor/bin/phpunit tests/Integration/AnalyticsServiceFunnelMetricsTest.php tests/Integration/AnalyticsRetentionMetricsTest.php tests/Integration/AnalyticsRetentionReportTest.php` (`6 tests`, `108 assertions`).
 - 2026-02-26: cerrado C6 con alertas operativas de `serviceFunnel` en `REPORTE-SEMANAL-PRODUCCION.ps1` (codigos `service_funnel_*`, seccion markdown/JSON y top servicios) y workflow semanal extendido (`.github/workflows/weekly-kpi-report.yml`) con umbrales dedicados, outputs de incidente y apertura/cierre automatica de `[ALERTA PROD] Weekly KPI service funnel degradado`.
 - 2026-02-26: cerrado C7 con nuevo controlador `controllers/ServiceCatalogController.php` y endpoint publico `services-catalog` (filtros + paginacion + metadatos + fallback `source=missing`), registrado en `api.php`, `lib/routes.php` y `lib/ApiConfig.php`; cobertura en `tests/Integration/ServiceCatalogControllerTest.php` y regresion analytics en verde.
+- 2026-02-26: cerrado C8 con snapshot de catalogo en `controllers/HealthController.php` (`servicesCatalog*` top-level + `checks.servicesCatalog`), reporte semanal extendido (`REPORTE-SEMANAL-PRODUCCION.ps1`) con warnings `services_catalog_*` y payload `servicesCatalog`, workflow semanal (`weekly-kpi-report.yml`) con outputs/incidentes `services_catalog_*`, y cobertura en `tests/Integration/HealthServiceCatalogSnapshotTest.php` + `tests-node/weekly-kpi-workflow-contract.test.js`.

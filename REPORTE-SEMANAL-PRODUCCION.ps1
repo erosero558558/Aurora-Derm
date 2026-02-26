@@ -110,6 +110,7 @@ function Get-WarningSeverity {
         'figo_post_p95_alto_',
         'no_show_rate_alta_',
         'retention_report_',
+        'services_catalog_',
         'idempotency_conflict_rate_alta_',
         'recurrence_rate_',
         'conversion_rate_',
@@ -142,6 +143,9 @@ function Get-WarningImpact {
         return 'conversion'
     }
     if ($WarningCode.StartsWith('service_funnel_')) {
+        return 'conversion'
+    }
+    if ($WarningCode.StartsWith('services_catalog_')) {
         return 'conversion'
     }
     if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
@@ -183,6 +187,9 @@ function Get-WarningRunbookRef {
         return 'docs/RUNBOOKS.md#31-monitoreo-diario'
     }
     if ($WarningCode.StartsWith('service_funnel_')) {
+        return 'docs/RUNBOOKS.md#31-monitoreo-diario'
+    }
+    if ($WarningCode.StartsWith('services_catalog_')) {
         return 'docs/RUNBOOKS.md#31-monitoreo-diario'
     }
     if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
@@ -880,6 +887,10 @@ $calendarTokenHealthy = [bool](Get-ObjectValueOrDefault -Object $health -Propert
 $calendarLastSuccessAt = [string](Get-ObjectValueOrDefault -Object $health -Property 'calendarLastSuccessAt' -DefaultValue '')
 $sentryBackendConfigured = [bool](Get-ObjectValueOrDefault -Object $health -Property 'sentryBackendConfigured' -DefaultValue $false)
 $sentryFrontendConfigured = [bool](Get-ObjectValueOrDefault -Object $health -Property 'sentryFrontendConfigured' -DefaultValue $false)
+$servicesCatalogSource = [string](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogSource' -DefaultValue 'unknown')
+$servicesCatalogVersion = [string](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogVersion' -DefaultValue 'unknown')
+$servicesCatalogCount = [int](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogCount' -DefaultValue 0)
+$servicesCatalogConfigured = [bool](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogConfigured' -DefaultValue $false)
 
 $retentionStatusCounts = Get-ObjectValueOrDefault -Object $retention -Property 'statusCounts' -DefaultValue $null
 $retentionAppointmentsTotal = [int](Get-ObjectValueOrDefault -Object $retention -Property 'appointmentsTotal' -DefaultValue 0)
@@ -1085,6 +1096,15 @@ if (-not $sentryBackendConfigured) {
 }
 if (-not $sentryFrontendConfigured) {
     $warnings.Add('sentry_frontend_no_configurado')
+}
+if ($servicesCatalogSource -ne 'file') {
+    $warnings.Add("services_catalog_${servicesCatalogSource}")
+}
+if (-not $servicesCatalogConfigured) {
+    $warnings.Add('services_catalog_not_configured')
+}
+if ($servicesCatalogCount -le 0) {
+    $warnings.Add('services_catalog_empty')
 }
 $idempotencySampleSufficient = $idempotencyRequestsWithKey -ge 10
 if ($idempotencySampleSufficient -and $idempotencyConflictRatePct -ge $IdempotencyConflictRateWarnPct) {
@@ -1417,6 +1437,13 @@ $serviceFunnelTopRowsBlock
 - sentry_backend_configured: $sentryBackendConfigured
 - sentry_frontend_configured: $sentryFrontendConfigured
 
+## Services Catalog
+
+- services_catalog_source: $servicesCatalogSource
+- services_catalog_configured: $servicesCatalogConfigured
+- services_catalog_version: $servicesCatalogVersion
+- services_catalog_count: $servicesCatalogCount
+
 ## Retention
 
 - appointments_total: $retentionAppointmentsTotal
@@ -1572,6 +1599,12 @@ $observabilityPayload = [ordered]@{}
 $observabilityPayload.sentryBackendConfigured = $sentryBackendConfigured
 $observabilityPayload.sentryFrontendConfigured = $sentryFrontendConfigured
 
+$servicesCatalogPayload = [ordered]@{}
+$servicesCatalogPayload.source = $servicesCatalogSource
+$servicesCatalogPayload.configured = $servicesCatalogConfigured
+$servicesCatalogPayload.version = $servicesCatalogVersion
+$servicesCatalogPayload.servicesCount = $servicesCatalogCount
+
 $retentionStatusCountsPayload = [ordered]@{}
 $retentionStatusCountsPayload.confirmed = $retentionConfirmed
 $retentionStatusCountsPayload.completed = $retentionCompleted
@@ -1672,6 +1705,7 @@ $reportPayload.conversionTrend = $conversionTrendPayload
 $reportPayload.serviceFunnel = $serviceFunnelPayload
 $reportPayload.calendar = $calendarPayload
 $reportPayload.observability = $observabilityPayload
+$reportPayload.servicesCatalog = $servicesCatalogPayload
 $reportPayload.retention = $retentionPayload
 $reportPayload.retentionReport = $retentionReportPayload
 $reportPayload.idempotency = $idempotencyPayload
@@ -1696,6 +1730,7 @@ Write-Host "start_checkout_rate_pct=$startCheckoutRatePct booking_confirmed=$boo
 Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurrence_rate_pct=$retentionRecurrenceRatePct retention_report_alert_count=$retentionReportAlertCount sentry_backend=$sentryBackendConfigured sentry_frontend=$sentryFrontendConfigured"
 Write-Host "idempotency_requests_with_key=$idempotencyRequestsWithKey idempotency_conflict_rate_pct=$idempotencyConflictRatePct idempotency_replay_rate_pct=$idempotencyReplayRatePct"
 Write-Host "service_funnel_source=$serviceFunnelSource service_funnel_rows=$serviceFunnelRowsCount service_funnel_alert_count=$serviceFunnelAlertCount"
+Write-Host "services_catalog_source=$servicesCatalogSource services_catalog_version=$servicesCatalogVersion services_catalog_count=$servicesCatalogCount services_catalog_configured=$servicesCatalogConfigured"
 Write-Host "release_decision=$releaseDecision release_reason=$releaseReason"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow

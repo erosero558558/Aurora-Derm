@@ -136,10 +136,26 @@ test('weekly-kpi workflow separa incidentes general, SLA y retencion', () => {
         'retention-signal:',
         'Issue de retencion ya refleja la misma senal',
         "steps.report.outputs.retention_incident_recovered == 'true'",
+        'Crear/actualizar incidente semanal de service funnel',
+        "steps.report.outputs.service_funnel_incident_required == 'true'",
+        '[ALERTA PROD] Weekly KPI service funnel degradado',
+        'service-funnel-signal:',
+        'Issue de service funnel ya refleja la misma senal',
+        "steps.report.outputs.service_funnel_incident_recovered == 'true'",
+        'Crear/actualizar incidente semanal de services catalog',
+        "steps.report.outputs.services_catalog_incident_required == 'true'",
+        '[ALERTA PROD] Weekly KPI services catalog degradado',
+        'services-catalog-signal:',
+        'Issue de services catalog ya refleja la misma senal',
+        "steps.report.outputs.services_catalog_incident_recovered == 'true'",
         'general_incident_reason_codes',
         'general_incident_severity',
         'retention_incident_reason_codes',
         'retention_incident_severity',
+        'service_funnel_incident_reason_codes',
+        'service_funnel_incident_severity',
+        'services_catalog_incident_reason_codes',
+        'services_catalog_incident_severity',
         'ops_sla_failure_axes',
         'ops_sla_severity',
         'severity:critical',
@@ -202,6 +218,33 @@ test('weekly-kpi workflow expone outputs normalizados para semaforo de retencion
             raw.includes(`"${outputKey}=`),
             true,
             `falta output normalizado de retencion: ${outputKey}`
+        );
+    }
+});
+
+test('weekly-kpi workflow expone outputs normalizados para service funnel y services catalog', () => {
+    const { raw } = loadWorkflow();
+    const requiredOutputs = [
+        'service_funnel_alert_count_int',
+        'service_funnel_alert_data_valid',
+        'service_funnel_incident_required',
+        'service_funnel_incident_recovered',
+        'service_funnel_incident_reason_codes',
+        'service_funnel_incident_severity',
+        'service_funnel_signal_key',
+        'services_catalog_count_int',
+        'services_catalog_data_valid',
+        'services_catalog_incident_required',
+        'services_catalog_incident_recovered',
+        'services_catalog_incident_reason_codes',
+        'services_catalog_incident_severity',
+        'services_catalog_signal_key',
+    ];
+    for (const outputKey of requiredOutputs) {
+        assert.equal(
+            raw.includes(`"${outputKey}=`),
+            true,
+            `falta output normalizado de service funnel/services catalog: ${outputKey}`
         );
     }
 });
