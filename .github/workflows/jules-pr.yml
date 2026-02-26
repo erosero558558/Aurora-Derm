@@ -132,4 +132,7 @@ jobs:
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                   git add AGENT_BOARD.yaml AGENT_SIGNALS.yaml JULES_TASKS.md KIMI_TASKS.md
                   git commit -m "chore(agents): reconcile merged PR #${{ github.event.pull_request.number }} [skip ci]"
-                  git push origin HEAD:main
+                  if ! node bin/sync-main-safe.js --remote origin --branch "main" --max-sync-attempts 3 --json; then
+                    echo "::warning::Reconciliation sync failed after retries; skipping push. Next run will reconcile."
+                    exit 0
+                  fi

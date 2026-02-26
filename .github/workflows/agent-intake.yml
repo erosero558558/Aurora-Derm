@@ -80,12 +80,7 @@ jobs:
                     echo "No changes to commit after staging."
                     exit 0
                   }
-                  if ! git pull --rebase origin "${GITHUB_REF_NAME}"; then
-                    echo "::warning::Queue sync rebase conflict; skipping push. Next run will reconcile."
-                    git rebase --abort || true
-                    exit 0
-                  fi
-                  if ! git push origin "HEAD:${GITHUB_REF_NAME}"; then
-                    echo "::warning::Queue sync push failed; skipping. Next run will reconcile."
+                  if ! node bin/sync-main-safe.js --remote origin --branch "${GITHUB_REF_NAME}" --max-sync-attempts 3 --json; then
+                    echo "::warning::Queue sync failed after retries; skipping push. Next run will reconcile."
                     exit 0
                   fi
