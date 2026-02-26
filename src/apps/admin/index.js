@@ -31,7 +31,9 @@ import {
 import {
     initAvailabilityCalendar,
     changeMonth,
+    jumpAvailabilityToToday,
     addTimeSlot,
+    prefillTimeSlot,
     removeTimeSlot,
 } from './modules/availability.js';
 
@@ -565,6 +567,16 @@ function attachGlobalListeners() {
             if (action === 'change-month') {
                 event.preventDefault();
                 changeMonth(Number(actionEl.dataset.delta || 0));
+                return;
+            }
+            if (action === 'availability-today') {
+                event.preventDefault();
+                jumpAvailabilityToToday();
+                return;
+            }
+            if (action === 'prefill-time-slot') {
+                event.preventDefault();
+                prefillTimeSlot(actionEl.dataset.time || '');
                 return;
             }
             if (action === 'add-time-slot') {

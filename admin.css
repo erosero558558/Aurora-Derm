@@ -903,6 +903,37 @@
     color: var(--color-text-secondary);
 }
 
+#appointmentsTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+#appointmentsTable th:nth-child(1),
+#appointmentsTable td:nth-child(1) {
+    min-width: 220px;
+}
+
+#appointmentsTable th:nth-child(2),
+#appointmentsTable td:nth-child(2) {
+    min-width: 130px;
+}
+
+#appointmentsTable th:nth-child(3),
+#appointmentsTable td:nth-child(3) {
+    min-width: 150px;
+}
+
+#appointmentsTable th:nth-child(6),
+#appointmentsTable td:nth-child(6) {
+    min-width: 180px;
+}
+
+#appointmentsTable th:nth-child(8),
+#appointmentsTable td:nth-child(8) {
+    min-width: 168px;
+}
+
 .data-table tr:hover {
     background: rgba(0, 113, 227, 0.02);
 }
@@ -928,6 +959,10 @@
 .appointment-cell-main strong {
     display: inline-block;
     margin-bottom: 2px;
+}
+
+.appointment-cell-main small {
+    word-break: break-word;
 }
 
 .appointment-inline-meta {
@@ -958,6 +993,8 @@
     align-items: center;
     gap: 6px;
     width: fit-content;
+    max-width: 100%;
+    flex-wrap: wrap;
 }
 
 .data-table td small {
@@ -1072,6 +1109,22 @@
 .btn-sm {
     padding: 8px 16px;
     font-size: 0.85rem;
+}
+
+@media (max-width: 1200px) and (min-width: 901px) {
+    #appointmentsTable .table-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(36px, 1fr));
+        gap: 6px;
+        min-width: 132px;
+    }
+
+    #appointmentsTable .table-actions .btn-icon,
+    #appointmentsTable .table-actions a.btn-icon {
+        width: 34px;
+        height: 34px;
+        justify-self: start;
+    }
 }
 
 /* ========================================
@@ -1226,6 +1279,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .calendar-header span {
@@ -1235,6 +1290,54 @@
 
 .calendar-header .btn-icon {
     background: #f2f6fc;
+}
+
+.availability-today-btn {
+    margin-left: auto;
+    gap: 8px;
+}
+
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -4px 0 14px;
+}
+
+.calendar-legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid #dfe7f2;
+    background: #f8fbff;
+    color: #5d7089;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.calendar-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    display: inline-block;
+    background: #bfd0e7;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.calendar-legend-dot.is-slots {
+    background: var(--color-phone);
+}
+
+.calendar-legend-dot.is-selected {
+    background: var(--color-primary);
+}
+
+.calendar-legend-dot.is-today {
+    background: #fff;
+    border: 2px solid var(--color-primary);
+    box-sizing: border-box;
 }
 
 .calendar-grid {
@@ -1337,6 +1440,54 @@
     line-height: 1.35;
 }
 
+.availability-selection-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 14px;
+    min-height: 34px;
+}
+
+.availability-summary-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid #dce6f2;
+    background: #f8fbff;
+    color: #41566f;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.availability-summary-chip strong {
+    font-weight: 800;
+    color: #1f3b5a;
+}
+
+.availability-summary-chip.is-readonly {
+    background: #f3f6fb;
+    border-color: #d9e2ee;
+    color: #546b84;
+}
+
+.availability-summary-chip.is-editable {
+    background: #eef7ff;
+    border-color: #d1e7ff;
+    color: #0f58ba;
+}
+
+.availability-detail-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.availability-slots-panel,
+.availability-editor-panel {
+    min-width: 0;
+}
+
 .time-slots-list {
     display: flex;
     flex-direction: column;
@@ -1345,6 +1496,46 @@
     max-height: 360px;
     overflow-y: auto;
     padding-right: 4px;
+}
+
+.slot-presets {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #e1eaf5;
+    background: #f8fbff;
+}
+
+.slot-presets-label {
+    grid-column: 1 / -1;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4d6179;
+}
+
+.slot-preset-btn {
+    border: 1px solid #d7e5f7;
+    border-radius: 10px;
+    background: #fff;
+    color: #214766;
+    font-weight: 700;
+    font-size: 0.84rem;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.slot-preset-btn:hover {
+    background: #eef6ff;
+    border-color: #bcd6fb;
+}
+
+.slot-preset-btn:focus-visible {
+    outline: 3px solid rgba(0, 113, 227, 0.22);
+    outline-offset: 1px;
 }
 
 .time-slot-item {
@@ -1615,6 +1806,16 @@
         position: static;
         top: auto;
     }
+
+    .availability-detail-grid {
+        grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.95fr);
+        align-items: start;
+    }
+
+    .availability-editor-panel {
+        position: sticky;
+        top: 12px;
+    }
 }
 
 @media (max-width: 900px) {
@@ -1692,6 +1893,21 @@
 
     #appointmentsTable .table-actions {
         min-width: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+        gap: 8px;
+    }
+
+    #appointmentsTable .table-actions .btn-icon,
+    #appointmentsTable .table-actions a.btn-icon {
+        width: 40px;
+        height: 40px;
+        justify-self: stretch;
+    }
+
+    #appointmentsTable .table-actions .btn-icon i,
+    #appointmentsTable .table-actions a.btn-icon i {
+        margin: 0 auto;
     }
 }
 
@@ -1764,6 +1980,19 @@
         align-items: flex-start;
         flex-direction: column;
         gap: 8px;
+    }
+
+    .availability-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .availability-editor-panel {
+        position: static;
+        top: auto;
+    }
+
+    .slot-presets {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .slot-count-badge {
@@ -1866,6 +2095,20 @@
     .table-empty-state,
     .card-empty-state {
         padding: 24px 16px;
+    }
+
+    .calendar-header {
+        justify-content: flex-start;
+    }
+
+    .availability-today-btn {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .slot-presets {
+        grid-template-columns: 1fr 1fr;
     }
 }
 

@@ -77,6 +77,46 @@ function setTimeSlotsCountBadge(count) {
     badgeEl.textContent = `${normalizedCount} horario${normalizedCount === 1 ? '' : 's'}`;
 }
 
+function renderAvailabilitySelectionSummary() {
+    const summaryEl = document.getElementById('availabilitySelectionSummary');
+    if (!summaryEl) return;
+
+    const source = String(currentAvailabilityMeta.source || 'store');
+    const sourceLabel = source === 'google' ? 'Google Calendar' : 'Local';
+    const modeLabel = availabilityReadOnly ? 'Solo lectura' : 'Editable';
+    const dateValue = String(selectedDate || '').trim();
+    const selectedSlots = dateValue
+        ? Array.isArray(currentAvailability[dateValue])
+            ? currentAvailability[dateValue].length
+            : 0
+        : null;
+
+    if (!dateValue) {
+        summaryEl.innerHTML = [
+            `<span class="availability-summary-chip"><strong>Fuente:</strong> ${escapeHtml(sourceLabel)}</span>`,
+            `<span class="availability-summary-chip ${availabilityReadOnly ? 'is-readonly' : 'is-editable'}"><strong>Modo:</strong> ${escapeHtml(modeLabel)}</span>`,
+            '<span class="toolbar-state-empty">Selecciona una fecha para ver el detalle del dia</span>',
+        ].join('');
+        return;
+    }
+
+    const parsedDate = new Date(dateValue);
+    const dateLabel = Number.isNaN(parsedDate.getTime())
+        ? dateValue
+        : parsedDate.toLocaleDateString('es-EC', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+          });
+
+    summaryEl.innerHTML = [
+        `<span class="availability-summary-chip"><strong>Fuente:</strong> ${escapeHtml(sourceLabel)}</span>`,
+        `<span class="availability-summary-chip ${availabilityReadOnly ? 'is-readonly' : 'is-editable'}"><strong>Modo:</strong> ${escapeHtml(modeLabel)}</span>`,
+        `<span class="availability-summary-chip"><strong>Fecha:</strong> ${escapeHtml(dateLabel)}</span>`,
+        `<span class="availability-summary-chip"><strong>Slots:</strong> ${escapeHtml(String(selectedSlots ?? 0))}</span>`,
+    ].join('');
+}
+
 function renderStatus() {
     const { statusEl, detailsEl, linksEl } = ensureStatusElements();
     if (!statusEl) return;
@@ -129,6 +169,7 @@ function renderStatus() {
         );
     }
     updateSectionHeadings(source);
+    renderAvailabilitySelectionSummary();
 
     if (!linksEl) return;
 
@@ -190,12 +231,28 @@ function clearSelectedDateState() {
         list.innerHTML =
             '<p class="empty-message">Selecciona una fecha para ver los horarios</p>';
     }
+    toggleReadOnlyUi();
+    renderAvailabilitySelectionSummary();
 }
 
 function toggleReadOnlyUi() {
+    const hasSelectedDate = Boolean(String(selectedDate || '').trim());
     const addSlotForm = document.getElementById('addSlotForm');
     if (addSlotForm) {
-        addSlotForm.classList.toggle('is-hidden', availabilityReadOnly);
+        addSlotForm.classList.toggle(
+            'is-hidden',
+            availabilityReadOnly || !hasSelectedDate
+        );
+    }
+    const presets = document.getElementById('availabilityQuickSlotPresets');
+    if (presets) {
+        presets.classList.toggle(
+            'is-hidden',
+            availabilityReadOnly || !hasSelectedDate
+        );
+        presets.querySelectorAll('.slot-preset-btn').forEach((button) => {
+            button.disabled = availabilityReadOnly || !hasSelectedDate;
+        });
     }
 }
 
@@ -278,6 +335,7 @@ export function renderAvailabilityCalendar() {
 
     const calendar = document.getElementById('availabilityCalendar');
     calendar.innerHTML = '';
+    const todayKey = toLocalDateKey(new Date());
 
     const weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
     weekDays.forEach((day) => {
@@ -301,8 +359,12 @@ export function renderAvailabilityCalendar() {
         const dayEl = document.createElement('div');
         dayEl.className = 'calendar-day';
         dayEl.textContent = day;
+        dayEl.tabIndex = 0;
+        dayEl.setAttribute('role', 'button');
+        dayEl.setAttribute('aria-label', `Seleccionar ${dateStr}`);
 
         if (selectedDate === dateStr) dayEl.classList.add('selected');
+        if (todayKey === dateStr) dayEl.classList.add('today');
         if (
             currentAvailability[dateStr] &&
             currentAvailability[dateStr].length > 0
@@ -310,6 +372,11 @@ export function renderAvailabilityCalendar() {
             dayEl.classList.add('has-slots');
 
         dayEl.addEventListener('click', () => selectDate(dateStr));
+        dayEl.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            selectDate(dateStr);
+        });
         calendar.appendChild(dayEl);
     }
 
@@ -328,12 +395,22 @@ export async function initAvailabilityCalendar() {
     renderAvailabilityCalendar();
     if (!selectedDate) {
         clearSelectedDateState();
+    } else {
+        toggleReadOnlyUi();
+        renderAvailabilitySelectionSummary();
     }
 }
 
 export function changeMonth(delta) {
     currentMonth.setMonth(currentMonth.getMonth() + delta);
     renderAvailabilityCalendar();
+}
+
+export function jumpAvailabilityToToday() {
+    const today = new Date();
+    currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    renderAvailabilityCalendar();
+    selectDate(toLocalDateKey(today));
 }
 
 function selectDate(dateStr) {
@@ -347,9 +424,8 @@ function selectDate(dateStr) {
             month: 'long',
             year: 'numeric',
         });
-    document
-        .getElementById('addSlotForm')
-        .classList.toggle('is-hidden', availabilityReadOnly);
+    toggleReadOnlyUi();
+    renderAvailabilitySelectionSummary();
     loadTimeSlots(dateStr);
 }
 
@@ -360,6 +436,7 @@ function loadTimeSlots(dateStr) {
     if (slots.length === 0) {
         list.innerHTML =
             '<p class="empty-message">No hay horarios configurados para este dia</p>';
+        renderAvailabilitySelectionSummary();
         return;
     }
 
@@ -385,6 +462,7 @@ function loadTimeSlots(dateStr) {
     `
         )
         .join('');
+    renderAvailabilitySelectionSummary();
 }
 
 async function saveAvailability() {
@@ -455,4 +533,18 @@ export async function removeTimeSlot(dateStr, time) {
     } catch (error) {
         showToast(`No se pudo eliminar el horario: ${error.message}`, 'error');
     }
+}
+
+export function prefillTimeSlot(value) {
+    if (availabilityReadOnly) {
+        showToast(
+            'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
+            'warning'
+        );
+        return;
+    }
+    const input = document.getElementById('newSlotTime');
+    if (!(input instanceof HTMLInputElement)) return;
+    input.value = String(value || '').trim();
+    input.focus();
 }

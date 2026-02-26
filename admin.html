@@ -605,6 +605,34 @@
                                 >
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm availability-today-btn"
+                                    data-action="availability-today"
+                                >
+                                    <i class="fas fa-calendar-day"></i>
+                                    Hoy
+                                </button>
+                            </div>
+                            <div class="calendar-legend" aria-hidden="true">
+                                <span class="calendar-legend-chip">
+                                    <span
+                                        class="calendar-legend-dot is-slots"
+                                    ></span>
+                                    Con horarios
+                                </span>
+                                <span class="calendar-legend-chip">
+                                    <span
+                                        class="calendar-legend-dot is-selected"
+                                    ></span>
+                                    Seleccionado
+                                </span>
+                                <span class="calendar-legend-chip">
+                                    <span
+                                        class="calendar-legend-dot is-today"
+                                    ></span>
+                                    Hoy
+                                </span>
                             </div>
                             <div
                                 class="calendar-grid"
@@ -630,33 +658,114 @@
                                 class="availability-helper"
                                 id="availabilityHelperText"
                             >
-                                Selecciona un dia para revisar horarios y cambios.
+                                Selecciona un dia para revisar horarios y
+                                cambios.
                             </p>
-
-                            <div class="time-slots-list" id="timeSlotsList">
-                                <p class="empty-message">
-                                    Selecciona una fecha para ver los horarios
-                                </p>
+                            <div
+                                class="availability-selection-summary"
+                                id="availabilitySelectionSummary"
+                                aria-live="polite"
+                            >
+                                <span class="toolbar-state-empty"
+                                    >Selecciona una fecha para ver el detalle
+                                    del dia</span
+                                >
                             </div>
 
                             <div
-                                class="add-slot-form is-hidden"
-                                id="addSlotForm"
+                                class="availability-detail-grid"
+                                id="availabilityDetailGrid"
                             >
-                                <h4>Agregar Horario</h4>
-                                <div class="form-row">
-                                    <input
-                                        type="time"
-                                        id="newSlotTime"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary btn-sm"
-                                        data-action="add-time-slot"
+                                <div class="availability-slots-panel">
+                                    <div
+                                        class="time-slots-list"
+                                        id="timeSlotsList"
                                     >
-                                        <i class="fas fa-plus"></i>
-                                    </button>
+                                        <p class="empty-message">
+                                            Selecciona una fecha para ver los
+                                            horarios
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="availability-editor-panel">
+                                    <div
+                                        class="slot-presets is-hidden"
+                                        id="availabilityQuickSlotPresets"
+                                        aria-label="Horarios sugeridos"
+                                    >
+                                        <span class="slot-presets-label"
+                                            >Sugeridos</span
+                                        >
+                                        <button
+                                            type="button"
+                                            class="slot-preset-btn"
+                                            data-action="prefill-time-slot"
+                                            data-time="09:00"
+                                        >
+                                            09:00
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="slot-preset-btn"
+                                            data-action="prefill-time-slot"
+                                            data-time="09:30"
+                                        >
+                                            09:30
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="slot-preset-btn"
+                                            data-action="prefill-time-slot"
+                                            data-time="10:00"
+                                        >
+                                            10:00
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="slot-preset-btn"
+                                            data-action="prefill-time-slot"
+                                            data-time="16:00"
+                                        >
+                                            16:00
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="slot-preset-btn"
+                                            data-action="prefill-time-slot"
+                                            data-time="16:30"
+                                        >
+                                            16:30
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="slot-preset-btn"
+                                            data-action="prefill-time-slot"
+                                            data-time="17:00"
+                                        >
+                                            17:00
+                                        </button>
+                                    </div>
+
+                                    <div
+                                        class="add-slot-form is-hidden"
+                                        id="addSlotForm"
+                                    >
+                                        <h4>Agregar Horario</h4>
+                                        <div class="form-row">
+                                            <input
+                                                type="time"
+                                                id="newSlotTime"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                class="btn btn-primary btn-sm"
+                                                data-action="add-time-slot"
+                                            >
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -674,6 +783,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260225-adminux4" type="module"></script>
+        <script src="admin.js?v=admin-20260226-adminux5" type="module"></script>
     </body>
 </html>
