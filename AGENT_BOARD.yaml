@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 149
+  revision: 152
   updated_at: 2026-02-26
 
 tasks:
@@ -2591,5 +2591,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-067.md"
     depends_on: []
     prompt: "C4 ops: incidente automatico para fallo nightly-stability"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-068
+    title: "C4 ops: incluir nightly workflow contract en agent:test"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T04:59:01.982Z"
+    risk: low
+    scope: tooling
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["package.json", "tests-node/nightly-stability-workflow-contract.test.js", "AGENT_BOARD.yaml"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T04:59:01.982Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "C4 ops: incluir nightly workflow contract en agent:test"
+    acceptance_ref: "verification/agent-runs/AG-068.md"
+    evidence_ref: "verification/agent-runs/AG-068.md"
+    depends_on: []
+    prompt: "C4 ops: incluir nightly workflow contract en agent:test"
     created_at: 2026-02-26
     updated_at: 2026-02-26
