@@ -25,6 +25,8 @@
         "lint:php": "node bin/lint-php-syntax.js",
         "build": "rollup -c && npm run build:html",
         "build:html": "node bin/build-html.js templates/index.template.html index.html && node bin/build-html.js templates/telemedicina.template.html telemedicina.html",
+        "assets:versions:sync": "node bin/sync-frontend-asset-versions.js",
+        "assets:versions:check": "node bin/sync-frontend-asset-versions.js --check",
         "bundle:deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File ./PREPARAR-PAQUETE-DESPLIEGUE.ps1 -IncludeTooling",
         "verify:prod": "powershell -NoProfile -ExecutionPolicy Bypass -File ./VERIFICAR-DESPLIEGUE.ps1 -Domain https://pielarmonia.com",
         "verify:prod:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File ./VERIFICAR-DESPLIEGUE.ps1 -Domain https://pielarmonia.com -RequireStableDataDir -RequireBackupHealthy -SkipAssetHashChecks -AssetHashRetryCount 1 -AssetHashRetryDelaySec 2",

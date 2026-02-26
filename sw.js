@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v12-20260226-themefix1';
+const CACHE_NAME = 'pielarmonia-v12-figo-20260226-themefix2';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
     '/admin.js',
     '/styles-deferred.css?v=ui-20260223-clsfix1',
     '/js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1',
-    '/script.js?v=figo-20260226-themefix1',
+    '/script.js?v=figo-20260226-themefix2',
     // Fonts preloaded on every page
     '/fonts/plus-jakarta-sans.woff2',
     '/fonts/fraunces.woff2',
