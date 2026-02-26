@@ -21,7 +21,7 @@ export function showToast(message, type = 'info', title = '') {
     };
 
     const titles = {
-        success: title || 'Exito',
+        success: title || 'Éxito',
         error: title || 'Error',
         warning: title || 'Advertencia',
         info: title || 'Información',
@@ -33,7 +33,7 @@ export function showToast(message, type = 'info', title = '') {
             <div class="toast-title">${escapeHtml(titles[type])}</div>
             <div class="toast-message">${escapeHtml(message)}</div>
         </div>
-        <button type="button" class="toast-close" data-action="close-toast" aria-label="Cerrar notificacion">
+        <button type="button" class="toast-close" data-action="close-toast" aria-label="Cerrar notificación">
             <i class="fas fa-times"></i>
         </button>
         <div class="toast-progress"></div>
@@ -91,8 +91,8 @@ export function getServiceName(service) {
         video: 'Video Consulta',
         laser: 'Tratamiento Láser',
         rejuvenecimiento: 'Rejuvenecimiento',
-        acne: 'Tratamiento de Acne',
-        cancer: 'Deteccion de Cancer de Piel',
+        acne: 'Tratamiento de Acné',
+        cancer: 'Detección de Cáncer de Piel',
     };
     return names[service] || service;
 }
@@ -112,8 +112,8 @@ export function getStatusText(status) {
         pending: 'Pendiente',
         cancelled: 'Cancelada',
         completed: 'Completada',
-        no_show: 'No asistio',
-        noshow: 'No asistio',
+        no_show: 'No asistió',
+        noshow: 'No asistió',
     };
     return texts[status] || status;
 }

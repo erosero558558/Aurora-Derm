@@ -546,10 +546,10 @@ async function handleLogin(event) {
         try {
             const result = await login2FA(code);
             if (result.csrfToken) setCsrfToken(result.csrfToken);
-            showToast('Bienvenido al panel de administracion', 'success');
+            showToast('Bienvenido al panel de administración', 'success');
             await showDashboard();
         } catch {
-            showToast('Codigo incorrecto o sesion expirada', 'error');
+            showToast('Código incorrecto o sesión expirada', 'error');
         }
         return;
     }
@@ -566,15 +566,15 @@ async function handleLogin(event) {
             document.getElementById('admin2FACode')?.focus();
             const btn = document.getElementById('loginBtn');
             if (btn) btn.innerHTML = '<i class="fas fa-check"></i> Verificar';
-            showToast('Ingresa tu codigo 2FA', 'info');
+            showToast('Ingresa tu código 2FA', 'info');
             return;
         }
 
         if (loginResult.csrfToken) setCsrfToken(loginResult.csrfToken);
-        showToast('Bienvenido al panel de administracion', 'success');
+        showToast('Bienvenido al panel de administración', 'success');
         await showDashboard();
     } catch {
-        showToast('Contrasena incorrecta', 'error');
+        showToast('Contraseña incorrecta', 'error');
     }
 }
 

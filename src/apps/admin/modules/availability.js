@@ -387,7 +387,7 @@ function renderAvailabilityDayActions() {
         );
     } else {
         statusMarkup.push(
-            '<span class="toolbar-chip is-muted">Portapapeles vacio</span>'
+            '<span class="toolbar-chip is-muted">Portapapeles vacío</span>'
         );
     }
 
@@ -478,7 +478,7 @@ function renderStatus() {
 
     linksEl.innerHTML = [
         renderDoctor('rosero', 'Dr. Rosero'),
-        renderDoctor('narvaez', 'Dra. Narvaez'),
+        renderDoctor('narvaez', 'Dra. Narváez'),
     ].join(' | ');
 }
 
@@ -945,7 +945,7 @@ export function copyAvailabilityDay() {
     setAvailabilityClipboard(selectedDate, selectedSlots);
     renderAvailabilityDayActions();
     showToast(
-        `Dia copiado (${selectedSlots.length} horario${selectedSlots.length === 1 ? '' : 's'})`,
+        `Día copiado (${selectedSlots.length} horario${selectedSlots.length === 1 ? '' : 's'})`,
         'success'
     );
 }
@@ -957,7 +957,7 @@ export async function pasteAvailabilityDay() {
         availabilityDayClipboard?.slots || []
     );
     if (clipboardSlots.length === 0) {
-        showToast('Portapapeles vacio', 'warning');
+        showToast('Portapapeles vacío', 'warning');
         return;
     }
 

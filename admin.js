@@ -1,4 +1,4 @@
-let e = [],
+﻿let e = [],
     t = [],
     n = [],
     a = {},
@@ -83,12 +83,12 @@ function w(e, t = 'info', n = '') {
         o.setAttribute('aria-live', i ? 'assertive' : 'polite'),
         o.setAttribute('aria-atomic', 'true'));
     const r = {
-        success: n || 'Exito',
+        success: n || 'Éxito',
         error: n || 'Error',
         warning: n || 'Advertencia',
         info: n || 'Información',
     };
-    ((o.innerHTML = `\n        <i class="fas ${{ success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' }[t]} toast-icon"></i>\n        <div class="toast-content">\n            <div class="toast-title">${v(r[t])}</div>\n            <div class="toast-message">${v(e)}</div>\n        </div>\n        <button type="button" class="toast-close" data-action="close-toast" aria-label="Cerrar notificacion">\n            <i class="fas fa-times"></i>\n        </button>\n        <div class="toast-progress"></div>\n    `),
+    ((o.innerHTML = `\n        <i class="fas ${{ success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' }[t]} toast-icon"></i>\n        <div class="toast-content">\n            <div class="toast-title">${v(r[t])}</div>\n            <div class="toast-message">${v(e)}</div>\n        </div>\n        <button type="button" class="toast-close" data-action="close-toast" aria-label="Cerrar notificación">\n            <i class="fas fa-times"></i>\n        </button>\n        <div class="toast-progress"></div>\n    `),
         a.appendChild(o),
         setTimeout(() => {
             o.parentElement &&
@@ -118,8 +118,8 @@ function L(e) {
             video: 'Video Consulta',
             laser: 'Tratamiento Láser',
             rejuvenecimiento: 'Rejuvenecimiento',
-            acne: 'Tratamiento de Acne',
-            cancer: 'Deteccion de Cancer de Piel',
+            acne: 'Tratamiento de Acné',
+            cancer: 'Detección de Cáncer de Piel',
         }[e] || e
     );
 }
@@ -139,8 +139,8 @@ function $(e) {
             pending: 'Pendiente',
             cancelled: 'Cancelada',
             completed: 'Completada',
-            no_show: 'No asistio',
-            noshow: 'No asistio',
+            no_show: 'No asistió',
+            noshow: 'No asistió',
         }[e] || e
     );
 }
@@ -1371,7 +1371,7 @@ function Fe() {
                                 month: 'Este mes',
                                 confirmed: 'Confirmadas',
                                 cancelled: 'Canceladas',
-                                no_show: 'No asistio',
+                                no_show: 'No asistió',
                                 pending_transfer: 'Transferencias por validar',
                             };
                             return t[String(e || Ie)] || t.all;
@@ -1619,7 +1619,7 @@ function ft() {
                   `<span class="toolbar-chip">Portapapeles: ${v(String(i.length))} (${v(ot(Ve?.sourceDate))})</span>`
               )
             : u.push(
-                  '<span class="toolbar-chip is-muted">Portapapeles vacio</span>'
+                  '<span class="toolbar-chip is-muted">Portapapeles vacío</span>'
               ),
         Ke &&
             u.push(
@@ -1729,7 +1729,7 @@ function pt() {
     };
     n.innerHTML = [
         h('rosero', 'Dr. Rosero'),
-        h('narvaez', 'Dra. Narvaez'),
+        h('narvaez', 'Dra. Narváez'),
     ].join(' | ');
 }
 function gt() {
@@ -1905,7 +1905,7 @@ function Bt() {
 async function $t() {
     if ((et(), !Bt())) return;
     const e = nt(Ve?.slots || []);
-    if (0 === e.length) return void w('Portapapeles vacio', 'warning');
+    if (0 === e.length) return void w('Portapapeles vacío', 'warning');
     const t = it();
     if (t.length === e.length && t.every((t, n) => t === e[n]))
         w('La fecha ya tiene esos mismos horarios', 'warning');
@@ -2346,10 +2346,10 @@ async function Vt(e) {
                 return b('login-2fa', { method: 'POST', body: { code: e } });
             })(e);
             (t.csrfToken && g(t.csrfToken),
-                w('Bienvenido al panel de administracion', 'success'),
+                w('Bienvenido al panel de administración', 'success'),
                 await Kt());
         } catch {
-            w('Codigo incorrecto o sesion expirada', 'error');
+            w('Código incorrecto o sesión expirada', 'error');
         }
         return;
     }
@@ -2367,14 +2367,14 @@ async function Vt(e) {
             const e = document.getElementById('loginBtn');
             return (
                 e && (e.innerHTML = '<i class="fas fa-check"></i> Verificar'),
-                void w('Ingresa tu codigo 2FA', 'info')
+                void w('Ingresa tu código 2FA', 'info')
             );
         }
         (e.csrfToken && g(e.csrfToken),
-            w('Bienvenido al panel de administracion', 'success'),
+            w('Bienvenido al panel de administración', 'success'),
             await Kt());
     } catch {
-        w('Contrasena incorrecta', 'error');
+        w('Contraseña incorrecta', 'error');
     }
 }
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2589,7 +2589,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         ? (at(ze, e),
                                           ft(),
                                           w(
-                                              `Dia copiado (${e.length} horario${1 === e.length ? '' : 's'})`,
+                                              `Día copiado (${e.length} horario${1 === e.length ? '' : 's'})`,
                                               'success'
                                           ))
                                         : w(
@@ -2795,7 +2795,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 void (await (async function (e) {
                                     if (
                                         confirm(
-                                            'Marcar esta cita como "No asistio"?'
+                                            'Marcar esta cita como "No asistió"?'
                                         )
                                     )
                                         if (e)
@@ -3138,7 +3138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         !!e.authenticated && (e.csrfToken && g(e.csrfToken), !0)
                     );
                 } catch (e) {
-                    return (w('No se pudo verificar la sesion', 'warning'), !1);
+                    return (w('No se pudo verificar la sesión', 'warning'), !1);
                 }
             })())
                 ? await Kt()
