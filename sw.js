@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v11-20260224-swopt1';
+const CACHE_NAME = 'pielarmonia-v12-20260226-themefix1';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
     '/admin.js',
     '/styles-deferred.css?v=ui-20260223-clsfix1',
     '/js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1',
-    '/script.js?v=figo-20260222-slotservicefix1',
+    '/script.js?v=figo-20260226-themefix1',
     // Fonts preloaded on every page
     '/fonts/plus-jakarta-sans.woff2',
     '/fonts/fraunces.woff2',
@@ -131,9 +131,16 @@ async function staleWhileRevalidate(request) {
 }
 
 function isImageAsset(pathname) {
-    return ['.png', '.jpg', '.jpeg', '.webp', '.avif', '.svg', '.gif', '.ico'].some(
-        (ext) => pathname.endsWith(ext)
-    );
+    return [
+        '.png',
+        '.jpg',
+        '.jpeg',
+        '.webp',
+        '.avif',
+        '.svg',
+        '.gif',
+        '.ico',
+    ].some((ext) => pathname.endsWith(ext));
 }
 
 self.addEventListener('install', (event) => {
@@ -208,7 +215,7 @@ self.addEventListener('push', (event) => {
         body: data.body || 'Tienes una nueva notificación.',
         icon: '/images/icon-192.png',
         badge: '/images/icon-192.png',
-        data: data.url || '/'
+        data: data.url || '/',
     };
 
     event.waitUntil(self.registration.showNotification(title, options));
@@ -216,7 +223,5 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    event.waitUntil(
-        self.clients.openWindow(event.notification.data)
-    );
+    event.waitUntil(self.clients.openWindow(event.notification.data));
 });
