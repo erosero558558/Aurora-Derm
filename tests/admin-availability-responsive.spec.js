@@ -153,10 +153,31 @@ async function openAvailabilitySection(page, sourceMode = 'store') {
     return { usedSlotDay: false };
 }
 
+async function ensureAtLeastOneSelectedSlot(page) {
+    const slotItems = page.locator('#timeSlotsList .time-slot-item');
+    const currentCount = await slotItems.count();
+    if (currentCount > 0) {
+        return currentCount;
+    }
+
+    await page
+        .locator(
+            '#availabilityQuickSlotPresets .slot-preset-btn[data-time="09:00"]'
+        )
+        .click();
+    await page.locator('[data-action="add-time-slot"]').click();
+    await expect(slotItems).toHaveCount(1);
+    return 1;
+}
+
 function acceptNextDialog(page) {
     page.once('dialog', async (dialog) => {
         await dialog.accept();
     });
+}
+
+function getExpectedSlotsSummaryText(usedSlotDay) {
+    return usedSlotDay ? 'Slots: 2' : 'Slots:';
 }
 
 test.describe('Admin availability responsive tablet layout', () => {
@@ -188,11 +209,9 @@ test.describe('Admin availability responsive tablet layout', () => {
         await expect(
             page.locator('#availabilitySelectionSummary')
         ).toContainText('Slots:');
-        if (usedSlotDay) {
-            await expect(
-                page.locator('#availabilitySelectionSummary')
-            ).toContainText('Slots: 2');
-        }
+        await expect(
+            page.locator('#availabilitySelectionSummary')
+        ).toContainText(getExpectedSlotsSummaryText(usedSlotDay));
 
         await expect(
             page.locator('#availabilityQuickSlotPresets')
@@ -267,20 +286,10 @@ test.describe('Admin availability responsive tablet layout', () => {
         await openAvailabilitySection(page, 'store');
 
         const slotItems = page.locator('#timeSlotsList .time-slot-item');
-        if ((await slotItems.count()) === 0) {
-            await page
-                .locator(
-                    '#availabilityQuickSlotPresets .slot-preset-btn[data-time="09:00"]'
-                )
-                .click();
-            await page.locator('[data-action="add-time-slot"]').click();
-            await expect(slotItems).toHaveCount(1);
-        }
-
         const initialSelectedDateText = await page
             .locator('#selectedDate')
             .textContent();
-        const initialCount = await slotItems.count();
+        const initialCount = await ensureAtLeastOneSelectedSlot(page);
         expect(initialCount).toBeGreaterThan(0);
 
         await page.locator('[data-action="copy-availability-day"]').click();

@@ -142,13 +142,14 @@ test.describe('Panel de administracion', () => {
         const loginBtn = page
             .locator('button[type="submit"], .btn-primary')
             .first();
+        await expect(passwordInput).toBeVisible();
+        await expect(loginBtn).toBeVisible();
 
-        if ((await passwordInput.isVisible()) && (await loginBtn.isVisible())) {
-            await passwordInput.fill('');
-            await loginBtn.click();
-            await page.waitForTimeout(1000);
-            await expect(passwordInput).toBeVisible();
-        }
+        await passwordInput.fill('');
+        await loginBtn.click();
+
+        await expect(passwordInput).toBeVisible();
+        await expect(page.locator('#adminDashboard')).toHaveClass(/is-hidden/);
     });
 
     test('login con contrasena incorrecta muestra error', async ({ page }) => {
@@ -157,19 +158,17 @@ test.describe('Panel de administracion', () => {
         const loginBtn = page
             .locator('button[type="submit"], .btn-primary')
             .first();
+        await expect(passwordInput).toBeVisible();
+        await expect(loginBtn).toBeVisible();
 
-        if ((await passwordInput.isVisible()) && (await loginBtn.isVisible())) {
-            await passwordInput.fill('contrasena_incorrecta_test');
-            await loginBtn.click();
-            await page.waitForTimeout(2000);
+        await passwordInput.fill('contrasena_incorrecta_test');
+        await loginBtn.click();
 
-            const errorMsg = page
-                .locator('[class*="error"], [class*="alert"], .toast')
-                .first();
-            if (await errorMsg.isVisible()) {
-                await expect(errorMsg).toBeVisible();
-            }
-        }
+        const errorMsg = page
+            .locator('[class*="error"], [class*="alert"], .toast')
+            .first();
+        await expect(errorMsg).toBeVisible();
+        await expect(page.locator('#adminDashboard')).toHaveClass(/is-hidden/);
     });
 
     test('dashboard incluye desgloses de embudo extendidos', async ({
