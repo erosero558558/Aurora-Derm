@@ -181,6 +181,25 @@ Configura en GitHub (repo -> Settings -> Secrets and variables -> Actions):
     - `false` (default actual): contrato de calendario permite entorno `store` durante rollout.
     - `true` (cutover): el gate falla si `health.calendarSource != google`.
 
+Variables opcionales para ajustar sensibilidad del reporte semanal KPI (sin tocar YAML):
+
+- `WEEKLY_KPI_RETENTION_DAYS`
+- `WEEKLY_KPI_NO_SHOW_WARN_PCT`
+- `WEEKLY_KPI_RECURRENCE_MIN_WARN_PCT`
+- `WEEKLY_KPI_RECURRENCE_DROP_WARN_PCT`
+- `WEEKLY_KPI_RECURRENCE_MIN_UNIQUE_PATIENTS`
+- `WEEKLY_KPI_IDEMPOTENCY_CONFLICT_WARN_PCT`
+- `WEEKLY_KPI_CONVERSION_MIN_WARN_PCT`
+- `WEEKLY_KPI_CONVERSION_DROP_WARN_PCT`
+- `WEEKLY_KPI_CONVERSION_MIN_START_CHECKOUT`
+- `WEEKLY_KPI_START_CHECKOUT_MIN_WARN_PCT`
+- `WEEKLY_KPI_START_CHECKOUT_DROP_WARN_PCT`
+- `WEEKLY_KPI_START_CHECKOUT_MIN_VIEW_BOOKING`
+- `WEEKLY_KPI_CORE_P95_MAX_MS`
+- `WEEKLY_KPI_FIGO_POST_P95_MAX_MS`
+
+Referencia operativa: `docs/RUNBOOKS.md` seccion `1.6 Weekly KPI thresholds`.
+
 Ejecucion:
 
 - `git push` a `main` para deploy automatico.

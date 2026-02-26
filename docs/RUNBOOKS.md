@@ -80,6 +80,41 @@ Fallback operativo ante pico transitorio:
 3.  Si persiste, abrir incidente `[ALERTA PROD]` y detener release hasta resolver causa raiz.
 4.  Si desaparece, registrar evento como transitorio con timestamp y metrica afectada.
 
+### 1.6 Weekly KPI thresholds (operacion sin cambios de codigo)
+
+Objetivo: ajustar sensibilidad de alertas semanales sin editar workflows.
+
+Orden de precedencia:
+
+1. `workflow_dispatch` input manual (si se especifica en la corrida).
+2. Repository Variables `WEEKLY_KPI_*`.
+3. Defaults del workflow `weekly-kpi-report.yml`.
+
+Variables soportadas (Repository -> Settings -> Secrets and variables -> Actions -> Variables):
+
+- `WEEKLY_KPI_RETENTION_DAYS` (default `30`)
+- `WEEKLY_KPI_NO_SHOW_WARN_PCT` (default `20`)
+- `WEEKLY_KPI_RECURRENCE_MIN_WARN_PCT` (default `30`)
+- `WEEKLY_KPI_RECURRENCE_DROP_WARN_PCT` (default `15`)
+- `WEEKLY_KPI_RECURRENCE_MIN_UNIQUE_PATIENTS` (default `5`)
+- `WEEKLY_KPI_IDEMPOTENCY_CONFLICT_WARN_PCT` (default `5`)
+- `WEEKLY_KPI_CONVERSION_MIN_WARN_PCT` (default `25`)
+- `WEEKLY_KPI_CONVERSION_DROP_WARN_PCT` (default `15`)
+- `WEEKLY_KPI_CONVERSION_MIN_START_CHECKOUT` (default `10`)
+- `WEEKLY_KPI_START_CHECKOUT_MIN_WARN_PCT` (default `0.25`)
+- `WEEKLY_KPI_START_CHECKOUT_DROP_WARN_PCT` (default `0.2`)
+- `WEEKLY_KPI_START_CHECKOUT_MIN_VIEW_BOOKING` (default `100`)
+- `WEEKLY_KPI_CORE_P95_MAX_MS` (default `800`)
+- `WEEKLY_KPI_FIGO_POST_P95_MAX_MS` (default `2500`)
+
+Runbook rapido para ajuste:
+
+1. Cambiar variables `WEEKLY_KPI_*` en GitHub.
+2. Ejecutar manualmente `Actions -> Weekly KPI Report -> Run workflow`.
+3. Verificar bloque `Thresholds efectivos` en `GITHUB_STEP_SUMMARY`.
+4. Confirmar que el comportamiento de incidentes semanales coincide con los nuevos umbrales.
+5. Si el cambio no es el esperado, volver a defaults y re-ejecutar.
+
 ---
 
 ## 2. Respuesta a Incidentes (Emergency Response)
