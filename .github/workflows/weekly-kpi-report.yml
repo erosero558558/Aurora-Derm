@@ -360,6 +360,10 @@ jobs:
                         state: 'all',
                         per_page: 100
                       });
+                      const weeklyIncidentTitles = new Set([
+                        '[ALERTA PROD] Weekly KPI report con warnings',
+                        '[ALERTA PROD] Weekly KPI retencion degradada'
+                      ]);
                       const prodIncidents = allIssues.filter((issue) => {
                         if (issue.pull_request) return false;
                         const title = String(issue.title || '');
@@ -368,6 +372,7 @@ jobs:
                         return Number.isFinite(createdMs) && createdMs >= since;
                       });
                       const incidentsOpen = prodIncidents.filter((issue) => issue.state === 'open');
+                      const incidentsOpenExternal = incidentsOpen.filter((issue) => !weeklyIncidentTitles.has(String(issue.title || '')));
                       const incidentsClosed = prodIncidents.filter((issue) => issue.state === 'closed');
                       const mttrHours = incidentsClosed
                         .map((issue) => {
@@ -393,7 +398,9 @@ jobs:
                       core.setOutput('ops_nightly_success_rate_pct', nightlyRate === null ? 'n/a' : nightlyRate.toFixed(2));
                       core.setOutput('ops_nightly_target_ok', nightlyTargetOk ? 'true' : 'false');
                       core.setOutput('ops_incidents_total', String(prodIncidents.length));
-                      core.setOutput('ops_incidents_open', String(incidentsOpen.length));
+                      core.setOutput('ops_incidents_open', String(incidentsOpenExternal.length));
+                      core.setOutput('ops_incidents_open_total', String(incidentsOpen.length));
+                      core.setOutput('ops_incidents_open_external', String(incidentsOpenExternal.length));
                       core.setOutput('ops_incidents_closed', String(incidentsClosed.length));
                       core.setOutput('ops_incidents_mttr_hours_avg', mttrAvg === null ? 'n/a' : mttrAvg.toFixed(2));
                       core.setOutput('ops_incidents_mttr_target_ok', mttrTargetOk ? 'true' : 'false');
@@ -448,15 +455,16 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- nightly_runs: ``${{ steps.ops_sla.outputs.ops_nightly_runs }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- nightly_success_rate_pct: ``${{ steps.ops_sla.outputs.ops_nightly_success_rate_pct }}`` (target >=90%, ok: ``${{ steps.ops_sla.outputs.ops_nightly_target_ok }}``)"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- incidents_total: ``${{ steps.ops_sla.outputs.ops_incidents_total }}``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- incidents_open: ``${{ steps.ops_sla.outputs.ops_incidents_open }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- incidents_open_external: ``${{ steps.ops_sla.outputs.ops_incidents_open_external }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- incidents_open_total: ``${{ steps.ops_sla.outputs.ops_incidents_open_total }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- incidents_closed: ``${{ steps.ops_sla.outputs.ops_incidents_closed }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- incidents_mttr_hours_avg: ``${{ steps.ops_sla.outputs.ops_incidents_mttr_hours_avg }}`` (target <4h, ok: ``${{ steps.ops_sla.outputs.ops_incidents_mttr_target_ok }}``)"
                   if ("${{ steps.report.outputs.report_md_path }}" -ne "") {
                     Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Report file: ``${{ steps.report.outputs.report_md_path }}``"
                   }
 
-            - name: Crear/actualizar incidente semanal
-              if: ${{ github.event_name == 'schedule' && (steps.report.outputs.warnings_critical_count == '-1' || steps.report.outputs.warnings_critical_count != '0' || steps.report.outputs.retention_report_alert_count != '0' || steps.ops_sla.outputs.ops_fast_sla_ok != 'true' || steps.ops_sla.outputs.ops_nightly_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_mttr_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_open != '0') }}
+            - name: Crear/actualizar incidente semanal general
+              if: ${{ github.event_name == 'schedule' && (steps.report.outputs.warnings_critical_count == '-1' || steps.report.outputs.warnings_critical_count != '0' || steps.ops_sla.outputs.ops_fast_sla_ok != 'true' || steps.ops_sla.outputs.ops_nightly_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_mttr_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_open_external != '0') }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -477,11 +485,6 @@ jobs:
                         `- warnings_non_critical_count: ${{ steps.report.outputs.warnings_non_critical_count }}`,
                         `- warnings_critical_list: ${{ steps.report.outputs.warnings_critical_list }}`,
                         `- warnings_non_critical_list: ${{ steps.report.outputs.warnings_non_critical_list }}`,
-                        `- retention_report_source: ${{ steps.report.outputs.retention_report_source }}`,
-                        `- retention_report_alert_count: ${{ steps.report.outputs.retention_report_alert_count }}`,
-                        `- retention_report_alert_warn_count: ${{ steps.report.outputs.retention_report_alert_warn_count }}`,
-                        `- retention_report_alert_critical_count: ${{ steps.report.outputs.retention_report_alert_critical_count }}`,
-                        `- retention_report_alert_list: ${{ steps.report.outputs.retention_report_alert_list }}`,
                         `- fast_runs_last_${{ steps.ops_sla.outputs.lookback_days }}d: ${{ steps.ops_sla.outputs.ops_fast_runs }}`,
                         `- fast_success_rate_pct: ${{ steps.ops_sla.outputs.ops_fast_success_rate_pct }}`,
                         `- fast_p95_min: ${{ steps.ops_sla.outputs.ops_fast_p95_min }}`,
@@ -490,7 +493,8 @@ jobs:
                         `- nightly_success_rate_pct: ${{ steps.ops_sla.outputs.ops_nightly_success_rate_pct }}`,
                         `- nightly_target_ok: ${{ steps.ops_sla.outputs.ops_nightly_target_ok }}`,
                         `- incidents_total_last_${{ steps.ops_sla.outputs.lookback_days }}d: ${{ steps.ops_sla.outputs.ops_incidents_total }}`,
-                        `- incidents_open: ${{ steps.ops_sla.outputs.ops_incidents_open }}`,
+                        `- incidents_open_external: ${{ steps.ops_sla.outputs.ops_incidents_open_external }}`,
+                        `- incidents_open_total: ${{ steps.ops_sla.outputs.ops_incidents_open_total }}`,
                         `- incidents_closed: ${{ steps.ops_sla.outputs.ops_incidents_closed }}`,
                         `- incidents_mttr_hours_avg: ${{ steps.ops_sla.outputs.ops_incidents_mttr_hours_avg }}`,
                         `- incidents_mttr_target_ok: ${{ steps.ops_sla.outputs.ops_incidents_mttr_target_ok }}`
@@ -517,13 +521,14 @@ jobs:
                           owner,
                           repo,
                           title,
-                          body
+                          body,
+                          labels: ['production-alert', 'weekly-kpi']
                         });
                         core.info(`Issue creado: #${created.data.number}`);
                       }
 
-            - name: Cerrar incidente semanal al recuperar
-              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.warnings_critical_count == '0' && steps.report.outputs.retention_report_alert_count == '0' && steps.ops_sla.outputs.ops_fast_sla_ok == 'true' && steps.ops_sla.outputs.ops_nightly_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_mttr_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_open == '0' }}
+            - name: Cerrar incidente semanal general al recuperar
+              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.warnings_critical_count == '0' && steps.ops_sla.outputs.ops_fast_sla_ok == 'true' && steps.ops_sla.outputs.ops_nightly_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_mttr_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_open_external == '0' }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -565,3 +570,100 @@ jobs:
                         state: 'closed'
                       });
                       core.info(`Issue cerrado: #${existing.number}`);
+
+            - name: Crear/actualizar incidente semanal de retencion
+              if: ${{ github.event_name == 'schedule' && steps.report.outputs.retention_report_alert_count != '0' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI retencion degradada';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const body = [
+                        'El workflow `Weekly KPI Report` detecto alertas de retencion (`retention-report`).',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- retention_report_source: ${{ steps.report.outputs.retention_report_source }}`,
+                        `- retention_report_alert_count: ${{ steps.report.outputs.retention_report_alert_count }}`,
+                        `- retention_report_alert_warn_count: ${{ steps.report.outputs.retention_report_alert_warn_count }}`,
+                        `- retention_report_alert_critical_count: ${{ steps.report.outputs.retention_report_alert_critical_count }}`,
+                        `- retention_report_alert_list: ${{ steps.report.outputs.retention_report_alert_list }}`,
+                        '',
+                        'Accion recomendada: revisar runbook de monitoreo diario y ejecutar hardening en agenda/recordatorios.'
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body
+                        });
+                        core.info(`Issue de retencion actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body,
+                          labels: ['production-alert', 'retention']
+                        });
+                        core.info(`Issue de retencion creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente semanal de retencion al recuperar
+              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.retention_report_alert_count == '0' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI retencion degradada';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente de retencion abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por reporte semanal de retencion.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue de retencion cerrado: #${existing.number}`);
