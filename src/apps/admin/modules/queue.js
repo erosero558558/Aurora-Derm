@@ -1,4 +1,4 @@
-import { apiRequest } from './api.js';
+﻿import { apiRequest } from './api.js';
 import {
     currentQueueMeta,
     currentQueueTickets,
@@ -22,9 +22,62 @@ const QUEUE_PRIORITY_LABELS = {
 };
 
 const TERMINAL_QUEUE_STATUSES = new Set(['completed', 'no_show', 'cancelled']);
+const QUEUE_REALTIME_BASE_MS = 2500;
+const QUEUE_REALTIME_MAX_MS = 15000;
 const queueUiState = {
     pendingCallByConsultorio: new Set(),
+    realtimeTimerId: 0,
+    realtimeEnabled: false,
+    realtimeFailureStreak: 0,
+    realtimeRequestInFlight: false,
 };
+
+function getQueueSyncStatusEl() {
+    return document.getElementById('queueSyncStatus');
+}
+
+function setQueueSyncStatus(state, message) {
+    const statusEl = getQueueSyncStatusEl();
+    if (!statusEl) return;
+
+    const normalizedState = String(state || 'paused').toLowerCase();
+    const fallbackMessageByState = {
+        live: 'Cola en vivo',
+        reconnecting: 'Reintentando sincronizacion',
+        offline: 'Sin conexion al backend',
+        paused: 'Cola en pausa',
+    };
+
+    statusEl.dataset.state = normalizedState;
+    statusEl.textContent =
+        String(message || '').trim() ||
+        fallbackMessageByState[normalizedState] ||
+        fallbackMessageByState.paused;
+}
+
+function getRealtimeDelayMs() {
+    const multiplier = Math.max(
+        0,
+        Number(queueUiState.realtimeFailureStreak || 0)
+    );
+    const delay = QUEUE_REALTIME_BASE_MS * Math.pow(2, Math.min(multiplier, 3));
+    return Math.min(QUEUE_REALTIME_MAX_MS, delay);
+}
+
+function clearQueueRealtimeTimer() {
+    if (!queueUiState.realtimeTimerId) return;
+    window.clearTimeout(queueUiState.realtimeTimerId);
+    queueUiState.realtimeTimerId = 0;
+}
+
+function scheduleQueueRealtimeTick({ immediate = false } = {}) {
+    clearQueueRealtimeTimer();
+    if (!queueUiState.realtimeEnabled) return;
+    const delayMs = immediate ? 0 : getRealtimeDelayMs();
+    queueUiState.realtimeTimerId = window.setTimeout(() => {
+        void runQueueRealtimeTick();
+    }, delayMs);
+}
 
 function formatDateTime(value) {
     const ts = Date.parse(String(value || ''));
@@ -382,13 +435,65 @@ function renderQueueSection() {
     renderQueueTable();
 }
 
+async function runQueueRealtimeTick() {
+    if (!queueUiState.realtimeEnabled) return;
+
+    if (!isQueueSectionActive()) {
+        setQueueSyncStatus('paused', 'Cola en pausa');
+        clearQueueRealtimeTimer();
+        return;
+    }
+
+    if (document.hidden) {
+        setQueueSyncStatus('paused', 'Cola en pausa (pestana oculta)');
+        scheduleQueueRealtimeTick();
+        return;
+    }
+
+    if (navigator.onLine === false) {
+        queueUiState.realtimeFailureStreak += 1;
+        setQueueSyncStatus('offline', 'Sin conexion al backend');
+        scheduleQueueRealtimeTick();
+        return;
+    }
+
+    if (queueUiState.realtimeRequestInFlight) {
+        scheduleQueueRealtimeTick();
+        return;
+    }
+
+    queueUiState.realtimeRequestInFlight = true;
+    const refreshed = await refreshQueueRealtime({
+        silent: true,
+        fromRealtime: true,
+    });
+    queueUiState.realtimeRequestInFlight = false;
+
+    if (refreshed) {
+        queueUiState.realtimeFailureStreak = 0;
+        setQueueSyncStatus('live', 'Cola en vivo');
+    } else {
+        queueUiState.realtimeFailureStreak += 1;
+        const retrySeconds = Math.max(
+            1,
+            Math.ceil(getRealtimeDelayMs() / 1000)
+        );
+        setQueueSyncStatus('reconnecting', `Reintentando en ${retrySeconds}s`);
+    }
+
+    scheduleQueueRealtimeTick();
+}
+
 export function isQueueSectionActive() {
     return (
         document.querySelector('.nav-item.active')?.dataset.section === 'queue'
     );
 }
 
-export async function refreshQueueRealtime({ silent = false } = {}) {
+export async function refreshQueueRealtime({
+    silent = false,
+    fromRealtime = false,
+} = {}) {
     try {
         const payload = await apiRequest('data');
         const data = payload.data || {};
@@ -401,8 +506,19 @@ export async function refreshQueueRealtime({ silent = false } = {}) {
                 : null
         );
         renderQueueSection();
+        if (!fromRealtime && isQueueSectionActive()) {
+            setQueueSyncStatus('live', 'Cola sincronizada');
+        }
         return true;
     } catch (error) {
+        if (!fromRealtime && isQueueSectionActive()) {
+            setQueueSyncStatus(
+                navigator.onLine === false ? 'offline' : 'reconnecting',
+                navigator.onLine === false
+                    ? 'Sin conexion al backend'
+                    : 'No se pudo sincronizar cola'
+            );
+        }
         if (!silent) {
             showToast(
                 `No se pudo actualizar turnero: ${error.message}`,
@@ -415,7 +531,46 @@ export async function refreshQueueRealtime({ silent = false } = {}) {
 
 export function loadQueueSection() {
     renderQueueSection();
+    setQueueSyncStatus('paused', 'Sincronizacion lista');
     void refreshQueueRealtime({ silent: true });
+}
+
+export function startQueueRealtimeSync({ immediate = true } = {}) {
+    queueUiState.realtimeEnabled = true;
+    queueUiState.realtimeFailureStreak = 0;
+    if (!isQueueSectionActive()) {
+        setQueueSyncStatus('paused', 'Cola en pausa');
+        clearQueueRealtimeTimer();
+        return;
+    }
+
+    if (immediate) {
+        setQueueSyncStatus('live', 'Sincronizando cola...');
+        clearQueueRealtimeTimer();
+        void runQueueRealtimeTick();
+        return;
+    }
+
+    setQueueSyncStatus('live', 'Cola en vivo');
+    scheduleQueueRealtimeTick();
+}
+
+export function stopQueueRealtimeSync({ reason = 'paused' } = {}) {
+    queueUiState.realtimeEnabled = false;
+    queueUiState.realtimeFailureStreak = 0;
+    queueUiState.realtimeRequestInFlight = false;
+    clearQueueRealtimeTimer();
+
+    const reasonText = String(reason || 'paused').toLowerCase();
+    if (reasonText === 'offline') {
+        setQueueSyncStatus('offline', 'Sin conexion al backend');
+        return;
+    }
+    if (reasonText === 'hidden') {
+        setQueueSyncStatus('paused', 'Cola en pausa (pestana oculta)');
+        return;
+    }
+    setQueueSyncStatus('paused', 'Cola en pausa');
 }
 
 export async function callNextForConsultorio(consultorio) {

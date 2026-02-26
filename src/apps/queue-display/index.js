@@ -1,10 +1,15 @@
 const API_ENDPOINT = '/api.php';
 const POLL_MS = 2500;
+const POLL_MAX_MS = 15000;
 
 const state = {
     lastCalledSignature: '',
     audioContext: null,
     pollingId: 0,
+    clockId: 0,
+    pollingEnabled: false,
+    failureStreak: 0,
+    refreshBusy: false,
 };
 
 function getById(id) {
@@ -47,6 +52,25 @@ async function apiRequest(resource) {
     return payload;
 }
 
+function setConnectionStatus(stateLabel, message) {
+    const el = getById('displayConnectionState');
+    if (!el) return;
+
+    const normalized = String(stateLabel || 'live').toLowerCase();
+    const fallbackByState = {
+        live: 'Conectado',
+        reconnecting: 'Reconectando',
+        offline: 'Sin conexion',
+        paused: 'En pausa',
+    };
+
+    el.dataset.state = normalized;
+    el.textContent =
+        String(message || '').trim() ||
+        fallbackByState[normalized] ||
+        fallbackByState.live;
+}
+
 function renderCalledTicket(containerId, ticket, consultorioLabel) {
     const container = getById(containerId);
     if (!container) return;
@@ -75,7 +99,8 @@ function renderNextTickets(nextTickets) {
     if (!list) return;
 
     if (!Array.isArray(nextTickets) || nextTickets.length === 0) {
-        list.innerHTML = '<li class="display-empty">No hay turnos pendientes.</li>';
+        list.innerHTML =
+            '<li class="display-empty">No hay turnos pendientes.</li>';
         return;
     }
 
@@ -111,7 +136,9 @@ function computeCalledSignature(callingNow) {
 function playBell() {
     try {
         if (!state.audioContext) {
-            state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            state.audioContext = new (
+                window.AudioContext || window.webkitAudioContext
+            )();
         }
 
         const ctx = state.audioContext;
@@ -142,11 +169,14 @@ function renderUpdatedAt(queueState) {
         badge.textContent = 'Actualizacion pendiente';
         return;
     }
-    badge.textContent = `Actualizado ${new Date(ts).toLocaleTimeString('es-EC', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-    })}`;
+    badge.textContent = `Actualizado ${new Date(ts).toLocaleTimeString(
+        'es-EC',
+        {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        }
+    )}`;
 }
 
 function renderState(queueState) {
@@ -164,8 +194,16 @@ function renderState(queueState) {
         }
     }
 
-    renderCalledTicket('displayConsultorio1', byConsultorio[1], 'Consultorio 1');
-    renderCalledTicket('displayConsultorio2', byConsultorio[2], 'Consultorio 2');
+    renderCalledTicket(
+        'displayConsultorio1',
+        byConsultorio[1],
+        'Consultorio 1'
+    );
+    renderCalledTicket(
+        'displayConsultorio2',
+        byConsultorio[2],
+        'Consultorio 2'
+    );
     renderNextTickets(queueState?.nextTickets || []);
     renderUpdatedAt(queueState);
 
@@ -176,16 +214,103 @@ function renderState(queueState) {
     state.lastCalledSignature = signature;
 }
 
+function getPollDelayMs() {
+    const attempts = Math.max(0, Number(state.failureStreak || 0));
+    const delay = POLL_MS * Math.pow(2, Math.min(attempts, 3));
+    return Math.min(POLL_MAX_MS, delay);
+}
+
+function clearPollingTimer() {
+    if (!state.pollingId) return;
+    window.clearTimeout(state.pollingId);
+    state.pollingId = 0;
+}
+
+function scheduleNextPoll({ immediate = false } = {}) {
+    clearPollingTimer();
+    if (!state.pollingEnabled) return;
+    const delay = immediate ? 0 : getPollDelayMs();
+    state.pollingId = window.setTimeout(() => {
+        void runDisplayPollTick();
+    }, delay);
+}
+
 async function refreshDisplayState() {
+    if (state.refreshBusy) return false;
+    state.refreshBusy = true;
     try {
         const payload = await apiRequest('queue-state');
         renderState(payload.data || {});
+        if (state.pollingEnabled) {
+            setConnectionStatus('live', 'Conectado');
+        }
+        return true;
     } catch (error) {
         const list = getById('displayNextList');
         if (list) {
             list.innerHTML = `<li class="display-empty">Sin conexion: ${escapeHtml(error.message)}</li>`;
         }
+        setConnectionStatus(
+            navigator.onLine === false ? 'offline' : 'reconnecting',
+            navigator.onLine === false ? 'Sin conexion' : 'Reconectando...'
+        );
+        return false;
+    } finally {
+        state.refreshBusy = false;
     }
+}
+
+async function runDisplayPollTick() {
+    if (!state.pollingEnabled) return;
+
+    if (document.hidden) {
+        setConnectionStatus('paused', 'En pausa (pestana oculta)');
+        scheduleNextPoll();
+        return;
+    }
+
+    if (navigator.onLine === false) {
+        state.failureStreak += 1;
+        setConnectionStatus('offline', 'Sin conexion');
+        scheduleNextPoll();
+        return;
+    }
+
+    const refreshed = await refreshDisplayState();
+    if (refreshed) {
+        state.failureStreak = 0;
+        setConnectionStatus('live', 'Conectado');
+    } else {
+        state.failureStreak += 1;
+    }
+    scheduleNextPoll();
+}
+
+function startDisplayPolling({ immediate = true } = {}) {
+    state.pollingEnabled = true;
+    if (immediate) {
+        setConnectionStatus('live', 'Sincronizando...');
+        void runDisplayPollTick();
+        return;
+    }
+    scheduleNextPoll();
+}
+
+function stopDisplayPolling({ reason = 'paused' } = {}) {
+    state.pollingEnabled = false;
+    state.failureStreak = 0;
+    clearPollingTimer();
+
+    const normalizedReason = String(reason || 'paused').toLowerCase();
+    if (normalizedReason === 'offline') {
+        setConnectionStatus('offline', 'Sin conexion');
+        return;
+    }
+    if (normalizedReason === 'hidden') {
+        setConnectionStatus('paused', 'En pausa (pestana oculta)');
+        return;
+    }
+    setConnectionStatus('paused', 'En pausa');
 }
 
 function updateClock() {
@@ -199,12 +324,34 @@ function updateClock() {
 
 function initDisplay() {
     updateClock();
-    window.setInterval(updateClock, 1000);
+    state.clockId = window.setInterval(updateClock, 1000);
 
-    void refreshDisplayState();
-    state.pollingId = window.setInterval(() => {
-        void refreshDisplayState();
-    }, POLL_MS);
+    setConnectionStatus('paused', 'Sincronizacion lista');
+    startDisplayPolling({ immediate: true });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopDisplayPolling({ reason: 'hidden' });
+            return;
+        }
+        startDisplayPolling({ immediate: true });
+    });
+
+    window.addEventListener('online', () => {
+        startDisplayPolling({ immediate: true });
+    });
+
+    window.addEventListener('offline', () => {
+        stopDisplayPolling({ reason: 'offline' });
+    });
+
+    window.addEventListener('beforeunload', () => {
+        stopDisplayPolling({ reason: 'paused' });
+        if (state.clockId) {
+            window.clearInterval(state.clockId);
+            state.clockId = 0;
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', initDisplay);

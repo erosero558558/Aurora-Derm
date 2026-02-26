@@ -39,8 +39,18 @@ test.describe('Sala turnos display', () => {
                         },
                     ],
                     nextTickets: [
-                        { id: 3, ticketCode: 'A-053', patientInitials: 'EP', position: 1 },
-                        { id: 4, ticketCode: 'A-054', patientInitials: 'LR', position: 2 },
+                        {
+                            id: 3,
+                            ticketCode: 'A-053',
+                            patientInitials: 'EP',
+                            position: 1,
+                        },
+                        {
+                            id: 4,
+                            ticketCode: 'A-054',
+                            patientInitials: 'LR',
+                            position: 2,
+                        },
                     ],
                 },
             });
@@ -48,10 +58,16 @@ test.describe('Sala turnos display', () => {
 
         await page.goto('/sala-turnos.html');
 
-        await expect(page.locator('#displayConsultorio1')).toContainText('A-051');
-        await expect(page.locator('#displayConsultorio2')).toContainText('A-052');
+        await expect(page.locator('#displayConsultorio1')).toContainText(
+            'A-051'
+        );
+        await expect(page.locator('#displayConsultorio2')).toContainText(
+            'A-052'
+        );
         await expect(page.locator('#displayNextList li')).toHaveCount(2);
         await expect(page.locator('#displayNextList')).toContainText('A-053');
+        await expect(page.locator('#displayConnectionState')).toContainText(
+            'Conectado'
+        );
     });
 });
-

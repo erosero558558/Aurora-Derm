@@ -58,6 +58,42 @@ body {
     font-weight: 700;
 }
 
+.display-connection-state {
+    justify-self: end;
+    width: fit-content;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: rgb(24 39 67 / 64%);
+}
+
+.display-connection-state[data-state='live'] {
+    border-color: rgb(45 212 191 / 46%);
+    color: #8ff8ec;
+    background: rgb(45 212 191 / 16%);
+}
+
+.display-connection-state[data-state='reconnecting'] {
+    border-color: rgb(251 191 36 / 46%);
+    color: #fde68a;
+    background: rgb(251 191 36 / 16%);
+}
+
+.display-connection-state[data-state='offline'] {
+    border-color: rgb(244 114 182 / 44%);
+    color: #fbcfe8;
+    background: rgb(244 114 182 / 14%);
+}
+
+.display-connection-state[data-state='paused'] {
+    border-color: rgb(148 163 184 / 46%);
+    color: #cbd5e1;
+    background: rgb(148 163 184 / 16%);
+}
+
 .display-updated-at {
     color: var(--muted);
     font-size: 0.85rem;
@@ -178,4 +214,3 @@ body {
         grid-template-columns: 1fr;
     }
 }
-

@@ -10,7 +10,7 @@ function json(route, payload, status = 200) {
 }
 
 function buildQueueMetaFromState(state) {
-    const byConsultorio = { '1': null, '2': null };
+    const byConsultorio = { 1: null, 2: null };
     for (const ticket of state.callingNow || []) {
         const room = String(ticket.assignedConsultorio || '');
         if (room === '1' || room === '2') {
@@ -28,7 +28,9 @@ function buildQueueMetaFromState(state) {
 }
 
 test.describe('Admin turnero sala', () => {
-    test('permite llamar siguiente ticket en consultorio 1', async ({ page }) => {
+    test('permite llamar siguiente ticket en consultorio 1', async ({
+        page,
+    }) => {
         let queueTickets = [
             {
                 id: 501,
@@ -65,8 +67,18 @@ test.describe('Admin turnero sala', () => {
             },
             callingNow: [],
             nextTickets: [
-                { id: 501, ticketCode: 'A-501', patientInitials: 'EP', position: 1 },
-                { id: 502, ticketCode: 'A-502', patientInitials: 'JP', position: 2 },
+                {
+                    id: 501,
+                    ticketCode: 'A-501',
+                    patientInitials: 'EP',
+                    position: 1,
+                },
+                {
+                    id: 502,
+                    ticketCode: 'A-502',
+                    patientInitials: 'JP',
+                    position: 2,
+                },
             ],
         };
 
@@ -80,7 +92,11 @@ test.describe('Admin turnero sala', () => {
                     csrfToken: 'csrf_queue_admin',
                 });
             }
-            return json(route, { ok: true, authenticated: true, csrfToken: 'csrf_queue_admin' });
+            return json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_admin',
+            });
         });
 
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
@@ -171,7 +187,11 @@ test.describe('Admin turnero sala', () => {
                 return json(route, {
                     ok: true,
                     printed: false,
-                    print: { ok: true, errorCode: 'printer_disabled', message: 'disabled' },
+                    print: {
+                        ok: true,
+                        errorCode: 'printer_disabled',
+                        message: 'disabled',
+                    },
                 });
             }
 
@@ -184,11 +204,25 @@ test.describe('Admin turnero sala', () => {
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
         await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('2');
+        await expect(page.locator('#queueSyncStatus')).toContainText('vivo');
 
-        await page.locator('[data-action="queue-call-next"][data-queue-consultorio="1"]').first().click();
+        await page
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .first()
+            .click();
 
         await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('1');
         await expect(page.locator('#queueC1Now')).toContainText('A-501');
         await expect(page.locator('#queueTableBody')).toContainText('A-501');
+        await expect(
+            page
+                .locator(
+                    '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+                )
+                .first()
+        ).toBeDisabled();
+        await expect(page.locator('#queueReleaseC1')).toContainText('A-501');
     });
 });

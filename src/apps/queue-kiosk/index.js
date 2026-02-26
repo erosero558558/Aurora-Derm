@@ -1,6 +1,7 @@
 const API_ENDPOINT = '/api.php';
 const CHAT_ENDPOINT = '/figo-chat.php';
 const QUEUE_POLL_MS = 2500;
+const QUEUE_POLL_MAX_MS = 15000;
 const THEME_STORAGE_KEY = 'kioskThemeMode';
 
 const state = {
@@ -8,6 +9,9 @@ const state = {
     chatHistory: [],
     assistantBusy: false,
     queueTimerId: 0,
+    queuePollingEnabled: false,
+    queueFailureStreak: 0,
+    queueRefreshBusy: false,
     themeMode: 'system',
     mediaQuery: null,
 };
@@ -34,7 +38,9 @@ async function apiRequest(resource, { method = 'GET', body } = {}) {
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
-            ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+            ...(body !== undefined
+                ? { 'Content-Type': 'application/json' }
+                : {}),
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -81,6 +87,52 @@ function setKioskStatus(message, type = 'info') {
     el.dataset.status = type;
 }
 
+function setQueueConnectionStatus(stateLabel, message) {
+    const el = getById('queueConnectionState');
+    if (!el) return;
+
+    const normalized = String(stateLabel || 'live').toLowerCase();
+    const fallbackByState = {
+        live: 'Cola conectada',
+        reconnecting: 'Reintentando conexion',
+        offline: 'Sin conexion al backend',
+        paused: 'Cola en pausa',
+    };
+
+    el.dataset.state = normalized;
+    el.textContent =
+        String(message || '').trim() ||
+        fallbackByState[normalized] ||
+        fallbackByState.live;
+}
+
+function renderQueueUpdatedAt(updatedAt) {
+    const el = getById('queueUpdatedAt');
+    if (!el) return;
+    const ts = Date.parse(String(updatedAt || ''));
+    if (!Number.isFinite(ts)) {
+        el.textContent = 'Actualizacion pendiente';
+        return;
+    }
+    el.textContent = `Actualizado ${new Date(ts).toLocaleTimeString('es-EC', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    })}`;
+}
+
+function getQueuePollDelayMs() {
+    const attempts = Math.max(0, Number(state.queueFailureStreak || 0));
+    const delay = QUEUE_POLL_MS * Math.pow(2, Math.min(attempts, 3));
+    return Math.min(QUEUE_POLL_MAX_MS, delay);
+}
+
+function clearQueuePollTimer() {
+    if (!state.queueTimerId) return;
+    window.clearTimeout(state.queueTimerId);
+    state.queueTimerId = 0;
+}
+
 function formatIsoDateTime(iso) {
     const ts = Date.parse(String(iso || ''));
     if (!Number.isFinite(ts)) {
@@ -112,7 +164,8 @@ function renderQueuePanel(queueState) {
             ? queueState.callingNow
             : [];
         if (callingNow.length === 0) {
-            callingNowEl.innerHTML = '<p class="queue-empty">Sin llamados activos.</p>';
+            callingNowEl.innerHTML =
+                '<p class="queue-empty">Sin llamados activos.</p>';
         } else {
             callingNowEl.innerHTML = callingNow
                 .map(
@@ -152,15 +205,31 @@ function renderQueuePanel(queueState) {
 }
 
 async function refreshQueueState() {
+    if (state.queueRefreshBusy) {
+        return false;
+    }
+    state.queueRefreshBusy = true;
     try {
         const payload = await apiRequest('queue-state');
         state.queueState = payload.data || {};
         renderQueuePanel(state.queueState);
+        renderQueueUpdatedAt(state.queueState?.updatedAt);
+        if (state.queuePollingEnabled) {
+            setQueueConnectionStatus('live', 'Cola conectada');
+        }
+        return true;
     } catch (error) {
-        setKioskStatus(
-            `No se pudo actualizar la cola en vivo: ${error.message}`,
-            'warning'
-        );
+        if (navigator.onLine === false) {
+            setQueueConnectionStatus('offline', 'Sin conexion al backend');
+        } else {
+            setQueueConnectionStatus(
+                'reconnecting',
+                `Reintentando: ${error.message}`
+            );
+        }
+        return false;
+    } finally {
+        state.queueRefreshBusy = false;
     }
 }
 
@@ -210,14 +279,22 @@ async function submitCheckin(event) {
     const initialsInput = getById('checkinInitials');
     const submitBtn = getById('checkinSubmit');
 
-    const phone = phoneInput instanceof HTMLInputElement ? phoneInput.value.trim() : '';
-    const time = timeInput instanceof HTMLInputElement ? timeInput.value.trim() : '';
-    const date = dateInput instanceof HTMLInputElement ? dateInput.value.trim() : '';
+    const phone =
+        phoneInput instanceof HTMLInputElement ? phoneInput.value.trim() : '';
+    const time =
+        timeInput instanceof HTMLInputElement ? timeInput.value.trim() : '';
+    const date =
+        dateInput instanceof HTMLInputElement ? dateInput.value.trim() : '';
     const patientInitials =
-        initialsInput instanceof HTMLInputElement ? initialsInput.value.trim() : '';
+        initialsInput instanceof HTMLInputElement
+            ? initialsInput.value.trim()
+            : '';
 
     if (!phone || !time || !date) {
-        setKioskStatus('Telefono, fecha y hora son obligatorios para check-in', 'error');
+        setKioskStatus(
+            'Telefono, fecha y hora son obligatorios para check-in',
+            'error'
+        );
         return;
     }
 
@@ -236,10 +313,17 @@ async function submitCheckin(event) {
             },
         });
         setKioskStatus('Check-in registrado correctamente', 'success');
-        renderTicketResult(payload, payload.replay ? 'Check-in ya existente' : 'Check-in de cita');
+        renderTicketResult(
+            payload,
+            payload.replay ? 'Check-in ya existente' : 'Check-in de cita'
+        );
+        state.queueFailureStreak = 0;
         await refreshQueueState();
     } catch (error) {
-        setKioskStatus(`No se pudo registrar el check-in: ${error.message}`, 'error');
+        setKioskStatus(
+            `No se pudo registrar el check-in: ${error.message}`,
+            'error'
+        );
     } finally {
         if (submitBtn instanceof HTMLButtonElement) {
             submitBtn.disabled = false;
@@ -254,14 +338,21 @@ async function submitWalkIn(event) {
     const phoneInput = getById('walkinPhone');
     const submitBtn = getById('walkinSubmit');
 
-    const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : '';
+    const name =
+        nameInput instanceof HTMLInputElement ? nameInput.value.trim() : '';
     const initialsRaw =
-        initialsInput instanceof HTMLInputElement ? initialsInput.value.trim() : '';
+        initialsInput instanceof HTMLInputElement
+            ? initialsInput.value.trim()
+            : '';
     const patientInitials = initialsRaw || deriveInitials(name);
-    const phone = phoneInput instanceof HTMLInputElement ? phoneInput.value.trim() : '';
+    const phone =
+        phoneInput instanceof HTMLInputElement ? phoneInput.value.trim() : '';
 
     if (!patientInitials) {
-        setKioskStatus('Ingresa iniciales o nombre para generar el turno', 'error');
+        setKioskStatus(
+            'Ingresa iniciales o nombre para generar el turno',
+            'error'
+        );
         return;
     }
 
@@ -280,6 +371,7 @@ async function submitWalkIn(event) {
         });
         setKioskStatus('Turno walk-in registrado correctamente', 'success');
         renderTicketResult(payload, 'Turno sin cita');
+        state.queueFailureStreak = 0;
         await refreshQueueState();
     } catch (error) {
         setKioskStatus(`No se pudo crear el turno: ${error.message}`, 'error');
@@ -296,7 +388,11 @@ function assistantGuard(text) {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
 
-    if (/(diagnost|medicacion|tratamiento medico|receta|dosis|enfermedad)/.test(normalized)) {
+    if (
+        /(diagnost|medicacion|tratamiento medico|receta|dosis|enfermedad)/.test(
+            normalized
+        )
+    ) {
         return 'En este kiosco solo puedo ayudarte con turnos y orientacion de sala. Para consulta medica, acude a recepcion.';
     }
 
@@ -364,7 +460,9 @@ async function submitAssistant(event) {
         });
 
         const payload = await response.json();
-        const aiText = String(payload?.choices?.[0]?.message?.content || '').trim();
+        const aiText = String(
+            payload?.choices?.[0]?.message?.content || ''
+        ).trim();
         const answer = assistantGuard(aiText);
         appendAssistantMessage('bot', answer);
 
@@ -393,7 +491,8 @@ function applyTheme(mode) {
         state.mediaQuery instanceof MediaQueryList
             ? state.mediaQuery.matches
             : false;
-    const activeMode = mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
+    const activeMode =
+        mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
     root.dataset.theme = activeMode;
 
     document.querySelectorAll('[data-theme-mode]').forEach((button) => {
@@ -437,6 +536,68 @@ function initDefaultDate() {
     }
 }
 
+function scheduleQueuePolling({ immediate = false } = {}) {
+    clearQueuePollTimer();
+    if (!state.queuePollingEnabled) return;
+    const delay = immediate ? 0 : getQueuePollDelayMs();
+    state.queueTimerId = window.setTimeout(() => {
+        void runQueuePollingTick();
+    }, delay);
+}
+
+async function runQueuePollingTick() {
+    if (!state.queuePollingEnabled) return;
+
+    if (document.hidden) {
+        setQueueConnectionStatus('paused', 'Cola en pausa (pestana oculta)');
+        scheduleQueuePolling();
+        return;
+    }
+
+    if (navigator.onLine === false) {
+        state.queueFailureStreak += 1;
+        setQueueConnectionStatus('offline', 'Sin conexion al backend');
+        scheduleQueuePolling();
+        return;
+    }
+
+    const refreshed = await refreshQueueState();
+    if (refreshed) {
+        state.queueFailureStreak = 0;
+        setQueueConnectionStatus('live', 'Cola conectada');
+    } else {
+        state.queueFailureStreak += 1;
+    }
+    scheduleQueuePolling();
+}
+
+function startQueuePolling({ immediate = true } = {}) {
+    state.queuePollingEnabled = true;
+    if (immediate) {
+        setQueueConnectionStatus('live', 'Sincronizando cola...');
+        void runQueuePollingTick();
+        return;
+    }
+    scheduleQueuePolling();
+}
+
+function stopQueuePolling({ reason = 'paused' } = {}) {
+    state.queuePollingEnabled = false;
+    state.queueFailureStreak = 0;
+    clearQueuePollTimer();
+
+    const normalizedReason = String(reason || 'paused').toLowerCase();
+    if (normalizedReason === 'offline') {
+        setQueueConnectionStatus('offline', 'Sin conexion al backend');
+        return;
+    }
+    if (normalizedReason === 'hidden') {
+        setQueueConnectionStatus('paused', 'Cola en pausa (pestana oculta)');
+        return;
+    }
+    setQueueConnectionStatus('paused', 'Cola en pausa');
+}
+
 function initKiosk() {
     initTheme();
     initDefaultDate();
@@ -460,10 +621,29 @@ function initKiosk() {
         'Hola. Soy el asistente de sala. Puedo ayudarte con check-in, turnos y ubicacion de consultorios.'
     );
 
-    void refreshQueueState();
-    state.queueTimerId = window.setInterval(() => {
-        void refreshQueueState();
-    }, QUEUE_POLL_MS);
+    setQueueConnectionStatus('paused', 'Sincronizacion lista');
+    renderQueueUpdatedAt('');
+    startQueuePolling({ immediate: true });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopQueuePolling({ reason: 'hidden' });
+            return;
+        }
+        startQueuePolling({ immediate: true });
+    });
+
+    window.addEventListener('online', () => {
+        startQueuePolling({ immediate: true });
+    });
+
+    window.addEventListener('offline', () => {
+        stopQueuePolling({ reason: 'offline' });
+    });
+
+    window.addEventListener('beforeunload', () => {
+        stopQueuePolling({ reason: 'paused' });
+    });
 }
 
 document.addEventListener('DOMContentLoaded', initKiosk);

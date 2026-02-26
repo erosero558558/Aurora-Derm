@@ -65,6 +65,8 @@ import {
 import {
     loadQueueSection,
     refreshQueueRealtime,
+    startQueueRealtimeSync,
+    stopQueueRealtimeSync,
     callNextForConsultorio,
     applyQueueTicketAction,
     reprintQueueTicket,
@@ -969,11 +971,18 @@ async function runAdminQuickCommand(rawCommand) {
         return true;
     }
 
-    if (command.includes('turnero') || command.includes('cola') || command.includes('consultorio')) {
+    if (
+        command.includes('turnero') ||
+        command.includes('cola') ||
+        command.includes('consultorio')
+    ) {
         await navigateToSection('queue', { focus: false });
         if (command.includes('c1') || command.includes('consultorio 1')) {
             await callNextForConsultorio(1);
-        } else if (command.includes('c2') || command.includes('consultorio 2')) {
+        } else if (
+            command.includes('c2') ||
+            command.includes('consultorio 2')
+        ) {
             await callNextForConsultorio(2);
         } else {
             await refreshQueueRealtime({ silent: true });
@@ -1080,6 +1089,10 @@ async function renderSection(section) {
     const sectionEl = document.getElementById(section);
     if (sectionEl) sectionEl.classList.add('active');
 
+    if (section !== 'queue') {
+        stopQueueRealtimeSync({ reason: 'paused' });
+    }
+
     switch (section) {
         case 'dashboard':
             loadDashboardData();
@@ -1100,6 +1113,7 @@ async function renderSection(section) {
         }
         case 'queue': {
             loadQueueSection();
+            startQueueRealtimeSync({ immediate: true });
             break;
         }
         default:
@@ -1114,6 +1128,7 @@ async function renderSection(section) {
 function showLogin() {
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('adminDashboard');
+    stopQueueRealtimeSync({ reason: 'paused' });
     closeSidebar();
     if (loginScreen) loginScreen.classList.remove('is-hidden');
     if (dashboard) dashboard.classList.add('is-hidden');
@@ -1421,7 +1436,9 @@ function attachGlobalListeners() {
 
         if (action === 'queue-call-next') {
             event.preventDefault();
-            await callNextForConsultorio(Number(actionEl.dataset.queueConsultorio || 0));
+            await callNextForConsultorio(
+                Number(actionEl.dataset.queueConsultorio || 0)
+            );
             return;
         }
 
@@ -1728,11 +1745,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
     }
 
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopQueueRealtimeSync({ reason: 'hidden' });
+            return;
+        }
+        if (getActiveSection() === 'queue') {
+            startQueueRealtimeSync({ immediate: true });
+        }
+    });
+
     window.addEventListener('online', async () => {
         const refreshed = await refreshAdminDataAndRender({
             showSuccessToast: false,
             showErrorToast: false,
         });
+        if (getActiveSection() === 'queue') {
+            startQueueRealtimeSync({ immediate: true });
+        }
         if (refreshed) {
             showToast('Conexion restaurada. Datos actualizados.', 'success');
             return;
@@ -1741,6 +1771,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             'Conexion restaurada, pero no se pudieron refrescar datos.',
             'warning'
         );
+    });
+
+    window.addEventListener('offline', () => {
+        if (getActiveSection() === 'queue') {
+            stopQueueRealtimeSync({ reason: 'offline' });
+        }
     });
 
     syncSidebarOverlayA11yState(false);

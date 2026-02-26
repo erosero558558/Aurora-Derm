@@ -46,33 +46,45 @@ test.describe('Kiosco turnos', () => {
             }
 
             if (resource === 'queue-ticket') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        id: 101,
-                        ticketCode: 'A-101',
-                        patientInitials: 'EP',
-                        queueType: 'walk_in',
-                        createdAt: new Date().toISOString(),
+                return json(
+                    route,
+                    {
+                        ok: true,
+                        data: {
+                            id: 101,
+                            ticketCode: 'A-101',
+                            patientInitials: 'EP',
+                            queueType: 'walk_in',
+                            createdAt: new Date().toISOString(),
+                        },
+                        printed: false,
+                        print: {
+                            ok: true,
+                            errorCode: 'printer_disabled',
+                            message: 'disabled',
+                        },
                     },
-                    printed: false,
-                    print: { ok: true, errorCode: 'printer_disabled', message: 'disabled' },
-                }, 201);
+                    201
+                );
             }
 
             if (resource === 'queue-checkin') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        id: 102,
-                        ticketCode: 'A-102',
-                        patientInitials: 'EP',
-                        queueType: 'appointment',
-                        createdAt: new Date().toISOString(),
+                return json(
+                    route,
+                    {
+                        ok: true,
+                        data: {
+                            id: 102,
+                            ticketCode: 'A-102',
+                            patientInitials: 'EP',
+                            queueType: 'appointment',
+                            createdAt: new Date().toISOString(),
+                        },
+                        printed: true,
+                        print: { ok: true, errorCode: '', message: 'ok' },
                     },
-                    printed: true,
-                    print: { ok: true, errorCode: '', message: 'ok' },
-                }, 201);
+                    201
+                );
             }
 
             return json(route, { ok: true, data: {} });
@@ -89,7 +101,8 @@ test.describe('Kiosco turnos', () => {
                         index: 0,
                         message: {
                             role: 'assistant',
-                            content: 'Usa la opcion Tengo cita para check-in o No tengo cita para turno.',
+                            content:
+                                'Usa la opcion Tengo cita para check-in o No tengo cita para turno.',
                         },
                         finish_reason: 'stop',
                     },
@@ -100,17 +113,26 @@ test.describe('Kiosco turnos', () => {
         });
 
         await page.goto('/kiosco-turnos.html');
-        await expect(page.locator('h1')).toContainText('Registro en sala de espera');
+        await expect(page.locator('h1')).toContainText(
+            'Registro en sala de espera'
+        );
 
         await page.fill('#walkinInitials', 'EP');
         await page.click('#walkinSubmit');
 
         await expect(page.locator('#ticketResult')).toContainText('A-101');
         await expect(page.locator('#queueWaitingCount')).toHaveText('2');
+        await expect(page.locator('#queueConnectionState')).toContainText(
+            'Cola conectada'
+        );
+        await expect(page.locator('#queueUpdatedAt')).not.toContainText(
+            'pendiente'
+        );
 
         await page.fill('#assistantInput', 'Como hago check-in');
         await page.click('#assistantSend');
-        await expect(page.locator('#assistantMessages')).toContainText('Tengo cita');
+        await expect(page.locator('#assistantMessages')).toContainText(
+            'Tengo cita'
+        );
     });
 });
-
