@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 119
+  revision: 122
   updated_at: 2026-02-26
 
 tasks:
@@ -2173,5 +2173,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-056.md"
     depends_on: []
     prompt: "Backend hardening: appointment idempotency replay guard"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-057
+    title: "Backend observability: idempotency metrics in health and weekly report"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T02:22:18.146Z"
+    risk: medium
+    scope: monitoring
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["controllers/AppointmentController.php", "controllers/HealthController.php", "controllers/AnalyticsController.php", "REPORTE-SEMANAL-PRODUCCION.ps1", "tests/Integration/AnalyticsRetentionMetricsTest.php"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T02:22:18.146Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Backend observability: idempotency metrics in health and weekly report"
+    acceptance_ref: "verification/agent-runs/AG-057.md"
+    evidence_ref: "verification/agent-runs/AG-057.md"
+    depends_on: []
+    prompt: "Backend observability: idempotency metrics in health and weekly report"
     created_at: 2026-02-26
     updated_at: 2026-02-26

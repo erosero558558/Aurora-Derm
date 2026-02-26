@@ -27,7 +27,7 @@ class AnalyticsRetentionMetricsTest extends TestCase
         unset($GLOBALS['__TEST_RESPONSE']);
     }
 
-    public function testGetFunnelMetricsIncludesRetentionSnapshot(): void
+    public function testGetFunnelMetricsIncludesRetentionAndIdempotencySnapshots(): void
     {
         $context = [
             'store' => [
@@ -74,6 +74,7 @@ class AnalyticsRetentionMetricsTest extends TestCase
             $this->assertTrue((bool) ($payload['ok'] ?? false));
             $this->assertArrayHasKey('data', $payload);
             $this->assertArrayHasKey('retention', $payload['data']);
+            $this->assertArrayHasKey('idempotency', $payload['data']);
 
             $retention = $payload['data']['retention'];
             $this->assertSame(5, (int) ($retention['appointmentsTotal'] ?? -1));
@@ -90,6 +91,36 @@ class AnalyticsRetentionMetricsTest extends TestCase
             $this->assertSame(3, (int) ($retention['uniquePatients'] ?? -1));
             $this->assertSame(1, (int) ($retention['recurrentPatients'] ?? -1));
             $this->assertSame(33.3, (float) ($retention['recurrenceRatePct'] ?? -1));
+
+            $idempotency = $payload['data']['idempotency'];
+            $requestsWithKey = (int) ($idempotency['requestsWithKey'] ?? -1);
+            $newCount = (int) ($idempotency['new'] ?? -1);
+            $replayCount = (int) ($idempotency['replay'] ?? -1);
+            $conflictCount = (int) ($idempotency['conflict'] ?? -1);
+            $unknownCount = (int) ($idempotency['unknown'] ?? -1);
+            $conflictRatePct = (float) ($idempotency['conflictRatePct'] ?? -1);
+            $replayRatePct = (float) ($idempotency['replayRatePct'] ?? -1);
+
+            $this->assertGreaterThanOrEqual(0, $requestsWithKey);
+            $this->assertGreaterThanOrEqual(0, $newCount);
+            $this->assertGreaterThanOrEqual(0, $replayCount);
+            $this->assertGreaterThanOrEqual(0, $conflictCount);
+            $this->assertGreaterThanOrEqual(0, $unknownCount);
+            $this->assertSame($newCount + $replayCount + $conflictCount + $unknownCount, $requestsWithKey);
+            $this->assertGreaterThanOrEqual(0.0, $conflictRatePct);
+            $this->assertLessThanOrEqual(100.0, $conflictRatePct);
+            $this->assertGreaterThanOrEqual(0.0, $replayRatePct);
+            $this->assertLessThanOrEqual(100.0, $replayRatePct);
+
+            if ($requestsWithKey > 0) {
+                $expectedConflictRate = round(($conflictCount / $requestsWithKey) * 100, 2);
+                $expectedReplayRate = round(($replayCount / $requestsWithKey) * 100, 2);
+                $this->assertEquals($expectedConflictRate, $conflictRatePct);
+                $this->assertEquals($expectedReplayRate, $replayRatePct);
+            } else {
+                $this->assertSame(0.0, $conflictRatePct);
+                $this->assertSame(0.0, $replayRatePct);
+            }
         }
     }
 }

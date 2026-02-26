@@ -6,6 +6,7 @@ param(
     [int]$CoreP95MaxMs = 800,
     [int]$FigoPostP95MaxMs = 2500,
     [double]$NoShowRateWarnPct = 20,
+    [double]$IdempotencyConflictRateWarnPct = 5,
     [double]$RecurrenceRateMinWarnPct = 30,
     [double]$RecurrenceRateDropWarnPct = 15,
     [int]$RecurrenceWarnMinUniquePatients = 5,
@@ -88,6 +89,7 @@ function Get-WarningSeverity {
         'core_p95_alto_',
         'figo_post_p95_alto_',
         'no_show_rate_alta_',
+        'idempotency_conflict_rate_alta_',
         'recurrence_rate_',
         'conversion_rate_',
         'start_checkout_rate_'
@@ -115,6 +117,9 @@ function Get-WarningImpact {
         return 'chat'
     }
     if ($WarningCode.StartsWith('conversion_rate_') -or $WarningCode.StartsWith('start_checkout_rate_')) {
+        return 'conversion'
+    }
+    if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
         return 'conversion'
     }
     if ($WarningCode.StartsWith('recurrence_rate_') -or $WarningCode.StartsWith('no_show_rate_alta_')) {
@@ -147,6 +152,9 @@ function Get-WarningRunbookRef {
         return 'docs/MONITORING_SETUP.md'
     }
     if ($WarningCode.StartsWith('conversion_rate_') -or $WarningCode.StartsWith('start_checkout_rate_')) {
+        return 'docs/RUNBOOKS.md#31-monitoreo-diario'
+    }
+    if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
         return 'docs/RUNBOOKS.md#31-monitoreo-diario'
     }
     if ($WarningCode.StartsWith('recurrence_rate_') -or $WarningCode.StartsWith('no_show_rate_alta_')) {
@@ -490,6 +498,7 @@ $health = $healthResult.Json
 $summary = $null
 $events = @{}
 $retention = $null
+$idempotency = $null
 $metricsText = ''
 $funnelSource = 'funnel-metrics'
 
@@ -497,6 +506,7 @@ if ($funnelResult.Ok -and $null -ne $funnelResult.Json -and [bool]($funnelResult
     $funnel = $funnelResult.Json.data
     $summary = $funnel.summary
     $retention = Get-ObjectValueOrDefault -Object $funnel -Property 'retention' -DefaultValue $null
+    $idempotency = Get-ObjectValueOrDefault -Object $funnel -Property 'idempotency' -DefaultValue $null
     $eventsObj = $funnel.events
     if ($null -ne $eventsObj) {
         $events = @{}
@@ -606,6 +616,74 @@ if ($null -eq $retention) {
     }
 }
 
+if ($null -eq $idempotency) {
+    if ([string]::IsNullOrWhiteSpace($metricsText)) {
+        $metricsFallbackResult = Invoke-TextGet -Name 'metrics-idempotency' -Url "$base/api.php?resource=metrics"
+        if ($metricsFallbackResult.Ok) {
+            $metricsText = [string]$metricsFallbackResult.Body
+        }
+    }
+
+    $idempotencySeries = Parse-PrometheusCounterSeries -MetricsText $metricsText -MetricName 'booking_idempotency_events_total'
+    $idempotencyCounts = @{
+        new = 0
+        replay = 0
+        conflict = 0
+        unknown = 0
+    }
+    foreach ($row in $idempotencySeries) {
+        $labels = $row.Labels
+        $value = [int]([Math]::Round([double]$row.Value))
+        if ($value -le 0) {
+            continue
+        }
+        $outcome = 'unknown'
+        if ($null -ne $labels -and $labels.ContainsKey('outcome')) {
+            $outcome = [string]$labels['outcome']
+        }
+        if ([string]::IsNullOrWhiteSpace($outcome)) {
+            $outcome = 'unknown'
+        }
+        $outcome = $outcome.ToLowerInvariant()
+        if (-not $idempotencyCounts.ContainsKey($outcome)) {
+            $outcome = 'unknown'
+        }
+        $idempotencyCounts[$outcome] = [int]$idempotencyCounts[$outcome] + $value
+    }
+    $idempotencyRequestsWithKey = [int]$idempotencyCounts.new + [int]$idempotencyCounts.replay + [int]$idempotencyCounts.conflict + [int]$idempotencyCounts.unknown
+    $idempotencyConflictRatePct = if ($idempotencyRequestsWithKey -gt 0) {
+        [Math]::Round(([double]$idempotencyCounts.conflict / [double]$idempotencyRequestsWithKey) * 100, 2)
+    } else {
+        0.0
+    }
+    $idempotencyReplayRatePct = if ($idempotencyRequestsWithKey -gt 0) {
+        [Math]::Round(([double]$idempotencyCounts.replay / [double]$idempotencyRequestsWithKey) * 100, 2)
+    } else {
+        0.0
+    }
+    $idempotency = [pscustomobject]@{
+        requestsWithKey = $idempotencyRequestsWithKey
+        new = [int]$idempotencyCounts.new
+        replay = [int]$idempotencyCounts.replay
+        conflict = [int]$idempotencyCounts.conflict
+        unknown = [int]$idempotencyCounts.unknown
+        conflictRatePct = $idempotencyConflictRatePct
+        replayRatePct = $idempotencyReplayRatePct
+    }
+}
+
+if ($null -eq $idempotency) {
+    $idempotency = [pscustomobject]@{
+        requestsWithKey = 0
+        new = 0
+        replay = 0
+        conflict = 0
+        unknown = 0
+        conflictRatePct = 0.0
+        replayRatePct = 0.0
+    }
+}
+
 if ($null -eq $retention) {
     $retention = [pscustomobject]@{
         appointmentsTotal = 0
@@ -698,6 +776,13 @@ $retentionCompletionRatePct = [double](Get-ObjectValueOrDefault -Object $retenti
 $retentionUniquePatients = [int](Get-ObjectValueOrDefault -Object $retention -Property 'uniquePatients' -DefaultValue 0)
 $retentionRecurrentPatients = [int](Get-ObjectValueOrDefault -Object $retention -Property 'recurrentPatients' -DefaultValue 0)
 $retentionRecurrenceRatePct = [double](Get-ObjectValueOrDefault -Object $retention -Property 'recurrenceRatePct' -DefaultValue 0)
+$idempotencyRequestsWithKey = [int](Get-ObjectValueOrDefault -Object $idempotency -Property 'requestsWithKey' -DefaultValue 0)
+$idempotencyNew = [int](Get-ObjectValueOrDefault -Object $idempotency -Property 'new' -DefaultValue 0)
+$idempotencyReplay = [int](Get-ObjectValueOrDefault -Object $idempotency -Property 'replay' -DefaultValue 0)
+$idempotencyConflict = [int](Get-ObjectValueOrDefault -Object $idempotency -Property 'conflict' -DefaultValue 0)
+$idempotencyUnknown = [int](Get-ObjectValueOrDefault -Object $idempotency -Property 'unknown' -DefaultValue 0)
+$idempotencyConflictRatePct = [double](Get-ObjectValueOrDefault -Object $idempotency -Property 'conflictRatePct' -DefaultValue 0)
+$idempotencyReplayRatePct = [double](Get-ObjectValueOrDefault -Object $idempotency -Property 'replayRatePct' -DefaultValue 0)
 
 $warnings = New-Object System.Collections.Generic.List[string]
 if ($errorRatePct -ge 2.0) {
@@ -729,6 +814,10 @@ if (-not $sentryBackendConfigured) {
 }
 if (-not $sentryFrontendConfigured) {
     $warnings.Add('sentry_frontend_no_configurado')
+}
+$idempotencySampleSufficient = $idempotencyRequestsWithKey -ge 10
+if ($idempotencySampleSufficient -and $idempotencyConflictRatePct -ge $IdempotencyConflictRateWarnPct) {
+    $warnings.Add("idempotency_conflict_rate_alta_${idempotencyConflictRatePct}pct")
 }
 
 $reportGeneratedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
@@ -1054,6 +1143,18 @@ $markdown = @"
 - retention_baseline_recurrence_rate_pct: $retentionBaselineRecurrenceLabel
 - retention_trend_ready: $retentionTrendReady
 
+## Idempotency
+
+- requests_with_key: $idempotencyRequestsWithKey
+- new: $idempotencyNew
+- replay: $idempotencyReplay
+- conflict: $idempotencyConflict
+- unknown: $idempotencyUnknown
+- replay_rate_pct: $idempotencyReplayRatePct
+- conflict_rate_pct: $idempotencyConflictRatePct
+- conflict_warning_sample_sufficient: $idempotencySampleSufficient (requests_with_key >= 10)
+- conflict_warn_pct_threshold: $IdempotencyConflictRateWarnPct
+
 ## Latency Bench
 
 - core_p95_max_ms: $coreP95Max (target <= $CoreP95MaxMs)
@@ -1165,6 +1266,17 @@ $reportPayload = [ordered]@{
         recurrenceMinWarnPct = [Math]::Round([double]$RecurrenceRateMinWarnPct, 2)
         recurrenceDropWarnPct = [Math]::Round([double]$RecurrenceRateDropWarnPct, 2)
     }
+    idempotency = [ordered]@{
+        requestsWithKey = $idempotencyRequestsWithKey
+        new = $idempotencyNew
+        replay = $idempotencyReplay
+        conflict = $idempotencyConflict
+        unknown = $idempotencyUnknown
+        conflictRatePct = [Math]::Round([double]$idempotencyConflictRatePct, 2)
+        replayRatePct = [Math]::Round([double]$idempotencyReplayRatePct, 2)
+        conflictWarningSampleSufficient = [bool]$idempotencySampleSufficient
+        conflictWarnPctThreshold = [Math]::Round([double]$IdempotencyConflictRateWarnPct, 2)
+    }
     retentionTrend = [ordered]@{
         previousReportGeneratedAt = $previousReportDate
         noShowRateDeltaPct = $retentionNoShowRateDeltaPct
@@ -1223,6 +1335,7 @@ Write-Host "Reporte markdown: $reportMdPath"
 Write-Host "Reporte json: $reportJsonPath"
 Write-Host "start_checkout_rate_pct=$startCheckoutRatePct booking_confirmed=$bookingConfirmed booking_confirmed_rate_pct=$bookingConfirmedRatePct error_rate_pct=$errorRatePct core_p95_max_ms=$coreP95Max figo_post_p95_ms=$figoPostP95"
 Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurrence_rate_pct=$retentionRecurrenceRatePct sentry_backend=$sentryBackendConfigured sentry_frontend=$sentryFrontendConfigured"
+Write-Host "idempotency_requests_with_key=$idempotencyRequestsWithKey idempotency_conflict_rate_pct=$idempotencyConflictRatePct idempotency_replay_rate_pct=$idempotencyReplayRatePct"
 Write-Host "release_decision=$releaseDecision release_reason=$releaseReason"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow

@@ -111,6 +111,7 @@ class AppointmentController
                             $storedFingerprint !== '' &&
                             !hash_equals($storedFingerprint, $incomingFingerprint)
                         ) {
+                            self::emitIdempotencyObservability('conflict', $idempotencyKey, $incomingFingerprint, $existing);
                             return [
                                 'ok' => false,
                                 'error' => 'La clave de idempotencia ya fue usada con otra reserva',
@@ -119,6 +120,7 @@ class AppointmentController
                             ];
                         }
 
+                        self::emitIdempotencyObservability('replay', $idempotencyKey, $incomingFingerprint, $existing);
                         return [
                             'ok' => true,
                             'store' => $freshStore,
@@ -210,6 +212,10 @@ class AppointmentController
         if (!isset($appointment['slotDurationMin']) || (int) $appointment['slotDurationMin'] <= 0) {
             $calendarBooking = CalendarBookingService::fromEnv();
             $appointment['slotDurationMin'] = $calendarBooking->getDurationMin((string) ($appointment['service'] ?? 'consulta'));
+        }
+        if ($idempotencyKey !== '' && !$idempotentReplay) {
+            $fingerprint = trim((string) ($appointment['idempotencyFingerprint'] ?? ''));
+            self::emitIdempotencyObservability('new', $idempotencyKey, $fingerprint, $appointment);
         }
 
         $emailSent = false;
@@ -617,6 +623,38 @@ class AppointmentController
             return $appointment;
         }
         return null;
+    }
+
+    private static function emitIdempotencyObservability(
+        string $outcome,
+        string $idempotencyKey,
+        string $fingerprint,
+        array $appointment = []
+    ): void {
+        $normalizedOutcome = strtolower(trim($outcome));
+        if (!in_array($normalizedOutcome, ['new', 'replay', 'conflict'], true)) {
+            $normalizedOutcome = 'unknown';
+        }
+
+        if (class_exists('Metrics')) {
+            Metrics::increment('booking_idempotency_events_total', [
+                'outcome' => $normalizedOutcome,
+            ]);
+        }
+
+        if (function_exists('audit_log_event')) {
+            $keyHash = hash('sha256', $idempotencyKey);
+            audit_log_event('booking.idempotency.' . $normalizedOutcome, [
+                'outcome' => $normalizedOutcome,
+                'idempotencyKeyHash' => $keyHash,
+                'idempotencyFingerprint' => $fingerprint !== '' ? substr($fingerprint, 0, 24) : '',
+                'appointmentId' => (int) ($appointment['id'] ?? 0),
+                'doctor' => (string) ($appointment['doctor'] ?? ''),
+                'service' => (string) ($appointment['service'] ?? ''),
+                'date' => (string) ($appointment['date'] ?? ''),
+                'time' => (string) ($appointment['time'] ?? ''),
+            ]);
+        }
     }
 
     private static function inferErrorCode(int $statusCode, string $errorMessage): string

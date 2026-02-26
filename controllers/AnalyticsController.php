@@ -195,6 +195,7 @@ class AnalyticsController
         $abandonRate = $startCheckout > 0 ? round(($checkoutAbandon / $startCheckout) * 100, 1) : 0.0;
         $store = isset($context['store']) && is_array($context['store']) ? $context['store'] : [];
         $retention = self::buildRetentionSnapshot($store);
+        $idempotency = self::buildIdempotencySnapshot($rawMetrics);
 
         $toList = static function (array $assoc): array {
             $rows = [];
@@ -226,6 +227,7 @@ class AnalyticsController
             'bookingStepBreakdown' => $toList($bookingStepBreakdown),
             'errorCodeBreakdown' => $toList($errorCodeBreakdown),
             'retention' => $retention,
+            'idempotency' => $idempotency,
             'generatedAt' => gmdate('c')
         ];
     }
@@ -383,6 +385,51 @@ class AnalyticsController
                 'reason' => self::normalizeLabel($labels['reason'] ?? 'unknown'),
             ]);
         }
+    }
+
+    /**
+     * Build idempotency runtime snapshot from metrics counters.
+     *
+     * @return array<string,int|float>
+     */
+    private static function buildIdempotencySnapshot(string $rawMetrics): array
+    {
+        $series = self::parsePrometheusCounterSeries($rawMetrics, 'booking_idempotency_events_total');
+        $counts = [
+            'new' => 0,
+            'replay' => 0,
+            'conflict' => 0,
+            'unknown' => 0,
+        ];
+
+        foreach ($series as $row) {
+            $labels = is_array($row['labels'] ?? null) ? $row['labels'] : [];
+            $value = (int) round((float) ($row['value'] ?? 0));
+            if ($value <= 0) {
+                continue;
+            }
+
+            $outcome = self::normalizeLabel($labels['outcome'] ?? 'unknown');
+            if (!isset($counts[$outcome])) {
+                $counts['unknown'] += $value;
+                continue;
+            }
+            $counts[$outcome] += $value;
+        }
+
+        $requestsWithKey = $counts['new'] + $counts['replay'] + $counts['conflict'] + $counts['unknown'];
+        $conflictRatePct = $requestsWithKey > 0 ? round(($counts['conflict'] / $requestsWithKey) * 100, 2) : 0.0;
+        $replayRatePct = $requestsWithKey > 0 ? round(($counts['replay'] / $requestsWithKey) * 100, 2) : 0.0;
+
+        return [
+            'requestsWithKey' => $requestsWithKey,
+            'new' => $counts['new'],
+            'replay' => $counts['replay'],
+            'conflict' => $counts['conflict'],
+            'unknown' => $counts['unknown'],
+            'conflictRatePct' => $conflictRatePct,
+            'replayRatePct' => $replayRatePct,
+        ];
     }
 
     /**

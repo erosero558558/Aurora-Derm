@@ -59,6 +59,7 @@ class HealthController
         $sentryBackendConfigured = trim((string) getenv('PIELARMONIA_SENTRY_DSN')) !== '';
         $sentryFrontendConfigured = trim((string) getenv('PIELARMONIA_SENTRY_DSN_PUBLIC')) !== '';
         $redisStatus = getenv('PIELARMONIA_REDIS_HOST') ? 'configured' : 'disabled';
+        $idempotencySnapshot = self::collectIdempotencySnapshot();
         $store = isset($context['store']) && is_array($context['store']) ? $context['store'] : read_store();
         $appointments = isset($store['appointments']) && is_array($store['appointments']) ? $store['appointments'] : [];
         $confirmedAppointments = 0;
@@ -128,6 +129,8 @@ class HealthController
             'calendarTokenHealthy' => $calendarTokenHealthy,
             'sentryBackendConfigured' => $sentryBackendConfigured,
             'sentryFrontendConfigured' => $sentryFrontendConfigured,
+            'idempotencyRequestsWithKey' => (int) ($idempotencySnapshot['requestsWithKey'] ?? 0),
+            'idempotencyConflictRatePct' => (float) ($idempotencySnapshot['conflictRatePct'] ?? 0.0),
         ]);
         json_response([
             'ok' => true,
@@ -156,6 +159,7 @@ class HealthController
             'calendarLastErrorReason' => $calendarLastErrorReason,
             'sentryBackendConfigured' => $sentryBackendConfigured,
             'sentryFrontendConfigured' => $sentryFrontendConfigured,
+            'idempotency' => $idempotencySnapshot,
             'checks' => [
                 'storage' => [
                     'ready' => $storageReady,
@@ -185,6 +189,7 @@ class HealthController
                     'sentryBackendConfigured' => $sentryBackendConfigured,
                     'sentryFrontendConfigured' => $sentryFrontendConfigured,
                 ],
+                'idempotency' => $idempotencySnapshot,
                 'backup' => $backupCheck,
                 'storeCounts' => $storeCounts
             ],
@@ -335,6 +340,87 @@ class HealthController
         }
 
         return '';
+    }
+
+    /**
+     * Collect idempotency event counters from Metrics export.
+     *
+     * @return array<string,int|float|bool>
+     */
+    private static function collectIdempotencySnapshot(): array
+    {
+        $default = [
+            'available' => false,
+            'requestsWithKey' => 0,
+            'new' => 0,
+            'replay' => 0,
+            'conflict' => 0,
+            'unknown' => 0,
+            'conflictRatePct' => 0.0,
+            'replayRatePct' => 0.0,
+        ];
+
+        if (!class_exists('Metrics')) {
+            return $default;
+        }
+
+        $raw = Metrics::export();
+        if (!is_string($raw) || trim($raw) === '') {
+            return $default;
+        }
+
+        $counts = [
+            'new' => 0,
+            'replay' => 0,
+            'conflict' => 0,
+            'unknown' => 0,
+        ];
+
+        $pattern = '/^booking_idempotency_events_total(?:\{([^}]*)\})?\s+([+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?)$/';
+        $lines = preg_split('/\R/', $raw) ?: [];
+        foreach ($lines as $line) {
+            $line = trim((string) $line);
+            if ($line === '' || $line[0] === '#') {
+                continue;
+            }
+            if (preg_match($pattern, $line, $match) !== 1) {
+                continue;
+            }
+
+            $labelsRaw = isset($match[1]) ? (string) $match[1] : '';
+            $valueRaw = isset($match[2]) ? (string) $match[2] : '0';
+            $value = is_numeric($valueRaw) ? (int) round((float) $valueRaw) : 0;
+            if ($value <= 0) {
+                continue;
+            }
+
+            $outcome = 'unknown';
+            if ($labelsRaw !== '' && preg_match('/outcome="([^"]+)"/', $labelsRaw, $labelMatch) === 1) {
+                $candidate = strtolower(trim((string) ($labelMatch[1] ?? '')));
+                if ($candidate !== '') {
+                    $outcome = $candidate;
+                }
+            }
+            if (!isset($counts[$outcome])) {
+                $outcome = 'unknown';
+            }
+            $counts[$outcome] += $value;
+        }
+
+        $requestsWithKey = $counts['new'] + $counts['replay'] + $counts['conflict'] + $counts['unknown'];
+        $conflictRatePct = $requestsWithKey > 0 ? round(($counts['conflict'] / $requestsWithKey) * 100, 2) : 0.0;
+        $replayRatePct = $requestsWithKey > 0 ? round(($counts['replay'] / $requestsWithKey) * 100, 2) : 0.0;
+
+        return [
+            'available' => true,
+            'requestsWithKey' => $requestsWithKey,
+            'new' => $counts['new'],
+            'replay' => $counts['replay'],
+            'conflict' => $counts['conflict'],
+            'unknown' => $counts['unknown'],
+            'conflictRatePct' => $conflictRatePct,
+            'replayRatePct' => $replayRatePct,
+        ];
     }
 
     private static function is_figo_recursive_config(string $endpoint): bool
