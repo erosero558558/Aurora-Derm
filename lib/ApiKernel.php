@@ -115,48 +115,7 @@ class ApiKernel
 
         // Load Store
         $storeReadStart = microtime(true);
-        $storeOptions = [];
-
-        // Optimize store loading for specific endpoints
-        if ($resource === 'booked-slots') {
-            $date = isset($_GET['date']) ? trim((string)$_GET['date']) : '';
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-                $storeOptions = [
-                    'tables' => ['appointments', 'availability'],
-                    'date_filter' => [
-                        'start' => $date,
-                        'end' => $date
-                    ]
-                ];
-            }
-        } elseif ($resource === 'availability') {
-             // Availability usually requests a range, but logic is complex (default 21 days).
-             // We can optimize if dateFrom is provided.
-             $dateFrom = isset($_GET['dateFrom']) ? trim((string)$_GET['dateFrom']) : '';
-             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
-                 $days = isset($_GET['days']) ? (int)$_GET['days'] : 21;
-                 $days = max(1, min($days, 90));
-
-                 // Calculate end date
-                 try {
-                     $dt = new DateTime($dateFrom);
-                     $dt->modify("+$days days");
-                     $dateTo = $dt->format('Y-m-d');
-
-                     $storeOptions = [
-                        'tables' => ['appointments', 'availability'],
-                        'date_filter' => [
-                            'start' => $dateFrom,
-                            'end' => $dateTo
-                        ]
-                     ];
-                 } catch (Throwable $e) {
-                     // Invalid date, fallback to full load
-                 }
-             }
-        }
-
-        $store = read_store($storeOptions);
+        $store = read_store();
         $storeReadDuration = microtime(true) - $storeReadStart;
 
         if (class_exists('Metrics')) {
