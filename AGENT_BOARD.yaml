@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 138
+  revision: 140
   updated_at: 2026-02-26
 
 tasks:
@@ -2439,5 +2439,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-063.md"
     depends_on: []
     prompt: "C4 ops: documentar variables WEEKLY_KPI y protocolo de ajuste"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-064
+    title: "C4 ops: testear contrato de umbrales weekly-kpi workflow"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T04:28:03.497Z"
+    risk: medium
+    scope: .github
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js", "package.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T04:28:03.497Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "C4 ops: testear contrato de umbrales weekly-kpi workflow"
+    acceptance_ref: "verification/agent-runs/AG-064.md"
+    evidence_ref: "verification/agent-runs/AG-064.md"
+    depends_on: []
+    prompt: "C4 ops: testear contrato de umbrales weekly-kpi workflow"
     created_at: 2026-02-26
     updated_at: 2026-02-26
