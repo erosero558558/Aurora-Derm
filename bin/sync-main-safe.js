@@ -10,11 +10,14 @@ const DEFAULT_OPTIONS = {
     branch: 'main',
     boardPath: 'AGENT_BOARD.yaml',
     autoStash: true,
+    autoDiscardDerivedQueueNoise: true,
     push: true,
     maxSyncAttempts: 3,
     dryRun: false,
     json: false,
 };
+
+const DERIVED_QUEUE_FILES = new Set(['jules_tasks.md', 'kimi_tasks.md']);
 
 function parseArgs(argv = []) {
     const opts = { ...DEFAULT_OPTIONS };
@@ -38,6 +41,10 @@ function parseArgs(argv = []) {
         }
         if (arg === '--no-stash') {
             opts.autoStash = false;
+            continue;
+        }
+        if (arg === '--no-auto-discard-derived-queue-noise') {
+            opts.autoDiscardDerivedQueueNoise = false;
             continue;
         }
         if (arg === '--no-push') {
@@ -107,6 +114,30 @@ function parseLines(value) {
         .filter(Boolean);
 }
 
+function parseDirtyFiles(statusOutput) {
+    const files = [];
+    for (const rawLine of String(statusOutput || '').split(/\r?\n/)) {
+        const line = rawLine.replace(/\r$/, '');
+        if (!line.trim()) continue;
+        const pathPart = line.length > 3 ? line.slice(3).trim() : '';
+        if (!pathPart) continue;
+        const normalized = normalizePath(pathPart);
+        if (normalized.includes(' -> ')) {
+            const parts = normalized.split(' -> ');
+            files.push(parts[parts.length - 1]);
+        } else {
+            files.push(normalized);
+        }
+    }
+    return files;
+}
+
+function shouldDiscardDerivedQueueNoise(statusOutput) {
+    const files = parseDirtyFiles(statusOutput);
+    if (files.length === 0) return false;
+    return files.every((file) => DERIVED_QUEUE_FILES.has(file));
+}
+
 function getUnmergedFiles(runner, options) {
     const result = runner(
         'git',
@@ -115,6 +146,27 @@ function getUnmergedFiles(runner, options) {
     );
     if (!result.ok) return [];
     return parseLines(result.stdout);
+}
+
+function discardDerivedQueueNoise(runner, options, statusOutput) {
+    const files = parseDirtyFiles(statusOutput).filter((file) =>
+        DERIVED_QUEUE_FILES.has(file)
+    );
+    if (files.length === 0) {
+        return {
+            ok: true,
+            code: 0,
+            stdout: '',
+            stderr: '',
+            command: 'git restore --worktree --source=HEAD -- <none>',
+            dryRun: Boolean(options.dryRun),
+        };
+    }
+    return runner(
+        'git',
+        ['restore', '--worktree', '--source=HEAD', '--', ...files],
+        options
+    );
 }
 
 function normalizePath(pathValue) {
@@ -289,7 +341,47 @@ function run(argv = process.argv.slice(2), deps = {}) {
             );
         }
 
-        const isDirty = parseLines(statusResult.stdout).length > 0;
+        let currentStatus = statusResult;
+        let isDirty = parseLines(currentStatus.stdout).length > 0;
+
+        if (
+            isDirty &&
+            options.autoDiscardDerivedQueueNoise &&
+            shouldDiscardDerivedQueueNoise(currentStatus.stdout)
+        ) {
+            const discardResult = discardDerivedQueueNoise(
+                runner,
+                options,
+                currentStatus.stdout
+            );
+            result.steps.push({
+                name: 'discard_derived_queue_noise',
+                ...discardResult,
+            });
+            if (!discardResult.ok) {
+                throw new Error(
+                    `git restore de colas derivadas fallo: ${discardResult.stderr || discardResult.stdout}`
+                );
+            }
+
+            const statusAfterDiscard = runner(
+                'git',
+                ['status', '--porcelain'],
+                options
+            );
+            result.steps.push({
+                name: 'status_after_discard',
+                ...statusAfterDiscard,
+            });
+            if (!statusAfterDiscard.ok) {
+                throw new Error(
+                    `git status post-discard fallo: ${statusAfterDiscard.stderr || statusAfterDiscard.stdout}`
+                );
+            }
+            currentStatus = statusAfterDiscard;
+            isDirty = parseLines(currentStatus.stdout).length > 0;
+        }
+
         if (isDirty && options.autoStash) {
             const stashName = `tmp-sync-main-safe-${new Date().toISOString()}`;
             const stashResult = runner(
@@ -400,6 +492,9 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     parseLines,
+    parseDirtyFiles,
+    shouldDiscardDerivedQueueNoise,
+    discardDerivedQueueNoise,
     normalizePath,
     isOnlyBoardConflict,
     isRetryablePushFailure,

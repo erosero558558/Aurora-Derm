@@ -7,6 +7,8 @@ const assert = require('node:assert/strict');
 const {
     parseArgs,
     parseLines,
+    parseDirtyFiles,
+    shouldDiscardDerivedQueueNoise,
     normalizePath,
     isOnlyBoardConflict,
     isRetryablePushFailure,
@@ -19,6 +21,7 @@ test('sync-main-safe parseArgs aplica defaults', () => {
     assert.equal(opts.branch, 'main');
     assert.equal(opts.boardPath, 'AGENT_BOARD.yaml');
     assert.equal(opts.autoStash, true);
+    assert.equal(opts.autoDiscardDerivedQueueNoise, true);
     assert.equal(opts.push, true);
     assert.equal(opts.maxSyncAttempts, 3);
     assert.equal(opts.dryRun, false);
@@ -34,6 +37,7 @@ test('sync-main-safe parseArgs reconoce flags principales', () => {
         '--board',
         'AGENT_BOARD.yaml',
         '--no-stash',
+        '--no-auto-discard-derived-queue-noise',
         '--no-push',
         '--max-sync-attempts',
         '5',
@@ -44,6 +48,7 @@ test('sync-main-safe parseArgs reconoce flags principales', () => {
     assert.equal(opts.branch, 'release');
     assert.equal(opts.boardPath, 'AGENT_BOARD.yaml');
     assert.equal(opts.autoStash, false);
+    assert.equal(opts.autoDiscardDerivedQueueNoise, false);
     assert.equal(opts.push, false);
     assert.equal(opts.maxSyncAttempts, 5);
     assert.equal(opts.dryRun, true);
@@ -65,6 +70,23 @@ test('sync-main-safe detecta conflicto exclusivo de AGENT_BOARD', () => {
 test('sync-main-safe normaliza paths en formato cross-platform', () => {
     assert.equal(normalizePath('AGENT_BOARD.yaml'), 'agent_board.yaml');
     assert.equal(normalizePath('a\\b\\C.md'), 'a/b/c.md');
+});
+
+test('sync-main-safe parsea archivos sucios desde git status --porcelain', () => {
+    assert.deepEqual(parseDirtyFiles(' M JULES_TASKS.md\n'), [
+        'jules_tasks.md',
+    ]);
+    assert.deepEqual(parseDirtyFiles('R  old.md -> KIMI_TASKS.md\n'), [
+        'kimi_tasks.md',
+    ]);
+});
+
+test('sync-main-safe detecta ruido derivado en colas jules/kimi', () => {
+    assert.equal(shouldDiscardDerivedQueueNoise(' M JULES_TASKS.md\n'), true);
+    assert.equal(
+        shouldDiscardDerivedQueueNoise(' M JULES_TASKS.md\n M foo.txt\n'),
+        false
+    );
 });
 
 test('sync-main-safe detecta push retryable por fetch first/non-fast-forward', () => {
@@ -135,5 +157,62 @@ test('sync-main-safe reintenta fetch/rebase/push tras rechazo retryable', () => 
     assert.equal(
         calls.filter((entry) => entry.startsWith('git fetch ')).length >= 2,
         true
+    );
+});
+
+test('sync-main-safe descarta ruido de colas derivadas antes de sincronizar', () => {
+    const calls = [];
+    let statusCount = 0;
+
+    const fakeRunner = (program, args) => {
+        const command = `${program} ${args.join(' ')}`;
+        calls.push(command);
+
+        if (program !== 'git') {
+            return { ok: true, code: 0, stdout: '', stderr: '', command };
+        }
+
+        if (args[0] === 'status') {
+            statusCount += 1;
+            return {
+                ok: true,
+                code: 0,
+                stdout: statusCount === 1 ? ' M JULES_TASKS.md\n' : '',
+                stderr: '',
+                command,
+            };
+        }
+        if (args[0] === 'restore') {
+            return { ok: true, code: 0, stdout: '', stderr: '', command };
+        }
+        if (args[0] === 'fetch') {
+            return { ok: true, code: 0, stdout: '', stderr: '', command };
+        }
+        if (args[0] === 'rebase') {
+            return { ok: true, code: 0, stdout: '', stderr: '', command };
+        }
+        if (args[0] === 'push') {
+            return { ok: true, code: 0, stdout: '', stderr: '', command };
+        }
+        if (args[0] === 'stash') {
+            return { ok: true, code: 0, stdout: '', stderr: '', command };
+        }
+
+        return { ok: true, code: 0, stdout: '', stderr: '', command };
+    };
+
+    const code = run(['--json'], { runner: fakeRunner });
+    assert.equal(code, 0);
+    assert.equal(
+        calls.some((entry) =>
+            entry.startsWith(
+                'git restore --worktree --source=HEAD -- jules_tasks.md'
+            )
+        ),
+        true
+    );
+    assert.equal(
+        calls.some((entry) => entry.startsWith('git stash push')),
+        false
     );
 });
