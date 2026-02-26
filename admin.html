@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260226-theme1" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260226-nav2" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -219,6 +219,78 @@
                             <span>Menu</span>
                         </button>
                         <h2 id="pageTitle">Dashboard</h2>
+                        <nav
+                            class="admin-quick-nav"
+                            data-qa="admin-quick-nav"
+                            aria-label="Navegacion rapida de secciones"
+                        >
+                            <button
+                                type="button"
+                                class="admin-quick-nav-item active"
+                                data-section="dashboard"
+                                aria-current="page"
+                                aria-pressed="true"
+                                title="Ir a dashboard (Alt+Shift+1)"
+                            >
+                                <i class="fas fa-chart-line"></i>
+                                <span>Dashboard</span>
+                                <span class="admin-quick-nav-shortcut"
+                                    >Alt+Shift+1</span
+                                >
+                            </button>
+                            <button
+                                type="button"
+                                class="admin-quick-nav-item"
+                                data-section="appointments"
+                                aria-pressed="false"
+                                title="Ir a citas (Alt+Shift+2)"
+                            >
+                                <i class="fas fa-calendar-check"></i>
+                                <span>Citas</span>
+                                <span class="admin-quick-nav-shortcut"
+                                    >Alt+Shift+2</span
+                                >
+                            </button>
+                            <button
+                                type="button"
+                                class="admin-quick-nav-item"
+                                data-section="callbacks"
+                                aria-pressed="false"
+                                title="Ir a callbacks (Alt+Shift+3)"
+                            >
+                                <i class="fas fa-phone-alt"></i>
+                                <span>Callbacks</span>
+                                <span class="admin-quick-nav-shortcut"
+                                    >Alt+Shift+3</span
+                                >
+                            </button>
+                            <button
+                                type="button"
+                                class="admin-quick-nav-item"
+                                data-section="reviews"
+                                aria-pressed="false"
+                                title="Ir a reseñas (Alt+Shift+4)"
+                            >
+                                <i class="fas fa-star"></i>
+                                <span>Reseñas</span>
+                                <span class="admin-quick-nav-shortcut"
+                                    >Alt+Shift+4</span
+                                >
+                            </button>
+                            <button
+                                type="button"
+                                class="admin-quick-nav-item"
+                                data-section="availability"
+                                aria-pressed="false"
+                                title="Ir a disponibilidad (Alt+Shift+5)"
+                            >
+                                <i class="fas fa-clock"></i>
+                                <span>Disponibilidad</span>
+                                <span class="admin-quick-nav-shortcut"
+                                    >Alt+Shift+5</span
+                                >
+                            </button>
+                        </nav>
                     </div>
                     <div class="header-actions">
                         <div
@@ -960,6 +1032,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260226-theme1" type="module"></script>
+        <script src="admin.js?v=admin-20260226-nav2" type="module"></script>
     </body>
 </html>

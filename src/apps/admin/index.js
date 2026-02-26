@@ -46,6 +46,18 @@ import {
 } from './modules/availability.js';
 
 const ADMIN_NAV_COMPACT_BREAKPOINT = 1024;
+const ADMIN_SECTION_SHORTCUTS = new Map([
+    ['digit1', 'dashboard'],
+    ['digit2', 'appointments'],
+    ['digit3', 'callbacks'],
+    ['digit4', 'reviews'],
+    ['digit5', 'availability'],
+    ['1', 'dashboard'],
+    ['2', 'appointments'],
+    ['3', 'callbacks'],
+    ['4', 'reviews'],
+    ['5', 'availability'],
+]);
 const SIDEBAR_FOCUSABLE_SELECTOR = [
     'a[href]',
     'button:not([disabled])',
@@ -53,7 +65,11 @@ const SIDEBAR_FOCUSABLE_SELECTOR = [
 ].join(',');
 
 function getNavItems() {
-    return Array.from(document.querySelectorAll('.nav-item[data-section]'));
+    return Array.from(
+        document.querySelectorAll(
+            '.nav-item[data-section], .admin-quick-nav-item[data-section]'
+        )
+    );
 }
 
 function getSectionFromHash() {
@@ -89,7 +105,18 @@ function setNavActive(section) {
         } else {
             item.removeAttribute('aria-current');
         }
+        if (item instanceof HTMLButtonElement) {
+            item.setAttribute('aria-pressed', String(isActive));
+        }
     });
+}
+
+function isTypingContextTarget(target) {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    return Boolean(
+        target.closest('input, textarea, select, [contenteditable="true"]')
+    );
 }
 
 function syncHash(section) {
@@ -230,6 +257,29 @@ function closeSidebar({ restoreFocus = false } = {}) {
     if (restoreFocus && wasOpen && toggleBtn) {
         toggleBtn.focus();
     }
+}
+
+function handleAdminKeyboardShortcuts(event) {
+    if (!event.altKey || !event.shiftKey) return;
+    if (isTypingContextTarget(event.target)) return;
+
+    const dashboard = document.getElementById('adminDashboard');
+    if (!dashboard || dashboard.classList.contains('is-hidden')) return;
+
+    const key = String(event.key || '').toLowerCase();
+    const code = String(event.code || '').toLowerCase();
+    if (key === 'm' || code === 'keym') {
+        event.preventDefault();
+        setSidebarOpen(!isSidebarOpen());
+        return;
+    }
+
+    const targetSection =
+        ADMIN_SECTION_SHORTCUTS.get(code) || ADMIN_SECTION_SHORTCUTS.get(key);
+    if (!targetSection) return;
+
+    event.preventDefault();
+    void navigateToSection(targetSection);
 }
 
 function focusSection(section, { preventScroll = true } = {}) {
@@ -727,8 +777,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('keydown', (event) => {
         trapSidebarFocus(event);
 
-        if (event.key !== 'Escape') return;
-        closeSidebar({ restoreFocus: true });
+        if (event.key === 'Escape') {
+            closeSidebar({ restoreFocus: true });
+            return;
+        }
+
+        handleAdminKeyboardShortcuts(event);
     });
     window.addEventListener('resize', () => {
         if (!isCompactAdminViewport()) {

@@ -110,7 +110,7 @@ function k(e) {
     const t = Number(e);
     return !Number.isFinite(t) || t < 0 ? 0 : t;
 }
-function B(e) {
+function L(e) {
     return (
         {
             consulta: 'Consulta Dermatológica',
@@ -123,7 +123,7 @@ function B(e) {
         }[e] || e
     );
 }
-function L(e) {
+function B(e) {
     return (
         {
             rosero: 'Dr. Rosero',
@@ -207,12 +207,12 @@ function T(e, t) {
         return t;
     }
 }
-function N(e, t) {
+function M(e, t) {
     try {
         localStorage.setItem(e, JSON.stringify(t));
     } catch (e) {}
 }
-async function M() {
+async function N() {
     try {
         const [e, t] = await Promise.all([
                 h('data'),
@@ -220,18 +220,18 @@ async function M() {
             ]),
             n = e.data || {},
             a = Array.isArray(n.appointments) ? n.appointments : [];
-        (c(a), N('appointments', a));
+        (c(a), M('appointments', a));
         const o = Array.isArray(n.callbacks)
             ? n.callbacks.map((e) => ({ ...e, status: D(e.status) }))
             : [];
-        (l(o), N('callbacks', o));
+        (l(o), M('callbacks', o));
         const i = Array.isArray(n.reviews) ? n.reviews : [];
-        (d(i), N('reviews', i));
+        (d(i), M('reviews', i));
         const r =
             n.availability && 'object' == typeof n.availability
                 ? n.availability
                 : {};
-        (u(r), N('availability', r));
+        (u(r), M('availability', r));
         const s =
             n.availabilityMeta && 'object' == typeof n.availabilityMeta
                 ? n.availabilityMeta
@@ -242,7 +242,7 @@ async function M() {
                   };
         if (
             (m(s),
-            N('availability-meta', s),
+            M('availability-meta', s),
             n.funnelMetrics && 'object' == typeof n.funnelMetrics)
         )
             p(n.funnelMetrics);
@@ -284,7 +284,7 @@ async function M() {
                       },
                   });
         }
-        t && t.ok ? (f(t), N('health-status', t)) : f(null);
+        t && t.ok ? (f(t), M('health-status', t)) : f(null);
     } catch (e) {
         (c(T('appointments', [])),
             l(T('callbacks', []).map((e) => ({ ...e, status: D(e.status) }))),
@@ -509,7 +509,7 @@ function O() {
         : (p.innerHTML = o
               .map(
                   (e) =>
-                      `\n            <div class="upcoming-item">\n                <div class="upcoming-time">\n                    <span class="time">${v(e.time)}</span>\n                </div>\n                <div class="upcoming-info">\n                    <span class="name">${v(e.name)}</span>\n                    <span class="service">${v(B(e.service))}</span>\n                </div>\n                <div class="upcoming-actions">\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(String(e.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                </div>\n            </div>\n        `
+                      `\n            <div class="upcoming-item">\n                <div class="upcoming-time">\n                    <span class="time">${v(e.time)}</span>\n                </div>\n                <div class="upcoming-info">\n                    <span class="name">${v(e.name)}</span>\n                    <span class="service">${v(L(e.service))}</span>\n                </div>\n                <div class="upcoming-actions">\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(String(e.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                </div>\n            </div>\n        `
               )
               .join(''));
     const f = document.getElementById('recentCallbacksList'),
@@ -921,7 +921,7 @@ function ke(e) {
             });
         })(t));
 }
-function Be(e) {
+function Le(e) {
     const t = String(e?.paymentStatus || ''),
         n = String(e?.status || 'confirmed'),
         a = new Date().toISOString().split('T')[0],
@@ -942,7 +942,7 @@ function Be(e) {
                     ? 6
                     : 7;
 }
-function Le() {
+function Be() {
     const t = (function () {
             const { filterSelect: e, sortSelect: t, searchInput: n } = ve();
             return {
@@ -1073,7 +1073,7 @@ function Le() {
                 }
                 if ('datetime_asc' === n) return o(e, t);
                 if ('triage' === n) {
-                    const n = Be(e) - Be(t);
+                    const n = Le(e) - Le(t);
                     return 0 !== n ? n : o(e, t);
                 }
                 return -o(e, t);
@@ -1093,7 +1093,7 @@ function Le() {
                         .filter(Boolean)
                         .join(' '),
                     i = e.doctorAssigned
-                        ? `<br><small>Asignado: ${v(L(e.doctorAssigned))}</small>`
+                        ? `<br><small>Asignado: ${v(B(e.doctorAssigned))}</small>`
                         : '',
                     r = e.transferReference
                         ? `<br><small>Ref: ${v(e.transferReference)}</small>`
@@ -1110,7 +1110,7 @@ function Le() {
                         ? `<br><a class="appointment-proof-link" href="${v(s)}" target="_blank" rel="noopener noreferrer"><i class="fas fa-file-arrow-up" aria-hidden="true"></i> Ver comprobante</a>`
                         : '',
                     l = String(e.phone || '').replace(/\D/g, '');
-                return `\n        <tr class="${o}">\n            <td data-label="Paciente" class="appointment-cell-main">\n                <strong>${v(e.name)}</strong><br>\n                <small>${v(e.email)}</small>\n                <div class="appointment-inline-meta">\n                    <span class="toolbar-chip">${v(String(e.phone || 'Sin telefono'))}</span>\n                </div>\n            </td>\n            <td data-label="Servicio">${v(B(e.service))}</td>\n            <td data-label="Doctor">${v(L(e.doctor))}${i}</td>\n            <td data-label="Fecha">${v(
+                return `\n        <tr class="${o}">\n            <td data-label="Paciente" class="appointment-cell-main">\n                <strong>${v(e.name)}</strong><br>\n                <small>${v(e.email)}</small>\n                <div class="appointment-inline-meta">\n                    <span class="toolbar-chip">${v(String(e.phone || 'Sin telefono'))}</span>\n                </div>\n            </td>\n            <td data-label="Servicio">${v(L(e.service))}</td>\n            <td data-label="Doctor">${v(B(e.doctor))}${i}</td>\n            <td data-label="Fecha">${v(
                     (function (e) {
                         const t = new Date(e);
                         return Number.isNaN(t.getTime())
@@ -1192,7 +1192,7 @@ function Le() {
         })(t, n));
 }
 function Ce() {
-    Le();
+    Be();
 }
 function $e(e) {
     let t = String(e ?? '');
@@ -1202,8 +1202,8 @@ let Ae = null,
     Ie = new Date(),
     De = !1,
     Te = null;
-const Ne = 'admin-availability-day-clipboard';
-function Me(e) {
+const Me = 'admin-availability-day-clipboard';
+function Ne(e) {
     return `${e.getFullYear()}-${String(e.getMonth() + 1).padStart(2, '0')}-${String(e.getDate()).padStart(2, '0')}`;
 }
 function _e(e) {
@@ -1217,7 +1217,7 @@ function Pe() {
     Te ||
         (Te = (function () {
             try {
-                const e = JSON.parse(localStorage.getItem(Ne) || 'null');
+                const e = JSON.parse(localStorage.getItem(Me) || 'null');
                 if (!e || 'object' != typeof e) return null;
                 const t = String(e.sourceDate || '').trim(),
                     n = Array.isArray(e.slots)
@@ -1241,8 +1241,8 @@ function He() {
             Array.isArray(Te.slots) &&
             Te.slots.length > 0
         )
-            return void localStorage.setItem(Ne, JSON.stringify(Te));
-        localStorage.removeItem(Ne);
+            return void localStorage.setItem(Me, JSON.stringify(Te));
+        localStorage.removeItem(Me);
     } catch (e) {}
 }
 function Re(e) {
@@ -1519,7 +1519,7 @@ function Ze() {
     ).toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
     const r = document.getElementById('availabilityCalendar');
     r.innerHTML = '';
-    const s = Me(new Date());
+    const s = Ne(new Date());
     ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'].forEach((e) => {
         const t = document.createElement('div');
         ((t.className = 'calendar-day-header'),
@@ -1534,7 +1534,7 @@ function Ze() {
             r.appendChild(n));
     }
     for (let n = 1; n <= o; n += 1) {
-        const o = Me(new Date(e, t, n)),
+        const o = Ne(new Date(e, t, n)),
             i = document.createElement('div');
         ((i.className = 'calendar-day'),
             (i.textContent = n),
@@ -1609,53 +1609,71 @@ function tt() {
           !1)
         : !!Ae || (w('Selecciona una fecha primero', 'warning'), !1);
 }
-const nt = [
-    'a[href]',
-    'button:not([disabled])',
-    '[tabindex]:not([tabindex="-1"])',
-].join(',');
-function at() {
-    return Array.from(document.querySelectorAll('.nav-item[data-section]'));
-}
+const nt = new Map([
+        ['digit1', 'dashboard'],
+        ['digit2', 'appointments'],
+        ['digit3', 'callbacks'],
+        ['digit4', 'reviews'],
+        ['digit5', 'availability'],
+        ['1', 'dashboard'],
+        ['2', 'appointments'],
+        ['3', 'callbacks'],
+        ['4', 'reviews'],
+        ['5', 'availability'],
+    ]),
+    at = [
+        'a[href]',
+        'button:not([disabled])',
+        '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
 function ot() {
-    const e = window.location.hash.replace(/^#/, '').trim();
-    return new Set(at().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
+    return Array.from(
+        document.querySelectorAll(
+            '.nav-item[data-section], .admin-quick-nav-item[data-section]'
+        )
+    );
 }
 function it() {
+    const e = window.location.hash.replace(/^#/, '').trim();
+    return new Set(ot().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
+}
+function rt() {
     return (
         document.querySelector('.nav-item.active')?.dataset.section ||
-        ot() ||
+        it() ||
         'dashboard'
     );
 }
-function rt() {
+function st() {
     return window.innerWidth <= 1024;
 }
-function st() {
+function ct() {
     return Boolean(
         document.getElementById('adminSidebar')?.classList.contains('is-open')
     );
 }
-function ct(e) {
-    at().forEach((t) => {
+function lt(e) {
+    ot().forEach((t) => {
         const n = t.dataset.section === e;
         (t.classList.toggle('active', n),
             n
                 ? t.setAttribute('aria-current', 'page')
-                : t.removeAttribute('aria-current'));
+                : t.removeAttribute('aria-current'),
+            t instanceof HTMLButtonElement &&
+                t.setAttribute('aria-pressed', String(n)));
     });
 }
-function lt() {
+function dt() {
     return {
         sidebar: document.getElementById('adminSidebar'),
         backdrop: document.getElementById('adminSidebarBackdrop'),
         toggleBtn: document.getElementById('adminMenuToggle'),
     };
 }
-function dt() {
+function ut() {
     const e = document.getElementById('adminSidebar');
     return e
-        ? Array.from(e.querySelectorAll(nt)).filter(
+        ? Array.from(e.querySelectorAll(at)).filter(
               (e) =>
                   e instanceof HTMLElement &&
                   !e.hasAttribute('disabled') &&
@@ -1663,10 +1681,10 @@ function dt() {
           )
         : [];
 }
-function ut(e) {
+function mt(e) {
     const t = document.getElementById('adminSidebar'),
         n = document.getElementById('adminMainContent'),
-        a = rt(),
+        a = st(),
         o = Boolean(a && e);
     (t && t.setAttribute('aria-hidden', String(!o && a)),
         n &&
@@ -1674,16 +1692,16 @@ function ut(e) {
                 ? n.setAttribute('aria-hidden', 'true')
                 : n.removeAttribute('aria-hidden')));
 }
-function mt(e) {
-    const { sidebar: t, backdrop: n, toggleBtn: a } = lt();
+function pt(e) {
+    const { sidebar: t, backdrop: n, toggleBtn: a } = dt();
     if (!t || !n || !a) return;
-    const o = Boolean(e && rt());
+    const o = Boolean(e && st());
     (t.classList.toggle('is-open', o),
         n.classList.toggle('is-hidden', !o),
         n.setAttribute('aria-hidden', String(!o)),
         document.body.classList.toggle('admin-sidebar-open', o),
         a.setAttribute('aria-expanded', String(o)),
-        ut(o),
+        mt(o),
         o &&
             (function () {
                 const e = document.getElementById('adminSidebar');
@@ -1694,18 +1712,18 @@ function mt(e) {
                         t.scrollIntoView({ block: 'nearest' }),
                         void t.focus()
                     );
-                const n = dt();
+                const n = ut();
                 n[0] instanceof HTMLElement ? n[0].focus() : e.focus();
             })());
 }
-function pt({ restoreFocus: e = !1 } = {}) {
-    const { toggleBtn: t } = lt(),
+function ft({ restoreFocus: e = !1 } = {}) {
+    const { toggleBtn: t } = dt(),
         n = document
             .getElementById('adminSidebar')
             ?.classList.contains('is-open');
-    (mt(!1), e && n && t && t.focus());
+    (pt(!1), e && n && t && t.focus());
 }
-async function ft(e, t = {}) {
+async function gt(e, t = {}) {
     const {
             refresh: n = !0,
             updateHash: a = !0,
@@ -1713,16 +1731,16 @@ async function ft(e, t = {}) {
             closeMobileNav: i = !0,
         } = t,
         r = e || 'dashboard';
-    if ((ct(r), i && pt(), n))
+    if ((lt(r), i && ft(), n))
         try {
-            await M();
+            await N();
         } catch (e) {
             w(
                 `No se pudo actualizar datos en vivo: ${e?.message || 'error desconocido'}`,
                 'warning'
             );
         }
-    (await gt(r),
+    (await yt(r),
         a &&
             (function (e) {
                 const t = `#${e}`;
@@ -1744,7 +1762,7 @@ async function ft(e, t = {}) {
                     }));
             })(r));
 }
-async function gt(e) {
+async function yt(e) {
     const t = document.getElementById('pageTitle');
     (t &&
         (t.textContent =
@@ -1868,13 +1886,13 @@ async function gt(e) {
             })();
     }
 }
-async function yt() {
+async function ht() {
     const e = document.getElementById('loginScreen'),
         t = document.getElementById('adminDashboard');
     (e && e.classList.add('is-hidden'),
         t && t.classList.remove('is-hidden'),
-        ct(ot()),
-        pt(),
+        lt(it()),
+        ft(),
         await (async function () {
             const e = document.getElementById('currentDate');
             if (e) {
@@ -1887,15 +1905,15 @@ async function yt() {
                 e.textContent = new Date().toLocaleDateString('es-EC', t);
             }
             try {
-                await M();
+                await N();
             } catch (e) {
                 w(
                     `No se pudo actualizar datos en vivo: ${e?.message || 'error desconocido'}`,
                     'warning'
                 );
             }
-            const t = it();
-            await gt(t);
+            const t = rt();
+            await yt(t);
         })(),
         await (async function () {
             if (G) return;
@@ -1923,7 +1941,7 @@ async function yt() {
             }
         })());
 }
-async function ht(e) {
+async function bt(e) {
     e.preventDefault();
     const t = document.getElementById('group2FA');
     if (t && !t.classList.contains('is-hidden')) {
@@ -1934,7 +1952,7 @@ async function ht(e) {
             })(e);
             (t.csrfToken && g(t.csrfToken),
                 w('Bienvenido al panel de administracion', 'success'),
-                await yt());
+                await ht());
         } catch {
             w('Codigo incorrecto o sesion expirada', 'error');
         }
@@ -1959,7 +1977,7 @@ async function ht(e) {
         }
         (e.csrfToken && g(e.csrfToken),
             w('Bienvenido al panel de administracion', 'success'),
-            await yt());
+            await ht());
     } catch {
         w('Contrasena incorrecta', 'error');
     }
@@ -2064,8 +2082,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                             $e(e.name || ''),
                                             $e(e.email || ''),
                                             $e(e.phone || ''),
-                                            $e(B(e.service)),
-                                            $e(L(e.doctor)),
+                                            $e(L(e.service)),
+                                            $e(B(e.doctor)),
                                             e.price || '',
                                             $e(C(e.status || 'confirmed')),
                                             $e(A(e.paymentStatus)),
@@ -2113,7 +2131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         ve();
                                     (e && (e.value = 'all'),
                                         t && (t.value = ''),
-                                        Le());
+                                        Be());
                                 })()
                             );
                         if ('appointment-density' === r)
@@ -2127,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                             document.getElementById(
                                                 'appointmentsTableBody'
                                             )
-                                        ) && Le());
+                                        ) && Be());
                                 })(i.dataset.density || 'comfortable')
                             );
                         if ('change-month' === r)
@@ -2148,7 +2166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         1
                                     )),
                                         Ze(),
-                                        Qe(Me(e)));
+                                        Qe(Ne(e)));
                                 })()
                             );
                         if ('prefill-time-slot' === r)
@@ -2252,7 +2270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         );
                                     const n = new Date(t);
                                     n.setDate(t.getDate() + 1);
-                                    const o = Me(n),
+                                    const o = Ne(n),
                                         i = Re(a[o] || []);
                                     if (
                                         !(i.length > 0) ||
@@ -2413,7 +2431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                             new Date().toISOString(),
                                                     },
                                                 }),
-                                                    await M(),
+                                                    await N(),
                                                     Ce(),
                                                     O(),
                                                     w(
@@ -2447,7 +2465,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                         paymentStatus: 'failed',
                                                     },
                                                 }),
-                                                    await M(),
+                                                    await N(),
                                                     Ce(),
                                                     O(),
                                                     w(
@@ -2481,7 +2499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                         status: 'cancelled',
                                                     },
                                                 }),
-                                                    await M(),
+                                                    await N(),
                                                     Ce(),
                                                     O(),
                                                     w(
@@ -2515,7 +2533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                         status: 'no_show',
                                                     },
                                                 }),
-                                                    await M(),
+                                                    await N(),
                                                     Ce(),
                                                     O(),
                                                     w(
@@ -2555,7 +2573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                     status: 'contactado',
                                                 },
                                             }),
-                                            await M(),
+                                            await N(),
                                             U(),
                                             O(),
                                             w(
@@ -2581,12 +2599,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const o = document.getElementById('appointmentFilter');
             o &&
                 o.addEventListener('change', () => {
-                    Le();
+                    Be();
                 });
             const i = document.getElementById('searchAppointments');
             i &&
                 i.addEventListener('input', () => {
-                    Le();
+                    Be();
                 });
             const r = document.getElementById('appointmentSort');
             r &&
@@ -2594,7 +2612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     !(function (e) {
                         const t = we(e),
                             { sortSelect: n } = ve();
-                        (n && (n.value = t), Ee(pe, t), Le());
+                        (n && (n.value = t), Ee(pe, t), Be());
                     })(r.value || 'datetime_desc');
                 });
             const s = document.getElementById('callbackFilter');
@@ -2606,11 +2624,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             (t && (t.value = e.sort), ke(e.density));
         })());
     const o = document.getElementById('loginForm');
-    (o && o.addEventListener('submit', ht),
-        at().forEach((e) => {
+    (o && o.addEventListener('submit', bt),
+        ot().forEach((e) => {
             e.addEventListener('click', async (t) => {
                 (t.preventDefault(),
-                    await ft(e.dataset.section || 'dashboard'));
+                    await gt(e.dataset.section || 'dashboard'));
             });
         }),
         document
@@ -2618,21 +2636,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             ?.addEventListener('click', () => {
                 const e = document.getElementById('adminSidebar'),
                     t = e?.classList.contains('is-open');
-                mt(!t);
+                pt(!t);
             }),
         document
             .getElementById('adminMenuClose')
-            ?.addEventListener('click', () => pt({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => ft({ restoreFocus: !0 })),
         document
             .getElementById('adminSidebarBackdrop')
-            ?.addEventListener('click', () => pt({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => ft({ restoreFocus: !0 })),
         window.addEventListener('keydown', (e) => {
             (!(function (e) {
                 if ('Tab' !== e.key) return;
-                if (!rt() || !st()) return;
+                if (!st() || !ct()) return;
                 const t = document.getElementById('adminSidebar');
                 if (!t) return;
-                const n = dt();
+                const n = ut();
                 if (0 === n.length) return (e.preventDefault(), void t.focus());
                 const a = n[0],
                     o = n[n.length - 1],
@@ -2645,16 +2663,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                           (e.preventDefault(), a.focus())
                     : (e.preventDefault(), (e.shiftKey ? o : a).focus());
             })(e),
-                'Escape' === e.key && pt({ restoreFocus: !0 }));
+                'Escape' !== e.key
+                    ? (function (e) {
+                          if (!e.altKey || !e.shiftKey) return;
+                          if (
+                              (t = e.target) instanceof HTMLElement &&
+                              (t.isContentEditable ||
+                                  Boolean(
+                                      t.closest(
+                                          'input, textarea, select, [contenteditable="true"]'
+                                      )
+                                  ))
+                          )
+                              return;
+                          var t;
+                          const n = document.getElementById('adminDashboard');
+                          if (!n || n.classList.contains('is-hidden')) return;
+                          const a = String(e.key || '').toLowerCase(),
+                              o = String(e.code || '').toLowerCase();
+                          if ('m' === a || 'keym' === o)
+                              return (e.preventDefault(), void pt(!ct()));
+                          const i = nt.get(o) || nt.get(a);
+                          i && (e.preventDefault(), gt(i));
+                      })(e)
+                    : ft({ restoreFocus: !0 }));
         }),
         window.addEventListener('resize', () => {
-            (rt() || pt(), ut(st()));
+            (st() || ft(), mt(ct()));
         }),
         window.addEventListener('hashchange', async () => {
             const e = document.getElementById('adminDashboard');
             e &&
                 !e.classList.contains('is-hidden') &&
-                (await ft(ot(), {
+                (await gt(it(), {
                     refresh: !1,
                     updateHash: !1,
                     focus: !1,
@@ -2695,9 +2736,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     : {},
                         };
                         (await h('import', { method: 'POST', body: a }),
-                            await M());
+                            await N());
                         const o = document.querySelector('.nav-item.active');
-                        (await gt(o?.dataset.section || 'dashboard'),
+                        (await yt(o?.dataset.section || 'dashboard'),
                             w(
                                 `Datos importados: ${a.appointments.length} citas`,
                                 'success'
@@ -2709,15 +2750,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         ),
         window.addEventListener('online', async () => {
             (w('Conexion restaurada. Actualizando datos...', 'success'),
-                await M(),
-                await gt(it()));
+                await N(),
+                await yt(rt()));
         }),
-        ut(!1),
+        mt(!1),
         await (async function () {
             if (!navigator.onLine && T('appointments', null))
                 return (
                     w('Modo offline: mostrando datos locales', 'info'),
-                    void (await yt())
+                    void (await ht())
                 );
             (await (async function () {
                 try {
@@ -2729,11 +2770,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return (w('No se pudo verificar la sesion', 'warning'), !1);
                 }
             })())
-                ? await yt()
+                ? await ht()
                 : (function () {
                       const e = document.getElementById('loginScreen'),
                           t = document.getElementById('adminDashboard');
-                      (pt(),
+                      (ft(),
                           e && e.classList.remove('is-hidden'),
                           t && t.classList.add('is-hidden'));
                   })();
