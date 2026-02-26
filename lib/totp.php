@@ -35,14 +35,14 @@ class TOTP
      * Verify a code against a secret.
      * Allows for a time window drift.
      */
-    public static function verify(string $secret, string $code, int $window = 1): bool
+    public static function verify(string $secret, string $code, int $window = 1, ?int $timestamp = null): bool
     {
         $code = trim($code);
         if (strlen($code) !== self::DIGITS || !ctype_digit($code)) {
             return false;
         }
 
-        $timestamp = time();
+        $timestamp = $timestamp ?? time();
         for ($i = -$window; $i <= $window; $i++) {
             if (self::getCode($secret, $timestamp + ($i * self::PERIOD)) === $code) {
                 return true;
