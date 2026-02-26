@@ -11,6 +11,18 @@ declare(strict_types=1);
  */
 function rate_limit_client_ip(): string
 {
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? null;
+    if (!is_string($remoteAddr) || trim($remoteAddr) === '') {
+        return 'unknown';
+    }
+
+    $remoteAddr = trim($remoteAddr);
+
+    // If REMOTE_ADDR is not a trusted proxy, we do NOT trust headers.
+    if (!rate_limit_is_trusted_proxy($remoteAddr)) {
+        return filter_var($remoteAddr, FILTER_VALIDATE_IP) !== false ? $remoteAddr : 'unknown';
+    }
+
     $candidates = [
         $_SERVER['HTTP_CF_CONNECTING_IP'] ?? null,
         $_SERVER['HTTP_X_REAL_IP'] ?? null,
@@ -23,7 +35,7 @@ function rate_limit_client_ip(): string
         $candidates[] = $first;
     }
 
-    $candidates[] = $_SERVER['REMOTE_ADDR'] ?? null;
+    $candidates[] = $remoteAddr;
 
     foreach ($candidates as $candidate) {
         if (!is_string($candidate) || trim($candidate) === '') {
@@ -37,6 +49,69 @@ function rate_limit_client_ip(): string
     }
 
     return 'unknown';
+}
+
+/**
+ * Checks if an IP is a trusted proxy.
+ */
+function rate_limit_is_trusted_proxy(string $ip): bool
+{
+    $trusted = getenv('PIELARMONIA_TRUSTED_PROXIES');
+    if (!is_string($trusted) || trim($trusted) === '') {
+        // Default to trusting localhost only if not configured
+        $trusted = '127.0.0.1,::1';
+    }
+
+    $trusted = trim($trusted);
+    if ($trusted === '*') {
+        return true;
+    }
+
+    $proxies = explode(',', $trusted);
+    foreach ($proxies as $proxy) {
+        $proxy = trim($proxy);
+        if ($proxy === '') {
+            continue;
+        }
+        if (rate_limit_ip_in_range($ip, $proxy)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Checks if an IP is in a CIDR range.
+ */
+function rate_limit_ip_in_range(string $ip, string $range): bool
+{
+    if (strpos($range, '/') === false) {
+        return $ip === $range;
+    }
+
+    [$subnet, $bits] = explode('/', $range, 2);
+    $ip = @inet_pton($ip);
+    $subnet = @inet_pton($subnet);
+
+    if ($ip === false || $subnet === false) {
+        return false;
+    }
+
+    // Check if IP versions match
+    if (strlen($ip) !== strlen($subnet)) {
+        return false;
+    }
+
+    $bits = (int) $bits;
+    // Calculate mask
+    $mask = str_repeat("\xFF", (int)($bits / 8));
+    if (($bits % 8) > 0) {
+        $mask .= chr(0xFF << (8 - ($bits % 8)));
+    }
+    $mask = str_pad($mask, strlen($ip), "\x00");
+
+    return ($ip & $mask) === ($subnet & $mask);
 }
 
 /**

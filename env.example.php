@@ -105,6 +105,12 @@
 // ── Cron (recordatorios automáticos) ────────────────
 // putenv('PIELARMONIA_CRON_SECRET=un_token_secreto_largo');
 // ── Rate limit (IP + usuario) ────────────────────────
+// Proxies de confianza (para usar X-Forwarded-For).
+// Por seguridad, X-Forwarded-For se ignora si la peticion no viene de una IP confiable.
+// Default: 127.0.0.1,::1 (localhost).
+// Si usas Cloudflare o Load Balancer, agrega sus IPs (CIDR soportado).
+// putenv('PIELARMONIA_TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16');
+
 // Habilita limite adicional por usuario/token (default true).
 // putenv('PIELARMONIA_RATE_LIMIT_PER_USER_ENABLED=true');
 // Max requests por usuario/token en la ventana (default = maxRequests del endpoint).

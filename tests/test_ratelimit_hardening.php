@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 $tempDir = __DIR__ . '/temp_ratelimit_data';
 putenv("PIELARMONIA_DATA_DIR=$tempDir");
+putenv("PIELARMONIA_TRUSTED_PROXIES=10.10.10.10");
 
 if (is_dir($tempDir)) {
     $it = new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS);
