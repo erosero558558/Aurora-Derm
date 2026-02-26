@@ -160,6 +160,12 @@ Evidencia parcial (retencion + conversion/funnel):
 - Evitar micro-PRs de sincronizacion (`plan/status/board`) inmediatamente despues del PR tecnico; cerrar evidencia en lote en el mismo PR o en un unico PR de cierre de sesion.
 - `Weekly KPI Report` manual: ejecutar una sola vez por bloque que modifique el reporte semanal (no por subcambio).
 
+### Nota de coordinacion frontend (2026-02-26)
+
+- El cierre de bloques frontend se consolida en lote (`board/docs/evidencia`) para evitar micro-PRs de sincronizacion documental.
+- Comando canonico de cierre QA frontend: `npm run test:frontend:qa:closeout` (public + admin + superficies tocadas + version consistency).
+- Los cambios frontend normales no requieren workflows manuales de ops/deploy; se validan con PR checks y Playwright local por bloque.
+
 ## Comandos oficiales del plan
 
 - Validacion backend bloqueante: `npm run gate:prod:backend`

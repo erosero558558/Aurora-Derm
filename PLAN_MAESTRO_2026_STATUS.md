@@ -2,7 +2,7 @@
 
 > Nota de gobernanza (2026-02-24): este documento se mantiene como snapshot historico; la fuente unica de control operativo es `PLAN_MAESTRO_OPERATIVO_2026.md`.
 
-Fecha de actualizacion: 2026-02-25 (sesion Codex hardening KPI semanal: conversion + funnel)
+Fecha de actualizacion: 2026-02-26 (sesion Codex frontend closeout por bloques: QA + dark/light publico/admin)
 Dominio: https://pielarmonia.com
 
 ## Resumen rapido
@@ -10,6 +10,7 @@ Dominio: https://pielarmonia.com
 - Actualizacion 2026-02-24 (post-fix compat calendar): CI y Post-Deploy Gate en verde para commit `c4beac8`.
 - Actualizacion 2026-02-25 (weekly KPI hardening): guardrails de conversion y funnel temprano en `main`, con validaciones remotas `Weekly KPI Report` runs `22408343562` y `22408612570`.
 - Ajuste operativo 2026-02-25: se adopta modo de ejecucion por bloques (45-90 min) con validacion remota por hitos para reducir fragmentacion y tiempo muerto de checks.
+- Actualizacion 2026-02-26 (frontend closeout): se completa lote frontend (`AG-037..AG-045`) con QA de cierre (`npm run test:frontend:qa:closeout`) y soporte de tema oscuro/claro operativo en sitio publico y administrador.
 - CI run `22334259615` (push a main): `success`.
 - Post-Deploy Gate run `22334259617` (push a main): `success`.
 - CI run `22334594766` (commit `916adde`): `success`.
@@ -326,3 +327,12 @@ Dominio: https://pielarmonia.com
 2. Registrar evidencia de Sentry (timestamp/eventID por proyecto) en este status y/o `verification/agent-runs/`.
 3. Mantener monitoreo semanal de p95 `availability` y revisar warnings no bloqueantes en `Weekly KPI Report` (ej. `core_p95_alto_*`) para separar ruido de latencia vs regresion de conversion/funnel.
 4. Usar `npm run prod:readiness:summary` para vista unica (gates criticos, workflows recientes, alertas prod, warnings semanales locales y pendientes reales) con salida en `verification/runtime/prod-readiness-summary.{md,json}`.
+
+## Cierre frontend (lote 2026-02-26)
+
+- Alcance cerrado en este lote: bloques frontend publico/admin + QA de cierre + cierre batch de board/docs (`AG-037..AG-045`).
+- Tema oscuro/claro: restaurado en sitio publico y agregado al admin (login + dashboard), con persistencia y tests Playwright.
+- Evidencia de PRs (frontend): `#317`, `#318`, `#319`, `#320`, `#329`, `#348`, `#352`, `#353`, `#355`, `#358`, `#359`, `#360`, `#361`.
+- Comando canonico de cierre frontend: `npm run test:frontend:qa:closeout`.
+- Validacion local de cierre (2026-02-25): `38 passed` (public) + `22 passed`/`1 skipped` (admin) + `18 passed` (booking/chat/version consistency) = `78 passed`, `1 skipped`.
+- Evidencia por tarea: `verification/agent-runs/AG-037.md` ... `verification/agent-runs/AG-045.md`.
