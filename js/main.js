@@ -442,28 +442,108 @@ function initBookingCalendarLazyInit() {
     });
 }
 
+let pendingBookingServiceSelection = '';
+let pendingBookingServiceSelectionTimer = null;
+let pendingBookingServiceSelectionAttempts = 0;
+
+function clearPendingBookingServiceSelection() {
+    pendingBookingServiceSelection = '';
+    pendingBookingServiceSelectionAttempts = 0;
+    if (pendingBookingServiceSelectionTimer) {
+        window.clearTimeout(pendingBookingServiceSelectionTimer);
+        pendingBookingServiceSelectionTimer = null;
+    }
+}
+
+function scrollToBookingSection() {
+    const appointmentSection = document.getElementById('citas');
+    if (!appointmentSection) {
+        return;
+    }
+
+    const navHeight = document.querySelector('.nav')?.offsetHeight || 80;
+    const targetPosition = appointmentSection.offsetTop - navHeight - 20;
+    window.scrollTo({
+        top: targetPosition,
+        behavior: getPreferredScrollBehavior(),
+    });
+}
+
+function applyBookingServiceSelection(value) {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+        return false;
+    }
+
+    const select = document.getElementById('serviceSelect');
+    if (!select) {
+        return false;
+    }
+
+    const optionExists = Array.from(select.options || []).some(
+        function (option) {
+            return String(option.value || '').trim() === normalized;
+        }
+    );
+    if (!optionExists) {
+        return false;
+    }
+
+    if (select.value !== normalized) {
+        select.value = normalized;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        markBookingViewed('service_select');
+    }
+    return true;
+}
+
+function schedulePendingBookingServiceSelection() {
+    if (
+        !pendingBookingServiceSelection ||
+        pendingBookingServiceSelectionTimer !== null
+    ) {
+        return;
+    }
+
+    const runAttempt = function () {
+        pendingBookingServiceSelectionTimer = null;
+
+        if (!pendingBookingServiceSelection) {
+            return;
+        }
+
+        pendingBookingServiceSelectionAttempts += 1;
+        applyBookingServiceSelection(pendingBookingServiceSelection);
+
+        if (pendingBookingServiceSelectionAttempts >= 60) {
+            clearPendingBookingServiceSelection();
+            return;
+        }
+
+        pendingBookingServiceSelectionTimer = window.setTimeout(
+            runAttempt,
+            250
+        );
+    };
+
+    pendingBookingServiceSelectionTimer = window.setTimeout(runAttempt, 0);
+}
+
 /**
  * Selects a service in the booking form programmatically and scrolls to the appointment section.
+ * Supports deferred booking content by queueing a short retry window.
  * @param {string} value - The value of the service to select.
  */
 function fallbackSelectService(value) {
-    const select = document.getElementById('serviceSelect');
-    if (select) {
-        select.value = value;
-        select.dispatchEvent(new Event('change'));
-        markBookingViewed('service_select');
-        const appointmentSection = document.getElementById('citas');
-        if (appointmentSection) {
-            const navHeight =
-                document.querySelector('.nav')?.offsetHeight || 80;
-            const targetPosition =
-                appointmentSection.offsetTop - navHeight - 20;
-            window.scrollTo({
-                top: targetPosition,
-                behavior: getPreferredScrollBehavior(),
-            });
-        }
+    const normalized = String(value || '').trim();
+    if (normalized) {
+        pendingBookingServiceSelection = normalized;
+        pendingBookingServiceSelectionAttempts = 0;
     }
+
+    scrollToBookingSection();
+    applyBookingServiceSelection(normalized);
+    schedulePendingBookingServiceSelection();
 }
 
 let chatActionFallbackBridgeBound = false;
@@ -560,6 +640,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(({ loadDeferredContent }) => loadDeferredContent())
         .catch(() => false)
         .then(() => {
+            schedulePendingBookingServiceSelection();
             showConsentBanner();
 
             const initHighPriorityWarmups = createOnceTask(() => {

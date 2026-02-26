@@ -7,12 +7,14 @@ const SERVICE_PAGES = [
         name: 'acne',
         intentBadge: /acne/i,
         ctaHref: '#citas',
+        bookingValue: 'acne',
     },
     {
         path: '/servicios/laser.html',
         name: 'laser',
         intentBadge: /laser/i,
         ctaHref: '#citas',
+        bookingValue: 'laser',
     },
 ];
 
@@ -215,6 +217,58 @@ test.describe('Service pages conversion QA', () => {
             expect(after.top).toBeLessThan(beforeTop);
 
             await expect(quickDockReserve).toBeVisible();
+        }
+    });
+
+    test('service booking CTAs preselect matching service even when citas is deferred', async ({
+        page,
+    }) => {
+        for (const service of SERVICE_PAGES) {
+            await page.setViewportSize({ width: 390, height: 844 });
+            await waitForStablePage(page, service.path);
+
+            const heroBookingCta = page
+                .locator('[data-qa="service-hero-booking-cta"]')
+                .first();
+            await expect(heroBookingCta).toBeVisible();
+            await heroBookingCta.click({ force: true });
+
+            await expect
+                .poll(
+                    async () =>
+                        page.evaluate(() => {
+                            const select =
+                                document.getElementById('serviceSelect');
+                            return select ? select.value : null;
+                        }),
+                    { timeout: 12000 }
+                )
+                .toBe(service.bookingValue);
+
+            await page.evaluate(() => {
+                const select = document.getElementById('serviceSelect');
+                if (!select) return;
+                select.value = 'consulta';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            const quickDockBookingCta = page
+                .locator('[data-qa="service-quickdock-booking-cta"]')
+                .first();
+            await expect(quickDockBookingCta).toBeVisible();
+            await quickDockBookingCta.click({ force: true });
+
+            await expect
+                .poll(
+                    async () =>
+                        page.evaluate(() => {
+                            const select =
+                                document.getElementById('serviceSelect');
+                            return select ? select.value : null;
+                        }),
+                    { timeout: 6000 }
+                )
+                .toBe(service.bookingValue);
         }
     });
 });
