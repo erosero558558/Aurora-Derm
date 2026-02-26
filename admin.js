@@ -123,7 +123,7 @@ function B(e) {
         }[e] || e
     );
 }
-function C(e) {
+function L(e) {
     return (
         {
             rosero: 'Dr. Rosero',
@@ -132,7 +132,7 @@ function C(e) {
         }[e] || e
     );
 }
-function $(e) {
+function C(e) {
     return (
         {
             confirmed: 'Confirmada',
@@ -144,7 +144,7 @@ function $(e) {
         }[e] || e
     );
 }
-function L(e) {
+function $(e) {
     return (
         {
             card: 'Tarjeta',
@@ -814,13 +814,72 @@ async function ee() {
         (t && (t.className = n), (e.disabled = !1));
     }
 }
-const te = 'admin-appointments-sort',
-    ne = 'admin-appointments-density',
-    ae = 'datetime_desc',
-    oe = 'comfortable',
-    ie = new Set(['datetime_desc', 'datetime_asc', 'triage', 'patient_az']),
-    re = new Set(['comfortable', 'compact']);
+const te = 'themeMode',
+    ne = new Set(['light', 'dark', 'system']);
+let ae = 'system',
+    oe = null,
+    ie = !1,
+    re = null;
 function se() {
+    return (
+        oe ||
+            'function' != typeof window.matchMedia ||
+            (oe = window.matchMedia('(prefers-color-scheme: dark)')),
+        oe
+    );
+}
+function ce(e) {
+    return ne.has(String(e || '').trim());
+}
+function le(e) {
+    const t = document.documentElement;
+    if (!t) return;
+    const n = (function (e) {
+        return 'system' !== e ? e : se()?.matches ? 'dark' : 'light';
+    })(e);
+    (t.setAttribute('data-theme-mode', e), t.setAttribute('data-theme', n));
+}
+function de() {
+    document
+        .querySelectorAll('.admin-theme-btn[data-theme-mode]')
+        .forEach((e) => {
+            const t = e.dataset.themeMode === ae;
+            (e.classList.toggle('is-active', t),
+                e.setAttribute('aria-pressed', String(t)));
+        });
+}
+function ue(e, { persist: t = !1, animate: n = !1 } = {}) {
+    const a = ce(e) ? e : 'system';
+    ((ae = a),
+        t &&
+            (function (e) {
+                try {
+                    localStorage.setItem(te, e);
+                } catch (e) {}
+            })(a),
+        n &&
+            document.body &&
+            (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ||
+                (re && clearTimeout(re),
+                document.body.classList.remove('theme-transition'),
+                document.body.offsetWidth,
+                document.body.classList.add('theme-transition'),
+                (re = setTimeout(() => {
+                    document.body?.classList.remove('theme-transition');
+                }, 220)))),
+        le(a),
+        de());
+}
+function me() {
+    'system' === ae && (le('system'), de());
+}
+const pe = 'admin-appointments-sort',
+    fe = 'admin-appointments-density',
+    ge = 'datetime_desc',
+    ye = 'comfortable',
+    he = new Set(['datetime_desc', 'datetime_asc', 'triage', 'patient_az']),
+    be = new Set(['comfortable', 'compact']);
+function ve() {
     return {
         filterSelect: document.getElementById('appointmentFilter'),
         sortSelect: document.getElementById('appointmentSort'),
@@ -835,26 +894,26 @@ function se() {
         ),
     };
 }
-function ce(e) {
+function we(e) {
     const t = String(e || '').trim();
-    return ie.has(t) ? t : ae;
+    return he.has(t) ? t : ge;
 }
-function le(e) {
+function Se(e) {
     const t = String(e || '').trim();
-    return re.has(t) ? t : oe;
+    return be.has(t) ? t : ye;
 }
-function de(e, t) {
+function Ee(e, t) {
     try {
         localStorage.setItem(e, JSON.stringify(t));
     } catch (e) {}
 }
-function ue(e) {
-    const t = le(e),
-        { appointmentsSection: n } = se();
+function ke(e) {
+    const t = Se(e),
+        { appointmentsSection: n } = ve();
     (n?.classList.toggle('appointments-density-compact', 'compact' === t),
         (function (e) {
-            const t = le(e),
-                { densityButtons: n } = se();
+            const t = Se(e),
+                { densityButtons: n } = ve();
             n.forEach((e) => {
                 const n = e.dataset.density === t;
                 (e.classList.toggle('is-active', n),
@@ -862,7 +921,7 @@ function ue(e) {
             });
         })(t));
 }
-function me(e) {
+function Be(e) {
     const t = String(e?.paymentStatus || ''),
         n = String(e?.status || 'confirmed'),
         a = new Date().toISOString().split('T')[0],
@@ -883,12 +942,12 @@ function me(e) {
                     ? 6
                     : 7;
 }
-function pe() {
+function Le() {
     const t = (function () {
-            const { filterSelect: e, sortSelect: t, searchInput: n } = se();
+            const { filterSelect: e, sortSelect: t, searchInput: n } = ve();
             return {
                 filter: String(e?.value || 'all'),
-                sort: ce(t?.value || ae),
+                sort: we(t?.value || ge),
                 search: String(n?.value || '').trim(),
             };
         })(),
@@ -998,7 +1057,7 @@ function pe() {
             return void (a.innerHTML =
                 '\n            <tr class="table-empty-row">\n                <td colspan="8">\n                    <div class="table-empty-state">\n                        <i class="fas fa-calendar-check" aria-hidden="true"></i>\n                        <strong>No hay citas registradas</strong>\n                        <p>Cuando ingresen reservas nuevas apareceran aqui con acciones rapidas.</p>\n                    </div>\n                </td>\n            </tr>\n        ');
         const o = (function (e, t) {
-            const n = ce(t),
+            const n = we(t),
                 a = Array.isArray(e) ? [...e] : [],
                 o = (e, t) => {
                     const n = `${String(e?.date || '')} ${String(e?.time || '')}`,
@@ -1014,12 +1073,12 @@ function pe() {
                 }
                 if ('datetime_asc' === n) return o(e, t);
                 if ('triage' === n) {
-                    const n = me(e) - me(t);
+                    const n = Be(e) - Be(t);
                     return 0 !== n ? n : o(e, t);
                 }
                 return -o(e, t);
             });
-        })(t, n?.sort || ae);
+        })(t, n?.sort || ge);
         a.innerHTML = o
             .map((e) => {
                 const t = String(e.status || 'confirmed'),
@@ -1034,7 +1093,7 @@ function pe() {
                         .filter(Boolean)
                         .join(' '),
                     i = e.doctorAssigned
-                        ? `<br><small>Asignado: ${v(C(e.doctorAssigned))}</small>`
+                        ? `<br><small>Asignado: ${v(L(e.doctorAssigned))}</small>`
                         : '',
                     r = e.transferReference
                         ? `<br><small>Ref: ${v(e.transferReference)}</small>`
@@ -1051,7 +1110,7 @@ function pe() {
                         ? `<br><a class="appointment-proof-link" href="${v(s)}" target="_blank" rel="noopener noreferrer"><i class="fas fa-file-arrow-up" aria-hidden="true"></i> Ver comprobante</a>`
                         : '',
                     l = String(e.phone || '').replace(/\D/g, '');
-                return `\n        <tr class="${o}">\n            <td data-label="Paciente" class="appointment-cell-main">\n                <strong>${v(e.name)}</strong><br>\n                <small>${v(e.email)}</small>\n                <div class="appointment-inline-meta">\n                    <span class="toolbar-chip">${v(String(e.phone || 'Sin telefono'))}</span>\n                </div>\n            </td>\n            <td data-label="Servicio">${v(B(e.service))}</td>\n            <td data-label="Doctor">${v(C(e.doctor))}${i}</td>\n            <td data-label="Fecha">${v(
+                return `\n        <tr class="${o}">\n            <td data-label="Paciente" class="appointment-cell-main">\n                <strong>${v(e.name)}</strong><br>\n                <small>${v(e.email)}</small>\n                <div class="appointment-inline-meta">\n                    <span class="toolbar-chip">${v(String(e.phone || 'Sin telefono'))}</span>\n                </div>\n            </td>\n            <td data-label="Servicio">${v(B(e.service))}</td>\n            <td data-label="Doctor">${v(L(e.doctor))}${i}</td>\n            <td data-label="Fecha">${v(
                     (function (e) {
                         const t = new Date(e);
                         return Number.isNaN(t.getTime())
@@ -1062,25 +1121,25 @@ function pe() {
                                   year: 'numeric',
                               });
                     })(e.date)
-                )}</td>\n            <td data-label="Hora">${v(e.time)}</td>\n            <td data-label="Pago" class="appointment-payment-cell">\n                <strong>${v(e.price || '$0.00')}</strong>\n                <small>${v(L(e.paymentMethod))} - ${v(A(n))}</small>\n                ${r}\n                ${c}\n            </td>\n            <td data-label="Estado">\n                <span class="status-badge status-${v(t)}">\n                    ${v($(t))}\n                </span>\n            </td>\n            <td data-label="Acciones">\n                <div class="table-actions">\n                    ${a ? `\n                    <button type="button" class="btn-icon success" data-action="approve-transfer" data-id="${Number(e.id) || 0}" title="Aprobar transferencia">\n                        <i class="fas fa-check"></i>\n                    </button>\n                    <button type="button" class="btn-icon danger" data-action="reject-transfer" data-id="${Number(e.id) || 0}" title="Rechazar transferencia">\n                        <i class="fas fa-ban"></i>\n                    </button>\n                    ` : ''}\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar" aria-label="Llamar a ${v(e.name)}">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(l)}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp" aria-label="Abrir WhatsApp de ${v(e.name)}">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                    <button type="button" class="btn-icon danger" data-action="cancel-appointment" data-id="${Number(e.id) || 0}" title="Cancelar">\n                        <i class="fas fa-times"></i>\n                    </button>\n                    ${'cancelled' !== t && 'completed' !== t && 'no_show' !== t ? `\n                    <button type="button" class="btn-icon warning" data-action="mark-no-show" data-id="${Number(e.id) || 0}" title="Marcar no asistio">\n                        <i class="fas fa-user-slash"></i>\n                    </button>\n                    ` : ''}\n                </div>\n            </td>\n        </tr>\n    `;
+                )}</td>\n            <td data-label="Hora">${v(e.time)}</td>\n            <td data-label="Pago" class="appointment-payment-cell">\n                <strong>${v(e.price || '$0.00')}</strong>\n                <small>${v($(e.paymentMethod))} - ${v(A(n))}</small>\n                ${r}\n                ${c}\n            </td>\n            <td data-label="Estado">\n                <span class="status-badge status-${v(t)}">\n                    ${v(C(t))}\n                </span>\n            </td>\n            <td data-label="Acciones">\n                <div class="table-actions">\n                    ${a ? `\n                    <button type="button" class="btn-icon success" data-action="approve-transfer" data-id="${Number(e.id) || 0}" title="Aprobar transferencia">\n                        <i class="fas fa-check"></i>\n                    </button>\n                    <button type="button" class="btn-icon danger" data-action="reject-transfer" data-id="${Number(e.id) || 0}" title="Rechazar transferencia">\n                        <i class="fas fa-ban"></i>\n                    </button>\n                    ` : ''}\n                    <a href="tel:${v(e.phone)}" class="btn-icon" title="Llamar" aria-label="Llamar a ${v(e.name)}">\n                        <i class="fas fa-phone"></i>\n                    </a>\n                    <a href="https://wa.me/${v(l)}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="WhatsApp" aria-label="Abrir WhatsApp de ${v(e.name)}">\n                        <i class="fab fa-whatsapp"></i>\n                    </a>\n                    <button type="button" class="btn-icon danger" data-action="cancel-appointment" data-id="${Number(e.id) || 0}" title="Cancelar">\n                        <i class="fas fa-times"></i>\n                    </button>\n                    ${'cancelled' !== t && 'completed' !== t && 'no_show' !== t ? `\n                    <button type="button" class="btn-icon warning" data-action="mark-no-show" data-id="${Number(e.id) || 0}" title="Marcar no asistio">\n                        <i class="fas fa-user-slash"></i>\n                    </button>\n                    ` : ''}\n                </div>\n            </td>\n        </tr>\n    `;
             })
             .join('');
     })(n, { sort: t.sort }),
         (function (e, t) {
-            const { stateRow: n, clearBtn: a } = se();
+            const { stateRow: n, clearBtn: a } = ve();
             if (!n) return;
             const o = String(e?.filter || 'all'),
-                i = ce(e?.sort || ae),
+                i = we(e?.sort || ge),
                 r = String(e?.search || '').trim(),
                 s = (function () {
-                    const { appointmentsSection: e } = se();
+                    const { appointmentsSection: e } = ve();
                     return e?.classList.contains('appointments-density-compact')
                         ? 'compact'
                         : 'comfortable';
                 })(),
                 c = 'all' !== o,
                 l = r.length > 0,
-                d = i !== ae || s !== oe;
+                d = i !== ge || s !== ye;
             if (
                 (a &&
                     (a.classList.toggle('is-hidden', !c && !l),
@@ -1114,7 +1173,7 @@ function pe() {
                                 triage: 'Triage operativo',
                                 patient_az: 'Paciente (A-Z)',
                             };
-                            return t[ce(e)] || t.datetime_desc;
+                            return t[we(e)] || t.datetime_desc;
                         })(i)
                     )}</span>`
                 ),
@@ -1125,40 +1184,40 @@ function pe() {
                                 comfortable: 'Comoda',
                                 compact: 'Compacta',
                             };
-                            return t[le(e)] || t.comfortable;
+                            return t[Se(e)] || t.comfortable;
                         })(s)
                     )}</span>`
                 ),
                 (n.innerHTML = m.join('')));
         })(t, n));
 }
-function fe() {
-    pe();
+function Ce() {
+    Le();
 }
-function ge(e) {
+function $e(e) {
     let t = String(e ?? '');
     return (/^[=+\-@]/.test(t) && (t = "'" + t), `"${t.replace(/"/g, '""')}"`);
 }
-let ye = null,
-    he = new Date(),
-    be = !1,
-    ve = null;
-const we = 'admin-availability-day-clipboard';
-function Se(e) {
+let Ae = null,
+    Ie = new Date(),
+    De = !1,
+    Te = null;
+const Ne = 'admin-availability-day-clipboard';
+function Me(e) {
     return `${e.getFullYear()}-${String(e.getMonth() + 1).padStart(2, '0')}-${String(e.getDate()).padStart(2, '0')}`;
 }
-function Ee(e) {
+function _e(e) {
     const t = String(e || '').trim(),
         n = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (n) return new Date(Number(n[1]), Number(n[2]) - 1, Number(n[3]));
     const a = new Date(t);
     return Number.isNaN(a.getTime()) ? null : a;
 }
-function ke() {
-    ve ||
-        (ve = (function () {
+function Pe() {
+    Te ||
+        (Te = (function () {
             try {
-                const e = JSON.parse(localStorage.getItem(we) || 'null');
+                const e = JSON.parse(localStorage.getItem(Ne) || 'null');
                 if (!e || 'object' != typeof e) return null;
                 const t = String(e.sourceDate || '').trim(),
                     n = Array.isArray(e.slots)
@@ -1174,19 +1233,19 @@ function ke() {
             }
         })());
 }
-function Be() {
+function He() {
     try {
         if (
-            ve &&
-            'object' == typeof ve &&
-            Array.isArray(ve.slots) &&
-            ve.slots.length > 0
+            Te &&
+            'object' == typeof Te &&
+            Array.isArray(Te.slots) &&
+            Te.slots.length > 0
         )
-            return void localStorage.setItem(we, JSON.stringify(ve));
-        localStorage.removeItem(we);
+            return void localStorage.setItem(Ne, JSON.stringify(Te));
+        localStorage.removeItem(Ne);
     } catch (e) {}
 }
-function Ce(e) {
+function Re(e) {
     return Array.from(
         new Set(
             (Array.isArray(e) ? e : [])
@@ -1195,17 +1254,17 @@ function Ce(e) {
         )
     ).sort();
 }
-function $e(e, t) {
+function xe(e, t) {
     const n = String(e || '').trim(),
-        a = Ce(t);
-    if (!n || 0 === a.length) return ((ve = null), void Be());
-    ((ve = { sourceDate: n, slots: a, copiedAt: new Date().toISOString() }),
-        Be());
+        a = Re(t);
+    if (!n || 0 === a.length) return ((Te = null), void He());
+    ((Te = { sourceDate: n, slots: a, copiedAt: new Date().toISOString() }),
+        He());
 }
-function Le(e) {
+function je(e) {
     const t = String(e || '').trim();
     if (!t) return 'n/d';
-    const n = Ee(t);
+    const n = _e(t);
     return n
         ? n.toLocaleDateString('es-EC', {
               weekday: 'short',
@@ -1214,53 +1273,53 @@ function Le(e) {
           })
         : t;
 }
-function Ae() {
-    return ye ? Ce(a[ye] || []) : [];
+function Fe() {
+    return Ae ? Re(a[Ae] || []) : [];
 }
-function Ie(e, t) {
+function Oe(e, t) {
     const n = String(e || '').trim();
     if (!n) return;
-    const o = Ce(t);
+    const o = Re(t);
     0 !== o.length ? (a[n] = o) : delete a[n];
 }
-function De(e) {
-    const t = Ee(e);
-    t && (he = new Date(t.getFullYear(), t.getMonth(), 1));
+function qe(e) {
+    const t = _e(e);
+    t && (Ie = new Date(t.getFullYear(), t.getMonth(), 1));
 }
-function Te(e) {
+function Ue(e) {
     const t = String(e || '').trim();
     if (!t) return 'n/d';
     const n = new Date(t);
     return Number.isNaN(n.getTime()) ? 'n/d' : n.toLocaleString('es-EC');
 }
-function Ne(e) {
+function ze(e) {
     const t = document.getElementById('availabilityHelperText');
     t && (t.textContent = String(e || '').trim());
 }
-function Me(e) {
+function Ge(e) {
     const t = document.getElementById('timeSlotsCountBadge');
     if (!t) return;
     const n =
         Number.isFinite(Number(e)) && Number(e) > 0 ? Math.round(Number(e)) : 0;
     t.textContent = `${n} horario${1 === n ? '' : 's'}`;
 }
-function _e() {
+function We() {
     const e = document.getElementById('availabilitySelectionSummary');
     if (!e) return;
     const t =
             'google' === String(o.source || 'store')
                 ? 'Google Calendar'
                 : 'Local',
-        n = be ? 'Solo lectura' : 'Editable',
-        i = String(ye || '').trim(),
+        n = De ? 'Solo lectura' : 'Editable',
+        i = String(Ae || '').trim(),
         r = i ? (Array.isArray(a[i]) ? a[i].length : 0) : null;
     if (!i)
         return void (e.innerHTML = [
             `<span class="availability-summary-chip"><strong>Fuente:</strong> ${v(t)}</span>`,
-            `<span class="availability-summary-chip ${be ? 'is-readonly' : 'is-editable'}"><strong>Modo:</strong> ${v(n)}</span>`,
+            `<span class="availability-summary-chip ${De ? 'is-readonly' : 'is-editable'}"><strong>Modo:</strong> ${v(n)}</span>`,
             '<span class="toolbar-state-empty">Selecciona una fecha para ver el detalle del dia</span>',
         ].join(''));
-    const s = Ee(i),
+    const s = _e(i),
         c = s
             ? s.toLocaleDateString('es-EC', {
                   weekday: 'short',
@@ -1270,20 +1329,20 @@ function _e() {
             : i;
     e.innerHTML = [
         `<span class="availability-summary-chip"><strong>Fuente:</strong> ${v(t)}</span>`,
-        `<span class="availability-summary-chip ${be ? 'is-readonly' : 'is-editable'}"><strong>Modo:</strong> ${v(n)}</span>`,
+        `<span class="availability-summary-chip ${De ? 'is-readonly' : 'is-editable'}"><strong>Modo:</strong> ${v(n)}</span>`,
         `<span class="availability-summary-chip"><strong>Fecha:</strong> ${v(c)}</span>`,
         `<span class="availability-summary-chip"><strong>Slots:</strong> ${v(String(r ?? 0))}</span>`,
     ].join('');
 }
-function Pe() {
-    ke();
+function Je() {
+    Pe();
     const e = document.getElementById('availabilityDayActions'),
         t = document.getElementById('availabilityDayActionsStatus');
     if (!e || !t) return;
-    const n = Boolean(String(ye || '').trim()),
-        a = Ae(),
+    const n = Boolean(String(Ae || '').trim()),
+        a = Fe(),
         o = a.length > 0,
-        i = Ce(ve?.slots || []),
+        i = Re(Te?.slots || []),
         r = i.length > 0,
         s = e.querySelector('[data-action="copy-availability-day"]'),
         c = e.querySelector('[data-action="paste-availability-day"]'),
@@ -1291,9 +1350,9 @@ function Pe() {
         d = e.querySelector('[data-action="clear-availability-day"]');
     if (
         (s instanceof HTMLButtonElement && (s.disabled = !n || !o),
-        c instanceof HTMLButtonElement && (c.disabled = !n || !r || be),
-        l instanceof HTMLButtonElement && (l.disabled = !n || !o || be),
-        d instanceof HTMLButtonElement && (d.disabled = !n || !o || be),
+        c instanceof HTMLButtonElement && (c.disabled = !n || !r || De),
+        l instanceof HTMLButtonElement && (l.disabled = !n || !o || De),
+        d instanceof HTMLButtonElement && (d.disabled = !n || !o || De),
         e.classList.toggle('is-hidden', !n && !r),
         !n && !r)
     )
@@ -1302,25 +1361,25 @@ function Pe() {
     const u = [];
     (n &&
         (u.push(
-            `<span class="toolbar-chip is-info">Fecha activa: ${v(Le(ye))}</span>`
+            `<span class="toolbar-chip is-info">Fecha activa: ${v(je(Ae))}</span>`
         ),
         u.push(
             `<span class="toolbar-chip is-muted">Slots: ${v(String(a.length))}</span>`
         )),
         r
             ? u.push(
-                  `<span class="toolbar-chip">Portapapeles: ${v(String(i.length))} (${v(Le(ve?.sourceDate))})</span>`
+                  `<span class="toolbar-chip">Portapapeles: ${v(String(i.length))} (${v(je(Te?.sourceDate))})</span>`
               )
             : u.push(
                   '<span class="toolbar-chip is-muted">Portapapeles vacio</span>'
               ),
-        be &&
+        De &&
             u.push(
                 '<span class="toolbar-chip is-danger">Edicion bloqueada por Google Calendar</span>'
             ),
         (t.innerHTML = u.join('')));
 }
-function He() {
+function Ve() {
     const {
         statusEl: e,
         detailsEl: t,
@@ -1360,9 +1419,9 @@ function He() {
         c = !1 === o.calendarTokenHealthy ? 'no' : 'si',
         l = !1 === o.calendarConfigured ? 'no' : 'si',
         d = !1 === o.calendarReachable ? 'no' : 'si',
-        u = Te(o.generatedAt),
-        m = Te(o.calendarLastSuccessAt),
-        p = Te(o.calendarLastErrorAt),
+        u = Ue(o.generatedAt),
+        m = Ue(o.calendarLastSuccessAt),
+        p = Ue(o.calendarLastErrorAt),
         f = String(o.calendarLastErrorReason || '').trim();
     if ('google' === a) {
         const n = 'blocked' === i ? 'bloqueado' : 'live';
@@ -1376,13 +1435,13 @@ function He() {
                 (e += ` | Ultimo error: <strong>${v(p)}</strong> (${v(f)})`),
                 (t.innerHTML = e));
         }
-        Ne(
+        ze(
             'Modo solo lectura: gestiona horarios directamente en Google Calendar.'
         );
     } else
         ((e.innerHTML = 'Fuente: <strong>Configuracion local</strong>'),
             t && (t.innerHTML = `Snapshot: <strong>${v(u)}</strong>`),
-            Ne(
+            ze(
                 'Selecciona un dia para revisar horarios y agregar o eliminar slots.'
             ));
     if (
@@ -1404,8 +1463,8 @@ function He() {
                         ? 'Horarios del Dia (solo lectura)'
                         : 'Horarios del Dia');
         })(a),
-        _e(),
-        Pe(),
+        We(),
+        Je(),
         !n)
     )
         return;
@@ -1425,32 +1484,32 @@ function He() {
         y('narvaez', 'Dra. Narvaez'),
     ].join(' | ');
 }
-function Re() {
+function Ke() {
     const e = document.getElementById('selectedDate');
-    (e && (e.textContent = 'Selecciona una fecha'), Me(0));
+    (e && (e.textContent = 'Selecciona una fecha'), Ge(0));
     const t = document.getElementById('timeSlotsList');
     (t &&
         (t.innerHTML =
             '<p class="empty-message">Selecciona una fecha para ver los horarios</p>'),
-        xe(),
-        _e(),
-        Pe());
+        Ye(),
+        We(),
+        Je());
 }
-function xe() {
-    const e = Boolean(String(ye || '').trim()),
+function Ye() {
+    const e = Boolean(String(Ae || '').trim()),
         t = document.getElementById('addSlotForm');
-    t && t.classList.toggle('is-hidden', be || !e);
+    t && t.classList.toggle('is-hidden', De || !e);
     const n = document.getElementById('availabilityQuickSlotPresets');
     (n &&
-        (n.classList.toggle('is-hidden', be || !e),
+        (n.classList.toggle('is-hidden', De || !e),
         n.querySelectorAll('.slot-preset-btn').forEach((t) => {
-            t.disabled = be || !e;
+            t.disabled = De || !e;
         })),
-        Pe());
+        Je());
 }
-function je() {
-    const e = he.getFullYear(),
-        t = he.getMonth(),
+function Ze() {
+    const e = Ie.getFullYear(),
+        t = Ie.getMonth(),
         n = new Date(e, t, 1).getDay(),
         o = new Date(e, t + 1, 0).getDate(),
         i = new Date(e, t, 0).getDate();
@@ -1460,7 +1519,7 @@ function je() {
     ).toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
     const r = document.getElementById('availabilityCalendar');
     r.innerHTML = '';
-    const s = Se(new Date());
+    const s = Me(new Date());
     ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'].forEach((e) => {
         const t = document.createElement('div');
         ((t.className = 'calendar-day-header'),
@@ -1475,20 +1534,20 @@ function je() {
             r.appendChild(n));
     }
     for (let n = 1; n <= o; n += 1) {
-        const o = Se(new Date(e, t, n)),
+        const o = Me(new Date(e, t, n)),
             i = document.createElement('div');
         ((i.className = 'calendar-day'),
             (i.textContent = n),
             (i.tabIndex = 0),
             i.setAttribute('role', 'button'),
             i.setAttribute('aria-label', `Seleccionar ${o}`),
-            ye === o && i.classList.add('selected'),
+            Ae === o && i.classList.add('selected'),
             s === o && i.classList.add('today'),
             a[o] && a[o].length > 0 && i.classList.add('has-slots'),
-            i.addEventListener('click', () => Fe(o)),
+            i.addEventListener('click', () => Qe(o)),
             i.addEventListener('keydown', (e) => {
                 ('Enter' !== e.key && ' ' !== e.key) ||
-                    (e.preventDefault(), Fe(o));
+                    (e.preventDefault(), Qe(o));
             }),
             r.appendChild(i));
     }
@@ -1500,9 +1559,9 @@ function je() {
             r.appendChild(t));
     }
 }
-function Fe(e) {
-    ((ye = e), je());
-    const t = Ee(e) || new Date(e);
+function Qe(e) {
+    ((Ae = e), Ze());
+    const t = _e(e) || new Date(e);
     ((document.getElementById('selectedDate').textContent =
         t.toLocaleDateString('es-EC', {
             weekday: 'long',
@@ -1510,19 +1569,19 @@ function Fe(e) {
             month: 'long',
             year: 'numeric',
         })),
-        xe(),
-        _e(),
-        Oe(e));
+        Ye(),
+        We(),
+        Xe(e));
 }
-function Oe(e) {
+function Xe(e) {
     const t = a[e] || [],
         n = document.getElementById('timeSlotsList');
-    if ((Me(t.length), 0 === t.length))
+    if ((Ge(t.length), 0 === t.length))
         return (
             (n.innerHTML =
                 '<p class="empty-message">No hay horarios configurados para este dia</p>'),
-            _e(),
-            void Pe()
+            We(),
+            void Je()
         );
     const o = encodeURIComponent(String(e || ''));
     ((n.innerHTML = t
@@ -1530,55 +1589,55 @@ function Oe(e) {
         .sort()
         .map(
             (e) =>
-                `\n        <div class="time-slot-item${be ? ' is-readonly' : ''}">\n            <span class="time">${v(e)}</span>\n            <div class="slot-actions">\n                ${be ? '<span class="slot-readonly-tag">Solo lectura</span>' : `<button type="button" class="btn-icon danger" data-action="remove-time-slot" data-date="${o}" data-time="${encodeURIComponent(String(e || ''))}">\n                    <i class="fas fa-trash"></i>\n                </button>`}\n            </div>\n        </div>\n    `
+                `\n        <div class="time-slot-item${De ? ' is-readonly' : ''}">\n            <span class="time">${v(e)}</span>\n            <div class="slot-actions">\n                ${De ? '<span class="slot-readonly-tag">Solo lectura</span>' : `<button type="button" class="btn-icon danger" data-action="remove-time-slot" data-date="${o}" data-time="${encodeURIComponent(String(e || ''))}">\n                    <i class="fas fa-trash"></i>\n                </button>`}\n            </div>\n        </div>\n    `
         )
         .join('')),
-        _e(),
-        Pe());
+        We(),
+        Je());
 }
-async function qe() {
-    if (be)
+async function et() {
+    if (De)
         throw new Error('Disponibilidad en solo lectura (Google Calendar).');
     await h('availability', { method: 'POST', body: { availability: a } });
 }
-function Ue() {
-    return be
+function tt() {
+    return De
         ? (w(
               'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
               'warning'
           ),
           !1)
-        : !!ye || (w('Selecciona una fecha primero', 'warning'), !1);
+        : !!Ae || (w('Selecciona una fecha primero', 'warning'), !1);
 }
-const ze = [
+const nt = [
     'a[href]',
     'button:not([disabled])',
     '[tabindex]:not([tabindex="-1"])',
 ].join(',');
-function Ge() {
+function at() {
     return Array.from(document.querySelectorAll('.nav-item[data-section]'));
 }
-function We() {
+function ot() {
     const e = window.location.hash.replace(/^#/, '').trim();
-    return new Set(Ge().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
+    return new Set(at().map((e) => e.dataset.section)).has(e) ? e : 'dashboard';
 }
-function Je() {
+function it() {
     return (
         document.querySelector('.nav-item.active')?.dataset.section ||
-        We() ||
+        ot() ||
         'dashboard'
     );
 }
-function Ve() {
+function rt() {
     return window.innerWidth <= 1024;
 }
-function Ke() {
+function st() {
     return Boolean(
         document.getElementById('adminSidebar')?.classList.contains('is-open')
     );
 }
-function Ye(e) {
-    Ge().forEach((t) => {
+function ct(e) {
+    at().forEach((t) => {
         const n = t.dataset.section === e;
         (t.classList.toggle('active', n),
             n
@@ -1586,17 +1645,17 @@ function Ye(e) {
                 : t.removeAttribute('aria-current'));
     });
 }
-function Ze() {
+function lt() {
     return {
         sidebar: document.getElementById('adminSidebar'),
         backdrop: document.getElementById('adminSidebarBackdrop'),
         toggleBtn: document.getElementById('adminMenuToggle'),
     };
 }
-function Qe() {
+function dt() {
     const e = document.getElementById('adminSidebar');
     return e
-        ? Array.from(e.querySelectorAll(ze)).filter(
+        ? Array.from(e.querySelectorAll(nt)).filter(
               (e) =>
                   e instanceof HTMLElement &&
                   !e.hasAttribute('disabled') &&
@@ -1604,10 +1663,10 @@ function Qe() {
           )
         : [];
 }
-function Xe(e) {
+function ut(e) {
     const t = document.getElementById('adminSidebar'),
         n = document.getElementById('adminMainContent'),
-        a = Ve(),
+        a = rt(),
         o = Boolean(a && e);
     (t && t.setAttribute('aria-hidden', String(!o && a)),
         n &&
@@ -1615,16 +1674,16 @@ function Xe(e) {
                 ? n.setAttribute('aria-hidden', 'true')
                 : n.removeAttribute('aria-hidden')));
 }
-function et(e) {
-    const { sidebar: t, backdrop: n, toggleBtn: a } = Ze();
+function mt(e) {
+    const { sidebar: t, backdrop: n, toggleBtn: a } = lt();
     if (!t || !n || !a) return;
-    const o = Boolean(e && Ve());
+    const o = Boolean(e && rt());
     (t.classList.toggle('is-open', o),
         n.classList.toggle('is-hidden', !o),
         n.setAttribute('aria-hidden', String(!o)),
         document.body.classList.toggle('admin-sidebar-open', o),
         a.setAttribute('aria-expanded', String(o)),
-        Xe(o),
+        ut(o),
         o &&
             (function () {
                 const e = document.getElementById('adminSidebar');
@@ -1635,18 +1694,18 @@ function et(e) {
                         t.scrollIntoView({ block: 'nearest' }),
                         void t.focus()
                     );
-                const n = Qe();
+                const n = dt();
                 n[0] instanceof HTMLElement ? n[0].focus() : e.focus();
             })());
 }
-function tt({ restoreFocus: e = !1 } = {}) {
-    const { toggleBtn: t } = Ze(),
+function pt({ restoreFocus: e = !1 } = {}) {
+    const { toggleBtn: t } = lt(),
         n = document
             .getElementById('adminSidebar')
             ?.classList.contains('is-open');
-    (et(!1), e && n && t && t.focus());
+    (mt(!1), e && n && t && t.focus());
 }
-async function nt(e, t = {}) {
+async function ft(e, t = {}) {
     const {
             refresh: n = !0,
             updateHash: a = !0,
@@ -1654,7 +1713,7 @@ async function nt(e, t = {}) {
             closeMobileNav: i = !0,
         } = t,
         r = e || 'dashboard';
-    if ((Ye(r), i && tt(), n))
+    if ((ct(r), i && pt(), n))
         try {
             await M();
         } catch (e) {
@@ -1663,7 +1722,7 @@ async function nt(e, t = {}) {
                 'warning'
             );
         }
-    (await at(r),
+    (await gt(r),
         a &&
             (function (e) {
                 const t = `#${e}`;
@@ -1685,7 +1744,7 @@ async function nt(e, t = {}) {
                     }));
             })(r));
 }
-async function at(e) {
+async function gt(e) {
     const t = document.getElementById('pageTitle');
     (t &&
         (t.textContent =
@@ -1706,7 +1765,7 @@ async function at(e) {
             O();
             break;
         case 'appointments':
-            fe();
+            Ce();
             break;
         case 'callbacks':
             U();
@@ -1789,33 +1848,33 @@ async function at(e) {
                             };
                         (u(t),
                             m(r),
-                            (be = 'google' === String(r.source || '')),
-                            He(),
-                            xe(),
-                            ye && !a[ye] && ((ye = null), Re()));
+                            (De = 'google' === String(r.source || '')),
+                            Ve(),
+                            Ye(),
+                            Ae && !a[Ae] && ((Ae = null), Ke()));
                     } catch (e) {
                         (console.error('Error refreshing availability:', e),
                             w(
                                 `Error al actualizar disponibilidad: ${e?.message || 'error desconocido'}`,
                                 'error'
                             ),
-                            (be = 'google' === String(o.source || '')),
-                            He(),
-                            xe());
+                            (De = 'google' === String(o.source || '')),
+                            Ve(),
+                            Ye());
                     }
                 })(),
-                    je(),
-                    ye ? (xe(), _e()) : Re());
+                    Ze(),
+                    Ae ? (Ye(), We()) : Ke());
             })();
     }
 }
-async function ot() {
+async function yt() {
     const e = document.getElementById('loginScreen'),
         t = document.getElementById('adminDashboard');
     (e && e.classList.add('is-hidden'),
         t && t.classList.remove('is-hidden'),
-        Ye(We()),
-        tt(),
+        ct(ot()),
+        pt(),
         await (async function () {
             const e = document.getElementById('currentDate');
             if (e) {
@@ -1835,8 +1894,8 @@ async function ot() {
                     'warning'
                 );
             }
-            const t = Je();
-            await at(t);
+            const t = it();
+            await gt(t);
         })(),
         await (async function () {
             if (G) return;
@@ -1864,7 +1923,7 @@ async function ot() {
             }
         })());
 }
-async function it(e) {
+async function ht(e) {
     e.preventDefault();
     const t = document.getElementById('group2FA');
     if (t && !t.classList.contains('is-hidden')) {
@@ -1875,7 +1934,7 @@ async function it(e) {
             })(e);
             (t.csrfToken && g(t.csrfToken),
                 w('Bienvenido al panel de administracion', 'success'),
-                await ot());
+                await yt());
         } catch {
             w('Codigo incorrecto o sesion expirada', 'error');
         }
@@ -1900,618 +1959,658 @@ async function it(e) {
         }
         (e.csrfToken && g(e.csrfToken),
             w('Bienvenido al panel de administracion', 'success'),
-            await ot());
+            await yt());
     } catch {
         w('Contrasena incorrecta', 'error');
     }
 }
 document.addEventListener('DOMContentLoaded', async () => {
-    ((function () {
-        document.addEventListener('click', async (o) => {
-            const i = o.target.closest('[data-action]');
-            if (!i) return;
-            const r = i.dataset.action;
-            if ('close-toast' !== r) {
-                if ('logout' === r)
-                    return (
-                        o.preventDefault(),
-                        void (await (async function () {
-                            try {
-                                await b('logout', { method: 'POST' });
-                            } catch (e) {}
-                            (w('Sesion cerrada correctamente', 'info'),
-                                setTimeout(
-                                    () => window.location.reload(),
-                                    800
-                                ));
-                        })())
-                    );
-                if ('export-data' === r)
-                    return (
-                        o.preventDefault(),
-                        void (function () {
-                            const o = {
-                                    appointments: e,
-                                    callbacks: t,
-                                    reviews: n,
-                                    availability: a,
-                                    exportDate: new Date().toISOString(),
-                                },
-                                i = new Blob([JSON.stringify(o, null, 2)], {
-                                    type: 'application/json',
-                                }),
-                                r = URL.createObjectURL(i),
-                                s = document.createElement('a');
-                            ((s.href = r),
-                                (s.download = `piel-en-armonia-backup-${new Date().toISOString().split('T')[0]}.json`),
-                                document.body.appendChild(s),
-                                s.click(),
-                                document.body.removeChild(s),
-                                URL.revokeObjectURL(r),
-                                w('Datos exportados correctamente', 'success'));
-                        })()
-                    );
-                if ('open-import-file' === r)
-                    return (
-                        o.preventDefault(),
-                        void document.getElementById('importFileInput')?.click()
-                    );
-                try {
-                    if ('export-csv' === r)
+    ((ae = (function () {
+        try {
+            const e = localStorage.getItem(te) || 'system';
+            return ce(e) ? e : 'system';
+        } catch (e) {
+            return 'system';
+        }
+    })()),
+        ue(ae, { persist: !1, animate: !1 }),
+        (function () {
+            if (ie) return;
+            const e = se();
+            e &&
+                ('function' == typeof e.addEventListener
+                    ? (e.addEventListener('change', me), (ie = !0))
+                    : 'function' == typeof e.addListener &&
+                      (e.addListener(me), (ie = !0)));
+        })(),
+        (function () {
+            document.addEventListener('click', async (o) => {
+                const i = o.target.closest('[data-action]');
+                if (!i) return;
+                const r = i.dataset.action;
+                if ('close-toast' !== r) {
+                    if ('logout' === r)
+                        return (
+                            o.preventDefault(),
+                            void (await (async function () {
+                                try {
+                                    await b('logout', { method: 'POST' });
+                                } catch (e) {}
+                                (w('Sesion cerrada correctamente', 'info'),
+                                    setTimeout(
+                                        () => window.location.reload(),
+                                        800
+                                    ));
+                            })())
+                        );
+                    if ('export-data' === r)
                         return (
                             o.preventDefault(),
                             void (function () {
-                                if (!Array.isArray(e) || 0 === e.length)
-                                    return void w(
-                                        'No hay citas para exportar',
-                                        'warning'
-                                    );
-                                const t = e.map((e) => [
-                                        Number(e.id) || 0,
-                                        e.date || '',
-                                        e.time || '',
-                                        ge(e.name || ''),
-                                        ge(e.email || ''),
-                                        ge(e.phone || ''),
-                                        ge(B(e.service)),
-                                        ge(C(e.doctor)),
-                                        e.price || '',
-                                        ge($(e.status || 'confirmed')),
-                                        ge(A(e.paymentStatus)),
-                                        ge(L(e.paymentMethod)),
-                                    ]),
-                                    n = [
-                                        [
-                                            'ID',
-                                            'Fecha',
-                                            'Hora',
-                                            'Paciente',
-                                            'Email',
-                                            'Telefono',
-                                            'Servicio',
-                                            'Doctor',
-                                            'Precio',
-                                            'Estado',
-                                            'Estado pago',
-                                            'Metodo pago',
-                                        ].join(','),
-                                        ...t.map((e) => e.join(',')),
-                                    ].join('\n'),
-                                    a = new Blob([n], {
-                                        type: 'text/csv;charset=utf-8;',
+                                const o = {
+                                        appointments: e,
+                                        callbacks: t,
+                                        reviews: n,
+                                        availability: a,
+                                        exportDate: new Date().toISOString(),
+                                    },
+                                    i = new Blob([JSON.stringify(o, null, 2)], {
+                                        type: 'application/json',
                                     }),
-                                    o = URL.createObjectURL(a),
-                                    i = document.createElement('a');
-                                ((i.href = o),
-                                    (i.download = `citas-pielarmonia-${new Date().toISOString().split('T')[0]}.csv`),
-                                    document.body.appendChild(i),
-                                    i.click(),
-                                    document.body.removeChild(i),
-                                    URL.revokeObjectURL(o),
+                                    r = URL.createObjectURL(i),
+                                    s = document.createElement('a');
+                                ((s.href = r),
+                                    (s.download = `piel-en-armonia-backup-${new Date().toISOString().split('T')[0]}.json`),
+                                    document.body.appendChild(s),
+                                    s.click(),
+                                    document.body.removeChild(s),
+                                    URL.revokeObjectURL(r),
                                     w(
-                                        'CSV exportado correctamente',
+                                        'Datos exportados correctamente',
                                         'success'
                                     ));
                             })()
                         );
-                    if ('clear-appointment-filters' === r)
+                    if ('open-import-file' === r)
                         return (
                             o.preventDefault(),
-                            void (function () {
-                                const { filterSelect: e, searchInput: t } =
-                                    se();
-                                (e && (e.value = 'all'),
-                                    t && (t.value = ''),
-                                    pe());
-                            })()
+                            void document
+                                .getElementById('importFileInput')
+                                ?.click()
                         );
-                    if ('appointment-density' === r)
+                    if ('set-admin-theme' === r)
                         return (
                             o.preventDefault(),
-                            void (function (e) {
-                                const t = le(e);
-                                (ue(t),
-                                    de(ne, t),
-                                    Boolean(
-                                        document.getElementById(
-                                            'appointmentsTableBody'
-                                        )
-                                    ) && pe());
-                            })(i.dataset.density || 'comfortable')
+                            void ue(i.dataset.themeMode || 'system', {
+                                persist: !0,
+                                animate: !0,
+                            })
                         );
-                    if ('change-month' === r)
-                        return (
-                            o.preventDefault(),
-                            (s = Number(i.dataset.delta || 0)),
-                            he.setMonth(he.getMonth() + s),
-                            void je()
-                        );
-                    if ('availability-today' === r)
-                        return (
-                            o.preventDefault(),
-                            void (function () {
-                                const e = new Date();
-                                ((he = new Date(
-                                    e.getFullYear(),
-                                    e.getMonth(),
-                                    1
-                                )),
-                                    je(),
-                                    Fe(Se(e)));
-                            })()
-                        );
-                    if ('prefill-time-slot' === r)
-                        return (
-                            o.preventDefault(),
-                            void (function (e) {
-                                if (be)
-                                    return void w(
-                                        'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
-                                        'warning'
-                                    );
-                                const t =
-                                    document.getElementById('newSlotTime');
-                                t instanceof HTMLInputElement &&
-                                    ((t.value = String(e || '').trim()),
-                                    t.focus());
-                            })(i.dataset.time || '')
-                        );
-                    if ('copy-availability-day' === r)
-                        return (
-                            o.preventDefault(),
-                            void (function () {
-                                if (!ye)
-                                    return void w(
-                                        'Selecciona una fecha para copiar',
-                                        'warning'
-                                    );
-                                const e = Ae();
-                                0 !== e.length
-                                    ? ($e(ye, e),
-                                      Pe(),
-                                      w(
-                                          `Dia copiado (${e.length} horario${1 === e.length ? '' : 's'})`,
-                                          'success'
-                                      ))
-                                    : w(
-                                          'No hay horarios para copiar en este dia',
-                                          'warning'
-                                      );
-                            })()
-                        );
-                    if ('paste-availability-day' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function () {
-                                if ((ke(), !Ue())) return;
-                                const e = Ce(ve?.slots || []);
-                                if (0 === e.length)
-                                    return void w(
-                                        'Portapapeles vacio',
-                                        'warning'
-                                    );
-                                const t = Ae();
-                                if (
-                                    t.length === e.length &&
-                                    t.every((t, n) => t === e[n])
-                                )
-                                    w(
-                                        'La fecha ya tiene esos mismos horarios',
-                                        'warning'
-                                    );
-                                else if (
-                                    !(t.length > 0) ||
-                                    confirm(
-                                        `Reemplazar ${t.length} horario${1 === t.length ? '' : 's'} en ${Le(ye)} con ${e.length}?`
-                                    )
-                                )
-                                    try {
-                                        (Ie(ye, e),
-                                            await qe(),
-                                            De(ye),
-                                            Fe(ye),
-                                            w(
-                                                'Horarios pegados en la fecha seleccionada',
-                                                'success'
-                                            ));
-                                    } catch (e) {
-                                        w(
-                                            `No se pudieron pegar los horarios: ${e.message}`,
-                                            'error'
+                    var s;
+                    try {
+                        if ('export-csv' === r)
+                            return (
+                                o.preventDefault(),
+                                void (function () {
+                                    if (!Array.isArray(e) || 0 === e.length)
+                                        return void w(
+                                            'No hay citas para exportar',
+                                            'warning'
                                         );
-                                    }
-                            })())
-                        );
-                    if ('duplicate-availability-day-next' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function () {
-                                if (!Ue()) return;
-                                const e = Ae();
-                                if (0 === e.length)
-                                    return void w(
-                                        'No hay horarios para duplicar en este dia',
-                                        'warning'
-                                    );
-                                const t = Ee(ye);
-                                if (!t)
-                                    return void w(
-                                        'Fecha seleccionada invalida',
-                                        'error'
-                                    );
-                                const n = new Date(t);
-                                n.setDate(t.getDate() + 1);
-                                const o = Se(n),
-                                    i = Ce(a[o] || []);
-                                if (
-                                    !(i.length > 0) ||
-                                    confirm(
-                                        `${Le(o)} ya tiene ${i.length} horario${1 === i.length ? '' : 's'}. Deseas reemplazarlos?`
-                                    )
-                                )
-                                    try {
-                                        (Ie(o, e),
-                                            $e(ye, e),
-                                            await qe(),
-                                            De(o),
-                                            Fe(o),
-                                            w(
-                                                `Horarios duplicados a ${Le(o)}`,
-                                                'success'
-                                            ));
-                                    } catch (e) {
-                                        w(
-                                            `No se pudo duplicar el dia: ${e.message}`,
-                                            'error'
-                                        );
-                                    }
-                            })())
-                        );
-                    if ('clear-availability-day' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function () {
-                                if (!Ue()) return;
-                                const e = Ae();
-                                if (0 !== e.length) {
-                                    if (
-                                        confirm(
-                                            `Eliminar ${e.length} horario${1 === e.length ? '' : 's'} de ${Le(ye)}?`
-                                        )
-                                    )
-                                        try {
-                                            (Ie(ye, []),
-                                                await qe(),
-                                                De(ye),
-                                                Fe(ye),
-                                                w(
-                                                    'Horarios del dia eliminados',
-                                                    'success'
-                                                ));
-                                        } catch (e) {
-                                            w(
-                                                `No se pudo limpiar el dia: ${e.message}`,
-                                                'error'
-                                            );
-                                        }
-                                } else
-                                    w(
-                                        'No hay horarios que limpiar en este dia',
-                                        'warning'
-                                    );
-                            })())
-                        );
-                    if ('add-time-slot' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function () {
-                                if (be)
-                                    return void w(
-                                        'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
-                                        'warning'
-                                    );
-                                if (!ye)
-                                    return void w(
-                                        'Selecciona una fecha primero',
-                                        'warning'
-                                    );
-                                const e =
-                                    document.getElementById(
-                                        'newSlotTime'
-                                    ).value;
-                                if (e)
-                                    if (
-                                        (a[ye] || (a[ye] = []),
-                                        a[ye].includes(e))
-                                    )
-                                        w('Este horario ya existe', 'warning');
-                                    else
-                                        try {
-                                            (a[ye].push(e),
-                                                await qe(),
-                                                Oe(ye),
-                                                je(),
-                                                (document.getElementById(
-                                                    'newSlotTime'
-                                                ).value = ''),
-                                                w(
-                                                    'Horario agregado',
-                                                    'success'
-                                                ));
-                                        } catch (e) {
-                                            w(
-                                                `No se pudo guardar el horario: ${e.message}`,
-                                                'error'
-                                            );
-                                        }
-                                else w('Ingresa un horario', 'warning');
-                            })())
-                        );
-                    if ('remove-time-slot' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function (e, t) {
-                                if (be)
-                                    w(
-                                        'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
-                                        'warning'
-                                    );
-                                else
-                                    try {
-                                        ((a[e] = (a[e] || []).filter(
-                                            (e) => e !== t
-                                        )),
-                                            await qe(),
-                                            Oe(e),
-                                            je(),
-                                            w('Horario eliminado', 'success'));
-                                    } catch (e) {
-                                        w(
-                                            `No se pudo eliminar el horario: ${e.message}`,
-                                            'error'
-                                        );
-                                    }
-                            })(
-                                decodeURIComponent(i.dataset.date || ''),
-                                decodeURIComponent(i.dataset.time || '')
-                            ))
-                        );
-                    if ('approve-transfer' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function (e) {
-                                if (
-                                    confirm(
-                                        '¿Aprobar el comprobante de transferencia de esta cita?'
-                                    )
-                                )
-                                    if (e)
-                                        try {
-                                            (await h('appointments', {
-                                                method: 'PATCH',
-                                                body: {
-                                                    id: e,
-                                                    paymentStatus: 'paid',
-                                                    paymentPaidAt:
-                                                        new Date().toISOString(),
-                                                },
-                                            }),
-                                                await M(),
-                                                fe(),
-                                                O(),
-                                                w(
-                                                    'Transferencia aprobada',
-                                                    'success'
-                                                ));
-                                        } catch (e) {
-                                            w(
-                                                `No se pudo aprobar: ${e.message}`,
-                                                'error'
-                                            );
-                                        }
-                                    else w('Id de cita invalido', 'error');
-                            })(Number(i.dataset.id || 0)))
-                        );
-                    if ('reject-transfer' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function (e) {
-                                if (
-                                    confirm(
-                                        '¿Rechazar el comprobante de transferencia? La cita quedará como pago fallido.'
-                                    )
-                                )
-                                    if (e)
-                                        try {
-                                            (await h('appointments', {
-                                                method: 'PATCH',
-                                                body: {
-                                                    id: e,
-                                                    paymentStatus: 'failed',
-                                                },
-                                            }),
-                                                await M(),
-                                                fe(),
-                                                O(),
-                                                w(
-                                                    'Transferencia rechazada',
-                                                    'warning'
-                                                ));
-                                        } catch (e) {
-                                            w(
-                                                `No se pudo rechazar: ${e.message}`,
-                                                'error'
-                                            );
-                                        }
-                                    else w('Id de cita invalido', 'error');
-                            })(Number(i.dataset.id || 0)))
-                        );
-                    if ('cancel-appointment' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function (e) {
-                                if (
-                                    confirm(
-                                        '¿Estas seguro de cancelar esta cita?'
-                                    )
-                                )
-                                    if (e)
-                                        try {
-                                            (await h('appointments', {
-                                                method: 'PATCH',
-                                                body: {
-                                                    id: e,
-                                                    status: 'cancelled',
-                                                },
-                                            }),
-                                                await M(),
-                                                fe(),
-                                                O(),
-                                                w(
-                                                    'Cita cancelada correctamente',
-                                                    'success'
-                                                ));
-                                        } catch (e) {
-                                            w(
-                                                `No se pudo cancelar la cita: ${e.message}`,
-                                                'error'
-                                            );
-                                        }
-                                    else w('Id de cita invalido', 'error');
-                            })(Number(i.dataset.id || 0)))
-                        );
-                    if ('mark-no-show' === r)
-                        return (
-                            o.preventDefault(),
-                            void (await (async function (e) {
-                                if (
-                                    confirm(
-                                        'Marcar esta cita como "No asistio"?'
-                                    )
-                                )
-                                    if (e)
-                                        try {
-                                            (await h('appointments', {
-                                                method: 'PATCH',
-                                                body: {
-                                                    id: e,
-                                                    status: 'no_show',
-                                                },
-                                            }),
-                                                await M(),
-                                                fe(),
-                                                O(),
-                                                w(
-                                                    'Cita marcada como no asistio',
-                                                    'success'
-                                                ));
-                                        } catch (e) {
-                                            w(
-                                                `No se pudo marcar no-show: ${e.message}`,
-                                                'error'
-                                            );
-                                        }
-                                    else w('Id de cita invalido', 'error');
-                            })(Number(i.dataset.id || 0)))
-                        );
-                    'mark-contacted' === r &&
-                        (o.preventDefault(),
-                        await (async function (e, n = '') {
-                            let a = null;
-                            const o = Number(e);
-                            o > 0 && (a = t.find((e) => Number(e.id) === o));
-                            const i = n ? decodeURIComponent(n) : '';
-                            if (
-                                (!a && i && (a = t.find((e) => e.fecha === i)),
-                                a)
-                            )
-                                try {
-                                    const e = a.id || Date.now();
-                                    (a.id || (a.id = e),
-                                        await h('callbacks', {
-                                            method: 'PATCH',
-                                            body: {
-                                                id: Number(e),
-                                                status: 'contactado',
-                                            },
+                                    const t = e.map((e) => [
+                                            Number(e.id) || 0,
+                                            e.date || '',
+                                            e.time || '',
+                                            $e(e.name || ''),
+                                            $e(e.email || ''),
+                                            $e(e.phone || ''),
+                                            $e(B(e.service)),
+                                            $e(L(e.doctor)),
+                                            e.price || '',
+                                            $e(C(e.status || 'confirmed')),
+                                            $e(A(e.paymentStatus)),
+                                            $e($(e.paymentMethod)),
+                                        ]),
+                                        n = [
+                                            [
+                                                'ID',
+                                                'Fecha',
+                                                'Hora',
+                                                'Paciente',
+                                                'Email',
+                                                'Telefono',
+                                                'Servicio',
+                                                'Doctor',
+                                                'Precio',
+                                                'Estado',
+                                                'Estado pago',
+                                                'Metodo pago',
+                                            ].join(','),
+                                            ...t.map((e) => e.join(',')),
+                                        ].join('\n'),
+                                        a = new Blob([n], {
+                                            type: 'text/csv;charset=utf-8;',
                                         }),
-                                        await M(),
-                                        U(),
-                                        O(),
+                                        o = URL.createObjectURL(a),
+                                        i = document.createElement('a');
+                                    ((i.href = o),
+                                        (i.download = `citas-pielarmonia-${new Date().toISOString().split('T')[0]}.csv`),
+                                        document.body.appendChild(i),
+                                        i.click(),
+                                        document.body.removeChild(i),
+                                        URL.revokeObjectURL(o),
                                         w(
-                                            'Marcado como contactado',
+                                            'CSV exportado correctamente',
                                             'success'
                                         ));
-                                } catch (e) {
-                                    w(
-                                        `No se pudo actualizar callback: ${e.message}`,
-                                        'error'
-                                    );
-                                }
-                            else w('Callback no encontrado', 'error');
-                        })(
-                            Number(i.dataset.callbackId || 0),
-                            i.dataset.callbackDate || ''
-                        ));
-                } catch (e) {
-                    w(`Error ejecutando accion: ${e.message}`, 'error');
-                }
-                var s;
-            } else i.closest('.toast')?.remove();
-        });
-        const o = document.getElementById('appointmentFilter');
-        o &&
-            o.addEventListener('change', () => {
-                pe();
+                                })()
+                            );
+                        if ('clear-appointment-filters' === r)
+                            return (
+                                o.preventDefault(),
+                                void (function () {
+                                    const { filterSelect: e, searchInput: t } =
+                                        ve();
+                                    (e && (e.value = 'all'),
+                                        t && (t.value = ''),
+                                        Le());
+                                })()
+                            );
+                        if ('appointment-density' === r)
+                            return (
+                                o.preventDefault(),
+                                void (function (e) {
+                                    const t = Se(e);
+                                    (ke(t),
+                                        Ee(fe, t),
+                                        Boolean(
+                                            document.getElementById(
+                                                'appointmentsTableBody'
+                                            )
+                                        ) && Le());
+                                })(i.dataset.density || 'comfortable')
+                            );
+                        if ('change-month' === r)
+                            return (
+                                o.preventDefault(),
+                                (s = Number(i.dataset.delta || 0)),
+                                Ie.setMonth(Ie.getMonth() + s),
+                                void Ze()
+                            );
+                        if ('availability-today' === r)
+                            return (
+                                o.preventDefault(),
+                                void (function () {
+                                    const e = new Date();
+                                    ((Ie = new Date(
+                                        e.getFullYear(),
+                                        e.getMonth(),
+                                        1
+                                    )),
+                                        Ze(),
+                                        Qe(Me(e)));
+                                })()
+                            );
+                        if ('prefill-time-slot' === r)
+                            return (
+                                o.preventDefault(),
+                                void (function (e) {
+                                    if (De)
+                                        return void w(
+                                            'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
+                                            'warning'
+                                        );
+                                    const t =
+                                        document.getElementById('newSlotTime');
+                                    t instanceof HTMLInputElement &&
+                                        ((t.value = String(e || '').trim()),
+                                        t.focus());
+                                })(i.dataset.time || '')
+                            );
+                        if ('copy-availability-day' === r)
+                            return (
+                                o.preventDefault(),
+                                void (function () {
+                                    if (!Ae)
+                                        return void w(
+                                            'Selecciona una fecha para copiar',
+                                            'warning'
+                                        );
+                                    const e = Fe();
+                                    0 !== e.length
+                                        ? (xe(Ae, e),
+                                          Je(),
+                                          w(
+                                              `Dia copiado (${e.length} horario${1 === e.length ? '' : 's'})`,
+                                              'success'
+                                          ))
+                                        : w(
+                                              'No hay horarios para copiar en este dia',
+                                              'warning'
+                                          );
+                                })()
+                            );
+                        if ('paste-availability-day' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function () {
+                                    if ((Pe(), !tt())) return;
+                                    const e = Re(Te?.slots || []);
+                                    if (0 === e.length)
+                                        return void w(
+                                            'Portapapeles vacio',
+                                            'warning'
+                                        );
+                                    const t = Fe();
+                                    if (
+                                        t.length === e.length &&
+                                        t.every((t, n) => t === e[n])
+                                    )
+                                        w(
+                                            'La fecha ya tiene esos mismos horarios',
+                                            'warning'
+                                        );
+                                    else if (
+                                        !(t.length > 0) ||
+                                        confirm(
+                                            `Reemplazar ${t.length} horario${1 === t.length ? '' : 's'} en ${je(Ae)} con ${e.length}?`
+                                        )
+                                    )
+                                        try {
+                                            (Oe(Ae, e),
+                                                await et(),
+                                                qe(Ae),
+                                                Qe(Ae),
+                                                w(
+                                                    'Horarios pegados en la fecha seleccionada',
+                                                    'success'
+                                                ));
+                                        } catch (e) {
+                                            w(
+                                                `No se pudieron pegar los horarios: ${e.message}`,
+                                                'error'
+                                            );
+                                        }
+                                })())
+                            );
+                        if ('duplicate-availability-day-next' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function () {
+                                    if (!tt()) return;
+                                    const e = Fe();
+                                    if (0 === e.length)
+                                        return void w(
+                                            'No hay horarios para duplicar en este dia',
+                                            'warning'
+                                        );
+                                    const t = _e(Ae);
+                                    if (!t)
+                                        return void w(
+                                            'Fecha seleccionada invalida',
+                                            'error'
+                                        );
+                                    const n = new Date(t);
+                                    n.setDate(t.getDate() + 1);
+                                    const o = Me(n),
+                                        i = Re(a[o] || []);
+                                    if (
+                                        !(i.length > 0) ||
+                                        confirm(
+                                            `${je(o)} ya tiene ${i.length} horario${1 === i.length ? '' : 's'}. Deseas reemplazarlos?`
+                                        )
+                                    )
+                                        try {
+                                            (Oe(o, e),
+                                                xe(Ae, e),
+                                                await et(),
+                                                qe(o),
+                                                Qe(o),
+                                                w(
+                                                    `Horarios duplicados a ${je(o)}`,
+                                                    'success'
+                                                ));
+                                        } catch (e) {
+                                            w(
+                                                `No se pudo duplicar el dia: ${e.message}`,
+                                                'error'
+                                            );
+                                        }
+                                })())
+                            );
+                        if ('clear-availability-day' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function () {
+                                    if (!tt()) return;
+                                    const e = Fe();
+                                    if (0 !== e.length) {
+                                        if (
+                                            confirm(
+                                                `Eliminar ${e.length} horario${1 === e.length ? '' : 's'} de ${je(Ae)}?`
+                                            )
+                                        )
+                                            try {
+                                                (Oe(Ae, []),
+                                                    await et(),
+                                                    qe(Ae),
+                                                    Qe(Ae),
+                                                    w(
+                                                        'Horarios del dia eliminados',
+                                                        'success'
+                                                    ));
+                                            } catch (e) {
+                                                w(
+                                                    `No se pudo limpiar el dia: ${e.message}`,
+                                                    'error'
+                                                );
+                                            }
+                                    } else
+                                        w(
+                                            'No hay horarios que limpiar en este dia',
+                                            'warning'
+                                        );
+                                })())
+                            );
+                        if ('add-time-slot' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function () {
+                                    if (De)
+                                        return void w(
+                                            'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
+                                            'warning'
+                                        );
+                                    if (!Ae)
+                                        return void w(
+                                            'Selecciona una fecha primero',
+                                            'warning'
+                                        );
+                                    const e =
+                                        document.getElementById(
+                                            'newSlotTime'
+                                        ).value;
+                                    if (e)
+                                        if (
+                                            (a[Ae] || (a[Ae] = []),
+                                            a[Ae].includes(e))
+                                        )
+                                            w(
+                                                'Este horario ya existe',
+                                                'warning'
+                                            );
+                                        else
+                                            try {
+                                                (a[Ae].push(e),
+                                                    await et(),
+                                                    Xe(Ae),
+                                                    Ze(),
+                                                    (document.getElementById(
+                                                        'newSlotTime'
+                                                    ).value = ''),
+                                                    w(
+                                                        'Horario agregado',
+                                                        'success'
+                                                    ));
+                                            } catch (e) {
+                                                w(
+                                                    `No se pudo guardar el horario: ${e.message}`,
+                                                    'error'
+                                                );
+                                            }
+                                    else w('Ingresa un horario', 'warning');
+                                })())
+                            );
+                        if ('remove-time-slot' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function (e, t) {
+                                    if (De)
+                                        w(
+                                            'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
+                                            'warning'
+                                        );
+                                    else
+                                        try {
+                                            ((a[e] = (a[e] || []).filter(
+                                                (e) => e !== t
+                                            )),
+                                                await et(),
+                                                Xe(e),
+                                                Ze(),
+                                                w(
+                                                    'Horario eliminado',
+                                                    'success'
+                                                ));
+                                        } catch (e) {
+                                            w(
+                                                `No se pudo eliminar el horario: ${e.message}`,
+                                                'error'
+                                            );
+                                        }
+                                })(
+                                    decodeURIComponent(i.dataset.date || ''),
+                                    decodeURIComponent(i.dataset.time || '')
+                                ))
+                            );
+                        if ('approve-transfer' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function (e) {
+                                    if (
+                                        confirm(
+                                            '¿Aprobar el comprobante de transferencia de esta cita?'
+                                        )
+                                    )
+                                        if (e)
+                                            try {
+                                                (await h('appointments', {
+                                                    method: 'PATCH',
+                                                    body: {
+                                                        id: e,
+                                                        paymentStatus: 'paid',
+                                                        paymentPaidAt:
+                                                            new Date().toISOString(),
+                                                    },
+                                                }),
+                                                    await M(),
+                                                    Ce(),
+                                                    O(),
+                                                    w(
+                                                        'Transferencia aprobada',
+                                                        'success'
+                                                    ));
+                                            } catch (e) {
+                                                w(
+                                                    `No se pudo aprobar: ${e.message}`,
+                                                    'error'
+                                                );
+                                            }
+                                        else w('Id de cita invalido', 'error');
+                                })(Number(i.dataset.id || 0)))
+                            );
+                        if ('reject-transfer' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function (e) {
+                                    if (
+                                        confirm(
+                                            '¿Rechazar el comprobante de transferencia? La cita quedará como pago fallido.'
+                                        )
+                                    )
+                                        if (e)
+                                            try {
+                                                (await h('appointments', {
+                                                    method: 'PATCH',
+                                                    body: {
+                                                        id: e,
+                                                        paymentStatus: 'failed',
+                                                    },
+                                                }),
+                                                    await M(),
+                                                    Ce(),
+                                                    O(),
+                                                    w(
+                                                        'Transferencia rechazada',
+                                                        'warning'
+                                                    ));
+                                            } catch (e) {
+                                                w(
+                                                    `No se pudo rechazar: ${e.message}`,
+                                                    'error'
+                                                );
+                                            }
+                                        else w('Id de cita invalido', 'error');
+                                })(Number(i.dataset.id || 0)))
+                            );
+                        if ('cancel-appointment' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function (e) {
+                                    if (
+                                        confirm(
+                                            '¿Estas seguro de cancelar esta cita?'
+                                        )
+                                    )
+                                        if (e)
+                                            try {
+                                                (await h('appointments', {
+                                                    method: 'PATCH',
+                                                    body: {
+                                                        id: e,
+                                                        status: 'cancelled',
+                                                    },
+                                                }),
+                                                    await M(),
+                                                    Ce(),
+                                                    O(),
+                                                    w(
+                                                        'Cita cancelada correctamente',
+                                                        'success'
+                                                    ));
+                                            } catch (e) {
+                                                w(
+                                                    `No se pudo cancelar la cita: ${e.message}`,
+                                                    'error'
+                                                );
+                                            }
+                                        else w('Id de cita invalido', 'error');
+                                })(Number(i.dataset.id || 0)))
+                            );
+                        if ('mark-no-show' === r)
+                            return (
+                                o.preventDefault(),
+                                void (await (async function (e) {
+                                    if (
+                                        confirm(
+                                            'Marcar esta cita como "No asistio"?'
+                                        )
+                                    )
+                                        if (e)
+                                            try {
+                                                (await h('appointments', {
+                                                    method: 'PATCH',
+                                                    body: {
+                                                        id: e,
+                                                        status: 'no_show',
+                                                    },
+                                                }),
+                                                    await M(),
+                                                    Ce(),
+                                                    O(),
+                                                    w(
+                                                        'Cita marcada como no asistio',
+                                                        'success'
+                                                    ));
+                                            } catch (e) {
+                                                w(
+                                                    `No se pudo marcar no-show: ${e.message}`,
+                                                    'error'
+                                                );
+                                            }
+                                        else w('Id de cita invalido', 'error');
+                                })(Number(i.dataset.id || 0)))
+                            );
+                        'mark-contacted' === r &&
+                            (o.preventDefault(),
+                            await (async function (e, n = '') {
+                                let a = null;
+                                const o = Number(e);
+                                o > 0 &&
+                                    (a = t.find((e) => Number(e.id) === o));
+                                const i = n ? decodeURIComponent(n) : '';
+                                if (
+                                    (!a &&
+                                        i &&
+                                        (a = t.find((e) => e.fecha === i)),
+                                    a)
+                                )
+                                    try {
+                                        const e = a.id || Date.now();
+                                        (a.id || (a.id = e),
+                                            await h('callbacks', {
+                                                method: 'PATCH',
+                                                body: {
+                                                    id: Number(e),
+                                                    status: 'contactado',
+                                                },
+                                            }),
+                                            await M(),
+                                            U(),
+                                            O(),
+                                            w(
+                                                'Marcado como contactado',
+                                                'success'
+                                            ));
+                                    } catch (e) {
+                                        w(
+                                            `No se pudo actualizar callback: ${e.message}`,
+                                            'error'
+                                        );
+                                    }
+                                else w('Callback no encontrado', 'error');
+                            })(
+                                Number(i.dataset.callbackId || 0),
+                                i.dataset.callbackDate || ''
+                            ));
+                    } catch (e) {
+                        w(`Error ejecutando accion: ${e.message}`, 'error');
+                    }
+                } else i.closest('.toast')?.remove();
             });
-        const i = document.getElementById('searchAppointments');
-        i &&
-            i.addEventListener('input', () => {
-                pe();
-            });
-        const r = document.getElementById('appointmentSort');
-        r &&
-            r.addEventListener('change', () => {
-                !(function (e) {
-                    const t = ce(e),
-                        { sortSelect: n } = se();
-                    (n && (n.value = t), de(te, t), pe());
-                })(r.value || 'datetime_desc');
-            });
-        const s = document.getElementById('callbackFilter');
-        s && s.addEventListener('change', z);
-    })(),
+            const o = document.getElementById('appointmentFilter');
+            o &&
+                o.addEventListener('change', () => {
+                    Le();
+                });
+            const i = document.getElementById('searchAppointments');
+            i &&
+                i.addEventListener('input', () => {
+                    Le();
+                });
+            const r = document.getElementById('appointmentSort');
+            r &&
+                r.addEventListener('change', () => {
+                    !(function (e) {
+                        const t = we(e),
+                            { sortSelect: n } = ve();
+                        (n && (n.value = t), Ee(pe, t), Le());
+                    })(r.value || 'datetime_desc');
+                });
+            const s = document.getElementById('callbackFilter');
+            s && s.addEventListener('change', z);
+        })(),
         (function () {
-            const e = { sort: ce(T(te, ae)), density: le(T(ne, oe)) },
-                { sortSelect: t } = se();
-            (t && (t.value = e.sort), ue(e.density));
+            const e = { sort: we(T(pe, ge)), density: Se(T(fe, ye)) },
+                { sortSelect: t } = ve();
+            (t && (t.value = e.sort), ke(e.density));
         })());
     const o = document.getElementById('loginForm');
-    (o && o.addEventListener('submit', it),
-        Ge().forEach((e) => {
+    (o && o.addEventListener('submit', ht),
+        at().forEach((e) => {
             e.addEventListener('click', async (t) => {
                 (t.preventDefault(),
-                    await nt(e.dataset.section || 'dashboard'));
+                    await ft(e.dataset.section || 'dashboard'));
             });
         }),
         document
@@ -2519,21 +2618,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             ?.addEventListener('click', () => {
                 const e = document.getElementById('adminSidebar'),
                     t = e?.classList.contains('is-open');
-                et(!t);
+                mt(!t);
             }),
         document
             .getElementById('adminMenuClose')
-            ?.addEventListener('click', () => tt({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => pt({ restoreFocus: !0 })),
         document
             .getElementById('adminSidebarBackdrop')
-            ?.addEventListener('click', () => tt({ restoreFocus: !0 })),
+            ?.addEventListener('click', () => pt({ restoreFocus: !0 })),
         window.addEventListener('keydown', (e) => {
             (!(function (e) {
                 if ('Tab' !== e.key) return;
-                if (!Ve() || !Ke()) return;
+                if (!rt() || !st()) return;
                 const t = document.getElementById('adminSidebar');
                 if (!t) return;
-                const n = Qe();
+                const n = dt();
                 if (0 === n.length) return (e.preventDefault(), void t.focus());
                 const a = n[0],
                     o = n[n.length - 1],
@@ -2546,16 +2645,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                           (e.preventDefault(), a.focus())
                     : (e.preventDefault(), (e.shiftKey ? o : a).focus());
             })(e),
-                'Escape' === e.key && tt({ restoreFocus: !0 }));
+                'Escape' === e.key && pt({ restoreFocus: !0 }));
         }),
         window.addEventListener('resize', () => {
-            (Ve() || tt(), Xe(Ke()));
+            (rt() || pt(), ut(st()));
         }),
         window.addEventListener('hashchange', async () => {
             const e = document.getElementById('adminDashboard');
             e &&
                 !e.classList.contains('is-hidden') &&
-                (await nt(We(), {
+                (await ft(ot(), {
                     refresh: !1,
                     updateHash: !1,
                     focus: !1,
@@ -2598,7 +2697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         (await h('import', { method: 'POST', body: a }),
                             await M());
                         const o = document.querySelector('.nav-item.active');
-                        (await at(o?.dataset.section || 'dashboard'),
+                        (await gt(o?.dataset.section || 'dashboard'),
                             w(
                                 `Datos importados: ${a.appointments.length} citas`,
                                 'success'
@@ -2611,14 +2710,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('online', async () => {
             (w('Conexion restaurada. Actualizando datos...', 'success'),
                 await M(),
-                await at(Je()));
+                await gt(it()));
         }),
-        Xe(!1),
+        ut(!1),
         await (async function () {
             if (!navigator.onLine && T('appointments', null))
                 return (
                     w('Modo offline: mostrando datos locales', 'info'),
-                    void (await ot())
+                    void (await yt())
                 );
             (await (async function () {
                 try {
@@ -2630,11 +2729,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return (w('No se pudo verificar la sesion', 'warning'), !1);
                 }
             })())
-                ? await ot()
+                ? await yt()
                 : (function () {
                       const e = document.getElementById('loginScreen'),
                           t = document.getElementById('adminDashboard');
-                      (tt(),
+                      (pt(),
                           e && e.classList.remove('is-hidden'),
                           t && t.classList.add('is-hidden'));
                   })();

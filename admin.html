@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260226-adminux6" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260226-theme1" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -29,6 +29,47 @@
         <!-- Login Screen -->
         <div id="loginScreen" class="login-screen">
             <div class="login-box">
+                <div class="login-theme-bar">
+                    <div
+                        class="admin-theme-switcher"
+                        role="group"
+                        aria-label="Tema de color"
+                    >
+                        <button
+                            type="button"
+                            class="admin-theme-btn"
+                            data-action="set-admin-theme"
+                            data-theme-mode="light"
+                            aria-label="Modo claro"
+                            aria-pressed="false"
+                            title="Modo claro"
+                        >
+                            <i class="fas fa-sun"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="admin-theme-btn"
+                            data-action="set-admin-theme"
+                            data-theme-mode="dark"
+                            aria-label="Modo oscuro"
+                            aria-pressed="false"
+                            title="Modo oscuro"
+                        >
+                            <i class="fas fa-moon"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="admin-theme-btn"
+                            data-action="set-admin-theme"
+                            data-theme-mode="system"
+                            aria-label="Modo sistema"
+                            aria-pressed="true"
+                            title="Modo sistema"
+                        >
+                            <i class="fas fa-circle-half-stroke"></i>
+                        </button>
+                    </div>
+                </div>
                 <div class="login-logo">
                     <i class="fas fa-spa"></i>
                     <h1>Panel de Administración</h1>
@@ -180,6 +221,45 @@
                         <h2 id="pageTitle">Dashboard</h2>
                     </div>
                     <div class="header-actions">
+                        <div
+                            class="admin-theme-switcher admin-theme-switcher-header"
+                            role="group"
+                            aria-label="Tema de color"
+                        >
+                            <button
+                                type="button"
+                                class="admin-theme-btn"
+                                data-action="set-admin-theme"
+                                data-theme-mode="light"
+                                aria-label="Modo claro"
+                                aria-pressed="false"
+                                title="Modo claro"
+                            >
+                                <i class="fas fa-sun"></i>
+                            </button>
+                            <button
+                                type="button"
+                                class="admin-theme-btn"
+                                data-action="set-admin-theme"
+                                data-theme-mode="dark"
+                                aria-label="Modo oscuro"
+                                aria-pressed="false"
+                                title="Modo oscuro"
+                            >
+                                <i class="fas fa-moon"></i>
+                            </button>
+                            <button
+                                type="button"
+                                class="admin-theme-btn"
+                                data-action="set-admin-theme"
+                                data-theme-mode="system"
+                                aria-label="Modo sistema"
+                                aria-pressed="true"
+                                title="Modo sistema"
+                            >
+                                <i class="fas fa-circle-half-stroke"></i>
+                            </button>
+                        </div>
                         <span class="current-date" id="currentDate"></span>
                         <span
                             id="pushStatusIndicator"
@@ -880,6 +960,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260226-adminux6" type="module"></script>
+        <script src="admin.js?v=admin-20260226-theme1" type="module"></script>
     </body>
 </html>

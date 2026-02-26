@@ -9,7 +9,7 @@ import {
     debugLog,
 } from './utils.js';
 import { initActionRouterEngine } from './router.js';
-import { initThemeMode } from './theme.js';
+import { initThemeMode, setThemeMode } from './theme.js';
 import { changeLanguage, initEnglishBundleWarmup } from './i18n.js';
 import { state } from './state.js';
 import { bootstrapConsent, showConsentBanner, initGA4 } from './cookies.js';
@@ -76,6 +76,34 @@ function loadSuccessModalRuntime() {
         successModalRuntimePromise = import('./success-modal.js');
     }
     return successModalRuntimePromise;
+}
+
+let themeButtonFallbackBridgeBound = false;
+
+function initThemeButtonFallbackBridge() {
+    if (themeButtonFallbackBridgeBound) {
+        return;
+    }
+    themeButtonFallbackBridgeBound = true;
+
+    document.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) return;
+
+        const button = target.closest('.theme-btn[data-theme-mode]');
+        if (!button) return;
+
+        const mode =
+            button.getAttribute('data-theme-mode') ||
+            button.getAttribute('data-value') ||
+            'system';
+
+        // Theme buttons should work even if the deferred action-router engine
+        // has not finished loading yet.
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setThemeMode(mode);
+    });
 }
 
 import { loadFeatureFlags, isFeatureEnabled } from './features.js';
@@ -516,6 +544,7 @@ document.addEventListener('DOMContentLoaded', function () {
     disablePlaceholderExternalLinks();
     bootstrapConsent();
     initChatActionFallbackBridge();
+    initThemeButtonFallbackBridge();
     initActionRouterEngine();
     initDeferredStylesheetLoading();
     initThemeMode();

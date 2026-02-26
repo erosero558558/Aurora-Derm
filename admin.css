@@ -18,6 +18,17 @@
     background: var(--color-bg-gray);
 }
 
+.admin-body.theme-transition,
+.admin-body.theme-transition *,
+.admin-body.theme-transition *::before,
+.admin-body.theme-transition *::after {
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease !important;
+}
+
 .admin-body.admin-sidebar-open {
     overflow: hidden;
     overscroll-behavior: none;
@@ -68,6 +79,12 @@
     max-width: 400px;
     text-align: center;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.login-theme-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin: -8px -8px 10px;
 }
 
 .login-logo {
@@ -163,6 +180,50 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+}
+
+.admin-theme-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid #dbe5f2;
+    background: #f8fbff;
+}
+
+.admin-theme-switcher-header {
+    margin-right: 2px;
+}
+
+.admin-theme-btn {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #5a6f88;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.admin-theme-btn:hover {
+    background: rgba(15, 88, 186, 0.08);
+    color: #0f58ba;
+}
+
+.admin-theme-btn.is-active {
+    background: #ffffff;
+    color: #0f58ba;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.admin-theme-btn:focus-visible {
+    outline: 3px solid rgba(0, 113, 227, 0.24);
+    outline-offset: 1px;
 }
 
 /* ========================================
@@ -442,6 +503,259 @@
     color: #ad2d2d;
     background: #fff1f1;
     border-color: #f0c9c9;
+}
+
+/* ========================================
+   ADMIN THEME (DARK)
+   ======================================== */
+html[data-theme='dark'] {
+    color-scheme: dark;
+}
+
+html[data-theme='dark'] .admin-body {
+    background: #0f1724;
+    color: #e6edf7;
+}
+
+html[data-theme='dark'] .admin-skip-link {
+    background: #101a2a;
+    color: #9bc7ff;
+    border-color: #4c8dff;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme='dark'] .login-screen {
+    background: linear-gradient(135deg, #18223b 0%, #231d39 100%);
+}
+
+html[data-theme='dark'] .login-box,
+html[data-theme='dark'] .admin-header,
+html[data-theme='dark'] .stat-card,
+html[data-theme='dark'] .dashboard-card,
+html[data-theme='dark'] .section-toolbar,
+html[data-theme='dark'] .table-container,
+html[data-theme='dark'] .reviews-stats,
+html[data-theme='dark'] .review-card-admin,
+html[data-theme='dark'] .availability-calendar,
+html[data-theme='dark'] .time-slots-config,
+html[data-theme='dark'] .toast {
+    background: #121c2d;
+    color: #e6edf7;
+    border-color: #26364d;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+html[data-theme='dark'] .login-hint,
+html[data-theme='dark'] .current-date,
+html[data-theme='dark'] .stat-label,
+html[data-theme='dark'] .muted-label,
+html[data-theme='dark'] .funnel-chip-label,
+html[data-theme='dark'] .funnel-row-label,
+html[data-theme='dark'] .empty-message,
+html[data-theme='dark'] .toolbar-state-row,
+html[data-theme='dark'] .search-box i,
+html[data-theme='dark'] .calendar-day-header,
+html[data-theme='dark'] .selected-date,
+html[data-theme='dark'] .availability-helper,
+html[data-theme='dark'] .toast-message,
+html[data-theme='dark'] .toast-close,
+html[data-theme='dark'] .callback-time {
+    color: #9fb0c7;
+}
+
+html[data-theme='dark'] .login-logo h1,
+html[data-theme='dark'] .admin-header h2,
+html[data-theme='dark'] .dashboard-card h3,
+html[data-theme='dark'] .availability-calendar h3,
+html[data-theme='dark'] .time-slots-config h3,
+html[data-theme='dark'] .calendar-header span,
+html[data-theme='dark'] .big-rating,
+html[data-theme='dark'] .table-empty-state strong,
+html[data-theme='dark'] .card-empty-state strong,
+html[data-theme='dark'] .toolbar-state-label,
+html[data-theme='dark'] .availability-summary-chip strong,
+html[data-theme='dark'] .slot-presets-label,
+html[data-theme='dark'] .toast-title {
+    color: #edf4ff;
+}
+
+html[data-theme='dark'] .admin-theme-switcher {
+    background: #0f1724;
+    border-color: #2a3a52;
+}
+
+html[data-theme='dark'] .admin-theme-btn {
+    color: #9fb0c7;
+}
+
+html[data-theme='dark'] .admin-theme-btn:hover {
+    background: rgba(95, 168, 255, 0.12);
+    color: #b8d7ff;
+}
+
+html[data-theme='dark'] .admin-theme-btn.is-active {
+    background: #1b2940;
+    color: #8fc8ff;
+    box-shadow: inset 0 0 0 1px rgba(110, 160, 230, 0.14);
+}
+
+html[data-theme='dark'] .sidebar-brand span,
+html[data-theme='dark'] .nav-item,
+html[data-theme='dark'] .logout-btn,
+html[data-theme='dark'] .sidebar-close-btn {
+    color: rgba(235, 243, 255, 0.86);
+}
+
+html[data-theme='dark'] .admin-sidebar-backdrop {
+    background: rgba(2, 6, 13, 0.65);
+}
+
+html[data-theme='dark'] .status-pill-muted {
+    color: #b1c5dd;
+    background: #162334;
+    border-color: #2c4058;
+}
+
+html[data-theme='dark'] .funnel-chip,
+html[data-theme='dark'] .funnel-row,
+html[data-theme='dark'] .upcoming-item,
+html[data-theme='dark'] .toolbar-state-empty,
+html[data-theme='dark'] .toolbar-state-value,
+html[data-theme='dark'] .toolbar-chip,
+html[data-theme='dark'] .calendar-legend-chip,
+html[data-theme='dark'] .slot-count-badge,
+html[data-theme='dark'] .availability-day-actions,
+html[data-theme='dark'] .availability-summary-chip,
+html[data-theme='dark'] .slot-presets,
+html[data-theme='dark'] .time-slot-item,
+html[data-theme='dark'] .slot-readonly-tag,
+html[data-theme='dark'] .time-slots-list > .empty-message,
+html[data-theme='dark'] .callback-preference {
+    background: #162334;
+    border-color: #2a3b52;
+    color: #c9d7e7;
+}
+
+html[data-theme='dark'] .toolbar-chip.is-accent,
+html[data-theme='dark'] .availability-day-actions-status .toolbar-chip.is-info,
+html[data-theme='dark'] .availability-summary-chip.is-editable {
+    background: #102744;
+    border-color: #284d7a;
+    color: #8fc8ff;
+}
+
+html[data-theme='dark'] .toolbar-chip.is-warning {
+    background: #342b14;
+    border-color: #6a5525;
+    color: #ffd287;
+}
+
+html[data-theme='dark'] .availability-day-actions-status .toolbar-chip.is-muted,
+html[data-theme='dark'] .availability-summary-chip.is-readonly {
+    background: #172130;
+    border-color: #2d3a4d;
+    color: #b1c2d6;
+}
+
+html[data-theme='dark'] .availability-day-actions-status .toolbar-chip.is-danger,
+html[data-theme='dark'] .btn-secondary.danger-soft {
+    background: #311a21;
+    border-color: #64323d;
+    color: #ffb9c4;
+}
+
+html[data-theme='dark'] .btn-secondary.danger-soft:hover {
+    background: #3a2028;
+    border-color: #7a3c49;
+}
+
+html[data-theme='dark'] .filter-group select,
+html[data-theme='dark'] .search-box input,
+html[data-theme='dark'] .add-slot-form input {
+    background: #0f1724;
+    border-color: #2a3b52;
+    color: #ecf3ff;
+}
+
+html[data-theme='dark'] .filter-group select option {
+    background: #101a2a;
+    color: #ecf3ff;
+}
+
+html[data-theme='dark'] .data-table th {
+    background: #172437;
+    color: #9db1ca;
+    border-bottom-color: #273952;
+}
+
+html[data-theme='dark'] .data-table td {
+    color: #dbe6f4;
+    border-bottom-color: #23354d;
+}
+
+html[data-theme='dark'] .data-table tr:hover {
+    background: rgba(95, 168, 255, 0.06);
+}
+
+html[data-theme='dark'] #appointmentsTable .appointment-row {
+    background: #121c2d;
+    border-color: #26364d;
+}
+
+html[data-theme='dark'] #appointmentsTable .appointment-row:hover {
+    background: #121c2d;
+}
+
+html[data-theme='dark'] #appointmentsTable .appointment-row td::before {
+    color: #93a8c2;
+}
+
+html[data-theme='dark'] .calendar-header .btn-icon,
+html[data-theme='dark'] .time-slot-item .slot-actions .btn-icon {
+    background: #162334;
+    border-color: #2a3b52;
+    color: #d8e3f1;
+}
+
+html[data-theme='dark'] .calendar-day:hover {
+    background: #1a2739;
+}
+
+html[data-theme='dark'] .calendar-day.other-month {
+    color: #546780;
+}
+
+html[data-theme='dark'] .calendar-day.today {
+    border-color: #6fb1ff;
+}
+
+html[data-theme='dark'] .calendar-day.selected {
+    background: #2473eb;
+}
+
+html[data-theme='dark'] .slot-preset-btn {
+    background: #101a2a;
+    border-color: #2b3f58;
+    color: #d5e2f3;
+}
+
+html[data-theme='dark'] .slot-preset-btn:hover {
+    background: #15253a;
+    border-color: #40658e;
+}
+
+html[data-theme='dark'] .add-slot-form {
+    border-top-color: #273952;
+}
+
+html[data-theme='dark'] .table-empty-state,
+html[data-theme='dark'] .card-empty-state {
+    color: #9fb0c7;
+}
+
+html[data-theme='dark'] .table-empty-state i,
+html[data-theme='dark'] .card-empty-state i {
+    color: #6f88a7;
 }
 
 /* Admin Sections */

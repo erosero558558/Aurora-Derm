@@ -69,6 +69,63 @@ test.describe('Homepage', () => {
         expect(hasValidThemeState).toBeTruthy();
     });
 
+    test('sistema de temas cambia a oscuro y persiste tras recarga', async ({
+        page,
+    }) => {
+        const darkBtn = page
+            .locator('.theme-btn[data-theme-mode="dark"]')
+            .first();
+        const lightBtn = page
+            .locator('.theme-btn[data-theme-mode="light"]')
+            .first();
+
+        await expect(darkBtn).toBeVisible();
+        await darkBtn.click();
+
+        await expect
+            .poll(async () => {
+                return page.evaluate(() => ({
+                    mode: document.documentElement.getAttribute(
+                        'data-theme-mode'
+                    ),
+                    theme: document.documentElement.getAttribute('data-theme'),
+                    stored: localStorage.getItem('themeMode'),
+                }));
+            })
+            .toEqual({
+                mode: 'dark',
+                theme: 'dark',
+                stored: 'dark',
+            });
+
+        await page.reload();
+
+        await expect
+            .poll(async () => {
+                return page.evaluate(() => ({
+                    mode: document.documentElement.getAttribute(
+                        'data-theme-mode'
+                    ),
+                    theme: document.documentElement.getAttribute('data-theme'),
+                }));
+            })
+            .toEqual({
+                mode: 'dark',
+                theme: 'dark',
+            });
+
+        if (await lightBtn.isVisible()) {
+            await lightBtn.click();
+            await expect
+                .poll(async () =>
+                    page.evaluate(() =>
+                        document.documentElement.getAttribute('data-theme')
+                    )
+                )
+                .toBe('light');
+        }
+    });
+
     test('footer visible con enlaces legales', async ({ page }) => {
         const footer = page.locator('footer').first();
         await expect(footer).toBeVisible();

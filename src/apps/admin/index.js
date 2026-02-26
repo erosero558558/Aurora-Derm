@@ -17,6 +17,7 @@ import {
 } from './modules/callbacks.js';
 import { loadReviews } from './modules/reviews.js';
 import { initPushNotifications } from './modules/push.js';
+import { initAdminThemeMode, setAdminThemeMode } from './modules/theme.js';
 import {
     loadAppointments,
     filterAppointments,
@@ -560,6 +561,12 @@ function attachGlobalListeners() {
             return;
         }
 
+        if (action === 'set-admin-theme') {
+            event.preventDefault();
+            setAdminThemeMode(actionEl.dataset.themeMode || 'system');
+            return;
+        }
+
         try {
             if (action === 'export-csv') {
                 event.preventDefault();
@@ -686,6 +693,7 @@ function attachGlobalListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    initAdminThemeMode();
     attachGlobalListeners();
     initAppointmentsToolbarPreferences();
 
