@@ -59,6 +59,7 @@ function register_api_routes(Router $router): void
     $router->add('PATCH', 'reschedule', [AppointmentController::class, 'processReschedule']);
 
     $router->add('GET', 'content', [ContentController::class, 'get']);
+    $router->add('GET', 'services-catalog', [ServiceCatalogController::class, 'index']);
 
     $router->add('GET', 'push-config', [PushController::class, 'config']);
     $router->add('POST', 'push-subscribe', [PushController::class, 'subscribe']);

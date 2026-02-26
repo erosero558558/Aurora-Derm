@@ -113,6 +113,64 @@ Criterio de salida:
 - [x] Pipeline con semaforos por dominio.
 - [x] Fallback operativo documentado para picos transitorios sin relajar seguridad.
 
+## C5 - Embudo de conversion por servicio (backend)
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Hacer trazable la conversion por `service_slug` y `service_category` en backend, sin cambios breaking de API.
+
+Entregables:
+
+- [x] `POST /funnel-event` acepta eventos de servicio (`view_service_category`, `view_service_detail`, `start_booking_from_service`).
+- [x] `GET /funnel-metrics` agrega breakdowns por servicio/categoria y matriz `serviceFunnel` con tasas.
+- [x] Cobertura de integracion backend para persistencia de labels y calculo de tasas.
+
+Criterio de salida:
+
+- [x] Los eventos de servicio quedan almacenados en metricas Prometheus con labels normalizados.
+- [x] `serviceFunnel` retorna tasas consistentes (`intent->checkout`, `checkout->confirmed`, `detail->confirmed`).
+- [x] Pruebas de integracion en verde sin regresion en `retention`.
+
+## C6 - Alertas operativas de service funnel (weekly KPI)
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Convertir el embudo por servicio en senal operativa semanal con umbrales configurables, incidentes dedicados y trazabilidad en artefactos.
+
+Entregables:
+
+- [x] `REPORTE-SEMANAL-PRODUCCION.ps1` incorpora analisis `serviceFunnel` (muestras, top servicios, alertas por servicio, codigos y payload JSON/markdown).
+- [x] `weekly-kpi-report.yml` agrega umbrales de service funnel (inputs + vars + outputs efectivos) y los pasa al reporte.
+- [x] Workflow semanal abre/cierra incidente dedicado `[ALERTA PROD] Weekly KPI service funnel degradado`.
+
+Criterio de salida:
+
+- [x] Warnings `service_funnel_*` quedan clasificados como `non_critical` de impacto `conversion` (con runbook).
+- [x] Reporte semanal expone `serviceFunnel.source/rows/alerts/top` en JSON y resumen.
+- [x] Incidentes semanales distinguen `general`, `retencion`, `ops-sla` y `service funnel` sin contaminar SLA externo.
+
+## C7 - Catalogo de servicios API (backend contract)
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Exponer un contrato backend estable para catalogo de servicios (`services-catalog`) con filtros/paginacion y tolerancia a catalogo faltante, sin cambios breaking.
+
+Entregables:
+
+- [x] Nuevo endpoint publico `GET /api.php?resource=services-catalog`.
+- [x] Filtros backend por `slug/category/subcategory/audience/doctor/q`, con `limit/offset`.
+- [x] Metadatos operativos (`source/version/timezone/total/filtered/returned/generatedAt`) para soporte de front/rediseno.
+- [x] Cobertura de integracion para filtros, busqueda y comportamiento cuando falta el catalogo.
+
+Criterio de salida:
+
+- [x] Endpoint responde `200` con `ok=true` y `data/meta` incluso cuando el catalogo no existe (`source=missing`).
+- [x] Contrato de filtros y paginacion protegido por pruebas de integracion verdes.
+- [x] Sin regresiones en analytics/retention existentes.
+
 ## Contratos publicos
 
 - No se introducen cambios breaking en contratos HTTP existentes.
@@ -167,3 +225,6 @@ Criterio de salida:
 - 2026-02-25: `weekly-kpi-report.yml` ahora calcula SLA operativo de 14 dias (`fast_p95_min <= 10`, `nightly_success_rate >= 90`) desde GitHub Actions, lo publica en summary y lo integra al criterio de apertura/cierre de incidente semanal; validado en run manual `22420355235` (`success`).
 - 2026-02-26: bloque C2 operativo extendido con alertas estructuradas de `retention-report` en `REPORTE-SEMANAL-PRODUCCION.ps1` (`retentionReport.source/alerts/alertCounts`) y gobernanza semanal en `.github/workflows/weekly-kpi-report.yml` (summary + apertura/cierre de incidente tambien por `retention_report_alert_count`); cobertura integrada en `tests/Integration/AnalyticsRetentionReportTest.php` (`testRetentionReportIncludesAlertsWhenThresholdsAreExceeded`).
 - 2026-02-26: C3 operativo reforzado en `.github/workflows/weekly-kpi-report.yml` separando incidentes automáticos `general` vs `retencion` (titulos dedicados + labels), corrigiendo autocierre por exclusión de incidentes semanales del KPI `ops_incidents_open_external`, y publicando ambos conteos (`external/total`) en summary para triage sin bucles.
+- 2026-02-26: cerrado C5 backend con trazabilidad de conversion por servicio en `controllers/AnalyticsController.php` (eventos `view_service_*` y `start_booking_from_service`, breakdowns `serviceCategory/serviceDetail/serviceBookingIntent/serviceCheckout/serviceConfirmed`, y matriz `serviceFunnel`), con cobertura en `tests/Integration/AnalyticsServiceFunnelMetricsTest.php`; validado con `php -d xdebug.mode=coverage vendor/bin/phpunit tests/Integration/AnalyticsServiceFunnelMetricsTest.php tests/Integration/AnalyticsRetentionMetricsTest.php tests/Integration/AnalyticsRetentionReportTest.php` (`6 tests`, `108 assertions`).
+- 2026-02-26: cerrado C6 con alertas operativas de `serviceFunnel` en `REPORTE-SEMANAL-PRODUCCION.ps1` (codigos `service_funnel_*`, seccion markdown/JSON y top servicios) y workflow semanal extendido (`.github/workflows/weekly-kpi-report.yml`) con umbrales dedicados, outputs de incidente y apertura/cierre automatica de `[ALERTA PROD] Weekly KPI service funnel degradado`.
+- 2026-02-26: cerrado C7 con nuevo controlador `controllers/ServiceCatalogController.php` y endpoint publico `services-catalog` (filtros + paginacion + metadatos + fallback `source=missing`), registrado en `api.php`, `lib/routes.php` y `lib/ApiConfig.php`; cobertura en `tests/Integration/ServiceCatalogControllerTest.php` y regresion analytics en verde.

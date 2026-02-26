@@ -85,6 +85,26 @@ on:
                 required: false
                 default: '100'
                 type: string
+            service_funnel_min_detail_views:
+                description: 'Muestra minima de vistas detalle por servicio'
+                required: false
+                default: '25'
+                type: string
+            service_funnel_min_checkout_starts:
+                description: 'Muestra minima de checkout por servicio'
+                required: false
+                default: '5'
+                type: string
+            service_funnel_checkout_to_confirmed_min_warn_pct:
+                description: 'Umbral minimo checkout->confirmed (%) por servicio'
+                required: false
+                default: '35'
+                type: string
+            service_funnel_detail_to_confirmed_min_warn_pct:
+                description: 'Umbral minimo detail->confirmed (%) por servicio'
+                required: false
+                default: '8'
+                type: string
             core_p95_max_ms:
                 description: 'Umbral p95 core (ms)'
                 required: false
@@ -132,6 +152,10 @@ jobs:
             REPORT_START_CHECKOUT_MIN_WARN_PCT: ${{ github.event.inputs.start_checkout_min_warn_pct || vars.WEEKLY_KPI_START_CHECKOUT_MIN_WARN_PCT || '0.25' }}
             REPORT_START_CHECKOUT_DROP_WARN_PCT: ${{ github.event.inputs.start_checkout_drop_warn_pct || vars.WEEKLY_KPI_START_CHECKOUT_DROP_WARN_PCT || '0.2' }}
             REPORT_START_CHECKOUT_MIN_VIEW_BOOKING: ${{ github.event.inputs.start_checkout_min_view_booking || vars.WEEKLY_KPI_START_CHECKOUT_MIN_VIEW_BOOKING || '100' }}
+            REPORT_SERVICE_FUNNEL_MIN_DETAIL_VIEWS: ${{ github.event.inputs.service_funnel_min_detail_views || vars.WEEKLY_KPI_SERVICE_FUNNEL_MIN_DETAIL_VIEWS || '25' }}
+            REPORT_SERVICE_FUNNEL_MIN_CHECKOUT_STARTS: ${{ github.event.inputs.service_funnel_min_checkout_starts || vars.WEEKLY_KPI_SERVICE_FUNNEL_MIN_CHECKOUT_STARTS || '5' }}
+            REPORT_SERVICE_FUNNEL_CHECKOUT_TO_CONFIRMED_MIN_WARN_PCT: ${{ github.event.inputs.service_funnel_checkout_to_confirmed_min_warn_pct || vars.WEEKLY_KPI_SERVICE_FUNNEL_CHECKOUT_TO_CONFIRMED_MIN_WARN_PCT || '35' }}
+            REPORT_SERVICE_FUNNEL_DETAIL_TO_CONFIRMED_MIN_WARN_PCT: ${{ github.event.inputs.service_funnel_detail_to_confirmed_min_warn_pct || vars.WEEKLY_KPI_SERVICE_FUNNEL_DETAIL_TO_CONFIRMED_MIN_WARN_PCT || '8' }}
             REPORT_CORE_P95_MAX_MS: ${{ github.event.inputs.core_p95_max_ms || vars.WEEKLY_KPI_CORE_P95_MAX_MS || '800' }}
             REPORT_FIGO_POST_P95_MAX_MS: ${{ github.event.inputs.figo_post_p95_max_ms || vars.WEEKLY_KPI_FIGO_POST_P95_MAX_MS || '2500' }}
             REPORT_MAX_REPORT_AGE_HOURS: ${{ github.event.inputs.max_report_age_hours || vars.WEEKLY_KPI_MAX_REPORT_AGE_HOURS || '36' }}
@@ -232,6 +256,10 @@ jobs:
                   $startCheckoutMinWarnPct = Parse-DoubleValue -Name 'start_checkout_min_warn_pct' -Raw $env:REPORT_START_CHECKOUT_MIN_WARN_PCT -DefaultValue 0.25 -MinValue 0 -Warnings $thresholdWarnings
                   $startCheckoutDropWarnPct = Parse-DoubleValue -Name 'start_checkout_drop_warn_pct' -Raw $env:REPORT_START_CHECKOUT_DROP_WARN_PCT -DefaultValue 0.2 -MinValue 0 -Warnings $thresholdWarnings
                   $startCheckoutMinViewBooking = Parse-IntValue -Name 'start_checkout_min_view_booking' -Raw $env:REPORT_START_CHECKOUT_MIN_VIEW_BOOKING -DefaultValue 100 -MinValue 1 -Warnings $thresholdWarnings
+                  $serviceFunnelMinDetailViews = Parse-IntValue -Name 'service_funnel_min_detail_views' -Raw $env:REPORT_SERVICE_FUNNEL_MIN_DETAIL_VIEWS -DefaultValue 25 -MinValue 1 -Warnings $thresholdWarnings
+                  $serviceFunnelMinCheckoutStarts = Parse-IntValue -Name 'service_funnel_min_checkout_starts' -Raw $env:REPORT_SERVICE_FUNNEL_MIN_CHECKOUT_STARTS -DefaultValue 5 -MinValue 1 -Warnings $thresholdWarnings
+                  $serviceFunnelCheckoutToConfirmedMinWarnPct = Parse-DoubleValue -Name 'service_funnel_checkout_to_confirmed_min_warn_pct' -Raw $env:REPORT_SERVICE_FUNNEL_CHECKOUT_TO_CONFIRMED_MIN_WARN_PCT -DefaultValue 35.0 -MinValue 0 -Warnings $thresholdWarnings
+                  $serviceFunnelDetailToConfirmedMinWarnPct = Parse-DoubleValue -Name 'service_funnel_detail_to_confirmed_min_warn_pct' -Raw $env:REPORT_SERVICE_FUNNEL_DETAIL_TO_CONFIRMED_MIN_WARN_PCT -DefaultValue 8.0 -MinValue 0 -Warnings $thresholdWarnings
                   $thresholdWarningsCount = $thresholdWarnings.Count
                   $thresholdWarningsList = if ($thresholdWarningsCount -gt 0) { @($thresholdWarnings) -join ' | ' } else { 'none' }
 
@@ -250,6 +278,10 @@ jobs:
                   "effective_start_checkout_min_warn_pct=$startCheckoutMinWarnPct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "effective_start_checkout_drop_warn_pct=$startCheckoutDropWarnPct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "effective_start_checkout_min_view_booking=$startCheckoutMinViewBooking" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "effective_service_funnel_min_detail_views=$serviceFunnelMinDetailViews" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "effective_service_funnel_min_checkout_starts=$serviceFunnelMinCheckoutStarts" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "effective_service_funnel_checkout_to_confirmed_min_warn_pct=$serviceFunnelCheckoutToConfirmedMinWarnPct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "effective_service_funnel_detail_to_confirmed_min_warn_pct=$serviceFunnelDetailToConfirmedMinWarnPct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "effective_fail_on_invalid_thresholds=$failOnInvalidThresholds" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "threshold_warnings_count=$thresholdWarningsCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "threshold_warnings_list=$thresholdWarningsList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -274,7 +306,11 @@ jobs:
                     '-ConversionWarnMinStartCheckout', $conversionMinStartCheckout,
                     '-StartCheckoutRateMinWarnPct', $startCheckoutMinWarnPct,
                     '-StartCheckoutRateDropWarnPct', $startCheckoutDropWarnPct,
-                    '-StartCheckoutWarnMinViewBooking', $startCheckoutMinViewBooking
+                    '-StartCheckoutWarnMinViewBooking', $startCheckoutMinViewBooking,
+                    '-ServiceFunnelWarnMinDetailViews', $serviceFunnelMinDetailViews,
+                    '-ServiceFunnelWarnMinCheckoutStarts', $serviceFunnelMinCheckoutStarts,
+                    '-ServiceFunnelCheckoutToConfirmedMinWarnPct', $serviceFunnelCheckoutToConfirmedMinWarnPct,
+                    '-ServiceFunnelDetailToConfirmedMinWarnPct', $serviceFunnelDetailToConfirmedMinWarnPct
                   )
 
                   if ($env:FAIL_ON_WARNINGS -eq 'true') {
@@ -343,6 +379,17 @@ jobs:
                     "retention_incident_reason_codes=report_missing,retention_alert_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_incident_severity=critical" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_source=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_rows=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_alert_count=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_alert_list=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_alert_count_int=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_alert_data_valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_incident_required=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_incident_recovered=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_incident_reason_codes=report_missing,service_funnel_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_incident_severity=critical" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_funnel_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_core_p95_max_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_figo_post_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_availability_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -458,6 +505,23 @@ jobs:
                     } else {
                       'none'
                     }
+                    $serviceFunnel = $payload.serviceFunnel
+                    $serviceFunnelSource = if ($null -ne $serviceFunnel -and $null -ne $serviceFunnel.source) { [string]$serviceFunnel.source } else { 'n/a' }
+                    $serviceFunnelRows = if ($null -ne $serviceFunnel -and $null -ne $serviceFunnel.rows) { [string]$serviceFunnel.rows } else { '0' }
+                    $serviceFunnelAlertCount = if ($null -ne $serviceFunnel -and $null -ne $serviceFunnel.alertCount) { [string]$serviceFunnel.alertCount } else { '0' }
+                    $serviceFunnelAlerts = if ($null -ne $serviceFunnel -and $serviceFunnel.alerts) { @($serviceFunnel.alerts) } else { @() }
+                    $serviceFunnelAlertList = if ($serviceFunnelAlerts.Count -gt 0) {
+                      @(
+                        $serviceFunnelAlerts | ForEach-Object {
+                          $code = if ($null -ne $_.code) { [string]$_.code } else { 'service_funnel_unknown' }
+                          $serviceSlug = if ($null -ne $_.serviceSlug) { [string]$_.serviceSlug } else { 'unknown' }
+                          $reason = if ($null -ne $_.reason) { [string]$_.reason } else { 'unknown' }
+                          "$code(service:$serviceSlug reason:$reason)"
+                        }
+                      ) -join '; '
+                    } else {
+                      'none'
+                    }
                     $coreP95MaxMs = if ($null -ne $latency) { $latency.coreP95MaxMs } else { 'n/a' }
                     $figoPostP95Ms = if ($null -ne $latency) { $latency.figoPostP95Ms } else { 'n/a' }
                     $availabilityBench = $null
@@ -496,6 +560,10 @@ jobs:
                     $retentionReportAlertWarnCount = 'n/a'
                     $retentionReportAlertCriticalCount = 'n/a'
                     $retentionReportAlertList = 'n/a'
+                    $serviceFunnelSource = 'n/a'
+                    $serviceFunnelRows = 'n/a'
+                    $serviceFunnelAlertCount = 'n/a'
+                    $serviceFunnelAlertList = 'n/a'
                     $coreP95MaxMs = 'n/a'
                     $figoPostP95Ms = 'n/a'
                     $availabilityP95Ms = 'n/a'
@@ -598,6 +666,38 @@ jobs:
                   "retention_incident_reason_codes=$retentionIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_incident_severity=$retentionIncidentSeverity" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_signal_key=$retentionSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_source=$serviceFunnelSource" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_rows=$serviceFunnelRows" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_alert_count=$serviceFunnelAlertCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_alert_list=$serviceFunnelAlertList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  $serviceFunnelAlertCountInt = -1
+                  $tmpServiceFunnelAlertCount = 0
+                  if ([int]::TryParse([string]$serviceFunnelAlertCount, [ref]$tmpServiceFunnelAlertCount)) {
+                    $serviceFunnelAlertCountInt = $tmpServiceFunnelAlertCount
+                  }
+                  $serviceFunnelAlertDataValid = if ($serviceFunnelAlertCountInt -ge 0) { 'true' } else { 'false' }
+                  $serviceFunnelIncidentRequired = if ($serviceFunnelAlertCountInt -eq -1 -or $serviceFunnelAlertCountInt -gt 0) { 'true' } else { 'false' }
+                  $serviceFunnelIncidentRecovered = if ($serviceFunnelAlertCountInt -eq 0 -and $reportStale -ne 'true') { 'true' } else { 'false' }
+                  $serviceFunnelReasonCodes = New-Object System.Collections.Generic.List[string]
+                  if ($reportStale -eq 'true') { $serviceFunnelReasonCodes.Add('report_stale') | Out-Null }
+                  if ($serviceFunnelAlertCountInt -eq -1) {
+                    $serviceFunnelReasonCodes.Add('service_funnel_invalid') | Out-Null
+                  } elseif ($serviceFunnelAlertCountInt -gt 0) {
+                    $serviceFunnelReasonCodes.Add('service_funnel_alert_active') | Out-Null
+                  }
+                  if ($serviceFunnelReasonCodes.Count -eq 0) {
+                    $serviceFunnelReasonCodes.Add('none') | Out-Null
+                  }
+                  $serviceFunnelIncidentReasonCodes = @($serviceFunnelReasonCodes) -join ','
+                  $serviceFunnelIncidentSeverity = if ($reportStale -eq 'true' -or $serviceFunnelAlertCountInt -eq -1) { 'critical' } elseif ($serviceFunnelAlertCountInt -ge 3) { 'critical' } elseif ($serviceFunnelAlertCountInt -gt 0) { 'warning' } else { 'warning' }
+                  $serviceFunnelSignalKey = "count:$serviceFunnelAlertCountInt|stale:$reportStale|reasons:$serviceFunnelIncidentReasonCodes|src:$serviceFunnelSource"
+                  "service_funnel_alert_count_int=$serviceFunnelAlertCountInt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_alert_data_valid=$serviceFunnelAlertDataValid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_incident_required=$serviceFunnelIncidentRequired" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_incident_recovered=$serviceFunnelIncidentRecovered" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_incident_reason_codes=$serviceFunnelIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_incident_severity=$serviceFunnelIncidentSeverity" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_funnel_signal_key=$serviceFunnelSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_core_p95_max_ms=$coreP95MaxMs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_figo_post_p95_ms=$figoPostP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_availability_p95_ms=$availabilityP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -680,7 +780,8 @@ jobs:
                       const weeklyIncidentTitles = new Set([
                         '[ALERTA PROD] Weekly KPI report con warnings',
                         '[ALERTA PROD] Weekly KPI SLA operativo degradado',
-                        '[ALERTA PROD] Weekly KPI retencion degradada'
+                        '[ALERTA PROD] Weekly KPI retencion degradada',
+                        '[ALERTA PROD] Weekly KPI service funnel degradado'
                       ]);
                       const prodIncidents = allIssues.filter((issue) => {
                         if (issue.pull_request) return false;
@@ -776,6 +877,10 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- start_checkout_min_warn_pct: ``${{ steps.run_report.outputs.effective_start_checkout_min_warn_pct }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- start_checkout_drop_warn_pct: ``${{ steps.run_report.outputs.effective_start_checkout_drop_warn_pct }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- start_checkout_min_view_booking: ``${{ steps.run_report.outputs.effective_start_checkout_min_view_booking }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_min_detail_views: ``${{ steps.run_report.outputs.effective_service_funnel_min_detail_views }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_min_checkout_starts: ``${{ steps.run_report.outputs.effective_service_funnel_min_checkout_starts }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_checkout_to_confirmed_min_warn_pct: ``${{ steps.run_report.outputs.effective_service_funnel_checkout_to_confirmed_min_warn_pct }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_detail_to_confirmed_min_warn_pct: ``${{ steps.run_report.outputs.effective_service_funnel_detail_to_confirmed_min_warn_pct }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- threshold_warnings_count: ``${{ steps.run_report.outputs.threshold_warnings_count }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- threshold_warnings_list: ``${{ steps.run_report.outputs.threshold_warnings_list }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings count: ``${{ steps.report.outputs.warnings_count }}``"
@@ -800,6 +905,15 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- start_checkout_rate_pct: ``${{ steps.report.outputs.conversion_start_checkout_rate_pct }}`` (delta: ``${{ steps.report.outputs.conversion_start_checkout_rate_delta_pct }}``)"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- booking_confirmed: ``${{ steps.report.outputs.conversion_booking_confirmed }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- booking_confirmed_rate_pct: ``${{ steps.report.outputs.conversion_booking_confirmed_rate_pct }}`` (delta: ``${{ steps.report.outputs.conversion_booking_confirmed_rate_delta_pct }}``)"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_source: ``${{ steps.report.outputs.service_funnel_source }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_rows: ``${{ steps.report.outputs.service_funnel_rows }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_alert_count: ``${{ steps.report.outputs.service_funnel_alert_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_alert_list: ``${{ steps.report.outputs.service_funnel_alert_list }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_incident_required: ``${{ steps.report.outputs.service_funnel_incident_required }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_incident_recovered: ``${{ steps.report.outputs.service_funnel_incident_recovered }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_incident_reason_codes: ``${{ steps.report.outputs.service_funnel_incident_reason_codes }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_incident_severity: ``${{ steps.report.outputs.service_funnel_incident_severity }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_funnel_signal_key: ``${{ steps.report.outputs.service_funnel_signal_key }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Latency"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- core_p95_max_ms: ``${{ steps.report.outputs.latency_core_p95_max_ms }}``"
@@ -1364,3 +1478,166 @@ jobs:
                         state: 'closed'
                       });
                       core.info(`Issue de retencion cerrado: #${existing.number}`);
+
+            - name: Crear/actualizar incidente semanal de service funnel
+              if: ${{ github.event_name == 'schedule' && steps.report.outputs.service_funnel_incident_required == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI service funnel degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = '${{ steps.report.outputs.service_funnel_signal_key }}';
+                      const signalMarker = `<!-- service-funnel-signal:${signal} -->`;
+                      const incidentSeverity = '${{ steps.report.outputs.service_funnel_incident_severity }}' || 'warning';
+                      const severityLabel = incidentSeverity === 'critical' ? 'severity:critical' : 'severity:warning';
+                      const baseLabels = ['production-alert', 'weekly-kpi', 'service-funnel', severityLabel];
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const buildMergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+                      const incidentBody = [
+                        'El workflow `Weekly KPI Report` detecto degradacion de embudo por servicio (`serviceFunnel`).',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- service_funnel_source: ${{ steps.report.outputs.service_funnel_source }}`,
+                        `- service_funnel_rows: ${{ steps.report.outputs.service_funnel_rows }}`,
+                        `- service_funnel_alert_count: ${{ steps.report.outputs.service_funnel_alert_count }}`,
+                        `- service_funnel_alert_list: ${{ steps.report.outputs.service_funnel_alert_list }}`,
+                        `- report_generated_at_utc: ${{ steps.report.outputs.report_generated_at_utc }}`,
+                        `- report_age_hours: ${{ steps.report.outputs.report_age_hours }}`,
+                        `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                        `- service_funnel_incident_reason_codes: ${{ steps.report.outputs.service_funnel_incident_reason_codes }}`,
+                        `- service_funnel_incident_severity: ${{ steps.report.outputs.service_funnel_incident_severity }}`,
+                        `- service_funnel_signal_key: ${{ steps.report.outputs.service_funnel_signal_key }}`,
+                        '',
+                        'Thresholds efectivos de service funnel en esta corrida:',
+                        `- service_funnel_min_detail_views: ${{ steps.run_report.outputs.effective_service_funnel_min_detail_views }}`,
+                        `- service_funnel_min_checkout_starts: ${{ steps.run_report.outputs.effective_service_funnel_min_checkout_starts }}`,
+                        `- service_funnel_checkout_to_confirmed_min_warn_pct: ${{ steps.run_report.outputs.effective_service_funnel_checkout_to_confirmed_min_warn_pct }}`,
+                        `- service_funnel_detail_to_confirmed_min_warn_pct: ${{ steps.run_report.outputs.effective_service_funnel_detail_to_confirmed_min_warn_pct }}`,
+                        `- threshold_warnings_count: ${{ steps.run_report.outputs.threshold_warnings_count }}`,
+                        `- threshold_warnings_list: ${{ steps.run_report.outputs.threshold_warnings_list }}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const mergedLabels = buildMergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), mergedLabels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels: mergedLabels
+                            });
+                            core.info(`Issue de service funnel actualizo labels de severidad: #${existing.number}`);
+                          }
+                          core.info(`Issue de service funnel ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: incidentBody,
+                          labels: mergedLabels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente de service funnel actualizado por cambio de senal semanal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- service_funnel_alert_count: ${{ steps.report.outputs.service_funnel_alert_count }}`,
+                            `- service_funnel_alert_list: ${{ steps.report.outputs.service_funnel_alert_list }}`,
+                            `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                            `- service_funnel_incident_reason_codes: ${{ steps.report.outputs.service_funnel_incident_reason_codes }}`,
+                            `- service_funnel_incident_severity: ${{ steps.report.outputs.service_funnel_incident_severity }}`,
+                            `- service_funnel_signal_key: ${{ steps.report.outputs.service_funnel_signal_key }}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue de service funnel actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body: incidentBody,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue de service funnel creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente semanal de service funnel al recuperar
+              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.service_funnel_incident_recovered == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI service funnel degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente de service funnel abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por reporte semanal de service funnel.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue de service funnel cerrado: #${existing.number}`);

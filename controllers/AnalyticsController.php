@@ -17,6 +17,9 @@ class AnalyticsController
      */
     private const ALLOWED_EVENTS = [
         'view_booking',
+        'view_service_category',
+        'view_service_detail',
+        'start_booking_from_service',
         'start_checkout',
         'payment_method_selected',
         'payment_success',
@@ -130,6 +133,11 @@ class AnalyticsController
         $paymentMethodBreakdown = [];
         $bookingStepBreakdown = [];
         $errorCodeBreakdown = [];
+        $serviceCategoryBreakdown = [];
+        $serviceDetailBreakdown = [];
+        $serviceBookingIntentBreakdown = [];
+        $serviceCheckoutBreakdown = [];
+        $serviceConfirmedBreakdown = [];
 
         foreach ($series as $row) {
             $labels = is_array($row['labels'] ?? null) ? $row['labels'] : [];
@@ -152,6 +160,45 @@ class AnalyticsController
                 $eventSourceBreakdown[$source] = 0;
             }
             $eventSourceBreakdown[$source] += $value;
+
+            $serviceCategory = self::normalizeLabel($labels['service_category'] ?? '', '');
+            if ($serviceCategory !== '') {
+                if (!isset($serviceCategoryBreakdown[$serviceCategory])) {
+                    $serviceCategoryBreakdown[$serviceCategory] = 0;
+                }
+                $serviceCategoryBreakdown[$serviceCategory] += $value;
+            }
+
+            $serviceSlug = self::normalizeLabel($labels['service_slug'] ?? ($labels['service'] ?? ''), '');
+            if ($serviceSlug !== '') {
+                if ($eventName === 'view_service_detail') {
+                    if (!isset($serviceDetailBreakdown[$serviceSlug])) {
+                        $serviceDetailBreakdown[$serviceSlug] = 0;
+                    }
+                    $serviceDetailBreakdown[$serviceSlug] += $value;
+                }
+
+                if ($eventName === 'start_booking_from_service') {
+                    if (!isset($serviceBookingIntentBreakdown[$serviceSlug])) {
+                        $serviceBookingIntentBreakdown[$serviceSlug] = 0;
+                    }
+                    $serviceBookingIntentBreakdown[$serviceSlug] += $value;
+                }
+
+                if ($eventName === 'start_checkout') {
+                    if (!isset($serviceCheckoutBreakdown[$serviceSlug])) {
+                        $serviceCheckoutBreakdown[$serviceSlug] = 0;
+                    }
+                    $serviceCheckoutBreakdown[$serviceSlug] += $value;
+                }
+
+                if ($eventName === 'booking_confirmed') {
+                    if (!isset($serviceConfirmedBreakdown[$serviceSlug])) {
+                        $serviceConfirmedBreakdown[$serviceSlug] = 0;
+                    }
+                    $serviceConfirmedBreakdown[$serviceSlug] += $value;
+                }
+            }
 
             if ($eventName === 'checkout_abandon') {
                 $step = self::normalizeLabel($labels['checkout_step'] ?? 'unknown');
@@ -207,6 +254,11 @@ class AnalyticsController
         arsort($paymentMethodBreakdown);
         arsort($bookingStepBreakdown);
         arsort($errorCodeBreakdown);
+        arsort($serviceCategoryBreakdown);
+        arsort($serviceDetailBreakdown);
+        arsort($serviceBookingIntentBreakdown);
+        arsort($serviceCheckoutBreakdown);
+        arsort($serviceConfirmedBreakdown);
 
         $viewBooking = (int) ($eventTotals['view_booking'] ?? 0);
         $startCheckout = (int) ($eventTotals['start_checkout'] ?? 0);
@@ -231,6 +283,13 @@ class AnalyticsController
             return $rows;
         };
 
+        $serviceFunnel = self::buildServiceFunnelBreakdown(
+            $serviceDetailBreakdown,
+            $serviceBookingIntentBreakdown,
+            $serviceCheckoutBreakdown,
+            $serviceConfirmedBreakdown
+        );
+
         return [
             'summary' => [
                 'viewBooking' => $viewBooking,
@@ -249,6 +308,12 @@ class AnalyticsController
             'paymentMethodBreakdown' => $toList($paymentMethodBreakdown),
             'bookingStepBreakdown' => $toList($bookingStepBreakdown),
             'errorCodeBreakdown' => $toList($errorCodeBreakdown),
+            'serviceCategoryBreakdown' => $toList($serviceCategoryBreakdown),
+            'serviceDetailBreakdown' => $toList($serviceDetailBreakdown),
+            'serviceBookingIntentBreakdown' => $toList($serviceBookingIntentBreakdown),
+            'serviceCheckoutBreakdown' => $toList($serviceCheckoutBreakdown),
+            'serviceConfirmedBreakdown' => $toList($serviceConfirmedBreakdown),
+            'serviceFunnel' => $serviceFunnel,
             'retention' => $retention,
             'idempotency' => $idempotency,
             'generatedAt' => gmdate('c')
@@ -780,6 +845,26 @@ class AnalyticsController
      */
     private static function extractEventLabels(string $event, array $params, array $labels): array
     {
+        $serviceSlug = self::normalizeLabel($params['service_slug'] ?? ($params['service'] ?? ''), '');
+        if ($serviceSlug !== '') {
+            $labels['service_slug'] = $serviceSlug;
+        }
+
+        $serviceCategory = self::normalizeLabel($params['service_category'] ?? '', '');
+        if ($serviceCategory !== '') {
+            $labels['service_category'] = $serviceCategory;
+        }
+
+        $serviceAudience = self::normalizeLabel($params['service_audience'] ?? '', '');
+        if ($serviceAudience !== '') {
+            $labels['service_audience'] = $serviceAudience;
+        }
+
+        $entryPoint = self::normalizeLabel($params['entry_point'] ?? '', '');
+        if ($entryPoint !== '') {
+            $labels['entry_point'] = $entryPoint;
+        }
+
         switch ($event) {
             case 'start_checkout':
                 $labels['checkout_entry'] = self::normalizeLabel($params['checkout_entry'] ?? 'unknown');
@@ -803,6 +888,72 @@ class AnalyticsController
                 break;
         }
         return $labels;
+    }
+
+    /**
+     * Build service-level funnel conversion rows from event breakdowns.
+     *
+     * @param array<string,int> $serviceDetailBreakdown
+     * @param array<string,int> $serviceBookingIntentBreakdown
+     * @param array<string,int> $serviceCheckoutBreakdown
+     * @param array<string,int> $serviceConfirmedBreakdown
+     * @return array<int,array<string,int|float|string>>
+     */
+    private static function buildServiceFunnelBreakdown(
+        array $serviceDetailBreakdown,
+        array $serviceBookingIntentBreakdown,
+        array $serviceCheckoutBreakdown,
+        array $serviceConfirmedBreakdown
+    ): array {
+        $serviceKeys = array_values(array_unique(array_merge(
+            array_keys($serviceDetailBreakdown),
+            array_keys($serviceBookingIntentBreakdown),
+            array_keys($serviceCheckoutBreakdown),
+            array_keys($serviceConfirmedBreakdown)
+        )));
+
+        $rows = [];
+        foreach ($serviceKeys as $serviceSlug) {
+            $detailViews = (int) ($serviceDetailBreakdown[$serviceSlug] ?? 0);
+            $bookingIntent = (int) ($serviceBookingIntentBreakdown[$serviceSlug] ?? 0);
+            $checkoutStarts = (int) ($serviceCheckoutBreakdown[$serviceSlug] ?? 0);
+            $bookingConfirmed = (int) ($serviceConfirmedBreakdown[$serviceSlug] ?? 0);
+
+            $rows[] = [
+                'serviceSlug' => (string) $serviceSlug,
+                'detailViews' => $detailViews,
+                'bookingIntent' => $bookingIntent,
+                'checkoutStarts' => $checkoutStarts,
+                'bookingConfirmed' => $bookingConfirmed,
+                'intentToCheckoutPct' => $bookingIntent > 0
+                    ? round(($checkoutStarts / $bookingIntent) * 100, 1)
+                    : 0.0,
+                'checkoutToConfirmedPct' => $checkoutStarts > 0
+                    ? round(($bookingConfirmed / $checkoutStarts) * 100, 1)
+                    : 0.0,
+                'detailToConfirmedPct' => $detailViews > 0
+                    ? round(($bookingConfirmed / $detailViews) * 100, 1)
+                    : 0.0,
+            ];
+        }
+
+        usort($rows, static function (array $a, array $b): int {
+            $confirmedA = (int) ($a['bookingConfirmed'] ?? 0);
+            $confirmedB = (int) ($b['bookingConfirmed'] ?? 0);
+            if ($confirmedA !== $confirmedB) {
+                return $confirmedB <=> $confirmedA;
+            }
+
+            $detailA = (int) ($a['detailViews'] ?? 0);
+            $detailB = (int) ($b['detailViews'] ?? 0);
+            if ($detailA !== $detailB) {
+                return $detailB <=> $detailA;
+            }
+
+            return strcmp((string) ($a['serviceSlug'] ?? ''), (string) ($b['serviceSlug'] ?? ''));
+        });
+
+        return $rows;
     }
 
     /**

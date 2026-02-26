@@ -25,6 +25,7 @@ require_once __DIR__ . '/controllers/CallbackController.php';
 require_once __DIR__ . '/controllers/ReviewController.php';
 require_once __DIR__ . '/controllers/AvailabilityController.php';
 require_once __DIR__ . '/controllers/ContentController.php';
+require_once __DIR__ . '/controllers/ServiceCatalogController.php';
 require_once __DIR__ . '/controllers/SystemController.php';
 require_once __DIR__ . '/controllers/ConfigController.php';
 require_once __DIR__ . '/controllers/PushController.php';

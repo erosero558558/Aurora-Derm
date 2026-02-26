@@ -17,6 +17,10 @@ param(
     [double]$StartCheckoutRateMinWarnPct = 0.25,
     [double]$StartCheckoutRateDropWarnPct = 0.2,
     [int]$StartCheckoutWarnMinViewBooking = 100,
+    [int]$ServiceFunnelWarnMinDetailViews = 25,
+    [int]$ServiceFunnelWarnMinCheckoutStarts = 5,
+    [double]$ServiceFunnelCheckoutToConfirmedMinWarnPct = 35,
+    [double]$ServiceFunnelDetailToConfirmedMinWarnPct = 8,
     [switch]$FailOnWarnings,
     [switch]$FailOnCriticalWarnings
 )
@@ -60,6 +64,21 @@ function Read-JsonFileSafe {
     }
 }
 
+function Convert-ToArraySafe {
+    param([object]$Value)
+    if ($null -eq $Value) {
+        return @()
+    }
+    if ($Value -is [System.Array]) {
+        return @($Value)
+    }
+    $toArrayMethod = $Value.PSObject.Methods['ToArray']
+    if ($null -ne $toArrayMethod) {
+        return @($Value.ToArray())
+    }
+    return @($Value)
+}
+
 function Get-WarningSeverity {
     param([string]$WarningCode)
 
@@ -94,7 +113,8 @@ function Get-WarningSeverity {
         'idempotency_conflict_rate_alta_',
         'recurrence_rate_',
         'conversion_rate_',
-        'start_checkout_rate_'
+        'start_checkout_rate_',
+        'service_funnel_'
     )) {
         if ($WarningCode.StartsWith($prefix)) {
             return 'non_critical'
@@ -119,6 +139,9 @@ function Get-WarningImpact {
         return 'chat'
     }
     if ($WarningCode.StartsWith('conversion_rate_') -or $WarningCode.StartsWith('start_checkout_rate_')) {
+        return 'conversion'
+    }
+    if ($WarningCode.StartsWith('service_funnel_')) {
         return 'conversion'
     }
     if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
@@ -157,6 +180,9 @@ function Get-WarningRunbookRef {
         return 'docs/MONITORING_SETUP.md'
     }
     if ($WarningCode.StartsWith('conversion_rate_') -or $WarningCode.StartsWith('start_checkout_rate_')) {
+        return 'docs/RUNBOOKS.md#31-monitoreo-diario'
+    }
+    if ($WarningCode.StartsWith('service_funnel_')) {
         return 'docs/RUNBOOKS.md#31-monitoreo-diario'
     }
     if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
@@ -875,6 +901,157 @@ $idempotencyUnknown = [int](Get-ObjectValueOrDefault -Object $idempotency -Prope
 $idempotencyConflictRatePct = [double](Get-ObjectValueOrDefault -Object $idempotency -Property 'conflictRatePct' -DefaultValue 0)
 $idempotencyReplayRatePct = [double](Get-ObjectValueOrDefault -Object $idempotency -Property 'replayRatePct' -DefaultValue 0)
 
+$serviceFunnelRowsRaw = @()
+if ($null -ne $funnel) {
+    $serviceFunnelRowsRaw = @(
+        Get-ObjectValueOrDefault -Object $funnel -Property 'serviceFunnel' -DefaultValue @()
+    )
+}
+$serviceFunnelSource = if ($serviceFunnelRowsRaw.Count -gt 0) { 'funnel-metrics' } else { 'missing' }
+$serviceFunnelRows = @()
+$serviceFunnelAlertCodes = New-Object System.Collections.Generic.List[string]
+$serviceFunnelAlerts = New-Object System.Collections.Generic.List[object]
+$serviceFunnelAlertSeen = @{}
+
+foreach ($serviceRow in $serviceFunnelRowsRaw) {
+    if ($null -eq $serviceRow) {
+        continue
+    }
+
+    $serviceSlug = [string](Get-ObjectValueOrDefault -Object $serviceRow -Property 'serviceSlug' -DefaultValue '')
+    if ([string]::IsNullOrWhiteSpace($serviceSlug)) {
+        continue
+    }
+
+    $detailViews = [int](Get-ObjectValueOrDefault -Object $serviceRow -Property 'detailViews' -DefaultValue 0)
+    $bookingIntent = [int](Get-ObjectValueOrDefault -Object $serviceRow -Property 'bookingIntent' -DefaultValue 0)
+    $checkoutStarts = [int](Get-ObjectValueOrDefault -Object $serviceRow -Property 'checkoutStarts' -DefaultValue 0)
+    $bookingConfirmedService = [int](Get-ObjectValueOrDefault -Object $serviceRow -Property 'bookingConfirmed' -DefaultValue 0)
+    $intentToCheckoutPct = [Math]::Round([double](Get-ObjectValueOrDefault -Object $serviceRow -Property 'intentToCheckoutPct' -DefaultValue 0), 2)
+    $checkoutToConfirmedPct = [Math]::Round([double](Get-ObjectValueOrDefault -Object $serviceRow -Property 'checkoutToConfirmedPct' -DefaultValue 0), 2)
+    $detailToConfirmedPct = [Math]::Round([double](Get-ObjectValueOrDefault -Object $serviceRow -Property 'detailToConfirmedPct' -DefaultValue 0), 2)
+
+    $serviceFunnelRows += [ordered]@{
+        serviceSlug = $serviceSlug
+        detailViews = $detailViews
+        bookingIntent = $bookingIntent
+        checkoutStarts = $checkoutStarts
+        bookingConfirmed = $bookingConfirmedService
+        intentToCheckoutPct = $intentToCheckoutPct
+        checkoutToConfirmedPct = $checkoutToConfirmedPct
+        detailToConfirmedPct = $detailToConfirmedPct
+    }
+
+    if ($detailViews -ge $ServiceFunnelWarnMinDetailViews -and $checkoutStarts -lt $ServiceFunnelWarnMinCheckoutStarts) {
+        $alertCode = "service_funnel_checkout_low_${serviceSlug}_${checkoutStarts}"
+        if (-not $serviceFunnelAlertSeen.ContainsKey($alertCode)) {
+            $serviceFunnelAlertSeen[$alertCode] = $true
+            $serviceFunnelAlertCodes.Add($alertCode) | Out-Null
+            $serviceFunnelAlerts.Add([ordered]@{
+                code = $alertCode
+                severity = 'warn'
+                serviceSlug = $serviceSlug
+                reason = 'checkout_starts_low'
+                actual = $checkoutStarts
+                threshold = $ServiceFunnelWarnMinCheckoutStarts
+                detailViews = $detailViews
+            }) | Out-Null
+        }
+    }
+
+    if ($checkoutStarts -ge $ServiceFunnelWarnMinCheckoutStarts -and $checkoutToConfirmedPct -lt $ServiceFunnelCheckoutToConfirmedMinWarnPct) {
+        $alertCode = "service_funnel_checkout_to_confirmed_baja_${serviceSlug}_${checkoutToConfirmedPct}pct"
+        if (-not $serviceFunnelAlertSeen.ContainsKey($alertCode)) {
+            $serviceFunnelAlertSeen[$alertCode] = $true
+            $serviceFunnelAlertCodes.Add($alertCode) | Out-Null
+            $serviceFunnelAlerts.Add([ordered]@{
+                code = $alertCode
+                severity = 'warn'
+                serviceSlug = $serviceSlug
+                reason = 'checkout_to_confirmed_low'
+                actualPct = $checkoutToConfirmedPct
+                thresholdPct = $ServiceFunnelCheckoutToConfirmedMinWarnPct
+                checkoutStarts = $checkoutStarts
+            }) | Out-Null
+        }
+    }
+
+    if ($detailViews -ge $ServiceFunnelWarnMinDetailViews -and $detailToConfirmedPct -lt $ServiceFunnelDetailToConfirmedMinWarnPct) {
+        $alertCode = "service_funnel_detail_to_confirmed_baja_${serviceSlug}_${detailToConfirmedPct}pct"
+        if (-not $serviceFunnelAlertSeen.ContainsKey($alertCode)) {
+            $serviceFunnelAlertSeen[$alertCode] = $true
+            $serviceFunnelAlertCodes.Add($alertCode) | Out-Null
+            $serviceFunnelAlerts.Add([ordered]@{
+                code = $alertCode
+                severity = 'warn'
+                serviceSlug = $serviceSlug
+                reason = 'detail_to_confirmed_low'
+                actualPct = $detailToConfirmedPct
+                thresholdPct = $ServiceFunnelDetailToConfirmedMinWarnPct
+                detailViews = $detailViews
+            }) | Out-Null
+        }
+    }
+}
+
+$serviceFunnelRows = @(
+    $serviceFunnelRows |
+        Sort-Object -Property `
+            @{ Expression = { [int](Get-ObjectValueOrDefault -Object $_ -Property 'bookingConfirmed' -DefaultValue 0) }; Descending = $true }, `
+            @{ Expression = { [int](Get-ObjectValueOrDefault -Object $_ -Property 'detailViews' -DefaultValue 0) }; Descending = $true }, `
+            @{ Expression = { [string](Get-ObjectValueOrDefault -Object $_ -Property 'serviceSlug' -DefaultValue '') }; Descending = $false }
+)
+$serviceFunnelTopRows = @($serviceFunnelRows | Select-Object -First 8)
+$serviceFunnelRowsCount = $serviceFunnelRows.Count
+$serviceFunnelRowsWithDetailSample = @($serviceFunnelRows | Where-Object { [int](Get-ObjectValueOrDefault -Object $_ -Property 'detailViews' -DefaultValue 0) -ge $ServiceFunnelWarnMinDetailViews }).Count
+$serviceFunnelRowsWithCheckoutSample = @($serviceFunnelRows | Where-Object { [int](Get-ObjectValueOrDefault -Object $_ -Property 'checkoutStarts' -DefaultValue 0) -ge $ServiceFunnelWarnMinCheckoutStarts }).Count
+if ($serviceFunnelRowsCount -eq 0 -and $startCheckout -ge $ConversionWarnMinStartCheckout) {
+    $missingAlertCode = 'service_funnel_missing'
+    if (-not $serviceFunnelAlertSeen.ContainsKey($missingAlertCode)) {
+        $serviceFunnelAlertSeen[$missingAlertCode] = $true
+        $serviceFunnelAlertCodes.Add($missingAlertCode) | Out-Null
+        $serviceFunnelAlerts.Add([ordered]@{
+            code = $missingAlertCode
+            severity = 'warn'
+            serviceSlug = 'all'
+            reason = 'service_funnel_payload_missing'
+            actual = 0
+            threshold = 1
+            startCheckout = $startCheckout
+        }) | Out-Null
+    }
+}
+$serviceFunnelAlertCount = $serviceFunnelAlertCodes.Count
+$serviceFunnelAlertCodesLabel = if ($serviceFunnelAlertCodes.Count -eq 0) { 'none' } else { (@($serviceFunnelAlertCodes) -join ', ') }
+$serviceFunnelAlertListLabel = if ($serviceFunnelAlerts.Count -eq 0) {
+    'none'
+} else {
+    @(
+        $serviceFunnelAlerts | ForEach-Object {
+            $alertCode = [string](Get-ObjectValueOrDefault -Object $_ -Property 'code' -DefaultValue 'service_funnel_unknown')
+            $reason = [string](Get-ObjectValueOrDefault -Object $_ -Property 'reason' -DefaultValue 'unknown')
+            $serviceSlug = [string](Get-ObjectValueOrDefault -Object $_ -Property 'serviceSlug' -DefaultValue 'unknown')
+            "$alertCode(service:$serviceSlug reason:$reason)"
+        }
+    ) -join '; '
+}
+$serviceFunnelTopRowsBlock = if ($serviceFunnelTopRows.Count -eq 0) {
+    '- none'
+} else {
+    @(
+        $serviceFunnelTopRows | ForEach-Object {
+            $serviceSlug = [string](Get-ObjectValueOrDefault -Object $_ -Property 'serviceSlug' -DefaultValue 'unknown')
+            $detailViews = [int](Get-ObjectValueOrDefault -Object $_ -Property 'detailViews' -DefaultValue 0)
+            $bookingIntent = [int](Get-ObjectValueOrDefault -Object $_ -Property 'bookingIntent' -DefaultValue 0)
+            $checkoutStarts = [int](Get-ObjectValueOrDefault -Object $_ -Property 'checkoutStarts' -DefaultValue 0)
+            $bookingConfirmedService = [int](Get-ObjectValueOrDefault -Object $_ -Property 'bookingConfirmed' -DefaultValue 0)
+            $checkoutToConfirmedPct = [Math]::Round([double](Get-ObjectValueOrDefault -Object $_ -Property 'checkoutToConfirmedPct' -DefaultValue 0), 2)
+            $detailToConfirmedPct = [Math]::Round([double](Get-ObjectValueOrDefault -Object $_ -Property 'detailToConfirmedPct' -DefaultValue 0), 2)
+            "- $serviceSlug | detail:$detailViews intent:$bookingIntent checkout:$checkoutStarts confirmed:$bookingConfirmedService checkout_to_confirmed_pct:$checkoutToConfirmedPct detail_to_confirmed_pct:$detailToConfirmedPct"
+        }
+    ) -join "`n"
+}
+
 $warnings = New-Object System.Collections.Generic.List[string]
 if ($errorRatePct -ge 2.0) {
     $warnings.Add("error_rate_alta_${errorRatePct}pct")
@@ -1101,6 +1278,12 @@ if (
 ) {
     $warnings.Add("start_checkout_rate_caida_${startCheckoutRateDeltaPct}pct")
 }
+foreach ($serviceFunnelWarningCode in $serviceFunnelAlertCodes) {
+    if ([string]::IsNullOrWhiteSpace([string]$serviceFunnelWarningCode)) {
+        continue
+    }
+    $warnings.Add([string]$serviceFunnelWarningCode)
+}
 $warningsCritical = New-Object System.Collections.Generic.List[string]
 $warningsNonCritical = New-Object System.Collections.Generic.List[string]
 $warningDetails = New-Object System.Collections.Generic.List[object]
@@ -1206,6 +1389,20 @@ $markdown = @"
 - previous_report_generated_at: $previousReportDate
 - start_checkout_rate_delta_pct: $startCheckoutRateDeltaLabel
 - booking_confirmed_rate_delta_pct: $bookingConfirmedRateDeltaLabel
+
+## Service Funnel
+
+- source: $serviceFunnelSource
+- rows: $serviceFunnelRowsCount
+- rows_detail_sample: $serviceFunnelRowsWithDetailSample (detail_views >= $ServiceFunnelWarnMinDetailViews)
+- rows_checkout_sample: $serviceFunnelRowsWithCheckoutSample (checkout_starts >= $ServiceFunnelWarnMinCheckoutStarts)
+- alert_count: $serviceFunnelAlertCount
+- alert_codes: $serviceFunnelAlertCodesLabel
+- alert_list: $serviceFunnelAlertListLabel
+- checkout_to_confirmed_min_warn_pct: $ServiceFunnelCheckoutToConfirmedMinWarnPct
+- detail_to_confirmed_min_warn_pct: $ServiceFunnelDetailToConfirmedMinWarnPct
+
+$serviceFunnelTopRowsBlock
 
 ## Calendar Health
 
@@ -1313,149 +1510,183 @@ $retentionBaselinePayload = [ordered]@{
 Set-Content -Path $reportMdPath -Value $markdown -Encoding UTF8
 $retentionBaselinePayload | ConvertTo-Json -Depth 6 | Set-Content -Path $retentionBaselinePath -Encoding UTF8
 
-$reportPayload = [ordered]@{
-    generatedAt = $reportGeneratedAt
-    domain = $base
-    summary = [ordered]@{
-        viewBooking = $viewBooking
-        startCheckout = $startCheckout
-        bookingConfirmed = $bookingConfirmed
-        checkoutAbandon = $checkoutAbandon
-        bookingError = $bookingError
-        checkoutError = $checkoutError
-        bookingErrorRatePct = $errorRatePct
-    }
-    conversion = [ordered]@{
-        viewBooking = $viewBooking
-        startCheckout = $startCheckout
-        bookingConfirmed = $bookingConfirmed
-        checkoutAbandon = $checkoutAbandon
-        bookingError = $bookingError
-        checkoutError = $checkoutError
-        startCheckoutRatePct = [Math]::Round([double]$startCheckoutRatePct, 2)
-        bookingConfirmedRatePct = [Math]::Round([double]$bookingConfirmedRatePct, 2)
-        checkoutAbandonRatePct = [Math]::Round([double]$checkoutAbandonRatePct, 2)
-        errorRatePct = [Math]::Round([double]$errorRatePct, 2)
-        startCheckoutWarningSampleSufficient = [bool]$startCheckoutSampleSufficient
-        startCheckoutWarnMinViewBooking = $StartCheckoutWarnMinViewBooking
-        startCheckoutMinWarnPct = [Math]::Round([double]$StartCheckoutRateMinWarnPct, 2)
-        startCheckoutDropWarnPct = [Math]::Round([double]$StartCheckoutRateDropWarnPct, 2)
-        conversionWarningSampleSufficient = [bool]$conversionSampleSufficient
-        conversionWarnMinStartCheckout = $ConversionWarnMinStartCheckout
-        conversionMinWarnPct = [Math]::Round([double]$ConversionRateMinWarnPct, 2)
-        conversionDropWarnPct = [Math]::Round([double]$ConversionRateDropWarnPct, 2)
-    }
-    conversionTrend = [ordered]@{
-        previousReportGeneratedAt = $previousReportDate
-        startCheckoutRateDeltaPct = $startCheckoutRateDeltaPct
-        bookingConfirmedRateDeltaPct = $bookingConfirmedRateDeltaPct
-    }
-    calendar = [ordered]@{
-        source = $calendarSource
-        mode = $calendarMode
-        reachable = $calendarReachable
-        tokenHealthy = $calendarTokenHealthy
-        lastSuccessAt = $calendarLastSuccessAt
-    }
-    observability = [ordered]@{
-        sentryBackendConfigured = $sentryBackendConfigured
-        sentryFrontendConfigured = $sentryFrontendConfigured
-    }
-    retention = [ordered]@{
-        appointmentsTotal = $retentionAppointmentsTotal
-        appointmentsNonCancelled = $retentionAppointmentsNonCancelled
-        statusCounts = [ordered]@{
-            confirmed = $retentionConfirmed
-            completed = $retentionCompleted
-            noShow = $retentionNoShow
-            cancelled = $retentionCancelled
-        }
-        noShowRatePct = [Math]::Round([double]$retentionNoShowRatePct, 2)
-        completionRatePct = [Math]::Round([double]$retentionCompletionRatePct, 2)
-        uniquePatients = $retentionUniquePatients
-        recurrentPatients = $retentionRecurrentPatients
-        recurrenceRatePct = [Math]::Round([double]$retentionRecurrenceRatePct, 2)
-        recurrenceWarningSampleSufficient = [bool]$retentionSampleSufficientForRecurrence
-        recurrenceWarnMinUniquePatients = $RecurrenceWarnMinUniquePatients
-        recurrenceMinWarnPct = [Math]::Round([double]$RecurrenceRateMinWarnPct, 2)
-        recurrenceDropWarnPct = [Math]::Round([double]$RecurrenceRateDropWarnPct, 2)
-    }
-    retentionReport = [ordered]@{
-        source = $retentionReportSource
-        days = $RetentionReportDays
-        error = $retentionReportError
-        meta = $retentionReportMeta
-        summary = $retentionReportSummary
-        alertCounts = [ordered]@{
-            total = $retentionReportAlertCount
-            warn = $retentionReportAlertWarnCount
-            critical = $retentionReportAlertCriticalCount
-        }
-        alerts = @($retentionReportAlerts)
-        alertCodes = @($retentionReportAlertCodes)
-    }
-    idempotency = [ordered]@{
-        requestsWithKey = $idempotencyRequestsWithKey
-        new = $idempotencyNew
-        replay = $idempotencyReplay
-        conflict = $idempotencyConflict
-        unknown = $idempotencyUnknown
-        conflictRatePct = [Math]::Round([double]$idempotencyConflictRatePct, 2)
-        replayRatePct = [Math]::Round([double]$idempotencyReplayRatePct, 2)
-        conflictWarningSampleSufficient = [bool]$idempotencySampleSufficient
-        conflictWarnPctThreshold = [Math]::Round([double]$IdempotencyConflictRateWarnPct, 2)
-    }
-    retentionTrend = [ordered]@{
-        previousReportGeneratedAt = $previousReportDate
-        noShowRateDeltaPct = $retentionNoShowRateDeltaPct
-        recurrenceRateDeltaPct = $retentionRecurrenceRateDeltaPct
-        trendReady = [bool]$retentionTrendReady
-    }
-    retentionBaseline = [ordered]@{
-        generatedAt = $retentionBaselineGeneratedAt
-        noShowRatePct = $retentionBaselineNoShowRatePct
-        recurrenceRatePct = $retentionBaselineRecurrenceRatePct
-        source = $retentionBaselineSource
-    }
-    latency = [ordered]@{
-        coreP95MaxMs = $coreP95Max
-        coreP95TargetMs = $CoreP95MaxMs
-        figoPostP95Ms = $figoPostP95
-        figoPostP95TargetMs = $FigoPostP95MaxMs
-        bench = $benchResults
-    }
-    warningCounts = [ordered]@{
-        total = $warningCountsTotal
-        critical = $warningCountsCritical
-        nonCritical = $warningCountsNonCritical
-    }
-    releaseGuardrails = [ordered]@{
-        decision = $releaseDecision
-        reason = $releaseReason
-        action = $releaseAction
-        criticalWarnings = @($warningsCritical)
-        nonCriticalWarnings = @($warningsNonCritical)
-    }
-    warningsBySeverity = [ordered]@{
-        critical = @($warningsCritical)
-        nonCritical = @($warningsNonCritical)
-    }
-    warningsByImpact = $warningsByImpactPayload
-    warningDetails = $warningDetailsPayload
-    warningsCritical = @($warningsCritical)
-    warningsNonCritical = @($warningsNonCritical)
-    warnings = @($warnings)
-    triagePlaybook = [ordered]@{
-        targetMinutes = 15
-        quickChecks = @(
-            'npm run gate:prod:fast',
-            'GET /api.php?resource=health',
-            'GET /api.php?resource=availability',
-            'POST /figo-chat.php'
-        )
-        defaultRunbook = 'docs/RUNBOOKS.md#2-respuesta-a-incidentes-emergency-response'
-    }
-}
+$summaryPayload = [ordered]@{}
+$summaryPayload.viewBooking = $viewBooking
+$summaryPayload.startCheckout = $startCheckout
+$summaryPayload.bookingConfirmed = $bookingConfirmed
+$summaryPayload.checkoutAbandon = $checkoutAbandon
+$summaryPayload.bookingError = $bookingError
+$summaryPayload.checkoutError = $checkoutError
+$summaryPayload.bookingErrorRatePct = $errorRatePct
+
+$conversionPayload = [ordered]@{}
+$conversionPayload.viewBooking = $viewBooking
+$conversionPayload.startCheckout = $startCheckout
+$conversionPayload.bookingConfirmed = $bookingConfirmed
+$conversionPayload.checkoutAbandon = $checkoutAbandon
+$conversionPayload.bookingError = $bookingError
+$conversionPayload.checkoutError = $checkoutError
+$conversionPayload.startCheckoutRatePct = [Math]::Round([double]$startCheckoutRatePct, 2)
+$conversionPayload.bookingConfirmedRatePct = [Math]::Round([double]$bookingConfirmedRatePct, 2)
+$conversionPayload.checkoutAbandonRatePct = [Math]::Round([double]$checkoutAbandonRatePct, 2)
+$conversionPayload.errorRatePct = [Math]::Round([double]$errorRatePct, 2)
+$conversionPayload.startCheckoutWarningSampleSufficient = [bool]$startCheckoutSampleSufficient
+$conversionPayload.startCheckoutWarnMinViewBooking = $StartCheckoutWarnMinViewBooking
+$conversionPayload.startCheckoutMinWarnPct = [Math]::Round([double]$StartCheckoutRateMinWarnPct, 2)
+$conversionPayload.startCheckoutDropWarnPct = [Math]::Round([double]$StartCheckoutRateDropWarnPct, 2)
+$conversionPayload.conversionWarningSampleSufficient = [bool]$conversionSampleSufficient
+$conversionPayload.conversionWarnMinStartCheckout = $ConversionWarnMinStartCheckout
+$conversionPayload.conversionMinWarnPct = [Math]::Round([double]$ConversionRateMinWarnPct, 2)
+$conversionPayload.conversionDropWarnPct = [Math]::Round([double]$ConversionRateDropWarnPct, 2)
+
+$conversionTrendPayload = [ordered]@{}
+$conversionTrendPayload.previousReportGeneratedAt = $previousReportDate
+$conversionTrendPayload.startCheckoutRateDeltaPct = $startCheckoutRateDeltaPct
+$conversionTrendPayload.bookingConfirmedRateDeltaPct = $bookingConfirmedRateDeltaPct
+
+$serviceFunnelThresholdsPayload = [ordered]@{}
+$serviceFunnelThresholdsPayload.minDetailViews = $ServiceFunnelWarnMinDetailViews
+$serviceFunnelThresholdsPayload.minCheckoutStarts = $ServiceFunnelWarnMinCheckoutStarts
+$serviceFunnelThresholdsPayload.checkoutToConfirmedMinWarnPct = [Math]::Round([double]$ServiceFunnelCheckoutToConfirmedMinWarnPct, 2)
+$serviceFunnelThresholdsPayload.detailToConfirmedMinWarnPct = [Math]::Round([double]$ServiceFunnelDetailToConfirmedMinWarnPct, 2)
+
+$serviceFunnelPayload = [ordered]@{}
+$serviceFunnelPayload.source = $serviceFunnelSource
+$serviceFunnelPayload.rows = $serviceFunnelRowsCount
+$serviceFunnelPayload.rowsDetailSample = $serviceFunnelRowsWithDetailSample
+$serviceFunnelPayload.rowsCheckoutSample = $serviceFunnelRowsWithCheckoutSample
+$serviceFunnelPayload.thresholds = $serviceFunnelThresholdsPayload
+$serviceFunnelPayload.top = @($serviceFunnelTopRows)
+$serviceFunnelPayload.alertCount = $serviceFunnelAlertCount
+$serviceFunnelPayload.alertCodes = @($serviceFunnelAlertCodes)
+$serviceFunnelPayload['alerts'] = Convert-ToArraySafe -Value $serviceFunnelAlerts
+
+$calendarPayload = [ordered]@{}
+$calendarPayload.source = $calendarSource
+$calendarPayload.mode = $calendarMode
+$calendarPayload.reachable = $calendarReachable
+$calendarPayload.tokenHealthy = $calendarTokenHealthy
+$calendarPayload.lastSuccessAt = $calendarLastSuccessAt
+
+$observabilityPayload = [ordered]@{}
+$observabilityPayload.sentryBackendConfigured = $sentryBackendConfigured
+$observabilityPayload.sentryFrontendConfigured = $sentryFrontendConfigured
+
+$retentionStatusCountsPayload = [ordered]@{}
+$retentionStatusCountsPayload.confirmed = $retentionConfirmed
+$retentionStatusCountsPayload.completed = $retentionCompleted
+$retentionStatusCountsPayload.noShow = $retentionNoShow
+$retentionStatusCountsPayload.cancelled = $retentionCancelled
+
+$retentionPayload = [ordered]@{}
+$retentionPayload.appointmentsTotal = $retentionAppointmentsTotal
+$retentionPayload.appointmentsNonCancelled = $retentionAppointmentsNonCancelled
+$retentionPayload.statusCounts = $retentionStatusCountsPayload
+$retentionPayload.noShowRatePct = [Math]::Round([double]$retentionNoShowRatePct, 2)
+$retentionPayload.completionRatePct = [Math]::Round([double]$retentionCompletionRatePct, 2)
+$retentionPayload.uniquePatients = $retentionUniquePatients
+$retentionPayload.recurrentPatients = $retentionRecurrentPatients
+$retentionPayload.recurrenceRatePct = [Math]::Round([double]$retentionRecurrenceRatePct, 2)
+$retentionPayload.recurrenceWarningSampleSufficient = [bool]$retentionSampleSufficientForRecurrence
+$retentionPayload.recurrenceWarnMinUniquePatients = $RecurrenceWarnMinUniquePatients
+$retentionPayload.recurrenceMinWarnPct = [Math]::Round([double]$RecurrenceRateMinWarnPct, 2)
+$retentionPayload.recurrenceDropWarnPct = [Math]::Round([double]$RecurrenceRateDropWarnPct, 2)
+
+$retentionReportAlertCountsPayload = [ordered]@{}
+$retentionReportAlertCountsPayload.total = $retentionReportAlertCount
+$retentionReportAlertCountsPayload.warn = $retentionReportAlertWarnCount
+$retentionReportAlertCountsPayload.critical = $retentionReportAlertCriticalCount
+
+$retentionReportPayload = [ordered]@{}
+$retentionReportPayload.source = $retentionReportSource
+$retentionReportPayload.days = $RetentionReportDays
+$retentionReportPayload.error = $retentionReportError
+$retentionReportPayload.meta = $retentionReportMeta
+$retentionReportPayload.summary = $retentionReportSummary
+$retentionReportPayload.alertCounts = $retentionReportAlertCountsPayload
+$retentionReportPayload['alerts'] = Convert-ToArraySafe -Value $retentionReportAlerts
+$retentionReportPayload.alertCodes = @($retentionReportAlertCodes)
+
+$idempotencyPayload = [ordered]@{}
+$idempotencyPayload.requestsWithKey = $idempotencyRequestsWithKey
+$idempotencyPayload.new = $idempotencyNew
+$idempotencyPayload.replay = $idempotencyReplay
+$idempotencyPayload.conflict = $idempotencyConflict
+$idempotencyPayload.unknown = $idempotencyUnknown
+$idempotencyPayload.conflictRatePct = [Math]::Round([double]$idempotencyConflictRatePct, 2)
+$idempotencyPayload.replayRatePct = [Math]::Round([double]$idempotencyReplayRatePct, 2)
+$idempotencyPayload.conflictWarningSampleSufficient = [bool]$idempotencySampleSufficient
+$idempotencyPayload.conflictWarnPctThreshold = [Math]::Round([double]$IdempotencyConflictRateWarnPct, 2)
+
+$retentionTrendPayload = [ordered]@{}
+$retentionTrendPayload.previousReportGeneratedAt = $previousReportDate
+$retentionTrendPayload.noShowRateDeltaPct = $retentionNoShowRateDeltaPct
+$retentionTrendPayload.recurrenceRateDeltaPct = $retentionRecurrenceRateDeltaPct
+$retentionTrendPayload.trendReady = [bool]$retentionTrendReady
+
+$retentionBaselinePayloadForReport = [ordered]@{}
+$retentionBaselinePayloadForReport.generatedAt = $retentionBaselineGeneratedAt
+$retentionBaselinePayloadForReport.noShowRatePct = $retentionBaselineNoShowRatePct
+$retentionBaselinePayloadForReport.recurrenceRatePct = $retentionBaselineRecurrenceRatePct
+$retentionBaselinePayloadForReport.source = $retentionBaselineSource
+
+$latencyPayload = [ordered]@{}
+$latencyPayload.coreP95MaxMs = $coreP95Max
+$latencyPayload.coreP95TargetMs = $CoreP95MaxMs
+$latencyPayload.figoPostP95Ms = $figoPostP95
+$latencyPayload.figoPostP95TargetMs = $FigoPostP95MaxMs
+$latencyPayload.bench = $benchResults
+
+$warningCountsPayload = [ordered]@{}
+$warningCountsPayload.total = $warningCountsTotal
+$warningCountsPayload.critical = $warningCountsCritical
+$warningCountsPayload.nonCritical = $warningCountsNonCritical
+
+$releaseGuardrailsPayload = [ordered]@{}
+$releaseGuardrailsPayload.decision = $releaseDecision
+$releaseGuardrailsPayload.reason = $releaseReason
+$releaseGuardrailsPayload.action = $releaseAction
+$releaseGuardrailsPayload.criticalWarnings = @($warningsCritical)
+$releaseGuardrailsPayload.nonCriticalWarnings = @($warningsNonCritical)
+
+$warningsBySeverityPayload = [ordered]@{}
+$warningsBySeverityPayload.critical = @($warningsCritical)
+$warningsBySeverityPayload.nonCritical = @($warningsNonCritical)
+
+$triagePlaybookPayload = [ordered]@{}
+$triagePlaybookPayload.targetMinutes = 15
+$triagePlaybookPayload.quickChecks = @(
+    'npm run gate:prod:fast',
+    'GET /api.php?resource=health',
+    'GET /api.php?resource=availability',
+    'POST /figo-chat.php'
+)
+$triagePlaybookPayload.defaultRunbook = 'docs/RUNBOOKS.md#2-respuesta-a-incidentes-emergency-response'
+
+$reportPayload = [ordered]@{}
+$reportPayload.generatedAt = $reportGeneratedAt
+$reportPayload.domain = $base
+$reportPayload.summary = $summaryPayload
+$reportPayload.conversion = $conversionPayload
+$reportPayload.conversionTrend = $conversionTrendPayload
+$reportPayload.serviceFunnel = $serviceFunnelPayload
+$reportPayload.calendar = $calendarPayload
+$reportPayload.observability = $observabilityPayload
+$reportPayload.retention = $retentionPayload
+$reportPayload.retentionReport = $retentionReportPayload
+$reportPayload.idempotency = $idempotencyPayload
+$reportPayload.retentionTrend = $retentionTrendPayload
+$reportPayload.retentionBaseline = $retentionBaselinePayloadForReport
+$reportPayload.latency = $latencyPayload
+$reportPayload.warningCounts = $warningCountsPayload
+$reportPayload.releaseGuardrails = $releaseGuardrailsPayload
+$reportPayload.warningsBySeverity = $warningsBySeverityPayload
+$reportPayload.warningsByImpact = $warningsByImpactPayload
+$reportPayload.warningDetails = $warningDetailsPayload
+$reportPayload.warningsCritical = @($warningsCritical)
+$reportPayload.warningsNonCritical = @($warningsNonCritical)
+$reportPayload.warnings = @($warnings)
+$reportPayload.triagePlaybook = $triagePlaybookPayload
 $reportPayload | ConvertTo-Json -Depth 10 | Set-Content -Path $reportJsonPath -Encoding UTF8
 
 Write-Host ''
@@ -1464,6 +1695,7 @@ Write-Host "Reporte json: $reportJsonPath"
 Write-Host "start_checkout_rate_pct=$startCheckoutRatePct booking_confirmed=$bookingConfirmed booking_confirmed_rate_pct=$bookingConfirmedRatePct error_rate_pct=$errorRatePct core_p95_max_ms=$coreP95Max figo_post_p95_ms=$figoPostP95"
 Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurrence_rate_pct=$retentionRecurrenceRatePct retention_report_alert_count=$retentionReportAlertCount sentry_backend=$sentryBackendConfigured sentry_frontend=$sentryFrontendConfigured"
 Write-Host "idempotency_requests_with_key=$idempotencyRequestsWithKey idempotency_conflict_rate_pct=$idempotencyConflictRatePct idempotency_replay_rate_pct=$idempotencyReplayRatePct"
+Write-Host "service_funnel_source=$serviceFunnelSource service_funnel_rows=$serviceFunnelRowsCount service_funnel_alert_count=$serviceFunnelAlertCount"
 Write-Host "release_decision=$releaseDecision release_reason=$releaseReason"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow
