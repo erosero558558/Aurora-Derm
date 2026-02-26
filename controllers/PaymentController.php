@@ -146,10 +146,11 @@ class PaymentController
             }
         }
 
-        if (appointment_slot_taken($store['appointments'], $appointment['date'], $appointment['time'], null, $doctorForCollision)) {
+        $idx = $store['idx_appointments_date'] ?? null;
+        if (appointment_slot_taken($store['appointments'], $appointment['date'], $appointment['time'], null, $doctorForCollision, $idx)) {
             if ($requestedDoctor === 'indiferente') {
                 $alternateDoctor = $doctorForCollision === 'rosero' ? 'narvaez' : 'rosero';
-                if (appointment_slot_taken($store['appointments'], $appointment['date'], $appointment['time'], null, $alternateDoctor)) {
+                if (appointment_slot_taken($store['appointments'], $appointment['date'], $appointment['time'], null, $alternateDoctor, $idx)) {
                     json_response([
                         'ok' => false,
                         'error' => 'Ese horario ya fue reservado'

@@ -272,6 +272,7 @@ function build_appointment_index(array $appointments): array
 
 function appointment_slot_taken(array $appointments, string $date, string $time, ?int $excludeId = null, string $doctor = '', ?array $index = null): bool
 {
+    // Optimization: Use pre-built index if provided to avoid O(N) scan
     if ($index !== null) {
         if (!isset($index[$date])) {
             return false;
