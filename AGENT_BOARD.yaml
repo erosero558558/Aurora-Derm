@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 102
+  revision: 103
   updated_at: 2026-02-26
 
 tasks:
