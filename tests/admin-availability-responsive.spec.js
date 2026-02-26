@@ -281,12 +281,26 @@ test.describe('Admin availability responsive tablet layout', () => {
         ).toBeDisabled();
         await expect(
             page.locator(
+                '#availabilityDayActions [data-action="duplicate-availability-next-week"]'
+            )
+        ).toBeDisabled();
+        await expect(
+            page.locator(
                 '#availabilityDayActions [data-action="clear-availability-day"]'
             )
         ).toBeDisabled();
+        await expect(
+            page.locator(
+                '#availabilityDayActions [data-action="clear-availability-week"]'
+            )
+        ).toBeDisabled();
+        await expect(page.locator('#availabilitySaveDraftBtn')).toBeDisabled();
+        await expect(
+            page.locator('#availabilityDiscardDraftBtn')
+        ).toBeDisabled();
     });
 
-    test('permite copiar, duplicar, limpiar y pegar horarios del dia en fuente local', async ({
+    test('permite copiar y gestionar borrador con guardar/descartar en disponibilidad', async ({
         page,
     }) => {
         await openAvailabilitySection(page, 'store');
@@ -295,6 +309,7 @@ test.describe('Admin availability responsive tablet layout', () => {
         const initialSelectedDateText = await page
             .locator('#selectedDate')
             .textContent();
+        await expect(page.locator('#availabilityDraftStatus')).toBeVisible();
         const initialCount = await ensureAtLeastOneSelectedSlot(page);
         expect(initialCount).toBeGreaterThan(0);
 
@@ -316,6 +331,16 @@ test.describe('Admin availability responsive tablet layout', () => {
             initialSelectedDateText || ''
         );
         await expect(slotItems).toHaveCount(initialCount);
+        await expect(page.locator('#availabilityDraftStatus')).toContainText(
+            'cambios pendientes'
+        );
+        await expect(page.locator('#availabilitySaveDraftBtn')).toBeEnabled();
+
+        await page.locator('#availabilitySaveDraftBtn').click();
+        await expect(page.locator('#availabilityDraftStatus')).toContainText(
+            'Sin cambios pendientes'
+        );
+        await expect(page.locator('#availabilitySaveDraftBtn')).toBeDisabled();
 
         acceptNextDialog(page);
         await page
@@ -327,15 +352,52 @@ test.describe('Admin availability responsive tablet layout', () => {
         await expect(page.locator('#timeSlotsList')).toContainText(
             'No hay horarios configurados'
         );
+        await expect(page.locator('#availabilityDraftStatus')).toContainText(
+            'cambios pendientes'
+        );
+
+        acceptNextDialog(page);
+        await page.locator('#availabilityDiscardDraftBtn').click();
+        await expect(slotItems).toHaveCount(initialCount);
+        await expect(page.locator('#availabilityDraftStatus')).toContainText(
+            'Sin cambios pendientes'
+        );
+    });
+
+    test('habilita acciones de bloque de 7 dias y las persiste al guardar', async ({
+        page,
+    }) => {
+        await openAvailabilitySection(page, 'store');
+        const slotItems = page.locator('#timeSlotsList .time-slot-item');
+        const initialCount = await ensureAtLeastOneSelectedSlot(page);
+        expect(initialCount).toBeGreaterThan(0);
 
         await page
             .locator(
-                '#availabilityDayActions [data-action="paste-availability-day"]'
+                '#availabilityDayActions [data-action="duplicate-availability-next-week"]'
             )
             .click();
-        await expect(slotItems).toHaveCount(initialCount);
+        await expect(page.locator('#availabilityDraftStatus')).toContainText(
+            'cambios pendientes'
+        );
         await expect(
-            page.locator('#availabilityDayActionsStatus')
-        ).toContainText('Portapapeles:');
+            page.locator('#availabilityDiscardDraftBtn')
+        ).toBeEnabled();
+
+        await page.locator('#availabilitySaveDraftBtn').click();
+        await expect(page.locator('#availabilityDraftStatus')).toContainText(
+            'Sin cambios pendientes'
+        );
+
+        acceptNextDialog(page);
+        await page
+            .locator(
+                '#availabilityDayActions [data-action="clear-availability-week"]'
+            )
+            .click();
+        await expect(slotItems).toHaveCount(0);
+        await expect(page.locator('#availabilityDraftStatus')).toContainText(
+            'cambios pendientes'
+        );
     });
 });

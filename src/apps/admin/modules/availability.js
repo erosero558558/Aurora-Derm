@@ -11,11 +11,52 @@ let selectedDate = null;
 let currentMonth = new Date();
 let availabilityReadOnly = false;
 let availabilityDayClipboard = null;
+let availabilityPersistedSnapshot = {};
+let availabilitySaveInFlight = false;
 
 const AVAILABILITY_DAY_CLIPBOARD_STORAGE_KEY =
     'admin-availability-day-clipboard';
 const AVAILABILITY_LAST_SELECTED_DATE_STORAGE_KEY =
     'admin-availability-last-selected-date';
+
+function cloneAvailabilityMap(source) {
+    const normalizedSource = source && typeof source === 'object' ? source : {};
+    const clone = {};
+    Object.keys(normalizedSource)
+        .sort()
+        .forEach((dateKey) => {
+            if (!isValidDateKey(dateKey)) return;
+            const slots = normalizeSlotsList(normalizedSource[dateKey] || []);
+            if (slots.length > 0) {
+                clone[dateKey] = slots;
+            }
+        });
+    return clone;
+}
+
+function setAvailabilityPersistedSnapshot(source) {
+    availabilityPersistedSnapshot = cloneAvailabilityMap(source);
+}
+
+function getAvailabilityDirtyDateKeys() {
+    const current = cloneAvailabilityMap(currentAvailability);
+    const persisted = cloneAvailabilityMap(availabilityPersistedSnapshot);
+    const allDateKeys = Array.from(
+        new Set([...Object.keys(current), ...Object.keys(persisted)])
+    ).sort();
+    return allDateKeys.filter((dateKey) => {
+        const currentSlots = current[dateKey] || [];
+        const persistedSlots = persisted[dateKey] || [];
+        if (currentSlots.length !== persistedSlots.length) return true;
+        return currentSlots.some(
+            (slot, index) => slot !== persistedSlots[index]
+        );
+    });
+}
+
+function isAvailabilityDirty() {
+    return getAvailabilityDirtyDateKeys().length > 0;
+}
 
 function toLocalDateKey(date) {
     const year = date.getFullYear();
@@ -168,6 +209,32 @@ function setSlotsForDate(dateStr, slots) {
         return;
     }
     currentAvailability[normalizedDate] = normalizedSlots;
+}
+
+function buildDateKeyRange(startDateKey, dayCount) {
+    const parsedStartDate = parseLocalDateKey(startDateKey);
+    const normalizedDayCount = Number(dayCount);
+    if (!parsedStartDate || !Number.isFinite(normalizedDayCount)) {
+        return [];
+    }
+
+    const totalDays = Math.max(0, Math.round(normalizedDayCount));
+    if (totalDays === 0) return [];
+
+    return Array.from({ length: totalDays }, (_, offset) => {
+        const date = new Date(parsedStartDate);
+        date.setDate(parsedStartDate.getDate() + offset);
+        return toLocalDateKey(date);
+    });
+}
+
+function getSlotsCountForDateKeys(dateKeys) {
+    return (Array.isArray(dateKeys) ? dateKeys : []).reduce(
+        (total, dateKey) =>
+            total +
+            normalizeSlotsList(currentAvailability[dateKey] || []).length,
+        0
+    );
 }
 
 function setCurrentMonthFromDateKey(dateValue) {
@@ -325,6 +392,15 @@ function renderAvailabilityDayActions() {
     const hasSelectedDate = Boolean(String(selectedDate || '').trim());
     const selectedSlots = getSelectedDaySlots();
     const hasSelectedSlots = selectedSlots.length > 0;
+    const selectedWeekDateKeys = hasSelectedDate
+        ? buildDateKeyRange(selectedDate, 7)
+        : [];
+    const selectedWeekSlotsCount =
+        getSlotsCountForDateKeys(selectedWeekDateKeys);
+    const selectedWeekActiveDays = selectedWeekDateKeys.filter(
+        (dateKey) =>
+            normalizeSlotsList(currentAvailability[dateKey] || []).length > 0
+    ).length;
     const clipboardSlots = normalizeSlotsList(
         availabilityDayClipboard?.slots || []
     );
@@ -339,8 +415,14 @@ function renderAvailabilityDayActions() {
     const duplicateBtn = panel.querySelector(
         '[data-action="duplicate-availability-day-next"]'
     );
+    const duplicateWeekBtn = panel.querySelector(
+        '[data-action="duplicate-availability-next-week"]'
+    );
     const clearBtn = panel.querySelector(
         '[data-action="clear-availability-day"]'
+    );
+    const clearWeekBtn = panel.querySelector(
+        '[data-action="clear-availability-week"]'
     );
 
     if (copyBtn instanceof HTMLButtonElement) {
@@ -354,9 +436,19 @@ function renderAvailabilityDayActions() {
         duplicateBtn.disabled =
             !hasSelectedDate || !hasSelectedSlots || availabilityReadOnly;
     }
+    if (duplicateWeekBtn instanceof HTMLButtonElement) {
+        duplicateWeekBtn.disabled =
+            !hasSelectedDate || !hasSelectedSlots || availabilityReadOnly;
+    }
     if (clearBtn instanceof HTMLButtonElement) {
         clearBtn.disabled =
             !hasSelectedDate || !hasSelectedSlots || availabilityReadOnly;
+    }
+    if (clearWeekBtn instanceof HTMLButtonElement) {
+        clearWeekBtn.disabled =
+            !hasSelectedDate ||
+            selectedWeekSlotsCount === 0 ||
+            availabilityReadOnly;
     }
 
     panel.classList.toggle('is-hidden', !hasSelectedDate && !hasClipboard);
@@ -376,6 +468,11 @@ function renderAvailabilityDayActions() {
         );
         statusMarkup.push(
             `<span class="toolbar-chip is-muted">Slots: ${escapeHtml(String(selectedSlots.length))}</span>`
+        );
+        statusMarkup.push(
+            `<span class="toolbar-chip is-muted">Semana: ${escapeHtml(
+                String(selectedWeekActiveDays)
+            )} dia(s), ${escapeHtml(String(selectedWeekSlotsCount))} slot(s)</span>`
         );
     }
 
@@ -398,6 +495,47 @@ function renderAvailabilityDayActions() {
     }
 
     statusEl.innerHTML = statusMarkup.join('');
+}
+
+function renderAvailabilityDraftPanel() {
+    const panel = document.getElementById('availabilityDraftPanel');
+    const statusEl = document.getElementById('availabilityDraftStatus');
+    const saveBtn = document.getElementById('availabilitySaveDraftBtn');
+    const discardBtn = document.getElementById('availabilityDiscardDraftBtn');
+    if (!panel || !statusEl) return;
+
+    const dirtyDateKeys = getAvailabilityDirtyDateKeys();
+    const dirtyCount = dirtyDateKeys.length;
+    const dirtyPreview = dirtyDateKeys
+        .slice(0, 2)
+        .map((dateKey) => formatAvailabilityDayLabel(dateKey))
+        .join(', ');
+
+    if (availabilityReadOnly) {
+        statusEl.innerHTML =
+            '<span class="toolbar-chip is-danger">Edición bloqueada por Google Calendar</span>';
+    } else if (dirtyCount === 0) {
+        statusEl.innerHTML =
+            '<span class="toolbar-chip is-muted">Sin cambios pendientes</span>';
+    } else {
+        const dirtyLabel = `${dirtyCount} día${dirtyCount === 1 ? '' : 's'} con cambios pendientes`;
+        const previewSuffix = dirtyPreview
+            ? ` (${escapeHtml(dirtyPreview)}${dirtyCount > 2 ? '…' : ''})`
+            : '';
+        statusEl.innerHTML = `<span class="toolbar-chip is-info">${escapeHtml(dirtyLabel)}${previewSuffix}</span>`;
+    }
+
+    if (saveBtn instanceof HTMLButtonElement) {
+        saveBtn.disabled =
+            availabilityReadOnly ||
+            dirtyCount === 0 ||
+            availabilitySaveInFlight;
+        saveBtn.setAttribute('aria-busy', String(availabilitySaveInFlight));
+    }
+
+    if (discardBtn instanceof HTMLButtonElement) {
+        discardBtn.disabled = dirtyCount === 0 || availabilitySaveInFlight;
+    }
 }
 
 function renderStatus() {
@@ -448,12 +586,13 @@ function renderStatus() {
             detailsEl.innerHTML = `Snapshot: <strong>${escapeHtml(generatedLabel)}</strong>`;
         }
         setAvailabilityHelperText(
-            'Selecciona un dia para revisar horarios y agregar o eliminar slots.'
+            'Selecciona un dia para editar horarios. Guarda o descarta el borrador cuando termines.'
         );
     }
     updateSectionHeadings(source);
     renderAvailabilitySelectionSummary();
     renderAvailabilityDayActions();
+    renderAvailabilityDraftPanel();
 
     if (!linksEl) return;
 
@@ -518,6 +657,7 @@ function clearSelectedDateState() {
     toggleReadOnlyUi();
     renderAvailabilitySelectionSummary();
     renderAvailabilityDayActions();
+    renderAvailabilityDraftPanel();
 }
 
 function toggleReadOnlyUi() {
@@ -540,6 +680,7 @@ function toggleReadOnlyUi() {
         });
     }
     renderAvailabilityDayActions();
+    renderAvailabilityDraftPanel();
 }
 
 async function refreshAvailabilitySnapshot() {
@@ -582,8 +723,9 @@ async function refreshAvailabilitySnapshot() {
             ),
         };
 
-        setAvailability(data);
+        setAvailability(cloneAvailabilityMap(data));
         setAvailabilityMeta(mergedMeta);
+        setAvailabilityPersistedSnapshot(currentAvailability);
         availabilityReadOnly = String(mergedMeta.source || '') === 'google';
         renderStatus();
         toggleReadOnlyUi();
@@ -804,6 +946,7 @@ function loadTimeSlots(dateStr) {
             '<p class="empty-message">No hay horarios configurados para este dia</p>';
         renderAvailabilitySelectionSummary();
         renderAvailabilityDayActions();
+        renderAvailabilityDraftPanel();
         return;
     }
 
@@ -831,16 +974,91 @@ function loadTimeSlots(dateStr) {
         .join('');
     renderAvailabilitySelectionSummary();
     renderAvailabilityDayActions();
+    renderAvailabilityDraftPanel();
 }
 
 async function saveAvailability() {
     if (availabilityReadOnly) {
         throw new Error('Disponibilidad en solo lectura (Google Calendar).');
     }
-    await apiRequest('availability', {
-        method: 'POST',
-        body: { availability: currentAvailability },
-    });
+    if (availabilitySaveInFlight) {
+        return false;
+    }
+    availabilitySaveInFlight = true;
+    renderAvailabilityDraftPanel();
+    try {
+        const normalizedAvailability =
+            cloneAvailabilityMap(currentAvailability);
+        setAvailability(normalizedAvailability);
+        await apiRequest('availability', {
+            method: 'POST',
+            body: { availability: normalizedAvailability },
+        });
+        setAvailabilityPersistedSnapshot(currentAvailability);
+        return true;
+    } finally {
+        availabilitySaveInFlight = false;
+        renderAvailabilityDraftPanel();
+    }
+}
+
+function syncAvailabilityUiAfterMutation() {
+    renderAvailabilityCalendar();
+    if (selectedDate) {
+        loadTimeSlots(selectedDate);
+        return;
+    }
+    clearSelectedDateState();
+}
+
+function mutateAvailabilityDraft(mutator) {
+    if (typeof mutator === 'function') {
+        mutator();
+    }
+    syncAvailabilityUiAfterMutation();
+}
+
+export async function saveAvailabilityDraft() {
+    if (availabilityReadOnly) {
+        showToast(
+            'Disponibilidad en solo lectura: gestionala desde Google Calendar.',
+            'warning'
+        );
+        return false;
+    }
+
+    if (!isAvailabilityDirty()) {
+        showToast('No hay cambios pendientes por guardar', 'info');
+        return false;
+    }
+
+    try {
+        await saveAvailability();
+        showToast('Cambios de disponibilidad guardados', 'success');
+        return true;
+    } catch (error) {
+        showToast(`No se pudieron guardar cambios: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+export function discardAvailabilityDraft() {
+    if (!isAvailabilityDirty()) {
+        showToast('No hay cambios pendientes por descartar', 'info');
+        return;
+    }
+
+    if (
+        !confirm(
+            'Descartar todos los cambios pendientes de disponibilidad y volver al estado guardado?'
+        )
+    ) {
+        return;
+    }
+
+    setAvailability(cloneAvailabilityMap(availabilityPersistedSnapshot));
+    syncAvailabilityUiAfterMutation();
+    showToast('Cambios pendientes descartados', 'success');
 }
 
 export async function addTimeSlot() {
@@ -855,31 +1073,27 @@ export async function addTimeSlot() {
         showToast('Selecciona una fecha primero', 'warning');
         return;
     }
-    const time = document.getElementById('newSlotTime').value;
+    const timeInput = document.getElementById('newSlotTime');
+    if (!(timeInput instanceof HTMLInputElement)) return;
+    const time = String(timeInput.value || '').trim();
     if (!time) {
         showToast('Ingresa un horario', 'warning');
         return;
     }
 
-    if (!currentAvailability[selectedDate]) {
-        currentAvailability[selectedDate] = [];
-    }
-
-    if (currentAvailability[selectedDate].includes(time)) {
+    const selectedSlots = normalizeSlotsList(
+        currentAvailability[selectedDate] || []
+    );
+    if (selectedSlots.includes(time)) {
         showToast('Este horario ya existe', 'warning');
         return;
     }
 
-    try {
-        currentAvailability[selectedDate].push(time);
-        await saveAvailability();
-        loadTimeSlots(selectedDate);
-        renderAvailabilityCalendar();
-        document.getElementById('newSlotTime').value = '';
-        showToast('Horario agregado', 'success');
-    } catch (error) {
-        showToast(`No se pudo guardar el horario: ${error.message}`, 'error');
-    }
+    mutateAvailabilityDraft(() => {
+        setSlotsForDate(selectedDate, [...selectedSlots, time]);
+    });
+    timeInput.value = '';
+    showToast('Horario agregado a cambios pendientes', 'success');
 }
 
 export async function removeTimeSlot(dateStr, time) {
@@ -890,17 +1104,24 @@ export async function removeTimeSlot(dateStr, time) {
         );
         return;
     }
-    try {
-        currentAvailability[dateStr] = (
-            currentAvailability[dateStr] || []
-        ).filter((t) => t !== time);
-        await saveAvailability();
-        loadTimeSlots(dateStr);
-        renderAvailabilityCalendar();
-        showToast('Horario eliminado', 'success');
-    } catch (error) {
-        showToast(`No se pudo eliminar el horario: ${error.message}`, 'error');
+    const normalizedDate = String(dateStr || '').trim();
+    const normalizedTime = String(time || '').trim();
+    if (!isValidDateKey(normalizedDate) || !normalizedTime) {
+        showToast('No se pudo identificar el horario a eliminar', 'warning');
+        return;
     }
+    const currentSlots = normalizeSlotsList(
+        currentAvailability[normalizedDate] || []
+    );
+    const nextSlots = currentSlots.filter((slot) => slot !== normalizedTime);
+    if (nextSlots.length === currentSlots.length) {
+        showToast('El horario ya no existe en el borrador', 'info');
+        return;
+    }
+    mutateAvailabilityDraft(() => {
+        setSlotsForDate(normalizedDate, nextSlots);
+    });
+    showToast('Horario eliminado de cambios pendientes', 'success');
 }
 
 export function prefillTimeSlot(value) {
@@ -957,7 +1178,7 @@ export async function pasteAvailabilityDay() {
         availabilityDayClipboard?.slots || []
     );
     if (clipboardSlots.length === 0) {
-        showToast('Portapapeles vacío', 'warning');
+        showToast('Portapapeles vacio', 'warning');
         return;
     }
 
@@ -979,18 +1200,10 @@ export async function pasteAvailabilityDay() {
         return;
     }
 
-    try {
+    mutateAvailabilityDraft(() => {
         setSlotsForDate(selectedDate, clipboardSlots);
-        await saveAvailability();
-        setCurrentMonthFromDateKey(selectedDate);
-        selectDate(selectedDate);
-        showToast('Horarios pegados en la fecha seleccionada', 'success');
-    } catch (error) {
-        showToast(
-            `No se pudieron pegar los horarios: ${error.message}`,
-            'error'
-        );
-    }
+    });
+    showToast('Horarios pegados en cambios pendientes', 'success');
 }
 
 export async function duplicateAvailabilityDayToNext() {
@@ -1022,19 +1235,60 @@ export async function duplicateAvailabilityDayToNext() {
         return;
     }
 
-    try {
+    mutateAvailabilityDraft(() => {
         setSlotsForDate(nextDateKey, sourceSlots);
         setAvailabilityClipboard(selectedDate, sourceSlots);
-        await saveAvailability();
-        setCurrentMonthFromDateKey(nextDateKey);
-        selectDate(nextDateKey);
-        showToast(
-            `Horarios duplicados a ${formatAvailabilityDayLabel(nextDateKey)}`,
-            'success'
-        );
-    } catch (error) {
-        showToast(`No se pudo duplicar el dia: ${error.message}`, 'error');
+    });
+    setCurrentMonthFromDateKey(nextDateKey);
+    selectDate(nextDateKey);
+    showToast(
+        `Horarios duplicados a ${formatAvailabilityDayLabel(nextDateKey)} (pendiente de guardar)`,
+        'success'
+    );
+}
+
+export async function duplicateAvailabilityDayToNextWeek() {
+    if (!requireEditableSelectedDate()) return;
+    const sourceSlots = getSelectedDaySlots();
+    if (sourceSlots.length === 0) {
+        showToast('No hay horarios para duplicar en este dia', 'warning');
+        return;
     }
+
+    const targetDateKeys = buildDateKeyRange(selectedDate, 8).slice(1);
+    if (targetDateKeys.length === 0) {
+        showToast('No se pudieron preparar los siguientes dias', 'error');
+        return;
+    }
+
+    const replacedDatesCount = targetDateKeys.filter((dateKey) => {
+        const daySlots = normalizeSlotsList(currentAvailability[dateKey] || []);
+        return (
+            daySlots.length > 0 &&
+            (daySlots.length !== sourceSlots.length ||
+                daySlots.some((slot, index) => slot !== sourceSlots[index]))
+        );
+    }).length;
+
+    if (
+        replacedDatesCount > 0 &&
+        !confirm(
+            `Se reemplazaran horarios en ${replacedDatesCount} dia(s). Deseas continuar?`
+        )
+    ) {
+        return;
+    }
+
+    mutateAvailabilityDraft(() => {
+        targetDateKeys.forEach((dateKey) => {
+            setSlotsForDate(dateKey, sourceSlots);
+        });
+        setAvailabilityClipboard(selectedDate, sourceSlots);
+    });
+    showToast(
+        `Horarios duplicados a los proximos ${targetDateKeys.length} dias (pendiente de guardar)`,
+        'success'
+    );
 }
 
 export async function clearAvailabilityDay() {
@@ -1053,13 +1307,52 @@ export async function clearAvailabilityDay() {
         return;
     }
 
-    try {
+    mutateAvailabilityDraft(() => {
         setSlotsForDate(selectedDate, []);
-        await saveAvailability();
-        setCurrentMonthFromDateKey(selectedDate);
-        selectDate(selectedDate);
-        showToast('Horarios del dia eliminados', 'success');
-    } catch (error) {
-        showToast(`No se pudo limpiar el dia: ${error.message}`, 'error');
+    });
+    setCurrentMonthFromDateKey(selectedDate);
+    selectDate(selectedDate);
+    showToast('Horarios del dia eliminados (pendiente de guardar)', 'success');
+}
+
+export async function clearAvailabilityWeek() {
+    if (!requireEditableSelectedDate()) return;
+    const weekDateKeys = buildDateKeyRange(selectedDate, 7);
+    if (weekDateKeys.length === 0) {
+        showToast('No se pudo preparar la semana de limpieza', 'error');
+        return;
     }
+
+    const datesWithSlots = weekDateKeys.filter(
+        (dateKey) =>
+            normalizeSlotsList(currentAvailability[dateKey] || []).length > 0
+    );
+    if (datesWithSlots.length === 0) {
+        showToast(
+            'No hay horarios para limpiar en los proximos 7 dias',
+            'warning'
+        );
+        return;
+    }
+    const totalSlots = getSlotsCountForDateKeys(datesWithSlots);
+
+    if (
+        !confirm(
+            `Eliminar ${totalSlots} horario(s) en ${datesWithSlots.length} dia(s) desde ${formatAvailabilityDayLabel(selectedDate)}?`
+        )
+    ) {
+        return;
+    }
+
+    mutateAvailabilityDraft(() => {
+        datesWithSlots.forEach((dateKey) => {
+            setSlotsForDate(dateKey, []);
+        });
+    });
+    setCurrentMonthFromDateKey(selectedDate);
+    selectDate(selectedDate);
+    showToast(
+        `Semana limpiada (${datesWithSlots.length} dia(s)) pendiente de guardar`,
+        'success'
+    );
 }

@@ -1093,6 +1093,7 @@ html[data-theme='dark'] .toolbar-chip,
 html[data-theme='dark'] .calendar-legend-chip,
 html[data-theme='dark'] .slot-count-badge,
 html[data-theme='dark'] .availability-day-actions,
+html[data-theme='dark'] .availability-draft-panel,
 html[data-theme='dark'] .availability-summary-chip,
 html[data-theme='dark'] .slot-presets,
 html[data-theme='dark'] .time-slot-item,
@@ -1132,6 +1133,7 @@ html[data-theme='dark'] .operations-action-icon {
 
 html[data-theme='dark'] .toolbar-chip.is-accent,
 html[data-theme='dark'] .availability-day-actions-status .toolbar-chip.is-info,
+html[data-theme='dark'] .availability-draft-status .toolbar-chip.is-info,
 html[data-theme='dark'] .availability-summary-chip.is-editable {
     background: #102744;
     border-color: #284d7a;
@@ -1145,6 +1147,7 @@ html[data-theme='dark'] .toolbar-chip.is-warning {
 }
 
 html[data-theme='dark'] .availability-day-actions-status .toolbar-chip.is-muted,
+html[data-theme='dark'] .availability-draft-status .toolbar-chip.is-muted,
 html[data-theme='dark'] .availability-summary-chip.is-readonly {
     background: #172130;
     border-color: #2d3a4d;
@@ -1152,6 +1155,7 @@ html[data-theme='dark'] .availability-summary-chip.is-readonly {
 }
 
 html[data-theme='dark'] .availability-day-actions-status .toolbar-chip.is-danger,
+html[data-theme='dark'] .availability-draft-status .toolbar-chip.is-danger,
 html[data-theme='dark'] .btn-secondary.danger-soft {
     background: #311a21;
     border-color: #64323d;
@@ -2692,6 +2696,36 @@ html[data-theme='dark'] .card-empty-state i {
     color: #a12638;
 }
 
+.availability-draft-panel {
+    margin: 0 0 14px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #d8e4f2;
+    background: #f8fbff;
+    display: grid;
+    gap: 10px;
+}
+
+.availability-draft-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.availability-draft-actions .btn {
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+}
+
+.availability-draft-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 28px;
+}
+
 .availability-summary-chip {
     display: inline-flex;
     align-items: center;
@@ -3353,6 +3387,10 @@ html[data-theme='dark'] .card-empty-state i {
     }
 
     .availability-day-actions-row {
+        grid-template-columns: 1fr;
+    }
+
+    .availability-draft-actions {
         grid-template-columns: 1fr;
     }
 

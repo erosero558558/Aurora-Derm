@@ -1245,7 +1245,10 @@
                                 Alt+Shift+S siguiente con horarios |
                                 Alt+Shift+flechas cambia mes |
                                 Alt+Shift+D duplicar | Alt+Shift+V pegar |
-                                Alt+Shift+X limpiar
+                                Alt+Shift+W duplicar 7 dias |
+                                Alt+Shift+X limpiar dia |
+                                Alt+Shift+Q limpiar 7 dias |
+                                Alt+Shift+G guardar | Alt+Shift+Z descartar
                             </p>
                             <div
                                 class="calendar-grid"
@@ -1316,7 +1319,15 @@
                                         data-action="duplicate-availability-day-next"
                                     >
                                         <i class="fas fa-arrow-right"></i>
-                                        Duplicar a mañana
+                                        Duplicar a manana
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm"
+                                        data-action="duplicate-availability-next-week"
+                                    >
+                                        <i class="fas fa-calendar-plus"></i>
+                                        Duplicar 7 dias
                                     </button>
                                     <button
                                         type="button"
@@ -1326,6 +1337,14 @@
                                         <i class="fas fa-trash"></i>
                                         Limpiar dia
                                     </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm danger-soft"
+                                        data-action="clear-availability-week"
+                                    >
+                                        <i class="fas fa-trash-can"></i>
+                                        Limpiar 7 dias
+                                    </button>
                                 </div>
                                 <div
                                     class="availability-day-actions-status"
@@ -1334,6 +1353,44 @@
                                     <span class="toolbar-state-empty"
                                         >Selecciona una fecha para usar acciones
                                         del dia</span
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                class="availability-draft-panel"
+                                id="availabilityDraftPanel"
+                                aria-live="polite"
+                            >
+                                <div
+                                    class="availability-draft-actions"
+                                    role="group"
+                                    aria-label="Acciones de borrador de disponibilidad"
+                                >
+                                    <button
+                                        type="button"
+                                        class="btn btn-primary btn-sm"
+                                        id="availabilitySaveDraftBtn"
+                                        data-action="save-availability-draft"
+                                    >
+                                        <i class="fas fa-floppy-disk"></i>
+                                        Guardar cambios
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm"
+                                        id="availabilityDiscardDraftBtn"
+                                        data-action="discard-availability-draft"
+                                    >
+                                        <i class="fas fa-rotate-left"></i>
+                                        Descartar
+                                    </button>
+                                </div>
+                                <div
+                                    class="availability-draft-status"
+                                    id="availabilityDraftStatus"
+                                >
+                                    <span class="toolbar-chip is-muted"
+                                        >Sin cambios pendientes</span
                                     >
                                 </div>
                             </div>

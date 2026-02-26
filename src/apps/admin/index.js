@@ -54,7 +54,11 @@ import {
     copyAvailabilityDay,
     pasteAvailabilityDay,
     duplicateAvailabilityDayToNext,
+    duplicateAvailabilityDayToNextWeek,
     clearAvailabilityDay,
+    clearAvailabilityWeek,
+    saveAvailabilityDraft,
+    discardAvailabilityDraft,
 } from './modules/availability.js';
 
 const ADMIN_NAV_COMPACT_BREAKPOINT = 1024;
@@ -716,6 +720,11 @@ function handleAdminKeyboardShortcuts(event) {
             void duplicateAvailabilityDayToNext();
             return;
         }
+        if (code === 'keyw') {
+            event.preventDefault();
+            void duplicateAvailabilityDayToNextWeek();
+            return;
+        }
         if (code === 'keyv') {
             event.preventDefault();
             void pasteAvailabilityDay();
@@ -724,6 +733,21 @@ function handleAdminKeyboardShortcuts(event) {
         if (code === 'keyx') {
             event.preventDefault();
             void clearAvailabilityDay();
+            return;
+        }
+        if (code === 'keyq') {
+            event.preventDefault();
+            void clearAvailabilityWeek();
+            return;
+        }
+        if (code === 'keyg') {
+            event.preventDefault();
+            void saveAvailabilityDraft();
+            return;
+        }
+        if (code === 'keyz') {
+            event.preventDefault();
+            discardAvailabilityDraft();
             return;
         }
     }
@@ -1404,9 +1428,29 @@ function attachGlobalListeners() {
                 await duplicateAvailabilityDayToNext();
                 return;
             }
+            if (action === 'duplicate-availability-next-week') {
+                event.preventDefault();
+                await duplicateAvailabilityDayToNextWeek();
+                return;
+            }
             if (action === 'clear-availability-day') {
                 event.preventDefault();
                 await clearAvailabilityDay();
+                return;
+            }
+            if (action === 'clear-availability-week') {
+                event.preventDefault();
+                await clearAvailabilityWeek();
+                return;
+            }
+            if (action === 'save-availability-draft') {
+                event.preventDefault();
+                await saveAvailabilityDraft();
+                return;
+            }
+            if (action === 'discard-availability-draft') {
+                event.preventDefault();
+                discardAvailabilityDraft();
                 return;
             }
             if (action === 'add-time-slot') {
