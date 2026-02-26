@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 168
+  revision: 171
   updated_at: 2026-02-26
 
 tasks:
@@ -2933,5 +2933,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-076.md"
     depends_on: []
     prompt: "Frontend QA Admin: reducir flakiness y warnings lint en specs clave"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-077
+    title: "Higiene workspace: desversionar caches PHP y blindar colas derivadas"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T05:49:45.690Z"
+    risk: medium
+    scope: tooling
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".gitignore", "package.json", "JULES_TASKS.md", "KIMI_TASKS.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T05:49:45.690Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Higiene workspace: desversionar caches PHP y blindar colas derivadas"
+    acceptance_ref: "verification/agent-runs/AG-077.md"
+    evidence_ref: "verification/agent-runs/AG-077.md"
+    depends_on: []
+    prompt: "Higiene workspace: desversionar caches PHP y blindar colas derivadas"
     created_at: 2026-02-26
     updated_at: 2026-02-26

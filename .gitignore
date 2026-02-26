@@ -22,6 +22,9 @@ verification/agent-runs/*
 
 # PHP Composer
 vendor/
+.php-cs-fixer.cache
+.phpunit.cache/
+coverage.xml
 
 # Sistema
 .DS_Store
