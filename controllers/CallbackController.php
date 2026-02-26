@@ -20,6 +20,8 @@ class CallbackController
         $store = $context['store'];
         require_rate_limit('callbacks', 5, 60);
         $payload = require_json_body();
+        // Security: ensure we generate a new ID for new callbacks
+        unset($payload['id']);
         $callback = normalize_callback($payload);
 
         if ($callback['telefono'] === '') {

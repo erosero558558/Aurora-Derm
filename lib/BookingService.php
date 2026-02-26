@@ -17,6 +17,8 @@ class BookingService
      */
     public function create(array $store, array $payload): array
     {
+        // Security: ensure we generate a new ID for new appointments
+        unset($payload['id']);
         $appointment = normalize_appointment($payload);
 
         $validation = validate_appointment_payload($appointment, [
