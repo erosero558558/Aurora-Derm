@@ -98,6 +98,12 @@ test.describe('Homepage', () => {
                 stored: 'dark',
             });
 
+        await expect(darkBtn).toHaveClass(/active/);
+        await expect(darkBtn).toHaveAttribute('aria-pressed', 'true');
+        if (await lightBtn.isVisible()) {
+            await expect(lightBtn).toHaveAttribute('aria-pressed', 'false');
+        }
+
         await page.reload();
 
         await expect
@@ -123,6 +129,7 @@ test.describe('Homepage', () => {
                     )
                 )
                 .toBe('light');
+            await expect(lightBtn).toHaveAttribute('aria-pressed', 'true');
         }
     });
 

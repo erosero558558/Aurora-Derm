@@ -18,6 +18,7 @@ const APPOINTMENT_SORT_STORAGE_KEY = 'admin-appointments-sort';
 const APPOINTMENT_DENSITY_STORAGE_KEY = 'admin-appointments-density';
 const DEFAULT_APPOINTMENT_SORT = 'datetime_desc';
 const DEFAULT_APPOINTMENT_DENSITY = 'comfortable';
+const DEFAULT_APPOINTMENT_FILTER = 'all';
 const APPOINTMENT_SORT_OPTIONS = new Set([
     'datetime_desc',
     'datetime_asc',
@@ -25,6 +26,36 @@ const APPOINTMENT_SORT_OPTIONS = new Set([
     'patient_az',
 ]);
 const APPOINTMENT_DENSITY_OPTIONS = new Set(['comfortable', 'compact']);
+const APPOINTMENT_FILTER_OPTIONS = new Set([
+    'all',
+    'today',
+    'upcoming_48h',
+    'week',
+    'month',
+    'confirmed',
+    'cancelled',
+    'no_show',
+    'pending_transfer',
+]);
+
+function toLocalDateKey(date) {
+    const target = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(target.getTime())) return '';
+    const year = target.getFullYear();
+    const month = String(target.getMonth() + 1).padStart(2, '0');
+    const day = String(target.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function parseAppointmentDateTime(appointment) {
+    const dateValue = String(appointment?.date || '').trim();
+    if (!dateValue) return null;
+    const timeValue = String(appointment?.time || '00:00').trim() || '00:00';
+    const isoCandidate = `${dateValue}T${timeValue}:00`;
+    const parsed = new Date(isoCandidate);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+}
 
 function getWeekRange() {
     const now = new Date();
@@ -62,6 +93,11 @@ function getAppointmentControls() {
                 '[data-action="appointment-density"][data-density]'
             )
         ),
+        quickFilterButtons: Array.from(
+            document.querySelectorAll(
+                '[data-action="appointment-quick-filter"][data-filter-value]'
+            )
+        ),
     };
 }
 
@@ -69,6 +105,7 @@ function getAppointmentFilterLabel(value) {
     const labels = {
         all: 'Todas las citas',
         today: 'Hoy',
+        upcoming_48h: 'Proximas 48h',
         week: 'Esta semana',
         month: 'Este mes',
         confirmed: 'Confirmadas',
@@ -76,7 +113,14 @@ function getAppointmentFilterLabel(value) {
         no_show: 'No asistio',
         pending_transfer: 'Transferencias por validar',
     };
-    return labels[String(value || 'all')] || 'Todas las citas';
+    return labels[String(value || DEFAULT_APPOINTMENT_FILTER)] || labels.all;
+}
+
+function normalizeAppointmentFilter(value) {
+    const normalized = String(value || '').trim();
+    return APPOINTMENT_FILTER_OPTIONS.has(normalized)
+        ? normalized
+        : DEFAULT_APPOINTMENT_FILTER;
 }
 
 function normalizeAppointmentSort(value) {
@@ -153,6 +197,16 @@ function setAppointmentDensityButtonState(value) {
     });
 }
 
+function setAppointmentQuickFilterButtonState(value) {
+    const filter = normalizeAppointmentFilter(value);
+    const { quickFilterButtons } = getAppointmentControls();
+    quickFilterButtons.forEach((button) => {
+        const isActive = button.dataset.filterValue === filter;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
 function applyAppointmentDensityClass(value) {
     const density = normalizeAppointmentDensity(value);
     const { appointmentsSection } = getAppointmentControls();
@@ -166,7 +220,9 @@ function applyAppointmentDensityClass(value) {
 function getAppointmentCriteria() {
     const { filterSelect, sortSelect, searchInput } = getAppointmentControls();
     return {
-        filter: String(filterSelect?.value || 'all'),
+        filter: normalizeAppointmentFilter(
+            filterSelect?.value || DEFAULT_APPOINTMENT_FILTER
+        ),
         sort: normalizeAppointmentSort(
             sortSelect?.value || DEFAULT_APPOINTMENT_SORT
         ),
@@ -176,16 +232,30 @@ function getAppointmentCriteria() {
 
 function applyAppointmentFilterCriteria(appointments, filter) {
     const items = Array.isArray(appointments) ? appointments : [];
-    const normalizedFilter = String(filter || 'all');
+    const normalizedFilter = normalizeAppointmentFilter(filter);
     let filtered = [...items];
 
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = toLocalDateKey(now);
+    const upcomingLimit = new Date(now);
+    upcomingLimit.setHours(upcomingLimit.getHours() + 48);
     const currentWeek = getWeekRange();
-    const currentMonthNumber = new Date().getMonth();
+    const currentMonthNumber = now.getMonth();
 
     switch (normalizedFilter) {
         case 'today':
             filtered = filtered.filter((a) => a.date === today);
+            break;
+        case 'upcoming_48h':
+            filtered = filtered.filter((a) => {
+                const dateTime = parseAppointmentDateTime(a);
+                if (!dateTime) return false;
+                const status = String(a?.status || 'confirmed');
+                if (status === 'cancelled' || status === 'completed') {
+                    return false;
+                }
+                return dateTime >= now && dateTime <= upcomingLimit;
+            });
             break;
         case 'week':
             filtered = filtered.filter(
@@ -240,13 +310,15 @@ function renderAppointmentsToolbarState(criteria, visibleAppointments) {
     const { stateRow, clearBtn } = getAppointmentControls();
     if (!stateRow) return;
 
-    const filterValue = String(criteria?.filter || 'all');
+    const filterValue = normalizeAppointmentFilter(
+        criteria?.filter || DEFAULT_APPOINTMENT_FILTER
+    );
     const sortValue = normalizeAppointmentSort(
         criteria?.sort || DEFAULT_APPOINTMENT_SORT
     );
     const searchValue = String(criteria?.search || '').trim();
     const densityValue = getAppointmentDensity();
-    const hasFilter = filterValue !== 'all';
+    const hasFilter = filterValue !== DEFAULT_APPOINTMENT_FILTER;
     const hasSearch = searchValue.length > 0;
     const hasPreferenceState =
         sortValue !== DEFAULT_APPOINTMENT_SORT ||
@@ -353,6 +425,7 @@ function sortAppointmentsByCriteria(appointments, sortValue) {
 
 function applyAndRenderAppointments() {
     const criteria = getAppointmentCriteria();
+    setAppointmentQuickFilterButtonState(criteria.filter);
     const filteredByFilter = applyAppointmentFilterCriteria(
         currentAppointments,
         criteria.filter
@@ -547,11 +620,38 @@ export function searchAppointments() {
     applyAndRenderAppointments();
 }
 
-export function resetAppointmentFilters() {
+export function applyAppointmentQuickFilter(value, options = {}) {
     const { filterSelect, searchInput } = getAppointmentControls();
-    if (filterSelect) filterSelect.value = 'all';
-    if (searchInput) searchInput.value = '';
+    const normalizedFilter = normalizeAppointmentFilter(value);
+    const preserveSearch = options.preserveSearch !== false;
+    if (filterSelect) {
+        filterSelect.value = normalizedFilter;
+    }
+    if (!preserveSearch && searchInput) {
+        searchInput.value = '';
+    }
     applyAndRenderAppointments();
+}
+
+export function focusAppointmentSearch() {
+    const { searchInput } = getAppointmentControls();
+    if (!(searchInput instanceof HTMLInputElement)) return false;
+    searchInput.focus({ preventScroll: true });
+    searchInput.select();
+    return true;
+}
+
+export function isAppointmentsSectionActive() {
+    return (
+        document.getElementById('appointments')?.classList.contains('active') ||
+        false
+    );
+}
+
+export function resetAppointmentFilters() {
+    applyAppointmentQuickFilter(DEFAULT_APPOINTMENT_FILTER, {
+        preserveSearch: false,
+    });
 }
 
 export function initAppointmentsToolbarPreferences() {

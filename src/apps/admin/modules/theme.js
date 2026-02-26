@@ -4,6 +4,7 @@ const VALID_THEME_MODES = new Set(['light', 'dark', 'system']);
 let currentThemeMode = 'system';
 let systemThemeQuery = null;
 let systemThemeListenerBound = false;
+let storageThemeListenerBound = false;
 let transitionTimer = null;
 
 function getSystemThemeQuery() {
@@ -120,10 +121,35 @@ function bindSystemThemeListener() {
     }
 }
 
+function handleThemeStorageSync(event) {
+    if (event?.key && event.key !== ADMIN_THEME_STORAGE_KEY) {
+        return;
+    }
+
+    const nextMode =
+        typeof event?.newValue === 'string' && isValidThemeMode(event.newValue)
+            ? event.newValue
+            : readStoredThemeMode();
+
+    applyThemeMode(nextMode, { persist: false, animate: false });
+}
+
+function bindStorageThemeListener() {
+    if (
+        storageThemeListenerBound ||
+        typeof window.addEventListener !== 'function'
+    ) {
+        return;
+    }
+    window.addEventListener('storage', handleThemeStorageSync);
+    storageThemeListenerBound = true;
+}
+
 export function initAdminThemeMode() {
     currentThemeMode = readStoredThemeMode();
     applyThemeMode(currentThemeMode, { persist: false, animate: false });
     bindSystemThemeListener();
+    bindStorageThemeListener();
 }
 
 export function setAdminThemeMode(mode) {

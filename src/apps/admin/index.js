@@ -13,6 +13,11 @@ import { loadDashboardData } from './modules/dashboard.js';
 import {
     loadCallbacks,
     filterCallbacks,
+    applyCallbackQuickFilter,
+    searchCallbacks,
+    resetCallbackFilters,
+    focusCallbackSearch,
+    isCallbacksSectionActive,
     markContacted,
 } from './modules/callbacks.js';
 import { loadReviews } from './modules/reviews.js';
@@ -22,6 +27,9 @@ import {
     loadAppointments,
     filterAppointments,
     searchAppointments,
+    applyAppointmentQuickFilter,
+    focusAppointmentSearch,
+    isAppointmentsSectionActive,
     resetAppointmentFilters,
     initAppointmentsToolbarPreferences,
     setAppointmentSort,
@@ -260,17 +268,67 @@ function closeSidebar({ restoreFocus = false } = {}) {
 }
 
 function handleAdminKeyboardShortcuts(event) {
-    if (!event.altKey || !event.shiftKey) return;
-    if (isTypingContextTarget(event.target)) return;
-
     const dashboard = document.getElementById('adminDashboard');
     if (!dashboard || dashboard.classList.contains('is-hidden')) return;
+
+    if (
+        event.key === '/' &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        isAppointmentsSectionActive() &&
+        !isTypingContextTarget(event.target)
+    ) {
+        event.preventDefault();
+        focusAppointmentSearch();
+        return;
+    }
+
+    if (
+        event.key === '/' &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        isCallbacksSectionActive() &&
+        !isTypingContextTarget(event.target)
+    ) {
+        event.preventDefault();
+        focusCallbackSearch();
+        return;
+    }
+
+    if (!event.altKey || !event.shiftKey) return;
+    if (isTypingContextTarget(event.target)) return;
 
     const key = String(event.key || '').toLowerCase();
     const code = String(event.code || '').toLowerCase();
     if (key === 'm' || code === 'keym') {
         event.preventDefault();
         setSidebarOpen(!isSidebarOpen());
+        return;
+    }
+
+    const appointmentShortcutFilters = {
+        keya: 'all',
+        keyh: 'today',
+        keyt: 'pending_transfer',
+        keyn: 'no_show',
+    };
+    const quickFilter = appointmentShortcutFilters[code] || null;
+    if (quickFilter) {
+        event.preventDefault();
+        void navigateToAppointmentsWithQuickFilter(quickFilter);
+        return;
+    }
+
+    const callbackShortcutFilters = {
+        keyp: 'pending',
+        keyc: 'contacted',
+    };
+    const callbackQuickFilter = callbackShortcutFilters[code] || null;
+    if (callbackQuickFilter) {
+        event.preventDefault();
+        void navigateToCallbacksWithQuickFilter(callbackQuickFilter);
         return;
     }
 
@@ -330,6 +388,18 @@ async function navigateToSection(section, options = {}) {
     if (focus) {
         focusSection(targetSection);
     }
+}
+
+async function navigateToAppointmentsWithQuickFilter(filter) {
+    await navigateToSection('appointments', { focus: false });
+    applyAppointmentQuickFilter(filter, { preserveSearch: false });
+    focusSection('appointments');
+}
+
+async function navigateToCallbacksWithQuickFilter(filter) {
+    await navigateToSection('callbacks', { focus: false });
+    applyCallbackQuickFilter(filter, { preserveSearch: false });
+    focusSection('callbacks');
 }
 
 /**
@@ -623,9 +693,26 @@ function attachGlobalListeners() {
                 exportAppointmentsCSV();
                 return;
             }
+            if (action === 'appointment-quick-filter') {
+                event.preventDefault();
+                applyAppointmentQuickFilter(
+                    actionEl.dataset.filterValue || 'all'
+                );
+                return;
+            }
+            if (action === 'callback-quick-filter') {
+                event.preventDefault();
+                applyCallbackQuickFilter(actionEl.dataset.filterValue || 'all');
+                return;
+            }
             if (action === 'clear-appointment-filters') {
                 event.preventDefault();
                 resetAppointmentFilters();
+                return;
+            }
+            if (action === 'clear-callback-filters') {
+                event.preventDefault();
+                resetCallbackFilters();
                 return;
             }
             if (action === 'appointment-density') {
@@ -739,6 +826,11 @@ function attachGlobalListeners() {
     const callbackFilter = document.getElementById('callbackFilter');
     if (callbackFilter) {
         callbackFilter.addEventListener('change', filterCallbacks);
+    }
+
+    const callbackSearchInput = document.getElementById('searchCallbacks');
+    if (callbackSearchInput) {
+        callbackSearchInput.addEventListener('input', searchCallbacks);
     }
 }
 

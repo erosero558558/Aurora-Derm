@@ -3,10 +3,12 @@
 let deps = null;
 let themeTransitionTimer = null;
 let systemThemeListenerBound = false;
+let themeStorageListenerBound = false;
 
 function init(inputDeps) {
     deps = inputDeps || {};
     bindSystemThemeListener();
+    bindStorageThemeListener();
     return window.PielThemeEngine;
 }
 
@@ -24,7 +26,11 @@ function setCurrentThemeMode(mode) {
 }
 
 function getThemeStorageKey() {
-    if (deps && typeof deps.themeStorageKey === 'string' && deps.themeStorageKey) {
+    if (
+        deps &&
+        typeof deps.themeStorageKey === 'string' &&
+        deps.themeStorageKey
+    ) {
         return deps.themeStorageKey;
     }
     return 'themeMode';
@@ -34,7 +40,9 @@ function getSystemThemeQuery() {
     if (deps && typeof deps.getSystemThemeQuery === 'function') {
         return deps.getSystemThemeQuery();
     }
-    return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    return window.matchMedia
+        ? window.matchMedia('(prefers-color-scheme: dark)')
+        : null;
 }
 
 function isValidThemeMode(mode) {
@@ -43,7 +51,11 @@ function isValidThemeMode(mode) {
     if (Array.isArray(validModes)) {
         return validModes.includes(normalized);
     }
-    return normalized === 'light' || normalized === 'dark' || normalized === 'system';
+    return (
+        normalized === 'light' ||
+        normalized === 'dark' ||
+        normalized === 'system'
+    );
 }
 
 function resolveThemeMode(mode) {
@@ -68,12 +80,18 @@ function applyThemeMode(mode) {
 function updateThemeButtons() {
     const currentMode = getCurrentThemeMode();
     document.querySelectorAll('.theme-btn').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.themeMode === currentMode);
+        const isActive = btn.dataset.themeMode === currentMode;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', String(isActive));
     });
 }
 
 function animateThemeTransition() {
     if (!document.body) {
+        return;
+    }
+
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
         return;
     }
 
@@ -90,20 +108,36 @@ function animateThemeTransition() {
     }, 320);
 }
 
+function readStoredThemeMode() {
+    try {
+        return localStorage.getItem(getThemeStorageKey()) || 'system';
+    } catch (_error) {
+        return 'system';
+    }
+}
+
+function persistThemeMode(mode) {
+    try {
+        localStorage.setItem(getThemeStorageKey(), mode);
+    } catch (_error) {
+        // no-op
+    }
+}
+
 function setThemeMode(mode) {
     if (!isValidThemeMode(mode)) {
         return;
     }
 
     setCurrentThemeMode(mode);
-    localStorage.setItem(getThemeStorageKey(), mode);
+    persistThemeMode(mode);
     animateThemeTransition();
     applyThemeMode(mode);
     updateThemeButtons();
 }
 
 function initThemeMode() {
-    const storedTheme = localStorage.getItem(getThemeStorageKey()) || 'system';
+    const storedTheme = readStoredThemeMode();
     const nextMode = isValidThemeMode(storedTheme) ? storedTheme : 'system';
     setCurrentThemeMode(nextMode);
     applyThemeMode(nextMode);
@@ -113,6 +147,7 @@ function initThemeMode() {
 function handleSystemThemeChange() {
     if (getCurrentThemeMode() === 'system') {
         applyThemeMode('system');
+        updateThemeButtons();
     }
 }
 
@@ -138,11 +173,39 @@ function bindSystemThemeListener() {
     }
 }
 
+function handleThemeStorageSync(event) {
+    const storageKey = getThemeStorageKey();
+    if (event?.key && event.key !== storageKey) {
+        return;
+    }
+
+    const rawMode =
+        typeof event?.newValue === 'string'
+            ? event.newValue
+            : readStoredThemeMode();
+    const nextMode = isValidThemeMode(rawMode) ? rawMode : 'system';
+    setCurrentThemeMode(nextMode);
+    applyThemeMode(nextMode);
+    updateThemeButtons();
+}
+
+function bindStorageThemeListener() {
+    if (
+        themeStorageListenerBound ||
+        typeof window.addEventListener !== 'function'
+    ) {
+        return;
+    }
+
+    window.addEventListener('storage', handleThemeStorageSync);
+    themeStorageListenerBound = true;
+}
+
 window.PielThemeEngine = {
     init,
     setThemeMode,
     initThemeMode,
-    applyThemeMode
+    applyThemeMode,
 };
 
 window.Piel = window.Piel || {};

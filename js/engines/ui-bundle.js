@@ -1,1 +1,688 @@
-!function(){"use strict";let e=null,t=null,n=!1;function o(){return e&&"function"==typeof e.getCurrentThemeMode&&e.getCurrentThemeMode()||"system"}function i(t){e&&"function"==typeof e.setCurrentThemeMode&&e.setCurrentThemeMode(t)}function a(){return e&&"string"==typeof e.themeStorageKey&&e.themeStorageKey?e.themeStorageKey:"themeMode"}function s(){return e&&"function"==typeof e.getSystemThemeQuery?e.getSystemThemeQuery():window.matchMedia?window.matchMedia("(prefers-color-scheme: dark)"):null}function c(t){const n=String(t||"").trim(),o=e?e.validThemeModes:null;return Array.isArray(o)?o.includes(n):"light"===n||"dark"===n||"system"===n}function r(e){const t=e||o(),n=function(e){const t=e||o();if("system"===t){const e=s();return e&&e.matches?"dark":"light"}return t}(t);document.documentElement.setAttribute("data-theme-mode",t),document.documentElement.setAttribute("data-theme",n)}function d(){const e=o();document.querySelectorAll(".theme-btn").forEach(t=>{t.classList.toggle("active",t.dataset.themeMode===e)})}function l(){"system"===o()&&r("system")}window.PielThemeEngine={init:function(t){return e=t||{},function(){if(n)return;const e=s();e&&("function"==typeof e.addEventListener?(e.addEventListener("change",l),n=!0):"function"==typeof e.addListener&&(e.addListener(l),n=!0))}(),window.PielThemeEngine},setThemeMode:function(e){c(e)&&(i(e),localStorage.setItem(a(),e),document.body&&(t&&clearTimeout(t),document.body.classList.remove("theme-transition"),document.body.offsetWidth,document.body.classList.add("theme-transition"),t=setTimeout(()=>{document.body.classList.remove("theme-transition")},320)),r(e),d())},initThemeMode:function(){const e=localStorage.getItem(a())||"system",t=c(e)?e:"system";i(t),r(t),d()},applyThemeMode:r},window.Piel=window.Piel||{},window.Piel.ThemeEngine=window.PielThemeEngine;let u=null,m=!1,f=!1,g=!1,p=!1;function w(e){e&&("paymentModal"!==e.id?e.classList.contains("is-closing")||(e.classList.add("is-closing"),setTimeout(()=>{e.classList.remove("active","is-closing"),document.querySelector(".modal.active")||(document.body.style.overflow="")},180)):u&&"function"==typeof u.closePaymentModal&&u.closePaymentModal())}window.PielModalUxEngine={init:function(e){return u=e||u,document.querySelectorAll(".modal").forEach(e=>{"true"!==e.dataset.modalUxBackdropBound&&(e.dataset.modalUxBackdropBound="true",e.addEventListener("click",function(e){e.target===this&&w(this)}))}),f||(f=!0,document.addEventListener("keydown",function(e){"Escape"===e.key&&(document.querySelectorAll(".modal.active").forEach(e=>{w(e)}),u&&"function"==typeof u.toggleMobileMenu&&u.toggleMobileMenu(!1))})),function(){if(g)return;g=!0,window.addEventListener("popstate",function(){p=!0;let e=!1;document.querySelectorAll(".modal.active").forEach(t=>{e=!0,"paymentModal"===t.id?u&&"function"==typeof u.closePaymentModal&&u.closePaymentModal({skipAbandonTrack:!1,reason:"back_gesture"}):w(t)});const t=document.getElementById("mobileMenu");t&&t.classList.contains("active")&&(e=!0,u&&"function"==typeof u.toggleMobileMenu?u.toggleMobileMenu(!1):t.classList.remove("active")),e&&!document.querySelector(".modal.active:not(.is-closing)")&&(document.body.style.overflow=""),setTimeout(()=>{p=!1},50)});const e=new MutationObserver(e=>{let t=!1,n=!1;e.forEach(e=>{"class"===e.attributeName&&(e.target.classList.contains("active")?t=!0:n=!0)}),t?history.state&&history.state.modalOpen||history.pushState({modalOpen:!0},""):n&&!p&&history.state&&history.state.modalOpen&&history.back()});document.querySelectorAll(".modal, #mobileMenu").forEach(t=>{e.observe(t,{attributes:!0,attributeFilter:["class"]})})}(),m=!0,window.PielModalUxEngine},isInitialized:function(){return m}};let y=null,h="";function v(){return y&&"function"==typeof y.getCurrentLang?y.getCurrentLang():"es"}function E(){return y&&"function"==typeof y.getClinicAddress?String(y.getClinicAddress()||""):""}function L(e){if(y&&"function"==typeof y.escapeHtml)return y.escapeHtml(String(e||""));const t=document.createElement("div");return t.textContent=String(e||""),t.innerHTML}function M(e){return{rosero:"Dr. Javier Rosero",narvaez:"Dra. Carolina Narvaez",indiferente:"Cualquiera disponible"}[e]||e||"-"}function C(e){return{consulta:"Consulta Dermatologica",telefono:"Consulta Telefónica",video:"Video Consulta",laser:"Tratamiento Láser",rejuvenecimiento:"Rejuvenecimiento"}[e]||e||"-"}function b(e){return e.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z"}function S(e){return e.toISOString().replace(/[-:]/g,"").split(".")[0]}function T(){h&&(URL.revokeObjectURL(h),h="")}window.PielSuccessModalEngine={init:function(e){return y=e||y,window.PielSuccessModalEngine},showSuccessModal:function(e){const t=document.getElementById("successModal");if(!t)return;const n=y&&"function"==typeof y.getCurrentAppointment&&y.getCurrentAppointment()||{},o=document.getElementById("appointmentDetails"),i=t.querySelector('[data-i18n="success_desc"]'),a=v();i&&(i.textContent=e?"es"===a?"Enviamos un correo de confirmacion con los detalles de tu cita.":"A confirmation email with your appointment details was sent.":"es"===a?"Tu cita fue registrada. Te contactaremos para confirmar detalles.":"Your appointment was saved. We will contact you to confirm details.");const s=n.date&&n.time?new Date(`${n.date}T${n.time}`):new Date,c=Number.isNaN(s.getTime())?new Date:s,r=new Date(c.getTime()+36e5),d=function(e,t,n){const o=encodeURIComponent("Cita - Piel en Armonia"),i=encodeURIComponent(`Servicio: ${C(e.service)}\nDoctor: ${M(e.doctor)}\nPrecio: ${e.price||""}`),a=encodeURIComponent(E());return`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${o}&dates=${b(t)}/${b(n)}&details=${i}&location=${a}`}(n,c,r),l=function(e,t,n){return`BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Piel en Armonia//Consulta//ES\nBEGIN:VEVENT\nDTSTART:${S(t)}\nDTEND:${S(n)}\nSUMMARY:Cita - Piel en Armonia\nDESCRIPTION:Servicio: ${C(e.service)}\\nDoctor: ${M(e.doctor)}\\nPrecio: ${e.price||""}\nLOCATION:${E()}\nEND:VEVENT\nEND:VCALENDAR`}(n,c,r),u=new Blob([l],{type:"text/calendar"});T(),h=URL.createObjectURL(u),o&&(o.innerHTML=`\n            <div class="success-details-card">\n                <p class="success-details-line"><strong>Doctor:</strong> ${L(M(n.doctor))}</p>\n                <p class="success-details-line"><strong>${"es"===a?"Fecha:":"Date:"}</strong> ${L(n.date||"-")}</p>\n                <p class="success-details-line"><strong>${"es"===a?"Hora:":"Time:"}</strong> ${L(n.time||"-")}</p>\n                <p class="success-details-line"><strong>${"es"===a?"Pago:":"Payment:"}</strong> ${L(function(e){const t=v(),n={card:"es"===t?"Tarjeta":"Card",transfer:"es"===t?"Transferencia":"Transfer",cash:"es"===t?"Efectivo":"Cash",unpaid:"es"===t?"Pendiente":"Pending"};return n[String(e||"").toLowerCase()]||e||n.unpaid}(n.paymentMethod))} - ${L(function(e){const t=String(e||"").toLowerCase(),n="es"===v()?{paid:"Pagado",pending_cash:"Pago en consultorio",pending_transfer_review:"Comprobante en validacion",pending_transfer:"Transferencia pendiente",pending_gateway:"Procesando pago",pending:"Pendiente",failed:"Fallido"}:{paid:"Paid",pending_cash:"Pay at clinic",pending_transfer_review:"Proof under review",pending_transfer:"Transfer pending",pending_gateway:"Processing payment",pending:"Pending",failed:"Failed"};return n[t]||e||n.pending}(n.paymentStatus))}</p>\n                <p><strong>Total:</strong> ${L(n.price||"$0.00")}</p>\n            </div>\n            <div class="success-calendar-actions">\n                <a href="${d}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary success-calendar-btn">\n                    <i class="fab fa-google"></i> Google Calendar\n                </a>\n                <a href="${h}" download="cita-piel-en-armonia.ics" class="btn btn-secondary success-calendar-btn">\n                    <i class="fas fa-calendar-alt"></i> Outlook/Apple\n                </a>\n            </div>\n        `),t.classList.add("active")},closeSuccessModal:function(){const e=document.getElementById("successModal");e&&e.classList.remove("active"),document.body.style.overflow="",T()}};let P=null;function k(){return P&&"function"==typeof P.getCurrentLang&&P.getCurrentLang()||"es"}function _(e,t){P&&"function"==typeof P.showToast&&P.showToast(e,t||"info")}function I(e,t){P&&"function"==typeof P.trackEvent&&P.trackEvent(e,t||{})}function A(){return P&&"string"==typeof P.cookieConsentKey&&P.cookieConsentKey?P.cookieConsentKey:"pa_cookie_consent_v1"}function $(){try{const e=localStorage.getItem(A());if(!e)return"";const t=JSON.parse(e);return"string"==typeof t?.status?t.status:""}catch(e){return""}}function D(e){const t="accepted"===e?"accepted":"rejected";try{localStorage.setItem(A(),JSON.stringify({status:t,at:(new Date).toISOString()}))}catch(e){}}function O(){"function"==typeof window.gtag&&window.gtag.apply(null,arguments)}function B(){if(window._ga4Loaded)return;if("accepted"!==$())return;window._ga4Loaded=!0,window.dataLayer=window.dataLayer||[],window.gtag||(window.gtag=function(){window.dataLayer.push(arguments)});const e=P&&"string"==typeof P.gaMeasurementId&&P.gaMeasurementId?P.gaMeasurementId:"G-GYY8PE5M8W",t=document.createElement("script");t.async=!0,t.src=`https://www.googletagmanager.com/gtag/js?id=${e}`,document.head.appendChild(t),O("js",new Date),"accepted"===$()&&O("consent","update",{analytics_storage:"granted",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"}),O("config",e)}function N(e,t){if(!e)return;const n=!0===t;e.classList.toggle("active",n)}function q(e){const t=document.getElementById("cookieBanner");t&&("accepted"===e?(D("accepted"),N(t,!1),O("consent","update",{analytics_storage:"granted",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"}),B(),_("es"===k()?"Preferencias de cookies guardadas.":"Cookie preferences saved.","success"),I("cookie_consent_update",{status:"accepted"})):"rejected"===e&&(D("rejected"),N(t,!1),O("consent","update",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"}),_("es"===k()?"Solo se mantendran cookies esenciales.":"Only essential cookies will be kept.","info"),I("cookie_consent_update",{status:"rejected"})))}window.Piel=window.Piel||{},window.Piel.ConsentEngine={init:function(e){return P=e||{},document.addEventListener("click",e=>{const t=e.target;t&&(t.closest("#cookieAcceptBtn")?q("accepted"):t.closest("#cookieRejectBtn")&&q("rejected"))}),window.Piel.ConsentEngine},getCookieConsent:$,setCookieConsent:D,initGA4:B,initCookieBanner:function(){const e=document.getElementById("cookieBanner");if(!e)return!1;const t=$();return N(e,"accepted"!==t&&"rejected"!==t),!0}},window.PielConsentEngine=window.Piel.ConsentEngine;let R=!1;window.PielUiEffects={init:function(){R||(R=!0,function(){const e=document.querySelector(".nav");if(!e)return;let t=!1,n=!1;const o=()=>{const o=window.scrollY>50;o!==n&&(e.classList.toggle("scrolled",o),n=o),t=!1};window.addEventListener("scroll",()=>{t||(t=!0,window.requestAnimationFrame(o))},{passive:!0}),o()}(),function(){const e=()=>{!function(){const e=document.querySelectorAll(".service-card, .team-card, .section-header, .tele-card, .review-card, .showcase-hero, .showcase-card, .showcase-split, .clinic-info, .clinic-map, .footer-content > *, .appointment-form-container, .appointment-info");if(!e.length)return;if(window.innerWidth<900||window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)return void e.forEach(e=>e.classList.add("visible"));const t=new IntersectionObserver(e=>{let n=0;e.forEach(e=>{if(e.isIntersecting){const o=100*n;e.target.style.transitionDelay=`${o}ms`,n++,e.target.classList.add("visible"),t.unobserve(e.target)}})},{root:null,rootMargin:"0px 0px -100px 0px",threshold:.1});e.forEach(e=>{e.classList.add("animate-on-scroll"),t.observe(e)})}(),function(){const e=document.querySelector(".hero-image-container");if(!e)return;if(window.innerWidth<1100)return;if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;let t=!1;window.addEventListener("scroll",()=>{t||(t=!0,window.requestAnimationFrame(()=>{const n=window.pageYOffset,o=Math.min(80,.12*n);e.style.transform=`translateY(calc(-50% + ${o}px))`,t=!1}))},{passive:!0})}(),function(){const e=document.getElementById("mapPlaceholder");if(!e)return;const t=()=>{const t=e.dataset.src;if(!t)return;const n=document.createElement("iframe");n.src=t,n.width="100%",n.height="100%",n.allowFullscreen=!0,n.loading="lazy",n.referrerPolicy="no-referrer-when-downgrade",n.style.border="0",e.innerHTML="",e.appendChild(n),e.classList.remove("map-placeholder"),e.style.backgroundColor="transparent"},n=new IntersectionObserver(e=>{e.forEach(e=>{e.isIntersecting&&(t(),n.disconnect())})},{rootMargin:"200px"});n.observe(e),e.addEventListener("click",t,{once:!0})}(),document.querySelectorAll(".blur-up img").forEach(e=>{e.complete?e.classList.add("loaded"):e.addEventListener("load",()=>e.classList.add("loaded"),{once:!0})})};"function"==typeof window.requestIdleCallback?window.requestIdleCallback(e,{timeout:1200}):setTimeout(e,180)}())}}}();
+!(function () {
+    'use strict';
+    let e = null,
+        t = null,
+        n = !1,
+        o = !1;
+    function i() {
+        return (
+            (e &&
+                'function' == typeof e.getCurrentThemeMode &&
+                e.getCurrentThemeMode()) ||
+            'system'
+        );
+    }
+    function a(t) {
+        e &&
+            'function' == typeof e.setCurrentThemeMode &&
+            e.setCurrentThemeMode(t);
+    }
+    function s() {
+        return e && 'string' == typeof e.themeStorageKey && e.themeStorageKey
+            ? e.themeStorageKey
+            : 'themeMode';
+    }
+    function r() {
+        return e && 'function' == typeof e.getSystemThemeQuery
+            ? e.getSystemThemeQuery()
+            : window.matchMedia
+              ? window.matchMedia('(prefers-color-scheme: dark)')
+              : null;
+    }
+    function c(t) {
+        const n = String(t || '').trim(),
+            o = e ? e.validThemeModes : null;
+        return Array.isArray(o)
+            ? o.includes(n)
+            : 'light' === n || 'dark' === n || 'system' === n;
+    }
+    function d(e) {
+        const t = e || i(),
+            n = (function (e) {
+                const t = e || i();
+                if ('system' === t) {
+                    const e = r();
+                    return e && e.matches ? 'dark' : 'light';
+                }
+                return t;
+            })(t);
+        (document.documentElement.setAttribute('data-theme-mode', t),
+            document.documentElement.setAttribute('data-theme', n));
+    }
+    function l() {
+        const e = i();
+        document.querySelectorAll('.theme-btn').forEach((t) => {
+            const n = t.dataset.themeMode === e;
+            (t.classList.toggle('active', n),
+                t.setAttribute('aria-pressed', String(n)));
+        });
+    }
+    function u() {
+        try {
+            return localStorage.getItem(s()) || 'system';
+        } catch (e) {
+            return 'system';
+        }
+    }
+    function m() {
+        'system' === i() && (d('system'), l());
+    }
+    function f(e) {
+        const t = s();
+        if (e?.key && e.key !== t) return;
+        const n = 'string' == typeof e?.newValue ? e.newValue : u(),
+            o = c(n) ? n : 'system';
+        (a(o), d(o), l());
+    }
+    ((window.PielThemeEngine = {
+        init: function (t) {
+            return (
+                (e = t || {}),
+                (function () {
+                    if (n) return;
+                    const e = r();
+                    e &&
+                        ('function' == typeof e.addEventListener
+                            ? (e.addEventListener('change', m), (n = !0))
+                            : 'function' == typeof e.addListener &&
+                              (e.addListener(m), (n = !0)));
+                })(),
+                o ||
+                    'function' != typeof window.addEventListener ||
+                    (window.addEventListener('storage', f), (o = !0)),
+                window.PielThemeEngine
+            );
+        },
+        setThemeMode: function (e) {
+            c(e) &&
+                (a(e),
+                (function (e) {
+                    try {
+                        localStorage.setItem(s(), e);
+                    } catch (e) {}
+                })(e),
+                document.body &&
+                    (window.matchMedia?.('(prefers-reduced-motion: reduce)')
+                        ?.matches ||
+                        (t && clearTimeout(t),
+                        document.body.classList.remove('theme-transition'),
+                        document.body.offsetWidth,
+                        document.body.classList.add('theme-transition'),
+                        (t = setTimeout(() => {
+                            document.body.classList.remove('theme-transition');
+                        }, 320)))),
+                d(e),
+                l());
+        },
+        initThemeMode: function () {
+            const e = u(),
+                t = c(e) ? e : 'system';
+            (a(t), d(t), l());
+        },
+        applyThemeMode: d,
+    }),
+        (window.Piel = window.Piel || {}),
+        (window.Piel.ThemeEngine = window.PielThemeEngine));
+    let g = null,
+        p = !1,
+        w = !1,
+        y = !1,
+        h = !1;
+    function v(e) {
+        e &&
+            ('paymentModal' !== e.id
+                ? e.classList.contains('is-closing') ||
+                  (e.classList.add('is-closing'),
+                  setTimeout(() => {
+                      (e.classList.remove('active', 'is-closing'),
+                          document.querySelector('.modal.active') ||
+                              (document.body.style.overflow = ''));
+                  }, 180))
+                : g &&
+                  'function' == typeof g.closePaymentModal &&
+                  g.closePaymentModal());
+    }
+    window.PielModalUxEngine = {
+        init: function (e) {
+            return (
+                (g = e || g),
+                document.querySelectorAll('.modal').forEach((e) => {
+                    'true' !== e.dataset.modalUxBackdropBound &&
+                        ((e.dataset.modalUxBackdropBound = 'true'),
+                        e.addEventListener('click', function (e) {
+                            e.target === this && v(this);
+                        }));
+                }),
+                w ||
+                    ((w = !0),
+                    document.addEventListener('keydown', function (e) {
+                        'Escape' === e.key &&
+                            (document
+                                .querySelectorAll('.modal.active')
+                                .forEach((e) => {
+                                    v(e);
+                                }),
+                            g &&
+                                'function' == typeof g.toggleMobileMenu &&
+                                g.toggleMobileMenu(!1));
+                    })),
+                (function () {
+                    if (y) return;
+                    ((y = !0),
+                        window.addEventListener('popstate', function () {
+                            h = !0;
+                            let e = !1;
+                            document
+                                .querySelectorAll('.modal.active')
+                                .forEach((t) => {
+                                    ((e = !0),
+                                        'paymentModal' === t.id
+                                            ? g &&
+                                              'function' ==
+                                                  typeof g.closePaymentModal &&
+                                              g.closePaymentModal({
+                                                  skipAbandonTrack: !1,
+                                                  reason: 'back_gesture',
+                                              })
+                                            : v(t));
+                                });
+                            const t = document.getElementById('mobileMenu');
+                            (t &&
+                                t.classList.contains('active') &&
+                                ((e = !0),
+                                g && 'function' == typeof g.toggleMobileMenu
+                                    ? g.toggleMobileMenu(!1)
+                                    : t.classList.remove('active')),
+                                e &&
+                                    !document.querySelector(
+                                        '.modal.active:not(.is-closing)'
+                                    ) &&
+                                    (document.body.style.overflow = ''),
+                                setTimeout(() => {
+                                    h = !1;
+                                }, 50));
+                        }));
+                    const e = new MutationObserver((e) => {
+                        let t = !1,
+                            n = !1;
+                        (e.forEach((e) => {
+                            'class' === e.attributeName &&
+                                (e.target.classList.contains('active')
+                                    ? (t = !0)
+                                    : (n = !0));
+                        }),
+                            t
+                                ? (history.state && history.state.modalOpen) ||
+                                  history.pushState({ modalOpen: !0 }, '')
+                                : n &&
+                                  !h &&
+                                  history.state &&
+                                  history.state.modalOpen &&
+                                  history.back());
+                    });
+                    document
+                        .querySelectorAll('.modal, #mobileMenu')
+                        .forEach((t) => {
+                            e.observe(t, {
+                                attributes: !0,
+                                attributeFilter: ['class'],
+                            });
+                        });
+                })(),
+                (p = !0),
+                window.PielModalUxEngine
+            );
+        },
+        isInitialized: function () {
+            return p;
+        },
+    };
+    let E = null,
+        L = '';
+    function M() {
+        return E && 'function' == typeof E.getCurrentLang
+            ? E.getCurrentLang()
+            : 'es';
+    }
+    function b() {
+        return E && 'function' == typeof E.getClinicAddress
+            ? String(E.getClinicAddress() || '')
+            : '';
+    }
+    function C(e) {
+        if (E && 'function' == typeof E.escapeHtml)
+            return E.escapeHtml(String(e || ''));
+        const t = document.createElement('div');
+        return ((t.textContent = String(e || '')), t.innerHTML);
+    }
+    function S(e) {
+        return (
+            {
+                rosero: 'Dr. Javier Rosero',
+                narvaez: 'Dra. Carolina Narvaez',
+                indiferente: 'Cualquiera disponible',
+            }[e] ||
+            e ||
+            '-'
+        );
+    }
+    function T(e) {
+        return (
+            {
+                consulta: 'Consulta Dermatologica',
+                telefono: 'Consulta Telefónica',
+                video: 'Video Consulta',
+                laser: 'Tratamiento Láser',
+                rejuvenecimiento: 'Rejuvenecimiento',
+            }[e] ||
+            e ||
+            '-'
+        );
+    }
+    function P(e) {
+        return e.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    }
+    function k(e) {
+        return e.toISOString().replace(/[-:]/g, '').split('.')[0];
+    }
+    function _() {
+        L && (URL.revokeObjectURL(L), (L = ''));
+    }
+    window.PielSuccessModalEngine = {
+        init: function (e) {
+            return ((E = e || E), window.PielSuccessModalEngine);
+        },
+        showSuccessModal: function (e) {
+            const t = document.getElementById('successModal');
+            if (!t) return;
+            const n =
+                    (E &&
+                        'function' == typeof E.getCurrentAppointment &&
+                        E.getCurrentAppointment()) ||
+                    {},
+                o = document.getElementById('appointmentDetails'),
+                i = t.querySelector('[data-i18n="success_desc"]'),
+                a = M();
+            i &&
+                (i.textContent = e
+                    ? 'es' === a
+                        ? 'Enviamos un correo de confirmacion con los detalles de tu cita.'
+                        : 'A confirmation email with your appointment details was sent.'
+                    : 'es' === a
+                      ? 'Tu cita fue registrada. Te contactaremos para confirmar detalles.'
+                      : 'Your appointment was saved. We will contact you to confirm details.');
+            const s =
+                    n.date && n.time
+                        ? new Date(`${n.date}T${n.time}`)
+                        : new Date(),
+                r = Number.isNaN(s.getTime()) ? new Date() : s,
+                c = new Date(r.getTime() + 36e5),
+                d = (function (e, t, n) {
+                    const o = encodeURIComponent('Cita - Piel en Armonia'),
+                        i = encodeURIComponent(
+                            `Servicio: ${T(e.service)}\nDoctor: ${S(e.doctor)}\nPrecio: ${e.price || ''}`
+                        ),
+                        a = encodeURIComponent(b());
+                    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${o}&dates=${P(t)}/${P(n)}&details=${i}&location=${a}`;
+                })(n, r, c),
+                l = (function (e, t, n) {
+                    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Piel en Armonia//Consulta//ES\nBEGIN:VEVENT\nDTSTART:${k(t)}\nDTEND:${k(n)}\nSUMMARY:Cita - Piel en Armonia\nDESCRIPTION:Servicio: ${T(e.service)}\\nDoctor: ${S(e.doctor)}\\nPrecio: ${e.price || ''}\nLOCATION:${b()}\nEND:VEVENT\nEND:VCALENDAR`;
+                })(n, r, c),
+                u = new Blob([l], { type: 'text/calendar' });
+            (_(),
+                (L = URL.createObjectURL(u)),
+                o &&
+                    (o.innerHTML = `\n            <div class="success-details-card">\n                <p class="success-details-line"><strong>Doctor:</strong> ${C(S(n.doctor))}</p>\n                <p class="success-details-line"><strong>${'es' === a ? 'Fecha:' : 'Date:'}</strong> ${C(n.date || '-')}</p>\n                <p class="success-details-line"><strong>${'es' === a ? 'Hora:' : 'Time:'}</strong> ${C(n.time || '-')}</p>\n                <p class="success-details-line"><strong>${'es' === a ? 'Pago:' : 'Payment:'}</strong> ${C(
+                        (function (e) {
+                            const t = M(),
+                                n = {
+                                    card: 'es' === t ? 'Tarjeta' : 'Card',
+                                    transfer:
+                                        'es' === t
+                                            ? 'Transferencia'
+                                            : 'Transfer',
+                                    cash: 'es' === t ? 'Efectivo' : 'Cash',
+                                    unpaid:
+                                        'es' === t ? 'Pendiente' : 'Pending',
+                                };
+                            return (
+                                n[String(e || '').toLowerCase()] ||
+                                e ||
+                                n.unpaid
+                            );
+                        })(n.paymentMethod)
+                    )} - ${C(
+                        (function (e) {
+                            const t = String(e || '').toLowerCase(),
+                                n =
+                                    'es' === M()
+                                        ? {
+                                              paid: 'Pagado',
+                                              pending_cash:
+                                                  'Pago en consultorio',
+                                              pending_transfer_review:
+                                                  'Comprobante en validacion',
+                                              pending_transfer:
+                                                  'Transferencia pendiente',
+                                              pending_gateway:
+                                                  'Procesando pago',
+                                              pending: 'Pendiente',
+                                              failed: 'Fallido',
+                                          }
+                                        : {
+                                              paid: 'Paid',
+                                              pending_cash: 'Pay at clinic',
+                                              pending_transfer_review:
+                                                  'Proof under review',
+                                              pending_transfer:
+                                                  'Transfer pending',
+                                              pending_gateway:
+                                                  'Processing payment',
+                                              pending: 'Pending',
+                                              failed: 'Failed',
+                                          };
+                            return n[t] || e || n.pending;
+                        })(n.paymentStatus)
+                    )}</p>\n                <p><strong>Total:</strong> ${C(n.price || '$0.00')}</p>\n            </div>\n            <div class="success-calendar-actions">\n                <a href="${d}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary success-calendar-btn">\n                    <i class="fab fa-google"></i> Google Calendar\n                </a>\n                <a href="${L}" download="cita-piel-en-armonia.ics" class="btn btn-secondary success-calendar-btn">\n                    <i class="fas fa-calendar-alt"></i> Outlook/Apple\n                </a>\n            </div>\n        `),
+                t.classList.add('active'));
+        },
+        closeSuccessModal: function () {
+            const e = document.getElementById('successModal');
+            (e && e.classList.remove('active'),
+                (document.body.style.overflow = ''),
+                _());
+        },
+    };
+    let A = null;
+    function I() {
+        return (
+            (A &&
+                'function' == typeof A.getCurrentLang &&
+                A.getCurrentLang()) ||
+            'es'
+        );
+    }
+    function $(e, t) {
+        A && 'function' == typeof A.showToast && A.showToast(e, t || 'info');
+    }
+    function D(e, t) {
+        A && 'function' == typeof A.trackEvent && A.trackEvent(e, t || {});
+    }
+    function O() {
+        return A && 'string' == typeof A.cookieConsentKey && A.cookieConsentKey
+            ? A.cookieConsentKey
+            : 'pa_cookie_consent_v1';
+    }
+    function B() {
+        try {
+            const e = localStorage.getItem(O());
+            if (!e) return '';
+            const t = JSON.parse(e);
+            return 'string' == typeof t?.status ? t.status : '';
+        } catch (e) {
+            return '';
+        }
+    }
+    function N(e) {
+        const t = 'accepted' === e ? 'accepted' : 'rejected';
+        try {
+            localStorage.setItem(
+                O(),
+                JSON.stringify({ status: t, at: new Date().toISOString() })
+            );
+        } catch (e) {}
+    }
+    function q() {
+        'function' == typeof window.gtag && window.gtag.apply(null, arguments);
+    }
+    function R() {
+        if (window._ga4Loaded) return;
+        if ('accepted' !== B()) return;
+        ((window._ga4Loaded = !0),
+            (window.dataLayer = window.dataLayer || []),
+            window.gtag ||
+                (window.gtag = function () {
+                    window.dataLayer.push(arguments);
+                }));
+        const e =
+                A && 'string' == typeof A.gaMeasurementId && A.gaMeasurementId
+                    ? A.gaMeasurementId
+                    : 'G-GYY8PE5M8W',
+            t = document.createElement('script');
+        ((t.async = !0),
+            (t.src = `https://www.googletagmanager.com/gtag/js?id=${e}`),
+            document.head.appendChild(t),
+            q('js', new Date()),
+            'accepted' === B() &&
+                q('consent', 'update', {
+                    analytics_storage: 'granted',
+                    ad_storage: 'denied',
+                    ad_user_data: 'denied',
+                    ad_personalization: 'denied',
+                }),
+            q('config', e));
+    }
+    function j(e, t) {
+        if (!e) return;
+        const n = !0 === t;
+        e.classList.toggle('active', n);
+    }
+    function x(e) {
+        const t = document.getElementById('cookieBanner');
+        t &&
+            ('accepted' === e
+                ? (N('accepted'),
+                  j(t, !1),
+                  q('consent', 'update', {
+                      analytics_storage: 'granted',
+                      ad_storage: 'denied',
+                      ad_user_data: 'denied',
+                      ad_personalization: 'denied',
+                  }),
+                  R(),
+                  $(
+                      'es' === I()
+                          ? 'Preferencias de cookies guardadas.'
+                          : 'Cookie preferences saved.',
+                      'success'
+                  ),
+                  D('cookie_consent_update', { status: 'accepted' }))
+                : 'rejected' === e &&
+                  (N('rejected'),
+                  j(t, !1),
+                  q('consent', 'update', {
+                      analytics_storage: 'denied',
+                      ad_storage: 'denied',
+                      ad_user_data: 'denied',
+                      ad_personalization: 'denied',
+                  }),
+                  $(
+                      'es' === I()
+                          ? 'Solo se mantendran cookies esenciales.'
+                          : 'Only essential cookies will be kept.',
+                      'info'
+                  ),
+                  D('cookie_consent_update', { status: 'rejected' })));
+    }
+    ((window.Piel = window.Piel || {}),
+        (window.Piel.ConsentEngine = {
+            init: function (e) {
+                return (
+                    (A = e || {}),
+                    document.addEventListener('click', (e) => {
+                        const t = e.target;
+                        t &&
+                            (t.closest('#cookieAcceptBtn')
+                                ? x('accepted')
+                                : t.closest('#cookieRejectBtn') &&
+                                  x('rejected'));
+                    }),
+                    window.Piel.ConsentEngine
+                );
+            },
+            getCookieConsent: B,
+            setCookieConsent: N,
+            initGA4: R,
+            initCookieBanner: function () {
+                const e = document.getElementById('cookieBanner');
+                if (!e) return !1;
+                const t = B();
+                return (j(e, 'accepted' !== t && 'rejected' !== t), !0);
+            },
+        }),
+        (window.PielConsentEngine = window.Piel.ConsentEngine));
+    let U = !1;
+    window.PielUiEffects = {
+        init: function () {
+            U ||
+                ((U = !0),
+                (function () {
+                    const e = document.querySelector('.nav');
+                    if (!e) return;
+                    let t = !1,
+                        n = !1;
+                    const o = () => {
+                        const o = window.scrollY > 50;
+                        (o !== n &&
+                            (e.classList.toggle('scrolled', o), (n = o)),
+                            (t = !1));
+                    };
+                    (window.addEventListener(
+                        'scroll',
+                        () => {
+                            t || ((t = !0), window.requestAnimationFrame(o));
+                        },
+                        { passive: !0 }
+                    ),
+                        o());
+                })(),
+                (function () {
+                    const e = () => {
+                        (!(function () {
+                            const e = document.querySelectorAll(
+                                '.service-card, .team-card, .section-header, .tele-card, .review-card, .showcase-hero, .showcase-card, .showcase-split, .clinic-info, .clinic-map, .footer-content > *, .appointment-form-container, .appointment-info'
+                            );
+                            if (!e.length) return;
+                            if (
+                                window.innerWidth < 900 ||
+                                (window.matchMedia &&
+                                    window.matchMedia(
+                                        '(prefers-reduced-motion: reduce)'
+                                    ).matches)
+                            )
+                                return void e.forEach((e) =>
+                                    e.classList.add('visible')
+                                );
+                            const t = new IntersectionObserver(
+                                (e) => {
+                                    let n = 0;
+                                    e.forEach((e) => {
+                                        if (e.isIntersecting) {
+                                            const o = 100 * n;
+                                            ((e.target.style.transitionDelay = `${o}ms`),
+                                                n++,
+                                                e.target.classList.add(
+                                                    'visible'
+                                                ),
+                                                t.unobserve(e.target));
+                                        }
+                                    });
+                                },
+                                {
+                                    root: null,
+                                    rootMargin: '0px 0px -100px 0px',
+                                    threshold: 0.1,
+                                }
+                            );
+                            e.forEach((e) => {
+                                (e.classList.add('animate-on-scroll'),
+                                    t.observe(e));
+                            });
+                        })(),
+                            (function () {
+                                const e = document.querySelector(
+                                    '.hero-image-container'
+                                );
+                                if (!e) return;
+                                if (window.innerWidth < 1100) return;
+                                if (
+                                    window.matchMedia &&
+                                    window.matchMedia(
+                                        '(prefers-reduced-motion: reduce)'
+                                    ).matches
+                                )
+                                    return;
+                                let t = !1;
+                                window.addEventListener(
+                                    'scroll',
+                                    () => {
+                                        t ||
+                                            ((t = !0),
+                                            window.requestAnimationFrame(() => {
+                                                const n = window.pageYOffset,
+                                                    o = Math.min(80, 0.12 * n);
+                                                ((e.style.transform = `translateY(calc(-50% + ${o}px))`),
+                                                    (t = !1));
+                                            }));
+                                    },
+                                    { passive: !0 }
+                                );
+                            })(),
+                            (function () {
+                                const e =
+                                    document.getElementById('mapPlaceholder');
+                                if (!e) return;
+                                const t = () => {
+                                        const t = e.dataset.src;
+                                        if (!t) return;
+                                        const n =
+                                            document.createElement('iframe');
+                                        ((n.src = t),
+                                            (n.width = '100%'),
+                                            (n.height = '100%'),
+                                            (n.allowFullscreen = !0),
+                                            (n.loading = 'lazy'),
+                                            (n.referrerPolicy =
+                                                'no-referrer-when-downgrade'),
+                                            (n.style.border = '0'),
+                                            (e.innerHTML = ''),
+                                            e.appendChild(n),
+                                            e.classList.remove(
+                                                'map-placeholder'
+                                            ),
+                                            (e.style.backgroundColor =
+                                                'transparent'));
+                                    },
+                                    n = new IntersectionObserver(
+                                        (e) => {
+                                            e.forEach((e) => {
+                                                e.isIntersecting &&
+                                                    (t(), n.disconnect());
+                                            });
+                                        },
+                                        { rootMargin: '200px' }
+                                    );
+                                (n.observe(e),
+                                    e.addEventListener('click', t, {
+                                        once: !0,
+                                    }));
+                            })(),
+                            document
+                                .querySelectorAll('.blur-up img')
+                                .forEach((e) => {
+                                    e.complete
+                                        ? e.classList.add('loaded')
+                                        : e.addEventListener(
+                                              'load',
+                                              () => e.classList.add('loaded'),
+                                              { once: !0 }
+                                          );
+                                }));
+                    };
+                    'function' == typeof window.requestIdleCallback
+                        ? window.requestIdleCallback(e, { timeout: 1200 })
+                        : setTimeout(e, 180);
+                })());
+        },
+    };
+})();

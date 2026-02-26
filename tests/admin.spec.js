@@ -239,6 +239,52 @@ test.describe('Panel de administracion', () => {
             .toBe('light');
     });
 
+    test('tema en admin se sincroniza via storage event', async ({ page }) => {
+        await setupAuthenticatedAdminMocks(page);
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+
+        await page.evaluate(() => {
+            window.dispatchEvent(
+                new StorageEvent('storage', {
+                    key: 'themeMode',
+                    newValue: 'dark',
+                })
+            );
+        });
+
+        await expect
+            .poll(async () =>
+                page.evaluate(() => ({
+                    mode: document.documentElement.getAttribute(
+                        'data-theme-mode'
+                    ),
+                    theme: document.documentElement.getAttribute('data-theme'),
+                }))
+            )
+            .toEqual({
+                mode: 'dark',
+                theme: 'dark',
+            });
+
+        await page.evaluate(() => {
+            window.dispatchEvent(
+                new StorageEvent('storage', {
+                    key: 'themeMode',
+                    newValue: 'light',
+                })
+            );
+        });
+
+        await expect
+            .poll(async () =>
+                page.evaluate(() =>
+                    document.documentElement.getAttribute('data-theme')
+                )
+            )
+            .toBe('light');
+    });
+
     test.describe('API de administracion (requiere PHP)', () => {
         test('API health check funciona', async ({ request }) => {
             await skipIfPhpRuntimeMissing(test, request);

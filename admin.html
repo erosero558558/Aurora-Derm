@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260226-nav2" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260226-nav4" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -624,6 +624,9 @@
                             <select id="appointmentFilter">
                                 <option value="all">Todas las citas</option>
                                 <option value="today">Hoy</option>
+                                <option value="upcoming_48h">
+                                    Proximas 48h
+                                </option>
                                 <option value="week">Esta semana</option>
                                 <option value="month">Este mes</option>
                                 <option value="confirmed">Confirmadas</option>
@@ -679,12 +682,74 @@
                             </button>
                         </div>
                         <div
+                            class="appointments-quick-filters"
+                            role="group"
+                            aria-label="Filtros rapidos de citas"
+                        >
+                            <button
+                                type="button"
+                                class="appointment-quick-filter-btn is-active"
+                                data-action="appointment-quick-filter"
+                                data-filter-value="all"
+                                aria-pressed="true"
+                                title="Todas (Alt+Shift+A)"
+                            >
+                                Todas
+                            </button>
+                            <button
+                                type="button"
+                                class="appointment-quick-filter-btn"
+                                data-action="appointment-quick-filter"
+                                data-filter-value="today"
+                                aria-pressed="false"
+                                title="Hoy (Alt+Shift+H)"
+                            >
+                                Hoy
+                            </button>
+                            <button
+                                type="button"
+                                class="appointment-quick-filter-btn"
+                                data-action="appointment-quick-filter"
+                                data-filter-value="pending_transfer"
+                                aria-pressed="false"
+                                title="Transferencias por validar (Alt+Shift+T)"
+                            >
+                                Por validar
+                            </button>
+                            <button
+                                type="button"
+                                class="appointment-quick-filter-btn"
+                                data-action="appointment-quick-filter"
+                                data-filter-value="no_show"
+                                aria-pressed="false"
+                                title="No asistio (Alt+Shift+N)"
+                            >
+                                No asistio
+                            </button>
+                            <button
+                                type="button"
+                                class="appointment-quick-filter-btn"
+                                data-action="appointment-quick-filter"
+                                data-filter-value="upcoming_48h"
+                                aria-pressed="false"
+                                title="Proximas 48 horas"
+                            >
+                                Prox 48h
+                            </button>
+                        </div>
+                        <div
                             class="toolbar-meta"
                             id="appointmentsToolbarMeta"
                             aria-live="polite"
                         >
                             <span class="toolbar-chip">Cargando citas...</span>
                         </div>
+                        <span
+                            class="appointments-shortcut-hint"
+                            title="Atajos: Alt+Shift+A/H/T/N y / para buscar"
+                        >
+                            Atajos: Alt+Shift+A/H/T/N | /
+                        </span>
                         <button
                             type="button"
                             class="btn btn-secondary btn-sm"
@@ -742,14 +807,103 @@
 
                 <!-- Callbacks Section -->
                 <section id="callbacks" class="admin-section" tabindex="-1">
-                    <div class="section-toolbar">
+                    <div class="section-toolbar section-toolbar-callbacks">
                         <div class="filter-group">
+                            <label for="callbackFilter" class="sr-only"
+                                >Filtrar callbacks</label
+                            >
                             <select id="callbackFilter">
                                 <option value="all">Todos</option>
                                 <option value="pending">Pendientes</option>
                                 <option value="contacted">Contactados</option>
+                                <option value="today">Hoy</option>
                             </select>
                         </div>
+                        <div
+                            class="callbacks-quick-filters"
+                            role="group"
+                            aria-label="Filtros rapidos de callbacks"
+                        >
+                            <button
+                                type="button"
+                                class="callback-quick-filter-btn is-active"
+                                data-action="callback-quick-filter"
+                                data-filter-value="all"
+                                aria-pressed="true"
+                                title="Todos los callbacks"
+                            >
+                                Todos
+                            </button>
+                            <button
+                                type="button"
+                                class="callback-quick-filter-btn"
+                                data-action="callback-quick-filter"
+                                data-filter-value="pending"
+                                aria-pressed="false"
+                                title="Pendientes (Alt+Shift+P)"
+                            >
+                                Pendientes
+                            </button>
+                            <button
+                                type="button"
+                                class="callback-quick-filter-btn"
+                                data-action="callback-quick-filter"
+                                data-filter-value="contacted"
+                                aria-pressed="false"
+                                title="Contactados (Alt+Shift+C)"
+                            >
+                                Contactados
+                            </button>
+                            <button
+                                type="button"
+                                class="callback-quick-filter-btn"
+                                data-action="callback-quick-filter"
+                                data-filter-value="today"
+                                aria-pressed="false"
+                                title="Callbacks de hoy"
+                            >
+                                Hoy
+                            </button>
+                        </div>
+                        <div
+                            class="toolbar-meta"
+                            id="callbacksToolbarMeta"
+                            aria-live="polite"
+                        >
+                            <span class="toolbar-chip">Cargando callbacks...</span>
+                        </div>
+                        <span
+                            class="appointments-shortcut-hint callbacks-shortcut-hint"
+                            title="Atajos: Alt+Shift+P/C y / para buscar"
+                        >
+                            Atajos: Alt+Shift+P/C | /
+                        </span>
+                        <div class="search-box callbacks-search-box">
+                            <i class="fas fa-search"></i>
+                            <input
+                                type="text"
+                                id="searchCallbacks"
+                                placeholder="Buscar por telefono, fecha o preferencia..."
+                                autocomplete="off"
+                                inputmode="text"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-secondary btn-sm is-hidden"
+                            id="clearCallbacksFiltersBtn"
+                            data-action="clear-callback-filters"
+                        >
+                            <i class="fas fa-filter-circle-xmark"></i>
+                            Limpiar
+                        </button>
+                    </div>
+                    <div
+                        class="toolbar-state-row"
+                        id="callbacksToolbarState"
+                        aria-live="polite"
+                    >
+                        <span class="toolbar-state-empty">Sin filtros activos</span>
                     </div>
 
                     <div class="callbacks-grid" id="callbacksGrid"></div>
@@ -1032,6 +1186,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260226-nav2" type="module"></script>
+        <script src="admin.js?v=admin-20260226-nav4" type="module"></script>
     </body>
 </html>
