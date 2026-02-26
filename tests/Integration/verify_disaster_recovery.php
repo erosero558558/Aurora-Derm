@@ -32,14 +32,14 @@ require_once __DIR__ . '/../../lib/db.php';
 $storeFile = data_file_path();
 require_once __DIR__ . '/../../lib/backup.php';
 
-function fail($msg, $dir)
+function fail($msg, $dir = null)
 {
-    // Fix: Access global tempDir properly
     global $tempDir;
     echo "FAILED: $msg\n";
     // Cleanup
-    if (isset($tempDir)) {
-        recursiveRemove($tempDir);
+    $cleanupDir = $dir ?? $tempDir;
+    if (isset($cleanupDir)) {
+        recursiveRemove($cleanupDir);
     }
     exit(1);
 }
