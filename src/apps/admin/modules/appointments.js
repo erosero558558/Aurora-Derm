@@ -1,6 +1,6 @@
 import { currentAppointments } from './state.js';
 import { apiRequest } from './api.js';
-import { refreshData } from './data.js';
+import { getLocalData, refreshData } from './data.js';
 import { loadDashboardData } from './dashboard.js';
 import {
     escapeHtml,
@@ -13,6 +13,18 @@ import {
     sanitizePublicHref,
     getStatusText,
 } from './ui.js';
+
+const APPOINTMENT_SORT_STORAGE_KEY = 'admin-appointments-sort';
+const APPOINTMENT_DENSITY_STORAGE_KEY = 'admin-appointments-density';
+const DEFAULT_APPOINTMENT_SORT = 'datetime_desc';
+const DEFAULT_APPOINTMENT_DENSITY = 'comfortable';
+const APPOINTMENT_SORT_OPTIONS = new Set([
+    'datetime_desc',
+    'datetime_asc',
+    'triage',
+    'patient_az',
+]);
+const APPOINTMENT_DENSITY_OPTIONS = new Set(['comfortable', 'compact']);
 
 function getWeekRange() {
     const now = new Date();
@@ -40,9 +52,16 @@ function countPendingTransfers(items) {
 function getAppointmentControls() {
     return {
         filterSelect: document.getElementById('appointmentFilter'),
+        sortSelect: document.getElementById('appointmentSort'),
         searchInput: document.getElementById('searchAppointments'),
         stateRow: document.getElementById('appointmentsToolbarState'),
         clearBtn: document.getElementById('clearAppointmentsFiltersBtn'),
+        appointmentsSection: document.getElementById('appointments'),
+        densityButtons: Array.from(
+            document.querySelectorAll(
+                '[data-action="appointment-density"][data-density]'
+            )
+        ),
     };
 }
 
@@ -60,10 +79,97 @@ function getAppointmentFilterLabel(value) {
     return labels[String(value || 'all')] || 'Todas las citas';
 }
 
+function normalizeAppointmentSort(value) {
+    const normalized = String(value || '').trim();
+    return APPOINTMENT_SORT_OPTIONS.has(normalized)
+        ? normalized
+        : DEFAULT_APPOINTMENT_SORT;
+}
+
+function normalizeAppointmentDensity(value) {
+    const normalized = String(value || '').trim();
+    return APPOINTMENT_DENSITY_OPTIONS.has(normalized)
+        ? normalized
+        : DEFAULT_APPOINTMENT_DENSITY;
+}
+
+function persistAppointmentUiPreference(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (_error) {
+        // localStorage disabled or unavailable; keep UX functional
+    }
+}
+
+function readAppointmentUiPreferences() {
+    return {
+        sort: normalizeAppointmentSort(
+            getLocalData(APPOINTMENT_SORT_STORAGE_KEY, DEFAULT_APPOINTMENT_SORT)
+        ),
+        density: normalizeAppointmentDensity(
+            getLocalData(
+                APPOINTMENT_DENSITY_STORAGE_KEY,
+                DEFAULT_APPOINTMENT_DENSITY
+            )
+        ),
+    };
+}
+
+function getAppointmentSortLabel(value) {
+    const labels = {
+        datetime_desc: 'Mas recientes primero',
+        datetime_asc: 'Proximas primero',
+        triage: 'Triage operativo',
+        patient_az: 'Paciente (A-Z)',
+    };
+    return labels[normalizeAppointmentSort(value)] || labels.datetime_desc;
+}
+
+function getAppointmentDensityLabel(value) {
+    const labels = {
+        comfortable: 'Comoda',
+        compact: 'Compacta',
+    };
+    return labels[normalizeAppointmentDensity(value)] || labels.comfortable;
+}
+
+function getAppointmentDensity() {
+    const { appointmentsSection } = getAppointmentControls();
+    if (
+        appointmentsSection?.classList.contains('appointments-density-compact')
+    ) {
+        return 'compact';
+    }
+    return 'comfortable';
+}
+
+function setAppointmentDensityButtonState(value) {
+    const density = normalizeAppointmentDensity(value);
+    const { densityButtons } = getAppointmentControls();
+    densityButtons.forEach((button) => {
+        const isActive = button.dataset.density === density;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function applyAppointmentDensityClass(value) {
+    const density = normalizeAppointmentDensity(value);
+    const { appointmentsSection } = getAppointmentControls();
+    appointmentsSection?.classList.toggle(
+        'appointments-density-compact',
+        density === 'compact'
+    );
+    setAppointmentDensityButtonState(density);
+}
+
 function getAppointmentCriteria() {
-    const { filterSelect, searchInput } = getAppointmentControls();
+    const { filterSelect, sortSelect, searchInput } = getAppointmentControls();
     return {
         filter: String(filterSelect?.value || 'all'),
+        sort: normalizeAppointmentSort(
+            sortSelect?.value || DEFAULT_APPOINTMENT_SORT
+        ),
         search: String(searchInput?.value || '').trim(),
     };
 }
@@ -135,16 +241,23 @@ function renderAppointmentsToolbarState(criteria, visibleAppointments) {
     if (!stateRow) return;
 
     const filterValue = String(criteria?.filter || 'all');
+    const sortValue = normalizeAppointmentSort(
+        criteria?.sort || DEFAULT_APPOINTMENT_SORT
+    );
     const searchValue = String(criteria?.search || '').trim();
+    const densityValue = getAppointmentDensity();
     const hasFilter = filterValue !== 'all';
     const hasSearch = searchValue.length > 0;
+    const hasPreferenceState =
+        sortValue !== DEFAULT_APPOINTMENT_SORT ||
+        densityValue !== DEFAULT_APPOINTMENT_DENSITY;
 
     if (clearBtn) {
         clearBtn.classList.toggle('is-hidden', !hasFilter && !hasSearch);
         clearBtn.disabled = !hasFilter && !hasSearch;
     }
 
-    if (!hasFilter && !hasSearch) {
+    if (!hasFilter && !hasSearch && !hasPreferenceState) {
         stateRow.innerHTML =
             '<span class="toolbar-state-empty">Sin filtros activos</span>';
         return;
@@ -154,7 +267,7 @@ function renderAppointmentsToolbarState(criteria, visibleAppointments) {
         ? visibleAppointments.length
         : 0;
     const criteriaMarkup = [
-        `<span class="toolbar-state-label">Criterios activos:</span>`,
+        `<span class="toolbar-state-label">${hasFilter || hasSearch ? 'Criterios activos:' : 'Vista activa:'}</span>`,
     ];
 
     if (hasFilter) {
@@ -174,8 +287,68 @@ function renderAppointmentsToolbarState(criteria, visibleAppointments) {
     criteriaMarkup.push(
         `<span class="toolbar-state-value">Resultados: ${escapeHtml(String(visibleCount))}</span>`
     );
+    criteriaMarkup.push(
+        `<span class="toolbar-state-value is-sort">Orden: ${escapeHtml(
+            getAppointmentSortLabel(sortValue)
+        )}</span>`
+    );
+    criteriaMarkup.push(
+        `<span class="toolbar-state-value is-density">Densidad: ${escapeHtml(
+            getAppointmentDensityLabel(densityValue)
+        )}</span>`
+    );
 
     stateRow.innerHTML = criteriaMarkup.join('');
+}
+
+function getAppointmentTriagePriority(appointment) {
+    const paymentStatus = String(appointment?.paymentStatus || '');
+    const status = String(appointment?.status || 'confirmed');
+    const today = new Date().toISOString().split('T')[0];
+    const dateValue = String(appointment?.date || '');
+
+    if (paymentStatus === 'pending_transfer_review') return 0;
+    if (status === 'confirmed' && dateValue === today) return 1;
+    if (status === 'confirmed') return 2;
+    if (status === 'pending') return 3;
+    if (status === 'no_show' || status === 'noshow') return 4;
+    if (status === 'completed') return 5;
+    if (status === 'cancelled') return 6;
+    return 7;
+}
+
+function sortAppointmentsByCriteria(appointments, sortValue) {
+    const sort = normalizeAppointmentSort(sortValue);
+    const items = Array.isArray(appointments) ? [...appointments] : [];
+    const byDateAsc = (a, b) => {
+        const dateA = `${String(a?.date || '')} ${String(a?.time || '')}`;
+        const dateB = `${String(b?.date || '')} ${String(b?.time || '')}`;
+        return dateA.localeCompare(dateB);
+    };
+
+    return items.sort((a, b) => {
+        if (sort === 'patient_az') {
+            const nameA = String(a?.name || '').toLocaleLowerCase('es');
+            const nameB = String(b?.name || '').toLocaleLowerCase('es');
+            const nameCompare = nameA.localeCompare(nameB, 'es');
+            if (nameCompare !== 0) return nameCompare;
+            return byDateAsc(a, b);
+        }
+
+        if (sort === 'datetime_asc') {
+            return byDateAsc(a, b);
+        }
+
+        if (sort === 'triage') {
+            const priorityDiff =
+                getAppointmentTriagePriority(a) -
+                getAppointmentTriagePriority(b);
+            if (priorityDiff !== 0) return priorityDiff;
+            return byDateAsc(a, b);
+        }
+
+        return -byDateAsc(a, b);
+    });
 }
 
 function applyAndRenderAppointments() {
@@ -189,7 +362,7 @@ function applyAndRenderAppointments() {
         criteria.search
     );
 
-    renderAppointments(filteredBySearch);
+    renderAppointments(filteredBySearch, { sort: criteria.sort });
     renderAppointmentsToolbarState(criteria, filteredBySearch);
 }
 
@@ -205,10 +378,20 @@ function renderAppointmentsToolbarMeta(visibleAppointments) {
     const allCount = all.length;
     const pendingTransferVisible = countPendingTransfers(visible);
     const todayVisible = countAppointmentsForToday(visible);
+    const actionableVisible = visible.filter((item) => {
+        const status = String(item?.status || 'confirmed');
+        return (
+            status !== 'cancelled' &&
+            status !== 'completed' &&
+            status !== 'no_show' &&
+            status !== 'noshow'
+        );
+    }).length;
 
     const chips = [
         `<span class="toolbar-chip is-accent">Mostrando ${escapeHtml(String(visibleCount))}${allCount !== visibleCount ? ` de ${escapeHtml(String(allCount))}` : ''}</span>`,
         `<span class="toolbar-chip">Hoy: ${escapeHtml(String(todayVisible))}</span>`,
+        `<span class="toolbar-chip">Accionables: ${escapeHtml(String(actionableVisible))}</span>`,
     ];
 
     if (pendingTransferVisible > 0) {
@@ -220,7 +403,7 @@ function renderAppointmentsToolbarMeta(visibleAppointments) {
     metaEl.innerHTML = chips.join('');
 }
 
-export function renderAppointments(appointments) {
+export function renderAppointments(appointments, options = {}) {
     const tbody = document.getElementById('appointmentsTableBody');
     if (!tbody) return;
     renderAppointmentsToolbarMeta(appointments);
@@ -240,11 +423,10 @@ export function renderAppointments(appointments) {
         return;
     }
 
-    const sorted = [...appointments].sort((a, b) => {
-        const dateA = (a.date || '') + ' ' + (a.time || '');
-        const dateB = (b.date || '') + ' ' + (b.time || '');
-        return dateB.localeCompare(dateA);
-    });
+    const sorted = sortAppointmentsByCriteria(
+        appointments,
+        options?.sort || DEFAULT_APPOINTMENT_SORT
+    );
 
     tbody.innerHTML = sorted
         .map((appointment) => {
@@ -370,6 +552,37 @@ export function resetAppointmentFilters() {
     if (filterSelect) filterSelect.value = 'all';
     if (searchInput) searchInput.value = '';
     applyAndRenderAppointments();
+}
+
+export function initAppointmentsToolbarPreferences() {
+    const prefs = readAppointmentUiPreferences();
+    const { sortSelect } = getAppointmentControls();
+    if (sortSelect) {
+        sortSelect.value = prefs.sort;
+    }
+    applyAppointmentDensityClass(prefs.density);
+}
+
+export function setAppointmentSort(value) {
+    const normalized = normalizeAppointmentSort(value);
+    const { sortSelect } = getAppointmentControls();
+    if (sortSelect) {
+        sortSelect.value = normalized;
+    }
+    persistAppointmentUiPreference(APPOINTMENT_SORT_STORAGE_KEY, normalized);
+    applyAndRenderAppointments();
+}
+
+export function setAppointmentDensity(value) {
+    const normalized = normalizeAppointmentDensity(value);
+    applyAppointmentDensityClass(normalized);
+    persistAppointmentUiPreference(APPOINTMENT_DENSITY_STORAGE_KEY, normalized);
+    const hasAppointmentsTable = Boolean(
+        document.getElementById('appointmentsTableBody')
+    );
+    if (hasAppointmentsTable) {
+        applyAndRenderAppointments();
+    }
 }
 
 export async function cancelAppointment(id) {

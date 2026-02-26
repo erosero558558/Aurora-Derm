@@ -741,6 +741,48 @@
     align-items: center;
 }
 
+.appointments-sort-group select {
+    min-width: 220px;
+}
+
+.appointments-density-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid #dbe5f2;
+    background: #f8fbff;
+}
+
+.density-toggle-btn {
+    border: 0;
+    background: transparent;
+    color: #5b6f88;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.density-toggle-btn:hover {
+    background: rgba(15, 88, 186, 0.08);
+    color: #0f58ba;
+}
+
+.density-toggle-btn.is-active {
+    background: #fff;
+    color: #0f58ba;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.density-toggle-btn:focus-visible {
+    outline: 3px solid rgba(0, 113, 227, 0.25);
+    outline-offset: 1px;
+}
+
 .toolbar-state-row {
     display: flex;
     align-items: center;
@@ -794,6 +836,18 @@
 
 .appointments-toolbar-state {
     min-height: 32px;
+}
+
+.toolbar-state-value.is-sort {
+    background: #f2f7ff;
+    border-color: #d4e2f8;
+    color: #234e88;
+}
+
+.toolbar-state-value.is-density {
+    background: #f8f4ff;
+    border-color: #e6daf8;
+    color: #5a3f8a;
 }
 
 .toolbar-meta {
@@ -932,6 +986,20 @@
 #appointmentsTable th:nth-child(8),
 #appointmentsTable td:nth-child(8) {
     min-width: 168px;
+}
+
+.appointments-density-compact #appointmentsTable th,
+.appointments-density-compact #appointmentsTable td {
+    padding: 11px 12px;
+}
+
+.appointments-density-compact #appointmentsTable .appointment-row td {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.appointments-density-compact .appointment-inline-meta .toolbar-chip {
+    padding: 3px 7px;
 }
 
 .data-table tr:hover {
@@ -1448,6 +1516,72 @@
     min-height: 34px;
 }
 
+.availability-day-actions {
+    margin: 0 0 14px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #dfe8f3;
+    background: #fbfdff;
+    display: grid;
+    gap: 10px;
+}
+
+.availability-day-actions-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.availability-day-actions-row .btn {
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+}
+
+.btn-secondary.danger-soft {
+    background: #fff5f5;
+    border-color: #f3d5d8;
+    color: #9b2332;
+}
+
+.btn-secondary.danger-soft:hover {
+    background: #ffecef;
+    border-color: #eebfc6;
+}
+
+.availability-day-actions-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 28px;
+    color: #5f738c;
+    font-size: 0.8rem;
+}
+
+.availability-day-actions-status .toolbar-chip {
+    font-size: 0.74rem;
+    padding: 5px 9px;
+}
+
+.availability-day-actions-status .toolbar-chip.is-info {
+    background: #eef6ff;
+    border-color: #d2e4ff;
+    color: #0f58ba;
+}
+
+.availability-day-actions-status .toolbar-chip.is-muted {
+    background: #f5f7fa;
+    border-color: #e0e7f0;
+    color: #5d7088;
+}
+
+.availability-day-actions-status .toolbar-chip.is-danger {
+    background: #fff2f3;
+    border-color: #f2d8dc;
+    color: #a12638;
+}
+
 .availability-summary-chip {
     display: inline-flex;
     align-items: center;
@@ -1962,6 +2096,16 @@
         order: 4;
     }
 
+    .appointments-density-toggle {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .density-toggle-btn {
+        flex: 1 1 0;
+        text-align: center;
+    }
+
     .search-box {
         max-width: none;
     }
@@ -1983,6 +2127,10 @@
     }
 
     .availability-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .availability-day-actions-row {
         grid-template-columns: 1fr;
     }
 

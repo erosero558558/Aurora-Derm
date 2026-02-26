@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260225-adminux4" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260226-adminux6" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -482,6 +482,50 @@
                                 </option>
                             </select>
                         </div>
+                        <div class="filter-group appointments-sort-group">
+                            <label class="sr-only" for="appointmentSort"
+                                >Orden de citas</label
+                            >
+                            <select id="appointmentSort">
+                                <option value="datetime_desc">
+                                    Mas recientes primero
+                                </option>
+                                <option value="datetime_asc">
+                                    Proximas primero
+                                </option>
+                                <option value="triage">
+                                    Triage operativo
+                                </option>
+                                <option value="patient_az">
+                                    Paciente (A-Z)
+                                </option>
+                            </select>
+                        </div>
+                        <div
+                            class="appointments-density-toggle"
+                            id="appointmentsDensityToggle"
+                            role="group"
+                            aria-label="Densidad de tabla de citas"
+                        >
+                            <button
+                                type="button"
+                                class="density-toggle-btn"
+                                data-action="appointment-density"
+                                data-density="comfortable"
+                                aria-pressed="true"
+                            >
+                                Comoda
+                            </button>
+                            <button
+                                type="button"
+                                class="density-toggle-btn"
+                                data-action="appointment-density"
+                                data-density="compact"
+                                aria-pressed="false"
+                            >
+                                Compacta
+                            </button>
+                        </div>
                         <div
                             class="toolbar-meta"
                             id="appointmentsToolbarMeta"
@@ -671,6 +715,59 @@
                                     del dia</span
                                 >
                             </div>
+                            <div
+                                class="availability-day-actions is-hidden"
+                                id="availabilityDayActions"
+                                aria-live="polite"
+                            >
+                                <div
+                                    class="availability-day-actions-row"
+                                    role="group"
+                                    aria-label="Acciones para la fecha seleccionada"
+                                >
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm"
+                                        data-action="copy-availability-day"
+                                    >
+                                        <i class="fas fa-copy"></i>
+                                        Copiar dia
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm"
+                                        data-action="paste-availability-day"
+                                    >
+                                        <i class="fas fa-paste"></i>
+                                        Pegar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm"
+                                        data-action="duplicate-availability-day-next"
+                                    >
+                                        <i class="fas fa-arrow-right"></i>
+                                        Duplicar a manana
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm danger-soft"
+                                        data-action="clear-availability-day"
+                                    >
+                                        <i class="fas fa-trash"></i>
+                                        Limpiar dia
+                                    </button>
+                                </div>
+                                <div
+                                    class="availability-day-actions-status"
+                                    id="availabilityDayActionsStatus"
+                                >
+                                    <span class="toolbar-state-empty"
+                                        >Selecciona una fecha para usar acciones
+                                        del dia</span
+                                    >
+                                </div>
+                            </div>
 
                             <div
                                 class="availability-detail-grid"
@@ -783,6 +880,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260226-adminux5" type="module"></script>
+        <script src="admin.js?v=admin-20260226-adminux6" type="module"></script>
     </body>
 </html>

@@ -153,6 +153,12 @@ async function openAvailabilitySection(page, sourceMode = 'store') {
     return { usedSlotDay: false };
 }
 
+function acceptNextDialog(page) {
+    page.once('dialog', async (dialog) => {
+        await dialog.accept();
+    });
+}
+
 test.describe('Admin availability responsive tablet layout', () => {
     test('muestra layout tablet de detalle y helpers de edicion en fuente local', async ({
         page,
@@ -240,5 +246,67 @@ test.describe('Admin availability responsive tablet layout', () => {
         await expect(page.locator('#availabilityQuickSlotPresets')).toHaveClass(
             /is-hidden/
         );
+        await expect(page.locator('#availabilityDayActions')).toBeVisible();
+        await expect(
+            page.locator('#availabilityDayActionsStatus')
+        ).toContainText('Edicion bloqueada');
+        await expect(
+            page.locator('[data-action="paste-availability-day"]')
+        ).toBeDisabled();
+        await expect(
+            page.locator('[data-action="duplicate-availability-day-next"]')
+        ).toBeDisabled();
+        await expect(
+            page.locator('[data-action="clear-availability-day"]')
+        ).toBeDisabled();
+    });
+
+    test('permite copiar, duplicar, limpiar y pegar horarios del dia en fuente local', async ({
+        page,
+    }) => {
+        await openAvailabilitySection(page, 'store');
+
+        const slotItems = page.locator('#timeSlotsList .time-slot-item');
+        if ((await slotItems.count()) === 0) {
+            await page
+                .locator(
+                    '#availabilityQuickSlotPresets .slot-preset-btn[data-time="09:00"]'
+                )
+                .click();
+            await page.locator('[data-action="add-time-slot"]').click();
+            await expect(slotItems).toHaveCount(1);
+        }
+
+        const initialSelectedDateText = await page
+            .locator('#selectedDate')
+            .textContent();
+        const initialCount = await slotItems.count();
+        expect(initialCount).toBeGreaterThan(0);
+
+        await page.locator('[data-action="copy-availability-day"]').click();
+        await expect(
+            page.locator('#availabilityDayActionsStatus')
+        ).toContainText('Portapapeles:');
+
+        await page
+            .locator('[data-action="duplicate-availability-day-next"]')
+            .click();
+        await expect(page.locator('#selectedDate')).not.toHaveText(
+            initialSelectedDateText || ''
+        );
+        await expect(slotItems).toHaveCount(initialCount);
+
+        acceptNextDialog(page);
+        await page.locator('[data-action="clear-availability-day"]').click();
+        await expect(slotItems).toHaveCount(0);
+        await expect(page.locator('#timeSlotsList')).toContainText(
+            'No hay horarios configurados'
+        );
+
+        await page.locator('[data-action="paste-availability-day"]').click();
+        await expect(slotItems).toHaveCount(initialCount);
+        await expect(
+            page.locator('#availabilityDayActionsStatus')
+        ).toContainText('Portapapeles:');
     });
 });

@@ -22,6 +22,9 @@ import {
     filterAppointments,
     searchAppointments,
     resetAppointmentFilters,
+    initAppointmentsToolbarPreferences,
+    setAppointmentSort,
+    setAppointmentDensity,
     exportAppointmentsCSV,
     approveTransfer,
     rejectTransfer,
@@ -35,6 +38,10 @@ import {
     addTimeSlot,
     prefillTimeSlot,
     removeTimeSlot,
+    copyAvailabilityDay,
+    pasteAvailabilityDay,
+    duplicateAvailabilityDayToNext,
+    clearAvailabilityDay,
 } from './modules/availability.js';
 
 const ADMIN_NAV_COMPACT_BREAKPOINT = 1024;
@@ -564,6 +571,13 @@ function attachGlobalListeners() {
                 resetAppointmentFilters();
                 return;
             }
+            if (action === 'appointment-density') {
+                event.preventDefault();
+                setAppointmentDensity(
+                    actionEl.dataset.density || 'comfortable'
+                );
+                return;
+            }
             if (action === 'change-month') {
                 event.preventDefault();
                 changeMonth(Number(actionEl.dataset.delta || 0));
@@ -577,6 +591,26 @@ function attachGlobalListeners() {
             if (action === 'prefill-time-slot') {
                 event.preventDefault();
                 prefillTimeSlot(actionEl.dataset.time || '');
+                return;
+            }
+            if (action === 'copy-availability-day') {
+                event.preventDefault();
+                copyAvailabilityDay();
+                return;
+            }
+            if (action === 'paste-availability-day') {
+                event.preventDefault();
+                await pasteAvailabilityDay();
+                return;
+            }
+            if (action === 'duplicate-availability-day-next') {
+                event.preventDefault();
+                await duplicateAvailabilityDayToNext();
+                return;
+            }
+            if (action === 'clear-availability-day') {
+                event.preventDefault();
+                await clearAvailabilityDay();
                 return;
             }
             if (action === 'add-time-slot') {
@@ -638,6 +672,13 @@ function attachGlobalListeners() {
         });
     }
 
+    const appointmentSort = document.getElementById('appointmentSort');
+    if (appointmentSort) {
+        appointmentSort.addEventListener('change', () => {
+            setAppointmentSort(appointmentSort.value || 'datetime_desc');
+        });
+    }
+
     const callbackFilter = document.getElementById('callbackFilter');
     if (callbackFilter) {
         callbackFilter.addEventListener('change', filterCallbacks);
@@ -646,6 +687,7 @@ function attachGlobalListeners() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     attachGlobalListeners();
+    initAppointmentsToolbarPreferences();
 
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {

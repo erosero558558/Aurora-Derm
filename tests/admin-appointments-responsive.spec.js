@@ -257,4 +257,62 @@ test.describe('Admin appointments responsive triage', () => {
             )
         ).toHaveCount(6);
     });
+
+    test('permite ordenar y guardar densidad de la tabla entre recargas', async ({
+        page,
+    }) => {
+        await openAppointmentsSection(page);
+
+        const firstRowBefore = page
+            .locator('#appointmentsTableBody tr.appointment-row')
+            .first();
+        await expect(firstRowBefore).toContainText('Carla NoShow');
+
+        await page.locator('#appointmentSort').selectOption('patient_az');
+        await expect(page.locator('#appointmentsToolbarState')).toContainText(
+            'Paciente (A-Z)'
+        );
+        await expect(
+            page.locator('#appointmentsTableBody tr.appointment-row').first()
+        ).toContainText('Ana Transfer');
+
+        await page
+            .locator(
+                '[data-action="appointment-density"][data-density="compact"]'
+            )
+            .click();
+        await expect(page.locator('#appointments')).toHaveClass(
+            /appointments-density-compact/
+        );
+        await expect(
+            page.locator(
+                '[data-action="appointment-density"][data-density="compact"]'
+            )
+        ).toHaveClass(/is-active/);
+
+        const prefs = await page.evaluate(() => ({
+            sort: localStorage.getItem('admin-appointments-sort'),
+            density: localStorage.getItem('admin-appointments-density'),
+        }));
+        expect(prefs.sort).toBe(JSON.stringify('patient_az'));
+        expect(prefs.density).toBe(JSON.stringify('compact'));
+
+        await page.reload();
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        const menuToggle = page.locator('#adminMenuToggle');
+        if (await menuToggle.isVisible()) {
+            await menuToggle.click();
+        }
+        await page.locator('.nav-item[data-section="appointments"]').click();
+        await expect(page.locator('#appointments')).toHaveClass(/active/);
+        await expect(page.locator('#appointmentSort')).toHaveValue(
+            'patient_az'
+        );
+        await expect(page.locator('#appointments')).toHaveClass(
+            /appointments-density-compact/
+        );
+        await expect(
+            page.locator('#appointmentsTableBody tr.appointment-row').first()
+        ).toContainText('Ana Transfer');
+    });
 });
