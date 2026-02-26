@@ -110,3 +110,25 @@ test('weekly-kpi workflow publica thresholds efectivos en resumen', () => {
         );
     }
 });
+
+test('weekly-kpi workflow separa incidentes general, SLA y retencion', () => {
+    const { raw } = loadWorkflow();
+
+    const requiredSnippets = [
+        'Crear/actualizar incidente semanal general',
+        "steps.report.outputs.warnings_critical_count == '-1' || steps.report.outputs.warnings_critical_count != '0'",
+        'Crear/actualizar incidente semanal de SLA operativo',
+        "steps.ops_sla.outputs.ops_fast_sla_ok != 'true' || steps.ops_sla.outputs.ops_nightly_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_mttr_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_open_external != '0'",
+        '[ALERTA PROD] Weekly KPI SLA operativo degradado',
+        'Crear/actualizar incidente semanal de retencion',
+        '[ALERTA PROD] Weekly KPI retencion degradada',
+    ];
+
+    for (const snippet of requiredSnippets) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta evidencia de separacion de incidente: ${snippet}`
+        );
+    }
+});

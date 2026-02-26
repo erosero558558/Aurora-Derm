@@ -2745,3 +2745,41 @@ tasks:
     prompt: "Frontend admin: normalizar copy ES y acentos visibles"
     created_at: 2026-02-26
     updated_at: 2026-02-26
+
+  - id: AG-072
+    title: "C4 ops: separar incidente weekly general vs SLA operativo"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T05:11:03.891Z"
+    risk: medium
+    scope: .github
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js", "AGENT_BOARD.yaml"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T05:11:03.891Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "C4 ops: separar incidente weekly general vs SLA operativo"
+    acceptance_ref: "verification/agent-runs/AG-070.md"
+    evidence_ref: "verification/agent-runs/AG-070.md"
+    depends_on: []
+    prompt: "C4 ops: separar incidente weekly general vs SLA operativo"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26

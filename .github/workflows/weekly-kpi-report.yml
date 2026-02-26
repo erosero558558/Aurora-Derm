@@ -572,6 +572,7 @@ jobs:
                       });
                       const weeklyIncidentTitles = new Set([
                         '[ALERTA PROD] Weekly KPI report con warnings',
+                        '[ALERTA PROD] Weekly KPI SLA operativo degradado',
                         '[ALERTA PROD] Weekly KPI retencion degradada'
                       ]);
                       const prodIncidents = allIssues.filter((issue) => {
@@ -693,7 +694,7 @@ jobs:
                   }
 
             - name: Crear/actualizar incidente semanal general
-              if: ${{ github.event_name == 'schedule' && (steps.report.outputs.warnings_critical_count == '-1' || steps.report.outputs.warnings_critical_count != '0' || steps.ops_sla.outputs.ops_fast_sla_ok != 'true' || steps.ops_sla.outputs.ops_nightly_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_mttr_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_open_external != '0') }}
+              if: ${{ github.event_name == 'schedule' && (steps.report.outputs.warnings_critical_count == '-1' || steps.report.outputs.warnings_critical_count != '0') }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -776,7 +777,7 @@ jobs:
                       }
 
             - name: Cerrar incidente semanal general al recuperar
-              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.warnings_critical_count == '0' && steps.ops_sla.outputs.ops_fast_sla_ok == 'true' && steps.ops_sla.outputs.ops_nightly_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_mttr_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_open_external == '0' }}
+              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.warnings_critical_count == '0' }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -818,6 +819,109 @@ jobs:
                         state: 'closed'
                       });
                       core.info(`Issue cerrado: #${existing.number}`);
+
+            - name: Crear/actualizar incidente semanal de SLA operativo
+              if: ${{ github.event_name == 'schedule' && (steps.ops_sla.outputs.ops_fast_sla_ok != 'true' || steps.ops_sla.outputs.ops_nightly_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_mttr_target_ok != 'true' || steps.ops_sla.outputs.ops_incidents_open_external != '0') }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI SLA operativo degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const body = [
+                        'El workflow `Weekly KPI Report` detecto degradacion de SLA operativo en la ventana semanal.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- fast_runs_last_${{ steps.ops_sla.outputs.lookback_days }}d: ${{ steps.ops_sla.outputs.ops_fast_runs }}`,
+                        `- fast_success_rate_pct: ${{ steps.ops_sla.outputs.ops_fast_success_rate_pct }}`,
+                        `- fast_p95_min: ${{ steps.ops_sla.outputs.ops_fast_p95_min }}`,
+                        `- fast_sla_ok: ${{ steps.ops_sla.outputs.ops_fast_sla_ok }}`,
+                        `- nightly_runs_last_${{ steps.ops_sla.outputs.lookback_days }}d: ${{ steps.ops_sla.outputs.ops_nightly_runs }}`,
+                        `- nightly_success_rate_pct: ${{ steps.ops_sla.outputs.ops_nightly_success_rate_pct }}`,
+                        `- nightly_target_ok: ${{ steps.ops_sla.outputs.ops_nightly_target_ok }}`,
+                        `- incidents_total_last_${{ steps.ops_sla.outputs.lookback_days }}d: ${{ steps.ops_sla.outputs.ops_incidents_total }}`,
+                        `- incidents_open_external: ${{ steps.ops_sla.outputs.ops_incidents_open_external }}`,
+                        `- incidents_open_total: ${{ steps.ops_sla.outputs.ops_incidents_open_total }}`,
+                        `- incidents_closed: ${{ steps.ops_sla.outputs.ops_incidents_closed }}`,
+                        `- incidents_mttr_hours_avg: ${{ steps.ops_sla.outputs.ops_incidents_mttr_hours_avg }}`,
+                        `- incidents_mttr_target_ok: ${{ steps.ops_sla.outputs.ops_incidents_mttr_target_ok }}`
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body
+                        });
+                        core.info(`Issue de SLA operativo actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body,
+                          labels: ['production-alert', 'weekly-kpi', 'ops-sla']
+                        });
+                        core.info(`Issue de SLA operativo creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente semanal de SLA operativo al recuperar
+              if: ${{ success() && github.event_name == 'schedule' && steps.ops_sla.outputs.ops_fast_sla_ok == 'true' && steps.ops_sla.outputs.ops_nightly_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_mttr_target_ok == 'true' && steps.ops_sla.outputs.ops_incidents_open_external == '0' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI SLA operativo degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente de SLA operativo abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por reporte semanal de SLA operativo.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue de SLA operativo cerrado: #${existing.number}`);
 
             - name: Crear/actualizar incidente semanal de retencion
               if: ${{ github.event_name == 'schedule' && steps.report.outputs.retention_report_alert_count != '0' }}
