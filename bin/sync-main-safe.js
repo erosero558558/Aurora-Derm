@@ -11,6 +11,7 @@ const DEFAULT_OPTIONS = {
     boardPath: 'AGENT_BOARD.yaml',
     autoStash: true,
     push: true,
+    maxSyncAttempts: 3,
     dryRun: false,
     json: false,
 };
@@ -41,6 +42,15 @@ function parseArgs(argv = []) {
         }
         if (arg === '--no-push') {
             opts.push = false;
+            continue;
+        }
+        if (arg === '--max-sync-attempts') {
+            const rawValue = String(argv[i + 1] || '').trim();
+            const parsed = Number.parseInt(rawValue, 10);
+            if (Number.isFinite(parsed) && parsed >= 1) {
+                opts.maxSyncAttempts = parsed;
+            }
+            i += 1;
             continue;
         }
         if (arg === '--dry-run') {
@@ -125,6 +135,115 @@ function isRebaseInProgress(repoRoot = process.cwd()) {
     return existsSync(rebaseMerge) || existsSync(rebaseApply);
 }
 
+function isRetryablePushFailure(pushResult) {
+    const haystack =
+        `${pushResult && pushResult.stderr ? pushResult.stderr : ''}\n${
+            pushResult && pushResult.stdout ? pushResult.stdout : ''
+        }`.toLowerCase();
+    return (
+        haystack.includes('fetch first') ||
+        haystack.includes('non-fast-forward') ||
+        haystack.includes('[rejected]')
+    );
+}
+
+function runRebaseWithBoardAutoResolve({
+    runner,
+    options,
+    repoRoot,
+    result,
+    stepPrefix = '',
+}) {
+    const prefix = stepPrefix ? `${stepPrefix}_` : '';
+    const rebaseTarget = `${options.remote}/${options.branch}`;
+    const rebaseResult = runner('git', ['rebase', rebaseTarget], options);
+    result.steps.push({ name: `${prefix}rebase`, ...rebaseResult });
+
+    if (rebaseResult.ok) return;
+
+    for (
+        let attempt = 0;
+        attempt < 5 && isRebaseInProgress(repoRoot);
+        attempt += 1
+    ) {
+        const unmerged = getUnmergedFiles(runner, options);
+        if (unmerged.length === 0) {
+            const continueResult = runner(
+                'git',
+                ['-c', 'core.editor=true', 'rebase', '--continue'],
+                options
+            );
+            result.steps.push({
+                name: `${prefix}rebase_continue_${attempt + 1}`,
+                ...continueResult,
+            });
+            if (!continueResult.ok) {
+                throw new Error(
+                    `git rebase --continue fallo: ${continueResult.stderr || continueResult.stdout}`
+                );
+            }
+            continue;
+        }
+
+        if (!isOnlyBoardConflict(unmerged, options.boardPath)) {
+            throw new Error(
+                `conflictos no auto-resolubles: ${unmerged.join(', ')}`
+            );
+        }
+
+        const resolverResult = runner(
+            process.execPath,
+            [
+                resolve(__dirname, 'resolve-board-revision-conflict.js'),
+                '--file',
+                options.boardPath,
+            ],
+            options
+        );
+        result.steps.push({
+            name: `${prefix}resolve_board_conflict_${attempt + 1}`,
+            ...resolverResult,
+        });
+        if (!resolverResult.ok) {
+            throw new Error(
+                `resolver de revision fallo: ${resolverResult.stderr || resolverResult.stdout}`
+            );
+        }
+
+        const addResult = runner('git', ['add', options.boardPath], options);
+        result.steps.push({
+            name: `${prefix}add_board_${attempt + 1}`,
+            ...addResult,
+        });
+        if (!addResult.ok) {
+            throw new Error(
+                `git add fallo: ${addResult.stderr || addResult.stdout}`
+            );
+        }
+
+        const continueResult = runner(
+            'git',
+            ['-c', 'core.editor=true', 'rebase', '--continue'],
+            options
+        );
+        result.steps.push({
+            name: `${prefix}rebase_continue_${attempt + 1}`,
+            ...continueResult,
+        });
+        if (!continueResult.ok) {
+            throw new Error(
+                `git rebase --continue fallo: ${continueResult.stderr || continueResult.stdout}`
+            );
+        }
+    }
+
+    if (isRebaseInProgress(repoRoot)) {
+        throw new Error(
+            'rebase quedo en progreso tras intentos de autorresolucion'
+        );
+    }
+}
+
 function printResult(payload, jsonMode) {
     if (jsonMode) {
         console.log(JSON.stringify(payload, null, 2));
@@ -190,125 +309,60 @@ function run(argv = process.argv.slice(2), deps = {}) {
             throw new Error('working tree sucio y --no-stash activo');
         }
 
-        const fetchResult = runner(
-            'git',
-            ['fetch', options.remote, options.branch],
-            options
+        const maxSyncAttempts = Math.max(
+            1,
+            Number(options.maxSyncAttempts) || 1
         );
-        result.steps.push({ name: 'fetch', ...fetchResult });
-        if (!fetchResult.ok) {
-            throw new Error(
-                `git fetch fallo: ${fetchResult.stderr || fetchResult.stdout}`
+        for (
+            let syncAttempt = 1;
+            syncAttempt <= maxSyncAttempts;
+            syncAttempt += 1
+        ) {
+            const suffix = syncAttempt > 1 ? `_retry_${syncAttempt}` : '';
+            const fetchResult = runner(
+                'git',
+                ['fetch', options.remote, options.branch],
+                options
             );
-        }
-
-        const rebaseTarget = `${options.remote}/${options.branch}`;
-        const rebaseResult = runner('git', ['rebase', rebaseTarget], options);
-        result.steps.push({ name: 'rebase', ...rebaseResult });
-
-        if (!rebaseResult.ok) {
-            for (
-                let attempt = 0;
-                attempt < 5 && isRebaseInProgress(repoRoot);
-                attempt += 1
-            ) {
-                const unmerged = getUnmergedFiles(runner, options);
-                if (unmerged.length === 0) {
-                    const continueResult = runner(
-                        'git',
-                        ['-c', 'core.editor=true', 'rebase', '--continue'],
-                        options
-                    );
-                    result.steps.push({
-                        name: `rebase_continue_${attempt + 1}`,
-                        ...continueResult,
-                    });
-                    if (!continueResult.ok) {
-                        throw new Error(
-                            `git rebase --continue fallo: ${continueResult.stderr || continueResult.stdout}`
-                        );
-                    }
-                    continue;
-                }
-
-                if (!isOnlyBoardConflict(unmerged, options.boardPath)) {
-                    throw new Error(
-                        `conflictos no auto-resolubles: ${unmerged.join(', ')}`
-                    );
-                }
-
-                const resolverResult = runner(
-                    process.execPath,
-                    [
-                        resolve(
-                            __dirname,
-                            'resolve-board-revision-conflict.js'
-                        ),
-                        '--file',
-                        options.boardPath,
-                    ],
-                    options
-                );
-                result.steps.push({
-                    name: `resolve_board_conflict_${attempt + 1}`,
-                    ...resolverResult,
-                });
-                if (!resolverResult.ok) {
-                    throw new Error(
-                        `resolver de revision fallo: ${resolverResult.stderr || resolverResult.stdout}`
-                    );
-                }
-
-                const addResult = runner(
-                    'git',
-                    ['add', options.boardPath],
-                    options
-                );
-                result.steps.push({
-                    name: `add_board_${attempt + 1}`,
-                    ...addResult,
-                });
-                if (!addResult.ok) {
-                    throw new Error(
-                        `git add fallo: ${addResult.stderr || addResult.stdout}`
-                    );
-                }
-
-                const continueResult = runner(
-                    'git',
-                    ['-c', 'core.editor=true', 'rebase', '--continue'],
-                    options
-                );
-                result.steps.push({
-                    name: `rebase_continue_${attempt + 1}`,
-                    ...continueResult,
-                });
-                if (!continueResult.ok) {
-                    throw new Error(
-                        `git rebase --continue fallo: ${continueResult.stderr || continueResult.stdout}`
-                    );
-                }
-            }
-
-            if (isRebaseInProgress(repoRoot)) {
+            result.steps.push({ name: `fetch${suffix}`, ...fetchResult });
+            if (!fetchResult.ok) {
                 throw new Error(
-                    'rebase quedo en progreso tras intentos de autorresolucion'
+                    `git fetch fallo: ${fetchResult.stderr || fetchResult.stdout}`
                 );
             }
-        }
 
-        if (options.push) {
+            runRebaseWithBoardAutoResolve({
+                runner,
+                options,
+                repoRoot,
+                result,
+                stepPrefix: syncAttempt > 1 ? `retry_${syncAttempt}` : '',
+            });
+
+            if (!options.push) {
+                break;
+            }
+
             const pushResult = runner(
                 'git',
                 ['push', options.remote, options.branch],
                 options
             );
-            result.steps.push({ name: 'push', ...pushResult });
-            if (!pushResult.ok) {
-                throw new Error(
-                    `git push fallo: ${pushResult.stderr || pushResult.stdout}`
-                );
+            result.steps.push({ name: `push${suffix}`, ...pushResult });
+            if (pushResult.ok) {
+                break;
             }
+
+            if (
+                syncAttempt < maxSyncAttempts &&
+                isRetryablePushFailure(pushResult)
+            ) {
+                continue;
+            }
+
+            throw new Error(
+                `git push fallo: ${pushResult.stderr || pushResult.stdout}`
+            );
         }
 
         if (result.stash.created) {
@@ -348,5 +402,7 @@ module.exports = {
     parseLines,
     normalizePath,
     isOnlyBoardConflict,
+    isRetryablePushFailure,
+    runRebaseWithBoardAutoResolve,
     run,
 };

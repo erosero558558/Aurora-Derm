@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 161
+  revision: 164
   updated_at: 2026-02-26
 
 tasks:
@@ -2819,5 +2819,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-073.md"
     depends_on: []
     prompt: "C4 ops: auto-resolver de conflictos AGENT_BOARD para sync-main-safe"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-074
+    title: "Retry automatico en sync-main-safe para non-fast-forward"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T05:34:39.898Z"
+    risk: medium
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["bin/sync-main-safe.js", "tests-node/sync-main-safe.test.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T05:34:39.898Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Retry automatico en sync-main-safe para non-fast-forward"
+    acceptance_ref: "verification/agent-runs/AG-074.md"
+    evidence_ref: "verification/agent-runs/AG-074.md"
+    depends_on: []
+    prompt: "Retry automatico en sync-main-safe para non-fast-forward"
     created_at: 2026-02-26
     updated_at: 2026-02-26
