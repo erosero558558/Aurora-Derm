@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 109
+  revision: 118
   updated_at: 2026-02-26
 
 tasks:
@@ -1496,8 +1496,8 @@ tasks:
     title: "Frontend P0: Chat + Booking coexistence UX (mobile/desktop)"
     owner: Ernesto
     executor: codex
-    status: backlog
-    status_since_at: "2026-02-25T22:00:58.689Z"
+    status: done
+    status_since_at: "2026-02-26T01:53:32.787Z"
     risk: medium
     scope: frontend-public
     codex_instance: codex_frontend
@@ -1518,24 +1518,24 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_cleared_at: "2026-02-26T01:53:32.787Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
     acceptance: "Chat y booking coexisten sin solapes ni bloqueo de interaccion en movil y desktop."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-039.md"
+    evidence_ref: "verification/agent-runs/AG-039.md"
     depends_on: ["AG-038"]
     prompt: "Mejorar coexistencia chat+booking: stacking/safe-area, reglas de apertura/cierre y handoff visual a booking, preservando comportamiento actual de errores y contratos."
     created_at: 2026-02-25
-    updated_at: 2026-02-25
+    updated_at: 2026-02-26
 
   - id: AG-040
     title: "Frontend P1: Telemedicina conversion polish (structure + CTA)"
     owner: Ernesto
     executor: codex
-    status: backlog
-    status_since_at: "2026-02-25T22:01:05.437Z"
+    status: done
+    status_since_at: "2026-02-26T01:53:33.086Z"
     risk: medium
     scope: frontend-public
     codex_instance: codex_frontend
@@ -1556,24 +1556,24 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_cleared_at: "2026-02-26T01:53:33.086Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
     acceptance: "Telemedicina mejora escaneabilidad y CTA sin regresion visual ni ruptura de templates."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-040.md"
+    evidence_ref: "verification/agent-runs/AG-040.md"
     depends_on: ["AG-037"]
     prompt: "Pulir conversion UX de telemedicina con mejoras incrementales en jerarquia, CTA y spacing, manteniendo compatibilidad de anclas y build templated."
     created_at: 2026-02-25
-    updated_at: 2026-02-25
+    updated_at: 2026-02-26
 
   - id: AG-041
     title: "Frontend P1: Public accessibility/performance hardening for touched surfaces"
     owner: Ernesto
     executor: codex
-    status: backlog
-    status_since_at: "2026-02-25T22:01:12.342Z"
+    status: done
+    status_since_at: "2026-02-26T01:53:33.361Z"
     risk: low
     scope: frontend-public
     codex_instance: codex_frontend
@@ -1594,24 +1594,24 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_cleared_at: "2026-02-26T01:53:33.361Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
     acceptance: "Superficies publicas tocadas quedan con hardening de accesibilidad/performance sin regresiones de defer/hydration."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-041.md"
+    evidence_ref: "verification/agent-runs/AG-041.md"
     depends_on: ["AG-037", "AG-038", "AG-039", "AG-040"]
     prompt: "Aplicar hardening de accesibilidad y performance en superficies publicas modificadas (focus visible, reduced motion, ARIA, defer/hydration safe) con control de peso."
     created_at: 2026-02-25
-    updated_at: 2026-02-25
+    updated_at: 2026-02-26
 
   - id: AG-042
     title: "Frontend P1: Admin dashboard/list UX quick wins"
     owner: Ernesto
     executor: codex
-    status: backlog
-    status_since_at: "2026-02-25T22:01:31.948Z"
+    status: done
+    status_since_at: "2026-02-26T01:54:30.000Z"
     risk: low
     scope: frontend-admin
     codex_instance: codex_backend_ops
@@ -1637,19 +1637,19 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Admin mejora claridad visual y estados de carga/empty/error sin romper flujos de login ni acciones clave."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-042.md"
+    evidence_ref: "verification/agent-runs/AG-042.md"
     depends_on: ["AG-037"]
     prompt: "Aplicar quick wins de UX en admin: jerarquia, estados, badges, acciones y spacing con bajo riesgo."
     created_at: 2026-02-25
-    updated_at: 2026-02-25
+    updated_at: 2026-02-26
 
   - id: AG-043
     title: "Frontend P1: Admin navigation and interaction polish"
     owner: Ernesto
     executor: codex
-    status: backlog
-    status_since_at: "2026-02-25T22:01:39.492Z"
+    status: done
+    status_since_at: "2026-02-26T01:54:31.000Z"
     risk: medium
     scope: frontend-admin
     codex_instance: codex_backend_ops
@@ -1675,12 +1675,12 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Navegacion admin mantiene hashes y mejora focus/responsive sin overflow critico."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-043.md"
+    evidence_ref: "verification/agent-runs/AG-043.md"
     depends_on: ["AG-042"]
     prompt: "Pulir navegacion e interacciones del admin (keyboard/focus/responsive) manteniendo hashes de secciones y comportamiento actual."
     created_at: 2026-02-25
-    updated_at: 2026-02-25
+    updated_at: 2026-02-26
 
   - id: AG-044
     title: "Frontend P1: FE regression suite alignment + visual baseline refresh"
@@ -1724,8 +1724,8 @@ tasks:
     title: "Frontend P1: Frontend readiness summary + board/docs batch close"
     owner: Ernesto
     executor: codex
-    status: backlog
-    status_since_at: "2026-02-25T22:01:52.701Z"
+    status: done
+    status_since_at: "2026-02-26T01:53:54.450Z"
     risk: low
     scope: docs
     codex_instance: codex_backend_ops
@@ -1746,17 +1746,17 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_cleared_at: "2026-02-26T01:53:54.450Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: none
     critical_zone: false
     acceptance: "Cierre de frontend en lote con board/evidencia/planes consistentes y sin micro-PRs de sync documental."
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-045.md"
+    evidence_ref: "verification/agent-runs/AG-045.md"
     depends_on: ["AG-044"]
     prompt: "Consolidar cierre frontend en lote (board+planes+evidencia) tras terminar bloques FE/QA para evitar PRs fragmentados de documentacion."
     created_at: 2026-02-25
-    updated_at: 2026-02-25
+    updated_at: 2026-02-26
 
   - id: AG-046
     title: "C4: cerrar guardrails release warning->blocking y fallback operativo"
