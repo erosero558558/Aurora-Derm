@@ -206,7 +206,7 @@ function runRebaseWithBoardAutoResolve({
         });
         if (!resolverResult.ok) {
             throw new Error(
-                `resolver de revision fallo: ${resolverResult.stderr || resolverResult.stdout}`
+                `resolver de board fallo: ${resolverResult.stderr || resolverResult.stdout}`
             );
         }
 

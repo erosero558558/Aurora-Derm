@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 171
+  revision: 174
   updated_at: 2026-02-26
 
 tasks:
@@ -3009,5 +3009,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-078.md"
     depends_on: []
     prompt: "Frontend P0: Hero service intent shortcuts + booking prefill conversion block"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-079
+    title: "Auto-resolver colisiones semanticas de task en AGENT_BOARD durante sync"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T06:05:52.831Z"
+    risk: medium
+    scope: tooling
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["bin/resolve-board-revision-conflict.js", "bin/sync-main-safe.js", "tests-node/resolve-board-revision-conflict.test.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T06:05:52.831Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Auto-resolver colisiones semanticas de task en AGENT_BOARD durante sync"
+    acceptance_ref: "verification/agent-runs/AG-078.md"
+    evidence_ref: "verification/agent-runs/AG-078.md"
+    depends_on: []
+    prompt: "Auto-resolver colisiones semanticas de task en AGENT_BOARD durante sync"
     created_at: 2026-02-26
     updated_at: 2026-02-26

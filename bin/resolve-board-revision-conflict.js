@@ -95,6 +95,57 @@ function trimOuterNewlines(value) {
     return String(value || '').replace(/^\n+|\n+$/g, '');
 }
 
+function parseTaskConflictVariants(taskBlock) {
+    const lines = String(taskBlock || '')
+        .split('\n')
+        .map((line) => line.replace(/\r$/, ''));
+
+    const left = [];
+    const right = [];
+    let mode = 'normal';
+    let conflicts = 0;
+
+    for (const line of lines) {
+        if (/^<<<<<<<[^\n]*$/.test(line)) {
+            if (mode !== 'normal') {
+                return { ok: false, left: [], right: [], conflicts: 0 };
+            }
+            mode = 'left';
+            conflicts += 1;
+            continue;
+        }
+        if (/^=======$/.test(line)) {
+            if (mode !== 'left') {
+                return { ok: false, left: [], right: [], conflicts: 0 };
+            }
+            mode = 'right';
+            continue;
+        }
+        if (/^>>>>>>>[^\n]*$/.test(line)) {
+            if (mode !== 'right') {
+                return { ok: false, left: [], right: [], conflicts: 0 };
+            }
+            mode = 'normal';
+            continue;
+        }
+
+        if (mode === 'normal') {
+            left.push(line);
+            right.push(line);
+        } else if (mode === 'left') {
+            left.push(line);
+        } else if (mode === 'right') {
+            right.push(line);
+        }
+    }
+
+    if (mode !== 'normal' || conflicts === 0) {
+        return { ok: false, left: [], right: [], conflicts: 0 };
+    }
+
+    return { ok: true, left, right, conflicts };
+}
+
 function mergeTaskBlocks(left, right, options) {
     const leftTask = parseTaskIdLine(left);
     const rightTask = parseTaskIdLine(right);
@@ -127,6 +178,111 @@ function mergeTaskBlocks(left, right, options) {
             left_id: leftTask.id,
             right_id: rightTask.id,
         },
+    };
+}
+
+function resolveTaskScopedConflicts(raw, options) {
+    const lines = String(raw || '')
+        .split('\n')
+        .map((line) => line.replace(/\r$/, ''));
+    const taskLinePattern = /^\s*-\s*id:\s*AG-\d+\s*$/;
+
+    const resolved = [];
+    const diagnostics = [];
+    let replaced = 0;
+
+    let index = 0;
+    while (index < lines.length) {
+        const line = lines[index];
+        if (!taskLinePattern.test(line)) {
+            resolved.push(line);
+            index += 1;
+            continue;
+        }
+
+        const start = index;
+        let end = index + 1;
+        while (end < lines.length && !taskLinePattern.test(lines[end])) {
+            end += 1;
+        }
+
+        const taskBlock = lines.slice(start, end).join('\n');
+        if (
+            !taskBlock.includes('<<<<<<<') ||
+            !taskBlock.includes('=======') ||
+            !taskBlock.includes('>>>>>>>')
+        ) {
+            resolved.push(...lines.slice(start, end));
+            index = end;
+            continue;
+        }
+
+        const variants = parseTaskConflictVariants(taskBlock);
+        if (!variants.ok) {
+            resolved.push(...lines.slice(start, end));
+            index = end;
+            continue;
+        }
+
+        const leftContent = trimOuterNewlines(variants.left.join('\n'));
+        const rightContent = trimOuterNewlines(variants.right.join('\n'));
+        const leftTask = parseTaskIdLine(leftContent);
+        const rightTask = parseTaskIdLine(rightContent);
+        if (!leftTask || !rightTask) {
+            resolved.push(...lines.slice(start, end));
+            index = end;
+            continue;
+        }
+
+        if (leftContent === rightContent) {
+            resolved.push(...leftContent.split('\n'));
+            replaced += 1;
+            diagnostics.push({
+                kind: 'task_conflict_identical_variants',
+                task_id: leftTask.id,
+                conflicts: variants.conflicts,
+            });
+            index = end;
+            continue;
+        }
+
+        if (leftTask.id === rightTask.id) {
+            const remappedId = buildTaskId(options.nextTaskNumericId);
+            options.nextTaskNumericId += 1;
+            const rightRemapped = rewriteFirstTaskId(rightContent, remappedId);
+
+            resolved.push(...leftContent.split('\n'));
+            resolved.push('');
+            resolved.push(...rightRemapped.split('\n'));
+            replaced += 1;
+            diagnostics.push({
+                kind: 'task_semantic_conflict_resolved',
+                left_id: leftTask.id,
+                right_id: rightTask.id,
+                remapped_to: remappedId,
+                conflicts: variants.conflicts,
+            });
+            index = end;
+            continue;
+        }
+
+        resolved.push(...leftContent.split('\n'));
+        resolved.push('');
+        resolved.push(...rightContent.split('\n'));
+        replaced += 1;
+        diagnostics.push({
+            kind: 'task_blocks_merged',
+            left_id: leftTask.id,
+            right_id: rightTask.id,
+            conflicts: variants.conflicts,
+        });
+        index = end;
+    }
+
+    return {
+        replaced,
+        diagnostics,
+        resolvedContent: resolved.join('\n'),
     };
 }
 
@@ -184,11 +340,28 @@ function resolveRevisionConflicts(raw) {
         }
     );
 
-    const hasConflictMarkers =
-        resolved.includes('<<<<<<<') ||
-        resolved.includes('=======') ||
-        resolved.includes('>>>>>>>');
-    const hasUnresolvedMarkers = hasConflictMarkers && remaining > 0;
+    const taskScoped = resolveTaskScopedConflicts(resolved, mergeOptions);
+    if (taskScoped.replaced > 0) {
+        replaced += taskScoped.replaced;
+        diagnostics.push(...taskScoped.diagnostics);
+        resolved = taskScoped.resolvedContent;
+    }
+
+    const unresolvedMarkers = (resolved.match(/^<<<<<<<[^\n]*$/gm) || [])
+        .length;
+    if (unresolvedMarkers === 0) {
+        for (let i = diagnostics.length - 1; i >= 0; i -= 1) {
+            if (
+                diagnostics[i] &&
+                diagnostics[i].kind === 'non_revision_conflict'
+            ) {
+                diagnostics.splice(i, 1);
+            }
+        }
+    }
+    remaining = unresolvedMarkers;
+
+    const hasUnresolvedMarkers = unresolvedMarkers > 0;
 
     return {
         replaced,
@@ -223,6 +396,14 @@ function print(payload, asJson) {
             } else if (item.kind === 'task_blocks_merged') {
                 console.log(
                     `- merged task blocks at ${item.offset}: ${item.left_id} + ${item.right_id}`
+                );
+            } else if (item.kind === 'task_semantic_conflict_resolved') {
+                console.log(
+                    `- resolved semantic task conflict: ${item.left_id} + ${item.right_id} -> ${item.remapped_to}`
+                );
+            } else if (item.kind === 'task_conflict_identical_variants') {
+                console.log(
+                    `- resolved identical task conflict variants: ${item.task_id}`
                 );
             } else {
                 console.log(
@@ -280,7 +461,9 @@ module.exports = {
     parseRevisionLine,
     parseTaskIdLine,
     collectMaxTaskId,
+    parseTaskConflictVariants,
     mergeTaskBlocks,
+    resolveTaskScopedConflicts,
     resolveRevisionConflicts,
     run,
 };

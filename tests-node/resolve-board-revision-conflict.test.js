@@ -123,3 +123,42 @@ tasks:
         true
     );
 });
+
+test('resolveRevisionConflicts resuelve colision semantica dentro de un mismo task id', () => {
+    const raw = `version: 1
+tasks:
+  - id: AG-076
+<<<<<<< HEAD
+    title: "frontend"
+    scope: frontend-qa
+=======
+    title: "backend"
+    scope: tooling
+>>>>>>> incoming
+    source_signal: manual
+<<<<<<< HEAD
+    acceptance: "frontend"
+=======
+    acceptance: "backend"
+>>>>>>> incoming
+    updated_at: 2026-02-26
+`;
+    const result = resolver.resolveRevisionConflicts(raw);
+    assert.equal(result.remaining, 0);
+    assert.equal(result.hasUnresolvedMarkers, false);
+    assert.match(
+        result.resolvedContent,
+        /- id: AG-076\s*\n\s*title: "frontend"\s*\n\s*scope: frontend-qa/
+    );
+    assert.match(
+        result.resolvedContent,
+        /- id: AG-077\s*\n\s*title: "backend"\s*\n\s*scope: tooling/
+    );
+    assert.equal(
+        result.diagnostics.some(
+            (item) => item.kind === 'task_semantic_conflict_resolved'
+        ),
+        true
+    );
+    assert.doesNotMatch(result.resolvedContent, /<<<<<<<|=======|>>>>>>>/);
+});
