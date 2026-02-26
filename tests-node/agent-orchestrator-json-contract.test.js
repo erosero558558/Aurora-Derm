@@ -631,16 +631,17 @@ signals: []
         const budget = runJsonExpectStatusWithOptions(
             dir,
             ['budget', '--strict', '--agent', 'jules'],
-            1,
+            0,
             { env: { JULES_DAILY_LIMIT: '0' } }
         );
         assertVersionLike(budget.version);
         assert.equal(budget.command, 'budget');
-        assert.equal(budget.ok, false);
+        assert.equal(budget.ok, true);
         assert.equal(Array.isArray(budget.exceeded), true);
-        assert.equal(budget.exceeded.includes('jules'), true);
+        assert.equal(budget.exceeded.includes('jules'), false);
         assert.equal(typeof budget.usage, 'object');
         assert.equal(typeof budget.remaining, 'object');
+        assert.equal(budget.remaining.jules, 0);
 
         writeFileSync(
             join(dir, 'AGENT_BOARD.yaml'),
