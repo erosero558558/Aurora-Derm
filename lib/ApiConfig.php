@@ -16,6 +16,7 @@ class ApiConfig
             'availability:GET' => [60, 60],
             'reviews:GET' => [60, 60],
             'booked-slots:GET' => [60, 60],
+            'queue-state:GET' => [180, 60],
             'payment-config:GET' => [60, 60],
             'monitoring-config:GET' => [60, 60],
             'metrics:GET' => [60, 60],
@@ -30,6 +31,8 @@ class ApiConfig
             'reviews:POST' => [5, 60],
             'callbacks:POST' => [5, 60],
             'funnel-event:POST' => [120, 60],
+            'queue-checkin:POST' => [20, 60],
+            'queue-ticket:POST' => [20, 60],
 
             // Webhooks
             'stripe-webhook:POST' => [60, 60],
@@ -45,6 +48,9 @@ class ApiConfig
             'push-subscribe:POST' => [15, 60],
             'push-unsubscribe:POST' => [15, 60],
             'push-test:POST' => [6, 60],
+            'queue-call-next:POST' => [60, 60],
+            'queue-ticket:PATCH' => [60, 60],
+            'queue-reprint:POST' => [30, 60],
 
             // Predictions
             'predictions:GET' => [20, 60],
@@ -61,6 +67,7 @@ class ApiConfig
             ['method' => 'GET', 'resource' => 'availability'],
             ['method' => 'GET', 'resource' => 'reviews'],
             ['method' => 'GET', 'resource' => 'booked-slots'],
+            ['method' => 'GET', 'resource' => 'queue-state'],
             ['method' => 'POST', 'resource' => 'payment-intent'],
             ['method' => 'POST', 'resource' => 'payment-verify'],
             ['method' => 'POST', 'resource' => 'transfer-proof'],
@@ -69,6 +76,8 @@ class ApiConfig
             ['method' => 'POST', 'resource' => 'callbacks'],
             ['method' => 'POST', 'resource' => 'reviews'],
             ['method' => 'POST', 'resource' => 'funnel-event'],
+            ['method' => 'POST', 'resource' => 'queue-checkin'],
+            ['method' => 'POST', 'resource' => 'queue-ticket'],
             ['method' => 'GET', 'resource' => 'reschedule'],
             ['method' => 'PATCH', 'resource' => 'reschedule'],
             ['method' => 'GET', 'resource' => 'content'],

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
+        />
+        <title>Kiosco de Turnos | Piel en Armonia</title>
+        <link rel="stylesheet" href="queue-kiosk.css" />
+    </head>
+    <body>
+        <header class="kiosk-header">
+            <div class="kiosk-brand">
+                <strong>Piel en Armonia</strong>
+                <span>Kiosco de turnos</span>
+            </div>
+            <div class="kiosk-theme-toggle" role="group" aria-label="Tema">
+                <button type="button" data-theme-mode="light" aria-pressed="false">
+                    Claro
+                </button>
+                <button type="button" data-theme-mode="dark" aria-pressed="false">
+                    Oscuro
+                </button>
+                <button type="button" data-theme-mode="system" aria-pressed="true">
+                    Sistema
+                </button>
+            </div>
+        </header>
+
+        <main class="kiosk-layout">
+            <section class="kiosk-card kiosk-checkin-card">
+                <h1>Registro en sala de espera</h1>
+                <p>
+                    Selecciona tu opcion para generar turno o confirmar cita.
+                </p>
+
+                <div id="kioskStatus" class="kiosk-status" data-status="info">
+                    Listo para registrar turnos.
+                </div>
+
+                <div class="kiosk-form-grid">
+                    <form id="checkinForm" class="kiosk-form">
+                        <h2>Tengo cita</h2>
+                        <label for="checkinPhone">Telefono</label>
+                        <input
+                            id="checkinPhone"
+                            type="tel"
+                            inputmode="numeric"
+                            autocomplete="tel"
+                            placeholder="0982453672"
+                            required
+                        />
+
+                        <label for="checkinDate">Fecha</label>
+                        <input id="checkinDate" type="date" required />
+
+                        <label for="checkinTime">Hora</label>
+                        <input id="checkinTime" type="time" required />
+
+                        <label for="checkinInitials">Iniciales (opcional)</label>
+                        <input
+                            id="checkinInitials"
+                            type="text"
+                            maxlength="4"
+                            placeholder="EP"
+                        />
+
+                        <button id="checkinSubmit" type="submit">
+                            Confirmar check-in
+                        </button>
+                    </form>
+
+                    <form id="walkinForm" class="kiosk-form">
+                        <h2>No tengo cita</h2>
+                        <label for="walkinName">Nombre (opcional)</label>
+                        <input id="walkinName" type="text" placeholder="Paciente" />
+
+                        <label for="walkinInitials">Iniciales</label>
+                        <input
+                            id="walkinInitials"
+                            type="text"
+                            maxlength="4"
+                            placeholder="EP"
+                        />
+
+                        <label for="walkinPhone">Telefono (opcional)</label>
+                        <input
+                            id="walkinPhone"
+                            type="tel"
+                            inputmode="numeric"
+                            autocomplete="tel"
+                            placeholder="0982453672"
+                        />
+
+                        <button id="walkinSubmit" type="submit">
+                            Generar turno
+                        </button>
+                    </form>
+                </div>
+
+                <div id="ticketResult" class="ticket-result">
+                    <p class="ticket-empty">Todavia no se ha generado ningun ticket.</p>
+                </div>
+            </section>
+
+            <aside class="kiosk-side">
+                <section class="kiosk-card">
+                    <h2>Estado de la cola</h2>
+                    <div class="queue-kpi-row">
+                        <article>
+                            <span>En espera</span>
+                            <strong id="queueWaitingCount">0</strong>
+                        </article>
+                        <article>
+                            <span>Llamados</span>
+                            <strong id="queueCalledCount">0</strong>
+                        </article>
+                    </div>
+
+                    <h3>Llamando ahora</h3>
+                    <div id="queueCallingNow" class="queue-calling-now">
+                        <p class="queue-empty">Sin llamados activos.</p>
+                    </div>
+
+                    <h3>Siguientes turnos</h3>
+                    <ol id="queueNextList" class="queue-next-list">
+                        <li class="queue-empty">No hay turnos en espera.</li>
+                    </ol>
+                </section>
+
+                <section class="kiosk-card">
+                    <h2>Asistente de sala</h2>
+                    <p class="assistant-note">
+                        Solo orientacion operativa de sala. No reemplaza consulta medica.
+                    </p>
+                    <div id="assistantMessages" class="assistant-messages"></div>
+                    <form id="assistantForm" class="assistant-form">
+                        <input
+                            id="assistantInput"
+                            type="text"
+                            placeholder="Ejemplo: donde espero para consultorio 2"
+                            autocomplete="off"
+                        />
+                        <button id="assistantSend" type="submit">Enviar</button>
+                    </form>
+                </section>
+            </aside>
+        </main>
+
+        <script src="js/queue-kiosk.js" defer></script>
+    </body>
+</html>
+

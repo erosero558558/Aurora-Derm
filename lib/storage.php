@@ -79,6 +79,7 @@ function storage_default_store_payload(): array
         'appointments' => [],
         'callbacks' => [],
         'reviews' => [],
+        'queue_tickets' => [],
         'availability' => [],
         'updatedAt' => local_date('c')
     ];
@@ -141,6 +142,7 @@ function normalize_store_payload($rawStore): array
     $appointments = isset($store['appointments']) && is_array($store['appointments']) ? $store['appointments'] : [];
     $callbacks = isset($store['callbacks']) && is_array($store['callbacks']) ? $store['callbacks'] : [];
     $reviews = isset($store['reviews']) && is_array($store['reviews']) ? $store['reviews'] : [];
+    $queueTickets = isset($store['queue_tickets']) && is_array($store['queue_tickets']) ? $store['queue_tickets'] : [];
     $availability = isset($store['availability']) && is_array($store['availability']) ? $store['availability'] : [];
     $updatedAt = isset($store['updatedAt']) && is_string($store['updatedAt']) && trim($store['updatedAt']) !== ''
         ? trim($store['updatedAt'])
@@ -149,11 +151,13 @@ function normalize_store_payload($rawStore): array
     $appointments = normalize_store_records_with_numeric_id($appointments, 'appointments');
     $callbacks = normalize_store_records_with_numeric_id($callbacks, 'callbacks');
     $reviews = normalize_store_records_with_numeric_id($reviews, 'reviews');
+    $queueTickets = normalize_store_records_with_numeric_id($queueTickets, 'queue_tickets');
 
     return [
         'appointments' => array_values($appointments),
         'callbacks' => array_values($callbacks),
         'reviews' => array_values($reviews),
+        'queue_tickets' => array_values($queueTickets),
         'availability' => $availability,
         'updatedAt' => $updatedAt,
         'idx_appointments_date' => build_appointment_index($appointments)
@@ -713,6 +717,33 @@ function migrate_json_to_sqlite(string $jsonPath, string $sqlitePath): bool
             }
         }
 
+        // Queue tickets
+        if (isset($data['queue_tickets']) && is_array($data['queue_tickets'])) {
+            $stmt = $pdo->prepare("INSERT OR REPLACE INTO queue_tickets (id, ticketCode, dailySeq, queueType, appointmentId, patientInitials, phoneLast4, priorityClass, status, assignedConsultorio, createdAt, calledAt, completedAt, createdSource, json_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            foreach ($data['queue_tickets'] as $ticket) {
+                if (!isset($ticket['id'])) {
+                    continue;
+                }
+                $stmt->execute([
+                    $ticket['id'],
+                    $ticket['ticketCode'] ?? '',
+                    $ticket['dailySeq'] ?? 0,
+                    $ticket['queueType'] ?? 'walk_in',
+                    $ticket['appointmentId'] ?? null,
+                    $ticket['patientInitials'] ?? '',
+                    $ticket['phoneLast4'] ?? '',
+                    $ticket['priorityClass'] ?? 'walk_in',
+                    $ticket['status'] ?? 'waiting',
+                    $ticket['assignedConsultorio'] ?? null,
+                    $ticket['createdAt'] ?? local_date('c'),
+                    $ticket['calledAt'] ?? '',
+                    $ticket['completedAt'] ?? '',
+                    $ticket['createdSource'] ?? 'kiosk',
+                    json_encode($ticket, JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        }
+
         // Availability
         if (isset($data['availability']) && is_array($data['availability'])) {
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO availability (date, time, doctor) VALUES (?, ?, ?)");
@@ -835,6 +866,7 @@ if (!function_exists('read_store')) {
                 'appointments' => [],
                 'callbacks' => [],
                 'reviews' => [],
+                'queue_tickets' => [],
                 'availability' => [],
                 'updatedAt' => local_date('c'),
                 'idx_appointments_date' => []
@@ -864,6 +896,15 @@ if (!function_exists('read_store')) {
                 $data = json_decode($row['json_data'], true);
                 if (is_array($data)) {
                     $store['callbacks'][] = $data;
+                }
+            }
+
+            // Fetch Queue Tickets
+            $stmt = $pdo->query("SELECT json_data FROM queue_tickets");
+            while ($row = $stmt->fetch()) {
+                $data = json_decode($row['json_data'], true);
+                if (is_array($data)) {
+                    $store['queue_tickets'][] = $data;
                 }
             }
 
@@ -1072,6 +1113,44 @@ if (!function_exists('write_store')) {
                 $keys = array_keys($toDelete);
                 $placeholders = implode(',', array_fill(0, count($keys), '?'));
                 $stmt = $pdo->prepare("DELETE FROM callbacks WHERE id IN ($placeholders)");
+                $stmt->execute($keys);
+            }
+
+            // Sync Queue tickets
+            $existingIds = $pdo->query("SELECT id FROM queue_tickets")->fetchAll(PDO::FETCH_COLUMN);
+            $existingIds = array_flip($existingIds);
+            $incomingIds = [];
+            $stmtUpsert = $pdo->prepare("INSERT OR REPLACE INTO queue_tickets (id, ticketCode, dailySeq, queueType, appointmentId, patientInitials, phoneLast4, priorityClass, status, assignedConsultorio, createdAt, calledAt, completedAt, createdSource, json_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            foreach ($store['queue_tickets'] as $ticket) {
+                if (!isset($ticket['id'])) {
+                    continue;
+                }
+                $id = $ticket['id'];
+                $incomingIds[$id] = true;
+                $stmtUpsert->execute([
+                    $id,
+                    $ticket['ticketCode'] ?? '',
+                    $ticket['dailySeq'] ?? 0,
+                    $ticket['queueType'] ?? 'walk_in',
+                    $ticket['appointmentId'] ?? null,
+                    $ticket['patientInitials'] ?? '',
+                    $ticket['phoneLast4'] ?? '',
+                    $ticket['priorityClass'] ?? 'walk_in',
+                    $ticket['status'] ?? 'waiting',
+                    $ticket['assignedConsultorio'] ?? null,
+                    $ticket['createdAt'] ?? local_date('c'),
+                    $ticket['calledAt'] ?? '',
+                    $ticket['completedAt'] ?? '',
+                    $ticket['createdSource'] ?? 'kiosk',
+                    json_encode($ticket, JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+            $toDelete = array_diff_key($existingIds, $incomingIds);
+            if (!empty($toDelete)) {
+                $keys = array_keys($toDelete);
+                $placeholders = implode(',', array_fill(0, count($keys), '?'));
+                $stmt = $pdo->prepare("DELETE FROM queue_tickets WHERE id IN ($placeholders)");
                 $stmt->execute($keys);
             }
 

@@ -7,6 +7,7 @@ import {
     currentCallbacks,
     currentReviews,
     currentAvailability,
+    currentQueueTickets,
 } from './modules/state.js';
 import { apiRequest } from './modules/api.js';
 import { loadDashboardData } from './modules/dashboard.js';
@@ -61,6 +62,13 @@ import {
     saveAvailabilityDraft,
     discardAvailabilityDraft,
 } from './modules/availability.js';
+import {
+    loadQueueSection,
+    refreshQueueRealtime,
+    callNextForConsultorio,
+    applyQueueTicketAction,
+    reprintQueueTicket,
+} from './modules/queue.js';
 
 const ADMIN_NAV_COMPACT_BREAKPOINT = 1024;
 const ADMIN_SECTION_SHORTCUTS = new Map([
@@ -69,11 +77,13 @@ const ADMIN_SECTION_SHORTCUTS = new Map([
     ['digit3', 'callbacks'],
     ['digit4', 'reviews'],
     ['digit5', 'availability'],
+    ['digit6', 'queue'],
     ['1', 'dashboard'],
     ['2', 'appointments'],
     ['3', 'callbacks'],
     ['4', 'reviews'],
     ['5', 'availability'],
+    ['6', 'queue'],
 ]);
 const SIDEBAR_FOCUSABLE_SELECTOR = [
     'a[href]',
@@ -206,6 +216,33 @@ const ADMIN_CONTEXT_ACTIONS = {
                 action: 'context-copy-availability-day',
                 icon: 'fa-copy',
                 label: 'Copiar día',
+            },
+        ],
+    },
+    queue: {
+        title: 'Acciones rápidas: turnero sala',
+        actions: [
+            {
+                action: 'queue-call-next',
+                queueConsultorio: '1',
+                icon: 'fa-bullhorn',
+                label: 'Llamar C1',
+            },
+            {
+                action: 'queue-call-next',
+                queueConsultorio: '2',
+                icon: 'fa-bullhorn',
+                label: 'Llamar C2',
+            },
+            {
+                action: 'queue-refresh-state',
+                icon: 'fa-rotate-right',
+                label: 'Refrescar cola',
+            },
+            {
+                action: 'context-open-dashboard',
+                icon: 'fa-chart-line',
+                label: 'Volver dashboard',
             },
         ],
     },
@@ -447,6 +484,9 @@ function createContextActionButton(actionDef) {
     }
     if (actionDef.targetSection) {
         button.dataset.targetSection = actionDef.targetSection;
+    }
+    if (actionDef.queueConsultorio) {
+        button.dataset.queueConsultorio = actionDef.queueConsultorio;
     }
     button.title = actionDef.hint || actionDef.label;
     button.innerHTML = `<i class="fas ${actionDef.icon}" aria-hidden="true"></i><span>${actionDef.label}</span>`;
@@ -929,6 +969,19 @@ async function runAdminQuickCommand(rawCommand) {
         return true;
     }
 
+    if (command.includes('turnero') || command.includes('cola') || command.includes('consultorio')) {
+        await navigateToSection('queue', { focus: false });
+        if (command.includes('c1') || command.includes('consultorio 1')) {
+            await callNextForConsultorio(1);
+        } else if (command.includes('c2') || command.includes('consultorio 2')) {
+            await callNextForConsultorio(2);
+        } else {
+            await refreshQueueRealtime({ silent: true });
+        }
+        focusSection('queue');
+        return true;
+    }
+
     if (command.includes('resena') || command.includes('review')) {
         await navigateToSection('reviews');
         return true;
@@ -1015,6 +1068,7 @@ async function renderSection(section) {
         callbacks: 'Callbacks',
         reviews: 'Resenas',
         availability: 'Disponibilidad',
+        queue: 'Turnero Sala',
     };
     const titleEl = document.getElementById('pageTitle');
     if (titleEl) titleEl.textContent = titles[section] || 'Dashboard';
@@ -1042,6 +1096,10 @@ async function renderSection(section) {
             break;
         case 'availability': {
             await initAvailabilityCalendar();
+            break;
+        }
+        case 'queue': {
+            loadQueueSection();
             break;
         }
         default:
@@ -1184,6 +1242,7 @@ function exportData() {
         appointments: currentAppointments,
         callbacks: currentCallbacks,
         reviews: currentReviews,
+        queue_tickets: currentQueueTickets,
         availability: currentAvailability,
         exportDate: new Date().toISOString(),
     };
@@ -1234,6 +1293,9 @@ async function importData(input) {
                 : [],
             callbacks: Array.isArray(data.callbacks) ? data.callbacks : [],
             reviews: Array.isArray(data.reviews) ? data.reviews : [],
+            queue_tickets: Array.isArray(data.queue_tickets)
+                ? data.queue_tickets
+                : [],
             availability:
                 data.availability && typeof data.availability === 'object'
                     ? data.availability
@@ -1348,6 +1410,18 @@ function attachGlobalListeners() {
             event.preventDefault();
             await navigateToCallbacksWithQuickFilter('pending');
             focusNextPendingCallback();
+            return;
+        }
+
+        if (action === 'queue-refresh-state') {
+            event.preventDefault();
+            await refreshQueueRealtime({ silent: false });
+            return;
+        }
+
+        if (action === 'queue-call-next') {
+            event.preventDefault();
+            await callNextForConsultorio(Number(actionEl.dataset.queueConsultorio || 0));
             return;
         }
 
@@ -1519,6 +1593,21 @@ function attachGlobalListeners() {
                     Number(actionEl.dataset.callbackId || 0),
                     actionEl.dataset.callbackDate || ''
                 );
+                return;
+            }
+            if (action === 'queue-ticket-action') {
+                event.preventDefault();
+                await applyQueueTicketAction(
+                    Number(actionEl.dataset.queueId || 0),
+                    actionEl.dataset.queueAction || '',
+                    Number(actionEl.dataset.queueConsultorio || 0)
+                );
+                return;
+            }
+            if (action === 'queue-reprint-ticket') {
+                event.preventDefault();
+                await reprintQueueTicket(Number(actionEl.dataset.queueId || 0));
+                return;
             }
         } catch (error) {
             showToast(`Error ejecutando accion: ${error.message}`, 'error');

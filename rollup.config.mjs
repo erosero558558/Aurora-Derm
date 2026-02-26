@@ -174,6 +174,26 @@ export default [
         },
         plugins: productionPlugins,
     },
+    // Queue Kiosk App
+    {
+        input: 'src/apps/queue-kiosk/index.js',
+        output: {
+            file: 'js/queue-kiosk.js',
+            format: 'iife',
+            sourcemap: false,
+        },
+        plugins: productionPlugins,
+    },
+    // Queue Display App (TV)
+    {
+        input: 'src/apps/queue-display/index.js',
+        output: {
+            file: 'js/queue-display.js',
+            format: 'iife',
+            sourcemap: false,
+        },
+        plugins: productionPlugins,
+    },
     // Main Script (ES module for code splitting; requires type="module" in HTML)
     {
         input: 'js/main.js',

@@ -173,3 +173,90 @@ function normalize_appointment(array $appointment): array
         'reminderSentAt' => truncate_field(trim((string) ($appointment['reminderSentAt'] ?? '')), 30)
     ];
 }
+
+function normalize_queue_ticket(array $ticket): array
+{
+    $queueType = strtolower(trim((string) ($ticket['queueType'] ?? 'walk_in')));
+    if (!in_array($queueType, ['appointment', 'walk_in'], true)) {
+        $queueType = 'walk_in';
+    }
+
+    $priorityClass = strtolower(trim((string) ($ticket['priorityClass'] ?? ($queueType === 'appointment' ? 'appt_current' : 'walk_in'))));
+    if (!in_array($priorityClass, ['appt_overdue', 'appt_current', 'walk_in'], true)) {
+        $priorityClass = $queueType === 'appointment' ? 'appt_current' : 'walk_in';
+    }
+
+    $status = strtolower(trim((string) ($ticket['status'] ?? 'waiting')));
+    if (!in_array($status, ['waiting', 'called', 'completed', 'no_show', 'cancelled'], true)) {
+        $status = 'waiting';
+    }
+
+    $initials = strtoupper(trim((string) ($ticket['patientInitials'] ?? '')));
+    $initials = preg_replace('/[^A-Z]/', '', $initials);
+    if (!is_string($initials)) {
+        $initials = '';
+    }
+    $initials = substr($initials, 0, 4);
+
+    $phoneLast4 = preg_replace('/\D+/', '', (string) ($ticket['phoneLast4'] ?? ''));
+    if (!is_string($phoneLast4)) {
+        $phoneLast4 = '';
+    }
+    if (strlen($phoneLast4) > 4) {
+        $phoneLast4 = substr($phoneLast4, -4);
+    }
+
+    $ticketCode = strtoupper(trim((string) ($ticket['ticketCode'] ?? '')));
+    if (!preg_match('/^[A-Z]-\d{3,4}$/', $ticketCode)) {
+        $ticketCode = '';
+    }
+
+    $dailySeq = isset($ticket['dailySeq']) ? (int) $ticket['dailySeq'] : 0;
+    if ($dailySeq < 0) {
+        $dailySeq = 0;
+    }
+
+    $assignedConsultorioRaw = $ticket['assignedConsultorio'] ?? null;
+    $assignedConsultorio = null;
+    if ($assignedConsultorioRaw !== null && $assignedConsultorioRaw !== '') {
+        $candidate = (int) $assignedConsultorioRaw;
+        if (in_array($candidate, [1, 2], true)) {
+            $assignedConsultorio = $candidate;
+        }
+    }
+
+    $appointmentId = null;
+    if (isset($ticket['appointmentId']) && $ticket['appointmentId'] !== '' && $ticket['appointmentId'] !== null) {
+        $candidate = (int) $ticket['appointmentId'];
+        if ($candidate > 0) {
+            $appointmentId = $candidate;
+        }
+    }
+
+    $createdSource = strtolower(trim((string) ($ticket['createdSource'] ?? 'kiosk')));
+    if (!in_array($createdSource, ['kiosk', 'admin'], true)) {
+        $createdSource = 'kiosk';
+    }
+
+    $createdAt = trim((string) ($ticket['createdAt'] ?? ''));
+    if ($createdAt === '') {
+        $createdAt = local_date('c');
+    }
+
+    return [
+        'id' => isset($ticket['id']) ? (int) $ticket['id'] : (int) round(microtime(true) * 1000),
+        'ticketCode' => $ticketCode,
+        'dailySeq' => $dailySeq,
+        'queueType' => $queueType,
+        'appointmentId' => $appointmentId,
+        'patientInitials' => $initials,
+        'phoneLast4' => $phoneLast4,
+        'priorityClass' => $priorityClass,
+        'status' => $status,
+        'assignedConsultorio' => $assignedConsultorio,
+        'createdAt' => $createdAt,
+        'calledAt' => truncate_field(trim((string) ($ticket['calledAt'] ?? '')), 40),
+        'completedAt' => truncate_field(trim((string) ($ticket['completedAt'] ?? '')), 40),
+        'createdSource' => $createdSource,
+    ];
+}

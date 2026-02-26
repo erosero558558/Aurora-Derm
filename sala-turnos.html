@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
+        />
+        <title>Sala de Espera | Turnero</title>
+        <link rel="stylesheet" href="queue-display.css" />
+    </head>
+    <body>
+        <header class="display-header">
+            <div class="display-brand">
+                <strong>Piel en Armonia</strong>
+                <span>Turnero de sala de espera</span>
+            </div>
+            <div class="display-clock-wrap">
+                <span id="displayClock" class="display-clock">--:--</span>
+                <span id="displayUpdatedAt" class="display-updated-at">
+                    Actualizacion pendiente
+                </span>
+            </div>
+        </header>
+
+        <main class="display-layout">
+            <section class="display-panel">
+                <h1>Llamando ahora</h1>
+                <div class="display-called-grid">
+                    <div id="displayConsultorio1"></div>
+                    <div id="displayConsultorio2"></div>
+                </div>
+            </section>
+
+            <section class="display-panel">
+                <h2>Siguientes turnos</h2>
+                <ol id="displayNextList" class="display-next-list">
+                    <li class="display-empty">No hay turnos pendientes.</li>
+                </ol>
+                <p class="display-privacy-note">
+                    Por privacidad, solo se muestra ticket e iniciales.
+                </p>
+            </section>
+        </main>
+
+        <script src="js/queue-display.js" defer></script>
+    </body>
+</html>
+

@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 209
+  revision: 220
   updated_at: 2026-02-26
 
 tasks:
@@ -3693,5 +3693,157 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-096.md"
     depends_on: ["AG-095"]
     prompt: "Frontend admin V2: appointments triage accionable + quick filters"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-097
+    title: "Turnero sala A: backend queue + printer"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T17:28:23.662Z"
+    risk: high
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["controllers/QueueController.php", "lib/QueueService.php", "lib/TicketPrinter.php", "lib/routes.php", "lib/ApiConfig.php", "lib/models.php", "lib/storage.php", "controllers/AdminDataController.php"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T17:28:23.662Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala A: backend queue + printer"
+    acceptance_ref: "verification/agent-runs/AG-097.md"
+    evidence_ref: "verification/agent-runs/AG-097.md"
+    depends_on: []
+    prompt: "Turnero sala A: backend queue + printer"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-098
+    title: "Turnero sala B: kiosco + TV frontend"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T17:47:24.717Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "src/apps/chat/engine.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T17:47:24.717Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala B: kiosco + TV frontend"
+    acceptance_ref: "verification/agent-runs/AG-098.md"
+    evidence_ref: "verification/agent-runs/AG-098.md"
+    depends_on: []
+    prompt: "Turnero sala B: kiosco + TV frontend"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-099
+    title: "Turnero sala C: admin control de llamados"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T17:47:39.534Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/modules/queue.js", "src/apps/admin/index.js", "src/apps/admin/modules/data.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T17:47:39.534Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala C: admin control de llamados"
+    acceptance_ref: "verification/agent-runs/AG-099.md"
+    evidence_ref: "verification/agent-runs/AG-099.md"
+    depends_on: []
+    prompt: "Turnero sala C: admin control de llamados"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-100
+    title: "Turnero sala D: QA E2E + cierre evidencia"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T17:48:44.140Z"
+    risk: medium
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/queue-kiosk.spec.js", "tests/queue-display.spec.js", "tests/admin-queue.spec.js", "AGENT_BOARD.yaml"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T17:48:44.140Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala D: QA E2E + cierre evidencia"
+    acceptance_ref: "verification/agent-runs/AG-100.md"
+    evidence_ref: "verification/agent-runs/AG-100.md"
+    depends_on: []
+    prompt: "Turnero sala D: QA E2E + cierre evidencia"
     created_at: 2026-02-26
     updated_at: 2026-02-26

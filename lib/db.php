@@ -218,6 +218,25 @@ function ensure_db_schema(): void
             doctor TEXT,
             PRIMARY KEY (date, time, doctor)
         )",
+        "CREATE TABLE IF NOT EXISTS queue_tickets (
+            id INTEGER PRIMARY KEY,
+            ticketCode TEXT NOT NULL,
+            dailySeq INTEGER NOT NULL,
+            queueType TEXT NOT NULL,
+            appointmentId INTEGER NULL,
+            patientInitials TEXT,
+            phoneLast4 TEXT,
+            priorityClass TEXT NOT NULL,
+            status TEXT NOT NULL,
+            assignedConsultorio INTEGER NULL,
+            createdAt TEXT NOT NULL,
+            calledAt TEXT NULL,
+            completedAt TEXT NULL,
+            createdSource TEXT NOT NULL,
+            json_data TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )",
         "CREATE TABLE IF NOT EXISTS kv_store (
             key TEXT PRIMARY KEY,
             value TEXT,
@@ -227,6 +246,9 @@ function ensure_db_schema(): void
         "CREATE INDEX IF NOT EXISTS idx_appointments_email ON appointments(email)",
         "CREATE INDEX IF NOT EXISTS idx_appointments_rescheduleToken ON appointments(rescheduleToken)",
         "CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating)",
+        "CREATE INDEX IF NOT EXISTS idx_queue_tickets_status ON queue_tickets(status)",
+        "CREATE INDEX IF NOT EXISTS idx_queue_tickets_createdAt ON queue_tickets(createdAt)",
+        "CREATE INDEX IF NOT EXISTS idx_queue_tickets_dailySeq ON queue_tickets(dailySeq)",
         "CREATE TABLE IF NOT EXISTS cron_failures (
             id INTEGER PRIMARY KEY,
             task_name TEXT,

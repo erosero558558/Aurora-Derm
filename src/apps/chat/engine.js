@@ -495,6 +495,13 @@ async function requestFigoCompletion(
     overrides = {},
     debugLabel = 'principal'
 ) {
+    const overrideSource =
+        typeof overrides.source === 'string' ? overrides.source.trim() : '';
+    const depSource =
+        deps && typeof deps.chatSource === 'string'
+            ? deps.chatSource.trim()
+            : '';
+    const source = overrideSource || depSource;
     const payload = {
         model: KIMI_CONFIG.model,
         messages: messages,
@@ -502,6 +509,9 @@ async function requestFigoCompletion(
         temperature: KIMI_CONFIG.temperature,
         ...overrides,
     };
+    if (source) {
+        payload.source = source;
+    }
 
     const controller = new AbortController();
     const timeoutMs = 9000;

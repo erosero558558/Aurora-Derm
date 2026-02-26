@@ -126,6 +126,31 @@ function figo_backend_should_fast_local_response(string $normalizedText): bool
     return false;
 }
 
+function figo_backend_is_kiosk_source(string $source): bool
+{
+    return strtolower(trim($source)) === 'kiosk_waiting_room';
+}
+
+function figo_backend_resolve_source(array $payload): string
+{
+    $source = '';
+    if (isset($payload['source']) && is_string($payload['source'])) {
+        $source = trim((string) $payload['source']);
+    } elseif (isset($payload['metadata']) && is_array($payload['metadata']) && isset($payload['metadata']['source']) && is_string($payload['metadata']['source'])) {
+        $source = trim((string) $payload['metadata']['source']);
+    }
+
+    if ($source === '') {
+        return 'web';
+    }
+
+    $source = strtolower((string) preg_replace('/[^a-z0-9_:\.-]+/', '_', $source));
+    if ($source === '') {
+        return 'web';
+    }
+    return substr($source, 0, 64);
+}
+
 function figo_backend_last_user_message(array $messages): string
 {
     for ($i = count($messages) - 1; $i >= 0; $i--) {
@@ -461,8 +486,23 @@ function figo_backend_ai_error_code(int $httpCode, string $curlErr): string
     return 'ai_unknown_error';
 }
 
-function figo_backend_ai_system_prompt(): string
+function figo_backend_ai_system_prompt(string $source = 'web'): string
 {
+    if (figo_backend_is_kiosk_source($source)) {
+        return "Eres Figo en modo kiosco de sala de espera para Piel en Armonia.\n"
+            . "Objetivo: guiar flujo operativo presencial de turnos y check-in.\n"
+            . "Alcance permitido:\n"
+            . "- Tomar turno sin cita (walk-in)\n"
+            . "- Check-in de cita (telefono + hora)\n"
+            . "- Explicar que el llamado sale en TV por Consultorio 1/2\n"
+            . "- Indicar derivacion a recepcion cuando falten datos o haya problemas\n"
+            . "Limites estrictos:\n"
+            . "- No dar diagnostico clinico\n"
+            . "- No recomendar medicacion ni tratamientos\n"
+            . "- No responder consultas de cultura general\n"
+            . "Responde siempre en espanol, maximo 3 frases cortas y accionables.";
+    }
+
     return "Eres Figo, asistente virtual amigable de la clínica dermatológica \"Piel en Armonía\" en Quito, Ecuador.\n"
         . "Eres conversacional y natural. Puedes hablar de cualquier tema de forma amena, pero tu especialidad es la clínica.\n"
         . "Cuando pregunten sobre la clínica, da información precisa:\n"
@@ -513,7 +553,7 @@ function figo_backend_extract_ai_content(array $decoded, string $raw): ?string
     return null;
 }
 
-function figo_backend_ai_response(string $userMessage, array $contextMessages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): array
+function figo_backend_ai_response(string $userMessage, array $contextMessages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null, string $source = 'web'): array
 {
     $startedAt = microtime(true);
     $endpoint = api_figo_env_ai_endpoint();
@@ -526,7 +566,7 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
         ];
     }
 
-    $messages = [['role' => 'system', 'content' => figo_backend_ai_system_prompt()]];
+    $messages = [['role' => 'system', 'content' => figo_backend_ai_system_prompt($source)]];
 
     $preparedContext = figo_backend_prepare_ai_context_messages($contextMessages);
     if ($preparedContext !== []) {
@@ -662,9 +702,43 @@ function figo_backend_ai_unavailable_message(): string
         . 'Para atencion inmediata, escribe a WhatsApp +593 98 245 3672.';
 }
 
-function figo_backend_answer(string $userMessage): string
+function figo_backend_answer(string $userMessage, string $source = 'web'): string
 {
     $normalized = figo_backend_normalize_text($userMessage);
+
+    if (figo_backend_is_kiosk_source($source)) {
+        if ($normalized === '') {
+            return 'Hola. En este kiosco te ayudo con check-in, turnos y orientacion de consultorios.';
+        }
+
+        if (figo_backend_contains_any($normalized, [
+            '/\bcita\b/',
+            '/\bcheck\b/',
+            '/\bturno\b/',
+            '/\bregistr/',
+            '/\btelefono\b/',
+            '/\bhora\b/'
+        ])) {
+            return "Para check-in usa la opcion 'Tengo cita' y escribe telefono + hora exacta.\n"
+                . "Si no tienes cita, usa 'No tengo cita' para generar turno.\n"
+                . "Tu llamado aparecera en la TV con Consultorio 1 o 2.";
+        }
+
+        if (figo_backend_contains_any($normalized, [
+            '/\bconsultorio\b/',
+            '/\btelevision\b/',
+            '/\bpantalla\b/',
+            '/\bdonde espero\b/',
+            '/\bsala\b/'
+        ])) {
+            return "Debes esperar en sala y revisar la TV de turnos.\n"
+                . "Se mostrara ticket + iniciales y el consultorio asignado.\n"
+                . "Si tienes dudas, recepcion te apoya de inmediato.";
+        }
+
+        return "En modo kiosco solo puedo ayudarte con turnos y check-in de sala.\n"
+            . "Para consulta medica o pagos, acude a recepcion.";
+    }
 
     if ($normalized === '') {
         return 'Hola, soy Figo de Piel en Armonia. Puedo ayudarte con servicios, precios, pagos y reservas. En que te ayudo?';
@@ -780,7 +854,7 @@ function figo_backend_answer(string $userMessage): string
         . "Si necesitas atencion directa: WhatsApp +593 98 245 3672.";
 }
 
-function figo_backend_compose_response(string $userMessage, array $messages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): array
+function figo_backend_compose_response(string $userMessage, array $messages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null, string $source = 'web'): array
 {
     $aiConfigured = api_figo_env_ai_endpoint() !== '';
     $allowFallback = api_figo_env_allow_local_fallback();
@@ -793,7 +867,7 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
             'mode' => 'local',
             'provider' => 'pattern_matching',
             'reason' => 'fast_local_scope_guard',
-            'content' => figo_backend_answer($userMessage),
+            'content' => figo_backend_answer($userMessage, $source),
             'status' => 200
         ];
     }
@@ -818,7 +892,7 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
             'mode' => 'local',
             'provider' => 'pattern_matching',
             'reason' => 'ai_failfast_window_local',
-            'content' => figo_backend_answer($userMessage),
+            'content' => figo_backend_answer($userMessage, $source),
             'status' => 200,
             'retryAfterSec' => $retryAfterSec
         ];
@@ -830,7 +904,8 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
             $userMessage,
             $messages,
             $requestedMaxTokens,
-            $requestedTemperature
+            $requestedTemperature,
+            $source
         );
     }
 
@@ -869,7 +944,7 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
         'mode' => 'local',
         'provider' => 'pattern_matching',
         'reason' => $aiConfigured ? $fallbackReason : 'ai_not_configured',
-        'content' => figo_backend_answer($userMessage),
+        'content' => figo_backend_answer($userMessage, $source),
         'status' => 200
     ];
 }
@@ -1136,6 +1211,7 @@ if ($messages === []) {
 $model = isset($payload['model']) && is_string($payload['model']) && trim($payload['model']) !== ''
     ? trim($payload['model'])
     : 'figo-assistant';
+$source = figo_backend_resolve_source($payload);
 $requestedMaxTokens = isset($payload['max_tokens']) ? (int) $payload['max_tokens'] : 0;
 $requestedTemperature = isset($payload['temperature']) ? (float) $payload['temperature'] : null;
 
@@ -1144,7 +1220,8 @@ $responsePlan = figo_backend_compose_response(
     $userMessage,
     $messages,
     $requestedMaxTokens,
-    $requestedTemperature
+    $requestedTemperature,
+    $source
 );
 $content = isset($responsePlan['content']) && is_string($responsePlan['content']) ? $responsePlan['content'] : figo_backend_ai_unavailable_message();
 $provider = isset($responsePlan['provider']) ? (string) $responsePlan['provider'] : 'pattern_matching';
@@ -1161,6 +1238,7 @@ if (($responsePlan['ok'] ?? false) !== true) {
         'retryAfterSec' => isset($responsePlan['retryAfterSec']) ? (int) $responsePlan['retryAfterSec'] : 0,
         'mode' => $mode,
         'provider' => $provider,
+        'source' => $source,
         'aiConfigured' => $aiConfigured,
         'allowLocalFallback' => $allowLocalFallback
     ], (int) ($responsePlan['status'] ?? 503));
@@ -1195,6 +1273,7 @@ json_response([
     ]],
     'mode' => $mode,
     'provider' => $provider,
+    'source' => $source,
     'reason' => $reason,
     'retryAfterSec' => isset($responsePlan['retryAfterSec']) ? (int) $responsePlan['retryAfterSec'] : 0,
     'aiConfigured' => $aiConfigured,

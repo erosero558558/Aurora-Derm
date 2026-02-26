@@ -22,6 +22,13 @@ function register_api_routes(Router $router): void
     $router->add('GET', 'data', [AdminDataController::class, 'index']);
     $router->add('POST', 'import', [AdminDataController::class, 'import']);
 
+    $router->add('GET', 'queue-state', [QueueController::class, 'state']);
+    $router->add('POST', 'queue-checkin', [QueueController::class, 'checkin']);
+    $router->add('POST', 'queue-ticket', [QueueController::class, 'ticket']);
+    $router->add('POST', 'queue-call-next', [QueueController::class, 'callNext']);
+    $router->add('PATCH', 'queue-ticket', [QueueController::class, 'patchTicket']);
+    $router->add('POST', 'queue-reprint', [QueueController::class, 'reprint']);
+
     $router->add('GET', 'appointments', [AppointmentController::class, 'index']);
     $router->add('POST', 'appointments', [AppointmentController::class, 'store']);
     $router->add('PATCH', 'appointments', [AppointmentController::class, 'update']);

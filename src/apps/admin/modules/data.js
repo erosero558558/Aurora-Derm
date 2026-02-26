@@ -7,6 +7,8 @@ import {
     setAvailabilityMeta,
     setFunnelMetrics,
     setHealthStatus,
+    setQueueTickets,
+    setQueueMeta,
     getEmptyFunnelMetrics
 } from './state.js';
 import { normalizeCallbackStatus, showToast } from './ui.js';
@@ -37,6 +39,8 @@ function loadFallbackState() {
     setReviews(getLocalData('reviews', []));
     setAvailability(getLocalData('availability', {}));
     setAvailabilityMeta(getLocalData('availability-meta', {}));
+    setQueueTickets(getLocalData('queue-tickets', []));
+    setQueueMeta(getLocalData('queue-meta', null));
     setFunnelMetrics(getEmptyFunnelMetrics());
     setHealthStatus(getLocalData('health-status', null));
 }
@@ -73,6 +77,19 @@ export async function refreshData() {
             : { source: 'store', mode: 'live', generatedAt: new Date().toISOString() };
         setAvailabilityMeta(availabilityMeta);
         saveLocalData('availability-meta', availabilityMeta);
+
+        const queueTickets = Array.isArray(data.queue_tickets)
+            ? data.queue_tickets
+            : [];
+        setQueueTickets(queueTickets);
+        saveLocalData('queue-tickets', queueTickets);
+
+        const queueMeta =
+            data.queueMeta && typeof data.queueMeta === 'object'
+                ? data.queueMeta
+                : null;
+        setQueueMeta(queueMeta);
+        saveLocalData('queue-meta', queueMeta);
 
         if (data.funnelMetrics && typeof data.funnelMetrics === 'object') {
             setFunnelMetrics(data.funnelMetrics);

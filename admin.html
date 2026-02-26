@@ -203,6 +203,16 @@
                         <i class="fas fa-clock"></i>
                         <span>Disponibilidad</span>
                     </a>
+                    <a
+                        href="#queue"
+                        class="nav-item"
+                        data-section="queue"
+                        title="Turnero Sala"
+                    >
+                        <i class="fas fa-users-viewfinder"></i>
+                        <span>Turnero Sala</span>
+                        <span class="badge" id="queueBadge">0</span>
+                    </a>
                 </nav>
 
                 <div class="sidebar-footer">
@@ -310,6 +320,19 @@
                                 <span>Disponibilidad</span>
                                 <span class="admin-quick-nav-shortcut"
                                     >Alt+Shift+5</span
+                                >
+                            </button>
+                            <button
+                                type="button"
+                                class="admin-quick-nav-item"
+                                data-section="queue"
+                                aria-pressed="false"
+                                title="Ir a turnero sala (Alt+Shift+6)"
+                            >
+                                <i class="fas fa-users-viewfinder"></i>
+                                <span>Turnero Sala</span>
+                                <span class="admin-quick-nav-shortcut"
+                                    >Alt+Shift+6</span
                                 >
                             </button>
                         </nav>
@@ -1178,6 +1201,103 @@
                     </div>
 
                     <div class="reviews-grid-admin" id="reviewsGrid"></div>
+                </section>
+
+                <!-- Queue Section -->
+                <section id="queue" class="admin-section" tabindex="-1">
+                    <div class="queue-admin-shell">
+                        <div class="queue-admin-header">
+                            <h3>Turnero de Sala</h3>
+                            <p>
+                                Cola unica para Consultorio 1/2. Llamado manual por operador.
+                            </p>
+                            <div class="queue-admin-header-actions">
+                                <button
+                                    type="button"
+                                    class="btn btn-primary btn-sm"
+                                    data-action="queue-call-next"
+                                    data-queue-consultorio="1"
+                                >
+                                    <i class="fas fa-bullhorn"></i>
+                                    Llamar C1
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-primary btn-sm"
+                                    data-action="queue-call-next"
+                                    data-queue-consultorio="2"
+                                >
+                                    <i class="fas fa-bullhorn"></i>
+                                    Llamar C2
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="queue-refresh-state"
+                                >
+                                    <i class="fas fa-rotate-right"></i>
+                                    Refrescar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="queue-admin-kpis">
+                            <article>
+                                <span>En espera</span>
+                                <strong id="queueWaitingCountAdmin">0</strong>
+                            </article>
+                            <article>
+                                <span>Llamados</span>
+                                <strong id="queueCalledCountAdmin">0</strong>
+                            </article>
+                            <article>
+                                <span>C1 activo</span>
+                                <strong id="queueC1Now">Sin llamado</strong>
+                            </article>
+                            <article>
+                                <span>C2 activo</span>
+                                <strong id="queueC2Now">Sin llamado</strong>
+                            </article>
+                            <article>
+                                <span>Ultima actualizacion</span>
+                                <strong id="queueLastUpdate">--</strong>
+                            </article>
+                        </div>
+
+                        <div class="queue-admin-grid">
+                            <div class="queue-admin-next">
+                                <h4>Siguientes turnos</h4>
+                                <ol id="queueNextAdminList">
+                                    <li class="empty-message">
+                                        No hay turnos en espera.
+                                    </li>
+                                </ol>
+                            </div>
+                            <div class="queue-admin-table-wrap">
+                                <table class="data-table queue-admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ticket</th>
+                                            <th>Tipo</th>
+                                            <th>Prioridad</th>
+                                            <th>Estado</th>
+                                            <th>Consultorio</th>
+                                            <th>Creado</th>
+                                            <th>Iniciales</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="queueTableBody">
+                                        <tr>
+                                            <td colspan="8" class="empty-message">
+                                                Sin tickets en cola.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Availability Section -->

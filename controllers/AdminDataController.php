@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../lib/QueueService.php';
+
 class AdminDataController
 {
     public static function index(array $context): void
@@ -79,6 +81,13 @@ class AdminDataController
             }
         }
 
+        try {
+            $queueService = new QueueService();
+            $store['queueMeta'] = $queueService->buildAdminSummary($store);
+        } catch (\Throwable $th) {
+            $store['queueMeta'] = null;
+        }
+
         json_response([
             'ok' => true,
             'data' => $store
@@ -98,6 +107,7 @@ class AdminDataController
         $store['appointments'] = isset($payload['appointments']) && is_array($payload['appointments']) ? $payload['appointments'] : [];
         $store['callbacks'] = isset($payload['callbacks']) && is_array($payload['callbacks']) ? $payload['callbacks'] : [];
         $store['reviews'] = isset($payload['reviews']) && is_array($payload['reviews']) ? $payload['reviews'] : [];
+        $store['queue_tickets'] = isset($payload['queue_tickets']) && is_array($payload['queue_tickets']) ? $payload['queue_tickets'] : [];
         $store['availability'] = isset($payload['availability']) && is_array($payload['availability']) ? $payload['availability'] : [];
         write_store($store);
         json_response([

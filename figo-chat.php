@@ -648,6 +648,16 @@ if ($messages === []) {
 $model = isset($payload['model']) && is_string($payload['model']) && trim($payload['model']) !== ''
     ? trim($payload['model'])
     : 'figo-assistant';
+$sourceRaw = '';
+if (isset($payload['source']) && is_string($payload['source'])) {
+    $sourceRaw = (string) $payload['source'];
+} elseif (isset($payload['metadata']) && is_array($payload['metadata']) && isset($payload['metadata']['source']) && is_string($payload['metadata']['source'])) {
+    $sourceRaw = (string) $payload['metadata']['source'];
+}
+$source = figo_metric_label($sourceRaw, 'web');
+if ($source === 'none') {
+    $source = 'web';
+}
 
 $lastUserMessage = figo_last_user_message($messages);
 $fastLocalContent = figo_fast_local_content(figo_normalize_text($lastUserMessage));
@@ -697,9 +707,10 @@ $upstreamPayload = [
     'messages' => array_slice($messages, -20),
     'max_tokens' => $maxTokens,
     'temperature' => $temperature,
+    'source' => $source,
     'metadata' => [
         'site' => 'pielarmonia.com',
-        'source' => 'web'
+        'source' => $source
     ]
 ];
 

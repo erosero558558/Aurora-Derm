@@ -5,6 +5,8 @@ export let currentAvailability = {};
 export let currentAvailabilityMeta = {};
 export let currentFunnelMetrics = null;
 export let currentHealthStatus = null;
+export let currentQueueTickets = [];
+export let currentQueueMeta = null;
 export let csrfToken = '';
 
 export function setAppointments(data) { currentAppointments = data || []; }
@@ -14,6 +16,8 @@ export function setAvailability(data) { currentAvailability = data || {}; }
 export function setAvailabilityMeta(data) { currentAvailabilityMeta = data || {}; }
 export function setFunnelMetrics(data) { currentFunnelMetrics = data; }
 export function setHealthStatus(data) { currentHealthStatus = data || null; }
+export function setQueueTickets(data) { currentQueueTickets = Array.isArray(data) ? data : []; }
+export function setQueueMeta(data) { currentQueueMeta = data && typeof data === 'object' ? data : null; }
 export function setCsrfToken(token) { csrfToken = token; }
 
 export function getEmptyFunnelMetrics() {
