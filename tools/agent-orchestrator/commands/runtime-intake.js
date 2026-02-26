@@ -308,7 +308,7 @@ function createRuntimeIntakeCommands(ctx = {}) {
             const agents = ['jules', 'kimi', 'codex'].filter(
                 (a) => agentFilter === 'all' || a === agentFilter
             );
-            const exceeded = agents.filter((a) => remaining[a] < 0);
+            const exceeded = agents.filter((a) => remaining[a] <= 0);
             const report = {
                 version: 1,
                 ok: exceeded.length === 0,
