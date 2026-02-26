@@ -37,6 +37,162 @@ function countPendingTransfers(items) {
     ).length;
 }
 
+function getAppointmentControls() {
+    return {
+        filterSelect: document.getElementById('appointmentFilter'),
+        searchInput: document.getElementById('searchAppointments'),
+        stateRow: document.getElementById('appointmentsToolbarState'),
+        clearBtn: document.getElementById('clearAppointmentsFiltersBtn'),
+    };
+}
+
+function getAppointmentFilterLabel(value) {
+    const labels = {
+        all: 'Todas las citas',
+        today: 'Hoy',
+        week: 'Esta semana',
+        month: 'Este mes',
+        confirmed: 'Confirmadas',
+        cancelled: 'Canceladas',
+        no_show: 'No asistio',
+        pending_transfer: 'Transferencias por validar',
+    };
+    return labels[String(value || 'all')] || 'Todas las citas';
+}
+
+function getAppointmentCriteria() {
+    const { filterSelect, searchInput } = getAppointmentControls();
+    return {
+        filter: String(filterSelect?.value || 'all'),
+        search: String(searchInput?.value || '').trim(),
+    };
+}
+
+function applyAppointmentFilterCriteria(appointments, filter) {
+    const items = Array.isArray(appointments) ? appointments : [];
+    const normalizedFilter = String(filter || 'all');
+    let filtered = [...items];
+
+    const today = new Date().toISOString().split('T')[0];
+    const currentWeek = getWeekRange();
+    const currentMonthNumber = new Date().getMonth();
+
+    switch (normalizedFilter) {
+        case 'today':
+            filtered = filtered.filter((a) => a.date === today);
+            break;
+        case 'week':
+            filtered = filtered.filter(
+                (a) => a.date >= currentWeek.start && a.date <= currentWeek.end
+            );
+            break;
+        case 'month':
+            filtered = filtered.filter(
+                (a) => new Date(a.date).getMonth() === currentMonthNumber
+            );
+            break;
+        case 'confirmed':
+        case 'cancelled':
+        case 'no_show':
+            filtered = filtered.filter(
+                (a) => (a.status || 'confirmed') === normalizedFilter
+            );
+            break;
+        case 'pending_transfer':
+            filtered = filtered.filter(
+                (a) => a.paymentStatus === 'pending_transfer_review'
+            );
+            break;
+        default:
+            break;
+    }
+
+    return filtered;
+}
+
+function applyAppointmentSearchCriteria(appointments, search) {
+    const items = Array.isArray(appointments) ? appointments : [];
+    const normalizedSearch = String(search || '')
+        .trim()
+        .toLowerCase();
+
+    if (!normalizedSearch) return [...items];
+
+    return items.filter(
+        (a) =>
+            String(a.name || '')
+                .toLowerCase()
+                .includes(normalizedSearch) ||
+            String(a.email || '')
+                .toLowerCase()
+                .includes(normalizedSearch) ||
+            String(a.phone || '').includes(normalizedSearch)
+    );
+}
+
+function renderAppointmentsToolbarState(criteria, visibleAppointments) {
+    const { stateRow, clearBtn } = getAppointmentControls();
+    if (!stateRow) return;
+
+    const filterValue = String(criteria?.filter || 'all');
+    const searchValue = String(criteria?.search || '').trim();
+    const hasFilter = filterValue !== 'all';
+    const hasSearch = searchValue.length > 0;
+
+    if (clearBtn) {
+        clearBtn.classList.toggle('is-hidden', !hasFilter && !hasSearch);
+        clearBtn.disabled = !hasFilter && !hasSearch;
+    }
+
+    if (!hasFilter && !hasSearch) {
+        stateRow.innerHTML =
+            '<span class="toolbar-state-empty">Sin filtros activos</span>';
+        return;
+    }
+
+    const visibleCount = Array.isArray(visibleAppointments)
+        ? visibleAppointments.length
+        : 0;
+    const criteriaMarkup = [
+        `<span class="toolbar-state-label">Criterios activos:</span>`,
+    ];
+
+    if (hasFilter) {
+        criteriaMarkup.push(
+            `<span class="toolbar-state-value is-filter">Filtro: ${escapeHtml(
+                getAppointmentFilterLabel(filterValue)
+            )}</span>`
+        );
+    }
+
+    if (hasSearch) {
+        criteriaMarkup.push(
+            `<span class="toolbar-state-value is-search">Busqueda: ${escapeHtml(searchValue)}</span>`
+        );
+    }
+
+    criteriaMarkup.push(
+        `<span class="toolbar-state-value">Resultados: ${escapeHtml(String(visibleCount))}</span>`
+    );
+
+    stateRow.innerHTML = criteriaMarkup.join('');
+}
+
+function applyAndRenderAppointments() {
+    const criteria = getAppointmentCriteria();
+    const filteredByFilter = applyAppointmentFilterCriteria(
+        currentAppointments,
+        criteria.filter
+    );
+    const filteredBySearch = applyAppointmentSearchCriteria(
+        filteredByFilter,
+        criteria.search
+    );
+
+    renderAppointments(filteredBySearch);
+    renderAppointmentsToolbarState(criteria, filteredBySearch);
+}
+
 function renderAppointmentsToolbarMeta(visibleAppointments) {
     const metaEl = document.getElementById('appointmentsToolbarMeta');
     if (!metaEl) return;
@@ -198,65 +354,22 @@ export function renderAppointments(appointments) {
 }
 
 export function loadAppointments() {
-    renderAppointments(currentAppointments);
+    applyAndRenderAppointments();
 }
 
 export function filterAppointments() {
-    const filter = document.getElementById('appointmentFilter').value;
-    let filtered = [...currentAppointments];
-
-    const today = new Date().toISOString().split('T')[0];
-    const currentWeek = getWeekRange();
-    const currentMonthNumber = new Date().getMonth();
-
-    switch (filter) {
-        case 'today':
-            filtered = filtered.filter((a) => a.date === today);
-            break;
-        case 'week':
-            filtered = filtered.filter(
-                (a) => a.date >= currentWeek.start && a.date <= currentWeek.end
-            );
-            break;
-        case 'month':
-            filtered = filtered.filter(
-                (a) => new Date(a.date).getMonth() === currentMonthNumber
-            );
-            break;
-        case 'confirmed':
-        case 'cancelled':
-        case 'no_show':
-            filtered = filtered.filter(
-                (a) => (a.status || 'confirmed') === filter
-            );
-            break;
-        case 'pending_transfer':
-            filtered = filtered.filter(
-                (a) => a.paymentStatus === 'pending_transfer_review'
-            );
-            break;
-        default:
-            break;
-    }
-
-    renderAppointments(filtered);
+    applyAndRenderAppointments();
 }
 
 export function searchAppointments() {
-    const search = document
-        .getElementById('searchAppointments')
-        .value.toLowerCase();
-    const filtered = currentAppointments.filter(
-        (a) =>
-            String(a.name || '')
-                .toLowerCase()
-                .includes(search) ||
-            String(a.email || '')
-                .toLowerCase()
-                .includes(search) ||
-            String(a.phone || '').includes(search)
-    );
-    renderAppointments(filtered);
+    applyAndRenderAppointments();
+}
+
+export function resetAppointmentFilters() {
+    const { filterSelect, searchInput } = getAppointmentControls();
+    if (filterSelect) filterSelect.value = 'all';
+    if (searchInput) searchInput.value = '';
+    applyAndRenderAppointments();
 }
 
 export async function cancelAppointment(id) {

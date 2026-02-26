@@ -736,6 +736,66 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
+.section-toolbar-appointments {
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.toolbar-state-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: -10px 0 16px;
+    color: var(--color-text-secondary);
+    font-size: 0.84rem;
+}
+
+.toolbar-state-empty {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px dashed #d5e0ee;
+    background: #fbfcfe;
+    color: #6d7f93;
+    font-weight: 600;
+}
+
+.toolbar-state-label {
+    font-weight: 700;
+    color: #4f6277;
+}
+
+.toolbar-state-value {
+    display: inline-flex;
+    align-items: center;
+    max-width: min(44ch, 100%);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid #dce6f2;
+    background: #f7fafe;
+    color: #324457;
+    font-weight: 600;
+}
+
+.toolbar-state-value.is-search {
+    background: #eef6ff;
+    border-color: #d4e6ff;
+    color: #0f58ba;
+}
+
+.toolbar-state-value.is-filter {
+    background: #f6f8fb;
+}
+
+.appointments-toolbar-state {
+    min-height: 32px;
+}
+
 .toolbar-meta {
     display: flex;
     align-items: center;
@@ -1678,12 +1738,26 @@
         align-items: stretch;
     }
 
+    .section-toolbar-appointments {
+        gap: 12px;
+    }
+
     .toolbar-meta {
         order: 4;
     }
 
     .search-box {
         max-width: none;
+    }
+
+    #clearAppointmentsFiltersBtn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .toolbar-state-row {
+        margin-top: -6px;
+        margin-bottom: 14px;
     }
 
     .selected-date-row {
@@ -1748,6 +1822,10 @@
 
     .section-toolbar {
         padding: 12px;
+    }
+
+    .toolbar-state-value {
+        max-width: 100%;
     }
 
     .data-table {

@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260225-adminux3" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260225-adminux4" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -467,7 +467,7 @@
 
                 <!-- Appointments Section -->
                 <section id="appointments" class="admin-section" tabindex="-1">
-                    <div class="section-toolbar">
+                    <div class="section-toolbar section-toolbar-appointments">
                         <div class="filter-group">
                             <select id="appointmentFilter">
                                 <option value="all">Todas las citas</option>
@@ -505,6 +505,24 @@
                                 placeholder="Buscar paciente..."
                             />
                         </div>
+                        <button
+                            type="button"
+                            class="btn btn-secondary btn-sm is-hidden"
+                            id="clearAppointmentsFiltersBtn"
+                            data-action="clear-appointment-filters"
+                        >
+                            <i class="fas fa-filter-circle-xmark"></i>
+                            Limpiar
+                        </button>
+                    </div>
+                    <div
+                        class="toolbar-state-row appointments-toolbar-state"
+                        id="appointmentsToolbarState"
+                        aria-live="polite"
+                    >
+                        <span class="toolbar-state-empty"
+                            >Sin filtros activos</span
+                        >
                     </div>
 
                     <div class="table-container">
@@ -656,6 +674,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260225-adminux3" type="module"></script>
+        <script src="admin.js?v=admin-20260225-adminux4" type="module"></script>
     </body>
 </html>

@@ -21,6 +21,7 @@ import {
     loadAppointments,
     filterAppointments,
     searchAppointments,
+    resetAppointmentFilters,
     exportAppointmentsCSV,
     approveTransfer,
     rejectTransfer,
@@ -554,6 +555,11 @@ function attachGlobalListeners() {
             if (action === 'export-csv') {
                 event.preventDefault();
                 exportAppointmentsCSV();
+                return;
+            }
+            if (action === 'clear-appointment-filters') {
+                event.preventDefault();
+                resetAppointmentFilters();
                 return;
             }
             if (action === 'change-month') {
