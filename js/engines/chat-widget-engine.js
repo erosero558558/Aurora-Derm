@@ -1,1 +1,276 @@
-!function(){"use strict";let t=null,e=!1,o=!1;const n={services:"Que servicios ofrecen?",prices:"Cuales son los precios?",telemedicine:"Como funciona la consulta online?",human:"Quiero hablar con un doctor real",acne:"Tengo problemas de acne",laser:"Informacion sobre tratamientos laser",location:"Donde estan ubicados?"};function i(){return!(!t||"function"!=typeof t.getChatbotOpen)&&!0===t.getChatbotOpen()}function a(e){t&&"function"==typeof t.setChatbotOpen&&t.setChatbotOpen(!0===e)}function s(){return t&&"function"==typeof t.getChatHistoryLength&&Number(t.getChatHistoryLength())||0}function c(o){var n;e||(e=!0,n={source:o||"widget"},t&&"function"==typeof t.trackEvent&&t.trackEvent("chat_started",n||{}))}function r(e){t&&"function"==typeof t.addBotMessage&&t.addBotMessage(e)}function u(e){if(t&&"function"==typeof t.addUserMessage)return t.addUserMessage(e)}function l(e){return t&&"function"==typeof t.processWithKimi?t.processWithKimi(e):Promise.resolve()}function d(){return"function"==typeof window.matchMedia?window.matchMedia("(max-width: 900px)").matches:window.innerWidth<=900}function g(){const e=document.documentElement,o=document.body;if(!e||!o)return;const n=function(){const t=document.querySelector(".quick-dock");if(!t||"function"!=typeof t.getBoundingClientRect)return 0;const e=window.getComputedStyle?window.getComputedStyle(t):null;if(e&&("none"===e.display||"hidden"===e.visibility))return 0;const o=t.getBoundingClientRect();return Number.isFinite(o.height)?Math.ceil(Math.max(o.height,0)):0}(),a=Math.max(0,n-56),s=window.innerWidth<=640?76:82;e.style.setProperty("--chat-widget-mobile-bottom",`${s+a}px`),e.style.setProperty("--chat-container-mobile-bottom",`${146+a}px`),e.style.setProperty("--chat-quick-dock-height",`${n}px`),d()?e.style.setProperty("--chat-mobile-top-offset",`${function(){let t=0;return[".language-bar",".nav"].forEach(e=>{const o=document.querySelector(e);if(!o)return;const n=o.getBoundingClientRect();Number.isFinite(n.bottom)&&(t=Math.max(t,n.bottom))}),Math.ceil(Math.max(t,96))}()+10}px`):e.style.removeProperty("--chat-mobile-top-offset"),o.classList.toggle("chatbot-open",i()),o.classList.toggle("chatbot-booking-active",i()&&!(!t||"function"!=typeof t.isChatBookingActive)&&!0===t.isChatBookingActive()),o.classList.toggle("chatbot-mobile-open",d()&&i())}async function f(){const t=document.getElementById("chatInput");if(!t)return;const e=String(t.value||"").trim();e&&(c("first_message"),await Promise.resolve(u(e)).catch(()=>{}),t.value="",await Promise.resolve(l(e)).catch(()=>{}))}function m(){const t=document.getElementById("chatTeaser");t&&t.classList.add("show")}function h(){const t=document.getElementById("chatTeaser");t&&t.classList.remove("show")}window.Piel=window.Piel||{},window.Piel.ChatWidgetEngine={init:function(e){return t=e||{},function(){if(o)return;o=!0;const t=()=>{g()};window.addEventListener("resize",t,{passive:!0}),window.addEventListener("orientationchange",t,{passive:!0}),window.visualViewport&&window.visualViewport.addEventListener("resize",t,{passive:!0})}(),g(),window.Piel&&window.Piel.ChatWidgetEngine},toggleChatbot:function(){const e=document.getElementById("chatbotContainer");if(!e)return;t&&"function"==typeof t.warmChatUi&&t.warmChatUi();const o=!i();if(a(o),!o)return e.classList.remove("active"),void g();g(),e.classList.add("active"),h();const n=document.getElementById("chatNotification");if(n&&(n.style.display="none"),t&&"function"==typeof t.scrollToBottom&&t.scrollToBottom(),c("widget_open"),s()>0)return;const u="true"===localStorage.getItem("forceAI")||"file:"!==window.location.protocol;!function(...e){t&&"function"==typeof t.debugLog&&t.debugLog(...e)}("Estado del chatbot:",u?"IA REAL":"Respuestas locales"),r(function(t){let e="Hola! Soy el <strong>Dr. Virtual</strong> de <strong>Piel en Armonia</strong>.<br><br>";return t?(e+="<strong>Conectado con Inteligencia Artificial</strong><br><br>",e+="Puedo ayudarte con informacion detallada sobre:<br>",e+="- Nuestros servicios dermatologicos<br>",e+="- Precios de consultas y tratamientos<br>",e+="- Agendar citas presenciales o online<br>",e+="- Ubicacion y horarios de atencion<br>",e+="- Resolver tus dudas sobre cuidado de la piel<br><br>"):(e+="Puedo ayudarte con informacion sobre:<br>",e+="- Nuestros servicios dermatologicos<br>",e+="- Precios de consultas y tratamientos<br>",e+="- Agendar citas presenciales o online<br>",e+="- Ubicacion y horarios de atencion<br><br>"),e+="En que puedo ayudarte hoy?",e}(u)),setTimeout(()=>{let t='<div class="chat-suggestions">';t+='<button class="chat-suggestion-btn" data-action="quick-message" data-value="services">',t+='<i class="fas fa-stethoscope"></i> Ver servicios',t+="</button>",t+='<button class="chat-suggestion-btn" data-action="quick-message" data-value="appointment">',t+='<i class="fas fa-calendar-check"></i> Agendar cita',t+="</button>",t+='<button class="chat-suggestion-btn" data-action="quick-message" data-value="prices">',t+='<i class="fas fa-tag"></i> Consultar precios',t+="</button>",t+="</div>",r('<div class="chat-suggestions"><button class="chat-suggestion-btn" data-action="quick-message" data-value="services"><i class="fas fa-stethoscope"></i> Ver servicios</button><button class="chat-suggestion-btn" data-action="quick-message" data-value="appointment"><i class="fas fa-calendar-check"></i> Agendar cita</button><button class="chat-suggestion-btn" data-action="quick-message" data-value="prices"><i class="fas fa-tag"></i> Consultar precios</button></div>')},500)},minimizeChatbot:function(){const t=document.getElementById("chatbotContainer");t&&t.classList.remove("active"),a(!1),g()},handleChatKeypress:function(t){t&&"Enter"===t.key&&f()},sendChatMessage:f,sendQuickMessage:function(e){if(c("quick_message"),"appointment"===e)return Promise.resolve(u("Quiero agendar una cita")).catch(()=>{}),t&&"function"==typeof t.startChatBooking&&t.startChatBooking(),void g();const o=n[e]||e;Promise.resolve(u(o)).catch(()=>{}),Promise.resolve(l(o)).catch(()=>{})},scheduleInitialNotification:function(t){const e=Number(t),o=Number.isFinite(e)&&e>=0?e:8e3;setTimeout(()=>{const t=document.getElementById("chatNotification"),e=i(),o=s();e||0!==o||(t&&(t.style.display="flex"),m())},o)},showTeaser:m,hideTeaser:h}}();
+!(function () {
+    'use strict';
+    let t = null,
+        e = !1,
+        o = !1;
+    const n = {
+        services: 'Que servicios ofrecen?',
+        prices: 'Cuales son los precios?',
+        telemedicine: 'Como funciona la consulta online?',
+        human: 'Quiero hablar con un doctor real',
+        acne: 'Tengo problemas de acne',
+        laser: 'Informacion sobre tratamientos laser',
+        location: 'Donde estan ubicados?',
+    };
+    function i() {
+        return (
+            !(!t || 'function' != typeof t.getChatbotOpen) &&
+            !0 === t.getChatbotOpen()
+        );
+    }
+    function a(e) {
+        t &&
+            'function' == typeof t.setChatbotOpen &&
+            t.setChatbotOpen(!0 === e);
+    }
+    function s() {
+        return (
+            (t &&
+                'function' == typeof t.getChatHistoryLength &&
+                Number(t.getChatHistoryLength())) ||
+            0
+        );
+    }
+    function c(o) {
+        var n;
+        e ||
+            ((e = !0),
+            (n = { source: o || 'widget' }),
+            t &&
+                'function' == typeof t.trackEvent &&
+                t.trackEvent('chat_started', n || {}));
+    }
+    function r(e) {
+        t && 'function' == typeof t.addBotMessage && t.addBotMessage(e);
+    }
+    function u(e) {
+        if (t && 'function' == typeof t.addUserMessage)
+            return t.addUserMessage(e);
+    }
+    function l(e) {
+        return t && 'function' == typeof t.processWithKimi
+            ? t.processWithKimi(e)
+            : Promise.resolve();
+    }
+    function d() {
+        return 'function' == typeof window.matchMedia
+            ? window.matchMedia('(max-width: 900px)').matches
+            : window.innerWidth <= 900;
+    }
+    function g() {
+        const e = document.documentElement,
+            o = document.body;
+        if (!e || !o) return;
+        const n = (function () {
+                const t = document.querySelector('.quick-dock');
+                if (!t || 'function' != typeof t.getBoundingClientRect)
+                    return 0;
+                const e = window.getComputedStyle
+                    ? window.getComputedStyle(t)
+                    : null;
+                if (e && ('none' === e.display || 'hidden' === e.visibility))
+                    return 0;
+                const o = t.getBoundingClientRect();
+                return Number.isFinite(o.height)
+                    ? Math.ceil(Math.max(o.height, 0))
+                    : 0;
+            })(),
+            a = Math.max(0, n - 56),
+            s = window.innerWidth <= 640 ? 76 : 82;
+        (e.style.setProperty('--chat-widget-mobile-bottom', `${s + a}px`),
+            e.style.setProperty(
+                '--chat-container-mobile-bottom',
+                `${146 + a}px`
+            ),
+            e.style.setProperty('--chat-quick-dock-height', `${n}px`),
+            d()
+                ? e.style.setProperty(
+                      '--chat-mobile-top-offset',
+                      `${
+                          (function () {
+                              let t = 0;
+                              return (
+                                  ['.language-bar', '.nav'].forEach((e) => {
+                                      const o = document.querySelector(e);
+                                      if (!o) return;
+                                      const n = o.getBoundingClientRect();
+                                      Number.isFinite(n.bottom) &&
+                                          (t = Math.max(t, n.bottom));
+                                  }),
+                                  Math.ceil(Math.max(t, 96))
+                              );
+                          })() + 10
+                      }px`
+                  )
+                : e.style.removeProperty('--chat-mobile-top-offset'),
+            o.classList.toggle('chatbot-open', i()),
+            o.classList.toggle(
+                'chatbot-booking-active',
+                i() &&
+                    !(!t || 'function' != typeof t.isChatBookingActive) &&
+                    !0 === t.isChatBookingActive()
+            ),
+            o.classList.toggle('chatbot-mobile-open', d() && i()));
+    }
+    async function f() {
+        const t = document.getElementById('chatInput');
+        if (!t) return;
+        const e = String(t.value || '').trim();
+        e &&
+            (c('first_message'),
+            await Promise.resolve(u(e)).catch(() => {}),
+            (t.value = ''),
+            await Promise.resolve(l(e)).catch(() => {}));
+    }
+    function m() {
+        const t = document.getElementById('chatTeaser');
+        t && t.classList.add('show');
+    }
+    function h() {
+        const t = document.getElementById('chatTeaser');
+        t && t.classList.remove('show');
+    }
+    ((window.Piel = window.Piel || {}),
+        (window.Piel.ChatWidgetEngine = {
+            init: function (e) {
+                return (
+                    (t = e || {}),
+                    (function () {
+                        if (o) return;
+                        o = !0;
+                        const t = () => {
+                            g();
+                        };
+                        (window.addEventListener('resize', t, { passive: !0 }),
+                            window.addEventListener('orientationchange', t, {
+                                passive: !0,
+                            }),
+                            window.visualViewport &&
+                                window.visualViewport.addEventListener(
+                                    'resize',
+                                    t,
+                                    { passive: !0 }
+                                ));
+                    })(),
+                    g(),
+                    window.Piel && window.Piel.ChatWidgetEngine
+                );
+            },
+            toggleChatbot: function () {
+                const e = document.getElementById('chatbotContainer');
+                if (!e) return;
+                t && 'function' == typeof t.warmChatUi && t.warmChatUi();
+                const o = !i();
+                if ((a(o), !o)) return (e.classList.remove('active'), void g());
+                (g(), e.classList.add('active'), h());
+                const n = document.getElementById('chatNotification');
+                if (
+                    (n && (n.style.display = 'none'),
+                    t &&
+                        'function' == typeof t.scrollToBottom &&
+                        t.scrollToBottom(),
+                    c('widget_open'),
+                    s() > 0)
+                )
+                    return;
+                const u =
+                    'true' === localStorage.getItem('forceAI') ||
+                    'file:' !== window.location.protocol;
+                (!(function (...e) {
+                    t && 'function' == typeof t.debugLog && t.debugLog(...e);
+                })('Estado del chatbot:', u ? 'IA REAL' : 'Respuestas locales'),
+                    r(
+                        (function (t) {
+                            let e =
+                                'Hola! Soy el <strong>Dr. Virtual</strong> de <strong>Piel en Armonia</strong>.<br><br>';
+                            return (
+                                t
+                                    ? ((e +=
+                                          '<strong>Conectado con Inteligencia Artificial</strong><br><br>'),
+                                      (e +=
+                                          'Puedo ayudarte con informacion detallada sobre:<br>'),
+                                      (e +=
+                                          '- Nuestros servicios dermatologicos<br>'),
+                                      (e +=
+                                          '- Precios de consultas y tratamientos<br>'),
+                                      (e +=
+                                          '- Agendar citas presenciales o online<br>'),
+                                      (e +=
+                                          '- Ubicacion y horarios de atencion<br>'),
+                                      (e +=
+                                          '- Resolver tus dudas sobre cuidado de la piel<br><br>'))
+                                    : ((e +=
+                                          'Puedo ayudarte con informacion sobre:<br>'),
+                                      (e +=
+                                          '- Nuestros servicios dermatologicos<br>'),
+                                      (e +=
+                                          '- Precios de consultas y tratamientos<br>'),
+                                      (e +=
+                                          '- Agendar citas presenciales o online<br>'),
+                                      (e +=
+                                          '- Ubicacion y horarios de atencion<br><br>')),
+                                (e += 'En que puedo ayudarte hoy?'),
+                                e
+                            );
+                        })(u)
+                    ),
+                    setTimeout(() => {
+                        let t = '<div class="chat-suggestions">';
+                        ((t +=
+                            '<button class="chat-suggestion-btn" data-action="quick-message" data-value="services">'),
+                            (t +=
+                                '<i class="fas fa-stethoscope"></i> Ver servicios'),
+                            (t += '</button>'),
+                            (t +=
+                                '<button class="chat-suggestion-btn" data-action="quick-message" data-value="appointment">'),
+                            (t +=
+                                '<i class="fas fa-calendar-check"></i> Agendar cita'),
+                            (t += '</button>'),
+                            (t +=
+                                '<button class="chat-suggestion-btn" data-action="quick-message" data-value="prices">'),
+                            (t +=
+                                '<i class="fas fa-tag"></i> Consultar precios'),
+                            (t += '</button>'),
+                            (t += '</div>'),
+                            r(
+                                '<div class="chat-suggestions"><button class="chat-suggestion-btn" data-action="quick-message" data-value="services"><i class="fas fa-stethoscope"></i> Ver servicios</button><button class="chat-suggestion-btn" data-action="quick-message" data-value="appointment"><i class="fas fa-calendar-check"></i> Agendar cita</button><button class="chat-suggestion-btn" data-action="quick-message" data-value="prices"><i class="fas fa-tag"></i> Consultar precios</button></div>'
+                            ));
+                    }, 500));
+            },
+            minimizeChatbot: function () {
+                const t = document.getElementById('chatbotContainer');
+                (t && t.classList.remove('active'), a(!1), g());
+            },
+            handleChatKeypress: function (t) {
+                t && 'Enter' === t.key && f();
+            },
+            sendChatMessage: f,
+            sendQuickMessage: function (e) {
+                if ((c('quick_message'), 'appointment' === e))
+                    return (
+                        Promise.resolve(u('Quiero agendar una cita')).catch(
+                            () => {}
+                        ),
+                        t &&
+                            'function' == typeof t.startChatBooking &&
+                            t.startChatBooking(),
+                        void g()
+                    );
+                const o = n[e] || e;
+                (Promise.resolve(u(o)).catch(() => {}),
+                    Promise.resolve(l(o)).catch(() => {}));
+            },
+            scheduleInitialNotification: function (t) {
+                const e = Number(t),
+                    o = Number.isFinite(e) && e >= 0 ? e : 8e3;
+                setTimeout(() => {
+                    const t = document.getElementById('chatNotification'),
+                        e = i(),
+                        o = s();
+                    e || 0 !== o || (t && (t.style.display = 'flex'), m());
+                }, o);
+            },
+            showTeaser: m,
+            hideTeaser: h,
+        }));
+})();

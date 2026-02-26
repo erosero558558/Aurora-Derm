@@ -1,1 +1,243 @@
-!function(){"use strict";let e=null,t=!1,n=0,o=[];function a(t,n){return"en"===(e&&"function"==typeof e.getCurrentLang?e.getCurrentLang():"es")?n:t}function i(t){try{return e.getCaptchaToken?e.getCaptchaToken(t):Promise.resolve(null)}catch(e){return Promise.resolve(null)}}function r(){const e=document.getElementById("reviewModal");e&&(e.classList.remove("active"),document.body.style.overflow="")}window.PielEngagementFormsEngine={init:function(s){return e=s||e,function(){const t=document.getElementById("callbackForm");t&&"true"!==t.dataset.callbackEngineBound&&(t.dataset.callbackEngineBound="true",t.addEventListener("submit",async function(t){t.preventDefault();const n=this.querySelector('button[type="submit"]'),o=n?n.innerHTML:"";n&&(n.disabled=!0,n.innerHTML='<i class="fas fa-spinner fa-spin"></i> Enviando...');const r=new FormData(this),s=await i("callback"),c={id:Date.now(),telefono:r.get("telefono"),preferencia:r.get("preferencia"),fecha:(new Date).toISOString(),status:"pendiente",captchaToken:s};try{e&&"function"==typeof e.createCallbackRecord&&await e.createCallbackRecord(c),e&&"function"==typeof e.showToast&&e.showToast(a("Solicitud enviada. Te llamaremos pronto.","Request sent. We will call you soon."),"success"),this.reset()}catch(t){e&&"function"==typeof e.showToast&&e.showToast(a("No se pudo enviar tu solicitud. Intenta de nuevo.","We could not send your request. Try again."),"error")}finally{n&&(n.disabled=!1,n.innerHTML=o)}}))}(),function(){const t=document.getElementById("reviewForm"),s=Array.from(document.querySelectorAll(".star-rating i"));t&&"true"!==t.dataset.reviewEngineBound?(t.dataset.reviewEngineBound="true",o=s,n=0,o.forEach((e,t)=>{e.addEventListener("click",()=>{n=t+1,o.forEach((e,t)=>{const o=t<n;e.classList.toggle("active",o),e.classList.toggle("fas",o),e.classList.toggle("far",!o)})})}),t.addEventListener("submit",async function(t){if(t.preventDefault(),0===n)return void alert(a("Por favor selecciona una calificacion","Please select a rating"));const s=new FormData(this),c=await i("review"),u={id:Date.now(),name:s.get("reviewerName"),rating:n,text:s.get("reviewText"),date:(new Date).toISOString(),verified:!0,captchaToken:c};try{const t=e&&"function"==typeof e.createReviewRecord?await e.createReviewRecord(u):u,i=e&&"function"==typeof e.getReviewsCache?e.getReviewsCache():[],s=[t,...i.filter(e=>e.id!==t.id)];e&&"function"==typeof e.setReviewsCache&&e.setReviewsCache(s),e&&"function"==typeof e.renderPublicReviews&&e.renderPublicReviews(s),e&&"function"==typeof e.showToast&&e.showToast(a("Gracias por tu reseña.","Thank you for your review."),"success"),r(),this.reset(),n=0,o.forEach(e=>{e.classList.remove("active","fas"),e.classList.add("far")})}catch(t){e&&"function"==typeof e.showToast&&e.showToast(a("No pudimos guardar tu reseña. Intenta nuevamente.","We could not save your review. Try again."),"error")}})):o=s}(),t=!0,window.PielEngagementFormsEngine},isInitialized:function(){return t},openReviewModal:function(){const e=document.getElementById("reviewModal");e&&(e.classList.add("active"),document.body.style.overflow="hidden")},closeReviewModal:r}}();
+(function () {
+    'use strict';
+
+    // build-sync: 20260219-sync1
+
+    let deps = null;
+    let initialized = false;
+    let selectedRating = 0;
+    let stars = [];
+
+    function getLang() {
+        return deps && typeof deps.getCurrentLang === 'function'
+            ? deps.getCurrentLang()
+            : 'es';
+    }
+
+    function t(esText, enText) {
+        return getLang() === 'en' ? enText : esText;
+    }
+
+    function getCaptchaToken(action) {
+        try {
+            return deps.getCaptchaToken
+                ? deps.getCaptchaToken(action)
+                : Promise.resolve(null);
+        } catch (_e) {
+            return Promise.resolve(null);
+        }
+    }
+
+    function resetStarVisuals() {
+        stars.forEach((star) => {
+            star.classList.remove('active', 'fas');
+            star.classList.add('far');
+        });
+    }
+
+    function applySelectedRating(rating) {
+        selectedRating = rating;
+        stars.forEach((star, index) => {
+            const active = index < selectedRating;
+            star.classList.toggle('active', active);
+            star.classList.toggle('fas', active);
+            star.classList.toggle('far', !active);
+        });
+    }
+
+    function bindCallbackForm() {
+        const callbackForm = document.getElementById('callbackForm');
+        if (
+            !callbackForm ||
+            callbackForm.dataset.callbackEngineBound === 'true'
+        ) {
+            return;
+        }
+        callbackForm.dataset.callbackEngineBound = 'true';
+
+        callbackForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalContent = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML =
+                    '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            }
+
+            const formData = new FormData(this);
+            const token = await getCaptchaToken('callback');
+            const callback = {
+                id: Date.now(),
+                telefono: formData.get('telefono'),
+                preferencia: formData.get('preferencia'),
+                fecha: new Date().toISOString(),
+                status: 'pendiente',
+                captchaToken: token,
+            };
+
+            try {
+                if (deps && typeof deps.createCallbackRecord === 'function') {
+                    await deps.createCallbackRecord(callback);
+                }
+                if (deps && typeof deps.showToast === 'function') {
+                    deps.showToast(
+                        t(
+                            'Solicitud enviada. Te llamaremos pronto.',
+                            'Request sent. We will call you soon.'
+                        ),
+                        'success'
+                    );
+                }
+                this.reset();
+            } catch (_e) {
+                if (deps && typeof deps.showToast === 'function') {
+                    deps.showToast(
+                        t(
+                            'No se pudo enviar tu solicitud. Intenta de nuevo.',
+                            'We could not send your request. Try again.'
+                        ),
+                        'error'
+                    );
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalContent;
+                }
+            }
+        });
+    }
+
+    function bindReviewForm() {
+        const reviewForm = document.getElementById('reviewForm');
+        const reviewStars = Array.from(
+            document.querySelectorAll('.star-rating i')
+        );
+        if (!reviewForm || reviewForm.dataset.reviewEngineBound === 'true') {
+            stars = reviewStars;
+            return;
+        }
+
+        reviewForm.dataset.reviewEngineBound = 'true';
+        stars = reviewStars;
+        selectedRating = 0;
+
+        stars.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                applySelectedRating(index + 1);
+            });
+        });
+
+        reviewForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            if (selectedRating === 0) {
+                alert(
+                    t(
+                        'Por favor selecciona una calificacion',
+                        'Please select a rating'
+                    )
+                );
+                return;
+            }
+
+            const formData = new FormData(this);
+            const token = await getCaptchaToken('review');
+            const review = {
+                id: Date.now(),
+                name: formData.get('reviewerName'),
+                rating: selectedRating,
+                text: formData.get('reviewText'),
+                date: new Date().toISOString(),
+                verified: true,
+                captchaToken: token,
+            };
+
+            try {
+                const savedReview =
+                    deps && typeof deps.createReviewRecord === 'function'
+                        ? await deps.createReviewRecord(review)
+                        : review;
+
+                const currentReviews =
+                    deps && typeof deps.getReviewsCache === 'function'
+                        ? deps.getReviewsCache()
+                            : [];
+                const mergedReviews = [
+                    savedReview,
+                    ...currentReviews.filter(
+                        (item) => item.id !== savedReview.id
+                    ),
+                ];
+
+                if (deps && typeof deps.setReviewsCache === 'function') {
+                    deps.setReviewsCache(mergedReviews);
+                }
+                if (deps && typeof deps.renderPublicReviews === 'function') {
+                    deps.renderPublicReviews(mergedReviews);
+                }
+
+                if (deps && typeof deps.showToast === 'function') {
+                    deps.showToast(
+                        t(
+                            'Gracias por tu reseña.',
+                            'Thank you for your review.'
+                        ),
+                        'success'
+                    );
+                }
+
+                closeReviewModal();
+                this.reset();
+                selectedRating = 0;
+                resetStarVisuals();
+            } catch (_e) {
+                if (deps && typeof deps.showToast === 'function') {
+                    deps.showToast(
+                        t(
+                            'No pudimos guardar tu reseña. Intenta nuevamente.',
+                            'We could not save your review. Try again.'
+                        ),
+                        'error'
+                    );
+                }
+            }
+        });
+    }
+
+    function openReviewModal() {
+        const modal = document.getElementById('reviewModal');
+        if (!modal) return;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeReviewModal() {
+        const modal = document.getElementById('reviewModal');
+        if (!modal) return;
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function init(inputDeps) {
+        deps = inputDeps || deps;
+        bindCallbackForm();
+        bindReviewForm();
+        initialized = true;
+        return window.PielEngagementFormsEngine;
+    }
+
+    function isInitialized() {
+        return initialized;
+    }
+
+    window.PielEngagementFormsEngine = {
+        init,
+        isInitialized,
+        openReviewModal,
+        closeReviewModal,
+    };
+
+})();
