@@ -1,6 +1,7 @@
 const API_ENDPOINT = '/api.php';
 const POLL_MS = 2500;
 const POLL_MAX_MS = 15000;
+const POLL_STALE_THRESHOLD_MS = 30000;
 
 const state = {
     lastCalledSignature: '',
@@ -69,6 +70,38 @@ function setConnectionStatus(stateLabel, message) {
         String(message || '').trim() ||
         fallbackByState[normalized] ||
         fallbackByState.live;
+}
+
+function formatElapsedAge(ms) {
+    const safeMs = Math.max(0, Number(ms || 0));
+    const seconds = Math.round(safeMs / 1000);
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remSeconds = seconds % 60;
+    if (remSeconds <= 0) {
+        return `${minutes}m`;
+    }
+    return `${minutes}m ${remSeconds}s`;
+}
+
+function evaluateQueueFreshness(queueState) {
+    const updatedAtTs = Date.parse(String(queueState?.updatedAt || ''));
+    if (!Number.isFinite(updatedAtTs)) {
+        return {
+            stale: false,
+            missingTimestamp: true,
+            ageMs: null,
+        };
+    }
+
+    const ageMs = Math.max(0, Date.now() - updatedAtTs);
+    return {
+        stale: ageMs >= POLL_STALE_THRESHOLD_MS,
+        missingTimestamp: false,
+        ageMs,
+    };
 }
 
 function renderCalledTicket(containerId, ticket, consultorioLabel) {
@@ -236,25 +269,32 @@ function scheduleNextPoll({ immediate = false } = {}) {
 }
 
 async function refreshDisplayState() {
-    if (state.refreshBusy) return false;
+    if (state.refreshBusy) {
+        return { ok: false, stale: false, reason: 'busy' };
+    }
     state.refreshBusy = true;
     try {
         const payload = await apiRequest('queue-state');
-        renderState(payload.data || {});
-        if (state.pollingEnabled) {
-            setConnectionStatus('live', 'Conectado');
-        }
-        return true;
+        const queueState = payload.data || {};
+        renderState(queueState);
+        const freshness = evaluateQueueFreshness(queueState);
+        return {
+            ok: true,
+            stale: Boolean(freshness.stale),
+            missingTimestamp: Boolean(freshness.missingTimestamp),
+            ageMs: freshness.ageMs,
+        };
     } catch (error) {
         const list = getById('displayNextList');
         if (list) {
             list.innerHTML = `<li class="display-empty">Sin conexion: ${escapeHtml(error.message)}</li>`;
         }
-        setConnectionStatus(
-            navigator.onLine === false ? 'offline' : 'reconnecting',
-            navigator.onLine === false ? 'Sin conexion' : 'Reconectando...'
-        );
-        return false;
+        return {
+            ok: false,
+            stale: false,
+            reason: 'fetch_error',
+            errorMessage: error.message,
+        };
     } finally {
         state.refreshBusy = false;
     }
@@ -276,12 +316,21 @@ async function runDisplayPollTick() {
         return;
     }
 
-    const refreshed = await refreshDisplayState();
-    if (refreshed) {
+    const refreshResult = await refreshDisplayState();
+    if (refreshResult.ok && !refreshResult.stale) {
         state.failureStreak = 0;
         setConnectionStatus('live', 'Conectado');
+    } else if (refreshResult.ok && refreshResult.stale) {
+        state.failureStreak += 1;
+        const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
+        setConnectionStatus(
+            'reconnecting',
+            `Watchdog: datos estancados ${staleAge}`
+        );
     } else {
         state.failureStreak += 1;
+        const retrySeconds = Math.max(1, Math.ceil(getPollDelayMs() / 1000));
+        setConnectionStatus('reconnecting', `Reconectando en ${retrySeconds}s`);
     }
     scheduleNextPoll();
 }

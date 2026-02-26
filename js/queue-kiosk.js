@@ -74,16 +74,20 @@
             : (t.textContent = 'Actualizacion pendiente');
     }
     function c() {
+        const e = Math.max(0, Number(t.queueFailureStreak || 0)),
+            n = 2500 * Math.pow(2, Math.min(e, 3));
+        return Math.min(15e3, n);
+    }
+    function u() {
         t.queueTimerId &&
             (window.clearTimeout(t.queueTimerId), (t.queueTimerId = 0));
     }
-    async function u() {
-        if (t.queueRefreshBusy) return !1;
+    async function l() {
+        if (t.queueRefreshBusy) return { ok: !1, stale: !1, reason: 'busy' };
         t.queueRefreshBusy = !0;
         try {
             const e = await a('queue-state');
-            return (
-                (t.queueState = e.data || {}),
+            ((t.queueState = e.data || {}),
                 (function (e) {
                     const t = i('queueWaitingCount'),
                         a = i('queueCalledCount'),
@@ -122,22 +126,32 @@
                                   .join(''));
                     }
                 })(t.queueState),
-                r(t.queueState?.updatedAt),
-                t.queuePollingEnabled && s('live', 'Cola conectada'),
-                !0
-            );
+                r(t.queueState?.updatedAt));
+            const o = (function (e) {
+                const t = Date.parse(String(e?.updatedAt || ''));
+                if (!Number.isFinite(t))
+                    return { stale: !1, missingTimestamp: !0, ageMs: null };
+                const n = Math.max(0, Date.now() - t);
+                return { stale: n >= 3e4, missingTimestamp: !1, ageMs: n };
+            })(t.queueState);
+            return {
+                ok: !0,
+                stale: Boolean(o.stale),
+                missingTimestamp: Boolean(o.missingTimestamp),
+                ageMs: o.ageMs,
+            };
         } catch (e) {
-            return (
-                !1 === navigator.onLine
-                    ? s('offline', 'Sin conexion al backend')
-                    : s('reconnecting', `Reintentando: ${e.message}`),
-                !1
-            );
+            return {
+                ok: !1,
+                stale: !1,
+                reason: 'fetch_error',
+                errorMessage: e.message,
+            };
         } finally {
             t.queueRefreshBusy = !1;
         }
     }
-    function l(e, a) {
+    function d(e, a) {
         const o = i('ticketResult');
         if (!o) return;
         const s = e?.data || {},
@@ -163,54 +177,58 @@
             })(s.createdAt)
         )}</dd></div>\n            </dl>\n            <p class="ticket-result-print">${l}</p>\n        </article>\n    `;
     }
-    async function d(e) {
+    async function m(e) {
         if ((e.preventDefault(), !(e.currentTarget instanceof HTMLFormElement)))
             return;
         const n = i('checkinPhone'),
-            s = i('checkinTime'),
-            r = i('checkinDate'),
-            c = i('checkinInitials'),
-            d = i('checkinSubmit'),
-            m = n instanceof HTMLInputElement ? n.value.trim() : '',
-            p = s instanceof HTMLInputElement ? s.value.trim() : '',
+            r = i('checkinTime'),
+            c = i('checkinDate'),
+            u = i('checkinInitials'),
+            m = i('checkinSubmit'),
+            p = n instanceof HTMLInputElement ? n.value.trim() : '',
             f = r instanceof HTMLInputElement ? r.value.trim() : '',
-            g = c instanceof HTMLInputElement ? c.value.trim() : '';
-        if (m && p && f) {
-            d instanceof HTMLButtonElement && (d.disabled = !0);
+            g = c instanceof HTMLInputElement ? c.value.trim() : '',
+            h = u instanceof HTMLInputElement ? u.value.trim() : '';
+        if (p && f && g) {
+            m instanceof HTMLButtonElement && (m.disabled = !0);
             try {
                 const e = await a('queue-checkin', {
                     method: 'POST',
                     body: {
-                        telefono: m,
-                        hora: p,
-                        fecha: f,
-                        patientInitials: g,
+                        telefono: p,
+                        hora: f,
+                        fecha: g,
+                        patientInitials: h,
                     },
                 });
                 (o('Check-in registrado correctamente', 'success'),
-                    l(
+                    d(
                         e,
                         e.replay ? 'Check-in ya existente' : 'Check-in de cita'
                     ),
                     (t.queueFailureStreak = 0),
-                    await u());
+                    (await l()).ok ||
+                        s(
+                            'reconnecting',
+                            'Check-in registrado; pendiente sincronizar cola'
+                        ));
             } catch (e) {
                 o(`No se pudo registrar el check-in: ${e.message}`, 'error');
             } finally {
-                d instanceof HTMLButtonElement && (d.disabled = !1);
+                m instanceof HTMLButtonElement && (m.disabled = !1);
             }
         } else
             o('Telefono, fecha y hora son obligatorios para check-in', 'error');
     }
-    async function m(e) {
+    async function p(e) {
         e.preventDefault();
         const n = i('walkinName'),
-            s = i('walkinInitials'),
-            r = i('walkinPhone'),
-            c = i('walkinSubmit'),
-            d = n instanceof HTMLInputElement ? n.value.trim() : '',
-            m =
-                (s instanceof HTMLInputElement ? s.value.trim() : '') ||
+            r = i('walkinInitials'),
+            c = i('walkinPhone'),
+            u = i('walkinSubmit'),
+            m = n instanceof HTMLInputElement ? n.value.trim() : '',
+            p =
+                (r instanceof HTMLInputElement ? r.value.trim() : '') ||
                 (function (e) {
                     const t = String(e || '').trim();
                     if (!t) return '';
@@ -224,27 +242,31 @@
                     for (const e of n)
                         if (((i += e.slice(0, 1)), i.length >= 3)) break;
                     return i.slice(0, 4);
-                })(d),
-            p = r instanceof HTMLInputElement ? r.value.trim() : '';
-        if (m) {
-            c instanceof HTMLButtonElement && (c.disabled = !0);
+                })(m),
+            f = c instanceof HTMLInputElement ? c.value.trim() : '';
+        if (p) {
+            u instanceof HTMLButtonElement && (u.disabled = !0);
             try {
                 const e = await a('queue-ticket', {
                     method: 'POST',
-                    body: { patientInitials: m, name: d, phone: p },
+                    body: { patientInitials: p, name: m, phone: f },
                 });
                 (o('Turno walk-in registrado correctamente', 'success'),
-                    l(e, 'Turno sin cita'),
+                    d(e, 'Turno sin cita'),
                     (t.queueFailureStreak = 0),
-                    await u());
+                    (await l()).ok ||
+                        s(
+                            'reconnecting',
+                            'Turno creado; pendiente sincronizar cola'
+                        ));
             } catch (e) {
                 o(`No se pudo crear el turno: ${e.message}`, 'error');
             } finally {
-                c instanceof HTMLButtonElement && (c.disabled = !1);
+                u instanceof HTMLButtonElement && (u.disabled = !1);
             }
         } else o('Ingresa iniciales o nombre para generar el turno', 'error');
     }
-    function p(e, t) {
+    function f(e, t) {
         const a = i('assistantMessages');
         if (!a) return;
         const o = document.createElement('article');
@@ -253,14 +275,14 @@
             a.appendChild(o),
             (a.scrollTop = a.scrollHeight));
     }
-    async function f(e) {
+    async function g(e) {
         if ((e.preventDefault(), t.assistantBusy)) return;
         const n = i('assistantInput'),
             a = i('assistantSend');
         if (!(n instanceof HTMLInputElement)) return;
         const o = n.value.trim();
         if (o) {
-            (p('user', o),
+            (f('user', o),
                 (n.value = ''),
                 (t.assistantBusy = !0),
                 a instanceof HTMLButtonElement && (a.disabled = !0));
@@ -306,14 +328,14 @@
                             'Puedo ayudarte con turnos, check-in y ubicacion de consultorios.'
                         );
                     })(String(i?.choices?.[0]?.message?.content || '').trim());
-                (p('bot', a),
+                (f('bot', a),
                     (t.chatHistory = [
                         ...t.chatHistory,
                         { role: 'user', content: o },
                         { role: 'assistant', content: a },
                     ].slice(-8)));
             } catch (e) {
-                p(
+                f(
                     'bot',
                     'No pude conectar con el asistente. Te ayudo en recepcion para continuar con tu turno.'
                 );
@@ -323,7 +345,7 @@
             }
         }
     }
-    function g(e) {
+    function h(e) {
         t.themeMode = e;
         const n = document.documentElement,
             i = t.mediaQuery instanceof MediaQueryList && t.mediaQuery.matches,
@@ -335,40 +357,53 @@
                     t.setAttribute('aria-pressed', String(n === e)));
             }));
     }
-    function h({ immediate: e = !1 } = {}) {
-        if ((c(), !t.queuePollingEnabled)) return;
-        const n = e
-            ? 0
-            : (function () {
-                  const e = Math.max(0, Number(t.queueFailureStreak || 0)),
-                      n = 2500 * Math.pow(2, Math.min(e, 3));
-                  return Math.min(15e3, n);
-              })();
+    function y({ immediate: e = !1 } = {}) {
+        if ((u(), !t.queuePollingEnabled)) return;
+        const n = e ? 0 : c();
         t.queueTimerId = window.setTimeout(() => {
-            y();
+            k();
         }, n);
     }
-    async function y() {
-        if (t.queuePollingEnabled)
-            return document.hidden
-                ? (s('paused', 'Cola en pausa (pestana oculta)'), void h())
-                : !1 === navigator.onLine
-                  ? ((t.queueFailureStreak += 1),
-                    s('offline', 'Sin conexion al backend'),
-                    void h())
-                  : ((await u())
-                        ? ((t.queueFailureStreak = 0),
-                          s('live', 'Cola conectada'))
-                        : (t.queueFailureStreak += 1),
-                    void h());
+    async function k() {
+        if (!t.queuePollingEnabled) return;
+        if (document.hidden)
+            return (s('paused', 'Cola en pausa (pestana oculta)'), void y());
+        if (!1 === navigator.onLine)
+            return (
+                (t.queueFailureStreak += 1),
+                s('offline', 'Sin conexion al backend'),
+                void y()
+            );
+        const e = await l();
+        (e.ok && !e.stale
+            ? ((t.queueFailureStreak = 0), s('live', 'Cola conectada'))
+            : e.ok && e.stale
+              ? ((t.queueFailureStreak += 1),
+                s(
+                    'reconnecting',
+                    `Watchdog: cola estancada ${(function (e) {
+                        const t = Math.max(0, Number(e || 0)),
+                            n = Math.round(t / 1e3);
+                        if (n < 60) return `${n}s`;
+                        const i = Math.floor(n / 60),
+                            a = n % 60;
+                        return a <= 0 ? `${i}m` : `${i}m ${a}s`;
+                    })(e.ageMs || 0)}`
+                ))
+              : ((t.queueFailureStreak += 1),
+                s(
+                    'reconnecting',
+                    `Reintentando en ${Math.max(1, Math.ceil(c() / 1e3))}s`
+                )),
+            y());
     }
-    function k({ immediate: e = !0 } = {}) {
+    function T({ immediate: e = !0 } = {}) {
         if (((t.queuePollingEnabled = !0), e))
-            return (s('live', 'Sincronizando cola...'), void y());
-        h();
+            return (s('live', 'Sincronizando cola...'), void k());
+        y();
     }
     function S({ reason: e = 'paused' } = {}) {
-        ((t.queuePollingEnabled = !1), (t.queueFailureStreak = 0), c());
+        ((t.queuePollingEnabled = !1), (t.queueFailureStreak = 0), u());
         const n = String(e || 'paused').toLowerCase();
         'offline' !== n
             ? s(
@@ -384,7 +419,7 @@
             const n = localStorage.getItem(e) || 'system';
             ((t.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')),
                 t.mediaQuery.addEventListener('change', () => {
-                    'system' === t.themeMode && g('system');
+                    'system' === t.themeMode && h('system');
                 }),
                 document.querySelectorAll('[data-theme-mode]').forEach((t) => {
                     t.addEventListener('click', () => {
@@ -392,11 +427,11 @@
                             const n = ['light', 'dark', 'system'].includes(t)
                                 ? t
                                 : 'system';
-                            (localStorage.setItem(e, n), g(n));
+                            (localStorage.setItem(e, n), h(n));
                         })(t.getAttribute('data-theme-mode') || 'system');
                     });
                 }),
-                g(n));
+                h(n));
         })(),
             (function () {
                 const e = i('checkinDate');
@@ -407,23 +442,23 @@
         const n = i('checkinForm'),
             a = i('walkinForm'),
             o = i('assistantForm');
-        (n instanceof HTMLFormElement && n.addEventListener('submit', d),
-            a instanceof HTMLFormElement && a.addEventListener('submit', m),
-            o instanceof HTMLFormElement && o.addEventListener('submit', f),
-            p(
+        (n instanceof HTMLFormElement && n.addEventListener('submit', m),
+            a instanceof HTMLFormElement && a.addEventListener('submit', p),
+            o instanceof HTMLFormElement && o.addEventListener('submit', g),
+            f(
                 'bot',
                 'Hola. Soy el asistente de sala. Puedo ayudarte con check-in, turnos y ubicacion de consultorios.'
             ),
             s('paused', 'Sincronizacion lista'),
             r(''),
-            k({ immediate: !0 }),
+            T({ immediate: !0 }),
             document.addEventListener('visibilitychange', () => {
                 document.hidden
                     ? S({ reason: 'hidden' })
-                    : k({ immediate: !0 });
+                    : T({ immediate: !0 });
             }),
             window.addEventListener('online', () => {
-                k({ immediate: !0 });
+                T({ immediate: !0 });
             }),
             window.addEventListener('offline', () => {
                 S({ reason: 'offline' });

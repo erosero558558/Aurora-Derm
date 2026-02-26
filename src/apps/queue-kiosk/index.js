@@ -2,6 +2,7 @@ const API_ENDPOINT = '/api.php';
 const CHAT_ENDPOINT = '/figo-chat.php';
 const QUEUE_POLL_MS = 2500;
 const QUEUE_POLL_MAX_MS = 15000;
+const QUEUE_STALE_THRESHOLD_MS = 30000;
 const THEME_STORAGE_KEY = 'kioskThemeMode';
 
 const state = {
@@ -106,6 +107,38 @@ function setQueueConnectionStatus(stateLabel, message) {
         fallbackByState.live;
 }
 
+function formatElapsedAge(ms) {
+    const safeMs = Math.max(0, Number(ms || 0));
+    const seconds = Math.round(safeMs / 1000);
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remSeconds = seconds % 60;
+    if (remSeconds <= 0) {
+        return `${minutes}m`;
+    }
+    return `${minutes}m ${remSeconds}s`;
+}
+
+function evaluateQueueFreshness(queueState) {
+    const updatedAtTs = Date.parse(String(queueState?.updatedAt || ''));
+    if (!Number.isFinite(updatedAtTs)) {
+        return {
+            stale: false,
+            missingTimestamp: true,
+            ageMs: null,
+        };
+    }
+
+    const ageMs = Math.max(0, Date.now() - updatedAtTs);
+    return {
+        stale: ageMs >= QUEUE_STALE_THRESHOLD_MS,
+        missingTimestamp: false,
+        ageMs,
+    };
+}
+
 function renderQueueUpdatedAt(updatedAt) {
     const el = getById('queueUpdatedAt');
     if (!el) return;
@@ -206,7 +239,7 @@ function renderQueuePanel(queueState) {
 
 async function refreshQueueState() {
     if (state.queueRefreshBusy) {
-        return false;
+        return { ok: false, stale: false, reason: 'busy' };
     }
     state.queueRefreshBusy = true;
     try {
@@ -214,20 +247,20 @@ async function refreshQueueState() {
         state.queueState = payload.data || {};
         renderQueuePanel(state.queueState);
         renderQueueUpdatedAt(state.queueState?.updatedAt);
-        if (state.queuePollingEnabled) {
-            setQueueConnectionStatus('live', 'Cola conectada');
-        }
-        return true;
+        const freshness = evaluateQueueFreshness(state.queueState);
+        return {
+            ok: true,
+            stale: Boolean(freshness.stale),
+            missingTimestamp: Boolean(freshness.missingTimestamp),
+            ageMs: freshness.ageMs,
+        };
     } catch (error) {
-        if (navigator.onLine === false) {
-            setQueueConnectionStatus('offline', 'Sin conexion al backend');
-        } else {
-            setQueueConnectionStatus(
-                'reconnecting',
-                `Reintentando: ${error.message}`
-            );
-        }
-        return false;
+        return {
+            ok: false,
+            stale: false,
+            reason: 'fetch_error',
+            errorMessage: error.message,
+        };
     } finally {
         state.queueRefreshBusy = false;
     }
@@ -318,7 +351,13 @@ async function submitCheckin(event) {
             payload.replay ? 'Check-in ya existente' : 'Check-in de cita'
         );
         state.queueFailureStreak = 0;
-        await refreshQueueState();
+        const refreshResult = await refreshQueueState();
+        if (!refreshResult.ok) {
+            setQueueConnectionStatus(
+                'reconnecting',
+                'Check-in registrado; pendiente sincronizar cola'
+            );
+        }
     } catch (error) {
         setKioskStatus(
             `No se pudo registrar el check-in: ${error.message}`,
@@ -372,7 +411,13 @@ async function submitWalkIn(event) {
         setKioskStatus('Turno walk-in registrado correctamente', 'success');
         renderTicketResult(payload, 'Turno sin cita');
         state.queueFailureStreak = 0;
-        await refreshQueueState();
+        const refreshResult = await refreshQueueState();
+        if (!refreshResult.ok) {
+            setQueueConnectionStatus(
+                'reconnecting',
+                'Turno creado; pendiente sincronizar cola'
+            );
+        }
     } catch (error) {
         setKioskStatus(`No se pudo crear el turno: ${error.message}`, 'error');
     } finally {
@@ -561,12 +606,27 @@ async function runQueuePollingTick() {
         return;
     }
 
-    const refreshed = await refreshQueueState();
-    if (refreshed) {
+    const refreshResult = await refreshQueueState();
+    if (refreshResult.ok && !refreshResult.stale) {
         state.queueFailureStreak = 0;
         setQueueConnectionStatus('live', 'Cola conectada');
+    } else if (refreshResult.ok && refreshResult.stale) {
+        state.queueFailureStreak += 1;
+        const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
+        setQueueConnectionStatus(
+            'reconnecting',
+            `Watchdog: cola estancada ${staleAge}`
+        );
     } else {
         state.queueFailureStreak += 1;
+        const retrySeconds = Math.max(
+            1,
+            Math.ceil(getQueuePollDelayMs() / 1000)
+        );
+        setQueueConnectionStatus(
+            'reconnecting',
+            `Reintentando en ${retrySeconds}s`
+        );
     }
     scheduleQueuePolling();
 }
