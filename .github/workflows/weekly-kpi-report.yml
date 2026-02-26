@@ -20,6 +20,11 @@ on:
                 required: false
                 default: true
                 type: boolean
+            fail_on_invalid_thresholds:
+                description: 'Fallar workflow si detecta umbrales invalidos y aplica defaults/clamp'
+                required: false
+                default: false
+                type: boolean
             retention_days:
                 description: 'Ventana de dias para retention-report'
                 required: false
@@ -109,6 +114,7 @@ jobs:
             TARGET_DOMAIN: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
             BENCH_RUNS: ${{ github.event.inputs.bench_runs || '15' }}
             FAIL_ON_WARNINGS: ${{ github.event.inputs.fail_on_warnings || 'true' }}
+            FAIL_ON_INVALID_THRESHOLDS: ${{ github.event.inputs.fail_on_invalid_thresholds || vars.WEEKLY_KPI_FAIL_ON_INVALID_THRESHOLDS || 'false' }}
             REPORT_RETENTION_DAYS: ${{ github.event.inputs.retention_days || vars.WEEKLY_KPI_RETENTION_DAYS || '30' }}
             REPORT_NO_SHOW_WARN_PCT: ${{ github.event.inputs.no_show_warn_pct || vars.WEEKLY_KPI_NO_SHOW_WARN_PCT || '20' }}
             REPORT_RECURRENCE_MIN_WARN_PCT: ${{ github.event.inputs.recurrence_min_warn_pct || vars.WEEKLY_KPI_RECURRENCE_MIN_WARN_PCT || '30' }}
@@ -143,56 +149,84 @@ jobs:
               id: run_report
               shell: pwsh
               run: |
+                  function Add-ThresholdWarning {
+                    param(
+                      [System.Collections.Generic.List[string]]$Warnings,
+                      [string]$Message
+                    )
+                    if ($null -eq $Warnings) { return }
+                    if ([string]::IsNullOrWhiteSpace($Message)) { return }
+                    $Warnings.Add($Message) | Out-Null
+                  }
+
                   function Parse-IntValue {
                     param(
+                      [string]$Name,
                       [string]$Raw,
                       [int]$DefaultValue,
-                      [int]$MinValue = 0
+                      [int]$MinValue = 0,
+                      [System.Collections.Generic.List[string]]$Warnings
                     )
                     $parsed = $DefaultValue
                     if (-not [string]::IsNullOrWhiteSpace($Raw)) {
                       $tmp = 0
                       if ([int]::TryParse($Raw, [ref]$tmp)) {
                         $parsed = $tmp
+                      } else {
+                        Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor invalido '$Raw', se usa default $DefaultValue"
                       }
                     }
-                    if ($parsed -lt $MinValue) { $parsed = $MinValue }
+                    if ($parsed -lt $MinValue) {
+                      Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor $parsed menor que minimo $MinValue, se aplica clamp"
+                      $parsed = $MinValue
+                    }
                     return $parsed
                   }
 
                   function Parse-DoubleValue {
                     param(
+                      [string]$Name,
                       [string]$Raw,
                       [double]$DefaultValue,
-                      [double]$MinValue = 0
+                      [double]$MinValue = 0,
+                      [System.Collections.Generic.List[string]]$Warnings
                     )
                     $parsed = $DefaultValue
                     if (-not [string]::IsNullOrWhiteSpace($Raw)) {
                       $tmp = 0.0
                       if ([double]::TryParse($Raw, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$tmp)) {
                         $parsed = $tmp
+                      } else {
+                        Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor invalido '$Raw', se usa default $DefaultValue"
                       }
                     }
-                    if ($parsed -lt $MinValue) { $parsed = $MinValue }
+                    if ($parsed -lt $MinValue) {
+                      Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor $parsed menor que minimo $MinValue, se aplica clamp"
+                      $parsed = $MinValue
+                    }
                     return $parsed
                   }
 
+                  $thresholdWarnings = New-Object System.Collections.Generic.List[string]
+                  $failOnInvalidThresholds = "$env:FAIL_ON_INVALID_THRESHOLDS".ToLowerInvariant() -eq 'true'
                   $benchRuns = [int]$env:BENCH_RUNS
                   if ($benchRuns -lt 5) { $benchRuns = 5 }
-                  $retentionDays = Parse-IntValue -Raw $env:REPORT_RETENTION_DAYS -DefaultValue 30 -MinValue 1
-                  $coreP95MaxMs = Parse-IntValue -Raw $env:REPORT_CORE_P95_MAX_MS -DefaultValue 800 -MinValue 1
-                  $figoPostP95MaxMs = Parse-IntValue -Raw $env:REPORT_FIGO_POST_P95_MAX_MS -DefaultValue 2500 -MinValue 1
-                  $noShowWarnPct = Parse-DoubleValue -Raw $env:REPORT_NO_SHOW_WARN_PCT -DefaultValue 20.0 -MinValue 0
-                  $idempotencyConflictWarnPct = Parse-DoubleValue -Raw $env:REPORT_IDEMPOTENCY_CONFLICT_WARN_PCT -DefaultValue 5.0 -MinValue 0
-                  $recurrenceMinWarnPct = Parse-DoubleValue -Raw $env:REPORT_RECURRENCE_MIN_WARN_PCT -DefaultValue 30.0 -MinValue 0
-                  $recurrenceDropWarnPct = Parse-DoubleValue -Raw $env:REPORT_RECURRENCE_DROP_WARN_PCT -DefaultValue 15.0 -MinValue 0
-                  $recurrenceMinUniquePatients = Parse-IntValue -Raw $env:REPORT_RECURRENCE_MIN_UNIQUE_PATIENTS -DefaultValue 5 -MinValue 1
-                  $conversionMinWarnPct = Parse-DoubleValue -Raw $env:REPORT_CONVERSION_MIN_WARN_PCT -DefaultValue 25.0 -MinValue 0
-                  $conversionDropWarnPct = Parse-DoubleValue -Raw $env:REPORT_CONVERSION_DROP_WARN_PCT -DefaultValue 15.0 -MinValue 0
-                  $conversionMinStartCheckout = Parse-IntValue -Raw $env:REPORT_CONVERSION_MIN_START_CHECKOUT -DefaultValue 10 -MinValue 1
-                  $startCheckoutMinWarnPct = Parse-DoubleValue -Raw $env:REPORT_START_CHECKOUT_MIN_WARN_PCT -DefaultValue 0.25 -MinValue 0
-                  $startCheckoutDropWarnPct = Parse-DoubleValue -Raw $env:REPORT_START_CHECKOUT_DROP_WARN_PCT -DefaultValue 0.2 -MinValue 0
-                  $startCheckoutMinViewBooking = Parse-IntValue -Raw $env:REPORT_START_CHECKOUT_MIN_VIEW_BOOKING -DefaultValue 100 -MinValue 1
+                  $retentionDays = Parse-IntValue -Name 'retention_days' -Raw $env:REPORT_RETENTION_DAYS -DefaultValue 30 -MinValue 1 -Warnings $thresholdWarnings
+                  $coreP95MaxMs = Parse-IntValue -Name 'core_p95_max_ms' -Raw $env:REPORT_CORE_P95_MAX_MS -DefaultValue 800 -MinValue 1 -Warnings $thresholdWarnings
+                  $figoPostP95MaxMs = Parse-IntValue -Name 'figo_post_p95_max_ms' -Raw $env:REPORT_FIGO_POST_P95_MAX_MS -DefaultValue 2500 -MinValue 1 -Warnings $thresholdWarnings
+                  $noShowWarnPct = Parse-DoubleValue -Name 'no_show_warn_pct' -Raw $env:REPORT_NO_SHOW_WARN_PCT -DefaultValue 20.0 -MinValue 0 -Warnings $thresholdWarnings
+                  $idempotencyConflictWarnPct = Parse-DoubleValue -Name 'idempotency_conflict_warn_pct' -Raw $env:REPORT_IDEMPOTENCY_CONFLICT_WARN_PCT -DefaultValue 5.0 -MinValue 0 -Warnings $thresholdWarnings
+                  $recurrenceMinWarnPct = Parse-DoubleValue -Name 'recurrence_min_warn_pct' -Raw $env:REPORT_RECURRENCE_MIN_WARN_PCT -DefaultValue 30.0 -MinValue 0 -Warnings $thresholdWarnings
+                  $recurrenceDropWarnPct = Parse-DoubleValue -Name 'recurrence_drop_warn_pct' -Raw $env:REPORT_RECURRENCE_DROP_WARN_PCT -DefaultValue 15.0 -MinValue 0 -Warnings $thresholdWarnings
+                  $recurrenceMinUniquePatients = Parse-IntValue -Name 'recurrence_min_unique_patients' -Raw $env:REPORT_RECURRENCE_MIN_UNIQUE_PATIENTS -DefaultValue 5 -MinValue 1 -Warnings $thresholdWarnings
+                  $conversionMinWarnPct = Parse-DoubleValue -Name 'conversion_min_warn_pct' -Raw $env:REPORT_CONVERSION_MIN_WARN_PCT -DefaultValue 25.0 -MinValue 0 -Warnings $thresholdWarnings
+                  $conversionDropWarnPct = Parse-DoubleValue -Name 'conversion_drop_warn_pct' -Raw $env:REPORT_CONVERSION_DROP_WARN_PCT -DefaultValue 15.0 -MinValue 0 -Warnings $thresholdWarnings
+                  $conversionMinStartCheckout = Parse-IntValue -Name 'conversion_min_start_checkout' -Raw $env:REPORT_CONVERSION_MIN_START_CHECKOUT -DefaultValue 10 -MinValue 1 -Warnings $thresholdWarnings
+                  $startCheckoutMinWarnPct = Parse-DoubleValue -Name 'start_checkout_min_warn_pct' -Raw $env:REPORT_START_CHECKOUT_MIN_WARN_PCT -DefaultValue 0.25 -MinValue 0 -Warnings $thresholdWarnings
+                  $startCheckoutDropWarnPct = Parse-DoubleValue -Name 'start_checkout_drop_warn_pct' -Raw $env:REPORT_START_CHECKOUT_DROP_WARN_PCT -DefaultValue 0.2 -MinValue 0 -Warnings $thresholdWarnings
+                  $startCheckoutMinViewBooking = Parse-IntValue -Name 'start_checkout_min_view_booking' -Raw $env:REPORT_START_CHECKOUT_MIN_VIEW_BOOKING -DefaultValue 100 -MinValue 1 -Warnings $thresholdWarnings
+                  $thresholdWarningsCount = $thresholdWarnings.Count
+                  $thresholdWarningsList = if ($thresholdWarningsCount -gt 0) { @($thresholdWarnings) -join ' | ' } else { 'none' }
 
                   "effective_retention_days=$retentionDays" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "effective_core_p95_max_ms=$coreP95MaxMs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -208,6 +242,13 @@ jobs:
                   "effective_start_checkout_min_warn_pct=$startCheckoutMinWarnPct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "effective_start_checkout_drop_warn_pct=$startCheckoutDropWarnPct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "effective_start_checkout_min_view_booking=$startCheckoutMinViewBooking" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "effective_fail_on_invalid_thresholds=$failOnInvalidThresholds" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "threshold_warnings_count=$thresholdWarningsCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "threshold_warnings_list=$thresholdWarningsList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+                  if ($failOnInvalidThresholds -and $thresholdWarningsCount -gt 0) {
+                    throw "Se detectaron umbrales invalidos ($thresholdWarningsCount): $thresholdWarningsList"
+                  }
 
                   $args = @(
                     '-Domain', $env:TARGET_DOMAIN,
@@ -582,6 +623,7 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Dominio: ``$env:TARGET_DOMAIN``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Bench runs: ``$env:BENCH_RUNS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Fail on warnings (critical-only gate): ``$env:FAIL_ON_WARNINGS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Fail on invalid thresholds: ``${{ steps.run_report.outputs.effective_fail_on_invalid_thresholds }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Thresholds efectivos"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- retention_days: ``${{ steps.run_report.outputs.effective_retention_days }}``"
@@ -598,6 +640,8 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- start_checkout_min_warn_pct: ``${{ steps.run_report.outputs.effective_start_checkout_min_warn_pct }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- start_checkout_drop_warn_pct: ``${{ steps.run_report.outputs.effective_start_checkout_drop_warn_pct }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- start_checkout_min_view_booking: ``${{ steps.run_report.outputs.effective_start_checkout_min_view_booking }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- threshold_warnings_count: ``${{ steps.run_report.outputs.threshold_warnings_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- threshold_warnings_list: ``${{ steps.run_report.outputs.threshold_warnings_list }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings count: ``${{ steps.report.outputs.warnings_count }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings critical: ``${{ steps.report.outputs.warnings_critical_count }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings non_critical: ``${{ steps.report.outputs.warnings_non_critical_count }}``"
@@ -686,6 +730,8 @@ jobs:
                         `- start_checkout_min_warn_pct: ${{ steps.run_report.outputs.effective_start_checkout_min_warn_pct }}`,
                         `- start_checkout_drop_warn_pct: ${{ steps.run_report.outputs.effective_start_checkout_drop_warn_pct }}`,
                         `- start_checkout_min_view_booking: ${{ steps.run_report.outputs.effective_start_checkout_min_view_booking }}`,
+                        `- threshold_warnings_count: ${{ steps.run_report.outputs.threshold_warnings_count }}`,
+                        `- threshold_warnings_list: ${{ steps.run_report.outputs.threshold_warnings_list }}`,
                         '',
                         `- fast_runs_last_${{ steps.ops_sla.outputs.lookback_days }}d: ${{ steps.ops_sla.outputs.ops_fast_runs }}`,
                         `- fast_success_rate_pct: ${{ steps.ops_sla.outputs.ops_fast_success_rate_pct }}`,
@@ -802,6 +848,8 @@ jobs:
                         `- recurrence_min_warn_pct: ${{ steps.run_report.outputs.effective_recurrence_min_warn_pct }}`,
                         `- recurrence_drop_warn_pct: ${{ steps.run_report.outputs.effective_recurrence_drop_warn_pct }}`,
                         `- recurrence_min_unique_patients: ${{ steps.run_report.outputs.effective_recurrence_min_unique_patients }}`,
+                        `- threshold_warnings_count: ${{ steps.run_report.outputs.threshold_warnings_count }}`,
+                        `- threshold_warnings_list: ${{ steps.run_report.outputs.threshold_warnings_list }}`,
                         '',
                         'Accion recomendada: revisar runbook de monitoreo diario y ejecutar hardening en agenda/recordatorios.'
                       ].join('\n');

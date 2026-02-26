@@ -25,6 +25,7 @@ test('weekly-kpi workflow expone inputs de umbrales esperados', () => {
     const inputs = parsed?.on?.workflow_dispatch?.inputs || {};
 
     const requiredInputs = [
+        'fail_on_invalid_thresholds',
         'retention_days',
         'no_show_warn_pct',
         'recurrence_min_warn_pct',
@@ -53,6 +54,7 @@ test('weekly-kpi workflow expone inputs de umbrales esperados', () => {
 test('weekly-kpi workflow mantiene fallback por vars WEEKLY_KPI_*', () => {
     const { raw } = loadWorkflow();
     const requiredVars = [
+        'WEEKLY_KPI_FAIL_ON_INVALID_THRESHOLDS',
         'WEEKLY_KPI_RETENTION_DAYS',
         'WEEKLY_KPI_NO_SHOW_WARN_PCT',
         'WEEKLY_KPI_RECURRENCE_MIN_WARN_PCT',
@@ -81,6 +83,7 @@ test('weekly-kpi workflow mantiene fallback por vars WEEKLY_KPI_*', () => {
 test('weekly-kpi workflow publica thresholds efectivos en resumen', () => {
     const { raw } = loadWorkflow();
     const requiredOutputs = [
+        'effective_fail_on_invalid_thresholds',
         'effective_retention_days',
         'effective_core_p95_max_ms',
         'effective_figo_post_p95_max_ms',
@@ -95,6 +98,8 @@ test('weekly-kpi workflow publica thresholds efectivos en resumen', () => {
         'effective_start_checkout_min_warn_pct',
         'effective_start_checkout_drop_warn_pct',
         'effective_start_checkout_min_view_booking',
+        'threshold_warnings_count',
+        'threshold_warnings_list',
     ];
 
     for (const outputKey of requiredOutputs) {
