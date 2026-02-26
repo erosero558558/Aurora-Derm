@@ -14,6 +14,11 @@ class HealthController
         $dataWritable = data_dir_writable();
         $storeEncrypted = store_file_is_encrypted();
         $dataDirSource = function_exists('data_dir_source') ? data_dir_source() : 'unknown';
+        $storageBackend = function_exists('storage_backend_mode') ? storage_backend_mode() : 'unknown';
+        $sqliteDriverAvailable = function_exists('storage_sqlite_available') ? storage_sqlite_available() : false;
+        $jsonFallbackEnabled = function_exists('storage_json_fallback_enabled')
+            ? storage_json_fallback_enabled()
+            : false;
         $figoEndpoint = self::resolve_figo_endpoint();
         $figoConfigured = $figoEndpoint !== '';
         $figoRecursive = self::is_figo_recursive_config($figoEndpoint);
@@ -106,6 +111,9 @@ class HealthController
             'timingMs' => $timingMs,
             'version' => app_runtime_version(),
             'dataDirSource' => $dataDirSource,
+            'storageBackend' => $storageBackend,
+            'sqliteDriverAvailable' => $sqliteDriverAvailable,
+            'jsonFallbackEnabled' => $jsonFallbackEnabled,
             'figoConfigured' => $figoConfigured,
             'figoRecursiveConfig' => $figoRecursive,
             'calendarConfigured' => $calendarClientConfigured,
@@ -129,6 +137,9 @@ class HealthController
             'version' => app_runtime_version(),
             'dataDirWritable' => $dataWritable,
             'dataDirSource' => $dataDirSource,
+            'storageBackend' => $storageBackend,
+            'sqliteDriverAvailable' => $sqliteDriverAvailable,
+            'jsonFallbackEnabled' => $jsonFallbackEnabled,
             'storeEncrypted' => $storeEncrypted,
             'figoConfigured' => $figoConfigured,
             'figoRecursiveConfig' => $figoRecursive,
@@ -150,7 +161,10 @@ class HealthController
                     'ready' => $storageReady,
                     'writable' => $dataWritable,
                     'encrypted' => $storeEncrypted,
-                    'source' => $dataDirSource
+                    'source' => $dataDirSource,
+                    'backend' => $storageBackend,
+                    'sqliteDriverAvailable' => $sqliteDriverAvailable,
+                    'jsonFallbackEnabled' => $jsonFallbackEnabled
                 ],
                 'redis' => $redisStatus,
                 'php_version' => PHP_VERSION,
@@ -208,8 +222,7 @@ class HealthController
         bool $calendarRequired,
         bool $blockOnFailure,
         bool $calendarReachable
-    ): string
-    {
+    ): string {
         if (!$calendarActive) {
             return $calendarRequired ? 'blocked' : 'live';
         }

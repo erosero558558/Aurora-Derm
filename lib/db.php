@@ -6,6 +6,66 @@ declare(strict_types=1);
  * Database abstraction layer using PDO.
  */
 
+if (!function_exists('db_parse_bool_env')) {
+    function db_parse_bool_env($value): bool
+    {
+        $normalized = strtolower(trim((string) $value));
+        return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+    }
+}
+
+if (!function_exists('db_log_once')) {
+    function db_log_once(string $key, string $message): void
+    {
+        static $seen = [];
+        if (isset($seen[$key])) {
+            return;
+        }
+        $seen[$key] = true;
+        error_log($message);
+    }
+}
+
+if (!function_exists('db_force_sqlite_unavailable')) {
+    function db_force_sqlite_unavailable(): bool
+    {
+        $raw = getenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE');
+        if (!is_string($raw) || trim($raw) === '') {
+            return false;
+        }
+        return db_parse_bool_env($raw);
+    }
+}
+
+if (!function_exists('db_sqlite_driver_available')) {
+    function db_sqlite_driver_available(): bool
+    {
+        static $available = null;
+        if (is_bool($available)) {
+            return $available;
+        }
+
+        if (db_force_sqlite_unavailable()) {
+            $available = false;
+            return $available;
+        }
+
+        if (!class_exists('PDO') || !extension_loaded('pdo_sqlite')) {
+            $available = false;
+            return $available;
+        }
+
+        try {
+            $drivers = PDO::getAvailableDrivers();
+            $available = is_array($drivers) && in_array('sqlite', $drivers, true);
+        } catch (Throwable $e) {
+            $available = false;
+        }
+
+        return $available;
+    }
+}
+
 function get_db_connection(?string $dbPath = null, bool $reset = false): ?PDO
 {
     static $pdo = null;
@@ -19,6 +79,14 @@ function get_db_connection(?string $dbPath = null, bool $reset = false): ?PDO
 
     // Try SQLite if path provided
     if ($dbPath !== null) {
+        if (!db_sqlite_driver_available()) {
+            db_log_once(
+                'sqlite_driver_unavailable',
+                'Piel en Armonia DB: SQLite driver unavailable; fallback storage required.'
+            );
+            return null;
+        }
+
         try {
             $dsn = "sqlite:" . $dbPath;
             $pdo = new PDO($dsn, null, null, [
@@ -31,7 +99,12 @@ function get_db_connection(?string $dbPath = null, bool $reset = false): ?PDO
             $pdo->exec('PRAGMA synchronous = NORMAL;');
             return $pdo;
         } catch (PDOException $e) {
-            error_log('Piel en Armonía SQLite Error: ' . $e->getMessage());
+            $reason = trim($e->getMessage());
+            $reasonKey = $reason === '' ? 'unknown' : md5($reason);
+            db_log_once(
+                'sqlite_connect_error_' . $reasonKey,
+                'Piel en Armonia DB: SQLite connection error: ' . $reason
+            );
             return null;
         }
     }

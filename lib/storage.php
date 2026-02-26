@@ -36,6 +36,17 @@ function storage_sqlite_available(): bool
         return $available;
     }
 
+    $forcedUnavailable = getenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE');
+    if (is_string($forcedUnavailable) && trim($forcedUnavailable) !== '' && parse_bool($forcedUnavailable)) {
+        $available = false;
+        return $available;
+    }
+
+    if (function_exists('db_sqlite_driver_available')) {
+        $available = db_sqlite_driver_available();
+        return $available;
+    }
+
     if (!class_exists('PDO')) {
         $available = false;
         return $available;
@@ -49,6 +60,17 @@ function storage_sqlite_available(): bool
     }
 
     return $available;
+}
+
+function storage_log_once(string $key, string $message): void
+{
+    static $seen = [];
+    if (isset($seen[$key])) {
+        return;
+    }
+
+    $seen[$key] = true;
+    error_log($message);
 }
 
 function storage_default_store_payload(): array
@@ -321,6 +343,15 @@ function audit_log_file_path(): string
 function store_file_is_encrypted(): bool
 {
     return false;
+}
+
+function storage_backend_mode(): string
+{
+    if (storage_sqlite_available()) {
+        return 'sqlite';
+    }
+
+    return storage_json_fallback_enabled() ? 'json_fallback' : 'unavailable';
 }
 
 function storage_json_fallback_enabled(): bool
@@ -730,15 +761,47 @@ function ensure_data_file(): bool
 
     ensure_data_htaccess($dataDir);
 
+    $storageMode = storage_backend_mode();
+    if ($storageMode === 'json_fallback') {
+        if (ensure_json_store_file()) {
+            storage_log_once(
+                'storage_json_fallback_active',
+                'Piel en Armonia storage: SQLite unavailable, using JSON fallback store.'
+            );
+            return true;
+        }
+
+        storage_log_once(
+            'storage_json_fallback_init_failed',
+            'Piel en Armonia storage: SQLite unavailable and JSON fallback initialization failed.'
+        );
+        return false;
+    }
+
+    if ($storageMode === 'unavailable') {
+        storage_log_once(
+            'storage_unavailable',
+            'Piel en Armonia storage: SQLite unavailable and JSON fallback disabled.'
+        );
+        return false;
+    }
+
     // Ensure schema exists
     $pdo = get_db_connection($dbPath);
     if ($pdo) {
         ensure_db_schema();
     } else {
-        error_log('Piel en Armonia: no se pudo conectar a SQLite: ' . $dbPath);
         if (storage_json_fallback_enabled() && ensure_json_store_file()) {
+            storage_log_once(
+                'storage_sqlite_connect_fallback',
+                'Piel en Armonia storage: SQLite connection failed, using JSON fallback store.'
+            );
             return true;
         }
+        storage_log_once(
+            'storage_sqlite_connect_failed',
+            'Piel en Armonia storage: SQLite connection failed and JSON fallback unavailable.'
+        );
         return false;
     }
 
