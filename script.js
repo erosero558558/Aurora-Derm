@@ -4,8 +4,8 @@ const e = localStorage.getItem('language'),
         : 'es';
 let n = e || t,
     o = localStorage.getItem('themeMode') || 'system',
-    i = null,
-    a = { active: !1, completed: !1, startedAt: 0, service: '', doctor: '' },
+    a = null,
+    i = { active: !1, completed: !1, startedAt: 0, service: '', doctor: '' },
     r = 0;
 const c = new Map();
 let s = [],
@@ -24,12 +24,12 @@ function p() {
     return n;
 }
 function f() {
-    return i;
+    return a;
 }
-function w(e) {
-    i = e;
+function y(e) {
+    a = e;
 }
-function y() {
+function w() {
     return s;
 }
 function b(e) {
@@ -86,12 +86,12 @@ function I() {
         return [];
     }
 }
-function B(e) {
+function D(e) {
     try {
         localStorage.setItem('chatHistory', JSON.stringify(e));
     } catch {}
 }
-const D = {
+const B = {
         currentLang: [
             p,
             function (e) {
@@ -106,16 +106,16 @@ const D = {
                 o = e;
             },
         ],
-        currentAppointment: [f, w],
+        currentAppointment: [f, y],
         checkoutSession: [
             function () {
-                return a;
+                return i;
             },
             function (e) {
-                a = e;
+                i = e;
             },
         ],
-        reviewsCache: [y, b],
+        reviewsCache: [w, b],
         chatbotOpen: [j, L],
         conversationContext: [_, T],
     },
@@ -125,15 +125,15 @@ const D = {
             get: (e, t, n) =>
                 'chatHistory' === t
                     ? I()
-                    : Object.prototype.hasOwnProperty.call(D, t)
-                      ? D[t][0]()
+                    : Object.prototype.hasOwnProperty.call(B, t)
+                      ? B[t][0]()
                       : Reflect.get(e, t, n),
             set: (e, t, n, o) =>
                 'chatHistory' === t
-                    ? (B(n), !0)
+                    ? (D(n), !0)
                     : 'bookedSlotsCache' !== t &&
-                      (Object.prototype.hasOwnProperty.call(D, t)
-                          ? (D[t][1](n), !0)
+                      (Object.prototype.hasOwnProperty.call(B, t)
+                          ? (B[t][1](n), !0)
                           : Reflect.set(e, t, n, o)),
         }
     ),
@@ -181,9 +181,9 @@ function V(e, t = 'info', n = '') {
         (o.id = 'toastContainer'),
         (o.className = 'toast-container'),
         document.body.appendChild(o));
-    const i = document.createElement('div');
-    i.className = `toast ${t}`;
-    const a = {
+    const a = document.createElement('div');
+    a.className = `toast ${t}`;
+    const i = {
             success: n || 'Exito',
             error: n || 'Error',
             warning: n || 'Advertencia',
@@ -194,12 +194,12 @@ function V(e, t = 'info', n = '') {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
-    ((i.innerHTML = `\n        <i class="fas ${{ success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' }[t]} toast-icon"></i>\n        <div class="toast-content">\n            <div class="toast-title">${a[t]}</div>\n            <div class="toast-message">${r}</div>\n        </div>\n        <button type="button" class="toast-close" data-action="toast-close">\n            <i class="fas fa-times"></i>\n        </button>\n        <div class="toast-progress"></div>\n    `),
-        o.appendChild(i),
+    ((a.innerHTML = `\n        <i class="fas ${{ success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' }[t]} toast-icon"></i>\n        <div class="toast-content">\n            <div class="toast-title">${i[t]}</div>\n            <div class="toast-message">${r}</div>\n        </div>\n        <button type="button" class="toast-close" data-action="toast-close">\n            <i class="fas fa-times"></i>\n        </button>\n        <div class="toast-progress"></div>\n    `),
+        o.appendChild(a),
         setTimeout(() => {
-            i.parentElement &&
-                ((i.style.animation = 'slideIn 0.3s ease reverse'),
-                setTimeout(() => i.remove(), 300));
+            a.parentElement &&
+                ((a.style.animation = 'slideIn 0.3s ease reverse'),
+                setTimeout(() => a.remove(), 300));
         }, 5e3));
 }
 function G(e, t) {
@@ -221,20 +221,20 @@ function Q(e) {
         cacheKey: t,
         src: n,
         scriptDataAttribute: o,
-        resolveModule: i,
-        isModuleReady: a = (e) => !!e,
+        resolveModule: a,
+        isModuleReady: i = (e) => !!e,
         onModuleReady: r,
         missingApiError: c = 'Deferred module loaded without expected API',
         loadError: s = 'No se pudo cargar el modulo diferido',
         logLabel: l = '',
     } = e || {};
-    if (!t || !n || !o || 'function' != typeof i)
+    if (!t || !n || !o || 'function' != typeof a)
         return Promise.reject(
             new Error('Invalid deferred module configuration')
         );
     const u = () => {
-            const e = i();
-            return a(e) ? ('function' == typeof r && r(e), e) : null;
+            const e = a();
+            return i(e) ? ('function' == typeof r && r(e), e) : null;
         },
         d = u();
     if (d) return Promise.resolve(d);
@@ -265,8 +265,8 @@ function Y(e, t = {}) {
     const {
         idleTimeout: n = 2e3,
         fallbackDelay: o = 1200,
-        skipOnConstrained: i = !0,
-        constrainedDelay: a = o,
+        skipOnConstrained: a = !0,
+        constrainedDelay: i = o,
     } = t;
     return (function () {
         const e =
@@ -279,15 +279,15 @@ function Y(e, t = {}) {
                 !/(^|[^0-9])2g/.test(String(e.effectiveType || '')))
         );
     })()
-        ? !i && (setTimeout(e, a), !0)
+        ? !a && (setTimeout(e, i), !0)
         : ('function' == typeof window.requestIdleCallback
               ? window.requestIdleCallback(e, { timeout: n })
               : setTimeout(e, o),
           !0);
 }
 function X(e, t, n, o = !0) {
-    const i = document.querySelector(e);
-    return !!i && (i.addEventListener(t, n, { once: !0, passive: o }), !0);
+    const a = document.querySelector(e);
+    return !!a && (a.addEventListener(t, n, { once: !0, passive: o }), !0);
 }
 function Z(e) {
     let t = !1;
@@ -314,17 +314,17 @@ function ee(e, t = {}) {
     };
 }
 function te(e, t, n = {}) {
-    const { threshold: o = 0.05, rootMargin: i = '0px', onNoObserver: a } = n;
+    const { threshold: o = 0.05, rootMargin: a = '0px', onNoObserver: i } = n;
     if (!e) return !1;
     if (!('IntersectionObserver' in window))
-        return ('function' == typeof a && a(), !1);
+        return ('function' == typeof i && i(), !1);
     const r = new IntersectionObserver(
         (e) => {
             e.forEach((e) => {
                 e.isIntersecting && (t(e), r.disconnect());
             });
         },
-        { threshold: o, rootMargin: i }
+        { threshold: o, rootMargin: a }
     );
     return (r.observe(e), !0);
 }
@@ -338,14 +338,14 @@ function oe(e, t, n) {
         if ('function' == typeof n) return n(e);
     });
 }
-const ie = $('/js/engines/ui-bundle.js'),
-    ae = window.matchMedia
+const ae = $('/js/engines/ui-bundle.js'),
+    ie = window.matchMedia
         ? window.matchMedia('(prefers-color-scheme: dark)')
         : null;
 function re() {
     return Q({
         cacheKey: 'theme-engine',
-        src: ie,
+        src: ae,
         scriptDataAttribute: 'data-ui-bundle',
         resolveModule: () => window.Piel && window.Piel.ThemeEngine,
         isModuleReady: (e) => !(!e || 'function' != typeof e.init),
@@ -357,7 +357,7 @@ function re() {
                 },
                 themeStorageKey: 'themeMode',
                 validThemeModes: Array.from(W),
-                getSystemThemeQuery: () => ae,
+                getSystemThemeQuery: () => ie,
             }),
         missingApiError: 'theme-engine loaded without API',
         loadError: 'No se pudo cargar theme-engine.js',
@@ -409,15 +409,15 @@ async function he(e, t = {}) {
         Object.entries(t.query).forEach(([e, t]) => {
             null != t && '' !== t && o.set(e, String(t));
         });
-    const i = `${N}?${o.toString()}`,
-        a = {
+    const a = `${N}?${o.toString()}`,
+        i = {
             method: n,
             credentials: 'same-origin',
             headers: { Accept: 'application/json' },
         };
     void 0 !== t.body &&
-        ((a.headers['Content-Type'] = 'application/json'),
-        (a.body = JSON.stringify(t.body)));
+        ((i.headers['Content-Type'] = 'application/json'),
+        (i.body = JSON.stringify(t.body)));
     const c = Number.isFinite(t.timeoutMs)
             ? Math.max(1500, Number(t.timeoutMs))
             : 9e3,
@@ -429,8 +429,8 @@ async function he(e, t = {}) {
         l = !0 !== t.silentSlowNotice,
         u = new Set([408, 425, 429, 500, 502, 503, 504]);
     function d(e, t = 0, n = !1, o = '') {
-        const i = new Error(e);
-        return ((i.status = t), (i.retryable = n), (i.code = o), i);
+        const a = new Error(e);
+        return ((a.status = t), (a.retryable = n), (a.code = o), a);
     }
     let g = null;
     for (let e = 0; e <= s; e += 1) {
@@ -450,7 +450,7 @@ async function he(e, t = {}) {
                     ));
             }, 1200));
         try {
-            const e = await fetch(i, { ...a, signal: t.signal }),
+            const e = await fetch(a, { ...i, signal: t.signal }),
                 n = await e.text();
             let o = {};
             try {
@@ -532,10 +532,10 @@ function pe() {
 async function fe() {
     return oe(pe, (e) => e.loadPaymentConfig());
 }
-async function we() {
+async function ye() {
     return oe(pe, (e) => e.loadStripeSdk());
 }
-async function ye(e) {
+async function we(e) {
     return oe(pe, (t) => t.createPaymentIntent(e));
 }
 async function be(e) {
@@ -600,29 +600,29 @@ async function Pe(e) {
                 (e.style.display = 'none'),
                 document.body.appendChild(e),
                 new Promise((o) => {
-                    let i = null;
-                    const a = () => {
+                    let a = null;
+                    const i = () => {
                         try {
-                            null !== i &&
+                            null !== a &&
                                 window.turnstile &&
                                 'function' == typeof window.turnstile.remove &&
-                                window.turnstile.remove(i);
+                                window.turnstile.remove(a);
                         } catch (e) {}
                         e.remove();
                     };
                     try {
-                        i = window.turnstile.render(e, {
+                        a = window.turnstile.render(e, {
                             sitekey: n,
                             action: t,
                             callback: (e) => {
-                                (a(), o(e || null));
+                                (i(), o(e || null));
                             },
                             'error-callback': () => {
-                                (a(), o(null));
+                                (i(), o(null));
                             },
                         });
                     } catch (e) {
-                        (a(), o(null));
+                        (i(), o(null));
                     }
                 })
             );
@@ -690,12 +690,12 @@ async function Te(e) {
 async function Ie(e) {
     return ne(Ce, (t) => t.createReviewRecord(e));
 }
-async function Be(e, t = {}) {
+async function De(e, t = {}) {
     return ne(Ce, (n) => n.uploadTransferProof(e, t));
 }
-let De = null;
+let Be = null;
 function Re(e = {}) {
-    return (De || (De = import('./js/chunks/engagement-CxyxLpwi.js')), De).then(
+    return (Be || (Be = import('./js/chunks/engagement-CxyxLpwi.js')), Be).then(
         (t) => t.loadPublicReviews(e)
     );
 }
@@ -747,11 +747,11 @@ function We(e = {}) {
     o &&
         !Object.prototype.hasOwnProperty.call(t, 'ab_variant') &&
         (t.ab_variant = o);
-    const i = Ke(n.source, '');
+    const a = Ke(n.source, '');
     return (
-        i &&
+        a &&
             !Object.prototype.hasOwnProperty.call(t, 'source') &&
-            (t.source = i),
+            (t.source = a),
         t
     );
 }
@@ -785,7 +785,7 @@ function ze(e, t = {}) {
                   t)
                 : t;
         })(We(t)),
-        i = [
+        a = [
             n,
             o.step || '',
             o.payment_method || '',
@@ -793,9 +793,9 @@ function ze(e, t = {}) {
             o.reason || '',
             o.source || '',
         ].join('|'),
-        a = Date.now();
-    if (a - (Ue.get(i) || 0) < 1200) return;
-    Ue.set(i, a);
+        i = Date.now();
+    if (i - (Ue.get(a) || 0) < 1200) return;
+    Ue.set(a, i);
     const r = JSON.stringify({ event: n, params: o });
     try {
         if (navigator.sendBeacon) {
@@ -886,20 +886,20 @@ async function et(e) {
                 };
             const n = new Array(t.length),
                 o = Math.max(1, Math.min(2, t.length));
-            let i = 0;
+            let a = 0;
             return (
                 await Promise.all(
                     Array.from({ length: o }, () =>
                         (async () => {
-                            for (; i < t.length; ) {
-                                const e = i;
-                                i += 1;
+                            for (; a < t.length; ) {
+                                const e = a;
+                                a += 1;
                                 const o = t[e],
-                                    a = await Be(o, { retries: 2 });
+                                    i = await De(o, { retries: 2 });
                                 n[e] = {
-                                    name: a.transferProofName || o.name || '',
-                                    url: a.transferProofUrl || '',
-                                    path: a.transferProofPath || '',
+                                    name: i.transferProofName || o.name || '',
+                                    url: i.transferProofUrl || '',
+                                    path: i.transferProofPath || '',
                                 };
                             }
                         })()
@@ -940,17 +940,17 @@ function tt() {
                     R.checkoutSession.active = !0 === e;
                 },
                 startCheckoutSession: ot,
-                setCheckoutStep: it,
-                completeCheckoutSession: at,
+                setCheckoutStep: at,
+                completeCheckoutSession: it,
                 maybeTrackCheckoutAbandon: rt,
                 loadPaymentConfig: fe,
-                loadStripeSdk: we,
-                createPaymentIntent: ye,
+                loadStripeSdk: ye,
+                createPaymentIntent: we,
                 verifyPaymentIntent: be,
                 buildAppointmentPayload: et,
                 stripTransientAppointmentFields: Ze,
                 createAppointmentRecord: _e,
-                uploadTransferProof: Be,
+                uploadTransferProof: De,
                 getCaptchaToken: Pe,
                 showSuccessModal: Xe,
                 showToast: V,
@@ -977,10 +977,10 @@ function nt() {
 function ot(e, t = {}) {
     oe(Fe, (n) => n.startCheckoutSession(e, t));
 }
-function it(e, t = {}) {
+function at(e, t = {}) {
     oe(Fe, (n) => n.setCheckoutStep(e, t));
 }
-function at(e) {
+function it(e) {
     oe(Fe, (t) => t.completeCheckoutSession(e));
 }
 function rt(e = 'unknown') {
@@ -1019,12 +1019,12 @@ function ut() {
         validateCasePhotoFiles: dt,
         markBookingViewed: Ge,
         startCheckoutSession: ot,
-        setCheckoutStep: it,
+        setCheckoutStep: at,
         trackEvent: $e,
         normalizeAnalyticsLabel: Ve,
         openPaymentModal: ht,
         debugLog: K,
-        setCurrentAppointment: w,
+        setCurrentAppointment: y,
     };
 }
 function dt(e) {
@@ -1046,8 +1046,8 @@ function dt(e) {
                 );
             const e = String(n.type || '').toLowerCase(),
                 o = t.has(e),
-                i = /\.(jpe?g|png|webp)$/i.test(String(n.name || ''));
-            if (!o && !i)
+                a = /\.(jpe?g|png|webp)$/i.test(String(n.name || ''));
+            if (!o && !a)
                 throw new Error(
                     'es' === R.currentLang
                         ? 'Solo se permiten imágenes JPG, PNG o WEBP.'
@@ -1113,12 +1113,12 @@ async function pt() {
     );
 }
 let ft = null;
-function wt() {
+function yt() {
     return (ft || (ft = import('./js/chunks/ui-C4GEqQxn.js')), ft);
 }
-let yt = null;
+let wt = null;
 function bt() {
-    return (yt || (yt = import('./js/chunks/engagement-CxyxLpwi.js')), yt);
+    return (wt || (wt = import('./js/chunks/engagement-CxyxLpwi.js')), wt);
 }
 let kt = null,
     vt = null;
@@ -1126,17 +1126,17 @@ function Pt() {
     return (vt || (vt = import('./js/chunks/reschedule-CiSqh0C5.js')), vt);
 }
 function Et(e) {
-    wt()
+    yt()
         .then((t) => t.toggleMobileMenu(e))
         .catch(() => {});
 }
 function Ct() {
-    wt()
+    yt()
         .then((e) => e.startWebVideo())
         .catch(() => {});
 }
 function St() {
-    wt()
+    yt()
         .then((e) => e.closeVideoModal())
         .catch(() => {});
 }
@@ -1170,7 +1170,7 @@ function Tt(e) {
         (await import('./js/chunks/shell-CjkQnRo5.js'))[e](...t);
 }
 const It = $('/js/engines/data-bundle.js?v=20260225-data-consolidation1');
-function Bt(e) {
+function Dt(e) {
     const t = document.getElementById('serviceSelect');
     if (t) {
         ((t.value = e),
@@ -1184,7 +1184,7 @@ function Bt(e) {
         }
     }
 }
-function Dt() {
+function Bt() {
     return Q({
         cacheKey: 'action-router-engine',
         src: It,
@@ -1214,7 +1214,7 @@ function Dt() {
                 minimizeChatbot: Tt('minimizeChatbot'),
                 startChatBooking: Tt('startChatBooking'),
                 handleChatDateSelect: Tt('handleChatDateSelect'),
-                selectService: Bt,
+                selectService: Dt,
             }),
         missingApiError: 'action-router-engine loaded without API',
         loadError: 'No se pudo cargar action-router-engine.js',
@@ -1252,8 +1252,9 @@ let Wt = null,
     Kt = null,
     zt = null,
     Ft = null,
-    $t = null;
-const Vt = import('./js/chunks/content-loader-BCpccN5h.js');
+    $t = null,
+    Vt = !1;
+const Gt = import('./js/chunks/content-loader-BCpccN5h.js');
 ((window.Piel = window.Piel || {}),
     (window.Piel.deployVersion =
         window.Piel.deployVersion ||
@@ -1286,12 +1287,12 @@ const Vt = import('./js/chunks/content-loader-BCpccN5h.js');
             }
             return '';
         })()));
-const Gt = 'pa_hero_variant_v1',
-    Ht = 'control',
-    Jt = 'focus_agenda',
-    Qt = [Ht, Jt],
-    Yt = {
-        [Ht]: {
+const Ht = 'pa_hero_variant_v1',
+    Jt = 'control',
+    Qt = 'focus_agenda',
+    Yt = [Jt, Qt],
+    Xt = {
+        [Jt]: {
             es: {
                 subtitle:
                     'Dermatologia especializada con tecnologia de vanguardia. Tratamientos personalizados para que tu piel luzca saludable y radiante.',
@@ -1303,7 +1304,7 @@ const Gt = 'pa_hero_variant_v1',
                 primaryCta: 'Book Consultation',
             },
         },
-        [Jt]: {
+        [Qt]: {
             es: {
                 subtitle:
                     'Agenda tu valoracion dermatologica en minutos, con atencion humana y seguimiento real.',
@@ -1316,9 +1317,9 @@ const Gt = 'pa_hero_variant_v1',
             },
         },
     };
-let Xt = null,
-    Zt = !1;
-function en() {
+let Zt = null,
+    en = !1;
+function tn() {
     return (function () {
         try {
             return !!window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -1330,19 +1331,19 @@ function en() {
         ? 'auto'
         : 'smooth';
 }
-function tn() {
+function nn() {
     return (
-        Xt ||
-            (Xt =
+        Zt ||
+            (Zt =
                 (function () {
                     try {
                         const e = (function (e) {
                             const t = String(e || '')
                                 .trim()
                                 .toLowerCase();
-                            return Qt.includes(t) ? t : '';
-                        })(localStorage.getItem(Gt));
-                        if (Qt.includes(e)) return e;
+                            return Yt.includes(t) ? t : '';
+                        })(localStorage.getItem(Ht));
+                        if (Yt.includes(e)) return e;
                     } catch (e) {}
                     let e;
                     try {
@@ -1350,36 +1351,36 @@ function tn() {
                         (window.crypto &&
                         'function' == typeof window.crypto.getRandomValues
                             ? (window.crypto.getRandomValues(t),
-                              (e = t[0] % 2 == 0 ? Ht : Jt))
-                            : (e = Math.random() < 0.5 ? Ht : Jt),
-                            localStorage.setItem(Gt, e));
+                              (e = t[0] % 2 == 0 ? Jt : Qt))
+                            : (e = Math.random() < 0.5 ? Jt : Qt),
+                            localStorage.setItem(Ht, e));
                     } catch (t) {
-                        e = Math.random() < 0.5 ? Ht : Jt;
+                        e = Math.random() < 0.5 ? Jt : Qt;
                     }
-                    return e || Ht;
-                })() || Ht),
-        Xt
+                    return e || Jt;
+                })() || Jt),
+        Zt
     );
 }
-function nn() {
-    const e = tn(),
+function on() {
+    const e = nn(),
         t = 'en' === R.currentLang ? 'en' : 'es',
-        n = Yt[e] || Yt[Ht],
+        n = Xt[e] || Xt[Jt],
         o = n[t] || n.es,
-        i = document.querySelector('.hero-subtitle[data-i18n="hero_subtitle"]');
-    i && o.subtitle && (i.textContent = o.subtitle);
-    const a = document.querySelector(
+        a = document.querySelector('.hero-subtitle[data-i18n="hero_subtitle"]');
+    a && o.subtitle && (a.textContent = o.subtitle);
+    const i = document.querySelector(
         '.hero-actions .btn-primary[data-i18n="hero_cta_primary"]'
     );
-    (a && o.primaryCta && (a.textContent = o.primaryCta),
+    (i && o.primaryCta && (i.textContent = o.primaryCta),
         document.documentElement.setAttribute('data-hero-variant', e));
 }
 ((window.Piel.getExperimentContext = function () {
-    const e = tn();
+    const e = nn();
     return {
         heroVariant: e,
         source: `hero_${e}`,
-        checkoutEntry: e === Ht ? 'booking_form' : `booking_form_${e}`,
+        checkoutEntry: e === Jt ? 'booking_form' : `booking_form_${e}`,
     };
 }),
     (async function () {
@@ -1402,10 +1403,10 @@ function nn() {
     (window.Piel.isFeatureEnabled = function (e) {
         return !!Ot && Boolean(Ot[e]);
     }));
-const on = $('/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1');
-let an = null,
-    rn = !1;
-let cn = !1;
+const an = $('/styles-deferred.css?v=ui-20260221-deferred18-fullcssfix1');
+let rn = null,
+    cn = !1;
+let sn = !1;
 (document.addEventListener('DOMContentLoaded', function () {
     (document.querySelectorAll('a[href^="URL_"]').forEach((e) => {
         (e.removeAttribute('href'),
@@ -1413,15 +1414,15 @@ let cn = !1;
             e.classList.add('is-disabled-link'));
     }),
         Nt(),
-        cn ||
-            ((cn = !0),
+        sn ||
+            ((sn = !0),
             document.addEventListener('click', async function (e) {
                 const t = e.target instanceof Element ? e.target : null;
                 if (!t) return;
                 const n = t.closest('[data-action]');
                 if (!n) return;
                 const o = String(n.getAttribute('data-action') || '').trim(),
-                    i = n.getAttribute('data-value') || '';
+                    a = n.getAttribute('data-value') || '';
                 switch (o) {
                     case 'toggle-chatbot':
                         (e.preventDefault(),
@@ -1441,12 +1442,12 @@ let cn = !1;
                     case 'quick-message':
                         (e.preventDefault(),
                             e.stopImmediatePropagation(),
-                            (await Ut()).sendQuickMessage(i));
+                            (await Ut()).sendQuickMessage(a));
                         break;
                     case 'chat-booking':
                         (e.preventDefault(),
                             e.stopImmediatePropagation(),
-                            (await Ut()).handleChatBookingSelection(i));
+                            (await Ut()).handleChatBookingSelection(a));
                         break;
                     case 'start-booking':
                         (e.preventDefault(),
@@ -1471,11 +1472,11 @@ let cn = !1;
                                             t = n.offsetTop - e - 20;
                                         window.scrollTo({
                                             top: t,
-                                            behavior: en(),
+                                            behavior: tn(),
                                         });
                                     }
                                 }
-                            })(i));
+                            })(a));
                 }
             }),
             document.addEventListener('change', async function (e) {
@@ -1484,25 +1485,38 @@ let cn = !1;
                     t.closest('[data-action="chat-date-select"]') &&
                     (await Ut()).handleChatDateSelect(t.value);
             })),
+        Vt ||
+            ((Vt = !0),
+            document.addEventListener('click', (e) => {
+                const t = e.target instanceof Element ? e.target : null;
+                if (!t) return;
+                const n = t.closest('.theme-btn[data-theme-mode]');
+                if (!n) return;
+                const o =
+                    n.getAttribute('data-theme-mode') ||
+                    n.getAttribute('data-value') ||
+                    'system';
+                (e.preventDefault(), e.stopImmediatePropagation(), ce(o));
+            })),
         oe(
-            Dt,
+            Bt,
             () => {},
             (e) => {}
         ),
-        rn ||
+        cn ||
             'file:' === window.location.protocol ||
-            ((rn = !0),
+            ((cn = !0),
             Y(
                 () => {
                     (document.querySelector(
                         'link[data-deferred-stylesheet="true"], link[rel="stylesheet"][href*="styles-deferred.css"]'
                     )
                         ? Promise.resolve(!0)
-                        : an ||
-                          ((an = new Promise((e, t) => {
+                        : rn ||
+                          ((rn = new Promise((e, t) => {
                               const n = document.createElement('link');
                               ((n.rel = 'stylesheet'),
-                                  (n.href = on),
+                                  (n.href = an),
                                   (n.dataset.deferredStylesheet = 'true'),
                                   (n.onload = () => e(!0)),
                                   (n.onerror = () =>
@@ -1513,9 +1527,9 @@ let cn = !1;
                                       )),
                                   document.head.appendChild(n));
                           }).catch((e) => {
-                              throw ((an = null), e);
+                              throw ((rn = null), e);
                           })),
-                          an)
+                          rn)
                     ).catch(() => {});
                 },
                 {
@@ -1527,10 +1541,10 @@ let cn = !1;
             )),
         oe(re, (e) => e.initThemeMode()),
         ge(R.currentLang)
-            .then(() => nn())
-            .catch(() => nn()),
-        tn(),
+            .then(() => on())
+            .catch(() => on()),
         nn(),
+        on(),
         (function () {
             const e = (e, t) => {
                 const n = document.querySelector(e);
@@ -1539,7 +1553,7 @@ let cn = !1;
                     ((n.dataset.heroExperimentBound = 'true'),
                     n.addEventListener('click', () => {
                         $e('booking_step_completed', {
-                            source: `hero_${tn()}`,
+                            source: `hero_${nn()}`,
                             step: t,
                         });
                     }));
@@ -1552,18 +1566,18 @@ let cn = !1;
                     '.hero-actions .btn-secondary[data-i18n="hero_cta_secondary"]',
                     'hero_secondary_cta_click'
                 ),
-                Zt ||
-                    ((Zt = !0),
+                en ||
+                    ((en = !0),
                     $e('booking_step_completed', {
-                        source: `hero_${tn()}`,
+                        source: `hero_${nn()}`,
                         step: 'hero_variant_assigned',
                     })));
         })(),
-        document.addEventListener('piel:language-changed', nn),
+        document.addEventListener('piel:language-changed', on),
         oe(Nt, (e) => e.initGA4()),
         oe(Fe, (e) => e.initBookingFunnelObserver()),
         oe(Fe, (e) => e.initDeferredSectionPrefetch()),
-        Vt.then(({ loadDeferredContent: e }) => e())
+        Gt.then(({ loadDeferredContent: e }) => e())
             .catch(() => !1)
             .then(() => {
                 oe(Nt, (e) => e.initCookieBanner());
@@ -1701,15 +1715,15 @@ let cn = !1;
         if (!n) return;
         const o = n.closest('a[href^="#"]');
         if (!o) return;
-        const i = o.getAttribute('href');
-        if (!i || '#' === i) return;
-        const a = document.querySelector(i);
-        if (!a) return;
+        const a = o.getAttribute('href');
+        if (!a || '#' === a) return;
+        const i = document.querySelector(a);
+        if (!i) return;
         t.preventDefault();
         const r = e ? e.offsetHeight : 0,
-            c = a.offsetTop - r - 20;
-        ('#citas' === i && Ge(`cta_click_${tn()}`),
-            window.scrollTo({ top: c, behavior: en() }));
+            c = i.offsetTop - r - 20;
+        ('#citas' === a && Ge(`cta_click_${nn()}`),
+            window.scrollTo({ top: c, behavior: tn() }));
     }),
         document.addEventListener('click', function (e) {
             const t = e.target instanceof Element ? e.target : null;
@@ -1750,8 +1764,8 @@ let cn = !1;
                     if (e.isIntersecting) {
                         const n = e.target,
                             o = n.dataset.src,
-                            i = n.dataset.srcset;
-                        (i && (n.srcset = i),
+                            a = n.dataset.srcset;
+                        (a && (n.srcset = a),
                             (n.src = o),
                             n.classList.add('loaded'),
                             t.unobserve(n));
@@ -1779,7 +1793,7 @@ let cn = !1;
             } catch (e) {}
     }));
 export {
-    it as A,
+    at as A,
     ot as B,
     x as C,
     U as D,
@@ -1787,7 +1801,7 @@ export {
     je as F,
     te as G,
     b as H,
-    y as I,
+    w as I,
     Ie as J,
     Te as K,
     z as L,
@@ -1803,7 +1817,7 @@ export {
     q as f,
     j as g,
     O as h,
-    B as i,
+    D as i,
     I as j,
     f as k,
     Q as l,
@@ -1811,7 +1825,7 @@ export {
     _ as n,
     K as o,
     R as p,
-    w as q,
+    y as q,
     oe as r,
     V as s,
     $e as t,
@@ -1820,5 +1834,5 @@ export {
     ne as w,
     Pe as x,
     _e as y,
-    at as z,
+    it as z,
 };
