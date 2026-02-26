@@ -2906,8 +2906,8 @@ tasks:
     status_since_at: "2026-02-26T05:24:48.642Z"
     risk: low
     scope: frontend-qa
-    codex_instance: codex_frontend
-    domain_lane: frontend_content
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
     files: ["tests/admin.spec.js", "tests/admin-availability-responsive.spec.js", "tests/admin-navigation-responsive.spec.js", "tests/admin-quick-nav.spec.js"]
