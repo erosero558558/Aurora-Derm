@@ -42,7 +42,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Backup integrity verification and at-rest encryption
 
 Implementar checksum SHA-256 por header, cifrado AES-256-CBC y prueba de integridad con test.
@@ -60,7 +59,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### PHP rate-limiter sliding window and per-user limits
 
 Actualizar rate-limiter a sliding window, incluir limite por user token y pruebas de regresion.
@@ -78,7 +76,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### OpenAPI 3.1 specification for public API resources
 
 Generar OpenAPI 3.1 para api.php recursos principales y documentar como visualizarla localmente.
@@ -96,7 +93,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Email notification system for appointment confirmations
 
 Implementar wrapper PHPMailer para confirmaciones y recordatorios con templates HTML y test.
@@ -114,7 +110,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Resolver fallo workflow: CI: refactor(governance): extract remaining commands and add php contract…
 
 Resolver señal run#22379873691. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -132,7 +127,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Resolver fallo workflow: CI: feat(governance): add warn-first diagnostics and policy enforcement c…
 
 Resolver señal run#22379426844. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -150,7 +144,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Resolver fallo workflow: CI: refactor(orchestrator): extract contribution metrics engine
 
 Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -168,7 +161,6 @@ dispatched_by: agent-orchestrator
 session: sessions/6593824734303087673
 dispatched: 2026-02-25
 -->
-
 ### Resolver fallo workflow: CI: ci(c1): add staging figo-contract and chat smoke gate; close AG-021
 
 Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -186,7 +178,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Resolver fallo workflow: Agent Governance: feat(board): queue P1-P3 tech debt tasks (AG-019, AG-020, AG-021)
 
 Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -204,7 +195,6 @@ dispatched_by: agent-orchestrator
 session: sessions/8161501925126400906
 dispatched: 2026-02-25
 -->
-
 ### Resolver fallo workflow: Agent Autopilot: Agent Autopilot
 
 Resolver señal workflow:agent-autopilot:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -222,7 +212,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Resolver fallo workflow: CI: CI
 
 Resolver señal workflow:ci:codex/prod-readiness-workflows-20260225. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/.
@@ -240,7 +229,6 @@ dispatched_by: agent-orchestrator
 session:
 dispatched:
 -->
-
 ### Harden autopilot run diagnostics for fast triage
 
 Harden autopilot run diagnostics for fast triage

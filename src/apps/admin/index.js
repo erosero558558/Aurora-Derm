@@ -19,6 +19,7 @@ import {
     focusCallbackSearch,
     isCallbacksSectionActive,
     markContacted,
+    focusNextPendingCallback,
 } from './modules/callbacks.js';
 import { loadReviews } from './modules/reviews.js';
 import { initPushNotifications } from './modules/push.js';
@@ -76,6 +77,8 @@ const SIDEBAR_FOCUSABLE_SELECTOR = [
 ].join(',');
 const ADMIN_REFRESH_STALE_AFTER_MS = 5 * 60 * 1000;
 const ADMIN_REFRESH_STATUS_TICK_MS = 30 * 1000;
+const ADMIN_LAST_SECTION_STORAGE_KEY = 'adminLastSection';
+const ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY = 'adminSidebarCollapsed';
 const ADMIN_CONTEXT_ACTIONS = {
     dashboard: {
         title: 'Acciones rápidas: dashboard',
@@ -149,6 +152,11 @@ const ADMIN_CONTEXT_ACTIONS = {
                 icon: 'fa-calendar-check',
                 label: 'Ver citas por validar',
             },
+            {
+                action: 'context-open-callbacks-next',
+                icon: 'fa-phone-volume',
+                label: 'Siguiente llamada',
+            },
         ],
     },
     reviews: {
@@ -175,12 +183,12 @@ const ADMIN_CONTEXT_ACTIONS = {
         title: 'Acciones rápidas: disponibilidad',
         actions: [
             {
-                action: 'availability-today',
+                action: 'context-availability-today',
                 icon: 'fa-calendar-day',
                 label: 'Ir a hoy',
             },
             {
-                action: 'availability-next-with-slots',
+                action: 'context-availability-next',
                 icon: 'fa-forward',
                 label: 'Siguiente con horarios',
             },
@@ -190,7 +198,7 @@ const ADMIN_CONTEXT_ACTIONS = {
                 label: 'Agregar horario',
             },
             {
-                action: 'copy-availability-day',
+                action: 'context-copy-availability-day',
                 icon: 'fa-copy',
                 label: 'Copiar día',
             },
@@ -209,16 +217,50 @@ function getNavItems() {
     );
 }
 
-function getSectionFromHash() {
-    const hashSection = window.location.hash.replace(/^#/, '').trim();
+function normalizeAdminSection(section, fallback = 'dashboard') {
+    const candidate = String(section || '').trim();
+    if (!candidate) return fallback;
     const sections = new Set(getNavItems().map((item) => item.dataset.section));
-    return sections.has(hashSection) ? hashSection : 'dashboard';
+    return sections.has(candidate) ? candidate : fallback;
+}
+
+function getSectionFromHash({ fallback = 'dashboard' } = {}) {
+    const hashSection = window.location.hash.replace(/^#/, '').trim();
+    return normalizeAdminSection(hashSection, fallback);
+}
+
+function readStoredAdminSection() {
+    try {
+        const storedSection = localStorage.getItem(
+            ADMIN_LAST_SECTION_STORAGE_KEY
+        );
+        return normalizeAdminSection(storedSection, 'dashboard');
+    } catch (_error) {
+        return 'dashboard';
+    }
+}
+
+function persistAdminSection(section) {
+    const normalizedSection = normalizeAdminSection(section, 'dashboard');
+    try {
+        localStorage.setItem(ADMIN_LAST_SECTION_STORAGE_KEY, normalizedSection);
+    } catch (_error) {
+        // no-op
+    }
+}
+
+function resolvePreferredSection() {
+    const hashSection = window.location.hash.replace(/^#/, '').trim();
+    if (hashSection) {
+        return normalizeAdminSection(hashSection, 'dashboard');
+    }
+    return readStoredAdminSection();
 }
 
 function getActiveSection() {
     return (
         document.querySelector('.nav-item.active')?.dataset.section ||
-        getSectionFromHash() ||
+        resolvePreferredSection() ||
         'dashboard'
     );
 }
@@ -233,9 +275,70 @@ function isSidebarOpen() {
     );
 }
 
+function isSidebarCollapsed() {
+    return Boolean(
+        document.body?.classList.contains('admin-sidebar-collapsed')
+    );
+}
+
+function readSidebarCollapsedPreference() {
+    try {
+        return (
+            localStorage.getItem(ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY) === '1'
+        );
+    } catch (_error) {
+        return false;
+    }
+}
+
+function persistSidebarCollapsedPreference(isCollapsed) {
+    try {
+        localStorage.setItem(
+            ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY,
+            isCollapsed ? '1' : '0'
+        );
+    } catch (_error) {
+        // no-op
+    }
+}
+
+function syncSidebarCollapseButtonState(isCollapsed) {
+    const collapseBtn = document.getElementById('adminSidebarCollapse');
+    if (!(collapseBtn instanceof HTMLButtonElement)) return;
+    const nextLabel = isCollapsed
+        ? 'Expandir navegación lateral'
+        : 'Contraer navegación lateral';
+    collapseBtn.setAttribute('aria-pressed', String(isCollapsed));
+    collapseBtn.setAttribute('aria-label', nextLabel);
+    collapseBtn.setAttribute('title', nextLabel);
+}
+
+function setSidebarCollapsed(isCollapsed, { persist = true } = {}) {
+    if (!document.body) return false;
+
+    const shouldCollapse = Boolean(!isCompactAdminViewport() && isCollapsed);
+    document.body.classList.toggle('admin-sidebar-collapsed', shouldCollapse);
+    syncSidebarCollapseButtonState(shouldCollapse);
+
+    if (persist) {
+        persistSidebarCollapsedPreference(shouldCollapse);
+    }
+
+    return shouldCollapse;
+}
+
+function syncSidebarLayoutMode() {
+    if (isCompactAdminViewport()) {
+        setSidebarCollapsed(false, { persist: false });
+        return;
+    }
+    setSidebarCollapsed(readSidebarCollapsedPreference(), { persist: false });
+}
+
 function setNavActive(section) {
+    const normalizedSection = normalizeAdminSection(section, 'dashboard');
     getNavItems().forEach((item) => {
-        const isActive = item.dataset.section === section;
+        const isActive = item.dataset.section === normalizedSection;
         item.classList.toggle('active', isActive);
         if (isActive) {
             item.setAttribute('aria-current', 'page');
@@ -246,6 +349,7 @@ function setNavActive(section) {
             item.setAttribute('aria-pressed', String(isActive));
         }
     });
+    persistAdminSection(normalizedSection);
 }
 
 function isTypingContextTarget(target) {
@@ -373,12 +477,21 @@ function getSidebarFocusableElements() {
 
     return Array.from(
         sidebar.querySelectorAll(SIDEBAR_FOCUSABLE_SELECTOR)
-    ).filter(
-        (element) =>
-            element instanceof HTMLElement &&
-            !element.hasAttribute('disabled') &&
-            !element.hasAttribute('aria-hidden')
-    );
+    ).filter((element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        if (element.hasAttribute('disabled')) return false;
+        if (element.getAttribute('aria-hidden') === 'true') return false;
+        if (element.closest('.is-hidden')) return false;
+        if (element.getClientRects().length === 0) return false;
+        if (element.offsetWidth === 0 && element.offsetHeight === 0) {
+            return false;
+        }
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden') {
+            return false;
+        }
+        return true;
+    });
 }
 
 function syncSidebarOverlayA11yState(isOpen) {
@@ -569,7 +682,11 @@ function handleAdminKeyboardShortcuts(event) {
 
     if (key === 'm' || code === 'keym') {
         event.preventDefault();
-        setSidebarOpen(!isSidebarOpen());
+        if (isCompactAdminViewport()) {
+            setSidebarOpen(!isSidebarOpen());
+            return;
+        }
+        setSidebarCollapsed(!isSidebarCollapsed());
         return;
     }
 
@@ -902,7 +1019,10 @@ async function showDashboard() {
     const dashboard = document.getElementById('adminDashboard');
     if (loginScreen) loginScreen.classList.add('is-hidden');
     if (dashboard) dashboard.classList.remove('is-hidden');
-    setNavActive(getSectionFromHash());
+    const preferredSection = resolvePreferredSection();
+    setNavActive(preferredSection);
+    syncHash(preferredSection);
+    syncSidebarLayoutMode();
     closeSidebar();
     await updateDate();
     await initPushNotifications();
@@ -1122,6 +1242,16 @@ function attachGlobalListeners() {
             return;
         }
 
+        if (action === 'toggle-sidebar-collapse') {
+            event.preventDefault();
+            if (isCompactAdminViewport()) {
+                setSidebarOpen(!isSidebarOpen());
+                return;
+            }
+            setSidebarCollapsed(!isSidebarCollapsed());
+            return;
+        }
+
         if (action === 'run-admin-command') {
             event.preventDefault();
             const commandInput = document.getElementById('adminQuickCommand');
@@ -1163,10 +1293,38 @@ function attachGlobalListeners() {
             return;
         }
 
+        if (action === 'context-open-callbacks-next') {
+            event.preventDefault();
+            await navigateToCallbacksWithQuickFilter('pending');
+            focusNextPendingCallback();
+            return;
+        }
+
         if (action === 'context-focus-slot-input') {
             event.preventDefault();
             await navigateToSection('availability', { focus: false });
             focusAvailabilityTimeInput();
+            return;
+        }
+
+        if (action === 'context-availability-today') {
+            event.preventDefault();
+            await navigateToSection('availability', { focus: false });
+            jumpAvailabilityToToday();
+            return;
+        }
+
+        if (action === 'context-availability-next') {
+            event.preventDefault();
+            await navigateToSection('availability', { focus: false });
+            jumpAvailabilityToNextWithSlots();
+            return;
+        }
+
+        if (action === 'context-copy-availability-day') {
+            event.preventDefault();
+            await navigateToSection('availability', { focus: false });
+            copyAvailabilityDay();
             return;
         }
 
@@ -1186,6 +1344,12 @@ function attachGlobalListeners() {
             if (action === 'callback-quick-filter') {
                 event.preventDefault();
                 applyCallbackQuickFilter(actionEl.dataset.filterValue || 'all');
+                return;
+            }
+            if (action === 'callbacks-triage-next') {
+                event.preventDefault();
+                await navigateToCallbacksWithQuickFilter('pending');
+                focusNextPendingCallback();
                 return;
             }
             if (action === 'clear-appointment-filters') {
@@ -1337,7 +1501,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAppointmentsToolbarPreferences();
     ensureAdminRefreshStatusTicker();
     updateAdminRefreshStatus();
-    renderAdminContextActions(getSectionFromHash());
+    renderAdminContextActions(resolvePreferredSection());
+    syncSidebarLayoutMode();
 
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
@@ -1355,9 +1520,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document
         .getElementById('adminMenuToggle')
         ?.addEventListener('click', () => {
-            const sidebar = document.getElementById('adminSidebar');
-            const isOpen = sidebar?.classList.contains('is-open');
-            setSidebarOpen(!isOpen);
+            if (isCompactAdminViewport()) {
+                setSidebarOpen(!isSidebarOpen());
+                return;
+            }
+            setSidebarCollapsed(!isSidebarCollapsed());
         });
     document
         .getElementById('adminMenuClose')
@@ -1380,12 +1547,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!isCompactAdminViewport()) {
             closeSidebar();
         }
+        syncSidebarLayoutMode();
         syncSidebarOverlayA11yState(isSidebarOpen());
     });
     window.addEventListener('hashchange', async () => {
         const dashboard = document.getElementById('adminDashboard');
         if (!dashboard || dashboard.classList.contains('is-hidden')) return;
-        await navigateToSection(getSectionFromHash(), {
+        await navigateToSection(getSectionFromHash({ fallback: 'dashboard' }), {
             refresh: false,
             updateHash: false,
             focus: false,
@@ -1416,5 +1584,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     syncSidebarOverlayA11yState(false);
+    syncSidebarCollapseButtonState(isSidebarCollapsed());
     await checkAuthAndBoot();
 });

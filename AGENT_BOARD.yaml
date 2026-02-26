@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 183
+  revision: 181
   updated_at: 2026-02-26
 
 tasks:
@@ -3089,18 +3089,18 @@ tasks:
     updated_at: 2026-02-26
 
   - id: AG-081
-    title: "Auto-clean local noise for derived queue files in sync-main-safe"
-    owner: ernes
+    title: "Frontend admin UX: dashboard operational center + actionable triage"
+    owner: Ernesto
     executor: codex
     status: done
-    status_since_at: "2026-02-26T06:19:06.637Z"
+    status_since_at: "2026-02-26T06:29:10.224Z"
     risk: medium
-    scope: tooling
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
-    files: ["bin/sync-main-safe.js", "tests-node/sync-main-safe.test.js", "JULES_TASKS.md", "KIMI_TASKS.md"]
+    files: ["admin.html"]
     source_signal: manual
     source_ref: ""
     priority_score: 0
@@ -3114,31 +3114,31 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-26T06:19:06.637Z"
+    lease_cleared_at: "2026-02-26T06:29:10.224Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
-    acceptance: "Auto-clean local noise for derived queue files in sync-main-safe"
-    acceptance_ref: "verification/agent-runs/AG-080.md"
-    evidence_ref: "verification/agent-runs/AG-080.md"
+    acceptance: "Frontend admin UX: dashboard operational center + actionable triage"
+    acceptance_ref: "verification/agent-runs/AG-081.md"
+    evidence_ref: "verification/agent-runs/AG-081.md"
     depends_on: []
-    prompt: "Auto-clean local noise for derived queue files in sync-main-safe"
+    prompt: "Frontend admin UX: dashboard operational center + actionable triage"
     created_at: 2026-02-26
     updated_at: 2026-02-26
 
   - id: AG-082
-    title: "Automatizar snapshot + poda semanal de tareas done del AGENT_BOARD"
-    owner: ernes
+    title: "Frontend admin UX: callbacks triage rail + context action hardening"
+    owner: Ernesto
     executor: codex
     status: done
-    status_since_at: "2026-02-26T06:38:10.805Z"
+    status_since_at: "2026-02-26T06:41:40.602Z"
     risk: medium
-    scope: tooling
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
-    files: ["bin/archive-agent-board.js", "tests-node/archive-agent-board.test.js", ".github/workflows/agent-board-weekly-snapshot.yml", "package.json"]
+    files: ["admin.html"]
     source_signal: manual
     source_ref: ""
     priority_score: 0
@@ -3152,31 +3152,31 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-26T06:38:10.805Z"
+    lease_cleared_at: "2026-02-26T06:41:40.602Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
-    acceptance: "Automatizar snapshot + poda semanal de tareas done del AGENT_BOARD"
+    acceptance: "Admin callbacks triage rail operativo + acciones contextuales sin colision de selectores"
     acceptance_ref: "verification/agent-runs/AG-082.md"
     evidence_ref: "verification/agent-runs/AG-082.md"
     depends_on: []
-    prompt: "Automatizar snapshot + poda semanal de tareas done del AGENT_BOARD"
+    prompt: "Frontend admin UX: callbacks triage rail + context action hardening"
     created_at: 2026-02-26
     updated_at: 2026-02-26
 
   - id: AG-083
-    title: "C2 hardening: dedupe y semaforo valido para incidente semanal de retencion"
-    owner: ernes
+    title: "Frontend admin UX: collapsible sidebar + nav persistence + keyboard responsive polish"
+    owner: Ernesto
     executor: codex
     status: done
-    status_since_at: "2026-02-26T06:48:45.036Z"
+    status_since_at: "2026-02-26T06:53:16.651Z"
     risk: medium
-    scope: tooling
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
-    files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js"]
+    files: ["admin.html"]
     source_signal: manual
     source_ref: ""
     priority_score: 0
@@ -3190,14 +3190,14 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-02-26T06:48:45.036Z"
+    lease_cleared_at: "2026-02-26T06:53:16.651Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
-    acceptance: "C2 hardening: dedupe y semaforo valido para incidente semanal de retencion"
+    acceptance: "Frontend admin UX: collapsible sidebar + nav persistence + keyboard responsive polish"
     acceptance_ref: "verification/agent-runs/AG-083.md"
     evidence_ref: "verification/agent-runs/AG-083.md"
     depends_on: []
-    prompt: "C2 hardening: dedupe y semaforo valido para incidente semanal de retencion"
+    prompt: "Frontend admin UX: collapsible sidebar + nav persistence + keyboard responsive polish"
     created_at: 2026-02-26
     updated_at: 2026-02-26

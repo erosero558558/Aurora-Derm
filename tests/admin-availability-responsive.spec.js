@@ -270,13 +270,19 @@ test.describe('Admin availability responsive tablet layout', () => {
             page.locator('#availabilityDayActionsStatus')
         ).toContainText('Edicion bloqueada');
         await expect(
-            page.locator('[data-action="paste-availability-day"]')
+            page.locator(
+                '#availabilityDayActions [data-action="paste-availability-day"]'
+            )
         ).toBeDisabled();
         await expect(
-            page.locator('[data-action="duplicate-availability-day-next"]')
+            page.locator(
+                '#availabilityDayActions [data-action="duplicate-availability-day-next"]'
+            )
         ).toBeDisabled();
         await expect(
-            page.locator('[data-action="clear-availability-day"]')
+            page.locator(
+                '#availabilityDayActions [data-action="clear-availability-day"]'
+            )
         ).toBeDisabled();
     });
 
@@ -292,13 +298,19 @@ test.describe('Admin availability responsive tablet layout', () => {
         const initialCount = await ensureAtLeastOneSelectedSlot(page);
         expect(initialCount).toBeGreaterThan(0);
 
-        await page.locator('[data-action="copy-availability-day"]').click();
+        await page
+            .locator(
+                '#availabilityDayActions [data-action="copy-availability-day"]'
+            )
+            .click();
         await expect(
             page.locator('#availabilityDayActionsStatus')
         ).toContainText('Portapapeles:');
 
         await page
-            .locator('[data-action="duplicate-availability-day-next"]')
+            .locator(
+                '#availabilityDayActions [data-action="duplicate-availability-day-next"]'
+            )
             .click();
         await expect(page.locator('#selectedDate')).not.toHaveText(
             initialSelectedDateText || ''
@@ -306,13 +318,21 @@ test.describe('Admin availability responsive tablet layout', () => {
         await expect(slotItems).toHaveCount(initialCount);
 
         acceptNextDialog(page);
-        await page.locator('[data-action="clear-availability-day"]').click();
+        await page
+            .locator(
+                '#availabilityDayActions [data-action="clear-availability-day"]'
+            )
+            .click();
         await expect(slotItems).toHaveCount(0);
         await expect(page.locator('#timeSlotsList')).toContainText(
             'No hay horarios configurados'
         );
 
-        await page.locator('[data-action="paste-availability-day"]').click();
+        await page
+            .locator(
+                '#availabilityDayActions [data-action="paste-availability-day"]'
+            )
+            .click();
         await expect(slotItems).toHaveCount(initialCount);
         await expect(
             page.locator('#availabilityDayActionsStatus')

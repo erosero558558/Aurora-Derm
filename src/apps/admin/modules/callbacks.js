@@ -16,6 +16,8 @@ const CALLBACK_FILTER_OPTIONS = new Set([
     'contacted',
     'today',
 ]);
+const CALLBACK_URGENT_THRESHOLD_MINUTES = 120;
+const CALLBACK_ATTENTION_THRESHOLD_MINUTES = 45;
 
 const callbackCriteriaState = {
     filter: DEFAULT_CALLBACK_FILTER,
@@ -67,6 +69,47 @@ function parseCallbackDateTime(value) {
         return parsed;
     }
     return null;
+}
+
+function getCallbackMinutesSince(dateValue) {
+    const parsedDate = parseCallbackDateTime(dateValue);
+    if (!parsedDate) return 0;
+    const diffMs = Date.now() - parsedDate.getTime();
+    if (!Number.isFinite(diffMs)) return 0;
+    return Math.max(0, Math.round(diffMs / 60000));
+}
+
+function getPendingCallbacksSortedByUrgency(list) {
+    const items = Array.isArray(list) ? list : [];
+    return items
+        .filter(
+            (callback) =>
+                normalizeCallbackStatus(callback.status) === 'pendiente'
+        )
+        .map((callback) => ({
+            callback,
+            minutesWaiting: getCallbackMinutesSince(callback.fecha),
+        }))
+        .sort((a, b) => {
+            if (b.minutesWaiting !== a.minutesWaiting) {
+                return b.minutesWaiting - a.minutesWaiting;
+            }
+            const dateA = parseCallbackDateTime(a.callback.fecha);
+            const dateB = parseCallbackDateTime(b.callback.fecha);
+            const timeA = dateA ? dateA.getTime() : 0;
+            const timeB = dateB ? dateB.getTime() : 0;
+            return timeA - timeB;
+        });
+}
+
+function formatMinutesWaiting(minutes) {
+    const normalized = Number(minutes);
+    if (!Number.isFinite(normalized) || normalized <= 0) return 'reciÃ©n';
+    if (normalized < 60) return `${normalized} min`;
+    const hours = Math.floor(normalized / 60);
+    const rest = normalized % 60;
+    if (rest === 0) return `${hours} h`;
+    return `${hours} h ${rest} min`;
 }
 
 function getSortedCallbacks(list) {
@@ -218,6 +261,85 @@ function updateCallbacksToolbar(filteredCallbacks, allCallbacks, criteria) {
     setCallbackQuickFilterButtonState(quickFilterButtons, criteria.filter);
 }
 
+function renderCallbacksOpsPanel(allCallbacks) {
+    const queueHealthEl = document.getElementById('callbacksOpsQueueHealth');
+    const pendingCountEl = document.getElementById('callbacksOpsPendingCount');
+    const urgentCountEl = document.getElementById('callbacksOpsUrgentCount');
+    const todayCountEl = document.getElementById('callbacksOpsTodayCount');
+    const nextTargetEl = document.getElementById('callbacksOpsNext');
+    const nextButtonEl = document.getElementById('callbacksOpsNextBtn');
+
+    if (
+        !queueHealthEl ||
+        !pendingCountEl ||
+        !urgentCountEl ||
+        !todayCountEl ||
+        !nextTargetEl
+    ) {
+        return;
+    }
+
+    const pendingWithMeta = getPendingCallbacksSortedByUrgency(allCallbacks);
+    const pendingCount = pendingWithMeta.length;
+    const urgentCount = pendingWithMeta.filter(
+        (item) => item.minutesWaiting >= CALLBACK_URGENT_THRESHOLD_MINUTES
+    ).length;
+    const attentionCount = pendingWithMeta.filter(
+        (item) => item.minutesWaiting >= CALLBACK_ATTENTION_THRESHOLD_MINUTES
+    ).length;
+    const todayKey = toLocalDateKey(new Date());
+    const todayCount = pendingWithMeta.filter((item) => {
+        const callbackDate = parseCallbackDateTime(item.callback.fecha);
+        return callbackDate ? toLocalDateKey(callbackDate) === todayKey : false;
+    }).length;
+
+    pendingCountEl.textContent = escapeHtml(String(pendingCount));
+    urgentCountEl.textContent = escapeHtml(String(urgentCount));
+    todayCountEl.textContent = escapeHtml(String(todayCount));
+
+    queueHealthEl.className = 'toolbar-chip';
+    if (urgentCount > 0 || pendingCount >= 8) {
+        queueHealthEl.classList.add('is-warning');
+        queueHealthEl.textContent = 'Cola: prioridad alta';
+    } else if (attentionCount >= 2 || pendingCount >= 3) {
+        queueHealthEl.classList.add('is-accent');
+        queueHealthEl.textContent = 'Cola: atenciÃ³n requerida';
+    } else {
+        queueHealthEl.classList.add('is-muted');
+        queueHealthEl.textContent = 'Cola: estable';
+    }
+
+    const nextEntry = pendingWithMeta[0] || null;
+    if (!nextEntry) {
+        nextTargetEl.innerHTML =
+            '<span class="toolbar-state-empty">Sin callbacks pendientes en cola.</span>';
+        if (nextButtonEl instanceof HTMLButtonElement) {
+            nextButtonEl.disabled = true;
+        }
+        return;
+    }
+
+    const nextDate = parseCallbackDateTime(nextEntry.callback.fecha);
+    const nextDateLabel = nextDate
+        ? nextDate.toLocaleString('es-EC')
+        : 'Fecha no disponible';
+
+    nextTargetEl.innerHTML = `
+        <div class="callbacks-ops-next-card">
+            <span class="callbacks-ops-next-title">Siguiente contacto sugerido</span>
+            <strong class="callbacks-ops-next-phone">${escapeHtml(nextEntry.callback.telefono || 'Sin telÃ©fono')}</strong>
+            <span class="callbacks-ops-next-meta">Espera: ${escapeHtml(formatMinutesWaiting(nextEntry.minutesWaiting))} | Preferencia: ${escapeHtml(
+                getPreferenceText(nextEntry.callback.preferencia)
+            )}</span>
+            <span class="callbacks-ops-next-meta">Registrado: ${escapeHtml(nextDateLabel)}</span>
+        </div>
+    `;
+
+    if (nextButtonEl instanceof HTMLButtonElement) {
+        nextButtonEl.disabled = false;
+    }
+}
+
 export function renderCallbacks(callbacks) {
     const grid = document.getElementById('callbacksGrid');
     if (!grid) return;
@@ -238,8 +360,20 @@ export function renderCallbacks(callbacks) {
             const status = normalizeCallbackStatus(c.status);
             const callbackId = Number(c.id) || 0;
             const callbackDateKey = encodeURIComponent(String(c.fecha || ''));
+            const callbackDateValue = String(c.fecha || '');
+            const callbackTimestamp =
+                parseCallbackDateTime(callbackDateValue)?.getTime() || 0;
+            const minutesWaiting = getCallbackMinutesSince(callbackDateValue);
+            const waitingTone =
+                minutesWaiting >= CALLBACK_URGENT_THRESHOLD_MINUTES
+                    ? 'is-warning'
+                    : minutesWaiting >= CALLBACK_ATTENTION_THRESHOLD_MINUTES
+                      ? 'is-accent'
+                      : 'is-muted';
             return `
-            <div class="callback-card ${status}">
+            <div class="callback-card ${status}" data-callback-status="${status}" data-callback-id="${callbackId}" data-callback-date="${escapeHtml(
+                callbackDateKey
+            )}" data-callback-ts="${escapeHtml(String(callbackTimestamp))}">
                 <div class="callback-header">
                     <span class="callback-phone">${escapeHtml(c.telefono)}</span>
                     <span class="status-badge status-${status}">
@@ -254,6 +388,13 @@ export function renderCallbacks(callbacks) {
                     <i class="fas fa-calendar"></i>
                     ${escapeHtml(new Date(c.fecha).toLocaleString('es-EC'))}
                 </p>
+                ${
+                    status === 'pendiente'
+                        ? `<span class="toolbar-chip callback-wait-chip ${waitingTone}">En cola: ${escapeHtml(
+                              formatMinutesWaiting(minutesWaiting)
+                          )}</span>`
+                        : ''
+                }
                 <div class="callback-actions">
                     <a href="tel:${escapeHtml(c.telefono)}" class="btn btn-phone btn-sm" aria-label="Llamar al callback ${escapeHtml(c.telefono)}">
                         <i class="fas fa-phone"></i>
@@ -317,6 +458,7 @@ function applyCallbackFilterCriteria(criteria, { preserveSearch = true } = {}) {
 
     renderCallbacks(result.filtered);
     updateCallbacksToolbar(result.filtered, currentCallbacks, result.criteria);
+    renderCallbacksOpsPanel(currentCallbacks);
 }
 
 export function applyCallbackQuickFilter(
@@ -359,6 +501,42 @@ export function isCallbacksSectionActive() {
         document.getElementById('callbacks')?.classList.contains('active') ||
         false
     );
+}
+
+export function focusNextPendingCallback() {
+    const cards = Array.from(
+        document.querySelectorAll(
+            '#callbacksGrid .callback-card[data-callback-status="pendiente"]'
+        )
+    );
+    if (cards.length === 0) {
+        showToast('No hay callbacks pendientes para priorizar.', 'info');
+        return false;
+    }
+
+    const sortedCards = cards.sort((a, b) => {
+        const timeA = Number(a.getAttribute('data-callback-ts') || 0);
+        const timeB = Number(b.getAttribute('data-callback-ts') || 0);
+        if (
+            Number.isFinite(timeA) &&
+            Number.isFinite(timeB) &&
+            timeA !== timeB
+        ) {
+            return timeA - timeB;
+        }
+        return 0;
+    });
+    const targetCard = sortedCards[0];
+    const callButton = targetCard.querySelector('a[href^="tel:"]');
+    if (callButton instanceof HTMLElement) {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        callButton.focus({ preventScroll: true });
+        return true;
+    }
+
+    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    targetCard.focus?.();
+    return true;
 }
 
 export async function markContacted(callbackId, callbackDate = '') {

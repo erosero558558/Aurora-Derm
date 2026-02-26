@@ -353,6 +353,150 @@ function renderFunnelMetrics() {
     );
 }
 
+function updateOperationsSignalChip(element, text, level = 'muted') {
+    if (!element) return;
+    element.className = 'toolbar-chip';
+    if (level === 'accent') {
+        element.classList.add('is-accent');
+    } else if (level === 'warning') {
+        element.classList.add('is-warning');
+    }
+    element.textContent = text;
+}
+
+function buildOperationActionItem(action) {
+    return `
+        <div class="operations-action-item">
+            <span class="operations-action-icon">
+                <i class="fas ${escapeHtml(action.icon)}" aria-hidden="true"></i>
+            </span>
+            <div class="operations-action-copy">
+                <span class="operations-action-title">${escapeHtml(action.title)}</span>
+                <span class="operations-action-meta">${escapeHtml(action.meta)}</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" data-action="${escapeHtml(action.action)}">
+                ${escapeHtml(action.cta)}
+            </button>
+        </div>
+    `;
+}
+
+function renderOperationsCenter({
+    pendingTransfers = 0,
+    pendingCallbacks = 0,
+    todayAppointmentsCount = 0,
+    confirmedCount = 0,
+    totalNoShows = 0,
+}) {
+    const pendingTransfersEl = document.getElementById(
+        'operationPendingReviewCount'
+    );
+    const pendingCallbacksEl = document.getElementById(
+        'operationPendingCallbacksCount'
+    );
+    const todayLoadEl = document.getElementById('operationTodayLoadCount');
+    const queueHealthEl = document.getElementById('operationQueueHealth');
+    const refreshSignalEl = document.getElementById('operationRefreshSignal');
+    const actionListEl = document.getElementById('operationActionList');
+
+    if (
+        !pendingTransfersEl ||
+        !pendingCallbacksEl ||
+        !todayLoadEl ||
+        !queueHealthEl ||
+        !refreshSignalEl ||
+        !actionListEl
+    ) {
+        return;
+    }
+
+    pendingTransfersEl.textContent = formatCount(pendingTransfers);
+    pendingCallbacksEl.textContent = formatCount(pendingCallbacks);
+    todayLoadEl.textContent = formatCount(todayAppointmentsCount);
+
+    const queueScore =
+        pendingTransfers * 3 +
+        pendingCallbacks * 2 +
+        Math.max(0, todayAppointmentsCount - 6) +
+        totalNoShows;
+
+    if (queueScore >= 9) {
+        updateOperationsSignalChip(
+            queueHealthEl,
+            'Cola: prioridad alta',
+            'warning'
+        );
+    } else if (queueScore >= 4) {
+        updateOperationsSignalChip(
+            queueHealthEl,
+            'Cola: atención recomendada',
+            'accent'
+        );
+    } else {
+        updateOperationsSignalChip(queueHealthEl, 'Cola: estable', 'muted');
+    }
+
+    if (confirmedCount <= 0) {
+        updateOperationsSignalChip(
+            refreshSignalEl,
+            'Agenda: sin citas confirmadas',
+            'warning'
+        );
+    } else if (todayAppointmentsCount >= 6) {
+        updateOperationsSignalChip(
+            refreshSignalEl,
+            'Agenda: demanda alta hoy',
+            'accent'
+        );
+    } else {
+        updateOperationsSignalChip(
+            refreshSignalEl,
+            'Agenda: operación normal',
+            'muted'
+        );
+    }
+
+    const actions = [];
+    if (pendingTransfers > 0) {
+        actions.push({
+            icon: 'fa-money-check-dollar',
+            title: 'Transferencias pendientes',
+            meta: `${formatCount(pendingTransfers)} comprobante(s) por validar en citas`,
+            action: 'context-open-appointments-transfer',
+            cta: 'Revisar',
+        });
+    }
+    if (pendingCallbacks > 0) {
+        actions.push({
+            icon: 'fa-phone',
+            title: 'Callbacks por contactar',
+            meta: `${formatCount(pendingCallbacks)} solicitud(es) de llamada sin gestionar`,
+            action: 'context-open-callbacks-pending',
+            cta: 'Atender',
+        });
+    }
+    if (todayAppointmentsCount > 0) {
+        actions.push({
+            icon: 'fa-calendar-day',
+            title: 'Agenda de hoy',
+            meta: `${formatCount(todayAppointmentsCount)} cita(s) activas para seguimiento inmediato`,
+            action: 'context-open-appointments-today',
+            cta: 'Abrir',
+        });
+    }
+    if (actions.length === 0) {
+        actions.push({
+            icon: 'fa-rotate-right',
+            title: 'Sin alertas operativas',
+            meta: 'No hay pendientes críticos en este momento',
+            action: 'refresh-admin-data',
+            cta: 'Actualizar',
+        });
+    }
+
+    actionListEl.innerHTML = actions.map(buildOperationActionItem).join('');
+}
+
 export function loadDashboardData() {
     document.getElementById('totalAppointments').textContent =
         currentAppointments.length;
@@ -469,6 +613,14 @@ export function loadDashboardData() {
             )
             .join('');
     }
+
+    renderOperationsCenter({
+        pendingTransfers,
+        pendingCallbacks: pendingCallbacks.length,
+        todayAppointmentsCount: todayAppointments.length,
+        confirmedCount,
+        totalNoShows,
+    });
 
     renderFunnelMetrics();
 }

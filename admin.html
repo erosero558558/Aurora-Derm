@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260226-nav6" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260226-nav9" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -130,14 +130,27 @@
                         <i class="fas fa-spa"></i>
                         <span>Piel en Armonía</span>
                     </div>
-                    <button
-                        type="button"
-                        class="sidebar-close-btn"
-                        id="adminMenuClose"
-                        aria-label="Cerrar menu lateral"
-                    >
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="sidebar-header-actions">
+                        <button
+                            type="button"
+                            class="sidebar-collapse-btn"
+                            id="adminSidebarCollapse"
+                            data-action="toggle-sidebar-collapse"
+                            aria-label="Contraer navegación lateral"
+                            aria-pressed="false"
+                            title="Contraer navegación lateral"
+                        >
+                            <i class="fas fa-angles-left"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="sidebar-close-btn"
+                            id="adminMenuClose"
+                            aria-label="Cerrar menu lateral"
+                        >
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <nav class="sidebar-nav" id="adminSidebarNav">
@@ -146,6 +159,7 @@
                         class="nav-item active"
                         data-section="dashboard"
                         aria-current="page"
+                        title="Dashboard"
                     >
                         <i class="fas fa-chart-line"></i>
                         <span>Dashboard</span>
@@ -154,6 +168,7 @@
                         href="#appointments"
                         class="nav-item"
                         data-section="appointments"
+                        title="Citas"
                     >
                         <i class="fas fa-calendar-check"></i>
                         <span>Citas</span>
@@ -163,12 +178,18 @@
                         href="#callbacks"
                         class="nav-item"
                         data-section="callbacks"
+                        title="Callbacks"
                     >
                         <i class="fas fa-phone-alt"></i>
                         <span>Callbacks</span>
                         <span class="badge" id="callbacksBadge">0</span>
                     </a>
-                    <a href="#reviews" class="nav-item" data-section="reviews">
+                    <a
+                        href="#reviews"
+                        class="nav-item"
+                        data-section="reviews"
+                        title="Reseñas"
+                    >
                         <i class="fas fa-star"></i>
                         <span>Reseñas</span>
                         <span class="badge" id="reviewsBadge">0</span>
@@ -177,6 +198,7 @@
                         href="#availability"
                         class="nav-item"
                         data-section="availability"
+                        title="Disponibilidad"
                     >
                         <i class="fas fa-clock"></i>
                         <span>Disponibilidad</span>
@@ -566,6 +588,106 @@
                                 <p class="empty-message">
                                     No hay callbacks pendientes
                                 </p>
+                            </div>
+                        </div>
+                        <div class="dashboard-card dashboard-card-operations">
+                            <h3>
+                                <i class="fas fa-list-check"></i> Centro
+                                Operativo
+                            </h3>
+                            <p class="muted-label">
+                                Priorización rápida de pendientes para abrir
+                                acciones con un clic.
+                            </p>
+                            <div class="operations-summary-grid">
+                                <div class="operations-summary-item">
+                                    <span class="operations-summary-label"
+                                        >Transferencias por validar</span
+                                    >
+                                    <strong
+                                        class="operations-summary-value"
+                                        id="operationPendingReviewCount"
+                                        >0</strong
+                                    >
+                                </div>
+                                <div class="operations-summary-item">
+                                    <span class="operations-summary-label"
+                                        >Callbacks pendientes</span
+                                    >
+                                    <strong
+                                        class="operations-summary-value"
+                                        id="operationPendingCallbacksCount"
+                                        >0</strong
+                                    >
+                                </div>
+                                <div class="operations-summary-item">
+                                    <span class="operations-summary-label"
+                                        >Citas activas hoy</span
+                                    >
+                                    <strong
+                                        class="operations-summary-value"
+                                        id="operationTodayLoadCount"
+                                        >0</strong
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                class="operations-signal-row"
+                                aria-live="polite"
+                            >
+                                <span
+                                    class="toolbar-chip is-accent"
+                                    id="operationQueueHealth"
+                                    >Cola: estable</span
+                                >
+                                <span
+                                    class="toolbar-chip"
+                                    id="operationRefreshSignal"
+                                    >Actualización: reciente</span
+                                >
+                            </div>
+                            <div
+                                class="operations-action-list"
+                                id="operationActionList"
+                                aria-live="polite"
+                            >
+                                <p class="empty-message">
+                                    Sin acciones urgentes por ahora.
+                                </p>
+                            </div>
+                            <div class="operations-footer-actions">
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="context-open-appointments-transfer"
+                                >
+                                    <i class="fas fa-money-check-dollar"></i>
+                                    Ver por validar
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="context-open-callbacks-pending"
+                                >
+                                    <i class="fas fa-phone"></i>
+                                    Abrir callbacks
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="context-open-appointments-today"
+                                >
+                                    <i class="fas fa-calendar-day"></i>
+                                    Ir a citas de hoy
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-primary btn-sm"
+                                    data-action="refresh-admin-data"
+                                >
+                                    <i class="fas fa-rotate-right"></i>
+                                    Actualizar panel
+                                </button>
                             </div>
                         </div>
                         <div class="dashboard-card">
@@ -975,6 +1097,62 @@
                     >
                         <span class="toolbar-state-empty">Sin filtros activos</span>
                     </div>
+                    <div
+                        class="callbacks-ops-panel"
+                        id="callbacksOpsPanel"
+                        aria-live="polite"
+                    >
+                        <div class="callbacks-ops-summary">
+                            <span
+                                class="toolbar-chip is-accent"
+                                id="callbacksOpsQueueHealth"
+                                >Cola: estable</span
+                            >
+                            <span class="callbacks-ops-metric">
+                                <span class="callbacks-ops-label"
+                                    >Pendientes</span
+                                >
+                                <strong id="callbacksOpsPendingCount">0</strong>
+                            </span>
+                            <span class="callbacks-ops-metric">
+                                <span class="callbacks-ops-label"
+                                    >Urgentes (&gt; 2h)</span
+                                >
+                                <strong id="callbacksOpsUrgentCount">0</strong>
+                            </span>
+                            <span class="callbacks-ops-metric">
+                                <span class="callbacks-ops-label"
+                                    >Hoy</span
+                                >
+                                <strong id="callbacksOpsTodayCount">0</strong>
+                            </span>
+                        </div>
+                        <div class="callbacks-ops-next" id="callbacksOpsNext">
+                            <span class="toolbar-state-empty"
+                                >Sin callbacks pendientes en cola.</span
+                            >
+                        </div>
+                        <div class="callbacks-ops-actions">
+                            <button
+                                type="button"
+                                class="btn btn-secondary btn-sm"
+                                data-action="callback-quick-filter"
+                                data-filter-value="pending"
+                            >
+                                <i class="fas fa-filter"></i>
+                                Ver pendientes
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-primary btn-sm"
+                                data-action="callbacks-triage-next"
+                                id="callbacksOpsNextBtn"
+                            >
+                                <i class="fas fa-phone-volume"></i>
+                                Siguiente llamada
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="callbacks-grid" id="callbacksGrid"></div>
                 </section>
@@ -1271,6 +1449,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260226-nav6" type="module"></script>
+        <script src="admin.js?v=admin-20260226-nav9" type="module"></script>
     </body>
 </html>

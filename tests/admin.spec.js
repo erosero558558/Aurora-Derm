@@ -10,7 +10,7 @@ function jsonResponse(route, payload, status = 200) {
     });
 }
 
-async function setupAuthenticatedAdminMocks(page) {
+async function setupAuthenticatedAdminMocks(page, overrides = {}) {
     const baseData = {
         appointments: [],
         callbacks: [],
@@ -23,6 +23,14 @@ async function setupAuthenticatedAdminMocks(page) {
             calendarConfigured: true,
             calendarReachable: true,
             generatedAt: new Date().toISOString(),
+        },
+    };
+    const mergedData = {
+        ...baseData,
+        ...overrides,
+        availabilityMeta: {
+            ...baseData.availabilityMeta,
+            ...(overrides.availabilityMeta || {}),
         },
     };
 
@@ -39,7 +47,7 @@ async function setupAuthenticatedAdminMocks(page) {
         const resource = url.searchParams.get('resource') || '';
 
         if (resource === 'data') {
-            return jsonResponse(route, { ok: true, data: baseData });
+            return jsonResponse(route, { ok: true, data: mergedData });
         }
 
         if (resource === 'funnel-metrics') {
@@ -69,8 +77,8 @@ async function setupAuthenticatedAdminMocks(page) {
         if (resource === 'availability') {
             return jsonResponse(route, {
                 ok: true,
-                data: baseData.availability,
-                meta: baseData.availabilityMeta,
+                data: mergedData.availability,
+                meta: mergedData.availabilityMeta,
             });
         }
 
@@ -184,6 +192,130 @@ test.describe('Panel de administracion', () => {
         await expect(page.locator('#funnelErrorCodeList')).toHaveCount(1);
     });
 
+    test('dashboard centro operativo muestra prioridades y navega a triage', async ({
+        page,
+    }) => {
+        const today = new Date().toISOString().split('T')[0];
+        await setupAuthenticatedAdminMocks(page, {
+            appointments: [
+                {
+                    id: 1,
+                    name: 'Paciente Test',
+                    email: 'paciente@example.com',
+                    phone: '+593999111222',
+                    service: 'consulta',
+                    doctor: 'rosero',
+                    date: today,
+                    time: '10:00',
+                    status: 'confirmed',
+                    paymentStatus: 'pending_transfer_review',
+                },
+            ],
+            callbacks: [
+                {
+                    id: 9,
+                    telefono: '+593988776655',
+                    preferencia: 'ahora',
+                    fecha: new Date().toISOString(),
+                    status: 'pending',
+                },
+            ],
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await expect(page.locator('.dashboard-card-operations')).toBeVisible();
+        await expect(page.locator('#operationPendingReviewCount')).toHaveText(
+            '1'
+        );
+        await expect(
+            page.locator('#operationPendingCallbacksCount')
+        ).toHaveText('1');
+        await expect(
+            page.locator('#operationActionList .operations-action-item')
+        ).toHaveCount(3);
+
+        await page
+            .locator(
+                '.dashboard-card-operations [data-action="context-open-appointments-transfer"]'
+            )
+            .first()
+            .click();
+
+        await expect(page.locator('#appointments')).toHaveClass(/active/);
+        await expect(
+            page.locator(
+                '.appointment-quick-filter-btn[data-filter-value="pending_transfer"]'
+            )
+        ).toHaveClass(/is-active/);
+    });
+
+    test('callbacks triage prioriza siguiente llamada y enfoca contacto', async ({
+        page,
+    }) => {
+        const oldPendingDate = new Date(
+            Date.now() - 3 * 60 * 60 * 1000
+        ).toISOString();
+        const recentPendingDate = new Date(
+            Date.now() - 20 * 60 * 1000
+        ).toISOString();
+
+        await setupAuthenticatedAdminMocks(page, {
+            callbacks: [
+                {
+                    id: 101,
+                    telefono: '+593988111222',
+                    preferencia: 'ahora',
+                    fecha: oldPendingDate,
+                    status: 'pending',
+                },
+                {
+                    id: 102,
+                    telefono: '+593977333444',
+                    preferencia: '30min',
+                    fecha: recentPendingDate,
+                    status: 'pending',
+                },
+                {
+                    id: 103,
+                    telefono: '+593966555666',
+                    preferencia: '1hora',
+                    fecha: new Date().toISOString(),
+                    status: 'contacted',
+                },
+            ],
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+
+        await page
+            .locator('.admin-quick-nav-item[data-section="callbacks"]')
+            .click();
+        await expect(page.locator('#callbacks')).toHaveClass(/active/);
+        await expect(page.locator('#callbacksOpsPendingCount')).toHaveText('2');
+        await expect(page.locator('#callbacksOpsUrgentCount')).toHaveText('1');
+        await expect(page.locator('#callbacksOpsQueueHealth')).toContainText(
+            /prioridad|atenci/i
+        );
+        await expect(page.locator('#callbacksOpsNext')).toContainText(
+            '+593988111222'
+        );
+
+        await page.locator('#callbacksOpsNextBtn').click();
+        await expect(
+            page.locator(
+                '.callback-quick-filter-btn[data-filter-value="pending"]'
+            )
+        ).toHaveClass(/is-active/);
+        await expect(
+            page.locator(
+                '#callbacksGrid .callback-card.pendiente:has-text("+593988111222")'
+            )
+        ).toBeVisible();
+        await expect(page.locator('#callbacksOpsNextBtn')).toBeEnabled();
+    });
+
     test('tema tambien funciona en dashboard autenticado', async ({ page }) => {
         await setupAuthenticatedAdminMocks(page);
         await page.goto('/admin.html');
@@ -282,6 +414,81 @@ test.describe('Panel de administracion', () => {
                 )
             )
             .toBe('light');
+    });
+
+    test('reanuda ultima seccion y estado de sidebar colapsado en desktop', async ({
+        page,
+    }) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('adminLastSection', 'callbacks');
+            localStorage.setItem('adminSidebarCollapsed', '1');
+        });
+        await setupAuthenticatedAdminMocks(page, {
+            callbacks: [
+                {
+                    id: 701,
+                    telefono: '+593900000701',
+                    preferencia: 'ahora',
+                    fecha: new Date().toISOString(),
+                    status: 'pending',
+                },
+            ],
+        });
+        await page.setViewportSize({ width: 1366, height: 900 });
+        await page.goto('/admin.html');
+
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await expect(page).toHaveURL(/#callbacks$/);
+        await expect(page.locator('#callbacks')).toHaveClass(/active/);
+        await expect(page.locator('body')).toHaveClass(
+            /admin-sidebar-collapsed/
+        );
+        await expect(page.locator('#adminSidebarCollapse')).toHaveAttribute(
+            'aria-pressed',
+            'true'
+        );
+
+        await page.locator('#adminSidebarCollapse').click();
+        await expect(page.locator('body')).not.toHaveClass(
+            /admin-sidebar-collapsed/
+        );
+        await expect(page.locator('#adminSidebarCollapse')).toHaveAttribute(
+            'aria-pressed',
+            'false'
+        );
+        await expect
+            .poll(() =>
+                page.evaluate(() =>
+                    localStorage.getItem('adminSidebarCollapsed')
+                )
+            )
+            .toBe('0');
+    });
+
+    test('atajo Alt+Shift+M colapsa en desktop y abre menu en viewport compacto', async ({
+        page,
+    }) => {
+        await setupAuthenticatedAdminMocks(page);
+        await page.setViewportSize({ width: 1366, height: 900 });
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+
+        await page.keyboard.press('Alt+Shift+M');
+        await expect(page.locator('body')).toHaveClass(
+            /admin-sidebar-collapsed/
+        );
+
+        await page.setViewportSize({ width: 900, height: 900 });
+        await expect(page.locator('#adminMenuToggle')).toBeVisible();
+        await expect(page.locator('body')).not.toHaveClass(
+            /admin-sidebar-collapsed/
+        );
+
+        await page.keyboard.press('Alt+Shift+M');
+        await expect(page.locator('#adminSidebar')).toHaveClass(/is-open/);
+
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#adminSidebar')).not.toHaveClass(/is-open/);
     });
 
     test.describe('API de administracion (requiere PHP)', () => {
