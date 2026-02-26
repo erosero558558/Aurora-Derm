@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 190
+  revision: 193
   updated_at: 2026-02-26
 
 tasks:
@@ -3313,5 +3313,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-086.md"
     depends_on: []
     prompt: "C2 hardening: stale-report gate + signal keys en weekly incidents"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-087
+    title: "C3 hardening: reason codes diagnosticos para incidentes weekly (general/SLA/retencion)"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T07:37:43.563Z"
+    risk: medium
+    scope: tooling
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T07:37:43.563Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "C3 hardening: reason codes diagnosticos para incidentes weekly (general/SLA/retencion)"
+    acceptance_ref: "verification/agent-runs/AG-087.md"
+    evidence_ref: "verification/agent-runs/AG-087.md"
+    depends_on: []
+    prompt: "C3 hardening: reason codes diagnosticos para incidentes weekly (general/SLA/retencion)"
     created_at: 2026-02-26
     updated_at: 2026-02-26

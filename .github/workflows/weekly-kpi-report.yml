@@ -309,6 +309,7 @@ jobs:
                     "warnings_alert_data_valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "general_incident_required=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "general_incident_recovered=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "general_incident_reason_codes=report_missing,warnings_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "general_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "conversion_view_booking=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "conversion_start_checkout=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -338,6 +339,7 @@ jobs:
                     "retention_alert_data_valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_incident_required=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_incident_recovered=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "retention_incident_reason_codes=report_missing,retention_alert_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "retention_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_core_p95_max_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_figo_post_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -517,11 +519,23 @@ jobs:
                   $warningsAlertDataValid = if ($warningsCriticalCountInt -ge 0) { 'true' } else { 'false' }
                   $generalIncidentRequired = if ($warningsCriticalCountInt -eq -1 -or $warningsCriticalCountInt -gt 0 -or $reportStale -eq 'true') { 'true' } else { 'false' }
                   $generalIncidentRecovered = if ($warningsCriticalCountInt -eq 0 -and $reportStale -ne 'true') { 'true' } else { 'false' }
-                  $generalSignalKey = "wcc:$warningsCriticalCountInt|stale:$reportStale|ageh:$reportAgeHours"
+                  $generalReasonCodes = New-Object System.Collections.Generic.List[string]
+                  if ($reportStale -eq 'true') { $generalReasonCodes.Add('report_stale') | Out-Null }
+                  if ($warningsCriticalCountInt -eq -1) {
+                    $generalReasonCodes.Add('warnings_invalid') | Out-Null
+                  } elseif ($warningsCriticalCountInt -gt 0) {
+                    $generalReasonCodes.Add('warnings_critical') | Out-Null
+                  }
+                  if ($generalReasonCodes.Count -eq 0) {
+                    $generalReasonCodes.Add('none') | Out-Null
+                  }
+                  $generalIncidentReasonCodes = @($generalReasonCodes) -join ','
+                  $generalSignalKey = "wcc:$warningsCriticalCountInt|stale:$reportStale|reasons:$generalIncidentReasonCodes"
                   "warnings_critical_count_int=$warningsCriticalCountInt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "warnings_alert_data_valid=$warningsAlertDataValid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "general_incident_required=$generalIncidentRequired" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "general_incident_recovered=$generalIncidentRecovered" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "general_incident_reason_codes=$generalIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "general_signal_key=$generalSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "conversion_view_booking=$conversionViewBooking" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "conversion_start_checkout=$conversionStartCheckout" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -555,11 +569,23 @@ jobs:
                   $retentionAlertDataValid = if ($retentionAlertCountInt -ge 0) { 'true' } else { 'false' }
                   $retentionIncidentRequired = if ($retentionAlertCountInt -eq -1 -or $retentionAlertCountInt -gt 0) { 'true' } else { 'false' }
                   $retentionIncidentRecovered = if ($retentionAlertCountInt -eq 0 -and $reportStale -ne 'true') { 'true' } else { 'false' }
-                  $retentionSignalKey = "count:$retentionAlertCountInt|stale:$reportStale|src:$retentionReportSource"
+                  $retentionReasonCodes = New-Object System.Collections.Generic.List[string]
+                  if ($reportStale -eq 'true') { $retentionReasonCodes.Add('report_stale') | Out-Null }
+                  if ($retentionAlertCountInt -eq -1) {
+                    $retentionReasonCodes.Add('retention_alert_invalid') | Out-Null
+                  } elseif ($retentionAlertCountInt -gt 0) {
+                    $retentionReasonCodes.Add('retention_alert_active') | Out-Null
+                  }
+                  if ($retentionReasonCodes.Count -eq 0) {
+                    $retentionReasonCodes.Add('none') | Out-Null
+                  }
+                  $retentionIncidentReasonCodes = @($retentionReasonCodes) -join ','
+                  $retentionSignalKey = "count:$retentionAlertCountInt|stale:$reportStale|reasons:$retentionIncidentReasonCodes|src:$retentionReportSource"
                   "retention_report_alert_count_int=$retentionAlertCountInt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_alert_data_valid=$retentionAlertDataValid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_incident_required=$retentionIncidentRequired" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_incident_recovered=$retentionIncidentRecovered" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "retention_incident_reason_codes=$retentionIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "retention_signal_key=$retentionSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_core_p95_max_ms=$coreP95MaxMs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_figo_post_p95_ms=$figoPostP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -671,13 +697,21 @@ jobs:
                       const mttrTargetOk = mttrAvg === null || mttrAvg < 4;
                       const slaDegraded = !fastSlaOk || !nightlyTargetOk || !mttrTargetOk || incidentsOpenExternal.length !== 0;
                       const slaRecovered = fastSlaOk && nightlyTargetOk && mttrTargetOk && incidentsOpenExternal.length === 0;
+                      const slaFailureAxes = [];
+                      if (!fastSlaOk) slaFailureAxes.push('fast_lane');
+                      if (!nightlyTargetOk) slaFailureAxes.push('nightly_success');
+                      if (!mttrTargetOk) slaFailureAxes.push('mttr');
+                      if (incidentsOpenExternal.length !== 0) slaFailureAxes.push('open_external_incidents');
+                      if (!slaFailureAxes.length) slaFailureAxes.push('none');
+                      const opsSlaFailureAxes = slaFailureAxes.join(',');
                       const opsSlaSignalKey = [
                         `fast_ok:${fastSlaOk ? '1' : '0'}`,
                         `nightly_ok:${nightlyTargetOk ? '1' : '0'}`,
                         `mttr_ok:${mttrTargetOk ? '1' : '0'}`,
                         `open_ext:${incidentsOpenExternal.length}`,
                         `fast_p95:${fastP95 === null ? 'n/a' : fastP95.toFixed(2)}`,
-                        `nightly_rate:${nightlyRate === null ? 'n/a' : nightlyRate.toFixed(2)}`
+                        `nightly_rate:${nightlyRate === null ? 'n/a' : nightlyRate.toFixed(2)}`,
+                        `axes:${opsSlaFailureAxes}`
                       ].join('|');
 
                       core.setOutput('lookback_days', String(lookbackDays));
@@ -697,6 +731,7 @@ jobs:
                       core.setOutput('ops_incidents_mttr_target_ok', mttrTargetOk ? 'true' : 'false');
                       core.setOutput('ops_sla_degraded', slaDegraded ? 'true' : 'false');
                       core.setOutput('ops_sla_recovered', slaRecovered ? 'true' : 'false');
+                      core.setOutput('ops_sla_failure_axes', opsSlaFailureAxes);
                       core.setOutput('ops_sla_signal_key', opsSlaSignalKey);
 
             - name: Resumen
@@ -734,6 +769,7 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- report_stale: ``${{ steps.report.outputs.report_stale }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- general_incident_required: ``${{ steps.report.outputs.general_incident_required }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- general_incident_recovered: ``${{ steps.report.outputs.general_incident_recovered }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- general_incident_reason_codes: ``${{ steps.report.outputs.general_incident_reason_codes }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- general_signal_key: ``${{ steps.report.outputs.general_signal_key }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings non_critical: ``${{ steps.report.outputs.warnings_non_critical_count }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Warnings: ``${{ steps.report.outputs.warnings_list }}``"
@@ -770,6 +806,7 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- retention_alert_data_valid: ``${{ steps.report.outputs.retention_alert_data_valid }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- retention_incident_required: ``${{ steps.report.outputs.retention_incident_required }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- retention_incident_recovered: ``${{ steps.report.outputs.retention_incident_recovered }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- retention_incident_reason_codes: ``${{ steps.report.outputs.retention_incident_reason_codes }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- retention_signal_key: ``${{ steps.report.outputs.retention_signal_key }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Operational SLA (last ``${{ steps.ops_sla.outputs.lookback_days }}`` days)"
@@ -785,6 +822,7 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- incidents_mttr_hours_avg: ``${{ steps.ops_sla.outputs.ops_incidents_mttr_hours_avg }}`` (target <4h, ok: ``${{ steps.ops_sla.outputs.ops_incidents_mttr_target_ok }}``)"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- ops_sla_degraded: ``${{ steps.ops_sla.outputs.ops_sla_degraded }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- ops_sla_recovered: ``${{ steps.ops_sla.outputs.ops_sla_recovered }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- ops_sla_failure_axes: ``${{ steps.ops_sla.outputs.ops_sla_failure_axes }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- ops_sla_signal_key: ``${{ steps.ops_sla.outputs.ops_sla_signal_key }}``"
                   if ("${{ steps.report.outputs.report_md_path }}" -ne "") {
                     Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Report file: ``${{ steps.report.outputs.report_md_path }}``"
@@ -817,6 +855,7 @@ jobs:
                         `- report_generated_at_utc: ${{ steps.report.outputs.report_generated_at_utc }}`,
                         `- report_age_hours: ${{ steps.report.outputs.report_age_hours }}`,
                         `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                        `- general_incident_reason_codes: ${{ steps.report.outputs.general_incident_reason_codes }}`,
                         `- general_signal_key: ${{ steps.report.outputs.general_signal_key }}`,
                         '',
                         'Thresholds efectivos en esta corrida:',
@@ -887,6 +926,7 @@ jobs:
                             `- warnings_critical_count: ${{ steps.report.outputs.warnings_critical_count }}`,
                             `- warnings_critical_list: ${{ steps.report.outputs.warnings_critical_list }}`,
                             `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                            `- general_incident_reason_codes: ${{ steps.report.outputs.general_incident_reason_codes }}`,
                             `- general_signal_key: ${{ steps.report.outputs.general_signal_key }}`
                           ].join('\n')
                         });
@@ -978,6 +1018,7 @@ jobs:
                         `- incidents_closed: ${{ steps.ops_sla.outputs.ops_incidents_closed }}`,
                         `- incidents_mttr_hours_avg: ${{ steps.ops_sla.outputs.ops_incidents_mttr_hours_avg }}`,
                         `- incidents_mttr_target_ok: ${{ steps.ops_sla.outputs.ops_incidents_mttr_target_ok }}`,
+                        `- ops_sla_failure_axes: ${{ steps.ops_sla.outputs.ops_sla_failure_axes }}`,
                         `- ops_sla_signal_key: ${{ steps.ops_sla.outputs.ops_sla_signal_key }}`,
                         '',
                         signalMarker
@@ -1015,6 +1056,7 @@ jobs:
                             `- fast_sla_ok: ${{ steps.ops_sla.outputs.ops_fast_sla_ok }}`,
                             `- nightly_target_ok: ${{ steps.ops_sla.outputs.ops_nightly_target_ok }}`,
                             `- incidents_open_external: ${{ steps.ops_sla.outputs.ops_incidents_open_external }}`,
+                            `- ops_sla_failure_axes: ${{ steps.ops_sla.outputs.ops_sla_failure_axes }}`,
                             `- ops_sla_signal_key: ${{ steps.ops_sla.outputs.ops_sla_signal_key }}`
                           ].join('\n')
                         });
@@ -1101,6 +1143,7 @@ jobs:
                         `- report_generated_at_utc: ${{ steps.report.outputs.report_generated_at_utc }}`,
                         `- report_age_hours: ${{ steps.report.outputs.report_age_hours }}`,
                         `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                        `- retention_incident_reason_codes: ${{ steps.report.outputs.retention_incident_reason_codes }}`,
                         `- retention_signal_key: ${{ steps.report.outputs.retention_signal_key }}`,
                         '',
                         'Thresholds efectivos de retencion en esta corrida:',
@@ -1150,6 +1193,7 @@ jobs:
                             `- retention_report_alert_count: ${{ steps.report.outputs.retention_report_alert_count }}`,
                             `- retention_report_alert_list: ${{ steps.report.outputs.retention_report_alert_list }}`,
                             `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                            `- retention_incident_reason_codes: ${{ steps.report.outputs.retention_incident_reason_codes }}`,
                             `- retention_signal_key: ${{ steps.report.outputs.retention_signal_key }}`
                           ].join('\n')
                         });
