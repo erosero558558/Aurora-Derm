@@ -1758,6 +1758,7 @@ const governanceRuntime =
         codexCommandHandlers,
         parseBoard,
         parseHandoffs,
+        loadMetricsSnapshot,
         analyzeConflicts,
         toConflictJsonRecord,
         attachDiagnostics,

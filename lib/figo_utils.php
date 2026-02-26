@@ -679,15 +679,70 @@ function api_figo_env_ai_timeout_seconds(): int
 
     $timeout = (int) $raw;
     if ($timeout <= 0) {
-        $timeout = 15;
+        $timeout = 8;
     }
-    if ($timeout < 5) {
-        $timeout = 5;
+    if ($timeout < 2) {
+        $timeout = 2;
     }
-    if ($timeout > 45) {
-        $timeout = 45;
+    if ($timeout > 25) {
+        $timeout = 25;
     }
     return $timeout;
+}
+
+function api_figo_env_ai_connect_timeout_seconds(): int
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    $raw = api_first_non_empty([
+        getenv('FIGO_AI_CONNECT_TIMEOUT_SECONDS'),
+        $fileConfig['aiConnectTimeoutSeconds'] ?? null,
+        isset($aiNode['connectTimeoutSeconds']) ? (string) $aiNode['connectTimeoutSeconds'] : null
+    ]);
+
+    $requestTimeout = api_figo_env_ai_timeout_seconds();
+    $connectTimeout = (int) $raw;
+    if ($connectTimeout <= 0) {
+        $connectTimeout = max(1, min(3, $requestTimeout - 1));
+    }
+    if ($connectTimeout < 1) {
+        $connectTimeout = 1;
+    }
+    if ($connectTimeout > 10) {
+        $connectTimeout = 10;
+    }
+    if ($connectTimeout >= $requestTimeout) {
+        $connectTimeout = max(1, $requestTimeout - 1);
+    }
+    return $connectTimeout;
+}
+
+function api_figo_env_ai_failfast_window_seconds(): int
+{
+    $fileConfig = api_figo_read_config();
+    $aiNode = (isset($fileConfig['ai']) && is_array($fileConfig['ai'])) ? $fileConfig['ai'] : [];
+
+    $raw = api_first_non_empty([
+        getenv('FIGO_AI_FAILFAST_WINDOW_SECONDS'),
+        $fileConfig['aiFailfastWindowSeconds'] ?? null,
+        isset($aiNode['failfastWindowSeconds']) ? (string) $aiNode['failfastWindowSeconds'] : null
+    ]);
+
+    $normalizedRaw = is_string($raw) ? trim($raw) : '';
+    if ($normalizedRaw === '') {
+        $window = 45;
+    } else {
+        $window = (int) $normalizedRaw;
+    }
+    if ($window < 0) {
+        $window = 0;
+    }
+    if ($window > 600) {
+        $window = 600;
+    }
+
+    return $window;
 }
 
 function api_figo_env_ai_max_tokens(): int

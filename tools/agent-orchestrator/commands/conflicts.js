@@ -9,12 +9,17 @@ function handleConflictsCommand(ctx) {
         toConflictJsonRecord,
         attachDiagnostics,
         buildWarnFirstDiagnostics,
+        loadMetricsSnapshot,
     } = ctx;
     const strict = args.includes('--strict');
     const wantsJson = args.includes('--json');
     const board = parseBoard();
     const handoffData = parseHandoffs();
     const analysis = analyzeConflicts(board.tasks, handoffData.handoffs);
+    const metricsSnapshot =
+        typeof loadMetricsSnapshot === 'function'
+            ? loadMetricsSnapshot()
+            : null;
 
     const report = {
         version: 1,
@@ -33,6 +38,7 @@ function handleConflictsCommand(ctx) {
             board,
             handoffData,
             conflictAnalysis: analysis,
+            metricsSnapshot,
         })
     );
 

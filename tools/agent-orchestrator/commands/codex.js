@@ -28,15 +28,21 @@ function handleCodexCheckCommand(ctx) {
         buildWarnFirstDiagnostics,
         parseBoard,
         parseHandoffs,
+        loadMetricsSnapshot,
     } = ctx;
     const wantsJson = args.includes('--json');
     const report = buildCodexCheckReport();
+    const metricsSnapshot =
+        typeof loadMetricsSnapshot === 'function'
+            ? loadMetricsSnapshot()
+            : null;
     const reportWithDiagnostics = attachDiagnostics(
         report,
         buildWarnFirstDiagnostics({
             source: 'codex-check',
             board: parseBoard(),
             handoffData: parseHandoffs(),
+            metricsSnapshot,
         })
     );
 

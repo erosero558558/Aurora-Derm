@@ -341,6 +341,126 @@ function figo_backend_probe_ai_endpoint(int $timeoutSeconds = 3): ?bool
     return $status < 500;
 }
 
+function figo_backend_failfast_state_path(): string
+{
+    $baseDir = __DIR__ . DIRECTORY_SEPARATOR . 'data';
+    if (function_exists('data_dir_path')) {
+        $candidate = data_dir_path();
+        if (is_string($candidate) && trim($candidate) !== '') {
+            $baseDir = rtrim($candidate, "/\\");
+        }
+    }
+
+    $cacheDir = $baseDir . DIRECTORY_SEPARATOR . 'cache';
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0775, true);
+    }
+
+    return $cacheDir . DIRECTORY_SEPARATOR . 'figo-backend-ai-state.json';
+}
+
+function figo_backend_read_failfast_state(): array
+{
+    $path = figo_backend_failfast_state_path();
+    if (!is_file($path)) {
+        return ['up' => true, 'lastDownAt' => 0, 'reason' => ''];
+    }
+
+    $raw = @file_get_contents($path);
+    if (!is_string($raw) || trim($raw) === '') {
+        return ['up' => true, 'lastDownAt' => 0, 'reason' => ''];
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return ['up' => true, 'lastDownAt' => 0, 'reason' => ''];
+    }
+
+    return [
+        'up' => (bool) ($decoded['up'] ?? true),
+        'lastDownAt' => (int) ($decoded['lastDownAt'] ?? 0),
+        'reason' => isset($decoded['reason']) && is_string($decoded['reason']) ? trim((string) $decoded['reason']) : ''
+    ];
+}
+
+function figo_backend_write_failfast_state(bool $up, string $reason = ''): void
+{
+    $payload = [
+        'up' => $up,
+        'reason' => trim($reason),
+        'updatedAt' => time()
+    ];
+
+    if (!$up) {
+        $payload['lastDownAt'] = time();
+    } else {
+        $payload['lastDownAt'] = 0;
+    }
+
+    @file_put_contents(
+        figo_backend_failfast_state_path(),
+        json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        LOCK_EX
+    );
+}
+
+function figo_backend_check_failfast_window(): array
+{
+    $window = api_figo_env_ai_failfast_window_seconds();
+    if ($window <= 0) {
+        return ['active' => false, 'retryAfterSec' => 0, 'reason' => ''];
+    }
+
+    $state = figo_backend_read_failfast_state();
+    if (($state['up'] ?? true) === true) {
+        return ['active' => false, 'retryAfterSec' => 0, 'reason' => ''];
+    }
+
+    $lastDownAt = (int) ($state['lastDownAt'] ?? 0);
+    if ($lastDownAt <= 0) {
+        return ['active' => false, 'retryAfterSec' => 0, 'reason' => ''];
+    }
+
+    $elapsed = time() - $lastDownAt;
+    if ($elapsed >= $window) {
+        return ['active' => false, 'retryAfterSec' => 0, 'reason' => ''];
+    }
+
+    return [
+        'active' => true,
+        'retryAfterSec' => max(1, $window - $elapsed),
+        'reason' => isset($state['reason']) && is_string($state['reason']) ? trim((string) $state['reason']) : ''
+    ];
+}
+
+function figo_backend_ai_error_code(int $httpCode, string $curlErr): string
+{
+    if ($curlErr !== '') {
+        $normalized = strtolower($curlErr);
+        if (strpos($normalized, 'timed out') !== false) {
+            return 'ai_timeout';
+        }
+        if (strpos($normalized, 'could not resolve host') !== false || strpos($normalized, 'failed to connect') !== false) {
+            return 'ai_network';
+        }
+        return 'ai_curl_error';
+    }
+
+    if ($httpCode === 401 || $httpCode === 403) {
+        return 'ai_auth_error';
+    }
+    if ($httpCode === 429) {
+        return 'ai_rate_limited';
+    }
+    if ($httpCode >= 500) {
+        return 'ai_upstream_5xx';
+    }
+    if ($httpCode >= 400) {
+        return 'ai_upstream_4xx';
+    }
+    return 'ai_unknown_error';
+}
+
 function figo_backend_ai_system_prompt(): string
 {
     return "Eres Figo, asistente virtual amigable de la clínica dermatológica \"Piel en Armonía\" en Quito, Ecuador.\n"
@@ -393,11 +513,17 @@ function figo_backend_extract_ai_content(array $decoded, string $raw): ?string
     return null;
 }
 
-function figo_backend_ai_response(string $userMessage, array $contextMessages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): ?string
+function figo_backend_ai_response(string $userMessage, array $contextMessages = [], int $requestedMaxTokens = 0, ?float $requestedTemperature = null): array
 {
+    $startedAt = microtime(true);
     $endpoint = api_figo_env_ai_endpoint();
     if ($endpoint === '') {
-        return null;
+        return [
+            'ok' => false,
+            'errorCode' => 'ai_not_configured',
+            'content' => null,
+            'durationMs' => (int) round((microtime(true) - $startedAt) * 1000)
+        ];
     }
 
     $messages = [['role' => 'system', 'content' => figo_backend_ai_system_prompt()]];
@@ -434,7 +560,12 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     if (!is_string($payload)) {
-        return null;
+        return [
+            'ok' => false,
+            'errorCode' => 'ai_payload_encode_failed',
+            'content' => null,
+            'durationMs' => (int) round((microtime(true) - $startedAt) * 1000)
+        ];
     }
 
     $headers = ['Content-Type: application/json', 'Accept: application/json'];
@@ -455,35 +586,74 @@ function figo_backend_ai_response(string $userMessage, array $contextMessages = 
 
     $ch = curl_init($endpoint);
     if ($ch === false) {
-        return null;
+        return [
+            'ok' => false,
+            'errorCode' => 'ai_curl_init_failed',
+            'content' => null,
+            'durationMs' => (int) round((microtime(true) - $startedAt) * 1000)
+        ];
     }
+
+    $timeout = api_figo_env_ai_timeout_seconds();
+    $connectTimeout = api_figo_env_ai_connect_timeout_seconds();
 
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => $headers,
         CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_TIMEOUT => api_figo_env_ai_timeout_seconds(),
-        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => $timeout,
+        CURLOPT_CONNECTTIMEOUT => $connectTimeout,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2
     ]);
 
     $raw = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = (string) curl_error($ch);
     curl_close($ch);
+    $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
-    if (!is_string($raw) || $status >= 400) {
-        return null;
+    if (!is_string($raw) || $status >= 400 || $curlErr !== '') {
+        $errorCode = figo_backend_ai_error_code($status, $curlErr);
+        figo_backend_write_failfast_state(false, $errorCode);
+        return [
+            'ok' => false,
+            'errorCode' => $errorCode,
+            'httpCode' => $status,
+            'content' => null,
+            'durationMs' => $durationMs
+        ];
     }
 
     $decoded = json_decode($raw, true);
+    $content = null;
     if (is_array($decoded)) {
-        return figo_backend_extract_ai_content($decoded, $raw);
+        $content = figo_backend_extract_ai_content($decoded, $raw);
+    }
+    if (!is_string($content) || trim($content) === '') {
+        $plain = trim($raw);
+        $content = $plain !== '' ? $plain : null;
+    }
+    if (!is_string($content) || trim($content) === '') {
+        figo_backend_write_failfast_state(false, 'ai_empty_response');
+        return [
+            'ok' => false,
+            'errorCode' => 'ai_empty_response',
+            'httpCode' => $status,
+            'content' => null,
+            'durationMs' => $durationMs
+        ];
     }
 
-    $plain = trim($raw);
-    return $plain !== '' ? $plain : null;
+    figo_backend_write_failfast_state(true);
+    return [
+        'ok' => true,
+        'errorCode' => '',
+        'httpCode' => $status,
+        'content' => trim((string) $content),
+        'durationMs' => $durationMs
+    ];
 }
 
 function figo_backend_ai_unavailable_message(): string
@@ -628,9 +798,35 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
         ];
     }
 
-    $aiContent = null;
+    $failfast = figo_backend_check_failfast_window();
+    if ($aiConfigured && ($failfast['active'] ?? false) === true) {
+        $retryAfterSec = max(1, (int) ($failfast['retryAfterSec'] ?? 1));
+        if (!$allowFallback) {
+            return [
+                'ok' => false,
+                'mode' => 'unavailable',
+                'provider' => $aiProvider,
+                'reason' => 'ai_failfast_window',
+                'content' => figo_backend_ai_unavailable_message(),
+                'status' => 503,
+                'retryAfterSec' => $retryAfterSec
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'mode' => 'local',
+            'provider' => 'pattern_matching',
+            'reason' => 'ai_failfast_window_local',
+            'content' => figo_backend_answer($userMessage),
+            'status' => 200,
+            'retryAfterSec' => $retryAfterSec
+        ];
+    }
+
+    $aiResult = null;
     if ($aiConfigured) {
-        $aiContent = figo_backend_ai_response(
+        $aiResult = figo_backend_ai_response(
             $userMessage,
             $messages,
             $requestedMaxTokens,
@@ -638,6 +834,9 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
         );
     }
 
+    $aiContent = (is_array($aiResult) && isset($aiResult['content']) && is_string($aiResult['content']))
+        ? trim((string) $aiResult['content'])
+        : '';
     if (is_string($aiContent) && trim($aiContent) !== '') {
         return [
             'ok' => true,
@@ -649,12 +848,17 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
         ];
     }
 
+    $aiErrorCode = is_array($aiResult) && isset($aiResult['errorCode']) && is_string($aiResult['errorCode'])
+        ? trim((string) $aiResult['errorCode'])
+        : '';
+    $fallbackReason = $aiErrorCode !== '' ? ('ai_fallback_local_' . $aiErrorCode) : 'ai_fallback_local';
+
     if (!$allowFallback) {
         return [
             'ok' => false,
             'mode' => 'unavailable',
             'provider' => $aiConfigured ? $aiProvider : 'none',
-            'reason' => $aiConfigured ? 'ai_upstream_unavailable' : 'ai_not_configured',
+            'reason' => $aiErrorCode !== '' ? $aiErrorCode : ($aiConfigured ? 'ai_upstream_unavailable' : 'ai_not_configured'),
             'content' => figo_backend_ai_unavailable_message(),
             'status' => 503
         ];
@@ -664,7 +868,7 @@ function figo_backend_compose_response(string $userMessage, array $messages = []
         'ok' => true,
         'mode' => 'local',
         'provider' => 'pattern_matching',
-        'reason' => $aiConfigured ? 'ai_fallback_local' : 'ai_not_configured',
+        'reason' => $aiConfigured ? $fallbackReason : 'ai_not_configured',
         'content' => figo_backend_answer($userMessage),
         'status' => 200
     ];
@@ -864,6 +1068,7 @@ if ($method === 'GET') {
     $configSource = isset($fileConfig['__source']) && is_string($fileConfig['__source'])
         ? basename((string) $fileConfig['__source'])
         : 'environment';
+    $failfast = figo_backend_check_failfast_window();
     json_response([
         'ok' => true,
         'service' => 'figo-backend',
@@ -874,6 +1079,12 @@ if ($method === 'GET') {
         'aiModel' => api_figo_env_ai_model(),
         'aiEndpointHost' => figo_backend_ai_endpoint_host(),
         'aiUpstreamReachable' => figo_backend_probe_ai_endpoint(3),
+        'aiTimeoutSeconds' => api_figo_env_ai_timeout_seconds(),
+        'aiConnectTimeoutSeconds' => api_figo_env_ai_connect_timeout_seconds(),
+        'aiFailfastWindowSeconds' => api_figo_env_ai_failfast_window_seconds(),
+        'aiFailfastActive' => (bool) ($failfast['active'] ?? false),
+        'aiFailfastRetryAfterSec' => (int) ($failfast['retryAfterSec'] ?? 0),
+        'aiFailfastReason' => isset($failfast['reason']) ? (string) $failfast['reason'] : '',
         'allowLocalFallback' => api_figo_env_allow_local_fallback(),
         'internalTokenRequired' => figo_backend_internal_token() !== '',
         'internalTokenHeader' => figo_backend_internal_token_header(),
@@ -947,6 +1158,7 @@ if (($responsePlan['ok'] ?? false) !== true) {
         'ok' => false,
         'error' => $content,
         'reason' => $reason,
+        'retryAfterSec' => isset($responsePlan['retryAfterSec']) ? (int) $responsePlan['retryAfterSec'] : 0,
         'mode' => $mode,
         'provider' => $provider,
         'aiConfigured' => $aiConfigured,
@@ -984,6 +1196,7 @@ json_response([
     'mode' => $mode,
     'provider' => $provider,
     'reason' => $reason,
+    'retryAfterSec' => isset($responsePlan['retryAfterSec']) ? (int) $responsePlan['retryAfterSec'] : 0,
     'aiConfigured' => $aiConfigured,
     'allowLocalFallback' => $allowLocalFallback,
     'telegramConfigured' => $telegramConfigured,

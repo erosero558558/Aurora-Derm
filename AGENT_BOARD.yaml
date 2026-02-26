@@ -2099,3 +2099,41 @@ tasks:
     prompt: "Backend hardening: SQLite missing graceful mode + health signal"
     created_at: 2026-02-26
     updated_at: 2026-02-26
+
+  - id: AG-055
+    title: "Backend hardening: Figo AI failfast + timeout tuning"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T01:20:53.340Z"
+    risk: medium
+    scope: chat
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["figo-backend.php", "lib/figo_utils.php", "tests/Unit/Figo/FigoUtilsConfigTest.php"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T01:20:53.340Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Backend hardening: Figo AI failfast + timeout tuning"
+    acceptance_ref: "verification/agent-runs/AG-055.md"
+    evidence_ref: "verification/agent-runs/AG-055.md"
+    depends_on: []
+    prompt: "Backend hardening: Figo AI failfast + timeout tuning"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
