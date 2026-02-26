@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 197
+  revision: 200
   updated_at: 2026-02-26
 
 tasks:
@@ -3465,5 +3465,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-089.md"
     depends_on: []
     prompt: "C3 hardening: severidad operativa y labels de incidente en weekly-kpi"
+    created_at: 2026-02-26
+    updated_at: 2026-02-26
+
+  - id: AG-091
+    title: "Frontend public: fuente canonica unica para service pages acne/laser"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-26T16:07:29.462Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["servicios/acne.html", "servicios/laser.html"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-26T16:07:29.462Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Frontend public: fuente canonica unica para service pages acne/laser"
+    acceptance_ref: "verification/agent-runs/AG-090.md"
+    evidence_ref: "verification/agent-runs/AG-090.md"
+    depends_on: []
+    prompt: "Frontend public: fuente canonica unica para service pages acne/laser"
     created_at: 2026-02-26
     updated_at: 2026-02-26
