@@ -191,11 +191,32 @@ Criterio de salida:
 - [x] Incidente semanal dedicado `[ALERTA PROD] Weekly KPI services catalog degradado` habilitado con severidad.
 - [x] Contrato de workflow validado por tests Node.
 
+## C9 - Priorizacion inteligente de servicios (backend contract)
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Exponer una API backend que recomiende orden de categorias/servicios para navegacion y landings usando senales reales de funnel + catalogo.
+
+Entregables:
+
+- [x] Nuevo endpoint publico `GET /api.php?resource=service-priorities`.
+- [x] Ranking por `sort=hybrid|volume|conversion` con filtros `audience/category` y limites controlados.
+- [x] Respuesta aditiva con `data.categories`, `data.services`, `data.featured` y metadatos operativos (`source`, `catalogVersion`, `serviceCount`).
+- [x] Cobertura de integracion para ranking con señales de funnel, filtro pediatrico y fallback de catalogo faltante.
+
+Criterio de salida:
+
+- [x] `service-priorities` responde `200` con `source=catalog+funnel` cuando existen señales de conversion.
+- [x] Filtro `audience=ninos` prioriza rutas pediatricas sin romper contrato.
+- [x] Fallback `source=missing` devuelve arrays vacios y contrato estable.
+
 ## Contratos publicos
 
 - No se introducen cambios breaking en contratos HTTP existentes.
 - Cambios aditivos permitidos:
 - `GET /api.php?resource=funnel-metrics`: objeto `retention`.
+- `GET /api.php?resource=service-priorities`: ranking de navegacion por servicio/categoria.
 - Reporte semanal JSON: bloque `retention` y `retentionTrend`.
 
 ## Evidencia por commit
@@ -249,3 +270,4 @@ Criterio de salida:
 - 2026-02-26: cerrado C6 con alertas operativas de `serviceFunnel` en `REPORTE-SEMANAL-PRODUCCION.ps1` (codigos `service_funnel_*`, seccion markdown/JSON y top servicios) y workflow semanal extendido (`.github/workflows/weekly-kpi-report.yml`) con umbrales dedicados, outputs de incidente y apertura/cierre automatica de `[ALERTA PROD] Weekly KPI service funnel degradado`.
 - 2026-02-26: cerrado C7 con nuevo controlador `controllers/ServiceCatalogController.php` y endpoint publico `services-catalog` (filtros + paginacion + metadatos + fallback `source=missing`), registrado en `api.php`, `lib/routes.php` y `lib/ApiConfig.php`; cobertura en `tests/Integration/ServiceCatalogControllerTest.php` y regresion analytics en verde.
 - 2026-02-26: cerrado C8 con snapshot de catalogo en `controllers/HealthController.php` (`servicesCatalog*` top-level + `checks.servicesCatalog`), reporte semanal extendido (`REPORTE-SEMANAL-PRODUCCION.ps1`) con warnings `services_catalog_*` y payload `servicesCatalog`, workflow semanal (`weekly-kpi-report.yml`) con outputs/incidentes `services_catalog_*`, y cobertura en `tests/Integration/HealthServiceCatalogSnapshotTest.php` + `tests-node/weekly-kpi-workflow-contract.test.js`.
+- 2026-02-26: cerrado C9 con `controllers/ServicePriorityController.php` y endpoint publico `service-priorities` (orden inteligente por `hybrid|volume|conversion`, filtros `audience/category`, categorias/featured), registrado en `api.php`, `lib/routes.php` y `lib/ApiConfig.php`; cobertura en `tests/Integration/ServicePriorityControllerTest.php` + regresion `ServiceCatalog/Analytics/HealthServiceCatalog` en verde.
