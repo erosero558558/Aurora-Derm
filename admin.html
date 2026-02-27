@@ -1272,6 +1272,54 @@
                             </article>
                         </div>
 
+                        <div class="queue-ops-insights">
+                            <div class="queue-ops-insights-header">
+                                <h4>Resumen operativo</h4>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    id="queueExportCsvBtn"
+                                    data-action="queue-export-csv"
+                                >
+                                    <i class="fas fa-file-csv"></i>
+                                    Exportar CSV
+                                </button>
+                            </div>
+                            <div class="queue-ops-insights-grid">
+                                <article>
+                                    <span>Tickets hoy</span>
+                                    <strong id="queueOpsTicketsToday">0</strong>
+                                </article>
+                                <article>
+                                    <span>Completados hoy</span>
+                                    <strong id="queueOpsCompletedToday">0</strong>
+                                </article>
+                                <article>
+                                    <span>No show hoy</span>
+                                    <strong id="queueOpsNoShowRate">0%</strong>
+                                </article>
+                                <article>
+                                    <span>Espera promedio</span>
+                                    <strong id="queueOpsAvgWait">--</strong>
+                                </article>
+                                <article>
+                                    <span>Espera p95</span>
+                                    <strong id="queueOpsP95Wait">--</strong>
+                                </article>
+                                <article>
+                                    <span>Riesgo SLA (&gt;20m)</span>
+                                    <strong id="queueOpsSlaRisk">0</strong>
+                                </article>
+                            </div>
+                            <p
+                                id="queueOpsUpdatedAt"
+                                class="queue-triage-summary"
+                                aria-live="polite"
+                            >
+                                Resumen sin datos
+                            </p>
+                        </div>
+
                         <div class="queue-admin-grid">
                             <div class="queue-admin-next">
                                 <h4>Siguientes turnos</h4>

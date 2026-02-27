@@ -67,6 +67,7 @@ const queueUiState = {
     lastRefreshMode: 'idle',
     lastHealthySyncAt: 0,
     snapshotLoaded: false,
+    opsActionsBound: false,
 };
 
 function emitQueueOpsEvent(eventName, detail = {}) {
@@ -435,7 +436,10 @@ function scheduleQueueRealtimeTick({ immediate = false } = {}) {
 }
 
 function formatDateTime(value) {
-    const ts = Date.parse(String(value || ''));
+    const ts =
+        typeof value === 'number' && Number.isFinite(value)
+            ? value
+            : Date.parse(String(value || ''));
     if (!Number.isFinite(ts)) {
         return '--';
     }
@@ -445,6 +449,282 @@ function formatDateTime(value) {
         hour: '2-digit',
         minute: '2-digit',
     });
+}
+
+function parseQueueTimestamp(value) {
+    const ts = Date.parse(String(value || ''));
+    return Number.isFinite(ts) ? ts : null;
+}
+
+function isSameLocalDay(ts, nowTs = Date.now()) {
+    if (!Number.isFinite(ts)) return false;
+    const a = new Date(ts);
+    const b = new Date(nowTs);
+    return (
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate()
+    );
+}
+
+function formatQueueMinutesLabel(minutes) {
+    if (!Number.isFinite(minutes)) return '--';
+    return `${Math.max(0, Math.round(minutes))}m`;
+}
+
+function formatQueuePercent(value) {
+    if (!Number.isFinite(value)) return '0%';
+    const rounded = Math.round(value * 10) / 10;
+    if (Number.isInteger(rounded)) return `${rounded}%`;
+    return `${rounded.toFixed(1)}%`;
+}
+
+function getQueuePercentile(values, percentile) {
+    if (!Array.isArray(values) || values.length === 0) return null;
+    const ordered = [...values]
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b);
+    if (!ordered.length) return null;
+
+    const ratio = Math.min(1, Math.max(0, Number(percentile || 0)));
+    const index = Math.max(0, Math.ceil(ratio * ordered.length) - 1);
+    return ordered[index];
+}
+
+function computeQueueOperationalMetrics(tickets) {
+    const rows = Array.isArray(tickets) ? tickets : [];
+    const nowTs = Date.now();
+    const waitMinutesValues = [];
+    let ticketsToday = 0;
+    let completedToday = 0;
+    let noShowToday = 0;
+    let slaRiskCount = 0;
+    let latestSignalTs = null;
+
+    for (const ticket of rows) {
+        const status = String(ticket?.status || '').toLowerCase();
+        const createdTs = parseQueueTimestamp(ticket?.createdAt);
+        const calledTs = parseQueueTimestamp(ticket?.calledAt);
+        const completedTs = parseQueueTimestamp(ticket?.completedAt);
+        const eventTs =
+            completedTs ??
+            calledTs ??
+            createdTs ??
+            parseQueueTimestamp(ticket?.updatedAt);
+        if (Number.isFinite(eventTs)) {
+            latestSignalTs =
+                latestSignalTs === null
+                    ? eventTs
+                    : Math.max(latestSignalTs, eventTs);
+        }
+
+        if (Number.isFinite(createdTs) && isSameLocalDay(createdTs, nowTs)) {
+            ticketsToday += 1;
+        }
+        const terminalTs = completedTs ?? calledTs ?? createdTs;
+        if (
+            status === 'completed' &&
+            Number.isFinite(terminalTs) &&
+            isSameLocalDay(terminalTs, nowTs)
+        ) {
+            completedToday += 1;
+        }
+        if (
+            status === 'no_show' &&
+            Number.isFinite(terminalTs) &&
+            isSameLocalDay(terminalTs, nowTs)
+        ) {
+            noShowToday += 1;
+        }
+
+        if (status === 'waiting' && Number.isFinite(createdTs)) {
+            const waitingMinutes = Math.max(
+                0,
+                Math.round((nowTs - createdTs) / 60000)
+            );
+            if (waitingMinutes >= QUEUE_SLA_RISK_MINUTES) {
+                slaRiskCount += 1;
+            }
+        }
+
+        if (!Number.isFinite(createdTs)) continue;
+        let waitEndTs = null;
+        if (Number.isFinite(calledTs)) {
+            waitEndTs = calledTs;
+        } else if (status === 'waiting' || status === 'called') {
+            waitEndTs = nowTs;
+        } else if (Number.isFinite(completedTs)) {
+            waitEndTs = completedTs;
+        }
+        if (!Number.isFinite(waitEndTs)) continue;
+        const waitMinutes = Math.max(
+            0,
+            Math.round((waitEndTs - createdTs) / 60000)
+        );
+        waitMinutesValues.push(waitMinutes);
+    }
+
+    const avgWaitMinutes =
+        waitMinutesValues.length > 0
+            ? waitMinutesValues.reduce((sum, value) => sum + value, 0) /
+              waitMinutesValues.length
+            : null;
+    const p95WaitMinutes = getQueuePercentile(waitMinutesValues, 0.95);
+    const noShowBase = completedToday + noShowToday;
+    const noShowRatePct = noShowBase > 0 ? (noShowToday / noShowBase) * 100 : 0;
+
+    return {
+        ticketsToday,
+        completedToday,
+        noShowToday,
+        noShowRatePct,
+        avgWaitMinutes,
+        p95WaitMinutes,
+        slaRiskCount,
+        latestSignalTs,
+        waitSampleSize: waitMinutesValues.length,
+    };
+}
+
+function csvEscape(value) {
+    const text = String(value ?? '');
+    if (/[",\n]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+}
+
+function downloadQueueTicketsCsv(viewState) {
+    const visibleTickets = Array.isArray(viewState?.tickets)
+        ? viewState.tickets
+        : [];
+    if (!visibleTickets.length) {
+        showToast('No hay tickets visibles para exportar.', 'info');
+        return false;
+    }
+
+    const rows = visibleTickets.map((ticket) => {
+        const waitMinutes = getTicketWaitMinutes(ticket);
+        return [
+            ticket?.ticketCode || '',
+            ticket?.queueType || '',
+            ticket?.priorityClass || '',
+            ticket?.status || '',
+            ticket?.assignedConsultorio ?? '',
+            ticket?.patientInitials || '',
+            ticket?.phoneLast4 || '',
+            ticket?.createdAt || '',
+            ticket?.calledAt || '',
+            ticket?.completedAt || '',
+            Number.isFinite(waitMinutes) ? Math.round(waitMinutes) : '',
+            isSlaRiskTicket(ticket) ? 'yes' : 'no',
+        ];
+    });
+
+    const header = [
+        'ticket_code',
+        'queue_type',
+        'priority_class',
+        'status',
+        'assigned_consultorio',
+        'patient_initials',
+        'phone_last4',
+        'created_at',
+        'called_at',
+        'completed_at',
+        'wait_minutes',
+        'sla_risk',
+    ];
+    const csvContent = [
+        header.map(csvEscape).join(','),
+        ...rows.map((row) => row.map(csvEscape).join(',')),
+    ].join('\n');
+    const csvWithBom = `\uFEFF${csvContent}`;
+    const blob = new Blob([csvWithBom], {
+        type: 'text/csv;charset=utf-8',
+    });
+    const fileStamp = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[-:T]/g, '');
+    const fileName = `turnero-resumen-${fileStamp}.csv`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 500);
+
+    pushQueueActivity(`CSV exportado: ${rows.length} ticket(s) visibles`, {
+        level: 'info',
+    });
+    showToast(`CSV exportado (${rows.length} tickets).`, 'success');
+    emitQueueOpsEvent('queue_export_csv', {
+        rows: rows.length,
+        filter: normalizeQueueFilter(viewState?.activeFilter || 'all'),
+    });
+    return true;
+}
+
+function bindQueueOperationalActions() {
+    if (queueUiState.opsActionsBound) return;
+    queueUiState.opsActionsBound = true;
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
+        const trigger = event.target.closest(
+            '[data-action="queue-export-csv"]'
+        );
+        if (!(trigger instanceof HTMLElement)) return;
+        const viewState = queueUiState.lastViewState || buildQueueViewState();
+        downloadQueueTicketsCsv(viewState);
+    });
+}
+
+function renderQueueOperationalInsights() {
+    bindQueueOperationalActions();
+    const tickets = Array.isArray(currentQueueTickets)
+        ? currentQueueTickets
+        : [];
+    const metrics = computeQueueOperationalMetrics(tickets);
+
+    const ticketsTodayEl = document.getElementById('queueOpsTicketsToday');
+    const completedTodayEl = document.getElementById('queueOpsCompletedToday');
+    const noShowRateEl = document.getElementById('queueOpsNoShowRate');
+    const avgWaitEl = document.getElementById('queueOpsAvgWait');
+    const p95WaitEl = document.getElementById('queueOpsP95Wait');
+    const slaRiskEl = document.getElementById('queueOpsSlaRisk');
+    const updatedAtEl = document.getElementById('queueOpsUpdatedAt');
+
+    if (ticketsTodayEl) {
+        ticketsTodayEl.textContent = String(metrics.ticketsToday);
+    }
+    if (completedTodayEl) {
+        completedTodayEl.textContent = String(metrics.completedToday);
+    }
+    if (noShowRateEl) {
+        noShowRateEl.textContent = `${formatQueuePercent(metrics.noShowRatePct)} (${metrics.noShowToday})`;
+    }
+    if (avgWaitEl) {
+        avgWaitEl.textContent = formatQueueMinutesLabel(metrics.avgWaitMinutes);
+    }
+    if (p95WaitEl) {
+        p95WaitEl.textContent = formatQueueMinutesLabel(metrics.p95WaitMinutes);
+    }
+    if (slaRiskEl) {
+        slaRiskEl.textContent = String(metrics.slaRiskCount);
+    }
+    if (updatedAtEl) {
+        const updatedLabel =
+            Number.isFinite(metrics.latestSignalTs) &&
+            metrics.latestSignalTs !== null
+                ? formatDateTime(metrics.latestSignalTs)
+                : '--';
+        updatedAtEl.textContent = `Muestra: ${metrics.waitSampleSize} ticket(s) · ultima señal ${updatedLabel}`;
+    }
 }
 
 function normalizeQueueMetaFromState(queueState) {
@@ -1258,6 +1538,7 @@ function renderQueueSection() {
     queueUiState.lastViewState = viewState;
     syncQueueTriageControls(viewState);
     renderQueueOverview();
+    renderQueueOperationalInsights();
     renderQueueTable(viewState);
     const tableWrap = document.querySelector('#queue .queue-admin-table-wrap');
     if (tableWrap instanceof HTMLElement) {
