@@ -1106,4 +1106,227 @@ test.describe('Admin turnero sala', () => {
             expect.arrayContaining(['A-971', 'A-972'])
         );
     });
+
+    test('acciones de ticket (reasignar y completar) mantienen consistencia por consultorio', async ({
+        page,
+    }) => {
+        let queueTickets = [
+            {
+                id: 981,
+                ticketCode: 'A-981',
+                queueType: 'appointment',
+                patientInitials: 'RR',
+                priorityClass: 'appt_current',
+                status: 'called',
+                assignedConsultorio: 1,
+                createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+                calledAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 982,
+                ticketCode: 'A-982',
+                queueType: 'walk_in',
+                patientInitials: 'WW',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_lifecycle',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket' && request.method() === 'PATCH') {
+                const body = JSON.parse(request.postData() || '{}');
+                const ticketId = Number(body.id || 0);
+                const action = String(body.action || '').toLowerCase();
+                const consultorio = Number(body.consultorio || 0);
+                const ticketIndex = queueTickets.findIndex(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                );
+
+                if (ticketIndex < 0) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Ticket no encontrado' },
+                        404
+                    );
+                }
+
+                const currentTicket = queueTickets[ticketIndex];
+                if (
+                    (action === 'reasignar' || action === 'reassign') &&
+                    ![1, 2].includes(consultorio)
+                ) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Consultorio invalido' },
+                        400
+                    );
+                }
+
+                const nowIso = new Date().toISOString();
+                let updatedTicket = { ...currentTicket };
+
+                if (action === 'reasignar' || action === 'reassign') {
+                    updatedTicket = {
+                        ...currentTicket,
+                        assignedConsultorio: consultorio,
+                    };
+                } else if (
+                    action === 'completar' ||
+                    action === 'complete' ||
+                    action === 'completed'
+                ) {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'completed',
+                        assignedConsultorio: null,
+                        completedAt: nowIso,
+                    };
+                } else {
+                    return json(
+                        route,
+                        { ok: false, error: 'Accion no soportada' },
+                        400
+                    );
+                }
+
+                queueTickets = queueTickets.map((ticket, index) =>
+                    index === ticketIndex ? updatedTicket : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: updatedTicket,
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'queue-call-next') {
+                const body = JSON.parse(request.postData() || '{}');
+                const consultorio = Number(body.consultorio || 0);
+                const candidate = queueTickets.find(
+                    (ticket) => ticket.status === 'waiting'
+                );
+                if (!candidate) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Sin turnos en espera' },
+                        409
+                    );
+                }
+                queueTickets = queueTickets.map((ticket) =>
+                    ticket.id === candidate.id
+                        ? {
+                              ...ticket,
+                              status: 'called',
+                              assignedConsultorio: consultorio,
+                              calledAt: new Date().toISOString(),
+                          }
+                        : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets.find(
+                            (ticket) => ticket.id === candidate.id
+                        ),
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+
+        await expect(page.locator('#queueC1Now')).toContainText('A-981');
+        await expect(page.locator('#queueC2Now')).toContainText('Sin llamado');
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('1');
+
+        const rowA981 = page
+            .locator('#queueTableBody tr')
+            .filter({ hasText: 'A-981' })
+            .first();
+
+        await rowA981
+            .locator(
+                '[data-action="queue-ticket-action"][data-queue-action="reasignar"][data-queue-consultorio="2"]'
+            )
+            .click();
+
+        await expect(page.locator('#queueC2Now')).toContainText('A-981');
+        await expect(page.locator('#queueC1Now')).toContainText('Sin llamado');
+
+        await rowA981
+            .locator(
+                '[data-action="queue-ticket-action"][data-queue-action="completar"]'
+            )
+            .click();
+
+        await expect(page.locator('#queueC2Now')).toContainText('Sin llamado');
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('1');
+        await expect(rowA981).toContainText('Completado');
+
+        await page
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .first()
+            .click();
+
+        await expect(page.locator('#queueC1Now')).toContainText('A-982');
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('0');
+    });
 });

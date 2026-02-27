@@ -338,6 +338,133 @@ async function installSharedQueueMocks(context, options = {}) {
             });
         }
 
+        if (resource === 'queue-ticket' && method === 'PATCH') {
+            const body = parseBody(request);
+            const ticketId = Number(body.id || 0);
+            const action = String(body.action || '').toLowerCase();
+            const consultorio = Number(body.consultorio || 0);
+            const ticketIndex = queueTickets.findIndex(
+                (ticket) => Number(ticket.id || 0) === ticketId
+            );
+
+            if (ticketIndex < 0) {
+                return json(
+                    route,
+                    { ok: false, error: 'Ticket no encontrado' },
+                    404
+                );
+            }
+
+            const currentTicket = queueTickets[ticketIndex];
+            const nowIso = new Date().toISOString();
+            /** @type {Record<string, any> | null} */
+            let updatedTicket = null;
+
+            if (
+                action === 're-llamar' ||
+                action === 'rellamar' ||
+                action === 'recall' ||
+                action === 'llamar'
+            ) {
+                updatedTicket = {
+                    ...currentTicket,
+                    status: 'called',
+                    assignedConsultorio: [1, 2].includes(consultorio)
+                        ? consultorio
+                        : Number(currentTicket.assignedConsultorio || 0) || 1,
+                    calledAt: nowIso,
+                };
+            } else if (action === 'liberar' || action === 'release') {
+                updatedTicket = {
+                    ...currentTicket,
+                    status: 'waiting',
+                    assignedConsultorio: null,
+                    calledAt: null,
+                    completedAt: null,
+                };
+            } else if (
+                action === 'completar' ||
+                action === 'complete' ||
+                action === 'completed'
+            ) {
+                updatedTicket = {
+                    ...currentTicket,
+                    status: 'completed',
+                    assignedConsultorio: null,
+                    completedAt: nowIso,
+                };
+            } else if (action === 'no_show' || action === 'noshow') {
+                updatedTicket = {
+                    ...currentTicket,
+                    status: 'no_show',
+                    assignedConsultorio: null,
+                    completedAt: nowIso,
+                };
+            } else if (
+                action === 'cancelar' ||
+                action === 'cancel' ||
+                action === 'cancelled'
+            ) {
+                updatedTicket = {
+                    ...currentTicket,
+                    status: 'cancelled',
+                    assignedConsultorio: null,
+                    completedAt: nowIso,
+                };
+            } else if (action === 'reasignar' || action === 'reassign') {
+                if (![1, 2].includes(consultorio)) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Consultorio invalido' },
+                        400
+                    );
+                }
+                const consultorioBusy = queueTickets.some(
+                    (ticket) =>
+                        Number(ticket.id || 0) !== ticketId &&
+                        String(ticket.status || '') === 'called' &&
+                        Number(ticket.assignedConsultorio || 0) === consultorio
+                );
+                if (consultorioBusy) {
+                    return json(
+                        route,
+                        {
+                            ok: false,
+                            error: 'Consultorio ocupado',
+                            errorCode: 'queue_consultorio_busy',
+                        },
+                        409
+                    );
+                }
+                updatedTicket = {
+                    ...currentTicket,
+                    assignedConsultorio: consultorio,
+                    calledAt:
+                        String(currentTicket.status || '') === 'called'
+                            ? currentTicket.calledAt || nowIso
+                            : currentTicket.calledAt || null,
+                };
+            } else {
+                return json(
+                    route,
+                    { ok: false, error: 'Accion no soportada' },
+                    400
+                );
+            }
+
+            queueTickets = queueTickets.map((ticket, index) =>
+                index === ticketIndex ? updatedTicket : ticket
+            );
+
+            return json(route, {
+                ok: true,
+                data: {
+                    ticket: updatedTicket,
+                    queueState: currentQueueState(),
+                },
+            });
+        }
+
         if (resource === 'data') {
             const queueState = currentQueueState();
             return json(route, {
@@ -703,5 +830,150 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
                 { timeout: 10000 }
             )
             .toMatch(/A-00[12]/);
+    });
+
+    test('acciones de ticket en admin (reasignar, completar, no_show) sincronizan estado con TV', async ({
+        page,
+    }) => {
+        const context = page.context();
+        await installSharedQueueMocks(context);
+
+        const adminPage = page;
+        const kioskPage = await context.newPage();
+        const displayPage = await context.newPage();
+
+        await Promise.all([
+            adminPage.goto('/admin.html'),
+            kioskPage.goto('/kiosco-turnos.html'),
+            displayPage.goto('/sala-turnos.html'),
+        ]);
+
+        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 10);
+
+        await kioskPage.fill('#walkinInitials', 'W1');
+        await kioskPage.click('#walkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-001');
+
+        await kioskPage.fill('#checkinPhone', '0999888777');
+        await kioskPage.fill('#checkinDate', tomorrow);
+        await kioskPage.fill('#checkinTime', '10:00');
+        await kioskPage.fill('#checkinInitials', 'AP');
+        await kioskPage.click('#checkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-002');
+
+        await kioskPage.fill('#walkinInitials', 'W3');
+        await kioskPage.click('#walkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-003');
+
+        await adminPage.locator('.nav-item[data-section="queue"]').click();
+        await expect(adminPage.locator('#queue')).toHaveClass(/active/);
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '3'
+        );
+
+        await adminPage
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .first()
+            .click();
+        await expect(adminPage.locator('#queueC1Now')).toContainText('A-002');
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '2'
+        );
+
+        await expect
+            .poll(
+                async () =>
+                    (
+                        await displayPage
+                            .locator('#displayConsultorio1')
+                            .innerText()
+                    ).trim(),
+                { timeout: 10000 }
+            )
+            .toContain('A-002');
+
+        const rowA002 = adminPage
+            .locator('#queueTableBody tr')
+            .filter({ hasText: 'A-002' })
+            .first();
+        await rowA002
+            .locator(
+                '[data-action="queue-ticket-action"][data-queue-action="reasignar"][data-queue-consultorio="2"]'
+            )
+            .click();
+
+        await expect(adminPage.locator('#queueC2Now')).toContainText('A-002');
+        await expect(adminPage.locator('#queueC1Now')).toContainText(
+            'Sin llamado'
+        );
+
+        await expect
+            .poll(
+                async () =>
+                    (
+                        await displayPage
+                            .locator('#displayConsultorio2')
+                            .innerText()
+                    ).trim(),
+                { timeout: 10000 }
+            )
+            .toContain('A-002');
+
+        await rowA002
+            .locator(
+                '[data-action="queue-ticket-action"][data-queue-action="completar"]'
+            )
+            .click();
+
+        await expect(adminPage.locator('#queueC2Now')).toContainText(
+            'Sin llamado'
+        );
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '2'
+        );
+        await expect
+            .poll(
+                async () =>
+                    (
+                        await displayPage
+                            .locator('#displayConsultorio2')
+                            .innerText()
+                    ).trim(),
+                { timeout: 10000 }
+            )
+            .not.toContain('A-002');
+
+        await adminPage
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .first()
+            .click();
+        await expect(adminPage.locator('#queueC1Now')).toContainText('A-001');
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '1'
+        );
+
+        const rowA003 = adminPage
+            .locator('#queueTableBody tr')
+            .filter({ hasText: 'A-003' })
+            .first();
+        await rowA003
+            .locator(
+                '[data-action="queue-ticket-action"][data-queue-action="no_show"]'
+            )
+            .click();
+
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '0'
+        );
+        await expect(rowA003).toContainText('No asistio');
+        await expect(displayPage.locator('#displayNextList')).not.toContainText(
+            'A-003'
+        );
     });
 });
