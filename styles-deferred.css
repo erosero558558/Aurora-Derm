@@ -2769,8 +2769,12 @@ html[data-theme='light'] .hero::before {
         ) !important;
 }
 
+html[data-theme='light'] .hero-image-container {
+    z-index: 0 !important;
+}
+
 html[data-theme='light'] .hero-bg-image {
-    opacity: 0.26 !important;
+    opacity: 0.5 !important;
     filter: none !important;
 }
 
@@ -2835,8 +2839,12 @@ html[data-theme='dark'] .hero::before {
         ) !important;
 }
 
+html[data-theme='dark'] .hero-image-container {
+    z-index: 0 !important;
+}
+
 html[data-theme='dark'] .hero-bg-image {
-    opacity: 0.2 !important;
+    opacity: 0.3 !important;
     filter: none !important;
 }
 
@@ -2856,7 +2864,7 @@ html[data-theme='dark'] .contact-chip.whatsapp {
 
 @media (max-width: 900px) {
     html[data-theme='light'] .hero-bg-image {
-        opacity: 0.22 !important;
+        opacity: 0.46 !important;
     }
 }
 
