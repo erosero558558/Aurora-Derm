@@ -704,19 +704,38 @@ test.describe('Admin turnero sala', () => {
     test('usa fallback queue-state cuando /data no incluye queue_tickets', async ({
         page,
     }) => {
-        const queueTickets = [
-            {
-                id: 1501,
-                ticketCode: 'A-1501',
-                queueType: 'walk_in',
-                patientInitials: 'QA',
-                priorityClass: 'walk_in',
-                status: 'waiting',
-                assignedConsultorio: null,
-                createdAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+        const nowIso = new Date().toISOString();
+        const queueState = {
+            updatedAt: nowIso,
+            waitingCount: 14,
+            calledCount: 1,
+            counts: {
+                waiting: 14,
+                called: 1,
+                completed: 0,
+                no_show: 0,
+                cancelled: 0,
             },
-        ];
-        const queueState = buildQueueStateFromTickets(queueTickets);
+            callingNow: [
+                {
+                    id: 1599,
+                    ticketCode: 'A-1599',
+                    patientInitials: 'CC',
+                    assignedConsultorio: 1,
+                    calledAt: nowIso,
+                    status: 'called',
+                },
+            ],
+            nextTickets: Array.from({ length: 10 }, (_item, index) => ({
+                id: 1501 + index,
+                ticketCode: `A-${1501 + index}`,
+                patientInitials: `Q${index}`,
+                queueType: 'walk_in',
+                priorityClass: 'walk_in',
+                position: index + 1,
+                createdAt: nowIso,
+            })),
+        };
         let queueStateRequests = 0;
 
         await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
@@ -776,7 +795,14 @@ test.describe('Admin turnero sala', () => {
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
         await expect(page.locator('#queueTableBody')).toContainText('A-1501');
-        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('1');
+        await expect(page.locator('#queueTableBody')).toContainText('A-1510');
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('14');
+        await expect(page.locator('#queueTriageSummary')).toContainText(
+            'fallback parcial'
+        );
+        await expect(page.locator('#queueNextAdminList')).toContainText(
+            'Mostrando primeros 10 de 14 en espera'
+        );
         await expect.poll(() => queueStateRequests).toBeGreaterThan(0);
     });
 

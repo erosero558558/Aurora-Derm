@@ -65,6 +65,7 @@ Recuperación rápida (si borran caché o cambian navegador):
     - sincroniza al reconectar (`Sincronizar pendientes`).
 - TV/Admin:
     - usan estado degradado/reconnecting y respaldo local cuando aplique.
+    - en Admin, si entra fallback por `queue-state`, la tabla puede mostrar una muestra parcial (top de espera + llamados activos) y lo indica como `fallback parcial`.
 - Si la degradacion supera 5 minutos:
     - operar llamado por recepcion,
     - reintentar sincronizacion manual.

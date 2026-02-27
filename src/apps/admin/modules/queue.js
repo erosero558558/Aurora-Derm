@@ -65,10 +65,52 @@ const queueUiState = {
     syncState: 'paused',
     syncMessage: '',
     lastRefreshMode: 'idle',
+    fallbackContext: null,
     lastHealthySyncAt: 0,
     snapshotLoaded: false,
     opsActionsBound: false,
 };
+
+function clearQueueFallbackContext() {
+    queueUiState.fallbackContext = null;
+}
+
+function setQueueFallbackContextFromState(
+    queueState,
+    { reason = 'state_fallback' } = {}
+) {
+    const waitingCount = Number(queueState?.waitingCount || 0);
+    const calledCount = Number(queueState?.calledCount || 0);
+    const nextTicketsCount = Array.isArray(queueState?.nextTickets)
+        ? queueState.nextTickets.length
+        : 0;
+    const callingNowCount = Array.isArray(queueState?.callingNow)
+        ? queueState.callingNow.length
+        : 0;
+    const knownCount = Math.max(0, waitingCount + calledCount);
+    const sampledCount = Math.max(0, nextTicketsCount + callingNowCount);
+
+    queueUiState.fallbackContext = {
+        reason: String(reason || 'state_fallback'),
+        waitingCount: Math.max(0, waitingCount),
+        calledCount: Math.max(0, calledCount),
+        nextTicketsCount: Math.max(0, nextTicketsCount),
+        callingNowCount: Math.max(0, callingNowCount),
+        knownCount,
+        sampledCount,
+        partial: knownCount > sampledCount,
+        updatedAt:
+            String(queueState?.updatedAt || '').trim() ||
+            new Date().toISOString(),
+    };
+}
+
+function getActiveFallbackContext() {
+    if (queueUiState.lastRefreshMode !== 'state_fallback') return null;
+    const context = queueUiState.fallbackContext;
+    if (!context || typeof context !== 'object') return null;
+    return context;
+}
 
 function emitQueueOpsEvent(eventName, detail = {}) {
     try {
@@ -216,6 +258,7 @@ function restoreQueueSnapshot(snapshot, { source = 'fallback' } = {}) {
 
     setQueueTickets(queueTickets);
     setQueueMeta(queueMeta);
+    clearQueueFallbackContext();
     renderQueueSection();
 
     const ageMs = Math.max(
@@ -1422,11 +1465,15 @@ function syncQueueTriageControls(viewState) {
         const totalCount = Number(viewState?.totalCount || 0);
         const riskCount = Number(viewState?.riskCount || 0);
         const waitingCount = Number(viewState?.waitingCount || 0);
+        const fallbackContext = getActiveFallbackContext();
         let progressText = '';
         if (queueUiState.bulkActionInFlight) {
             progressText = ' · ejecutando accion masiva...';
         } else if (queueUiState.bulkReprintInFlight) {
             progressText = ' · reimprimiendo tickets visibles...';
+        }
+        if (fallbackContext?.partial) {
+            progressText += ` · fallback parcial ${fallbackContext.sampledCount}/${fallbackContext.knownCount}`;
         }
         summary.textContent = `${visibleCount}/${totalCount} visibles · ${waitingCount} en espera · ${riskCount} en riesgo SLA${progressText}`;
     }
@@ -1482,11 +1529,12 @@ function renderQueueOverview() {
         const nextTickets = Array.isArray(queueMeta.nextTickets)
             ? queueMeta.nextTickets
             : [];
+        const fallbackContext = getActiveFallbackContext();
         if (nextTickets.length === 0) {
             nextListEl.innerHTML =
                 '<li class="empty-message">No hay turnos en espera.</li>';
         } else {
-            nextListEl.innerHTML = nextTickets
+            const rows = nextTickets
                 .map(
                     (ticket) => `
                         <li>
@@ -1497,6 +1545,11 @@ function renderQueueOverview() {
                     `
                 )
                 .join('');
+            if (fallbackContext?.partial) {
+                nextListEl.innerHTML = `${rows}<li class="empty-message">Mostrando primeros ${escapeHtml(fallbackContext.nextTicketsCount)} de ${escapeHtml(fallbackContext.waitingCount)} en espera (fallback).</li>`;
+            } else {
+                nextListEl.innerHTML = rows;
+            }
         }
     }
 }
@@ -1512,6 +1565,7 @@ function renderQueueTable(viewState) {
             viewState?.activeFilter || 'all'
         );
         const searchTerm = String(viewState?.searchTerm || '').trim();
+        const fallbackContext = getActiveFallbackContext();
         let emptyMessage = 'Sin tickets en cola.';
         if (totalCount > 0 && (activeFilter !== 'all' || searchTerm !== '')) {
             const criteria = [];
@@ -1522,6 +1576,13 @@ function renderQueueTable(viewState) {
                 criteria.push(`búsqueda "${searchTerm}"`);
             }
             emptyMessage = `No hay tickets para ${criteria.join(' y ')}.`;
+        } else if (
+            activeFilter === 'all' &&
+            searchTerm === '' &&
+            fallbackContext &&
+            fallbackContext.knownCount > 0
+        ) {
+            emptyMessage = `Cola en fallback: backend reporta ${fallbackContext.knownCount} ticket(s) activos. Refresca para vista completa.`;
         }
         tableBody.innerHTML = `
             <tr>
@@ -1743,6 +1804,7 @@ async function applyQueueStateFallback({
             mapQueueStateToTickets(queueStateData, currentQueueTickets)
         );
         setQueueMeta(normalizeQueueMetaFromState(queueStateData));
+        setQueueFallbackContextFromState(queueStateData, { reason });
         queueUiState.lastRefreshMode = 'state_fallback';
         emitQueueOpsEvent('sync_fallback_queue_state', {
             source: fromRealtime ? 'realtime' : 'manual',
@@ -1792,6 +1854,7 @@ export async function refreshQueueRealtime({
                 ? data.queueMeta
                 : null
         );
+        clearQueueFallbackContext();
         queueUiState.lastRefreshMode = 'live';
         queueUiState.lastHealthySyncAt = Date.now();
         persistQueueSnapshot();
@@ -1827,6 +1890,9 @@ export async function refreshQueueRealtime({
         const restoredSnapshot = restoreQueueSnapshot(loadQueueSnapshot(), {
             source: fromRealtime ? 'realtime_error' : 'manual_error',
         });
+        if (!restoredSnapshot) {
+            clearQueueFallbackContext();
+        }
         queueUiState.lastRefreshMode = restoredSnapshot ? 'snapshot' : 'error';
         if (restoredSnapshot) {
             emitQueueOpsEvent('sync_fallback_snapshot', {
