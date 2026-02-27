@@ -215,11 +215,11 @@ jobs:
                       if ([int]::TryParse($Raw, [ref]$tmp)) {
                         $parsed = $tmp
                       } else {
-                        Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor invalido '$Raw', se usa default $DefaultValue"
+                        Add-ThresholdWarning -Warnings $Warnings -Message "${Name}: valor invalido '$Raw', se usa default $DefaultValue"
                       }
                     }
                     if ($parsed -lt $MinValue) {
-                      Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor $parsed menor que minimo $MinValue, se aplica clamp"
+                      Add-ThresholdWarning -Warnings $Warnings -Message "${Name}: valor $parsed menor que minimo $MinValue, se aplica clamp"
                       $parsed = $MinValue
                     }
                     return $parsed
@@ -239,11 +239,11 @@ jobs:
                       if ([double]::TryParse($Raw, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$tmp)) {
                         $parsed = $tmp
                       } else {
-                        Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor invalido '$Raw', se usa default $DefaultValue"
+                        Add-ThresholdWarning -Warnings $Warnings -Message "${Name}: valor invalido '$Raw', se usa default $DefaultValue"
                       }
                     }
                     if ($parsed -lt $MinValue) {
-                      Add-ThresholdWarning -Warnings $Warnings -Message "$Name: valor $parsed menor que minimo $MinValue, se aplica clamp"
+                      Add-ThresholdWarning -Warnings $Warnings -Message "${Name}: valor $parsed menor que minimo $MinValue, se aplica clamp"
                       $parsed = $MinValue
                     }
                     return $parsed
