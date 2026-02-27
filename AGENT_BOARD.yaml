@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 253
+  revision: 256
   updated_at: 2026-02-27
 
 tasks:
@@ -4263,5 +4263,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-111.md"
     depends_on: []
     prompt: "Turnero sala O: continuidad offline kiosco + snapshot de respaldo en TV"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-112
+    title: "Turnero sala P: consola de contingencia kiosco+TV (gestionar pendientes/snapshot)"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T01:36:12.037Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "js/queue-kiosk.js", "js/queue-display.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T01:36:12.037Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala P: consola de contingencia kiosco+TV (gestionar pendientes/snapshot)"
+    acceptance_ref: "verification/agent-runs/AG-112.md"
+    evidence_ref: "verification/agent-runs/AG-112.md"
+    depends_on: []
+    prompt: "Turnero sala P: consola de contingencia kiosco+TV (gestionar pendientes/snapshot)"
     created_at: 2026-02-27
     updated_at: 2026-02-27

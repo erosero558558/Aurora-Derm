@@ -18,6 +18,7 @@ const state = {
     lastHealthySyncAt: 0,
     bellMuted: false,
     lastSnapshot: null,
+    connectionState: 'paused',
 };
 
 function getById(id) {
@@ -72,6 +73,7 @@ function setConnectionStatus(stateLabel, message) {
         paused: 'En pausa',
     };
 
+    state.connectionState = normalized;
     el.dataset.state = normalized;
     el.textContent =
         String(message || '').trim() ||
@@ -226,18 +228,30 @@ function persistLastSnapshot(queueState) {
     } catch (_error) {
         // Ignore storage write failures.
     }
+    renderSnapshotHint();
 }
 
 function loadLastSnapshot() {
+    state.lastSnapshot = null;
     try {
         const raw = localStorage.getItem(DISPLAY_LAST_SNAPSHOT_STORAGE_KEY);
-        if (!raw) return null;
+        if (!raw) {
+            renderSnapshotHint();
+            return null;
+        }
         const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') return null;
+        if (!parsed || typeof parsed !== 'object') {
+            renderSnapshotHint();
+            return null;
+        }
 
         const savedAtTs = Date.parse(String(parsed.savedAt || ''));
-        if (!Number.isFinite(savedAtTs)) return null;
+        if (!Number.isFinite(savedAtTs)) {
+            renderSnapshotHint();
+            return null;
+        }
         if (Date.now() - savedAtTs > DISPLAY_LAST_SNAPSHOT_MAX_AGE_MS) {
+            renderSnapshotHint();
             return null;
         }
 
@@ -247,8 +261,10 @@ function loadLastSnapshot() {
             data,
         };
         state.lastSnapshot = snapshot;
+        renderSnapshotHint();
         return snapshot;
     } catch (_error) {
+        renderSnapshotHint();
         return null;
     }
 }
@@ -269,6 +285,98 @@ function renderFromSnapshot(snapshot, { mode = 'restore' } = {}) {
             : `Sin backend. Mostrando ultimo estado local (${ageLabel}).`
     );
     return true;
+}
+
+function ensureDisplaySnapshotHintEl() {
+    let hint = getById('displaySnapshotHint');
+    if (hint instanceof HTMLElement) {
+        return hint;
+    }
+
+    const opsHint = ensureDisplayOpsHintEl();
+    if (!opsHint?.parentElement) return null;
+
+    hint = document.createElement('span');
+    hint.id = 'displaySnapshotHint';
+    hint.className = 'display-updated-at';
+    hint.textContent = 'Respaldo: sin datos locales';
+    opsHint.insertAdjacentElement('afterend', hint);
+    return hint;
+}
+
+function renderSnapshotHint() {
+    const hint = ensureDisplaySnapshotHintEl();
+    if (!(hint instanceof HTMLElement)) return;
+
+    if (!state.lastSnapshot?.savedAt) {
+        hint.textContent = 'Respaldo: sin datos locales';
+        return;
+    }
+
+    const savedAtTs = Date.parse(String(state.lastSnapshot.savedAt || ''));
+    if (!Number.isFinite(savedAtTs)) {
+        hint.textContent = 'Respaldo: sin datos locales';
+        return;
+    }
+    hint.textContent = `Respaldo: ${formatElapsedAge(Date.now() - savedAtTs)} de antiguedad`;
+}
+
+function ensureDisplaySnapshotClearButton() {
+    let button = getById('displaySnapshotClearBtn');
+    if (button instanceof HTMLButtonElement) {
+        return button;
+    }
+
+    const clockWrap = document.querySelector('.display-clock-wrap');
+    if (!clockWrap) return null;
+
+    button = document.createElement('button');
+    button.id = 'displaySnapshotClearBtn';
+    button.type = 'button';
+    button.style.justifySelf = 'end';
+    button.style.border = '1px solid var(--border)';
+    button.style.borderRadius = '0.6rem';
+    button.style.padding = '0.34rem 0.55rem';
+    button.style.background = 'rgb(24 39 67 / 64%)';
+    button.style.color = 'var(--text)';
+    button.style.cursor = 'pointer';
+    button.style.fontSize = '0.8rem';
+    button.style.fontWeight = '600';
+    button.textContent = 'Limpiar respaldo';
+    clockWrap.appendChild(button);
+    return button;
+}
+
+function renderNoDataFallback(message = 'No hay turnos pendientes.') {
+    renderCalledTicket('displayConsultorio1', null, 'Consultorio 1');
+    renderCalledTicket('displayConsultorio2', null, 'Consultorio 2');
+    const list = getById('displayNextList');
+    if (list) {
+        list.innerHTML = `<li class="display-empty">${escapeHtml(message)}</li>`;
+    }
+}
+
+function clearLastSnapshot({ announce = false } = {}) {
+    state.lastSnapshot = null;
+    try {
+        localStorage.removeItem(DISPLAY_LAST_SNAPSHOT_STORAGE_KEY);
+    } catch (_error) {
+        // Ignore storage remove failures.
+    }
+    renderSnapshotHint();
+    if (state.connectionState !== 'live') {
+        renderNoDataFallback('Sin respaldo local disponible.');
+        if (navigator.onLine === false) {
+            setConnectionStatus('offline', 'Sin conexion');
+        } else {
+            setConnectionStatus('reconnecting', 'Sin respaldo local');
+        }
+    }
+    if (announce) {
+        setDisplayOpsHint(
+            'Respaldo local limpiado. Esperando datos en vivo del backend.'
+        );
+    }
 }
 
 function formatElapsedAge(ms) {
@@ -668,6 +776,7 @@ function initDisplay() {
     state.clockId = window.setInterval(updateClock, 1000);
 
     ensureDisplayOpsHintEl();
+    ensureDisplaySnapshotHintEl();
     const manualRefreshButton = ensureDisplayManualRefreshButton();
     if (manualRefreshButton instanceof HTMLButtonElement) {
         manualRefreshButton.addEventListener('click', () => {
@@ -680,7 +789,14 @@ function initDisplay() {
             toggleBellMuted();
         });
     }
+    const clearSnapshotButton = ensureDisplaySnapshotClearButton();
+    if (clearSnapshotButton instanceof HTMLButtonElement) {
+        clearSnapshotButton.addEventListener('click', () => {
+            clearLastSnapshot({ announce: true });
+        });
+    }
     renderBellToggle();
+    renderSnapshotHint();
 
     setConnectionStatus('paused', 'Sincronizacion lista');
     if (!renderFromSnapshot(state.lastSnapshot, { mode: 'startup' })) {
@@ -723,6 +839,11 @@ function initDisplay() {
         if (keyCode === 'keym') {
             event.preventDefault();
             toggleBellMuted();
+            return;
+        }
+        if (keyCode === 'keyx') {
+            event.preventDefault();
+            clearLastSnapshot({ announce: true });
         }
     });
 }

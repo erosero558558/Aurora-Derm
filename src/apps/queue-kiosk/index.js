@@ -15,6 +15,7 @@ const ASSISTANT_WELCOME_TEXT =
 const KIOSK_OFFLINE_OUTBOX_STORAGE_KEY = 'queueKioskOfflineOutbox';
 const KIOSK_OFFLINE_OUTBOX_MAX_ITEMS = 25;
 const KIOSK_OFFLINE_OUTBOX_FLUSH_BATCH = 4;
+const KIOSK_OFFLINE_OUTBOX_RENDER_LIMIT = 6;
 
 const state = {
     queueState: null,
@@ -352,6 +353,113 @@ function setQueueOutboxHint(message) {
     el.textContent = String(message || '').trim() || 'Pendientes offline: 0';
 }
 
+function ensureQueueOutboxConsoleEl() {
+    let panel = getById('queueOutboxConsole');
+    if (panel instanceof HTMLElement) {
+        return panel;
+    }
+
+    const outboxHint = ensureQueueOutboxHintEl();
+    if (!outboxHint?.parentElement) return null;
+
+    panel = document.createElement('section');
+    panel.id = 'queueOutboxConsole';
+    panel.style.border = '1px solid var(--border)';
+    panel.style.borderRadius = '0.75rem';
+    panel.style.padding = '0.55rem 0.65rem';
+    panel.style.marginBottom = '0.65rem';
+    panel.style.background = 'var(--surface-soft)';
+    panel.innerHTML = `
+        <p id="queueOutboxSummary" class="queue-updated-at">Outbox: 0 pendientes</p>
+        <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin:0.25rem 0 0.45rem;">
+            <button id="queueOutboxRetryBtn" type="button" style="border:1px solid var(--border);border-radius:0.6rem;padding:0.34rem 0.55rem;background:var(--surface);color:var(--text);cursor:pointer;">Sincronizar pendientes</button>
+            <button id="queueOutboxDropOldestBtn" type="button" style="border:1px solid var(--border);border-radius:0.6rem;padding:0.34rem 0.55rem;background:var(--surface);color:var(--text);cursor:pointer;">Descartar mas antiguo</button>
+            <button id="queueOutboxClearBtn" type="button" style="border:1px solid var(--border);border-radius:0.6rem;padding:0.34rem 0.55rem;background:var(--surface);color:var(--text);cursor:pointer;">Limpiar pendientes</button>
+        </div>
+        <ol id="queueOutboxList" style="margin:0;padding-left:1.1rem;display:grid;gap:0.35rem;">
+            <li class="queue-empty">Sin pendientes offline.</li>
+        </ol>
+        <p class="queue-updated-at" style="margin-top:0.45rem;">Atajos: Alt+Shift+Y sincroniza pendientes, Alt+Shift+K limpia pendientes.</p>
+    `;
+    outboxHint.insertAdjacentElement('afterend', panel);
+    return panel;
+}
+
+function setQueueOutboxActionLoading(isLoading) {
+    const retryBtn = getById('queueOutboxRetryBtn');
+    const clearBtn = getById('queueOutboxClearBtn');
+    const dropOldestBtn = getById('queueOutboxDropOldestBtn');
+
+    if (retryBtn instanceof HTMLButtonElement) {
+        retryBtn.disabled = Boolean(isLoading) || !state.offlineOutbox.length;
+        retryBtn.textContent = isLoading
+            ? 'Sincronizando...'
+            : 'Sincronizar pendientes';
+    }
+    if (clearBtn instanceof HTMLButtonElement) {
+        clearBtn.disabled = Boolean(isLoading) || !state.offlineOutbox.length;
+    }
+    if (dropOldestBtn instanceof HTMLButtonElement) {
+        dropOldestBtn.disabled =
+            Boolean(isLoading) || state.offlineOutbox.length <= 0;
+    }
+}
+
+function renderOutboxConsole() {
+    ensureQueueOutboxConsoleEl();
+    const summary = getById('queueOutboxSummary');
+    const list = getById('queueOutboxList');
+    const pendingCount = state.offlineOutbox.length;
+
+    if (summary instanceof HTMLElement) {
+        summary.textContent =
+            pendingCount <= 0
+                ? 'Outbox: 0 pendientes'
+                : `Outbox: ${pendingCount} pendiente(s)`;
+    }
+
+    if (list instanceof HTMLElement) {
+        if (pendingCount <= 0) {
+            list.innerHTML =
+                '<li class="queue-empty">Sin pendientes offline.</li>';
+        } else {
+            list.innerHTML = state.offlineOutbox
+                .slice(0, KIOSK_OFFLINE_OUTBOX_RENDER_LIMIT)
+                .map((item, index) => {
+                    const queuedAt = formatIsoDateTime(item.queuedAt);
+                    const attempts = Number(item.attempts || 0);
+                    return `<li><strong>${escapeHtml(item.originLabel)}</strong> · ${escapeHtml(item.patientInitials || '--')} · ${escapeHtml(item.queueType || '--')} · ${escapeHtml(queuedAt)} · intento ${index + 1}/${Math.max(1, attempts + 1)}</li>`;
+                })
+                .join('');
+        }
+    }
+
+    setQueueOutboxActionLoading(false);
+}
+
+function clearOfflineOutbox({ reason = 'manual' } = {}) {
+    state.offlineOutbox = [];
+    saveOfflineOutbox();
+    renderOfflineOutboxHint();
+    renderOutboxConsole();
+    if (reason === 'manual') {
+        setKioskStatus('Pendientes offline limpiados manualmente.', 'info');
+    }
+}
+
+function discardOldestOutboxItem() {
+    if (!state.offlineOutbox.length) return;
+    const oldest = state.offlineOutbox[state.offlineOutbox.length - 1];
+    state.offlineOutbox.pop();
+    saveOfflineOutbox();
+    renderOfflineOutboxHint();
+    renderOutboxConsole();
+    setKioskStatus(
+        `Descartado pendiente antiguo (${oldest?.originLabel || 'sin detalle'}).`,
+        'info'
+    );
+}
+
 function saveOfflineOutbox() {
     try {
         localStorage.setItem(
@@ -406,6 +514,7 @@ function renderOfflineOutboxHint() {
     const pendingCount = state.offlineOutbox.length;
     if (pendingCount <= 0) {
         setQueueOutboxHint('Pendientes offline: 0 (sin pendientes).');
+        renderOutboxConsole();
         return;
     }
 
@@ -413,11 +522,12 @@ function renderOfflineOutboxHint() {
         String(state.offlineOutbox[0]?.queuedAt || '')
     );
     const ageLabel = Number.isFinite(firstQueuedAt)
-        ? ` · mas antiguo ${formatElapsedAge(Date.now() - firstQueuedAt)}`
+        ? ` - mas antiguo ${formatElapsedAge(Date.now() - firstQueuedAt)}`
         : '';
     setQueueOutboxHint(
-        `Pendientes offline: ${pendingCount} · sincronizacion automatica al reconectar${ageLabel}`
+        `Pendientes offline: ${pendingCount} - sincronizacion automatica al reconectar${ageLabel}`
     );
+    renderOutboxConsole();
 }
 
 function buildPendingLocalCode() {
@@ -743,6 +853,7 @@ async function flushOfflineOutbox({
     if (!force && navigator.onLine === false) return;
 
     state.offlineOutboxFlushBusy = true;
+    setQueueOutboxActionLoading(true);
     let processed = 0;
     try {
         while (
@@ -800,6 +911,7 @@ async function flushOfflineOutbox({
         }
     } finally {
         state.offlineOutboxFlushBusy = false;
+        renderOutboxConsole();
     }
 }
 
@@ -1350,12 +1462,35 @@ function initKiosk() {
 
     ensureQueueOpsHintEl();
     ensureQueueOutboxHintEl();
+    ensureQueueOutboxConsoleEl();
     loadOfflineOutbox();
     renderOfflineOutboxHint();
     const manualRefreshButton = ensureQueueManualRefreshButton();
     if (manualRefreshButton instanceof HTMLButtonElement) {
         manualRefreshButton.addEventListener('click', () => {
             void runQueueManualRefresh();
+        });
+    }
+    const outboxRetryButton = getById('queueOutboxRetryBtn');
+    if (outboxRetryButton instanceof HTMLButtonElement) {
+        outboxRetryButton.addEventListener('click', () => {
+            void flushOfflineOutbox({
+                source: 'operator',
+                force: true,
+                maxItems: KIOSK_OFFLINE_OUTBOX_MAX_ITEMS,
+            });
+        });
+    }
+    const outboxDropOldestButton = getById('queueOutboxDropOldestBtn');
+    if (outboxDropOldestButton instanceof HTMLButtonElement) {
+        outboxDropOldestButton.addEventListener('click', () => {
+            discardOldestOutboxItem();
+        });
+    }
+    const outboxClearButton = getById('queueOutboxClearBtn');
+    if (outboxClearButton instanceof HTMLButtonElement) {
+        outboxClearButton.addEventListener('click', () => {
+            clearOfflineOutbox({ reason: 'manual' });
         });
     }
 
@@ -1400,6 +1535,20 @@ function initKiosk() {
         if (keyCode === 'keyl') {
             event.preventDefault();
             resetKioskSession({ reason: 'manual' });
+            return;
+        }
+        if (keyCode === 'keyy') {
+            event.preventDefault();
+            void flushOfflineOutbox({
+                source: 'shortcut',
+                force: true,
+                maxItems: KIOSK_OFFLINE_OUTBOX_MAX_ITEMS,
+            });
+            return;
+        }
+        if (keyCode === 'keyk') {
+            event.preventDefault();
+            clearOfflineOutbox({ reason: 'manual' });
         }
     });
 }

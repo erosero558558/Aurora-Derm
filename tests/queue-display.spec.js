@@ -249,4 +249,59 @@ test.describe('Sala turnos display', () => {
             'estado local'
         );
     });
+
+    test('permite limpiar snapshot local desde controles de contingencia', async ({
+        page,
+    }) => {
+        await page.addInitScript(() => {
+            localStorage.setItem(
+                'queueDisplayLastSnapshot',
+                JSON.stringify({
+                    savedAt: new Date().toISOString(),
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        callingNow: [
+                            {
+                                id: 9,
+                                ticketCode: 'A-909',
+                                patientInitials: 'LR',
+                                assignedConsultorio: 2,
+                                calledAt: new Date().toISOString(),
+                            },
+                        ],
+                        nextTickets: [],
+                    },
+                })
+            );
+        });
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+            return route.abort('failed');
+        });
+
+        await page.goto('/sala-turnos.html');
+
+        await expect(page.locator('#displayConsultorio2')).toContainText(
+            'A-909'
+        );
+        await expect(page.locator('#displaySnapshotClearBtn')).toBeVisible();
+
+        await page.locator('#displaySnapshotClearBtn').click();
+
+        const storedSnapshot = await page.evaluate(() =>
+            localStorage.getItem('queueDisplayLastSnapshot')
+        );
+        expect(storedSnapshot).toBeNull();
+        await expect(page.locator('#displayConnectionState')).toContainText(
+            'Sin respaldo local'
+        );
+        await expect(page.locator('#displayNextList')).toContainText(
+            'Sin respaldo local disponible.'
+        );
+    });
 });

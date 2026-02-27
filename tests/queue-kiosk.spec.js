@@ -379,11 +379,13 @@ test.describe('Kiosco turnos', () => {
         await expect(page.locator('#queueOutboxHint')).toContainText(
             'Pendientes offline: 1'
         );
+        await expect(page.locator('#queueOutboxList')).toContainText(
+            'Turno sin cita'
+        );
+        await expect(page.locator('#queueOutboxRetryBtn')).toBeVisible();
 
         offlineTicketMode = false;
-        await page.evaluate(() => {
-            window.dispatchEvent(new Event('online'));
-        });
+        await page.locator('#queueOutboxRetryBtn').click();
 
         await expect
             .poll(
@@ -407,5 +409,56 @@ test.describe('Kiosco turnos', () => {
                 { timeout: 12000 }
             )
             .toContain('sincronizado');
+    });
+
+    test('permite limpiar pendientes offline desde consola', async ({
+        page,
+    }) => {
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 0,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket') {
+                return route.abort('failed');
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await page.fill('#walkinInitials', 'EP');
+        await page.click('#walkinSubmit');
+        await page.fill('#walkinInitials', 'MC');
+        await page.click('#walkinSubmit');
+
+        await expect(page.locator('#queueOutboxHint')).toContainText(
+            'Pendientes offline: 2'
+        );
+        await expect(page.locator('#queueOutboxList')).toContainText(
+            'Turno sin cita'
+        );
+
+        await page.locator('#queueOutboxClearBtn').click();
+
+        await expect(page.locator('#queueOutboxHint')).toContainText(
+            'Pendientes offline: 0'
+        );
+        await expect(page.locator('#queueOutboxList')).toContainText(
+            'Sin pendientes offline.'
+        );
     });
 });
