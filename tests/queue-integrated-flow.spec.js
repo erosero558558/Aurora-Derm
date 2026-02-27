@@ -586,4 +586,122 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
             displayPage.locator('#displayConnectionState')
         ).toContainText('Conectado');
     });
+
+    test('llamados paralelos C1/C2 mantienen tickets unicos y TV consistente con siguiente cola', async ({
+        page,
+    }) => {
+        const context = page.context();
+        await installSharedQueueMocks(context);
+
+        const adminPage = page;
+        const kioskPage = await context.newPage();
+        const displayPage = await context.newPage();
+
+        await Promise.all([
+            adminPage.goto('/admin.html'),
+            kioskPage.goto('/kiosco-turnos.html'),
+            displayPage.goto('/sala-turnos.html'),
+        ]);
+
+        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 10);
+
+        await kioskPage.fill('#walkinInitials', 'W1');
+        await kioskPage.click('#walkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-001');
+
+        await kioskPage.fill('#checkinPhone', '0999888777');
+        await kioskPage.fill('#checkinDate', tomorrow);
+        await kioskPage.fill('#checkinTime', '10:00');
+        await kioskPage.fill('#checkinInitials', 'AP');
+        await kioskPage.click('#checkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-002');
+
+        await kioskPage.fill('#walkinInitials', 'W2');
+        await kioskPage.click('#walkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-003');
+
+        await adminPage.locator('.nav-item[data-section="queue"]').click();
+        await expect(adminPage.locator('#queue')).toHaveClass(/active/);
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '3'
+        );
+
+        const callC1Button = adminPage
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .first();
+        const callC2Button = adminPage
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="2"]'
+            )
+            .first();
+
+        await expect(callC1Button).toBeVisible();
+        await expect(callC2Button).toBeVisible();
+        await adminPage.evaluate(() => {
+            const c1 = document.querySelector(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            );
+            const c2 = document.querySelector(
+                '[data-action="queue-call-next"][data-queue-consultorio="2"]'
+            );
+            if (!c1 || !c2) return;
+            const clickC1 = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+            });
+            const clickC2 = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+            });
+            c1.dispatchEvent(clickC1);
+            c2.dispatchEvent(clickC2);
+        });
+
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '1'
+        );
+        await expect(adminPage.locator('#queueNextAdminList')).toContainText(
+            'A-003'
+        );
+
+        const c1NowText =
+            (await adminPage.locator('#queueC1Now').textContent()) || '';
+        const c2NowText =
+            (await adminPage.locator('#queueC2Now').textContent()) || '';
+        const c1Code = (c1NowText.match(/A-\d+/) || [])[0] || '';
+        const c2Code = (c2NowText.match(/A-\d+/) || [])[0] || '';
+
+        expect(c1Code).toBeTruthy();
+        expect(c2Code).toBeTruthy();
+        expect(c1Code).not.toEqual(c2Code);
+        expect([c1Code, c2Code]).toEqual(
+            expect.arrayContaining(['A-001', 'A-002'])
+        );
+
+        await expect(displayPage.locator('#displayNextList')).toContainText(
+            'A-003'
+        );
+        await expect
+            .poll(
+                async () => {
+                    const c1 = (
+                        await displayPage
+                            .locator('#displayConsultorio1')
+                            .innerText()
+                    ).trim();
+                    const c2 = (
+                        await displayPage
+                            .locator('#displayConsultorio2')
+                            .innerText()
+                    ).trim();
+                    return `${c1}\n${c2}`;
+                },
+                { timeout: 10000 }
+            )
+            .toMatch(/A-00[12]/);
+    });
 });
