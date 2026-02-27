@@ -68,7 +68,7 @@ function buildPage(title, description, canonical, content) {
         <meta property="og:site_name" content="Piel en Armonía" />
         <meta property="og:image" content="https://pielarmonia.com/images/optimized/showcase-hero.jpg" />
         <link rel="stylesheet" href="/styles.css?v=inline-20260224-extracted1" />
-        <link rel="stylesheet" href="/styles-deferred.css?v=ui-20260223-clsfix1" />
+        <link rel="stylesheet" href="/styles-deferred.css?v=ui-20260227-deferredfix1" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <script src="/js/service-navigation-analytics.js?v=${escapeHtml(SERVICE_ANALYTICS_VERSION)}" defer></script>
     </head>

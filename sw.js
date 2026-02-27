@@ -6,7 +6,7 @@ const STATIC_ASSETS = [
     '/admin.html',
     '/admin.css',
     '/admin.js',
-    '/styles-deferred.css?v=ui-20260223-clsfix1',
+    '/styles-deferred.css?v=ui-20260227-deferredfix1',
     '/js/bootstrap-inline-engine.js?v=figo-20260221-phase10-realagenda1',
     '/script.js?v=figo-20260226-themefix2',
     // Fonts preloaded on every page
