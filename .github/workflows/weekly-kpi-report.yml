@@ -305,41 +305,41 @@ jobs:
                     throw "Se detectaron umbrales invalidos ($thresholdWarningsCount): $thresholdWarningsList"
                   }
 
-                  $args = @(
-                    '-Domain', $env:TARGET_DOMAIN,
-                    '-BenchRuns', $benchRuns,
-                    '-RetentionReportDays', $retentionDays,
-                    '-CoreP95MaxMs', $coreP95MaxMs,
-                    '-FigoPostP95MaxMs', $figoPostP95MaxMs,
-                    '-NoShowRateWarnPct', $noShowWarnPct,
-                    '-IdempotencyConflictRateWarnPct', $idempotencyConflictWarnPct,
-                    '-RecurrenceRateMinWarnPct', $recurrenceMinWarnPct,
-                    '-RecurrenceRateDropWarnPct', $recurrenceDropWarnPct,
-                    '-RecurrenceWarnMinUniquePatients', $recurrenceMinUniquePatients,
-                    '-ConversionRateMinWarnPct', $conversionMinWarnPct,
-                    '-ConversionRateDropWarnPct', $conversionDropWarnPct,
-                    '-ConversionWarnMinStartCheckout', $conversionMinStartCheckout,
-                    '-StartCheckoutRateMinWarnPct', $startCheckoutMinWarnPct,
-                    '-StartCheckoutRateDropWarnPct', $startCheckoutDropWarnPct,
-                    '-StartCheckoutWarnMinViewBooking', $startCheckoutMinViewBooking,
-                    '-ServiceFunnelWarnMinDetailViews', $serviceFunnelMinDetailViews,
-                    '-ServiceFunnelWarnMinCheckoutStarts', $serviceFunnelMinCheckoutStarts,
-                    '-ServiceFunnelCheckoutToConfirmedMinWarnPct', $serviceFunnelCheckoutToConfirmedMinWarnPct,
-                    '-ServiceFunnelDetailToConfirmedMinWarnPct', $serviceFunnelDetailToConfirmedMinWarnPct,
-                    '-CriticalFreeCycleTarget', $cycleTargetWeeks
-                  )
+                  $reportParams = @{
+                    Domain = $env:TARGET_DOMAIN
+                    BenchRuns = $benchRuns
+                    RetentionReportDays = $retentionDays
+                    CoreP95MaxMs = $coreP95MaxMs
+                    FigoPostP95MaxMs = $figoPostP95MaxMs
+                    NoShowRateWarnPct = $noShowWarnPct
+                    IdempotencyConflictRateWarnPct = $idempotencyConflictWarnPct
+                    RecurrenceRateMinWarnPct = $recurrenceMinWarnPct
+                    RecurrenceRateDropWarnPct = $recurrenceDropWarnPct
+                    RecurrenceWarnMinUniquePatients = $recurrenceMinUniquePatients
+                    ConversionRateMinWarnPct = $conversionMinWarnPct
+                    ConversionRateDropWarnPct = $conversionDropWarnPct
+                    ConversionWarnMinStartCheckout = $conversionMinStartCheckout
+                    StartCheckoutRateMinWarnPct = $startCheckoutMinWarnPct
+                    StartCheckoutRateDropWarnPct = $startCheckoutDropWarnPct
+                    StartCheckoutWarnMinViewBooking = $startCheckoutMinViewBooking
+                    ServiceFunnelWarnMinDetailViews = $serviceFunnelMinDetailViews
+                    ServiceFunnelWarnMinCheckoutStarts = $serviceFunnelMinCheckoutStarts
+                    ServiceFunnelCheckoutToConfirmedMinWarnPct = $serviceFunnelCheckoutToConfirmedMinWarnPct
+                    ServiceFunnelDetailToConfirmedMinWarnPct = $serviceFunnelDetailToConfirmedMinWarnPct
+                    CriticalFreeCycleTarget = $cycleTargetWeeks
+                  }
 
                   if ($env:FAIL_ON_WARNINGS -eq 'true') {
-                    $args += '-FailOnCriticalWarnings'
+                    $reportParams.FailOnCriticalWarnings = $true
                   } else {
                     Write-Host 'FailOnCriticalWarnings desactivado para esta corrida.'
                   }
                   if ($env:FAIL_ON_CYCLE_NOT_READY -eq 'true') {
-                    $args += '-FailOnCycleNotReady'
+                    $reportParams.FailOnCycleNotReady = $true
                   } else {
                     Write-Host 'FailOnCycleNotReady desactivado para esta corrida.'
                   }
-                  & ./REPORTE-SEMANAL-PRODUCCION.ps1 @args
+                  & ./REPORTE-SEMANAL-PRODUCCION.ps1 @reportParams
 
             - name: Detectar ultimo reporte
               if: ${{ always() }}
