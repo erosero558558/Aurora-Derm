@@ -1,0 +1,137 @@
+{
+    "desktop": [
+        {
+            "id": "servicios",
+            "label_es": "Servicios",
+            "label_en": "Services",
+            "type": "mega",
+            "children": [
+                {
+                    "group": "medical",
+                    "label_es": "Dermatología clínica",
+                    "label_en": "Clinical dermatology",
+                    "items": [
+                        {
+                            "slug": "diagnostico-integral",
+                            "label_es": "Diagnóstico integral",
+                            "label_en": "Comprehensive diagnosis"
+                        },
+                        {
+                            "slug": "acne-rosacea",
+                            "label_es": "Acné y rosácea",
+                            "label_en": "Acne and rosacea"
+                        },
+                        {
+                            "slug": "verrugas",
+                            "label_es": "Eliminación de verrugas",
+                            "label_en": "Wart removal"
+                        },
+                        {
+                            "slug": "granitos-brazos-piernas",
+                            "label_es": "Granitos en brazos y piernas",
+                            "label_en": "Arm and leg bumps"
+                        },
+                        {
+                            "slug": "cicatrices",
+                            "label_es": "Reducción de cicatrices",
+                            "label_en": "Scar reduction"
+                        },
+                        {
+                            "slug": "cancer-piel",
+                            "label_es": "Detección de cáncer de piel",
+                            "label_en": "Skin cancer detection"
+                        },
+                        {
+                            "slug": "piel-cabello-unas",
+                            "label_es": "Piel, cabello y uñas",
+                            "label_en": "Skin, hair and nails"
+                        }
+                    ]
+                },
+                {
+                    "group": "aesthetic",
+                    "label_es": "Estética médica",
+                    "label_en": "Medical aesthetics",
+                    "items": [
+                        {
+                            "slug": "peeling-quimico",
+                            "label_es": "Peelings químicos",
+                            "label_en": "Chemical peels"
+                        },
+                        {
+                            "slug": "mesoterapia",
+                            "label_es": "Mesoterapia",
+                            "label_en": "Mesotherapy"
+                        },
+                        {
+                            "slug": "laser-dermatologico",
+                            "label_es": "Láser dermatológico",
+                            "label_en": "Dermatology laser"
+                        },
+                        {
+                            "slug": "botox",
+                            "label_es": "Botox",
+                            "label_en": "Botox"
+                        },
+                        {
+                            "slug": "bioestimuladores-colageno",
+                            "label_es": "Bioestimuladores de colágeno",
+                            "label_en": "Collagen biostimulators"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ninos",
+            "label_es": "Niños",
+            "label_en": "Children",
+            "type": "anchor",
+            "target": "#ninos"
+        },
+        {
+            "id": "telemedicina",
+            "label_es": "Telemedicina",
+            "label_en": "Telemedicine",
+            "type": "anchor",
+            "target": "#telemedicina"
+        },
+        {
+            "id": "resultados",
+            "label_es": "Resultados",
+            "label_en": "Results",
+            "type": "anchor",
+            "target": "#galeria"
+        },
+        {
+            "id": "equipo",
+            "label_es": "Equipo Médico",
+            "label_en": "Medical Team",
+            "type": "anchor",
+            "target": "#equipo"
+        },
+        {
+            "id": "consultorio",
+            "label_es": "Consultorio",
+            "label_en": "Clinic",
+            "type": "anchor",
+            "target": "#consultorio"
+        },
+        {
+            "id": "tarifas",
+            "label_es": "Tarifas y Pagos",
+            "label_en": "Pricing & Payments",
+            "type": "anchor",
+            "target": "#tarifario"
+        }
+    ],
+    "mobile": {
+        "mode": "nested",
+        "show_children_under_services": true
+    },
+    "cta": {
+        "label_es": "Reservar cita",
+        "label_en": "Book appointment",
+        "target": "#citas"
+    }
+}

@@ -1,81 +1,118 @@
-    <body>
-        <!-- Language Selector -->
-        <div class="language-bar">
-            <div class="language-options">
-                <div class="theme-options" role="group" aria-label="Modo de tema">
-                    <button type="button" class="theme-btn" data-theme-mode="light" data-action="set-theme" data-value="light" aria-label="Modo claro">
-                        <i class="fas fa-sun" aria-hidden="true"></i>
-                        <span data-i18n="theme_light">Claro</span>
-                    </button>
-                    <button type="button" class="theme-btn" data-theme-mode="dark" data-action="set-theme" data-value="dark" aria-label="Modo oscuro">
-                        <i class="fas fa-moon" aria-hidden="true"></i>
-                        <span data-i18n="theme_dark">Oscuro</span>
-                    </button>
-                    <button type="button" class="theme-btn active" data-theme-mode="system" data-action="set-theme" data-value="system" aria-label="Modo sistema">
-                        <i class="fas fa-circle-half-stroke" aria-hidden="true"></i>
-                        <span data-i18n="theme_system">Sistema</span>
-                    </button>
-                </div>
-                <div class="lang-switch" role="group" aria-label="Idioma">
-                    <button type="button" class="lang-btn active" data-lang="es" data-action="set-language" data-value="es">
-                        ES
-                    </button>
-                    <button type="button" class="lang-btn" data-lang="en" data-action="set-language" data-value="en">
-                        EN
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Navigation -->
-        <nav class="nav" id="nav">
-            <div class="nav-content">
-                <a href="#" class="nav-logo">
-                    <i class="fas fa-spa"></i>
-                    <span data-i18n="brand">Piel en Armon&iacute;a</span>
-                </a>
-                <ul class="nav-links">
-                    <li><a href="#inicio" data-i18n="nav_home">Inicio</a></li>
-                    <li>
-                        <a href="#servicios" data-i18n="nav_services">Servicios</a>
-                    </li>
-                    <li>
-                        <a href="#tarifario" data-i18n="nav_pricing">Tarifario</a>
-                    </li>
-                    <li>
-                        <a href="#telemedicina" data-i18n="nav_telemedicine">Telemedicina</a>
-                    </li>
-                    <li><a href="#equipo" data-i18n="nav_team">Equipo</a></li>
-                    <li>
-                        <a href="#galeria" data-i18n="nav_gallery">Resultados</a>
-                    </li>
-                    <li>
-                        <a href="#consultorio" data-i18n="nav_clinic">Consultorio</a>
-                    </li>
-                    <li>
-                        <a href="#resenas" data-i18n="nav_reviews">Rese&ntilde;as</a>
-                    </li>
-                </ul>
-                <div class="nav-actions">
-                    <a href="#citas" class="nav-cta" id="booking-btn" data-i18n="nav_book">Reservar Cita</a>
-                </div>
-                <button type="button" class="nav-mobile-toggle" data-action="toggle-mobile-menu">
-                    <i class="fas fa-bars"></i>
+<body>
+    <!-- Language Selector -->
+    <div class="language-bar">
+        <div class="language-options">
+            <div class="theme-options" role="group" aria-label="Modo de tema">
+                <button type="button" class="theme-btn" data-theme-mode="light" data-action="set-theme" data-value="light" aria-label="Modo claro">
+                    <i class="fas fa-sun" aria-hidden="true"></i>
+                    <span data-i18n="theme_light">Claro</span>
+                </button>
+                <button type="button" class="theme-btn" data-theme-mode="dark" data-action="set-theme" data-value="dark" aria-label="Modo oscuro">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                    <span data-i18n="theme_dark">Oscuro</span>
+                </button>
+                <button type="button" class="theme-btn active" data-theme-mode="system" data-action="set-theme" data-value="system" aria-label="Modo sistema">
+                    <i class="fas fa-circle-half-stroke" aria-hidden="true"></i>
+                    <span data-i18n="theme_system">Sistema</span>
                 </button>
             </div>
-        </nav>
-
-        <!-- Mobile Menu -->
-        <div class="mobile-menu" id="mobileMenu">
-            <button type="button" class="mobile-close" data-action="toggle-mobile-menu">
-                <i class="fas fa-times"></i>
-            </button>
-            <a href="#inicio" data-action="toggle-mobile-menu" data-i18n="nav_home">Inicio</a>
-            <a href="#servicios" data-action="toggle-mobile-menu" data-i18n="nav_services">Servicios</a>
-            <a href="#tarifario" data-action="toggle-mobile-menu" data-i18n="nav_pricing">Tarifario</a>
-            <a href="#telemedicina" data-action="toggle-mobile-menu" data-i18n="nav_telemedicine">Telemedicina</a>
-            <a href="#equipo" data-action="toggle-mobile-menu" data-i18n="nav_team">Equipo</a>
-            <a href="#galeria" data-action="toggle-mobile-menu" data-i18n="nav_gallery">Resultados</a>
-            <a href="#consultorio" data-action="toggle-mobile-menu" data-i18n="nav_clinic">Consultorio</a>
-            <a href="#citas" data-action="toggle-mobile-menu" class="mobile-cta" data-i18n="nav_book">Reservar Cita</a>
+            <div class="lang-switch" role="group" aria-label="Idioma">
+                <button type="button" class="lang-btn active" data-lang="es" data-action="set-language" data-value="es">
+                    ES
+                </button>
+                <button type="button" class="lang-btn" data-lang="en" data-action="set-language" data-value="en">
+                    EN
+                </button>
+            </div>
         </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav nav-premium" id="nav">
+        <div class="nav-content">
+            <a href="#inicio" class="nav-logo">
+                <i class="fas fa-spa"></i>
+                <span data-i18n="brand">Piel en Armon&iacute;a</span>
+            </a>
+            <ul class="nav-links nav-links-premium" role="menubar" aria-label="Navegaci&oacute;n principal">
+                <li class="nav-item nav-item--mega" role="none">
+                    <a href="#servicios" role="menuitem" data-i18n="nav_services">Servicios</a>
+                    <div class="mega-menu" aria-label="Men&uacute; de servicios">
+                        <div class="mega-column">
+                            <h4 data-i18n="nav_services_medical">Dermatolog&iacute;a cl&iacute;nica</h4>
+                            <a href="/servicios/diagnostico-integral" data-i18n="nav_service_diagnostico">Diagn&oacute;stico integral</a>
+                            <a href="/servicios/acne-rosacea" data-i18n="nav_service_acne_rosacea">Acn&eacute; y ros&aacute;cea</a>
+                            <a href="/servicios/verrugas" data-i18n="nav_service_verrugas">Eliminaci&oacute;n de verrugas</a>
+                            <a href="/servicios/granitos-brazos-piernas" data-i18n="nav_service_granitos">Granitos en brazos y piernas</a>
+                            <a href="/servicios/piel-cabello-unas" data-i18n="nav_service_piel_cabello_unas">Piel, cabello y u&ntilde;as</a>
+                            <a href="/servicios/cicatrices" data-i18n="nav_service_cicatrices">Reducci&oacute;n de cicatrices</a>
+                            <a href="/servicios/cancer-piel" data-i18n="nav_service_cancer_piel">Detecci&oacute;n de c&aacute;ncer de piel</a>
+                        </div>
+                        <div class="mega-column">
+                            <h4 data-i18n="nav_services_aesthetic">Est&eacute;tica m&eacute;dica</h4>
+                            <a href="/servicios/peeling-quimico" data-i18n="nav_service_peeling">Peelings qu&iacute;micos</a>
+                            <a href="/servicios/mesoterapia" data-i18n="nav_service_mesoterapia">Mesoterapia</a>
+                            <a href="/servicios/laser-dermatologico" data-i18n="nav_service_laser">L&aacute;ser dermatol&oacute;gico</a>
+                            <a href="/servicios/botox" data-i18n="nav_service_botox">Botox</a>
+                            <a href="/servicios/bioestimuladores-colageno" data-i18n="nav_service_bioestimuladores">Bioestimuladores de col&aacute;geno</a>
+                            <a href="#servicios" data-i18n="nav_service_all">Ver todos</a>
+                        </div>
+                        <div class="mega-column mega-column-highlight">
+                            <p class="mega-kicker" data-i18n="nav_services_kicker">M&eacute;dico primero</p>
+                            <h4 data-i18n="nav_services_highlight_title">Reserva seg&uacute;n tu motivo principal</h4>
+                            <p data-i18n="nav_services_highlight_desc">
+                                Te orientamos por diagn&oacute;stico, no por moda. Consulta especializada para ni&ntilde;os, adultos y adultos mayores.
+                            </p>
+                            <a href="#citas" class="btn btn-primary btn-sm" data-i18n="nav_book">Reservar cita</a>
+                        </div>
+                    </div>
+                </li>
+                <li role="none"><a href="#ninos" role="menuitem" data-i18n="nav_children">Ni&ntilde;os</a></li>
+                <li role="none"><a href="#telemedicina" role="menuitem" data-i18n="nav_telemedicine">Telemedicina</a></li>
+                <li role="none"><a href="#galeria" role="menuitem" data-i18n="nav_gallery">Resultados</a></li>
+                <li role="none"><a href="#equipo" role="menuitem" data-i18n="nav_team_medical">Equipo M&eacute;dico</a></li>
+                <li role="none"><a href="#consultorio" role="menuitem" data-i18n="nav_clinic">Consultorio</a></li>
+                <li role="none"><a href="#tarifario" role="menuitem" data-i18n="nav_pricing_payments">Tarifas y Pagos</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="#citas" class="nav-cta" id="booking-btn" data-i18n="nav_book">Reservar Cita</a>
+            </div>
+            <button type="button" class="nav-mobile-toggle" data-action="toggle-mobile-menu" aria-label="Abrir men&uacute;">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <button type="button" class="mobile-close" data-action="toggle-mobile-menu" aria-label="Cerrar men&uacute;">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <details class="mobile-submenu" open>
+            <summary data-i18n="nav_services">Servicios</summary>
+            <a href="/servicios/diagnostico-integral">Diagn&oacute;stico integral</a>
+            <a href="/servicios/acne-rosacea">Acn&eacute; y ros&aacute;cea</a>
+            <a href="/servicios/verrugas">Verrugas</a>
+            <a href="/servicios/granitos-brazos-piernas">Granitos brazos/piernas</a>
+            <a href="/servicios/cicatrices">Cicatrices</a>
+            <a href="/servicios/cancer-piel">C&aacute;ncer de piel</a>
+            <a href="/servicios/peeling-quimico">Peeling qu&iacute;mico</a>
+            <a href="/servicios/mesoterapia">Mesoterapia</a>
+            <a href="/servicios/laser-dermatologico">L&aacute;ser</a>
+            <a href="/servicios/botox">Botox</a>
+            <a href="/servicios/bioestimuladores-colageno">Bioestimuladores</a>
+            <a href="/servicios/piel-cabello-unas">Piel, cabello y u&ntilde;as</a>
+        </details>
+        <details class="mobile-submenu">
+            <summary data-i18n="nav_children">Ni&ntilde;os</summary>
+            <a href="#ninos" data-action="toggle-mobile-menu" data-i18n="nav_children_overview">Dermatolog&iacute;a pedi&aacute;trica</a>
+            <a href="/ninos/dermatologia-pediatrica">Reserva pedi&aacute;trica r&aacute;pida</a>
+        </details>
+        <a href="#telemedicina" data-action="toggle-mobile-menu" data-i18n="nav_telemedicine">Telemedicina</a>
+        <a href="#galeria" data-action="toggle-mobile-menu" data-i18n="nav_gallery">Resultados</a>
+        <a href="#equipo" data-action="toggle-mobile-menu" data-i18n="nav_team_medical">Equipo M&eacute;dico</a>
+        <a href="#consultorio" data-action="toggle-mobile-menu" data-i18n="nav_clinic">Consultorio</a>
+        <a href="#tarifario" data-action="toggle-mobile-menu" data-i18n="nav_pricing_payments">Tarifas y Pagos</a>
+        <a href="#citas" data-action="toggle-mobile-menu" class="mobile-cta" data-i18n="nav_book">Reservar Cita</a>
+    </div>

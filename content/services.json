@@ -1,0 +1,374 @@
+{
+    "version": "2026.1",
+    "timezone": "America/Guayaquil",
+    "services": [
+        {
+            "slug": "diagnostico-integral",
+            "category": "clinical",
+            "subcategory": "core",
+            "audience": ["children", "adults", "seniors"],
+            "hero": "Diagnóstico integral de piel, cabello y uñas",
+            "summary": "Consulta especializada para identificar la causa y definir un plan dermatológico completo.",
+            "indications": [
+                "brotes recurrentes",
+                "lesiones nuevas",
+                "caída de cabello",
+                "fragilidad ungueal"
+            ],
+            "contraindications": [],
+            "duration": "30-45 min",
+            "price_from": 40,
+            "iva": 0.0,
+            "doctor_profile": ["rosero", "narvaez"],
+            "faq": [
+                "¿Qué incluye la primera consulta?",
+                "¿Necesito exámenes previos?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Reservar valoración",
+                "label_en": "Book assessment"
+            }
+        },
+        {
+            "slug": "acne-rosacea",
+            "category": "clinical",
+            "subcategory": "inflammatory",
+            "audience": ["children", "adults"],
+            "hero": "Tratamiento médico para acné y rosácea",
+            "summary": "Control de inflamación, brotes y secuelas con protocolos progresivos.",
+            "indications": [
+                "acné inflamatorio",
+                "rosácea",
+                "marcas postinflamatorias"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "price_from": 80,
+            "iva": 0.0,
+            "doctor_profile": ["rosero", "narvaez"],
+            "faq": [
+                "¿Cuándo se ven resultados?",
+                "¿Se combina con peeling o láser?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "acne",
+                "label_es": "Quiero controlar mi acné",
+                "label_en": "I want acne treatment"
+            }
+        },
+        {
+            "slug": "verrugas",
+            "category": "clinical",
+            "subcategory": "procedures",
+            "audience": ["children", "adults", "seniors"],
+            "hero": "Eliminación segura de verrugas",
+            "summary": "Opciones de manejo según tipo de verruga, ubicación y edad.",
+            "indications": [
+                "verrugas comunes",
+                "verrugas plantares",
+                "verrugas periungueales"
+            ],
+            "contraindications": [],
+            "duration": "20-30 min",
+            "price_from": 60,
+            "iva": 0.0,
+            "doctor_profile": ["rosero"],
+            "faq": [
+                "¿El procedimiento duele?",
+                "¿Cuántas sesiones se requieren?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Quiero evaluar verrugas",
+                "label_en": "Evaluate warts"
+            }
+        },
+        {
+            "slug": "granitos-brazos-piernas",
+            "category": "clinical",
+            "subcategory": "texture",
+            "audience": ["children", "adults"],
+            "hero": "Disminución de granitos en brazos y piernas",
+            "summary": "Manejo integral de textura áspera tipo queratosis pilar.",
+            "indications": [
+                "queratosis pilar",
+                "piel áspera",
+                "enrojecimiento folicular"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "price_from": 60,
+            "iva": 0.0,
+            "doctor_profile": ["narvaez"],
+            "faq": [
+                "¿Se cura de forma permanente?",
+                "¿Qué rutina diaria recomiendan?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Quiero mejorar textura",
+                "label_en": "Improve skin texture"
+            }
+        },
+        {
+            "slug": "cicatrices",
+            "category": "clinical",
+            "subcategory": "repair",
+            "audience": ["adults", "seniors"],
+            "hero": "Reducción de cicatrices",
+            "summary": "Estrategias combinadas para mejorar profundidad, color y textura.",
+            "indications": [
+                "cicatrices de acné",
+                "cicatrices quirúrgicas",
+                "marcas postinflamatorias"
+            ],
+            "contraindications": [],
+            "duration": "30-60 min",
+            "price_from": 90,
+            "iva": 0.15,
+            "doctor_profile": ["narvaez"],
+            "faq": [
+                "¿Qué técnica es mejor para mi caso?",
+                "¿Cuántas sesiones necesito?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "laser",
+                "label_es": "Quiero reducir cicatrices",
+                "label_en": "Reduce scars"
+            }
+        },
+        {
+            "slug": "cancer-piel",
+            "category": "clinical",
+            "subcategory": "oncology-screening",
+            "audience": ["adults", "seniors"],
+            "hero": "Detección oportuna de cáncer de piel",
+            "summary": "Dermatoscopía para detectar lesiones sospechosas de forma temprana.",
+            "indications": [
+                "lunares nuevos",
+                "lesiones que cambian",
+                "antecedente familiar"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "price_from": 70,
+            "iva": 0.0,
+            "doctor_profile": ["rosero"],
+            "faq": [
+                "¿Cada cuánto debo controlarme?",
+                "¿Qué señales son de alarma?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "cancer",
+                "label_es": "Quiero control preventivo",
+                "label_en": "Book preventive screening"
+            }
+        },
+        {
+            "slug": "peeling-quimico",
+            "category": "aesthetic",
+            "subcategory": "skin-renewal",
+            "audience": ["adults"],
+            "hero": "Peelings químicos médicos",
+            "summary": "Renovación cutánea para mejorar tono, manchas y textura.",
+            "indications": [
+                "fotoenvejecimiento",
+                "manchas",
+                "acné activo leve"
+            ],
+            "contraindications": [
+                "embarazo según fórmula",
+                "piel irritada aguda"
+            ],
+            "duration": "30-45 min",
+            "price_from": 85,
+            "iva": 0.15,
+            "doctor_profile": ["narvaez"],
+            "faq": [
+                "¿Cuántos días de recuperación hay?",
+                "¿Es compatible con otros tratamientos?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Quiero peeling químico",
+                "label_en": "Book chemical peel"
+            }
+        },
+        {
+            "slug": "mesoterapia",
+            "category": "aesthetic",
+            "subcategory": "injectables",
+            "audience": ["adults"],
+            "hero": "Mesoterapia dermatológica",
+            "summary": "Microinyecciones para mejorar hidratación, luminosidad y calidad de piel.",
+            "indications": [
+                "piel opaca",
+                "deshidratación",
+                "envejecimiento inicial"
+            ],
+            "contraindications": ["embarazo", "alergia a componentes"],
+            "duration": "30 min",
+            "price_from": 95,
+            "iva": 0.15,
+            "doctor_profile": ["narvaez"],
+            "faq": [
+                "¿Cuántas sesiones son recomendadas?",
+                "¿Con qué frecuencia se realiza?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Quiero mesoterapia",
+                "label_en": "Book mesotherapy"
+            }
+        },
+        {
+            "slug": "laser-dermatologico",
+            "category": "aesthetic",
+            "subcategory": "devices",
+            "audience": ["adults", "seniors"],
+            "hero": "Láser dermatológico médico",
+            "summary": "Tratamientos con tecnología láser para manchas, cicatrices y rejuvenecimiento.",
+            "indications": ["manchas", "cicatrices", "envejecimiento de piel"],
+            "contraindications": [
+                "bronceado reciente",
+                "fotosensibilidad aguda"
+            ],
+            "duration": "45-60 min",
+            "price_from": 150,
+            "iva": 0.15,
+            "doctor_profile": ["narvaez"],
+            "faq": [
+                "¿Cuánto dura cada sesión?",
+                "¿Qué cuidados debo seguir después?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "laser",
+                "label_es": "Quiero valoración láser",
+                "label_en": "Book laser assessment"
+            }
+        },
+        {
+            "slug": "botox",
+            "category": "aesthetic",
+            "subcategory": "injectables",
+            "audience": ["adults"],
+            "hero": "Botox médico",
+            "summary": "Manejo de líneas de expresión con resultado natural y seguro.",
+            "indications": ["líneas frontales", "entrecejo", "patas de gallo"],
+            "contraindications": [
+                "embarazo",
+                "lactancia según evaluación médica"
+            ],
+            "duration": "20-30 min",
+            "price_from": 140,
+            "iva": 0.15,
+            "doctor_profile": ["narvaez"],
+            "faq": [
+                "¿Cuándo se ven los resultados?",
+                "¿Cada cuánto debo repetirlo?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Quiero evaluación de botox",
+                "label_en": "Book botox assessment"
+            }
+        },
+        {
+            "slug": "bioestimuladores-colageno",
+            "category": "aesthetic",
+            "subcategory": "injectables",
+            "audience": ["adults", "seniors"],
+            "hero": "Bioestimuladores de colágeno",
+            "summary": "Estimulación progresiva de colágeno para soporte y firmeza facial.",
+            "indications": [
+                "flacidez leve-moderada",
+                "pérdida de soporte",
+                "calidad de piel"
+            ],
+            "contraindications": ["infección activa local", "embarazo"],
+            "duration": "30-45 min",
+            "price_from": 280,
+            "iva": 0.15,
+            "doctor_profile": ["narvaez"],
+            "faq": [
+                "¿Cuánto tarda en verse el resultado?",
+                "¿Cuántas sesiones se recomiendan?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Quiero bioestimuladores",
+                "label_en": "Book collagen biostimulators"
+            }
+        },
+        {
+            "slug": "piel-cabello-unas",
+            "category": "clinical",
+            "subcategory": "integral",
+            "audience": ["children", "adults", "seniors"],
+            "hero": "Diagnóstico y tratamiento de piel, cabello y uñas",
+            "summary": "Abordaje integral para enfermedades dermatológicas en todas las edades.",
+            "indications": [
+                "dermatitis",
+                "alopecia",
+                "onicopatías",
+                "prurito crónico"
+            ],
+            "contraindications": [],
+            "duration": "30-45 min",
+            "price_from": 40,
+            "iva": 0.0,
+            "doctor_profile": ["rosero", "narvaez"],
+            "faq": [
+                "¿Atienden niños y adultos mayores?",
+                "¿Se puede iniciar por telemedicina?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Quiero evaluación integral",
+                "label_en": "Book full dermatology review"
+            }
+        },
+        {
+            "slug": "dermatologia-pediatrica",
+            "category": "children",
+            "subcategory": "pediatric",
+            "audience": ["children"],
+            "hero": "Dermatología pediátrica",
+            "summary": "Diagnóstico y seguimiento dermatológico para niños y adolescentes.",
+            "indications": [
+                "dermatitis atópica",
+                "acné adolescente",
+                "verrugas",
+                "alteraciones de cuero cabelludo"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "price_from": 30,
+            "iva": 0.0,
+            "doctor_profile": ["rosero", "narvaez"],
+            "faq": [
+                "¿Qué debo llevar a la consulta pediátrica?",
+                "¿Pueden hacer seguimiento por telemedicina?"
+            ],
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Reserva pediátrica rápida",
+                "label_en": "Fast pediatric booking"
+            }
+        }
+    ]
+}

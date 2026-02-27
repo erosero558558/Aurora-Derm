@@ -1,0 +1,130 @@
+name: Frontend Premium QA
+
+on:
+    push:
+        branches: [main, staging]
+        paths:
+            - 'templates/**'
+            - 'content/**'
+            - 'servicios/**'
+            - 'ninos/**'
+            - 'styles.css'
+            - 'styles-deferred.css'
+            - 'index.html'
+            - 'telemedicina.html'
+            - 'js/service-navigation-analytics.js'
+            - 'js/services-init.js'
+            - 'tests/premium-navigation-ia.spec.js'
+            - 'tests/service-pages-premium-new.spec.js'
+            - 'tests/service-pages-qa.spec.js'
+            - 'tests/deferred-content-fallback.spec.js'
+            - 'tests/mobile-overflow-regression.spec.js'
+            - 'lighthouserc.premium.json'
+            - 'playwright.config.js'
+            - 'package.json'
+            - 'package-lock.json'
+    pull_request:
+        branches: [main, staging]
+        paths:
+            - 'templates/**'
+            - 'content/**'
+            - 'servicios/**'
+            - 'ninos/**'
+            - 'styles.css'
+            - 'styles-deferred.css'
+            - 'index.html'
+            - 'telemedicina.html'
+            - 'js/service-navigation-analytics.js'
+            - 'js/services-init.js'
+            - 'tests/premium-navigation-ia.spec.js'
+            - 'tests/service-pages-premium-new.spec.js'
+            - 'tests/service-pages-qa.spec.js'
+            - 'tests/deferred-content-fallback.spec.js'
+            - 'tests/mobile-overflow-regression.spec.js'
+            - 'lighthouserc.premium.json'
+            - 'playwright.config.js'
+            - 'package.json'
+            - 'package-lock.json'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    premium-qa:
+        name: Premium UX + Lighthouse gate
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        env:
+            TEST_LOCAL_SERVER: php
+            PIELARMONIA_ADMIN_PASSWORD: ${{ secrets.PIELARMONIA_ADMIN_PASSWORD || 'admin123' }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.2'
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Rebuild HTML and service routes
+              run: |
+                  npm run build:html
+                  npm run services:build
+
+            - name: Install Playwright (chromium)
+              run: npx playwright install --with-deps chromium
+
+            - name: Run premium frontend QA
+              run: npm run test:frontend:qa:premium
+
+            - name: Resolve Chromium path for Lighthouse
+              id: chromium
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  echo "path=$(node -e \"const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath());\")" >> "$GITHUB_OUTPUT"
+
+            - name: Run Lighthouse premium thresholds
+              env:
+                  CHROME_PATH: ${{ steps.chromium.outputs.path }}
+              run: npm run test:frontend:lighthouse:premium
+
+            - name: Upload Playwright report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: premium-playwright-report
+                  path: playwright-report/
+                  if-no-files-found: ignore
+                  retention-days: 14
+
+            - name: Upload Lighthouse report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: premium-lighthouse-report
+                  path: .lighthouseci/
+                  if-no-files-found: ignore
+                  retention-days: 14
+
+            - name: Summary
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Frontend Premium QA";
+                    echo "- Workflow: premium UX + lighthouse gate";
+                    echo "- QA command: \`npm run test:frontend:qa:premium\`";
+                    echo "- Lighthouse command: \`npm run test:frontend:lighthouse:premium\`";
+                    echo "- Result: \`${{ job.status }}\`";
+                  } >> "$GITHUB_STEP_SUMMARY"

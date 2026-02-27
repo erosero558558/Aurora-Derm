@@ -10,14 +10,17 @@ test.describe('Deferred content fallback', () => {
 
         const servicios = page.locator('#servicios');
         await expect(servicios).toBeVisible();
-        await expect(servicios).toContainText('Estamos preparando esta sección para ti');
-
-        const serviciosTextLength = await servicios.evaluate((node) =>
-            (node.textContent || '').trim().length
+        await expect(servicios).toContainText(
+            /Arquitectura de atenci.n completa en dermatolog.a|Servicios/i
         );
-        expect(serviciosTextLength).toBeGreaterThan(40);
+        await expect(servicios).not.toContainText(/Cargando contenido/i);
 
-        // Static fallback doesn't have a retry button immediately
-        // await expect(servicios.locator('a.btn')).toHaveCount(1);
+        const serviciosTextLength = await servicios.evaluate(
+            (node) => (node.textContent || '').trim().length
+        );
+        expect(serviciosTextLength).toBeGreaterThan(120);
+
+        const linksInFallback = await servicios.locator('a').count();
+        expect(linksInFallback).toBeGreaterThanOrEqual(8);
     });
 });

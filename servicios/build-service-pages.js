@@ -3,10 +3,13 @@
 
 const fs = require('fs');
 const path = require('path');
+const { runPremiumGenerator } = require('./generate-premium-pages.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const ACNE_FILE = path.join(ROOT, 'servicios', 'acne.html');
 const LASER_FILE = path.join(ROOT, 'servicios', 'laser.html');
+const ACNE_ROUTE_INDEX = path.join(ROOT, 'servicios', 'acne', 'index.html');
+const LASER_ROUTE_INDEX = path.join(ROOT, 'servicios', 'laser', 'index.html');
 
 const LASER_COPY = {
     title:
@@ -39,6 +42,7 @@ function readUtf8(filePath) {
 }
 
 function writeUtf8(filePath, content) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, content, 'utf8');
 }
 
@@ -186,34 +190,92 @@ function run() {
     const acneHtml = readUtf8(ACNE_FILE);
     const expectedLaser = buildLaserFromAcne(acneHtml);
     const currentLaser = readUtf8(LASER_FILE);
+    const currentAcneRoute = fs.existsSync(ACNE_ROUTE_INDEX)
+        ? readUtf8(ACNE_ROUTE_INDEX)
+        : '';
+    const currentLaserRoute = fs.existsSync(LASER_ROUTE_INDEX)
+        ? readUtf8(LASER_ROUTE_INDEX)
+        : '';
 
+    if (checkOnly && expectedLaser !== currentLaser) {
+        console.error(
+            [
+                'servicios/laser.html esta fuera de sync con la fuente canonica servicios/acne.html.',
+                'Ejecuta: node servicios/build-service-pages.js',
+            ].join('\n')
+        );
+        process.exit(1);
+    }
+    if (checkOnly && currentAcneRoute !== acneHtml) {
+        console.error(
+            [
+                'servicios/acne/index.html esta fuera de sync con servicios/acne.html.',
+                'Ejecuta: node servicios/build-service-pages.js',
+            ].join('\n')
+        );
+        process.exit(1);
+    }
+    if (checkOnly && currentLaserRoute !== expectedLaser) {
+        console.error(
+            [
+                'servicios/laser/index.html esta fuera de sync con servicios/laser.html.',
+                'Ejecuta: node servicios/build-service-pages.js',
+            ].join('\n')
+        );
+        process.exit(1);
+    }
+
+    if (!checkOnly && expectedLaser !== currentLaser) {
+        writeUtf8(LASER_FILE, expectedLaser);
+        console.log(
+            'Actualizado: servicios/laser.html generado desde servicios/acne.html'
+        );
+    } else if (checkOnly) {
+        console.log(
+            'OK: servicios/laser.html esta sincronizado con la fuente canonica.'
+        );
+    } else {
+        console.log(
+            'Sin cambios: servicios/laser.html ya estaba sincronizado.'
+        );
+    }
+
+    if (!checkOnly) {
+        if (currentAcneRoute !== acneHtml) {
+            writeUtf8(ACNE_ROUTE_INDEX, acneHtml);
+            console.log('Actualizado: servicios/acne/index.html sincronizado.');
+        }
+        if (currentLaserRoute !== expectedLaser) {
+            writeUtf8(LASER_ROUTE_INDEX, expectedLaser);
+            console.log(
+                'Actualizado: servicios/laser/index.html sincronizado.'
+            );
+        }
+    }
+
+    const premiumResult = runPremiumGenerator({ checkOnly });
     if (checkOnly) {
-        if (expectedLaser !== currentLaser) {
+        if (!premiumResult.ok) {
             console.error(
                 [
-                    'servicios/laser.html esta fuera de sync con la fuente canonica servicios/acne.html.',
+                    'Premium pages fuera de sync con content/services.json.',
+                    ...premiumResult.mismatches.map((file) => `- ${file}`),
                     'Ejecuta: node servicios/build-service-pages.js',
                 ].join('\n')
             );
             process.exit(1);
         }
-        console.log(
-            'OK: servicios/laser.html esta sincronizado con la fuente canonica.'
-        );
+        console.log('OK: premium service pages sincronizadas.');
         return;
     }
 
-    if (expectedLaser === currentLaser) {
+    if (premiumResult.written.length > 0) {
         console.log(
-            'Sin cambios: servicios/laser.html ya estaba sincronizado.'
+            `Actualizado: ${premiumResult.written.length} archivo(s) premium de servicios.`
         );
-        return;
+    } else {
+        console.log('Sin cambios: premium service pages ya sincronizadas.');
     }
-
-    writeUtf8(LASER_FILE, expectedLaser);
-    console.log(
-        'Actualizado: servicios/laser.html generado desde servicios/acne.html'
-    );
 }
 
 try {
