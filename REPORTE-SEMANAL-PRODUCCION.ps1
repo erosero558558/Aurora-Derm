@@ -111,6 +111,7 @@ function Get-WarningSeverity {
         'no_show_rate_alta_',
         'retention_report_',
         'services_catalog_',
+        'service_priorities_',
         'idempotency_conflict_rate_alta_',
         'recurrence_rate_',
         'conversion_rate_',
@@ -146,6 +147,9 @@ function Get-WarningImpact {
         return 'conversion'
     }
     if ($WarningCode.StartsWith('services_catalog_')) {
+        return 'conversion'
+    }
+    if ($WarningCode.StartsWith('service_priorities_')) {
         return 'conversion'
     }
     if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
@@ -190,6 +194,9 @@ function Get-WarningRunbookRef {
         return 'docs/RUNBOOKS.md#31-monitoreo-diario'
     }
     if ($WarningCode.StartsWith('services_catalog_')) {
+        return 'docs/RUNBOOKS.md#31-monitoreo-diario'
+    }
+    if ($WarningCode.StartsWith('service_priorities_')) {
         return 'docs/RUNBOOKS.md#31-monitoreo-diario'
     }
     if ($WarningCode.StartsWith('idempotency_conflict_rate_alta_')) {
@@ -532,6 +539,7 @@ Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 $healthResult = Invoke-JsonGet -Name 'health' -Url "$base/api.php?resource=health"
 $funnelResult = Invoke-JsonGet -Name 'funnel-metrics' -Url "$base/api.php?resource=funnel-metrics"
 $retentionReportResult = Invoke-JsonGet -Name 'retention-report' -Url "$base/api.php?resource=retention-report&days=$RetentionReportDays"
+$servicePrioritiesResult = Invoke-JsonGet -Name 'service-priorities' -Url "$base/api.php?resource=service-priorities&limit=12&categoryLimit=8&featuredLimit=3"
 
 if (-not $healthResult.Ok) {
     throw "No se pudo consultar health: $($healthResult.Error)"
@@ -891,6 +899,29 @@ $servicesCatalogSource = [string](Get-ObjectValueOrDefault -Object $health -Prop
 $servicesCatalogVersion = [string](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogVersion' -DefaultValue 'unknown')
 $servicesCatalogCount = [int](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogCount' -DefaultValue 0)
 $servicesCatalogConfigured = [bool](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogConfigured' -DefaultValue $false)
+$servicePrioritiesSource = 'unreachable'
+$servicePrioritiesCatalogSource = 'unknown'
+$servicePrioritiesCatalogVersion = 'unknown'
+$servicePrioritiesServiceCount = 0
+$servicePrioritiesCategoryCount = 0
+$servicePrioritiesFeaturedCount = 0
+$servicePrioritiesSort = 'unknown'
+$servicePrioritiesAudience = 'unknown'
+if ($servicePrioritiesResult.Ok -and $null -ne $servicePrioritiesResult.Json -and [bool](Get-ObjectValueOrDefault -Object $servicePrioritiesResult.Json -Property 'ok' -DefaultValue $false)) {
+    $servicePrioritiesPayload = Get-ObjectValueOrDefault -Object $servicePrioritiesResult.Json -Property 'data' -DefaultValue $null
+    $servicePrioritiesMeta = Get-ObjectValueOrDefault -Object $servicePrioritiesResult.Json -Property 'meta' -DefaultValue $null
+    $servicePrioritiesSource = [string](Get-ObjectValueOrDefault -Object $servicePrioritiesMeta -Property 'source' -DefaultValue 'unknown')
+    $servicePrioritiesCatalogSource = [string](Get-ObjectValueOrDefault -Object $servicePrioritiesMeta -Property 'catalogSource' -DefaultValue 'unknown')
+    $servicePrioritiesCatalogVersion = [string](Get-ObjectValueOrDefault -Object $servicePrioritiesMeta -Property 'catalogVersion' -DefaultValue 'unknown')
+    $servicePrioritiesServiceCount = [int](Get-ObjectValueOrDefault -Object $servicePrioritiesMeta -Property 'serviceCount' -DefaultValue 0)
+    $servicePrioritiesCategoryCount = [int](Get-ObjectValueOrDefault -Object $servicePrioritiesMeta -Property 'categoryCount' -DefaultValue 0)
+    $servicePrioritiesSort = [string](Get-ObjectValueOrDefault -Object $servicePrioritiesMeta -Property 'sort' -DefaultValue 'unknown')
+    $servicePrioritiesAudience = [string](Get-ObjectValueOrDefault -Object $servicePrioritiesMeta -Property 'audience' -DefaultValue '')
+    $servicePrioritiesFeaturedRaw = Convert-ToArraySafe -Value (Get-ObjectValueOrDefault -Object $servicePrioritiesPayload -Property 'featured' -DefaultValue @())
+    $servicePrioritiesFeaturedCount = $servicePrioritiesFeaturedRaw.Count
+} elseif ($servicePrioritiesResult.Ok) {
+    $servicePrioritiesSource = 'invalid_payload'
+}
 
 $retentionStatusCounts = Get-ObjectValueOrDefault -Object $retention -Property 'statusCounts' -DefaultValue $null
 $retentionAppointmentsTotal = [int](Get-ObjectValueOrDefault -Object $retention -Property 'appointmentsTotal' -DefaultValue 0)
@@ -1105,6 +1136,18 @@ if (-not $servicesCatalogConfigured) {
 }
 if ($servicesCatalogCount -le 0) {
     $warnings.Add('services_catalog_empty')
+}
+if ($servicePrioritiesSource -ne 'catalog+funnel') {
+    $warnings.Add("service_priorities_${servicePrioritiesSource}")
+}
+if ($servicePrioritiesServiceCount -le 0) {
+    $warnings.Add('service_priorities_services_empty')
+}
+if ($servicePrioritiesCategoryCount -le 0) {
+    $warnings.Add('service_priorities_categories_empty')
+}
+if ($servicePrioritiesFeaturedCount -le 0) {
+    $warnings.Add('service_priorities_featured_empty')
 }
 $idempotencySampleSufficient = $idempotencyRequestsWithKey -ge 10
 if ($idempotencySampleSufficient -and $idempotencyConflictRatePct -ge $IdempotencyConflictRateWarnPct) {
@@ -1444,6 +1487,17 @@ $serviceFunnelTopRowsBlock
 - services_catalog_version: $servicesCatalogVersion
 - services_catalog_count: $servicesCatalogCount
 
+## Service Priorities
+
+- service_priorities_source: $servicePrioritiesSource
+- service_priorities_catalog_source: $servicePrioritiesCatalogSource
+- service_priorities_catalog_version: $servicePrioritiesCatalogVersion
+- service_priorities_services_count: $servicePrioritiesServiceCount
+- service_priorities_categories_count: $servicePrioritiesCategoryCount
+- service_priorities_featured_count: $servicePrioritiesFeaturedCount
+- service_priorities_sort: $servicePrioritiesSort
+- service_priorities_audience: $servicePrioritiesAudience
+
 ## Retention
 
 - appointments_total: $retentionAppointmentsTotal
@@ -1605,6 +1659,16 @@ $servicesCatalogPayload.configured = $servicesCatalogConfigured
 $servicesCatalogPayload.version = $servicesCatalogVersion
 $servicesCatalogPayload.servicesCount = $servicesCatalogCount
 
+$servicePrioritiesPayload = [ordered]@{}
+$servicePrioritiesPayload.source = $servicePrioritiesSource
+$servicePrioritiesPayload.catalogSource = $servicePrioritiesCatalogSource
+$servicePrioritiesPayload.catalogVersion = $servicePrioritiesCatalogVersion
+$servicePrioritiesPayload.servicesCount = $servicePrioritiesServiceCount
+$servicePrioritiesPayload.categoriesCount = $servicePrioritiesCategoryCount
+$servicePrioritiesPayload.featuredCount = $servicePrioritiesFeaturedCount
+$servicePrioritiesPayload.sort = $servicePrioritiesSort
+$servicePrioritiesPayload.audience = $servicePrioritiesAudience
+
 $retentionStatusCountsPayload = [ordered]@{}
 $retentionStatusCountsPayload.confirmed = $retentionConfirmed
 $retentionStatusCountsPayload.completed = $retentionCompleted
@@ -1706,6 +1770,7 @@ $reportPayload.serviceFunnel = $serviceFunnelPayload
 $reportPayload.calendar = $calendarPayload
 $reportPayload.observability = $observabilityPayload
 $reportPayload.servicesCatalog = $servicesCatalogPayload
+$reportPayload.servicePriorities = $servicePrioritiesPayload
 $reportPayload.retention = $retentionPayload
 $reportPayload.retentionReport = $retentionReportPayload
 $reportPayload.idempotency = $idempotencyPayload
@@ -1731,6 +1796,7 @@ Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurre
 Write-Host "idempotency_requests_with_key=$idempotencyRequestsWithKey idempotency_conflict_rate_pct=$idempotencyConflictRatePct idempotency_replay_rate_pct=$idempotencyReplayRatePct"
 Write-Host "service_funnel_source=$serviceFunnelSource service_funnel_rows=$serviceFunnelRowsCount service_funnel_alert_count=$serviceFunnelAlertCount"
 Write-Host "services_catalog_source=$servicesCatalogSource services_catalog_version=$servicesCatalogVersion services_catalog_count=$servicesCatalogCount services_catalog_configured=$servicesCatalogConfigured"
+Write-Host "service_priorities_source=$servicePrioritiesSource service_priorities_catalog_source=$servicePrioritiesCatalogSource service_priorities_services_count=$servicePrioritiesServiceCount service_priorities_categories_count=$servicePrioritiesCategoryCount service_priorities_featured_count=$servicePrioritiesFeaturedCount"
 Write-Host "release_decision=$releaseDecision release_reason=$releaseReason"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow

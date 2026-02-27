@@ -401,6 +401,23 @@ jobs:
                     "services_catalog_incident_reason_codes=report_missing,services_catalog_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "services_catalog_incident_severity=critical" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "services_catalog_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_source=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_catalog_source=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_catalog_version=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_services_count=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_categories_count=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_featured_count=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_sort=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_audience=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_services_count_int=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_categories_count_int=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_featured_count_int=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_data_valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_incident_required=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_incident_recovered=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_incident_reason_codes=report_missing,service_priorities_invalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_incident_severity=critical" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "service_priorities_signal_key=missing_report" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_core_p95_max_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_figo_post_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "latency_availability_p95_ms=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -538,6 +555,15 @@ jobs:
                     $servicesCatalogVersion = if ($null -ne $servicesCatalog -and $null -ne $servicesCatalog.version) { [string]$servicesCatalog.version } else { 'n/a' }
                     $servicesCatalogCount = if ($null -ne $servicesCatalog -and $null -ne $servicesCatalog.servicesCount) { [string]$servicesCatalog.servicesCount } else { '0' }
                     $servicesCatalogConfigured = if ($null -ne $servicesCatalog -and $null -ne $servicesCatalog.configured) { [string]$servicesCatalog.configured } else { 'false' }
+                    $servicePriorities = $payload.servicePriorities
+                    $servicePrioritiesSource = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.source) { [string]$servicePriorities.source } else { 'n/a' }
+                    $servicePrioritiesCatalogSource = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.catalogSource) { [string]$servicePriorities.catalogSource } else { 'n/a' }
+                    $servicePrioritiesCatalogVersion = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.catalogVersion) { [string]$servicePriorities.catalogVersion } else { 'n/a' }
+                    $servicePrioritiesServicesCount = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.servicesCount) { [string]$servicePriorities.servicesCount } else { '0' }
+                    $servicePrioritiesCategoriesCount = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.categoriesCount) { [string]$servicePriorities.categoriesCount } else { '0' }
+                    $servicePrioritiesFeaturedCount = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.featuredCount) { [string]$servicePriorities.featuredCount } else { '0' }
+                    $servicePrioritiesSort = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.sort) { [string]$servicePriorities.sort } else { 'n/a' }
+                    $servicePrioritiesAudience = if ($null -ne $servicePriorities -and $null -ne $servicePriorities.audience) { [string]$servicePriorities.audience } else { 'n/a' }
                     $coreP95MaxMs = if ($null -ne $latency) { $latency.coreP95MaxMs } else { 'n/a' }
                     $figoPostP95Ms = if ($null -ne $latency) { $latency.figoPostP95Ms } else { 'n/a' }
                     $availabilityBench = $null
@@ -584,6 +610,14 @@ jobs:
                     $servicesCatalogVersion = 'n/a'
                     $servicesCatalogCount = 'n/a'
                     $servicesCatalogConfigured = 'n/a'
+                    $servicePrioritiesSource = 'n/a'
+                    $servicePrioritiesCatalogSource = 'n/a'
+                    $servicePrioritiesCatalogVersion = 'n/a'
+                    $servicePrioritiesServicesCount = 'n/a'
+                    $servicePrioritiesCategoriesCount = 'n/a'
+                    $servicePrioritiesFeaturedCount = 'n/a'
+                    $servicePrioritiesSort = 'n/a'
+                    $servicePrioritiesAudience = 'n/a'
                     $coreP95MaxMs = 'n/a'
                     $figoPostP95Ms = 'n/a'
                     $availabilityP95Ms = 'n/a'
@@ -765,6 +799,79 @@ jobs:
                   "services_catalog_incident_reason_codes=$servicesCatalogIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "services_catalog_incident_severity=$servicesCatalogIncidentSeverity" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "services_catalog_signal_key=$servicesCatalogSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_source=$servicePrioritiesSource" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_catalog_source=$servicePrioritiesCatalogSource" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_catalog_version=$servicePrioritiesCatalogVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_services_count=$servicePrioritiesServicesCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_categories_count=$servicePrioritiesCategoriesCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_featured_count=$servicePrioritiesFeaturedCount" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_sort=$servicePrioritiesSort" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_audience=$servicePrioritiesAudience" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  $servicePrioritiesServicesCountInt = -1
+                  $tmpServicePrioritiesServicesCount = 0
+                  if ([int]::TryParse([string]$servicePrioritiesServicesCount, [ref]$tmpServicePrioritiesServicesCount)) {
+                    $servicePrioritiesServicesCountInt = $tmpServicePrioritiesServicesCount
+                  }
+                  $servicePrioritiesCategoriesCountInt = -1
+                  $tmpServicePrioritiesCategoriesCount = 0
+                  if ([int]::TryParse([string]$servicePrioritiesCategoriesCount, [ref]$tmpServicePrioritiesCategoriesCount)) {
+                    $servicePrioritiesCategoriesCountInt = $tmpServicePrioritiesCategoriesCount
+                  }
+                  $servicePrioritiesFeaturedCountInt = -1
+                  $tmpServicePrioritiesFeaturedCount = 0
+                  if ([int]::TryParse([string]$servicePrioritiesFeaturedCount, [ref]$tmpServicePrioritiesFeaturedCount)) {
+                    $servicePrioritiesFeaturedCountInt = $tmpServicePrioritiesFeaturedCount
+                  }
+                  $servicePrioritiesDataValid = if ([string]::IsNullOrWhiteSpace($servicePrioritiesSource) -or $servicePrioritiesSource -eq 'n/a') { 'false' } else { 'true' }
+                  $servicePrioritiesReasonCodes = New-Object System.Collections.Generic.List[string]
+                  if ($reportStale -eq 'true') { $servicePrioritiesReasonCodes.Add('report_stale') | Out-Null }
+                  if ($servicePrioritiesDataValid -ne 'true') {
+                    $servicePrioritiesReasonCodes.Add('service_priorities_invalid') | Out-Null
+                  } elseif ($servicePrioritiesSource -ne 'catalog+funnel') {
+                    $servicePrioritiesReasonCodes.Add("service_priorities_source_$servicePrioritiesSource") | Out-Null
+                  }
+                  if ($servicePrioritiesServicesCountInt -eq -1) {
+                    $servicePrioritiesReasonCodes.Add('service_priorities_services_count_invalid') | Out-Null
+                  } elseif ($servicePrioritiesServicesCountInt -le 0) {
+                    $servicePrioritiesReasonCodes.Add('service_priorities_services_empty') | Out-Null
+                  }
+                  if ($servicePrioritiesCategoriesCountInt -eq -1) {
+                    $servicePrioritiesReasonCodes.Add('service_priorities_categories_count_invalid') | Out-Null
+                  } elseif ($servicePrioritiesCategoriesCountInt -le 0) {
+                    $servicePrioritiesReasonCodes.Add('service_priorities_categories_empty') | Out-Null
+                  }
+                  if ($servicePrioritiesFeaturedCountInt -eq -1) {
+                    $servicePrioritiesReasonCodes.Add('service_priorities_featured_count_invalid') | Out-Null
+                  } elseif ($servicePrioritiesFeaturedCountInt -le 0) {
+                    $servicePrioritiesReasonCodes.Add('service_priorities_featured_empty') | Out-Null
+                  }
+                  if ($servicePrioritiesReasonCodes.Count -eq 0) {
+                    $servicePrioritiesReasonCodes.Add('none') | Out-Null
+                  }
+                  $servicePrioritiesIncidentRequired = if ($servicePrioritiesReasonCodes.Count -gt 1 -or @($servicePrioritiesReasonCodes)[0] -ne 'none') { 'true' } else { 'false' }
+                  $servicePrioritiesIncidentRecovered = if ($servicePrioritiesIncidentRequired -eq 'false' -and $reportStale -ne 'true') { 'true' } else { 'false' }
+                  $servicePrioritiesIncidentReasonCodes = @($servicePrioritiesReasonCodes) -join ','
+                  $servicePrioritiesIncidentSeverity = if (
+                    $reportStale -eq 'true' -or
+                    $servicePrioritiesDataValid -ne 'true' -or
+                    $servicePrioritiesSource -eq 'missing' -or
+                    $servicePrioritiesSource -eq 'invalid' -or
+                    $servicePrioritiesSource -eq 'unknown' -or
+                    $servicePrioritiesSource -eq 'unreachable' -or
+                    $servicePrioritiesServicesCountInt -eq -1 -or
+                    $servicePrioritiesCategoriesCountInt -eq -1 -or
+                    $servicePrioritiesFeaturedCountInt -eq -1
+                  ) { 'critical' } elseif ($servicePrioritiesIncidentRequired -eq 'true') { 'warning' } else { 'warning' }
+                  $servicePrioritiesSignalKey = "svc:$servicePrioritiesServicesCountInt|cat:$servicePrioritiesCategoriesCountInt|ft:$servicePrioritiesFeaturedCountInt|stale:$reportStale|reasons:$servicePrioritiesIncidentReasonCodes|src:$servicePrioritiesSource"
+                  "service_priorities_services_count_int=$servicePrioritiesServicesCountInt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_categories_count_int=$servicePrioritiesCategoriesCountInt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_featured_count_int=$servicePrioritiesFeaturedCountInt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_data_valid=$servicePrioritiesDataValid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_incident_required=$servicePrioritiesIncidentRequired" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_incident_recovered=$servicePrioritiesIncidentRecovered" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_incident_reason_codes=$servicePrioritiesIncidentReasonCodes" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_incident_severity=$servicePrioritiesIncidentSeverity" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "service_priorities_signal_key=$servicePrioritiesSignalKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_core_p95_max_ms=$coreP95MaxMs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_figo_post_p95_ms=$figoPostP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "latency_availability_p95_ms=$availabilityP95Ms" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -849,7 +956,8 @@ jobs:
                         '[ALERTA PROD] Weekly KPI SLA operativo degradado',
                         '[ALERTA PROD] Weekly KPI retencion degradada',
                         '[ALERTA PROD] Weekly KPI service funnel degradado',
-                        '[ALERTA PROD] Weekly KPI services catalog degradado'
+                        '[ALERTA PROD] Weekly KPI services catalog degradado',
+                        '[ALERTA PROD] Weekly KPI service priorities degradado'
                       ]);
                       const prodIncidents = allIssues.filter((issue) => {
                         if (issue.pull_request) return false;
@@ -991,6 +1099,17 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_incident_reason_codes: ``${{ steps.report.outputs.services_catalog_incident_reason_codes }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_incident_severity: ``${{ steps.report.outputs.services_catalog_incident_severity }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- services_catalog_signal_key: ``${{ steps.report.outputs.services_catalog_signal_key }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_source: ``${{ steps.report.outputs.service_priorities_source }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_catalog_source: ``${{ steps.report.outputs.service_priorities_catalog_source }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_catalog_version: ``${{ steps.report.outputs.service_priorities_catalog_version }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_services_count: ``${{ steps.report.outputs.service_priorities_services_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_categories_count: ``${{ steps.report.outputs.service_priorities_categories_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_featured_count: ``${{ steps.report.outputs.service_priorities_featured_count }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_incident_required: ``${{ steps.report.outputs.service_priorities_incident_required }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_incident_recovered: ``${{ steps.report.outputs.service_priorities_incident_recovered }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_incident_reason_codes: ``${{ steps.report.outputs.service_priorities_incident_reason_codes }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_incident_severity: ``${{ steps.report.outputs.service_priorities_incident_severity }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- service_priorities_signal_key: ``${{ steps.report.outputs.service_priorities_signal_key }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Latency"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- core_p95_max_ms: ``${{ steps.report.outputs.latency_core_p95_max_ms }}``"
@@ -1873,3 +1992,163 @@ jobs:
                         state: 'closed'
                       });
                       core.info(`Issue de services catalog cerrado: #${existing.number}`);
+
+            - name: Crear/actualizar incidente semanal de service priorities
+              if: ${{ github.event_name == 'schedule' && steps.report.outputs.service_priorities_incident_required == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI service priorities degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = '${{ steps.report.outputs.service_priorities_signal_key }}';
+                      const signalMarker = `<!-- service-priorities-signal:${signal} -->`;
+                      const incidentSeverity = '${{ steps.report.outputs.service_priorities_incident_severity }}' || 'warning';
+                      const severityLabel = incidentSeverity === 'critical' ? 'severity:critical' : 'severity:warning';
+                      const baseLabels = ['production-alert', 'weekly-kpi', 'service-priorities', severityLabel];
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const buildMergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+                      const incidentBody = [
+                        'El workflow `Weekly KPI Report` detecto degradacion en priorizacion de servicios (`servicePriorities`).',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- service_priorities_source: ${{ steps.report.outputs.service_priorities_source }}`,
+                        `- service_priorities_catalog_source: ${{ steps.report.outputs.service_priorities_catalog_source }}`,
+                        `- service_priorities_catalog_version: ${{ steps.report.outputs.service_priorities_catalog_version }}`,
+                        `- service_priorities_services_count: ${{ steps.report.outputs.service_priorities_services_count }}`,
+                        `- service_priorities_categories_count: ${{ steps.report.outputs.service_priorities_categories_count }}`,
+                        `- service_priorities_featured_count: ${{ steps.report.outputs.service_priorities_featured_count }}`,
+                        `- service_priorities_sort: ${{ steps.report.outputs.service_priorities_sort }}`,
+                        `- service_priorities_audience: ${{ steps.report.outputs.service_priorities_audience }}`,
+                        `- report_generated_at_utc: ${{ steps.report.outputs.report_generated_at_utc }}`,
+                        `- report_age_hours: ${{ steps.report.outputs.report_age_hours }}`,
+                        `- report_stale: ${{ steps.report.outputs.report_stale }}`,
+                        `- service_priorities_incident_reason_codes: ${{ steps.report.outputs.service_priorities_incident_reason_codes }}`,
+                        `- service_priorities_incident_severity: ${{ steps.report.outputs.service_priorities_incident_severity }}`,
+                        `- service_priorities_signal_key: ${{ steps.report.outputs.service_priorities_signal_key }}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const mergedLabels = buildMergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), mergedLabels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels: mergedLabels
+                            });
+                            core.info(`Issue de service priorities actualizo labels de severidad: #${existing.number}`);
+                          }
+                          core.info(`Issue de service priorities ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: incidentBody,
+                          labels: mergedLabels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente de service priorities actualizado por cambio de senal semanal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- service_priorities_source: ${{ steps.report.outputs.service_priorities_source }}`,
+                            `- service_priorities_services_count: ${{ steps.report.outputs.service_priorities_services_count }}`,
+                            `- service_priorities_categories_count: ${{ steps.report.outputs.service_priorities_categories_count }}`,
+                            `- service_priorities_featured_count: ${{ steps.report.outputs.service_priorities_featured_count }}`,
+                            `- service_priorities_incident_reason_codes: ${{ steps.report.outputs.service_priorities_incident_reason_codes }}`,
+                            `- service_priorities_incident_severity: ${{ steps.report.outputs.service_priorities_incident_severity }}`,
+                            `- service_priorities_signal_key: ${{ steps.report.outputs.service_priorities_signal_key }}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue de service priorities actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body: incidentBody,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue de service priorities creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente semanal de service priorities al recuperar
+              if: ${{ success() && github.event_name == 'schedule' && steps.report.outputs.service_priorities_incident_recovered == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Weekly KPI service priorities degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente de service priorities abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por reporte semanal de service priorities.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue de service priorities cerrado: #${existing.number}`);

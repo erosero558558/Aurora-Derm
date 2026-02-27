@@ -211,6 +211,25 @@ Criterio de salida:
 - [x] Filtro `audience=ninos` prioriza rutas pediatricas sin romper contrato.
 - [x] Fallback `source=missing` devuelve arrays vacios y contrato estable.
 
+## C10 - Operacion semanal de service priorities (KPI + incidentes)
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Convertir `service-priorities` en senal operativa semanal con salida normalizada, summary y ciclo de incidente dedicado.
+
+Entregables:
+
+- [x] `REPORTE-SEMANAL-PRODUCCION.ps1` incorpora bloque `servicePriorities` en JSON/markdown y warnings `service_priorities_*`.
+- [x] `weekly-kpi-report.yml` agrega outputs normalizados `service_priorities_*` y crea/cierra incidente semanal dedicado.
+- [x] `tests-node/weekly-kpi-workflow-contract.test.js` valida contrato de outputs y presencia del flujo de incidente.
+
+Criterio de salida:
+
+- [x] Reporte semanal serializa `servicePriorities` con `source/catalogSource/catalogVersion/servicesCount/categoriesCount/featuredCount`.
+- [x] Incidente semanal dedicado `[ALERTA PROD] Weekly KPI service priorities degradado` activo con severidad y signal key.
+- [x] Contrato de workflow protegido por tests Node en verde.
+
 ## Contratos publicos
 
 - No se introducen cambios breaking en contratos HTTP existentes.
@@ -271,3 +290,4 @@ Criterio de salida:
 - 2026-02-26: cerrado C7 con nuevo controlador `controllers/ServiceCatalogController.php` y endpoint publico `services-catalog` (filtros + paginacion + metadatos + fallback `source=missing`), registrado en `api.php`, `lib/routes.php` y `lib/ApiConfig.php`; cobertura en `tests/Integration/ServiceCatalogControllerTest.php` y regresion analytics en verde.
 - 2026-02-26: cerrado C8 con snapshot de catalogo en `controllers/HealthController.php` (`servicesCatalog*` top-level + `checks.servicesCatalog`), reporte semanal extendido (`REPORTE-SEMANAL-PRODUCCION.ps1`) con warnings `services_catalog_*` y payload `servicesCatalog`, workflow semanal (`weekly-kpi-report.yml`) con outputs/incidentes `services_catalog_*`, y cobertura en `tests/Integration/HealthServiceCatalogSnapshotTest.php` + `tests-node/weekly-kpi-workflow-contract.test.js`.
 - 2026-02-26: cerrado C9 con `controllers/ServicePriorityController.php` y endpoint publico `service-priorities` (orden inteligente por `hybrid|volume|conversion`, filtros `audience/category`, categorias/featured), registrado en `api.php`, `lib/routes.php` y `lib/ApiConfig.php`; cobertura en `tests/Integration/ServicePriorityControllerTest.php` + regresion `ServiceCatalog/Analytics/HealthServiceCatalog` en verde.
+- 2026-02-26: cerrado C10 con extension de `REPORTE-SEMANAL-PRODUCCION.ps1` (payload/markdown/warnings `service_priorities_*`), `weekly-kpi-report.yml` (outputs + incidente dedicado `service priorities`) y contrato actualizado en `tests-node/weekly-kpi-workflow-contract.test.js`.
