@@ -700,4 +700,230 @@ test.describe('Admin turnero sala', () => {
         );
         await expect(page.locator('#queueTableBody')).toContainText('A-911');
     });
+
+    test('evita duplicar llamado cuando hay doble clic en rafaga para el mismo consultorio', async ({
+        page,
+    }) => {
+        let queueCallNextRequests = 0;
+        let queueTickets = [
+            {
+                id: 951,
+                ticketCode: 'A-951',
+                queueType: 'appointment',
+                patientInitials: 'EP',
+                priorityClass: 'appt_overdue',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_burst',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-call-next') {
+                queueCallNextRequests += 1;
+                await new Promise((resolve) => setTimeout(resolve, 250));
+                queueTickets = [
+                    {
+                        ...queueTickets[0],
+                        status: 'called',
+                        assignedConsultorio: 1,
+                        calledAt: new Date().toISOString(),
+                    },
+                ];
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets[0],
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('1');
+
+        await page
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .first()
+            .evaluate((button) => {
+                const firstClick = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                });
+                const secondClick = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                });
+                button.dispatchEvent(firstClick);
+                button.dispatchEvent(secondClick);
+            });
+
+        await expect(page.locator('#queueC1Now')).toContainText('A-951');
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('0');
+        await expect.poll(() => queueCallNextRequests).toBe(1);
+    });
+
+    test('permite reintento despues de error transitorio en llamado de consultorio', async ({
+        page,
+    }) => {
+        let queueCallNextRequests = 0;
+        let queueTickets = [
+            {
+                id: 961,
+                ticketCode: 'A-961',
+                queueType: 'walk_in',
+                patientInitials: 'JP',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_retry',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-call-next') {
+                queueCallNextRequests += 1;
+                if (queueCallNextRequests === 1) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Fallo temporal de backend' },
+                        503
+                    );
+                }
+                queueTickets = [
+                    {
+                        ...queueTickets[0],
+                        status: 'called',
+                        assignedConsultorio: 1,
+                        calledAt: new Date().toISOString(),
+                    },
+                ];
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets[0],
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+
+        const callC1Button = page.locator(
+            '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+        );
+
+        await callC1Button.first().click();
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('1');
+        await expect(page.locator('#queueActivityList')).toContainText(
+            'Error llamando siguiente en C1'
+        );
+
+        await callC1Button.first().click();
+        await expect(page.locator('#queueC1Now')).toContainText('A-961');
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('0');
+        await expect.poll(() => queueCallNextRequests).toBe(2);
+    });
 });

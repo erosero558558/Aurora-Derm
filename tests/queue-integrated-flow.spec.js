@@ -121,9 +121,13 @@ function buildQueueMetaFromState(queueState) {
     };
 }
 
-async function installSharedQueueMocks(context) {
+async function installSharedQueueMocks(context, options = {}) {
     let nextId = 1000;
     let nextDailySeq = 1;
+    let remainingCallNextFailures = Math.max(
+        0,
+        Number(options.callNextFailCount || 0)
+    );
     /** @type {Array<Record<string, any>>} */
     let queueTickets = [];
 
@@ -265,6 +269,18 @@ async function installSharedQueueMocks(context) {
         }
 
         if (resource === 'queue-call-next' && method === 'POST') {
+            if (remainingCallNextFailures > 0) {
+                remainingCallNextFailures -= 1;
+                return json(
+                    route,
+                    {
+                        ok: false,
+                        error: 'Servicio de cola temporalmente no disponible',
+                    },
+                    503
+                );
+            }
+
             const body = parseBody(request);
             const consultorio = Number(body.consultorio || 0);
             if (![1, 2].includes(consultorio)) {
@@ -504,5 +520,70 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
         await expect(displayPage.locator('#displayNextList')).toContainText(
             'A-001'
         );
+    });
+
+    test('recupera llamado tras falla transitoria y mantiene estado final consistente en TV', async ({
+        page,
+    }) => {
+        const context = page.context();
+        await installSharedQueueMocks(context, { callNextFailCount: 1 });
+
+        const adminPage = page;
+        const kioskPage = await context.newPage();
+        const displayPage = await context.newPage();
+
+        await Promise.all([
+            adminPage.goto('/admin.html'),
+            kioskPage.goto('/kiosco-turnos.html'),
+            displayPage.goto('/sala-turnos.html'),
+        ]);
+
+        await kioskPage.fill('#walkinInitials', 'RT');
+        await kioskPage.click('#walkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-001');
+
+        await adminPage.locator('.nav-item[data-section="queue"]').click();
+        await expect(adminPage.locator('#queue')).toHaveClass(/active/);
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '1'
+        );
+
+        const callC1Button = adminPage
+            .locator(
+                '[data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .first();
+
+        await callC1Button.click();
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '1'
+        );
+        await expect(adminPage.locator('#queueC1Now')).toContainText(
+            'Sin llamado'
+        );
+        await expect(
+            displayPage.locator('#displayConsultorio1')
+        ).not.toContainText('A-001');
+
+        await callC1Button.click();
+
+        await expect(adminPage.locator('#queueC1Now')).toContainText('A-001');
+        await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
+            '0'
+        );
+        await expect
+            .poll(
+                async () =>
+                    (
+                        await displayPage
+                            .locator('#displayConsultorio1')
+                            .innerText()
+                    ).trim(),
+                { timeout: 10000 }
+            )
+            .toContain('A-001');
+        await expect(
+            displayPage.locator('#displayConnectionState')
+        ).toContainText('Conectado');
     });
 });

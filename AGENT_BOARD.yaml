@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 259
+  revision: 262
   updated_at: 2026-02-27
 
 tasks:
@@ -4339,5 +4339,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-113.md"
     depends_on: []
     prompt: "Turnero sala Q: QA E2E integrado kiosco-admin-tv con privacidad"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-114
+    title: "Turnero sala R: stress/retry QA integrado de llamadas y reconexion"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T01:50:26.148Z"
+    risk: medium
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/admin-queue.spec.js", "tests/queue-integrated-flow.spec.js", "verification/agent-runs/AG-114.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T01:50:26.148Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Cobertura stress/retry valida que llamadas en ráfaga y reconexión mantienen estado consistente"
+    acceptance_ref: "verification/agent-runs/AG-114.md"
+    evidence_ref: "verification/agent-runs/AG-114.md"
+    depends_on: []
+    prompt: "Turnero sala R: stress/retry QA integrado de llamadas y reconexion"
     created_at: 2026-02-27
     updated_at: 2026-02-27
