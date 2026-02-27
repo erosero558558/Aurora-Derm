@@ -135,4 +135,171 @@ test.describe('Kiosco turnos', () => {
             'Tengo cita'
         );
     });
+
+    test('activa modo degradado por watchdog y recupera con refresh manual', async ({
+        page,
+    }) => {
+        let queueStateCalls = 0;
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'queue-state') {
+                queueStateCalls += 1;
+                if (queueStateCalls === 1) {
+                    return json(route, {
+                        ok: true,
+                        data: {
+                            updatedAt: new Date(
+                                Date.now() - 90 * 1000
+                            ).toISOString(),
+                            waitingCount: 1,
+                            calledCount: 0,
+                            callingNow: [],
+                            nextTickets: [],
+                        },
+                    });
+                }
+
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 1,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                    },
+                });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await expect(page.locator('#queueManualRefreshBtn')).toHaveCount(1, {
+            timeout: 15000,
+        });
+        await expect
+            .poll(async () => {
+                const text = await page
+                    .locator('#queueConnectionState')
+                    .textContent();
+                return text || '';
+            })
+            .toContain('Watchdog');
+        await expect(page.locator('#queueOpsHint')).toContainText('degradada');
+
+        await page.locator('#queueManualRefreshBtn').click();
+
+        await expect
+            .poll(async () => {
+                const text = await page
+                    .locator('#queueConnectionState')
+                    .textContent();
+                return text || '';
+            })
+            .toContain('Cola conectada');
+        await expect
+            .poll(async () => {
+                const text = await page.locator('#queueOpsHint').textContent();
+                return text || '';
+            })
+            .toMatch(/Sincronizacion manual exitosa|Operacion estable/i);
+    });
+
+    test('reinicia la sesion por privacidad manual e inactividad', async ({
+        page,
+    }) => {
+        await page.addInitScript(() => {
+            window.__PIEL_QUEUE_KIOSK_IDLE_RESET_MS = 5000;
+        });
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 1,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [
+                            {
+                                id: 210,
+                                ticketCode: 'A-210',
+                                patientInitials: 'EP',
+                                position: 1,
+                            },
+                        ],
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket') {
+                return json(
+                    route,
+                    {
+                        ok: true,
+                        data: {
+                            id: 210,
+                            ticketCode: 'A-210',
+                            patientInitials: 'EP',
+                            queueType: 'walk_in',
+                            createdAt: new Date().toISOString(),
+                        },
+                        printed: false,
+                        print: {
+                            ok: true,
+                            errorCode: 'printer_disabled',
+                            message: 'disabled',
+                        },
+                    },
+                    201
+                );
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+        await expect(page.locator('#kioskSessionResetBtn')).toHaveCount(1, {
+            timeout: 15000,
+        });
+
+        await page.fill('#walkinInitials', 'EP');
+        await page.click('#walkinSubmit');
+        await expect(page.locator('#ticketResult')).toContainText('A-210');
+
+        await page.locator('#kioskSessionResetBtn').click();
+        await expect(page.locator('#ticketResult')).toContainText(
+            'Todavia no se ha generado ningun ticket.'
+        );
+        await expect(page.locator('#kioskStatus')).toContainText(
+            'Pantalla limpiada'
+        );
+
+        await page.fill('#walkinInitials', 'EP');
+        await page.click('#walkinSubmit');
+        await expect(page.locator('#ticketResult')).toContainText('A-210');
+
+        await expect
+            .poll(
+                async () => {
+                    const text = await page
+                        .locator('#kioskStatus')
+                        .textContent();
+                    return text || '';
+                },
+                { timeout: 12000 }
+            )
+            .toContain('inactividad');
+        await expect(page.locator('#ticketResult')).toContainText(
+            'Todavia no se ha generado ningun ticket.'
+        );
+    });
 });

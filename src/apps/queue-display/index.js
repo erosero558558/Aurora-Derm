@@ -2,6 +2,7 @@ const API_ENDPOINT = '/api.php';
 const POLL_MS = 2500;
 const POLL_MAX_MS = 15000;
 const POLL_STALE_THRESHOLD_MS = 30000;
+const DISPLAY_BELL_MUTED_STORAGE_KEY = 'queueDisplayBellMuted';
 
 const state = {
     lastCalledSignature: '',
@@ -11,6 +12,9 @@ const state = {
     pollingEnabled: false,
     failureStreak: 0,
     refreshBusy: false,
+    manualRefreshBusy: false,
+    lastHealthySyncAt: 0,
+    bellMuted: false,
 };
 
 function getById(id) {
@@ -72,6 +76,124 @@ function setConnectionStatus(stateLabel, message) {
         fallbackByState.live;
 }
 
+function ensureDisplayOpsHintEl() {
+    let el = getById('displayOpsHint');
+    if (el) return el;
+
+    const updatedAtEl = getById('displayUpdatedAt');
+    if (!updatedAtEl?.parentElement) return null;
+
+    el = document.createElement('span');
+    el.id = 'displayOpsHint';
+    el.className = 'display-updated-at';
+    el.textContent = 'Estado operativo: inicializando...';
+    updatedAtEl.insertAdjacentElement('afterend', el);
+    return el;
+}
+
+function setDisplayOpsHint(message) {
+    const el = ensureDisplayOpsHintEl();
+    if (!el) return;
+    el.textContent = String(message || '').trim() || 'Estado operativo';
+}
+
+function ensureDisplayManualRefreshButton() {
+    let button = getById('displayManualRefreshBtn');
+    if (button instanceof HTMLButtonElement) {
+        return button;
+    }
+
+    const clockWrap = document.querySelector('.display-clock-wrap');
+    if (!clockWrap) return null;
+
+    button = document.createElement('button');
+    button.id = 'displayManualRefreshBtn';
+    button.type = 'button';
+    button.textContent = 'Refrescar panel';
+    button.style.justifySelf = 'end';
+    button.style.border = '1px solid var(--border)';
+    button.style.borderRadius = '0.6rem';
+    button.style.padding = '0.34rem 0.55rem';
+    button.style.background = 'rgb(24 39 67 / 64%)';
+    button.style.color = 'var(--text)';
+    button.style.cursor = 'pointer';
+    clockWrap.appendChild(button);
+    return button;
+}
+
+function setDisplayManualRefreshLoading(isLoading) {
+    const button = ensureDisplayManualRefreshButton();
+    if (!(button instanceof HTMLButtonElement)) return;
+    button.disabled = Boolean(isLoading);
+    button.textContent = isLoading ? 'Refrescando...' : 'Refrescar panel';
+}
+
+function ensureDisplayBellToggleButton() {
+    let button = getById('displayBellToggleBtn');
+    if (button instanceof HTMLButtonElement) {
+        return button;
+    }
+
+    const clockWrap = document.querySelector('.display-clock-wrap');
+    if (!clockWrap) return null;
+
+    button = document.createElement('button');
+    button.id = 'displayBellToggleBtn';
+    button.type = 'button';
+    button.style.justifySelf = 'end';
+    button.style.border = '1px solid var(--border)';
+    button.style.borderRadius = '0.6rem';
+    button.style.padding = '0.34rem 0.55rem';
+    button.style.background = 'rgb(24 39 67 / 64%)';
+    button.style.color = 'var(--text)';
+    button.style.cursor = 'pointer';
+    button.style.fontSize = '0.8rem';
+    button.style.fontWeight = '600';
+    clockWrap.appendChild(button);
+    return button;
+}
+
+function renderBellToggle() {
+    const button = ensureDisplayBellToggleButton();
+    if (!(button instanceof HTMLButtonElement)) return;
+
+    button.textContent = state.bellMuted ? 'Campanilla: Off' : 'Campanilla: On';
+    button.dataset.state = state.bellMuted ? 'muted' : 'enabled';
+    button.setAttribute('aria-pressed', String(state.bellMuted));
+    button.title = state.bellMuted
+        ? 'Campanilla en silencio'
+        : 'Campanilla activa';
+}
+
+function persistBellPreference() {
+    localStorage.setItem(
+        DISPLAY_BELL_MUTED_STORAGE_KEY,
+        state.bellMuted ? '1' : '0'
+    );
+}
+
+function loadBellPreference() {
+    const stored = localStorage.getItem(DISPLAY_BELL_MUTED_STORAGE_KEY);
+    state.bellMuted = stored === '1';
+}
+
+function setBellMuted(nextMuted, { announce = false } = {}) {
+    state.bellMuted = Boolean(nextMuted);
+    persistBellPreference();
+    renderBellToggle();
+    if (announce) {
+        setDisplayOpsHint(
+            state.bellMuted
+                ? 'Campanilla en silencio. Puedes reactivarla con Alt+Shift+M.'
+                : 'Campanilla activa para nuevos llamados.'
+        );
+    }
+}
+
+function toggleBellMuted() {
+    setBellMuted(!state.bellMuted, { announce: true });
+}
+
 function formatElapsedAge(ms) {
     const safeMs = Math.max(0, Number(ms || 0));
     const seconds = Math.round(safeMs / 1000);
@@ -84,6 +206,13 @@ function formatElapsedAge(ms) {
         return `${minutes}m`;
     }
     return `${minutes}m ${remSeconds}s`;
+}
+
+function formatLastHealthySyncAge() {
+    if (!state.lastHealthySyncAt) {
+        return 'sin sincronizacion confirmada';
+    }
+    return `hace ${formatElapsedAge(Date.now() - state.lastHealthySyncAt)}`;
 }
 
 function evaluateQueueFreshness(queueState) {
@@ -167,6 +296,9 @@ function computeCalledSignature(callingNow) {
 }
 
 function playBell() {
+    if (state.bellMuted) {
+        return;
+    }
     try {
         if (!state.audioContext) {
             state.audioContext = new (
@@ -305,6 +437,7 @@ async function runDisplayPollTick() {
 
     if (document.hidden) {
         setConnectionStatus('paused', 'En pausa (pestana oculta)');
+        setDisplayOpsHint('Pantalla en pausa por pestana oculta.');
         scheduleNextPoll();
         return;
     }
@@ -312,6 +445,9 @@ async function runDisplayPollTick() {
     if (navigator.onLine === false) {
         state.failureStreak += 1;
         setConnectionStatus('offline', 'Sin conexion');
+        setDisplayOpsHint(
+            'Sin conexion. Mantener llamado por voz desde recepcion hasta recuperar enlace.'
+        );
         scheduleNextPoll();
         return;
     }
@@ -319,7 +455,9 @@ async function runDisplayPollTick() {
     const refreshResult = await refreshDisplayState();
     if (refreshResult.ok && !refreshResult.stale) {
         state.failureStreak = 0;
+        state.lastHealthySyncAt = Date.now();
         setConnectionStatus('live', 'Conectado');
+        setDisplayOpsHint(`Panel estable (${formatLastHealthySyncAge()}).`);
     } else if (refreshResult.ok && refreshResult.stale) {
         state.failureStreak += 1;
         const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
@@ -327,12 +465,62 @@ async function runDisplayPollTick() {
             'reconnecting',
             `Watchdog: datos estancados ${staleAge}`
         );
+        setDisplayOpsHint(
+            `Datos estancados ${staleAge}. Verifica fuente de cola.`
+        );
     } else {
         state.failureStreak += 1;
         const retrySeconds = Math.max(1, Math.ceil(getPollDelayMs() / 1000));
         setConnectionStatus('reconnecting', `Reconectando en ${retrySeconds}s`);
+        setDisplayOpsHint(
+            `Conexion inestable. Reintento automatico en ${retrySeconds}s.`
+        );
     }
     scheduleNextPoll();
+}
+
+async function runDisplayManualRefresh() {
+    if (state.manualRefreshBusy) return;
+    state.manualRefreshBusy = true;
+    setDisplayManualRefreshLoading(true);
+    setConnectionStatus('reconnecting', 'Refrescando panel...');
+
+    try {
+        const refreshResult = await refreshDisplayState();
+        if (refreshResult.ok && !refreshResult.stale) {
+            state.failureStreak = 0;
+            state.lastHealthySyncAt = Date.now();
+            setConnectionStatus('live', 'Conectado');
+            setDisplayOpsHint(
+                `Sincronizacion manual exitosa (${formatLastHealthySyncAge()}).`
+            );
+            return;
+        }
+        if (refreshResult.ok && refreshResult.stale) {
+            const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
+            setConnectionStatus(
+                'reconnecting',
+                `Watchdog: datos estancados ${staleAge}`
+            );
+            setDisplayOpsHint(`Persisten datos estancados (${staleAge}).`);
+            return;
+        }
+        const retrySeconds = Math.max(1, Math.ceil(getPollDelayMs() / 1000));
+        setConnectionStatus(
+            navigator.onLine === false ? 'offline' : 'reconnecting',
+            navigator.onLine === false
+                ? 'Sin conexion'
+                : `Reconectando en ${retrySeconds}s`
+        );
+        setDisplayOpsHint(
+            navigator.onLine === false
+                ? 'Sin internet. Llamado manual temporal.'
+                : `Refresh manual sin exito. Reintento automatico en ${retrySeconds}s.`
+        );
+    } finally {
+        state.manualRefreshBusy = false;
+        setDisplayManualRefreshLoading(false);
+    }
 }
 
 function startDisplayPolling({ immediate = true } = {}) {
@@ -353,13 +541,18 @@ function stopDisplayPolling({ reason = 'paused' } = {}) {
     const normalizedReason = String(reason || 'paused').toLowerCase();
     if (normalizedReason === 'offline') {
         setConnectionStatus('offline', 'Sin conexion');
+        setDisplayOpsHint(
+            'Sin conexion. Mantener protocolo manual de llamados.'
+        );
         return;
     }
     if (normalizedReason === 'hidden') {
         setConnectionStatus('paused', 'En pausa (pestana oculta)');
+        setDisplayOpsHint('Pantalla oculta. Reanuda al volver al frente.');
         return;
     }
     setConnectionStatus('paused', 'En pausa');
+    setDisplayOpsHint('Sincronizacion pausada.');
 }
 
 function updateClock() {
@@ -372,10 +565,27 @@ function updateClock() {
 }
 
 function initDisplay() {
+    loadBellPreference();
     updateClock();
     state.clockId = window.setInterval(updateClock, 1000);
 
+    ensureDisplayOpsHintEl();
+    const manualRefreshButton = ensureDisplayManualRefreshButton();
+    if (manualRefreshButton instanceof HTMLButtonElement) {
+        manualRefreshButton.addEventListener('click', () => {
+            void runDisplayManualRefresh();
+        });
+    }
+    const bellToggleButton = ensureDisplayBellToggleButton();
+    if (bellToggleButton instanceof HTMLButtonElement) {
+        bellToggleButton.addEventListener('click', () => {
+            toggleBellMuted();
+        });
+    }
+    renderBellToggle();
+
     setConnectionStatus('paused', 'Sincronizacion lista');
+    setDisplayOpsHint('Esperando primera sincronizacion...');
     startDisplayPolling({ immediate: true });
 
     document.addEventListener('visibilitychange', () => {
@@ -399,6 +609,20 @@ function initDisplay() {
         if (state.clockId) {
             window.clearInterval(state.clockId);
             state.clockId = 0;
+        }
+    });
+
+    window.addEventListener('keydown', (event) => {
+        if (!event.altKey || !event.shiftKey) return;
+        const keyCode = String(event.code || '').toLowerCase();
+        if (keyCode === 'keyr') {
+            event.preventDefault();
+            void runDisplayManualRefresh();
+            return;
+        }
+        if (keyCode === 'keym') {
+            event.preventDefault();
+            toggleBellMuted();
         }
     });
 }

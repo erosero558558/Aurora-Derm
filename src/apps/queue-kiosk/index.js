@@ -4,6 +4,14 @@ const QUEUE_POLL_MS = 2500;
 const QUEUE_POLL_MAX_MS = 15000;
 const QUEUE_STALE_THRESHOLD_MS = 30000;
 const THEME_STORAGE_KEY = 'kioskThemeMode';
+const KIOSK_IDLE_RESET_DEFAULT_MS = 90000;
+const KIOSK_IDLE_RESET_MIN_MS = 5000;
+const KIOSK_IDLE_RESET_MAX_MS = 15 * 60 * 1000;
+const KIOSK_IDLE_WARNING_MS = 20000;
+const KIOSK_IDLE_POSTPONE_MS = 15000;
+const KIOSK_IDLE_TICK_MS = 1000;
+const ASSISTANT_WELCOME_TEXT =
+    'Hola. Soy el asistente de sala. Puedo ayudarte con check-in, turnos y ubicacion de consultorios.';
 
 const state = {
     queueState: null,
@@ -13,8 +21,14 @@ const state = {
     queuePollingEnabled: false,
     queueFailureStreak: 0,
     queueRefreshBusy: false,
+    queueManualRefreshBusy: false,
+    queueLastHealthySyncAt: 0,
     themeMode: 'system',
     mediaQuery: null,
+    idleTimerId: 0,
+    idleTickId: 0,
+    idleDeadlineTs: 0,
+    idleResetMs: KIOSK_IDLE_RESET_DEFAULT_MS,
 };
 
 function escapeHtml(value) {
@@ -107,6 +121,243 @@ function setQueueConnectionStatus(stateLabel, message) {
         fallbackByState.live;
 }
 
+function resolveIdleResetMs() {
+    const overrideMs = Number(window.__PIEL_QUEUE_KIOSK_IDLE_RESET_MS);
+    const rawMs = Number.isFinite(overrideMs)
+        ? overrideMs
+        : KIOSK_IDLE_RESET_DEFAULT_MS;
+    return Math.min(
+        KIOSK_IDLE_RESET_MAX_MS,
+        Math.max(KIOSK_IDLE_RESET_MIN_MS, Math.round(rawMs))
+    );
+}
+
+function formatCountdownMs(ms) {
+    const safeMs = Math.max(0, Number(ms || 0));
+    const totalSeconds = Math.ceil(safeMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const paddedSeconds = String(seconds).padStart(2, '0');
+    return `${minutes}:${paddedSeconds}`;
+}
+
+function ensureSessionGuard() {
+    let guard = getById('kioskSessionGuard');
+    if (guard instanceof HTMLElement) {
+        return guard;
+    }
+
+    const statusEl = getById('kioskStatus');
+    if (!(statusEl instanceof HTMLElement)) return null;
+
+    guard = document.createElement('div');
+    guard.id = 'kioskSessionGuard';
+    guard.style.display = 'flex';
+    guard.style.flexWrap = 'wrap';
+    guard.style.alignItems = 'center';
+    guard.style.gap = '0.55rem';
+    guard.style.marginBottom = '0.85rem';
+
+    const countdown = document.createElement('span');
+    countdown.id = 'kioskSessionCountdown';
+    countdown.textContent = 'Privacidad auto: --:--';
+    countdown.style.display = 'inline-flex';
+    countdown.style.alignItems = 'center';
+    countdown.style.padding = '0.2rem 0.55rem';
+    countdown.style.border = '1px solid var(--border)';
+    countdown.style.borderRadius = '999px';
+    countdown.style.background = 'var(--surface-soft)';
+    countdown.style.color = 'var(--muted)';
+    countdown.style.fontSize = '0.82rem';
+
+    const resetButton = document.createElement('button');
+    resetButton.id = 'kioskSessionResetBtn';
+    resetButton.type = 'button';
+    resetButton.textContent = 'Nueva persona / limpiar pantalla';
+    resetButton.style.border = '1px solid var(--border)';
+    resetButton.style.borderRadius = '0.65rem';
+    resetButton.style.padding = '0.38rem 0.62rem';
+    resetButton.style.background = 'var(--surface-soft)';
+    resetButton.style.color = 'var(--text)';
+    resetButton.style.cursor = 'pointer';
+
+    guard.appendChild(countdown);
+    guard.appendChild(resetButton);
+    statusEl.insertAdjacentElement('afterend', guard);
+    return guard;
+}
+
+function renderIdleCountdown() {
+    const countdown = getById('kioskSessionCountdown');
+    if (!(countdown instanceof HTMLElement)) return;
+
+    if (!state.idleDeadlineTs) {
+        countdown.textContent = 'Privacidad auto: --:--';
+        countdown.dataset.state = 'normal';
+        countdown.style.color = 'var(--muted)';
+        countdown.style.borderColor = 'var(--border)';
+        return;
+    }
+
+    const remainingMs = Math.max(0, state.idleDeadlineTs - Date.now());
+    countdown.textContent = `Privacidad auto: ${formatCountdownMs(remainingMs)}`;
+    const warning = remainingMs <= KIOSK_IDLE_WARNING_MS;
+    countdown.dataset.state = warning ? 'warning' : 'normal';
+    countdown.style.color = warning ? 'var(--danger)' : 'var(--muted)';
+    countdown.style.borderColor = warning ? 'var(--danger)' : 'var(--border)';
+}
+
+function clearIdleTimers() {
+    if (state.idleTimerId) {
+        window.clearTimeout(state.idleTimerId);
+        state.idleTimerId = 0;
+    }
+    if (state.idleTickId) {
+        window.clearInterval(state.idleTickId);
+        state.idleTickId = 0;
+    }
+}
+
+function renderTicketEmptyState() {
+    const container = getById('ticketResult');
+    if (!container) return;
+    container.innerHTML =
+        '<p class="ticket-empty">Todavia no se ha generado ningun ticket.</p>';
+}
+
+function resetAssistantConversation() {
+    const assistantMessages = getById('assistantMessages');
+    if (assistantMessages) {
+        assistantMessages.innerHTML = '';
+    }
+    state.chatHistory = [];
+    appendAssistantMessage('bot', ASSISTANT_WELCOME_TEXT);
+
+    const assistantInput = getById('assistantInput');
+    if (assistantInput instanceof HTMLInputElement) {
+        assistantInput.value = '';
+    }
+}
+
+function resetKioskForms() {
+    const checkinForm = getById('checkinForm');
+    const walkinForm = getById('walkinForm');
+    if (checkinForm instanceof HTMLFormElement) {
+        checkinForm.reset();
+    }
+    if (walkinForm instanceof HTMLFormElement) {
+        walkinForm.reset();
+    }
+    initDefaultDate();
+}
+
+function beginIdleSessionGuard({ durationMs = null } = {}) {
+    const resolvedDuration = Math.min(
+        KIOSK_IDLE_RESET_MAX_MS,
+        Math.max(
+            KIOSK_IDLE_RESET_MIN_MS,
+            Math.round(
+                Number.isFinite(Number(durationMs))
+                    ? Number(durationMs)
+                    : state.idleResetMs
+            )
+        )
+    );
+
+    clearIdleTimers();
+    state.idleDeadlineTs = Date.now() + resolvedDuration;
+    renderIdleCountdown();
+
+    state.idleTickId = window.setInterval(() => {
+        renderIdleCountdown();
+    }, KIOSK_IDLE_TICK_MS);
+
+    state.idleTimerId = window.setTimeout(() => {
+        const busyNow = state.assistantBusy || state.queueManualRefreshBusy;
+        if (busyNow) {
+            setKioskStatus(
+                'Sesion activa. Reprogramando limpieza automatica.',
+                'info'
+            );
+            beginIdleSessionGuard({ durationMs: KIOSK_IDLE_POSTPONE_MS });
+            return;
+        }
+        resetKioskSession({ reason: 'idle_timeout' });
+    }, resolvedDuration);
+}
+
+function registerKioskActivity() {
+    beginIdleSessionGuard();
+}
+
+function resetKioskSession({ reason = 'manual' } = {}) {
+    resetKioskForms();
+    resetAssistantConversation();
+    renderTicketEmptyState();
+
+    const reasonText =
+        reason === 'idle_timeout'
+            ? 'Sesion reiniciada por inactividad para proteger privacidad.'
+            : 'Pantalla limpiada. Lista para el siguiente paciente.';
+    setKioskStatus(reasonText, 'info');
+    beginIdleSessionGuard();
+}
+
+function ensureQueueOpsHintEl() {
+    let el = getById('queueOpsHint');
+    if (el) return el;
+
+    const queueCard = document.querySelector('.kiosk-side .kiosk-card');
+    const queueUpdatedAt = getById('queueUpdatedAt');
+    if (!queueCard || !queueUpdatedAt) return null;
+
+    el = document.createElement('p');
+    el.id = 'queueOpsHint';
+    el.className = 'queue-updated-at';
+    el.textContent = 'Estado operativo: inicializando...';
+    queueUpdatedAt.insertAdjacentElement('afterend', el);
+    return el;
+}
+
+function setQueueOpsHint(message) {
+    const el = ensureQueueOpsHintEl();
+    if (!el) return;
+    el.textContent = String(message || '').trim() || 'Estado operativo';
+}
+
+function ensureQueueManualRefreshButton() {
+    let button = getById('queueManualRefreshBtn');
+    if (button instanceof HTMLButtonElement) {
+        return button;
+    }
+
+    const queueUpdatedAt = getById('queueUpdatedAt');
+    if (!queueUpdatedAt?.parentElement) return null;
+
+    button = document.createElement('button');
+    button.id = 'queueManualRefreshBtn';
+    button.type = 'button';
+    button.textContent = 'Reintentar sincronizacion';
+    button.style.margin = '0.25rem 0 0.55rem';
+    button.style.border = '1px solid var(--border)';
+    button.style.borderRadius = '0.6rem';
+    button.style.padding = '0.42rem 0.62rem';
+    button.style.background = 'var(--surface-soft)';
+    button.style.color = 'var(--text)';
+    button.style.cursor = 'pointer';
+    queueUpdatedAt.insertAdjacentElement('afterend', button);
+    return button;
+}
+
+function setQueueManualRefreshLoading(isLoading) {
+    const button = ensureQueueManualRefreshButton();
+    if (!(button instanceof HTMLButtonElement)) return;
+    button.disabled = Boolean(isLoading);
+    button.textContent = isLoading
+        ? 'Actualizando cola...'
+        : 'Reintentar sincronizacion';
+}
+
 function formatElapsedAge(ms) {
     const safeMs = Math.max(0, Number(ms || 0));
     const seconds = Math.round(safeMs / 1000);
@@ -119,6 +370,13 @@ function formatElapsedAge(ms) {
         return `${minutes}m`;
     }
     return `${minutes}m ${remSeconds}s`;
+}
+
+function formatLastHealthySyncAge() {
+    if (!state.queueLastHealthySyncAt) {
+        return 'sin sincronizacion confirmada';
+    }
+    return `hace ${formatElapsedAge(Date.now() - state.queueLastHealthySyncAt)}`;
 }
 
 function evaluateQueueFreshness(queueState) {
@@ -303,6 +561,7 @@ function renderTicketResult(payload, originLabel) {
 
 async function submitCheckin(event) {
     event.preventDefault();
+    registerKioskActivity();
     const form = event.currentTarget;
     if (!(form instanceof HTMLFormElement)) return;
 
@@ -372,6 +631,7 @@ async function submitCheckin(event) {
 
 async function submitWalkIn(event) {
     event.preventDefault();
+    registerKioskActivity();
     const nameInput = getById('walkinName');
     const initialsInput = getById('walkinInitials');
     const phoneInput = getById('walkinPhone');
@@ -461,6 +721,7 @@ function appendAssistantMessage(role, content) {
 
 async function submitAssistant(event) {
     event.preventDefault();
+    registerKioskActivity();
     if (state.assistantBusy) return;
 
     const input = getById('assistantInput');
@@ -529,6 +790,19 @@ async function submitAssistant(event) {
     }
 }
 
+function bindKioskActivitySignals() {
+    const activityEvents = ['pointerdown', 'keydown', 'input', 'touchstart'];
+    activityEvents.forEach((eventName) => {
+        document.addEventListener(
+            eventName,
+            () => {
+                registerKioskActivity();
+            },
+            true
+        );
+    });
+}
+
 function applyTheme(mode) {
     state.themeMode = mode;
     const root = document.documentElement;
@@ -595,6 +869,7 @@ async function runQueuePollingTick() {
 
     if (document.hidden) {
         setQueueConnectionStatus('paused', 'Cola en pausa (pestana oculta)');
+        setQueueOpsHint('Pestana oculta. Turnero en pausa temporal.');
         scheduleQueuePolling();
         return;
     }
@@ -602,6 +877,9 @@ async function runQueuePollingTick() {
     if (navigator.onLine === false) {
         state.queueFailureStreak += 1;
         setQueueConnectionStatus('offline', 'Sin conexion al backend');
+        setQueueOpsHint(
+            'Sin internet. Deriva check-in/turnos a recepcion mientras se recupera conexion.'
+        );
         scheduleQueuePolling();
         return;
     }
@@ -609,13 +887,20 @@ async function runQueuePollingTick() {
     const refreshResult = await refreshQueueState();
     if (refreshResult.ok && !refreshResult.stale) {
         state.queueFailureStreak = 0;
+        state.queueLastHealthySyncAt = Date.now();
         setQueueConnectionStatus('live', 'Cola conectada');
+        setQueueOpsHint(
+            `Operacion estable (${formatLastHealthySyncAge()}). Kiosco disponible para turnos.`
+        );
     } else if (refreshResult.ok && refreshResult.stale) {
         state.queueFailureStreak += 1;
         const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
         setQueueConnectionStatus(
             'reconnecting',
             `Watchdog: cola estancada ${staleAge}`
+        );
+        setQueueOpsHint(
+            `Cola degradada: sin cambios en ${staleAge}. Usa "Reintentar sincronizacion" o apoyo de recepcion.`
         );
     } else {
         state.queueFailureStreak += 1;
@@ -627,8 +912,61 @@ async function runQueuePollingTick() {
             'reconnecting',
             `Reintentando en ${retrySeconds}s`
         );
+        setQueueOpsHint(
+            `Conexion inestable. Reintento automatico en ${retrySeconds}s.`
+        );
     }
     scheduleQueuePolling();
+}
+
+async function runQueueManualRefresh() {
+    if (state.queueManualRefreshBusy) return;
+    registerKioskActivity();
+    state.queueManualRefreshBusy = true;
+    setQueueManualRefreshLoading(true);
+    setQueueConnectionStatus('reconnecting', 'Refrescando manualmente...');
+
+    try {
+        const refreshResult = await refreshQueueState();
+        if (refreshResult.ok && !refreshResult.stale) {
+            state.queueFailureStreak = 0;
+            state.queueLastHealthySyncAt = Date.now();
+            setQueueConnectionStatus('live', 'Cola conectada');
+            setQueueOpsHint(
+                `Sincronizacion manual exitosa (${formatLastHealthySyncAge()}).`
+            );
+            return;
+        }
+        if (refreshResult.ok && refreshResult.stale) {
+            const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
+            setQueueConnectionStatus(
+                'reconnecting',
+                `Watchdog: cola estancada ${staleAge}`
+            );
+            setQueueOpsHint(
+                `Persisten datos estancados (${staleAge}). Verifica backend o recepcion.`
+            );
+            return;
+        }
+        const retrySeconds = Math.max(
+            1,
+            Math.ceil(getQueuePollDelayMs() / 1000)
+        );
+        setQueueConnectionStatus(
+            navigator.onLine === false ? 'offline' : 'reconnecting',
+            navigator.onLine === false
+                ? 'Sin conexion al backend'
+                : `Reintentando en ${retrySeconds}s`
+        );
+        setQueueOpsHint(
+            navigator.onLine === false
+                ? 'Sin internet. Opera manualmente en recepcion.'
+                : `Refresh manual sin exito. Reintento automatico en ${retrySeconds}s.`
+        );
+    } finally {
+        state.queueManualRefreshBusy = false;
+        setQueueManualRefreshLoading(false);
+    }
 }
 
 function startQueuePolling({ immediate = true } = {}) {
@@ -649,16 +987,22 @@ function stopQueuePolling({ reason = 'paused' } = {}) {
     const normalizedReason = String(reason || 'paused').toLowerCase();
     if (normalizedReason === 'offline') {
         setQueueConnectionStatus('offline', 'Sin conexion al backend');
+        setQueueOpsHint(
+            'Sin conexion. Esperando reconexion para reanudar cola.'
+        );
         return;
     }
     if (normalizedReason === 'hidden') {
         setQueueConnectionStatus('paused', 'Cola en pausa (pestana oculta)');
+        setQueueOpsHint('Pestana oculta. Reanudando al volver a primer plano.');
         return;
     }
     setQueueConnectionStatus('paused', 'Cola en pausa');
+    setQueueOpsHint('Sincronizacion pausada por navegacion.');
 }
 
 function initKiosk() {
+    state.idleResetMs = resolveIdleResetMs();
     initTheme();
     initDefaultDate();
 
@@ -676,12 +1020,29 @@ function initKiosk() {
         assistantForm.addEventListener('submit', submitAssistant);
     }
 
-    appendAssistantMessage(
-        'bot',
-        'Hola. Soy el asistente de sala. Puedo ayudarte con check-in, turnos y ubicacion de consultorios.'
-    );
+    ensureSessionGuard();
+    const resetSessionBtn = getById('kioskSessionResetBtn');
+    if (resetSessionBtn instanceof HTMLButtonElement) {
+        resetSessionBtn.addEventListener('click', () => {
+            resetKioskSession({ reason: 'manual' });
+        });
+    }
+
+    resetAssistantConversation();
+    renderTicketEmptyState();
+    bindKioskActivitySignals();
+    beginIdleSessionGuard();
+
+    ensureQueueOpsHintEl();
+    const manualRefreshButton = ensureQueueManualRefreshButton();
+    if (manualRefreshButton instanceof HTMLButtonElement) {
+        manualRefreshButton.addEventListener('click', () => {
+            void runQueueManualRefresh();
+        });
+    }
 
     setQueueConnectionStatus('paused', 'Sincronizacion lista');
+    setQueueOpsHint('Esperando primera sincronizacion de cola...');
     renderQueueUpdatedAt('');
     startQueuePolling({ immediate: true });
 
@@ -703,6 +1064,20 @@ function initKiosk() {
 
     window.addEventListener('beforeunload', () => {
         stopQueuePolling({ reason: 'paused' });
+    });
+
+    window.addEventListener('keydown', (event) => {
+        if (!event.altKey || !event.shiftKey) return;
+        const keyCode = String(event.code || '').toLowerCase();
+        if (keyCode === 'keyr') {
+            event.preventDefault();
+            void runQueueManualRefresh();
+            return;
+        }
+        if (keyCode === 'keyl') {
+            event.preventDefault();
+            resetKioskSession({ reason: 'manual' });
+        }
     });
 }
 
