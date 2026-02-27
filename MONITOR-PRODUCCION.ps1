@@ -3,9 +3,13 @@ param(
     [int]$TimeoutSec = 15,
     [int]$MaxLatencyMs = 3500,
     [switch]$AllowDegradedFigo,
+    [switch]$AllowDegradedServicePriorities,
     [switch]$SkipBackupCheck,
     [switch]$AllowStoreCalendar,
-    [switch]$AllowBlockedCalendar
+    [switch]$AllowBlockedCalendar,
+    [int]$MinServicePrioritiesServices = 1,
+    [int]$MinServicePrioritiesCategories = 1,
+    [int]$MinServicePrioritiesFeatured = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -98,6 +102,7 @@ $checks = @(
     @{ Name = 'reviews'; Url = "$base/api.php?resource=reviews" },
     @{ Name = 'availability'; Url = "$base/api.php?resource=availability" },
     @{ Name = 'booked-slots'; Url = "$base/api.php?resource=booked-slots&date=$todayDate&doctor=indiferente&service=consulta" },
+    @{ Name = 'service-priorities'; Url = "$base/api.php?resource=service-priorities&limit=12&categoryLimit=8&featuredLimit=3" },
     @{ Name = 'figo-get'; Url = "$base/figo-chat.php" }
 )
 
@@ -283,6 +288,60 @@ if ($null -ne $bookedResult -and $bookedResult.StatusCode -eq 200) {
             }
             if ($duration -le 0) {
                 $failures += "[FAIL] booked-slots.meta.durationMin invalido ($duration)"
+            }
+        }
+    }
+}
+
+$servicePrioritiesResult = $results | Where-Object { $_.Name -eq 'service-priorities' } | Select-Object -First 1
+if ($null -ne $servicePrioritiesResult -and $servicePrioritiesResult.StatusCode -eq 200) {
+    $servicePriorities = Parse-JsonBody -Body $servicePrioritiesResult.Body
+    if ($null -eq $servicePriorities) {
+        $failures += '[FAIL] service-priorities: JSON invalido'
+    } else {
+        $meta = $null
+        $data = $null
+        try { $meta = $servicePriorities.meta } catch { $meta = $null }
+        try { $data = $servicePriorities.data } catch { $data = $null }
+        if ($null -eq $meta) {
+            $failures += '[FAIL] service-priorities: meta ausente'
+        } else {
+            $source = ''
+            $catalogVersion = ''
+            $serviceCountMeta = -1
+            try { $source = [string]$meta.source } catch {}
+            try { $catalogVersion = [string]$meta.catalogVersion } catch {}
+            try { $serviceCountMeta = [int]$meta.serviceCount } catch { $serviceCountMeta = -1 }
+
+            if (-not $AllowDegradedServicePriorities -and $source -ne 'catalog+funnel') {
+                $failures += "[FAIL] service-priorities.meta.source=$source (esperado=catalog+funnel)"
+            }
+            if ([string]::IsNullOrWhiteSpace($catalogVersion)) {
+                $failures += '[FAIL] service-priorities.meta.catalogVersion vacio'
+            }
+            if ($serviceCountMeta -lt $MinServicePrioritiesServices) {
+                $failures += "[FAIL] service-priorities.meta.serviceCount=$serviceCountMeta (< $MinServicePrioritiesServices)"
+            }
+        }
+
+        if ($null -eq $data) {
+            $failures += '[FAIL] service-priorities: data ausente'
+        } else {
+            $servicesCount = 0
+            $categoriesCount = 0
+            $featuredCount = 0
+            try { $servicesCount = @($data.services).Count } catch { $servicesCount = 0 }
+            try { $categoriesCount = @($data.categories).Count } catch { $categoriesCount = 0 }
+            try { $featuredCount = @($data.featured).Count } catch { $featuredCount = 0 }
+
+            if ($servicesCount -lt $MinServicePrioritiesServices) {
+                $failures += "[FAIL] service-priorities.data.services count=$servicesCount (< $MinServicePrioritiesServices)"
+            }
+            if ($categoriesCount -lt $MinServicePrioritiesCategories) {
+                $failures += "[FAIL] service-priorities.data.categories count=$categoriesCount (< $MinServicePrioritiesCategories)"
+            }
+            if ($featuredCount -lt $MinServicePrioritiesFeatured) {
+                $failures += "[FAIL] service-priorities.data.featured count=$featuredCount (< $MinServicePrioritiesFeatured)"
             }
         }
     }

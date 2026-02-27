@@ -230,6 +230,27 @@ Criterio de salida:
 - [x] Incidente semanal dedicado `[ALERTA PROD] Weekly KPI service priorities degradado` activo con severidad y signal key.
 - [x] Contrato de workflow protegido por tests Node en verde.
 
+## C11 - Monitor diario de service priorities (produccion)
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Endurecer el monitor diario de produccion para detectar degradacion temprana de `service-priorities` (fuente, volumen y estructura), sin esperar al KPI semanal.
+
+Entregables:
+
+- [x] `MONITOR-PRODUCCION.ps1` agrega check explicito a `GET /api.php?resource=service-priorities`.
+- [x] Validaciones de contrato diario: `meta.source`, `meta.catalogVersion`, `meta.serviceCount`, y conteos minimos en `data.services/categories/featured`.
+- [x] Flags operativos de tolerancia/umbral: `AllowDegradedServicePriorities`, `MinServicePrioritiesServices`, `MinServicePrioritiesCategories`, `MinServicePrioritiesFeatured`.
+- [x] `.github/workflows/prod-monitor.yml` expone inputs/env/summary para esos parametros y los cablea al monitor.
+- [x] Cobertura de contrato Node en `tests-node/prod-monitor-workflow-contract.test.js`.
+
+Criterio de salida:
+
+- [x] Monitor diario falla si `service-priorities` pierde fuente `catalog+funnel` (salvo override operativo temporal).
+- [x] Monitor diario falla si la API devuelve catalogo vacio por debajo de umbrales configurados.
+- [x] Contrato de workflow protegido por test automatizado.
+
 ## Contratos publicos
 
 - No se introducen cambios breaking en contratos HTTP existentes.
@@ -291,3 +312,4 @@ Criterio de salida:
 - 2026-02-26: cerrado C8 con snapshot de catalogo en `controllers/HealthController.php` (`servicesCatalog*` top-level + `checks.servicesCatalog`), reporte semanal extendido (`REPORTE-SEMANAL-PRODUCCION.ps1`) con warnings `services_catalog_*` y payload `servicesCatalog`, workflow semanal (`weekly-kpi-report.yml`) con outputs/incidentes `services_catalog_*`, y cobertura en `tests/Integration/HealthServiceCatalogSnapshotTest.php` + `tests-node/weekly-kpi-workflow-contract.test.js`.
 - 2026-02-26: cerrado C9 con `controllers/ServicePriorityController.php` y endpoint publico `service-priorities` (orden inteligente por `hybrid|volume|conversion`, filtros `audience/category`, categorias/featured), registrado en `api.php`, `lib/routes.php` y `lib/ApiConfig.php`; cobertura en `tests/Integration/ServicePriorityControllerTest.php` + regresion `ServiceCatalog/Analytics/HealthServiceCatalog` en verde.
 - 2026-02-26: cerrado C10 con extension de `REPORTE-SEMANAL-PRODUCCION.ps1` (payload/markdown/warnings `service_priorities_*`), `weekly-kpi-report.yml` (outputs + incidente dedicado `service priorities`) y contrato actualizado en `tests-node/weekly-kpi-workflow-contract.test.js`.
+- 2026-02-26: cerrado C11 con endurecimiento de `MONITOR-PRODUCCION.ps1` para `service-priorities` (source/catalogVersion/counts + umbrales/overrides), cableado en `.github/workflows/prod-monitor.yml` (inputs/env/summary) y contrato Node nuevo `tests-node/prod-monitor-workflow-contract.test.js`.

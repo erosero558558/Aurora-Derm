@@ -40,6 +40,26 @@ on:
                 required: false
                 default: false
                 type: boolean
+            allow_degraded_service_priorities:
+                description: 'Permitir service-priorities en source distinto de catalog+funnel temporalmente'
+                required: false
+                default: false
+                type: boolean
+            min_service_priorities_services:
+                description: 'Minimo de servicios esperados en service-priorities'
+                required: false
+                default: '1'
+                type: string
+            min_service_priorities_categories:
+                description: 'Minimo de categorias esperadas en service-priorities'
+                required: false
+                default: '1'
+                type: string
+            min_service_priorities_featured:
+                description: 'Minimo de destacados esperados en service-priorities'
+                required: false
+                default: '1'
+                type: string
 
 concurrency:
     group: prod-monitor
@@ -62,6 +82,10 @@ jobs:
             ALLOW_BLOCKED_CALENDAR: ${{ github.event.inputs.allow_blocked_calendar || 'false' }}
             SKIP_BACKUP_CHECK: ${{ github.event.inputs.skip_backup_check || 'false' }}
             REQUIRE_GOOGLE_CALENDAR: ${{ github.event.inputs.require_google_calendar || vars.REQUIRE_GOOGLE_CALENDAR || 'false' }}
+            ALLOW_DEGRADED_SERVICE_PRIORITIES: ${{ github.event.inputs.allow_degraded_service_priorities || 'false' }}
+            MIN_SERVICE_PRIORITIES_SERVICES: ${{ github.event.inputs.min_service_priorities_services || vars.PROD_MONITOR_MIN_SERVICE_PRIORITIES_SERVICES || '1' }}
+            MIN_SERVICE_PRIORITIES_CATEGORIES: ${{ github.event.inputs.min_service_priorities_categories || vars.PROD_MONITOR_MIN_SERVICE_PRIORITIES_CATEGORIES || '1' }}
+            MIN_SERVICE_PRIORITIES_FEATURED: ${{ github.event.inputs.min_service_priorities_featured || vars.PROD_MONITOR_MIN_SERVICE_PRIORITIES_FEATURED || '1' }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -95,6 +119,21 @@ jobs:
                   if ($env:SKIP_BACKUP_CHECK -eq 'true') {
                     $monitorArgs.SkipBackupCheck = $true
                   }
+                  if ($env:ALLOW_DEGRADED_SERVICE_PRIORITIES -eq 'true') {
+                    $monitorArgs.AllowDegradedServicePriorities = $true
+                  }
+
+                  $minServices = [int]$env:MIN_SERVICE_PRIORITIES_SERVICES
+                  if ($minServices -lt 0) { $minServices = 0 }
+                  $monitorArgs.MinServicePrioritiesServices = $minServices
+
+                  $minCategories = [int]$env:MIN_SERVICE_PRIORITIES_CATEGORIES
+                  if ($minCategories -lt 0) { $minCategories = 0 }
+                  $monitorArgs.MinServicePrioritiesCategories = $minCategories
+
+                  $minFeatured = [int]$env:MIN_SERVICE_PRIORITIES_FEATURED
+                  if ($minFeatured -lt 0) { $minFeatured = 0 }
+                  $monitorArgs.MinServicePrioritiesFeatured = $minFeatured
 
                   & ./MONITOR-PRODUCCION.ps1 @monitorArgs
 
@@ -110,6 +149,10 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_blocked_calendar: ``$env:ALLOW_BLOCKED_CALENDAR``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- skip_backup_check: ``$env:SKIP_BACKUP_CHECK``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- require_google_calendar: ``$env:REQUIRE_GOOGLE_CALENDAR``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_degraded_service_priorities: ``$env:ALLOW_DEGRADED_SERVICE_PRIORITIES``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_services: ``$env:MIN_SERVICE_PRIORITIES_SERVICES``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_categories: ``$env:MIN_SERVICE_PRIORITIES_CATEGORIES``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_featured: ``$env:MIN_SERVICE_PRIORITIES_FEATURED``"
 
             - name: Crear/actualizar incidente (solo schedule)
               if: ${{ failure() && github.event_name == 'schedule' }}
