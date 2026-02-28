@@ -1,129 +1,36 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { gotoPublicRoute } = require('./helpers/public-v2');
 
-const SECTION_IDS = [
-    'inicio',
-    'servicios',
-    'tarifario',
-    'telemedicina',
-    'equipo',
-    'galeria',
-    'consultorio',
-    'resenas',
-    'citas',
-];
+const ROUTES = ['/es/', '/en/', '/es/servicios/', '/es/telemedicina/'];
 const MOBILE_VIEWPORTS = [
     { width: 360, height: 800, label: '360x800' },
     { width: 390, height: 844, label: '390x844' },
     { width: 412, height: 915, label: '412x915' },
 ];
 
-async function collectOverflowForSection(page, sectionId) {
-    return page.evaluate((id) => {
-        const section = document.getElementById(id);
-        if (!section) {
-            return { missing: true, offenders: [] };
-        }
-
-        const viewportWidth = window.innerWidth;
-        const candidates = [
-            section,
-            ...Array.from(section.querySelectorAll('*')),
-        ];
-        const offenders = [];
-
-        for (const element of candidates) {
-            const style = window.getComputedStyle(element);
-            if (
-                style.display === 'none' ||
-                style.visibility === 'hidden' ||
-                style.position === 'fixed' ||
-                style.position === 'sticky'
-            ) {
-                continue;
-            }
-
-            const rect = element.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0) {
-                continue;
-            }
-
-            const overflowsLeft = rect.left < -1;
-            const overflowsRight = rect.right > viewportWidth + 1;
-            if (!overflowsLeft && !overflowsRight) {
-                continue;
-            }
-
-            offenders.push({
-                tag: element.tagName.toLowerCase(),
-                id: element.id || '',
-                className: String(element.className || '').slice(0, 100),
-                left: Math.round(rect.left),
-                right: Math.round(rect.right),
-                width: Math.round(rect.width),
-            });
-
-            if (offenders.length >= 15) {
-                break;
-            }
-        }
-
-        return {
-            missing: false,
-            sectionId: id,
-            viewportWidth,
-            offenders,
-        };
-    }, sectionId);
-}
-
-test.describe('Mobile overflow regressions', () => {
-    test('critical sections stay inside viewport on mobile width', async ({
-        page,
-    }) => {
+test.describe('Mobile overflow regressions V2', () => {
+    test('key public routes stay inside the viewport on mobile', async ({ page }) => {
         for (const viewport of MOBILE_VIEWPORTS) {
-            await page.setViewportSize({
-                width: viewport.width,
-                height: viewport.height,
-            });
-            await page.goto('/', {
-                timeout: 45000,
-                waitUntil: 'domcontentloaded',
-            });
-            await page
-                .waitForLoadState('load', { timeout: 20000 })
-                .catch(() => null);
-            await page.waitForTimeout(1500);
-
-            for (const sectionId of SECTION_IDS) {
-                await page.evaluate((id) => {
-                    const section = document.getElementById(id);
-                    if (section) {
-                        section.scrollIntoView({ block: 'start' });
-                    }
-                }, sectionId);
-                await page.waitForTimeout(80);
-
-                const metrics = await collectOverflowForSection(page, sectionId);
-                expect(metrics.missing).toBeFalsy();
+            await page.setViewportSize(viewport);
+            for (const route of ROUTES) {
+                await gotoPublicRoute(page, route);
+                const dimensions = await page.evaluate(() => ({
+                    scrollWidth: document.documentElement.scrollWidth,
+                    clientWidth: document.documentElement.clientWidth,
+                }));
                 expect(
-                    metrics.offenders,
-                    `Overflow in section #${sectionId} (${viewport.label})`
-                ).toEqual([]);
+                    dimensions.scrollWidth,
+                    `horizontal overflow detected on ${route} (${viewport.label})`
+                ).toBeLessThanOrEqual(dimensions.clientWidth + 1);
             }
         }
     });
 
-    test('chat container stays fully visible when opened on mobile', async ({
-        page,
-    }) => {
+    test('chat container stays visible on mobile when opened', async ({ page }) => {
         for (const viewport of MOBILE_VIEWPORTS) {
-            await page.setViewportSize({
-                width: viewport.width,
-                height: viewport.height,
-            });
-            await page.goto('/');
-            await page.waitForTimeout(600);
+            await page.setViewportSize(viewport);
+            await gotoPublicRoute(page, '/es/');
 
             const toggle = page.locator('.chatbot-toggle');
             await expect(toggle).toBeVisible();
@@ -133,18 +40,12 @@ test.describe('Mobile overflow regressions', () => {
             await expect(chatContainer).toBeVisible();
 
             const chatRect = await chatContainer.boundingBox();
-            expect(chatRect).not.toBeNull();
-
             const currentViewport = page.viewportSize();
+            expect(chatRect).not.toBeNull();
             expect(currentViewport).not.toBeNull();
-
             expect(chatRect.x).toBeGreaterThanOrEqual(-1);
-            expect(chatRect.x + chatRect.width).toBeLessThanOrEqual(
-                currentViewport.width + 1
-            );
-            expect(chatRect.y + chatRect.height).toBeLessThanOrEqual(
-                currentViewport.height + 1
-            );
+            expect(chatRect.x + chatRect.width).toBeLessThanOrEqual(currentViewport.width + 1);
+            expect(chatRect.y + chatRect.height).toBeLessThanOrEqual(currentViewport.height + 1);
         }
     });
 });

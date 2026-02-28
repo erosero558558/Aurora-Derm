@@ -1,0 +1,100 @@
+---
+const { locale = 'es', dictionary = {} } = Astro.props;
+
+const intents = [
+    {
+        id: 'diagnosis',
+        label:
+            dictionary.hero_intent_label_consulta ||
+            (locale === 'en' ? 'First assessment' : 'Primera valoracion'),
+        title:
+            dictionary.hero_intent_title_consulta ||
+            (locale === 'en'
+                ? 'Comprehensive dermatology review and initial plan.'
+                : 'Revision dermatologica integral y plan inicial.'),
+        cta:
+            dictionary.hero_intent_cta_consulta ||
+            (locale === 'en'
+                ? 'I want a general consult'
+                : 'Quiero consulta general'),
+        href: `${locale === 'en' ? '/en/' : '/es/'}?service=consulta#citas`,
+        category: 'clinical',
+    },
+    {
+        id: 'inflammation',
+        label:
+            dictionary.hero_intent_label_acne ||
+            (locale === 'en' ? 'Acne and breakouts' : 'Acne y brotes'),
+        title:
+            dictionary.hero_intent_title_acne ||
+            (locale === 'en'
+                ? 'Active acne control, marks, and a personalized routine.'
+                : 'Control de acne activo, marcas y rutina personalizada.'),
+        cta:
+            dictionary.hero_intent_cta_acne ||
+            (locale === 'en' ? 'I want acne treatment' : 'Quiero tratar acne'),
+        href: `${locale === 'en' ? '/en/' : '/es/'}?service=acne#citas`,
+        category: 'clinical',
+    },
+    {
+        id: 'procedures',
+        label:
+            dictionary.hero_intent_label_laser ||
+            (locale === 'en' ? 'Spots and scars' : 'Manchas y cicatrices'),
+        title:
+            dictionary.hero_intent_title_laser ||
+            (locale === 'en'
+                ? 'Laser dermatology assessment and safe treatment options.'
+                : 'Evaluacion para laser dermatologico y opciones seguras.'),
+        cta:
+            dictionary.hero_intent_cta_laser ||
+            (locale === 'en'
+                ? 'I want a laser assessment'
+                : 'Quiero valorar laser'),
+        href: `${locale === 'en' ? '/en/' : '/es/'}?service=laser#citas`,
+        category: 'aesthetic',
+    },
+];
+---
+
+<section class="sony-section sony-intent-rail" aria-labelledby="intent-rail-heading">
+    <div class="sony-intent-rail__intro">
+        <p>{dictionary.hero_intent_badge || 'Elige tu motivo principal en 1 clic'}</p>
+        <h2 id="intent-rail-heading">
+            {
+                locale === 'en'
+                    ? 'Start from the concern that brought you here.'
+                    : 'Empieza por el motivo que te trajo hoy.'
+            }
+        </h2>
+        <span>
+            {
+                dictionary.hero_intent_copy ||
+                    'Preseleccionamos el servicio para que el formulario de cita te tome menos tiempo.'
+            }
+        </span>
+    </div>
+    <div class="sony-intent-rail__grid">
+        {
+            intents.map((intent) => (
+                <article class="sony-intent-card">
+                    <p>{intent.label}</p>
+                    <h3>{intent.title}</h3>
+                    <a
+                        class="sony-btn sony-btn--ghost"
+                        href={intent.href}
+                        data-analytics-event="open_public_cta"
+                        data-entry-surface="intent_rail"
+                        data-cta-target="booking"
+                        data-service-category={intent.category}
+                        data-service-intent={intent.id}
+                        data-catalog-category={intent.category}
+                        data-catalog-intent={intent.id}
+                    >
+                        {intent.cta}
+                    </a>
+                </article>
+            ))
+        }
+    </div>
+</section>

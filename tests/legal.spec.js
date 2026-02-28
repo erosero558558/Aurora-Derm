@@ -1,56 +1,33 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v2');
 
-const legalPages = [
-    {
-        path: '/terminos.html',
-        title: /Términos|Terms/,
-        heading: /Términos y Condiciones|Terms (and|&) Conditions/,
-    },
-    {
-        path: '/privacidad.html',
-        title: /Privacidad|Privacy/,
-        heading: /Política de Privacidad|Privacy Policy/,
-    },
-    {
-        path: '/cookies.html',
-        title: /Cookies|Cookie/,
-        heading: /Política de Cookies|Cookie Policy/,
-    },
-    {
-        path: '/aviso-medico.html',
-        title: /Aviso.*Médic|Medical Disclaimer/,
-        heading: /Aviso de Responsabilidad Médica|Medical Disclaimer/,
-    },
+const LEGAL_CASES = [
+    { route: '/es/legal/terminos/', heading: /Terminos y condiciones/i, switchHref: '/en/legal/terms/' },
+    { route: '/es/legal/privacidad/', heading: /Politica de privacidad/i, switchHref: '/en/legal/privacy/' },
+    { route: '/en/legal/terms/', heading: /Terms and conditions/i, switchHref: '/es/legal/terminos/' },
+    { route: '/en/legal/privacy/', heading: /Privacy policy/i, switchHref: '/es/legal/privacidad/' },
 ];
 
-for (const lp of legalPages) {
-    test.describe(`Página legal: ${lp.path}`, () => {
-        test(`carga ${lp.path} correctamente`, async ({ page }) => {
-            await page.goto(lp.path);
-            await expect(page).toHaveTitle(lp.title);
-        });
+test.describe('Legal V2', () => {
+    for (const legalCase of LEGAL_CASES) {
+        test(`renders ${legalCase.route} with clean legal shell`, async ({ page }) => {
+            await gotoPublicRoute(page, legalCase.route);
 
-        test(`muestra encabezado en ${lp.path}`, async ({ page }) => {
-            await page.goto(lp.path);
-            const h1 = page.locator('h1').first();
-            await expect(h1).toHaveText(lp.heading);
+            await expect(page.locator('[data-legal-hero]')).toBeVisible();
+            await expect(page.locator('[data-legal-hero] h1')).toHaveText(legalCase.heading);
+            await expect(page.locator('[data-legal-tabs] .legal-tabs-v2__link')).toHaveCount(4);
+            await expect(page.locator('[data-legal-tabs] [aria-current="page"]')).toHaveCount(1);
+            await expect(page.locator('[data-legal-article] .legal-article-v2__highlights article')).toHaveCount(2);
+            await expect(page.locator('[data-support-band]')).toBeVisible();
+            await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
+            await expect(page.locator('.public-nav__lang')).toHaveAttribute('href', legalCase.switchHref);
+            await expect(page.locator('.sony-legal-card')).toHaveCount(0);
         });
+    }
 
-        test(`tiene enlace de regreso en ${lp.path}`, async ({ page }) => {
-            await page.goto(lp.path);
-            const backLink = page
-                .locator('a[href*="pielarmonia.com"], a[href="/"]')
-                .first();
-            await expect(backLink).toBeVisible();
-        });
-
-        test(`tiene enlaces a otras páginas legales en ${lp.path}`, async ({
-            page,
-        }) => {
-            await page.goto(lp.path);
-            const legalLinks = page.locator('.legal-links a, .legal-footer a');
-            expect(await legalLinks.count()).toBeGreaterThanOrEqual(2);
-        });
+    test('legal pages keep booking hooks available through the bridge', async ({ page }) => {
+        await gotoPublicRoute(page, '/es/legal/terminos/');
+        await waitForBookingHooks(page, 'consulta');
     });
-}
+});

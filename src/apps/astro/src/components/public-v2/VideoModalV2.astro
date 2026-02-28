@@ -1,0 +1,49 @@
+---
+const { locale = 'es' } = Astro.props;
+---
+
+<div id="videoModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content public-modal public-modal--video">
+        <button
+            type="button"
+            class="modal-close"
+            data-action="close-video-modal"
+            aria-label={locale === 'en' ? 'Close video options' : 'Cerrar opciones de video'}
+        >
+            <i class="fas fa-times"></i>
+        </button>
+        <p class="public-modal__eyebrow">{locale === 'en' ? 'Telemedicine' : 'Telemedicina'}</p>
+        <h3>{locale === 'en' ? 'Choose how you want to connect' : 'Elige como quieres conectarte'}</h3>
+        <p class="public-modal__deck">
+            {locale === 'en'
+                ? 'Open the browser option or move the consultation to WhatsApp video without leaving the care flow.'
+                : 'Abre la opcion en navegador o mueve la consulta a video por WhatsApp sin salir del flujo de atencion.'}
+        </p>
+        <div class="public-modal__stack">
+            <a
+                href="https://meet.jit.si/PielEnArmonia-Consulta"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="video-option"
+            >
+                <div class="video-option-info">
+                    <h4>Jitsi Meet</h4>
+                    <p>{locale === 'en' ? 'Works directly from the browser.' : 'Funciona directamente desde el navegador.'}</p>
+                </div>
+                <span class="public-modal__pill">{locale === 'en' ? 'Recommended' : 'Recomendado'}</span>
+            </a>
+            <a
+                href="https://wa.me/593982453672?text=Hola%20doctor,%20solicito%20videoconsulta"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="video-option"
+            >
+                <div class="video-option-info">
+                    <h4>WhatsApp Video</h4>
+                    <p>{locale === 'en' ? 'Use the app most patients already have.' : 'Usa la aplicacion que la mayoria de pacientes ya tiene.'}</p>
+                </div>
+                <span class="public-modal__pill">{locale === 'en' ? 'Fastest' : 'Mas rapido'}</span>
+            </a>
+        </div>
+    </div>
+</div>

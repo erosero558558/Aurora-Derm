@@ -1,0 +1,147 @@
+---
+import { servicePath } from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+
+const doctors =
+    locale === 'en'
+        ? [
+              {
+                  name: 'Dr. Javier Rosero',
+                  role: 'Clinical dermatology and diagnostic decision-making',
+                  bio: 'Focused on broad assessment, suspicious lesions, skin cancer screening, and skin-hair-nail cases that need a complete map before treatment.',
+                  image: '/images/optimized/team-rosero.jpg',
+                  areas: [
+                      'Comprehensive diagnosis',
+                      'Skin cancer screening',
+                      'Skin, hair, and nails',
+                  ],
+                  links: [
+                      {
+                          href: servicePath(locale, 'diagnostico-integral'),
+                          label: 'Comprehensive diagnosis',
+                      },
+                      {
+                          href: servicePath(locale, 'cancer-piel'),
+                          label: 'Skin cancer screening',
+                      },
+                      {
+                          href: servicePath(locale, 'piel-cabello-unas'),
+                          label: 'Skin, hair and nails',
+                      },
+                  ],
+              },
+              {
+                  name: 'Dr. Carolina Narvaez',
+                  role: 'Medical aesthetics, acne, and protocol-driven procedures',
+                  bio: 'Focused on laser, injectables, rejuvenation pathways, and inflammatory conditions that need visible but medically controlled progression.',
+                  image: '/images/optimized/team-narvaez.jpg',
+                  areas: [
+                      'Acne and rosacea',
+                      'Medical laser',
+                      'Injectables and rejuvenation',
+                  ],
+                  links: [
+                      {
+                          href: servicePath(locale, 'acne-rosacea'),
+                          label: 'Acne and rosacea',
+                      },
+                      {
+                          href: servicePath(locale, 'laser-dermatologico'),
+                          label: 'Dermatology laser',
+                      },
+                      {
+                          href: servicePath(locale, 'botox'),
+                          label: 'Botox assessment',
+                      },
+                  ],
+              },
+          ]
+        : [
+              {
+                  name: 'Dr. Javier Rosero',
+                  role: 'Dermatologia clinica y toma de decision diagnostica',
+                  bio: 'Enfocado en valoracion amplia, lesiones sospechosas, control de cancer de piel y casos de piel-cabello-unas que necesitan mapa completo antes de tratar.',
+                  image: '/images/optimized/team-rosero.jpg',
+                  areas: [
+                      'Diagnostico integral',
+                      'Control de cancer de piel',
+                      'Piel, cabello y unas',
+                  ],
+                  links: [
+                      {
+                          href: servicePath(locale, 'diagnostico-integral'),
+                          label: 'Diagnostico integral',
+                      },
+                      {
+                          href: servicePath(locale, 'cancer-piel'),
+                          label: 'Cancer de piel',
+                      },
+                      {
+                          href: servicePath(locale, 'piel-cabello-unas'),
+                          label: 'Piel, cabello y unas',
+                      },
+                  ],
+              },
+              {
+                  name: 'Dra. Carolina Narvaez',
+                  role: 'Estetica medica, acne y procedimientos con protocolo',
+                  bio: 'Enfocada en laser, inyectables, rutas de rejuvenecimiento y condiciones inflamatorias que necesitan progresion visible pero controlada medicamente.',
+                  image: '/images/optimized/team-narvaez.jpg',
+                  areas: [
+                      'Acne y rosacea',
+                      'Laser dermatologico',
+                      'Inyectables y rejuvenecimiento',
+                  ],
+                  links: [
+                      {
+                          href: servicePath(locale, 'acne-rosacea'),
+                          label: 'Acne y rosacea',
+                      },
+                      {
+                          href: servicePath(locale, 'laser-dermatologico'),
+                          label: 'Laser dermatologico',
+                      },
+                      {
+                          href: servicePath(locale, 'botox'),
+                          label: 'Valoracion de botox',
+                      },
+                  ],
+              },
+          ];
+---
+
+<div class="sony-team-spotlight" data-team-spotlight>
+    {
+        doctors.map((doctor) => (
+            <article class="sony-team-card">
+                <div class="sony-team-card__media">
+                    <picture>
+                        <source type="image/webp" srcset={doctor.image.replace('.jpg', '.webp')} />
+                        <img
+                            src={doctor.image}
+                            alt={doctor.name}
+                            loading="lazy"
+                            decoding="async"
+                            width="500"
+                            height="600"
+                        />
+                    </picture>
+                </div>
+                <div class="sony-team-card__body">
+                    <p>{doctor.role}</p>
+                    <h3>{doctor.name}</h3>
+                    <span>{doctor.bio}</span>
+                    <ul>
+                        {doctor.areas.map((area) => <li>{area}</li>)}
+                    </ul>
+                    <div class="sony-team-card__links">
+                        {doctor.links.map((link) => (
+                            <a href={link.href}>{link.label}</a>
+                        ))}
+                    </div>
+                </div>
+            </article>
+        ))
+    }
+</div>

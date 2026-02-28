@@ -1,0 +1,137 @@
+---
+import {
+    homePath,
+    legalBasePath,
+    serviceHubPath,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+const legalBase = legalBasePath(locale);
+const quickLinks = [
+    {
+        href: serviceHubPath(locale),
+        label: locale === 'en' ? 'Services' : 'Servicios',
+    },
+    {
+        href: servicePath(locale, 'dermatologia-pediatrica'),
+        label: locale === 'en' ? 'Pediatric dermatology' : 'Dermatologia pediatrica',
+    },
+    {
+        href: telemedicinePath(locale),
+        label: locale === 'en' ? 'Telemedicine' : 'Telemedicina',
+    },
+    {
+        href: `${homePath(locale)}#citas`,
+        label: locale === 'en' ? 'Book appointment' : 'Reservar cita',
+    },
+];
+const legalLinks = [
+    {
+        href: legalBase + (locale === 'en' ? 'terms/' : 'terminos/'),
+        label: locale === 'en' ? 'Terms' : 'Terminos',
+    },
+    {
+        href: legalBase + (locale === 'en' ? 'privacy/' : 'privacidad/'),
+        label: locale === 'en' ? 'Privacy' : 'Privacidad',
+    },
+    {
+        href: legalBase + 'cookies/',
+        label: 'Cookies',
+    },
+    {
+        href:
+            legalBase +
+            (locale === 'en' ? 'medical-disclaimer/' : 'aviso-medico/'),
+        label: locale === 'en' ? 'Medical Disclaimer' : 'Aviso medico',
+    },
+];
+---
+
+<footer class="sony-footer">
+    <div class="sony-footer__inner">
+        <section class="sony-footer__brand">
+            <p>PIEL EN ARMONIA</p>
+            <h2>
+                {locale === 'en'
+                    ? 'Dermatology booking and follow-up in one public flow.'
+                    : 'Reserva, seguimiento y orientacion dermatologica en un solo flujo publico.'}
+            </h2>
+            <span>
+                {locale === 'en'
+                    ? 'Designed for fast decisions: service pages, telemedicine, legal clarity, and booking without dead ends.'
+                    : 'Disenado para decisiones rapidas: servicios, telemedicina, claridad legal y reserva sin callejones sin salida.'}
+            </span>
+            <div class="sony-footer__actions">
+                <a
+                    class="sony-btn sony-btn--primary"
+                    href={`${homePath(locale)}#citas`}
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="footer_primary"
+                    data-cta-target="booking"
+                    data-service-category="clinical"
+                    data-service-intent="diagnosis"
+                    data-catalog-category="all"
+                    data-catalog-intent="diagnosis"
+                >
+                    {locale === 'en' ? 'Start booking' : 'Empezar reserva'}
+                </a>
+                <a
+                    class="sony-btn sony-btn--ghost"
+                    href="https://wa.me/593982453672"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    data-analytics-event="whatsapp_click"
+                    data-entry-surface="footer_whatsapp"
+                    data-cta-target="whatsapp"
+                    data-service-category="all"
+                    data-service-intent="all"
+                    data-catalog-category="all"
+                    data-catalog-intent="all"
+                >
+                    WhatsApp
+                </a>
+            </div>
+        </section>
+        <div class="sony-footer__grid">
+            <nav aria-label={locale === 'en' ? 'Quick links' : 'Accesos rapidos'}>
+                <p>{locale === 'en' ? 'Explore' : 'Explora'}</p>
+                <ul>
+                    {quickLinks.map((link) => (
+                        <li>
+                            <a href={link.href}>{link.label}</a>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
+            <nav aria-label="Legal links">
+                <p>{locale === 'en' ? 'Legal' : 'Legal'}</p>
+                <ul>
+                    {legalLinks.map((link) => (
+                        <li>
+                            <a href={link.href}>{link.label}</a>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
+            <section class="sony-footer__meta">
+                <p>{locale === 'en' ? 'Operations' : 'Operacion'}</p>
+                <ul>
+                    <li>Quito, Ecuador</li>
+                    <li>WhatsApp: +593 98 245 3672</li>
+                    <li>
+                        {locale === 'en'
+                            ? 'Public routes: /en/* and /es/*'
+                            : 'Rutas publicas: /es/* y /en/*'}
+                    </li>
+                    <li>
+                        {locale === 'en'
+                            ? 'Booking, chat, and telemedicine kept in the same funnel.'
+                            : 'Booking, chat y telemedicina dentro del mismo funnel.'}
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </div>
+</footer>

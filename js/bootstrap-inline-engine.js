@@ -23,6 +23,7 @@
     const deferredModulePromises = new Map();
     let deferredStylesheetPromise = null;
     let deferredStylesheetInitDone = false;
+    let publicRuntimeConfigPromise = null;
 
     function debugLog() {
         // Debug logging removed
@@ -47,6 +48,94 @@
         }
     }
 
+    function mergeRuntimeConfig(runtimePayload) {
+        if (
+            !runtimePayload ||
+            typeof runtimePayload !== 'object' ||
+            Array.isArray(runtimePayload)
+        ) {
+            return;
+        }
+
+        window.Piel = window.Piel || {};
+        if (!window.Piel.config || typeof window.Piel.config !== 'object') {
+            window.Piel.config = runtimePayload;
+            return;
+        }
+
+        const current = window.Piel.config;
+        if (
+            (!current.captcha || typeof current.captcha !== 'object') &&
+            runtimePayload.captcha &&
+            typeof runtimePayload.captcha === 'object'
+        ) {
+            current.captcha = runtimePayload.captcha;
+        }
+        if (
+            (!current.features || typeof current.features !== 'object') &&
+            runtimePayload.features &&
+            typeof runtimePayload.features === 'object'
+        ) {
+            current.features = runtimePayload.features;
+        }
+        if (
+            (typeof current.deployVersion !== 'string' ||
+                current.deployVersion.trim() === '') &&
+            typeof runtimePayload.deployVersion === 'string' &&
+            runtimePayload.deployVersion.trim() !== ''
+        ) {
+            current.deployVersion = runtimePayload.deployVersion;
+        }
+    }
+
+    function fetchPublicRuntimeConfig() {
+        if (publicRuntimeConfigPromise) {
+            return publicRuntimeConfigPromise;
+        }
+
+        publicRuntimeConfigPromise = fetch(
+            '/api.php?resource=public-runtime-config',
+            {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                },
+            }
+        )
+            .then(function (response) {
+                if (!response.ok) {
+                    return null;
+                }
+                return response.json().catch(function () {
+                    return null;
+                });
+            })
+            .then(function (payload) {
+                if (
+                    !payload ||
+                    typeof payload !== 'object' ||
+                    Array.isArray(payload)
+                ) {
+                    return null;
+                }
+
+                const runtimeData =
+                    payload.data &&
+                    typeof payload.data === 'object' &&
+                    !Array.isArray(payload.data)
+                        ? payload.data
+                        : payload;
+                mergeRuntimeConfig(runtimeData);
+                return runtimeData;
+            })
+            .catch(function () {
+                return null;
+            });
+
+        return publicRuntimeConfigPromise;
+    }
+
     function hydrateRuntimePayloads() {
         const contentPayload = readJsonPayload('piel-content-payload');
         if (
@@ -63,11 +152,11 @@
             typeof runtimePayload === 'object' &&
             !Array.isArray(runtimePayload)
         ) {
-            window.Piel = window.Piel || {};
-            if (!window.Piel.config || typeof window.Piel.config !== 'object') {
-                window.Piel.config = runtimePayload;
-            }
+            mergeRuntimeConfig(runtimePayload);
+            return;
         }
+
+        fetchPublicRuntimeConfig();
     }
 
     function loadDeferredModule(options) {

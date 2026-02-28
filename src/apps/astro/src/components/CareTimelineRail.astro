@@ -1,0 +1,204 @@
+---
+const { locale = 'es', service } = Astro.props;
+
+const category = String(service?.category || 'clinical').toLowerCase();
+const duration = service?.duration || (locale === 'en' ? '30 min' : '30 min');
+const priceFrom = service?.price_from ? `$${service.price_from}` : locale === 'en' ? 'assessment' : 'valoracion';
+
+const copy = {
+    es: {
+        clinical: {
+            eyebrow: 'Timeline de cuidado',
+            title: 'Antes, durante y despues de una ruta clinica.',
+            description:
+                'Este timeline deja claro que preparar, que se valida en consulta y como se sostiene el seguimiento cuando el caso no termina en una sola visita.',
+            cards: [
+                {
+                    step: 'Antes',
+                    title: 'Prepara contexto e imagenes si las tienes',
+                    body: 'Lleva antecedentes, tratamientos previos y fotos utiles si el motivo cambio rapido o viene de un control remoto.',
+                },
+                {
+                    step: 'Consulta',
+                    title: `Valoracion inicial desde ${priceFrom}`,
+                    body: `En aproximadamente ${duration} se confirma diagnostico, necesidad de estudios y si la modalidad correcta sigue siendo esta.`,
+                },
+                {
+                    step: '48-72h',
+                    title: 'Ajustes y aclaraciones',
+                    body: 'Si faltan datos o el caso necesita escalar, el plan se corrige pronto para no dejar la reserva en un limbo.',
+                },
+                {
+                    step: 'Seguimiento',
+                    title: 'Control segun respuesta',
+                    body: 'La continuidad puede pasar por telemedicina, nueva consulta o procedimiento de apoyo segun evolucion.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Timeline de cuidado',
+            title: 'Secuencia segura para tratamientos esteticos.',
+            description:
+                'En estetica la conversion mejora cuando el paciente ve la secuencia completa: preparacion, sesion, cuidados y control.',
+            cards: [
+                {
+                    step: 'Antes',
+                    title: 'Revisar antecedentes y suspensiones temporales',
+                    body: 'Se valida exposicion solar reciente, irritacion activa, medicamentos y expectativas antes de confirmar la sesion.',
+                },
+                {
+                    step: 'Sesion',
+                    title: `Procedimiento guiado desde ${priceFrom}`,
+                    body: `La consulta inicial y la sesion se ordenan para que el acto principal ocurra con contexto medico y en el tiempo correcto.`,
+                },
+                {
+                    step: '24-72h',
+                    title: 'Cuidados posteriores inmediatos',
+                    body: 'Se refuerzan proteccion solar, productos permitidos, senales de alarma y manejo de edema o irritacion.',
+                },
+                {
+                    step: 'Revision',
+                    title: 'Control de evolucion y combinacion',
+                    body: 'El control define si el resultado va en buen camino o si conviene combinar otra tecnica en una siguiente fase.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Timeline de cuidado',
+            title: 'Ruta simple para casos pediatricos.',
+            description:
+                'En pediatria conviene que la familia vea la secuencia completa desde la primera visita hasta el control para reducir friccion.',
+            cards: [
+                {
+                    step: 'Antes',
+                    title: 'Preparar fotos, rutinas y dudas de cuidadores',
+                    body: 'Ayuda llevar productos usados, tiempo de evolucion y cambios recientes para que la consulta sea mas clara.',
+                },
+                {
+                    step: 'Consulta',
+                    title: `Valoracion pediatrica desde ${priceFrom}`,
+                    body: `Se confirma diagnostico, plan para casa y que parte del seguimiento puede resolverse sin otro traslado inmediato.`,
+                },
+                {
+                    step: 'Casa',
+                    title: 'Aplicacion y observacion guiada',
+                    body: 'La familia sigue instrucciones simples, observa alertas y documenta cambios relevantes antes del siguiente control.',
+                },
+                {
+                    step: 'Control',
+                    title: 'Revision y escalamiento si cambia el caso',
+                    body: 'Si aparecen dolor, lesiones nuevas o baja respuesta, la ruta sube a una consulta mas amplia o nuevo examen.',
+                },
+            ],
+        },
+    },
+    en: {
+        clinical: {
+            eyebrow: 'Care timeline',
+            title: 'Before, during, and after a clinical route.',
+            description:
+                'This timeline clarifies what to prepare, what is validated during consultation, and how continuity works when the case does not end in a single visit.',
+            cards: [
+                {
+                    step: 'Before',
+                    title: 'Bring context and useful images when available',
+                    body: 'Bring history, previous treatments, and images when the concern changed quickly or started with remote review.',
+                },
+                {
+                    step: 'Consultation',
+                    title: `Initial assessment from ${priceFrom}`,
+                    body: `In about ${duration}, diagnosis, need for studies, and route fit are confirmed.`,
+                },
+                {
+                    step: '48-72h',
+                    title: 'Adjustments and clarifications',
+                    body: 'If context is missing or the case needs escalation, the plan is corrected early so booking is not left in limbo.',
+                },
+                {
+                    step: 'Follow-up',
+                    title: 'Review according to response',
+                    body: 'Continuity can move to telemedicine, another consultation, or a supporting procedure depending on evolution.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Care timeline',
+            title: 'Safe sequencing for aesthetic routes.',
+            description:
+                'In aesthetics, conversion improves when the patient sees the full sequence: preparation, session, aftercare, and review.',
+            cards: [
+                {
+                    step: 'Before',
+                    title: 'Review history and temporary pause points',
+                    body: 'Recent sun exposure, active irritation, medications, and expectation fit are checked before the session is confirmed.',
+                },
+                {
+                    step: 'Session',
+                    title: `Procedure guided from ${priceFrom}`,
+                    body: `The initial assessment and the main act are sequenced so the procedure happens with clinical context and correct timing.`,
+                },
+                {
+                    step: '24-72h',
+                    title: 'Immediate aftercare',
+                    body: 'Sun protection, allowed products, alarm signs, and swelling or irritation handling are reinforced.',
+                },
+                {
+                    step: 'Review',
+                    title: 'Evolution check and combination decision',
+                    body: 'The review determines whether progress is on track or whether a complementary technique should enter a second phase.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Care timeline',
+            title: 'Simple route for pediatric cases.',
+            description:
+                'In pediatrics it helps when caregivers can see the full sequence from the first visit to follow-up, reducing friction.',
+            cards: [
+                {
+                    step: 'Before',
+                    title: 'Prepare photos, routines, and caregiver questions',
+                    body: 'It helps to bring used products, time of evolution, and recent changes so the visit is clearer.',
+                },
+                {
+                    step: 'Consultation',
+                    title: `Pediatric assessment from ${priceFrom}`,
+                    body: 'Diagnosis, home plan, and which part of follow-up can happen without another transfer are confirmed.',
+                },
+                {
+                    step: 'Home',
+                    title: 'Guided application and observation',
+                    body: 'Caregivers follow simple instructions, watch alerts, and document meaningful changes before the next review.',
+                },
+                {
+                    step: 'Review',
+                    title: 'Check and escalation if the case changes',
+                    body: 'If pain, new lesions, or low response appear, the route escalates to broader consultation or additional exam.',
+                },
+            ],
+        },
+    },
+};
+
+const localeCopy = copy[locale] || copy.es;
+const selected = localeCopy[category] || localeCopy.clinical;
+---
+
+<section class="sony-section sony-section--compact sony-care-timeline" data-care-timeline>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-care-timeline__grid">
+        {
+            selected.cards.map((card) => (
+                <article class="sony-care-timeline__card" data-care-timeline-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

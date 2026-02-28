@@ -1,0 +1,163 @@
+---
+import {
+    getLocalizedServicesBySlugs,
+    getServiceCtaLabel,
+    homePath,
+    localizeCategory,
+    mapServiceHint,
+    resolveServiceIntents,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+const isEnglish = locale === 'en';
+
+const featuredRoutes = getLocalizedServicesBySlugs(
+    [
+        'diagnostico-integral',
+        'acne-rosacea',
+        'botox',
+        'dermatologia-pediatrica',
+    ],
+    locale
+).map((service) => {
+    const intents = resolveServiceIntents(service);
+    const supportsRemote = intents.includes('remote');
+    const format = supportsRemote
+        ? isEnglish
+            ? 'In-person + telemedicine'
+            : 'Presencial + telemedicina'
+        : service.category === 'aesthetic'
+          ? isEnglish
+              ? 'Procedure-led visit'
+              : 'Visita guiada por procedimiento'
+          : service.category === 'children'
+            ? isEnglish
+                ? 'Pediatric in-person visit'
+                : 'Consulta pediatrica presencial'
+            : isEnglish
+              ? 'In-person medical review'
+              : 'Valoracion medica presencial';
+    const nextStep = supportsRemote
+        ? {
+              href: telemedicinePath(locale),
+              label: isEnglish
+                  ? 'Start with telemedicine'
+                  : 'Empezar por telemedicina',
+              target: 'telemedicine',
+          }
+        : {
+              href: `${homePath(locale)}?service=${encodeURIComponent(mapServiceHint(service.slug))}#citas`,
+              label: isEnglish ? 'Book direct' : 'Reservar directo',
+              target: 'booking',
+          };
+
+    return {
+        ...service,
+        intents,
+        format,
+        nextStep,
+        bestFor: (service.indications || []).slice(0, 2).join(
+            isEnglish ? ' / ' : ' / '
+        ),
+    };
+});
+
+const getPrimaryIntent = (service) =>
+    service.intents.find((item) => item !== 'all') || 'all';
+---
+
+<section class="sony-section sony-treatment-specs" data-treatment-spec-rail>
+    <div class="sony-section__head">
+        <p>{isEnglish ? 'Decision specs' : 'Specs de decision'}</p>
+        <h2>
+            {isEnglish
+                ? 'Compare the strongest entry routes before you commit to one.'
+                : 'Compara las rutas mas fuertes antes de comprometerte con una.'}
+        </h2>
+        <span>
+            {isEnglish
+                ? 'Built for campaigns, landing pages, and visitors who need a fast side-by-side without reading every service page first.'
+                : 'Pensado para campanas, landings y visitas que necesitan una comparacion rapida sin leer primero todas las fichas.'}
+        </span>
+    </div>
+    <div class="sony-treatment-specs__grid">
+        {
+            featuredRoutes.map((service) => (
+                <article class="sony-treatment-specs__card" data-treatment-spec-card>
+                    <div class="sony-treatment-specs__topline">
+                        <p>{localizeCategory(service.category, locale)}</p>
+                        <span>
+                            {service.intents.includes('remote')
+                                ? isEnglish
+                                    ? 'Hybrid route'
+                                    : 'Ruta hibrida'
+                                : service.category === 'aesthetic'
+                                  ? isEnglish
+                                      ? 'Treatment-first'
+                                      : 'Tratamiento primero'
+                                  : service.category === 'children'
+                                    ? isEnglish
+                                        ? 'Family-first'
+                                        : 'Ruta familiar'
+                                    : isEnglish
+                                      ? 'Clinical route'
+                                      : 'Ruta clinica'}
+                        </span>
+                    </div>
+                    <h3>{service.hero || service.slug}</h3>
+                    <p class="sony-treatment-specs__summary">{service.summary}</p>
+                    <dl class="sony-treatment-specs__list">
+                        <div>
+                            <dt>{isEnglish ? 'Best for' : 'Ideal para'}</dt>
+                            <dd>{service.bestFor || (isEnglish ? 'Broad assessment' : 'Valoracion amplia')}</dd>
+                        </div>
+                        <div>
+                            <dt>{isEnglish ? 'Format' : 'Formato'}</dt>
+                            <dd>{service.format}</dd>
+                        </div>
+                        <div>
+                            <dt>{isEnglish ? 'Duration' : 'Duracion'}</dt>
+                            <dd>{service.duration || '30 min'}</dd>
+                        </div>
+                        <div>
+                            <dt>{isEnglish ? 'From' : 'Desde'}</dt>
+                            <dd>${service.price_from || '0'}</dd>
+                        </div>
+                    </dl>
+                    <div class="sony-treatment-specs__actions">
+                        <a
+                            class="sony-btn sony-btn--ghost"
+                            href={servicePath(locale, service.slug)}
+                            data-analytics-event="open_public_cta"
+                            data-entry-surface="treatment_spec_rail_detail"
+                            data-cta-target="service_detail"
+                            data-service-slug={service.slug}
+                            data-service-category={service.category}
+                            data-service-intent={getPrimaryIntent(service)}
+                            data-catalog-category={service.category}
+                            data-catalog-intent={getPrimaryIntent(service)}
+                        >
+                            {getServiceCtaLabel(service, locale)}
+                        </a>
+                        <a
+                            class="sony-btn sony-btn--primary"
+                            href={service.nextStep.href}
+                            data-analytics-event="open_public_cta"
+                            data-entry-surface="treatment_spec_rail_primary"
+                            data-cta-target={service.nextStep.target}
+                            data-service-slug={service.slug}
+                            data-service-category={service.category}
+                            data-service-intent={getPrimaryIntent(service)}
+                            data-catalog-category={service.category}
+                            data-catalog-intent={getPrimaryIntent(service)}
+                        >
+                            {service.nextStep.label}
+                        </a>
+                    </div>
+                </article>
+            ))
+        }
+    </div>
+</section>

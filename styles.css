@@ -1593,8 +1593,8 @@ html[data-theme='dark'] .cookie-link {
         padding: 13px 12px;
     }
     .hero-content {
-        padding-top: calc(124px + var(--safe-top));
-        padding-bottom: 70px;
+        padding-top: calc(72px + var(--safe-top));
+        padding-bottom: 56px;
     }
     .hero-title {
         font-size: clamp(1.9rem, 10.6vw, 2.6rem);
@@ -1619,7 +1619,7 @@ html[data-theme='dark'] .cookie-link {
         scroll-margin-top: 126px;
     }
     .service-intent-panel {
-        margin-top: 12px;
+        margin-top: 4px;
         padding: 12px;
         border-radius: 16px;
     }

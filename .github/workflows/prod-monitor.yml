@@ -65,6 +65,21 @@ on:
                 required: false
                 default: false
                 type: boolean
+            enable_public_cutover_monitor:
+                description: 'Habilitar smoke publico post-cutover (routing + conversion)'
+                required: false
+                default: false
+                type: boolean
+            public_cutover_started_at:
+                description: 'Fecha/hora de inicio de cutover (ISO 8601)'
+                required: false
+                default: ''
+                type: string
+            public_cutover_window_hours:
+                description: 'Ventana activa post-cutover para smoke publico (horas)'
+                required: false
+                default: '72'
+                type: string
 
 concurrency:
     group: prod-monitor
@@ -92,6 +107,12 @@ jobs:
             MIN_SERVICE_PRIORITIES_CATEGORIES: ${{ github.event.inputs.min_service_priorities_categories || vars.PROD_MONITOR_MIN_SERVICE_PRIORITIES_CATEGORIES || '1' }}
             MIN_SERVICE_PRIORITIES_FEATURED: ${{ github.event.inputs.min_service_priorities_featured || vars.PROD_MONITOR_MIN_SERVICE_PRIORITIES_FEATURED || '1' }}
             REQUIRE_SERVICE_PRIORITIES_FUNNEL: ${{ github.event.inputs.require_service_priorities_funnel || vars.PROD_MONITOR_REQUIRE_SERVICE_PRIORITIES_FUNNEL || 'false' }}
+            ENABLE_PUBLIC_CUTOVER_MONITOR: ${{ github.event.inputs.enable_public_cutover_monitor || vars.PROD_MONITOR_ENABLE_PUBLIC_CUTOVER || 'false' }}
+            PUBLIC_CUTOVER_STARTED_AT: ${{ github.event.inputs.public_cutover_started_at || vars.PUBLIC_CUTOVER_STARTED_AT || '' }}
+            PUBLIC_CUTOVER_WINDOW_HOURS: ${{ github.event.inputs.public_cutover_window_hours || vars.PUBLIC_CUTOVER_WINDOW_HOURS || '72' }}
+            PUBLIC_CUTOVER_WINDOW_ACTIVE: 'false'
+            PUBLIC_CUTOVER_WINDOW_REASON: 'disabled'
+            PUBLIC_CUTOVER_ELAPSED_HOURS: ''
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -146,6 +167,90 @@ jobs:
 
                   & ./MONITOR-PRODUCCION.ps1 @monitorArgs
 
+            - name: Evaluar ventana post-cutover publico
+              id: cutover_window
+              shell: pwsh
+              run: |
+                  $enabled = ([string]$env:ENABLE_PUBLIC_CUTOVER_MONITOR).ToLowerInvariant() -eq 'true'
+                  $windowHours = 72.0
+                  try {
+                    $parsedWindow = [double]$env:PUBLIC_CUTOVER_WINDOW_HOURS
+                    if ($parsedWindow -ge 1) {
+                      $windowHours = $parsedWindow
+                    }
+                  } catch {
+                    Write-Host "[WARN] PUBLIC_CUTOVER_WINDOW_HOURS invalido. Se usa 72h."
+                  }
+
+                  $active = $false
+                  $reason = 'disabled'
+                  $elapsedHours = ''
+
+                  if ($enabled) {
+                    $reason = 'missing_start'
+                    $startRaw = [string]$env:PUBLIC_CUTOVER_STARTED_AT
+                    if (-not [string]::IsNullOrWhiteSpace($startRaw)) {
+                      try {
+                        $startAt = [DateTimeOffset]::Parse(
+                          $startRaw,
+                          [System.Globalization.CultureInfo]::InvariantCulture,
+                          [System.Globalization.DateTimeStyles]::AssumeUniversal
+                        )
+                        $nowUtc = [DateTimeOffset]::UtcNow
+                        $elapsed = ($nowUtc - $startAt.ToUniversalTime()).TotalHours
+                        $elapsedHours = [Math]::Round($elapsed, 2).ToString(
+                          [System.Globalization.CultureInfo]::InvariantCulture
+                        )
+                        if ($elapsed -lt 0) {
+                          $reason = 'future_start'
+                        } elseif ($elapsed -le $windowHours) {
+                          $active = $true
+                          $reason = 'active'
+                        } else {
+                          $reason = 'window_elapsed'
+                        }
+                      } catch {
+                        $reason = 'invalid_start'
+                        Write-Host "[WARN] PUBLIC_CUTOVER_STARTED_AT invalido: $startRaw"
+                      }
+                    }
+                  }
+
+                  $activeValue = if ($active) { 'true' } else { 'false' }
+                  "PUBLIC_CUTOVER_WINDOW_ACTIVE=$activeValue" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "PUBLIC_CUTOVER_WINDOW_REASON=$reason" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "PUBLIC_CUTOVER_ELAPSED_HOURS=$elapsedHours" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+                  "active=$activeValue" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+                  "reason=$reason" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+                  "elapsed_hours=$elapsedHours" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+                  Write-Host "Cutover window => enabled=$enabled active=$activeValue reason=$reason elapsed_hours=$elapsedHours window_hours=$windowHours"
+
+            - name: Setup Node para smoke publico post-cutover
+              if: ${{ env.PUBLIC_CUTOVER_WINDOW_ACTIVE == 'true' }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Validar routing + conversion publica post-cutover (ES/EN)
+              id: public_cutover
+              if: ${{ env.PUBLIC_CUTOVER_WINDOW_ACTIVE == 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p .public-cutover-monitor
+                  node bin/check-public-routing-smoke.js --base-url "${TARGET_DOMAIN}" --label "prod-monitor-cutover-routing" --output ".public-cutover-monitor/routing-smoke.json"
+                  node bin/check-public-conversion-smoke.js --base-url "${TARGET_DOMAIN}" --label "prod-monitor-cutover-conversion" --output ".public-cutover-monitor/conversion-smoke.json"
+
+            - name: Upload public cutover monitor evidence
+              if: ${{ always() && env.PUBLIC_CUTOVER_WINDOW_ACTIVE == 'true' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: public-cutover-monitor-evidence
+                  path: .public-cutover-monitor/
+                  if-no-files-found: warn
+                  retention-days: 7
+
             - name: Resumen
               if: ${{ always() }}
               shell: pwsh
@@ -163,9 +268,15 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_categories: ``$env:MIN_SERVICE_PRIORITIES_CATEGORIES``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_featured: ``$env:MIN_SERVICE_PRIORITIES_FEATURED``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- require_service_priorities_funnel: ``$env:REQUIRE_SERVICE_PRIORITIES_FUNNEL``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- enable_public_cutover_monitor: ``$env:ENABLE_PUBLIC_CUTOVER_MONITOR``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_started_at: ``$env:PUBLIC_CUTOVER_STARTED_AT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_window_hours: ``$env:PUBLIC_CUTOVER_WINDOW_HOURS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_window_active: ``$env:PUBLIC_CUTOVER_WINDOW_ACTIVE`` (reason ``$env:PUBLIC_CUTOVER_WINDOW_REASON``)"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_elapsed_hours: ``$env:PUBLIC_CUTOVER_ELAPSED_HOURS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_step_outcome: ``${{ steps.public_cutover.outcome }}``"
 
             - name: Crear/actualizar incidente (solo schedule)
-              if: ${{ failure() && github.event_name == 'schedule' }}
+              if: ${{ failure() && github.event_name == 'schedule' && steps.public_cutover.outcome != 'failure' }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -216,6 +327,62 @@ jobs:
                         core.info(`Issue creado: #${created.data.number}`);
                       }
 
+            - name: Crear/actualizar incidente post-cutover publico (solo schedule)
+              if: ${{ failure() && github.event_name == 'schedule' && steps.public_cutover.outcome == 'failure' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Monitor post-cutover publico degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const body = [
+                        'El smoke post-cutover publico (routing/conversion ES/EN) fallo en ejecucion programada.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- target_domain: ${process.env.TARGET_DOMAIN || 'n/a'}`,
+                        `- window_active: ${process.env.PUBLIC_CUTOVER_WINDOW_ACTIVE || 'n/a'}`,
+                        `- window_reason: ${process.env.PUBLIC_CUTOVER_WINDOW_REASON || 'n/a'}`,
+                        `- elapsed_hours: ${process.env.PUBLIC_CUTOVER_ELAPSED_HOURS || 'n/a'}`
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body
+                        });
+                        await github.rest.issues.addLabels({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          labels: ['production-alert', 'public-cutover']
+                        });
+                        core.info(`Issue existente actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body,
+                          labels: ['production-alert', 'public-cutover']
+                        });
+                        core.info(`Issue creado: #${created.data.number}`);
+                      }
+
             - name: Cerrar incidente al recuperar (solo schedule)
               if: ${{ success() && github.event_name == 'schedule' }}
               uses: actions/github-script@v7
@@ -259,3 +426,50 @@ jobs:
                         state: 'closed'
                       });
                       core.info(`Issue cerrado: #${existing.number}`);
+
+            - name: Cerrar incidente post-cutover al recuperar (solo schedule)
+              if: ${{ success() && github.event_name == 'schedule' && steps.public_cutover.outcome != 'failure' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Monitor post-cutover publico degradado';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente post-cutover abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por monitor programado.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`,
+                          `- window_active: ${process.env.PUBLIC_CUTOVER_WINDOW_ACTIVE || 'n/a'}`,
+                          `- window_reason: ${process.env.PUBLIC_CUTOVER_WINDOW_REASON || 'n/a'}`,
+                          `- elapsed_hours: ${process.env.PUBLIC_CUTOVER_ELAPSED_HOURS || 'n/a'}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue post-cutover cerrado: #${existing.number}`);

@@ -6,21 +6,34 @@ on:
         paths:
             - 'templates/**'
             - 'content/**'
+            - 'src/apps/astro/**'
             - 'servicios/**'
             - 'ninos/**'
             - 'styles.css'
+            - 'styles-astro.css'
             - 'styles-deferred.css'
+            - '.htaccess'
+            - 'nginx-pielarmonia.conf'
+            - 'sitemap.xml'
+            - 'robots.txt'
             - 'index.html'
             - 'telemedicina.html'
             - 'js/service-navigation-analytics.js'
             - 'js/services-init.js'
             - 'tests/premium-navigation-ia.spec.js'
+            - 'tests/service-booking-hints-parity.spec.js'
             - 'tests/service-pages-premium-new.spec.js'
+            - 'tests/public-routing-redirects.spec.js'
+            - 'tests/public-seo-routing.spec.js'
             - 'tests/service-pages-qa.spec.js'
             - 'tests/deferred-content-fallback.spec.js'
             - 'tests/mobile-overflow-regression.spec.js'
             - 'lighthouserc.premium.json'
+            - 'bin/capture-public-baseline.js'
+            - 'bin/run-public-performance-gate.js'
+            - 'bin/run-staging-acceptance-gate.js'
             - 'playwright.config.js'
+            - 'tests/staging-acceptance-gate.spec.js'
             - 'package.json'
             - 'package-lock.json'
     pull_request:
@@ -28,21 +41,34 @@ on:
         paths:
             - 'templates/**'
             - 'content/**'
+            - 'src/apps/astro/**'
             - 'servicios/**'
             - 'ninos/**'
             - 'styles.css'
+            - 'styles-astro.css'
             - 'styles-deferred.css'
+            - '.htaccess'
+            - 'nginx-pielarmonia.conf'
+            - 'sitemap.xml'
+            - 'robots.txt'
             - 'index.html'
             - 'telemedicina.html'
             - 'js/service-navigation-analytics.js'
             - 'js/services-init.js'
             - 'tests/premium-navigation-ia.spec.js'
+            - 'tests/service-booking-hints-parity.spec.js'
             - 'tests/service-pages-premium-new.spec.js'
+            - 'tests/public-routing-redirects.spec.js'
+            - 'tests/public-seo-routing.spec.js'
             - 'tests/service-pages-qa.spec.js'
             - 'tests/deferred-content-fallback.spec.js'
             - 'tests/mobile-overflow-regression.spec.js'
             - 'lighthouserc.premium.json'
+            - 'bin/capture-public-baseline.js'
+            - 'bin/run-public-performance-gate.js'
+            - 'bin/run-staging-acceptance-gate.js'
             - 'playwright.config.js'
+            - 'tests/staging-acceptance-gate.spec.js'
             - 'package.json'
             - 'package-lock.json'
     workflow_dispatch:
@@ -76,10 +102,12 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            - name: Rebuild HTML and service routes
+            - name: Rebuild public routes (legacy + Astro)
               run: |
                   npm run build:html
                   npm run services:build
+                  npm run astro:build
+                  npm run astro:sync
 
             - name: Install Playwright (chromium)
               run: npx playwright install --with-deps chromium
@@ -99,6 +127,14 @@ jobs:
                   CHROME_PATH: ${{ steps.chromium.outputs.path }}
               run: npm run test:frontend:lighthouse:premium
 
+            - name: Run public performance gate (CWV + budgets)
+              env:
+                  CHROME_PATH: ${{ steps.chromium.outputs.path }}
+              run: npm run test:frontend:performance:gate
+
+            - name: Capture visual baseline (desktop + mobile)
+              run: node bin/capture-public-baseline.js --out-dir .visual-baseline --label ci
+
             - name: Upload Playwright report
               if: always()
               uses: actions/upload-artifact@v4
@@ -117,6 +153,24 @@ jobs:
                   if-no-files-found: ignore
                   retention-days: 14
 
+            - name: Upload Visual baseline
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: premium-visual-baseline
+                  path: .visual-baseline/
+                  if-no-files-found: ignore
+                  retention-days: 14
+
+            - name: Upload Performance gate evidence
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: premium-performance-gate
+                  path: verification/performance-gate/
+                  if-no-files-found: ignore
+                  retention-days: 14
+
             - name: Summary
               if: ${{ always() }}
               shell: bash
@@ -126,5 +180,7 @@ jobs:
                     echo "- Workflow: premium UX + lighthouse gate";
                     echo "- QA command: \`npm run test:frontend:qa:premium\`";
                     echo "- Lighthouse command: \`npm run test:frontend:lighthouse:premium\`";
+                    echo "- Performance gate: \`npm run test:frontend:performance:gate\`";
+                    echo "- Visual baseline: \`node bin/capture-public-baseline.js --out-dir .visual-baseline --label ci\`";
                     echo "- Result: \`${{ job.status }}\`";
                   } >> "$GITHUB_STEP_SUMMARY"

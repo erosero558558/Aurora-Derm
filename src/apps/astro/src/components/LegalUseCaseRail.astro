@@ -1,0 +1,108 @@
+---
+const { locale = 'es', currentSlug = '' } = Astro.props;
+
+const copy = {
+    es: {
+        eyebrow: 'Atajos por caso',
+        title: 'Llega a la politica correcta segun lo que vas a hacer.',
+        description:
+            'Este bloque traduce el lenguaje legal a decisiones concretas del funnel: reservar, compartir informacion, gestionar consentimiento o entender limites clinicos.',
+        items: [
+            {
+                targetSlug: 'terminos',
+                kicker: 'Reserva y cambios',
+                title: 'Voy a reservar o reprogramar',
+                body: 'Revisa terminos si necesitas entender confirmacion, pagos, cancelaciones o no show antes de continuar.',
+                href: '/es/legal/terminos/',
+            },
+            {
+                targetSlug: 'privacidad',
+                kicker: 'Datos y fotos',
+                title: 'Voy a enviar fotos o documentos',
+                body: 'Privacidad explica como se usan imagenes, datos de contacto y antecedentes clinicos dentro del flujo asistencial.',
+                href: '/es/legal/privacidad/',
+            },
+            {
+                targetSlug: 'cookies',
+                kicker: 'Consentimiento',
+                title: 'Quiero gestionar cookies opcionales',
+                body: 'Cookies aclara que sigue funcionando aunque rechaces medicion no esencial y como ajustar preferencias.',
+                href: '/es/legal/cookies/',
+            },
+            {
+                targetSlug: 'aviso-medico',
+                kicker: 'Alcance',
+                title: 'Quiero saber si esto sustituye una consulta',
+                body: 'Aviso medico define cuando el contenido orienta y cuando el caso debe pasar a valoracion profesional o urgencia.',
+                href: '/es/legal/aviso-medico/',
+            },
+        ],
+    },
+    en: {
+        eyebrow: 'Use-case shortcuts',
+        title: 'Jump to the correct policy based on what you are about to do.',
+        description:
+            'This block translates legal language into concrete funnel decisions: booking, sharing information, managing consent, or understanding clinical limits.',
+        items: [
+            {
+                targetSlug: 'terms',
+                kicker: 'Booking and changes',
+                title: 'I am about to book or reschedule',
+                body: 'Review terms if you need clarity on confirmation, payments, cancellations, or no-show before continuing.',
+                href: '/en/legal/terms/',
+            },
+            {
+                targetSlug: 'privacy',
+                kicker: 'Data and images',
+                title: 'I want to send images or documents',
+                body: 'Privacy explains how images, contact data, and clinical background are used within the care workflow.',
+                href: '/en/legal/privacy/',
+            },
+            {
+                targetSlug: 'cookies',
+                kicker: 'Consent',
+                title: 'I want to manage optional cookies',
+                body: 'Cookies clarifies what still works when non-essential measurement is rejected and how preferences can be adjusted.',
+                href: '/en/legal/cookies/',
+            },
+            {
+                targetSlug: 'medical-disclaimer',
+                kicker: 'Scope',
+                title: 'I need to know whether this replaces consultation',
+                body: 'Medical disclaimer defines when content only guides and when the case must move to professional evaluation or urgent care.',
+                href: '/en/legal/medical-disclaimer/',
+            },
+        ],
+    },
+};
+
+const selected = copy[locale] || copy.es;
+---
+
+<section class="sony-section sony-section--compact sony-legal-usecases" data-legal-usecases>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-legal-usecases__grid">
+        {
+            selected.items.map((item) => {
+                const isActive = item.targetSlug === currentSlug;
+                return (
+                    <a
+                        class="sony-legal-usecases__card"
+                        data-legal-usecase-card
+                        href={item.href}
+                        data-active={isActive ? 'true' : 'false'}
+                        aria-current={isActive ? 'page' : undefined}
+                    >
+                        <span>{item.kicker}</span>
+                        <h3>{item.title}</h3>
+                        <p>{item.body}</p>
+                    </a>
+                );
+            })
+        }
+    </div>
+</section>

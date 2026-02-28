@@ -1,0 +1,108 @@
+---
+const { locale = 'es', currentSlug = '' } = Astro.props;
+
+const copy = {
+    es: {
+        eyebrow: 'Mapa legal',
+        title: 'Cada politica responde una friccion distinta del funnel.',
+        description:
+            'Usa esta navegacion para saltar entre condiciones de reserva, privacidad, cookies y alcance medico sin salir del flujo publico.',
+        items: [
+            {
+                slug: 'terminos',
+                href: '/es/legal/terminos/',
+                kicker: 'Reserva',
+                title: 'Terminos y condiciones',
+                body: 'Aclara confirmacion, reprogramacion, pagos y uso aceptable del sitio.',
+            },
+            {
+                slug: 'privacidad',
+                href: '/es/legal/privacidad/',
+                kicker: 'Datos',
+                title: 'Politica de privacidad',
+                body: 'Explica que informacion se pide, para que se usa y como se conserva.',
+            },
+            {
+                slug: 'cookies',
+                href: '/es/legal/cookies/',
+                kicker: 'Consentimiento',
+                title: 'Politica de cookies',
+                body: 'Detalla cookies esenciales, analitica opcional y gestion de preferencias.',
+            },
+            {
+                slug: 'aviso-medico',
+                href: '/es/legal/aviso-medico/',
+                kicker: 'Alcance clinico',
+                title: 'Aviso medico',
+                body: 'Define limites del contenido, del chatbot y cuando corresponde escalar el caso.',
+            },
+        ],
+    },
+    en: {
+        eyebrow: 'Legal map',
+        title: 'Each policy resolves a different friction point in the funnel.',
+        description:
+            'Use this navigation to move across booking terms, privacy, cookies, and medical scope without leaving the public flow.',
+        items: [
+            {
+                slug: 'terms',
+                href: '/en/legal/terms/',
+                kicker: 'Booking',
+                title: 'Terms and conditions',
+                body: 'Clarifies confirmation, rescheduling, payments, and acceptable website use.',
+            },
+            {
+                slug: 'privacy',
+                href: '/en/legal/privacy/',
+                kicker: 'Data',
+                title: 'Privacy policy',
+                body: 'Explains what information is requested, why it is used, and how it is retained.',
+            },
+            {
+                slug: 'cookies',
+                href: '/en/legal/cookies/',
+                kicker: 'Consent',
+                title: 'Cookie policy',
+                body: 'Details essential cookies, optional analytics, and preference management.',
+            },
+            {
+                slug: 'medical-disclaimer',
+                href: '/en/legal/medical-disclaimer/',
+                kicker: 'Clinical scope',
+                title: 'Medical disclaimer',
+                body: 'Defines limits of website content, chatbot guidance, and escalation scenarios.',
+            },
+        ],
+    },
+};
+
+const selected = copy[locale] || copy.es;
+---
+
+<section class="sony-section sony-section--compact sony-policy-nav" data-policy-navigator>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-policy-nav__grid">
+        {
+            selected.items.map((item) => {
+                const isActive = item.slug === currentSlug;
+                return (
+                    <a
+                        class="sony-policy-nav__card"
+                        data-policy-nav-card
+                        href={item.href}
+                        aria-current={isActive ? 'page' : undefined}
+                        data-active={isActive ? 'true' : 'false'}
+                    >
+                        <span>{item.kicker}</span>
+                        <h3>{item.title}</h3>
+                        <p>{item.body}</p>
+                    </a>
+                );
+            })
+        }
+    </div>
+</section>

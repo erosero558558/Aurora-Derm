@@ -1,0 +1,168 @@
+---
+const {
+    title = 'Piel en Armonia',
+    description = '',
+    locale = 'es',
+    canonicalPath = '/es/',
+    alternatePath = '/en/',
+    bodyClass = '',
+    loadRuntime = false,
+    preloadHero = false,
+    extraStyles = [],
+    deferLegacyStyles = false,
+} = Astro.props;
+
+const origin = 'https://pielarmonia.com';
+const canonical = new URL(canonicalPath, origin).toString();
+const alternate = new URL(alternatePath, origin).toString();
+const xDefault = locale === 'en' ? alternate : canonical;
+---
+
+<!doctype html>
+<html lang={locale}>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <meta name="robots" content="index,follow,max-image-preview:large" />
+        <link rel="canonical" href={canonical} />
+        <link
+            rel="alternate"
+            href={alternate}
+            hreflang={locale === 'es' ? 'en' : 'es'}
+        />
+        <link rel="alternate" href={canonical} hreflang={locale} />
+        <link rel="alternate" href={xDefault} hreflang="x-default" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Piel en Armonia" />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta
+            property="og:image"
+            content="https://pielarmonia.com/images/optimized/showcase-hero.jpg"
+        />
+        <meta name="theme-color" content="#090b11" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="manifest" href="/manifest.json" />
+        <link
+            rel="preload"
+            href="/fonts/plus-jakarta-sans.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        {
+            preloadHero && (
+                <link
+                    rel="preload"
+                    as="image"
+                    href="/images/optimized/showcase-hero-1024.webp"
+                    type="image/webp"
+                    imagesrcset="/images/optimized/showcase-hero-640.webp 640w, /images/optimized/showcase-hero-1024.webp 1024w, /images/optimized/showcase-hero-1400.webp 1400w"
+                    imagesizes="(max-width: 740px) 100vw, (max-width: 1280px) 95vw, 1220px"
+                    fetchpriority="high"
+                />
+            )
+        }
+        {
+            deferLegacyStyles ? (
+                <>
+                    <style id="legacy-ui-blocker">
+                        {`.cookie-banner, .modal, .chatbot-widget, .chatbot-container { display: none !important; }`}
+                    </style>
+                    <script is:inline>
+                        {`(() => {
+    const href = '/styles.css?v=figo-20260227-redesignfix3';
+    const blockerId = 'legacy-ui-blocker';
+
+    const ensureLegacyStyles = () => {
+        if (document.querySelector('link[data-legacy-styles="true"]')) {
+            return;
+        }
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.dataset.legacyStyles = 'true';
+        link.onload = () => {
+            const blocker = document.getElementById(blockerId);
+            if (blocker) {
+                blocker.remove();
+            }
+        };
+        document.head.appendChild(link);
+    };
+
+    if (document.readyState === 'complete') {
+        setTimeout(ensureLegacyStyles, 0);
+        return;
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(ensureLegacyStyles, 0);
+    }, { once: true });
+})();`}
+                    </script>
+                    <noscript>
+                        <link rel="stylesheet" href="/styles.css?v=figo-20260227-redesignfix3" />
+                    </noscript>
+                </>
+            ) : (
+                <link rel="stylesheet" href="/styles.css?v=figo-20260227-redesignfix3" />
+            )
+        }
+        <link rel="stylesheet" href="/styles-astro.css?v=astro-20260228-v2" />
+        {
+            extraStyles.map((href) => <link rel="stylesheet" href={href} />)
+        }
+        <script
+            src="/js/service-navigation-analytics.js?v=service-analytics-20260228-v3"
+            defer
+        ></script>
+        {
+            loadRuntime && (
+                <script is:inline>
+                    {`(() => {
+    if (window.__publicRuntimeLoaded) {
+        return;
+    }
+    window.__publicRuntimeLoaded = true;
+
+    const appendScript = (src, type) => {
+        const element = document.createElement('script');
+        element.src = src;
+        if (type) {
+            element.type = type;
+        } else {
+            element.defer = true;
+        }
+        document.head.appendChild(element);
+    };
+
+    const bootRuntime = () => {
+        appendScript('/js/bootstrap-inline-engine.js', '');
+        appendScript('/script.js', 'module');
+    };
+
+    if (document.readyState === 'complete') {
+        setTimeout(bootRuntime, 0);
+        return;
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(bootRuntime, 0);
+    }, { once: true });
+})();`}
+                </script>
+            )
+        }
+    </head>
+    <body class:list={['astro-public', bodyClass]}>
+        <a class="sony-skip-link" href="#main-content">
+            {locale === 'en' ? 'Skip to content' : 'Saltar al contenido'}
+        </a>
+        <slot />
+    </body>
+</html>

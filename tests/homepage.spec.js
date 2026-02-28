@@ -1,144 +1,78 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v2');
 
-test.describe('Homepage', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/');
+test.describe('Public home V2', () => {
+    test('renders the new shell and editorial macro sections on ES home', async ({ page }) => {
+        await gotoPublicRoute(page, '/es/');
+
+        await expect(page).toHaveTitle(/Piel en Armonia/i);
+        await expect(page.locator('[data-public-nav]')).toBeVisible();
+        await expect(page.locator('[data-stage-carousel]')).toBeVisible();
+        await expect(page.locator('[data-stage-slide]')).toHaveCount(3);
+        await expect(page.locator('[data-stage-trigger]')).toHaveCount(3);
+        await expect(page.locator('[data-latest-news]')).toBeVisible();
+        await expect(page.locator('[data-featured-story] .featured-story')).toHaveCount(3);
+        await expect(page.locator('[data-program-grid] .program-grid__card')).toHaveCount(3);
+        await expect(page.locator('[data-telemedicine-band]')).toBeVisible();
+        await expect(page.locator('[data-doctor-band] .doctor-band__card')).toHaveCount(2);
+        await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
+        await expect(page.locator('[data-public-footer]')).toBeVisible();
+        await expect(page.locator('.sony-hero')).toHaveCount(0);
     });
 
-    test('carga correctamente con título', async ({ page }) => {
-        await expect(page).toHaveTitle(/Piel en Armonía/);
+    test('stage trigger switches the active editorial story', async ({ page }) => {
+        await gotoPublicRoute(page, '/es/');
+
+        const firstTrigger = page.locator('[data-stage-trigger]').nth(0);
+        const secondTrigger = page.locator('[data-stage-trigger]').nth(1);
+        await expect(firstTrigger).toHaveClass(/is-active/);
+        await secondTrigger.click();
+        await expect(secondTrigger).toHaveClass(/is-active/);
+        await expect(page.locator('[data-stage-slide].is-active')).toHaveCount(1);
     });
 
-    test('muestra la sección hero', async ({ page }) => {
-        const hero = page.locator('.hero, #hero, [class*="hero"]').first();
-        await expect(hero).toBeVisible();
+    test('booking bridge hydrates the legacy hooks without restoring the old shell', async ({ page }) => {
+        await gotoPublicRoute(page, '/es/');
+        await waitForBookingHooks(page);
+        await expect(page.locator('#chatbotWidget')).toHaveCount(1);
+        await expect(page.locator('#chatbotContainer')).toHaveCount(1);
     });
 
-    test('muestra la sección de servicios', async ({ page }) => {
-        const servicios = page
-            .locator('#servicios, #services, [id*="servicio"]')
-            .first();
-        await expect(servicios).toBeVisible();
-    });
+    test('booking and cookie surfaces are rendered natively before the legacy runtime boots on home', async ({ page }) => {
+        await gotoPublicRoute(page, '/es/');
 
-    test('muestra el formulario de citas', async ({ page }) => {
-        const form = page.locator('#appointmentForm');
-        await expect(form).toBeVisible();
-    });
-
-    test('renderiza reseñas en la sección pública', async ({ page }) => {
-        const reviewsSection = page
-            .locator('#resenas, #reviews, .reviews-section')
-            .first();
-        await expect(reviewsSection).toBeVisible();
-        await reviewsSection.scrollIntoViewIfNeeded();
-        await page.waitForTimeout(1800);
-        await expect(
-            page.locator('.reviews-grid .review-card').first()
-        ).toBeVisible();
-    });
-
-    test('navegación principal funciona', async ({ page }) => {
-        const nav = page.locator('nav, .nav, .navbar').first();
-        await expect(nav).toBeVisible();
-    });
-
-    test('selector de idioma existe en el DOM', async ({ page }) => {
-        const langBtn = page.locator(
-            '[onclick*="changeLanguage"], [data-lang="en"], .lang-btn, .language-selector button'
-        );
-        expect(await langBtn.count()).toBeGreaterThanOrEqual(1);
-    });
-
-    test('sistema de temas existe en el DOM', async ({ page }) => {
-        const themeBtn = page.locator(
-            '[data-theme-mode], .theme-btn, .theme-toggle'
-        );
-        expect(await themeBtn.count()).toBeGreaterThanOrEqual(1);
-        const hasValidThemeState = await page.evaluate(() => {
-            const root = document.documentElement;
-            const dataTheme = root.getAttribute('data-theme');
-            if (dataTheme && /^(light|dark)$/.test(dataTheme)) {
-                return true;
-            }
-            return !!document.querySelector(
-                '[data-theme-mode].active, .theme-btn.active, .theme-toggle .active'
-            );
-        });
-        expect(hasValidThemeState).toBeTruthy();
-    });
-
-    test('sistema de temas cambia a oscuro y persiste tras recarga', async ({
-        page,
-    }) => {
-        const darkBtn = page
-            .locator('.theme-btn[data-theme-mode="dark"]')
-            .first();
-        const lightBtn = page
-            .locator('.theme-btn[data-theme-mode="light"]')
-            .first();
-
-        await expect(darkBtn).toBeVisible();
-        await darkBtn.click();
-
+        await expect(page.locator('[data-public-booking-shell]')).toBeVisible();
+        await expect(page.locator('#appointmentForm')).toBeVisible();
+        await expect(page.locator('#cookieBanner')).toContainText(/cookies/i);
+        await expect(page.locator('#videoModal')).toBeAttached();
+        await expect(page.locator('#paymentModal')).toBeAttached();
+        await expect(page.locator('#successModal')).toBeAttached();
+        await expect(page.locator('#rescheduleModal')).toBeAttached();
+        await expect(page.locator('#reviewModal')).toBeAttached();
+        await expect(page.locator('.booking-bridge__placeholder')).toHaveCount(0);
         await expect
-            .poll(async () => {
-                return page.evaluate(() => ({
-                    mode: document.documentElement.getAttribute(
-                        'data-theme-mode'
+            .poll(
+                async () =>
+                    page.evaluate(
+                        () =>
+                            document.documentElement.dataset.publicV2RuntimeBooted ||
+                            ''
                     ),
-                    theme: document.documentElement.getAttribute('data-theme'),
-                    stored: localStorage.getItem('themeMode'),
-                }));
-            })
-            .toEqual({
-                mode: 'dark',
-                theme: 'dark',
-                stored: 'dark',
-            });
-
-        await expect(darkBtn).toHaveClass(/active/);
-        await expect(darkBtn).toHaveAttribute('aria-pressed', 'true');
-        if (await lightBtn.isVisible()) {
-            await expect(lightBtn).toHaveAttribute('aria-pressed', 'false');
-        }
-
-        await page.reload();
-
-        await expect
-            .poll(async () => {
-                return page.evaluate(() => ({
-                    mode: document.documentElement.getAttribute(
-                        'data-theme-mode'
-                    ),
-                    theme: document.documentElement.getAttribute('data-theme'),
-                }));
-            })
-            .toEqual({
-                mode: 'dark',
-                theme: 'dark',
-            });
-
-        if (await lightBtn.isVisible()) {
-            await lightBtn.click();
-            await expect
-                .poll(async () =>
-                    page.evaluate(() =>
-                        document.documentElement.getAttribute('data-theme')
-                    )
-                )
-                .toBe('light');
-            await expect(lightBtn).toHaveAttribute('aria-pressed', 'true');
-        }
+                { timeout: 1000 }
+            )
+            .toBe('');
     });
 
-    test('footer visible con enlaces legales', async ({ page }) => {
-        const footer = page.locator('footer').first();
-        await expect(footer).toBeVisible();
-        const links = footer.locator(
-            'a[href*="terminos"], a[href*="privacidad"]'
-        );
-        expect(await links.count()).toBeGreaterThanOrEqual(1);
+    test('english home keeps the same V2 structure and locale switch', async ({ page }) => {
+        await gotoPublicRoute(page, '/en/');
+
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+        await expect(page.locator('.public-nav__lang')).toHaveAttribute('href', '/es/');
+        await expect(page.locator('[data-stage-carousel]')).toBeVisible();
+        await expect(page.locator('[data-latest-news]')).toContainText(/Latest/i);
+        await expect(page.locator('[data-program-grid] .program-grid__card')).toHaveCount(3);
+        await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
+        await expect(page.locator('.sony-hero')).toHaveCount(0);
     });
 });

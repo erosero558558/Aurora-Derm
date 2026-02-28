@@ -1,0 +1,636 @@
+---
+import {
+    homePath,
+    mapServiceHint,
+    resolveServiceIntents,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const {
+    locale = 'es',
+    variant = 'home',
+    currentService = null,
+    defaultProfile = 'diagnosis',
+} = Astro.props;
+
+const classifyCtaTarget = (href = '') => {
+    if (href.includes('#citas') || href.includes('?service=')) return 'booking';
+    if (href.includes('#service-finder')) return 'service_finder';
+    if (href.includes('/telemedicina/') || href.includes('/telemedicine/')) return 'telemedicine';
+    if (href.includes('/servicios/') || href.includes('/services/')) return 'service_detail';
+    return 'navigation';
+};
+
+const bookingHint = currentService ? mapServiceHint(currentService.slug) : 'consulta';
+const directBookingHref = `${homePath(locale)}?service=${encodeURIComponent(bookingHint)}#citas`;
+const isEnglish = locale === 'en';
+const telemedicineEntryHref =
+    variant === 'telemedicine' ? `${homePath(locale)}#citas` : telemedicinePath(locale);
+const telemedicineEntryLabel =
+    variant === 'telemedicine'
+        ? isEnglish
+            ? 'Book online now'
+            : 'Reservar online ahora'
+        : isEnglish
+          ? 'View telemedicine'
+          : 'Ver telemedicina';
+const currentServiceIntents = currentService ? resolveServiceIntents(currentService) : ['all'];
+const currentCatalogCategory = currentService?.category || 'all';
+const currentCatalogIntent =
+    currentServiceIntents.find((item) => item !== 'all') || 'all';
+const profileContextMap = {
+    diagnosis: {
+        category: 'clinical',
+        intent: 'diagnosis',
+    },
+    remote: {
+        category:
+            currentService && currentServiceIntents.includes('remote')
+                ? currentCatalogCategory
+                : 'all',
+        intent: 'remote',
+    },
+    procedure: {
+        category: currentService?.category || 'aesthetic',
+        intent: currentService ? currentCatalogIntent : 'rejuvenation',
+    },
+    pediatric: {
+        category: 'children',
+        intent: 'pediatric',
+    },
+};
+
+const headingCopy = isEnglish
+    ? {
+          home: {
+              eyebrow: 'Route planner',
+              title: 'Choose the right entry point before you book.',
+              description:
+                  'Compare in-person assessment, telemedicine, and treatment-led routes without leaving the funnel.',
+          },
+          service: {
+              eyebrow: 'Route check',
+              title: 'Validate whether this service, telemedicine, or a broader assessment should come first.',
+              description:
+                  'This prevents users from jumping into the wrong booking path when the case still needs triage.',
+          },
+          telemedicine: {
+              eyebrow: 'Entry comparison',
+              title: 'Decide when online care is enough and when in-person review should lead.',
+              description:
+                  'Telemedicine works best when the case can start remotely and escalate only if the diagnosis requires it.',
+          },
+      }
+    : {
+          home: {
+              eyebrow: 'Planificador de rutas',
+              title: 'Elige el punto de entrada correcto antes de reservar.',
+              description:
+                  'Compara valoracion presencial, telemedicina y rutas de tratamiento sin salir del funnel.',
+          },
+          service: {
+              eyebrow: 'Chequeo de ruta',
+              title: 'Valida si esta ficha, telemedicina o una valoracion mas amplia debe ir primero.',
+              description:
+                  'Asi evitamos que el usuario entre al booking equivocado cuando el caso todavia necesita triage.',
+          },
+          telemedicine: {
+              eyebrow: 'Comparador de entradas',
+              title: 'Decide cuando basta empezar online y cuando debe liderar la revision presencial.',
+              description:
+                  'Telemedicina funciona mejor cuando el caso puede iniciar remoto y escalar solo si el diagnostico lo pide.',
+          },
+      };
+
+const routeCards = isEnglish
+    ? [
+          {
+              id: 'inperson',
+              eyebrow: 'In-person assessment',
+              title: 'Direct examination first',
+              description:
+                  'Best when the case may need dermatoscopy, lesion mapping, scalp review, or a broader first diagnosis.',
+              bullets: [
+                  'New or changing lesions',
+                  'Skin, hair, and nail review',
+                  'May escalate to procedure',
+              ],
+              href: `${homePath(locale)}?service=consulta#citas`,
+              ctaLabel: 'Book assessment',
+              category: 'clinical',
+              intent: 'diagnosis',
+          },
+          {
+              id: 'telemedicine',
+              eyebrow: 'Telemedicine',
+              title: 'Remote start with escalation path',
+              description:
+                  'Useful for acne, dermatitis, follow-ups, treatment questions, and cases that can begin with photos or video.',
+              bullets: [
+                  'Fast triage from home',
+                  'Good for follow-up and flare control',
+                  'Escalates to in-person if needed',
+              ],
+              href: telemedicineEntryHref,
+              ctaLabel: telemedicineEntryLabel,
+              category:
+                  currentService && currentServiceIntents.includes('remote')
+                      ? currentCatalogCategory
+                      : 'all',
+              intent: 'remote',
+          },
+          {
+              id: 'treatment',
+              eyebrow: currentService ? 'Current service route' : 'Treatment-led route',
+              title: currentService ? currentService.hero || 'Current service' : 'Procedure or rejuvenation path',
+              description: currentService
+                  ? `If ${currentService.hero || 'this service'} matches the goal, the booking flow can start directly with the current route.`
+                  : 'Better when the visitor already knows they are looking for peels, injectables, laser, scars, or a focused treatment goal.',
+              bullets: currentService
+                  ? [
+                        'Direct booking with preselected intent',
+                        'Keeps the current service context',
+                        'Still compatible with broader assessment',
+                    ]
+                  : [
+                        'Focused aesthetic or procedural goals',
+                        'Use the finder to compare treatment routes',
+                        'Keeps booking intent visible',
+                    ],
+              href: currentService ? directBookingHref : `${homePath(locale)}#service-finder`,
+              ctaLabel: currentService ? 'Book current service' : 'Explore treatment routes',
+              category: currentService?.category || 'aesthetic',
+              intent: currentService ? currentCatalogIntent : 'rejuvenation',
+          },
+      ]
+    : [
+          {
+              id: 'inperson',
+              eyebrow: 'Valoracion presencial',
+              title: 'Examen directo primero',
+              description:
+                  'Mejor cuando el caso puede requerir dermatoscopia, revision de lesiones, cuero cabelludo o un diagnostico mas amplio.',
+              bullets: [
+                  'Lesiones nuevas o cambiantes',
+                  'Revision de piel, cabello y unas',
+                  'Puede escalar a procedimiento',
+              ],
+              href: `${homePath(locale)}?service=consulta#citas`,
+              ctaLabel: 'Reservar valoracion',
+              category: 'clinical',
+              intent: 'diagnosis',
+          },
+          {
+              id: 'telemedicine',
+              eyebrow: 'Telemedicina',
+              title: 'Inicio remoto con escalamiento',
+              description:
+                  'Util para acne, dermatitis, controles, dudas de tratamiento y casos que pueden arrancar con fotos o video.',
+              bullets: [
+                  'Triage rapido desde casa',
+                  'Buen punto de partida para controles',
+                  'Escala a presencial si hace falta',
+              ],
+              href: telemedicineEntryHref,
+              ctaLabel: telemedicineEntryLabel,
+              category:
+                  currentService && currentServiceIntents.includes('remote')
+                      ? currentCatalogCategory
+                      : 'all',
+              intent: 'remote',
+          },
+          {
+              id: 'treatment',
+              eyebrow: currentService ? 'Ruta del servicio actual' : 'Ruta guiada por tratamiento',
+              title: currentService ? currentService.hero || 'Servicio actual' : 'Procedimiento o rejuvenecimiento',
+              description: currentService
+                  ? `Si ${currentService.hero || 'este servicio'} coincide con el objetivo, el booking puede empezar directo con la ruta actual.`
+                  : 'Sirve mejor cuando la persona ya sabe que busca peeling, inyectables, laser, cicatrices o una meta de tratamiento concreta.',
+              bullets: currentService
+                  ? [
+                        'Reserva directa con intencion preseleccionada',
+                        'Mantiene el contexto de la ficha actual',
+                        'Sigue compatible con valoracion amplia',
+                    ]
+                  : [
+                        'Objetivos esteticos o procedimentales claros',
+                        'Usa el finder para comparar tratamientos',
+                        'Mantiene visible la intencion de booking',
+                    ],
+              href: currentService ? directBookingHref : `${homePath(locale)}#service-finder`,
+              ctaLabel: currentService ? 'Reservar servicio actual' : 'Explorar tratamientos',
+              category: currentService?.category || 'aesthetic',
+              intent: currentService ? currentCatalogIntent : 'rejuvenation',
+          },
+      ];
+
+const profiles = isEnglish
+    ? [
+            {
+                id: 'diagnosis',
+                label: 'I am not sure yet',
+                routeId: 'inperson',
+              kicker: 'Recommended first move',
+              title: 'Start with a broader in-person assessment.',
+              description:
+                  'This gives the medical team room to diagnose, map lesions, and decide whether telemedicine or a treatment route should come next.',
+              primaryHref: `${homePath(locale)}?service=consulta#citas`,
+              primaryLabel: 'Book assessment',
+              primaryTarget: 'booking',
+              secondaryHref: servicePath(locale, 'diagnostico-integral'),
+              secondaryLabel: 'View comprehensive diagnosis',
+              secondaryTarget: 'service_detail',
+          },
+          {
+              id: 'remote',
+              label: 'I can start online',
+              routeId: 'telemedicine',
+              kicker: 'Remote-first route',
+              title: 'Start with telemedicine and escalate only if needed.',
+              description:
+                  'A strong first step for acne, dermatitis, follow-up, and situations where photos or video can accelerate the first decision.',
+              primaryHref: telemedicineEntryHref,
+              primaryLabel:
+                  variant === 'telemedicine' ? 'Book online now' : 'Go to telemedicine',
+              primaryTarget: classifyCtaTarget(telemedicineEntryHref),
+              secondaryHref: `${homePath(locale)}?service=consulta#citas`,
+              secondaryLabel: 'Book in-person instead',
+              secondaryTarget: 'booking',
+          },
+          {
+              id: 'procedure',
+              label: 'I want treatment',
+              routeId: 'treatment',
+              kicker: 'Treatment-led route',
+              title: currentService
+                  ? 'This page can already act as the booking entry point.'
+                  : 'Go straight into a treatment-led route.',
+              description: currentService
+                  ? `If the goal matches ${currentService.hero || 'the current service'}, the user can book directly without losing context.`
+                  : 'Use the service finder to compare peels, laser, scars, injectables, and other focused treatment pathways before booking.',
+              primaryHref: currentService ? directBookingHref : `${homePath(locale)}#service-finder`,
+              primaryLabel: currentService ? 'Book this service' : 'Open the service finder',
+              primaryTarget: currentService ? 'booking' : 'service_finder',
+              secondaryHref: `${homePath(locale)}?service=rejuvenecimiento#citas`,
+              secondaryLabel: 'Book aesthetic assessment',
+              secondaryTarget: 'booking',
+          },
+          {
+              id: 'pediatric',
+              label: 'It is for a child',
+              routeId: 'inperson',
+              kicker: 'Pediatric-first route',
+              title: 'Start with pediatric dermatology or a guided assessment.',
+              description:
+                  'Child and teen cases usually benefit from a direct review first, then follow-up can later move to telemedicine if appropriate.',
+              primaryHref: servicePath(locale, 'dermatologia-pediatrica'),
+              primaryLabel: 'Open pediatric dermatology',
+              primaryTarget: 'service_detail',
+              secondaryHref: `${homePath(locale)}?service=consulta#citas`,
+              secondaryLabel: 'Book guided assessment',
+              secondaryTarget: 'booking',
+          },
+      ]
+    : [
+          {
+              id: 'diagnosis',
+              label: 'No se que ruta elegir',
+              routeId: 'inperson',
+              kicker: 'Primer movimiento recomendado',
+              title: 'Empieza por una valoracion presencial amplia.',
+              description:
+                  'Esto le da margen al equipo medico para diagnosticar, mapear lesiones y decidir si despues conviene telemedicina o una ruta de tratamiento.',
+              primaryHref: `${homePath(locale)}?service=consulta#citas`,
+              primaryLabel: 'Reservar valoracion',
+              primaryTarget: 'booking',
+              secondaryHref: servicePath(locale, 'diagnostico-integral'),
+              secondaryLabel: 'Ver diagnostico integral',
+              secondaryTarget: 'service_detail',
+          },
+          {
+              id: 'remote',
+              label: 'Puedo empezar online',
+              routeId: 'telemedicine',
+              kicker: 'Ruta remota primero',
+              title: 'Empieza por telemedicina y escala solo si hace falta.',
+              description:
+                  'Es una entrada fuerte para acne, dermatitis, controles y situaciones donde fotos o video aceleran la primera decision.',
+              primaryHref: telemedicineEntryHref,
+              primaryLabel:
+                  variant === 'telemedicine'
+                      ? 'Reservar online ahora'
+                      : 'Ir a telemedicina',
+              primaryTarget: classifyCtaTarget(telemedicineEntryHref),
+              secondaryHref: `${homePath(locale)}?service=consulta#citas`,
+              secondaryLabel: 'Reservar presencial',
+              secondaryTarget: 'booking',
+          },
+          {
+              id: 'procedure',
+              label: 'Busco tratamiento',
+              routeId: 'treatment',
+              kicker: 'Ruta guiada por tratamiento',
+              title: currentService
+                  ? 'Esta pagina ya puede funcionar como punto de entrada al booking.'
+                  : 'Ve directo a una ruta de tratamiento.',
+              description: currentService
+                  ? `Si el objetivo coincide con ${currentService.hero || 'la ficha actual'}, el usuario puede reservar sin perder contexto.`
+                  : 'Usa el finder para comparar peelings, laser, cicatrices, inyectables y otras rutas focalizadas antes de reservar.',
+              primaryHref: currentService ? directBookingHref : `${homePath(locale)}#service-finder`,
+              primaryLabel: currentService ? 'Reservar esta ficha' : 'Abrir el finder',
+              primaryTarget: currentService ? 'booking' : 'service_finder',
+              secondaryHref: `${homePath(locale)}?service=rejuvenecimiento#citas`,
+              secondaryLabel: 'Reservar valoracion estetica',
+              secondaryTarget: 'booking',
+          },
+          {
+              id: 'pediatric',
+              label: 'Es para un nino',
+              routeId: 'inperson',
+              kicker: 'Ruta pediatrica primero',
+              title: 'Empieza por dermatologia pediatrica o valoracion guiada.',
+              description:
+                  'Los casos de ninos y adolescentes suelen beneficiarse de una revision directa primero, y luego el seguimiento puede pasar a telemedicina si aplica.',
+              primaryHref: servicePath(locale, 'dermatologia-pediatrica'),
+              primaryLabel: 'Abrir dermatologia pediatrica',
+              primaryTarget: 'service_detail',
+              secondaryHref: `${homePath(locale)}?service=consulta#citas`,
+              secondaryLabel: 'Reservar valoracion guiada',
+              secondaryTarget: 'booking',
+          },
+      ];
+
+const fallbackProfile = profiles.find((profile) => profile.id === defaultProfile) || profiles[0];
+const heading = headingCopy[variant] || headingCopy.home;
+---
+
+<section
+    id="route-planner"
+    class="sony-section sony-route-planner"
+    data-route-planner
+    data-default-profile={fallbackProfile.id}
+    data-route-variant={variant}
+    data-locale={locale}
+    data-current-service={currentService?.slug || ''}
+>
+    <div class="sony-section__head">
+        <p>{heading.eyebrow}</p>
+        <h2>{heading.title}</h2>
+        <span>{heading.description}</span>
+    </div>
+    <div class="sony-route-planner__shell">
+        <div class="sony-route-planner__summary">
+            <p data-route-summary-kicker>{fallbackProfile.kicker}</p>
+            <h3 data-route-summary-title>{fallbackProfile.title}</h3>
+            <span data-route-summary-description>{fallbackProfile.description}</span>
+            <div class="sony-route-planner__summary-actions">
+                <a
+                    class="sony-btn sony-btn--primary"
+                    data-route-primary
+                    href={fallbackProfile.primaryHref}
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="route_planner_summary_primary"
+                    data-cta-target={fallbackProfile.primaryTarget}
+                    data-route-profile={fallbackProfile.id}
+                    data-route-id={fallbackProfile.routeId}
+                    data-route-variant={variant}
+                    data-service-slug={currentService?.slug || ''}
+                    data-service-category={profileContextMap[fallbackProfile.id]?.category || currentCatalogCategory}
+                    data-service-intent={profileContextMap[fallbackProfile.id]?.intent || currentCatalogIntent}
+                    data-catalog-category={profileContextMap[fallbackProfile.id]?.category || currentCatalogCategory}
+                    data-catalog-intent={profileContextMap[fallbackProfile.id]?.intent || currentCatalogIntent}
+                >
+                    {fallbackProfile.primaryLabel}
+                </a>
+                <a
+                    class="sony-btn sony-btn--ghost"
+                    data-route-secondary
+                    href={fallbackProfile.secondaryHref}
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="route_planner_summary_secondary"
+                    data-cta-target={fallbackProfile.secondaryTarget}
+                    data-route-profile={fallbackProfile.id}
+                    data-route-id={fallbackProfile.routeId}
+                    data-route-variant={variant}
+                    data-service-slug={currentService?.slug || ''}
+                    data-service-category={profileContextMap[fallbackProfile.id]?.category || currentCatalogCategory}
+                    data-service-intent={profileContextMap[fallbackProfile.id]?.intent || currentCatalogIntent}
+                    data-catalog-category={profileContextMap[fallbackProfile.id]?.category || currentCatalogCategory}
+                    data-catalog-intent={profileContextMap[fallbackProfile.id]?.intent || currentCatalogIntent}
+                >
+                    {fallbackProfile.secondaryLabel}
+                </a>
+            </div>
+        </div>
+        <div class="sony-route-planner__controls" role="toolbar" aria-label={isEnglish ? 'Route profiles' : 'Perfiles de ruta'}>
+            {
+                profiles.map((profile) => (
+                    <button
+                        type="button"
+                        class="sony-route-planner__chip"
+                        data-route-profile={profile.id}
+                        data-route-id={profile.routeId}
+                        data-summary-kicker={profile.kicker}
+                        data-summary-title={profile.title}
+                        data-summary-description={profile.description}
+                        data-primary-href={profile.primaryHref}
+                        data-primary-label={profile.primaryLabel}
+                        data-primary-target={profile.primaryTarget}
+                        data-primary-category={profileContextMap[profile.id]?.category || currentCatalogCategory}
+                        data-primary-intent={profileContextMap[profile.id]?.intent || currentCatalogIntent}
+                        data-secondary-href={profile.secondaryHref}
+                        data-secondary-label={profile.secondaryLabel}
+                        data-secondary-target={profile.secondaryTarget}
+                        data-secondary-category={profileContextMap[profile.id]?.category || currentCatalogCategory}
+                        data-secondary-intent={profileContextMap[profile.id]?.intent || currentCatalogIntent}
+                        aria-pressed={profile.id === fallbackProfile.id ? 'true' : 'false'}
+                    >
+                        {profile.label}
+                    </button>
+                ))
+            }
+        </div>
+        <div class="sony-route-planner__grid">
+            {
+                routeCards.map((route) => (
+                    <article
+                        class="sony-route-planner__card"
+                        data-route-card={route.id}
+                        data-active={route.id === fallbackProfile.routeId ? 'true' : 'false'}
+                    >
+                        <p>{route.eyebrow}</p>
+                        <h3>{route.title}</h3>
+                        <span>{route.description}</span>
+                        <ul>
+                            {route.bullets.map((item) => <li>{item}</li>)}
+                        </ul>
+                        <a
+                            class="sony-btn sony-btn--ghost"
+                            href={route.href}
+                            data-analytics-event="open_public_cta"
+                            data-entry-surface="route_planner_card"
+                            data-cta-target={classifyCtaTarget(route.href)}
+                            data-route-id={route.id}
+                            data-route-variant={variant}
+                            data-service-slug={currentService?.slug || ''}
+                            data-service-category={route.category}
+                            data-service-intent={route.intent}
+                            data-catalog-category={route.category}
+                            data-catalog-intent={route.intent}
+                        >
+                            {route.ctaLabel}
+                        </a>
+                    </article>
+                ))
+            }
+        </div>
+    </div>
+    <script is:inline>
+        document.querySelectorAll('[data-route-planner]').forEach((root) => {
+            const buttons = Array.from(
+                root.querySelectorAll('button[data-route-profile]')
+            );
+            const cards = Array.from(root.querySelectorAll('[data-route-card]'));
+            const summaryKicker = root.querySelector('[data-route-summary-kicker]');
+            const summaryTitle = root.querySelector('[data-route-summary-title]');
+            const summaryDescription = root.querySelector('[data-route-summary-description]');
+            const primaryLink = root.querySelector('[data-route-primary]');
+            const secondaryLink = root.querySelector('[data-route-secondary]');
+            const defaultProfile = root.getAttribute('data-default-profile') || 'diagnosis';
+            const routeVariant = root.getAttribute('data-route-variant') || 'home';
+            const locale = root.getAttribute('data-locale') || 'es';
+            const currentService = root.getAttribute('data-current-service') || '';
+
+            const applyProfile = (profileId) => {
+                const activeButton = buttons.find((button) => button.dataset.routeProfile === profileId) || buttons[0];
+                if (!activeButton) {
+                    return;
+                }
+
+                const activeRoute = activeButton.dataset.routeId || 'inperson';
+
+                buttons.forEach((button) => {
+                    button.setAttribute(
+                        'aria-pressed',
+                        button === activeButton ? 'true' : 'false'
+                    );
+                });
+
+                cards.forEach((card) => {
+                    card.setAttribute(
+                        'data-active',
+                        card.dataset.routeCard === activeRoute ? 'true' : 'false'
+                    );
+                });
+
+                if (summaryKicker) {
+                    summaryKicker.textContent = activeButton.dataset.summaryKicker || '';
+                }
+                if (summaryTitle) {
+                    summaryTitle.textContent = activeButton.dataset.summaryTitle || '';
+                }
+                if (summaryDescription) {
+                    summaryDescription.textContent =
+                        activeButton.dataset.summaryDescription || '';
+                }
+                if (primaryLink) {
+                    primaryLink.textContent = activeButton.dataset.primaryLabel || '';
+                    primaryLink.setAttribute(
+                        'href',
+                        activeButton.dataset.primaryHref || '#'
+                    );
+                    primaryLink.setAttribute(
+                        'data-cta-target',
+                        activeButton.dataset.primaryTarget || 'navigation'
+                    );
+                    primaryLink.setAttribute(
+                        'data-route-profile',
+                        activeButton.dataset.routeProfile || defaultProfile
+                    );
+                    primaryLink.setAttribute(
+                        'data-route-id',
+                        activeButton.dataset.routeId || activeRoute
+                    );
+                    primaryLink.setAttribute('data-route-variant', routeVariant);
+                    primaryLink.setAttribute('data-service-slug', currentService);
+                    primaryLink.setAttribute(
+                        'data-service-category',
+                        activeButton.dataset.primaryCategory || 'all'
+                    );
+                    primaryLink.setAttribute(
+                        'data-service-intent',
+                        activeButton.dataset.primaryIntent || 'all'
+                    );
+                    primaryLink.setAttribute(
+                        'data-catalog-category',
+                        activeButton.dataset.primaryCategory || 'all'
+                    );
+                    primaryLink.setAttribute(
+                        'data-catalog-intent',
+                        activeButton.dataset.primaryIntent || 'all'
+                    );
+                }
+                if (secondaryLink) {
+                    const href = activeButton.dataset.secondaryHref || '';
+                    secondaryLink.textContent =
+                        activeButton.dataset.secondaryLabel || '';
+                    secondaryLink.setAttribute('href', href || '#');
+                    secondaryLink.setAttribute(
+                        'data-cta-target',
+                        activeButton.dataset.secondaryTarget || 'navigation'
+                    );
+                    secondaryLink.setAttribute(
+                        'data-route-profile',
+                        activeButton.dataset.routeProfile || defaultProfile
+                    );
+                    secondaryLink.setAttribute(
+                        'data-route-id',
+                        activeButton.dataset.routeId || activeRoute
+                    );
+                    secondaryLink.setAttribute('data-route-variant', routeVariant);
+                    secondaryLink.setAttribute('data-service-slug', currentService);
+                    secondaryLink.setAttribute(
+                        'data-service-category',
+                        activeButton.dataset.secondaryCategory || 'all'
+                    );
+                    secondaryLink.setAttribute(
+                        'data-service-intent',
+                        activeButton.dataset.secondaryIntent || 'all'
+                    );
+                    secondaryLink.setAttribute(
+                        'data-catalog-category',
+                        activeButton.dataset.secondaryCategory || 'all'
+                    );
+                    secondaryLink.setAttribute(
+                        'data-catalog-intent',
+                        activeButton.dataset.secondaryIntent || 'all'
+                    );
+                    secondaryLink.toggleAttribute('hidden', !href);
+                }
+            };
+
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    applyProfile(button.dataset.routeProfile || defaultProfile);
+                    window.dispatchEvent(
+                        new CustomEvent('route-planner-profile-change', {
+                            detail: {
+                                profile: button.dataset.routeProfile || defaultProfile,
+                                routeId: button.dataset.routeId || 'inperson',
+                                variant: routeVariant,
+                                locale,
+                                currentService,
+                                category:
+                                    button.dataset.primaryCategory || 'all',
+                                intent: button.dataset.primaryIntent || 'all',
+                            },
+                        })
+                    );
+                });
+            });
+
+            applyProfile(defaultProfile);
+        });
+    </script>
+</section>

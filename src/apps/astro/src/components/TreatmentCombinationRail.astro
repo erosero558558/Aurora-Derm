@@ -1,0 +1,177 @@
+---
+const { locale = 'es', service } = Astro.props;
+
+const category = String(service?.category || 'clinical').toLowerCase();
+const priceFrom = service?.price_from ? `$${service.price_from}` : locale === 'en' ? 'medical assessment' : 'valoracion medica';
+
+const combos = {
+    es: {
+        clinical: {
+            eyebrow: 'Combinaciones',
+            title: 'Rutas que suelen construirse alrededor de este servicio.',
+            description:
+                'No todos los casos terminan en una sola cita. Estas combinaciones explican como suele crecer la ruta sin romper conversion ni seguimiento.',
+            cards: [
+                {
+                    step: 'Ruta 01',
+                    title: 'Valoracion + tratamiento medico progresivo',
+                    body: `Empieza con consulta desde ${priceFrom} para confirmar diagnostico y ordenar medicacion, rutina y controles segun respuesta.`,
+                },
+                {
+                    step: 'Ruta 02',
+                    title: 'Valoracion + control remoto corto',
+                    body: 'Si el caso lo permite, el seguimiento puede pasar por telemedicina para revisar tolerancia, fotos y adherencia antes de escalar.',
+                },
+                {
+                    step: 'Ruta 03',
+                    title: 'Valoracion + examen o procedimiento presencial',
+                    body: 'Cuando aparecen dudas diagnosticas, dermatoscopia o intervenciones, la ruta cambia a presencial sin perder continuidad del plan.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Combinaciones',
+            title: 'Como suele escalar un plan estetico seguro.',
+            description:
+                'Los procedimientos con mejor conversion no se venden aislados. Se aterrizan con valoracion, secuencia y control posterior.',
+            cards: [
+                {
+                    step: 'Ruta 01',
+                    title: 'Valoracion + sesion principal',
+                    body: `La consulta inicial desde ${priceFrom} confirma indicacion, zonas, tiempos y si el procedimiento principal es suficiente.`,
+                },
+                {
+                    step: 'Ruta 02',
+                    title: 'Sesion principal + control de evolucion',
+                    body: 'Se revisa respuesta, edema, cuidados y si hace falta una segunda fase o ajuste de expectativa antes de repetir.',
+                },
+                {
+                    step: 'Ruta 03',
+                    title: 'Procedimiento + combinacion complementaria',
+                    body: 'Peeling, biostimulacion, toxina o laser pueden combinarse cuando la calidad de piel y el objetivo lo justifican clinicamente.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Combinaciones',
+            title: 'Rutas familiares y pediatricas que suelen funcionar mejor.',
+            description:
+                'En pediatria conviene ordenar la entrada: valoracion, educacion familiar y seguimiento simple antes de complicar la ruta.',
+            cards: [
+                {
+                    step: 'Ruta 01',
+                    title: 'Valoracion pediatrica + plan para casa',
+                    body: `La primera consulta desde ${priceFrom} define diagnostico, rutina, alertas y como sostener el cuidado en casa.`,
+                },
+                {
+                    step: 'Ruta 02',
+                    title: 'Control con fotos + ajuste breve',
+                    body: 'Muchos casos pueden revisar evolucion con evidencia remota antes de pedir otro traslado presencial.',
+                },
+                {
+                    step: 'Ruta 03',
+                    title: 'Escalamiento presencial cuando cambia el caso',
+                    body: 'Si aparecen lesiones nuevas, dolor o sospecha de procedimiento, la ruta sube a consulta fisica o valoracion mas amplia.',
+                },
+            ],
+        },
+    },
+    en: {
+        clinical: {
+            eyebrow: 'Combinations',
+            title: 'Care routes that are commonly built around this service.',
+            description:
+                'Not every case ends in a single visit. These combinations show how the route usually expands without breaking conversion or follow-up.',
+            cards: [
+                {
+                    step: 'Route 01',
+                    title: 'Assessment + progressive medical treatment',
+                    body: `Start with an assessment from ${priceFrom} to confirm diagnosis and define medication, routine, and review cadence.`,
+                },
+                {
+                    step: 'Route 02',
+                    title: 'Assessment + short remote review',
+                    body: 'When the case allows it, follow-up can move to telemedicine to review tolerance, images, and adherence before escalation.',
+                },
+                {
+                    step: 'Route 03',
+                    title: 'Assessment + in-person exam or procedure',
+                    body: 'If diagnostic uncertainty, dermatoscopy, or intervention appears, the route shifts to in-person care without losing plan continuity.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Combinations',
+            title: 'How a safe aesthetic plan usually scales.',
+            description:
+                'High-conversion procedures are rarely sold in isolation. They land better with assessment, sequencing, and a clear post-session review.',
+            cards: [
+                {
+                    step: 'Route 01',
+                    title: 'Assessment + main session',
+                    body: `The first consultation from ${priceFrom} confirms indication, areas, timing, and whether the main procedure is enough.`,
+                },
+                {
+                    step: 'Route 02',
+                    title: 'Main session + evolution check',
+                    body: 'Response, swelling, aftercare, and expectation fit are reviewed before deciding if a second phase is needed.',
+                },
+                {
+                    step: 'Route 03',
+                    title: 'Procedure + complementary combination',
+                    body: 'Peels, biostimulators, toxin, or laser can be combined when skin quality and objective justify it clinically.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Combinations',
+            title: 'Family-first pediatric routes that usually work better.',
+            description:
+                'In pediatric dermatology the route works best when entry is ordered: assessment, caregiver guidance, and simple follow-up before adding complexity.',
+            cards: [
+                {
+                    step: 'Route 01',
+                    title: 'Pediatric assessment + home plan',
+                    body: `The first consultation from ${priceFrom} defines diagnosis, routines, warning signs, and what caregivers should monitor at home.`,
+                },
+                {
+                    step: 'Route 02',
+                    title: 'Photo review + brief adjustment',
+                    body: 'Many cases can review progress remotely before asking the family for another in-person transfer.',
+                },
+                {
+                    step: 'Route 03',
+                    title: 'In-person escalation when the case changes',
+                    body: 'If new lesions, pain, or procedure suspicion appears, the route escalates to physical evaluation or broader assessment.',
+                },
+            ],
+        },
+    },
+};
+
+const localeCopy = combos[locale] || combos.es;
+const selected = localeCopy[category] || localeCopy.clinical;
+---
+
+<section
+    class="sony-section sony-section--compact sony-treatment-combos"
+    data-treatment-combos
+    data-treatment-category={category}
+>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-treatment-combos__grid">
+        {
+            selected.cards.map((card) => (
+                <article class="sony-treatment-combos__card" data-treatment-combo-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

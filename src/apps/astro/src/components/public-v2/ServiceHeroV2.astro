@@ -1,0 +1,14 @@
+---
+const { hero, locale = 'es' } = Astro.props;
+---
+
+<section class="service-hero-v2" data-service-hero>
+    <div class="service-hero-v2__copy">
+        <p>{hero.eyebrow}</p>
+        <h1>{hero.title}</h1>
+        <p>{hero.deck}</p>
+        <div class="service-hero-v2__meta"><span>{hero.duration}</span><span>{`$${hero.price}`}</span></div>
+        <a href="#citas" class="hero-stage__cta hero-stage__cta--primary" data-analytics-event="start_booking_from_service" data-cta-target="booking" data-service-slug={hero.slug} data-service-category={hero.category} data-service-intent={hero.intent} data-catalog-category={hero.category} data-catalog-intent={hero.intent}>{locale === 'en' ? 'Book route' : 'Reservar ruta'}</a>
+    </div>
+    <div class="service-hero-v2__media"><img src={hero.media} alt={hero.title} loading="eager" /></div>
+</section>

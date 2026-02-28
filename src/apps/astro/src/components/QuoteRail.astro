@@ -1,0 +1,28 @@
+---
+const { locale = 'es', dictionary = {} } = Astro.props;
+
+const quotes = [
+    dictionary.review_1,
+    dictionary.review_2,
+    dictionary.review_3,
+].filter(Boolean);
+---
+
+<section id="resenas" class="sony-section sony-quotes" aria-labelledby="quote-rail-heading">
+    <div class="sony-section__head">
+        <p>{dictionary.reviews_count || (locale === 'en' ? 'Verified reviews' : 'Resenas verificadas')}</p>
+        <h2 id="quote-rail-heading">
+            {dictionary.reviews_title || (locale === 'en' ? 'What patients say' : 'Lo que dicen nuestros pacientes')}
+        </h2>
+    </div>
+    <div class="sony-quote-grid">
+        {
+            quotes.map((quote) => (
+                <article class="sony-quote-card">
+                    <p>{locale === 'en' ? 'Patient journey' : 'Experiencia de pacientes'}</p>
+                    <blockquote>{quote}</blockquote>
+                </article>
+            ))
+        }
+    </div>
+</section>

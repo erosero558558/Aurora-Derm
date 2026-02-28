@@ -1,0 +1,44 @@
+---
+const { locale = 'es' } = Astro.props;
+---
+
+<section class="sony-cta-cluster">
+    <div>
+        <h2>
+            {
+                locale === 'en'
+                    ? 'Reserve in under 2 minutes with real-time availability.'
+                    : 'Reserva en menos de 2 minutos con disponibilidad en tiempo real.'
+            }
+        </h2>
+        <p>
+            {
+                locale === 'en'
+                    ? 'Choose service, doctor, and date. Keep control of online payment and confirmation.'
+                    : 'Elige servicio, doctor y fecha. Mantienes control de pago y confirmacion.'
+            }
+        </p>
+    </div>
+    <div class="sony-cta-cluster__actions">
+        <a
+            class="sony-btn sony-btn--primary"
+            href={locale === 'en' ? '/en/#citas' : '/es/#citas'}
+            data-analytics-event="open_public_cta"
+            data-entry-surface="cta_cluster_primary"
+            data-cta-target="booking"
+        >
+            {locale === 'en' ? 'Start Booking' : 'Empezar reserva'}
+        </a>
+        <a
+            class="sony-btn sony-btn--ghost"
+            href="https://wa.me/593982453672"
+            rel="noopener noreferrer"
+            target="_blank"
+            data-analytics-event="whatsapp_click"
+            data-entry-surface="cta_cluster_whatsapp"
+            data-cta-target="whatsapp"
+        >
+            WhatsApp
+        </a>
+    </div>
+</section>

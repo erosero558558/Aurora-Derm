@@ -1,0 +1,148 @@
+---
+import { homePath, servicePath, telemedicinePath } from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+const isEnglish = locale === 'en';
+
+const cases = isEnglish
+    ? [
+          {
+              eyebrow: 'Priority route',
+              title: 'New or changing lesion',
+              description:
+                  'Do not force this through a cosmetic route. Start with a broader clinical review and dermatoscopic assessment.',
+              meta: 'Best in-person',
+              href: `${homePath(locale)}?service=consulta#citas`,
+              cta: 'Book assessment',
+              target: 'booking',
+              intent: 'diagnosis',
+          },
+          {
+              eyebrow: 'Remote-first',
+              title: 'Acne, rosacea, or flare control',
+              description:
+                  'A strong telemedicine entry when photos or video can accelerate the first decision without unnecessary travel.',
+              meta: 'Telemedicine works',
+              href: telemedicinePath(locale),
+              cta: 'Start online',
+              target: 'telemedicine',
+              intent: 'inflammation',
+          },
+          {
+              eyebrow: 'Treatment route',
+              title: 'Injectables or rejuvenation planning',
+              description:
+                  'When the goal is already clear, move directly into a treatment-led path with booking visible from the first screen.',
+              meta: 'Procedure-first',
+              href: servicePath(locale, 'botox'),
+              cta: 'Open treatment route',
+              target: 'service_detail',
+              intent: 'rejuvenation',
+              serviceSlug: 'botox',
+              serviceCategory: 'aesthetic',
+          },
+          {
+              eyebrow: 'Family-first',
+              title: 'Child or teen case',
+              description:
+                  'Use the pediatric route first, then escalate to broader review or telemedicine follow-up only if the case allows it.',
+              meta: 'Pediatric review',
+              href: servicePath(locale, 'dermatologia-pediatrica'),
+              cta: 'Open pediatric route',
+              target: 'service_detail',
+              intent: 'pediatric',
+              serviceSlug: 'dermatologia-pediatrica',
+              serviceCategory: 'children',
+          },
+      ]
+    : [
+          {
+              eyebrow: 'Ruta prioritaria',
+              title: 'Lesion nueva o cambiante',
+              description:
+                  'No la empujes por una ruta estetica. Empieza por revision clinica amplia y valoracion dermatoscopica.',
+              meta: 'Mejor presencial',
+              href: `${homePath(locale)}?service=consulta#citas`,
+              cta: 'Reservar valoracion',
+              target: 'booking',
+              intent: 'diagnosis',
+          },
+          {
+              eyebrow: 'Remoto primero',
+              title: 'Acne, rosacea o control de brote',
+              description:
+                  'Es una entrada fuerte por telemedicina cuando fotos o video aceleran la primera decision sin traslados innecesarios.',
+              meta: 'Telemedicina funciona',
+              href: telemedicinePath(locale),
+              cta: 'Empezar online',
+              target: 'telemedicine',
+              intent: 'inflammation',
+          },
+          {
+              eyebrow: 'Ruta de tratamiento',
+              title: 'Planeacion de inyectables o rejuvenecimiento',
+              description:
+                  'Cuando el objetivo ya es claro, entra directo a una ruta guiada por tratamiento con booking visible desde la primera pantalla.',
+              meta: 'Procedimiento primero',
+              href: servicePath(locale, 'botox'),
+              cta: 'Abrir ruta de tratamiento',
+              target: 'service_detail',
+              intent: 'rejuvenation',
+              serviceSlug: 'botox',
+              serviceCategory: 'aesthetic',
+          },
+          {
+              eyebrow: 'Ruta familiar',
+              title: 'Caso de nino o adolescente',
+              description:
+                  'Usa primero la ruta pediatrica y luego escala a revision amplia o seguimiento remoto solo si el caso lo permite.',
+              meta: 'Revision pediatrica',
+              href: servicePath(locale, 'dermatologia-pediatrica'),
+              cta: 'Abrir ruta pediatrica',
+              target: 'service_detail',
+              intent: 'pediatric',
+              serviceSlug: 'dermatologia-pediatrica',
+              serviceCategory: 'children',
+          },
+      ];
+---
+
+<section class="sony-section sony-case-priority" data-case-priority-rail>
+    <div class="sony-section__head">
+        <p>{isEnglish ? 'Entry by case' : 'Entrada por caso'}</p>
+        <h2>
+            {isEnglish
+                ? 'Use the strongest path for the situation in front of you.'
+                : 'Usa la ruta mas fuerte para la situacion que tienes enfrente.'}
+        </h2>
+        <span>
+            {isEnglish
+                ? 'This is the fast filter for urgency, telemedicine fit, treatment intent, and pediatric cases.'
+                : 'Este es el filtro rapido para prioridad, encaje con telemedicina, intencion de tratamiento y casos pediatricos.'}
+        </span>
+    </div>
+    <div class="sony-case-priority__grid">
+        {
+            cases.map((item) => (
+                <article class="sony-case-priority__card" data-case-priority-card>
+                    <p>{item.eyebrow}</p>
+                    <h3>{item.title}</h3>
+                    <span>{item.description}</span>
+                    <strong>{item.meta}</strong>
+                    <a
+                        class="sony-btn sony-btn--ghost"
+                        href={item.href}
+                        data-analytics-event="open_public_cta"
+                        data-entry-surface="case_priority_rail"
+                        data-cta-target={item.target}
+                        data-service-intent={item.intent}
+                        data-service-slug={item.serviceSlug || ''}
+                        data-service-category={item.serviceCategory || ''}
+                    >
+                        {item.cta}
+                    </a>
+                </article>
+            ))
+        }
+    </div>
+</section>

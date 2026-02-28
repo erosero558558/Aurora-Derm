@@ -1,0 +1,808 @@
+---
+import {
+    getLocaleSwitchPath,
+    getServiceIntentDefinitions,
+    homePath,
+    serviceHubPath,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const { locale = 'es', navigation, pathname = '/es/' } = Astro.props;
+const primaryMenu = Array.isArray(navigation?.desktop) ? navigation.desktop : [];
+const serviceNode = primaryMenu.find((item) => item?.type === 'mega');
+const nonServiceNodes = primaryMenu.filter((item) => item?.type !== 'mega');
+const targetLocale = locale === 'en' ? 'es' : 'en';
+const switchPath = getLocaleSwitchPath(targetLocale, pathname);
+const serviceChildren = Array.isArray(serviceNode?.children) ? serviceNode.children : [];
+const cta = navigation?.cta || {};
+const ctaLabel = locale === 'en' ? cta.label_en || 'Book' : cta.label_es || 'Reservar';
+const mobileMenuLabel = locale === 'en' ? 'Menu' : 'Menu';
+const localeSwitchLabel =
+    locale === 'en' ? 'Cambiar a espanol' : 'Switch to English';
+const servicesHref = serviceHubPath(locale);
+const isServiceArea = pathname.startsWith(servicesHref);
+const isTelemedicineArea = pathname === telemedicinePath(locale);
+const isPediatricService = pathname === servicePath(locale, 'dermatologia-pediatrica');
+const intentDefinitions = getServiceIntentDefinitions(locale);
+const intentIndex = Object.fromEntries(intentDefinitions.map((item) => [item.id, item]));
+const categoryLabels =
+    locale === 'en'
+        ? {
+              all: 'All families',
+              clinical: 'Clinical',
+              aesthetic: 'Aesthetic',
+              children: 'Pediatric',
+          }
+        : {
+              all: 'Todas las familias',
+              clinical: 'Clinica',
+              aesthetic: 'Estetica',
+              children: 'Pediatria',
+          };
+const diagnosisHubHref = `${servicesHref}?category=clinical&intent=diagnosis`;
+const aestheticHubHref = `${servicesHref}?category=aesthetic&intent=rejuvenation`;
+const pediatricHubHref = `${servicesHref}?category=children&intent=pediatric`;
+const megaOverview =
+    locale === 'en'
+        ? {
+              eyebrow: 'Service architecture',
+              title: 'Move from diagnosis to treatment without losing booking context.',
+              description:
+                  'Use the catalogue hub, telemedicine, or direct assessment depending on how clear the case already is.',
+              actions: [
+                  { href: servicesHref, label: 'View all services' },
+                  { href: telemedicinePath(locale), label: 'Start with telemedicine' },
+                  { href: `${homePath(locale)}?service=consulta#citas`, label: 'Book assessment' },
+              ],
+              activeContextLabel: 'Active route',
+              activeCta: {
+                  all: {
+                      label: 'View full catalogue',
+                      href: servicesHref,
+                      target: 'service_hub',
+                      note: 'Keep comparing families until the case narrows down.',
+                  },
+                  diagnosis: {
+                      label: 'Book assessment',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'The fastest next step is still broad assessment.',
+                  },
+                  inflammation: {
+                      label: 'Book medical review',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Inflammatory cases need earlier medical framing.',
+                  },
+                  procedures: {
+                      label: 'Book procedural review',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Procedure intent should still pass through fit and sequencing.',
+                  },
+                  rejuvenation: {
+                      label: 'Book aesthetic assessment',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Aesthetic intent is stronger once goals and baseline align.',
+                  },
+                  pediatric: {
+                      label: 'View pediatric route',
+                      href: pediatricHubHref,
+                      target: 'service_hub',
+                      note: 'Family-first routing reduces friction before booking.',
+                  },
+                  remote: {
+                      label: 'Open telemedicine',
+                      href: telemedicinePath(locale),
+                      target: 'telemedicine',
+                      note: 'Remote review can remove travel friction first.',
+                  },
+              },
+          }
+        : {
+              eyebrow: 'Arquitectura de servicios',
+              title: 'Pasa de diagnostico a tratamiento sin perder el contexto de reserva.',
+              description:
+                  'Usa el hub de catalogo, telemedicina o valoracion directa segun que tan claro ya venga el caso.',
+              actions: [
+                  { href: servicesHref, label: 'Ver todos los servicios' },
+                  { href: telemedicinePath(locale), label: 'Empezar por telemedicina' },
+                  { href: `${homePath(locale)}?service=consulta#citas`, label: 'Reservar valoracion' },
+              ],
+              activeContextLabel: 'Ruta activa',
+              activeCta: {
+                  all: {
+                      label: 'Ver catalogo completo',
+                      href: servicesHref,
+                      target: 'service_hub',
+                      note: 'Sigue comparando familias hasta que el caso se estreche mejor.',
+                  },
+                  diagnosis: {
+                      label: 'Reservar valoracion',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'El siguiente paso mas limpio sigue siendo una valoracion amplia.',
+                  },
+                  inflammation: {
+                      label: 'Reservar control medico',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Los casos inflamatorios necesitan encuadre medico antes.',
+                  },
+                  procedures: {
+                      label: 'Reservar revision procedimental',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'La intencion procedimental debe pasar todavia por fit y secuencia.',
+                  },
+                  rejuvenation: {
+                      label: 'Reservar valoracion estetica',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'La intencion estetica pesa mas cuando objetivo y baseline ya se alinean.',
+                  },
+                  pediatric: {
+                      label: 'Ver ruta pediatrica',
+                      href: pediatricHubHref,
+                      target: 'service_hub',
+                      note: 'La ruta familiar reduce friccion antes de reservar.',
+                  },
+                  remote: {
+                      label: 'Abrir telemedicina',
+                      href: telemedicinePath(locale),
+                      target: 'telemedicine',
+                      note: 'La revision remota puede quitar primero la friccion de traslado.',
+                  },
+              },
+          };
+const megaHighlights =
+    locale === 'en'
+        ? [
+              {
+                  eyebrow: 'Clinical highlight',
+                  title: 'Comprehensive diagnosis',
+                  description:
+                      'Start with the broadest clinical route when the case still needs framing.',
+                  href: diagnosisHubHref,
+                  cta: 'Open clinical routes',
+                  category: 'clinical',
+                  intent: 'diagnosis',
+              },
+              {
+                  eyebrow: 'Aesthetic highlight',
+                  title: 'Botox and rejuvenation',
+                  description:
+                      'Jump directly into treatment-led pathways with a visible booking intent.',
+                  href: aestheticHubHref,
+                  cta: 'Open aesthetic routes',
+                  category: 'aesthetic',
+                  intent: 'rejuvenation',
+              },
+              {
+                  eyebrow: 'Family highlight',
+                  title: 'Pediatric dermatology',
+                  description:
+                      'Keep family-first entry points visible when the case is for children or teens.',
+                  href: pediatricHubHref,
+                  cta: 'Open pediatric routes',
+                  category: 'children',
+                  intent: 'pediatric',
+              },
+          ]
+        : [
+              {
+                  eyebrow: 'Highlight clinico',
+                  title: 'Diagnostico integral',
+                  description:
+                      'Empieza por la ruta clinica mas amplia cuando el caso todavia necesita encuadre.',
+                  href: diagnosisHubHref,
+                  cta: 'Abrir rutas clinicas',
+                  category: 'clinical',
+                  intent: 'diagnosis',
+              },
+              {
+                  eyebrow: 'Highlight estetico',
+                  title: 'Botox y rejuvenecimiento',
+                  description:
+                      'Entra directo a trayectos guiados por tratamiento con booking visible.',
+                  href: aestheticHubHref,
+                  cta: 'Abrir rutas esteticas',
+                  category: 'aesthetic',
+                  intent: 'rejuvenation',
+              },
+              {
+                  eyebrow: 'Highlight familiar',
+                  title: 'Dermatologia pediatrica',
+                  description:
+                      'Mantiene visibles las puertas de entrada familiares cuando el caso es de ninos o adolescentes.',
+                  href: pediatricHubHref,
+                  cta: 'Abrir rutas pediatricas',
+                  category: 'children',
+                  intent: 'pediatric',
+              },
+          ];
+const resolvePrimaryHref = (item) =>
+    item.id === 'telemedicina'
+        ? telemedicinePath(locale)
+        : item.id === 'ninos'
+          ? servicePath(locale, 'dermatologia-pediatrica')
+          : homePath(locale) + (item.target || '#');
+const intentLabels = {
+    all: intentIndex.all?.label || 'All',
+    diagnosis: intentIndex.diagnosis?.label || 'Diagnosis',
+    inflammation: intentIndex.inflammation?.label || 'Inflammation',
+    procedures: intentIndex.procedures?.label || 'Procedures',
+    rejuvenation: intentIndex.rejuvenation?.label || 'Rejuvenation',
+    pediatric: intentIndex.pediatric?.label || 'Pediatric',
+    remote: intentIndex.remote?.label || 'Remote',
+};
+const quickPathCopy =
+    locale === 'en'
+        ? {
+              title: 'Quick paths',
+              primaryStep: 'Primary route',
+              familyStep: 'Family route',
+              alternateStep: 'Alternate route',
+              familyTitleByCategory: {
+                  all: 'View all families',
+                  clinical: 'Open clinical routes',
+                  aesthetic: 'Open aesthetic routes',
+                  children: 'Open pediatric routes',
+              },
+              familyDescriptionByCategory: {
+                  all: 'Keep the full catalogue visible while the case still needs a broader read.',
+                  clinical: 'Keep diagnostic and symptom-led routes visible without losing the current intent.',
+                  aesthetic: 'Jump into treatment-led routes with the active intent still preserved.',
+                  children: 'Use the family-first catalogue route when the case depends on caregiver clarity.',
+              },
+              telemedicineTitle: 'Start with telemedicine',
+              telemedicineDescription:
+                  'Use remote review first when travel is still friction and the next step can be clarified online.',
+              bookingTitle: 'Book assessment',
+              bookingDescription:
+                  'Move directly into booking when the case already needs a broader in-person medical read.',
+          }
+        : {
+              title: 'Rutas rapidas',
+              primaryStep: 'Ruta principal',
+              familyStep: 'Ruta por familia',
+              alternateStep: 'Ruta alterna',
+              familyTitleByCategory: {
+                  all: 'Ver todas las familias',
+                  clinical: 'Abrir rutas clinicas',
+                  aesthetic: 'Abrir rutas esteticas',
+                  children: 'Abrir rutas pediatricas',
+              },
+              familyDescriptionByCategory: {
+                  all: 'Mantiene visible todo el catalogo mientras el caso todavia necesita una lectura mas amplia.',
+                  clinical: 'Mantiene visibles rutas diagnosticas y guiadas por sintomas sin perder la intencion activa.',
+                  aesthetic: 'Entra a rutas guiadas por tratamiento manteniendo la intencion actual.',
+                  children: 'Usa la ruta familiar cuando el caso depende de claridad para cuidadores.',
+              },
+              telemedicineTitle: 'Empezar por telemedicina',
+              telemedicineDescription:
+                  'Usa revision remota primero cuando el traslado todavia es friccion y el siguiente paso puede aclararse online.',
+              bookingTitle: 'Reservar valoracion',
+              bookingDescription:
+                  'Pasa directo a booking cuando el caso ya necesita una lectura medica presencial mas amplia.',
+          };
+---
+
+<header
+    class="sony-header"
+    data-service-hub-path={servicesHref}
+    data-home-path={homePath(locale)}
+    data-telemedicine-path={telemedicinePath(locale)}
+    data-locale={locale}
+>
+    <div class="sony-header__inner">
+        <a class="sony-brand" href={homePath(locale)}>PIEL EN ARMONIA</a>
+        <nav class="sony-nav" aria-label="Main navigation">
+            <ul class="sony-nav__list">
+                {
+                    serviceNode && (
+                        <li class="sony-nav__item sony-nav__item--mega">
+                            <a
+                                href={servicesHref}
+                                aria-haspopup="true"
+                                aria-current={isServiceArea ? 'page' : undefined}
+                                data-nav-root="services"
+                            >
+                                {locale === 'en' ? serviceNode.label_en : serviceNode.label_es}
+                            </a>
+                            <div class="sony-mega">
+                                <section class="sony-mega__overview">
+                                    <p>{megaOverview.eyebrow}</p>
+                                    <h3>{megaOverview.title}</h3>
+                                    <span>{megaOverview.description}</span>
+                                    <div class="sony-mega__context">
+                                        <small data-mega-context-category>{categoryLabels.all}</small>
+                                        <small data-mega-context-intent>{intentLabels.all}</small>
+                                    </div>
+                                <div class="sony-mega__focus">
+                                    <p data-mega-focus-label>{megaOverview.activeContextLabel}</p>
+                                    <strong data-mega-focus-note>{megaOverview.activeCta.all.note}</strong>
+                                        <a
+                                            class="sony-btn sony-btn--ghost"
+                                            href={megaOverview.activeCta.all.href}
+                                            data-mega-focus-cta
+                                            data-analytics-event="open_public_cta"
+                                            data-entry-surface="mega_active_context"
+                                            data-cta-target={megaOverview.activeCta.all.target}
+                                            data-service-category="all"
+                                            data-service-intent="all"
+                                            data-catalog-category="all"
+                                            data-catalog-intent="all"
+                                        >
+                                            {megaOverview.activeCta.all.label}
+                                        </a>
+                                    </div>
+                                    <div class="sony-mega__actions">
+                                        {megaOverview.actions.map((action) => (
+                                            <a class="sony-btn sony-btn--ghost" href={action.href}>
+                                                {action.label}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </section>
+                                {
+                                    serviceChildren.map((group) => (
+                                        <section class="sony-mega__group">
+                                            <h3>{locale === 'en' ? group.label_en : group.label_es}</h3>
+                                            <ul>
+                                                {(group.items || []).map((item) => (
+                                                    <li>
+                                                        <a href={servicePath(locale, item.slug)}>
+                                                            {locale === 'en' ? item.label_en : item.label_es}
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </section>
+                                    ))
+                                }
+                                <section class="sony-mega__features">
+                                    {megaHighlights.map((item) => (
+                                        <a
+                                            class="sony-mega__feature-card"
+                                            href={item.href}
+                                            data-route-category={item.category}
+                                            data-route-intent={item.intent}
+                                        >
+                                            <p>{item.eyebrow}</p>
+                                            <h3>{item.title}</h3>
+                                            <span>{item.description}</span>
+                                            <strong>{item.cta}</strong>
+                                        </a>
+                                    ))}
+                                </section>
+                            </div>
+                        </li>
+                    )
+                }
+                {
+                    nonServiceNodes.map((item) => (
+                        <li class="sony-nav__item">
+                            <a
+                                href={resolvePrimaryHref(item)}
+                                aria-current={
+                                    item.id === 'telemedicina' && isTelemedicineArea
+                                        ? 'page'
+                                        : item.id === 'ninos' && isPediatricService
+                                          ? 'page'
+                                          : undefined
+                                }
+                                data-nav-root={item.id}
+                            >
+                                {locale === 'en' ? item.label_en : item.label_es}
+                            </a>
+                        </li>
+                    ))
+                }
+            </ul>
+        </nav>
+        <div class="sony-header__actions">
+            <a class="sony-lang" href={switchPath} aria-label={localeSwitchLabel} hreflang={targetLocale}>
+                {locale === 'en' ? 'ES' : 'EN'}
+            </a>
+            <a class="sony-cta" href={homePath(locale) + '#citas'}>{ctaLabel}</a>
+        </div>
+        <details class="sony-mobile-nav">
+            <summary>{mobileMenuLabel}</summary>
+            <div class="sony-mobile-nav__panel">
+                {
+                    serviceNode && (
+                        <details open>
+                            <summary>{locale === 'en' ? serviceNode.label_en : serviceNode.label_es}</summary>
+                            <div class="sony-mobile-nav__overview">
+                                <p>{megaOverview.eyebrow}</p>
+                                <h3>{megaOverview.title}</h3>
+                                <div class="sony-mega__context">
+                                    <small data-mega-context-category>{categoryLabels.all}</small>
+                                    <small data-mega-context-intent>{intentLabels.all}</small>
+                                </div>
+                                <div class="sony-mega__focus">
+                                    <p data-mega-focus-label>{megaOverview.activeContextLabel}</p>
+                                    <strong data-mega-focus-note>{megaOverview.activeCta.all.note}</strong>
+                                    <a
+                                        class="sony-btn sony-btn--ghost"
+                                        href={megaOverview.activeCta.all.href}
+                                        data-mega-focus-cta
+                                        data-analytics-event="open_public_cta"
+                                        data-entry-surface="mobile_mega_active_context"
+                                        data-cta-target={megaOverview.activeCta.all.target}
+                                        data-service-category="all"
+                                        data-service-intent="all"
+                                        data-catalog-category="all"
+                                        data-catalog-intent="all"
+                                    >
+                                        {megaOverview.activeCta.all.label}
+                                    </a>
+                                </div>
+                                <div class="sony-mobile-nav__quick-paths">
+                                    <article class="sony-mobile-nav__quick-path" data-mobile-quick-path data-slot="primary">
+                                        <span data-mobile-quick-step>{quickPathCopy.primaryStep}</span>
+                                        <h4 data-mobile-quick-title>{megaOverview.activeCta.all.label}</h4>
+                                        <p data-mobile-quick-description>{megaOverview.activeCta.all.note}</p>
+                                        <a
+                                            class="sony-btn sony-btn--ghost"
+                                            href={megaOverview.activeCta.all.href}
+                                            data-mobile-quick-link
+                                            data-slot="primary"
+                                            data-analytics-event="open_public_cta"
+                                            data-entry-surface="mobile_quick_path_primary"
+                                            data-cta-target={megaOverview.activeCta.all.target}
+                                            data-service-category="all"
+                                            data-service-intent="all"
+                                            data-catalog-category="all"
+                                            data-catalog-intent="all"
+                                        >
+                                            {megaOverview.activeCta.all.label}
+                                        </a>
+                                    </article>
+                                    <article class="sony-mobile-nav__quick-path" data-mobile-quick-path data-slot="family">
+                                        <span data-mobile-quick-step>{quickPathCopy.familyStep}</span>
+                                        <h4 data-mobile-quick-title>{quickPathCopy.familyTitleByCategory.all}</h4>
+                                        <p data-mobile-quick-description>{quickPathCopy.familyDescriptionByCategory.all}</p>
+                                        <a
+                                            class="sony-btn sony-btn--ghost"
+                                            href={servicesHref}
+                                            data-mobile-quick-link
+                                            data-slot="family"
+                                            data-analytics-event="open_public_cta"
+                                            data-entry-surface="mobile_quick_path_family"
+                                            data-cta-target="service_hub"
+                                            data-service-category="all"
+                                            data-service-intent="all"
+                                            data-catalog-category="all"
+                                            data-catalog-intent="all"
+                                        >
+                                            {quickPathCopy.familyTitleByCategory.all}
+                                        </a>
+                                    </article>
+                                    <article class="sony-mobile-nav__quick-path" data-mobile-quick-path data-slot="alternate">
+                                        <span data-mobile-quick-step>{quickPathCopy.alternateStep}</span>
+                                        <h4 data-mobile-quick-title>{quickPathCopy.telemedicineTitle}</h4>
+                                        <p data-mobile-quick-description>{quickPathCopy.telemedicineDescription}</p>
+                                        <a
+                                            class="sony-btn sony-btn--ghost"
+                                            href={telemedicinePath(locale)}
+                                            data-mobile-quick-link
+                                            data-slot="alternate"
+                                            data-analytics-event="open_public_cta"
+                                            data-entry-surface="mobile_quick_path_alternate"
+                                            data-cta-target="telemedicine"
+                                            data-service-category="all"
+                                            data-service-intent="remote"
+                                            data-catalog-category="all"
+                                            data-catalog-intent="all"
+                                        >
+                                            {quickPathCopy.telemedicineTitle}
+                                        </a>
+                                    </article>
+                                </div>
+                                <div class="sony-mobile-nav__overview-actions">
+                                    {megaOverview.actions.map((action) => (
+                                        <a class="sony-btn sony-btn--ghost" href={action.href}>
+                                            {action.label}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                            <div class="sony-mobile-nav__features">
+                                {megaHighlights.map((item) => (
+                                    <a
+                                        class="sony-mega__feature-card"
+                                        href={item.href}
+                                        data-route-category={item.category}
+                                        data-route-intent={item.intent}
+                                    >
+                                        <p>{item.eyebrow}</p>
+                                        <h3>{item.title}</h3>
+                                        <span>{item.description}</span>
+                                        <strong>{item.cta}</strong>
+                                    </a>
+                                ))}
+                            </div>
+                            <div class="sony-mobile-nav__groups">
+                                {
+                                    serviceChildren.map((group) => (
+                                        <section class="sony-mobile-nav__group">
+                                            <h3>{locale === 'en' ? group.label_en : group.label_es}</h3>
+                                            <ul>
+                                                {(group.items || []).map((item) => (
+                                                    <li>
+                                                        <a href={servicePath(locale, item.slug)}>
+                                                            {locale === 'en' ? item.label_en : item.label_es}
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </section>
+                                    ))
+                                }
+                            </div>
+                        </details>
+                    )
+                }
+                <nav aria-label="Mobile navigation">
+                    <ul>
+                        {
+                            nonServiceNodes.map((item) => (
+                                <li>
+                                    <a
+                                        href={resolvePrimaryHref(item)}
+                                        aria-current={
+                                            item.id === 'telemedicina' && isTelemedicineArea
+                                                ? 'page'
+                                                : item.id === 'ninos' && isPediatricService
+                                                  ? 'page'
+                                                  : undefined
+                                        }
+                                        data-nav-root={item.id}
+                                    >
+                                        {locale === 'en' ? item.label_en : item.label_es}
+                                    </a>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                </nav>
+                <div class="sony-mobile-nav__actions">
+                    <a class="sony-lang" href={switchPath} aria-label={localeSwitchLabel} hreflang={targetLocale}>
+                        {locale === 'en' ? 'ES' : 'EN'}
+                    </a>
+                    <a class="sony-cta" href={homePath(locale) + '#citas'}>{ctaLabel}</a>
+                </div>
+            </div>
+        </details>
+    </div>
+    <script is:inline define:vars={{ categoryLabels, intentLabels, megaActiveCta: megaOverview.activeCta, quickPathCopy }}>
+        (() => {
+            const normalizePath = (value) => {
+                const raw = String(value || '').trim();
+                if (!raw) return '/';
+                return raw.endsWith('/') ? raw : `${raw}/`;
+            };
+            const header = document.querySelector('.sony-header[data-service-hub-path]');
+            if (!header) return;
+
+            const serviceHubPath = normalizePath(
+                header.getAttribute('data-service-hub-path') || '/'
+            );
+            const homePath = String(header.getAttribute('data-home-path') || '/');
+            const telemedicinePath = String(
+                header.getAttribute('data-telemedicine-path') || '/'
+            );
+            const contextCategoryNodes = header.querySelectorAll('[data-mega-context-category]');
+            const contextIntentNodes = header.querySelectorAll('[data-mega-context-intent]');
+            const focusNoteNodes = header.querySelectorAll('[data-mega-focus-note]');
+            const focusCtaNodes = header.querySelectorAll('[data-mega-focus-cta]');
+            const mobileQuickPathNodes = Array.from(
+                header.querySelectorAll('[data-mobile-quick-path]')
+            );
+            const url = new URL(window.location.href);
+            const pathname = normalizePath(url.pathname);
+            const setCurrent = (node, active) => {
+                if (!node) return;
+                if (active) {
+                    node.setAttribute('data-current', 'true');
+                } else {
+                    node.removeAttribute('data-current');
+                }
+            };
+            const intentCategoryMap = {
+                diagnosis: 'clinical',
+                inflammation: 'clinical',
+                procedures: 'clinical',
+                rejuvenation: 'aesthetic',
+                pediatric: 'children',
+                remote: 'clinical',
+            };
+            const buildFamilyRoute = (category, intent) => {
+                if (category === 'all' && intent === 'all') {
+                    return {
+                        title: quickPathCopy.familyTitleByCategory.all,
+                        description: quickPathCopy.familyDescriptionByCategory.all,
+                        href: serviceHubPath,
+                        target: 'service_hub',
+                        category: 'all',
+                        intent: 'all',
+                    };
+                }
+                const resolvedCategory =
+                    category !== 'all'
+                        ? category
+                        : intentCategoryMap[intent] || 'clinical';
+                const query =
+                    intent !== 'all'
+                        ? `${serviceHubPath}?category=${resolvedCategory}&intent=${intent}`
+                        : `${serviceHubPath}?category=${resolvedCategory}`;
+                return {
+                    title:
+                        quickPathCopy.familyTitleByCategory[resolvedCategory] ||
+                        quickPathCopy.familyTitleByCategory.all,
+                    description:
+                        quickPathCopy.familyDescriptionByCategory[resolvedCategory] ||
+                        quickPathCopy.familyDescriptionByCategory.all,
+                    href: query,
+                    target: 'service_hub',
+                    category: resolvedCategory,
+                    intent: intent,
+                };
+            };
+            const buildAlternateRoute = (currentRecommendation, category, intent) => {
+                if (currentRecommendation.target === 'telemedicine') {
+                    return {
+                        title: quickPathCopy.bookingTitle,
+                        description: quickPathCopy.bookingDescription,
+                        href: `${homePath}?service=consulta#citas`,
+                        target: 'booking',
+                        category: category === 'all' ? 'clinical' : category,
+                        intent: intent === 'all' ? 'diagnosis' : intent,
+                    };
+                }
+                return {
+                    title: quickPathCopy.telemedicineTitle,
+                    description: quickPathCopy.telemedicineDescription,
+                    href: telemedicinePath,
+                    target: 'telemedicine',
+                    category: category,
+                    intent: 'remote',
+                };
+            };
+            const setQuickPath = (node, config, stepLabel, state) => {
+                if (!node || !config) return;
+                const stepNode = node.querySelector('[data-mobile-quick-step]');
+                const titleNode = node.querySelector('[data-mobile-quick-title]');
+                const descriptionNode = node.querySelector('[data-mobile-quick-description]');
+                const linkNode = node.querySelector('[data-mobile-quick-link]');
+                if (stepNode) stepNode.textContent = stepLabel || '';
+                if (titleNode) titleNode.textContent = config.title || '';
+                if (descriptionNode) descriptionNode.textContent = config.description || '';
+                if (linkNode) {
+                    linkNode.textContent = config.title || '';
+                    linkNode.setAttribute('href', config.href || serviceHubPath);
+                    linkNode.setAttribute('data-cta-target', config.target || 'service_hub');
+                    linkNode.setAttribute('data-service-category', config.category || 'all');
+                    linkNode.setAttribute('data-service-intent', config.intent || 'all');
+                    linkNode.setAttribute(
+                        'data-catalog-category',
+                        state?.category || 'all'
+                    );
+                    linkNode.setAttribute(
+                        'data-catalog-intent',
+                        state?.intent || 'all'
+                    );
+                }
+            };
+
+            const applyState = (nextState) => {
+                const category = String(nextState.category || 'all').toLowerCase();
+                const intent = String(nextState.intent || 'all').toLowerCase();
+                const currentRecommendation = megaActiveCta[intent] || megaActiveCta.all;
+                const familyRoute = buildFamilyRoute(category, intent);
+                const alternateRoute = buildAlternateRoute(
+                    currentRecommendation,
+                    category,
+                    intent
+                );
+
+                contextCategoryNodes.forEach((node) => {
+                    node.textContent = categoryLabels[category] || categoryLabels.all;
+                });
+                contextIntentNodes.forEach((node) => {
+                    node.textContent = intentLabels[intent] || intentLabels.all;
+                });
+                focusNoteNodes.forEach((node) => {
+                    node.textContent = currentRecommendation.note || '';
+                });
+                focusCtaNodes.forEach((node) => {
+                    node.textContent = currentRecommendation.label || '';
+                    node.setAttribute('href', currentRecommendation.href || serviceHubPath);
+                    node.setAttribute(
+                        'data-cta-target',
+                        currentRecommendation.target || 'service_hub'
+                    );
+                    node.setAttribute('data-service-category', category);
+                    node.setAttribute('data-service-intent', intent);
+                    node.setAttribute('data-catalog-category', category);
+                    node.setAttribute('data-catalog-intent', intent);
+                });
+                setQuickPath(
+                    mobileQuickPathNodes.find((node) => node.getAttribute('data-slot') === 'primary'),
+                    {
+                        title: currentRecommendation.label || '',
+                        description: currentRecommendation.note || '',
+                        href: currentRecommendation.href || serviceHubPath,
+                        target: currentRecommendation.target || 'service_hub',
+                        category: category,
+                        intent: intent,
+                    },
+                    quickPathCopy.primaryStep,
+                    { category, intent }
+                );
+                setQuickPath(
+                    mobileQuickPathNodes.find((node) => node.getAttribute('data-slot') === 'family'),
+                    familyRoute,
+                    quickPathCopy.familyStep,
+                    { category, intent }
+                );
+                setQuickPath(
+                    mobileQuickPathNodes.find((node) => node.getAttribute('data-slot') === 'alternate'),
+                    alternateRoute,
+                    quickPathCopy.alternateStep,
+                    { category, intent }
+                );
+
+                header.querySelectorAll('[data-route-category]').forEach((node) => {
+                    const cardCategory = String(
+                        node.getAttribute('data-route-category') || ''
+                    ).toLowerCase();
+                    const cardIntent = String(
+                        node.getAttribute('data-route-intent') || ''
+                    ).toLowerCase();
+                    const matchesHub = pathname === serviceHubPath;
+                    const exactCategory = category !== 'all' && cardCategory === category;
+                    const exactIntent = cardIntent === intent;
+                    const mappedIntentCategory =
+                        intentCategoryMap[intent] && cardCategory === intentCategoryMap[intent];
+                    const active =
+                        (matchesHub &&
+                            exactCategory &&
+                            (intent === 'all' || exactIntent || mappedIntentCategory)) ||
+                        (!matchesHub && intent !== 'all' && (exactIntent || mappedIntentCategory));
+                    setCurrent(node, Boolean(active));
+                });
+
+                const pediatricLink = header.querySelector('[data-nav-root="ninos"]');
+                if (pediatricLink && pathname === serviceHubPath && category === 'children') {
+                    pediatricLink.setAttribute('aria-current', 'page');
+                }
+            };
+
+            applyState({
+                category: url.searchParams.get('category') || 'all',
+                intent: url.searchParams.get('intent') || 'all',
+            });
+
+            window.addEventListener('service-filter-change', (event) => {
+                const detail = event?.detail || {};
+                applyState({
+                    category: detail.category || 'all',
+                    intent: detail.intent || 'all',
+                });
+            });
+
+            window.addEventListener('service-hub-state-change', (event) => {
+                const detail = event?.detail || {};
+                applyState({
+                    category: detail.category || 'all',
+                    intent: detail.intent || 'all',
+                });
+            });
+        })();
+    </script>
+</header>

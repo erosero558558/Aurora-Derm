@@ -1,0 +1,515 @@
+---
+import {
+    getServiceIntentDefinitions,
+    getLocalizedServices,
+    getServiceCtaLabel,
+    homePath,
+    localizeAudience,
+    localizeCategory,
+    localizeDoctorProfiles,
+    mapServiceHint,
+    resolveServiceIntents,
+    serviceHubPath,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const { locale = 'es', syncQuery = false } = Astro.props;
+const services = getLocalizedServices(locale);
+const intentDefinitions = getServiceIntentDefinitions(locale);
+const intentCountMap = Object.fromEntries(
+    intentDefinitions.map((intent) => [
+        intent.id,
+        intent.id === 'all'
+            ? services.length
+            : services.filter((service) => resolveServiceIntents(service).includes(intent.id)).length,
+    ])
+);
+const categoryLabels =
+    locale === 'en'
+        ? {
+              all: 'All families',
+              clinical: 'Clinical',
+              aesthetic: 'Aesthetic',
+              children: 'Pediatric',
+          }
+        : {
+              all: 'Todas las familias',
+              clinical: 'Clinica',
+              aesthetic: 'Estetica',
+              children: 'Pediatria',
+          };
+const finderContext =
+    locale === 'en'
+        ? {
+              eyebrow: 'Active route',
+              categoryCopy: {
+                  all: {
+                      title: 'Start broad and narrow only once the case reads more clearly.',
+                      description:
+                          'Use intent to remove noise first, then decide whether the next move is booking, telemedicine, or a more specific family route.',
+                  },
+                  clinical: {
+                      title: 'Clinical routes work best when symptoms and evolution still need framing.',
+                      description:
+                          'This family is stronger when the visitor still needs diagnostic reading, symptom comparison, and a clear medical next step.',
+                  },
+                  aesthetic: {
+                      title: 'Aesthetic routes work better when the goal is clear and the review window stays realistic.',
+                      description:
+                          'This family is better once the visitor already leans toward visible treatment outcomes and a guided procedural path.',
+                  },
+                  children: {
+                      title: 'Pediatric routes need caregiver clarity and a simpler handoff.',
+                      description:
+                          'This family is stronger when the decision depends on home routine, tolerance, and clearer escalation signals for children.',
+                  },
+              },
+              recommendationByIntent: {
+                  all: {
+                      label: 'View full catalogue',
+                      href: serviceHubPath(locale),
+                      target: 'service_hub',
+                      note: 'Keep comparing routes before collapsing into one family.',
+                  },
+                  diagnosis: {
+                      label: 'Book assessment',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Assessment is the fastest next step when the case still needs broad diagnostic framing.',
+                  },
+                  inflammation: {
+                      label: 'Book medical review',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Inflammatory routes convert better when symptoms and control windows are reviewed early.',
+                  },
+                  procedures: {
+                      label: 'Book procedural review',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Procedure-led cases need fit, sequence, and recovery clarified before committing.',
+                  },
+                  rejuvenation: {
+                      label: 'Book aesthetic assessment',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Aesthetic intent becomes more credible once goals and baseline are aligned first.',
+                  },
+                  pediatric: {
+                      label: 'View pediatric route',
+                      href: servicePath(locale, 'dermatologia-pediatrica'),
+                      target: 'service_detail',
+                      note: 'Pediatric cases benefit from a cleaner family-first route before a broader catalogue pass.',
+                  },
+                  remote: {
+                      label: 'Open telemedicine',
+                      href: telemedicinePath(locale),
+                      target: 'telemedicine',
+                      note: 'Remote intent is strongest when image review and next-step clarity can happen before travel.',
+                  },
+              },
+          }
+        : {
+              eyebrow: 'Ruta activa',
+              categoryCopy: {
+                  all: {
+                      title: 'Empieza amplio y estrecha solo cuando el caso ya se lea mejor.',
+                      description:
+                          'Usa la intencion para quitar ruido primero y luego decide si conviene booking, telemedicina o una familia mas especifica.',
+                  },
+                  clinical: {
+                      title: 'Las rutas clinicas funcionan mejor cuando sintomas y evolucion todavia necesitan encuadre.',
+                      description:
+                          'Esta familia pesa mas cuando el visitante aun necesita lectura diagnostica, comparacion de sintomas y siguiente paso medico claro.',
+                  },
+                  aesthetic: {
+                      title: 'Las rutas esteticas funcionan mejor cuando el objetivo ya esta claro y la revision se mide sin ansiedad.',
+                      description:
+                          'Esta familia encaja mejor cuando el visitante ya se inclina por un resultado visible y una ruta guiada por procedimiento.',
+                  },
+                  children: {
+                      title: 'Las rutas pediatricas necesitan claridad para cuidadores y un handoff mas simple.',
+                      description:
+                          'Esta familia gana cuando la decision depende de rutina en casa, tolerancia y senales de escalamiento mas claras para ninos.',
+                  },
+              },
+              recommendationByIntent: {
+                  all: {
+                      label: 'Ver catalogo completo',
+                      href: serviceHubPath(locale),
+                      target: 'service_hub',
+                      note: 'Sigue comparando rutas antes de cerrarte en una sola familia.',
+                  },
+                  diagnosis: {
+                      label: 'Reservar valoracion',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'La valoracion es el siguiente paso mas limpio cuando el caso todavia necesita encuadre diagnostico amplio.',
+                  },
+                  inflammation: {
+                      label: 'Reservar control medico',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Las rutas inflamatorias convierten mejor cuando sintomas y ventanas de control se revisan pronto.',
+                  },
+                  procedures: {
+                      label: 'Reservar revision procedimental',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'Los casos guiados por procedimiento necesitan aclarar fit, secuencia y recuperacion antes de comprometerse.',
+                  },
+                  rejuvenation: {
+                      label: 'Reservar valoracion estetica',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      target: 'booking',
+                      note: 'La intencion estetica gana credibilidad cuando objetivo y baseline se alinean primero.',
+                  },
+                  pediatric: {
+                      label: 'Ver ruta pediatrica',
+                      href: servicePath(locale, 'dermatologia-pediatrica'),
+                      target: 'service_detail',
+                      note: 'Los casos pediatricos ganan con una ruta mas limpia para familia antes de volver al catalogo amplio.',
+                  },
+                  remote: {
+                      label: 'Abrir telemedicina',
+                      href: telemedicinePath(locale),
+                      target: 'telemedicine',
+                      note: 'La intencion remota pesa mas cuando revision de imagenes y siguiente paso pueden resolverse antes del traslado.',
+                  },
+              },
+          };
+---
+
+<section
+    id="service-finder"
+    class="sony-section sony-service-finder"
+    data-service-finder
+    data-sync-query={syncQuery ? 'true' : 'false'}
+    data-locale={locale}
+>
+    <div class="sony-section__head">
+        <p>{locale === 'en' ? 'Service finder' : 'Buscador de servicios'}</p>
+        <h2>
+            {locale === 'en'
+                ? 'Choose the fastest route by clinical intent.'
+                : 'Elige la ruta mas rapida segun la intencion clinica.'}
+        </h2>
+    </div>
+    <div class="sony-service-finder__toolbar">
+        <div class="sony-service-finder__controls" role="toolbar" aria-label={locale === 'en' ? 'Service intent filters' : 'Filtros por intencion'}>
+            {
+                intentDefinitions.map((intent, index) => (
+                    <button
+                        type="button"
+                        class="sony-service-finder__chip"
+                        data-service-filter={intent.id}
+                        data-service-description={intent.description}
+                        aria-pressed={index === 0 ? 'true' : 'false'}
+                    >
+                        {intent.label}
+                        <span>{intentCountMap[intent.id]}</span>
+                    </button>
+                ))
+            }
+        </div>
+        <div class="sony-service-finder__status">
+            <strong data-service-count>{services.length}</strong>
+            <p>
+                {locale === 'en' ? 'visible routes' : 'rutas visibles'}
+            </p>
+            <span data-service-description>{intentDefinitions[0].description}</span>
+        </div>
+    </div>
+    <article class="sony-service-finder__active" data-service-active-context>
+        <div class="sony-service-finder__active-status">
+            <small data-service-context-category>{categoryLabels.all}</small>
+            <small data-service-context-intent>{intentDefinitions[0]?.label || 'All'}</small>
+        </div>
+        <p data-service-context-eyebrow>{finderContext.eyebrow}</p>
+        <h3 data-service-context-title>{finderContext.categoryCopy.all.title}</h3>
+        <span data-service-context-description>{finderContext.categoryCopy.all.description}</span>
+        <div class="sony-service-finder__active-actions">
+            <a
+                class="sony-btn sony-btn--ghost"
+                href={finderContext.recommendationByIntent.all.href}
+                data-service-context-cta
+                data-analytics-event="open_public_cta"
+                data-entry-surface="service_finder_active_context"
+                data-cta-target={finderContext.recommendationByIntent.all.target}
+            >
+                {finderContext.recommendationByIntent.all.label}
+            </a>
+        </div>
+    </article>
+    <div class="sony-service-finder__grid">
+        {
+            services.map((service) => {
+                const audiences = localizeAudience(service.audience, locale);
+                const doctors = localizeDoctorProfiles(service.doctor_profile, locale);
+                const intents = resolveServiceIntents(service).join(' ');
+                return (
+                    <article
+                        class="sony-service-finder__card"
+                        data-service-card={service.slug}
+                        data-intents={intents}
+                        data-category={service.category}
+                    >
+                        <p>{localizeCategory(service.category, locale)}</p>
+                        <h3>{service.hero || service.slug}</h3>
+                        <span>{service.summary}</span>
+                        <div class="sony-service-finder__meta">
+                            <small>
+                                {locale === 'en' ? 'Duration' : 'Duracion'}: {service.duration || '30 min'}
+                            </small>
+                            <small>
+                                {locale === 'en' ? 'From' : 'Desde'} ${service.price_from || '0'}
+                            </small>
+                        </div>
+                        <ul class="sony-service-finder__pills">
+                            {audiences.map((audience) => <li>{audience}</li>)}
+                        </ul>
+                        <div class="sony-service-finder__doctors">
+                            {doctors.map((doctor) => <small>{doctor}</small>)}
+                        </div>
+                        <div class="sony-service-finder__actions">
+                            <a class="sony-btn sony-btn--ghost" href={servicePath(locale, service.slug)}>
+                                {getServiceCtaLabel(service, locale)}
+                            </a>
+                            <a
+                                class="sony-btn sony-btn--primary sony-service-finder__booking-link"
+                                href={`${homePath(locale)}?service=${encodeURIComponent(mapServiceHint(service.slug))}#citas`}
+                                data-analytics-event="start_booking_from_service"
+                                data-service-slug={service.slug}
+                                data-service-category={service.category}
+                                data-service-intent={resolveServiceIntents(service).find((intent) => intent !== 'all') || 'all'}
+                                data-entry-surface="service_finder"
+                            >
+                                {locale === 'en' ? 'Book direct' : 'Reservar directo'}
+                            </a>
+                        </div>
+                    </article>
+                );
+            })
+        }
+    </div>
+    <script is:inline define:vars={{ categoryLabels, finderContext }}>
+        document.querySelectorAll('[data-service-finder]').forEach((root) => {
+            const buttons = Array.from(root.querySelectorAll('[data-service-filter]'));
+            const cards = Array.from(root.querySelectorAll('[data-service-card]'));
+            const countNode = root.querySelector('[data-service-count]');
+            const descriptionNode = root.querySelector('[data-service-description]');
+            const contextCategoryNode = root.querySelector('[data-service-context-category]');
+            const contextIntentNode = root.querySelector('[data-service-context-intent]');
+            const contextEyebrowNode = root.querySelector('[data-service-context-eyebrow]');
+            const contextTitleNode = root.querySelector('[data-service-context-title]');
+            const contextDescriptionNode = root.querySelector('[data-service-context-description]');
+            const contextCtaNode = root.querySelector('[data-service-context-cta]');
+            const syncQuery = root.getAttribute('data-sync-query') === 'true';
+            const validFilters = new Set(
+                buttons
+                    .map((button) => button.dataset.serviceFilter || '')
+                    .filter(Boolean)
+            );
+            const validCategories = new Set(['all', 'clinical', 'aesthetic', 'children']);
+            const intentLabelMap = Object.fromEntries(
+                buttons.map((button) => [
+                    button.dataset.serviceFilter || 'all',
+                    button.firstChild && button.firstChild.textContent
+                        ? button.firstChild.textContent.trim()
+                        : button.textContent.replace(/\s+\d+\s*$/, '').trim(),
+                ])
+            );
+            let state = {
+                intent: 'all',
+                category: 'all',
+            };
+
+            const writeIntentQuery = (filterId) => {
+                if (!syncQuery) {
+                    return;
+                }
+
+                const url = new URL(window.location.href);
+                if (filterId === 'all') {
+                    url.searchParams.delete('intent');
+                } else {
+                    url.searchParams.set('intent', filterId);
+                }
+                window.history.replaceState({}, '', url);
+            };
+
+            const applyState = (nextState, options = {}) => {
+                const normalizedFilter = validFilters.has(nextState.intent) ? nextState.intent : 'all';
+                const normalizedCategory = validCategories.has(nextState.category)
+                    ? nextState.category
+                    : 'all';
+                state = {
+                    intent: normalizedFilter,
+                    category: normalizedCategory,
+                };
+
+                buttons.forEach((button) => {
+                    const active = button.dataset.serviceFilter === normalizedFilter;
+                    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    if (active && descriptionNode) {
+                        descriptionNode.textContent = button.dataset.serviceDescription || '';
+                    }
+                });
+
+                let visibleCount = 0;
+                cards.forEach((card) => {
+                    const intents = String(card.dataset.intents || '')
+                        .split(/\s+/)
+                        .filter(Boolean);
+                    const matchesCategory =
+                        normalizedCategory === 'all' ||
+                        String(card.dataset.category || '') === normalizedCategory;
+                    const visible =
+                        matchesCategory &&
+                        (normalizedFilter === 'all' || intents.includes(normalizedFilter));
+                    card.toggleAttribute('hidden', !visible);
+                    if (visible) {
+                        visibleCount += 1;
+                    }
+                });
+
+                if (countNode) {
+                    countNode.textContent = String(visibleCount);
+                }
+                if (contextCategoryNode) {
+                    contextCategoryNode.textContent =
+                        categoryLabels[normalizedCategory] || categoryLabels.all;
+                }
+                if (contextIntentNode) {
+                    contextIntentNode.textContent =
+                        intentLabelMap[normalizedFilter] || intentLabelMap.all || 'All';
+                }
+                if (contextEyebrowNode) {
+                    contextEyebrowNode.textContent = finderContext.eyebrow;
+                }
+                if (contextTitleNode) {
+                    contextTitleNode.textContent =
+                        (finderContext.categoryCopy[normalizedCategory] ||
+                            finderContext.categoryCopy.all).title;
+                }
+                if (contextDescriptionNode) {
+                    const categoryDescription =
+                        (finderContext.categoryCopy[normalizedCategory] ||
+                            finderContext.categoryCopy.all).description;
+                    const recommendation =
+                        finderContext.recommendationByIntent[normalizedFilter] ||
+                        finderContext.recommendationByIntent.all;
+                    contextDescriptionNode.textContent = `${categoryDescription} ${recommendation.note}`.trim();
+                }
+                if (contextCtaNode) {
+                    const recommendation =
+                        finderContext.recommendationByIntent[normalizedFilter] ||
+                        finderContext.recommendationByIntent.all;
+                    contextCtaNode.textContent = recommendation.label;
+                    contextCtaNode.setAttribute('href', recommendation.href);
+                    contextCtaNode.setAttribute('data-cta-target', recommendation.target);
+                    contextCtaNode.setAttribute('data-service-intent', normalizedFilter);
+                    contextCtaNode.setAttribute('data-service-category', normalizedCategory);
+                }
+
+                if (options.writeQuery) {
+                    writeIntentQuery(normalizedFilter);
+                }
+
+                if (options.emitEvent !== false) {
+                    window.dispatchEvent(
+                        new CustomEvent('service-filter-change', {
+                            detail: {
+                                intent: normalizedFilter,
+                                category: normalizedCategory,
+                                visibleCount,
+                                locale: root.getAttribute('data-locale') || 'es',
+                                source: 'service_finder',
+                                reason: options.reason || 'interaction',
+                            },
+                        })
+                    );
+                }
+            };
+
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    applyState(
+                        {
+                            ...state,
+                            intent: button.dataset.serviceFilter || 'all',
+                        },
+                        {
+                            writeQuery: true,
+                            reason: 'interaction',
+                            emitEvent: true,
+                        }
+                    );
+                });
+            });
+
+            const initialState = (() => {
+                if (!syncQuery) {
+                    return {
+                        intent: 'all',
+                        category: 'all',
+                    };
+                }
+
+                const url = new URL(window.location.href);
+                const requestedIntent = url.searchParams.get('intent');
+                const requestedCategory = url.searchParams.get('category');
+                return {
+                    intent: validFilters.has(requestedIntent || '') ? requestedIntent : 'all',
+                    category: validCategories.has(requestedCategory || '')
+                        ? requestedCategory
+                        : 'all',
+                };
+            })();
+
+            window.addEventListener('service-hub:set-intent', (event) => {
+                const nextIntent = event?.detail?.intent;
+                if (!validFilters.has(nextIntent || '')) {
+                    return;
+                }
+
+                applyState(
+                    {
+                        ...state,
+                        intent: nextIntent,
+                    },
+                    {
+                        writeQuery: true,
+                        reason: event?.detail?.reason || 'sync',
+                        emitEvent: true,
+                    }
+                );
+            });
+
+            window.addEventListener('service-hub-state-change', (event) => {
+                if (!syncQuery) {
+                    return;
+                }
+                const detail = event?.detail || {};
+                applyState(
+                    {
+                        intent: detail.intent || state.intent,
+                        category: detail.category || state.category,
+                    },
+                    {
+                        writeQuery: false,
+                        reason: detail.reason || 'sync',
+                        emitEvent: false,
+                    }
+                );
+            });
+
+            applyState(initialState, {
+                writeQuery: false,
+                reason: syncQuery ? 'initial' : 'default',
+                emitEvent: false,
+            });
+        });
+    </script>
+</section>

@@ -5,12 +5,12 @@
             "startServerCommand": "php -S 127.0.0.1:8088 -t .",
             "startServerReadyPattern": "Development Server",
             "url": [
-                "http://127.0.0.1:8088/",
-                "http://127.0.0.1:8088/telemedicina",
-                "http://127.0.0.1:8088/servicios/diagnostico-integral",
-                "http://127.0.0.1:8088/servicios/acne-rosacea",
-                "http://127.0.0.1:8088/servicios/botox",
-                "http://127.0.0.1:8088/ninos/dermatologia-pediatrica"
+                "http://127.0.0.1:8088/es/",
+                "http://127.0.0.1:8088/en/",
+                "http://127.0.0.1:8088/es/telemedicina/",
+                "http://127.0.0.1:8088/es/servicios/diagnostico-integral/",
+                "http://127.0.0.1:8088/es/servicios/acne-rosacea/",
+                "http://127.0.0.1:8088/es/servicios/botox/"
             ],
             "settings": {
                 "formFactor": "mobile",
@@ -33,15 +33,15 @@
         "assert": {
             "assertions": {
                 "categories:performance": [
-                    "warn",
+                    "error",
                     {
-                        "minScore": 0.8
+                        "minScore": 0.85
                     }
                 ],
                 "categories:accessibility": [
                     "error",
                     {
-                        "minScore": 0.9
+                        "minScore": 0.95
                     }
                 ],
                 "categories:best-practices": [
@@ -51,7 +51,7 @@
                     }
                 ],
                 "categories:seo": [
-                    "warn",
+                    "error",
                     {
                         "minScore": 0.9
                     }

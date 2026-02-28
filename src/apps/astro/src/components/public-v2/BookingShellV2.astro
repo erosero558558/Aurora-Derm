@@ -1,0 +1,269 @@
+---
+import { getDictionary, legalBasePath } from '../../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+
+const dict = getDictionary(locale);
+const legalPath = legalBasePath(locale);
+const termsHref = `${legalPath}${locale === 'en' ? 'terms/' : 'terminos/'}`;
+const privacyHref = `${legalPath}${locale === 'en' ? 'privacy/' : 'privacidad/'}`;
+
+const serviceOptions = [
+    { value: '', label: dict.select_service },
+    {
+        value: 'consulta',
+        price: '40',
+        tax: '0',
+        label: dict.opt_consulta,
+        selected: true,
+    },
+    { value: 'telefono', price: '25', tax: '0', label: dict.opt_telefono },
+    { value: 'video', price: '30', tax: '0', label: dict.opt_video },
+    { value: 'laser', price: '150', tax: '0.15', label: dict.opt_laser },
+    {
+        value: 'rejuvenecimiento',
+        price: '120',
+        tax: '0.15',
+        label: dict.opt_rejuvenation,
+    },
+    { value: 'acne', price: '80', tax: '0', label: dict.opt_acne },
+    { value: 'cancer', price: '70', tax: '0', label: dict.opt_cancer },
+];
+
+const doctorOptions = [
+    { value: '', label: dict.select_doctor },
+    { value: 'rosero', label: dict.opt_rosero },
+    { value: 'narvaez', label: dict.opt_narvaez },
+    { value: 'indiferente', label: dict.opt_any },
+];
+
+const areaOptions = [
+    { value: '', label: dict.select_area },
+    { value: 'rostro', label: dict.area_face },
+    { value: 'cuello', label: dict.area_neck },
+    { value: 'cuero_cabelludo', label: dict.area_scalp },
+    { value: 'tronco', label: dict.area_torso },
+    { value: 'brazos_manos', label: dict.area_arms },
+    { value: 'piernas_pies', label: dict.area_legs },
+    { value: 'otra', label: dict.area_other },
+];
+
+const evolutionOptions = [
+    { value: '', label: dict.select_evolution },
+    { value: 'menos_1_semana', label: dict.evolution_1w },
+    { value: '1_4_semanas', label: dict.evolution_1m },
+    { value: '1_3_meses', label: dict.evolution_3m },
+    { value: '3_12_meses', label: dict.evolution_12m },
+    { value: 'mas_1_ano', label: dict.evolution_year },
+];
+---
+
+<div class="appointment-container public-booking-shell" data-public-booking-shell>
+    <div class="appointment-info">
+        <h2 class="section-title" data-i18n="appointment_title">{dict.appointment_title}</h2>
+        <p class="appointment-desc" data-i18n="appointment_desc">{dict.appointment_desc}</p>
+
+        <div class="appointment-benefits">
+            <div class="benefit-item">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                <span data-i18n="benefit_1">{dict.benefit_1}</span>
+            </div>
+            <div class="benefit-item">
+                <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                <span data-i18n="benefit_2">{dict.benefit_2}</span>
+            </div>
+            <div class="benefit-item">
+                <i class="fas fa-sync" aria-hidden="true"></i>
+                <div class="benefit-copy">
+                    <span data-i18n="benefit_3">{dict.benefit_3}</span>
+                    <a href={termsHref} class="benefit-link" data-i18n="benefit_3_link">
+                        {dict.benefit_3_link}
+                    </a>
+                    <small class="benefit-note" data-i18n="benefit_3_note">
+                        {dict.benefit_3_note}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="appointment-form-container">
+        <form id="appointmentForm" class="appointment-form">
+            <h3 data-i18n="form_title">{dict.form_title}</h3>
+            <p class="booking-form-meta" data-i18n="booking_form_intro">
+                {dict.booking_form_intro}
+            </p>
+            <div
+                class="booking-steps"
+                aria-label={locale === 'en' ? 'Booking steps' : 'Pasos de reserva'}
+            >
+                <span class="booking-step-pill" data-i18n="booking_step_availability">
+                    {dict.booking_step_availability}
+                </span>
+                <span class="booking-step-pill" data-i18n="booking_step_payment">
+                    {dict.booking_step_payment}
+                </span>
+                <span class="booking-step-pill" data-i18n="booking_step_confirmation">
+                    {dict.booking_step_confirmation}
+                </span>
+            </div>
+            <div
+                id="bookingInlineFeedback"
+                class="booking-inline-feedback is-hidden"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+            ></div>
+
+            <div class="form-group">
+                <label for="serviceSelect" data-i18n="label_service">{dict.label_service}</label>
+                <select name="service" id="serviceSelect" required>
+                    {serviceOptions.map((option) => (
+                        <option
+                            value={option.value}
+                            data-price={option.price}
+                            data-service-tax={option.tax}
+                            selected={option.selected}
+                        >
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="doctorSelect" data-i18n="label_doctor">{dict.label_doctor}</label>
+                <select name="doctor" id="doctorSelect" required>
+                    {doctorOptions.map((option) => (
+                        <option value={option.value}>{option.label}</option>
+                    ))}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="appointmentDate" data-i18n="label_date">{dict.label_date}</label>
+                    <input type="date" id="appointmentDate" name="date" required />
+                </div>
+                <div class="form-group">
+                    <label for="timeSelect" data-i18n="label_time">{dict.label_time}</label>
+                    <select name="time" id="timeSelect" required>
+                        <option value="">{dict.select_time}</option>
+                        <option value="09:00">09:00</option>
+                        <option value="10:00">10:00</option>
+                        <option value="11:00">11:00</option>
+                        <option value="12:00">12:00</option>
+                        <option value="15:00">15:00</option>
+                        <option value="16:00">16:00</option>
+                        <option value="17:00">17:00</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentName" data-i18n="label_name">{dict.label_name}</label>
+                <input type="text" id="appointmentName" name="name" required />
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentEmail" data-i18n="label_email">{dict.label_email}</label>
+                <input type="email" id="appointmentEmail" name="email" required />
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentPhone" data-i18n="label_phone">{dict.label_phone}</label>
+                <input
+                    type="tel"
+                    id="appointmentPhone"
+                    name="phone"
+                    required
+                    inputmode="tel"
+                    autocomplete="tel"
+                    data-i18n="placeholder_phone"
+                    placeholder={dict.placeholder_phone}
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentReason" data-i18n="label_reason">{dict.label_reason}</label>
+                <textarea
+                    id="appointmentReason"
+                    name="reason"
+                    rows="3"
+                    data-i18n="placeholder_reason"
+                    placeholder={dict.placeholder_reason}
+                ></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="affectedAreaSelect" data-i18n="label_area">{dict.label_area}</label>
+                    <select name="affectedArea" id="affectedAreaSelect">
+                        {areaOptions.map((option) => (
+                            <option value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="evolutionTimeSelect" data-i18n="label_evolution">
+                        {dict.label_evolution}
+                    </label>
+                    <select name="evolutionTime" id="evolutionTimeSelect">
+                        {evolutionOptions.map((option) => (
+                            <option value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="casePhotos" data-i18n="label_case_photos">{dict.label_case_photos}</label>
+                <input
+                    type="file"
+                    id="casePhotos"
+                    name="casePhotos"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    multiple
+                />
+                <small class="form-help" data-i18n="case_photos_help">{dict.case_photos_help}</small>
+            </div>
+
+            <div class="form-consent">
+                <label class="checkbox-line" for="privacyConsent">
+                    <input type="checkbox" id="privacyConsent" name="privacyConsent" required />
+                    <span data-i18n="privacy_consent_label">{dict.privacy_consent_label}</span>
+                </label>
+                <p class="form-privacy-note">
+                    <span data-i18n="privacy_images_note">{dict.privacy_images_note}</span>
+                    <a href={privacyHref} data-i18n="privacy_link_label">{dict.privacy_link_label}</a>
+                </p>
+            </div>
+
+            <div class="price-summary is-hidden" id="priceSummary">
+                <div class="price-row">
+                    <span data-i18n="summary_subtotal">{dict.summary_subtotal}</span>
+                    <span id="subtotalPrice">$0.00</span>
+                </div>
+                <div class="price-row">
+                    <span data-i18n="summary_iva">{dict.summary_iva}</span>
+                    <span id="ivaPrice">$0.00</span>
+                </div>
+                <div class="price-row total">
+                    <span data-i18n="summary_total">{dict.summary_total}</span>
+                    <span id="totalPrice">$0.00</span>
+                </div>
+            </div>
+            <p class="price-summary-hint" id="priceHint" data-i18n="booking_price_hint">
+                {dict.booking_price_hint}
+            </p>
+
+            <button type="submit" class="btn btn-primary btn-full">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                <span data-i18n="btn_continue">{dict.btn_continue}</span>
+            </button>
+            <p class="booking-submit-note" data-i18n="booking_submit_note">
+                {dict.booking_submit_note}
+            </p>
+        </form>
+    </div>
+</div>

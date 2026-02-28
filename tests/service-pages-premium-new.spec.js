@@ -1,43 +1,51 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v2');
 
-const PREMIUM_SERVICE_ROUTES = [
-    '/servicios/diagnostico-integral.html',
-    '/servicios/acne-rosacea.html',
-    '/servicios/verrugas.html',
-    '/servicios/granitos-brazos-piernas.html',
-    '/servicios/cicatrices.html',
-    '/servicios/cancer-piel.html',
-    '/servicios/peeling-quimico.html',
-    '/servicios/mesoterapia.html',
-    '/servicios/laser-dermatologico.html',
-    '/servicios/botox.html',
-    '/servicios/bioestimuladores-colageno.html',
-    '/servicios/piel-cabello-unas.html',
-    '/ninos/dermatologia-pediatrica.html',
+const ES_CASES = [
+    { route: '/es/servicios/acne-rosacea/', slug: 'acne-rosacea', expectedValue: 'acne' },
+    { route: '/es/servicios/botox/', slug: 'botox', expectedValue: 'rejuvenecimiento' },
+    { route: '/es/servicios/cancer-piel/', slug: 'cancer-piel', expectedValue: 'cancer' },
 ];
 
-test.describe('Premium service routes', () => {
-    test('all premium routes render content and booking CTA', async ({
-        page,
-    }) => {
-        for (const route of PREMIUM_SERVICE_ROUTES) {
-            await page.goto(route, { waitUntil: 'domcontentloaded' });
-            await expect(page.locator('.service-hero-card')).toBeVisible();
-            await expect(page.locator('.service-hero-card h1')).not.toHaveText(
-                ''
-            );
+const EN_CASES = [
+    { route: '/en/services/diagnostico-integral/', slug: 'diagnostico-integral', expectedValue: 'consulta' },
+    { route: '/en/services/botox/', slug: 'botox', expectedValue: 'rejuvenecimiento' },
+];
 
-            const bookingCta = page
-                .locator(
-                    '.service-actions a[data-analytics-event="start_booking_from_service"]'
-                )
-                .first();
-            await expect(bookingCta).toBeVisible();
-            await expect(bookingCta).toHaveAttribute(
-                'href',
-                /\/\?service=.+#citas/
-            );
+test.describe('Service detail V2', () => {
+    test('service routes render the new editorial template in Spanish', async ({ page }) => {
+        for (const item of ES_CASES) {
+            await gotoPublicRoute(page, item.route);
+            await expect(page.locator('[data-service-hero]')).toBeVisible();
+            await expect(page.locator('[data-service-story]')).toBeVisible();
+            await expect(page.locator('[data-service-evidence]')).toBeVisible();
+            await expect(page.locator('[data-service-timeline] .service-timeline-v2__steps article')).toHaveCount(4);
+            await expect(page.locator('[data-related-programs] .service-card-v2')).toHaveCount(3);
+            const cta = page.locator('[data-service-hero] a[data-analytics-event="start_booking_from_service"]');
+            await expect(cta).toHaveAttribute('href', '#citas');
+            await expect(cta).toHaveAttribute('data-service-slug', item.slug);
+            await expect(page.locator('.sony-detail-hero')).toHaveCount(0);
+        }
+    });
+
+    test('service routes keep booking continuity and service preselection', async ({ page }) => {
+        for (const item of ES_CASES) {
+            await gotoPublicRoute(page, item.route);
+            await waitForBookingHooks(page, item.expectedValue);
+            await page.locator('[data-service-hero] a[data-analytics-event="start_booking_from_service"]').click();
+            await expect(page).toHaveURL(new RegExp(`${item.route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}#citas$`));
+            await waitForBookingHooks(page, item.expectedValue);
+        }
+    });
+
+    test('english service routes keep the same template and service hint', async ({ page }) => {
+        for (const item of EN_CASES) {
+            await gotoPublicRoute(page, item.route);
+            await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+            await expect(page.locator('[data-service-hero]')).toBeVisible();
+            await expect(page.locator('[data-related-programs]')).toBeVisible();
+            await waitForBookingHooks(page, item.expectedValue);
         }
     });
 });

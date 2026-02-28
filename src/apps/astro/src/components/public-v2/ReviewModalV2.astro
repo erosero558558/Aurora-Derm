@@ -1,0 +1,41 @@
+---
+const { locale = 'es' } = Astro.props;
+---
+
+<div id="reviewModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content public-modal public-modal--review">
+        <button
+            type="button"
+            class="modal-close"
+            data-action="close-review-modal"
+            aria-label={locale === 'en' ? 'Close review modal' : 'Cerrar modal de resena'}
+        >
+            <i class="fas fa-times"></i>
+        </button>
+        <p class="public-modal__eyebrow">{locale === 'en' ? 'Review' : 'Resena'}</p>
+        <h3>{locale === 'en' ? 'Write your review' : 'Escribe tu resena'}</h3>
+        <form id="reviewForm">
+            <div class="form-group">
+                <label>{locale === 'en' ? 'Your name' : 'Tu nombre'}</label>
+                <input type="text" name="reviewerName" required />
+            </div>
+            <div class="form-group">
+                <label>{locale === 'en' ? 'Rating' : 'Calificacion'}</label>
+                <div class="star-rating">
+                    <i class="far fa-star" data-rating="1"></i>
+                    <i class="far fa-star" data-rating="2"></i>
+                    <i class="far fa-star" data-rating="3"></i>
+                    <i class="far fa-star" data-rating="4"></i>
+                    <i class="far fa-star" data-rating="5"></i>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>{locale === 'en' ? 'Your experience' : 'Tu experiencia'}</label>
+                <textarea name="reviewText" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">
+                <span>{locale === 'en' ? 'Publish review' : 'Publicar resena'}</span>
+            </button>
+        </form>
+    </div>
+</div>

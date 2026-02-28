@@ -1,0 +1,86 @@
+---
+const { locale = 'es' } = Astro.props;
+
+const copy =
+    locale === 'en'
+        ? {
+              eyebrow: 'Operational trust',
+              title: 'What stays predictable after you click book.',
+              intro:
+                  'Clear response windows, payment handling, and follow-up expectations before the visit starts.',
+              cards: [
+                  {
+                      kicker: 'Response window',
+                      title: 'Clinical confirmation with a concrete next step',
+                      body: 'We keep booking, reschedule, and telemedicine entry points aligned so your case does not get lost between channels.',
+                  },
+                  {
+                      kicker: 'Payment flow',
+                      title: 'Traceable payment and proof review',
+                      body: 'Card, transfer, and in-clinic payment paths remain tied to the same operational flow and confirmation state.',
+                  },
+                  {
+                      kicker: 'Follow-up',
+                      title: 'Immediate route after the first visit',
+                      body: 'You leave with the next action defined: treatment, remote follow-up, or broader diagnostic review.',
+                  },
+              ],
+              cta: 'Start booking',
+          }
+        : {
+              eyebrow: 'Confianza operativa',
+              title: 'Lo que sigue siendo predecible despues de reservar.',
+              intro:
+                  'Ventanas claras de respuesta, manejo de pagos y expectativas de seguimiento antes de que empiece la consulta.',
+              cards: [
+                  {
+                      kicker: 'Ventana de respuesta',
+                      title: 'Confirmacion clinica con siguiente paso concreto',
+                      body: 'Mantenemos alineados booking, reprogramacion y telemedicina para que tu caso no se pierda entre canales.',
+                  },
+                  {
+                      kicker: 'Flujo de pago',
+                      title: 'Pago trazable y validacion de comprobantes',
+                      body: 'Tarjeta, transferencia y pago en consultorio quedan ligados al mismo flujo operativo y al mismo estado de confirmacion.',
+                  },
+                  {
+                      kicker: 'Seguimiento',
+                      title: 'Ruta inmediata despues de la primera consulta',
+                      body: 'Sales con la siguiente accion definida: tratamiento, control remoto o valoracion diagnostica ampliada.',
+                  },
+              ],
+              cta: 'Reservar ahora',
+          };
+---
+
+<section class="sony-section sony-guarantee" data-care-guarantee>
+    <div class="sony-section__head sony-section__head--split">
+        <div>
+            <p>{copy.eyebrow}</p>
+            <h2>{copy.title}</h2>
+        </div>
+        <div class="sony-guarantee__intro">
+            <p>{copy.intro}</p>
+            <a
+                class="sony-btn sony-btn--ghost"
+                href="#citas"
+                data-analytics-event="open_public_cta"
+                data-entry-surface="care_guarantee"
+                data-cta-target="booking"
+            >
+                {copy.cta}
+            </a>
+        </div>
+    </div>
+    <div class="sony-guarantee__grid">
+        {
+            copy.cards.map((card) => (
+                <article class="sony-guarantee__card" data-care-guarantee-card>
+                    <span>{card.kicker}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

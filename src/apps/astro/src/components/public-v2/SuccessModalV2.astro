@@ -1,0 +1,20 @@
+---
+const { locale = 'es' } = Astro.props;
+---
+
+<div id="successModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content success-content public-modal public-modal--success">
+        <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+        <p class="public-modal__eyebrow">{locale === 'en' ? 'Confirmed' : 'Confirmada'}</p>
+        <h3>{locale === 'en' ? 'Appointment confirmed' : 'Cita confirmada'}</h3>
+        <p data-i18n="success_desc">
+            {locale === 'en'
+                ? 'Your appointment was registered successfully.'
+                : 'Tu cita fue registrada correctamente.'}
+        </p>
+        <div id="appointmentDetails"></div>
+        <button type="button" class="btn btn-primary" data-action="close-success-modal">
+            <span>{locale === 'en' ? 'Done' : 'Entendido'}</span>
+        </button>
+    </div>
+</div>

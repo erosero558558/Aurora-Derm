@@ -1,266 +1,32 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v2');
 
-async function prepareStablePublicState(page) {
-    await page.addInitScript(() => {
-        try {
-            localStorage.setItem(
-                'pa_cookie_consent_v1',
-                JSON.stringify({
-                    status: 'accepted',
-                    at: '2026-01-01T00:00:00.000Z',
-                })
-            );
-        } catch (_error) {
-            // no-op
-        }
-    });
-}
+test.describe('Telemedicine V2', () => {
+    test('telemedicine pages render the new editorial structure in Spanish', async ({ page }) => {
+        await gotoPublicRoute(page, '/es/telemedicina/');
 
-async function stabilizeDynamicUi(page) {
-    await page.evaluate(() => {
-        [
-            '#cookieBanner',
-            '#chatbotWidget',
-            '#chatbotContainer',
-            '.chatbot-toggle',
-            '.quick-dock',
-        ].forEach((selector) => {
-            document.querySelectorAll(selector).forEach((node) => {
-                if (node instanceof HTMLElement) {
-                    node.style.display = 'none';
-                }
-            });
-        });
-    });
-}
-
-async function gotoTelemedicina(page) {
-    await prepareStablePublicState(page);
-    await page.goto('/telemedicina.html', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('load').catch(() => null);
-    await page.waitForTimeout(900);
-    await stabilizeDynamicUi(page);
-    await page.locator('#telemedicina').scrollIntoViewIfNeeded();
-}
-
-async function collectSectionOverflow(page, sectionSelector) {
-    return page.evaluate((selector) => {
-        const section = document.querySelector(selector);
-        if (!(section instanceof HTMLElement)) {
-            return { missing: true, offenders: [] };
-        }
-
-        const viewportWidth = window.innerWidth;
-        const offenders = [];
-        const candidates = [
-            section,
-            ...Array.from(section.querySelectorAll('*')),
-        ];
-        for (const element of candidates) {
-            if (!(element instanceof HTMLElement)) continue;
-            const style = window.getComputedStyle(element);
-            if (
-                style.display === 'none' ||
-                style.visibility === 'hidden' ||
-                style.position === 'fixed' ||
-                style.position === 'sticky'
-            ) {
-                continue;
-            }
-            const rect = element.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0) continue;
-            if (rect.left >= -1 && rect.right <= viewportWidth + 1) continue;
-            offenders.push({
-                tag: element.tagName.toLowerCase(),
-                id: element.id || '',
-                className: String(element.className || '').slice(0, 120),
-                left: Math.round(rect.left),
-                right: Math.round(rect.right),
-                width: Math.round(rect.width),
-            });
-            if (offenders.length >= 12) break;
-        }
-
-        return { missing: false, viewportWidth, offenders };
-    }, sectionSelector);
-}
-
-test.describe('Telemedicina conversion QA', () => {
-    test('desktop mantiene jerarquia de conversion y CTAs accionables', async ({
-        page,
-    }) => {
-        await page.setViewportSize({ width: 1280, height: 900 });
-        await gotoTelemedicina(page);
-
-        const teleSection = page.locator('#telemedicina');
-        const conversionGrid = teleSection.locator(
-            '.telemedicine-conversion-grid'
-        );
-        const decisionPanel = teleSection.locator('.tele-decision-panel');
-        const optionsGrid = teleSection.locator('.telemedicine-options');
-        const ctaRow = teleSection.locator('.tele-cta-row');
-
-        await expect(teleSection).toBeVisible();
-        await expect(conversionGrid).toBeVisible();
-        await expect(teleSection.locator('.tele-quick-card')).toHaveCount(3);
-        await expect(decisionPanel).toContainText(
-            /(Consulta online|Online consultation)/i
-        );
-        await expect(decisionPanel.locator('.tele-prep-steps li')).toHaveCount(
-            3
-        );
-        await expect(ctaRow.locator('a.btn')).toHaveCount(2);
-        await expect(ctaRow.locator('a[href="#citas"]')).toBeVisible();
-        await expect(
-            ctaRow.locator('a.tele-cta-whatsapp[href*="wa.me/593982453672"]')
-        ).toBeVisible();
-
-        const conversionColumns = await conversionGrid.evaluate(
-            (el) => getComputedStyle(el).gridTemplateColumns
-        );
-        expect(
-            conversionColumns.trim().split(/\s+/).filter(Boolean).length
-        ).toBeGreaterThan(1);
-
-        const panelBox = await decisionPanel.boundingBox();
-        const optionsBox = await optionsGrid.boundingBox();
-        expect(panelBox).not.toBeNull();
-        expect(optionsBox).not.toBeNull();
-        expect(panelBox.y).toBeLessThan(optionsBox.y);
+        await expect(page.locator('[data-telemedicine-hero]')).toBeVisible();
+        await expect(page.locator('[data-how-it-works]')).toBeVisible();
+        await expect(page.locator('[data-who-it-fits]')).toBeVisible();
+        await expect(page.locator('[data-escalation-model] .service-timeline-v2__steps article')).toHaveCount(3);
+        await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
+        await expect(page.locator('.sony-detail-hero')).toHaveCount(0);
     });
 
-    test('mobile mantiene bloque de conversion sin overflow y CTAs en una columna', async ({
-        page,
-    }) => {
-        await page.setViewportSize({ width: 390, height: 844 });
-        await gotoTelemedicina(page);
-
-        const teleSection = page.locator('#telemedicina');
-        const conversionGrid = teleSection.locator(
-            '.telemedicine-conversion-grid'
-        );
-        const ctaRow = teleSection.locator('.tele-cta-row');
-        const ctaButtons = ctaRow.locator('a.btn');
-
-        const conversionColumns = await conversionGrid.evaluate(
-            (el) => getComputedStyle(el).gridTemplateColumns
-        );
-        expect(
-            conversionColumns.trim().split(/\s+/).filter(Boolean).length
-        ).toBe(1);
-
-        const ctaDisplay = await ctaRow.evaluate(
-            (el) => getComputedStyle(el).display
-        );
-        const ctaColumns = await ctaRow.evaluate(
-            (el) => getComputedStyle(el).gridTemplateColumns
-        );
-        expect(ctaDisplay).toBe('grid');
-        expect(ctaColumns.trim().split(/\s+/).filter(Boolean).length).toBe(1);
-
-        await expect(ctaButtons).toHaveCount(2);
-        const [firstBtn, secondBtn] = await Promise.all([
-            ctaButtons.nth(0).boundingBox(),
-            ctaButtons.nth(1).boundingBox(),
-        ]);
-        expect(firstBtn).not.toBeNull();
-        expect(secondBtn).not.toBeNull();
-        expect(Math.abs(firstBtn.width - secondBtn.width)).toBeLessThanOrEqual(
-            2
-        );
-
-        const overflowMetrics = await collectSectionOverflow(
-            page,
-            '#telemedicina'
-        );
-        expect(overflowMetrics.missing).toBeFalsy();
-        expect(
-            overflowMetrics.offenders,
-            `Overflow en #telemedicina (${JSON.stringify(overflowMetrics.offenders)})`
-        ).toEqual([]);
+    test('telemedicine booking bridge opens the existing hooks', async ({ page }) => {
+        await gotoPublicRoute(page, '/es/telemedicina/');
+        await page.locator('[data-booking-bridge-band] a[data-analytics-event="open_public_cta"]').click();
+        await expect(page).toHaveURL(/#citas$/);
+        await waitForBookingHooks(page);
     });
 
-    test('CTAs de telemedicina preseleccionan video en el formulario de citas', async ({
-        page,
-    }) => {
-        await page.setViewportSize({ width: 390, height: 844 });
-        await gotoTelemedicina(page);
+    test('english telemedicine keeps the same shell and locale switch', async ({ page }) => {
+        await gotoPublicRoute(page, '/en/telemedicine/');
 
-        await page.evaluate(() =>
-            window.scrollTo({ top: 0, behavior: 'auto' })
-        );
-        const heroBookingCta = page
-            .locator('[data-qa="tele-hero-booking-cta"]')
-            .first();
-        await expect(heroBookingCta).toBeVisible();
-        await heroBookingCta.click({ force: true });
-
-        await expect
-            .poll(
-                async () =>
-                    page.evaluate(() => {
-                        const select = document.getElementById('serviceSelect');
-                        return select ? select.value : null;
-                    }),
-                { timeout: 12000 }
-            )
-            .toBe('video');
-
-        await page.evaluate(() => {
-            const select = document.getElementById('serviceSelect');
-            if (!select) return;
-            select.value = 'consulta';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
-        await page.locator('#telemedicina').scrollIntoViewIfNeeded();
-        const panelBookingCta = page
-            .locator('[data-qa="tele-panel-booking-cta"]')
-            .first();
-        await expect(panelBookingCta).toBeVisible();
-        await panelBookingCta.click({ force: true });
-
-        await expect
-            .poll(
-                async () =>
-                    page.evaluate(() => {
-                        const select = document.getElementById('serviceSelect');
-                        return select ? select.value : null;
-                    }),
-                { timeout: 8000 }
-            )
-            .toBe('video');
-
-        await page.evaluate(() => {
-            const select = document.getElementById('serviceSelect');
-            if (!select) return;
-            select.value = 'consulta';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
-        await page.evaluate(() =>
-            window.scrollTo({ top: 0, behavior: 'auto' })
-        );
-        await page.locator('.nav-mobile-toggle').click();
-        await expect(page.locator('#mobileMenu')).toHaveClass(/active/);
-
-        const mobileBookingCta = page
-            .locator('[data-qa="tele-mobile-booking-cta"]')
-            .first();
-        await expect(mobileBookingCta).toBeVisible();
-        await mobileBookingCta.click({ force: true });
-
-        await expect(page.locator('#mobileMenu')).not.toHaveClass(/active/);
-        await expect
-            .poll(
-                async () =>
-                    page.evaluate(() => {
-                        const select = document.getElementById('serviceSelect');
-                        return select ? select.value : null;
-                    }),
-                { timeout: 8000 }
-            )
-            .toBe('video');
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+        await expect(page.locator('.public-nav__lang')).toHaveAttribute('href', '/es/telemedicina/');
+        await expect(page.locator('[data-telemedicine-hero]')).toBeVisible();
+        await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
     });
 });

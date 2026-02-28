@@ -1,0 +1,38 @@
+---
+const { locale = 'es' } = Astro.props;
+---
+
+<div id="rescheduleModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content public-modal public-modal--reschedule">
+        <button
+            type="button"
+            class="modal-close"
+            data-action="close-reschedule-modal"
+            aria-label={locale === 'en' ? 'Close reschedule modal' : 'Cerrar modal de reprogramacion'}
+        >
+            &times;
+        </button>
+        <p class="public-modal__eyebrow">{locale === 'en' ? 'Reschedule' : 'Reprogramacion'}</p>
+        <h3>{locale === 'en' ? 'Reschedule appointment' : 'Reprogramar cita'}</h3>
+        <div id="rescheduleInfo"></div>
+        <div class="form-group">
+            <label>{locale === 'en' ? 'New date' : 'Nueva fecha'}</label>
+            <input type="date" id="rescheduleDate" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label>{locale === 'en' ? 'New time' : 'Nuevo horario'}</label>
+            <select id="rescheduleTime" class="form-control">
+                <option value="">{locale === 'en' ? 'Select time' : 'Selecciona un horario'}</option>
+            </select>
+        </div>
+        <div id="rescheduleError" class="form-error is-hidden"></div>
+        <button
+            type="button"
+            class="btn btn-primary"
+            id="rescheduleSubmitBtn"
+            data-action="submit-reschedule"
+        >
+            <span>{locale === 'en' ? 'Confirm reschedule' : 'Confirmar reprogramacion'}</span>
+        </button>
+    </div>
+</div>

@@ -1,0 +1,128 @@
+---
+const { locale = 'es', variant = 'service' } = Astro.props;
+
+const copy = {
+    es: {
+        service: {
+            eyebrow: 'Seguimiento',
+            title: 'Lo que suele pasar despues de la primera valoracion.',
+            description:
+                'La primera cita no cierra solo en diagnostico. Tambien define ventanas de control, tolerancia y si conviene combinar modalidades.',
+            cards: [
+                {
+                    step: '24-72 horas',
+                    title: 'Ajuste inicial del plan',
+                    body: 'Se confirma si la indicacion se mantiene, si faltan estudios o si conviene cambiar a una entrada mas amplia.',
+                },
+                {
+                    step: '1-4 semanas',
+                    title: 'Control de respuesta y tolerancia',
+                    body: 'Se revisa evolucion, adherencia y si el tratamiento requiere refuerzo presencial o soporte adicional.',
+                },
+                {
+                    step: 'Escalamiento',
+                    title: 'Cambio de modalidad cuando hace falta',
+                    body: 'Si el caso cambia, la continuidad puede pasar a telemedicina, procedimiento o consulta general sin romper la reserva.',
+                },
+            ],
+        },
+        telemedicine: {
+            eyebrow: 'Seguimiento',
+            title: 'Como se mantiene la continuidad despues de la consulta online.',
+            description:
+                'Telemedicina funciona mejor cuando deja claro que pasa despues: revision de fotos, ajustes y escalamiento presencial si el caso lo pide.',
+            cards: [
+                {
+                    step: '24-48 horas',
+                    title: 'Revision de evidencia compartida',
+                    body: 'Si faltan fotos, contexto o antecedentes, el equipo te indica que completar antes de definir el siguiente paso.',
+                },
+                {
+                    step: '1-3 semanas',
+                    title: 'Seguimiento remoto cuando aplica',
+                    body: 'Controles cortos permiten ver respuesta, efectos adversos y adherencia antes de mover la ruta de tratamiento.',
+                },
+                {
+                    step: 'Escalamiento',
+                    title: 'Paso a consulta presencial si el caso cambia',
+                    body: 'Lesiones complejas, procedimientos o dudas diagnosticas se redirigen a valoracion fisica sin perder continuidad operativa.',
+                },
+            ],
+        },
+    },
+    en: {
+        service: {
+            eyebrow: 'Follow-up',
+            title: 'What usually happens after the first assessment.',
+            description:
+                'The first appointment does more than confirm diagnosis. It also defines review windows, tolerance checks, and whether a different care route fits better.',
+            cards: [
+                {
+                    step: '24-72 hours',
+                    title: 'Initial plan adjustment',
+                    body: 'The team confirms whether the indication stands, whether extra studies are needed, or whether a broader entry route makes more sense.',
+                },
+                {
+                    step: '1-4 weeks',
+                    title: 'Response and tolerance review',
+                    body: 'Progress, adherence, and treatment tolerance are reviewed before deciding if in-person reinforcement is needed.',
+                },
+                {
+                    step: 'Escalation',
+                    title: 'Route changes when the case requires it',
+                    body: 'If the case shifts, continuity can move to telemedicine, procedure, or general consultation without breaking the booking flow.',
+                },
+            ],
+        },
+        telemedicine: {
+            eyebrow: 'Follow-up',
+            title: 'How continuity is maintained after the online consultation.',
+            description:
+                'Telemedicine works better when the next step is explicit: image review, treatment adjustments, and in-person escalation when needed.',
+            cards: [
+                {
+                    step: '24-48 hours',
+                    title: 'Review of shared evidence',
+                    body: 'If more images, context, or medical history are needed, the team tells you what to complete before the next step is defined.',
+                },
+                {
+                    step: '1-3 weeks',
+                    title: 'Remote follow-up when appropriate',
+                    body: 'Short check-ins help review response, adverse effects, and adherence before moving the treatment route.',
+                },
+                {
+                    step: 'Escalation',
+                    title: 'Move to in-person care if the case changes',
+                    body: 'Complex lesions, procedures, or diagnostic uncertainty are redirected to physical evaluation without losing operational continuity.',
+                },
+            ],
+        },
+    },
+};
+
+const selectedLocale = copy[locale] || copy.es;
+const selectedVariant = selectedLocale[variant] || selectedLocale.service;
+---
+
+<section
+    class="sony-section sony-section--compact sony-follow-up"
+    data-follow-up-rail
+    data-follow-up-variant={variant}
+>
+    <div class="sony-section__head">
+        <p>{selectedVariant.eyebrow}</p>
+        <h2>{selectedVariant.title}</h2>
+        <span>{selectedVariant.description}</span>
+    </div>
+    <div class="sony-follow-up__grid">
+        {
+            selectedVariant.cards.map((card) => (
+                <article class="sony-follow-up__card" data-follow-up-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

@@ -1,0 +1,196 @@
+---
+import { homePath, telemedicinePath } from '../lib/content.js';
+
+const { locale = 'es', variant = 'service' } = Astro.props;
+const isEnglish = locale === 'en';
+
+const variants = {
+    service: isEnglish
+        ? {
+              eyebrow: 'Before you book',
+              title: 'Know what speeds the first decision.',
+              description:
+                  'These signals help confirm if this route fits, if telemedicine should lead first, or if in-person review is stronger.',
+              cards: [
+                  {
+                      kicker: 'What to bring',
+                      title: 'Photos, current treatment, and timing of changes',
+                      body: 'Arrive with recent photos, active products or prescriptions, and how long the issue has been evolving.',
+                      cta: 'Book assessment',
+                      href: `${homePath(locale)}#citas`,
+                  },
+                  {
+                      kicker: 'What happens first',
+                      title: 'The first consultation confirms indication and sequence',
+                      body: 'We validate if this is the right route, if another service should lead, and whether booking should stay procedural.',
+                      cta: 'Open telemedicine',
+                      href: telemedicinePath(locale),
+                  },
+                  {
+                      kicker: 'Escalation logic',
+                      title: 'Cases can move to in-person, telemedicine, or combined follow-up',
+                      body: 'The route stays flexible when urgency, imaging quality, or medical history make a different entry stronger.',
+                  },
+              ],
+          }
+        : {
+              eyebrow: 'Antes de reservar',
+              title: 'Ten claro que acelera la primera decision.',
+              description:
+                  'Estas señales ayudan a confirmar si esta ruta encaja, si telemedicina debe liderar primero o si la revision presencial es mas fuerte.',
+              cards: [
+                  {
+                      kicker: 'Que traer',
+                      title: 'Fotos, tratamiento actual y tiempo de evolucion',
+                      body: 'Llega con fotos recientes, productos o recetas activas y el tiempo real de cambio del caso.',
+                      cta: 'Reservar valoracion',
+                      href: `${homePath(locale)}#citas`,
+                  },
+                  {
+                      kicker: 'Que pasa primero',
+                      title: 'La primera consulta confirma indicacion y secuencia',
+                      body: 'Validamos si esta es la ruta correcta, si debe liderar otro servicio y si el booking debe seguir siendo procedimental.',
+                      cta: 'Abrir telemedicina',
+                      href: telemedicinePath(locale),
+                  },
+                  {
+                      kicker: 'Logica de escalamiento',
+                      title: 'El caso puede moverse a presencial, remoto o seguimiento combinado',
+                      body: 'La ruta se mantiene flexible cuando la urgencia, la calidad de imagen o los antecedentes piden otra entrada.',
+                  },
+              ],
+          },
+    telemedicine: isEnglish
+        ? {
+              eyebrow: 'Remote readiness',
+              title: 'Use telemedicine when the setup is strong enough to decide quickly.',
+              description:
+                  'Good photos, clear timing, and realistic escalation expectations make online entry much more useful.',
+              cards: [
+                  {
+                      kicker: 'Before the call',
+                      title: 'Prepare photos with daylight and one wide context shot',
+                      body: 'Good lighting and one close plus one contextual image reduce avoidable back-and-forth.',
+                  },
+                  {
+                      kicker: 'During the call',
+                      title: 'Expect triage, route confirmation, and booking guidance',
+                      body: 'The first online step clarifies whether follow-up stays remote or should move to in-person review.',
+                      cta: 'Book now',
+                      href: `${homePath(locale)}#citas`,
+                  },
+                  {
+                      kicker: 'When to switch',
+                      title: 'Escalate fast if the case looks urgent, procedural, or image-limited',
+                      body: 'Telemedicine is strong for orientation, but not every lesion, child case, or procedural goal should stay remote.',
+                  },
+              ],
+          }
+        : {
+              eyebrow: 'Preparacion remota',
+              title: 'Usa telemedicina cuando el montaje ya permite decidir rapido.',
+              description:
+                  'Buenas fotos, tiempo de evolucion claro y expectativa realista de escalamiento vuelven mucho mas util la entrada online.',
+              cards: [
+                  {
+                      kicker: 'Antes de la llamada',
+                      title: 'Prepara fotos con luz natural y una toma de contexto',
+                      body: 'Una imagen cercana y otra abierta reducen idas y vueltas innecesarias.',
+                  },
+                  {
+                      kicker: 'Durante la llamada',
+                      title: 'Espera triage, confirmacion de ruta y guia de booking',
+                      body: 'El primer paso online aclara si el seguimiento sigue remoto o si debe pasar a revision presencial.',
+                      cta: 'Reservar ahora',
+                      href: `${homePath(locale)}#citas`,
+                  },
+                  {
+                      kicker: 'Cuando cambiar',
+                      title: 'Escala rapido si el caso es urgente, procedimental o depende de mejores imagenes',
+                      body: 'Telemedicina orienta muy bien, pero no toda lesion, caso pediatrico u objetivo procedimental debe quedarse remoto.',
+                  },
+              ],
+          },
+    hub: isEnglish
+        ? {
+              eyebrow: 'Booking context',
+              title: 'The catalogue should reduce doubt, not add another decision layer.',
+              description:
+                  'These checks keep the hub useful for campaigns, direct entry, and quick service matching.',
+              cards: [
+                  {
+                      kicker: 'Start broad',
+                      title: 'Use clinical routes when the case still needs framing',
+                      body: 'If the issue is not yet well-defined, broader assessment routes prevent poor self-selection.',
+                      cta: 'Book assessment',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                  },
+                  {
+                      kicker: 'Use intent',
+                      title: 'Move faster when the treatment goal is already explicit',
+                      body: 'Aesthetic or pediatric routes work best when the user already knows the direction.',
+                  },
+                  {
+                      kicker: 'Keep continuity',
+                      title: 'Telemedicine and in-person should stay connected to the same booking path',
+                      body: 'The hub is stronger when switching route does not reset service context or CTA visibility.',
+                      cta: 'Open telemedicine',
+                      href: telemedicinePath(locale),
+                  },
+              ],
+          }
+        : {
+              eyebrow: 'Contexto de reserva',
+              title: 'El catalogo debe quitar duda, no agregar otra capa de decision.',
+              description:
+                  'Estas comprobaciones mantienen util el hub para campañas, entrada directa y emparejamiento rapido de servicio.',
+              cards: [
+                  {
+                      kicker: 'Empieza amplio',
+                      title: 'Usa rutas clinicas cuando el caso todavia necesita encuadre',
+                      body: 'Si el problema no esta bien definido, una valoracion amplia evita una auto-seleccion pobre.',
+                      cta: 'Reservar valoracion',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                  },
+                  {
+                      kicker: 'Usa intencion',
+                      title: 'Avanza mas rapido cuando el objetivo ya es explicito',
+                      body: 'Las rutas esteticas o pediatricas funcionan mejor cuando la direccion del caso ya viene clara.',
+                  },
+                  {
+                      kicker: 'Mantener continuidad',
+                      title: 'Telemedicina y presencial deben seguir conectados al mismo booking',
+                      body: 'El hub gana cuando cambiar de ruta no reinicia el contexto del servicio ni la visibilidad del CTA.',
+                      cta: 'Abrir telemedicina',
+                      href: telemedicinePath(locale),
+                  },
+              ],
+          },
+};
+
+const content = variants[variant] || variants.service;
+---
+
+<section class="sony-section sony-readiness" data-readiness-rail>
+    <div class="sony-section__head">
+        <p>{content.eyebrow}</p>
+        <h2>{content.title}</h2>
+        <span>{content.description}</span>
+    </div>
+    <div class="sony-readiness__grid">
+        {
+            content.cards.map((card) => (
+                <article class="sony-readiness__card" data-readiness-card>
+                    <p>{card.kicker}</p>
+                    <h3>{card.title}</h3>
+                    <span>{card.body}</span>
+                    {card.href && (
+                        <a class="sony-btn sony-btn--ghost" href={card.href}>
+                            {card.cta}
+                        </a>
+                    )}
+                </article>
+            ))
+        }
+    </div>
+</section>

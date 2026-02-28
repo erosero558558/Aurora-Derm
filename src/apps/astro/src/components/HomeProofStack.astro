@@ -1,0 +1,169 @@
+---
+const { locale = 'es' } = Astro.props;
+
+const pricing =
+    locale === 'en'
+        ? {
+              eyebrow: 'Pricing and payments',
+              title: 'Commercial clarity before the calendar step.',
+              cards: [
+                  {
+                      title: 'Visible starting rates',
+                      body: 'The public site shows starting prices by route so the booking flow begins with realistic expectations.',
+                  },
+                  {
+                      title: 'Procedure scope in consultation',
+                      body: 'Final cost, number of sessions, and combinations are defined after diagnosis and skin profile review.',
+                  },
+                  {
+                      title: 'Operational payment control',
+                      body: 'Card, transfer, or in-clinic payment remain available according to the service and confirmation step.',
+                  },
+              ],
+          }
+        : {
+              eyebrow: 'Tarifas y pagos',
+              title: 'Claridad comercial antes de entrar al calendario.',
+              cards: [
+                  {
+                      title: 'Tarifas base visibles',
+                      body: 'El sitio publico muestra precios desde la ruta correcta para que la reserva empiece con expectativas realistas.',
+                  },
+                  {
+                      title: 'Alcance del procedimiento en consulta',
+                      body: 'Costo final, numero de sesiones y combinaciones se cierran despues del diagnostico y del perfil de piel.',
+                  },
+                  {
+                      title: 'Pago con control operativo',
+                      body: 'Tarjeta, transferencia o pago en consultorio siguen disponibles segun servicio y paso de confirmacion.',
+                  },
+              ],
+          };
+
+const clinic =
+    locale === 'en'
+        ? {
+              eyebrow: 'Clinic',
+              title: 'In-person and remote care share the same operational spine.',
+              description:
+                  'The experience is designed so assessment, procedure, payment, follow-up, and telemedicine do not feel like disconnected systems.',
+              points: [
+                  'Structured intake and medical review',
+                  'Booking, reschedule, and follow-up in one public funnel',
+                  'Remote continuity when the case does not need unnecessary travel',
+              ],
+              stats: ['In-person assessment', 'Telemedicine follow-up', 'Operational traceability'],
+          }
+        : {
+              eyebrow: 'Consultorio',
+              title: 'La atencion presencial y remota comparte la misma columna operativa.',
+              description:
+                  'La experiencia esta armada para que valoracion, procedimiento, pago, seguimiento y telemedicina no se sientan sistemas separados.',
+              points: [
+                  'Ingreso estructurado y revision medica',
+                  'Reserva, reprogramacion y seguimiento en un mismo funnel publico',
+                  'Continuidad remota cuando el caso no necesita traslado innecesario',
+              ],
+              stats: ['Valoracion presencial', 'Seguimiento por telemedicina', 'Trazabilidad operativa'],
+          };
+
+const results =
+    locale === 'en'
+        ? {
+              eyebrow: 'Results',
+              title: 'Outcome language stays measurable and realistic.',
+              cards: [
+                  {
+                      title: 'Phased objectives',
+                      body: 'We frame outcomes in phases: diagnosis, inflammation control, procedure response, and maintenance.',
+                  },
+                  {
+                      title: 'Combined protocols',
+                      body: 'The site already prepares users for cases that need more than one service to reach a stable result.',
+                  },
+                  {
+                      title: 'No cosmetic overpromising',
+                      body: 'Clinical judgment, adherence, skin type, and follow-up define what is realistic for each case.',
+                  },
+              ],
+          }
+        : {
+              eyebrow: 'Resultados',
+              title: 'El lenguaje de resultados sigue siendo medible y realista.',
+              cards: [
+                  {
+                      title: 'Objetivos por fases',
+                      body: 'Los resultados se enmarcan por etapas: diagnostico, control de inflamacion, respuesta al procedimiento y mantenimiento.',
+                  },
+                  {
+                      title: 'Protocolos combinados',
+                      body: 'El sitio ya prepara al paciente para casos que necesitan mas de un servicio para llegar a un resultado estable.',
+                  },
+                  {
+                      title: 'Sin sobrepromesa estetica',
+                      body: 'Criterio medico, adherencia, tipo de piel y seguimiento definen lo realista en cada caso.',
+                  },
+              ],
+          };
+---
+
+<section id="tarifario" class="sony-section">
+    <div class="sony-section__head">
+        <p>{pricing.eyebrow}</p>
+        <h2>{pricing.title}</h2>
+    </div>
+    <div class="sony-proof-grid">
+        {
+            pricing.cards.map((card) => (
+                <article class="sony-proof-card">
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>
+
+<section id="consultorio" class="sony-section sony-clinic-showcase">
+    <div class="sony-clinic-showcase__media">
+        <picture>
+            <source type="image/webp" srcset="/images/optimized/showcase-clinic.webp" />
+            <img
+                src="/images/optimized/showcase-clinic.jpg"
+                alt={locale === 'en' ? 'Clinic environment' : 'Ambiente del consultorio'}
+                loading="lazy"
+                decoding="async"
+                width="900"
+                height="700"
+            />
+        </picture>
+    </div>
+    <div class="sony-clinic-showcase__content">
+        <p>{clinic.eyebrow}</p>
+        <h2>{clinic.title}</h2>
+        <span>{clinic.description}</span>
+        <ul>
+            {clinic.points.map((point) => <li>{point}</li>)}
+        </ul>
+        <div class="sony-clinic-showcase__stats">
+            {clinic.stats.map((stat) => <small>{stat}</small>)}
+        </div>
+    </div>
+</section>
+
+<section id="galeria" class="sony-section">
+    <div class="sony-section__head">
+        <p>{results.eyebrow}</p>
+        <h2>{results.title}</h2>
+    </div>
+    <div class="sony-proof-grid">
+        {
+            results.cards.map((card) => (
+                <article class="sony-proof-card sony-proof-card--soft">
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

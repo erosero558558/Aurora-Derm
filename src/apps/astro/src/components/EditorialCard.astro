@@ -1,0 +1,27 @@
+---
+const { kicker = '', title = '', description = '', href = '#', image = '' } = Astro.props;
+const baseImage = String(image || '').replace(/\.(avif|webp|jpe?g|png)$/i, '');
+---
+
+<article class="editorial-card">
+    <a href={href}>
+        <div class="editorial-card__media">
+            <picture>
+                <source type="image/webp" srcset={`${baseImage}.webp`} />
+                <img
+                    src={image}
+                    alt={title}
+                    loading="lazy"
+                    decoding="async"
+                    width="800"
+                    height="520"
+                />
+            </picture>
+        </div>
+        <div class="editorial-card__body">
+            <p>{kicker}</p>
+            <h3>{title}</h3>
+            <span>{description}</span>
+        </div>
+    </a>
+</article>

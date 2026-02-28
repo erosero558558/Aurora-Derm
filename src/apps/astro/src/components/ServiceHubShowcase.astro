@@ -1,0 +1,485 @@
+---
+import {
+    getServiceIntentDefinitions,
+    getLocalizedServices,
+    getServiceCtaLabel,
+    homePath,
+    localizeAudience,
+    localizeCategory,
+    mapServiceHint,
+    resolveServiceIntents,
+    servicePath,
+} from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+const services = getLocalizedServices(locale);
+const isEnglish = locale === 'en';
+const intentDefinitions = getServiceIntentDefinitions(locale);
+const categoryFilters = isEnglish
+    ? [
+          {
+              id: 'all',
+              label: 'All families',
+              description:
+                  'Keep the full catalogue visible and combine it with the intent filter when the campaign needs a narrower route.',
+          },
+          {
+              id: 'clinical',
+              label: 'Clinical',
+              description:
+                  'Show diagnostic, inflammatory, lesion, and broader clinical entry points first.',
+          },
+          {
+              id: 'aesthetic',
+              label: 'Aesthetic',
+              description:
+                  'Focus on rejuvenation, laser, injectables, peels, and treatment-led pathways.',
+          },
+          {
+              id: 'children',
+              label: 'Pediatric',
+              description:
+                  'Keep only family and pediatric-first routes visible.',
+          },
+      ]
+    : [
+          {
+              id: 'all',
+              label: 'Todas las familias',
+              description:
+                  'Mantiene visible todo el catalogo y se combina con el filtro de intencion cuando la campana necesita una ruta mas estrecha.',
+          },
+          {
+              id: 'clinical',
+              label: 'Clinica',
+              description:
+                  'Prioriza rutas diagnosticas, inflamatorias, de lesiones y puertas de entrada clinicas amplias.',
+          },
+          {
+              id: 'aesthetic',
+              label: 'Estetica',
+              description:
+                  'Enfoca rejuvenecimiento, laser, inyectables, peelings y trayectos guiados por tratamiento.',
+          },
+          {
+              id: 'children',
+              label: 'Pediatria',
+              description:
+                  'Deja visibles solo rutas familiares y pediatricas.',
+          },
+      ];
+
+const categoryDefinitions = isEnglish
+    ? [
+          {
+              id: 'clinical',
+              anchor: 'clinical-routes',
+              eyebrow: 'Clinical entry points',
+              title: 'Diagnosis, inflammation, lesions, and broader review.',
+              description:
+                  'Built for cases that still need diagnostic framing before a narrower treatment route makes sense.',
+              featuredSlug: 'diagnostico-integral',
+          },
+          {
+              id: 'aesthetic',
+              anchor: 'aesthetic-routes',
+              eyebrow: 'Procedure-led routes',
+              title: 'Laser, injectables, peels, and physician-guided rejuvenation.',
+              description:
+                  'Focused pathways for visitors who already know they want a treatment-oriented outcome.',
+              featuredSlug: 'botox',
+          },
+          {
+              id: 'children',
+              anchor: 'pediatric-routes',
+              eyebrow: 'Family route',
+              title: 'Pediatric dermatology with clear escalation paths.',
+              description:
+                  'Children and teen cases with a cleaner first step into in-person review or follow-up.',
+              featuredSlug: 'dermatologia-pediatrica',
+          },
+      ]
+    : [
+          {
+              id: 'clinical',
+              anchor: 'rutas-clinicas',
+              eyebrow: 'Puertas de entrada clinicas',
+              title: 'Diagnostico, inflamacion, lesiones y revision amplia.',
+              description:
+                  'Pensado para casos que todavia necesitan encuadre diagnostico antes de pasar a una ruta mas estrecha.',
+              featuredSlug: 'diagnostico-integral',
+          },
+          {
+              id: 'aesthetic',
+              anchor: 'rutas-esteticas',
+              eyebrow: 'Rutas guiadas por procedimiento',
+              title: 'Laser, inyectables, peelings y rejuvenecimiento medico.',
+              description:
+                  'Trayectos focalizados para quien ya sabe que quiere un resultado orientado a tratamiento.',
+              featuredSlug: 'botox',
+          },
+          {
+              id: 'children',
+              anchor: 'ruta-pediatrica',
+              eyebrow: 'Ruta familiar',
+              title: 'Dermatologia pediatrica con escalamiento claro.',
+              description:
+                  'Casos de ninos y adolescentes con un primer paso mas limpio hacia valoracion o seguimiento.',
+              featuredSlug: 'dermatologia-pediatrica',
+          },
+      ];
+
+const groups = categoryDefinitions.map((category) => {
+    const items = services.filter((service) => service.category === category.id);
+    const featured =
+        items.find((service) => service.slug === category.featuredSlug) || items[0] || null;
+    const otherItems = items.filter((service) => service.slug !== featured?.slug);
+    const minPrice = items.reduce((lowest, service) => {
+        const current = Number(service.price_from || 0);
+        if (lowest === null) {
+            return current;
+        }
+        return Math.min(lowest, current);
+    }, null);
+
+    return {
+        ...category,
+        items,
+        featured,
+        featuredIntents: featured ? resolveServiceIntents(featured).join(' ') : 'all',
+        otherItems,
+        minPrice,
+    };
+});
+---
+
+<section class="sony-section sony-service-hub" data-service-hub data-locale={locale}>
+    <div class="sony-section__head">
+        <p>{isEnglish ? 'Catalogue hub' : 'Hub de catalogo'}</p>
+        <h2>
+            {isEnglish
+                ? 'Browse the public service system by route, not by guesswork.'
+                : 'Recorre el sistema publico de servicios por ruta, no por intuicion.'}
+        </h2>
+        <span>
+            {isEnglish
+                ? 'Each family keeps its own lead service, direct booking entry, and a shortlist of adjacent options.'
+                : 'Cada familia mantiene su servicio lider, entrada directa a booking y una lista corta de opciones adyacentes.'}
+        </span>
+    </div>
+    <div class="sony-service-hub__toolbar">
+        <div class="sony-service-hub__controls" role="toolbar" aria-label={isEnglish ? 'Service family filters' : 'Filtros por familia'}>
+            {
+                categoryFilters.map((filter, index) => (
+                    <button
+                        type="button"
+                        class="sony-service-hub__chip"
+                        data-hub-category={filter.id}
+                        data-hub-description={filter.description}
+                        aria-pressed={index === 0 ? 'true' : 'false'}
+                    >
+                        {filter.label}
+                    </button>
+                ))
+            }
+        </div>
+        <div class="sony-service-hub__status">
+            <strong data-hub-count>{groups.length}</strong>
+            <p>{isEnglish ? 'visible families' : 'familias visibles'}</p>
+            <span data-hub-description>{categoryFilters[0].description}</span>
+        </div>
+    </div>
+    <div class="sony-service-hub__stack">
+        {
+            groups.map((group) => (
+                <section
+                    class="sony-service-hub__section"
+                    id={group.anchor}
+                    data-service-hub-section
+                    data-category-id={group.id}
+                >
+                    <div class="sony-service-hub__intro">
+                        <p>{group.eyebrow}</p>
+                        <h3>{group.title}</h3>
+                        <span>{group.description}</span>
+                        <div class="sony-service-hub__stats">
+                            <small>
+                                {group.items.length}{' '}
+                                {isEnglish ? 'services in this family' : 'servicios en esta familia'}
+                            </small>
+                            <small>
+                                {isEnglish ? 'From' : 'Desde'} ${group.minPrice || 0}
+                            </small>
+                        </div>
+                    </div>
+                    {
+                        group.featured && (
+                            <article
+                                class="sony-service-hub__feature"
+                                data-service-hub-item
+                                data-service-slug={group.featured.slug}
+                                data-intents={group.featuredIntents}
+                            >
+                                <p>{localizeCategory(group.featured.category, locale)}</p>
+                                <h3>{group.featured.hero || group.featured.slug}</h3>
+                                <span>{group.featured.summary}</span>
+                                <ul class="sony-service-hub__audience">
+                                    {localizeAudience(group.featured.audience, locale).map((item) => (
+                                        <li>{item}</li>
+                                    ))}
+                                </ul>
+                                <div class="sony-service-hub__meta">
+                                    <small>
+                                        {isEnglish ? 'Duration' : 'Duracion'}:{' '}
+                                        {group.featured.duration || '30 min'}
+                                    </small>
+                                    <small>
+                                        {isEnglish ? 'From' : 'Desde'} $
+                                        {group.featured.price_from || '0'}
+                                    </small>
+                                </div>
+                                <div class="sony-service-hub__actions">
+                                    <a
+                                        class="sony-btn sony-btn--primary"
+                                        href={servicePath(locale, group.featured.slug)}
+                                    >
+                                        {getServiceCtaLabel(group.featured, locale)}
+                                    </a>
+                                    <a
+                                        class="sony-btn sony-btn--ghost"
+                                        href={`${homePath(locale)}?service=${encodeURIComponent(mapServiceHint(group.featured.slug))}#citas`}
+                                        data-analytics-event="start_booking_from_service"
+                                        data-service-slug={group.featured.slug}
+                                        data-service-category={group.featured.category}
+                                        data-service-intent={resolveServiceIntents(group.featured).find((intent) => intent !== 'all') || 'all'}
+                                        data-entry-surface="service_hub_feature"
+                                    >
+                                        {isEnglish ? 'Book direct' : 'Reservar directo'}
+                                    </a>
+                                </div>
+                            </article>
+                        )
+                    }
+                    <div class="sony-service-hub__grid">
+                        {
+                            group.otherItems.map((service) => (
+                                <article
+                                    class="sony-service-hub__card"
+                                    data-service-hub-item
+                                    data-service-slug={service.slug}
+                                    data-intents={resolveServiceIntents(service).join(' ')}
+                                >
+                                    <p>{localizeCategory(service.category, locale)}</p>
+                                    <h3>{service.hero || service.slug}</h3>
+                                    <span>{service.summary}</span>
+                                    <div class="sony-service-hub__meta">
+                                        <small>
+                                            {isEnglish ? 'Duration' : 'Duracion'}:{' '}
+                                            {service.duration || '30 min'}
+                                        </small>
+                                        <small>
+                                            {isEnglish ? 'From' : 'Desde'} ${service.price_from || '0'}
+                                        </small>
+                                    </div>
+                                    <a class="sony-related-card__link" href={servicePath(locale, service.slug)}>
+                                        {getServiceCtaLabel(service, locale)}
+                                    </a>
+                                </article>
+                            ))
+                        }
+                    </div>
+                    <p class="sony-service-hub__empty" data-service-hub-empty hidden>
+                        {isEnglish
+                            ? 'No services remain visible with this combination. Change category or intent.'
+                            : 'No quedan servicios visibles con esta combinacion. Cambia familia o intencion.'}
+                    </p>
+                </section>
+            ))
+        }
+    </div>
+    <script is:inline>
+        document.querySelectorAll('[data-service-hub]').forEach((root) => {
+            const categoryButtons = Array.from(
+                root.querySelectorAll('[data-hub-category]')
+            );
+            const sections = Array.from(
+                root.querySelectorAll('[data-service-hub-section]')
+            );
+            const countNode = root.querySelector('[data-hub-count]');
+            const descriptionNode = root.querySelector('[data-hub-description]');
+            const validCategories = new Set(
+                categoryButtons
+                    .map((button) => button.dataset.hubCategory || '')
+                    .filter(Boolean)
+            );
+            const validIntents = new Set(
+                Array.from(
+                    root.querySelectorAll('[data-service-hub-item]')
+                )
+                    .flatMap((item) =>
+                        String(item.getAttribute('data-intents') || '')
+                            .split(/\s+/)
+                            .filter(Boolean)
+                    )
+            );
+
+            let state = {
+                category: 'all',
+                intent: 'all',
+            };
+
+            const writeQuery = () => {
+                const url = new URL(window.location.href);
+                if (state.category === 'all') {
+                    url.searchParams.delete('category');
+                } else {
+                    url.searchParams.set('category', state.category);
+                }
+
+                if (state.intent === 'all') {
+                    url.searchParams.delete('intent');
+                } else {
+                    url.searchParams.set('intent', state.intent);
+                }
+
+                window.history.replaceState({}, '', url);
+            };
+
+            const syncSectionVisibility = (section) => {
+                const matchesCategory =
+                    state.category === 'all' ||
+                    section.dataset.categoryId === state.category;
+                const items = Array.from(
+                    section.querySelectorAll('[data-service-hub-item]')
+                );
+                const emptyNode = section.querySelector('[data-service-hub-empty]');
+                let visibleItems = 0;
+
+                items.forEach((item) => {
+                    const intents = String(item.getAttribute('data-intents') || '')
+                        .split(/\s+/)
+                        .filter(Boolean);
+                    const matchesIntent =
+                        state.intent === 'all' || intents.includes(state.intent);
+                    const visible = matchesCategory && matchesIntent;
+                    item.toggleAttribute('hidden', !visible);
+                    if (visible) {
+                        visibleItems += 1;
+                    }
+                });
+
+                const showSection =
+                    matchesCategory &&
+                    (visibleItems > 0 || state.category !== 'all');
+                section.toggleAttribute('hidden', !showSection);
+                if (emptyNode) {
+                    emptyNode.toggleAttribute(
+                        'hidden',
+                        !matchesCategory || visibleItems > 0
+                    );
+                }
+
+                return {
+                    showSection,
+                    visibleItems,
+                };
+            };
+
+            const applyState = (nextState, options = {}) => {
+                state = {
+                    category: validCategories.has(nextState.category)
+                        ? nextState.category
+                        : 'all',
+                    intent:
+                        nextState.intent === 'all' || validIntents.has(nextState.intent)
+                            ? nextState.intent
+                            : 'all',
+                };
+
+                categoryButtons.forEach((button) => {
+                    const active = button.dataset.hubCategory === state.category;
+                    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    if (active && descriptionNode) {
+                        descriptionNode.textContent =
+                            button.dataset.hubDescription || '';
+                    }
+                });
+
+                let visibleSections = 0;
+                let visibleServices = 0;
+                sections.forEach((section) => {
+                    const result = syncSectionVisibility(section);
+                    if (result.showSection) {
+                        visibleSections += 1;
+                    }
+                    visibleServices += result.visibleItems;
+                });
+                if (countNode) {
+                    countNode.textContent = String(visibleSections);
+                }
+
+                if (options.writeQuery) {
+                    writeQuery();
+                }
+
+                window.dispatchEvent(
+                    new CustomEvent('service-hub-state-change', {
+                        detail: {
+                            category: state.category,
+                            intent: state.intent,
+                            visibleFamilies: visibleSections,
+                            visibleServices,
+                            locale: root.getAttribute('data-locale') || 'es',
+                            source: 'service_hub',
+                            triggerSource: options.triggerSource || 'service_hub',
+                            reason: options.reason || 'interaction',
+                        },
+                    })
+                );
+            };
+
+            categoryButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    applyState(
+                        {
+                            ...state,
+                            category: button.dataset.hubCategory || 'all',
+                        },
+                        {
+                            writeQuery: true,
+                            triggerSource: 'service_hub',
+                            reason: 'interaction',
+                        }
+                    );
+                });
+            });
+
+            window.addEventListener('service-filter-change', (event) => {
+                applyState(
+                    {
+                        ...state,
+                        intent: event?.detail?.intent || 'all',
+                    },
+                    {
+                        writeQuery: false,
+                        triggerSource: event?.detail?.source || 'service_finder',
+                        reason: event?.detail?.reason || 'sync',
+                    }
+                );
+            });
+
+            const search = new URL(window.location.href).searchParams;
+            applyState(
+                {
+                    category: search.get('category') || 'all',
+                    intent: search.get('intent') || 'all',
+                },
+                {
+                    writeQuery: false,
+                    triggerSource: 'service_hub',
+                    reason: 'initial',
+                }
+            );
+        });
+    </script>
+</section>

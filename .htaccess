@@ -9,6 +9,30 @@ RewriteEngine On
 RewriteCond %{HTTPS} !=on
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# ── Migración canónica pública ES/EN (301) ─────────────
+RewriteRule ^$ /es/ [R=301,L]
+RewriteRule ^index\.html$ /es/ [R=301,L,NC]
+
+# Landing y legales legacy
+RewriteRule ^telemedicina(?:\.html)?$ /es/telemedicina/ [R=301,L,NC]
+RewriteRule ^terminos\.html$ /es/legal/terminos/ [R=301,L,NC]
+RewriteRule ^privacidad\.html$ /es/legal/privacidad/ [R=301,L,NC]
+RewriteRule ^cookies\.html$ /es/legal/cookies/ [R=301,L,NC]
+RewriteRule ^aviso-medico\.html$ /es/legal/aviso-medico/ [R=301,L,NC]
+
+# Servicios legacy -> canónica /es/servicios/*
+RewriteRule ^servicios/acne(?:\.html)?/?$ /es/servicios/acne-rosacea/ [R=301,L,NC]
+RewriteRule ^servicios/laser(?:\.html)?/?$ /es/servicios/laser-dermatologico/ [R=301,L,NC]
+RewriteRule ^servicios/([a-z0-9-]+)\.html$ /es/servicios/$1/ [R=301,L,NC]
+RewriteRule ^servicios/([a-z0-9-]+)/?$ /es/servicios/$1/ [R=301,L,NC]
+
+# Ruta pediátrica legacy
+RewriteRule ^ninos/([a-z0-9-]+)\.html$ /es/servicios/$1/ [R=301,L,NC]
+RewriteRule ^ninos/([a-z0-9-]+)/?$ /es/servicios/$1/ [R=301,L,NC]
+
+# Fallback para páginas públicas legacy en raíz (mantiene query params)
+RewriteRule ^(?!admin$|kiosco-turnos$|sala-turnos$|stats$)([a-z0-9-]+)\.html$ /es/$1/ [R=301,L,NC]
+
 # ── Cabeceras de seguridad ───────────────────────────────
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"

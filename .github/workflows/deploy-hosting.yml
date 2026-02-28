@@ -41,15 +41,44 @@ on:
                 required: false
                 default: false
                 type: boolean
+            require_staging_canary:
+                description: 'Exigir canary/staging exitoso antes de produccion'
+                required: false
+                default: true
+                type: boolean
+            allow_prod_without_staging:
+                description: 'Permitir prod sin staging (solo emergencia)'
+                required: false
+                default: false
+                type: boolean
             clean_slate:
                 description: 'Eliminar archivos remotos no presentes (peligroso)'
                 required: false
                 default: false
                 type: boolean
+            enable_public_cutover_monitor:
+                description: 'Habilitar bootstrap de monitor post-cutover publico'
+                required: false
+                default: true
+                type: boolean
+            public_cutover_window_hours:
+                description: 'Ventana de monitoreo post-cutover (horas)'
+                required: false
+                default: '72'
+                type: string
+            dispatch_public_cutover_monitor:
+                description: 'Disparar prod-monitor inmediatamente tras deploy'
+                required: false
+                default: true
+                type: boolean
 
 concurrency:
     group: deploy-pielarmonia-pipeline
     cancel-in-progress: false
+
+permissions:
+    contents: read
+    actions: write
 
 jobs:
     deploy-canary:
@@ -66,10 +95,26 @@ jobs:
             FTP_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
             FTP_CLEAN_SLATE: ${{ github.event.inputs.clean_slate || 'false' }} # Careful with clean slate on staging if shared
             STAGING_URL: ${{ vars.STAGING_URL || 'https://staging.pielarmonia.com' }}
+            REQUIRE_STAGING_CANARY: ${{ github.event.inputs.require_staging_canary || vars.REQUIRE_STAGING_CANARY || 'true' }}
+            ALLOW_PROD_WITHOUT_STAGING: ${{ github.event.inputs.allow_prod_without_staging || vars.ALLOW_PROD_WITHOUT_STAGING || 'false' }}
 
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Install Node Dependencies
+              run: npm ci
+
+            - name: Build Astro public routes
+              run: |
+                  npm run astro:build
+                  npm run astro:sync
 
             - name: Setup PHP
               uses: shivammathur/setup-php@v2
@@ -100,10 +145,45 @@ jobs:
                   fi
                   if [ "${missing}" -eq 1 ]; then
                     echo "enabled=false" >> "$GITHUB_OUTPUT"
-                    echo "::notice::Staging canary deshabilitado por secretos faltantes. Continuara deploy de produccion."
+                    echo "missing=true" >> "$GITHUB_OUTPUT"
+                    echo "::warning::Staging canary no disponible por secretos STAGING_FTP_* faltantes."
                   else
                     echo "enabled=true" >> "$GITHUB_OUTPUT"
+                    echo "missing=false" >> "$GITHUB_OUTPUT"
                   fi
+
+            - name: Enforce staging canary gate policy
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  if [ "${{ steps.staging_secrets.outputs.missing }}" != "true" ]; then
+                    echo "Staging canary habilitado. Politica OK."
+                    exit 0
+                  fi
+
+                  if [ "${FTP_DRY_RUN}" = "true" ]; then
+                    echo "::notice::dry_run=true permite omitir staging efectivo."
+                    exit 0
+                  fi
+
+                  require_staging="$(echo "${REQUIRE_STAGING_CANARY}" | tr '[:upper:]' '[:lower:]')"
+                  allow_without_staging="$(echo "${ALLOW_PROD_WITHOUT_STAGING}" | tr '[:upper:]' '[:lower:]')"
+
+                  if [ "${require_staging}" = "true" ] && [ "${allow_without_staging}" != "true" ]; then
+                    echo "::error::Politica bloqueante: require_staging_canary=true y faltan secretos STAGING_FTP_*."
+                    echo "::error::Configura staging o ejecuta override explicito allow_prod_without_staging=true."
+                    exit 1
+                  fi
+
+                  if [ "${allow_without_staging}" = "true" ]; then
+                    echo "::warning::Override activo: allow_prod_without_staging=true. Se permite continuar sin staging."
+                  else
+                    echo "::notice::require_staging_canary=false. Se permite continuar sin staging."
+                  fi
+
+            - name: Install Playwright (chromium) for staging acceptance gate
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' && env.FTP_DRY_RUN != 'true' }}
+              run: npx playwright install --with-deps chromium
 
             - name: Preflight red (Staging)
               if: ${{ steps.staging_secrets.outputs.enabled == 'true' }}
@@ -206,12 +286,58 @@ jobs:
                   curl -IfsS "${STAGING_URL}/" > /tmp/home_staging.txt
                   echo "Staging Verified."
 
+            - name: Validate public routing ES/EN + redirects (Staging)
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' && env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p .staging-acceptance
+                  node bin/check-public-routing-smoke.js --base-url "${STAGING_URL}" --label "staging-canary" --output ".staging-acceptance/routing-smoke.json"
+
+            - name: Validate public conversion hooks ES/EN (Staging)
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' && env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p .staging-acceptance
+                  node bin/check-public-conversion-smoke.js --base-url "${STAGING_URL}" --label "staging-canary-conversion" --output ".staging-acceptance/conversion-smoke.json"
+
+            - name: Run staging acceptance gate (visual + funcional + performance)
+              if: ${{ steps.staging_secrets.outputs.enabled == 'true' && env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  node bin/run-staging-acceptance-gate.js --base-url "${STAGING_URL}" --label "staging-canary" --out-dir ".staging-acceptance"
+
+            - name: Upload staging acceptance evidence
+              if: ${{ always() && steps.staging_secrets.outputs.enabled == 'true' && env.FTP_DRY_RUN != 'true' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: canary-staging-acceptance-evidence
+                  path: .staging-acceptance/
+                  if-no-files-found: warn
+                  retention-days: 14
+
             - name: Omitir canary no configurado
               if: ${{ steps.staging_secrets.outputs.enabled != 'true' }}
               shell: bash
               run: |
                   set -euo pipefail
-                  echo "Canary staging omitido: secretos STAGING_FTP_* no configurados."
+                  echo "Canary staging omitido: secretos STAGING_FTP_* no configurados o politica flexible."
+
+            - name: Canary summary
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Canary gate";
+                    echo "- require_staging_canary: \`${REQUIRE_STAGING_CANARY}\`";
+                    echo "- allow_prod_without_staging: \`${ALLOW_PROD_WITHOUT_STAGING}\`";
+                    echo "- staging_secrets_missing: \`${{ steps.staging_secrets.outputs.missing || 'unknown' }}\`";
+                    echo "- staging_canary_enabled: \`${{ steps.staging_secrets.outputs.enabled || 'unknown' }}\`";
+                    echo "- dry_run: \`${FTP_DRY_RUN}\`";
+                    echo "- Result: \`${{ job.status }}\`";
+                  } >> "$GITHUB_STEP_SUMMARY"
 
     deploy-prod:
         needs: deploy-canary
@@ -229,10 +355,30 @@ jobs:
             FTP_CLEAN_SLATE: ${{ github.event.inputs.clean_slate || 'false' }}
             GIT_SYNC_WAIT_SEC: ${{ vars.GIT_SYNC_WAIT_SEC || '75' }}
             PROD_URL: ${{ vars.PROD_URL || 'https://pielarmonia.com' }}
+            REQUIRE_STAGING_CANARY: ${{ github.event.inputs.require_staging_canary || vars.REQUIRE_STAGING_CANARY || 'true' }}
+            ALLOW_PROD_WITHOUT_STAGING: ${{ github.event.inputs.allow_prod_without_staging || vars.ALLOW_PROD_WITHOUT_STAGING || 'false' }}
+            ENABLE_PUBLIC_CUTOVER_MONITOR: ${{ github.event.inputs.enable_public_cutover_monitor || vars.PROD_MONITOR_ENABLE_PUBLIC_CUTOVER || 'true' }}
+            PUBLIC_CUTOVER_WINDOW_HOURS: ${{ github.event.inputs.public_cutover_window_hours || vars.PUBLIC_CUTOVER_WINDOW_HOURS || '72' }}
+            DISPATCH_PUBLIC_CUTOVER_MONITOR: ${{ github.event.inputs.dispatch_public_cutover_monitor || 'true' }}
+            PUBLIC_CUTOVER_STARTED_AT: ''
 
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Install Node Dependencies
+              run: npm ci
+
+            - name: Build Astro public routes
+              run: |
+                  npm run astro:build
+                  npm run astro:sync
 
             - name: Setup PHP
               uses: shivammathur/setup-php@v2
@@ -358,3 +504,145 @@ jobs:
                   curl -fsS "${PROD_URL}/figo-chat.php" > /tmp/figo.json
                   curl -IfsS "${PROD_URL}/" > /tmp/home_headers.txt
                   echo "Production Verified."
+
+            - name: Stamp public cutover start
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p .public-cutover
+                  started_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+                  echo "PUBLIC_CUTOVER_STARTED_AT=${started_at}" >> "$GITHUB_ENV"
+                  echo "Public cutover started at ${started_at}"
+
+            - name: Validate public routing ES/EN + redirects (Prod)
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  node bin/check-public-routing-smoke.js --base-url "${PROD_URL}" --label "production" --output ".public-cutover/routing-smoke.json"
+
+            - name: Validate public conversion hooks ES/EN (Prod)
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  node bin/check-public-conversion-smoke.js --base-url "${PROD_URL}" --label "production-conversion" --output ".public-cutover/conversion-smoke.json"
+
+            - name: Write public cutover manifest
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  node bin/write-public-cutover-manifest.js \
+                    --base-url "${PROD_URL}" \
+                    --label "production-cutover" \
+                    --out-dir ".public-cutover" \
+                    --window-hours "${PUBLIC_CUTOVER_WINDOW_HOURS}" \
+                    --started-at "${PUBLIC_CUTOVER_STARTED_AT}" \
+                    --routing-report ".public-cutover/routing-smoke.json" \
+                    --conversion-report ".public-cutover/conversion-smoke.json"
+
+            - name: Upload public cutover evidence
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: public-cutover-evidence
+                  path: .public-cutover/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Persist public cutover monitor window
+              if: ${{ env.FTP_DRY_RUN != 'true' && env.ENABLE_PUBLIC_CUTOVER_MONITOR == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const variables = [
+                        {
+                          name: 'PROD_MONITOR_ENABLE_PUBLIC_CUTOVER',
+                          value: 'true'
+                        },
+                        {
+                          name: 'PUBLIC_CUTOVER_STARTED_AT',
+                          value: process.env.PUBLIC_CUTOVER_STARTED_AT
+                        },
+                        {
+                          name: 'PUBLIC_CUTOVER_WINDOW_HOURS',
+                          value: process.env.PUBLIC_CUTOVER_WINDOW_HOURS
+                        }
+                      ];
+
+                      for (const variable of variables) {
+                        try {
+                          await github.rest.actions.getRepoVariable({
+                            owner,
+                            repo,
+                            name: variable.name
+                          });
+                          await github.rest.actions.updateRepoVariable({
+                            owner,
+                            repo,
+                            name: variable.name,
+                            value: variable.value
+                          });
+                          core.info(`Updated repo variable ${variable.name}`);
+                        } catch (error) {
+                          if (error.status !== 404) {
+                            throw error;
+                          }
+                          await github.rest.actions.createRepoVariable({
+                            owner,
+                            repo,
+                            name: variable.name,
+                            value: variable.value
+                          });
+                          core.info(`Created repo variable ${variable.name}`);
+                        }
+                      }
+
+            - name: Bootstrap prod-monitor post-cutover
+              if: ${{ env.FTP_DRY_RUN != 'true' && env.ENABLE_PUBLIC_CUTOVER_MONITOR == 'true' && env.DISPATCH_PUBLIC_CUTOVER_MONITOR == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const ref =
+                        context.payload.workflow_run?.head_branch ||
+                        (context.ref || '').replace('refs/heads/', '') ||
+                        'main';
+
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner,
+                        repo,
+                        workflow_id: 'prod-monitor.yml',
+                        ref,
+                        inputs: {
+                          domain: process.env.PROD_URL,
+                          enable_public_cutover_monitor: 'true',
+                          public_cutover_started_at: process.env.PUBLIC_CUTOVER_STARTED_AT,
+                          public_cutover_window_hours: process.env.PUBLIC_CUTOVER_WINDOW_HOURS
+                        }
+                      });
+                      core.info(`prod-monitor.yml dispatched for ref ${ref}`);
+
+            - name: Production summary
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Production deploy";
+                    echo "- require_staging_canary: \`${REQUIRE_STAGING_CANARY}\`";
+                    echo "- allow_prod_without_staging: \`${ALLOW_PROD_WITHOUT_STAGING}\`";
+                    echo "- needs.deploy-canary.result: \`${{ needs.deploy-canary.result }}\`";
+                    echo "- enable_public_cutover_monitor: \`${ENABLE_PUBLIC_CUTOVER_MONITOR}\`";
+                    echo "- dispatch_public_cutover_monitor: \`${DISPATCH_PUBLIC_CUTOVER_MONITOR}\`";
+                    echo "- public_cutover_started_at: \`${PUBLIC_CUTOVER_STARTED_AT}\`";
+                    echo "- public_cutover_window_hours: \`${PUBLIC_CUTOVER_WINDOW_HOURS}\`";
+                    echo "- public_cutover_artifact: \`public-cutover-evidence\`";
+                    echo "- public_cutover_repo_vars: \`PROD_MONITOR_ENABLE_PUBLIC_CUTOVER,PUBLIC_CUTOVER_STARTED_AT,PUBLIC_CUTOVER_WINDOW_HOURS\`";
+                    echo "- dry_run: \`${FTP_DRY_RUN}\`";
+                    echo "- Result: \`${{ job.status }}\`";
+                  } >> "$GITHUB_STEP_SUMMARY"

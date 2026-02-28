@@ -1,0 +1,108 @@
+---
+const { locale = 'es', currentSlug = '' } = Astro.props;
+
+const copy = {
+    es: {
+        eyebrow: 'Impacto operativo',
+        title: 'Que sigue funcionando segun el tema legal que estas revisando.',
+        description:
+            'Esta matriz baja la politica a operaciones concretas del sitio: reservar, usar soporte, compartir evidencia y entender que partes dependen de consentimiento o evaluacion medica.',
+        cards: [
+            {
+                key: 'booking',
+                label: 'Reserva',
+                title: 'Formulario y CTA de citas',
+                body: 'La reserva publica debe seguir disponible como ruta principal, aunque cambien preferencias de medicion o el caso requiera revision clinica adicional.',
+            },
+            {
+                key: 'support',
+                label: 'Soporte',
+                title: 'WhatsApp y continuidad operativa',
+                body: 'El soporte sirve para aclarar tiempos, documentos y modalidad antes de reservar o cuando el caso necesita reencaminarse.',
+            },
+            {
+                key: 'data',
+                label: 'Evidencia',
+                title: 'Fotos, documentos y datos compartidos',
+                body: 'La informacion clinica o administrativa solo tiene sentido dentro del flujo asistencial autorizado y con el alcance correcto.',
+            },
+            {
+                key: 'scope',
+                label: 'Limites',
+                title: 'Lo que no sustituye una valoracion',
+                body: 'Ninguna politica convierte el contenido, el chat o el formulario en diagnostico; el acto medico se confirma en consulta.',
+            },
+        ],
+        emphasis: {
+            terminos: 'booking',
+            privacidad: 'data',
+            cookies: 'support',
+            'aviso-medico': 'scope',
+        },
+    },
+    en: {
+        eyebrow: 'Operational impact',
+        title: 'What still works depending on the legal topic you are reviewing.',
+        description:
+            'This matrix translates policy into concrete site operations: booking, support, evidence sharing, and which areas still depend on consent or medical evaluation.',
+        cards: [
+            {
+                key: 'booking',
+                label: 'Booking',
+                title: 'Appointment form and booking CTAs',
+                body: 'Public booking should remain the primary route even when measurement preferences change or the case later needs additional clinical review.',
+            },
+            {
+                key: 'support',
+                label: 'Support',
+                title: 'WhatsApp and operational continuity',
+                body: 'Support helps clarify timing, documents, and modality before booking or when the case must be redirected.',
+            },
+            {
+                key: 'data',
+                label: 'Evidence',
+                title: 'Photos, documents, and shared data',
+                body: 'Clinical or administrative information only makes sense inside the authorized care workflow and with the right scope.',
+            },
+            {
+                key: 'scope',
+                label: 'Limits',
+                title: 'What does not replace evaluation',
+                body: 'No policy turns content, chat, or forms into diagnosis; clinical judgment is confirmed during consultation.',
+            },
+        ],
+        emphasis: {
+            terms: 'booking',
+            privacy: 'data',
+            cookies: 'support',
+            'medical-disclaimer': 'scope',
+        },
+    },
+};
+
+const selected = copy[locale] || copy.es;
+const activeKey = selected.emphasis[currentSlug] || 'booking';
+---
+
+<section class="sony-section sony-section--compact sony-legal-matrix" data-legal-matrix>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-legal-matrix__grid">
+        {
+            selected.cards.map((card) => (
+                <article
+                    class="sony-legal-matrix__card"
+                    data-legal-matrix-card
+                    data-active={card.key === activeKey ? 'true' : 'false'}
+                >
+                    <span>{card.label}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

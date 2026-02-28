@@ -1,0 +1,180 @@
+---
+const { locale = 'es', service } = Astro.props;
+
+const category = String(service?.category || 'clinical').toLowerCase();
+const serviceName = service?.hero || service?.slug || (locale === 'en' ? 'service' : 'servicio');
+const indications = Array.isArray(service?.indications) ? service.indications.filter(Boolean) : [];
+const primaryIndication =
+    indications[0] || (locale === 'en' ? 'the main concern' : 'el motivo principal de consulta');
+
+const copy = {
+    es: {
+        clinical: {
+            eyebrow: 'Evidencia de resultado',
+            title: 'Que evidencia valida si la ruta clinica va bien.',
+            description:
+                'El progreso no se mide solo por sensacion. Conviene fijar que evidencia observar, cuando revisarla y que cambio obliga a corregir la ruta.',
+            cards: [
+                {
+                    step: 'Evidencia 01',
+                    title: `Fotos y sintomas comparables para ${serviceName}`,
+                    body: `La referencia util es comparar lesiones, inflamacion, picor o brotes ligados a ${primaryIndication}, no una impresion aislada del mismo dia.`,
+                },
+                {
+                    step: 'Evidencia 02',
+                    title: 'Tolerancia y adherencia que sostienen el plan',
+                    body: 'Si el tratamiento irrita demasiado, no se cumple o cambia la rutina, la lectura del resultado pierde valor y conviene ajustar antes de insistir.',
+                },
+                {
+                    step: 'Evidencia 03',
+                    title: 'Cambio de ruta cuando la respuesta deja de ser coherente',
+                    body: 'Nuevas lesiones, peor dolor, falta de respuesta o dudas diagnosticas son evidencia suficiente para ampliar estudio, control o consulta presencial.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Evidencia de resultado',
+            title: 'Como leer evidencia real en una ruta estetica.',
+            description:
+                'En estetica la lectura correcta distingue inflamacion temporal, cambio visible progresivo y el punto en que repetir seria demasiado pronto.',
+            cards: [
+                {
+                    step: 'Evidencia 01',
+                    title: `Baseline visual claro para ${serviceName}`,
+                    body: 'Fotos consistentes, zonas tratadas y objetivo definido evitan medir el resultado con memoria imprecisa o con luz distinta.',
+                },
+                {
+                    step: 'Evidencia 02',
+                    title: 'Cambio visible por fases, no por ansiedad',
+                    body: 'La evidencia util es textura, tono, volumen o calidad de piel en la ventana correcta, no la inflamacion normal de los primeros dias.',
+                },
+                {
+                    step: 'Evidencia 03',
+                    title: 'Control que decide esperar, repetir o combinar',
+                    body: 'El siguiente paso debe apoyarse en la evolucion observada y no en urgencia comercial: a veces conviene esperar y a veces combinar tecnica.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Evidencia de resultado',
+            title: 'Que evidencia ayuda en una ruta pediatrica o familiar.',
+            description:
+                'En pediatria la mejor lectura mezcla observacion simple, adherencia del cuidador y alertas claras para decidir si seguir igual o escalar.',
+            cards: [
+                {
+                    step: 'Evidencia 01',
+                    title: `Observacion simple y repetible para ${serviceName}`,
+                    body: 'Importa comparar enrojecimiento, picor, extension o brotes con la misma logica en casa, sin cambiar la forma de observar cada semana.',
+                },
+                {
+                    step: 'Evidencia 02',
+                    title: 'Rutina realista para cuidadores',
+                    body: 'Si la familia no puede sostener el plan, la evidencia se distorsiona. La respuesta util exige una rutina que de verdad se pueda cumplir.',
+                },
+                {
+                    step: 'Evidencia 03',
+                    title: 'Alertas que justifican volver antes',
+                    body: 'Dolor, empeoramiento rapido, nuevas lesiones o mala tolerancia no se esperan pasivamente: son evidencia para revaluar y escalar.',
+                },
+            ],
+        },
+    },
+    en: {
+        clinical: {
+            eyebrow: 'Outcome evidence',
+            title: 'What evidence confirms a clinical route is working.',
+            description:
+                'Progress should not be measured only by feeling. It helps to define which evidence to watch, when to review it, and which change should correct the route.',
+            cards: [
+                {
+                    step: 'Evidence 01',
+                    title: `Comparable images and symptoms for ${serviceName}`,
+                    body: `Useful reference comes from comparing lesions, inflammation, itch, or flares linked to ${primaryIndication}, not from a single-day impression.`,
+                },
+                {
+                    step: 'Evidence 02',
+                    title: 'Tolerance and adherence that keep the plan valid',
+                    body: 'If treatment irritates too much, is not followed, or the routine changes constantly, the result becomes harder to read and the plan should be adjusted first.',
+                },
+                {
+                    step: 'Evidence 03',
+                    title: 'Route change when the response stops making sense',
+                    body: 'New lesions, more pain, poor response, or diagnostic uncertainty are enough evidence to expand testing, follow-up, or in-person review.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Outcome evidence',
+            title: 'How to read real evidence in an aesthetic route.',
+            description:
+                'In aesthetics, correct interpretation separates temporary inflammation, progressive visible change, and the point where repeating would still be too early.',
+            cards: [
+                {
+                    step: 'Evidence 01',
+                    title: `Clear visual baseline for ${serviceName}`,
+                    body: 'Consistent photos, treated areas, and a defined objective prevent judging progress with an imprecise memory or different lighting.',
+                },
+                {
+                    step: 'Evidence 02',
+                    title: 'Visible change by phases, not by anxiety',
+                    body: 'Useful evidence is texture, tone, volume, or skin quality in the right window, not normal early swelling or peeling.',
+                },
+                {
+                    step: 'Evidence 03',
+                    title: 'Review that decides whether to wait, repeat, or combine',
+                    body: 'The next step should be driven by observed evolution rather than sales urgency: sometimes the right move is to wait and sometimes to combine.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Outcome evidence',
+            title: 'What evidence helps in a pediatric or family-first route.',
+            description:
+                'In pediatric dermatology, the best interpretation mixes simple observation, caregiver adherence, and clear alerts that define whether to continue or escalate.',
+            cards: [
+                {
+                    step: 'Evidence 01',
+                    title: `Simple and repeatable observation for ${serviceName}`,
+                    body: 'It matters to compare redness, itch, spread, or flares with the same home logic each week instead of changing how progress is observed.',
+                },
+                {
+                    step: 'Evidence 02',
+                    title: 'A realistic routine for caregivers',
+                    body: 'If the family cannot sustain the plan, evidence gets distorted. Useful response depends on a routine that can actually be followed.',
+                },
+                {
+                    step: 'Evidence 03',
+                    title: 'Alerts that justify an earlier return',
+                    body: 'Pain, rapid worsening, new lesions, or poor tolerance should not be passively watched. They are evidence to reassess and escalate.',
+                },
+            ],
+        },
+    },
+};
+
+const localeCopy = copy[locale] || copy.es;
+const selected = localeCopy[category] || localeCopy.clinical;
+---
+
+<section
+    class="sony-section sony-section--compact sony-results-evidence"
+    data-results-evidence
+    data-results-category={category}
+>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-results-evidence__grid">
+        {
+            selected.cards.map((card) => (
+                <article class="sony-results-evidence__card" data-results-evidence-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

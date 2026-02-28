@@ -1,0 +1,1892 @@
+:root {
+    --sony-bg: #07090f;
+    --sony-surface: #0d1018;
+    --sony-card: #131925;
+    --sony-ink: #f6f8fc;
+    --sony-muted: #aab4c8;
+    --sony-line: rgba(255, 255, 255, 0.12);
+    --sony-accent: #2d6bff;
+    --sony-accent-soft: #78a0ff;
+    --sony-radius: 18px;
+    --sony-content: min(1220px, calc(100% - 48px));
+}
+
+.astro-public {
+    background:
+        radial-gradient(
+            1200px 650px at 90% -10%,
+            rgba(47, 84, 198, 0.22),
+            transparent 70%
+        ),
+        radial-gradient(
+            900px 500px at 0% 0%,
+            rgba(17, 43, 100, 0.35),
+            transparent 64%
+        ),
+        var(--sony-bg);
+    color: var(--sony-ink);
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+}
+
+.astro-public :focus-visible {
+    outline: 2px solid rgba(120, 160, 255, 0.95);
+    outline-offset: 3px;
+}
+
+.sony-skip-link {
+    position: absolute;
+    left: 16px;
+    top: 12px;
+    z-index: 1600;
+    transform: translateY(-140%);
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #090b12;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.sony-skip-link:focus {
+    transform: translateY(0);
+}
+
+/* Avoid loading legacy display font on Astro public routes. */
+.astro-public .section-title,
+.astro-public .hero-title,
+.astro-public .service-hero-card h1 {
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+}
+
+.astro-public a {
+    text-decoration: none;
+}
+
+.sony-header {
+    position: sticky;
+    top: 0;
+    z-index: 1300;
+    backdrop-filter: blur(12px);
+    background: rgba(8, 10, 17, 0.84);
+    border-bottom: 1px solid var(--sony-line);
+}
+
+.sony-header__inner {
+    width: var(--sony-content);
+    margin: 0 auto;
+    min-height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+}
+
+.sony-brand {
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    font-size: 0.82rem;
+}
+
+.sony-nav__list {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.sony-nav__item > a {
+    color: #dee4ef;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-radius: 10px;
+}
+
+.sony-nav__item > a:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.sony-nav__item > a[aria-current='page'],
+.sony-mobile-nav__panel a[aria-current='page'] {
+    color: #ffffff;
+    background: rgba(120, 160, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(120, 160, 255, 0.36);
+}
+
+.sony-nav__item--mega {
+    position: relative;
+}
+
+.sony-mega {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    min-width: 920px;
+    display: grid;
+    grid-template-columns: minmax(260px, 0.92fr) repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    padding: 18px;
+    border: 1px solid var(--sony-line);
+    background: rgba(12, 15, 24, 0.98);
+    border-radius: 18px;
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition:
+        opacity 200ms ease,
+        transform 200ms ease;
+}
+
+.sony-nav__item--mega:hover .sony-mega {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.sony-nav__item--mega:focus-within .sony-mega {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.sony-mega__group h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    color: #f6f8fc;
+}
+
+.sony-mega__overview,
+.sony-mobile-nav__overview {
+    border: 1px solid var(--sony-line);
+    border-radius: 20px;
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    gap: 10px;
+}
+
+.sony-mega__overview p,
+.sony-mobile-nav__overview p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.sony-mega__overview h3,
+.sony-mobile-nav__overview h3 {
+    font-size: 1.18rem;
+    line-height: 1.28;
+}
+
+.sony-mega__overview span {
+    color: var(--sony-muted);
+    line-height: 1.58;
+}
+
+.sony-mega__actions,
+.sony-mobile-nav__overview-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-mega__context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-mega__context small {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #d8e0f5;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.sony-mega__focus {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    gap: 8px;
+}
+
+.sony-mega__focus p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.sony-mega__focus strong {
+    color: #f7fbff;
+    line-height: 1.5;
+    font-size: 0.94rem;
+}
+
+.sony-mega__focus .sony-btn {
+    justify-self: start;
+}
+
+.sony-mega__features,
+.sony-mobile-nav__features {
+    display: grid;
+    gap: 12px;
+}
+
+.sony-mega__feature-card {
+    border: 1px solid var(--sony-line);
+    border-radius: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    display: grid;
+    gap: 8px;
+    transition:
+        border-color 180ms ease,
+        background 180ms ease,
+        transform 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.sony-mega__feature-card:hover,
+.sony-mega__feature-card[data-current='true'] {
+    border-color: rgba(120, 160, 255, 0.5);
+    background: linear-gradient(
+        180deg,
+        rgba(36, 67, 161, 0.28),
+        rgba(255, 255, 255, 0.06)
+    );
+    box-shadow: 0 16px 30px rgba(7, 15, 36, 0.28);
+    transform: translateY(-1px);
+}
+
+.sony-mega__feature-card p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.sony-mega__feature-card h3 {
+    font-size: 1rem;
+    line-height: 1.3;
+    color: #f6f8fc;
+}
+
+.sony-mega__feature-card span {
+    color: var(--sony-muted);
+    line-height: 1.5;
+    font-size: 0.84rem;
+}
+
+.sony-mega__feature-card strong {
+    color: #fff;
+    font-size: 0.82rem;
+}
+
+.sony-mega__group ul {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+}
+
+.sony-mega__group a {
+    color: #c6d0e4;
+    font-size: 0.88rem;
+}
+
+.sony-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sony-mobile-nav {
+    display: none;
+    width: 100%;
+}
+
+.sony-mobile-nav > summary {
+    list-style: none;
+    border: 1px solid var(--sony-line);
+    border-radius: 999px;
+    padding: 9px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+}
+
+.sony-mobile-nav > summary::-webkit-details-marker {
+    display: none;
+}
+
+.sony-mobile-nav[open] > summary {
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.sony-mobile-nav__panel {
+    margin-top: 10px;
+    border: 1px solid var(--sony-line);
+    background: rgba(12, 15, 24, 0.98);
+    border-radius: 16px;
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+}
+
+.sony-mobile-nav__panel details > summary {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #f2f5fb;
+    cursor: pointer;
+}
+
+.sony-mobile-nav__groups {
+    margin-top: 8px;
+    display: grid;
+    gap: 10px;
+}
+
+.sony-mobile-nav__overview {
+    margin-top: 10px;
+}
+
+.sony-mobile-nav__features {
+    margin-top: 10px;
+}
+
+.sony-mobile-nav__quick-paths {
+    display: grid;
+    gap: 10px;
+}
+
+.sony-mobile-nav__quick-path {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    gap: 8px;
+}
+
+.sony-mobile-nav__quick-path span {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.sony-mobile-nav__quick-path h4 {
+    font-size: 0.96rem;
+    line-height: 1.32;
+    color: #f7fbff;
+}
+
+.sony-mobile-nav__quick-path p {
+    color: var(--sony-muted);
+    line-height: 1.54;
+    font-size: 0.84rem;
+}
+
+.sony-mobile-nav__quick-path .sony-btn {
+    justify-self: start;
+}
+
+.sony-mobile-nav__group h3 {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sony-accent-soft);
+    margin-bottom: 6px;
+}
+
+.sony-mobile-nav__group ul,
+.sony-mobile-nav__panel nav ul {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+}
+
+.sony-mobile-nav__group a,
+.sony-mobile-nav__panel nav a {
+    color: #d6deee;
+    font-size: 0.86rem;
+}
+
+.sony-mobile-nav__actions {
+    display: flex;
+    gap: 10px;
+}
+
+.sony-lang,
+.sony-cta {
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.78rem;
+}
+
+.sony-lang {
+    border: 1px solid var(--sony-line);
+    color: #fff;
+    padding: 9px 12px;
+}
+
+.sony-cta {
+    background: #fff;
+    color: #090b12;
+    padding: 10px 14px;
+}
+
+.sony-hero {
+    width: var(--sony-content);
+    margin: 24px auto 0;
+    min-height: 68vh;
+    border-radius: 26px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--sony-line);
+}
+
+.sony-hero__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    min-height: 68vh;
+}
+
+.sony-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(3, 5, 10, 0.84) 0%,
+        rgba(3, 5, 10, 0.42) 52%,
+        rgba(3, 5, 10, 0.26) 100%
+    );
+}
+
+.sony-hero__content {
+    position: absolute;
+    inset: auto auto 44px 44px;
+    width: min(620px, calc(100% - 68px));
+}
+
+.sony-eyebrow {
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    font-size: 0.74rem;
+    color: #d4def3;
+    margin-bottom: 12px;
+}
+
+.sony-hero__content h1 {
+    font-size: clamp(2.2rem, 4.2vw, 4rem);
+    line-height: 1.03;
+    margin-bottom: 14px;
+}
+
+.sony-hero__content p {
+    color: #d4dced;
+    max-width: 56ch;
+}
+
+.sony-hero__actions {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.sony-treatment-specs__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sony-treatment-specs__card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 22px;
+    background:
+        radial-gradient(circle at top right, rgba(88, 120, 255, 0.12), transparent 38%),
+        linear-gradient(180deg, rgba(17, 22, 34, 0.96), rgba(9, 11, 17, 0.98));
+    display: grid;
+    gap: 16px;
+    min-height: 100%;
+    box-shadow: 0 28px 48px rgba(0, 0, 0, 0.22);
+}
+
+.sony-treatment-specs__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sony-treatment-specs__topline p,
+.sony-treatment-specs__topline span {
+    margin: 0;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+.sony-treatment-specs__topline p {
+    color: #dfe6f8;
+}
+
+.sony-treatment-specs__topline span {
+    color: #8ea2d7;
+}
+
+.sony-treatment-specs__card h3 {
+    margin: 0;
+    font-size: 1.34rem;
+    line-height: 1.15;
+}
+
+.sony-treatment-specs__summary {
+    margin: 0;
+    color: var(--sony-muted);
+}
+
+.sony-treatment-specs__list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+}
+
+.sony-treatment-specs__list div {
+    display: grid;
+    gap: 4px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sony-treatment-specs__list dt {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #8ea2d7;
+}
+
+.sony-treatment-specs__list dd {
+    margin: 0;
+    color: #fff;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.sony-treatment-specs__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.sony-case-priority__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sony-case-priority__card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 22px;
+    background: linear-gradient(180deg, rgba(15, 18, 28, 0.96), rgba(11, 13, 20, 0.98));
+    display: grid;
+    gap: 14px;
+    min-height: 100%;
+}
+
+.sony-case-priority__card p,
+.sony-case-priority__card strong {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.74rem;
+}
+
+.sony-case-priority__card p {
+    color: #8ea2d7;
+}
+
+.sony-case-priority__card h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    line-height: 1.15;
+}
+
+.sony-case-priority__card span {
+    color: var(--sony-muted);
+}
+
+.sony-case-priority__card strong {
+    color: #fff;
+}
+
+.sony-entry-decision {
+    display: grid;
+    gap: 18px;
+}
+
+.sony-entry-decision__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sony-entry-decision__card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 22px;
+    background: linear-gradient(180deg, rgba(15, 18, 28, 0.96), rgba(11, 13, 20, 0.98));
+    display: grid;
+    gap: 14px;
+    min-height: 100%;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.sony-entry-decision__card--active {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 26px 64px rgba(0, 0, 0, 0.26);
+    transform: translateY(-2px);
+}
+
+.sony-entry-decision__card--fit {
+    border-color: rgba(78, 194, 136, 0.34);
+}
+
+.sony-entry-decision__card--review {
+    border-color: rgba(230, 184, 73, 0.34);
+}
+
+.sony-entry-decision__card--support {
+    border-color: rgba(123, 169, 255, 0.34);
+}
+
+.sony-entry-decision__card span {
+    color: #8ea2d7;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.sony-entry-decision__card h3 {
+    margin: 0;
+    font-size: 1.14rem;
+    line-height: 1.3;
+}
+
+.sony-entry-decision__card p {
+    color: var(--sony-muted);
+    line-height: 1.68;
+}
+
+.sony-entry-decision__card .sony-btn {
+    justify-self: start;
+    margin-top: 2px;
+}
+
+.sony-entry-decision__card[data-entry-active='true'] .sony-btn {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.sony-category-outcomes {
+    display: grid;
+    gap: 18px;
+}
+
+.sony-category-outcomes__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sony-category-outcomes__card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 22px;
+    background: linear-gradient(180deg, rgba(15, 18, 28, 0.96), rgba(11, 13, 20, 0.98));
+    display: grid;
+    gap: 14px;
+    min-height: 100%;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.sony-category-outcomes__card span {
+    color: #8ea2d7;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.sony-category-outcomes__card h3 {
+    margin: 0;
+    font-size: 1.14rem;
+    line-height: 1.3;
+}
+
+.sony-category-outcomes__card p {
+    color: var(--sony-muted);
+    line-height: 1.68;
+}
+
+.sony-category-outcomes__card .sony-btn {
+    justify-self: start;
+    margin-top: 2px;
+}
+
+.sony-section__head--split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    gap: 22px;
+    align-items: end;
+}
+
+.sony-guarantee {
+    display: grid;
+    gap: 20px;
+}
+
+.sony-guarantee__intro {
+    display: grid;
+    gap: 14px;
+    justify-items: start;
+}
+
+.sony-guarantee__intro p {
+    color: var(--sony-muted);
+    line-height: 1.7;
+    max-width: 44ch;
+}
+
+.sony-guarantee__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sony-guarantee__card {
+    min-height: 100%;
+    display: grid;
+    gap: 10px;
+    border: 1px solid var(--sony-line);
+    border-radius: 22px;
+    padding: 24px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+        rgba(255, 255, 255, 0.02);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.sony-guarantee__card span {
+    color: var(--sony-accent-soft);
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.sony-guarantee__card h3 {
+    font-size: 1.15rem;
+    line-height: 1.35;
+}
+
+.sony-guarantee__card p {
+    color: var(--sony-muted);
+    line-height: 1.7;
+}
+
+.sony-btn {
+    border-radius: 999px;
+    padding: 12px 18px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sony-btn--primary {
+    background: #fff;
+    color: #090b12;
+}
+
+.sony-btn--ghost {
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    color: #fff;
+    background: transparent;
+}
+
+.sony-signal-band {
+    margin-top: 20px;
+}
+
+.sony-signal-band ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    list-style: none;
+}
+
+.sony-signal-band li {
+    border: 1px solid var(--sony-line);
+    border-radius: 18px;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sony-signal-band li span {
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    background: linear-gradient(135deg, #ffffff, #78a0ff);
+    box-shadow: 0 0 0 6px rgba(120, 160, 255, 0.12);
+}
+
+.sony-signal-band strong {
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+
+.sony-intent-rail {
+    display: grid;
+    gap: 18px;
+}
+
+.sony-intent-rail__intro {
+    display: grid;
+    gap: 8px;
+    max-width: 760px;
+}
+
+.sony-intent-rail__intro p {
+    font-size: 0.76rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #c7d2e7;
+    font-weight: 700;
+}
+
+.sony-intent-rail__intro h2 {
+    font-size: clamp(1.5rem, 2.8vw, 2.6rem);
+    line-height: 1.08;
+}
+
+.sony-intent-rail__intro span {
+    color: var(--sony-muted);
+    max-width: 60ch;
+}
+
+.sony-intent-rail__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-intent-card {
+    border: 1px solid var(--sony-line);
+    border-radius: 22px;
+    padding: 22px;
+    display: grid;
+    gap: 12px;
+    background:
+        linear-gradient(165deg, rgba(16, 21, 32, 0.96), rgba(26, 35, 52, 0.64)),
+        var(--sony-card);
+}
+
+.sony-intent-card p {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sony-accent-soft);
+    font-weight: 700;
+}
+
+.sony-intent-card h3 {
+    font-size: 1.08rem;
+    line-height: 1.3;
+}
+
+.sony-intent-card .sony-btn {
+    justify-self: flex-start;
+}
+
+.sony-section,
+.sony-content,
+.sony-cta-cluster,
+.sony-trust {
+    width: var(--sony-content);
+    margin: 38px auto 0;
+}
+
+@supports (content-visibility: auto) {
+    .sony-section,
+    .sony-cta-cluster,
+    .sony-trust,
+    .sony-footer {
+        content-visibility: auto;
+        contain-intrinsic-size: 860px;
+    }
+}
+
+.sony-section--compact {
+    border: 1px solid var(--sony-line);
+    border-radius: 20px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sony-strip {
+    border: 1px solid var(--sony-line);
+    border-radius: 20px;
+    padding: 22px;
+    background: linear-gradient(
+        120deg,
+        rgba(17, 23, 36, 0.9),
+        rgba(27, 37, 60, 0.7)
+    );
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+.sony-strip p {
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #c6d2e9;
+    font-weight: 700;
+}
+
+.sony-strip h2 {
+    margin-top: 7px;
+    font-size: clamp(1.3rem, 2.2vw, 2.1rem);
+}
+
+.sony-pillar-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-pillar-grid article {
+    border: 1px solid var(--sony-line);
+    border-radius: 20px;
+    padding: 22px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sony-pillar-grid h3 {
+    font-size: 1.08rem;
+}
+
+.sony-pillar-grid p {
+    margin-top: 8px;
+    color: var(--sony-muted);
+}
+
+.sony-section__head p {
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #bec9dc;
+    font-weight: 700;
+}
+
+.sony-section__head h2 {
+    margin-top: 8px;
+    font-size: clamp(1.55rem, 3vw, 2.7rem);
+    line-height: 1.1;
+}
+
+.sony-section__head span {
+    color: var(--sony-muted);
+    line-height: 1.6;
+    max-width: 72ch;
+}
+
+.editorial-grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-service-atlas {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-service-atlas__card,
+.sony-proof-card {
+    border: 1px solid var(--sony-line);
+    border-radius: 22px;
+    padding: 22px;
+    background:
+        linear-gradient(160deg, rgba(12, 16, 26, 0.94), rgba(23, 32, 47, 0.68)),
+        var(--sony-card);
+    display: grid;
+    gap: 12px;
+}
+
+.sony-service-atlas__card p,
+.sony-team-card__body p,
+.sony-clinic-showcase__content p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.sony-service-atlas__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.sony-service-atlas__header h3 {
+    font-size: 1.08rem;
+    line-height: 1.3;
+}
+
+.sony-service-atlas__header span {
+    border: 1px solid var(--sony-line);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    color: #e8eef9;
+}
+
+.sony-service-atlas__card small,
+.sony-team-card__body span,
+.sony-proof-card p,
+.sony-clinic-showcase__content span {
+    color: var(--sony-muted);
+    line-height: 1.58;
+}
+
+.sony-service-atlas__card ul,
+.sony-team-card__body ul,
+.sony-clinic-showcase__content ul {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.sony-service-atlas__card a,
+.sony-team-card__links a {
+    color: #f6f9ff;
+    font-weight: 700;
+}
+
+.sony-service-atlas__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-service-finder {
+    display: grid;
+    gap: 18px;
+}
+
+.sony-service-finder__toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.sony-service-finder__controls,
+.sony-service-finder__status,
+.sony-service-finder__card {
+    border: 1px solid var(--sony-line);
+    border-radius: 24px;
+    background:
+        linear-gradient(160deg, rgba(12, 16, 26, 0.94), rgba(23, 32, 47, 0.68)),
+        var(--sony-card);
+}
+
+.sony-service-finder__controls {
+    padding: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-service-finder__chip {
+    border: 1px solid var(--sony-line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.02);
+    color: #f8fbff;
+    padding: 10px 14px;
+    font: inherit;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    cursor: pointer;
+}
+
+.sony-service-finder__chip span {
+    border-left: 1px solid var(--sony-line);
+    padding-left: 8px;
+    color: var(--sony-accent-soft);
+    font-size: 0.82rem;
+}
+
+.sony-service-finder__chip[aria-pressed='true'] {
+    background: #f5f8ff;
+    color: #0d1320;
+    border-color: #f5f8ff;
+}
+
+.sony-service-finder__status {
+    padding: 20px;
+    display: grid;
+    gap: 8px;
+}
+
+.sony-service-finder__status strong {
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1;
+}
+
+.sony-service-finder__status p {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    color: var(--sony-accent-soft);
+    font-weight: 700;
+}
+
+.sony-service-finder__status span {
+    color: var(--sony-muted);
+    line-height: 1.6;
+}
+
+.sony-service-finder__active {
+    border: 1px solid var(--sony-line);
+    border-radius: 24px;
+    padding: 22px;
+    background:
+        linear-gradient(160deg, rgba(12, 16, 26, 0.94), rgba(23, 32, 47, 0.68)),
+        var(--sony-card);
+    display: grid;
+    gap: 12px;
+}
+
+.sony-service-finder__active-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-service-finder__active-status small {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: #d8e0f5;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.sony-service-finder__active p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.sony-service-finder__active h3 {
+    font-size: clamp(1.2rem, 2vw, 1.7rem);
+    line-height: 1.3;
+}
+
+.sony-service-finder__active > span {
+    color: var(--sony-muted);
+    line-height: 1.6;
+}
+
+.sony-service-finder__active-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-service-finder__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-service-finder__card {
+    padding: 22px;
+    display: grid;
+    gap: 12px;
+}
+
+.sony-service-finder__card[hidden] {
+    display: none;
+}
+
+.sony-service-finder__card p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.sony-service-finder__card h3 {
+    font-size: 1.12rem;
+    line-height: 1.3;
+}
+
+.sony-service-finder__card > span {
+    color: var(--sony-muted);
+    line-height: 1.58;
+}
+
+.sony-service-finder__meta,
+.sony-service-finder__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-service-finder__meta small,
+.sony-service-finder__doctors small {
+    border: 1px solid var(--sony-line);
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: #e6edf8;
+}
+
+.sony-service-finder__pills {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sony-service-finder__pills li {
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--sony-muted);
+    font-size: 0.82rem;
+}
+
+.sony-service-finder__doctors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sony-route-planner {
+    display: grid;
+    gap: 18px;
+}
+
+.sony-route-planner__shell {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.sony-route-planner__summary,
+.sony-route-planner__controls,
+.sony-route-planner__card {
+    border: 1px solid var(--sony-line);
+    border-radius: 24px;
+    background:
+        linear-gradient(160deg, rgba(12, 16, 26, 0.94), rgba(23, 32, 47, 0.68)),
+        var(--sony-card);
+}
+
+.sony-route-planner__summary {
+    padding: 24px;
+    display: grid;
+    gap: 10px;
+}
+
+.sony-route-planner__summary p,
+.sony-route-planner__card p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.sony-route-planner__summary h3,
+.sony-route-planner__card h3 {
+    font-size: clamp(1.2rem, 2vw, 1.7rem);
+    line-height: 1.18;
+}
+
+.sony-route-planner__summary span,
+.sony-route-planner__card > span {
+    color: var(--sony-muted);
+    line-height: 1.62;
+}
+
+.sony-route-planner__summary-actions,
+.sony-route-planner__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-route-planner__controls {
+    padding: 18px;
+}
+
+.sony-route-planner__chip {
+    border: 1px solid var(--sony-line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.02);
+    color: #f8fbff;
+    padding: 10px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.sony-route-planner__chip[aria-pressed='true'] {
+    background: #f5f8ff;
+    color: #0d1320;
+    border-color: #f5f8ff;
+}
+
+.sony-route-planner__grid {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-route-planner__card {
+    padding: 22px;
+    display: grid;
+    gap: 12px;
+    transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.sony-route-planner__card[data-active='true'] {
+    border-color: rgba(120, 160, 255, 0.48);
+    box-shadow: 0 20px 40px rgba(10, 18, 38, 0.34);
+    transform: translateY(-2px);
+}
+
+.sony-route-planner__card ul {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.sony-route-planner__card li {
+    color: #e6edf8;
+    line-height: 1.5;
+    padding-left: 18px;
+    position: relative;
+}
+
+.sony-route-planner__card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.65em;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ffffff, #78a0ff);
+}
+
+.sony-route-planner__card .sony-btn {
+    justify-self: flex-start;
+}
+
+.sony-team-spotlight {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sony-team-card {
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+    border: 1px solid var(--sony-line);
+    border-radius: 24px;
+    overflow: hidden;
+    background:
+        linear-gradient(160deg, rgba(12, 16, 26, 0.94), rgba(23, 32, 47, 0.68)),
+        var(--sony-card);
+}
+
+.sony-team-card__media img {
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    object-fit: cover;
+}
+
+.sony-team-card__body {
+    padding: 24px;
+    display: grid;
+    gap: 12px;
+}
+
+.sony-team-card__body h3,
+.sony-proof-card h3 {
+    font-size: 1.18rem;
+    line-height: 1.3;
+}
+
+.sony-team-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.sony-proof-grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-proof-card--soft {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sony-clinic-showcase {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.sony-clinic-showcase__media,
+.sony-clinic-showcase__content {
+    border: 1px solid var(--sony-line);
+    border-radius: 24px;
+    overflow: hidden;
+    background:
+        linear-gradient(160deg, rgba(12, 16, 26, 0.94), rgba(23, 32, 47, 0.68)),
+        var(--sony-card);
+}
+
+.sony-clinic-showcase__media img {
+    width: 100%;
+    height: 100%;
+    min-height: 340px;
+    object-fit: cover;
+}
+
+.sony-clinic-showcase__content {
+    padding: 26px;
+    display: grid;
+    gap: 14px;
+    align-content: center;
+}
+
+.sony-clinic-showcase__content h2 {
+    font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+    line-height: 1.12;
+}
+
+.sony-clinic-showcase__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-clinic-showcase__stats small {
+    border: 1px solid var(--sony-line);
+    border-radius: 999px;
+    padding: 7px 11px;
+    color: #e6edf8;
+}
+
+.editorial-card {
+    border-radius: var(--sony-radius);
+    overflow: hidden;
+    border: 1px solid var(--sony-line);
+    background: var(--sony-card);
+}
+
+.editorial-card__media img {
+    width: 100%;
+    aspect-ratio: 16 / 11;
+    object-fit: cover;
+}
+
+.editorial-card__body {
+    padding: 14px;
+    display: grid;
+    gap: 6px;
+}
+
+.editorial-card__body p {
+    color: var(--sony-accent-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.editorial-card__body h3 {
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1.25;
+}
+
+.editorial-card__body span {
+    color: var(--sony-muted);
+    font-size: 0.87rem;
+    line-height: 1.4;
+}
+
+.sony-cta-cluster {
+    border: 1px solid var(--sony-line);
+    border-radius: 24px;
+    padding: 26px;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+    background: linear-gradient(
+        140deg,
+        rgba(13, 18, 28, 0.9),
+        rgba(27, 35, 52, 0.66)
+    );
+}
+
+.sony-cta-cluster h2 {
+    font-size: clamp(1.3rem, 2.1vw, 2rem);
+    line-height: 1.2;
+}
+
+.sony-cta-cluster p {
+    margin-top: 6px;
+    color: var(--sony-muted);
+}
+
+.sony-cta-cluster__actions {
+    display: flex;
+    gap: 10px;
+}
+
+.sony-booking-shell {
+    margin-top: 42px;
+}
+
+.sony-trust {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    border: 1px solid var(--sony-line);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 36px;
+    background: var(--sony-surface);
+}
+
+.sony-trust h3 {
+    font-size: 1.18rem;
+}
+
+.sony-trust p {
+    color: var(--sony-muted);
+    margin-top: 5px;
+}
+
+.sony-footer {
+    border-top: 1px solid var(--sony-line);
+    margin-top: 44px;
+    background: rgba(9, 12, 20, 0.86);
+}
+
+.sony-footer__inner {
+    width: var(--sony-content);
+    margin: 0 auto;
+    padding: 30px 0 34px;
+    display: grid;
+    grid-template-columns: minmax(320px, 1.2fr) minmax(0, 1fr);
+    gap: 26px;
+}
+
+.sony-footer__brand {
+    display: grid;
+    gap: 10px;
+}
+
+.sony-footer p {
+    letter-spacing: 0.08em;
+    font-size: 0.76rem;
+    color: #cfd9eb;
+    font-weight: 700;
+}
+
+.sony-footer__brand h2 {
+    font-size: clamp(1.3rem, 2vw, 1.9rem);
+    line-height: 1.2;
+}
+
+.sony-footer__brand span {
+    color: var(--sony-muted);
+    line-height: 1.6;
+    max-width: 54ch;
+}
+
+.sony-footer__actions {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sony-footer__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sony-footer nav,
+.sony-footer__meta {
+    border: 1px solid var(--sony-line);
+    border-radius: 18px;
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sony-footer nav ul,
+.sony-footer__meta ul {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.sony-footer nav a,
+.sony-footer__meta li {
+    color: var(--sony-muted);
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 1080px) {
+    .editorial-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sony-nav {
+        display: none;
+    }
+
+    .sony-mobile-nav {
+        display: block;
+    }
+
+    .sony-header__inner {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        padding: 10px 0 12px;
+    }
+
+    .sony-hero__content {
+        inset: auto auto 26px 26px;
+        width: calc(100% - 40px);
+    }
+
+    .sony-hero,
+    .sony-hero__media img {
+        min-height: 60vh;
+    }
+
+    .sony-intent-rail__grid,
+    .sony-service-atlas,
+    .sony-service-finder__grid,
+    .sony-route-planner__grid,
+    .sony-guarantee__grid,
+    .sony-service-hub__grid,
+    .sony-case-priority__grid,
+    .sony-entry-decision__grid,
+    .sony-category-outcomes__grid,
+    .sony-treatment-specs__grid,
+    .sony-proof-grid,
+    .sony-journey__grid,
+    .sony-quote-grid,
+    .sony-signal-band ul,
+    .sony-detail-grid--triad,
+    .sony-legal-grid,
+    .sony-footer__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sony-footer__inner {
+        grid-template-columns: 1fr;
+    }
+
+    .sony-team-spotlight,
+    .sony-clinic-showcase,
+    .sony-section__head--split,
+    .sony-service-finder__toolbar,
+    .sony-route-planner__shell,
+    .sony-service-hub__toolbar,
+    .sony-service-hub__section,
+    .sony-mega {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 740px) {
+    :root {
+        --sony-content: calc(100% - 24px);
+    }
+
+    .sony-hero {
+        margin-top: 16px;
+        border-radius: 22px;
+    }
+
+    .sony-hero,
+    .sony-hero__media img {
+        min-height: 56vh;
+    }
+
+    .sony-hero__content {
+        inset: auto auto 20px 20px;
+        width: calc(100% - 32px);
+    }
+
+    .sony-header__inner {
+        min-height: 68px;
+    }
+
+    .sony-cta-cluster,
+    .sony-trust,
+    .sony-strip,
+    .sony-journey__grid,
+    .sony-related-services__grid,
+    .sony-detail-grid {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .editorial-grid,
+    .sony-detail-grid,
+    .sony-pillar-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sony-team-card {
+        grid-template-columns: 1fr;
+    }
+
+    .sony-service-finder__controls,
+    .sony-service-finder__status,
+    .sony-service-finder__active,
+    .sony-service-finder__card,
+    .sony-route-planner__summary,
+    .sony-route-planner__controls,
+    .sony-route-planner__card,
+    .sony-guarantee__card,
+    .sony-service-hub__intro,
+    .sony-service-hub__feature,
+    .sony-service-hub__card,
+    .sony-case-priority__card,
+    .sony-entry-decision__card,
+    .sony-category-outcomes__card,
+    .sony-treatment-specs__card {
+        padding: 18px;
+    }
+
+    .sony-header__actions {
+        margin-left: auto;
+    }
+
+    .sony-mobile-nav__actions {
+        flex-wrap: wrap;
+    }
+
+    .sony-intent-card,
+    .sony-quote-card,
+    .sony-signal-band li,
+    .sony-service-atlas__card,
+    .sony-proof-card,
+    .sony-legal-card,
+    .sony-footer nav,
+    .sony-footer__meta {
+        padding: 18px;
+    }
+
+    .sony-team-card__body,
+    .sony-clinic-showcase__content {
+        padding: 18px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .astro-public *,
+    .astro-public *::before,
+    .astro-public *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}

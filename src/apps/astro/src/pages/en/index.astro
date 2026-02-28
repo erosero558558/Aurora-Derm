@@ -1,0 +1,26 @@
+---
+import PublicShellV2 from '../../layouts/PublicShellV2.astro';
+import HeroStageCarouselV2 from '../../components/public-v2/HeroStageCarouselV2.astro';
+import LatestNewsStripV2 from '../../components/public-v2/LatestNewsStripV2.astro';
+import FeaturedStorySplitV2 from '../../components/public-v2/FeaturedStorySplitV2.astro';
+import ProgramFamilyGridV2 from '../../components/public-v2/ProgramFamilyGridV2.astro';
+import TelemedicineExperienceBandV2 from '../../components/public-v2/TelemedicineExperienceBandV2.astro';
+import DoctorAuthorityBandV2 from '../../components/public-v2/DoctorAuthorityBandV2.astro';
+import BookingBridgeBandV2 from '../../components/public-v2/BookingBridgeBandV2.astro';
+import { getHomeV2Data, getPublicNavigationModel } from '../../lib/public-v2.js';
+
+const locale = 'en';
+const pathname = '/en/';
+const page = getHomeV2Data(locale);
+const navModel = getPublicNavigationModel(locale, pathname);
+---
+
+<PublicShellV2 title={page.title} description={page.description} locale={locale} canonicalPath="/en/" alternatePath="/es/" pathname={pathname} navModel={navModel}>
+    <HeroStageCarouselV2 slides={page.slides} locale={locale} />
+    <LatestNewsStripV2 items={page.latest} locale={locale} />
+    <FeaturedStorySplitV2 stories={page.featuredStories} locale={locale} />
+    <ProgramFamilyGridV2 families={page.families} locale={locale} />
+    <TelemedicineExperienceBandV2 eyebrow={page.telemedicine.eyebrow} title={page.telemedicine.title} deck={page.telemedicine.deck} points={page.telemedicine.points} href={page.telemedicine.href} locale={locale} />
+    <DoctorAuthorityBandV2 doctors={page.doctors} locale={locale} />
+    <BookingBridgeBandV2 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} locale={locale} />
+</PublicShellV2>

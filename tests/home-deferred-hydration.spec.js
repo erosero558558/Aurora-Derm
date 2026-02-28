@@ -2,23 +2,31 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Home deferred hydration', () => {
-    test('hydrates deferred sections and chatbot widget', async ({ page }) => {
-        await page.goto('/');
+    test('keeps the Public V2 shell visible and boots the legacy runtime bridge on home', async ({ page }) => {
+        await page.goto('/es/');
+        await page.waitForLoadState('load', { timeout: 20000 }).catch(() => null);
 
-        const serviciosSection = page.locator('#servicios');
-        await expect(serviciosSection).toBeVisible();
-        await expect(serviciosSection).not.toHaveClass(/deferred-content/, {
-            timeout: 15000,
-        });
+        await expect(page.locator('[data-public-nav]')).toBeVisible();
+        await expect(page.locator('[data-stage-carousel]')).toBeVisible();
+        await expect(page.locator('[data-program-grid]')).toBeVisible();
+        await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
+
+        await expect
+            .poll(
+                async () =>
+                    page.evaluate(
+                        () =>
+                            document.documentElement.dataset.publicV2RuntimeBooted ||
+                            ''
+                    ),
+                { timeout: 15000 }
+            )
+            .toBe('true');
 
         const chatbotToggle = page.locator('#chatbotWidget .chatbot-toggle');
         await expect(chatbotToggle).toBeVisible({ timeout: 15000 });
-
-        const hasMeaningfulContent = await serviciosSection.evaluate((node) => {
-            const text = (node.textContent || '').trim();
-            return text.length > 200 && !text.includes('Cargando contenido...');
+        await expect(page.locator('#appointmentForm')).toBeVisible({
+            timeout: 15000,
         });
-
-        expect(hasMeaningfulContent).toBeTruthy();
     });
 });

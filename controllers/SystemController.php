@@ -23,6 +23,44 @@ class SystemController
         ]);
     }
 
+    public static function publicRuntimeConfig(array $context): void
+    {
+        $captchaProvider = function_exists('captcha_get_provider')
+            ? captcha_get_provider()
+            : null;
+        $captchaSiteKey = function_exists('captcha_get_site_key')
+            ? captcha_get_site_key()
+            : null;
+        $captchaScriptUrl = function_exists('captcha_get_script_url')
+            ? captcha_get_script_url()
+            : null;
+
+        $features = [];
+        if (class_exists('FeatureFlags') && method_exists('FeatureFlags', 'getAll')) {
+            $rawFeatures = FeatureFlags::getAll();
+            if (is_array($rawFeatures)) {
+                $features = $rawFeatures;
+            }
+        }
+
+        $deployVersion = function_exists('app_runtime_version')
+            ? app_runtime_version()
+            : gmdate('YmdHis');
+
+        json_response([
+            'ok' => true,
+            'data' => [
+                'captcha' => [
+                    'provider' => is_string($captchaProvider) ? $captchaProvider : null,
+                    'siteKey' => is_string($captchaSiteKey) ? $captchaSiteKey : null,
+                    'scriptUrl' => is_string($captchaScriptUrl) ? $captchaScriptUrl : null,
+                ],
+                'features' => $features,
+                'deployVersion' => (string) $deployVersion,
+            ],
+        ]);
+    }
+
     public static function metrics(array $context): void
     {
         $store = $context['store'];

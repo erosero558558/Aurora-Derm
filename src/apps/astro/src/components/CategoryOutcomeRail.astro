@@ -1,0 +1,91 @@
+---
+import { serviceHubPath } from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+const hubBase = serviceHubPath(locale);
+
+const copy = {
+    es: {
+        eyebrow: 'Resultados por categoria',
+        title: 'Cada familia de servicio se evalua con señales distintas.',
+        description:
+            'Este bloque evita promesas planas: en clinica importa respuesta y tolerancia, en estetica la ventana correcta de lectura, y en pediatria la adherencia familiar.',
+        cards: [
+            {
+                step: 'Clinica',
+                title: 'Progreso interpretable por sintomas, fotos y control',
+                body: 'Las rutas clinicas mejoran cuando la respuesta se compara con evidencia consistente y no solo con memoria subjetiva.',
+                href: `${hubBase}?category=clinical&intent=diagnosis`,
+                cta: 'Explorar rutas clinicas',
+            },
+            {
+                step: 'Estetica',
+                title: 'Cambio visible en fases y no en una sola fecha',
+                body: 'En estetica la lectura correcta distingue inflamacion inicial, mejora progresiva y el momento real para repetir o combinar.',
+                href: `${hubBase}?category=aesthetic&intent=rejuvenation`,
+                cta: 'Explorar rutas esteticas',
+            },
+            {
+                step: 'Pediatrica',
+                title: 'Resultado sostenible para familia y cuidadores',
+                body: 'La ruta pediatrica funciona cuando el cuidado en casa se puede cumplir, las alertas se entienden y el escalamiento llega a tiempo.',
+                href: `${hubBase}?category=children&intent=pediatric`,
+                cta: 'Explorar rutas pediatricas',
+            },
+        ],
+    },
+    en: {
+        eyebrow: 'Outcomes by category',
+        title: 'Each service family is judged by different signals.',
+        description:
+            'This block avoids flat promises: clinical routes rely on response and tolerance, aesthetics on the right reading window, and pediatric care on caregiver adherence.',
+        cards: [
+            {
+                step: 'Clinical',
+                title: 'Interpretable progress through symptoms, images, and review',
+                body: 'Clinical routes improve when response is compared with consistent evidence rather than with subjective memory alone.',
+                href: `${hubBase}?category=clinical&intent=diagnosis`,
+                cta: 'Explore clinical routes',
+            },
+            {
+                step: 'Aesthetic',
+                title: 'Visible change in phases, not on a single date',
+                body: 'In aesthetics, correct interpretation separates early inflammation, progressive improvement, and the real moment to repeat or combine.',
+                href: `${hubBase}?category=aesthetic&intent=rejuvenation`,
+                cta: 'Explore aesthetic routes',
+            },
+            {
+                step: 'Pediatric',
+                title: 'A sustainable result for family and caregivers',
+                body: 'The pediatric route works when home care is realistic, alerts are understood, and escalation happens at the right time.',
+                href: `${hubBase}?category=children&intent=pediatric`,
+                cta: 'Explore pediatric routes',
+            },
+        ],
+    },
+};
+
+const selected = copy[locale] || copy.es;
+---
+
+<section class="sony-section sony-section--compact sony-category-outcomes" data-category-outcomes>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-category-outcomes__grid">
+        {
+            selected.cards.map((card) => (
+                <article class="sony-category-outcomes__card" data-category-outcome-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                    <a class="sony-btn sony-btn--ghost" href={card.href}>
+                        {card.cta}
+                    </a>
+                </article>
+            ))
+        }
+    </div>
+</section>

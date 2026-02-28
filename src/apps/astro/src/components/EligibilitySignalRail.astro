@@ -1,0 +1,143 @@
+---
+const {
+    locale = 'es',
+    service,
+    audience = [],
+    contraindications = [],
+} = Astro.props;
+
+const category = String(service?.category || 'clinical').toLowerCase();
+const indications = Array.isArray(service?.indications) ? service.indications.slice(0, 3) : [];
+const safeAudience = Array.isArray(audience) && audience.length > 0 ? audience.slice(0, 3) : [];
+const safeContraindications =
+    Array.isArray(contraindications) && contraindications.length > 0
+        ? contraindications.slice(0, 3)
+        : [];
+
+const categoryCopy = {
+    es: {
+        clinical: {
+            title: 'Senales de elegibilidad y alertas antes de reservar.',
+            description:
+                'Este bloque ayuda a separar buen fit, puntos de revision y escenarios donde conviene cambiar de modalidad o subir a consulta presencial.',
+            escalate: [
+                'lesion nueva o rapidamente cambiante',
+                'dolor, sangrado o empeoramiento brusco',
+                'dudas diagnosticas que requieran examen fisico',
+            ],
+        },
+        aesthetic: {
+            title: 'Candidatura, pausas y alertas para tratamientos esteticos.',
+            description:
+                'En estetica conviene dejar claro quien suele ser candidato, que obliga a pausar y cuando el procedimiento necesita otra secuencia.',
+            escalate: [
+                'expectativa de resultado inmediato no realista',
+                'necesidad de valoracion presencial de calidad de piel o volumen',
+                'combinacion de procedimientos que requiera secuencia medica',
+            ],
+        },
+        children: {
+            title: 'Elegibilidad y alertas en rutas pediatricas.',
+            description:
+                'Para casos de ninos y adolescentes priorizamos simplicidad: buen fit, alertas familiares y momentos para escalar.',
+            escalate: [
+                'empeoramiento rapido o dolor relevante',
+                'lesiones nuevas que cambian el contexto',
+                'dificultad para controlar el caso solo con seguimiento remoto',
+            ],
+        },
+    },
+    en: {
+        clinical: {
+            title: 'Eligibility signals and alerts before booking.',
+            description:
+                'This block separates strong fit, review points, and scenarios where the route should move to in-person care or a broader assessment.',
+            escalate: [
+                'new or rapidly changing lesion',
+                'pain, bleeding, or abrupt worsening',
+                'diagnostic uncertainty that needs physical examination',
+            ],
+        },
+        aesthetic: {
+            title: 'Candidate fit, pause points, and alerts for aesthetic care.',
+            description:
+                'In aesthetics it helps to make clear who is usually a fit, what should pause the route, and when sequencing matters.',
+            escalate: [
+                'unrealistic expectation of immediate results',
+                'need for in-person review of skin quality or volume',
+                'procedure combination that requires medical sequencing',
+            ],
+        },
+        children: {
+            title: 'Eligibility and alerts for pediatric routes.',
+            description:
+                'For children and adolescents the route works better when fit, caregiver alerts, and escalation points are explicit.',
+            escalate: [
+                'rapid worsening or meaningful pain',
+                'new lesions that change the context',
+                'difficulty managing the case through remote follow-up alone',
+            ],
+        },
+    },
+};
+
+const localeCopy = categoryCopy[locale] || categoryCopy.es;
+const selected = localeCopy[category] || localeCopy.clinical;
+
+const labels =
+    locale === 'en'
+        ? {
+              eyebrow: 'Eligibility',
+              good: 'Good fit',
+              pause: 'Pause and review',
+              escalate: 'Escalate route',
+              defaultAudience: 'Adults and patients needing assessment first',
+              defaultContra: 'Final suitability is confirmed during consultation according to history and skin profile.',
+          }
+        : {
+              eyebrow: 'Elegibilidad',
+              good: 'Buen fit',
+              pause: 'Pausar y revisar',
+              escalate: 'Escalar ruta',
+              defaultAudience: 'Adultos y pacientes que requieren valoracion inicial',
+              defaultContra: 'La elegibilidad final se confirma en consulta segun antecedentes, piel y objetivo.',
+          };
+
+const fitItems = safeAudience.length > 0 ? safeAudience : [labels.defaultAudience];
+const pauseItems = safeContraindications.length > 0 ? safeContraindications : [labels.defaultContra];
+---
+
+<section
+    class="sony-section sony-section--compact sony-eligibility"
+    data-eligibility-rail
+    data-eligibility-category={category}
+>
+    <div class="sony-section__head">
+        <p>{labels.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-eligibility__grid">
+        <article class="sony-eligibility__card sony-eligibility__card--fit" data-eligibility-card>
+            <span>{labels.good}</span>
+            <h3>{indications[0] || service?.hero || labels.defaultAudience}</h3>
+            <ul>
+                {fitItems.map((item) => <li>{item}</li>)}
+            </ul>
+        </article>
+        <article class="sony-eligibility__card sony-eligibility__card--pause" data-eligibility-card>
+            <span>{labels.pause}</span>
+            <h3>{indications[1] || labels.pause}</h3>
+            <ul>
+                {pauseItems.map((item) => <li>{item}</li>)}
+            </ul>
+        </article>
+        <article class="sony-eligibility__card sony-eligibility__card--escalate" data-eligibility-card>
+            <span>{labels.escalate}</span>
+            <h3>{indications[2] || labels.escalate}</h3>
+            <ul>
+                {selected.escalate.map((item) => <li>{item}</li>)}
+            </ul>
+        </article>
+    </div>
+</section>

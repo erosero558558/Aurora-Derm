@@ -1,0 +1,167 @@
+---
+import {
+    getLocalizedServices,
+    localizeCategory,
+    serviceHubPath,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+const services = getLocalizedServices(locale);
+
+const orderedGroups = ['clinical', 'aesthetic', 'children'].map((category) => {
+    const items = services.filter((service) => service.category === category);
+    const copyMap =
+        locale === 'en'
+            ? {
+                  clinical: {
+                      eyebrow: 'Diagnostic routes',
+                      title: 'Clinical dermatology',
+                      description:
+                          'Skin, hair, nails, inflammatory conditions, lesions, and broader diagnostic entry points.',
+                  },
+                  aesthetic: {
+                      eyebrow: 'Procedure routes',
+                      title: 'Medical aesthetics',
+                      description:
+                          'Injectables, laser, peels, and physician-led rejuvenation protocols.',
+                  },
+                  children: {
+                      eyebrow: 'Family route',
+                      title: 'Pediatric dermatology',
+                      description:
+                          'Children and adolescent cases with in-person or telemedicine follow-up when appropriate.',
+                  },
+              }
+            : {
+                  clinical: {
+                      eyebrow: 'Rutas diagnosticas',
+                      title: 'Dermatologia clinica',
+                      description:
+                          'Piel, cabello, unas, inflamacion, lesiones nuevas y puertas de entrada diagnosticas mas amplias.',
+                  },
+                  aesthetic: {
+                      eyebrow: 'Rutas de procedimiento',
+                      title: 'Estetica medica',
+                      description:
+                          'Inyectables, laser, peelings y protocolos medicos de rejuvenecimiento.',
+                  },
+                  children: {
+                      eyebrow: 'Ruta familiar',
+                      title: 'Dermatologia pediatrica',
+                      description:
+                          'Casos de ninos y adolescentes con seguimiento presencial o por telemedicina cuando conviene.',
+                  },
+              };
+
+    return {
+        category,
+        items,
+        ...copyMap[category],
+    };
+});
+
+const quickStart =
+    locale === 'en'
+        ? {
+              eyebrow: 'Fast start',
+              title: 'Not sure where to start?',
+              description:
+                  'Use booking for a broad assessment or start with telemedicine if you need a faster remote first pass.',
+              actions: [
+                  {
+                      href: serviceHubPath(locale),
+                      label: 'View full catalog',
+                      target: 'service_hub',
+                  },
+                  {
+                      href: '/en/#citas',
+                      label: 'Book assessment',
+                      target: 'booking',
+                  },
+                  {
+                      href: telemedicinePath(locale),
+                      label: 'Open telemedicine',
+                      target: 'telemedicine',
+                  },
+                  {
+                      href: servicePath(locale, 'dermatologia-pediatrica'),
+                      label: 'Pediatric route',
+                      target: 'service_detail',
+                  },
+              ],
+          }
+        : {
+              eyebrow: 'Inicio rapido',
+              title: 'No sabes por donde empezar?',
+              description:
+                  'Usa la reserva para una valoracion amplia o empieza por telemedicina si necesitas una primera lectura remota mas rapida.',
+              actions: [
+                  {
+                      href: serviceHubPath(locale),
+                      label: 'Ver catalogo completo',
+                      target: 'service_hub',
+                  },
+                  {
+                      href: '/es/#citas',
+                      label: 'Reservar valoracion',
+                      target: 'booking',
+                  },
+                  {
+                      href: telemedicinePath(locale),
+                      label: 'Abrir telemedicina',
+                      target: 'telemedicine',
+                  },
+                  {
+                      href: servicePath(locale, 'dermatologia-pediatrica'),
+                      label: 'Ruta pediatrica',
+                      target: 'service_detail',
+                  },
+              ],
+          };
+---
+
+<div class="sony-service-atlas" data-service-atlas>
+    {
+        orderedGroups.map((group) => (
+            <article class="sony-service-atlas__card">
+                <p>{group.eyebrow}</p>
+                <div class="sony-service-atlas__header">
+                    <h3>{group.title || localizeCategory(group.category, locale)}</h3>
+                    <span>{group.items.length}</span>
+                </div>
+                <small>{group.description}</small>
+                <ul>
+                    {group.items.map((service) => (
+                        <li>
+                            <a href={servicePath(locale, service.slug)}>
+                                {service.hero || service.slug}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </article>
+        ))
+    }
+    <article class="sony-service-atlas__card sony-service-atlas__card--actions">
+        <p>{quickStart.eyebrow}</p>
+        <div class="sony-service-atlas__header">
+            <h3>{quickStart.title}</h3>
+        </div>
+        <small>{quickStart.description}</small>
+        <div class="sony-service-atlas__actions">
+            {quickStart.actions.map((action) => (
+                <a
+                    class="sony-btn sony-btn--ghost"
+                    href={action.href}
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="service_atlas_quickstart"
+                    data-cta-target={action.target}
+                >
+                    {action.label}
+                </a>
+            ))}
+        </div>
+    </article>
+</div>

@@ -288,7 +288,7 @@
     "cookie_banner_text": "Usamos cookies esenciales para seguridad y funcionamiento. Puedes aceptar o rechazar cookies opcionales.",
     "cookie_reject": "Rechazar",
     "cookie_accept": "Aceptar",
-    "cookie_more": "Más información",
+    "cookie_more": "Política de cookies",
     "payment_card_help": "Tus datos se cifran y se procesan de forma segura con Stripe.",
     "label_transfer_proof": "Comprobante (JPG, PNG, WEBP o PDF)",
     "payment_transfer_eta": "Validamos transferencias en horario de atencion. Te confirmamos por WhatsApp.",
@@ -300,3 +300,4 @@
     "label_expiry": "Vencimiento",
     "label_cvv": "CVV"
 }
+

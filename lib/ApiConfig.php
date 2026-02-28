@@ -13,6 +13,7 @@ class ApiConfig
             // Public GET - High volume
             'content:GET' => [120, 60],
             'features:GET' => [60, 60],
+            'public-runtime-config:GET' => [60, 60],
             'availability:GET' => [60, 60],
             'reviews:GET' => [60, 60],
             'booked-slots:GET' => [60, 60],
@@ -64,6 +65,7 @@ class ApiConfig
         return [
             ['method' => 'GET', 'resource' => 'monitoring-config'],
             ['method' => 'GET', 'resource' => 'features'],
+            ['method' => 'GET', 'resource' => 'public-runtime-config'],
             ['method' => 'GET', 'resource' => 'metrics'],
             ['method' => 'GET', 'resource' => 'payment-config'],
             ['method' => 'GET', 'resource' => 'availability'],

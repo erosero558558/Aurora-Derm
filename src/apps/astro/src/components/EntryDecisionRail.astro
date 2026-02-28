@@ -1,0 +1,297 @@
+---
+const { locale = 'es', variant = 'home', activeTarget = '' } = Astro.props;
+
+const copy = {
+    es: {
+        eyebrow: 'Puertas de entrada',
+        variants: {
+            home: {
+                title: 'Elige la puerta de entrada correcta antes de reservar.',
+                description:
+                    'Este comparador reduce friccion: reserva directa cuando el objetivo es claro, telemedicina cuando hace falta contexto remoto y WhatsApp cuando la duda es operativa.',
+                cards: [
+                    {
+                        step: 'Reserva directa',
+                        title: 'Cuando ya sabes que quieres una valoracion',
+                        body: 'La ruta mas corta si tu objetivo es confirmar diagnostico, costo o elegibilidad en consulta.',
+                        href: '/es/?service=consulta#citas',
+                        cta: 'Ir a booking',
+                        tone: 'fit',
+                        target: 'booking',
+                    },
+                    {
+                        step: 'Telemedicina',
+                        title: 'Cuando primero necesitas orientacion remota',
+                        body: 'Sirve para acne, dermatitis, manchas y controles donde fotos y contexto pueden ordenar el siguiente paso.',
+                        href: '/es/telemedicina/',
+                        cta: 'Ver telemedicina',
+                        tone: 'review',
+                        target: 'telemedicine',
+                    },
+                    {
+                        step: 'WhatsApp',
+                        title: 'Cuando la friccion es administrativa',
+                        body: 'Util para horarios, documentos, medios de pago o para saber si conviene una valoracion general antes de reservar.',
+                        href: 'https://wa.me/593982453672',
+                        cta: 'Abrir WhatsApp',
+                        tone: 'support',
+                        target: 'whatsapp',
+                        external: true,
+                    },
+                ],
+            },
+            hub: {
+                title: 'Compara la mejor entrada antes de elegir un servicio.',
+                description:
+                    'Este comparador reduce friccion: reserva directa cuando el objetivo es claro, telemedicina cuando hace falta contexto remoto y WhatsApp cuando la duda es operativa.',
+                cards: [
+                    {
+                        step: 'Reserva directa',
+                        title: 'Cuando ya sabes que quieres una valoracion',
+                        body: 'La ruta mas corta si tu objetivo es confirmar diagnostico, costo o elegibilidad en consulta.',
+                        href: '/es/?service=consulta#citas',
+                        cta: 'Ir a booking',
+                        tone: 'fit',
+                        target: 'booking',
+                    },
+                    {
+                        step: 'Telemedicina',
+                        title: 'Cuando primero necesitas orientacion remota',
+                        body: 'Sirve para acne, dermatitis, manchas y controles donde fotos y contexto pueden ordenar el siguiente paso.',
+                        href: '/es/telemedicina/',
+                        cta: 'Ver telemedicina',
+                        tone: 'review',
+                        target: 'telemedicine',
+                    },
+                    {
+                        step: 'WhatsApp',
+                        title: 'Cuando la friccion es administrativa',
+                        body: 'Util para horarios, documentos, medios de pago o para saber si conviene una valoracion general antes de reservar.',
+                        href: 'https://wa.me/593982453672',
+                        cta: 'Abrir WhatsApp',
+                        tone: 'support',
+                        target: 'whatsapp',
+                        external: true,
+                    },
+                ],
+            },
+            telemedicine: {
+                title: 'Compara telemedicina con reserva directa y soporte operativo.',
+                description:
+                    'Aqui la pregunta no es solo si reservar. Tambien importa si el caso se beneficia de contexto remoto primero o si la friccion real es administrativa.',
+                cards: [
+                    {
+                        step: 'Reserva directa',
+                        title: 'Cuando ya debes pasar a valoracion presencial',
+                        body: 'Si hay procedimientos, lesiones sospechosas o necesidad de dermatoscopia, la ruta corta deja de ser remota y pasa a booking.',
+                        href: '/es/?service=consulta#citas',
+                        cta: 'Ir a booking',
+                        tone: 'fit',
+                        target: 'booking',
+                    },
+                    {
+                        step: 'Telemedicina',
+                        title: 'Cuando el caso todavia gana claridad con fotos y video',
+                        body: 'La ruta actual funciona mejor para ordenar acne, dermatitis, manchas y controles donde la evidencia visual define el siguiente paso.',
+                        href: '#route-planner',
+                        cta: 'Revisar ruta remota',
+                        tone: 'review',
+                        target: 'telemedicine',
+                    },
+                    {
+                        step: 'WhatsApp',
+                        title: 'Cuando el bloqueo es horario, documentos o preparacion',
+                        body: 'Usalo para dudas operativas antes de la videollamada o para confirmar que material conviene tener listo.',
+                        href: 'https://wa.me/593982453672',
+                        cta: 'Abrir WhatsApp',
+                        tone: 'support',
+                        target: 'whatsapp',
+                        external: true,
+                    },
+                ],
+            },
+        },
+    },
+    en: {
+        eyebrow: 'Entry routes',
+        variants: {
+            home: {
+                title: 'Choose the right entry route before booking.',
+                description:
+                    'This comparator reduces friction: direct booking when the objective is clear, telemedicine when remote context is useful, and WhatsApp when the blocker is operational.',
+                cards: [
+                    {
+                        step: 'Direct booking',
+                        title: 'When you already know you want an assessment',
+                        body: 'The shortest route when the goal is to confirm diagnosis, pricing, or suitability during consultation.',
+                        href: '/en/?service=consulta#citas',
+                        cta: 'Go to booking',
+                        tone: 'fit',
+                        target: 'booking',
+                    },
+                    {
+                        step: 'Telemedicine',
+                        title: 'When you need remote guidance first',
+                        body: 'Useful for acne, dermatitis, spots, and follow-ups where images and context help define the next step.',
+                        href: '/en/telemedicine/',
+                        cta: 'View telemedicine',
+                        tone: 'review',
+                        target: 'telemedicine',
+                    },
+                    {
+                        step: 'WhatsApp',
+                        title: 'When the friction is administrative',
+                        body: 'Best for timing, documents, payment methods, or deciding whether general assessment should come first.',
+                        href: 'https://wa.me/593982453672',
+                        cta: 'Open WhatsApp',
+                        tone: 'support',
+                        target: 'whatsapp',
+                        external: true,
+                    },
+                ],
+            },
+            hub: {
+                title: 'Compare the best entry before choosing a service.',
+                description:
+                    'This comparator reduces friction: direct booking when the objective is clear, telemedicine when remote context is useful, and WhatsApp when the blocker is operational.',
+                cards: [
+                    {
+                        step: 'Direct booking',
+                        title: 'When you already know you want an assessment',
+                        body: 'The shortest route when the goal is to confirm diagnosis, pricing, or suitability during consultation.',
+                        href: '/en/?service=consulta#citas',
+                        cta: 'Go to booking',
+                        tone: 'fit',
+                        target: 'booking',
+                    },
+                    {
+                        step: 'Telemedicine',
+                        title: 'When you need remote guidance first',
+                        body: 'Useful for acne, dermatitis, spots, and follow-ups where images and context help define the next step.',
+                        href: '/en/telemedicine/',
+                        cta: 'View telemedicine',
+                        tone: 'review',
+                        target: 'telemedicine',
+                    },
+                    {
+                        step: 'WhatsApp',
+                        title: 'When the friction is administrative',
+                        body: 'Best for timing, documents, payment methods, or deciding whether general assessment should come first.',
+                        href: 'https://wa.me/593982453672',
+                        cta: 'Open WhatsApp',
+                        tone: 'support',
+                        target: 'whatsapp',
+                        external: true,
+                    },
+                ],
+            },
+            telemedicine: {
+                title: 'Compare telemedicine with direct booking and operational support.',
+                description:
+                    'The question here is not only whether to book. It also matters whether the case benefits from remote context first or whether the real blocker is operational.',
+                cards: [
+                    {
+                        step: 'Direct booking',
+                        title: 'When the route should already move to in-person care',
+                        body: 'If procedures, suspicious lesions, or dermoscopy are likely, the shortest useful route is no longer remote and should move to booking.',
+                        href: '/en/?service=consulta#citas',
+                        cta: 'Go to booking',
+                        tone: 'fit',
+                        target: 'booking',
+                    },
+                    {
+                        step: 'Telemedicine',
+                        title: 'When photos and video still improve decision quality',
+                        body: 'The current route works best for acne, dermatitis, spots, and follow-ups where visual evidence shapes the next step.',
+                        href: '#route-planner',
+                        cta: 'Review remote route',
+                        tone: 'review',
+                        target: 'telemedicine',
+                    },
+                    {
+                        step: 'WhatsApp',
+                        title: 'When the blocker is timing, documents, or preparation',
+                        body: 'Use it for operational questions before the video visit or to confirm what material should be ready in advance.',
+                        href: 'https://wa.me/593982453672',
+                        cta: 'Open WhatsApp',
+                        tone: 'support',
+                        target: 'whatsapp',
+                        external: true,
+                    },
+                ],
+            },
+        },
+    },
+};
+
+const selected = copy[locale] || copy.es;
+const selectedVariant = selected.variants?.[variant] || selected.variants.home;
+const surfaceMap = {
+    home: 'entry_decision_home',
+    hub: 'entry_decision_hub',
+    telemedicine: 'entry_decision_telemedicine',
+};
+const surface = surfaceMap[variant] || surfaceMap.home;
+const targetContextMap = {
+    booking: {
+        category: 'clinical',
+        intent: 'diagnosis',
+    },
+    telemedicine: {
+        category: 'all',
+        intent: 'remote',
+    },
+    whatsapp: {
+        category: 'all',
+        intent: 'all',
+    },
+};
+---
+
+<section
+    class="sony-section sony-section--compact sony-entry-decision"
+    data-entry-decision
+    data-entry-decision-variant={variant}
+>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selectedVariant.title}</h2>
+        <span>{selectedVariant.description}</span>
+    </div>
+    <div class="sony-entry-decision__grid">
+        {
+            selectedVariant.cards.map((card) => (
+                <article
+                    class={`sony-entry-decision__card sony-entry-decision__card--${card.tone}${activeTarget === card.target ? ' sony-entry-decision__card--active' : ''}`}
+                    data-entry-decision-card
+                    data-entry-target={card.target}
+                    data-entry-active={activeTarget === card.target ? 'true' : 'false'}
+                >
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                    <a
+                        class="sony-btn sony-btn--ghost"
+                        href={card.href}
+                        target={card.external ? '_blank' : undefined}
+                        rel={card.external ? 'noopener noreferrer' : undefined}
+                        data-analytics-event="open_public_cta"
+                        data-entry-surface={surface}
+                        data-cta-target={card.target}
+                        data-service-category={targetContextMap[card.target]?.category || 'all'}
+                        data-service-intent={targetContextMap[card.target]?.intent || 'all'}
+                        data-catalog-category={targetContextMap[card.target]?.category || 'all'}
+                        data-catalog-intent={targetContextMap[card.target]?.intent || 'all'}
+                        aria-current={activeTarget === card.target ? 'page' : undefined}
+                    >
+                        {activeTarget === card.target && variant === 'telemedicine'
+                            ? locale === 'en'
+                                ? 'Current route'
+                                : 'Ruta actual'
+                            : card.cta}
+                    </a>
+                </article>
+            ))
+        }
+    </div>
+</section>

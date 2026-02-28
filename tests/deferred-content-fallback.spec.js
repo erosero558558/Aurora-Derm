@@ -1,26 +1,28 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Deferred content fallback', () => {
-    test('shows a recovery state instead of empty sections when deferred JSON fails', async ({
+    test('keeps the Public V2 shell and booking bridge visible if public runtime config API fails', async ({
         page,
     }) => {
-        await page.route('**/content/index.json**', (route) => route.abort());
-
-        await page.goto('/', { waitUntil: 'domcontentloaded' });
-
-        const servicios = page.locator('#servicios');
-        await expect(servicios).toBeVisible();
-        await expect(servicios).toContainText(
-            /Arquitectura de atenci.n completa en dermatolog.a|Servicios/i
+        await page.route('**/api.php?resource=public-runtime-config**', (route) =>
+            route.abort()
         );
-        await expect(servicios).not.toContainText(/Cargando contenido/i);
 
-        const serviciosTextLength = await servicios.evaluate(
-            (node) => (node.textContent || '').trim().length
-        );
-        expect(serviciosTextLength).toBeGreaterThan(120);
+        await page.goto('/es/', { waitUntil: 'domcontentloaded' });
+        await page.waitForLoadState('load', { timeout: 20000 }).catch(() => null);
 
-        const linksInFallback = await servicios.locator('a').count();
-        expect(linksInFallback).toBeGreaterThanOrEqual(8);
+        const stage = page.locator('[data-stage-carousel]');
+        await expect(stage).toBeVisible();
+
+        const families = page.locator('[data-program-grid]');
+        await expect(families).toBeVisible();
+        await expect(families.locator('.program-grid__card')).toHaveCount(3);
+
+        const featuredStories = page.locator('[data-featured-story]');
+        await expect(featuredStories).toBeVisible();
+        await expect(featuredStories.locator('.featured-story')).toHaveCount(3);
+
+        await expect(page.locator('#appointmentForm')).toBeVisible();
+        await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
     });
 });

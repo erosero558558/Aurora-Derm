@@ -1,0 +1,77 @@
+---
+import { homePath, telemedicinePath } from '../lib/content.js';
+
+const { locale = 'es', dictionary = {} } = Astro.props;
+const primaryCta =
+    dictionary.hero_cta_primary ||
+    (locale === 'en' ? 'Book assessment' : 'Reservar valoracion');
+const secondaryCta =
+    dictionary.hero_cta_secondary ||
+    (locale === 'en' ? 'Online care' : 'Atencion online');
+const heroTitle =
+    locale === 'en'
+        ? 'Precision dermatology with a faster booking path'
+        : 'Dermatologia de precision con un camino de reserva mas rapido';
+---
+
+<section class="sony-hero" id="inicio">
+    <div class="sony-hero__media">
+        <picture>
+            <source
+                type="image/webp"
+                srcset="/images/optimized/showcase-hero-640.webp 640w, /images/optimized/showcase-hero-1024.webp 1024w, /images/optimized/showcase-hero-1400.webp 1400w"
+                sizes="(max-width: 740px) 100vw, (max-width: 1280px) 95vw, 1220px"
+            />
+            <img
+                src="/images/optimized/showcase-hero-1400.jpg"
+                srcset="/images/optimized/showcase-hero-640.jpg 640w, /images/optimized/showcase-hero-1024.jpg 1024w, /images/optimized/showcase-hero-1400.jpg 1400w"
+                sizes="(max-width: 740px) 100vw, (max-width: 1280px) 95vw, 1220px"
+                alt={locale === 'en' ? 'Dermatology specialist care' : 'Atencion dermatologica especializada'}
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+                width="1400"
+                height="700"
+            />
+        </picture>
+    </div>
+    <div class="sony-hero__overlay"></div>
+    <div class="sony-hero__content">
+        <p class="sony-eyebrow">{dictionary.showcase_eyebrow || 'Dermatologia avanzada'}</p>
+        <h1>{heroTitle}</h1>
+        <p>
+            {
+                dictionary.hero_subtitle ||
+                    'Dermatologia especializada con tecnologia de vanguardia.'
+            }
+        </p>
+        <div class="sony-hero__actions">
+            <a
+                class="sony-btn sony-btn--primary"
+                href={homePath(locale) + '#citas'}
+                data-analytics-event="open_public_cta"
+                data-entry-surface="hero_media_primary"
+                data-cta-target="booking"
+                data-service-category="clinical"
+                data-service-intent="diagnosis"
+                data-catalog-category="all"
+                data-catalog-intent="diagnosis"
+            >
+                {primaryCta}
+            </a>
+            <a
+                class="sony-btn sony-btn--ghost"
+                href={telemedicinePath(locale)}
+                data-analytics-event="open_public_cta"
+                data-entry-surface="hero_media_secondary"
+                data-cta-target="telemedicine"
+                data-service-category="all"
+                data-service-intent="remote"
+                data-catalog-category="all"
+                data-catalog-intent="remote"
+            >
+                {secondaryCta}
+            </a>
+        </div>
+    </div>
+</section>

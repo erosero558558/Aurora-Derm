@@ -1,0 +1,68 @@
+---
+const { locale = 'es', page = {} } = Astro.props;
+const highlights = Array.isArray(page.highlights) ? page.highlights : [];
+const sections = Array.isArray(page.sections) ? page.sections : [];
+const support =
+    page.support ||
+    (locale === 'en'
+        ? 'Need context before booking? Use WhatsApp or review telemedicine first.'
+        : 'Necesitas contexto antes de reservar? Usa WhatsApp o revisa telemedicina primero.');
+---
+
+<section class="sony-section sony-legal-digest" aria-labelledby="legal-digest-heading">
+    <div class="sony-section__head">
+        <p>{locale === 'en' ? 'Policy highlights' : 'Puntos clave'}</p>
+        <h2 id="legal-digest-heading">
+            {locale === 'en'
+                ? 'What matters operationally before continuing.'
+                : 'Lo que importa operativamente antes de continuar.'}
+        </h2>
+    </div>
+    <div class="sony-legal-grid">
+        {
+            highlights.map((item) => (
+                <article class="sony-legal-card">
+                    <p>{item.kicker}</p>
+                    <h3>{item.title}</h3>
+                    <span>{item.body}</span>
+                </article>
+            ))
+        }
+    </div>
+</section>
+
+<section class="sony-section sony-legal-detail" aria-label={locale === 'en' ? 'Legal detail' : 'Detalle legal'}>
+    <div class="sony-detail-grid">
+        {
+            sections.map((section) => (
+                <article>
+                    <h2>{section.title}</h2>
+                    <p>{section.body}</p>
+                    {Array.isArray(section.items) && section.items.length > 0 && (
+                        <ul>
+                            {section.items.map((item) => <li>{item}</li>)}
+                        </ul>
+                    )}
+                </article>
+            ))
+        }
+    </div>
+</section>
+
+<section class="sony-section sony-legal-support">
+    <p>{locale === 'en' ? 'Support path' : 'Ruta de apoyo'}</p>
+    <h2>{support}</h2>
+    <div class="sony-legal-support__actions">
+        <a class="sony-btn sony-btn--primary" href={locale === 'en' ? '/en/#citas' : '/es/#citas'}>
+            {locale === 'en' ? 'Continue to booking' : 'Continuar a reserva'}
+        </a>
+        <a
+            class="sony-btn sony-btn--ghost"
+            href="https://wa.me/593982453672"
+            rel="noopener noreferrer"
+            target="_blank"
+        >
+            WhatsApp
+        </a>
+    </div>
+</section>

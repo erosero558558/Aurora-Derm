@@ -1,0 +1,381 @@
+---
+import {
+    getServiceIntentDefinitions,
+    homePath,
+    serviceHubPath,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+
+const categoryCopy = {
+    es: {
+        all: {
+            label: 'Todas las familias',
+            eyebrow: 'Contexto activo del catalogo',
+            title: 'Usa familia e intencion para quitar friccion antes de reservar.',
+            description:
+                'Cuando el hub no filtra nada, la mejor lectura sigue siendo la mas amplia: comparar familias, elegir la intencion correcta y luego pasar a booking o telemedicina.',
+            signals: {
+                step: 'Lectura del caso',
+                title: 'Empieza amplio cuando el problema todavia no esta bien encuadrado',
+                body: 'El catalogo completo funciona mejor para diagnostico inicial, dudas mixtas o casos donde todavia no conviene comprometerse con una sola tecnica.',
+            },
+            escalation: {
+                step: 'Cambio de ruta',
+                title: 'El siguiente paso debe simplificar, no agregar otra capa de duda',
+                body: 'Cuando la intencion ya se vuelve clara, conviene pasar a una familia concreta o a telemedicina para no navegar el catalogo completo demasiado tiempo.',
+            },
+        },
+        clinical: {
+            label: 'Dermatologia clinica',
+            eyebrow: 'Contexto activo del catalogo',
+            title: 'Las rutas clinicas funcionan mejor cuando el caso se lee con evidencia y amplitud.',
+            description:
+                'Aqui la conversion no depende de vender una tecnica. Depende de definir si el caso necesita encuadre diagnostico, control medico o escalamiento a examen presencial.',
+            signals: {
+                step: 'Prueba util',
+                title: 'Fotos, sintomas y tiempo de evolucion pesan mas que una sola impresion',
+                body: 'La mejor señal clinica compara lesiones, brotes, picor o cambios de tolerancia con una referencia consistente y medible.',
+            },
+            escalation: {
+                step: 'Escalamiento',
+                title: 'Procedimiento o dermatoscopia cuando la ruta clinica ya no basta',
+                body: 'Si aparecen dudas diagnosticas, lesiones sospechosas o baja respuesta, la siguiente accion correcta es ampliar estudio o pasar a consultorio.',
+            },
+        },
+        aesthetic: {
+            label: 'Estetica medica',
+            eyebrow: 'Contexto activo del catalogo',
+            title: 'Las rutas esteticas convierten mejor cuando el resultado se lee por fases y no por ansiedad.',
+            description:
+                'En estetica importa que el paciente llegue con objetivo claro, baseline visual y una ventana de control realista para no medir demasiado pronto.',
+            signals: {
+                step: 'Prueba util',
+                title: 'Baseline visual, zonas definidas y ventana correcta de revision',
+                body: 'La señal fuerte en estetica no es la urgencia. Es comparar cambio visible con fotos consistentes y una expectativa que no presione el tratamiento.',
+            },
+            escalation: {
+                step: 'Escalamiento',
+                title: 'Combinar o repetir solo cuando la evolucion ya es interpretable',
+                body: 'La mejor continuidad decide si conviene esperar, repetir o combinar otra tecnica medica sin forzar una segunda fase antes de tiempo.',
+            },
+        },
+        children: {
+            label: 'Dermatologia pediatrica',
+            eyebrow: 'Contexto activo del catalogo',
+            title: 'Las rutas pediatricas funcionan mejor cuando familia y cuidado en casa entran desde el principio.',
+            description:
+                'Aqui el valor no esta solo en el acto medico. Tambien esta en que cuidadores entiendan alertas, rutina y momento correcto de volver.',
+            signals: {
+                step: 'Prueba util',
+                title: 'Rutina realista, fotos simples y observacion repetible',
+                body: 'La señal mas fuerte en pediatria es que el plan se pueda sostener en casa y que la familia observe el cambio sin complejidad innecesaria.',
+            },
+            escalation: {
+                step: 'Escalamiento',
+                title: 'Volver antes si el ritmo del caso cambia',
+                body: 'Dolor, empeoramiento rapido, nuevas lesiones o mala tolerancia justifican revaluar pronto en lugar de insistir con la misma rutina.',
+            },
+        },
+    },
+    en: {
+        all: {
+            label: 'All families',
+            eyebrow: 'Active catalogue context',
+            title: 'Use family and intent to remove friction before booking.',
+            description:
+                'When the hub is not filtered, the strongest reading is still the broadest one: compare families, choose the right intent, and then move into booking or telemedicine.',
+            signals: {
+                step: 'Case read',
+                title: 'Start broad when the problem is still not framed well enough',
+                body: 'The full catalogue works best for initial diagnosis, mixed uncertainty, or cases where committing to a single technique would still be premature.',
+            },
+            escalation: {
+                step: 'Route shift',
+                title: 'The next step should simplify, not add another layer of doubt',
+                body: 'Once the intent becomes clearer, the right move is to narrow into a family or switch to telemedicine instead of staying too long in the full catalogue.',
+            },
+        },
+        clinical: {
+            label: 'Clinical dermatology',
+            eyebrow: 'Active catalogue context',
+            title: 'Clinical routes work better when the case is read with evidence and enough breadth.',
+            description:
+                'Conversion here does not depend on selling a technique. It depends on defining whether the case needs diagnostic framing, medical control, or escalation to in-person evaluation.',
+            signals: {
+                step: 'Useful evidence',
+                title: 'Images, symptoms, and timeline matter more than a single impression',
+                body: 'The strongest clinical signal compares lesions, flares, itch, or tolerance changes against a consistent reference that can actually be reviewed.',
+            },
+            escalation: {
+                step: 'Escalation',
+                title: 'Procedure or dermoscopy when the clinical route is no longer enough',
+                body: 'If diagnostic uncertainty, suspicious lesions, or poor response appear, the next correct action is broader testing or in-person review.',
+            },
+        },
+        aesthetic: {
+            label: 'Medical aesthetics',
+            eyebrow: 'Active catalogue context',
+            title: 'Aesthetic routes convert better when the outcome is read in phases, not through anxiety.',
+            description:
+                'In aesthetics it matters that the patient arrives with a clear goal, a visual baseline, and a realistic review window so the result is not judged too early.',
+            signals: {
+                step: 'Useful evidence',
+                title: 'Visual baseline, defined areas, and the right review window',
+                body: 'The strongest signal in aesthetics is not urgency. It is comparing visible change with consistent images and an expectation that does not pressure the treatment.',
+            },
+            escalation: {
+                step: 'Escalation',
+                title: 'Repeat or combine only once evolution is readable',
+                body: 'The best continuity decides whether to wait, repeat, or combine another medical technique without forcing a second phase too early.',
+            },
+        },
+        children: {
+            label: 'Pediatric dermatology',
+            eyebrow: 'Active catalogue context',
+            title: 'Pediatric routes work better when family and home care enter from the first step.',
+            description:
+                'The value here is not only in the medical act. It is also in making sure caregivers understand alerts, routines, and the right moment to come back.',
+            signals: {
+                step: 'Useful evidence',
+                title: 'Realistic routine, simple images, and repeatable observation',
+                body: 'The strongest pediatric signal is that the plan can actually be sustained at home and that the family can observe change without unnecessary complexity.',
+            },
+            escalation: {
+                step: 'Escalation',
+                title: 'Come back earlier if the pace of the case changes',
+                body: 'Pain, fast worsening, new lesions, or poor tolerance justify reassessment sooner instead of pushing the same routine for too long.',
+            },
+        },
+    },
+};
+
+const intentDefinitions = getServiceIntentDefinitions(locale);
+const intentIndex = Object.fromEntries(
+    intentDefinitions.map((item) => [item.id, item])
+);
+const currentCategoryCopy = categoryCopy[locale] || categoryCopy.es;
+const actionCopy =
+    locale === 'en'
+        ? {
+              eyebrow: 'Active route',
+              titlePrefix: 'Current intent:',
+              ctaByIntent: {
+                  all: 'Keep exploring the catalogue',
+                  diagnosis: 'Book assessment',
+                  inflammation: 'Book medical assessment',
+                  procedures: 'Book procedural review',
+                  rejuvenation: 'Book aesthetic assessment',
+                  pediatric: 'View pediatric route',
+                  remote: 'Open telemedicine',
+              },
+          }
+        : {
+              eyebrow: 'Ruta activa',
+              titlePrefix: 'Intencion activa:',
+              ctaByIntent: {
+                  all: 'Seguir explorando el catalogo',
+                  diagnosis: 'Reservar valoracion',
+                  inflammation: 'Reservar control medico',
+                  procedures: 'Reservar revision procedimental',
+                  rejuvenation: 'Reservar valoracion estetica',
+                  pediatric: 'Ver ruta pediatrica',
+                  remote: 'Abrir telemedicina',
+              },
+          };
+
+const intentTargets = {
+    all: serviceHubPath(locale),
+    diagnosis: `${homePath(locale)}?service=consulta#citas`,
+    inflammation: `${homePath(locale)}?service=consulta#citas`,
+    procedures: `${homePath(locale)}?service=consulta#citas`,
+    rejuvenation: `${homePath(locale)}?service=consulta#citas`,
+    pediatric: servicePath(locale, 'dermatologia-pediatrica'),
+    remote: telemedicinePath(locale),
+};
+---
+
+<section
+    class="sony-section sony-section--compact sony-hub-context"
+    data-hub-active-context
+    data-locale={locale}
+>
+    <div class="sony-section__head">
+        <p data-hub-context-eyebrow>{currentCategoryCopy.all.eyebrow}</p>
+        <h2 data-hub-context-title>{currentCategoryCopy.all.title}</h2>
+        <span data-hub-context-description>{currentCategoryCopy.all.description}</span>
+    </div>
+    <div class="sony-hub-context__status">
+        <small data-hub-context-category>{currentCategoryCopy.all.label}</small>
+        <small data-hub-context-intent>{intentIndex.all?.label || 'All'}</small>
+    </div>
+    <div class="sony-hub-context__grid">
+        <article class="sony-hub-context__card sony-hub-context__card--active" data-hub-context-card>
+            <span data-hub-context-card-step>{actionCopy.eyebrow}</span>
+            <h3 data-hub-context-card-title>
+                {actionCopy.titlePrefix} {intentIndex.all?.label || 'All'}
+            </h3>
+            <p data-hub-context-card-body>{intentIndex.all?.description || ''}</p>
+            <a
+                class="sony-btn sony-btn--ghost"
+                href={intentTargets.all}
+                data-hub-context-cta
+                data-analytics-event="open_public_cta"
+                data-entry-surface="hub_active_context"
+                data-cta-target="service_hub"
+                data-service-category="all"
+                data-service-intent="all"
+                data-catalog-category="all"
+                data-catalog-intent="all"
+            >
+                {actionCopy.ctaByIntent.all}
+            </a>
+        </article>
+        <article class="sony-hub-context__card" data-hub-context-card>
+            <span data-hub-context-card-step>{currentCategoryCopy.all.signals.step}</span>
+            <h3 data-hub-context-card-title>{currentCategoryCopy.all.signals.title}</h3>
+            <p data-hub-context-card-body>{currentCategoryCopy.all.signals.body}</p>
+        </article>
+        <article class="sony-hub-context__card" data-hub-context-card>
+            <span data-hub-context-card-step>{currentCategoryCopy.all.escalation.step}</span>
+            <h3 data-hub-context-card-title>{currentCategoryCopy.all.escalation.title}</h3>
+            <p data-hub-context-card-body>{currentCategoryCopy.all.escalation.body}</p>
+        </article>
+    </div>
+    <script
+        is:inline
+        define:vars={{
+            currentCategoryCopy,
+            intentIndex,
+            actionCopy,
+            intentTargets,
+        }}
+    >
+        document.querySelectorAll('[data-hub-active-context]').forEach((root) => {
+            const categoryNode = root.querySelector('[data-hub-context-category]');
+            const intentNode = root.querySelector('[data-hub-context-intent]');
+            const eyebrowNode = root.querySelector('[data-hub-context-eyebrow]');
+            const titleNode = root.querySelector('[data-hub-context-title]');
+            const descriptionNode = root.querySelector('[data-hub-context-description]');
+            const cards = Array.from(root.querySelectorAll('[data-hub-context-card]'));
+            const firstCardCta = root.querySelector('[data-hub-context-cta]');
+
+            const resolveCategory = (categoryId) =>
+                currentCategoryCopy[categoryId] || currentCategoryCopy.all;
+            const resolveIntent = (intentId) =>
+                intentIndex[intentId] || intentIndex.all;
+            const resolveRouteCategory = (categoryId, intentId) => {
+                if (intentId === 'remote') {
+                    return categoryId !== 'all' ? categoryId : 'all';
+                }
+                if (intentId === 'pediatric') {
+                    return 'children';
+                }
+                if (intentId === 'rejuvenation') {
+                    return categoryId !== 'all' ? categoryId : 'aesthetic';
+                }
+                if (
+                    intentId === 'diagnosis' ||
+                    intentId === 'inflammation' ||
+                    intentId === 'procedures'
+                ) {
+                    return categoryId !== 'all' ? categoryId : 'clinical';
+                }
+                return categoryId || 'all';
+            };
+            const resolveCtaTarget = (intentId) => {
+                if (intentId === 'remote') return 'telemedicine';
+                if (intentId === 'pediatric') return 'service_detail';
+                if (intentId === 'all') return 'service_hub';
+                return 'booking';
+            };
+
+            const setCard = (card, payload, { ctaLabel = '', ctaHref = '' } = {}) => {
+                if (!card || !payload) return;
+                const stepNode = card.querySelector('[data-hub-context-card-step]');
+                const titleNode = card.querySelector('[data-hub-context-card-title]');
+                const bodyNode = card.querySelector('[data-hub-context-card-body]');
+                const ctaNode = card.querySelector('[data-hub-context-cta]');
+
+                if (stepNode) stepNode.textContent = payload.step || '';
+                if (titleNode) titleNode.textContent = payload.title || '';
+                if (bodyNode) bodyNode.textContent = payload.body || '';
+
+                if (ctaNode) {
+                    if (ctaLabel && ctaHref) {
+                        ctaNode.textContent = ctaLabel;
+                        ctaNode.setAttribute('href', ctaHref);
+                        ctaNode.removeAttribute('hidden');
+                    } else {
+                        ctaNode.setAttribute('hidden', 'true');
+                    }
+                }
+            };
+
+            const applyState = (detail = {}) => {
+                const categoryId = String(detail.category || 'all').toLowerCase();
+                const intentId = String(detail.intent || 'all').toLowerCase();
+                const category = resolveCategory(categoryId);
+                const intent = resolveIntent(intentId);
+
+                if (eyebrowNode) eyebrowNode.textContent = category.eyebrow || '';
+                if (titleNode) titleNode.textContent = category.title || '';
+                if (descriptionNode) {
+                    descriptionNode.textContent =
+                        `${category.description || ''} ${intent.description || ''}`.trim();
+                }
+                if (categoryNode) categoryNode.textContent = category.label || '';
+                if (intentNode) intentNode.textContent = intent.label || '';
+
+                setCard(
+                    cards[0],
+                    {
+                        step: actionCopy.eyebrow,
+                        title: `${actionCopy.titlePrefix} ${intent.label || ''}`.trim(),
+                        body: intent.description || '',
+                    },
+                    {
+                        ctaLabel: actionCopy.ctaByIntent[intentId] || actionCopy.ctaByIntent.all,
+                        ctaHref: intentTargets[intentId] || intentTargets.all,
+                    }
+                );
+                setCard(cards[1], category.signals);
+                setCard(cards[2], category.escalation);
+
+                if (firstCardCta) {
+                    const routeCategory = resolveRouteCategory(categoryId, intentId);
+                    firstCardCta.setAttribute(
+                        'data-cta-target',
+                        resolveCtaTarget(intentId)
+                    );
+                    firstCardCta.setAttribute(
+                        'data-service-category',
+                        routeCategory
+                    );
+                    firstCardCta.setAttribute('data-service-intent', intentId);
+                    firstCardCta.setAttribute(
+                        'data-catalog-category',
+                        categoryId
+                    );
+                    firstCardCta.setAttribute('data-catalog-intent', intentId);
+                    firstCardCta.setAttribute(
+                        'data-hub-context-intent-target',
+                        intentId
+                    );
+                }
+            };
+
+            const search = new URL(window.location.href).searchParams;
+            applyState({
+                category: search.get('category') || 'all',
+                intent: search.get('intent') || 'all',
+            });
+
+            window.addEventListener('service-hub-state-change', (event) => {
+                applyState(event?.detail || {});
+            });
+        });
+    </script>
+</section>

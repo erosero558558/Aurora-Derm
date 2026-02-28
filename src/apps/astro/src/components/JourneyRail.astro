@@ -1,0 +1,175 @@
+---
+import { homePath, serviceHubPath, telemedicinePath } from '../lib/content.js';
+
+const { locale = 'es', variant = 'service' } = Astro.props;
+const ctaContext =
+    variant === 'telemedicine'
+        ? {
+              primary: {
+                  serviceCategory: 'all',
+                  serviceIntent: 'remote',
+                  catalogCategory: 'all',
+                  catalogIntent: 'remote',
+                  ctaTarget: 'booking',
+              },
+              secondary: {
+                  serviceCategory: 'all',
+                  serviceIntent: 'all',
+                  catalogCategory: 'all',
+                  catalogIntent: 'all',
+                  ctaTarget: 'service_hub',
+              },
+          }
+        : {
+              primary: {
+                  serviceCategory: 'clinical',
+                  serviceIntent: 'diagnosis',
+                  catalogCategory: 'all',
+                  catalogIntent: 'diagnosis',
+                  ctaTarget: 'booking',
+              },
+              secondary: {
+                  serviceCategory: 'all',
+                  serviceIntent: 'remote',
+                  catalogCategory: 'all',
+                  catalogIntent: 'remote',
+                  ctaTarget: 'telemedicine',
+              },
+          };
+
+const dictionary =
+    variant === 'telemedicine'
+        ? {
+              eyebrow:
+                  locale === 'en'
+                      ? 'Remote care path'
+                      : 'Ruta de atencion remota',
+              title:
+                  locale === 'en'
+                      ? 'Telemedicine stays structured from first message to follow-up.'
+                      : 'La telemedicina mantiene estructura desde el primer mensaje hasta el seguimiento.',
+              description:
+                  locale === 'en'
+                      ? 'We use a predictable flow so the online consultation remains useful, fast, and easy to escalate when needed.'
+                      : 'Usamos un flujo predecible para que la consulta online sea util, rapida y facil de escalar si hace falta.',
+              steps: [
+                  {
+                      number: '01',
+                      title: 'Share your case context',
+                      body: 'Choose service, upload helpful photos if you have them, and give us the shortest useful summary.',
+                  },
+                  {
+                      number: '02',
+                      title: 'Live dermatology review',
+                      body: 'The consultation focuses on symptoms, history, triggers, and image quality before any recommendation is defined.',
+                  },
+                  {
+                      number: '03',
+                      title: 'Plan, prescription, and next action',
+                      body: 'You leave with a clear plan: treatment, skincare adjustments, tests, or in-person review if the case needs it.',
+                  },
+                  {
+                      number: '04',
+                      title: 'Follow-up without friction',
+                      body: 'When the case allows it, adjustments and monitoring can continue remotely to avoid unnecessary travel.',
+                  },
+              ],
+              primaryLabel: 'Start online booking',
+              secondaryLabel: 'See all services',
+              primaryHref: `${homePath(locale)}#citas`,
+              secondaryHref: serviceHubPath(locale),
+          }
+        : {
+              eyebrow:
+                  locale === 'en'
+                      ? 'Care pathway'
+                      : 'Recorrido asistencial',
+              title:
+                  locale === 'en'
+                      ? 'Each service follows a clear clinical sequence.'
+                      : 'Cada servicio sigue una secuencia clinica clara.',
+              description:
+                  locale === 'en'
+                      ? 'The public page tells you what usually happens next so the booking CTA is not disconnected from the real care path.'
+                      : 'La pagina publica anticipa lo que suele pasar despues para que el CTA de reserva no quede desconectado del recorrido real.',
+              steps: [
+                  {
+                      number: '01',
+                      title: 'Initial assessment',
+                      body: 'We define concern, urgency, history, and whether the case starts better in person or through telemedicine.',
+                  },
+                  {
+                      number: '02',
+                      title: 'Diagnosis and scope',
+                      body: 'We confirm if the selected service fits the case or whether a broader dermatology evaluation is safer.',
+                  },
+                  {
+                      number: '03',
+                      title: 'Protocol or procedure',
+                      body: 'Treatment timing, number of sessions, expectations, recovery, and pricing are defined with medical criteria.',
+                  },
+                  {
+                      number: '04',
+                      title: 'Monitoring and adjustments',
+                      body: 'The plan stays open to combine services, adjust skincare, or move to telemedicine follow-up when useful.',
+                  },
+              ],
+              primaryLabel:
+                  locale === 'en' ? 'Book an assessment' : 'Reservar valoracion',
+              secondaryLabel:
+                  locale === 'en'
+                      ? 'Telemedicine first'
+                      : 'Empezar por telemedicina',
+              primaryHref: `${homePath(locale)}#citas`,
+              secondaryHref: telemedicinePath(locale),
+          };
+---
+
+<section class="sony-section sony-journey" data-journey-variant={variant}>
+    <div class="sony-section__head">
+        <p>{dictionary.eyebrow}</p>
+        <h2>{dictionary.title}</h2>
+        <span>{dictionary.description}</span>
+    </div>
+    <div class="sony-journey__grid">
+        {
+            dictionary.steps.map((step) => (
+                <article class="sony-journey__card">
+                    <p>{step.number}</p>
+                    <h3>{step.title}</h3>
+                    <span>{step.body}</span>
+                </article>
+            ))
+        }
+    </div>
+    <div class="sony-journey__actions">
+        <a
+            class="sony-btn sony-btn--primary"
+            href={dictionary.primaryHref}
+            data-analytics-event="open_public_cta"
+            data-entry-surface="journey_rail_primary"
+            data-cta-target={ctaContext.primary.ctaTarget}
+            data-route-variant={variant}
+            data-service-category={ctaContext.primary.serviceCategory}
+            data-service-intent={ctaContext.primary.serviceIntent}
+            data-catalog-category={ctaContext.primary.catalogCategory}
+            data-catalog-intent={ctaContext.primary.catalogIntent}
+        >
+            {dictionary.primaryLabel}
+        </a>
+        <a
+            class="sony-btn sony-btn--ghost"
+            href={dictionary.secondaryHref}
+            data-analytics-event="open_public_cta"
+            data-entry-surface="journey_rail_secondary"
+            data-cta-target={ctaContext.secondary.ctaTarget}
+            data-route-variant={variant}
+            data-service-category={ctaContext.secondary.serviceCategory}
+            data-service-intent={ctaContext.secondary.serviceIntent}
+            data-catalog-category={ctaContext.secondary.catalogCategory}
+            data-catalog-intent={ctaContext.secondary.catalogIntent}
+        >
+            {dictionary.secondaryLabel}
+        </a>
+    </div>
+</section>

@@ -1,0 +1,463 @@
+---
+import {
+    getServiceIntentDefinitions,
+    homePath,
+    serviceHubPath,
+    servicePath,
+    telemedicinePath,
+} from '../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+
+const categoryCopy = {
+    es: {
+        all: {
+            label: 'Todas las familias',
+            eyebrow: 'Confianza activa del catalogo',
+            title: 'La prueba correcta cambia con la familia y con la intencion de entrada.',
+            description:
+                'El hub no solo ordena servicios. Tambien cambia que evidencia genera confianza suficiente para pasar a booking, telemedicina o una ruta mas estrecha.',
+            authority: {
+                step: 'Autoridad util',
+                title: 'Comparar familias evita forzar una tecnica antes de entender bien el caso',
+                body: 'Cuando el filtro sigue amplio, la mejor senal de autoridad es que el sistema pueda orientar la puerta de entrada sin vender una sola solucion demasiado pronto.',
+            },
+            operations: {
+                step: 'Operacion estable',
+                title: 'Booking, telemedicina y lectura inicial siguen alineados',
+                body: 'La confianza operativa aparece cuando el paciente entiende que puede empezar por valoracion, resolver dudas online o seguir comparando sin perder el hilo del caso.',
+            },
+            handoff: {
+                step: 'Handoff claro',
+                title: 'La siguiente accion debe recortar friccion, no añadir otra capa de complejidad',
+                body: 'En el estado abierto del catalogo, la mejor continuidad consiste en reducir opciones hacia una familia concreta o una consulta inicial.',
+            },
+        },
+        clinical: {
+            label: 'Dermatologia clinica',
+            eyebrow: 'Confianza activa del catalogo',
+            title: 'La confianza clinica entra cuando el caso puede leerse con contexto, sintomas y seguimiento.',
+            description:
+                'En rutas clinicas la conversion mejora cuando el paciente entiende que hay criterio para observar evolucion, sospecha y escalamiento, no solo una respuesta cosmetica rapida.',
+            authority: {
+                step: 'Credencial medica',
+                title: 'Lectura diagnostica antes de prometer una tecnica',
+                body: 'Aqui pesa mas la capacidad de encuadrar brotes, lesiones, inflamacion y tolerancia que la venta de un solo procedimiento.',
+            },
+            operations: {
+                step: 'Operacion estable',
+                title: 'Fotos, sintomas y tiempo de evolucion sostienen mejor la decision',
+                body: 'La ruta clinica gana confianza cuando la observacion es comparable y permite decidir si conviene control, dermatoscopia o cambio de plan.',
+            },
+            handoff: {
+                step: 'Escalamiento',
+                title: 'Se escala cuando la incertidumbre diagnostica o la respuesta lo exigen',
+                body: 'Una ruta clinica robusta deja claro cuando el siguiente paso correcto ya no es esperar, sino ampliar estudio o pasar a consultorio.',
+            },
+        },
+        aesthetic: {
+            label: 'Estetica medica',
+            eyebrow: 'Confianza activa del catalogo',
+            title: 'La confianza estetica depende de expectativas sobrias, baseline y revision en el tiempo correcto.',
+            description:
+                'La conversion estetica mejora cuando el sistema encuadra objetivo, areas a tratar y ventanas de control realistas en lugar de empujar a decidir con ansiedad.',
+            authority: {
+                step: 'Credencial medica',
+                title: 'Resultado guiado por evaluacion, no por impulso',
+                body: 'La autoridad aqui se demuestra cuando el caso entra por criterio medico, combinacion de tecnicas y secuencia de revisiones, no por una promesa inmediata.',
+            },
+            operations: {
+                step: 'Operacion estable',
+                title: 'Baseline visual y objetivo concreto reducen ruido en la decision',
+                body: 'La confianza sube cuando el paciente entiende que el progreso se lee por zonas, fotos comparables y expectativas que no adelantan el juicio del tratamiento.',
+            },
+            handoff: {
+                step: 'Escalamiento',
+                title: 'Se combina o repite solo cuando la evolucion ya es interpretable',
+                body: 'La mejor continuidad define cuando conviene seguir igual, sumar otra tecnica o pasar a una valoracion mas amplia antes de insistir.',
+            },
+        },
+        children: {
+            label: 'Dermatologia pediatrica',
+            eyebrow: 'Confianza activa del catalogo',
+            title: 'La confianza pediatrica necesita claridad para familia, rutina en casa y alertas simples.',
+            description:
+                'En rutas pediatricas la confianza no sale solo del acto medico. Sale de que el cuidador entienda como observar, cuando volver y como sostener el plan en casa.',
+            authority: {
+                step: 'Credencial medica',
+                title: 'Plan claro para familia, no solo para consultorio',
+                body: 'La autoridad pediatrica se percibe cuando el sistema traduce el cuidado en pasos realistas que cuidadores pueden repetir sin confundir señales de alarma.',
+            },
+            operations: {
+                step: 'Operacion estable',
+                title: 'Rutina, tolerancia y observacion repetible sostienen la adherencia',
+                body: 'La confianza crece cuando la familia sabe que mirar, que cambios esperar y que parte del seguimiento puede resolverse sin improvisar.',
+            },
+            handoff: {
+                step: 'Escalamiento',
+                title: 'Se vuelve antes si cambia el ritmo del caso o la tolerancia',
+                body: 'La continuidad correcta explica cuando persistir, cuando ajustar y cuando no conviene esperar mas con el mismo plan.',
+            },
+        },
+    },
+    en: {
+        all: {
+            label: 'All families',
+            eyebrow: 'Active catalogue trust',
+            title: 'The right proof changes with the family and the intake intent.',
+            description:
+                'The hub does more than sort services. It also changes what kind of evidence builds enough trust to move into booking, telemedicine, or a narrower route.',
+            authority: {
+                step: 'Useful authority',
+                title: 'Comparing families prevents forcing a technique too early',
+                body: 'When the filter stays broad, the strongest authority signal is that the system can direct the entry point without selling a single solution too soon.',
+            },
+            operations: {
+                step: 'Stable operations',
+                title: 'Booking, telemedicine, and first read stay aligned',
+                body: 'Operational trust appears when the visitor understands they can start with assessment, resolve uncertainty online, or keep comparing without losing the case thread.',
+            },
+            handoff: {
+                step: 'Clear handoff',
+                title: 'The next action should cut friction, not add another layer of complexity',
+                body: 'In the open catalogue state, the best continuity narrows options into a specific family or a first consultation.',
+            },
+        },
+        clinical: {
+            label: 'Clinical dermatology',
+            eyebrow: 'Active catalogue trust',
+            title: 'Clinical trust appears when the case can be read through context, symptoms, and follow-up.',
+            description:
+                'Clinical conversion improves when the visitor understands there is a framework for evolution, suspicion, and escalation, not just a fast cosmetic answer.',
+            authority: {
+                step: 'Medical credential',
+                title: 'Diagnostic reading before promising a technique',
+                body: 'What matters here is the ability to frame flares, lesions, inflammation, and tolerance before narrowing into a single procedure.',
+            },
+            operations: {
+                step: 'Stable operations',
+                title: 'Images, symptoms, and timeline support the decision better',
+                body: 'The clinical route builds trust when observation is comparable and helps decide whether control, dermoscopy, or a plan change is the right next step.',
+            },
+            handoff: {
+                step: 'Escalation',
+                title: 'Escalate when diagnostic uncertainty or response makes it necessary',
+                body: 'A robust clinical route makes clear when waiting is no longer correct and broader testing or in-person review is needed.',
+            },
+        },
+        aesthetic: {
+            label: 'Medical aesthetics',
+            eyebrow: 'Active catalogue trust',
+            title: 'Aesthetic trust depends on sober expectations, baseline images, and the right review window.',
+            description:
+                'Aesthetic conversion improves when the system frames goals, treatment areas, and realistic control windows instead of pushing fast decisions through anxiety.',
+            authority: {
+                step: 'Medical credential',
+                title: 'Outcome led by evaluation, not impulse',
+                body: 'Authority here is proven when the case enters through medical judgement, treatment sequencing, and review windows instead of an immediate promise.',
+            },
+            operations: {
+                step: 'Stable operations',
+                title: 'Visual baseline and concrete goals remove noise from the choice',
+                body: 'Trust rises when the visitor understands progress is read through defined areas, comparable images, and expectations that do not rush judgement.',
+            },
+            handoff: {
+                step: 'Escalation',
+                title: 'Repeat or combine only once evolution is readable',
+                body: 'The best continuity defines when to stay the course, add another technique, or broaden assessment before pushing harder.',
+            },
+        },
+        children: {
+            label: 'Pediatric dermatology',
+            eyebrow: 'Active catalogue trust',
+            title: 'Pediatric trust needs clarity for caregivers, home routines, and simple alerts.',
+            description:
+                'In pediatric routes, trust does not come only from the medical act. It comes from making sure caregivers know how to observe, when to come back, and how to sustain the plan at home.',
+            authority: {
+                step: 'Medical credential',
+                title: 'Clear plan for families, not only for the clinic room',
+                body: 'Pediatric authority is felt when the system translates care into realistic steps caregivers can repeat without missing alarm signals.',
+            },
+            operations: {
+                step: 'Stable operations',
+                title: 'Routine, tolerance, and repeatable observation sustain adherence',
+                body: 'Trust grows when the family knows what to watch, what changes to expect, and what part of follow-up can be handled without improvisation.',
+            },
+            handoff: {
+                step: 'Escalation',
+                title: 'Come back sooner if the pace of the case or tolerance changes',
+                body: 'The right continuity explains when to persist, when to adjust, and when waiting on the same plan is no longer appropriate.',
+            },
+        },
+    },
+};
+
+const intentDefinitions = getServiceIntentDefinitions(locale);
+const intentIndex = Object.fromEntries(intentDefinitions.map((item) => [item.id, item]));
+const trustCopy = categoryCopy[locale] || categoryCopy.es;
+const actionCopy =
+    locale === 'en'
+        ? {
+              eyebrow: 'Intent signal',
+              titlePrefix: 'Trust priority:',
+              recommendations: {
+                  all: {
+                      label: 'Keep exploring the catalogue',
+                      href: serviceHubPath(locale),
+                      note: 'Stay broad while the case still needs framing before selecting one family.',
+                  },
+                  diagnosis: {
+                      label: 'Book assessment',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'Assessment is the fastest path when the case still needs medical framing.',
+                  },
+                  inflammation: {
+                      label: 'Book medical review',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'Inflammatory cases convert better when symptoms and follow-up are reviewed early.',
+                  },
+                  procedures: {
+                      label: 'Book procedural review',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'Procedure-led intent needs fit, sequence, and recovery reviewed before committing.',
+                  },
+                  rejuvenation: {
+                      label: 'Book aesthetic assessment',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'Aesthetic intent becomes more credible when goals and baseline images are aligned first.',
+                  },
+                  pediatric: {
+                      label: 'View pediatric route',
+                      href: servicePath(locale, 'dermatologia-pediatrica'),
+                      note: 'Caregiver clarity and home routine matter enough to justify a cleaner pediatric entry.',
+                  },
+                  remote: {
+                      label: 'Open telemedicine',
+                      href: telemedicinePath(locale),
+                      note: 'Remote intent builds trust when image review and next-step clarity can happen before travel.',
+                  },
+              },
+          }
+        : {
+              eyebrow: 'Senal de intencion',
+              titlePrefix: 'Prioridad de confianza:',
+              recommendations: {
+                  all: {
+                      label: 'Seguir explorando el catalogo',
+                      href: serviceHubPath(locale),
+                      note: 'Conviene seguir amplio mientras el caso todavia necesita encuadre antes de elegir una sola familia.',
+                  },
+                  diagnosis: {
+                      label: 'Reservar valoracion',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'La valoracion es la ruta mas limpia cuando el caso todavia necesita lectura medica inicial.',
+                  },
+                  inflammation: {
+                      label: 'Reservar control medico',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'Los casos inflamatorios convierten mejor cuando sintomas y seguimiento se revisan pronto.',
+                  },
+                  procedures: {
+                      label: 'Reservar revision procedimental',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'La intencion procedimental necesita revisar fit, secuencia y recuperacion antes de comprometerse.',
+                  },
+                  rejuvenation: {
+                      label: 'Reservar valoracion estetica',
+                      href: `${homePath(locale)}?service=consulta#citas`,
+                      note: 'La intencion estetica gana credibilidad cuando objetivo y baseline visual se alinean primero.',
+                  },
+                  pediatric: {
+                      label: 'Ver ruta pediatrica',
+                      href: servicePath(locale, 'dermatologia-pediatrica'),
+                      note: 'La claridad para cuidadores y la rutina en casa justifican una entrada pediatrica mas limpia.',
+                  },
+                  remote: {
+                      label: 'Abrir telemedicina',
+                      href: telemedicinePath(locale),
+                      note: 'La intencion remota genera confianza cuando revision de imagenes y siguiente paso pueden resolverse antes del traslado.',
+                  },
+              },
+          };
+
+const allRecommendation = actionCopy.recommendations.all;
+---
+
+<section
+    class="sony-section sony-section--compact sony-hub-trust"
+    data-hub-trust-rail
+    data-locale={locale}
+>
+    <div class="sony-section__head">
+        <p data-hub-trust-eyebrow>{trustCopy.all.eyebrow}</p>
+        <h2 data-hub-trust-title>{trustCopy.all.title}</h2>
+        <span data-hub-trust-description>{trustCopy.all.description}</span>
+    </div>
+    <div class="sony-hub-trust__status">
+        <small data-hub-trust-category>{trustCopy.all.label}</small>
+        <small data-hub-trust-intent>{intentIndex.all?.label || 'All'}</small>
+    </div>
+    <div class="sony-hub-trust__grid">
+        <article class="sony-hub-trust__card sony-hub-trust__card--active" data-hub-trust-card>
+            <span data-hub-trust-card-step>{actionCopy.eyebrow}</span>
+            <h3 data-hub-trust-card-title>
+                {actionCopy.titlePrefix} {intentIndex.all?.label || 'All'}
+            </h3>
+            <p data-hub-trust-card-body>{allRecommendation.note}</p>
+            <a
+                class="sony-btn sony-btn--ghost"
+                href={allRecommendation.href}
+                data-hub-trust-cta
+                data-analytics-event="open_public_cta"
+                data-entry-surface="hub_trust_signal"
+                data-cta-target="service_hub"
+                data-service-category="all"
+                data-service-intent="all"
+                data-catalog-category="all"
+                data-catalog-intent="all"
+            >
+                {allRecommendation.label}
+            </a>
+        </article>
+        <article class="sony-hub-trust__card" data-hub-trust-card>
+            <span data-hub-trust-card-step>{trustCopy.all.authority.step}</span>
+            <h3 data-hub-trust-card-title>{trustCopy.all.authority.title}</h3>
+            <p data-hub-trust-card-body>{trustCopy.all.authority.body}</p>
+        </article>
+        <article class="sony-hub-trust__card" data-hub-trust-card>
+            <span data-hub-trust-card-step>{trustCopy.all.handoff.step}</span>
+            <h3 data-hub-trust-card-title>{trustCopy.all.handoff.title}</h3>
+            <p data-hub-trust-card-body>{trustCopy.all.handoff.body}</p>
+        </article>
+    </div>
+    <script
+        is:inline
+        define:vars={{
+            trustCopy,
+            intentIndex,
+            actionCopy,
+        }}
+    >
+        document.querySelectorAll('[data-hub-trust-rail]').forEach((root) => {
+            const categoryNode = root.querySelector('[data-hub-trust-category]');
+            const intentNode = root.querySelector('[data-hub-trust-intent]');
+            const eyebrowNode = root.querySelector('[data-hub-trust-eyebrow]');
+            const titleNode = root.querySelector('[data-hub-trust-title]');
+            const descriptionNode = root.querySelector('[data-hub-trust-description]');
+            const cards = Array.from(root.querySelectorAll('[data-hub-trust-card]'));
+
+            const resolveCategory = (categoryId) => trustCopy[categoryId] || trustCopy.all;
+            const resolveIntent = (intentId) => intentIndex[intentId] || intentIndex.all;
+            const resolveRecommendation = (intentId) =>
+                actionCopy.recommendations[intentId] || actionCopy.recommendations.all;
+            const resolveRouteCategory = (categoryId, intentId) => {
+                if (intentId === 'remote') {
+                    return categoryId !== 'all' ? categoryId : 'all';
+                }
+                if (intentId === 'pediatric') {
+                    return 'children';
+                }
+                if (intentId === 'rejuvenation') {
+                    return categoryId !== 'all' ? categoryId : 'aesthetic';
+                }
+                if (
+                    intentId === 'diagnosis' ||
+                    intentId === 'inflammation' ||
+                    intentId === 'procedures'
+                ) {
+                    return categoryId !== 'all' ? categoryId : 'clinical';
+                }
+                return categoryId || 'all';
+            };
+            const resolveCtaTarget = (intentId) => {
+                if (intentId === 'remote') return 'telemedicine';
+                if (intentId === 'pediatric') return 'service_detail';
+                if (intentId === 'all') return 'service_hub';
+                return 'booking';
+            };
+
+            const setCard = (card, payload, { ctaLabel = '', ctaHref = '' } = {}) => {
+                if (!card || !payload) return;
+                const stepNode = card.querySelector('[data-hub-trust-card-step]');
+                const titleNode = card.querySelector('[data-hub-trust-card-title]');
+                const bodyNode = card.querySelector('[data-hub-trust-card-body]');
+                const ctaNode = card.querySelector('[data-hub-trust-cta]');
+
+                if (stepNode) stepNode.textContent = payload.step || '';
+                if (titleNode) titleNode.textContent = payload.title || '';
+                if (bodyNode) bodyNode.textContent = payload.body || '';
+
+                if (ctaNode) {
+                    if (ctaLabel && ctaHref) {
+                        ctaNode.textContent = ctaLabel;
+                        ctaNode.setAttribute('href', ctaHref);
+                        ctaNode.removeAttribute('hidden');
+                    } else {
+                        ctaNode.setAttribute('hidden', 'true');
+                    }
+                }
+            };
+
+            const applyState = (detail = {}) => {
+                const categoryId = String(detail.category || 'all').toLowerCase();
+                const intentId = String(detail.intent || 'all').toLowerCase();
+                const category = resolveCategory(categoryId);
+                const intent = resolveIntent(intentId);
+                const recommendation = resolveRecommendation(intentId);
+
+                if (eyebrowNode) eyebrowNode.textContent = category.eyebrow || '';
+                if (titleNode) titleNode.textContent = category.title || '';
+                if (descriptionNode) {
+                    descriptionNode.textContent =
+                        `${category.description || ''} ${recommendation.note || ''}`.trim();
+                }
+                if (categoryNode) categoryNode.textContent = category.label || '';
+                if (intentNode) intentNode.textContent = intent.label || '';
+
+                setCard(
+                    cards[0],
+                    {
+                        step: actionCopy.eyebrow,
+                        title: `${actionCopy.titlePrefix} ${intent.label || ''}`.trim(),
+                        body: recommendation.note || '',
+                    },
+                    {
+                        ctaLabel: recommendation.label || '',
+                        ctaHref: recommendation.href || '',
+                    }
+                );
+                setCard(cards[1], category.authority);
+                setCard(cards[2], category.handoff);
+
+                const firstCardCta = cards[0]?.querySelector('[data-hub-trust-cta]');
+                if (firstCardCta) {
+                    const routeCategory = resolveRouteCategory(categoryId, intentId);
+                    firstCardCta.setAttribute(
+                        'data-cta-target',
+                        resolveCtaTarget(intentId)
+                    );
+                    firstCardCta.setAttribute(
+                        'data-service-category',
+                        routeCategory
+                    );
+                    firstCardCta.setAttribute('data-service-intent', intentId);
+                    firstCardCta.setAttribute(
+                        'data-catalog-category',
+                        categoryId
+                    );
+                    firstCardCta.setAttribute('data-catalog-intent', intentId);
+                }
+            };
+
+            const params = new URLSearchParams(window.location.search);
+            applyState({
+                category: params.get('category') || 'all',
+                intent: params.get('intent') || 'all',
+            });
+
+            window.addEventListener('service-hub-state-change', (event) => {
+                applyState(event?.detail || {});
+            });
+        });
+    </script>
+</section>

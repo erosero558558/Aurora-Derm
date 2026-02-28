@@ -1,0 +1,137 @@
+---
+const { locale = 'es' } = Astro.props;
+
+const copy = {
+    es: {
+        eyebrow: 'Siguiente accion',
+        title: 'Si ya revisaste la politica, estas son las rutas utiles para continuar.',
+        description:
+            'Legal no debe dejarte bloqueado. Estas salidas mantienen la navegacion coherente segun si necesitas reservar, resolver una duda o revisar alcance clinico.',
+        cards: [
+            {
+                step: 'Reserva',
+                title: 'Ir directo al flujo de citas',
+                body: 'Si ya entiendes condiciones, privacidad y modalidad, continua al formulario principal sin pasos extra.',
+                href: '/es/#citas',
+                cta: 'Ir a citas',
+                target: 'booking',
+            },
+            {
+                step: 'Modalidad',
+                title: 'Revisar telemedicina antes de reservar',
+                body: 'Util cuando quieres validar si tu caso puede empezar online y que limitaciones tiene esa ruta.',
+                href: '/es/telemedicina/',
+                cta: 'Ver telemedicina',
+                target: 'telemedicine',
+            },
+            {
+                step: 'Soporte',
+                title: 'Resolver una duda operativa por WhatsApp',
+                body: 'Sirve para aclarar tiempos, documentos o si debes pasar a una valoracion general antes de pagar.',
+                href: 'https://wa.me/593982453672',
+                cta: 'Abrir WhatsApp',
+                external: true,
+                target: 'whatsapp',
+            },
+        ],
+    },
+    en: {
+        eyebrow: 'Next action',
+        title: 'Once you reviewed the policy, these are the useful routes to continue.',
+        description:
+            'Legal pages should not trap the user. These exits keep navigation coherent depending on whether you need booking, a support answer, or telemedicine scope.',
+        cards: [
+            {
+                step: 'Booking',
+                title: 'Go straight to the appointment flow',
+                body: 'If terms, privacy, and care modality are already clear, continue to the main booking form without extra steps.',
+                href: '/en/#citas',
+                cta: 'Go to booking',
+                target: 'booking',
+            },
+            {
+                step: 'Modality',
+                title: 'Review telemedicine before booking',
+                body: 'Useful when you want to confirm whether the case can start online and what limitations that route has.',
+                href: '/en/telemedicine/',
+                cta: 'View telemedicine',
+                target: 'telemedicine',
+            },
+            {
+                step: 'Support',
+                title: 'Resolve an operational question on WhatsApp',
+                body: 'Best for timing, documents, or deciding whether a general assessment should happen before payment.',
+                href: 'https://wa.me/593982453672',
+                cta: 'Open WhatsApp',
+                external: true,
+                target: 'whatsapp',
+            },
+        ],
+    },
+};
+
+const selected = copy[locale] || copy.es;
+const targetContextMap = {
+    booking: {
+        eventName: 'open_public_cta',
+        ctaTarget: 'booking',
+        serviceCategory: 'clinical',
+        serviceIntent: 'diagnosis',
+        catalogCategory: 'all',
+        catalogIntent: 'diagnosis',
+    },
+    telemedicine: {
+        eventName: 'open_public_cta',
+        ctaTarget: 'telemedicine',
+        serviceCategory: 'all',
+        serviceIntent: 'remote',
+        catalogCategory: 'all',
+        catalogIntent: 'remote',
+    },
+    whatsapp: {
+        eventName: 'whatsapp_click',
+        ctaTarget: 'whatsapp',
+        serviceCategory: 'all',
+        serviceIntent: 'all',
+        catalogCategory: 'all',
+        catalogIntent: 'all',
+    },
+};
+---
+
+<section class="sony-section sony-section--compact sony-legal-actions" data-legal-action-rail>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-legal-actions__grid">
+        {
+            selected.cards.map((card) => {
+                const context = targetContextMap[card.target] || targetContextMap.booking;
+                return (
+                <article class="sony-legal-actions__card" data-legal-action-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                    <a
+                        class="sony-btn sony-btn--ghost"
+                        href={card.href}
+                        target={card.external ? '_blank' : undefined}
+                        rel={card.external ? 'noopener noreferrer' : undefined}
+                        data-analytics-event={context.eventName}
+                        data-entry-surface="legal_action_rail"
+                        data-cta-target={context.ctaTarget}
+                        data-service-category={context.serviceCategory}
+                        data-service-intent={context.serviceIntent}
+                        data-catalog-category={context.catalogCategory}
+                        data-catalog-intent={context.catalogIntent}
+                    >
+                        {card.cta}
+                    </a>
+                </article>
+                );
+            })
+        }
+    </div>
+</section>

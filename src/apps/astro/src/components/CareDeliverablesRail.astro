@@ -1,0 +1,125 @@
+---
+const { locale = 'es', variant = 'service' } = Astro.props;
+
+const variants = {
+    es: {
+        service: {
+            eyebrow: 'Salida de consulta',
+            title: 'Lo que esta ruta debe dejar definido al terminar la valoracion.',
+            intro:
+                'No es solo una cita. Debe cerrar indicacion, siguiente paso y criterio para combinar presencial, telemedicina o procedimiento.',
+            cards: [
+                {
+                    kicker: 'Confirmacion',
+                    title: 'Indicacion clinica y limites del tratamiento',
+                    body: 'Se confirma si esta ruta encaja con el caso, que objetivos son realistas y que factores cambian la decision.',
+                },
+                {
+                    kicker: 'Plan',
+                    title: 'Secuencia concreta de sesiones, tiempos y combinaciones',
+                    body: 'La salida util incluye orden de tratamiento, ventanas de seguimiento y cuando conviene sumar otra ruta del catalogo.',
+                },
+                {
+                    kicker: 'Escalamiento',
+                    title: 'Puerta clara si hace falta otra modalidad',
+                    body: 'Si el caso requiere revision mas amplia, telemedicina de control o procedimiento presencial, esa transicion queda definida desde aqui.',
+                },
+            ],
+        },
+        telemedicine: {
+            eyebrow: 'Salida de telemedicina',
+            title: 'Lo que una consulta online util debe resolver antes de cerrar.',
+            intro:
+                'Telemedicina funciona mejor cuando reduce incertidumbre, ordena la evidencia visual y deja clara la necesidad de control remoto o presencial.',
+            cards: [
+                {
+                    kicker: 'Lectura inicial',
+                    title: 'Contexto clinico a partir de fotos, video e historia breve',
+                    body: 'La meta no es solo responder por chat: es convertir imagenes e historia en una decision operativa util para el caso.',
+                },
+                {
+                    kicker: 'Plan remoto',
+                    title: 'Manejo inicial, seguimiento y criterios de respuesta',
+                    body: 'Debes salir con indicaciones concretas, horizonte de control y senales para saber si el tratamiento remoto esta funcionando.',
+                },
+                {
+                    kicker: 'Escala presencial',
+                    title: 'Cuando dejar de insistir online y pasar a consultorio',
+                    body: 'Lesiones sospechosas, procedimientos, dermatoscopia o falta de respuesta deben activar una ruta presencial sin reiniciar el funnel.',
+                },
+            ],
+        },
+    },
+    en: {
+        service: {
+            eyebrow: 'Consult output',
+            title: 'What this route should leave defined once the assessment ends.',
+            intro:
+                'This is not just a visit. It should close indication, next step, and the rule for combining in-person care, telemedicine, or procedure.',
+            cards: [
+                {
+                    kicker: 'Confirmation',
+                    title: 'Clinical indication and treatment boundaries',
+                    body: 'The visit confirms whether this route fits the case, which goals are realistic, and which factors change the decision.',
+                },
+                {
+                    kicker: 'Plan',
+                    title: 'Concrete sequence of sessions, timing, and combinations',
+                    body: 'Useful output includes treatment order, follow-up windows, and when another route from the catalogue should be added.',
+                },
+                {
+                    kicker: 'Escalation',
+                    title: 'A clear door if another care mode is needed',
+                    body: 'If the case needs broader review, remote follow-up, or an in-person procedure, that transition should already be defined here.',
+                },
+            ],
+        },
+        telemedicine: {
+            eyebrow: 'Telemedicine output',
+            title: 'What a useful online consultation should resolve before it ends.',
+            intro:
+                'Telemedicine works best when it reduces uncertainty, structures the visual evidence, and makes the next remote or in-person step explicit.',
+            cards: [
+                {
+                    kicker: 'Initial read',
+                    title: 'Clinical context from photos, video, and brief history',
+                    body: 'The goal is not just to answer in chat. It is to turn images and context into an operational decision for the case.',
+                },
+                {
+                    kicker: 'Remote plan',
+                    title: 'Initial management, follow-up, and response criteria',
+                    body: 'You should leave with concrete guidance, a follow-up horizon, and signals that show whether remote management is working.',
+                },
+                {
+                    kicker: 'In-person escalation',
+                    title: 'When to stop pushing online and move to the clinic',
+                    body: 'Suspicious lesions, procedures, dermoscopy, or poor response should trigger an in-person path without resetting the funnel.',
+                },
+            ],
+        },
+    },
+};
+
+const localeKey = locale === 'en' ? 'en' : 'es';
+const variantKey = variant === 'telemedicine' ? 'telemedicine' : 'service';
+const copy = variants[localeKey][variantKey];
+---
+
+<section class="sony-section sony-deliverables" data-care-deliverables data-care-deliverables-variant={variantKey}>
+    <div class="sony-section__head">
+        <p>{copy.eyebrow}</p>
+        <h2>{copy.title}</h2>
+        <span>{copy.intro}</span>
+    </div>
+    <div class="sony-deliverables__grid">
+        {
+            copy.cards.map((card) => (
+                <article class="sony-deliverables__card" data-care-deliverables-card>
+                    <span>{card.kicker}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

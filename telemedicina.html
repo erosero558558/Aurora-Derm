@@ -1802,7 +1802,7 @@
                         ></div>
 
                         <div class="form-group">
-                            <label data-i18n="label_service"
+                            <label for="serviceSelect" data-i18n="label_service"
                                 >Tipo de Consulta</label
                             >
                             <select name="service" id="serviceSelect" required>
@@ -1870,8 +1870,8 @@
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="label_doctor">Doctor</label>
-                            <select name="doctor" required>
+                            <label for="doctorSelect" data-i18n="label_doctor">Doctor</label>
+                            <select name="doctor" id="doctorSelect" required>
                                 <option value="" data-i18n="select_doctor">
                                     Selecciona un doctor
                                 </option>
@@ -1889,12 +1889,12 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label data-i18n="label_date">Fecha</label>
-                                <input type="date" name="date" required />
+                                <label for="appointmentDate" data-i18n="label_date">Fecha</label>
+                                <input type="date" id="appointmentDate" name="date" required />
                             </div>
                             <div class="form-group">
-                                <label data-i18n="label_time">Hora</label>
-                                <select name="time" required>
+                                <label for="timeSelect" data-i18n="label_time">Hora</label>
+                                <select name="time" id="timeSelect" required>
                                     <option value="" data-i18n="select_time">
                                         Hora
                                     </option>
@@ -1910,21 +1910,22 @@
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="label_name"
+                            <label for="appointmentName" data-i18n="label_name"
                                 >Nombre completo</label
                             >
-                            <input type="text" name="name" required />
+                            <input type="text" id="appointmentName" name="name" required />
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="label_email">Email</label>
-                            <input type="email" name="email" required />
+                            <label for="appointmentEmail" data-i18n="label_email">Email</label>
+                            <input type="email" id="appointmentEmail" name="email" required />
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="label_phone">Teléfono</label>
+                            <label for="appointmentPhone" data-i18n="label_phone">Teléfono</label>
                             <input
                                 type="tel"
+                                id="appointmentPhone"
                                 name="phone"
                                 required
                                 inputmode="tel"
@@ -1935,10 +1936,11 @@
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="label_reason"
+                            <label for="appointmentReason" data-i18n="label_reason"
                                 >Motivo de consulta (opcional)</label
                             >
                             <textarea
+                                id="appointmentReason"
                                 name="reason"
                                 rows="3"
                                 data-i18n="placeholder_reason"
@@ -1948,10 +1950,10 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label data-i18n="label_area"
+                                <label for="affectedAreaSelect" data-i18n="label_area"
                                     >Zona de la piel (opcional)</label
                                 >
-                                <select name="affectedArea">
+                                <select name="affectedArea" id="affectedAreaSelect">
                                     <option value="" data-i18n="select_area">
                                         Selecciona una zona
                                     </option>
@@ -1997,10 +1999,10 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label data-i18n="label_evolution"
+                                <label for="evolutionTimeSelect" data-i18n="label_evolution"
                                     >Tiempo de evolución (opcional)</label
                                 >
-                                <select name="evolutionTime">
+                                <select name="evolutionTime" id="evolutionTimeSelect">
                                     <option
                                         value=""
                                         data-i18n="select_evolution"
@@ -2063,9 +2065,10 @@
                         </div>
 
                         <div class="form-consent">
-                            <label class="checkbox-line">
+                            <label class="checkbox-line" for="privacyConsent">
                                 <input
                                     type="checkbox"
+                                    id="privacyConsent"
                                     name="privacyConsent"
                                     required
                                 />

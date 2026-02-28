@@ -291,7 +291,7 @@
     "cookie_banner_text": "We use essential cookies for security and operation. You can accept or reject optional cookies.",
     "cookie_reject": "Reject",
     "cookie_accept": "Accept",
-    "cookie_more": "More information",
+    "cookie_more": "Cookie policy",
     "footer_privacy_note": "If you share photos by web or WhatsApp, they are used only for clinical guidance and appointment management.",
     "footer_tagline": "Specialized dermatology in Quito",
     "footer_rights": "All rights reserved.",
@@ -300,3 +300,4 @@
     "payment_transfer_eta": "We validate bank transfers during business hours and confirm by WhatsApp.",
     "payment_policy_link": "View cancellation, refund and rescheduling policy"
 }
+

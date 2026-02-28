@@ -1,0 +1,75 @@
+---
+import {
+    getLocalizedServicesBySlugs,
+    getRelatedServices,
+    getServiceCtaLabel,
+    localizeCategory,
+    servicePath,
+} from '../lib/content.js';
+
+const {
+    locale = 'es',
+    currentSlug = '',
+    serviceSlugs = [],
+    eyebrow = '',
+    title = '',
+    description = '',
+} = Astro.props;
+
+const relatedServices =
+    Array.isArray(serviceSlugs) && serviceSlugs.length > 0
+        ? getLocalizedServicesBySlugs(serviceSlugs, locale)
+        : getRelatedServices(currentSlug, locale, 3);
+
+const copy = {
+    eyebrow:
+        eyebrow ||
+        (locale === 'en'
+            ? 'Recommended routes'
+            : 'Rutas recomendadas'),
+    title:
+        title ||
+        (locale === 'en'
+            ? 'Continue with the most relevant adjacent services.'
+            : 'Continua con los servicios adyacentes mas relevantes.'),
+    description:
+        description ||
+        (locale === 'en'
+            ? 'These options usually appear before, after, or alongside the current service in real decision-making.'
+            : 'Estas opciones suelen aparecer antes, despues o junto al servicio actual en la toma de decision real.'),
+};
+---
+
+<section class="sony-section sony-related-services">
+    <div class="sony-section__head">
+        <p>{copy.eyebrow}</p>
+        <h2>{copy.title}</h2>
+        <span>{copy.description}</span>
+    </div>
+    <div class="sony-related-services__grid">
+        {
+            relatedServices.map((service) => (
+                <article class="sony-related-card">
+                    <p>{localizeCategory(service.category, locale)}</p>
+                    <h3>{service.hero || service.slug}</h3>
+                    <span>{service.summary}</span>
+                    <div class="sony-related-card__meta">
+                        <small>
+                            {locale === 'en' ? 'Duration' : 'Duracion'}:{' '}
+                            {service.duration || (locale === 'en' ? '30 min' : '30 min')}
+                        </small>
+                        <small>
+                            {locale === 'en' ? 'From' : 'Desde'} ${service.price_from || '0'}
+                        </small>
+                    </div>
+                    <a
+                        class="sony-related-card__link"
+                        href={servicePath(locale, service.slug)}
+                    >
+                        {getServiceCtaLabel(service, locale)}
+                    </a>
+                </article>
+            ))
+        }
+    </div>
+</section>

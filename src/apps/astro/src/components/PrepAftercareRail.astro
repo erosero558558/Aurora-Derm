@@ -1,0 +1,328 @@
+---
+import { homePath, serviceHubPath, telemedicinePath } from '../lib/content.js';
+
+const { locale = 'es', variant = 'service', service } = Astro.props;
+
+const category = String(service?.category || 'clinical').toLowerCase();
+const serviceName = service?.hero || service?.slug || (locale === 'en' ? 'service' : 'servicio');
+const hubBase = serviceHubPath(locale);
+
+const copy = {
+    es: {
+        hub: {
+            eyebrow: 'Preparacion y aftercare',
+            title: 'Cada familia del catalogo necesita una preparacion distinta y una salida clara.',
+            description:
+                'Este bloque evita una reserva ciega: muestra que conviene traer, como leer el post-consulta y cuando conviene cambiar de ruta.',
+            cards: [
+                {
+                    step: 'Dermatologia clinica',
+                    title: 'Llega con fotos, tiempo de evolucion y tratamientos activos',
+                    body: 'En rutas clinicas la mejor decision sale de comparar brotes, sintomas, cambios y productos que ya se probaron.',
+                    note: 'Aftercare: seguimiento de tolerancia, sintomas y necesidad de ampliar estudio si la respuesta no es coherente.',
+                    cta: 'Abrir rutas clinicas',
+                    href: `${hubBase}?category=clinical&intent=diagnosis`,
+                    category: 'clinical',
+                    intent: 'diagnosis',
+                },
+                {
+                    step: 'Estetica medica',
+                    title: 'Prepara baseline visual y evita medir el resultado demasiado pronto',
+                    body: 'En estetica importa llegar con objetivo claro, zonas definidas y margen realista para edema, descamacion o cambios por fases.',
+                    note: 'Aftercare: cuidar la piel, respetar ventanas de control y decidir repetir solo cuando la evolucion ya es interpretable.',
+                    cta: 'Abrir rutas esteticas',
+                    href: `${hubBase}?category=aesthetic&intent=rejuvenation`,
+                    category: 'aesthetic',
+                    intent: 'rejuvenation',
+                },
+                {
+                    step: 'Dermatologia pediatrica',
+                    title: 'Trae contexto familiar, rutina real y fotos simples',
+                    body: 'En casos pediatricos la ruta mejora cuando cuidadores explican que se usa en casa, que empeora el cuadro y como evoluciona el sintoma.',
+                    note: 'Aftercare: observar alertas sencillas, sostener una rutina cumplible y escalar pronto si aparece dolor o empeoramiento rapido.',
+                    cta: 'Abrir rutas pediatricas',
+                    href: `${hubBase}?category=children&intent=pediatric`,
+                    category: 'children',
+                    intent: 'pediatric',
+                },
+            ],
+        },
+        telemedicine: {
+            eyebrow: 'Preparacion y aftercare',
+            title: 'Como preparar la consulta remota y que hacer despues sin perder continuidad.',
+            description:
+                'Telemedicina funciona mejor cuando el material previo es util, el seguimiento se entiende y las señales para pasar a presencial quedan visibles.',
+            cards: [
+                {
+                    step: 'Antes de conectarte',
+                    title: 'Prepara fotos comparables, luz natural y una historia breve',
+                    body: 'Una imagen cercana, otra de contexto y una cronologia corta del cambio reducen idas y vueltas y mejoran la calidad de decision.',
+                },
+                {
+                    step: 'Aftercare remoto',
+                    title: 'Guarda la evidencia y sigue un plan simple de control',
+                    body: 'Despues de la llamada conviene seguir indicaciones concretas, observar tolerancia y tener listo el material para una revision corta si aplica.',
+                },
+                {
+                    step: 'Pasar a presencial',
+                    title: 'Escala si faltan imagenes utiles, aparece urgencia o el caso pide procedimiento',
+                    body: 'Dolor, lesiones sospechosas, mala lectura por imagen o falta de respuesta justifican mover la ruta a consultorio sin reiniciar el funnel.',
+                },
+            ],
+        },
+        service: {
+            clinical: {
+                eyebrow: 'Preparacion y aftercare',
+                title: `Como preparar ${serviceName} y que vigilar despues.`,
+                description:
+                    'La mejor lectura del tratamiento aparece cuando la preparacion es concreta, el aftercare se entiende y las alertas de escalamiento son visibles.',
+                cards: [
+                    {
+                        step: 'Antes de la valoracion',
+                        title: 'Trae fotos recientes, cronologia y productos activos',
+                        body: 'Conviene llegar con imagenes comparables, tiempo real de evolucion y cualquier crema, medicamento o rutina que ya se este usando.',
+                    },
+                    {
+                        step: 'Primeros dias',
+                        title: 'Lee tolerancia, sintomas y respuesta temprana con calma',
+                        body: 'El aftercare util no busca perfeccion inmediata. Busca saber si el plan se tolera, si la piel responde y si hace falta ajustar rapido.',
+                    },
+                    {
+                        step: 'Cuando escalar',
+                        title: 'No insistas si aparecen alertas o la ruta deja de tener sentido',
+                        body: 'Dolor mayor, nuevas lesiones, peor inflamacion o falta de respuesta son señales para ampliar estudio, mover a presencial o revisar el plan.',
+                    },
+                ],
+            },
+            aesthetic: {
+                eyebrow: 'Preparacion y aftercare',
+                title: `Como preparar ${serviceName} y proteger el resultado.`,
+                description:
+                    'En estetica el resultado mejora cuando el paciente llega con objetivo claro, entiende el cuidado posterior y no mide el cambio fuera de ventana.',
+                cards: [
+                    {
+                        step: 'Antes de la sesion',
+                        title: 'Define zonas, baseline visual y agenda con margen',
+                        body: 'Traer fotos comparables y saber que evento, fecha o expectativa manda evita presionar el procedimiento contra una ventana irreal.',
+                    },
+                    {
+                        step: 'Aftercare inmediato',
+                        title: 'Respeta edema, sensibilidad y cuidado de piel segun tecnica',
+                        body: 'Los primeros dias suelen ser para proteger la piel, evitar friccion innecesaria y dejar que la respuesta inicial se estabilice.',
+                    },
+                    {
+                        step: 'Revision util',
+                        title: 'Decide repetir o combinar solo cuando el resultado ya se puede leer',
+                        body: 'El control correcto evita sobretratar: primero se interpreta evolucion real y luego se define si conviene repetir, esperar o combinar.',
+                    },
+                ],
+            },
+            children: {
+                eyebrow: 'Preparacion y aftercare',
+                title: `Como preparar ${serviceName} con una ruta familiar sostenible.`,
+                description:
+                    'En pediatria la ruta mejora cuando cuidadores entienden que observar, que aplicar en casa y cuando volver sin improvisar.',
+                cards: [
+                    {
+                        step: 'Antes de la visita',
+                        title: 'Trae fotos simples, rutina actual y cambios del sintoma',
+                        body: 'Ayuda mucho saber que se uso ya, si el cuadro empeora por horarios o ambientes y que tan facil ha sido sostener el cuidado en casa.',
+                    },
+                    {
+                        step: 'Aftercare en casa',
+                        title: 'El plan debe ser corto, claro y cumplible para la familia',
+                        body: 'La mejor salida no es la mas compleja, sino la que cuidadores pueden repetir sin friccion ni dudas nuevas cada dia.',
+                    },
+                    {
+                        step: 'Volver antes',
+                        title: 'Escala si hay dolor, mala tolerancia o cambio rapido',
+                        body: 'Cuando el caso cambia de ritmo o aparecen alertas, la ruta correcta es revaluar pronto en lugar de insistir con el mismo esquema.',
+                    },
+                ],
+            },
+        },
+    },
+    en: {
+        hub: {
+            eyebrow: 'Preparation and aftercare',
+            title: 'Each catalogue family needs a different setup and a clear aftercare logic.',
+            description:
+                'This block prevents blind booking. It shows what to bring, how to read the post-consult phase, and when a route should change.',
+            cards: [
+                {
+                    step: 'Clinical dermatology',
+                    title: 'Bring images, timeline, and active treatments',
+                    body: 'Clinical routes work better when flares, symptoms, changes, and products already tried can be compared with context.',
+                    note: 'Aftercare: monitor tolerance, symptoms, and whether the route needs broader testing if response stops making sense.',
+                    cta: 'Open clinical routes',
+                    href: `${hubBase}?category=clinical&intent=diagnosis`,
+                    category: 'clinical',
+                    intent: 'diagnosis',
+                },
+                {
+                    step: 'Medical aesthetics',
+                    title: 'Prepare a visual baseline and avoid judging results too early',
+                    body: 'In aesthetics it helps to arrive with a clear goal, defined areas, and realistic room for swelling, peeling, or phased change.',
+                    note: 'Aftercare: protect the skin, respect review windows, and repeat only once the evolution is interpretable.',
+                    cta: 'Open aesthetic routes',
+                    href: `${hubBase}?category=aesthetic&intent=rejuvenation`,
+                    category: 'aesthetic',
+                    intent: 'rejuvenation',
+                },
+                {
+                    step: 'Pediatric dermatology',
+                    title: 'Bring family context, realistic routine, and simple photos',
+                    body: 'Pediatric cases improve when caregivers explain what is being used at home, what worsens the issue, and how symptoms evolve.',
+                    note: 'Aftercare: watch simple alerts, keep a sustainable routine, and escalate early if pain or fast worsening appears.',
+                    cta: 'Open pediatric routes',
+                    href: `${hubBase}?category=children&intent=pediatric`,
+                    category: 'children',
+                    intent: 'pediatric',
+                },
+            ],
+        },
+        telemedicine: {
+            eyebrow: 'Preparation and aftercare',
+            title: 'How to prepare the remote consultation and what to do afterwards without losing continuity.',
+            description:
+                'Telemedicine works better when the prep material is useful, the follow-up logic is clear, and the signals for moving to in-person care stay visible.',
+            cards: [
+                {
+                    step: 'Before you connect',
+                    title: 'Prepare comparable images, daylight, and a brief history',
+                    body: 'One close image, one contextual image, and a short timeline of change reduce back-and-forth and improve decision quality.',
+                },
+                {
+                    step: 'Remote aftercare',
+                    title: 'Keep the evidence and follow a simple review plan',
+                    body: 'After the call, it helps to follow concrete guidance, monitor tolerance, and keep material ready for a short follow-up if needed.',
+                },
+                {
+                    step: 'Move to in-person care',
+                    title: 'Escalate if useful images are missing, urgency appears, or the case needs procedure',
+                    body: 'Pain, suspicious lesions, poor image read, or lack of response justify moving the route to the clinic without resetting the funnel.',
+                },
+            ],
+        },
+        service: {
+            clinical: {
+                eyebrow: 'Preparation and aftercare',
+                title: `How to prepare ${serviceName} and what to watch afterwards.`,
+                description:
+                    'The best treatment reading appears when preparation is concrete, aftercare is understood, and escalation alerts remain visible.',
+                cards: [
+                    {
+                        step: 'Before the assessment',
+                        title: 'Bring recent images, timeline, and active products',
+                        body: 'It helps to arrive with comparable photos, real timing of evolution, and any cream, medication, or routine already being used.',
+                    },
+                    {
+                        step: 'First days',
+                        title: 'Read tolerance, symptoms, and early response calmly',
+                        body: 'Useful aftercare does not chase instant perfection. It checks whether the plan is tolerated, whether the skin is responding, and whether quick adjustment is needed.',
+                    },
+                    {
+                        step: 'When to escalate',
+                        title: 'Do not keep pushing if alerts appear or the route stops making sense',
+                        body: 'More pain, new lesions, worse inflammation, or no response are enough signals to expand testing, move to in-person care, or revise the plan.',
+                    },
+                ],
+            },
+            aesthetic: {
+                eyebrow: 'Preparation and aftercare',
+                title: `How to prepare ${serviceName} and protect the outcome.`,
+                description:
+                    'In aesthetics, results improve when the patient arrives with a clear goal, understands aftercare, and does not judge change outside the right window.',
+                cards: [
+                    {
+                        step: 'Before the session',
+                        title: 'Define areas, visual baseline, and timing margin',
+                        body: 'Comparable photos and a clear date or event context prevent the procedure from being pressured against an unrealistic window.',
+                    },
+                    {
+                        step: 'Immediate aftercare',
+                        title: 'Respect swelling, sensitivity, and skin protection by technique',
+                        body: 'The first days are usually for protecting the skin, avoiding unnecessary friction, and letting the early response settle.',
+                    },
+                    {
+                        step: 'Useful review',
+                        title: 'Repeat or combine only once the outcome can actually be read',
+                        body: 'The right review avoids overtreatment. First interpret real evolution, then decide whether to repeat, wait, or combine.',
+                    },
+                ],
+            },
+            children: {
+                eyebrow: 'Preparation and aftercare',
+                title: `How to prepare ${serviceName} with a sustainable family-first route.`,
+                description:
+                    'In pediatric care the route improves when caregivers understand what to observe, what to apply at home, and when to return without improvising.',
+                cards: [
+                    {
+                        step: 'Before the visit',
+                        title: 'Bring simple photos, current routine, and symptom changes',
+                        body: 'It helps to know what has already been used, whether the issue worsens in certain environments or schedules, and how easy home care has been.',
+                    },
+                    {
+                        step: 'At-home aftercare',
+                        title: 'The plan should be short, clear, and realistic for caregivers',
+                        body: 'The best output is not the most complex one. It is the one caregivers can repeat consistently without creating new friction every day.',
+                    },
+                    {
+                        step: 'Return earlier',
+                        title: 'Escalate if there is pain, poor tolerance, or fast change',
+                        body: 'When the case changes pace or new alerts appear, the correct route is early reassessment instead of repeating the same scheme.',
+                    },
+                ],
+            },
+        },
+    },
+};
+
+const localeCopy = copy[locale] || copy.es;
+const selected =
+    variant === 'hub'
+        ? localeCopy.hub
+        : variant === 'telemedicine'
+          ? localeCopy.telemedicine
+        : localeCopy.service[category] || localeCopy.service.clinical;
+---
+
+<section
+    class="sony-section sony-section--compact sony-protocol-rail"
+    data-care-protocol
+    data-care-protocol-variant={variant}
+    data-care-protocol-category={variant === 'hub' ? 'mixed' : category}
+>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-protocol-rail__grid">
+        {
+            selected.cards.map((card) => (
+                <article class="sony-protocol-rail__card" data-care-protocol-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                    {card.note && <strong>{card.note}</strong>}
+                    {card.href && (
+                        <a
+                            class="sony-btn sony-btn--ghost"
+                            href={card.href}
+                            data-analytics-event="open_public_cta"
+                            data-entry-surface={`prep_aftercare_${variant}`}
+                            data-cta-target="service_hub"
+                            data-service-category={card.category || 'all'}
+                            data-service-intent={card.intent || 'all'}
+                            data-catalog-category={card.category || 'all'}
+                            data-catalog-intent={card.intent || 'all'}
+                        >
+                            {card.cta}
+                        </a>
+                    )}
+                </article>
+            ))
+        }
+    </div>
+</section>

@@ -1,0 +1,27 @@
+---
+const { locale = 'es', dictionary = {} } = Astro.props;
+
+const items = [
+    dictionary.hero_trust_fast ||
+        (locale === 'en' ? 'Fast WhatsApp response' : 'Respuesta rapida por WhatsApp'),
+    dictionary.hero_trust_booking ||
+        (locale === 'en' ? 'Book in minutes' : 'Reserva en minutos'),
+    dictionary.hero_trust_online ||
+        (locale === 'en'
+            ? 'In-person and online care'
+            : 'Atencion presencial y online'),
+];
+---
+
+<section class="sony-section sony-signal-band" aria-label={locale === 'en' ? 'Care signals' : 'Senales de atencion'}>
+    <ul>
+        {
+            items.map((item) => (
+                <li>
+                    <span></span>
+                    <strong>{item}</strong>
+                </li>
+            ))
+        }
+    </ul>
+</section>

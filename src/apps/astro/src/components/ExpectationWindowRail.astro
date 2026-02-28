@@ -1,0 +1,173 @@
+---
+const { locale = 'es', service } = Astro.props;
+
+const category = String(service?.category || 'clinical').toLowerCase();
+const serviceName = service?.hero || service?.slug || (locale === 'en' ? 'service' : 'servicio');
+
+const copy = {
+    es: {
+        clinical: {
+            eyebrow: 'Expectativas',
+            title: 'Que esperar de una ruta clinica bien llevada.',
+            description:
+                'La expectativa correcta evita abandono: algunas mejoras se sienten rapido, otras dependen de adherencia, control y ajuste del plan.',
+            cards: [
+                {
+                    step: 'Primera consulta',
+                    title: `Claridad del plan para ${serviceName}`,
+                    body: 'La primera sesion suele resolver diagnostico inicial, prioridad y si el caso requiere estudios, telemedicina o procedimiento adicional.',
+                },
+                {
+                    step: '1-4 semanas',
+                    title: 'Ventana inicial de respuesta',
+                    body: 'En muchas rutas clinicas la mejoria temprana existe, pero la lectura real depende de tolerancia, adherencia y contexto.',
+                },
+                {
+                    step: 'Mantenimiento',
+                    title: 'Ajustes y continuidad',
+                    body: 'Los mejores resultados aparecen cuando el control corrige el plan a tiempo en vez de repetir la misma ruta sin evidencia.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Expectativas',
+            title: 'Ventanas realistas de resultado en estetica medica.',
+            description:
+                'El bloque alinea resultado visible, inflamacion normal y momento correcto de control para que el paciente no mida el tratamiento demasiado pronto.',
+            cards: [
+                {
+                    step: 'Dia 0-3',
+                    title: 'Cambios iniciales y cuidados',
+                    body: 'Puede haber edema, sensibilidad o descamacion segun tecnica. Eso no equivale al resultado final.',
+                },
+                {
+                    step: '1-6 semanas',
+                    title: 'Resultado visible progresivo',
+                    body: 'En peelings, biostimuladores, toxina o laser la mejora real suele aparecer por fases y no toda en el mismo dia.',
+                },
+                {
+                    step: 'Control',
+                    title: 'Momento correcto para decidir si repetir o combinar',
+                    body: 'La revision evita sobretratar y define si el siguiente paso es esperar, repetir o combinar otra tecnica.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Expectativas',
+            title: 'Que esperar en una ruta pediatrica o familiar.',
+            description:
+                'En ninos y adolescentes la expectativa correcta combina respuesta clinica, adherencia familiar y alertas simples para decidir si escalar.',
+            cards: [
+                {
+                    step: 'Inicio',
+                    title: 'Plan claro para casa',
+                    body: 'El primer objetivo suele ser que cuidadores entiendan rutina, alertas y como observar la evolucion sin saturar el proceso.',
+                },
+                {
+                    step: '1-4 semanas',
+                    title: 'Revision de adherencia y respuesta',
+                    body: 'La mejoria depende tanto del tratamiento como de que el plan se aplique de forma consistente en casa.',
+                },
+                {
+                    step: 'Escalamiento',
+                    title: 'Cuando conviene volver o ampliar estudio',
+                    body: 'Si el caso cambia, duele mas o no responde, la expectativa correcta es escalar, no insistir sin nueva valoracion.',
+                },
+            ],
+        },
+    },
+    en: {
+        clinical: {
+            eyebrow: 'Expectations',
+            title: 'What to expect from a well-managed clinical route.',
+            description:
+                'Correct expectations reduce abandonment: some improvement appears early, but meaningful progress often depends on adherence, review, and timely adjustment.',
+            cards: [
+                {
+                    step: 'First consultation',
+                    title: `Plan clarity for ${serviceName}`,
+                    body: 'The first session usually resolves initial diagnosis, urgency, and whether studies, telemedicine, or procedure support are needed.',
+                },
+                {
+                    step: '1-4 weeks',
+                    title: 'Initial response window',
+                    body: 'Many clinical routes can show early progress, but interpretation still depends on tolerance, adherence, and context.',
+                },
+                {
+                    step: 'Maintenance',
+                    title: 'Adjustment and continuity',
+                    body: 'Best outcomes appear when follow-up corrects the route in time instead of repeating the same plan without evidence.',
+                },
+            ],
+        },
+        aesthetic: {
+            eyebrow: 'Expectations',
+            title: 'Realistic result windows in medical aesthetics.',
+            description:
+                'This block aligns visible progress, normal inflammation, and the right review moment so treatment is not judged too early.',
+            cards: [
+                {
+                    step: 'Day 0-3',
+                    title: 'Immediate changes and aftercare',
+                    body: 'Swelling, sensitivity, or peeling can happen depending on technique. That is not the final result.',
+                },
+                {
+                    step: '1-6 weeks',
+                    title: 'Progressive visible outcome',
+                    body: 'With peels, biostimulators, toxin, or laser, meaningful improvement often appears in phases rather than all at once.',
+                },
+                {
+                    step: 'Review',
+                    title: 'Right moment to repeat or combine',
+                    body: 'The check-up prevents overtreatment and defines whether the next step is waiting, repeating, or combining another technique.',
+                },
+            ],
+        },
+        children: {
+            eyebrow: 'Expectations',
+            title: 'What to expect in a pediatric or family-first route.',
+            description:
+                'For children and teenagers, the right expectation combines clinical response, caregiver adherence, and simple alerts that define escalation.',
+            cards: [
+                {
+                    step: 'Start',
+                    title: 'Clear home plan',
+                    body: 'The first goal is usually making sure caregivers understand routine, alerts, and how to watch evolution without overloading the process.',
+                },
+                {
+                    step: '1-4 weeks',
+                    title: 'Adherence and response review',
+                    body: 'Improvement depends on treatment and on whether the plan is consistently applied at home.',
+                },
+                {
+                    step: 'Escalation',
+                    title: 'When it makes sense to return or expand evaluation',
+                    body: 'If the case changes, hurts more, or does not respond, the right expectation is escalation rather than repeating without new evaluation.',
+                },
+            ],
+        },
+    },
+};
+
+const localeCopy = copy[locale] || copy.es;
+const selected = localeCopy[category] || localeCopy.clinical;
+---
+
+<section class="sony-section sony-section--compact sony-expectation" data-expectation-rail>
+    <div class="sony-section__head">
+        <p>{selected.eyebrow}</p>
+        <h2>{selected.title}</h2>
+        <span>{selected.description}</span>
+    </div>
+    <div class="sony-expectation__grid">
+        {
+            selected.cards.map((card) => (
+                <article class="sony-expectation__card" data-expectation-card>
+                    <span>{card.step}</span>
+                    <h3>{card.title}</h3>
+                    <p>{card.body}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

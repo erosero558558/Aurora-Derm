@@ -65,6 +65,24 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
 
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Install Node Dependencies
+              run: npm ci
+
+            - name: Build Astro public routes
+              run: |
+                  npm run astro:build
+                  npm run astro:sync
+
+            - name: Install Playwright (chromium) for acceptance gate
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              run: npx playwright install --with-deps chromium
+
             - name: Validar secretos requeridos
               shell: bash
               run: |
@@ -146,3 +164,48 @@ jobs:
                   echo "Figo:"
                   head -c 300 /tmp/figo.json
                   echo
+
+            - name: Validar routing publico ES/EN + redirects (staging)
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p .staging-acceptance
+                  node bin/check-public-routing-smoke.js --base-url "${PROD_URL}" --label "staging" --output ".staging-acceptance/routing-smoke.json"
+
+            - name: Validar conversion publica ES/EN (staging)
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p .staging-acceptance
+                  node bin/check-public-conversion-smoke.js --base-url "${PROD_URL}" --label "staging-conversion" --output ".staging-acceptance/conversion-smoke.json"
+
+            - name: Gate de aceptacion publica staging (visual + funcional + performance)
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  node bin/run-staging-acceptance-gate.js --base-url "${PROD_URL}" --label "staging" --out-dir ".staging-acceptance"
+
+            - name: Upload staging acceptance evidence
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: staging-acceptance-evidence
+                  path: .staging-acceptance/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Staging summary
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Staging acceptance";
+                    echo "- routing_smoke_report: \`.staging-acceptance/routing-smoke.json\`";
+                    echo "- conversion_smoke_report: \`.staging-acceptance/conversion-smoke.json\`";
+                    echo "- manual_checklist: \`.staging-acceptance/*/staging-manual-checklist.md\`";
+                    echo "- artifact: \`staging-acceptance-evidence\`";
+                    echo "- result: \`${{ job.status }}\`";
+                  } >> "$GITHUB_STEP_SUMMARY"
