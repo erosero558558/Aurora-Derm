@@ -103,9 +103,69 @@ const ADMIN_LAST_SECTION_STORAGE_KEY = 'adminLastSection';
 const ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY = 'adminSidebarCollapsed';
 const QUEUE_STATION_MODE_STORAGE_KEY = 'queueStationMode';
 const QUEUE_STATION_CONSULTORIO_STORAGE_KEY = 'queueStationConsultorio';
+const QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY = 'queueOneTapAdvance';
+const QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY = 'queueCallKeyBindingV1';
+const QUEUE_ONBOARDING_SEEN_STORAGE_KEY = 'queueOnboardingSeenV1';
+const QUEUE_ONBOARDING_PROGRESS_STORAGE_KEY = 'queueOnboardingProgressV2';
 const QUEUE_STATION_MODE_LOCKED = 'locked';
 const QUEUE_STATION_MODE_FREE = 'free';
+const QUEUE_ONE_TAP_COOLDOWN_MS = 1200;
 const NUMPAD_KEY_LOCATION = 3;
+const QUEUE_NUMPAD_ENTER_CODES = new Set(['numpadenter', 'kpenter']);
+const QUEUE_NUMPAD_ENTER_KEYS = new Set(['enter', 'return']);
+const QUEUE_NUMPAD_ADD_CODES = new Set(['numpadadd', 'kpadd']);
+const QUEUE_NUMPAD_ADD_KEYS = new Set(['+', 'add', 'plus']);
+const QUEUE_NUMPAD_SUBTRACT_CODES = new Set(['numpadsubtract', 'kpsubtract']);
+const QUEUE_NUMPAD_SUBTRACT_KEYS = new Set(['-', 'subtract', 'minus']);
+const QUEUE_NUMPAD_DECIMAL_CODES = new Set(['numpaddecimal', 'kpdecimal']);
+const QUEUE_NUMPAD_DECIMAL_KEYS = new Set([
+    '.',
+    ',',
+    'decimal',
+    'separator',
+    'delete',
+    'del',
+]);
+const QUEUE_NUMPAD_HELP_TOGGLE_STORAGE_KEY = 'queueNumpadHelpOpen';
+const QUEUE_SENSITIVE_ACTIONS = new Set([
+    'completar',
+    'no_show',
+    'cancelar',
+    'reasignar',
+]);
+const QUEUE_PRACTICE_COACH_STYLE_ID = 'queuePracticeCoachInlineStyles';
+const QUEUE_PRACTICE_STEPS = Object.freeze([
+    Object.freeze({
+        id: 'call_next',
+        label: 'Llamar siguiente (Numpad Enter)',
+    }),
+    Object.freeze({
+        id: 're_llamar',
+        label: 'Re-llamar ticket activo (Numpad +)',
+    }),
+    Object.freeze({
+        id: 'completar',
+        label: 'Completar ticket activo (Numpad . / ,)',
+    }),
+    Object.freeze({
+        id: 'no_show',
+        label: 'Marcar no_show (Numpad -)',
+    }),
+]);
+const QUEUE_ONBOARDING_STEPS = Object.freeze([
+    Object.freeze({
+        id: 'station_locked',
+        label: 'Bloquear estación en C1 o C2',
+    }),
+    Object.freeze({
+        id: 'shortcuts_opened',
+        label: 'Abrir panel de atajos numpad',
+    }),
+    Object.freeze({
+        id: 'practice_completed',
+        label: 'Completar práctica guiada (4 acciones)',
+    }),
+]);
 const ADMIN_CONTEXT_ACTIONS = {
     dashboard: {
         title: 'Acciones rápidas: dashboard',
@@ -265,6 +325,19 @@ let adminRefreshStatusTimerId = 0;
 const queueStationState = {
     mode: QUEUE_STATION_MODE_FREE,
     consultorio: 1,
+    oneTapAdvance: false,
+};
+const queueStarUiState = {
+    helpOpen: false,
+    onboardingVisible: false,
+    onboardingProgress: null,
+    practiceMode: false,
+    practiceTickId: 0,
+    practiceState: null,
+    oneTapInFlight: false,
+    lastOneTapAt: 0,
+    customCallKey: null,
+    captureCallKeyMode: false,
 };
 
 function emitQueueOpsStationEvent(eventName, detail = {}) {
@@ -282,6 +355,787 @@ function emitQueueOpsStationEvent(eventName, detail = {}) {
     } catch (_error) {
         // no-op: operational telemetry is best effort
     }
+}
+
+function readLocalFlag(storageKey, fallback = false) {
+    try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw === null) return Boolean(fallback);
+        return raw === '1' || raw === 'true';
+    } catch (_error) {
+        return Boolean(fallback);
+    }
+}
+
+function writeLocalFlag(storageKey, value) {
+    try {
+        localStorage.setItem(storageKey, value ? '1' : '0');
+    } catch (_error) {
+        // no-op
+    }
+}
+
+function createQueueOnboardingProgressState() {
+    const progress = {};
+    QUEUE_ONBOARDING_STEPS.forEach((step) => {
+        progress[step.id] = false;
+    });
+    return progress;
+}
+
+function normalizeQueueOnboardingProgressState(rawProgress) {
+    const fallback = createQueueOnboardingProgressState();
+    if (!rawProgress || typeof rawProgress !== 'object') {
+        return fallback;
+    }
+    QUEUE_ONBOARDING_STEPS.forEach((step) => {
+        fallback[step.id] = Boolean(rawProgress[step.id]);
+    });
+    return fallback;
+}
+
+function readQueueOnboardingProgressFromStorage() {
+    try {
+        const raw = localStorage.getItem(QUEUE_ONBOARDING_PROGRESS_STORAGE_KEY);
+        if (!raw) return createQueueOnboardingProgressState();
+        return normalizeQueueOnboardingProgressState(JSON.parse(raw));
+    } catch (_error) {
+        return createQueueOnboardingProgressState();
+    }
+}
+
+function persistQueueOnboardingProgress(progressState) {
+    try {
+        localStorage.setItem(
+            QUEUE_ONBOARDING_PROGRESS_STORAGE_KEY,
+            JSON.stringify(normalizeQueueOnboardingProgressState(progressState))
+        );
+    } catch (_error) {
+        // no-op
+    }
+}
+
+function getQueueOnboardingProgressState() {
+    if (!queueStarUiState.onboardingProgress) {
+        queueStarUiState.onboardingProgress =
+            createQueueOnboardingProgressState();
+    }
+    return queueStarUiState.onboardingProgress;
+}
+
+function getQueueOnboardingProgressCount() {
+    const progressState = getQueueOnboardingProgressState();
+    return QUEUE_ONBOARDING_STEPS.reduce(
+        (acc, step) => (progressState[step.id] ? acc + 1 : acc),
+        0
+    );
+}
+
+function syncQueueOnboardingChecklistUi() {
+    const checklist = document.getElementById('queueOnboardingChecklist');
+    const progressPill = document.getElementById('queueOnboardingProgressPill');
+    const meta = document.getElementById('queueOnboardingMeta');
+    const progressState = getQueueOnboardingProgressState();
+    const totalSteps = QUEUE_ONBOARDING_STEPS.length;
+    const completedCount = getQueueOnboardingProgressCount();
+
+    if (checklist instanceof HTMLElement) {
+        checklist.innerHTML = QUEUE_ONBOARDING_STEPS.map((step) => {
+            const done = Boolean(progressState[step.id]);
+            return `<li class="queue-practice-step${done ? ' is-done' : ''}">${step.label}</li>`;
+        }).join('');
+    }
+
+    if (progressPill instanceof HTMLElement) {
+        progressPill.textContent = `${completedCount}/${totalSteps}`;
+    }
+
+    if (meta instanceof HTMLElement) {
+        if (completedCount >= totalSteps) {
+            meta.textContent =
+                'Checklist completado. Puedes cerrar la guía o iniciar práctica cuando quieras.';
+        } else {
+            meta.textContent = `Paso ${Math.min(
+                totalSteps,
+                completedCount + 1
+            )} de ${totalSteps}. Completa los pasos para dejar esta estación lista.`;
+        }
+    }
+}
+
+function markQueueOnboardingStepCompleted(
+    stepId,
+    { source = 'manual', announce = false } = {}
+) {
+    const normalizedStepId = String(stepId || '')
+        .trim()
+        .toLowerCase();
+    if (!normalizedStepId) return false;
+    const stepExists = QUEUE_ONBOARDING_STEPS.some(
+        (step) => step.id === normalizedStepId
+    );
+    if (!stepExists) return false;
+
+    const progressState = getQueueOnboardingProgressState();
+    if (progressState[normalizedStepId]) return false;
+
+    progressState[normalizedStepId] = true;
+    persistQueueOnboardingProgress(progressState);
+    syncQueueOnboardingChecklistUi();
+
+    const completedCount = getQueueOnboardingProgressCount();
+    const totalSteps = QUEUE_ONBOARDING_STEPS.length;
+    emitQueueOpsStationEvent('onboarding_step_completed', {
+        source,
+        stepId: normalizedStepId,
+        completedCount,
+        totalSteps,
+    });
+
+    if (announce) {
+        const toastMessage =
+            completedCount >= totalSteps
+                ? 'Checklist de guía completado.'
+                : `Guía: paso ${completedCount}/${totalSteps} completado.`;
+        showToast(
+            toastMessage,
+            completedCount >= totalSteps ? 'success' : 'info'
+        );
+    }
+
+    return true;
+}
+
+function getQueueHelpPanel() {
+    return document.getElementById('queueShortcutPanel');
+}
+
+function getQueueOneTapControlButton() {
+    return document.querySelector('[data-action="queue-toggle-one-tap"]');
+}
+
+function ensureQueueOneTapControlButton() {
+    const actionsWrap = document.querySelector(
+        '#queue .queue-station-control-actions'
+    );
+    if (!(actionsWrap instanceof HTMLElement)) return null;
+
+    let button = getQueueOneTapControlButton();
+    if (button instanceof HTMLButtonElement) return button;
+
+    button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-secondary btn-sm';
+    button.dataset.action = 'queue-toggle-one-tap';
+    button.setAttribute('aria-pressed', 'false');
+    button.textContent = 'Modo 1 tecla';
+
+    const shortcutsButton = actionsWrap.querySelector(
+        '[data-action="queue-toggle-shortcuts"]'
+    );
+    if (shortcutsButton && shortcutsButton.parentElement === actionsWrap) {
+        actionsWrap.insertBefore(button, shortcutsButton);
+    } else {
+        actionsWrap.appendChild(button);
+    }
+    return button;
+}
+
+function getQueueCallKeyCaptureButton() {
+    return document.querySelector('[data-action="queue-capture-call-key"]');
+}
+
+function getQueueCallKeyClearButton() {
+    return document.querySelector('[data-action="queue-clear-call-key"]');
+}
+
+function ensureQueueCallKeyControlButtons() {
+    const actionsWrap = document.querySelector(
+        '#queue .queue-station-control-actions'
+    );
+    if (!(actionsWrap instanceof HTMLElement)) {
+        return { captureButton: null, clearButton: null };
+    }
+
+    let captureButton = getQueueCallKeyCaptureButton();
+    if (!(captureButton instanceof HTMLButtonElement)) {
+        captureButton = document.createElement('button');
+        captureButton.type = 'button';
+        captureButton.className = 'btn btn-secondary btn-sm';
+        captureButton.dataset.action = 'queue-capture-call-key';
+        captureButton.setAttribute('aria-pressed', 'false');
+        captureButton.textContent = 'Calibrar tecla externa';
+        const shortcutsButton = actionsWrap.querySelector(
+            '[data-action="queue-toggle-shortcuts"]'
+        );
+        if (shortcutsButton && shortcutsButton.parentElement === actionsWrap) {
+            actionsWrap.insertBefore(captureButton, shortcutsButton);
+        } else {
+            actionsWrap.appendChild(captureButton);
+        }
+    }
+
+    let clearButton = getQueueCallKeyClearButton();
+    if (!(clearButton instanceof HTMLButtonElement)) {
+        clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'btn btn-secondary btn-sm';
+        clearButton.dataset.action = 'queue-clear-call-key';
+        clearButton.textContent = 'Quitar tecla externa';
+        clearButton.hidden = true;
+        const anchorButton =
+            captureButton && captureButton.parentElement === actionsWrap
+                ? captureButton.nextSibling
+                : null;
+        if (anchorButton) {
+            actionsWrap.insertBefore(clearButton, anchorButton);
+        } else {
+            actionsWrap.appendChild(clearButton);
+        }
+    }
+
+    return { captureButton, clearButton };
+}
+
+function describeQueueCallKeyBinding(binding) {
+    const normalizedBinding = normalizeQueueCallKeyBinding(binding);
+    if (!normalizedBinding) return 'Numpad Enter';
+
+    const { code, key, location } = normalizedBinding;
+    if (code === 'numpadenter' || code === 'kpenter') {
+        return 'Numpad Enter';
+    }
+    if (
+        (key === 'enter' || key === 'return') &&
+        location === NUMPAD_KEY_LOCATION
+    ) {
+        return 'Enter (numpad)';
+    }
+    if (key === 'enter' || key === 'return') {
+        return 'Enter externo';
+    }
+    if (key && location === NUMPAD_KEY_LOCATION) {
+        return `${key.toUpperCase()} (numpad)`;
+    }
+    if (key) {
+        return key.length === 1 ? key.toUpperCase() : key;
+    }
+    if (code) {
+        return code;
+    }
+    return 'Tecla externa';
+}
+
+function syncQueueOneTapShortcutHint() {
+    const panel = getQueueHelpPanel();
+    if (!(panel instanceof HTMLElement)) return;
+    const list = panel.querySelector('ul');
+    if (!(list instanceof HTMLElement)) return;
+
+    let oneTapItem = list.querySelector('[data-queue-one-tap-hint]');
+    if (!(oneTapItem instanceof HTMLLIElement)) {
+        oneTapItem = document.createElement('li');
+        oneTapItem.dataset.queueOneTapHint = '1';
+        list.appendChild(oneTapItem);
+    }
+
+    const oneTapEnabled = normalizeQueueOneTapAdvance(
+        queueStationState.oneTapAdvance,
+        false
+    );
+    oneTapItem.innerHTML = oneTapEnabled
+        ? '<strong>Modo 1 tecla:</strong> activo. Numpad Enter completa ticket activo y llama siguiente.'
+        : '<strong>Modo 1 tecla:</strong> desactivado. Flujo recomendado: Numpad . y luego Numpad Enter.';
+}
+
+function syncQueueCallKeyShortcutHint() {
+    const panel = getQueueHelpPanel();
+    if (!(panel instanceof HTMLElement)) return;
+    const list = panel.querySelector('ul');
+    if (!(list instanceof HTMLElement)) return;
+
+    let callKeyItem = list.querySelector('[data-queue-call-key-hint]');
+    if (!(callKeyItem instanceof HTMLLIElement)) {
+        callKeyItem = document.createElement('li');
+        callKeyItem.dataset.queueCallKeyHint = '1';
+        list.appendChild(callKeyItem);
+    }
+
+    if (queueStarUiState.customCallKey) {
+        const bindingLabel = describeQueueCallKeyBinding(
+            queueStarUiState.customCallKey
+        );
+        callKeyItem.innerHTML = '';
+        const strong = document.createElement('strong');
+        strong.textContent = 'Tecla externa activa:';
+        callKeyItem.appendChild(strong);
+        callKeyItem.append(` ${bindingLabel} (capturada en esta estación)`);
+    } else {
+        callKeyItem.innerHTML =
+            '<strong>Tecla externa:</strong> opcional. Usa "Calibrar tecla externa" si tu numpad inalámbrico no envía Numpad Enter.';
+    }
+}
+
+function syncQueueHelpPanel() {
+    const panel = getQueueHelpPanel();
+    const toggleButton = document.querySelector(
+        '[data-action="queue-toggle-shortcuts"]'
+    );
+    if (panel instanceof HTMLElement) {
+        panel.hidden = !queueStarUiState.helpOpen;
+        panel.setAttribute('aria-hidden', String(!queueStarUiState.helpOpen));
+    }
+    if (toggleButton instanceof HTMLButtonElement) {
+        toggleButton.setAttribute(
+            'aria-pressed',
+            String(queueStarUiState.helpOpen)
+        );
+        toggleButton.textContent = queueStarUiState.helpOpen
+            ? 'Ocultar atajos'
+            : 'Atajos numpad';
+    }
+    syncQueueOneTapShortcutHint();
+    syncQueueCallKeyShortcutHint();
+}
+
+function setQueueHelpPanelOpen(
+    isOpen,
+    { announce = false, source = 'manual' } = {}
+) {
+    queueStarUiState.helpOpen = Boolean(isOpen);
+    writeLocalFlag(
+        QUEUE_NUMPAD_HELP_TOGGLE_STORAGE_KEY,
+        queueStarUiState.helpOpen
+    );
+    syncQueueHelpPanel();
+    if (queueStarUiState.helpOpen) {
+        markQueueOnboardingStepCompleted('shortcuts_opened', {
+            source,
+            announce: false,
+        });
+    }
+    emitQueueOpsStationEvent('shortcut_panel_toggled', {
+        source,
+        open: queueStarUiState.helpOpen,
+    });
+    if (announce) {
+        showToast(
+            queueStarUiState.helpOpen
+                ? 'Panel de atajos numpad visible'
+                : 'Panel de atajos numpad oculto',
+            'info'
+        );
+    }
+}
+
+function toggleQueueHelpPanel({ source = 'manual', announce = true } = {}) {
+    setQueueHelpPanelOpen(!queueStarUiState.helpOpen, { source, announce });
+}
+
+function getQueueOnboardingPanel() {
+    return document.getElementById('queueOnboardingPanel');
+}
+
+function getQueuePracticeModeBadge() {
+    return document.getElementById('queuePracticeModeBadge');
+}
+
+function normalizeQueuePracticeAction(action) {
+    return String(action || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/-/g, '_');
+}
+
+function resolveQueuePracticeStepId(action) {
+    const normalized = normalizeQueuePracticeAction(action);
+    if (!normalized) return '';
+    if (normalized === 'call_next' || normalized === 'callnext') {
+        return 'call_next';
+    }
+    if (normalized === 're_llamar' || normalized === 'rellamar') {
+        return 're_llamar';
+    }
+    if (normalized === 'completar' || normalized === 'bulk_completar') {
+        return 'completar';
+    }
+    if (normalized === 'no_show' || normalized === 'bulk_no_show') {
+        return 'no_show';
+    }
+    return '';
+}
+
+function createQueuePracticeState() {
+    const completed = {};
+    QUEUE_PRACTICE_STEPS.forEach((step) => {
+        completed[step.id] = false;
+    });
+    return {
+        startedAt: Date.now(),
+        lastActionAt: 0,
+        actionsCount: 0,
+        completed,
+        completedAt: 0,
+    };
+}
+
+function getQueuePracticeCompletionCount() {
+    const state = queueStarUiState.practiceState;
+    if (!state || !state.completed || typeof state.completed !== 'object') {
+        return 0;
+    }
+    return QUEUE_PRACTICE_STEPS.reduce(
+        (acc, step) => (state.completed[step.id] ? acc + 1 : acc),
+        0
+    );
+}
+
+function formatQueuePracticeElapsed() {
+    const state = queueStarUiState.practiceState;
+    if (!state || !Number.isFinite(state.startedAt) || state.startedAt <= 0) {
+        return '00:00';
+    }
+    const elapsedSeconds = Math.max(
+        0,
+        Math.floor((Date.now() - Number(state.startedAt || 0)) / 1000)
+    );
+    const mm = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+    const ss = String(elapsedSeconds % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+}
+
+function stopQueuePracticeTicker() {
+    if (!queueStarUiState.practiceTickId) return;
+    window.clearInterval(queueStarUiState.practiceTickId);
+    queueStarUiState.practiceTickId = 0;
+}
+
+function startQueuePracticeTicker() {
+    stopQueuePracticeTicker();
+    queueStarUiState.practiceTickId = window.setInterval(() => {
+        if (!queueStarUiState.practiceMode) {
+            stopQueuePracticeTicker();
+            return;
+        }
+        syncQueuePracticeCoachUi();
+    }, 1000);
+}
+
+function ensureQueuePracticeCoachStyles() {
+    if (document.getElementById(QUEUE_PRACTICE_COACH_STYLE_ID)) return;
+    const styleEl = document.createElement('style');
+    styleEl.id = QUEUE_PRACTICE_COACH_STYLE_ID;
+    styleEl.textContent = `
+        #queue .queue-practice-coach {
+            margin-top: 0.75rem;
+            border: 1px solid var(--admin-border, #d8e1f0);
+            border-radius: 16px;
+            padding: 0.9rem 1rem;
+            background: linear-gradient(160deg, #f6f9ff, #ffffff);
+        }
+        #queue .queue-practice-coach-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+            margin-bottom: 0.48rem;
+        }
+        #queue .queue-practice-coach-header h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+        #queue .queue-practice-progress {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #1f4f9f;
+            background: #eaf2ff;
+            border-radius: 999px;
+            padding: 0.15rem 0.55rem;
+        }
+        #queue .queue-practice-meta {
+            margin: 0 0 0.5rem;
+            color: #4f5d73;
+            font-size: 0.9rem;
+        }
+        #queue .queue-practice-steps {
+            margin: 0;
+            padding-left: 1.1rem;
+            display: grid;
+            gap: 0.3rem;
+        }
+        #queue .queue-practice-step.is-done {
+            color: #0d7a4a;
+            font-weight: 600;
+        }
+        #queue .queue-practice-step.is-done::marker {
+            content: '✓ ';
+            color: #0d7a4a;
+        }
+        #queue .queue-practice-actions {
+            margin-top: 0.62rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+        #queue .queue-onboarding-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+            margin-bottom: 0.35rem;
+        }
+        #queue .queue-onboarding-panel .queue-practice-meta {
+            margin: 0 0 0.5rem;
+        }
+        #queue .queue-onboarding-panel .queue-practice-steps {
+            margin: 0 0 0.55rem;
+            padding-left: 1.1rem;
+            display: grid;
+            gap: 0.3rem;
+        }
+    `;
+    document.head.appendChild(styleEl);
+}
+
+function ensureQueuePracticeCoachPanel() {
+    let panel = document.getElementById('queuePracticeCoachPanel');
+    if (panel instanceof HTMLElement) return panel;
+
+    const queueSection = document.getElementById('queue');
+    if (!(queueSection instanceof HTMLElement)) return null;
+    const onboardingPanel = getQueueOnboardingPanel();
+    if (!(onboardingPanel instanceof HTMLElement)) return null;
+
+    ensureQueuePracticeCoachStyles();
+    panel = document.createElement('section');
+    panel.id = 'queuePracticeCoachPanel';
+    panel.className = 'queue-practice-coach';
+    panel.setAttribute('aria-label', 'Práctica guiada turnero');
+    panel.hidden = true;
+    panel.innerHTML = `
+        <div class="queue-practice-coach-header">
+            <h4>Práctica guiada</h4>
+            <span id="queuePracticeProgressPill" class="queue-practice-progress">0/${QUEUE_PRACTICE_STEPS.length}</span>
+        </div>
+        <p id="queuePracticeMeta" class="queue-practice-meta">
+            Activa práctica para ensayar sin afectar la cola real.
+        </p>
+        <ol id="queuePracticeStepsList" class="queue-practice-steps"></ol>
+        <div class="queue-practice-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-action="queue-reset-practice">
+                Reiniciar práctica
+            </button>
+        </div>
+    `;
+    onboardingPanel.insertAdjacentElement('afterend', panel);
+    return panel;
+}
+
+function renderQueuePracticeSteps() {
+    const list = document.getElementById('queuePracticeStepsList');
+    if (!(list instanceof HTMLElement)) return;
+    const completed = queueStarUiState.practiceState?.completed || {};
+    list.innerHTML = QUEUE_PRACTICE_STEPS.map((step) => {
+        const done = Boolean(completed[step.id]);
+        return `<li class="queue-practice-step${done ? ' is-done' : ''}">${step.label}</li>`;
+    }).join('');
+}
+
+function syncQueuePracticeCoachUi() {
+    const panel = ensureQueuePracticeCoachPanel();
+    if (!(panel instanceof HTMLElement)) return;
+
+    const practiceActive = Boolean(queueStarUiState.practiceMode);
+    panel.hidden = !practiceActive;
+    if (!practiceActive) return;
+
+    const completedCount = getQueuePracticeCompletionCount();
+    const totalSteps = QUEUE_PRACTICE_STEPS.length;
+    const pill = document.getElementById('queuePracticeProgressPill');
+    if (pill instanceof HTMLElement) {
+        pill.textContent = `${completedCount}/${totalSteps}`;
+    }
+
+    const meta = document.getElementById('queuePracticeMeta');
+    if (meta instanceof HTMLElement) {
+        const state = queueStarUiState.practiceState;
+        const actionCount = Number(state?.actionsCount || 0);
+        const elapsed = formatQueuePracticeElapsed();
+        if (completedCount >= totalSteps) {
+            meta.textContent = `Práctica completada en ${elapsed}. Acciones simuladas: ${actionCount}.`;
+        } else {
+            meta.textContent = `Paso ${Math.min(totalSteps, completedCount + 1)} de ${totalSteps}. Tiempo: ${elapsed}.`;
+        }
+    }
+
+    renderQueuePracticeSteps();
+}
+
+function registerQueuePracticeAction(
+    action,
+    { source = 'manual', consultorio = null, ticketId = null } = {}
+) {
+    if (!queueStarUiState.practiceMode) return;
+    if (!queueStarUiState.practiceState) {
+        queueStarUiState.practiceState = createQueuePracticeState();
+    }
+
+    const state = queueStarUiState.practiceState;
+    state.actionsCount = Number(state.actionsCount || 0) + 1;
+    state.lastActionAt = Date.now();
+
+    const stepId = resolveQueuePracticeStepId(action);
+    let stepCompleted = false;
+    if (stepId && !state.completed[stepId]) {
+        state.completed[stepId] = true;
+        stepCompleted = true;
+    }
+
+    const completedCount = getQueuePracticeCompletionCount();
+    const totalSteps = QUEUE_PRACTICE_STEPS.length;
+    const finished = completedCount >= totalSteps;
+    if (finished && !state.completedAt) {
+        state.completedAt = Date.now();
+    }
+
+    syncQueuePracticeCoachUi();
+
+    if (finished) {
+        markQueueOnboardingStepCompleted('practice_completed', {
+            source,
+            announce: false,
+        });
+    }
+
+    emitQueueOpsStationEvent('practice_action_simulated', {
+        source,
+        action,
+        stepId: stepId || null,
+        stepCompleted,
+        completedCount,
+        totalSteps,
+        consultorio,
+        ticketId,
+        finished,
+    });
+
+    if (stepCompleted) {
+        showToast(
+            finished
+                ? 'Práctica completada. Lista para operación real.'
+                : `Práctica: paso ${completedCount}/${totalSteps} completado.`,
+            finished ? 'success' : 'info'
+        );
+    }
+}
+
+function resetQueuePracticeProgress({
+    source = 'manual',
+    announce = false,
+} = {}) {
+    queueStarUiState.practiceState = createQueuePracticeState();
+    syncQueuePracticeCoachUi();
+    emitQueueOpsStationEvent('practice_progress_reset', {
+        source,
+        totalSteps: QUEUE_PRACTICE_STEPS.length,
+    });
+    if (announce) {
+        showToast('Práctica reiniciada desde el paso 1.', 'info');
+    }
+}
+
+function syncQueuePracticeModeUi() {
+    const isActive = Boolean(queueStarUiState.practiceMode);
+    const badge = getQueuePracticeModeBadge();
+    if (badge instanceof HTMLElement) {
+        badge.hidden = !isActive;
+    }
+    const stopPracticeButton = document.querySelector(
+        '[data-action="queue-stop-practice"]'
+    );
+    if (stopPracticeButton instanceof HTMLButtonElement) {
+        stopPracticeButton.hidden = !isActive;
+    }
+    syncQueuePracticeCoachUi();
+}
+
+function setQueuePracticeMode(isActive, { source = 'manual' } = {}) {
+    queueStarUiState.practiceMode = Boolean(isActive);
+    if (queueStarUiState.practiceMode) {
+        resetQueuePracticeProgress({ source, announce: false });
+        startQueuePracticeTicker();
+    } else {
+        stopQueuePracticeTicker();
+        queueStarUiState.practiceState = null;
+    }
+    try {
+        window.__PIEL_QUEUE_PRACTICE_MODE = queueStarUiState.practiceMode;
+    } catch (_error) {
+        // no-op
+    }
+    syncQueuePracticeModeUi();
+    emitQueueOpsStationEvent(
+        queueStarUiState.practiceMode
+            ? 'practice_mode_enabled'
+            : 'practice_mode_disabled',
+        {
+            source,
+            stationMode: queueStationState.mode,
+            consultorio: queueStationState.consultorio,
+        }
+    );
+}
+
+function simulateQueuePracticeAction(
+    action,
+    { source = 'manual', consultorio = null, ticketId = null } = {}
+) {
+    showToast(
+        `Modo práctica: "${action}" simulado${consultorio ? ` en C${consultorio}` : ''}.`,
+        'info'
+    );
+    registerQueuePracticeAction(action, {
+        source,
+        consultorio,
+        ticketId,
+    });
+}
+
+function setQueueOnboardingVisible(
+    isVisible,
+    { persist = false, source = 'manual' } = {}
+) {
+    const panel = getQueueOnboardingPanel();
+    const visible = Boolean(isVisible);
+    queueStarUiState.onboardingVisible = visible;
+    if (panel instanceof HTMLElement) {
+        panel.hidden = !visible;
+        panel.setAttribute('aria-hidden', String(!visible));
+    }
+    if (!visible && persist) {
+        writeLocalFlag(QUEUE_ONBOARDING_SEEN_STORAGE_KEY, true);
+    }
+    syncQueueOnboardingChecklistUi();
+    syncQueuePracticeCoachUi();
+    emitQueueOpsStationEvent(
+        visible ? 'onboarding_opened' : 'onboarding_closed',
+        {
+            source,
+        }
+    );
+}
+
+function maybeShowQueueOnboarding() {
+    syncQueueOnboardingChecklistUi();
+    const onboardingSeen = readLocalFlag(
+        QUEUE_ONBOARDING_SEEN_STORAGE_KEY,
+        false
+    );
+    if (onboardingSeen) {
+        setQueueOnboardingVisible(false, { source: 'autoload' });
+        return;
+    }
+    setQueueOnboardingVisible(true, { source: 'autoload' });
 }
 
 function getNavItems() {
@@ -453,6 +1307,73 @@ function normalizeQueueStationConsultorio(consultorio, fallback = 1) {
     return normalized === 1 || normalized === 2 ? normalized : fallback;
 }
 
+function normalizeQueueOneTapAdvance(value, fallback = false) {
+    if (typeof value === 'boolean') return value;
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase();
+    if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalized)) {
+        return true;
+    }
+    if (['0', 'false', 'no', 'off', 'disabled'].includes(normalized)) {
+        return false;
+    }
+    return Boolean(fallback);
+}
+
+function normalizeQueueCallKeyBinding(binding, fallback = null) {
+    if (!binding || typeof binding !== 'object') {
+        return fallback;
+    }
+    const code = String(binding.code || '')
+        .trim()
+        .toLowerCase();
+    const key = String(binding.key || '')
+        .trim()
+        .toLowerCase();
+    const locationRaw = Number(binding.location);
+    const location = Number.isFinite(locationRaw)
+        ? Math.max(0, Math.min(3, Math.round(locationRaw)))
+        : null;
+
+    if (!code && !key) {
+        return fallback;
+    }
+
+    return {
+        code,
+        key,
+        location,
+    };
+}
+
+function readQueueCustomCallKeyFromStorage() {
+    try {
+        const raw = localStorage.getItem(QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return normalizeQueueCallKeyBinding(parsed, null);
+    } catch (_error) {
+        return null;
+    }
+}
+
+function persistQueueCustomCallKey(binding) {
+    try {
+        const normalized = normalizeQueueCallKeyBinding(binding, null);
+        if (!normalized) {
+            localStorage.removeItem(QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY);
+            return;
+        }
+        localStorage.setItem(
+            QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY,
+            JSON.stringify(normalized)
+        );
+    } catch (_error) {
+        // no-op
+    }
+}
+
 function readQueueStationConfigFromStorage() {
     try {
         const mode = normalizeQueueStationMode(
@@ -487,6 +1408,28 @@ function persistQueueStationConfig(mode, consultorio) {
     }
 }
 
+function readQueueOneTapAdvanceFromStorage() {
+    try {
+        return normalizeQueueOneTapAdvance(
+            localStorage.getItem(QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY),
+            false
+        );
+    } catch (_error) {
+        return false;
+    }
+}
+
+function persistQueueOneTapAdvance(enabled) {
+    try {
+        localStorage.setItem(
+            QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY,
+            enabled ? '1' : '0'
+        );
+    } catch (_error) {
+        // no-op
+    }
+}
+
 function readQueueStationProvisioningFromUrl() {
     try {
         const url = new URL(window.location.href);
@@ -496,10 +1439,18 @@ function readQueueStationProvisioningFromUrl() {
         const lockRaw = String(url.searchParams.get('lock') || '')
             .trim()
             .toLowerCase();
+        const oneTapRaw = String(
+            url.searchParams.get('onetap') ||
+                url.searchParams.get('one_tap') ||
+                ''
+        )
+            .trim()
+            .toLowerCase();
         const hasStationParam = stationRaw !== '';
         const hasLockParam = lockRaw !== '';
+        const hasOneTapParam = oneTapRaw !== '';
 
-        if (!hasStationParam && !hasLockParam) {
+        if (!hasStationParam && !hasLockParam && !hasOneTapParam) {
             return null;
         }
 
@@ -516,12 +1467,17 @@ function readQueueStationProvisioningFromUrl() {
         } else if (['0', 'false', 'free', 'no'].includes(lockRaw)) {
             mode = QUEUE_STATION_MODE_FREE;
         }
+        const oneTapAdvance = hasOneTapParam
+            ? normalizeQueueOneTapAdvance(oneTapRaw, false)
+            : null;
 
         return {
             consultorio,
             mode,
+            oneTapAdvance,
             hadStationParam: hasStationParam,
             hadLockParam: hasLockParam,
+            hadOneTapParam: hasOneTapParam,
         };
     } catch (_error) {
         return null;
@@ -533,9 +1489,13 @@ function clearQueueStationProvisioningParams() {
         const url = new URL(window.location.href);
         const hadStation = url.searchParams.has('station');
         const hadLock = url.searchParams.has('lock');
-        if (!hadStation && !hadLock) return;
+        const hadOneTap =
+            url.searchParams.has('onetap') || url.searchParams.has('one_tap');
+        if (!hadStation && !hadLock && !hadOneTap) return;
         url.searchParams.delete('station');
         url.searchParams.delete('lock');
+        url.searchParams.delete('onetap');
+        url.searchParams.delete('one_tap');
         const nextPath = `${url.pathname}${url.search}${url.hash}`;
         if (
             window.history &&
@@ -571,9 +1531,21 @@ function syncQueueStationUi() {
         queueStationState.consultorio,
         1
     );
+    const oneTapAdvance = normalizeQueueOneTapAdvance(
+        queueStationState.oneTapAdvance,
+        false
+    );
+    const customCallKey = normalizeQueueCallKeyBinding(
+        queueStarUiState.customCallKey,
+        null
+    );
+    const captureCallKeyMode = Boolean(queueStarUiState.captureCallKeyMode);
 
     queueSection.dataset.stationMode = mode;
     queueSection.dataset.stationConsultorio = String(consultorio);
+    queueSection.dataset.oneTapAdvance = oneTapAdvance ? '1' : '0';
+    queueSection.dataset.customCallKey = customCallKey ? '1' : '0';
+    queueSection.dataset.captureCallKeyMode = captureCallKeyMode ? '1' : '0';
 
     const stationBadge = document.getElementById('queueStationBadge');
     if (stationBadge instanceof HTMLElement) {
@@ -592,10 +1564,22 @@ function syncQueueStationUi() {
 
     const stationHint = document.getElementById('queueStationHint');
     if (stationHint instanceof HTMLElement) {
-        stationHint.textContent =
+        let hintText =
             mode === QUEUE_STATION_MODE_LOCKED
-                ? `Numpad Enter llama siempre en C${consultorio}.`
-                : `Modo libre: Numpad 1/2 selecciona consultorio, Numpad Enter llama.`;
+                ? oneTapAdvance
+                    ? `Modo 1 tecla activo: Numpad Enter completa ticket activo y llama siguiente en C${consultorio}.`
+                    : `Numpad Enter llama en C${consultorio}. Numpad . completa, Numpad - no_show y Numpad + re-llama.`
+                : oneTapAdvance
+                  ? `Modo libre + 1 tecla: Numpad 1/2 elige consultorio y Numpad Enter completa + llama.`
+                  : `Modo libre: Numpad 1/2 selecciona consultorio, Numpad Enter llama y Numpad 0 abre ayuda.`;
+        if (customCallKey) {
+            hintText += ` Tecla externa activa: ${describeQueueCallKeyBinding(customCallKey)}.`;
+        }
+        if (captureCallKeyMode) {
+            hintText +=
+                ' Calibración en curso: presiona la tecla deseada o Esc para cancelar.';
+        }
+        stationHint.textContent = hintText;
     }
 
     document
@@ -629,6 +1613,46 @@ function syncQueueStationUi() {
     );
     if (reconfigureButton instanceof HTMLButtonElement) {
         reconfigureButton.disabled = mode !== QUEUE_STATION_MODE_LOCKED;
+    }
+
+    const oneTapButton = ensureQueueOneTapControlButton();
+    if (oneTapButton instanceof HTMLButtonElement) {
+        oneTapButton.classList.toggle('is-active', oneTapAdvance);
+        oneTapButton.setAttribute('aria-pressed', String(oneTapAdvance));
+        oneTapButton.textContent = oneTapAdvance
+            ? 'Modo 1 tecla: ON'
+            : 'Modo 1 tecla: OFF';
+        oneTapButton.title = oneTapAdvance
+            ? 'Desactivar modo 1 tecla (Alt+Shift+E)'
+            : 'Activar modo 1 tecla (Alt+Shift+E)';
+    }
+
+    const { captureButton, clearButton } = ensureQueueCallKeyControlButtons();
+    if (captureButton instanceof HTMLButtonElement) {
+        captureButton.classList.toggle('is-active', captureCallKeyMode);
+        captureButton.setAttribute('aria-pressed', String(captureCallKeyMode));
+        if (captureCallKeyMode) {
+            captureButton.textContent = 'Escuchando tecla...';
+            captureButton.title =
+                'Presiona la tecla externa de llamado (Esc para cancelar)';
+        } else if (customCallKey) {
+            captureButton.textContent = 'Recalibrar tecla externa';
+            captureButton.title = `Tecla actual: ${describeQueueCallKeyBinding(customCallKey)}`;
+        } else {
+            captureButton.textContent = 'Calibrar tecla externa';
+            captureButton.title =
+                'Asigna una tecla externa para llamar siguiente';
+        }
+    }
+    if (clearButton instanceof HTMLButtonElement) {
+        clearButton.hidden = !customCallKey;
+        clearButton.disabled = captureCallKeyMode;
+        clearButton.setAttribute('aria-hidden', String(!customCallKey));
+        if (customCallKey) {
+            clearButton.title = `Quitar tecla externa (${describeQueueCallKeyBinding(customCallKey)})`;
+        } else {
+            clearButton.removeAttribute('title');
+        }
     }
 
     document
@@ -668,6 +1692,165 @@ function syncQueueStationUi() {
                 }
             }
         });
+
+    syncQueueHelpPanel();
+}
+
+function setQueueOneTapAdvanceEnabled(
+    enabled,
+    { persist = true, announce = false, source = 'manual' } = {}
+) {
+    const nextEnabled = normalizeQueueOneTapAdvance(enabled, false);
+    const changed = nextEnabled !== queueStationState.oneTapAdvance;
+    queueStationState.oneTapAdvance = nextEnabled;
+
+    if (persist) {
+        persistQueueOneTapAdvance(nextEnabled);
+    }
+
+    syncQueueStationUi();
+
+    if (announce && changed) {
+        showToast(
+            nextEnabled
+                ? 'Modo 1 tecla activado: Numpad Enter completa y llama siguiente.'
+                : 'Modo 1 tecla desactivado: vuelve flujo completar + llamar.',
+            nextEnabled ? 'success' : 'info'
+        );
+    }
+
+    if (changed) {
+        emitQueueOpsStationEvent('one_tap_mode_toggled', {
+            source,
+            enabled: nextEnabled,
+            stationMode: queueStationState.mode,
+            consultorio: queueStationState.consultorio,
+        });
+    }
+}
+
+function setQueueCustomCallKeyBinding(
+    binding,
+    { persist = true, announce = true, source = 'manual' } = {}
+) {
+    const normalized = normalizeQueueCallKeyBinding(binding, null);
+    queueStarUiState.customCallKey = normalized;
+    if (persist) {
+        persistQueueCustomCallKey(normalized);
+    }
+    syncQueueStationUi();
+
+    if (normalized) {
+        emitQueueOpsStationEvent('call_key_binding_saved', {
+            source,
+            binding: normalized,
+            stationMode: queueStationState.mode,
+            consultorio: queueStationState.consultorio,
+        });
+        if (announce) {
+            showToast(
+                `Tecla externa guardada: ${describeQueueCallKeyBinding(normalized)}.`,
+                'success'
+            );
+        }
+        return;
+    }
+
+    emitQueueOpsStationEvent('call_key_binding_cleared', {
+        source,
+        stationMode: queueStationState.mode,
+        consultorio: queueStationState.consultorio,
+    });
+    if (announce) {
+        showToast(
+            'Tecla externa eliminada. Se usa Numpad Enter estándar.',
+            'info'
+        );
+    }
+}
+
+function setQueueCallKeyCaptureMode(
+    enabled,
+    { source = 'manual', announce = true } = {}
+) {
+    const nextMode = Boolean(enabled);
+    if (nextMode === queueStarUiState.captureCallKeyMode) return;
+    queueStarUiState.captureCallKeyMode = nextMode;
+    syncQueueStationUi();
+
+    emitQueueOpsStationEvent(
+        nextMode ? 'call_key_capture_started' : 'call_key_capture_stopped',
+        {
+            source,
+            stationMode: queueStationState.mode,
+            consultorio: queueStationState.consultorio,
+        }
+    );
+
+    if (!announce) return;
+    showToast(
+        nextMode
+            ? 'Calibración activa: presiona la tecla externa para llamar siguiente.'
+            : 'Calibración detenida.',
+        nextMode ? 'info' : 'warning'
+    );
+}
+
+function isQueueCallKeyCaptureSkippableEvent(event) {
+    const key = getQueueKeyboardKey(event);
+    const code = getQueueKeyboardCode(event);
+    if (!key && !code) return true;
+    const skippableKeys = new Set([
+        'shift',
+        'control',
+        'alt',
+        'meta',
+        'altgraph',
+        'capslock',
+        'numlock',
+        'scrolllock',
+    ]);
+    const skippableCodes = new Set([
+        'shiftleft',
+        'shiftright',
+        'controlleft',
+        'controlright',
+        'altleft',
+        'altright',
+        'metaleft',
+        'metaright',
+    ]);
+    return skippableKeys.has(key) || skippableCodes.has(code);
+}
+
+function captureQueueCallKeyFromEvent(event, { source = 'capture' } = {}) {
+    if (!queueStarUiState.captureCallKeyMode) return false;
+
+    const key = getQueueKeyboardKey(event);
+    if (key === 'escape') {
+        setQueueCallKeyCaptureMode(false, {
+            source: `${source}_escape`,
+            announce: true,
+        });
+        return true;
+    }
+    if (event.repeat) return true;
+    if (event.ctrlKey || event.metaKey || event.altKey) return true;
+    if (isQueueCallKeyCaptureSkippableEvent(event)) return true;
+
+    const signature = getQueueKeyboardSignature(event);
+    if (!signature) return true;
+
+    setQueueCustomCallKeyBinding(signature, {
+        persist: true,
+        announce: true,
+        source,
+    });
+    setQueueCallKeyCaptureMode(false, {
+        source: `${source}_saved`,
+        announce: false,
+    });
+    return true;
 }
 
 function setQueueStationConfig(
@@ -695,6 +1878,13 @@ function setQueueStationConfig(
 
     syncQueueStationUi();
 
+    if (nextMode === QUEUE_STATION_MODE_LOCKED) {
+        markQueueOnboardingStepCompleted('station_locked', {
+            source,
+            announce: false,
+        });
+    }
+
     if (announce && (changedMode || changedConsultorio)) {
         if (nextMode === QUEUE_STATION_MODE_LOCKED) {
             showToast(`Estación bloqueada en C${nextConsultorio}`, 'success');
@@ -715,9 +1905,30 @@ function setQueueStationConfig(
 }
 
 function bootstrapQueueStationConfig() {
+    stopQueuePracticeTicker();
     const storedConfig = readQueueStationConfigFromStorage();
     queueStationState.mode = storedConfig.mode;
     queueStationState.consultorio = storedConfig.consultorio;
+    queueStationState.oneTapAdvance = readQueueOneTapAdvanceFromStorage();
+    queueStarUiState.customCallKey = readQueueCustomCallKeyFromStorage();
+    queueStarUiState.onboardingProgress =
+        readQueueOnboardingProgressFromStorage();
+    queueStarUiState.helpOpen = readLocalFlag(
+        QUEUE_NUMPAD_HELP_TOGGLE_STORAGE_KEY,
+        false
+    );
+    queueStarUiState.onboardingVisible = false;
+    queueStarUiState.practiceMode = false;
+    queueStarUiState.practiceState = null;
+    queueStarUiState.practiceTickId = 0;
+    queueStarUiState.oneTapInFlight = false;
+    queueStarUiState.lastOneTapAt = 0;
+    queueStarUiState.captureCallKeyMode = false;
+    try {
+        window.__PIEL_QUEUE_PRACTICE_MODE = false;
+    } catch (_error) {
+        // no-op
+    }
 
     const provisioningConfig = readQueueStationProvisioningFromUrl();
     if (provisioningConfig) {
@@ -729,6 +1940,13 @@ function bootstrapQueueStationConfig() {
             provisioningConfig.consultorio,
             queueStationState.consultorio
         );
+        if (provisioningConfig.oneTapAdvance !== null) {
+            queueStationState.oneTapAdvance = normalizeQueueOneTapAdvance(
+                provisioningConfig.oneTapAdvance,
+                queueStationState.oneTapAdvance
+            );
+            persistQueueOneTapAdvance(queueStationState.oneTapAdvance);
+        }
         persistQueueStationConfig(
             queueStationState.mode,
             queueStationState.consultorio
@@ -737,6 +1955,7 @@ function bootstrapQueueStationConfig() {
             source: 'query',
             mode: queueStationState.mode,
             consultorio: queueStationState.consultorio,
+            oneTapAdvance: queueStationState.oneTapAdvance,
         });
         clearQueueStationProvisioningParams();
     } else {
@@ -744,31 +1963,267 @@ function bootstrapQueueStationConfig() {
             source: 'storage',
             mode: queueStationState.mode,
             consultorio: queueStationState.consultorio,
+            oneTapAdvance: queueStationState.oneTapAdvance,
         });
     }
 
     syncQueueStationUi();
+    syncQueueHelpPanel();
+    if (queueStationState.mode === QUEUE_STATION_MODE_LOCKED) {
+        markQueueOnboardingStepCompleted('station_locked', {
+            source: 'bootstrap',
+            announce: false,
+        });
+    }
+    if (queueStarUiState.helpOpen) {
+        markQueueOnboardingStepCompleted('shortcuts_opened', {
+            source: 'bootstrap',
+            announce: false,
+        });
+    }
+    syncQueueOnboardingChecklistUi();
+    syncQueuePracticeModeUi();
+    setQueueOnboardingVisible(false, { source: 'bootstrap' });
 }
 
 function isQueueNumpadEnterEvent(event) {
-    const code = String(event.code || '').toLowerCase();
-    if (code === 'numpadenter') return true;
-    const key = String(event.key || '').toLowerCase();
-    return (
-        Number(event.location || 0) === NUMPAD_KEY_LOCATION && key === 'enter'
+    if (isQueueCustomCallKeyEvent(event)) return true;
+    const code = getQueueKeyboardCode(event);
+    if (QUEUE_NUMPAD_ENTER_CODES.has(code)) return true;
+    return matchesQueueNumpadKeyByLocation(event, QUEUE_NUMPAD_ENTER_KEYS);
+}
+
+function getQueueKeyboardLocation(event) {
+    const rawLocation = Number(event?.location);
+    return Number.isFinite(rawLocation)
+        ? Math.max(0, Math.min(3, Math.round(rawLocation)))
+        : 0;
+}
+
+function getQueueKeyboardSignature(event) {
+    return normalizeQueueCallKeyBinding(
+        {
+            code: getQueueKeyboardCode(event),
+            key: getQueueKeyboardKey(event),
+            location: getQueueKeyboardLocation(event),
+        },
+        null
     );
+}
+
+function isQueueCustomCallKeyEvent(event) {
+    const customBinding = normalizeQueueCallKeyBinding(
+        queueStarUiState.customCallKey,
+        null
+    );
+    if (!customBinding) return false;
+
+    const eventBinding = getQueueKeyboardSignature(event);
+    if (!eventBinding) return false;
+
+    const codeMatches = customBinding.code
+        ? customBinding.code === eventBinding.code
+        : true;
+    const keyMatches = customBinding.key
+        ? customBinding.key === eventBinding.key
+        : true;
+    const locationMatches =
+        typeof customBinding.location === 'number'
+            ? customBinding.location === eventBinding.location
+            : true;
+    return codeMatches && keyMatches && locationMatches;
 }
 
 function isQueueNumpadDigitEvent(event, digit) {
     const expectedDigit = String(digit || '');
     if (!expectedDigit) return false;
-    const code = String(event.code || '').toLowerCase();
+    const code = getQueueKeyboardCode(event);
     if (code === `numpad${expectedDigit}`) return true;
-    const key = String(event.key || '');
+    const key = String(event.key || '').trim();
+    return isQueueNumpadLocation(event) && key === expectedDigit;
+}
+
+function isQueueNumpadAddEvent(event) {
+    const code = getQueueKeyboardCode(event);
+    if (QUEUE_NUMPAD_ADD_CODES.has(code)) return true;
+    return matchesQueueNumpadKeyByLocation(event, QUEUE_NUMPAD_ADD_KEYS);
+}
+
+function isQueueNumpadSubtractEvent(event) {
+    const code = getQueueKeyboardCode(event);
+    if (QUEUE_NUMPAD_SUBTRACT_CODES.has(code)) return true;
+    return matchesQueueNumpadKeyByLocation(event, QUEUE_NUMPAD_SUBTRACT_KEYS);
+}
+
+function isQueueNumpadDecimalEvent(event) {
+    const code = getQueueKeyboardCode(event);
+    if (QUEUE_NUMPAD_DECIMAL_CODES.has(code)) return true;
+    return matchesQueueNumpadKeyByLocation(event, QUEUE_NUMPAD_DECIMAL_KEYS);
+}
+
+function isQueueNumpadZeroEvent(event) {
+    return isQueueNumpadDigitEvent(event, 0);
+}
+
+function getQueueKeyboardCode(event) {
+    return String(event?.code || '')
+        .trim()
+        .toLowerCase();
+}
+
+function getQueueKeyboardKey(event) {
+    return String(event?.key || '')
+        .trim()
+        .toLowerCase();
+}
+
+function isQueueNumpadLocation(event) {
+    return Number(event?.location || 0) === NUMPAD_KEY_LOCATION;
+}
+
+function matchesQueueNumpadKeyByLocation(event, keysSet) {
     return (
-        Number(event.location || 0) === NUMPAD_KEY_LOCATION &&
-        key === expectedDigit
+        isQueueNumpadLocation(event) && keysSet.has(getQueueKeyboardKey(event))
     );
+}
+
+function getQueueActiveTicketIdForConsultorio(consultorio) {
+    const room = normalizeQueueStationConsultorio(consultorio, 0);
+    if (![1, 2].includes(room)) return 0;
+    const releaseButton = document.getElementById(`queueReleaseC${room}`);
+    const ticketId = Number(releaseButton?.dataset?.queueId || 0);
+    return Number.isFinite(ticketId) ? ticketId : 0;
+}
+
+function getQueueActiveTicketLabelForConsultorio(consultorio) {
+    const room = normalizeQueueStationConsultorio(consultorio, 0);
+    if (![1, 2].includes(room)) return '--';
+    const releaseButton = document.getElementById(`queueReleaseC${room}`);
+    const text = String(releaseButton?.textContent || '').trim();
+    const match = text.match(/\(([^)]+)\)\s*$/);
+    if (match && match[1]) return match[1].trim();
+    return '--';
+}
+
+function requiresQueueSensitiveConfirmation(action) {
+    return QUEUE_SENSITIVE_ACTIONS.has(String(action || '').toLowerCase());
+}
+
+function confirmQueueSensitiveAction({
+    action,
+    consultorio,
+    source = 'manual',
+} = {}) {
+    const normalizedAction = String(action || '').toLowerCase();
+    const room = normalizeQueueStationConsultorio(consultorio, 0);
+    const ticketLabel = getQueueActiveTicketLabelForConsultorio(room);
+    const firstConfirm = window.confirm(
+        `Acción sensible: ${normalizedAction} ${ticketLabel !== '--' ? `(${ticketLabel})` : ''} en C${room}. ¿Deseas continuar?`
+    );
+    if (!firstConfirm) {
+        emitQueueOpsStationEvent('action_cancelled', {
+            source,
+            action: normalizedAction,
+            consultorio: room || null,
+            reason: 'first_confirm_declined',
+        });
+        return false;
+    }
+
+    const secondConfirm = window.confirm(
+        'Confirmación final: esta acción afectará la cola actual. ¿Confirmas ejecutar ahora?'
+    );
+    if (!secondConfirm) {
+        emitQueueOpsStationEvent('action_cancelled', {
+            source,
+            action: normalizedAction,
+            consultorio: room || null,
+            reason: 'second_confirm_declined',
+        });
+        return false;
+    }
+    emitQueueOpsStationEvent('action_confirmed', {
+        source,
+        action: normalizedAction,
+        consultorio: room || null,
+    });
+    return true;
+}
+
+async function runQueueStationTicketAction(action, { source = 'numpad' } = {}) {
+    const normalizedAction = String(action || '').toLowerCase();
+    const room = normalizeQueueStationConsultorio(
+        queueStationState.consultorio,
+        0
+    );
+    if (![1, 2].includes(room)) {
+        showToast('Consultorio de estación inválido', 'error');
+        return false;
+    }
+
+    const ticketId = getQueueActiveTicketIdForConsultorio(room);
+    if (!ticketId) {
+        showToast(`No hay ticket activo en C${room}`, 'warning');
+        return false;
+    }
+
+    if (requiresQueueSensitiveConfirmation(normalizedAction)) {
+        const confirmed = confirmQueueSensitiveAction({
+            action: normalizedAction,
+            consultorio: room,
+            source,
+        });
+        if (!confirmed) return false;
+    }
+
+    if (queueStarUiState.practiceMode) {
+        showToast(
+            `Modo práctica: acción "${normalizedAction}" simulada en C${room}.`,
+            'info'
+        );
+        registerQueuePracticeAction(normalizedAction, {
+            source,
+            consultorio: room,
+            ticketId,
+        });
+        return true;
+    }
+
+    const success = await applyQueueTicketAction(
+        ticketId,
+        normalizedAction,
+        room
+    );
+    if (success) {
+        emitQueueOpsStationEvent('station_ticket_action', {
+            source,
+            action: normalizedAction,
+            consultorio: room,
+            ticketId,
+        });
+    }
+    return success;
+}
+
+function handleQueueEscapeKey(event) {
+    if (!isQueueSectionActive()) return false;
+    if (queueStarUiState.onboardingVisible) {
+        event.preventDefault();
+        setQueueOnboardingVisible(false, {
+            persist: true,
+            source: 'keyboard_escape',
+        });
+        return true;
+    }
+    if (queueStarUiState.helpOpen) {
+        event.preventDefault();
+        setQueueHelpPanelOpen(false, {
+            source: 'keyboard_escape',
+            announce: false,
+        });
+        return true;
+    }
+    return false;
 }
 
 function blockQueueStationChange(
@@ -821,14 +2276,24 @@ async function runQueueCallNext(consultorio, { source = 'manual' } = {}) {
     }
 
     const normalizedSource = String(source || 'manual').toLowerCase();
+    const isNumpadSource = normalizedSource.startsWith('numpad');
     const enforceLock =
-        normalizedSource === 'numpad' ||
+        isNumpadSource ||
         normalizedSource === 'shortcut' ||
         normalizedSource === 'command';
 
     if (!isQueueStationCallAllowed(room) && enforceLock) {
         blockQueueStationChange(room, { source });
         return false;
+    }
+
+    if (queueStarUiState.practiceMode) {
+        showToast(`Modo práctica: llamada simulada en C${room}.`, 'info');
+        registerQueuePracticeAction('call_next', {
+            source,
+            consultorio: room,
+        });
+        return true;
     }
 
     if (!isQueueStationCallAllowed(room) && isQueueStationLocked()) {
@@ -859,6 +2324,97 @@ async function runQueueCallNext(consultorio, { source = 'manual' } = {}) {
         syncQueueStationUi();
     });
     return true;
+}
+
+async function runQueueOneTapAdvanceForStation({
+    source = 'numpad_one_tap',
+} = {}) {
+    const room = normalizeQueueStationConsultorio(
+        queueStationState.consultorio,
+        0
+    );
+    if (![1, 2].includes(room)) {
+        showToast('Consultorio de estación inválido', 'error');
+        return false;
+    }
+
+    const now = Date.now();
+    if (queueStarUiState.oneTapInFlight) {
+        showToast('Flujo 1 tecla en proceso. Espera un momento.', 'warning');
+        emitQueueOpsStationEvent('one_tap_blocked', {
+            source,
+            consultorio: room,
+            reason: 'in_flight',
+        });
+        return false;
+    }
+    if (
+        queueStarUiState.lastOneTapAt > 0 &&
+        now - queueStarUiState.lastOneTapAt < QUEUE_ONE_TAP_COOLDOWN_MS
+    ) {
+        showToast(
+            'Espera un segundo antes de volver a usar Numpad Enter.',
+            'warning'
+        );
+        emitQueueOpsStationEvent('one_tap_blocked', {
+            source,
+            consultorio: room,
+            reason: 'cooldown',
+            cooldownMs: QUEUE_ONE_TAP_COOLDOWN_MS,
+        });
+        return false;
+    }
+
+    queueStarUiState.oneTapInFlight = true;
+    try {
+        const activeTicketId = getQueueActiveTicketIdForConsultorio(room);
+        let completedInThisFlow = false;
+        if (activeTicketId) {
+            if (queueStarUiState.practiceMode) {
+                emitQueueOpsStationEvent('practice_one_tap_simulated', {
+                    source,
+                    consultorio: room,
+                    ticketId: activeTicketId,
+                });
+                registerQueuePracticeAction('completar', {
+                    source,
+                    consultorio: room,
+                    ticketId: activeTicketId,
+                });
+            } else {
+                const completed = await applyQueueTicketAction(
+                    activeTicketId,
+                    'completar',
+                    room
+                );
+                if (!completed) return false;
+                completedInThisFlow = true;
+            }
+        }
+
+        const called = await runQueueCallNext(room, { source });
+        if (called) {
+            showToast(
+                queueStarUiState.practiceMode
+                    ? `Modo práctica 1 tecla en C${room}: completar + llamar simulado.`
+                    : activeTicketId
+                      ? `Flujo 1 tecla en C${room}: atención cerrada y siguiente llamado.`
+                      : `Flujo 1 tecla en C${room}: llamando siguiente.`,
+                queueStarUiState.practiceMode ? 'info' : 'success'
+            );
+            emitQueueOpsStationEvent('station_one_tap_executed', {
+                source,
+                consultorio: room,
+                hadActiveTicket: Boolean(activeTicketId),
+                completedInThisFlow,
+                practiceMode: queueStarUiState.practiceMode,
+            });
+            queueStarUiState.lastOneTapAt = Date.now();
+        }
+        return called;
+    } finally {
+        queueStarUiState.oneTapInFlight = false;
+    }
 }
 
 function syncHash(section) {
@@ -1184,8 +2740,41 @@ function handleAdminKeyboardShortcuts(event) {
         !event.altKey &&
         !event.shiftKey
     ) {
+        if (queueStarUiState.captureCallKeyMode) {
+            event.preventDefault();
+            captureQueueCallKeyFromEvent(event, {
+                source: 'capture_keyboard',
+            });
+            return;
+        }
         if (event.repeat) return;
 
+        if (isQueueNumpadZeroEvent(event)) {
+            event.preventDefault();
+            toggleQueueHelpPanel({ source: 'numpad', announce: true });
+            return;
+        }
+        if (isQueueNumpadAddEvent(event)) {
+            event.preventDefault();
+            void runQueueStationTicketAction('re-llamar', {
+                source: 'numpad_add',
+            });
+            return;
+        }
+        if (isQueueNumpadDecimalEvent(event)) {
+            event.preventDefault();
+            void runQueueStationTicketAction('completar', {
+                source: 'numpad_decimal',
+            });
+            return;
+        }
+        if (isQueueNumpadSubtractEvent(event)) {
+            event.preventDefault();
+            void runQueueStationTicketAction('no_show', {
+                source: 'numpad_subtract',
+            });
+            return;
+        }
         if (isQueueNumpadDigitEvent(event, 1)) {
             event.preventDefault();
             selectQueueStationConsultorioViaNumpad(1, { source: 'numpad' });
@@ -1198,9 +2787,15 @@ function handleAdminKeyboardShortcuts(event) {
         }
         if (isQueueNumpadEnterEvent(event)) {
             event.preventDefault();
-            void runQueueCallNext(queueStationState.consultorio, {
-                source: 'numpad',
-            });
+            if (queueStationState.oneTapAdvance) {
+                void runQueueOneTapAdvanceForStation({
+                    source: 'numpad_one_tap',
+                });
+            } else {
+                void runQueueCallNext(queueStationState.consultorio, {
+                    source: 'numpad',
+                });
+            }
             return;
         }
     }
@@ -1283,6 +2878,11 @@ function handleAdminKeyboardShortcuts(event) {
     }
 
     if (isQueueSectionActive()) {
+        if (code === 'digit0' || code === 'numpad0') {
+            event.preventDefault();
+            toggleQueueHelpPanel({ source: 'shortcut', announce: false });
+            return;
+        }
         if (code === 'keyj') {
             event.preventDefault();
             void runQueueCallNext(1, { source: 'shortcut' });
@@ -1296,6 +2896,15 @@ function handleAdminKeyboardShortcuts(event) {
         if (code === 'keyu') {
             event.preventDefault();
             void refreshQueueRealtime({ silent: false });
+            return;
+        }
+        if (code === 'keye') {
+            event.preventDefault();
+            setQueueOneTapAdvanceEnabled(!queueStationState.oneTapAdvance, {
+                persist: true,
+                announce: true,
+                source: 'shortcut',
+            });
             return;
         }
         if (code === 'keyf') {
@@ -1335,21 +2944,45 @@ function handleAdminKeyboardShortcuts(event) {
         }
         if (code === 'keyg') {
             event.preventDefault();
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_completar', {
+                    source: 'shortcut',
+                });
+                return;
+            }
             void runQueueBulkAction('completar');
             return;
         }
         if (code === 'keyh') {
             event.preventDefault();
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_no_show', {
+                    source: 'shortcut',
+                });
+                return;
+            }
             void runQueueBulkAction('no_show');
             return;
         }
         if (code === 'keyb') {
             event.preventDefault();
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_cancelar', {
+                    source: 'shortcut',
+                });
+                return;
+            }
             void runQueueBulkAction('cancelar');
             return;
         }
         if (code === 'keyp') {
             event.preventDefault();
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_reprint', {
+                    source: 'shortcut',
+                });
+                return;
+            }
             void runQueueBulkReprint();
             return;
         }
@@ -1513,7 +3146,7 @@ async function runAdminQuickCommand(rawCommand) {
 
     if (command === 'help' || command === 'ayuda') {
         showToast(
-            'Comandos: citas hoy, citas por validar, callbacks pendientes, turnero c1/c2, turnero sla, disponibilidad hoy, exportar csv.',
+            'Comandos: citas hoy, citas por validar, callbacks pendientes, turnero c1/c2, turnero 1 tecla, turnero sla, disponibilidad hoy, exportar csv.',
             'info'
         );
         return true;
@@ -1537,23 +3170,85 @@ async function runAdminQuickCommand(rawCommand) {
         command.includes('consultorio')
     ) {
         await navigateToSection('queue', { focus: false });
-        if (command.includes('c1') || command.includes('consultorio 1')) {
+        if (
+            command.includes('1 tecla on') ||
+            command.includes('modo 1 tecla on') ||
+            command.includes('one tap on')
+        ) {
+            setQueueOneTapAdvanceEnabled(true, {
+                persist: true,
+                announce: true,
+                source: 'command',
+            });
+        } else if (
+            command.includes('1 tecla off') ||
+            command.includes('modo 1 tecla off') ||
+            command.includes('one tap off')
+        ) {
+            setQueueOneTapAdvanceEnabled(false, {
+                persist: true,
+                announce: true,
+                source: 'command',
+            });
+        } else if (
+            command.includes('1 tecla') ||
+            command.includes('one tap') ||
+            command.includes('modo express')
+        ) {
+            setQueueOneTapAdvanceEnabled(!queueStationState.oneTapAdvance, {
+                persist: true,
+                announce: true,
+                source: 'command',
+            });
+        } else if (
+            command.includes('c1') ||
+            command.includes('consultorio 1')
+        ) {
             await runQueueCallNext(1, { source: 'command' });
         } else if (
             command.includes('completar visibles') ||
             command.includes('bulk completar')
         ) {
-            await runQueueBulkAction('completar');
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_completar', {
+                    source: 'command',
+                });
+            } else {
+                await runQueueBulkAction('completar');
+            }
         } else if (
             command.includes('no show visibles') ||
             command.includes('bulk no show')
         ) {
-            await runQueueBulkAction('no_show');
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_no_show', {
+                    source: 'command',
+                });
+            } else {
+                await runQueueBulkAction('no_show');
+            }
         } else if (
             command.includes('cancelar visibles') ||
             command.includes('bulk cancelar')
         ) {
-            await runQueueBulkAction('cancelar');
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_cancelar', {
+                    source: 'command',
+                });
+            } else {
+                await runQueueBulkAction('cancelar');
+            }
+        } else if (
+            command.includes('reimprimir visibles') ||
+            command.includes('bulk reprint')
+        ) {
+            if (queueStarUiState.practiceMode) {
+                simulateQueuePracticeAction('bulk_reprint', {
+                    source: 'command',
+                });
+            } else {
+                await runQueueBulkReprint();
+            }
         } else if (command.includes('sla')) {
             setQueueFilter('sla_risk');
             focusQueueSearch();
@@ -1671,6 +3366,10 @@ async function renderSection(section) {
 
     if (section !== 'queue') {
         stopQueueRealtimeSync({ reason: 'paused' });
+        setQueueCallKeyCaptureMode(false, {
+            source: 'section_change',
+            announce: false,
+        });
     }
 
     switch (section) {
@@ -1695,6 +3394,8 @@ async function renderSection(section) {
             loadQueueSection();
             startQueueRealtimeSync({ immediate: true });
             syncQueueStationUi();
+            syncQueueHelpPanel();
+            maybeShowQueueOnboarding();
             break;
         }
         default:
@@ -1710,6 +3411,11 @@ function showLogin() {
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('adminDashboard');
     stopQueueRealtimeSync({ reason: 'paused' });
+    setQueueCallKeyCaptureMode(false, { source: 'logout', announce: false });
+    stopQueuePracticeTicker();
+    queueStarUiState.practiceMode = false;
+    queueStarUiState.practiceState = null;
+    syncQueuePracticeModeUi();
     closeSidebar();
     if (loginScreen) loginScreen.classList.remove('is-hidden');
     if (dashboard) dashboard.classList.add('is-hidden');
@@ -2077,6 +3783,127 @@ function attachGlobalListeners() {
             return;
         }
 
+        if (action === 'queue-toggle-shortcuts') {
+            event.preventDefault();
+            toggleQueueHelpPanel({ source: 'button', announce: false });
+            return;
+        }
+
+        if (action === 'queue-open-onboarding') {
+            event.preventDefault();
+            setQueueOnboardingVisible(true, {
+                persist: false,
+                source: 'station_panel_button',
+            });
+            return;
+        }
+
+        if (action === 'queue-toggle-one-tap') {
+            event.preventDefault();
+            setQueueOneTapAdvanceEnabled(!queueStationState.oneTapAdvance, {
+                persist: true,
+                announce: true,
+                source: 'station_panel_button',
+            });
+            return;
+        }
+
+        if (action === 'queue-capture-call-key') {
+            event.preventDefault();
+            setQueueCallKeyCaptureMode(!queueStarUiState.captureCallKeyMode, {
+                source: 'station_panel_button',
+                announce: true,
+            });
+            return;
+        }
+
+        if (action === 'queue-clear-call-key') {
+            event.preventDefault();
+            if (!queueStarUiState.customCallKey) return;
+            const confirmClear = window.confirm(
+                `Se eliminará la tecla externa (${describeQueueCallKeyBinding(
+                    queueStarUiState.customCallKey
+                )}). ¿Deseas continuar?`
+            );
+            if (!confirmClear) return;
+            setQueueCustomCallKeyBinding(null, {
+                persist: true,
+                announce: true,
+                source: 'station_panel_button',
+            });
+            setQueueCallKeyCaptureMode(false, {
+                source: 'station_panel_button_clear',
+                announce: false,
+            });
+            return;
+        }
+
+        if (action === 'queue-start-practice') {
+            event.preventDefault();
+            setQueueOnboardingVisible(false, {
+                persist: false,
+                source: 'practice_start',
+            });
+            setQueuePracticeMode(true, { source: 'practice_start' });
+            setQueueHelpPanelOpen(true, {
+                source: 'practice_start',
+                announce: false,
+            });
+            showToast(
+                'Modo práctica activo: simulación local, no se enviarán cambios a la cola real.',
+                'info'
+            );
+            emitQueueOpsStationEvent('onboarding_practice_started', {
+                stationMode: queueStationState.mode,
+                consultorio: queueStationState.consultorio,
+            });
+            return;
+        }
+
+        if (action === 'queue-reset-practice') {
+            event.preventDefault();
+            if (!queueStarUiState.practiceMode) {
+                showToast(
+                    'Activa modo práctica para reiniciar el entrenamiento.',
+                    'warning'
+                );
+                return;
+            }
+            resetQueuePracticeProgress({
+                source: 'practice_reset_button',
+                announce: true,
+            });
+            return;
+        }
+
+        if (action === 'queue-stop-practice') {
+            event.preventDefault();
+            setQueuePracticeMode(false, { source: 'practice_stop_button' });
+            showToast(
+                'Modo práctica desactivado. Operación real reanudada.',
+                'success'
+            );
+            return;
+        }
+
+        if (action === 'queue-dismiss-onboarding') {
+            event.preventDefault();
+            const completedCount = getQueueOnboardingProgressCount();
+            const totalSteps = QUEUE_ONBOARDING_STEPS.length;
+            if (completedCount < totalSteps) {
+                const confirmDismiss = window.confirm(
+                    `La guía aún no está completa (${completedCount}/${totalSteps}). ¿Deseas cerrarla de todos modos?`
+                );
+                if (!confirmDismiss) return;
+            }
+            setQueueOnboardingVisible(false, {
+                persist: true,
+                source: 'onboarding_button',
+            });
+            showToast('Guía inicial completada', 'success');
+            return;
+        }
+
         if (action === 'queue-call-next') {
             event.preventDefault();
             await runQueueCallNext(
@@ -2258,6 +4085,21 @@ function attachGlobalListeners() {
             }
             if (action === 'queue-ticket-action') {
                 event.preventDefault();
+                if (queueStarUiState.practiceMode) {
+                    simulateQueuePracticeAction(
+                        String(actionEl.dataset.queueAction || 'ticket_action'),
+                        {
+                            source: 'button',
+                            consultorio:
+                                Number(
+                                    actionEl.dataset.queueConsultorio || 0
+                                ) || null,
+                            ticketId:
+                                Number(actionEl.dataset.queueId || 0) || null,
+                        }
+                    );
+                    return;
+                }
                 await applyQueueTicketAction(
                     Number(actionEl.dataset.queueId || 0),
                     actionEl.dataset.queueAction || '',
@@ -2267,6 +4109,13 @@ function attachGlobalListeners() {
             }
             if (action === 'queue-reprint-ticket') {
                 event.preventDefault();
+                if (queueStarUiState.practiceMode) {
+                    simulateQueuePracticeAction('reprint_ticket', {
+                        source: 'button',
+                        ticketId: Number(actionEl.dataset.queueId || 0) || null,
+                    });
+                    return;
+                }
                 await reprintQueueTicket(Number(actionEl.dataset.queueId || 0));
                 return;
             }
@@ -2359,6 +4208,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         trapSidebarFocus(event);
 
         if (event.key === 'Escape') {
+            if (handleQueueEscapeKey(event)) {
+                return;
+            }
             closeSidebar({ restoreFocus: true });
             return;
         }

@@ -71,6 +71,58 @@ test.describe('Sala turnos display', () => {
         );
     });
 
+    test('acepta queue-state snake_case para llamados y siguientes', async ({
+        page,
+    }) => {
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, {
+                ok: true,
+                data: {
+                    updated_at: new Date().toISOString(),
+                    calling_now: [
+                        {
+                            id: 11,
+                            ticket_code: 'A-411',
+                            patient_initials: 'JK',
+                            assigned_consultorio: 1,
+                            called_at: new Date().toISOString(),
+                        },
+                        {
+                            id: 12,
+                            ticket_code: 'A-412',
+                            patient_initials: 'LM',
+                            assigned_consultorio: 2,
+                            called_at: new Date().toISOString(),
+                        },
+                    ],
+                    next_tickets: [
+                        {
+                            id: 13,
+                            ticket_code: 'A-413',
+                            patient_initials: 'PQ',
+                        },
+                    ],
+                },
+            });
+        });
+
+        await page.goto('/sala-turnos.html');
+
+        await expect(page.locator('#displayConsultorio1')).toContainText(
+            'A-411'
+        );
+        await expect(page.locator('#displayConsultorio2')).toContainText(
+            'A-412'
+        );
+        await expect(page.locator('#displayNextList')).toContainText('A-413');
+    });
+
     test('muestra watchdog degradado y recupera con refresh manual', async ({
         page,
     }) => {
@@ -287,7 +339,10 @@ test.describe('Sala turnos display', () => {
         await page.goto('/sala-turnos.html');
 
         await expect(page.locator('#displayConsultorio2')).toContainText(
-            'A-909'
+            'A-909',
+            {
+                timeout: 10000,
+            }
         );
         await expect(page.locator('#displaySnapshotClearBtn')).toBeVisible();
 

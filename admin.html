@@ -11,7 +11,7 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="stylesheet" href="admin.min.css" />
-        <link rel="stylesheet" href="admin.css?v=admin-20260227-queuefix2" />
+        <link rel="stylesheet" href="admin.css?v=admin-20260227-queuestar1" />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -1209,7 +1209,7 @@
                         <div class="queue-admin-header">
                             <h3>Turnero de Sala</h3>
                             <p>
-                                Cola unica para Consultorio 1/2. Llamado manual por operador.
+                                Cola unica para Consultorio 1/2. Flujo recomendado: completar atencion y luego llamar siguiente.
                             </p>
                             <div class="queue-admin-header-actions">
                                 <button
@@ -1248,6 +1248,33 @@
                                 </span>
                             </div>
                         </div>
+                        <section
+                            class="queue-star-panel"
+                            aria-label="Flujo rapido de turnero"
+                        >
+                            <article class="queue-star-card">
+                                <h4>1) Termina atención</h4>
+                                <p>
+                                    Usa <strong>Numpad .</strong> (o <strong>Numpad ,</strong> segun
+                                    teclado) para completar el ticket activo del consultorio de esta
+                                    estación (doble confirmación).
+                                </p>
+                            </article>
+                            <article class="queue-star-card">
+                                <h4>2) Llama siguiente</h4>
+                                <p>
+                                    Despues de completar, usa <strong>Numpad Enter</strong>.
+                                    El teclado principal <strong>Enter</strong> no dispara llamados.
+                                </p>
+                            </article>
+                            <article class="queue-star-card">
+                                <h4>3) Soporte rápido</h4>
+                                <p>
+                                    <strong>Numpad +</strong> re-llama, <strong>Numpad -</strong>
+                                    marca no show, <strong>Numpad 0</strong> abre ayuda.
+                                </p>
+                            </article>
+                        </section>
 
                         <section
                             id="queueStationControl"
@@ -1276,6 +1303,13 @@
                                     class="queue-station-badge"
                                     data-consultorio="1"
                                     >Estación C1</span
+                                >
+                                <span
+                                    id="queuePracticeModeBadge"
+                                    class="queue-practice-badge"
+                                    aria-live="polite"
+                                    hidden
+                                    >Modo práctica activo</span
                                 >
                                 <span class="queue-station-provision-hint">
                                     Provisionar:
@@ -1313,6 +1347,101 @@
                                     data-action="queue-reconfigure-station"
                                 >
                                     Reconfigurar estación
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="queue-toggle-shortcuts"
+                                    aria-pressed="false"
+                                >
+                                    Atajos numpad
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="queue-open-onboarding"
+                                >
+                                    Reabrir guía
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="queue-stop-practice"
+                                    hidden
+                                >
+                                    Salir práctica
+                                </button>
+                            </div>
+                        </section>
+                        <section
+                            id="queueShortcutPanel"
+                            class="queue-shortcut-panel"
+                            aria-label="Atajos del numpad"
+                            aria-hidden="true"
+                            hidden
+                        >
+                            <h4>Atajos por estación</h4>
+                            <ul>
+                                <li>
+                                    <strong>Flujo rapido:</strong> <strong>Numpad .</strong>
+                                    (confirmar x2) y luego <strong>Numpad Enter</strong>
+                                </li>
+                                <li><strong>Numpad Enter</strong>: llamar siguiente</li>
+                                <li><strong>Numpad .</strong> o <strong>Numpad ,</strong>: completar ticket activo</li>
+                                <li><strong>Numpad -</strong>: marcar no show</li>
+                                <li><strong>Numpad +</strong>: re-llamar ticket activo</li>
+                                <li><strong>Numpad 1/2</strong>: elegir consultorio (solo modo libre)</li>
+                                <li><strong>Numpad 0</strong>: abrir/cerrar esta ayuda</li>
+                                <li><strong>Esc</strong>: cerrar guía/ayuda visible</li>
+                            </ul>
+                        </section>
+                        <section
+                            id="queueOnboardingPanel"
+                            class="queue-onboarding-panel"
+                            aria-label="Guía inicial de turnero"
+                            aria-hidden="true"
+                            hidden
+                        >
+                            <div class="queue-onboarding-header">
+                                <h4>Guía rápida de primera vez</h4>
+                                <span
+                                    id="queueOnboardingProgressPill"
+                                    class="queue-practice-progress"
+                                    aria-live="polite"
+                                    >0/3</span
+                                >
+                            </div>
+                            <p>
+                                Este panel está optimizado para operación segura. Si esta PC está
+                                bloqueada en C1 o C2, <strong>Numpad Enter</strong> llamará solo ese
+                                consultorio.
+                            </p>
+                            <p
+                                id="queueOnboardingMeta"
+                                class="queue-practice-meta"
+                                aria-live="polite"
+                            >
+                                Completa los pasos para dejar la estación lista.
+                            </p>
+                            <ol
+                                id="queueOnboardingChecklist"
+                                class="queue-practice-steps"
+                                aria-live="polite"
+                            ></ol>
+                            <div class="queue-onboarding-actions">
+                                <button
+                                    type="button"
+                                    class="btn btn-primary btn-sm"
+                                    data-action="queue-start-practice"
+                                >
+                                    Iniciar práctica
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-action="queue-dismiss-onboarding"
+                                >
+                                    Entendido
                                 </button>
                             </div>
                         </section>
@@ -1750,6 +1879,6 @@
         ></div>
 
         <!-- utils.js is now bundled/imported by admin.js -->
-        <script src="admin.js?v=admin-20260227-queuefix2" type="module"></script>
+        <script src="admin.js?v=admin-20260227-queuestar1" type="module"></script>
     </body>
 </html>

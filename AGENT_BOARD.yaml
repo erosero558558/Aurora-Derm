@@ -6,8 +6,8 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 272
-  updated_at: 2026-02-27
+  revision: 319
+  updated_at: 2026-02-28
 
 tasks:
   - id: AG-001
@@ -4493,3 +4493,611 @@ tasks:
     prompt: "Ejecutar 6 frentes del turnero en 1 bloque: impresora/reprint, recovery robusto, observabilidad, A11y+performance, stress QA, cierre runbook"
     created_at: 2026-02-27
     updated_at: 2026-02-27
+
+  - id: AG-118
+    title: "Turnero sala V: numpad por estacion C1/C2 en admin queue"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T06:23:02.636Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/index.js", "src/apps/admin/modules/queue.js", "admin.html"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T06:23:02.636Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala V: numpad por estacion C1/C2 en admin queue"
+    acceptance_ref: "verification/agent-runs/AG-118.md"
+    evidence_ref: "verification/agent-runs/AG-118.md"
+    depends_on: ["AG-117"]
+    prompt: "Turnero sala V: numpad por estacion C1/C2 en admin queue"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-119
+    title: "Turnero sala VI: hardening numpad cross-platform windows/mac"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T18:02:09.989Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T18:02:09.989Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala VI: hardening numpad cross-platform windows/mac"
+    acceptance_ref: "verification/agent-runs/AG-119.md"
+    evidence_ref: "verification/agent-runs/AG-119.md"
+    depends_on: []
+    prompt: "Turnero sala VI: hardening numpad cross-platform windows/mac"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-120
+    title: "Turnero sala VII: flujo una tecla con Numpad Enter"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T18:07:32.477Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T18:07:32.477Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala VII: flujo una tecla con Numpad Enter"
+    acceptance_ref: "verification/agent-runs/AG-120.md"
+    evidence_ref: "verification/agent-runs/AG-120.md"
+    depends_on: []
+    prompt: "Turnero sala VII: flujo una tecla con Numpad Enter"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-121
+    title: "Turnero sala VIII: robustez operativa modo una tecla"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T18:16:46.194Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T18:16:46.194Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala VIII: robustez operativa modo una tecla"
+    acceptance_ref: "verification/agent-runs/AG-121.md"
+    evidence_ref: "verification/agent-runs/AG-121.md"
+    depends_on: []
+    prompt: "Turnero sala VIII: robustez operativa modo una tecla"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-122
+    title: "Turnero sala IX: TV premium con anuncio claro y privacidad estricta"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T18:20:12.208Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/queue-display/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T18:20:12.208Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala IX: TV premium con anuncio claro y privacidad estricta"
+    acceptance_ref: "verification/agent-runs/AG-122.md"
+    evidence_ref: "verification/agent-runs/AG-122.md"
+    depends_on: []
+    prompt: "Turnero sala IX: TV premium con anuncio claro y privacidad estricta"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-123
+    title: "Turnero sala X: onboarding guiado + práctica asistida en admin"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-27T18:46:55.989Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-27T18:46:55.989Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala X: onboarding guiado + práctica asistida en admin"
+    acceptance_ref: "verification/agent-runs/AG-123.md"
+    evidence_ref: "verification/agent-runs/AG-123.md"
+    depends_on: []
+    prompt: "Turnero sala X: onboarding guiado + práctica asistida en admin"
+    created_at: 2026-02-27
+    updated_at: 2026-02-27
+
+  - id: AG-124
+    title: "Turnero sala estrella: TV premium con campanilla robusta y privacidad estricta"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T01:52:49.640Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["sala-turnos.html", "src/apps/queue-display/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T01:52:49.640Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala estrella: TV premium con campanilla robusta y privacidad estricta"
+    acceptance_ref: "verification/agent-runs/AG-124.md"
+    evidence_ref: "verification/agent-runs/AG-124.md"
+    depends_on: []
+    prompt: "Turnero sala estrella: TV premium con campanilla robusta y privacidad estricta"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-125
+    title: "Turnero sala estrella: kiosco premium con bienvenida guiada y ayuda persistente"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:04:04.400Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["kiosco-turnos.html", "src/apps/queue-kiosk/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:04:04.400Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala estrella: kiosco premium con bienvenida guiada y ayuda persistente"
+    acceptance_ref: "verification/agent-runs/AG-125.md"
+    evidence_ref: "verification/agent-runs/AG-125.md"
+    depends_on: []
+    prompt: "Turnero sala estrella: kiosco premium con bienvenida guiada y ayuda persistente"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-126
+    title: "Turnero sala QA: atajos numpad seguros (Numpad0 + Enter principal)"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:11:44.944Z"
+    risk: low
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/admin-queue.spec.js", "docs/RUNBOOK_TURNERO_SALA.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:11:44.944Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala QA: atajos numpad seguros (Numpad0 + Enter principal)"
+    acceptance_ref: "verification/agent-runs/AG-126.md"
+    evidence_ref: "verification/agent-runs/AG-126.md"
+    depends_on: []
+    prompt: "Turnero sala QA: atajos numpad seguros (Numpad0 + Enter principal)"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-127
+    title: "Turnero sala QA integral cross-surface (admin+kiosco+tv+integrado)"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:19:44.465Z"
+    risk: low
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/admin-queue.spec.js", "tests/queue-kiosk.spec.js", "tests/queue-display.spec.js", "tests/queue-integrated-flow.spec.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:19:44.465Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala QA integral cross-surface (admin+kiosco+tv+integrado)"
+    acceptance_ref: "verification/agent-runs/AG-127.md"
+    evidence_ref: "verification/agent-runs/AG-127.md"
+    depends_on: []
+    prompt: "Turnero sala QA integral cross-surface (admin+kiosco+tv+integrado)"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-128
+    title: "Turnero sala: bloque QA Modo 1 tecla + persistencia por estación"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:25:28.638Z"
+    risk: low
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/admin-queue.spec.js", "docs/RUNBOOK_TURNERO_SALA.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:25:28.638Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala: bloque QA Modo 1 tecla + persistencia por estación"
+    acceptance_ref: "verification/agent-runs/AG-128.md"
+    evidence_ref: "verification/agent-runs/AG-128.md"
+    depends_on: []
+    prompt: "Turnero sala: bloque QA Modo 1 tecla + persistencia por estación"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-129
+    title: "Turnero sala XI: calibracion de tecla externa por estacion (numpad wireless)"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:36:18.617Z"
+    risk: medium
+    scope: frontend-qa
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:36:18.617Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala XI: calibracion de tecla externa por estacion (numpad wireless)"
+    acceptance_ref: "verification/agent-runs/AG-129.md"
+    evidence_ref: "verification/agent-runs/AG-129.md"
+    depends_on: []
+    prompt: "Turnero sala XI: calibracion de tecla externa por estacion (numpad wireless)"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-130
+    title: "Turnero sala XII: QA + runbook de calibracion de tecla externa por estacion"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:39:27.689Z"
+    risk: low
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/admin-queue.spec.js", "docs/RUNBOOK_TURNERO_SALA.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:39:27.689Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala XII: QA + runbook de calibracion de tecla externa por estacion"
+    acceptance_ref: "verification/agent-runs/AG-130.md"
+    evidence_ref: "verification/agent-runs/AG-130.md"
+    depends_on: []
+    prompt: "Turnero sala XII: QA + runbook de calibracion de tecla externa por estacion"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-131
+    title: "Turnero sala XIII: hardening anti-flake de suite QA queue"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:47:11.691Z"
+    risk: low
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["playwright.config.js", "tests/admin-queue.spec.js", "tests/queue-display.spec.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:47:11.691Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala XIII: hardening anti-flake de suite QA queue"
+    acceptance_ref: "verification/agent-runs/AG-131.md"
+    evidence_ref: "verification/agent-runs/AG-131.md"
+    depends_on: []
+    prompt: "Turnero sala XIII: hardening anti-flake de suite QA queue"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-132
+    title: "Turnero sala XIV: onboarding operativo estrella con checklist persistente"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T02:58:33.692Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin/index.js", "admin.html"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T02:58:33.692Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala XIV: onboarding operativo estrella con checklist persistente"
+    acceptance_ref: "verification/agent-runs/AG-132.md"
+    evidence_ref: "verification/agent-runs/AG-132.md"
+    depends_on: []
+    prompt: "Turnero sala XIV: onboarding operativo estrella con checklist persistente"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28
+
+  - id: AG-133
+    title: "Turnero sala XV: TV estrella de sala (claridad, privacidad y audio confiable)"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-02-28T03:02:59.428Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/queue-display/index.js", "sala-turnos.html"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-02-28T03:02:59.428Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero sala XV: TV estrella de sala (claridad, privacidad y audio confiable)"
+    acceptance_ref: "verification/agent-runs/AG-133.md"
+    evidence_ref: "verification/agent-runs/AG-133.md"
+    depends_on: []
+    prompt: "Turnero sala XV: TV estrella de sala (claridad, privacidad y audio confiable)"
+    created_at: 2026-02-28
+    updated_at: 2026-02-28

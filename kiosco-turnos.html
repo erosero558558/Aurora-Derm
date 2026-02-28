@@ -8,23 +8,34 @@
             content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
         />
         <title>Kiosco de Turnos | Piel en Armonia</title>
-        <link rel="stylesheet" href="queue-kiosk.css?v=queue-20260227-fix2" />
+        <link rel="stylesheet" href="queue-kiosk.css?v=queue-20260227-star1" />
     </head>
     <body>
+        <div
+            id="kioskWelcomeScreen"
+            class="kiosk-welcome-screen"
+            aria-hidden="true"
+        >
+            <div class="kiosk-welcome-card">
+                <strong>Bienvenida a Piel en Armonia</strong>
+                <p>Tu turno en sala, rapido y claro.</p>
+            </div>
+        </div>
         <header class="kiosk-header">
             <div class="kiosk-brand">
                 <strong>Piel en Armonia</strong>
                 <span>Kiosco de turnos</span>
             </div>
-            <div class="kiosk-theme-toggle" role="group" aria-label="Tema">
-                <button type="button" data-theme-mode="light" aria-pressed="false">
-                    Claro
-                </button>
-                <button type="button" data-theme-mode="dark" aria-pressed="false">
-                    Oscuro
-                </button>
-                <button type="button" data-theme-mode="system" aria-pressed="true">
-                    Sistema
+            <div class="kiosk-header-tools">
+                <p class="kiosk-header-note">Pensado para uso simple y seguro</p>
+                <button
+                    id="kioskHelpToggle"
+                    type="button"
+                    class="kiosk-header-help-btn"
+                    aria-expanded="false"
+                    aria-controls="kioskQuickHelpPanel"
+                >
+                    Ayuda rapida
                 </button>
             </div>
         </header>
@@ -34,6 +45,50 @@
                 <h1>Registro en sala de espera</h1>
                 <p>
                     Selecciona tu opcion para generar turno o confirmar cita.
+                </p>
+                <div class="kiosk-flow-cards">
+                    <article>
+                        <h3>Tengo cita</h3>
+                        <p>Check-in por telefono + fecha + hora</p>
+                    </article>
+                    <article>
+                        <h3>No tengo cita</h3>
+                        <p>Ticket walk-in con iniciales</p>
+                    </article>
+                </div>
+                <div
+                    id="kioskQuickActions"
+                    class="kiosk-quick-actions"
+                    role="group"
+                    aria-label="Seleccion rapida de flujo"
+                >
+                    <button
+                        id="kioskQuickCheckin"
+                        type="button"
+                        class="kiosk-quick-action"
+                        data-flow-target="checkin"
+                        aria-pressed="true"
+                    >
+                        Tengo cita
+                    </button>
+                    <button
+                        id="kioskQuickWalkin"
+                        type="button"
+                        class="kiosk-quick-action"
+                        data-flow-target="walkin"
+                        aria-pressed="false"
+                    >
+                        No tengo cita
+                    </button>
+                </div>
+                <p
+                    id="kioskProgressHint"
+                    class="kiosk-progress-hint"
+                    data-tone="info"
+                    role="status"
+                    aria-live="polite"
+                >
+                    Paso 1 de 2: selecciona una opcion para comenzar.
                 </p>
 
                 <div
@@ -45,6 +100,21 @@
                 >
                     Listo para registrar turnos.
                 </div>
+                <section
+                    id="kioskQuickHelpPanel"
+                    class="kiosk-quick-help-panel"
+                    aria-live="polite"
+                    hidden
+                >
+                    <h2>Guia rapida</h2>
+                    <ol>
+                        <li>Elige "Tengo cita" o "No tengo cita".</li>
+                        <li>Completa datos y pulsa el boton azul.</li>
+                        <li>Toma tu ticket y espera el llamado en la TV.</li>
+                    </ol>
+                    <p>Atajos: <strong>Alt+Shift+1</strong> cita, <strong>Alt+Shift+2</strong> sin cita, <strong>Alt+Shift+H</strong> ayuda.</p>
+                    <button id="kioskHelpClose" type="button">Cerrar ayuda</button>
+                </section>
 
                 <div class="kiosk-form-grid">
                     <form id="checkinForm" class="kiosk-form">
@@ -184,6 +254,6 @@
             </aside>
         </main>
 
-        <script src="js/queue-kiosk.js?v=queue-20260227-fix2" defer></script>
+        <script src="js/queue-kiosk.js?v=queue-20260227-star1" defer></script>
     </body>
 </html>

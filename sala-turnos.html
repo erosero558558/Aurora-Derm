@@ -8,13 +8,16 @@
             content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
         />
         <title>Sala de Espera | Turnero</title>
-        <link rel="stylesheet" href="queue-display.css?v=queue-20260227-fix2" />
+        <link rel="stylesheet" href="queue-display.css?v=queue-20260227-star1" />
     </head>
     <body>
         <header class="display-header">
             <div class="display-brand">
                 <strong>Piel en Armonia</strong>
-                <span>Turnero de sala de espera</span>
+                <span>Turnero de sala de espera · Vista pacientes (lectura grande)</span>
+                <span class="display-privacy-pill" aria-label="Privacidad activa">
+                    Privacidad activa: ticket + iniciales
+                </span>
             </div>
             <div class="display-clock-wrap">
                 <span id="displayClock" class="display-clock">--:--</span>
@@ -29,6 +32,9 @@
                 </span>
                 <span id="displayUpdatedAt" class="display-updated-at">
                     Actualizacion pendiente
+                </span>
+                <span id="displayShortcutsHint" class="display-updated-at">
+                    Atajos staff: Alt+Shift+R refrescar · Alt+Shift+M campanilla · Alt+Shift+B prueba
                 </span>
             </div>
         </header>
@@ -53,6 +59,6 @@
             </section>
         </main>
 
-        <script src="js/queue-display.js?v=queue-20260227-fix2" defer></script>
+        <script src="js/queue-display.js?v=queue-20260227-star1" defer></script>
     </body>
 </html>

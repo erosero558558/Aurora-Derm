@@ -177,6 +177,13 @@ test.describe('Admin turnero sala', () => {
                 return json(route, { ok: true, status: 'ok' });
             }
 
+            if (resource === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: queueState,
+                });
+            }
+
             if (resource === 'funnel-metrics') {
                 return json(route, { ok: true, data: {} });
             }
@@ -246,7 +253,9 @@ test.describe('Admin turnero sala', () => {
         });
 
         await page.goto('/admin.html');
-        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await expect(page.locator('#adminDashboard')).toBeVisible({
+            timeout: 15000,
+        });
 
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -920,6 +929,129 @@ test.describe('Admin turnero sala', () => {
         await expect(page.locator('#queueTableBody')).toContainText('A-2602');
         await expect(page.locator('#queueTableBody')).toContainText('A-2603');
         await expect(page.locator('#queueC1Now')).toContainText('A-2601');
+        await expect(page.locator('#queueTriageSummary')).toContainText(
+            'fallback parcial'
+        );
+        await expect(page.locator('#queueSyncStatus')).toContainText(
+            'fallback'
+        );
+        await expect.poll(() => queueStateRequests).toBe(0);
+    });
+
+    test('usa queue_state de /data como fallback local sin llamar /queue-state', async ({
+        page,
+    }) => {
+        const nowIso = new Date().toISOString();
+        let queueStateRequests = 0;
+        const queueStatePayload = {
+            updated_at: nowIso,
+            waiting_count: 4,
+            called_count: 1,
+            counts: {
+                waiting: 4,
+                called: 1,
+                completed: 0,
+                no_show: 0,
+                cancelled: 0,
+            },
+            calling_now_by_consultorio: {
+                1: {
+                    id: 3601,
+                    ticket_code: 'A-3601',
+                    patient_initials: 'CV',
+                    assigned_consultorio: 1,
+                    called_at: nowIso,
+                    status: 'called',
+                },
+                2: null,
+            },
+            next_tickets: [
+                {
+                    id: 3602,
+                    ticket_code: 'A-3602',
+                    patient_initials: 'JP',
+                    queue_type: 'appointment',
+                    priority_class: 'appt_overdue',
+                    position: 1,
+                    created_at: nowIso,
+                },
+                {
+                    id: 3603,
+                    ticket_code: 'A-3603',
+                    patient_initials: 'LM',
+                    queue_type: 'walk_in',
+                    priority_class: 'walk_in',
+                    position: 2,
+                    created_at: nowIso,
+                },
+            ],
+        };
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_state_data_fallback',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_state: queueStatePayload,
+                    },
+                });
+            }
+
+            if (resource === 'queue-state') {
+                queueStateRequests += 1;
+                return json(
+                    route,
+                    {
+                        ok: false,
+                        error: 'queue-state should not be needed for queue_state fallback',
+                    },
+                    500
+                );
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(page.locator('#queueWaitingCountAdmin')).toHaveText('4');
+        await expect(page.locator('#queueTableBody')).toContainText('A-3602');
+        await expect(page.locator('#queueTableBody')).toContainText('A-3603');
+        await expect(page.locator('#queueC1Now')).toContainText('A-3601');
         await expect(page.locator('#queueTriageSummary')).toContainText(
             'fallback parcial'
         );
@@ -1816,6 +1948,320 @@ test.describe('Admin turnero sala', () => {
         await expect.poll(() => queueCallNextRequests.length).toBe(1);
     });
 
+    test('modo 1 tecla provisionado completa ticket activo y llama siguiente en consultorio bloqueado', async ({
+        page,
+    }) => {
+        const queueCallNextRequests = [];
+        const queueTicketActions = [];
+        let queueTickets = [
+            {
+                id: 1501,
+                ticketCode: 'A-1501',
+                queueType: 'appointment',
+                patientInitials: 'AA',
+                priorityClass: 'appt_current',
+                status: 'called',
+                assignedConsultorio: 2,
+                calledAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+                createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 1502,
+                ticketCode: 'A-1502',
+                queueType: 'walk_in',
+                patientInitials: 'BB',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_one_tap_c2',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket' && request.method() === 'PATCH') {
+                const body = JSON.parse(request.postData() || '{}');
+                const ticketId = Number(body.id || 0);
+                const action = String(body.action || '').toLowerCase();
+                const consultorio = Number(body.consultorio || 0);
+                queueTicketActions.push({ ticketId, action, consultorio });
+
+                const ticketIndex = queueTickets.findIndex(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                );
+                if (ticketIndex < 0) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Ticket no encontrado' },
+                        404
+                    );
+                }
+
+                const nowIso = new Date().toISOString();
+                const updatedTicket = {
+                    ...queueTickets[ticketIndex],
+                    status: 'completed',
+                    assignedConsultorio: null,
+                    completedAt: nowIso,
+                };
+                queueTickets = queueTickets.map((ticket, index) =>
+                    index === ticketIndex ? updatedTicket : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: updatedTicket,
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'queue-call-next' && request.method() === 'POST') {
+                const body = JSON.parse(request.postData() || '{}');
+                const consultorio = Number(body.consultorio || 0);
+                queueCallNextRequests.push(consultorio);
+
+                const candidate = queueTickets.find(
+                    (ticket) => ticket.status === 'waiting'
+                );
+                if (!candidate) {
+                    return json(route, {
+                        ok: true,
+                        data: {
+                            ticket: null,
+                            queueState,
+                        },
+                    });
+                }
+
+                const nowIso = new Date().toISOString();
+                queueTickets = queueTickets.map((ticket) =>
+                    ticket.id === candidate.id
+                        ? {
+                              ...ticket,
+                              status: 'called',
+                              assignedConsultorio: consultorio,
+                              calledAt: nowIso,
+                          }
+                        : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets.find(
+                            (ticket) => ticket.id === candidate.id
+                        ),
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html?station=c2&lock=1&one_tap=1');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(page.locator('#queueStationBadge')).toContainText(
+            'Estación C2'
+        );
+        await expect(page.locator('#queueStationModeBadge')).toContainText(
+            'Bloqueado'
+        );
+        await expect(
+            page.locator('[data-action="queue-toggle-one-tap"]')
+        ).toContainText('ON');
+
+        await page.keyboard.press('NumpadEnter');
+        await expect.poll(() => queueTicketActions.length).toBe(1);
+        await expect.poll(() => queueTicketActions[0]?.ticketId).toBe(1501);
+        await expect
+            .poll(() => queueTicketActions[0]?.action)
+            .toBe('completar');
+        await expect.poll(() => queueTicketActions[0]?.consultorio).toBe(2);
+        await expect.poll(() => queueCallNextRequests.length).toBe(1);
+        await expect.poll(() => queueCallNextRequests[0]).toBe(2);
+        await expect(page.locator('#queueC2Now')).toContainText('A-1502');
+
+        await page.reload();
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(
+            page.locator('[data-action="queue-toggle-one-tap"]')
+        ).toContainText('ON');
+    });
+
+    test('modo 1 tecla sin ticket activo solo llama siguiente (sin completar)', async ({
+        page,
+    }) => {
+        const queueCallNextRequests = [];
+        const queueTicketActions = [];
+        let queueTickets = [
+            {
+                id: 1511,
+                ticketCode: 'A-1511',
+                queueType: 'walk_in',
+                patientInitials: 'ZX',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_one_tap_only_call',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket' && request.method() === 'PATCH') {
+                queueTicketActions.push(JSON.parse(request.postData() || '{}'));
+                return json(route, { ok: false, error: 'No esperado' }, 500);
+            }
+
+            if (resource === 'queue-call-next' && request.method() === 'POST') {
+                const body = JSON.parse(request.postData() || '{}');
+                const consultorio = Number(body.consultorio || 0);
+                queueCallNextRequests.push(consultorio);
+
+                const candidate = queueTickets.find(
+                    (ticket) => ticket.status === 'waiting'
+                );
+                if (!candidate) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Sin turnos en espera' },
+                        409
+                    );
+                }
+
+                const nowIso = new Date().toISOString();
+                queueTickets = queueTickets.map((ticket) =>
+                    ticket.id === candidate.id
+                        ? {
+                              ...ticket,
+                              status: 'called',
+                              assignedConsultorio: consultorio,
+                              calledAt: nowIso,
+                          }
+                        : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets.find(
+                            (ticket) => ticket.id === candidate.id
+                        ),
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html?station=c1&lock=1&one_tap=1');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(
+            page.locator('[data-action="queue-toggle-one-tap"]')
+        ).toContainText('ON');
+
+        await page.keyboard.press('NumpadEnter');
+        await expect.poll(() => queueTicketActions.length).toBe(0);
+        await expect.poll(() => queueCallNextRequests.length).toBe(1);
+        await expect.poll(() => queueCallNextRequests[0]).toBe(1);
+        await expect(page.locator('#queueC1Now')).toContainText('A-1511');
+    });
+
     test('modo bloqueado permite override manual con boton del consultorio opuesto', async ({
         page,
     }) => {
@@ -1923,6 +2369,896 @@ test.describe('Admin turnero sala', () => {
         await expect(page.locator('#toastContainer')).toContainText(
             'Llamando manualmente C1'
         );
+    });
+
+    test('panel de ayuda se abre/cierra con atajo 0 y numpad + re-llama ticket activo en la estacion', async ({
+        page,
+    }) => {
+        const queueTicketActions = [];
+        let queueTickets = [
+            {
+                id: 1291,
+                ticketCode: 'A-1291',
+                queueType: 'appointment',
+                patientInitials: 'RT',
+                priorityClass: 'appt_current',
+                status: 'called',
+                assignedConsultorio: 1,
+                calledAt: new Date(Date.now() - 90 * 1000).toISOString(),
+                createdAt: new Date(Date.now() - 9 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 1292,
+                ticketCode: 'A-1292',
+                queueType: 'walk_in',
+                patientInitials: 'PQ',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_numpad_star_help',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket' && request.method() === 'PATCH') {
+                const body = JSON.parse(request.postData() || '{}');
+                const ticketId = Number(body.id || 0);
+                const action = String(body.action || '').toLowerCase();
+                queueTicketActions.push({ ticketId, action });
+
+                const ticketIndex = queueTickets.findIndex(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                );
+                if (ticketIndex < 0) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Ticket no encontrado' },
+                        404
+                    );
+                }
+
+                const currentTicket = queueTickets[ticketIndex];
+                const updatedTicket =
+                    action === 're-llamar' || action === 'rellamar'
+                        ? {
+                              ...currentTicket,
+                              status: 'called',
+                              assignedConsultorio:
+                                  Number(
+                                      currentTicket.assignedConsultorio || 1
+                                  ) || 1,
+                              calledAt: new Date().toISOString(),
+                          }
+                        : currentTicket;
+
+                queueTickets = queueTickets.map((ticket, index) =>
+                    index === ticketIndex ? updatedTicket : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: updatedTicket,
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html?station=c1&lock=1');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(page.locator('#queueShortcutPanel')).toBeHidden();
+        await page.locator('[data-action="queue-toggle-shortcuts"]').click();
+        await expect(page.locator('#queueShortcutPanel')).toBeVisible();
+        await page.keyboard.press('Alt+Shift+0');
+        await expect(page.locator('#queueShortcutPanel')).toBeHidden();
+        await page.keyboard.press('Alt+Shift+0');
+        await expect(page.locator('#queueShortcutPanel')).toBeVisible();
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: '+',
+                    code: 'NumpadAdd',
+                    location: 3,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueTicketActions.length).toBe(1);
+        await expect
+            .poll(() => queueTicketActions[0]?.action)
+            .toBe('re-llamar');
+    });
+
+    test('numpad . y - exigen confirmacion doble y respetan cancelacion', async ({
+        page,
+    }) => {
+        const queueTicketActions = [];
+        let queueTickets = [
+            {
+                id: 1293,
+                ticketCode: 'A-1293',
+                queueType: 'appointment',
+                patientInitials: 'LM',
+                priorityClass: 'appt_overdue',
+                status: 'called',
+                assignedConsultorio: 1,
+                calledAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+                createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 1294,
+                ticketCode: 'A-1294',
+                queueType: 'walk_in',
+                patientInitials: 'OP',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_numpad_star_confirm',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket' && request.method() === 'PATCH') {
+                const body = JSON.parse(request.postData() || '{}');
+                const ticketId = Number(body.id || 0);
+                const action = String(body.action || '').toLowerCase();
+                queueTicketActions.push({ ticketId, action });
+
+                const ticketIndex = queueTickets.findIndex(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                );
+                if (ticketIndex < 0) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Ticket no encontrado' },
+                        404
+                    );
+                }
+
+                const currentTicket = queueTickets[ticketIndex];
+                const nowIso = new Date().toISOString();
+                let updatedTicket = { ...currentTicket };
+                if (action === 'completar') {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'completed',
+                        assignedConsultorio: null,
+                        completedAt: nowIso,
+                    };
+                } else if (action === 'no_show') {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'no_show',
+                        assignedConsultorio: null,
+                    };
+                }
+
+                queueTickets = queueTickets.map((ticket, index) =>
+                    index === ticketIndex ? updatedTicket : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: updatedTicket,
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html?station=c1&lock=1');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+
+        const dismissDialogs = async (dialog) => {
+            await dialog.dismiss();
+        };
+        page.on('dialog', dismissDialogs);
+        await page.keyboard.press('NumpadDecimal');
+        await expect.poll(() => queueTicketActions.length).toBe(0);
+        page.off('dialog', dismissDialogs);
+
+        const acceptDialogs = async (dialog) => {
+            await dialog.accept();
+        };
+        page.on('dialog', acceptDialogs);
+        await page.keyboard.press('NumpadSubtract');
+        await expect.poll(() => queueTicketActions.length).toBe(1);
+        await expect.poll(() => queueTicketActions[0]?.action).toBe('no_show');
+        await expect.poll(() => queueTicketActions[0]?.ticketId).toBe(1293);
+        page.off('dialog', acceptDialogs);
+    });
+
+    test('numpad cross-platform soporta Enter por location=3 y decimal regional', async ({
+        page,
+    }) => {
+        const queueCallNextRequests = [];
+        const queueTicketActions = [];
+        let queueTickets = [
+            {
+                id: 1401,
+                ticketCode: 'A-1401',
+                queueType: 'walk_in',
+                patientInitials: 'BB',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 1402,
+                ticketCode: 'A-1402',
+                queueType: 'appointment',
+                patientInitials: 'CC',
+                priorityClass: 'appt_current',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_numpad_location_fallback',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-call-next' && request.method() === 'POST') {
+                const body = JSON.parse(request.postData() || '{}');
+                const consultorio = Number(body.consultorio || 0);
+                queueCallNextRequests.push(consultorio);
+                const waitingTicket = queueTickets.find(
+                    (ticket) => ticket.status === 'waiting'
+                );
+                if (!waitingTicket) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Sin turnos en espera' },
+                        409
+                    );
+                }
+                const nowIso = new Date().toISOString();
+                queueTickets = queueTickets.map((ticket) =>
+                    ticket.id === waitingTicket.id
+                        ? {
+                              ...ticket,
+                              status: 'called',
+                              assignedConsultorio: consultorio,
+                              calledAt: nowIso,
+                          }
+                        : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets.find(
+                            (ticket) => ticket.id === waitingTicket.id
+                        ),
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket' && request.method() === 'PATCH') {
+                const body = JSON.parse(request.postData() || '{}');
+                const ticketId = Number(body.id || 0);
+                const action = String(body.action || '').toLowerCase();
+                queueTicketActions.push({ ticketId, action });
+
+                const ticketIndex = queueTickets.findIndex(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                );
+                if (ticketIndex < 0) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Ticket no encontrado' },
+                        404
+                    );
+                }
+
+                const currentTicket = queueTickets[ticketIndex];
+                const nowIso = new Date().toISOString();
+                const updatedTicket =
+                    action === 'completar'
+                        ? {
+                              ...currentTicket,
+                              status: 'completed',
+                              assignedConsultorio: null,
+                              completedAt: nowIso,
+                          }
+                        : currentTicket;
+                queueTickets = queueTickets.map((ticket, index) =>
+                    index === ticketIndex ? updatedTicket : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: updatedTicket,
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html?station=c1&lock=1');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await page.locator('#queue').click({ position: { x: 18, y: 16 } });
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    location: 1,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueCallNextRequests.length).toBe(0);
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: '',
+                    location: 3,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueCallNextRequests.length).toBe(1);
+        await expect.poll(() => queueCallNextRequests[0]).toBe(1);
+
+        const acceptDialogs = async (dialog) => {
+            await dialog.accept();
+        };
+        page.on('dialog', acceptDialogs);
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: ',',
+                    code: 'NumpadDecimal',
+                    location: 0,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueTicketActions.length).toBe(1);
+        await expect
+            .poll(() => queueTicketActions[0]?.action)
+            .toBe('completar');
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: '',
+                    location: 3,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueCallNextRequests.length).toBe(2);
+        await expect.poll(() => queueCallNextRequests[1]).toBe(1);
+        await expect(page.locator('#queueC1Now')).toContainText('A-1402');
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Delete',
+                    code: 'NumpadDecimal',
+                    location: 0,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueTicketActions.length).toBe(2);
+        await expect
+            .poll(() => queueTicketActions[1]?.action)
+            .toBe('completar');
+
+        page.off('dialog', acceptDialogs);
+    });
+
+    test('calibra tecla externa para llamado y persiste por estacion hasta limpiar binding', async ({
+        page,
+    }) => {
+        const queueCallNextRequests = [];
+        let queueTickets = [
+            {
+                id: 1501,
+                ticketCode: 'A-1501',
+                queueType: 'walk_in',
+                patientInitials: 'KE',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 7 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 1502,
+                ticketCode: 'A-1502',
+                queueType: 'appointment',
+                patientInitials: 'LA',
+                priorityClass: 'appt_current',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 1503,
+                ticketCode: 'A-1503',
+                queueType: 'walk_in',
+                patientInitials: 'MI',
+                priorityClass: 'walk_in',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_custom_call_key',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-call-next' && request.method() === 'POST') {
+                const body = JSON.parse(request.postData() || '{}');
+                const consultorio = Number(body.consultorio || 0);
+                queueCallNextRequests.push(consultorio);
+                const waitingTicket = queueTickets.find(
+                    (ticket) => ticket.status === 'waiting'
+                );
+                if (!waitingTicket) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Sin turnos en espera' },
+                        409
+                    );
+                }
+                const nowIso = new Date().toISOString();
+                queueTickets = queueTickets.map((ticket) =>
+                    ticket.id === waitingTicket.id
+                        ? {
+                              ...ticket,
+                              status: 'called',
+                              assignedConsultorio: consultorio,
+                              calledAt: nowIso,
+                          }
+                        : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets.find(
+                            (ticket) => ticket.id === waitingTicket.id
+                        ),
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html?station=c1&lock=1');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    location: 1,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueCallNextRequests.length).toBe(0);
+
+        await page.locator('[data-action="queue-capture-call-key"]').click();
+        await expect(page.locator('#toastContainer')).toContainText(
+            'Calibración activa'
+        );
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    location: 1,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect(page.locator('#toastContainer')).toContainText(
+            'Tecla externa guardada'
+        );
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    location: 1,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueCallNextRequests.length).toBe(1);
+        await expect.poll(() => queueCallNextRequests[0]).toBe(1);
+
+        await page.reload();
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(
+            page.locator('[data-action="queue-clear-call-key"]')
+        ).toBeVisible();
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    location: 1,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueCallNextRequests.length).toBe(2);
+        await expect.poll(() => queueCallNextRequests[1]).toBe(1);
+
+        page.once('dialog', async (dialog) => {
+            await dialog.accept();
+        });
+        await page.locator('[data-action="queue-clear-call-key"]').click();
+        await expect(page.locator('#toastContainer')).toContainText(
+            'Tecla externa eliminada'
+        );
+
+        await page.evaluate(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    location: 1,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+        });
+        await expect.poll(() => queueCallNextRequests.length).toBe(2);
+    });
+
+    test('modo práctica simula acciones y no altera cola real hasta salir de práctica', async ({
+        page,
+    }) => {
+        const queueCallNextRequests = [];
+        const queueTicketPatchRequests = [];
+        let queueTickets = [
+            {
+                id: 1301,
+                ticketCode: 'A-1301',
+                queueType: 'appointment',
+                patientInitials: 'PR',
+                priorityClass: 'appt_current',
+                status: 'waiting',
+                assignedConsultorio: null,
+                createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+            },
+        ];
+        let queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_practice_mode',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+            }
+
+            if (resource === 'queue-call-next' && request.method() === 'POST') {
+                const body = JSON.parse(request.postData() || '{}');
+                queueCallNextRequests.push(Number(body.consultorio || 0));
+                const candidate = queueTickets.find(
+                    (ticket) => ticket.status === 'waiting'
+                );
+                if (!candidate) {
+                    return json(
+                        route,
+                        { ok: false, error: 'Sin turnos en espera' },
+                        409
+                    );
+                }
+                queueTickets = queueTickets.map((ticket) =>
+                    ticket.id === candidate.id
+                        ? {
+                              ...ticket,
+                              status: 'called',
+                              assignedConsultorio: Number(
+                                  body.consultorio || 1
+                              ),
+                              calledAt: new Date().toISOString(),
+                          }
+                        : ticket
+                );
+                queueState = buildQueueStateFromTickets(queueTickets);
+                return json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets.find(
+                            (ticket) => ticket.id === candidate.id
+                        ),
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'queue-ticket' && request.method() === 'PATCH') {
+                queueTicketPatchRequests.push(1);
+                return json(route, { ok: true, data: { ticket: null } });
+            }
+
+            if (resource === 'health') {
+                return json(route, { ok: true, status: 'ok' });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/admin.html?station=c1&lock=1');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+
+        await page.locator('[data-action="queue-start-practice"]').click();
+        await expect(page.locator('#queuePracticeModeBadge')).toBeVisible();
+
+        await page.keyboard.press('NumpadEnter');
+        await expect.poll(() => queueCallNextRequests.length).toBe(0);
+
+        await page
+            .locator(
+                '#queueTableBody [data-action="queue-ticket-action"][data-queue-action="completar"]'
+            )
+            .first()
+            .click();
+        await expect.poll(() => queueTicketPatchRequests.length).toBe(0);
+
+        await page.locator('[data-action="queue-stop-practice"]').click();
+        await expect(page.locator('#queuePracticeModeBadge')).toBeHidden();
+
+        await page.keyboard.press('NumpadEnter');
+        await expect.poll(() => queueCallNextRequests.length).toBe(1);
+        await expect.poll(() => queueCallNextRequests[0]).toBe(1);
     });
 
     test('tabla muestra mensaje de filtro activo cuando hay tickets pero no matchean', async ({

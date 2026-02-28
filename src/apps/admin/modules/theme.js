@@ -1,4 +1,5 @@
-const ADMIN_THEME_STORAGE_KEY = 'themeMode';
+const ADMIN_THEME_STORAGE_KEY = 'queueThemeAdmin';
+const ADMIN_THEME_STORAGE_LEGACY_KEY = 'themeMode';
 const VALID_THEME_MODES = new Set(['light', 'dark', 'system']);
 
 let currentThemeMode = 'system';
@@ -28,7 +29,9 @@ function resolveTheme(mode) {
 function readStoredThemeMode() {
     try {
         const stored =
-            localStorage.getItem(ADMIN_THEME_STORAGE_KEY) || 'system';
+            localStorage.getItem(ADMIN_THEME_STORAGE_KEY) ||
+            localStorage.getItem(ADMIN_THEME_STORAGE_LEGACY_KEY) ||
+            'system';
         return isValidThemeMode(stored) ? stored : 'system';
     } catch (_error) {
         return 'system';
@@ -38,6 +41,7 @@ function readStoredThemeMode() {
 function persistThemeMode(mode) {
     try {
         localStorage.setItem(ADMIN_THEME_STORAGE_KEY, mode);
+        localStorage.setItem(ADMIN_THEME_STORAGE_LEGACY_KEY, mode);
     } catch (_error) {
         // no-op
     }

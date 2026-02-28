@@ -16,6 +16,14 @@ const QUEUE_STATUS_LABELS = {
     cancelled: 'Cancelado',
 };
 
+function isQueuePracticeModeEnabled() {
+    try {
+        return Boolean(window.__PIEL_QUEUE_PRACTICE_MODE);
+    } catch (_error) {
+        return false;
+    }
+}
+
 const QUEUE_PRIORITY_LABELS = {
     appt_overdue: 'Cita vencida',
     appt_current: 'Cita vigente',
@@ -887,6 +895,38 @@ function renderQueueOperationalInsights() {
 
 function normalizeQueueMetaFromState(queueState) {
     const normalizedState = normalizeQueueStatePayload(queueState);
+    const normalizeQueueTicket = (ticket, { positionFallback = null } = {}) => {
+        const positionValue = Number(ticket?.position || 0);
+        return {
+            ...ticket,
+            id: Number(ticket?.id || ticket?.ticket_id || 0) || 0,
+            ticketCode: String(
+                ticket?.ticketCode || ticket?.ticket_code || '--'
+            ),
+            patientInitials: String(
+                ticket?.patientInitials || ticket?.patient_initials || '--'
+            ),
+            assignedConsultorio:
+                Number(
+                    ticket?.assignedConsultorio ??
+                        ticket?.assigned_consultorio ??
+                        0
+                ) || null,
+            calledAt: String(ticket?.calledAt || ticket?.called_at || ''),
+            queueType: String(
+                ticket?.queueType || ticket?.queue_type || 'walk_in'
+            ),
+            priorityClass: String(
+                ticket?.priorityClass || ticket?.priority_class || 'walk_in'
+            ),
+            position:
+                positionValue > 0
+                    ? positionValue
+                    : Number(positionFallback || 0) > 0
+                      ? Number(positionFallback)
+                      : null,
+        };
+    };
     const callingNowByConsultorio = {
         1: null,
         2: null,
@@ -900,7 +940,8 @@ function normalizeQueueMetaFromState(queueState) {
             ticket?.assignedConsultorio ?? ticket?.assigned_consultorio ?? 0
         );
         if (consultorio === 1 || consultorio === 2) {
-            callingNowByConsultorio[String(consultorio)] = ticket;
+            callingNowByConsultorio[String(consultorio)] =
+                normalizeQueueTicket(ticket);
         }
     }
 
@@ -911,7 +952,9 @@ function normalizeQueueMetaFromState(queueState) {
         counts: normalizedState.counts || {},
         callingNowByConsultorio,
         nextTickets: Array.isArray(normalizedState.nextTickets)
-            ? normalizedState.nextTickets
+            ? normalizedState.nextTickets.map((ticket, index) =>
+                  normalizeQueueTicket(ticket, { positionFallback: index + 1 })
+              )
             : [],
     };
 }
@@ -1627,7 +1670,7 @@ function ensureQueueTriageControls() {
             </div>
             <p id="queueTriageSummary" class="queue-triage-summary" role="status" aria-live="polite">Sin datos de cola</p>
             <p class="queue-triage-summary">
-                Atajos: Alt+Shift+J (C1), Alt+Shift+K (C2), Alt+Shift+F (buscar), Alt+Shift+L (SLA), Alt+Shift+U (refrescar), Alt+Shift+P (reimprimir visibles), Alt+Shift+W/C/A/I (estado), Numpad 1/2 + Enter (estación)
+                Atajos: Alt+Shift+J (C1), Alt+Shift+K (C2), Alt+Shift+F (buscar), Alt+Shift+L (SLA), Alt+Shift+U (refrescar), Alt+Shift+P (reimprimir visibles), Alt+Shift+W/C/A/I (estado), Numpad Enter / + / . / - / 0 (estación)
             </p>
         `;
         const kpis = shell.querySelector('.queue-admin-kpis');
@@ -2127,18 +2170,34 @@ export async function refreshQueueRealtime({
     try {
         const payload = await apiRequest('data');
         const data = payload.data || {};
+        const dataQueueState =
+            data.queueState && typeof data.queueState === 'object'
+                ? data.queueState
+                : data.queue_state && typeof data.queue_state === 'object'
+                  ? data.queue_state
+                  : null;
         const rawQueueTickets = Array.isArray(data.queue_tickets)
             ? data.queue_tickets
             : Array.isArray(data.queueTickets)
               ? data.queueTickets
-              : null;
+              : Array.isArray(dataQueueState?.queue_tickets)
+                ? dataQueueState.queue_tickets
+                : Array.isArray(dataQueueState?.queueTickets)
+                  ? dataQueueState.queueTickets
+                  : Array.isArray(dataQueueState?.tickets)
+                    ? dataQueueState.tickets
+                    : null;
         const dataHasQueueTickets = Array.isArray(rawQueueTickets);
+        const dataTicketsAreEmpty =
+            dataHasQueueTickets && rawQueueTickets.length === 0;
         const rawQueueMeta =
             data.queueMeta && typeof data.queueMeta === 'object'
                 ? data.queueMeta
                 : data.queue_meta && typeof data.queue_meta === 'object'
                   ? data.queue_meta
-                  : null;
+                  : dataQueueState && typeof dataQueueState === 'object'
+                    ? dataQueueState
+                    : null;
         const normalizedQueueMeta = rawQueueMeta
             ? normalizeQueueMetaFromState(rawQueueMeta)
             : null;
@@ -2150,7 +2209,10 @@ export async function refreshQueueRealtime({
             : [];
         let usedMetaFallback = false;
 
-        if (!dataHasQueueTickets && normalizedQueueMeta) {
+        if (
+            (!dataHasQueueTickets || dataTicketsAreEmpty) &&
+            normalizedQueueMeta
+        ) {
             const queueMetaActiveCount =
                 Number(normalizedQueueMeta.waitingCount || 0) +
                 Number(normalizedQueueMeta.calledCount || 0);
@@ -2170,7 +2232,38 @@ export async function refreshQueueRealtime({
             }
         }
 
-        if (!dataHasQueueTickets && queueTickets.length === 0) {
+        const previousActiveTickets = Array.isArray(currentQueueTickets)
+            ? currentQueueTickets.filter((ticket) =>
+                  NON_TERMINAL_QUEUE_STATUSES.has(
+                      String(ticket?.status || '').toLowerCase()
+                  )
+              ).length
+            : 0;
+        const declaredMetaActiveCount = normalizedQueueMeta
+            ? Number(normalizedQueueMeta.waitingCount || 0) +
+              Number(normalizedQueueMeta.calledCount || 0)
+            : 0;
+
+        if (
+            dataTicketsAreEmpty &&
+            !usedMetaFallback &&
+            previousActiveTickets > 0 &&
+            declaredMetaActiveCount === 0
+        ) {
+            const queueStateHydrated = await applyQueueStateFallback({
+                silent,
+                fromRealtime,
+                reason: 'data_empty_queue_tickets',
+            });
+            if (queueStateHydrated) {
+                return true;
+            }
+        }
+
+        if (
+            (!dataHasQueueTickets || dataTicketsAreEmpty) &&
+            queueTickets.length === 0
+        ) {
             const queueStateHydrated = await applyQueueStateFallback({
                 silent,
                 fromRealtime,
@@ -2367,6 +2460,11 @@ export async function callNextForConsultorio(consultorio) {
                       new Date().toISOString()
                   )
         );
+        try {
+            await refreshQueueRealtime({ silent: true });
+        } catch (_syncError) {
+            // best effort: keep optimistic queue update even if background sync fails
+        }
         renderQueueSection();
         if (ticket && ticket.ticketCode) {
             pushQueueActivity(
@@ -2530,6 +2628,20 @@ export async function runQueueBulkAction(action) {
         showToast('Accion masiva invalida', 'error');
         return { ok: false, success: 0, failed: 0 };
     }
+    if (isQueuePracticeModeEnabled()) {
+        pushQueueActivity(
+            `Modo práctica: bulk ${normalizedAction} simulado (sin cambios reales)`,
+            { level: 'info' }
+        );
+        showToast(
+            `Modo práctica: bulk ${getBulkActionLabel(normalizedAction).toLowerCase()} simulado.`,
+            'info'
+        );
+        emitQueueOpsEvent('bulk_action_practice_simulated', {
+            action: normalizedAction,
+        });
+        return { ok: true, success: 0, failed: 0, simulated: true };
+    }
     if (queueUiState.bulkActionInFlight) {
         return { ok: false, success: 0, failed: 0 };
     }
@@ -2635,6 +2747,15 @@ export async function runQueueBulkAction(action) {
 }
 
 export async function runQueueBulkReprint() {
+    if (isQueuePracticeModeEnabled()) {
+        pushQueueActivity(
+            'Modo práctica: reimpresión visible simulada (sin impresión real)',
+            { level: 'info' }
+        );
+        showToast('Modo práctica: reimpresión simulada.', 'info');
+        emitQueueOpsEvent('bulk_reprint_practice_simulated', {});
+        return { ok: true, success: 0, failed: 0, simulated: true };
+    }
     if (queueUiState.bulkReprintInFlight) {
         return { ok: false, success: 0, failed: 0 };
     }

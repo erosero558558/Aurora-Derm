@@ -136,6 +136,61 @@ test.describe('Kiosco turnos', () => {
         );
     });
 
+    test('acepta payload queue-state con snake_case sin dejar cola vacia', async ({
+        page,
+    }) => {
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, {
+                ok: true,
+                data: {
+                    updated_at: new Date().toISOString(),
+                    waiting_count: 2,
+                    called_count: 1,
+                    calling_now: [
+                        {
+                            id: 31,
+                            ticket_code: 'A-031',
+                            patient_initials: 'KR',
+                            assigned_consultorio: 2,
+                            called_at: new Date().toISOString(),
+                        },
+                    ],
+                    next_tickets: [
+                        {
+                            id: 32,
+                            ticket_code: 'A-032',
+                            patient_initials: 'LP',
+                            queue_type: 'walk_in',
+                            priority_class: 'walk_in',
+                        },
+                        {
+                            id: 33,
+                            ticket_code: 'A-033',
+                            patient_initials: 'RM',
+                            queue_type: 'appointment',
+                            priority_class: 'appt_current',
+                        },
+                    ],
+                },
+            });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await expect(page.locator('#queueWaitingCount')).toHaveText('2');
+        await expect(page.locator('#queueCalledCount')).toHaveText('1');
+        await expect(page.locator('#queueCallingNow')).toContainText('A-031');
+        await expect(page.locator('#queueNextList')).toContainText('A-032');
+        await expect(page.locator('#queueNextList')).toContainText('A-033');
+    });
+
     test('activa modo degradado por watchdog y recupera con refresh manual', async ({
         page,
     }) => {

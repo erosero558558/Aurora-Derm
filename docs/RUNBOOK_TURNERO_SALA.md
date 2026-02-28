@@ -28,6 +28,27 @@ Operacion estable del turnero de sala para 2 consultorios con cola unica, llamad
     - `#displayConnectionState` en `live`.
     - campanilla activa si se requiere audio.
 
+## Flujo rapido recomendado (recepcion)
+
+Cuando una atencion termina en consultorio:
+
+1. Marcar cierre del ticket activo de la estacion:
+    - `Numpad .` o `Numpad ,` (completar, con doble confirmacion).
+2. Llamar siguiente:
+    - `Numpad Enter`.
+3. Si necesitas repetir aviso del mismo paciente:
+    - `Numpad +` (re-llamar).
+
+Importante:
+
+- `Enter` del teclado principal no llama turnos.
+- En estacion bloqueada (`C1` o `C2`), `Numpad Enter` llama siempre ese consultorio.
+- Secuencia recomendada cuando termina una atencion: `Numpad .` -> confirmar 2 veces -> `Numpad Enter`.
+- Si deseas operar en una sola pulsacion, activa `Modo 1 tecla` en `Control de estación`:
+    - `Numpad Enter` completa ticket activo y llama siguiente automaticamente.
+    - mantener desactivado por defecto para minimizar errores en horarios de alto flujo.
+- Si tu numpad inalambrico no dispara `Numpad Enter`, usa `Calibrar tecla externa` y presiona la tecla real del dispositivo (ej. Enter externo). Se guarda por estación.
+
 ## Provisionamiento por estación (2 PCs)
 
 Configurar cada computadora una sola vez en navegador estable (no incógnito):
@@ -36,10 +57,15 @@ Configurar cada computadora una sola vez en navegador estable (no incógnito):
     - abrir `admin.html?station=c1&lock=1`
 2. PC consultorio 2:
     - abrir `admin.html?station=c2&lock=1`
-3. El sistema guarda localmente:
+3. Opcional (flujo en una sola pulsación por estación):
+    - usar `admin.html?station=c1&lock=1&one_tap=1` o `admin.html?station=c2&lock=1&one_tap=1`
+    - recomendado solo para personal entrenado; por defecto mantener `one_tap` apagado.
+4. El sistema guarda localmente:
     - `queueStationMode=locked`
     - `queueStationConsultorio=1|2`
-4. Después del primer arranque, la URL se limpia automáticamente (`history.replaceState`) y la estación queda persistida en `localStorage`.
+    - `queueOneTapAdvance=1|0`
+    - `queueCallKeyBindingV1={code,key,location}` (solo si calibras tecla externa)
+5. Después del primer arranque, la URL se limpia automáticamente (`history.replaceState`) y la estación queda persistida en `localStorage`.
 
 Recuperación rápida (si borran caché o cambian navegador):
 
@@ -47,6 +73,8 @@ Recuperación rápida (si borran caché o cambian navegador):
 2. Confirmar en panel `Control de estación`:
     - badge `Estación C1/C2`
     - estado `Bloqueado`.
+    - estado `Modo 1 tecla` según operación requerida (`ON`/`OFF`).
+    - si aplica, volver a calibrar `Tecla externa` con el botón `Calibrar tecla externa`.
 
 ## Contingencias
 
@@ -82,7 +110,20 @@ Recuperación rápida (si borran caché o cambian navegador):
 - `Alt+Shift+G/H/B`: bulk completar/no_show/cancelar
 - `Alt+Shift+P`: reimprimir tickets visibles
 - `Numpad Enter`: llamar siguiente del consultorio de la estación activa
+- `Numpad +`: re-llamar ticket activo del consultorio de la estación
+- `Numpad .` o `Numpad ,`: completar ticket activo del consultorio de la estación
+- `Numpad -`: marcar no_show del ticket activo del consultorio de la estación
+- `Numpad 0`: abrir/cerrar panel de ayuda de atajos
 - `Numpad 1/2`: solo en modo libre, seleccionar consultorio objetivo
+- `Esc`: cerrar panel de ayuda o guia inicial
+
+Compatibilidad Windows/Mac (2 numpads):
+
+- El sistema detecta numpad por `KeyboardEvent.code` y fallback `key + location=3`.
+- Funciona en Windows (Chrome/Edge) y Mac (Chrome/Safari) con teclado numerico externo.
+- Si una tecla no dispara accion, validar que NumLock este activo y que el foco no este en un campo de texto.
+- Si el hardware reporta Enter como tecla principal (location distinta de 3), usar `Calibrar tecla externa` en esa PC para asociarla al llamado.
+- En algunos layouts de Mac/ES la tecla decimal del numpad se reporta como `,` o `Delete`; ambas variantes quedan cubiertas.
 
 Reglas operativas de estación:
 

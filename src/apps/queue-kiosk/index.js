@@ -18,6 +18,9 @@ const KIOSK_OFFLINE_OUTBOX_FLUSH_BATCH = 4;
 const KIOSK_OFFLINE_OUTBOX_RENDER_LIMIT = 6;
 const KIOSK_OFFLINE_OUTBOX_DEDUPE_MS = 90 * 1000;
 const KIOSK_PRINTER_STATE_STORAGE_KEY = 'queueKioskPrinterState';
+const KIOSK_STAR_STYLE_ID = 'kioskStarInlineStyles';
+const KIOSK_WELCOME_HIDE_MS = 1800;
+const KIOSK_WELCOME_REMOVE_MS = 2600;
 
 const state = {
     queueState: null,
@@ -40,6 +43,9 @@ const state = {
     lastConnectionState: '',
     lastConnectionMessage: '',
     printerState: null,
+    quickHelpOpen: false,
+    selectedFlow: 'checkin',
+    welcomeDismissed: false,
 };
 
 function emitQueueOpsEvent(eventName, detail = {}) {
@@ -70,6 +76,383 @@ function escapeHtml(value) {
 
 function getById(id) {
     return document.getElementById(id);
+}
+
+function ensureKioskStarStyles() {
+    if (document.getElementById(KIOSK_STAR_STYLE_ID)) {
+        return;
+    }
+
+    const styleEl = document.createElement('style');
+    styleEl.id = KIOSK_STAR_STYLE_ID;
+    styleEl.textContent = `
+        body[data-kiosk-mode='star'] .kiosk-header {
+            border-bottom-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+            box-shadow: 0 10px 28px rgb(15 31 54 / 10%);
+        }
+        .kiosk-header-tools {
+            display: grid;
+            gap: 0.35rem;
+            justify-items: end;
+        }
+        .kiosk-header-help-btn {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.34rem 0.72rem;
+            background: var(--surface-soft);
+            color: var(--text);
+            font-size: 0.86rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 44px;
+        }
+        .kiosk-header-help-btn[data-open='true'] {
+            border-color: color-mix(in srgb, var(--primary) 38%, #fff 62%);
+            background: color-mix(in srgb, var(--surface-strong) 84%, #fff 16%);
+            color: var(--primary-strong);
+        }
+        .kiosk-quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.65rem;
+            margin: 0.45rem 0 0.6rem;
+        }
+        .kiosk-quick-action {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 0.8rem 0.92rem;
+            background: var(--surface-soft);
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            min-height: 64px;
+            text-align: left;
+        }
+        .kiosk-quick-action[data-active='true'] {
+            border-color: color-mix(in srgb, var(--primary) 42%, #fff 58%);
+            background: color-mix(in srgb, var(--surface-strong) 86%, #fff 14%);
+            color: var(--primary-strong);
+            box-shadow: 0 12px 26px rgb(15 107 220 / 14%);
+        }
+        .kiosk-progress-hint {
+            margin: 0 0 0.72rem;
+            color: var(--muted);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .kiosk-progress-hint[data-tone='success'] {
+            color: var(--success);
+        }
+        .kiosk-progress-hint[data-tone='warn'] {
+            color: #9a6700;
+        }
+        .kiosk-quick-help-panel {
+            margin: 0 0 0.9rem;
+            border: 1px solid color-mix(in srgb, var(--primary) 24%, #fff 76%);
+            border-radius: 16px;
+            padding: 0.88rem 0.95rem;
+            background: color-mix(in srgb, var(--surface-strong) 86%, #fff 14%);
+        }
+        .kiosk-quick-help-panel h2 {
+            margin: 0 0 0.46rem;
+            font-size: 1.08rem;
+        }
+        .kiosk-quick-help-panel ol {
+            margin: 0 0 0.56rem;
+            padding-left: 1.12rem;
+            color: var(--text);
+            line-height: 1.45;
+        }
+        .kiosk-quick-help-panel p {
+            margin: 0 0 0.6rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+        .kiosk-quick-help-panel button {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.46rem 0.74rem;
+            background: #fff;
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 44px;
+        }
+        .kiosk-form.is-flow-active {
+            border-color: color-mix(in srgb, var(--primary) 32%, var(--border) 68%);
+            box-shadow: 0 14px 28px rgb(15 107 220 / 11%);
+        }
+        .kiosk-quick-action:focus-visible,
+        .kiosk-header-help-btn:focus-visible,
+        .kiosk-quick-help-panel button:focus-visible {
+            outline: 3px solid color-mix(in srgb, var(--primary) 62%, #fff 38%);
+            outline-offset: 2px;
+        }
+        @media (max-width: 760px) {
+            .kiosk-header-tools {
+                justify-items: start;
+            }
+            .kiosk-quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .kiosk-quick-action,
+            .kiosk-header-help-btn,
+            .kiosk-form {
+                transition: none !important;
+            }
+        }
+    `;
+    document.head.appendChild(styleEl);
+}
+
+function setKioskProgressHint(message, tone = 'info') {
+    const hintEl = getById('kioskProgressHint');
+    if (!(hintEl instanceof HTMLElement)) return;
+    const normalizedTone = ['info', 'warn', 'success'].includes(
+        String(tone || '').toLowerCase()
+    )
+        ? String(tone || '').toLowerCase()
+        : 'info';
+    const nextText =
+        String(message || '').trim() ||
+        'Paso 1 de 2: selecciona una opcion para comenzar.';
+    hintEl.dataset.tone = normalizedTone;
+    hintEl.textContent = nextText;
+}
+
+function setKioskHelpPanelOpen(nextOpen, { source = 'ui' } = {}) {
+    const panel = getById('kioskQuickHelpPanel');
+    const toggle = getById('kioskHelpToggle');
+    if (
+        !(panel instanceof HTMLElement) ||
+        !(toggle instanceof HTMLButtonElement)
+    ) {
+        return;
+    }
+
+    const open = Boolean(nextOpen);
+    state.quickHelpOpen = open;
+    panel.hidden = !open;
+    toggle.dataset.open = open ? 'true' : 'false';
+    toggle.setAttribute('aria-expanded', String(open));
+    emitQueueOpsEvent('quick_help_toggled', {
+        open,
+        source,
+    });
+    if (open) {
+        setKioskProgressHint(
+            'Guia abierta: elige opcion, completa datos y confirma ticket.',
+            'info'
+        );
+    } else {
+        setKioskProgressHint(
+            'Paso 1 de 2: selecciona una opcion para comenzar.',
+            'info'
+        );
+    }
+}
+
+function focusFlowTarget(target, { announce = true } = {}) {
+    const normalized =
+        String(target || '').toLowerCase() === 'walkin' ? 'walkin' : 'checkin';
+    state.selectedFlow = normalized;
+
+    const checkinForm = getById('checkinForm');
+    const walkinForm = getById('walkinForm');
+    if (checkinForm instanceof HTMLElement) {
+        checkinForm.classList.toggle(
+            'is-flow-active',
+            normalized === 'checkin'
+        );
+    }
+    if (walkinForm instanceof HTMLElement) {
+        walkinForm.classList.toggle('is-flow-active', normalized === 'walkin');
+    }
+
+    const quickCheckin = getById('kioskQuickCheckin');
+    const quickWalkin = getById('kioskQuickWalkin');
+    if (quickCheckin instanceof HTMLButtonElement) {
+        const active = normalized === 'checkin';
+        quickCheckin.dataset.active = active ? 'true' : 'false';
+        quickCheckin.setAttribute('aria-pressed', String(active));
+    }
+    if (quickWalkin instanceof HTMLButtonElement) {
+        const active = normalized === 'walkin';
+        quickWalkin.dataset.active = active ? 'true' : 'false';
+        quickWalkin.setAttribute('aria-pressed', String(active));
+    }
+
+    const targetInputId =
+        normalized === 'walkin' ? 'walkinInitials' : 'checkinPhone';
+    const targetInput = getById(targetInputId);
+    if (targetInput instanceof HTMLInputElement) {
+        targetInput.focus({ preventScroll: false });
+    }
+
+    if (announce) {
+        setKioskProgressHint(
+            normalized === 'walkin'
+                ? 'Paso 2: escribe iniciales y pulsa "Generar turno".'
+                : 'Paso 2: escribe telefono, fecha y hora para check-in.',
+            'info'
+        );
+    }
+    emitQueueOpsEvent('flow_focus', {
+        target: normalized,
+    });
+}
+
+function getQueueStateArray(source, keys) {
+    if (!source || typeof source !== 'object' || !Array.isArray(keys)) {
+        return [];
+    }
+    for (const key of keys) {
+        if (!key) continue;
+        if (Array.isArray(source[key])) {
+            return source[key];
+        }
+    }
+    return [];
+}
+
+function getQueueStateObject(source, keys) {
+    if (!source || typeof source !== 'object' || !Array.isArray(keys)) {
+        return null;
+    }
+    for (const key of keys) {
+        if (!key) continue;
+        const value = source[key];
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            return value;
+        }
+    }
+    return null;
+}
+
+function getQueueStateNumber(source, keys, fallback = 0) {
+    if (!source || typeof source !== 'object' || !Array.isArray(keys)) {
+        return Number(fallback || 0);
+    }
+    for (const key of keys) {
+        if (!key) continue;
+        const value = Number(source[key]);
+        if (Number.isFinite(value)) {
+            return value;
+        }
+    }
+    return Number(fallback || 0);
+}
+
+function normalizeQueueStatePayload(rawState) {
+    const state = rawState && typeof rawState === 'object' ? rawState : {};
+    const counts = getQueueStateObject(state, ['counts']) || {};
+    const waitingCountRaw = getQueueStateNumber(
+        state,
+        ['waitingCount', 'waiting_count'],
+        Number.NaN
+    );
+    const calledCountRaw = getQueueStateNumber(
+        state,
+        ['calledCount', 'called_count'],
+        Number.NaN
+    );
+
+    let callingNow = getQueueStateArray(state, [
+        'callingNow',
+        'calling_now',
+        'calledTickets',
+        'called_tickets',
+    ]);
+    if (callingNow.length === 0) {
+        const byConsultorio = getQueueStateObject(state, [
+            'callingNowByConsultorio',
+            'calling_now_by_consultorio',
+        ]);
+        if (byConsultorio) {
+            callingNow = Object.values(byConsultorio).filter(Boolean);
+        }
+    }
+
+    const nextTickets = getQueueStateArray(state, [
+        'nextTickets',
+        'next_tickets',
+        'waitingTickets',
+        'waiting_tickets',
+    ]);
+
+    const waitingCount = Number.isFinite(waitingCountRaw)
+        ? waitingCountRaw
+        : getQueueStateNumber(
+              counts,
+              ['waiting', 'waiting_count'],
+              nextTickets.length
+          );
+    const calledCount = Number.isFinite(calledCountRaw)
+        ? calledCountRaw
+        : getQueueStateNumber(
+              counts,
+              ['called', 'called_count'],
+              callingNow.length
+          );
+
+    return {
+        updatedAt:
+            String(state.updatedAt || state.updated_at || '').trim() ||
+            new Date().toISOString(),
+        waitingCount: Math.max(0, Number(waitingCount || 0)),
+        calledCount: Math.max(0, Number(calledCount || 0)),
+        callingNow: Array.isArray(callingNow)
+            ? callingNow.map((ticket) => ({
+                  ...ticket,
+                  id: Number(ticket?.id || ticket?.ticket_id || 0) || 0,
+                  ticketCode: String(
+                      ticket?.ticketCode || ticket?.ticket_code || '--'
+                  ),
+                  patientInitials: String(
+                      ticket?.patientInitials ||
+                          ticket?.patient_initials ||
+                          '--'
+                  ),
+                  assignedConsultorio:
+                      Number(
+                          ticket?.assignedConsultorio ??
+                              ticket?.assigned_consultorio ??
+                              0
+                      ) || null,
+                  calledAt: String(ticket?.calledAt || ticket?.called_at || ''),
+              }))
+            : [],
+        nextTickets: Array.isArray(nextTickets)
+            ? nextTickets.map((ticket, index) => ({
+                  ...ticket,
+                  id: Number(ticket?.id || ticket?.ticket_id || 0) || 0,
+                  ticketCode: String(
+                      ticket?.ticketCode || ticket?.ticket_code || '--'
+                  ),
+                  patientInitials: String(
+                      ticket?.patientInitials ||
+                          ticket?.patient_initials ||
+                          '--'
+                  ),
+                  queueType: String(
+                      ticket?.queueType || ticket?.queue_type || 'walk_in'
+                  ),
+                  priorityClass: String(
+                      ticket?.priorityClass ||
+                          ticket?.priority_class ||
+                          'walk_in'
+                  ),
+                  position:
+                      Number(ticket?.position || 0) > 0
+                          ? Number(ticket.position)
+                          : index + 1,
+              }))
+            : [],
+    };
 }
 
 async function apiRequest(resource, { method = 'GET', body } = {}) {
@@ -207,34 +590,18 @@ function ensureSessionGuard() {
 
     guard = document.createElement('div');
     guard.id = 'kioskSessionGuard';
-    guard.style.display = 'flex';
-    guard.style.flexWrap = 'wrap';
-    guard.style.alignItems = 'center';
-    guard.style.gap = '0.55rem';
-    guard.style.marginBottom = '0.85rem';
+    guard.className = 'kiosk-session-guard';
 
     const countdown = document.createElement('span');
     countdown.id = 'kioskSessionCountdown';
+    countdown.className = 'kiosk-session-countdown';
     countdown.textContent = 'Privacidad auto: --:--';
-    countdown.style.display = 'inline-flex';
-    countdown.style.alignItems = 'center';
-    countdown.style.padding = '0.2rem 0.55rem';
-    countdown.style.border = '1px solid var(--border)';
-    countdown.style.borderRadius = '999px';
-    countdown.style.background = 'var(--surface-soft)';
-    countdown.style.color = 'var(--muted)';
-    countdown.style.fontSize = '0.82rem';
 
     const resetButton = document.createElement('button');
     resetButton.id = 'kioskSessionResetBtn';
     resetButton.type = 'button';
+    resetButton.className = 'kiosk-session-reset';
     resetButton.textContent = 'Nueva persona / limpiar pantalla';
-    resetButton.style.border = '1px solid var(--border)';
-    resetButton.style.borderRadius = '0.65rem';
-    resetButton.style.padding = '0.38rem 0.62rem';
-    resetButton.style.background = 'var(--surface-soft)';
-    resetButton.style.color = 'var(--text)';
-    resetButton.style.cursor = 'pointer';
 
     guard.appendChild(countdown);
     guard.appendChild(resetButton);
@@ -249,8 +616,6 @@ function renderIdleCountdown() {
     if (!state.idleDeadlineTs) {
         countdown.textContent = 'Privacidad auto: --:--';
         countdown.dataset.state = 'normal';
-        countdown.style.color = 'var(--muted)';
-        countdown.style.borderColor = 'var(--border)';
         return;
     }
 
@@ -258,8 +623,6 @@ function renderIdleCountdown() {
     countdown.textContent = `Privacidad auto: ${formatCountdownMs(remainingMs)}`;
     const warning = remainingMs <= KIOSK_IDLE_WARNING_MS;
     countdown.dataset.state = warning ? 'warning' : 'normal';
-    countdown.style.color = warning ? 'var(--danger)' : 'var(--muted)';
-    countdown.style.borderColor = warning ? 'var(--danger)' : 'var(--border)';
 }
 
 function clearIdleTimers() {
@@ -342,6 +705,7 @@ function beginIdleSessionGuard({ durationMs = null } = {}) {
 }
 
 function registerKioskActivity() {
+    dismissWelcomeScreen({ reason: 'activity' });
     beginIdleSessionGuard();
 }
 
@@ -349,12 +713,18 @@ function resetKioskSession({ reason = 'manual' } = {}) {
     resetKioskForms();
     resetAssistantConversation();
     renderTicketEmptyState();
+    setKioskHelpPanelOpen(false, { source: 'session_reset' });
+    focusFlowTarget('checkin', { announce: false });
 
     const reasonText =
         reason === 'idle_timeout'
             ? 'Sesion reiniciada por inactividad para proteger privacidad.'
             : 'Pantalla limpiada. Lista para el siguiente paciente.';
     setKioskStatus(reasonText, 'info');
+    setKioskProgressHint(
+        'Paso 1 de 2: selecciona una opcion para comenzar.',
+        'info'
+    );
     renderOfflineOutboxHint();
     beginIdleSessionGuard();
 }
@@ -500,22 +870,18 @@ function ensureQueueOutboxConsoleEl() {
 
     panel = document.createElement('section');
     panel.id = 'queueOutboxConsole';
-    panel.style.border = '1px solid var(--border)';
-    panel.style.borderRadius = '0.75rem';
-    panel.style.padding = '0.55rem 0.65rem';
-    panel.style.marginBottom = '0.65rem';
-    panel.style.background = 'var(--surface-soft)';
+    panel.className = 'queue-outbox-console';
     panel.innerHTML = `
         <p id="queueOutboxSummary" class="queue-updated-at">Outbox: 0 pendientes</p>
-        <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin:0.25rem 0 0.45rem;">
-            <button id="queueOutboxRetryBtn" type="button" style="border:1px solid var(--border);border-radius:0.6rem;padding:0.34rem 0.55rem;background:var(--surface);color:var(--text);cursor:pointer;">Sincronizar pendientes</button>
-            <button id="queueOutboxDropOldestBtn" type="button" style="border:1px solid var(--border);border-radius:0.6rem;padding:0.34rem 0.55rem;background:var(--surface);color:var(--text);cursor:pointer;">Descartar mas antiguo</button>
-            <button id="queueOutboxClearBtn" type="button" style="border:1px solid var(--border);border-radius:0.6rem;padding:0.34rem 0.55rem;background:var(--surface);color:var(--text);cursor:pointer;">Limpiar pendientes</button>
+        <div class="queue-outbox-actions">
+            <button id="queueOutboxRetryBtn" type="button" class="queue-outbox-btn">Sincronizar pendientes</button>
+            <button id="queueOutboxDropOldestBtn" type="button" class="queue-outbox-btn">Descartar mas antiguo</button>
+            <button id="queueOutboxClearBtn" type="button" class="queue-outbox-btn">Limpiar pendientes</button>
         </div>
-        <ol id="queueOutboxList" style="margin:0;padding-left:1.1rem;display:grid;gap:0.35rem;">
+        <ol id="queueOutboxList" class="queue-outbox-list">
             <li class="queue-empty">Sin pendientes offline.</li>
         </ol>
-        <p class="queue-updated-at" style="margin-top:0.45rem;">Atajos: Alt+Shift+Y sincroniza pendientes, Alt+Shift+K limpia pendientes.</p>
+        <p class="queue-updated-at queue-outbox-shortcuts">Atajos: Alt+Shift+Y sincroniza pendientes, Alt+Shift+K limpia pendientes.</p>
     `;
     outboxHint.insertAdjacentElement('afterend', panel);
     return panel;
@@ -689,14 +1055,8 @@ function ensureQueueManualRefreshButton() {
     button = document.createElement('button');
     button.id = 'queueManualRefreshBtn';
     button.type = 'button';
+    button.className = 'queue-manual-refresh-btn';
     button.textContent = 'Reintentar sincronizacion';
-    button.style.margin = '0.25rem 0 0.55rem';
-    button.style.border = '1px solid var(--border)';
-    button.style.borderRadius = '0.6rem';
-    button.style.padding = '0.42rem 0.62rem';
-    button.style.background = 'var(--surface-soft)';
-    button.style.color = 'var(--text)';
-    button.style.cursor = 'pointer';
     queueUpdatedAt.insertAdjacentElement('afterend', button);
     return button;
 }
@@ -732,7 +1092,8 @@ function formatLastHealthySyncAge() {
 }
 
 function evaluateQueueFreshness(queueState) {
-    const updatedAtTs = Date.parse(String(queueState?.updatedAt || ''));
+    const normalizedState = normalizeQueueStatePayload(queueState);
+    const updatedAtTs = Date.parse(String(normalizedState.updatedAt || ''));
     if (!Number.isFinite(updatedAtTs)) {
         return {
             stale: false,
@@ -752,7 +1113,8 @@ function evaluateQueueFreshness(queueState) {
 function renderQueueUpdatedAt(updatedAt) {
     const el = getById('queueUpdatedAt');
     if (!el) return;
-    const ts = Date.parse(String(updatedAt || ''));
+    const normalizedState = normalizeQueueStatePayload({ updatedAt });
+    const ts = Date.parse(String(normalizedState.updatedAt || ''));
     if (!Number.isFinite(ts)) {
         el.textContent = 'Actualizacion pendiente';
         return;
@@ -790,21 +1152,22 @@ function formatIsoDateTime(iso) {
 }
 
 function renderQueuePanel(queueState) {
+    const normalizedState = normalizeQueueStatePayload(queueState);
     const waitingCountEl = getById('queueWaitingCount');
     const calledCountEl = getById('queueCalledCount');
     const callingNowEl = getById('queueCallingNow');
     const nextListEl = getById('queueNextList');
 
     if (waitingCountEl) {
-        waitingCountEl.textContent = String(queueState?.waitingCount || 0);
+        waitingCountEl.textContent = String(normalizedState.waitingCount || 0);
     }
     if (calledCountEl) {
-        calledCountEl.textContent = String(queueState?.calledCount || 0);
+        calledCountEl.textContent = String(normalizedState.calledCount || 0);
     }
 
     if (callingNowEl) {
-        const callingNow = Array.isArray(queueState?.callingNow)
-            ? queueState.callingNow
+        const callingNow = Array.isArray(normalizedState.callingNow)
+            ? normalizedState.callingNow
             : [];
         if (callingNow.length === 0) {
             callingNowEl.innerHTML =
@@ -825,8 +1188,8 @@ function renderQueuePanel(queueState) {
     }
 
     if (nextListEl) {
-        const nextTickets = Array.isArray(queueState?.nextTickets)
-            ? queueState.nextTickets
+        const nextTickets = Array.isArray(normalizedState.nextTickets)
+            ? normalizedState.nextTickets
             : [];
         if (nextTickets.length === 0) {
             nextListEl.innerHTML =
@@ -854,7 +1217,7 @@ async function refreshQueueState() {
     state.queueRefreshBusy = true;
     try {
         const payload = await apiRequest('queue-state');
-        state.queueState = payload.data || {};
+        state.queueState = normalizeQueueStatePayload(payload.data || {});
         renderQueuePanel(state.queueState);
         renderQueueUpdatedAt(state.queueState?.updatedAt);
         const freshness = evaluateQueueFreshness(state.queueState);
@@ -880,7 +1243,25 @@ function renderTicketResult(payload, originLabel) {
     const container = getById('ticketResult');
     if (!container) return;
 
-    const ticket = payload?.data || {};
+    const rawTicket = payload?.data || {};
+    const ticket = {
+        ...rawTicket,
+        id: Number(rawTicket?.id || rawTicket?.ticket_id || 0) || 0,
+        ticketCode: String(
+            rawTicket?.ticketCode || rawTicket?.ticket_code || '--'
+        ),
+        patientInitials: String(
+            rawTicket?.patientInitials || rawTicket?.patient_initials || '--'
+        ),
+        queueType: String(
+            rawTicket?.queueType || rawTicket?.queue_type || 'walk_in'
+        ),
+        createdAt: String(
+            rawTicket?.createdAt ||
+                rawTicket?.created_at ||
+                new Date().toISOString()
+        ),
+    };
     const print = payload?.print || {};
     updatePrinterStateFromPayload(payload, { origin: originLabel });
     const nextTickets = Array.isArray(state.queueState?.nextTickets)
@@ -1115,6 +1496,7 @@ async function flushOfflineOutbox({
 async function submitCheckin(event) {
     event.preventDefault();
     registerKioskActivity();
+    dismissWelcomeScreen({ reason: 'form_submit' });
     const form = event.currentTarget;
     if (!(form instanceof HTMLFormElement)) return;
 
@@ -1140,6 +1522,10 @@ async function submitCheckin(event) {
             'Telefono, fecha y hora son obligatorios para check-in',
             'error'
         );
+        setKioskProgressHint(
+            'Completa telefono, fecha y hora para continuar.',
+            'warn'
+        );
         return;
     }
 
@@ -1159,6 +1545,10 @@ async function submitCheckin(event) {
             body,
         });
         setKioskStatus('Check-in registrado correctamente', 'success');
+        setKioskProgressHint(
+            'Check-in completado. Conserva tu ticket y espera llamado.',
+            'success'
+        );
         renderTicketResult(
             payload,
             payload.replay ? 'Check-in ya existente' : 'Check-in de cita'
@@ -1202,12 +1592,20 @@ async function submitCheckin(event) {
                         : 'Check-in guardado offline. Se sincronizara automaticamente.',
                     'info'
                 );
+                setKioskProgressHint(
+                    'Check-in guardado offline. Recepcion confirmara al reconectar.',
+                    'warn'
+                );
                 return;
             }
         }
         setKioskStatus(
             `No se pudo registrar el check-in: ${error.message}`,
             'error'
+        );
+        setKioskProgressHint(
+            'No se pudo confirmar check-in. Intenta de nuevo o pide apoyo.',
+            'warn'
         );
     } finally {
         if (submitBtn instanceof HTMLButtonElement) {
@@ -1219,6 +1617,7 @@ async function submitCheckin(event) {
 async function submitWalkIn(event) {
     event.preventDefault();
     registerKioskActivity();
+    dismissWelcomeScreen({ reason: 'form_submit' });
     const nameInput = getById('walkinName');
     const initialsInput = getById('walkinInitials');
     const phoneInput = getById('walkinPhone');
@@ -1239,6 +1638,10 @@ async function submitWalkIn(event) {
             'Ingresa iniciales o nombre para generar el turno',
             'error'
         );
+        setKioskProgressHint(
+            'Escribe iniciales para generar tu turno.',
+            'warn'
+        );
         return;
     }
 
@@ -1257,6 +1660,10 @@ async function submitWalkIn(event) {
             body,
         });
         setKioskStatus('Turno walk-in registrado correctamente', 'success');
+        setKioskProgressHint(
+            'Turno generado. Conserva tu ticket y espera llamado.',
+            'success'
+        );
         renderTicketResult(payload, 'Turno sin cita');
         state.queueFailureStreak = 0;
         const refreshResult = await refreshQueueState();
@@ -1296,10 +1703,18 @@ async function submitWalkIn(event) {
                         : 'Turno guardado offline. Se sincronizara automaticamente.',
                     'info'
                 );
+                setKioskProgressHint(
+                    'Turno guardado offline. Recepcion lo sincronizara al reconectar.',
+                    'warn'
+                );
                 return;
             }
         }
         setKioskStatus(`No se pudo crear el turno: ${error.message}`, 'error');
+        setKioskProgressHint(
+            'No se pudo generar turno. Intenta de nuevo o pide apoyo.',
+            'warn'
+        );
     } finally {
         if (submitBtn instanceof HTMLButtonElement) {
             submitBtn.disabled = false;
@@ -1426,12 +1841,7 @@ function bindKioskActivitySignals() {
 function applyTheme(mode) {
     state.themeMode = mode;
     const root = document.documentElement;
-    const prefersDark =
-        state.mediaQuery instanceof MediaQueryList
-            ? state.mediaQuery.matches
-            : false;
-    const activeMode =
-        mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
+    const activeMode = 'light';
     root.dataset.theme = activeMode;
 
     document.querySelectorAll('[data-theme-mode]').forEach((button) => {
@@ -1441,31 +1851,77 @@ function applyTheme(mode) {
     });
 }
 
-function setTheme(mode) {
-    const normalized = ['light', 'dark', 'system'].includes(mode)
-        ? mode
-        : 'system';
+function setTheme(_mode) {
+    const normalized = 'light';
     localStorage.setItem(THEME_STORAGE_KEY, normalized);
     applyTheme(normalized);
 }
 
 function initTheme() {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY) || 'system';
-    state.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    state.mediaQuery.addEventListener('change', () => {
-        if (state.themeMode === 'system') {
-            applyTheme('system');
+    setTheme('light');
+}
+
+function dismissWelcomeScreen({ reason = 'auto' } = {}) {
+    if (state.welcomeDismissed) return;
+    state.welcomeDismissed = true;
+    const welcomeScreen = getById('kioskWelcomeScreen');
+    if (!(welcomeScreen instanceof HTMLElement)) return;
+    welcomeScreen.classList.add('is-hidden');
+    window.setTimeout(() => {
+        if (welcomeScreen.parentElement) {
+            welcomeScreen.remove();
         }
-    });
+    }, 700);
+    emitQueueOpsEvent('welcome_dismissed', { reason });
+}
 
-    document.querySelectorAll('[data-theme-mode]').forEach((button) => {
-        button.addEventListener('click', () => {
-            const mode = button.getAttribute('data-theme-mode') || 'system';
-            setTheme(mode);
+function runWelcomeSequence() {
+    const welcomeScreen = getById('kioskWelcomeScreen');
+    if (!(welcomeScreen instanceof HTMLElement)) return;
+
+    welcomeScreen.classList.add('is-visible');
+    setKioskProgressHint(
+        'Bienvenida: en segundos podras elegir tu tipo de atencion.',
+        'info'
+    );
+    window.setTimeout(() => {
+        dismissWelcomeScreen({ reason: 'auto' });
+    }, KIOSK_WELCOME_HIDE_MS);
+    window.setTimeout(() => {
+        dismissWelcomeScreen({ reason: 'safety_timeout' });
+    }, KIOSK_WELCOME_REMOVE_MS);
+}
+
+function bindKioskStarControls() {
+    const quickCheckin = getById('kioskQuickCheckin');
+    const quickWalkin = getById('kioskQuickWalkin');
+    const helpToggle = getById('kioskHelpToggle');
+    const helpClose = getById('kioskHelpClose');
+
+    if (quickCheckin instanceof HTMLButtonElement) {
+        quickCheckin.addEventListener('click', () => {
+            registerKioskActivity();
+            focusFlowTarget('checkin');
         });
-    });
-
-    applyTheme(stored);
+    }
+    if (quickWalkin instanceof HTMLButtonElement) {
+        quickWalkin.addEventListener('click', () => {
+            registerKioskActivity();
+            focusFlowTarget('walkin');
+        });
+    }
+    if (helpToggle instanceof HTMLButtonElement) {
+        helpToggle.addEventListener('click', () => {
+            registerKioskActivity();
+            setKioskHelpPanelOpen(!state.quickHelpOpen, { source: 'toggle' });
+        });
+    }
+    if (helpClose instanceof HTMLButtonElement) {
+        helpClose.addEventListener('click', () => {
+            registerKioskActivity();
+            setKioskHelpPanelOpen(false, { source: 'close_button' });
+        });
+    }
 }
 
 function initDefaultDate() {
@@ -1630,8 +2086,11 @@ function stopQueuePolling({ reason = 'paused' } = {}) {
 }
 
 function initKiosk() {
+    document.body.dataset.kioskMode = 'star';
+    ensureKioskStarStyles();
     state.idleResetMs = resolveIdleResetMs();
     initTheme();
+    runWelcomeSequence();
     initDefaultDate();
 
     const checkinForm = getById('checkinForm');
@@ -1647,6 +2106,8 @@ function initKiosk() {
     if (assistantForm instanceof HTMLFormElement) {
         assistantForm.addEventListener('submit', submitAssistant);
     }
+    bindKioskStarControls();
+    setKioskHelpPanelOpen(false, { source: 'init' });
 
     ensureSessionGuard();
     const resetSessionBtn = getById('kioskSessionResetBtn');
@@ -1658,6 +2119,11 @@ function initKiosk() {
 
     resetAssistantConversation();
     renderTicketEmptyState();
+    focusFlowTarget('checkin', { announce: false });
+    setKioskProgressHint(
+        'Paso 1 de 2: selecciona una opcion para comenzar.',
+        'info'
+    );
     bindKioskActivitySignals();
     beginIdleSessionGuard();
 
@@ -1734,6 +2200,23 @@ function initKiosk() {
         if (keyCode === 'keyr') {
             event.preventDefault();
             void runQueueManualRefresh();
+            return;
+        }
+        if (keyCode === 'keyh') {
+            event.preventDefault();
+            setKioskHelpPanelOpen(!state.quickHelpOpen, {
+                source: 'shortcut',
+            });
+            return;
+        }
+        if (keyCode === 'digit1') {
+            event.preventDefault();
+            focusFlowTarget('checkin');
+            return;
+        }
+        if (keyCode === 'digit2') {
+            event.preventDefault();
+            focusFlowTarget('walkin');
             return;
         }
         if (keyCode === 'keyl') {

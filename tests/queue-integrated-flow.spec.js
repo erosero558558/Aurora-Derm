@@ -121,6 +121,55 @@ function buildQueueMetaFromState(queueState) {
     };
 }
 
+async function clickQueueTicketActionByCode(
+    page,
+    { ticketCode, action, consultorio = null }
+) {
+    const code = String(ticketCode || '').trim();
+    const queueAction = String(action || '').trim();
+    const room =
+        consultorio === 1 || consultorio === 2 ? Number(consultorio) : null;
+    if (!code || !queueAction) {
+        throw new Error(
+            'ticketCode/action requeridos para clickQueueTicketActionByCode'
+        );
+    }
+
+    await expect(page.locator('#queueTableBody')).toContainText(code);
+    await page.evaluate(
+        ({
+            ticketCode: targetCode,
+            action: targetAction,
+            consultorio: targetRoom,
+        }) => {
+            const rows = Array.from(
+                document.querySelectorAll('#queueTableBody tr')
+            );
+            const row = rows.find((candidate) =>
+                String(candidate?.textContent || '').includes(targetCode)
+            );
+            if (!row) {
+                throw new Error(
+                    `No se encontro fila para ticket ${targetCode}`
+                );
+            }
+
+            let selector = `[data-action="queue-ticket-action"][data-queue-action="${targetAction}"]`;
+            if (targetRoom === 1 || targetRoom === 2) {
+                selector += `[data-queue-consultorio="${targetRoom}"]`;
+            }
+            const button = row.querySelector(selector);
+            if (!(button instanceof HTMLButtonElement)) {
+                throw new Error(
+                    `No se encontro boton ${targetAction} para ticket ${targetCode}`
+                );
+            }
+            button.click();
+        },
+        { ticketCode: code, action: queueAction, consultorio: room }
+    );
+}
+
 async function installSharedQueueMocks(context, options = {}) {
     let nextId = 1000;
     let nextDailySeq = 1;
@@ -896,15 +945,11 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
             )
             .toContain('A-002');
 
-        const rowA002 = adminPage
-            .locator('#queueTableBody tr')
-            .filter({ hasText: 'A-002' })
-            .first();
-        await rowA002
-            .locator(
-                '[data-action="queue-ticket-action"][data-queue-action="reasignar"][data-queue-consultorio="2"]'
-            )
-            .click();
+        await clickQueueTicketActionByCode(adminPage, {
+            ticketCode: 'A-002',
+            action: 'reasignar',
+            consultorio: 2,
+        });
 
         await expect(adminPage.locator('#queueC2Now')).toContainText('A-002');
         await expect(adminPage.locator('#queueC1Now')).toContainText(
@@ -923,11 +968,10 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
             )
             .toContain('A-002');
 
-        await rowA002
-            .locator(
-                '[data-action="queue-ticket-action"][data-queue-action="completar"]'
-            )
-            .click();
+        await clickQueueTicketActionByCode(adminPage, {
+            ticketCode: 'A-002',
+            action: 'completar',
+        });
 
         await expect(adminPage.locator('#queueC2Now')).toContainText(
             'Sin llamado'
@@ -958,20 +1002,17 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
             '1'
         );
 
-        const rowA003 = adminPage
-            .locator('#queueTableBody tr')
-            .filter({ hasText: 'A-003' })
-            .first();
-        await rowA003
-            .locator(
-                '[data-action="queue-ticket-action"][data-queue-action="no_show"]'
-            )
-            .click();
+        await clickQueueTicketActionByCode(adminPage, {
+            ticketCode: 'A-003',
+            action: 'no_show',
+        });
 
         await expect(adminPage.locator('#queueWaitingCountAdmin')).toHaveText(
             '0'
         );
-        await expect(rowA003).toContainText('No asistio');
+        await expect(adminPage.locator('#queueTableBody')).toContainText(
+            'No asistio'
+        );
         await expect(displayPage.locator('#displayNextList')).not.toContainText(
             'A-003'
         );
