@@ -218,7 +218,12 @@ async function run() {
         routes: [],
     };
 
-    const browser = await chromium.launch({ headless: true });
+    const launchOptions = { headless: true };
+    if (process.env.GITHUB_ACTIONS === 'true') {
+        launchOptions.args = ['--no-sandbox', '--disable-dev-shm-usage'];
+    }
+
+    const browser = await chromium.launch(launchOptions);
     try {
         for (const viewport of VIEWPORTS) {
             const viewportDir = path.join(outputRoot, viewport.id);

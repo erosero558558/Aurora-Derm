@@ -159,7 +159,7 @@ function formatScore(value) {
     return value.toFixed(2);
 }
 
-async function runWindowsForcedFlow(repoRoot, env) {
+async function runManualFlow(repoRoot, env) {
     const configPath = path.join(repoRoot, 'lighthouserc.premium.json');
     const rawConfig = fs.readFileSync(configPath, 'utf8');
     const config = JSON.parse(rawConfig);
@@ -355,9 +355,19 @@ async function runWindowsForcedFlow(repoRoot, env) {
     }
 
     console.log(
-        `[lighthouse-premium] Completed Windows forced run. URLs audited: ${urls.length}, warnings: ${warnings.length}`
+        `[lighthouse-premium] Completed manual run. URLs audited: ${urls.length}, warnings: ${warnings.length}`
     );
     return 0;
+}
+
+function shouldRunManualFlow(env) {
+    if (env.LIGHTHOUSE_FORCE_MANUAL === '1') {
+        return true;
+    }
+    if (process.platform === 'win32' && env.LIGHTHOUSE_FORCE_WINDOWS === '1') {
+        return true;
+    }
+    return env.GITHUB_ACTIONS === 'true';
 }
 
 const repoRoot = path.resolve(__dirname, '..');
@@ -367,18 +377,20 @@ if (chromepath) {
     env.CHROME_PATH = chromepath;
 }
 
-if (process.platform === 'win32' && env.LIGHTHOUSE_FORCE_WINDOWS !== '1') {
+const manualFlow = shouldRunManualFlow(env);
+
+if (process.platform === 'win32' && !manualFlow) {
     console.log(
         '[lighthouse-premium] Skipping on Windows host (set LIGHTHOUSE_FORCE_WINDOWS=1 to force local run).'
     );
     process.exit(0);
 }
 
-if (process.platform === 'win32' && env.LIGHTHOUSE_FORCE_WINDOWS === '1') {
-    runWindowsForcedFlow(repoRoot, env)
+if (manualFlow) {
+    runManualFlow(repoRoot, env)
         .then((exitCode) => process.exit(exitCode))
         .catch((error) => {
-            console.error('[lighthouse-premium] Unexpected Windows flow error:', error.message);
+            console.error('[lighthouse-premium] Unexpected manual flow error:', error.message);
             process.exit(1);
         });
     return;
