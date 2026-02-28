@@ -269,9 +269,7 @@
             var url = new URL(window.location.href);
             return (
                 url.hash === '#citas' ||
-                url.searchParams.has('service') ||
-                url.pathname.indexOf('/telemedicina/') !== -1 ||
-                url.pathname.indexOf('/telemedicine/') !== -1
+                url.searchParams.has('service')
             );
         }
 
