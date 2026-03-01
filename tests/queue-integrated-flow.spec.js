@@ -9,6 +9,23 @@ function json(route, payload, status = 200) {
     });
 }
 
+const ADMIN_UI_VARIANT =
+    String(process.env.ADMIN_UI_VARIANT || 'legacy')
+        .trim()
+        .toLowerCase() === 'sony_v2'
+        ? 'sony_v2'
+        : 'legacy';
+
+function adminUrl(query = '') {
+    const params = new URLSearchParams(String(query || ''));
+    if (ADMIN_UI_VARIANT === 'sony_v2') {
+        params.set('admin_ui', 'sony_v2');
+        params.set('admin_ui_reset', '1');
+    }
+    const search = params.toString();
+    return `/admin.html${search ? `?${search}` : ''}`;
+}
+
 function parseBody(request) {
     try {
         return request.postDataJSON() || {};
@@ -263,6 +280,13 @@ async function installSharedQueueMocks(context, options = {}) {
         const method = request.method().toUpperCase();
         const url = new URL(request.url());
         const resource = url.searchParams.get('resource') || '';
+
+        if (resource === 'features') {
+            return json(route, {
+                ok: true,
+                data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+            });
+        }
 
         if (resource === 'queue-state') {
             return json(route, { ok: true, data: currentQueueState() });
@@ -586,7 +610,7 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
         const displayPage = await context.newPage();
 
         await Promise.all([
-            adminPage.goto('/admin.html'),
+            adminPage.goto(adminUrl()),
             kioskPage.goto('/kiosco-turnos.html'),
             displayPage.goto('/sala-turnos.html'),
         ]);
@@ -645,7 +669,7 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
         const displayPage = await context.newPage();
 
         await Promise.all([
-            adminPage.goto('/admin.html'),
+            adminPage.goto(adminUrl()),
             kioskPage.goto('/kiosco-turnos.html'),
             displayPage.goto('/sala-turnos.html'),
         ]);
@@ -709,7 +733,7 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
         const displayPage = await context.newPage();
 
         await Promise.all([
-            adminPage.goto('/admin.html'),
+            adminPage.goto(adminUrl()),
             kioskPage.goto('/kiosco-turnos.html'),
             displayPage.goto('/sala-turnos.html'),
         ]);
@@ -774,7 +798,7 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
         const displayPage = await context.newPage();
 
         await Promise.all([
-            adminPage.goto('/admin.html'),
+            adminPage.goto(adminUrl()),
             kioskPage.goto('/kiosco-turnos.html'),
             displayPage.goto('/sala-turnos.html'),
         ]);
@@ -892,7 +916,7 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
         const displayPage = await context.newPage();
 
         await Promise.all([
-            adminPage.goto('/admin.html'),
+            adminPage.goto(adminUrl()),
             kioskPage.goto('/kiosco-turnos.html'),
             displayPage.goto('/sala-turnos.html'),
         ]);
@@ -1029,7 +1053,7 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
         const displayPage = await context.newPage();
 
         await Promise.all([
-            adminPage.goto('/admin.html'),
+            adminPage.goto(adminUrl()),
             kioskPage.goto('/kiosco-turnos.html'),
             displayPage.goto('/sala-turnos.html'),
         ]);

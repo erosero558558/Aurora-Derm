@@ -1,6 +1,9 @@
 name: Post-Deploy Gate (Full Regression)
 
 on:
+    push:
+        branches:
+            - main
     workflow_dispatch:
         inputs:
             domain:
@@ -73,6 +76,26 @@ on:
                 required: false
                 default: false
                 type: boolean
+            admin_rollout_stage:
+                description: 'Etapa gate admin UI (internal|canary|general|rollback)'
+                required: false
+                default: 'general'
+                type: string
+            admin_rollout_skip_runtime_smoke:
+                description: 'Omitir smoke runtime Playwright del gate admin UI'
+                required: false
+                default: false
+                type: boolean
+            admin_rollout_allow_feature_api_failure:
+                description: 'Permitir falla de features API en gate admin UI'
+                required: false
+                default: false
+                type: boolean
+            admin_rollout_allow_missing_flag:
+                description: 'Permitir ausencia de data.admin_sony_ui en gate admin UI'
+                required: false
+                default: false
+                type: boolean
 
 concurrency:
     group: post-deploy-gate-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}
@@ -84,6 +107,7 @@ permissions:
 
 jobs:
     gate:
+        if: ${{ github.event_name != 'push' || vars.RUN_POSTDEPLOY_GATE_ON_PUSH == 'true' }}
         name: Gate estricto en produccion
         runs-on: windows-latest
         timeout-minutes: 70
@@ -111,14 +135,36 @@ jobs:
             TEST_FIGO_CHAT_LATENCY: ${{ vars.TEST_FIGO_CHAT_LATENCY || 'false' }}
             TEST_FIGO_CHAT_LATENCY_SAMPLES: ${{ vars.TEST_FIGO_CHAT_LATENCY_SAMPLES || '6' }}
             TEST_FIGO_CHAT_LATENCY_P95_MS: ${{ vars.TEST_FIGO_CHAT_LATENCY_P95_MS || '2500' }}
+            RUN_POSTDEPLOY_GATE_ON_PUSH: ${{ vars.RUN_POSTDEPLOY_GATE_ON_PUSH || 'false' }}
+            ADMIN_ROLLOUT_STAGE_INPUT: ${{ github.event.inputs.admin_rollout_stage || vars.ADMIN_ROLLOUT_STAGE || 'general' }}
+            ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_INPUT: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE || 'false' }}
+            ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_INPUT: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE || 'false' }}
+            ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_INPUT: ${{ github.event.inputs.admin_rollout_allow_missing_flag || vars.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG || 'false' }}
             POSTDEPLOY_CHANGE_CLASS: runtime
+            POSTDEPLOY_TRIGGER_MODE: manual
             POSTDEPLOY_EFFECTIVE_WAIT_SECONDS: '0'
             BENCH_RUNS_EFFECTIVE: '0'
+            ADMIN_ROLLOUT_STAGE_EFFECTIVE: general
+            ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE: strict
+            ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE: 'false'
+            ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_EFFECTIVE: 'false'
+            ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_EFFECTIVE: 'false'
+            ADMIN_ROLLOUT_POLICY_SOURCE_EFFECTIVE: stage-default
         steps:
             - name: Checkout
               uses: actions/checkout@v4
               with:
                   fetch-depth: 2
+
+            - name: Resolver modo de ejecucion post-deploy gate
+              shell: pwsh
+              run: |
+                  $triggerMode = 'manual'
+                  if ($env:EVENT_NAME -eq 'push') {
+                    $triggerMode = 'push'
+                  }
+                  "POSTDEPLOY_TRIGGER_MODE=$triggerMode" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  Write-Host "Post-deploy gate trigger mode: $triggerMode"
 
             - name: Esperar sincronizacion Git del hosting
               if: ${{ github.event_name == 'push' }}
@@ -293,6 +339,60 @@ jobs:
               shell: pwsh
               run: npm ci
 
+            - name: Resolver configuracion gate admin UI
+              if: ${{ steps.gate.outcome == 'success' && env.POSTDEPLOY_CHANGE_CLASS != 'non-runtime' }}
+              shell: pwsh
+              run: |
+                  $policyJson = node ./bin/resolve-admin-rollout-policy.js `
+                    --stage "$env:ADMIN_ROLLOUT_STAGE_INPUT" `
+                    --default-stage general `
+                    --skip-runtime-smoke "$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_INPUT" `
+                    --default-skip-runtime-smoke false `
+                    --allow-feature-api-failure "$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_INPUT" `
+                    --default-allow-feature-api-failure false `
+                    --allow-missing-flag "$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_INPUT" `
+                    --default-allow-missing-flag false
+
+                  if ($LASTEXITCODE -ne 0) {
+                    throw 'No se pudo resolver politica admin rollout (gate).'
+                  }
+
+                  $policy = $policyJson | ConvertFrom-Json
+                  $skipRuntimeSmokeText = if ([bool]$policy.skip_runtime_smoke_effective) { 'true' } else { 'false' }
+                  $allowFeatureApiFailureText = if ([bool]$policy.allow_feature_api_failure_effective) { 'true' } else { 'false' }
+                  $allowMissingFlagText = if ([bool]$policy.allow_missing_flag_effective) { 'true' } else { 'false' }
+
+                  "ADMIN_ROLLOUT_STAGE_EFFECTIVE=$($policy.stage_effective)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE=$($policy.stage_profile)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE=$skipRuntimeSmokeText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_EFFECTIVE=$allowFeatureApiFailureText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_EFFECTIVE=$allowMissingFlagText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_POLICY_SOURCE_EFFECTIVE=$($policy.policy_source)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  Write-Host "Admin rollout => stage=$($policy.stage_effective) profile=$($policy.stage_profile) skip_runtime_smoke=$skipRuntimeSmokeText allow_feature_api_failure=$allowFeatureApiFailureText allow_missing_flag=$allowMissingFlagText policy_source=$($policy.policy_source)"
+
+            - name: Instalar Playwright (chromium) para gate admin UI
+              if: ${{ steps.gate.outcome == 'success' && env.POSTDEPLOY_CHANGE_CLASS != 'non-runtime' && env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE != 'true' }}
+              shell: pwsh
+              run: npx playwright install chromium
+
+            - name: Ejecutar gate admin UI rollout
+              id: admin_rollout
+              if: ${{ steps.gate.outcome == 'success' && env.POSTDEPLOY_CHANGE_CLASS != 'non-runtime' }}
+              shell: pwsh
+              run: |
+                  New-Item -ItemType Directory -Path verification -Force | Out-Null
+                  $skipRuntimeSmoke = ([string]$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE).ToLowerInvariant() -eq 'true'
+                  $allowFeatureApiFailure = ([string]$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_EFFECTIVE).ToLowerInvariant() -eq 'true'
+                  $allowMissingFlag = ([string]$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_EFFECTIVE).ToLowerInvariant() -eq 'true'
+
+                  ./GATE-ADMIN-ROLLOUT.ps1 `
+                    -Domain $env:TARGET_DOMAIN `
+                    -Stage $env:ADMIN_ROLLOUT_STAGE_EFFECTIVE `
+                    -SkipRuntimeSmoke:$skipRuntimeSmoke `
+                    -AllowFeatureApiFailure:$allowFeatureApiFailure `
+                    -AllowMissingAdminFlag:$allowMissingFlag `
+                    -ReportPath 'verification/last-admin-ui-rollout-gate.json'
+
             - name: Resolver modo estricto de calendario desde health
               if: ${{ steps.gate.outcome == 'success' && env.POSTDEPLOY_CHANGE_CLASS != 'non-runtime' }}
               shell: pwsh
@@ -341,8 +441,14 @@ jobs:
               if: ${{ always() }}
               shell: pwsh
               run: |
+                  $adminRolloutOutcome = '${{ steps.admin_rollout.outcome }}'
+                  if ([string]::IsNullOrWhiteSpace($adminRolloutOutcome)) {
+                    $adminRolloutOutcome = 'skipped'
+                  }
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Post-deploy gate"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Dominio: ``$env:TARGET_DOMAIN``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Trigger mode: ``$env:POSTDEPLOY_TRIGGER_MODE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- RUN_POSTDEPLOY_GATE_ON_PUSH: ``$env:RUN_POSTDEPLOY_GATE_ON_PUSH``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Bench runs: ``$env:BENCH_RUNS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Bench runs light cap: ``$env:BENCH_RUNS_LIGHT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Bench runs efectivos: ``$env:BENCH_RUNS_EFFECTIVE``"
@@ -354,9 +460,21 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input force asset hashes: ``$env:FORCE_ASSET_HASH_CHECKS_INPUT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Asset hash warning until: ``$env:ASSET_HASH_WARNING_UNTIL_INPUT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input skip figo-post bench: ``$env:SKIP_FIGO_POST_BENCH_INPUT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input admin rollout stage: ``$env:ADMIN_ROLLOUT_STAGE_INPUT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input admin rollout skip runtime smoke: ``$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_INPUT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input admin rollout allow feature API failure: ``$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_INPUT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Input admin rollout allow missing flag: ``$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_INPUT``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Change class: ``$env:POSTDEPLOY_CHANGE_CLASS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Effective wait seconds: ``$env:POSTDEPLOY_EFFECTIVE_WAIT_SECONDS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo platform: ``${{ steps.gate.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout stage (effective): ``$env:ADMIN_ROLLOUT_STAGE_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout stage profile (effective): ``$env:ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout skip runtime smoke (effective): ``$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout allow feature API failure (effective): ``$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout allow missing flag (effective): ``$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout policy source (effective): ``$env:ADMIN_ROLLOUT_POLICY_SOURCE_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo admin rollout: ``$adminRolloutOutcome``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Reporte admin rollout: ``verification/last-admin-ui-rollout-gate.json``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo agenda(calendar): ``${{ steps.calendar_contract.outcome }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo chat(figo): ``${{ steps.figo_contract.outcome }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Require Google calendar (input/vars): ``$env:REQUIRE_GOOGLE_CALENDAR``"
@@ -380,11 +498,27 @@ jobs:
                   if-no-files-found: warn
                   retention-days: 14
 
+            - name: Publicar reporte gate admin rollout
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: post-deploy-admin-rollout-report
+                  path: verification/last-admin-ui-rollout-gate.json
+                  if-no-files-found: warn
+                  retention-days: 14
+
             - name: Crear/actualizar incidente de gate
               if: ${{ failure() && github.event_name != 'workflow_dispatch' }}
               uses: actions/github-script@v7
               env:
                   GATE_OUTCOME: ${{ steps.gate.outcome }}
+                  ADMIN_ROLLOUT_OUTCOME: ${{ steps.admin_rollout.outcome }}
+                  ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ env.ADMIN_ROLLOUT_STAGE_EFFECTIVE }}
+                  ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE: ${{ env.ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE }}
+                  ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE: ${{ env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE }}
+                  ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_EFFECTIVE: ${{ env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_EFFECTIVE }}
+                  ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_EFFECTIVE: ${{ env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_EFFECTIVE }}
+                  ADMIN_ROLLOUT_POLICY_SOURCE_EFFECTIVE: ${{ env.ADMIN_ROLLOUT_POLICY_SOURCE_EFFECTIVE }}
                   POSTDEPLOY_CHANGE_CLASS: ${{ env.POSTDEPLOY_CHANGE_CLASS }}
                   POSTDEPLOY_EFFECTIVE_WAIT_SECONDS: ${{ env.POSTDEPLOY_EFFECTIVE_WAIT_SECONDS }}
                   BENCH_RUNS_EFFECTIVE: ${{ env.BENCH_RUNS_EFFECTIVE }}
@@ -405,6 +539,13 @@ jobs:
                         `- Workflow: ${context.workflow}`,
                         `- Branch: ${context.ref}`,
                         `- gate_outcome: ${process.env.GATE_OUTCOME || 'n/a'}`,
+                        `- admin_rollout_outcome: ${process.env.ADMIN_ROLLOUT_OUTCOME || 'skipped'}`,
+                        `- admin_rollout_stage_effective: ${process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE || 'n/a'}`,
+                        `- admin_rollout_stage_profile_effective: ${process.env.ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE || 'n/a'}`,
+                        `- admin_rollout_skip_runtime_smoke_effective: ${process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_EFFECTIVE || 'n/a'}`,
+                        `- admin_rollout_allow_feature_api_failure_effective: ${process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_EFFECTIVE || 'n/a'}`,
+                        `- admin_rollout_allow_missing_flag_effective: ${process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_EFFECTIVE || 'n/a'}`,
+                        `- admin_rollout_policy_source_effective: ${process.env.ADMIN_ROLLOUT_POLICY_SOURCE_EFFECTIVE || 'n/a'}`,
                         `- change_class: ${process.env.POSTDEPLOY_CHANGE_CLASS || 'n/a'}`,
                         `- effective_wait_seconds: ${process.env.POSTDEPLOY_EFFECTIVE_WAIT_SECONDS || 'n/a'}`,
                         `- bench_runs_effective: ${process.env.BENCH_RUNS_EFFECTIVE || 'n/a'}`,

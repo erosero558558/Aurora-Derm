@@ -142,6 +142,13 @@ async function setupAuthenticatedAdminMocks(page, overrides = {}) {
     });
 }
 
+async function waitForAdminReady(page) {
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-admin-ready',
+        'true'
+    );
+}
+
 test.describe('Panel de administracion', () => {
     test('pagina admin carga correctamente', async ({ page }) => {
         await page.goto('/admin.html');
@@ -160,6 +167,7 @@ test.describe('Panel de administracion', () => {
         page,
     }) => {
         await page.goto('/admin.html');
+        await waitForAdminReady(page);
 
         const darkThemeBtn = page
             .locator(
@@ -198,6 +206,7 @@ test.describe('Panel de administracion', () => {
 
     test('login con contrasena vacia no funciona', async ({ page }) => {
         await page.goto('/admin.html');
+        await waitForAdminReady(page);
         const passwordInput = page.locator('input[type="password"]').first();
         const loginBtn = page
             .locator('button[type="submit"], .btn-primary')
@@ -214,6 +223,7 @@ test.describe('Panel de administracion', () => {
 
     test('login con contrasena incorrecta muestra error', async ({ page }) => {
         await page.goto('/admin.html');
+        await waitForAdminReady(page);
         const passwordInput = page.locator('input[type="password"]').first();
         const loginBtn = page
             .locator('button[type="submit"], .btn-primary')

@@ -7,7 +7,7 @@ const { spawnSync } = require('node:child_process');
  *   - Variable de entorno: TEST_BASE_URL=https://pielarmonia.com npx playwright test
  *   - Servidor local automatico (PHP si existe, fallback Python)
  */
-const baseURL = process.env.TEST_BASE_URL || 'http://localhost:8000';
+const baseURL = process.env.TEST_BASE_URL || 'http://127.0.0.1:8000';
 const shouldStartLocalServer = !process.env.TEST_BASE_URL;
 const localServerPreference = (
     process.env.TEST_LOCAL_SERVER || ''

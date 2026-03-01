@@ -3,7 +3,7 @@
     "period": {
         "timezone": "America/Guayaquil",
         "window_days": 7,
-        "updated_at": "2026-02-28T01:49:39.560Z"
+        "updated_at": "2026-02-28T22:51:40.371Z"
     },
     "targets": {
         "rework_reduction_pct": 40,
@@ -22,15 +22,15 @@
         "traceability_pct": 0
     },
     "current": {
-        "tasks_total": 125,
-        "tasks_in_progress": 1,
-        "tasks_done": 124,
+        "tasks_total": 136,
+        "tasks_in_progress": 0,
+        "tasks_done": 136,
         "tasks_with_rework": 0,
         "file_conflicts": 0,
         "file_conflicts_handoff": 0,
         "non_critical_lead_time_hours_avg": null,
         "coordination_gate_red_rate_pct": null,
-        "traceability_pct": 99
+        "traceability_pct": 100
     },
     "contribution": {
         "scoring": {
@@ -42,28 +42,28 @@
             }
         },
         "totals": {
-            "tasks": 125,
-            "done_tasks": 124,
-            "active_tasks": 1,
-            "weighted_points_total": 245,
-            "weighted_done_points_total": 243,
-            "weighted_active_points_total": 2
+            "tasks": 136,
+            "done_tasks": 136,
+            "active_tasks": 0,
+            "weighted_points_total": 262,
+            "weighted_done_points_total": 262,
+            "weighted_active_points_total": 0
         },
         "executors": [
             {
                 "executor": "codex",
-                "tasks": 104,
-                "done_tasks": 103,
-                "active_tasks": 1,
-                "weighted_points": 209,
-                "weighted_done_points": 207,
-                "weighted_active_points": 2,
-                "tasks_pct": 83.2,
-                "done_tasks_pct": 83.1,
-                "active_tasks_pct": 100,
-                "weighted_points_pct": 85.3,
-                "weighted_done_points_pct": 85.2,
-                "weighted_active_points_pct": 100
+                "tasks": 115,
+                "done_tasks": 115,
+                "active_tasks": 0,
+                "weighted_points": 226,
+                "weighted_done_points": 226,
+                "weighted_active_points": 0,
+                "tasks_pct": 84.6,
+                "done_tasks_pct": 84.6,
+                "active_tasks_pct": 0,
+                "weighted_points_pct": 86.3,
+                "weighted_done_points_pct": 86.3,
+                "weighted_active_points_pct": 0
             },
             {
                 "executor": "jules",
@@ -73,11 +73,11 @@
                 "weighted_points": 23,
                 "weighted_done_points": 23,
                 "weighted_active_points": 0,
-                "tasks_pct": 9.6,
-                "done_tasks_pct": 9.7,
+                "tasks_pct": 8.8,
+                "done_tasks_pct": 8.8,
                 "active_tasks_pct": 0,
-                "weighted_points_pct": 9.4,
-                "weighted_done_points_pct": 9.5,
+                "weighted_points_pct": 8.8,
+                "weighted_done_points_pct": 8.8,
                 "weighted_active_points_pct": 0
             },
             {
@@ -88,11 +88,11 @@
                 "weighted_points": 13,
                 "weighted_done_points": 13,
                 "weighted_active_points": 0,
-                "tasks_pct": 7.2,
-                "done_tasks_pct": 7.3,
+                "tasks_pct": 6.6,
+                "done_tasks_pct": 6.6,
                 "active_tasks_pct": 0,
-                "weighted_points_pct": 5.3,
-                "weighted_done_points_pct": 5.3,
+                "weighted_points_pct": 5,
+                "weighted_done_points_pct": 5,
                 "weighted_active_points_pct": 0
             }
         ],
@@ -100,35 +100,35 @@
             {
                 "rank": 1,
                 "executor": "codex",
-                "weighted_done_points": 207,
-                "weighted_done_points_pct": 85.2,
-                "done_tasks": 103,
-                "done_tasks_pct": 83.1
+                "weighted_done_points": 226,
+                "weighted_done_points_pct": 86.3,
+                "done_tasks": 115,
+                "done_tasks_pct": 84.6
             },
             {
                 "rank": 2,
                 "executor": "jules",
                 "weighted_done_points": 23,
-                "weighted_done_points_pct": 9.5,
+                "weighted_done_points_pct": 8.8,
                 "done_tasks": 12,
-                "done_tasks_pct": 9.7
+                "done_tasks_pct": 8.8
             },
             {
                 "rank": 3,
                 "executor": "kimi",
                 "weighted_done_points": 13,
-                "weighted_done_points_pct": 5.3,
+                "weighted_done_points_pct": 5,
                 "done_tasks": 9,
-                "done_tasks_pct": 7.3
+                "done_tasks_pct": 6.6
             }
         ],
         "top_executor": {
             "rank": 1,
             "executor": "codex",
-            "weighted_done_points": 207,
-            "weighted_done_points_pct": 85.2,
-            "done_tasks": 103,
-            "done_tasks_pct": 83.1
+            "weighted_done_points": 226,
+            "weighted_done_points_pct": 86.3,
+            "done_tasks": 115,
+            "done_tasks_pct": 84.6
         }
     },
     "baseline_contribution": {
@@ -235,30 +235,30 @@
         "rows": [
             {
                 "executor": "codex",
-                "weighted_done_points_pct_current": 85.2,
+                "weighted_done_points_pct_current": 86.3,
                 "weighted_done_points_pct_baseline": 0,
-                "weighted_done_points_pct_delta": 85.2,
-                "done_tasks_pct_current": 83.1,
+                "weighted_done_points_pct_delta": 86.3,
+                "done_tasks_pct_current": 84.6,
                 "done_tasks_pct_baseline": 0,
-                "done_tasks_pct_delta": 83.1
+                "done_tasks_pct_delta": 84.6
             },
             {
                 "executor": "jules",
-                "weighted_done_points_pct_current": 9.5,
+                "weighted_done_points_pct_current": 8.8,
                 "weighted_done_points_pct_baseline": 66.7,
-                "weighted_done_points_pct_delta": -57.2,
-                "done_tasks_pct_current": 9.7,
+                "weighted_done_points_pct_delta": -57.9,
+                "done_tasks_pct_current": 8.8,
                 "done_tasks_pct_baseline": 50,
-                "done_tasks_pct_delta": -40.3
+                "done_tasks_pct_delta": -41.2
             },
             {
                 "executor": "kimi",
-                "weighted_done_points_pct_current": 5.3,
+                "weighted_done_points_pct_current": 5,
                 "weighted_done_points_pct_baseline": 33.3,
-                "weighted_done_points_pct_delta": -28,
-                "done_tasks_pct_current": 7.3,
+                "weighted_done_points_pct_delta": -28.3,
+                "done_tasks_pct_current": 6.6,
                 "done_tasks_pct_baseline": 50,
-                "done_tasks_pct_delta": -42.7
+                "done_tasks_pct_delta": -43.4
             }
         ]
     },
@@ -358,22 +358,22 @@
             },
             {
                 "date": "2026-02-28",
-                "captured_at": "2026-02-28T01:49:39.555Z",
+                "captured_at": "2026-02-28T22:51:40.369Z",
                 "top_executor": "codex",
                 "executors": {
                     "codex": {
-                        "weighted_done_points_pct": 85.2,
-                        "done_tasks_pct": 83.1,
-                        "active_tasks_pct": 100
+                        "weighted_done_points_pct": 86.3,
+                        "done_tasks_pct": 84.6,
+                        "active_tasks_pct": 0
                     },
                     "jules": {
-                        "weighted_done_points_pct": 9.5,
-                        "done_tasks_pct": 9.7,
+                        "weighted_done_points_pct": 8.8,
+                        "done_tasks_pct": 8.8,
                         "active_tasks_pct": 0
                     },
                     "kimi": {
-                        "weighted_done_points_pct": 5.3,
-                        "done_tasks_pct": 7.3,
+                        "weighted_done_points_pct": 5,
+                        "done_tasks_pct": 6.6,
                         "active_tasks_pct": 0
                     }
                 }
@@ -388,20 +388,20 @@
                 {
                     "executor": "codex",
                     "weighted_done_points_pct_from": 0,
-                    "weighted_done_points_pct_to": 85.2,
-                    "weighted_done_points_pct_delta": 85.2
+                    "weighted_done_points_pct_to": 86.3,
+                    "weighted_done_points_pct_delta": 86.3
                 },
                 {
                     "executor": "jules",
                     "weighted_done_points_pct_from": 66.7,
-                    "weighted_done_points_pct_to": 9.5,
-                    "weighted_done_points_pct_delta": -57.2
+                    "weighted_done_points_pct_to": 8.8,
+                    "weighted_done_points_pct_delta": -57.9
                 },
                 {
                     "executor": "kimi",
                     "weighted_done_points_pct_from": 33.3,
-                    "weighted_done_points_pct_to": 5.3,
-                    "weighted_done_points_pct_delta": -28
+                    "weighted_done_points_pct_to": 5,
+                    "weighted_done_points_pct_delta": -28.3
                 }
             ]
         }
@@ -422,8 +422,8 @@
                 "default": 1
             },
             "total_weight": 30,
-            "total_weighted_points": 2960,
-            "overall_weighted_score_pct": 98.7,
+            "total_weighted_points": 3000,
+            "overall_weighted_score_pct": 100,
             "priority_weight": 10,
             "priority_weighted_points": 1000,
             "priority_weighted_score_pct": 100,
@@ -433,8 +433,8 @@
         "totals": {
             "domains": 23,
             "by_signal": {
-                "GREEN": 22,
-                "YELLOW": 1,
+                "GREEN": 23,
+                "YELLOW": 0,
                 "RED": 0
             }
         },
@@ -498,9 +498,9 @@
             },
             "frontend-admin": {
                 "domain": "frontend-admin",
-                "tasks_total": 22,
+                "tasks_total": 24,
                 "active_tasks": 0,
-                "done_tasks": 22,
+                "done_tasks": 24,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -536,22 +536,41 @@
             },
             "frontend-public": {
                 "domain": "frontend-public",
-                "tasks_total": 14,
-                "active_tasks": 1,
-                "done_tasks": 13,
+                "tasks_total": 17,
+                "active_tasks": 0,
+                "done_tasks": 17,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
                 "review_tasks": 0,
-                "in_progress_tasks": 1,
+                "in_progress_tasks": 0,
                 "blocking_conflicts": 0,
                 "handoff_conflicts": 0,
                 "active_expired_handoffs": 0,
-                "reasons": ["active_tasks:1"],
-                "signal": "YELLOW",
+                "reasons": ["stable"],
+                "signal": "GREEN",
                 "weight": 1,
-                "signal_score_pct": 60,
-                "weighted_score_points": 60
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            "frontend-qa": {
+                "domain": "frontend-qa",
+                "tasks_total": 11,
+                "active_tasks": 0,
+                "done_tasks": 11,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
             },
             "tooling": {
                 "domain": "tooling",
@@ -593,25 +612,6 @@
             },
             "docs": {
                 "domain": "docs",
-                "tasks_total": 5,
-                "active_tasks": 0,
-                "done_tasks": 5,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
-            "frontend-qa": {
-                "domain": "frontend-qa",
                 "tasks_total": 5,
                 "active_tasks": 0,
                 "done_tasks": 5,
@@ -937,9 +937,9 @@
             },
             {
                 "domain": "frontend-admin",
-                "tasks_total": 22,
+                "tasks_total": 24,
                 "active_tasks": 0,
-                "done_tasks": 22,
+                "done_tasks": 24,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -975,22 +975,41 @@
             },
             {
                 "domain": "frontend-public",
-                "tasks_total": 14,
-                "active_tasks": 1,
-                "done_tasks": 13,
+                "tasks_total": 17,
+                "active_tasks": 0,
+                "done_tasks": 17,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
                 "review_tasks": 0,
-                "in_progress_tasks": 1,
+                "in_progress_tasks": 0,
                 "blocking_conflicts": 0,
                 "handoff_conflicts": 0,
                 "active_expired_handoffs": 0,
-                "reasons": ["active_tasks:1"],
-                "signal": "YELLOW",
+                "reasons": ["stable"],
+                "signal": "GREEN",
                 "weight": 1,
-                "signal_score_pct": 60,
-                "weighted_score_points": 60
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
+                "domain": "frontend-qa",
+                "tasks_total": 11,
+                "active_tasks": 0,
+                "done_tasks": 11,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
             },
             {
                 "domain": "tooling",
@@ -1032,25 +1051,6 @@
             },
             {
                 "domain": "docs",
-                "tasks_total": 5,
-                "active_tasks": 0,
-                "done_tasks": 5,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
-            {
-                "domain": "frontend-qa",
                 "tasks_total": 5,
                 "active_tasks": 0,
                 "done_tasks": 5,
@@ -2006,10 +2006,10 @@
             },
             {
                 "date": "2026-02-28",
-                "captured_at": "2026-02-28T01:49:39.558Z",
+                "captured_at": "2026-02-28T22:51:40.370Z",
                 "counts_by_signal": {
-                    "GREEN": 22,
-                    "YELLOW": 1,
+                    "GREEN": 23,
+                    "YELLOW": 0,
                     "RED": 0
                 },
                 "domains": {
@@ -2114,27 +2114,27 @@
                     },
                     "frontend-admin": {
                         "signal": "GREEN",
-                        "tasks_total": 22,
+                        "tasks_total": 24,
                         "active_tasks": 0,
-                        "done_tasks": 22,
+                        "done_tasks": 24,
                         "blocking_conflicts": 0,
                         "handoff_conflicts": 0,
                         "active_expired_handoffs": 0
                     },
                     "frontend-public": {
-                        "signal": "YELLOW",
-                        "tasks_total": 14,
-                        "active_tasks": 1,
-                        "done_tasks": 13,
+                        "signal": "GREEN",
+                        "tasks_total": 17,
+                        "active_tasks": 0,
+                        "done_tasks": 17,
                         "blocking_conflicts": 0,
                         "handoff_conflicts": 0,
                         "active_expired_handoffs": 0
                     },
                     "frontend-qa": {
                         "signal": "GREEN",
-                        "tasks_total": 5,
+                        "tasks_total": 11,
                         "active_tasks": 0,
-                        "done_tasks": 5,
+                        "done_tasks": 11,
                         "blocking_conflicts": 0,
                         "handoff_conflicts": 0,
                         "active_expired_handoffs": 0
@@ -2327,7 +2327,7 @@
                 {
                     "domain": "frontend-public",
                     "signal_from": "GREEN",
-                    "signal_to": "YELLOW",
+                    "signal_to": "GREEN",
                     "blocking_conflicts_from": 0,
                     "blocking_conflicts_to": 0,
                     "blocking_conflicts_delta": 0
@@ -2416,15 +2416,7 @@
         },
         "regressions": {
             "green_to_red": [],
-            "worsened_signal": [
-                {
-                    "domain": "frontend-public",
-                    "from_date": "2026-02-24",
-                    "to_date": "2026-02-28",
-                    "signal_from": "GREEN",
-                    "signal_to": "YELLOW"
-                }
-            ]
+            "worsened_signal": []
         }
     },
     "io": {
@@ -2440,9 +2432,9 @@
         ]
     },
     "delta": {
-        "tasks_total": 118,
+        "tasks_total": 129,
         "file_conflicts": 0,
         "file_conflicts_handoff": 0,
-        "traceability_pct": 99
+        "traceability_pct": 100
     }
 }

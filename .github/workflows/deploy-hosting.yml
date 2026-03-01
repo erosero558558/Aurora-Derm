@@ -71,6 +71,56 @@ on:
                 required: false
                 default: true
                 type: boolean
+            run_postdeploy_fast:
+                description: 'Disparar post-deploy-fast al finalizar deploy'
+                required: false
+                default: true
+                type: boolean
+            run_postdeploy_gate:
+                description: 'Disparar post-deploy-gate al finalizar deploy'
+                required: false
+                default: false
+                type: boolean
+            postdeploy_fast_wait_seconds:
+                description: 'wait_seconds para post-deploy-fast (workflow_dispatch)'
+                required: false
+                default: '45'
+                type: string
+            admin_rollout_stage:
+                description: 'Etapa admin rollout a propagar (internal|canary|general|rollback)'
+                required: false
+                default: 'general'
+                type: string
+            admin_rollout_skip_runtime_smoke_fast:
+                description: 'Omitir smoke runtime en post-deploy-fast'
+                required: false
+                default: true
+                type: boolean
+            admin_rollout_allow_feature_api_failure_fast:
+                description: 'Permitir falla de features API en post-deploy-fast'
+                required: false
+                default: false
+                type: boolean
+            admin_rollout_allow_missing_flag_fast:
+                description: 'Permitir ausencia de admin_sony_ui en post-deploy-fast'
+                required: false
+                default: false
+                type: boolean
+            admin_rollout_skip_runtime_smoke_gate:
+                description: 'Omitir smoke runtime en post-deploy-gate'
+                required: false
+                default: false
+                type: boolean
+            admin_rollout_allow_feature_api_failure_gate:
+                description: 'Permitir falla de features API en post-deploy-gate'
+                required: false
+                default: false
+                type: boolean
+            admin_rollout_allow_missing_flag_gate:
+                description: 'Permitir ausencia de admin_sony_ui en post-deploy-gate'
+                required: false
+                default: false
+                type: boolean
 
 concurrency:
     group: deploy-pielarmonia-pipeline
@@ -362,6 +412,19 @@ jobs:
             PUBLIC_CUTOVER_WINDOW_HOURS: ${{ github.event.inputs.public_cutover_window_hours || vars.PUBLIC_CUTOVER_WINDOW_HOURS || '72' }}
             DISPATCH_PUBLIC_CUTOVER_MONITOR: ${{ github.event.inputs.dispatch_public_cutover_monitor || 'true' }}
             PUBLIC_CUTOVER_STARTED_AT: ''
+            DISPATCH_EVENT_NAME: ${{ github.event_name }}
+            RUN_POSTDEPLOY_FAST_INPUT: ${{ github.event.inputs.run_postdeploy_fast || '' }}
+            RUN_POSTDEPLOY_GATE_INPUT: ${{ github.event.inputs.run_postdeploy_gate || '' }}
+            RUN_POSTDEPLOY_FAST_AUTOMATION: ${{ vars.RUN_POSTDEPLOY_FAST_FROM_DEPLOY_WORKFLOW_RUN || vars.RUN_POSTDEPLOY_FAST_FROM_DEPLOY || 'false' }}
+            RUN_POSTDEPLOY_GATE_AUTOMATION: ${{ vars.RUN_POSTDEPLOY_GATE_FROM_DEPLOY_WORKFLOW_RUN || vars.RUN_POSTDEPLOY_GATE_FROM_DEPLOY || 'false' }}
+            POSTDEPLOY_FAST_WAIT_SECONDS: ${{ github.event.inputs.postdeploy_fast_wait_seconds || vars.POSTDEPLOY_FAST_WAIT_SECONDS || '45' }}
+            ADMIN_ROLLOUT_STAGE_PROPAGATED: ${{ github.event.inputs.admin_rollout_stage || vars.ADMIN_ROLLOUT_STAGE_DEPLOY_AUTOMATION || vars.ADMIN_ROLLOUT_STAGE || 'general' }}
+            ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke_fast || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST || 'true' }}
+            ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure_fast || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST || 'false' }}
+            ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_missing_flag_fast || vars.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST || 'false' }}
+            ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke_gate || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE || 'false' }}
+            ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure_gate || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE || 'false' }}
+            ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_missing_flag_gate || vars.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG || 'false' }}
 
         steps:
             - name: Checkout
@@ -516,6 +579,243 @@ jobs:
                   curl -fsS "${PROD_URL}/figo-chat.php" > /tmp/figo.json
                   curl -IfsS "${PROD_URL}/" > /tmp/home_headers.txt
                   echo "Production Verified."
+
+            - name: Resolver parametros de dispatch post-deploy
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              id: resolve_postdeploy
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  normalize_bool() {
+                    local raw="${1:-}"
+                    local normalized
+                    normalized="$(echo "$raw" | tr '[:upper:]' '[:lower:]' | xargs)"
+                    case "$normalized" in
+                      1|true|yes|on) echo "true" ;;
+                      0|false|no|off|"") echo "false" ;;
+                      *) echo "false" ;;
+                    esac
+                  }
+
+                  json_field() {
+                    local json="${1:?json requerido}"
+                    local field="${2:?field requerido}"
+                    node -e '
+                      const payload = JSON.parse(process.argv[1]);
+                      const value = payload[process.argv[2]];
+                      if (typeof value === "boolean") {
+                        process.stdout.write(value ? "true" : "false");
+                        process.exit(0);
+                      }
+                      if (value === undefined || value === null) {
+                        process.stdout.write("");
+                        process.exit(0);
+                      }
+                      process.stdout.write(String(value));
+                    ' "$json" "$field"
+                  }
+
+                  dispatch_mode="automation"
+                  if [ "${DISPATCH_EVENT_NAME}" = "workflow_dispatch" ]; then
+                    dispatch_mode="manual"
+                    run_fast="$(normalize_bool "${RUN_POSTDEPLOY_FAST_INPUT}")"
+                    run_gate="$(normalize_bool "${RUN_POSTDEPLOY_GATE_INPUT}")"
+                  else
+                    run_fast="$(normalize_bool "${RUN_POSTDEPLOY_FAST_AUTOMATION}")"
+                    run_gate="$(normalize_bool "${RUN_POSTDEPLOY_GATE_AUTOMATION}")"
+                  fi
+
+                  base_policy_json="$(node ./bin/resolve-admin-rollout-policy.js \
+                    --stage "${ADMIN_ROLLOUT_STAGE_PROPAGATED}" \
+                    --default-stage general \
+                    --skip-runtime-smoke false \
+                    --default-skip-runtime-smoke false \
+                    --allow-feature-api-failure false \
+                    --default-allow-feature-api-failure false \
+                    --allow-missing-flag false \
+                    --default-allow-missing-flag false)"
+
+                  fast_policy_json="$(node ./bin/resolve-admin-rollout-policy.js \
+                    --stage "${ADMIN_ROLLOUT_STAGE_PROPAGATED}" \
+                    --default-stage general \
+                    --skip-runtime-smoke "${ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_PROPAGATED}" \
+                    --default-skip-runtime-smoke true \
+                    --allow-feature-api-failure "${ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_PROPAGATED}" \
+                    --default-allow-feature-api-failure false \
+                    --allow-missing-flag "${ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_PROPAGATED}" \
+                    --default-allow-missing-flag false)"
+
+                  gate_policy_json="$(node ./bin/resolve-admin-rollout-policy.js \
+                    --stage "${ADMIN_ROLLOUT_STAGE_PROPAGATED}" \
+                    --default-stage general \
+                    --skip-runtime-smoke "${ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_PROPAGATED}" \
+                    --default-skip-runtime-smoke false \
+                    --allow-feature-api-failure "${ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_PROPAGATED}" \
+                    --default-allow-feature-api-failure false \
+                    --allow-missing-flag "${ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_PROPAGATED}" \
+                    --default-allow-missing-flag false)"
+
+                  stage="$(json_field "$base_policy_json" stage_effective)"
+                  stage_profile="$(json_field "$base_policy_json" stage_profile)"
+                  policy_source_base="$(json_field "$base_policy_json" policy_source)"
+
+                  skip_runtime_smoke_fast="$(json_field "$fast_policy_json" skip_runtime_smoke_effective)"
+                  allow_feature_api_failure_fast="$(json_field "$fast_policy_json" allow_feature_api_failure_effective)"
+                  allow_missing_flag_fast="$(json_field "$fast_policy_json" allow_missing_flag_effective)"
+                  policy_source_fast="$(json_field "$fast_policy_json" policy_source)"
+
+                  skip_runtime_smoke_gate="$(json_field "$gate_policy_json" skip_runtime_smoke_effective)"
+                  allow_feature_api_failure_gate="$(json_field "$gate_policy_json" allow_feature_api_failure_effective)"
+                  allow_missing_flag_gate="$(json_field "$gate_policy_json" allow_missing_flag_effective)"
+                  policy_source_gate="$(json_field "$gate_policy_json" policy_source)"
+
+                  precheck_policy_source="stage-default"
+                  precheck_allow_feature_api_failure="$(json_field "$base_policy_json" allow_feature_api_failure_effective)"
+                  precheck_allow_missing_flag="$(json_field "$base_policy_json" allow_missing_flag_effective)"
+                  if [ "$run_gate" = "true" ]; then
+                    precheck_policy_source="gate:${policy_source_gate}"
+                    precheck_allow_feature_api_failure="$allow_feature_api_failure_gate"
+                    precheck_allow_missing_flag="$allow_missing_flag_gate"
+                  elif [ "$run_fast" = "true" ]; then
+                    precheck_policy_source="fast:${policy_source_fast}"
+                    precheck_allow_feature_api_failure="$allow_feature_api_failure_fast"
+                    precheck_allow_missing_flag="$allow_missing_flag_fast"
+                  else
+                    precheck_policy_source="stage-default:${policy_source_base}"
+                  fi
+
+                  echo "run_fast=$run_fast" >> "$GITHUB_OUTPUT"
+                  echo "run_gate=$run_gate" >> "$GITHUB_OUTPUT"
+                  echo "dispatch_mode=$dispatch_mode" >> "$GITHUB_OUTPUT"
+                  echo "stage=$stage" >> "$GITHUB_OUTPUT"
+                  echo "stage_profile=$stage_profile" >> "$GITHUB_OUTPUT"
+                  echo "skip_runtime_smoke_fast=$skip_runtime_smoke_fast" >> "$GITHUB_OUTPUT"
+                  echo "allow_feature_api_failure_fast=$allow_feature_api_failure_fast" >> "$GITHUB_OUTPUT"
+                  echo "allow_missing_flag_fast=$allow_missing_flag_fast" >> "$GITHUB_OUTPUT"
+                  echo "policy_source_fast=$policy_source_fast" >> "$GITHUB_OUTPUT"
+                  echo "skip_runtime_smoke_gate=$skip_runtime_smoke_gate" >> "$GITHUB_OUTPUT"
+                  echo "allow_feature_api_failure_gate=$allow_feature_api_failure_gate" >> "$GITHUB_OUTPUT"
+                  echo "allow_missing_flag_gate=$allow_missing_flag_gate" >> "$GITHUB_OUTPUT"
+                  echo "policy_source_gate=$policy_source_gate" >> "$GITHUB_OUTPUT"
+                  echo "precheck_policy_source=$precheck_policy_source" >> "$GITHUB_OUTPUT"
+                  echo "allow_feature_api_failure_precheck=$precheck_allow_feature_api_failure" >> "$GITHUB_OUTPUT"
+                  echo "allow_missing_flag_precheck=$precheck_allow_missing_flag" >> "$GITHUB_OUTPUT"
+
+                  echo "Dispatch config -> mode=$dispatch_mode fast=$run_fast gate=$run_gate stage=$stage stage_profile=$stage_profile precheck_source=$precheck_policy_source"
+
+            - name: Validar contrato features admin_sony_ui (post-deploy)
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: pwsh
+              env:
+                  ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
+                  ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_PRECHECK_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_precheck }}
+                  ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_PRECHECK_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_missing_flag_precheck }}
+              run: |
+                  $allowFeatureApiFailure = ([string]$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_PRECHECK_EFFECTIVE).Trim().ToLowerInvariant() -eq 'true'
+                  $allowMissingFlag = ([string]$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_PRECHECK_EFFECTIVE).Trim().ToLowerInvariant() -eq 'true'
+                  ./GATE-ADMIN-ROLLOUT.ps1 `
+                    -Domain $env:PROD_URL `
+                    -Stage $env:ADMIN_ROLLOUT_STAGE_EFFECTIVE `
+                    -SkipRuntimeSmoke `
+                    -AllowFeatureApiFailure:$allowFeatureApiFailure `
+                    -AllowMissingAdminFlag:$allowMissingFlag `
+                    -ReportPath 'verification/last-admin-ui-rollout-gate-deploy-hosting.json'
+
+            - name: Publicar reporte gate admin rollout (deploy-hosting)
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: deploy-hosting-admin-rollout-report
+                  path: verification/last-admin-ui-rollout-gate-deploy-hosting.json
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Disparar Post-Deploy Fast Lane
+              if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_fast == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner,
+                        repo,
+                        workflow_id: 'post-deploy-fast.yml',
+                        ref: 'main',
+                        inputs: {
+                          domain: process.env.PROD_URL,
+                          wait_seconds: process.env.POSTDEPLOY_FAST_WAIT_SECONDS,
+                          admin_rollout_stage: process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE,
+                          admin_rollout_skip_runtime_smoke: process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE,
+                          admin_rollout_allow_feature_api_failure: process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE,
+                          admin_rollout_allow_missing_flag: process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE
+                        }
+                      });
+
+                      core.info(
+                        `Workflow post-deploy-fast.yml disparado (domain=${process.env.PROD_URL}, stage=${process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE}).`
+                      );
+              env:
+                  ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
+                  ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_fast }}
+                  ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_fast }}
+                  ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_missing_flag_fast }}
+
+            - name: Disparar Post-Deploy Gate (Full Regression)
+              if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_gate == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner,
+                        repo,
+                        workflow_id: 'post-deploy-gate.yml',
+                        ref: 'main',
+                        inputs: {
+                          domain: process.env.PROD_URL,
+                          admin_rollout_stage: process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE,
+                          admin_rollout_skip_runtime_smoke: process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_EFFECTIVE,
+                          admin_rollout_allow_feature_api_failure: process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_EFFECTIVE,
+                          admin_rollout_allow_missing_flag: process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_EFFECTIVE
+                        }
+                      });
+
+                      core.info(
+                        `Workflow post-deploy-gate.yml disparado (domain=${process.env.PROD_URL}, stage=${process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE}).`
+                      );
+              env:
+                  ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
+                  ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_gate }}
+                  ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_gate }}
+                  ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_missing_flag_gate }}
+
+            - name: Resumen dispatch post-deploy
+              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  {
+                    echo "## Deploy Hosting - Dispatch post-deploy"
+                    echo "- Dominio prod: \`${PROD_URL}\`"
+                    echo "- dispatch mode (effective): \`${{ steps.resolve_postdeploy.outputs.dispatch_mode }}\`"
+                    echo "- run_postdeploy_fast (effective): \`${{ steps.resolve_postdeploy.outputs.run_fast }}\`"
+                    echo "- run_postdeploy_gate (effective): \`${{ steps.resolve_postdeploy.outputs.run_gate }}\`"
+                    echo "- admin rollout stage (effective): \`${{ steps.resolve_postdeploy.outputs.stage }}\`"
+                    echo "- admin rollout stage profile (effective): \`${{ steps.resolve_postdeploy.outputs.stage_profile }}\`"
+                    echo "- admin rollout skip runtime smoke fast (effective): \`${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_fast }}\`"
+                    echo "- admin rollout policy source fast (effective): \`${{ steps.resolve_postdeploy.outputs.policy_source_fast }}\`"
+                    echo "- admin rollout skip runtime smoke gate (effective): \`${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_gate }}\`"
+                    echo "- admin rollout policy source gate (effective): \`${{ steps.resolve_postdeploy.outputs.policy_source_gate }}\`"
+                    echo "- admin rollout precheck policy source (effective): \`${{ steps.resolve_postdeploy.outputs.precheck_policy_source }}\`"
+                    echo "- admin rollout allow feature API failure precheck (effective): \`${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_precheck }}\`"
+                    echo "- admin rollout allow missing flag precheck (effective): \`${{ steps.resolve_postdeploy.outputs.allow_missing_flag_precheck }}\`"
+                    echo "- reporte admin rollout deploy-hosting: \`verification/last-admin-ui-rollout-gate-deploy-hosting.json\`"
+                  } >> "$GITHUB_STEP_SUMMARY"
 
             - name: Stamp public cutover start
               if: ${{ env.FTP_DRY_RUN != 'true' }}

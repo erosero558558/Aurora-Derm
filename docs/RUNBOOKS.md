@@ -66,6 +66,8 @@ Reglas:
 
 1.  Fast lane (`post-deploy-fast.yml`) bloquea solo por fallas de health/smoke/contrato critico.
 2.  Full gate (`post-deploy-gate.yml`) se usa para regression completa y decision final en casos de duda.
+    - En modo automatico por `push`, se activa solo si `RUN_POSTDEPLOY_GATE_ON_PUSH=true` (default recomendado `false`).
+    - La politica de stage/flags de admin rollout se resuelve en `bin/resolve-admin-rollout-policy.js` para mantener consistencia entre precheck (`deploy-hosting`) y gates (`post-deploy-fast`/`post-deploy-gate`).
 3.  Nightly (`nightly-stability.yml`) valida dominios `platform`, `agenda`, `funnel` y publica semaforos por dominio.
 4.  Si hay warning no critico aislado (pico transitorio), se permite continuar solo si:
     - smoke y health estan en verde;
@@ -114,6 +116,50 @@ Runbook rapido para ajuste:
 3. Verificar bloque `Thresholds efectivos` en `GITHUB_STEP_SUMMARY`.
 4. Confirmar que el comportamiento de incidentes semanales coincide con los nuevos umbrales.
 5. Si el cambio no es el esperado, volver a defaults y re-ejecutar.
+
+### 1.7 Admin UI v2 rollout y rollback
+
+Para el despliegue del admin Sony-like v2 usar el runbook dedicado:
+
+- `docs/ADMIN-UI-ROLLOUT.md`
+
+Comando operativo rapido:
+
+```powershell
+npm run admin:ui:contingency
+```
+
+Este comando consulta el flag actual (`admin_sony_ui`) y muestra URLs de canary/rollback:
+
+- limpiar variante local: `admin_ui_reset=1`
+- legacy session-only: `admin_ui=legacy&admin_ui_reset=1`
+
+Gate recomendado por etapa:
+
+```powershell
+npm run gate:admin:rollout
+npm run gate:admin:rollout:general
+npm run gate:admin:rollout:rollback
+```
+
+Higiene de bundles admin (post-build / troubleshooting):
+
+```powershell
+npm run chunks:admin:prune
+node bin/clean-admin-chunks.js --dry-run
+```
+
+Propagacion automatizada desde deploy:
+
+1. En `Deploy Hosting (Canary Pipeline)` manual, usar:
+    - `run_postdeploy_fast`
+    - `run_postdeploy_gate`
+    - `admin_rollout_stage`
+    - flags `admin_rollout_*_fast` y `admin_rollout_*_gate`
+2. Para ejecucion automatica, controlar con variables:
+    - `RUN_POSTDEPLOY_FAST_FROM_DEPLOY_WORKFLOW_RUN` (preferido; recomendado `false`)
+    - `RUN_POSTDEPLOY_GATE_FROM_DEPLOY_WORKFLOW_RUN` (preferido; recomendado `false`)
+    - fallback legacy: `RUN_POSTDEPLOY_FAST_FROM_DEPLOY` y `RUN_POSTDEPLOY_GATE_FROM_DEPLOY`
 
 ---
 

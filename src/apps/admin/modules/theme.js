@@ -126,7 +126,11 @@ function bindSystemThemeListener() {
 }
 
 function handleThemeStorageSync(event) {
-    if (event?.key && event.key !== ADMIN_THEME_STORAGE_KEY) {
+    if (
+        event?.key &&
+        event.key !== ADMIN_THEME_STORAGE_KEY &&
+        event.key !== ADMIN_THEME_STORAGE_LEGACY_KEY
+    ) {
         return;
     }
 

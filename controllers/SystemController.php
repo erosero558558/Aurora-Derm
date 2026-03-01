@@ -17,9 +17,31 @@ class SystemController
 
     public static function features(array $context): void
     {
+        $flags = FeatureFlags::getAll();
+
+        // Public API contract: keep these keys stable for frontend runtime gates.
+        $requiredKeys = [
+            'new_booking_ui',
+            'admin_sony_ui',
+            'stripe_elements',
+            'dark_mode',
+            'chatgpt_integration',
+            'referral_program',
+        ];
+
+        foreach ($requiredKeys as $key) {
+            if (!array_key_exists($key, $flags)) {
+                $flags[$key] = FeatureFlags::isEnabled($key);
+            }
+        }
+
+        foreach ($flags as $key => $value) {
+            $flags[(string) $key] = (bool) $value;
+        }
+
         json_response([
             'ok' => true,
-            'data' => FeatureFlags::getAll()
+            'data' => $flags
         ]);
     }
 

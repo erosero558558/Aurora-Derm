@@ -16,6 +16,26 @@ on:
                 required: false
                 default: '60'
                 type: string
+            admin_rollout_stage:
+                description: 'Etapa gate admin UI (internal|canary|general|rollback)'
+                required: false
+                default: 'canary'
+                type: string
+            admin_rollout_skip_runtime_smoke:
+                description: 'Omitir smoke runtime Playwright del gate admin UI fast'
+                required: false
+                default: true
+                type: boolean
+            admin_rollout_allow_feature_api_failure:
+                description: 'Permitir falla de features API en gate admin UI fast'
+                required: false
+                default: false
+                type: boolean
+            admin_rollout_allow_missing_flag:
+                description: 'Permitir ausencia de data.admin_sony_ui en gate admin UI fast'
+                required: false
+                default: false
+                type: boolean
 
 concurrency:
     group: post-deploy-fast-${{ github.ref }}
@@ -34,6 +54,16 @@ jobs:
             ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME || 'PROD' }}
             TARGET_DOMAIN: ${{ github.event.inputs.domain || vars.TARGET_DOMAIN || 'https://pielarmonia.com' }}
             WAIT_SECONDS_FAST: ${{ github.event.inputs.wait_seconds || vars.WAIT_SECONDS_FAST || '45' }}
+            ADMIN_ROLLOUT_STAGE_FAST: ${{ github.event.inputs.admin_rollout_stage || vars.ADMIN_ROLLOUT_STAGE_FAST || 'canary' }}
+            ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST || 'true' }}
+            ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST || 'false' }}
+            ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST: ${{ github.event.inputs.admin_rollout_allow_missing_flag || vars.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST || 'false' }}
+            ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE: canary
+            ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE: progressive
+            ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE: 'true'
+            ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE: 'false'
+            ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE: 'false'
+            ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE: stage-default
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -66,15 +96,102 @@ jobs:
                     -RequireBackupReceiverReady `
                     -RequireCronReady
 
+            - name: Resolver configuracion gate admin UI (fast)
+              if: ${{ steps.gate_fast.outcome == 'success' }}
+              shell: pwsh
+              run: |
+                  $policyJson = node ./bin/resolve-admin-rollout-policy.js `
+                    --stage "$env:ADMIN_ROLLOUT_STAGE_FAST" `
+                    --default-stage canary `
+                    --skip-runtime-smoke "$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST" `
+                    --default-skip-runtime-smoke true `
+                    --allow-feature-api-failure "$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST" `
+                    --default-allow-feature-api-failure false `
+                    --allow-missing-flag "$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST" `
+                    --default-allow-missing-flag false
+
+                  if ($LASTEXITCODE -ne 0) {
+                    throw 'No se pudo resolver politica admin rollout (fast).'
+                  }
+
+                  $policy = $policyJson | ConvertFrom-Json
+                  $skipRuntimeSmokeText = if ([bool]$policy.skip_runtime_smoke_effective) { 'true' } else { 'false' }
+                  $allowFeatureApiFailureText = if ([bool]$policy.allow_feature_api_failure_effective) { 'true' } else { 'false' }
+                  $allowMissingFlagText = if ([bool]$policy.allow_missing_flag_effective) { 'true' } else { 'false' }
+
+                  "ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE=$($policy.stage_effective)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE=$($policy.stage_profile)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE=$skipRuntimeSmokeText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE=$allowFeatureApiFailureText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE=$allowMissingFlagText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE=$($policy.policy_source)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  Write-Host "Admin rollout fast => stage=$($policy.stage_effective) profile=$($policy.stage_profile) skip_runtime_smoke=$skipRuntimeSmokeText allow_feature_api_failure=$allowFeatureApiFailureText allow_missing_flag=$allowMissingFlagText policy_source=$($policy.policy_source)"
+
+            - name: Setup Node para smoke admin UI (fast)
+              if: ${{ steps.gate_fast.outcome == 'success' && env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Instalar dependencias Node (fast)
+              if: ${{ steps.gate_fast.outcome == 'success' && env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' }}
+              shell: pwsh
+              run: npm ci
+
+            - name: Instalar Playwright (chromium) para smoke admin UI (fast)
+              if: ${{ steps.gate_fast.outcome == 'success' && env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' }}
+              shell: pwsh
+              run: npx playwright install chromium
+
+            - name: Ejecutar gate admin UI rollout (fast)
+              id: admin_rollout_fast
+              if: ${{ steps.gate_fast.outcome == 'success' }}
+              shell: pwsh
+              run: |
+                  New-Item -ItemType Directory -Path verification -Force | Out-Null
+                  $skipRuntimeSmoke = ([string]$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
+                  $allowFeatureApiFailure = ([string]$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
+                  $allowMissingFlag = ([string]$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
+
+                  ./GATE-ADMIN-ROLLOUT.ps1 `
+                    -Domain $env:TARGET_DOMAIN `
+                    -Stage $env:ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE `
+                    -SkipRuntimeSmoke:$skipRuntimeSmoke `
+                    -AllowFeatureApiFailure:$allowFeatureApiFailure `
+                    -AllowMissingAdminFlag:$allowMissingFlag `
+                    -ReportPath 'verification/last-admin-ui-rollout-gate-fast.json'
+
+            - name: Publicar reporte gate admin rollout (fast)
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: post-deploy-fast-admin-rollout-report
+                  path: verification/last-admin-ui-rollout-gate-fast.json
+                  if-no-files-found: warn
+                  retention-days: 14
+
             - name: Resumen
               if: ${{ always() }}
               shell: pwsh
               run: |
+                  $adminRolloutOutcome = '${{ steps.admin_rollout_fast.outcome }}'
+                  if ([string]::IsNullOrWhiteSpace($adminRolloutOutcome)) {
+                    $adminRolloutOutcome = 'skipped'
+                  }
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Post-Deploy Fast Lane"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Dominio: ``$env:TARGET_DOMAIN``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Espera sync: ``$env:WAIT_SECONDS_FAST`` s"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Modo: ``verify+smoke`` (sin benchmark pesado)"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo platform: ``${{ steps.gate_fast.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout stage (fast): ``$env:ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout stage profile (fast): ``$env:ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout skip runtime smoke (fast): ``$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout allow feature API failure (fast): ``$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout allow missing flag (fast): ``$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout policy source (fast): ``$env:ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo admin rollout (fast): ``$adminRolloutOutcome``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Reporte admin rollout (fast): ``verification/last-admin-ui-rollout-gate-fast.json``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Resultado: ``${{ job.status }}``"
 
             - name: Crear/actualizar incidente fast lane
@@ -82,6 +199,13 @@ jobs:
               uses: actions/github-script@v7
               env:
                   GATE_FAST_OUTCOME: ${{ steps.gate_fast.outcome }}
+                  ADMIN_ROLLOUT_OUTCOME: ${{ steps.admin_rollout_fast.outcome }}
+                  ADMIN_ROLLOUT_STAGE: ${{ env.ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE }}
+                  ADMIN_ROLLOUT_STAGE_PROFILE: ${{ env.ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE }}
+                  ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE: ${{ env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE }}
+                  ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE: ${{ env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE }}
+                  ADMIN_ROLLOUT_ALLOW_MISSING_FLAG: ${{ env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE }}
+                  ADMIN_ROLLOUT_POLICY_SOURCE: ${{ env.ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE }}
                   JOB_STATUS: ${{ job.status }}
               with:
                   script: |
@@ -99,6 +223,13 @@ jobs:
                         `- Workflow: ${context.workflow}`,
                         `- Branch: ${context.ref}`,
                         `- gate_fast_outcome: ${process.env.GATE_FAST_OUTCOME || 'n/a'}`,
+                        `- admin_rollout_stage: ${process.env.ADMIN_ROLLOUT_STAGE || 'n/a'}`,
+                        `- admin_rollout_stage_profile: ${process.env.ADMIN_ROLLOUT_STAGE_PROFILE || 'n/a'}`,
+                        `- admin_rollout_skip_runtime_smoke: ${process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE || 'n/a'}`,
+                        `- admin_rollout_allow_feature_api_failure: ${process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE || 'n/a'}`,
+                        `- admin_rollout_allow_missing_flag: ${process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG || 'n/a'}`,
+                        `- admin_rollout_policy_source: ${process.env.ADMIN_ROLLOUT_POLICY_SOURCE || 'n/a'}`,
+                        `- admin_rollout_outcome: ${process.env.ADMIN_ROLLOUT_OUTCOME || 'skipped'}`,
                         `- job_status: ${process.env.JOB_STATUS || 'n/a'}`
                       ].join('\n');
 

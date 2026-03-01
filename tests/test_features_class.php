@@ -24,6 +24,7 @@ function assert_false($condition, $message = '')
 
 // Reset environment
 putenv('FEATURE_NEW_BOOKING_UI');
+putenv('FEATURE_ADMIN_SONY_UI');
 $dataFile = __DIR__ . '/../data/features.json';
 if (file_exists($dataFile)) {
     unlink($dataFile);
@@ -43,6 +44,7 @@ if (!class_exists('FeatureFlags')) {
 FeatureFlags::reset();
 
 assert_false(FeatureFlags::isEnabled('new_booking_ui'), 'Default new_booking_ui should be false');
+assert_false(FeatureFlags::isEnabled('admin_sony_ui'), 'Default admin_sony_ui should be false');
 
 // 2. Test Enable
 FeatureFlags::enable('new_booking_ui');
@@ -71,6 +73,7 @@ assert_false(FeatureFlags::isEnabled('new_booking_ui'), 'Env var=false should ov
 
 // Cleanup
 putenv('FEATURE_NEW_BOOKING_UI');
+putenv('FEATURE_ADMIN_SONY_UI');
 if (file_exists($dataFile)) {
     unlink($dataFile);
 }

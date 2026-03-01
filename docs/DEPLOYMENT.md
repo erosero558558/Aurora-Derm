@@ -30,6 +30,21 @@ El workflow `.github/workflows/deploy-hosting.yml` se encarga de:
 4.  Canary de staging y gate de aceptación cuando staging está configurado.
 5.  Publicación a producción por `git-sync`, FTP o SFTP según la configuración activa.
 6.  Smoke post-deploy de routing público, conversión pública y manifiesto de cutover.
+7.  Dispatch opcional de post-deploy (`post-deploy-fast.yml` y `post-deploy-gate.yml`) con propagación de `admin_rollout_stage` y flags del gate admin UI.
+
+### Dispatch Post-Deploy desde Deploy Hosting
+
+En ejecuciones manuales (`workflow_dispatch`) de `deploy-hosting.yml`:
+
+- `run_postdeploy_fast=true` dispara `post-deploy-fast.yml`.
+- `run_postdeploy_gate=true` dispara `post-deploy-gate.yml`.
+- `admin_rollout_stage` y flags `admin_rollout_*` se propagan a los workflows post-deploy.
+
+En ejecuciones automáticas (`workflow_run`), la activación se controla con variables:
+
+- `RUN_POSTDEPLOY_FAST_FROM_DEPLOY_WORKFLOW_RUN` (preferido; default `false` para evitar duplicado con trigger `push` de `post-deploy-fast`).
+- `RUN_POSTDEPLOY_GATE_FROM_DEPLOY_WORKFLOW_RUN` (preferido; default `false`).
+- Compatibilidad legacy: `RUN_POSTDEPLOY_FAST_FROM_DEPLOY` y `RUN_POSTDEPLOY_GATE_FROM_DEPLOY`.
 
 ### Despliegue Manual (Emergencia)
 
@@ -64,6 +79,10 @@ El sistema soporta despliegues porcentuales para probar con un subconjunto de us
     }
 }
 ```
+
+Admin UI Sony-like v2 usa este mismo modelo con la flag `admin_sony_ui`.
+Runbook operativo: `docs/ADMIN-UI-ROLLOUT.md`.
+Gate operativo por etapa: `GATE-ADMIN-ROLLOUT.ps1`.
 
 ## 4. Procedimiento de Rollback
 
@@ -108,4 +127,9 @@ php bin/verify-gate.php
 3.  [ ] `https://pielarmonia.com/es/` y `https://pielarmonia.com/en/` retornan `200`.
 4.  [ ] `https://pielarmonia.com/telemedicina.html` redirige a `/es/telemedicina/`.
 5.  [ ] El bridge de reserva (`#citas`, `#appointmentForm`, `#serviceSelect`) sigue visible.
-6.  [ ] No hay errores de consola (F12) rojos.
+6.  [ ] El formulario de contacto/reserva se abre correctamente.
+7.  [ ] `admin.html` resuelve variante correcta (`legacy` o `sony_v2`) segun `admin_ui`, storage y `admin_sony_ui`.
+8.  [ ] Chunks admin sin residuos:
+    - `npm run chunks:admin:prune` (incluido en `npm run build`)
+    - opcional: `node bin/clean-admin-chunks.js --dry-run`
+9.  [ ] No hay errores de consola (F12) rojos.

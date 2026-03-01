@@ -16,6 +16,7 @@ class FeatureFlags
     // Default flags configuration
     private static $defaults = [
         'new_booking_ui' => false,
+        'admin_sony_ui' => false,
         'stripe_elements' => false,
         'dark_mode' => false,
         'chatgpt_integration' => false,

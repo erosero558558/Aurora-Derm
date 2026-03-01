@@ -9,6 +9,23 @@ function json(route, payload, status = 200) {
     });
 }
 
+const ADMIN_UI_VARIANT =
+    String(process.env.ADMIN_UI_VARIANT || 'legacy')
+        .trim()
+        .toLowerCase() === 'sony_v2'
+        ? 'sony_v2'
+        : 'legacy';
+
+function adminUrl(query = '') {
+    const params = new URLSearchParams(String(query || ''));
+    if (ADMIN_UI_VARIANT === 'sony_v2') {
+        params.set('admin_ui', 'sony_v2');
+        params.set('admin_ui_reset', '1');
+    }
+    const search = params.toString();
+    return `/admin.html${search ? `?${search}` : ''}`;
+}
+
 function buildQueueMetaFromState(state) {
     const byConsultorio = { 1: null, 2: null };
     for (const ticket of state.callingNow || []) {
@@ -150,6 +167,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -252,7 +275,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible({
             timeout: 15000,
         });
@@ -351,6 +374,12 @@ test.describe('Admin turnero sala', () => {
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -385,7 +414,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
 
         await page.locator('.nav-item[data-section="queue"]').click();
@@ -463,6 +492,12 @@ test.describe('Admin turnero sala', () => {
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -497,7 +532,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
 
@@ -574,6 +609,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -648,7 +689,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
 
         await page.locator('.nav-item[data-section="queue"]').click();
@@ -752,6 +793,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -792,7 +839,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -869,6 +916,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -914,7 +967,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -992,6 +1045,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -1037,7 +1096,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -1084,6 +1143,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -1139,7 +1204,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -1198,6 +1263,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -1259,7 +1330,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -1330,6 +1401,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -1402,7 +1479,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -1500,6 +1577,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -1639,7 +1722,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -1723,6 +1806,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -1795,7 +1884,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c2&lock=1');
+        await page.goto(adminUrl('station=c2&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -1859,6 +1948,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -1913,7 +2008,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c1&lock=1');
+        await page.goto(adminUrl('station=c1&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -1983,6 +2078,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -2097,7 +2198,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c2&lock=1&one_tap=1');
+        await page.goto(adminUrl('station=c2&lock=1&one_tap=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -2162,6 +2263,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -2240,7 +2347,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c1&lock=1&one_tap=1');
+        await page.goto(adminUrl('station=c1&lock=1&one_tap=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -2285,6 +2392,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -2339,7 +2452,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c2&lock=1');
+        await page.goto(adminUrl('station=c2&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -2401,6 +2514,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -2480,7 +2599,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c1&lock=1');
+        await page.goto(adminUrl('station=c1&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -2550,6 +2669,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -2633,7 +2758,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c1&lock=1');
+        await page.goto(adminUrl('station=c1&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -2699,6 +2824,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -2812,7 +2943,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c1&lock=1');
+        await page.goto(adminUrl('station=c1&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -2956,6 +3087,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -3027,7 +3164,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c1&lock=1');
+        await page.goto(adminUrl('station=c1&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -3154,6 +3291,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -3230,7 +3373,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html?station=c1&lock=1');
+        await page.goto(adminUrl('station=c1&lock=1'));
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -3286,6 +3429,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -3320,7 +3469,7 @@ test.describe('Admin turnero sala', () => {
             return json(route, { ok: true, data: {} });
         });
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);
@@ -3384,6 +3533,12 @@ test.describe('Admin turnero sala', () => {
             const request = route.request();
             const url = new URL(request.url());
             const resource = url.searchParams.get('resource') || '';
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
 
             if (resource === 'data') {
                 return json(route, {
@@ -3460,7 +3615,7 @@ test.describe('Admin turnero sala', () => {
 
         page.on('dialog', (dialog) => dialog.accept());
 
-        await page.goto('/admin.html');
+        await page.goto(adminUrl());
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queue')).toHaveClass(/active/);

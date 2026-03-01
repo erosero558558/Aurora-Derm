@@ -1,0 +1,732 @@
+@font-face {
+    font-family: 'PlusJakarta';
+    src: url('./fonts/plus-jakarta-sans.woff2') format('woff2');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FrauncesSoft';
+    src: url('./fonts/fraunces.woff2') format('woff2');
+    font-display: swap;
+}
+
+:root {
+    --sony-bg: #090909;
+    --sony-surface: #121212;
+    --sony-surface-2: #171717;
+    --sony-border: #2a2a2a;
+    --sony-text: #f4f4f4;
+    --sony-muted: #b7b7b7;
+    --sony-accent: #d8d8d8;
+    --sony-success: #2ac080;
+    --sony-warning: #efb13f;
+    --sony-danger: #f05b5b;
+    --sony-sidebar: #050505;
+    --sony-grid-gap: 14px;
+    --sony-radius: 12px;
+    --sony-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+html[data-admin-ui='sony_v2'],
+html[data-admin-ui='sony_v2'] body {
+    background: radial-gradient(circle at 18% 14%, #1c1c1c 0%, #070707 58%);
+    color: var(--sony-text);
+}
+
+body.admin-v2-mode {
+    font-family: 'PlusJakarta', 'Segoe UI', sans-serif;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+}
+
+body.admin-v2-mode * {
+    box-sizing: border-box;
+}
+
+body.admin-v2-mode .is-hidden {
+    display: none !important;
+}
+
+body.admin-v2-mode .admin-dashboard {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    background: linear-gradient(130deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+}
+
+body.admin-v2-mode .admin-sidebar {
+    background: linear-gradient(180deg, #090909, #000000);
+    border-right: 1px solid var(--sony-border);
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 12;
+}
+
+body.admin-v2-mode .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    gap: 8px;
+}
+
+body.admin-v2-mode .sidebar-header strong {
+    font-family: 'FrauncesSoft', serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.82rem;
+    color: #ffffff;
+}
+
+body.admin-v2-mode .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+body.admin-v2-mode .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--sony-muted);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 11px 10px;
+    transition: all 0.2s ease;
+    font-size: 0.92rem;
+}
+
+body.admin-v2-mode .nav-item:hover,
+body.admin-v2-mode .nav-item:focus-visible {
+    color: #fff;
+    border-color: var(--sony-border);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+body.admin-v2-mode .nav-item.active {
+    color: #fff;
+    border-color: #3c3c3c;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03));
+}
+
+body.admin-v2-mode .badge {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 0.72rem;
+}
+
+body.admin-v2-mode .sidebar-footer {
+    margin-top: auto;
+}
+
+body.admin-v2-mode .logout-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #0f0f0f;
+    color: #ddd;
+    min-height: 40px;
+    cursor: pointer;
+}
+
+body.admin-v2-mode .admin-main {
+    min-width: 0;
+    padding: 18px;
+}
+
+body.admin-v2-mode .admin-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+body.admin-v2-mode .admin-header-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body.admin-v2-mode #pageTitle {
+    margin: 0;
+    font-family: 'FrauncesSoft', serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+body.admin-v2-mode .admin-quick-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+body.admin-v2-mode .admin-quick-nav-item {
+    border: 1px solid #2d2d2d;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--sony-muted);
+    border-radius: 999px;
+    padding: 6px 12px;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+body.admin-v2-mode .admin-quick-nav-item.active {
+    color: #fff;
+    border-color: #575757;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.admin-v2-mode .admin-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body.admin-v2-mode .sony-theme-switcher {
+    display: inline-flex;
+    gap: 4px;
+    border: 1px solid #2f2f2f;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 999px;
+    padding: 3px;
+}
+
+body.admin-v2-mode .admin-theme-btn {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #c4c4c4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+body.admin-v2-mode .admin-theme-btn.is-active {
+    color: #0a0a0a;
+    background: #f4f4f4;
+}
+
+body.admin-v2-mode .sony-context-strip {
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: var(--sony-radius);
+    border: 1px solid var(--sony-border);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: var(--sony-shadow);
+}
+
+body.admin-v2-mode .sony-command-box {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+body.admin-v2-mode .sony-command-box input,
+body.admin-v2-mode input,
+body.admin-v2-mode select {
+    min-height: 38px;
+    border-radius: 10px;
+    border: 1px solid #2f2f2f;
+    background: #111;
+    color: #ececec;
+    padding: 0 12px;
+}
+
+body.admin-v2-mode button,
+body.admin-v2-mode a[role='button'] {
+    min-height: 36px;
+    border-radius: 10px;
+    border: 1px solid #353535;
+    background: linear-gradient(180deg, #1f1f1f, #101010);
+    color: #efefef;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+body.admin-v2-mode button:hover,
+body.admin-v2-mode a[role='button']:hover {
+    transform: translateY(-1px);
+    border-color: #6b6b6b;
+}
+
+body.admin-v2-mode .admin-section {
+    display: none;
+}
+
+body.admin-v2-mode .admin-section.active {
+    display: block;
+    animation: fadeSlideIn 0.24s ease;
+}
+
+body.admin-v2-mode .sony-grid {
+    display: grid;
+    gap: var(--sony-grid-gap);
+    margin-bottom: var(--sony-grid-gap);
+}
+
+body.admin-v2-mode .sony-grid-kpi {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+body.admin-v2-mode .sony-grid-kpi.slim {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+body.admin-v2-mode .sony-grid-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.admin-v2-mode .sony-grid-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.admin-v2-mode .sony-kpi,
+body.admin-v2-mode .sony-panel {
+    border-radius: var(--sony-radius);
+    border: 1px solid var(--sony-border);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+    box-shadow: var(--sony-shadow);
+}
+
+body.admin-v2-mode .sony-kpi {
+    padding: 14px;
+}
+
+body.admin-v2-mode .sony-kpi h3,
+body.admin-v2-mode .sony-kpi h4 {
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #c5c5c5;
+}
+
+body.admin-v2-mode .sony-kpi strong {
+    font-size: 1.35rem;
+    font-family: 'FrauncesSoft', serif;
+}
+
+body.admin-v2-mode .sony-panel {
+    padding: 14px;
+}
+
+body.admin-v2-mode .sony-panel.soft {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+body.admin-v2-mode .sony-panel header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+body.admin-v2-mode .sony-panel-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+body.admin-v2-mode .sony-panel-stats div {
+    border: 1px solid #2d2d2d;
+    border-radius: 10px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+body.admin-v2-mode .sony-panel-stats span {
+    display: block;
+    color: #bebebe;
+    font-size: 0.74rem;
+    margin-bottom: 2px;
+}
+
+body.admin-v2-mode .sony-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 7px;
+}
+
+body.admin-v2-mode .sony-list li {
+    border: 1px solid #2d2d2d;
+    border-radius: 8px;
+    padding: 7px 9px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.82rem;
+}
+
+body.admin-v2-mode .toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 9px;
+}
+
+body.admin-v2-mode .toolbar-row.slim {
+    font-size: 0.82rem;
+    color: var(--sony-muted);
+}
+
+body.admin-v2-mode .toolbar-group {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+
+body.admin-v2-mode .toolbar-group.wrap {
+    flex-wrap: wrap;
+}
+
+body.admin-v2-mode .table-scroll {
+    overflow: auto;
+    border: 1px solid #2b2b2b;
+    border-radius: 10px;
+}
+
+body.admin-v2-mode .sony-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+
+body.admin-v2-mode .sony-table th,
+body.admin-v2-mode .sony-table td {
+    border-bottom: 1px solid #282828;
+    padding: 9px;
+    text-align: left;
+    vertical-align: top;
+}
+
+body.admin-v2-mode .sony-table thead th {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #bbb;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+body.admin-v2-mode .table-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+body.admin-v2-mode .callbacks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+}
+
+body.admin-v2-mode .callback-card {
+    border: 1px solid #2d2d2d;
+    border-radius: 11px;
+    padding: 11px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+body.admin-v2-mode .callback-card.pendiente {
+    border-color: #66521f;
+    box-shadow: inset 0 0 0 1px rgba(239, 177, 63, 0.2);
+}
+
+body.admin-v2-mode .callback-card.contactado {
+    border-color: #1f5f45;
+    box-shadow: inset 0 0 0 1px rgba(42, 192, 128, 0.18);
+}
+
+body.admin-v2-mode .callback-card header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+body.admin-v2-mode .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+body.admin-v2-mode .review-card {
+    border-radius: 10px;
+    border: 1px solid #2e2e2e;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px;
+}
+
+body.admin-v2-mode .review-card header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+body.admin-v2-mode .availability-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+body.admin-v2-mode .calendar-day {
+    border: 1px solid #2f2f2f;
+    border-radius: 10px;
+    min-height: 68px;
+    padding: 8px;
+    background: #0f0f0f;
+    color: #ececec;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 0.8rem;
+}
+
+body.admin-v2-mode .calendar-day.other-month {
+    opacity: 0.45;
+}
+
+body.admin-v2-mode .calendar-day.has-slots {
+    border-color: #4e4e4e;
+}
+
+body.admin-v2-mode .calendar-day.is-selected {
+    border-color: #f0f0f0;
+    box-shadow: inset 0 0 0 1px #f0f0f0;
+}
+
+body.admin-v2-mode .availability-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+body.admin-v2-mode .slot-presets,
+body.admin-v2-mode .add-slot-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+body.admin-v2-mode .time-slots-list {
+    display: grid;
+    gap: 8px;
+}
+
+body.admin-v2-mode .time-slot-item {
+    border: 1px solid #2d2d2d;
+    border-radius: 8px;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+body.admin-v2-mode #queueSensitiveConfirmDialog {
+    border: 1px solid #404040;
+    border-radius: 12px;
+    background: #101010;
+    color: #f1f1f1;
+    max-width: 430px;
+    width: 92%;
+}
+
+body.admin-v2-mode #queueSensitiveConfirmDialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+body.admin-v2-mode .toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 2000;
+    display: grid;
+    gap: 8px;
+}
+
+body.admin-v2-mode .toast {
+    min-width: 250px;
+    border-radius: 10px;
+    border: 1px solid #2f2f2f;
+    background: #121212;
+    color: #f2f2f2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    box-shadow: var(--sony-shadow);
+}
+
+body.admin-v2-mode .toast.success {
+    border-color: #267d5a;
+}
+
+body.admin-v2-mode .toast.warning {
+    border-color: #8c6b27;
+}
+
+body.admin-v2-mode .toast.error {
+    border-color: #8f3737;
+}
+
+body.admin-v2-mode .toast-close {
+    min-height: 26px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    padding: 0 8px;
+}
+
+body.admin-v2-mode .sony-login-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    grid-template-columns: minmax(0, 430px);
+    gap: 12px;
+    padding: 20px;
+}
+
+body.admin-v2-mode .sony-login-brand {
+    text-align: center;
+}
+
+body.admin-v2-mode .sony-login-brand h1 {
+    margin: 8px 0;
+    font-family: 'FrauncesSoft', serif;
+    font-size: 2.1rem;
+    letter-spacing: 0.02em;
+}
+
+body.admin-v2-mode .sony-kicker {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.72rem;
+    color: #b4b4b4;
+}
+
+body.admin-v2-mode .sony-login-form {
+    width: 100%;
+    border: 1px solid #2f2f2f;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+    box-shadow: var(--sony-shadow);
+}
+
+body.admin-v2-mode .icon {
+    width: 17px;
+    height: 17px;
+    fill: currentColor;
+}
+
+body.admin-v2-mode .admin-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: 0;
+    z-index: 11;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 1200px) {
+    body.admin-v2-mode .sony-grid-kpi {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    body.admin-v2-mode .sony-grid-three {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1024px) {
+    body.admin-v2-mode .admin-dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    body.admin-v2-mode .admin-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: translateX(-104%);
+        transition: transform 0.2s ease;
+        width: 290px;
+        z-index: 20;
+    }
+
+    body.admin-v2-mode .admin-sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    body.admin-v2-mode .admin-header {
+        grid-template-columns: 1fr;
+    }
+
+    body.admin-v2-mode .availability-detail-grid,
+    body.admin-v2-mode .sony-grid-two,
+    body.admin-v2-mode .sony-grid-three {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    body.admin-v2-mode .admin-main {
+        padding: 12px;
+    }
+
+    body.admin-v2-mode .sony-grid-kpi,
+    body.admin-v2-mode .sony-grid-kpi.slim {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body.admin-v2-mode .sony-list li,
+    body.admin-v2-mode .toolbar-row,
+    body.admin-v2-mode .table-actions {
+        font-size: 0.78rem;
+    }
+
+    body.admin-v2-mode .sony-login-brand h1 {
+        font-size: 1.8rem;
+    }
+}
