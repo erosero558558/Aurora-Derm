@@ -222,13 +222,6 @@ test('deploy-hosting aplica politica bloqueante de staging antes de produccion',
         'dispatch_public_cutover_monitor',
         'enable_public_v4_rollout_monitor',
         'public_v4_rollout_stage',
-        'public_v4_rollout_surface_test',
-        'public_v4_rollout_surface_control',
-        'public_v4_rollout_min_view_booking',
-        'public_v4_rollout_min_start_checkout',
-        'public_v4_rollout_max_confirmed_drop_pp',
-        'public_v4_rollout_min_confirmed_rate_pct',
-        'public_v4_rollout_allow_missing_control',
     ]) {
         assert.equal(
             Object.prototype.hasOwnProperty.call(inputs, inputName),

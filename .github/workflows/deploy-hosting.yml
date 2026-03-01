@@ -81,41 +81,6 @@ on:
                 required: false
                 default: 'canary'
                 type: string
-            public_v4_rollout_surface_test:
-                description: 'Superficie test para rollout publico V4'
-                required: false
-                default: 'v4'
-                type: string
-            public_v4_rollout_surface_control:
-                description: 'Superficie control para rollout publico V4'
-                required: false
-                default: 'legacy'
-                type: string
-            public_v4_rollout_min_view_booking:
-                description: 'Minimo de view_booking por superficie para evaluar rollout'
-                required: false
-                default: '20'
-                type: string
-            public_v4_rollout_min_start_checkout:
-                description: 'Minimo de start_checkout por superficie para evaluar rollout'
-                required: false
-                default: '10'
-                type: string
-            public_v4_rollout_max_confirmed_drop_pp:
-                description: 'Drop maximo permitido (pp) en confirmed_rate test vs control'
-                required: false
-                default: '8'
-                type: string
-            public_v4_rollout_min_confirmed_rate_pct:
-                description: 'Tasa minima de confirmed (%) para superficie test'
-                required: false
-                default: '20'
-                type: string
-            public_v4_rollout_allow_missing_control:
-                description: 'Permitir ausencia de data para superficie control'
-                required: false
-                default: false
-                type: boolean
             run_postdeploy_fast:
                 description: 'Disparar post-deploy-fast al finalizar deploy'
                 required: false
