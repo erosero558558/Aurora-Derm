@@ -36,7 +36,24 @@ $sectionsToExtract = [
 ];
 
 $extractedContent = [];
+$existingContent = [];
+$runtimeSectionIds = [
+    'videoModal',
+    'paymentModal',
+    'successModal',
+    'rescheduleModal',
+    'reviewModal',
+    'chatbotWidget',
+    'cookieBanner',
+];
 $modified = false;
+
+if (file_exists($outputJson)) {
+    $decoded = json_decode((string) file_get_contents($outputJson), true);
+    if (is_array($decoded)) {
+        $existingContent = $decoded;
+    }
+}
 
 foreach ($sectionsToExtract as $id) {
     $element = $dom->getElementById($id);
@@ -50,7 +67,20 @@ foreach ($sectionsToExtract as $id) {
         // Clean up artifacts if any (like xml declaration)
         $innerHTML = str_replace('<?xml encoding="UTF-8">', '', $innerHTML);
 
-        $extractedContent[$id] = trim($innerHTML);
+        $innerHTML = trim($innerHTML);
+
+        // If the source HTML already contains deferred placeholders, preserve the
+        // last non-empty runtime payload instead of overwriting it with blanks.
+        if (
+            $innerHTML === '' &&
+            in_array($id, $runtimeSectionIds, true) &&
+            isset($existingContent[$id]) &&
+            trim((string) $existingContent[$id]) !== ''
+        ) {
+            $innerHTML = trim((string) $existingContent[$id]);
+        }
+
+        $extractedContent[$id] = $innerHTML;
 
         // Empty the element content but keep attributes
         while ($element->hasChildNodes()) {
