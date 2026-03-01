@@ -1,0 +1,93 @@
+name: Diagnose Host Connectivity
+
+on:
+    workflow_dispatch:
+        inputs:
+            ports:
+                description: 'CSV de puertos a validar'
+                required: false
+                default: '21,22,990,2121,2222,65002,21098,22022,22222,10022,7822,443'
+                type: string
+
+permissions:
+    contents: read
+
+jobs:
+    diagnose:
+        name: Diagnosticar conectividad deploy host
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        env:
+            PORTS_INPUT: ${{ github.event.inputs.ports || '21,22,990,2121,2222,65002,21098,22022,22222,10022,7822,443' }}
+            SSH_HOST_SECRET: ${{ secrets.SSH_HOST }}
+            FTP_SERVER_SECRET: ${{ secrets.FTP_SERVER }}
+            SSH_HOST_VAR: ${{ vars.SSH_HOST || '' }}
+            FTP_SERVER_VAR: ${{ vars.FTP_SERVER || '' }}
+        steps:
+            - name: Diagnosticar puertos por origen de host
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  normalize_ports() {
+                    local csv="$1"
+                    echo "$csv" | tr ',' '\n' | tr -d ' ' | awk 'NF>0' | sort -u
+                  }
+
+                  resolve_host() {
+                    local host="$1"
+                    getent hosts "$host" 2>/dev/null | awk '{print $1}' | sort -u | paste -sd ',' -
+                  }
+
+                  check_ports() {
+                    local label="$1"
+                    local host="$2"
+
+                    if [ -z "$host" ]; then
+                      echo "- ${label}: host vacío"
+                      return 0
+                    fi
+
+                    local ips
+                    ips="$(resolve_host "$host" || true)"
+                    if [ -z "$ips" ]; then
+                      ips="no-resuelve"
+                    fi
+
+                    echo "- ${label}: host detectado, ips=${ips}"
+
+                    local opened=""
+                    while IFS= read -r port; do
+                      if timeout 3 bash -c "cat < /dev/null > /dev/tcp/${host}/${port}" 2>/dev/null; then
+                        echo "  - port ${port}: OPEN"
+                        opened="${opened}${port},"
+                      else
+                        echo "  - port ${port}: closed"
+                      fi
+                    done < <(normalize_ports "$PORTS_INPUT")
+
+                    if [ -n "$opened" ]; then
+                      echo "  - resumen: abiertos => ${opened%,}"
+                    else
+                      echo "  - resumen: sin puertos abiertos en la lista"
+                    fi
+                  }
+
+                  {
+                    echo "## Diagnostico de conectividad"
+                    echo "- timestamp_utc: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+                    echo "- ports_input: ${PORTS_INPUT}"
+                    echo ""
+                    check_ports "secrets.SSH_HOST" "${SSH_HOST_SECRET}"
+                    check_ports "secrets.FTP_SERVER" "${FTP_SERVER_SECRET}"
+                    check_ports "vars.SSH_HOST" "${SSH_HOST_VAR}"
+                    check_ports "vars.FTP_SERVER" "${FTP_SERVER_VAR}"
+                  } | tee connectivity-report.txt
+
+            - name: Publicar reporte
+              uses: actions/upload-artifact@v4
+              with:
+                  name: connectivity-report
+                  path: connectivity-report.txt
+                  if-no-files-found: warn
+                  retention-days: 7
