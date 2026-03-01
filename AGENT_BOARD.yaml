@@ -6,8 +6,8 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 325
-  updated_at: 2026-02-28
+  revision: 327
+  updated_at: 2026-03-01
 
 tasks:
   - id: AG-001
@@ -4084,10 +4084,10 @@ tasks:
     status_since_at: "2026-02-26T19:11:51.548Z"
     risk: medium
     scope: frontend-admin
-    codex_instance: codex_frontend
-    domain_lane: frontend_content
-    lane_lock: strict
-    cross_domain: false
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: handoff_allowed
+    cross_domain: true
     files: ["src/apps/admin/modules/queue.js", "src/apps/admin/index.js", "admin.js", "tests/admin-queue.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -4109,10 +4109,10 @@ tasks:
     acceptance: "Turnero sala K: consola operativa admin (historial + watchdog + atajos de estado)"
     acceptance_ref: "verification/agent-runs/AG-107.md"
     evidence_ref: "verification/agent-runs/AG-107.md"
-    depends_on: ["AG-106"]
+    depends_on: ["AG-106", "CDX-001"]
     prompt: "Turnero sala K: consola operativa admin (historial + watchdog + atajos de estado)"
     created_at: 2026-02-26
-    updated_at: 2026-02-26
+    updated_at: 2026-03-01
 
   - id: AG-108
     title: "Turnero sala L: hardening realtime kiosco+TV (watchdog + health state)"
@@ -4464,10 +4464,10 @@ tasks:
     status_since_at: "2026-02-27T04:52:10.877Z"
     risk: high
     scope: frontend-admin
-    codex_instance: codex_frontend
-    domain_lane: frontend_content
-    lane_lock: strict
-    cross_domain: false
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: handoff_allowed
+    cross_domain: true
     files: ["src/apps/admin/modules/queue.js", "src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "queue-kiosk.css", "queue-display.css", "admin.css", "tests/admin-queue.spec.js", "tests/queue-kiosk.spec.js", "tests/queue-display.spec.js", "tests/queue-integrated-flow.spec.js", "docs/RUNBOOK_TURNERO_SALA.md", "PLAN_MAESTRO_2026_STATUS.md", "verification/agent-runs/AG-117.md"]
     source_signal: manual
     source_ref: ""
@@ -4489,10 +4489,10 @@ tasks:
     acceptance: "Se implementan en un bloque: hardening de impresion, continuidad operativa, observabilidad funcional, mejoras A11y/perf, QA de estres y cierre documental de produccion"
     acceptance_ref: "verification/agent-runs/AG-117.md"
     evidence_ref: "verification/agent-runs/AG-117.md"
-    depends_on: ["AG-116"]
+    depends_on: ["AG-116", "CDX-001"]
     prompt: "Ejecutar 6 frentes del turnero en 1 bloque: impresora/reprint, recovery robusto, observabilidad, A11y+performance, stress QA, cierre runbook"
     created_at: 2026-02-27
-    updated_at: 2026-02-27
+    updated_at: 2026-03-01
 
   - id: AG-118
     title: "Turnero sala V: numpad por estacion C1/C2 en admin queue"
@@ -5177,3 +5177,41 @@ tasks:
     prompt: "Turnero sala XVII: lock estricto C1/C2 + seguridad numpad en admin"
     created_at: 2026-02-28
     updated_at: 2026-02-28
+
+  - id: AG-136
+    title: "Sony V3 public cutover"
+    owner: ernes
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-01T11:10:35.637Z"
+    risk: high
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/astro/src", "src/apps/astro/scripts/sync-dist.mjs", "js/public-v2-shell.js", "index.html", "telemedicina.html", "styles.css", "styles-deferred.css", "styles-astro.css"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-136_20260301111035637_6b6f29"
+    lease_owner: "ernes"
+    lease_created_at: "2026-03-01T11:10:35.637Z"
+    heartbeat_at: "2026-03-01T11:10:35.637Z"
+    lease_expires_at: "2026-03-01T15:10:35.637Z"
+    lease_reason: "board_write"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Sony V3 public cutover"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Sony V3 public cutover"
+    created_at: 2026-03-01
+    updated_at: 2026-03-01

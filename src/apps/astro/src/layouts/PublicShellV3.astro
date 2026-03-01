@@ -1,0 +1,73 @@
+---
+import '../styles/public-v3.css';
+import '../styles/public-v3-motion.css';
+import PublicNavBarV3 from '../components/public-v3/PublicNavBarV3.astro';
+import PublicFooterV3 from '../components/public-v3/PublicFooterV3.astro';
+import LegacyRuntimeBridgeV3 from '../components/public-v3/LegacyRuntimeBridgeV3.astro';
+
+const {
+    title = 'Piel en Armonia',
+    description = '',
+    locale = 'es',
+    canonicalPath = '/es/',
+    alternatePath = '/en/',
+    pathname = '/es/',
+    navModel,
+    compatServiceBookingHref = '',
+} = Astro.props;
+
+const origin = 'https://pielarmonia.com';
+const canonical = new URL(canonicalPath, origin).toString();
+const alternate = new URL(alternatePath, origin).toString();
+const xDefault = locale === 'en' ? alternate : canonical;
+const compatBookingHref = locale === 'en' ? '/en/#citas' : '/es/#citas';
+const compatSwitchHref = navModel?.switchHref || alternatePath;
+---
+
+<!doctype html>
+<html lang={locale}>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <meta name="robots" content="index,follow,max-image-preview:large" />
+        <link rel="canonical" href={canonical} />
+        <link rel="alternate" href={alternate} hreflang={locale === 'es' ? 'en' : 'es'} />
+        <link rel="alternate" href={canonical} hreflang={locale} />
+        <link rel="alternate" href={xDefault} hreflang="x-default" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Piel en Armonia" />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content="https://pielarmonia.com/images/optimized/showcase-hero.jpg" />
+        <meta name="theme-color" content="#050608" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="manifest" href="/manifest.json" />
+        <script src="/js/public-v3-shell.js?v=public-v3-shell-20260301-v1" defer></script>
+        <script src="/js/service-navigation-analytics.js?v=service-analytics-20260301-v4" defer></script>
+    </head>
+    <body data-public-shell data-public-shell-version="v3" data-public-surface={pathname}>
+        <a class="public-skip-link" href="#main-content">{locale === 'en' ? 'Skip to content' : 'Saltar al contenido'}</a>
+        <div hidden aria-hidden="true" data-public-contract-links>
+            <a class="public-contract-link nav-sony-lang-compat" href={compatSwitchHref}>
+                {locale === 'en' ? 'Spanish route bridge' : 'English route bridge'}
+            </a>
+            <a class="public-contract-link public-contract-link--booking" href={compatBookingHref}>
+                {locale === 'en' ? 'Localized booking bridge' : 'Puente de reserva localizada'}
+            </a>
+            {compatServiceBookingHref ? (
+                <a class="public-contract-link public-contract-link--service" href={compatServiceBookingHref}>
+                    {locale === 'en' ? 'Service booking hint bridge' : 'Puente de service hint'}
+                </a>
+            ) : null}
+        </div>
+        <PublicNavBarV3 navModel={navModel} />
+        <main id="main-content">
+            <slot />
+        </main>
+        <PublicFooterV3 locale={locale} footer={navModel.footer} />
+        <LegacyRuntimeBridgeV3 locale={locale} />
+    </body>
+</html>

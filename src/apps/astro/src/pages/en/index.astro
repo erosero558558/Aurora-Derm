@@ -1,26 +1,27 @@
----
-import PublicShellV2 from '../../layouts/PublicShellV2.astro';
-import HeroStageCarouselV2 from '../../components/public-v2/HeroStageCarouselV2.astro';
-import LatestNewsStripV2 from '../../components/public-v2/LatestNewsStripV2.astro';
-import FeaturedStorySplitV2 from '../../components/public-v2/FeaturedStorySplitV2.astro';
-import ProgramFamilyGridV2 from '../../components/public-v2/ProgramFamilyGridV2.astro';
-import TelemedicineExperienceBandV2 from '../../components/public-v2/TelemedicineExperienceBandV2.astro';
-import DoctorAuthorityBandV2 from '../../components/public-v2/DoctorAuthorityBandV2.astro';
-import BookingBridgeBandV2 from '../../components/public-v2/BookingBridgeBandV2.astro';
-import { getHomeV2Data, getPublicNavigationModel } from '../../lib/public-v2.js';
+﻿---
+import PublicShellV3 from '../../layouts/PublicShellV3.astro';
+import HeroStageCarouselV3 from '../../components/public-v3/HeroStageCarouselV3.astro';
+import LatestNewsStripV3 from '../../components/public-v3/LatestNewsStripV3.astro';
+import FeaturedStorySplitV3 from '../../components/public-v3/FeaturedStorySplitV3.astro';
+import ProgramFamilyGridV3 from '../../components/public-v3/ProgramFamilyGridV3.astro';
+import TelemedicineExperienceBandV3 from '../../components/public-v3/TelemedicineExperienceBandV3.astro';
+import DoctorAuthorityBandV3 from '../../components/public-v3/DoctorAuthorityBandV3.astro';
+import BookingBridgeBandV3 from '../../components/public-v3/BookingBridgeBandV3.astro';
+import { getHomeV3Data, getPublicNavigationModel } from '../../lib/public-v3.js';
 
 const locale = 'en';
 const pathname = '/en/';
-const page = getHomeV2Data(locale);
+const page = getHomeV3Data(locale);
 const navModel = getPublicNavigationModel(locale, pathname);
 ---
 
-<PublicShellV2 title={page.title} description={page.description} locale={locale} canonicalPath="/en/" alternatePath="/es/" pathname={pathname} navModel={navModel}>
-    <HeroStageCarouselV2 slides={page.slides} locale={locale} />
-    <LatestNewsStripV2 items={page.latest} locale={locale} />
-    <FeaturedStorySplitV2 stories={page.featuredStories} locale={locale} />
-    <ProgramFamilyGridV2 families={page.families} locale={locale} />
-    <TelemedicineExperienceBandV2 eyebrow={page.telemedicine.eyebrow} title={page.telemedicine.title} deck={page.telemedicine.deck} points={page.telemedicine.points} href={page.telemedicine.href} locale={locale} />
-    <DoctorAuthorityBandV2 doctors={page.doctors} locale={locale} />
-    <BookingBridgeBandV2 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} locale={locale} />
-</PublicShellV2>
+<PublicShellV3 title={page.title} description={page.description} locale={locale} canonicalPath="/en/" alternatePath="/es/" pathname={pathname} navModel={navModel}>
+    <HeroStageCarouselV3 slides={page.slides} locale={locale} />
+    <LatestNewsStripV3 items={page.latest} locale={locale} />
+    <FeaturedStorySplitV3 stories={page.featuredStories} locale={locale} />
+    <ProgramFamilyGridV3 families={page.families} locale={locale} />
+    <TelemedicineExperienceBandV3 eyebrow={page.telemedicine.eyebrow} title={page.telemedicine.title} deck={page.telemedicine.deck} points={page.telemedicine.points} href={page.telemedicine.href} tone={page.telemedicine.tone} locale={locale} />
+    <DoctorAuthorityBandV3 doctors={page.doctors} locale={locale} />
+    <BookingBridgeBandV3 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
+</PublicShellV3>
+

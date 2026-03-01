@@ -1,12 +1,12 @@
----
-import PublicShellV2 from '../../../layouts/PublicShellV2.astro';
-import ServiceHeroV2 from '../../../components/public-v2/ServiceHeroV2.astro';
-import ServiceStoryLayoutV2 from '../../../components/public-v2/ServiceStoryLayoutV2.astro';
-import ServiceEvidencePanelV2 from '../../../components/public-v2/ServiceEvidencePanelV2.astro';
-import ServiceTimelineV2 from '../../../components/public-v2/ServiceTimelineV2.astro';
-import RelatedProgramsV2 from '../../../components/public-v2/RelatedProgramsV2.astro';
-import BookingBridgeBandV2 from '../../../components/public-v2/BookingBridgeBandV2.astro';
-import { getPublicNavigationModel, getServiceDetailV2Data } from '../../../lib/public-v2.js';
+﻿---
+import PublicShellV3 from '../../../layouts/PublicShellV3.astro';
+import ServiceHeroV3 from '../../../components/public-v3/ServiceHeroV3.astro';
+import ServiceStoryLayoutV3 from '../../../components/public-v3/ServiceStoryLayoutV3.astro';
+import ServiceEvidencePanelV3 from '../../../components/public-v3/ServiceEvidencePanelV3.astro';
+import ServiceTimelineV3 from '../../../components/public-v3/ServiceTimelineV3.astro';
+import RelatedProgramsV3 from '../../../components/public-v3/RelatedProgramsV3.astro';
+import BookingBridgeBandV3 from '../../../components/public-v3/BookingBridgeBandV3.astro';
+import { getPublicNavigationModel, getServiceDetailV3Data } from '../../../lib/public-v3.js';
 import { getServices, servicePath } from '../../../lib/content.js';
 
 export async function getStaticPaths() {
@@ -15,17 +15,18 @@ export async function getStaticPaths() {
 
 const locale = 'en';
 const { slug } = Astro.params;
-const page = getServiceDetailV2Data(slug, locale);
+const page = getServiceDetailV3Data(slug, locale);
 if (!page) throw new Error(`Service not found: ${slug}`);
 const pathname = servicePath(locale, slug);
 const navModel = getPublicNavigationModel(locale, pathname);
 ---
 
-<PublicShellV2 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath={servicePath('es', slug)} pathname={pathname} navModel={navModel}>
-    <ServiceHeroV2 hero={page.hero} locale={locale} />
-    <ServiceStoryLayoutV2 story={page.story} locale={locale} />
-    <ServiceEvidencePanelV2 evidence={page.evidence} locale={locale} />
-    <ServiceTimelineV2 timeline={page.timeline} />
-    <RelatedProgramsV2 items={page.related} locale={locale} />
-    <BookingBridgeBandV2 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} locale={locale} />
-</PublicShellV2>
+<PublicShellV3 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath={servicePath('es', slug)} pathname={pathname} navModel={navModel} compatServiceBookingHref={`${pathname}?service=${encodeURIComponent(page.booking.serviceHint)}#citas`}>
+    <ServiceHeroV3 hero={page.hero} locale={locale} />
+    <ServiceStoryLayoutV3 story={page.story} locale={locale} />
+    <ServiceEvidencePanelV3 evidence={page.evidence} locale={locale} />
+    <ServiceTimelineV3 timeline={page.timeline} />
+    <RelatedProgramsV3 items={page.related} locale={locale} />
+    <BookingBridgeBandV3 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
+</PublicShellV3>
+

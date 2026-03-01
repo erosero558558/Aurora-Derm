@@ -1,0 +1,23 @@
+﻿---
+const { items = [], locale = 'es' } = Astro.props;
+---
+
+<section class="related-programs-v3" data-related-programs>
+    <div class="doctor-band__head">
+        <p>{locale === 'en' ? 'Related programmes' : 'Programas relacionados'}</p>
+        <h2>{locale === 'en' ? 'Neighbouring routes inside the same care system.' : 'Rutas vecinas dentro del mismo sistema de cuidado.'}</h2>
+    </div>
+    <div class="related-programs-v3__grid">
+        {
+            items.map((item) => (
+                <article class="service-card-v3">
+                    <p>{item.label}</p>
+                    <h3>{item.title}</h3>
+                    <p>{item.deck}</p>
+                    <a href={item.href} class="public-link-arrow">{item.cta}</a>
+                </article>
+            ))
+        }
+    </div>
+</section>
+

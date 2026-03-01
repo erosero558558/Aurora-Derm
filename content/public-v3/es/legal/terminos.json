@@ -1,0 +1,39 @@
+{
+    "title": "Terminos y condiciones",
+    "description": "Marco operativo de reservas, pagos, soporte y uso del sitio publico.",
+    "heading": "Terminos y condiciones",
+    "summary": "Esta pagina explica como se organiza la reserva, la validacion operativa y la continuidad del cuidado dentro del sitio publico.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Reserva",
+            "title": "La cita se confirma con agenda, datos y validacion operativa.",
+            "body": "Cada servicio puede requerir soporte adicional, pago o confirmacion manual segun modalidad y disponibilidad real."
+        },
+        {
+            "eyebrow": "Cambios",
+            "title": "Reprogramacion y cancelacion siguen una politica publica visible.",
+            "body": "La anticipacion, la disponibilidad viva y el estado del pago definen el siguiente paso."
+        }
+    ],
+    "sections": [
+        {
+            "title": "Alcance del servicio",
+            "body": "El sitio organiza informacion publica, rutas de servicio y reserva para consulta presencial o telemedicina.",
+            "items": [
+                "Los precios publicados pueden ser referenciales o de entrada.",
+                "La indicacion final depende de valoracion medica.",
+                "La modalidad puede cambiar por criterio clinico."
+            ]
+        },
+        {
+            "title": "Reservas y pagos",
+            "body": "La continuidad del booking depende de agenda viva, metodo de pago y validacion del caso.",
+            "items": [
+                "La disponibilidad puede cerrarse si otra reserva confirma antes.",
+                "Los requisitos previos se informan antes de confirmar.",
+                "Las politicas de no show y reembolso aplican segun canal y caso."
+            ]
+        }
+    ]
+}

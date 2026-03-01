@@ -1,0 +1,71 @@
+﻿---
+const { slides = [], locale = 'es' } = Astro.props;
+function stageSurface(id, action) {
+    const stageId = String(id || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    return `stage_${stageId || 'slide'}_${action}`;
+}
+
+function stageMediaSrc(slide) {
+    if (slide?.media && typeof slide.media === 'object') {
+        return String(slide.media.src || '').trim();
+    }
+    return String(slide?.mediaSrc || slide?.media || '').trim();
+}
+
+function stageMediaAlt(slide) {
+    if (slide?.media && typeof slide.media === 'object') {
+        return String(slide.media.alt || slide.title || '').trim();
+    }
+    return String(slide?.title || '').trim();
+}
+
+function stageEyebrow(slide) {
+    return String(slide?.eyebrow || slide?.category || '').trim();
+}
+---
+
+<section class="hero-stage" data-stage-carousel>
+    <div class="hero-stage__viewport">
+        {
+            slides.map((slide, index) => (
+                <article class:list={['hero-stage__slide', `hero-stage__slide--${slide.tone || 'ink'}`, index === 0 && 'is-active']} data-stage-slide data-stage-tone={slide.tone || 'ink'}>
+                    <img src={stageMediaSrc(slide)} alt={stageMediaAlt(slide)} loading={index === 0 ? 'eager' : 'lazy'} />
+                    <div class="hero-stage__overlay">
+                        <p class="hero-stage__category">{stageEyebrow(slide)}</p>
+                        <h1>{slide.title}</h1>
+                        <p>{slide.deck}</p>
+                        {
+                            Array.isArray(slide.stats) && slide.stats.length ? (
+                                <ul class="hero-stage__stats" aria-label={locale === 'en' ? 'Stage signals' : 'Senales de stage'}>
+                                    {slide.stats.map((item) => <li>{item}</li>)}
+                                </ul>
+                            ) : null
+                        }
+                        <div class="hero-stage__actions">
+                            <a href={slide.primary.href} class="hero-stage__cta hero-stage__cta--primary" data-analytics-event="open_public_cta" data-entry-surface={stageSurface(slide.id, 'primary')} data-cta-target={slide.primary.target}>{slide.primary.label}</a>
+                            {
+                                slide.secondary?.href ? (
+                                    <a href={slide.secondary.href} class="hero-stage__cta hero-stage__cta--secondary" data-analytics-event="open_public_cta" data-entry-surface={stageSurface(slide.id, 'secondary')} data-cta-target={slide.secondary.target}>{slide.secondary.label}</a>
+                                ) : null
+                            }
+                        </div>
+                    </div>
+                </article>
+            ))
+        }
+    </div>
+    <div class="hero-stage__rail" aria-label={locale === 'en' ? 'Featured stories' : 'Historias destacadas'}>
+        {
+            slides.map((slide, index) => (
+                <button type="button" class:list={['hero-stage__dot', index === 0 && 'is-active']} data-stage-trigger data-index={index}>
+                    <span>{stageEyebrow(slide)}</span>
+                    <strong>{slide.title}</strong>
+                </button>
+            ))
+        }
+    </div>
+</section>
+

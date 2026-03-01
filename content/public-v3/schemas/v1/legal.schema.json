@@ -1,0 +1,67 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/legal.schema.json",
+    "title": "Public V3 Legal Metadata",
+    "type": "object",
+    "required": ["supportBand", "booking", "pageOrder"],
+    "properties": {
+        "supportBand": {
+            "type": "object",
+            "required": ["eyebrow", "title", "deck"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "booking": {
+            "type": "object",
+            "required": [
+                "eyebrow",
+                "title",
+                "deck",
+                "actionLabel",
+                "serviceHint"
+            ],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "actionLabel": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "serviceHint": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "pageOrder": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        }
+    }
+}

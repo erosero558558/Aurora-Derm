@@ -1,0 +1,39 @@
+{
+    "title": "Medical disclaimer",
+    "description": "Clinical scope of the website, support, and chatbot.",
+    "heading": "Medical disclaimer",
+    "summary": "The public website informs and guides, but it does not replace professional evaluation or final diagnosis.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Guidance",
+            "title": "The website helps define the next step, not diagnose.",
+            "body": "Services, telemedicine, and editorial support move the funnel, but they do not replace medical judgement."
+        },
+        {
+            "eyebrow": "Urgency",
+            "title": "Acute cases require immediate attention outside the website.",
+            "body": "Do not depend on the form or chatbot during an emergency."
+        }
+    ],
+    "sections": [
+        {
+            "title": "Content limits",
+            "body": "Editorial and automated content does not replace individual medical judgement.",
+            "items": [
+                "It is not a prescription or final recommendation.",
+                "It does not guarantee eligibility for a procedure.",
+                "It does not replace physical examination when needed."
+            ]
+        },
+        {
+            "title": "When to escalate",
+            "body": "Intense pain, bleeding, or rapid progression require immediate attention through the right channel.",
+            "items": [
+                "Do not wait for an async website response.",
+                "Use emergency services when appropriate.",
+                "Book follow-up once the acute event is controlled."
+            ]
+        }
+    ]
+}

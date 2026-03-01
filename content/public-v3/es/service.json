@@ -1,0 +1,32 @@
+{
+    "heroTone": "ink",
+    "storyEyebrow": "Programa medico",
+    "storySummary": "Esta ficha se presenta como una capacidad clinica con fit, tiempo, contraindicaciones y continuidad.",
+    "storyTone": "porcelain",
+    "evidenceEyebrow": "Fit y evidencia",
+    "evidenceTitle": "Que suele indicar ajuste, que exige cautela y como se interpreta el siguiente paso.",
+    "evidenceTone": "silver",
+    "evidenceFallbackBullets": [
+        "La indicacion final se confirma en consulta segun piel, objetivos y antecedentes."
+    ],
+    "evidenceOutcomes": [
+        "Lectura clinica inicial",
+        "Secuencia esperada por tipo de tratamiento",
+        "Escalamiento a procedimiento o seguimiento cuando corresponda"
+    ],
+    "timelineEyebrow": "Secuencia de cuidado",
+    "timelineTone": "ink",
+    "timelineSteps": [
+        "Valoracion y confirmacion de ajuste",
+        "Preparacion e indicacion medica",
+        "Tratamiento o seguimiento",
+        "Revision de resultados y continuidad"
+    ],
+    "booking": {
+        "eyebrow": "Reserva",
+        "title": "Conserva la pista del programa y entra al booking existente.",
+        "deck": "La ruta actual mantiene service hint, continuidad de conversion y UI encapsulada dentro del shell V3.",
+        "actionLabel": "Reservar esta ruta",
+        "tone": "silver"
+    }
+}

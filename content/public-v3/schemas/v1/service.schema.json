@@ -1,0 +1,85 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/service.schema.json",
+    "title": "Public V3 Service Section Defaults",
+    "type": "object",
+    "required": [
+        "storyEyebrow",
+        "storySummary",
+        "evidenceEyebrow",
+        "evidenceTitle",
+        "evidenceFallbackBullets",
+        "evidenceOutcomes",
+        "timelineEyebrow",
+        "timelineSteps",
+        "booking"
+    ],
+    "properties": {
+        "storyEyebrow": {
+            "type": "string",
+            "minLength": 1
+        },
+        "storySummary": {
+            "type": "string",
+            "minLength": 1
+        },
+        "evidenceEyebrow": {
+            "type": "string",
+            "minLength": 1
+        },
+        "evidenceTitle": {
+            "type": "string",
+            "minLength": 1
+        },
+        "evidenceFallbackBullets": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "evidenceOutcomes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "timelineEyebrow": {
+            "type": "string",
+            "minLength": 1
+        },
+        "timelineSteps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "booking": {
+            "type": "object",
+            "required": ["eyebrow", "title", "deck", "actionLabel"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "actionLabel": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,224 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/navigation.v2.schema.json",
+    "title": "Public V3 Navigation V2",
+    "type": "object",
+    "required": [
+        "brandEyebrow",
+        "brandLine1",
+        "brandLine2",
+        "labels",
+        "mega",
+        "footer"
+    ],
+    "properties": {
+        "brandEyebrow": {
+            "type": "string",
+            "minLength": 1
+        },
+        "brandLine1": {
+            "type": "string",
+            "minLength": 1
+        },
+        "brandLine2": {
+            "type": "string",
+            "minLength": 1
+        },
+        "labels": {
+            "type": "object",
+            "required": [
+                "home",
+                "services",
+                "telemedicine",
+                "legal",
+                "book",
+                "primaryNav",
+                "featuredServices",
+                "openCatalogue"
+            ],
+            "properties": {
+                "home": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "services": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "telemedicine": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "legal": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "book": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "primaryNav": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "featuredServices": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "openCatalogue": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "mega": {
+            "type": "object",
+            "required": ["intro", "families"],
+            "properties": {
+                "intro": {
+                    "type": "object",
+                    "required": ["eyebrow", "title", "deck"],
+                    "properties": {
+                        "eyebrow": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "title": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "deck": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                },
+                "families": {
+                    "type": "object",
+                    "required": ["clinical", "aesthetic", "children"],
+                    "properties": {
+                        "clinical": {
+                            "type": "object",
+                            "required": ["title", "deck"],
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "minLength": 1
+                                },
+                                "deck": {
+                                    "type": "string",
+                                    "minLength": 1
+                                }
+                            }
+                        },
+                        "aesthetic": {
+                            "type": "object",
+                            "required": ["title", "deck"],
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "minLength": 1
+                                },
+                                "deck": {
+                                    "type": "string",
+                                    "minLength": 1
+                                }
+                            }
+                        },
+                        "children": {
+                            "type": "object",
+                            "required": ["title", "deck"],
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "minLength": 1
+                                },
+                                "deck": {
+                                    "type": "string",
+                                    "minLength": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "footer": {
+            "type": "object",
+            "required": [
+                "eyebrow",
+                "title",
+                "deck",
+                "ctaLabel",
+                "catalogTitle",
+                "careModesTitle",
+                "legalTitle",
+                "clinicTitle",
+                "clinicCity",
+                "clinicPhone",
+                "clinicHours",
+                "catalogClinical",
+                "catalogAesthetic",
+                "catalogChildren"
+            ],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "ctaLabel": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "catalogTitle": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "careModesTitle": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "legalTitle": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "clinicTitle": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "clinicCity": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "clinicPhone": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "clinicHours": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "catalogClinical": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "catalogAesthetic": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "catalogChildren": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        }
+    }
+}

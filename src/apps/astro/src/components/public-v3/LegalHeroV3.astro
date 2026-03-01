@@ -1,0 +1,10 @@
+﻿---
+const { page } = Astro.props;
+---
+
+<section class="legal-hero-v3" data-legal-hero data-section-tone={page.tone || 'porcelain'}>
+    <p>Legal</p>
+    <h1>{page.heading}</h1>
+    <p>{page.summary}</p>
+</section>
+

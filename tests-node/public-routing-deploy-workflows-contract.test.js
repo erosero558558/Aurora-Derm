@@ -257,7 +257,7 @@ test('deploy-hosting aplica politica bloqueante de staging antes de produccion',
     }
 });
 
-test('deploy-hosting publica fallback manual cuando git-sync no materializa Public V2', () => {
+test('deploy-hosting publica fallback manual cuando git-sync no materializa Public V3', () => {
     const { raw, parsed } = loadWorkflow(HOSTING_WORKFLOW_PATH);
     const prodSteps = parsed?.jobs?.['deploy-prod']?.steps || [];
     const prodNames = stepNames(prodSteps);
@@ -269,9 +269,10 @@ test('deploy-hosting publica fallback manual cuando git-sync no materializa Publ
     );
 
     for (const snippet of [
-        'bash ./bin/deploy-public-v2-live.sh',
+        'bash ./bin/deploy-public-v3-live.sh',
         'El script recompone \\`es/\\`, \\`en/\\`, \\`_astro/\\`, valida \\`/usr/sbin/nginx -t\\` y recarga Nginx.',
         'Tambien corrige redirects canonicos para evitar \\`:8080\\` detras de Cloudflare.',
+        'Compat temporal: \\`deploy-public-v2-live.sh\\` existe como shim y delega a V3.',
     ]) {
         assert.equal(
             raw.includes(snippet),
@@ -281,7 +282,7 @@ test('deploy-hosting publica fallback manual cuando git-sync no materializa Publ
     }
 });
 
-test('deploy staging y hosting publican el contrato de aprobacion Public V2 en sus summaries', () => {
+test('deploy staging y hosting publican el contrato de aprobacion Public V3 en sus summaries', () => {
     const { raw: stagingRaw, parsed: stagingParsed } = loadWorkflow(
         STAGING_WORKFLOW_PATH
     );
@@ -333,7 +334,7 @@ test('deploy staging y hosting publican el contrato de aprobacion Public V2 en s
         assert.equal(
             raw.includes(snippet),
             true,
-            `falta contrato de aprobacion Public V2 en ${workflowName}`
+            `falta contrato de aprobacion Public V3 en ${workflowName}`
         );
     }
 });

@@ -1,0 +1,35 @@
+﻿---
+const { families = [], locale = 'es' } = Astro.props;
+---
+
+<section class="services-editorial-grid" data-services-grid>
+    {
+        families.map((family) => (
+            <section class="services-editorial-grid__family" id={`family-${family.id}`} data-family-section={family.id}>
+                <div class="services-editorial-grid__feature">
+                    <img src={family.media} alt={family.label} loading="lazy" />
+                    <div>
+                        <p>{family.label}</p>
+                        <h2>{family.featured.title}</h2>
+                        <p>{family.deck}</p>
+                        <a href={family.featured.href} class="hero-stage__cta hero-stage__cta--primary" data-analytics-event="open_public_cta" data-entry-surface="services_editorial_feature" data-cta-target="service_detail" data-service-slug={family.featured.slug} data-service-category={family.id} data-catalog-category={family.id} data-catalog-intent="all">{family.featured.cta}</a>
+                    </div>
+                </div>
+                <div class="services-editorial-grid__cards">
+                    {
+                        family.cards.map((card) => (
+                            <article class="service-card-v3">
+                                <p>{card.label}</p>
+                                <h3>{card.title}</h3>
+                                <p>{card.deck}</p>
+                                <div class="service-card-v3__meta"><span>{card.duration}</span><span>{`$${card.price}`}</span></div>
+                                <a href={card.href} class="public-link-arrow">{card.cta}</a>
+                            </article>
+                        ))
+                    }
+                </div>
+            </section>
+        ))
+    }
+</section>
+

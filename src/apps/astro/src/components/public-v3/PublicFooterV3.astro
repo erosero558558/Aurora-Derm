@@ -1,0 +1,50 @@
+---
+const { locale = 'es', footer = {} } = Astro.props;
+const serviceHubHref = locale === 'en' ? '/en/services/' : '/es/servicios/';
+const telemedicineHref = locale === 'en' ? '/en/telemedicine/' : '/es/telemedicina/';
+const termsHref = locale === 'en' ? '/en/legal/terms/' : '/es/legal/terminos/';
+const privacyHref = locale === 'en' ? '/en/legal/privacy/' : '/es/legal/privacidad/';
+const cookiesHref = locale === 'en' ? '/en/legal/cookies/' : '/es/legal/cookies/';
+const medicalHref = locale === 'en' ? '/en/legal/medical-disclaimer/' : '/es/legal/aviso-medico/';
+---
+
+<footer class="public-footer" data-public-footer>
+    <div class="public-footer__top">
+        <div>
+            <p class="public-footer__eyebrow">{footer.eyebrow}</p>
+            <h2>{footer.title}</h2>
+            <p>{footer.deck}</p>
+        </div>
+        <a href="#citas" class="public-footer__cta" data-analytics-event="open_public_cta" data-entry-surface="footer_booking" data-cta-target="booking">
+            {footer.ctaLabel}
+        </a>
+    </div>
+    <div class="public-footer__grid">
+        <div>
+            <h3>{footer.catalogTitle}</h3>
+            <a href={serviceHubHref}>{locale === 'en' ? 'Services' : 'Servicios'}</a>
+            <a href={`${serviceHubHref}?category=clinical`}>{footer.catalogClinical}</a>
+            <a href={`${serviceHubHref}?category=aesthetic`}>{footer.catalogAesthetic}</a>
+            <a href={`${serviceHubHref}?category=children`}>{footer.catalogChildren}</a>
+        </div>
+        <div>
+            <h3>{footer.careModesTitle}</h3>
+            <a href={telemedicineHref}>{locale === 'en' ? 'Telemedicine' : 'Telemedicina'}</a>
+            <a href="#citas">{locale === 'en' ? 'Booking' : 'Reserva'}</a>
+            <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </div>
+        <div>
+            <h3>{footer.legalTitle}</h3>
+            <a href={termsHref}>{locale === 'en' ? 'Terms' : 'Terminos'}</a>
+            <a href={privacyHref}>{locale === 'en' ? 'Privacy' : 'Privacidad'}</a>
+            <a href={cookiesHref}>Cookies</a>
+            <a href={medicalHref}>{locale === 'en' ? 'Medical disclaimer' : 'Aviso medico'}</a>
+        </div>
+        <div>
+            <h3>{footer.clinicTitle}</h3>
+            <p>{footer.clinicCity}</p>
+            <p>{footer.clinicPhone}</p>
+            <p>{footer.clinicHours}</p>
+        </div>
+    </div>
+</footer>

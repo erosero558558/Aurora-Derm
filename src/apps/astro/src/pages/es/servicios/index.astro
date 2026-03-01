@@ -1,24 +1,25 @@
----
-import PublicShellV2 from '../../../layouts/PublicShellV2.astro';
-import HubHeroV2 from '../../../components/public-v2/HubHeroV2.astro';
-import FamilyTabsV2 from '../../../components/public-v2/FamilyTabsV2.astro';
-import FeaturedFamilyStoryV2 from '../../../components/public-v2/FeaturedFamilyStoryV2.astro';
-import ServicesEditorialGridV2 from '../../../components/public-v2/ServicesEditorialGridV2.astro';
-import TelemedicineExperienceBandV2 from '../../../components/public-v2/TelemedicineExperienceBandV2.astro';
-import BookingBridgeBandV2 from '../../../components/public-v2/BookingBridgeBandV2.astro';
-import { getHubV2Data, getPublicNavigationModel } from '../../../lib/public-v2.js';
+﻿---
+import PublicShellV3 from '../../../layouts/PublicShellV3.astro';
+import HubHeroV3 from '../../../components/public-v3/HubHeroV3.astro';
+import FamilyTabsV3 from '../../../components/public-v3/FamilyTabsV3.astro';
+import FeaturedFamilyStoryV3 from '../../../components/public-v3/FeaturedFamilyStoryV3.astro';
+import ServicesEditorialGridV3 from '../../../components/public-v3/ServicesEditorialGridV3.astro';
+import TelemedicineExperienceBandV3 from '../../../components/public-v3/TelemedicineExperienceBandV3.astro';
+import BookingBridgeBandV3 from '../../../components/public-v3/BookingBridgeBandV3.astro';
+import { getHubV3Data, getPublicNavigationModel } from '../../../lib/public-v3.js';
 
 const locale = 'es';
 const pathname = '/es/servicios/';
-const page = getHubV2Data(locale);
+const page = getHubV3Data(locale);
 const navModel = getPublicNavigationModel(locale, pathname);
 ---
 
-<PublicShellV2 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath="/en/services/" pathname={pathname} navModel={navModel}>
-    <HubHeroV2 hero={page.hero} />
-    <FamilyTabsV2 families={page.families} />
-    <FeaturedFamilyStoryV2 families={page.families.slice(0, 2)} />
-    <ServicesEditorialGridV2 families={page.families} locale={locale} />
-    <TelemedicineExperienceBandV2 eyebrow={page.telemedicine.eyebrow} title={page.telemedicine.title} deck={page.telemedicine.deck} points={[page.telemedicine.deck]} href={page.telemedicine.href} locale={locale} />
-    <BookingBridgeBandV2 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} locale={locale} />
-</PublicShellV2>
+<PublicShellV3 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath="/en/services/" pathname={pathname} navModel={navModel}>
+    <HubHeroV3 hero={page.hero} />
+    <FamilyTabsV3 families={page.families} />
+    <FeaturedFamilyStoryV3 families={page.families.slice(0, 2)} />
+    <ServicesEditorialGridV3 families={page.families} locale={locale} />
+    <TelemedicineExperienceBandV3 eyebrow={page.telemedicine.eyebrow} title={page.telemedicine.title} deck={page.telemedicine.deck} points={[page.telemedicine.deck]} href={page.telemedicine.href} tone={page.telemedicine.tone} locale={locale} />
+    <BookingBridgeBandV3 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
+</PublicShellV3>
+

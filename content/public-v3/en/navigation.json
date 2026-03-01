@@ -1,0 +1,52 @@
+{
+    "brandEyebrow": "Dermatology systems",
+    "brandLine1": "Piel en",
+    "brandLine2": "Armonia",
+    "labels": {
+        "home": "Home",
+        "services": "Services",
+        "telemedicine": "Telemedicine",
+        "legal": "Legal",
+        "book": "Book",
+        "primaryNav": "Primary",
+        "featuredServices": "Featured routes",
+        "openCatalogue": "Open catalogue"
+    },
+    "mega": {
+        "intro": {
+            "eyebrow": "Programs",
+            "title": "Dermatology organized as a system, not as a brochure page.",
+            "deck": "Browse diagnosis, medical aesthetics, pediatrics, and telemedicine from one public shell with booking continuity."
+        },
+        "families": {
+            "clinical": {
+                "title": "Clinical Dermatology",
+                "deck": "Lesions, hair, nails, acne, rosacea, and medical triage with clearer reading."
+            },
+            "aesthetic": {
+                "title": "Medical Aesthetics",
+                "deck": "Laser, peels, toxin, and collagen stimulation grouped as medical programs."
+            },
+            "children": {
+                "title": "Pediatric Dermatology",
+                "deck": "A dedicated entry point for children and teenagers with family-oriented follow-up."
+            }
+        }
+    },
+    "footer": {
+        "eyebrow": "Public system",
+        "title": "Piel en Armonia",
+        "deck": "One unified public experience for diagnosis, care programs, telemedicine, and booking.",
+        "ctaLabel": "Open booking",
+        "catalogTitle": "Catalogue",
+        "careModesTitle": "Care modes",
+        "legalTitle": "Legal",
+        "clinicTitle": "Clinic",
+        "clinicCity": "Quito, Ecuador",
+        "clinicPhone": "+593 98 786 6885",
+        "clinicHours": "Mon-Fri 09:00-18:00",
+        "catalogClinical": "Clinical Dermatology",
+        "catalogAesthetic": "Medical Aesthetics",
+        "catalogChildren": "Pediatric Dermatology"
+    }
+}

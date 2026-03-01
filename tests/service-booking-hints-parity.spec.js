@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v2');
+const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v3');
 
 const SERVICE_CASES = [
     {
@@ -48,7 +48,10 @@ test.describe('Service booking hints parity ES/EN', () => {
         page,
     }) => {
         const directCases = [
-            { route: '/es/?service=rejuvenecimiento#citas', expected: 'rejuvenecimiento' },
+            {
+                route: '/es/?service=rejuvenecimiento#citas',
+                expected: 'rejuvenecimiento',
+            },
             { route: '/en/?service=cancer#citas', expected: 'cancer' },
         ];
 
@@ -59,7 +62,8 @@ test.describe('Service booking hints parity ES/EN', () => {
                 .poll(
                     async () =>
                         page.evaluate(() => {
-                            const select = document.getElementById('serviceSelect');
+                            const select =
+                                document.getElementById('serviceSelect');
                             return select ? select.value : null;
                         }),
                     { timeout: 12000 }

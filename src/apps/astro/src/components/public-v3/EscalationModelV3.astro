@@ -1,0 +1,11 @@
+﻿---
+const { eyebrow = '', points = [], locale = 'es', tone = 'porcelain' } = Astro.props;
+---
+
+<section class="service-timeline-v3" data-escalation-model data-section-tone={tone}>
+    <p>{eyebrow || (locale === 'en' ? 'Escalation model' : 'Modelo de escalamiento')}</p>
+    <div class="service-timeline-v3__steps">
+        {points.map((point, index) => <article><span>{`0${index + 1}`}</span><h3>{point}</h3></article>)}
+    </div>
+</section>
+

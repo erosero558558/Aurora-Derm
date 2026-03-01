@@ -1,0 +1,39 @@
+{
+    "title": "Terms and conditions",
+    "description": "Operational framework for bookings, payments, support, and use of the public site.",
+    "heading": "Terms and conditions",
+    "summary": "This page explains how booking, operational validation, and care continuity are organized inside the public website.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Booking",
+            "title": "An appointment is confirmed through schedule, data, and operational validation.",
+            "body": "Each service may require additional support, payment, or manual confirmation according to mode and live availability."
+        },
+        {
+            "eyebrow": "Changes",
+            "title": "Rescheduling and cancellation follow a visible public policy.",
+            "body": "Lead time, live availability, and payment state define the next step."
+        }
+    ],
+    "sections": [
+        {
+            "title": "Service scope",
+            "body": "The site organizes public information, service routes, and booking for in-person or telemedicine care.",
+            "items": [
+                "Published prices can be reference or entry prices.",
+                "Final indication depends on medical assessment.",
+                "Care mode can change according to clinical criteria."
+            ]
+        },
+        {
+            "title": "Bookings and payments",
+            "body": "Booking continuity depends on live schedule, payment method, and case validation.",
+            "items": [
+                "Availability can close if another reservation confirms first.",
+                "Preparation requirements are disclosed before confirmation.",
+                "No-show and refund policies apply according to channel and case."
+            ]
+        }
+    ]
+}

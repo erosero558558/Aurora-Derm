@@ -1,0 +1,17 @@
+{
+    "supportBand": {
+        "eyebrow": "Soporte",
+        "title": "La capa legal sigue conectada con booking, telemedicina y soporte humano.",
+        "deck": "Revisa la politica y continua por la ruta de atencion adecuada segun urgencia, contexto y modalidad.",
+        "tone": "porcelain"
+    },
+    "booking": {
+        "eyebrow": "Reserva",
+        "title": "La lectura legal no rompe la continuidad del recorrido.",
+        "deck": "Si tu caso ya esta claro, puedes seguir con la misma entrada de booking desde cualquier pagina legal.",
+        "actionLabel": "Abrir reserva",
+        "serviceHint": "consulta",
+        "tone": "silver"
+    },
+    "pageOrder": ["terminos", "privacidad", "cookies", "aviso-medico"]
+}

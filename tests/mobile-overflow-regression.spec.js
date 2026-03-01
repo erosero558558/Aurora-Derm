@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute } = require('./helpers/public-v2');
+const { gotoPublicRoute } = require('./helpers/public-v3');
 
 const ROUTES = ['/es/', '/en/', '/es/servicios/', '/es/telemedicina/'];
 const MOBILE_VIEWPORTS = [
@@ -9,8 +9,10 @@ const MOBILE_VIEWPORTS = [
     { width: 412, height: 915, label: '412x915' },
 ];
 
-test.describe('Mobile overflow regressions V2', () => {
-    test('key public routes stay inside the viewport on mobile', async ({ page }) => {
+test.describe('Mobile overflow regressions V3', () => {
+    test('key public routes stay inside the viewport on mobile', async ({
+        page,
+    }) => {
         for (const viewport of MOBILE_VIEWPORTS) {
             await page.setViewportSize(viewport);
             for (const route of ROUTES) {
@@ -27,7 +29,9 @@ test.describe('Mobile overflow regressions V2', () => {
         }
     });
 
-    test('chat container stays visible on mobile when opened', async ({ page }) => {
+    test('chat container stays visible on mobile when opened', async ({
+        page,
+    }) => {
         for (const viewport of MOBILE_VIEWPORTS) {
             await page.setViewportSize(viewport);
             await gotoPublicRoute(page, '/es/');
@@ -44,8 +48,12 @@ test.describe('Mobile overflow regressions V2', () => {
             expect(chatRect).not.toBeNull();
             expect(currentViewport).not.toBeNull();
             expect(chatRect.x).toBeGreaterThanOrEqual(-1);
-            expect(chatRect.x + chatRect.width).toBeLessThanOrEqual(currentViewport.width + 1);
-            expect(chatRect.y + chatRect.height).toBeLessThanOrEqual(currentViewport.height + 1);
+            expect(chatRect.x + chatRect.width).toBeLessThanOrEqual(
+                currentViewport.width + 1
+            );
+            expect(chatRect.y + chatRect.height).toBeLessThanOrEqual(
+                currentViewport.height + 1
+            );
         }
     });
 });

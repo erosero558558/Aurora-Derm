@@ -1,0 +1,27 @@
+---
+import BookingShellV3 from './BookingShellV3.astro';
+
+const {
+    eyebrow = '',
+    title = '',
+    deck = '',
+    actionLabel = '',
+    serviceHint = 'consulta',
+    locale = 'es',
+    tone = 'silver',
+} = Astro.props;
+---
+
+<section class="booking-bridge booking-bridge--v3" data-booking-bridge-band data-booking-bridge-version="v3" data-section-tone={tone}>
+    <div class="booking-bridge__intro">
+        <p>{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{deck}</p>
+        <a href="#citas" class="hero-stage__cta hero-stage__cta--primary" data-analytics-event="open_public_cta" data-entry-surface="booking_bridge_primary" data-cta-target="booking">
+            {actionLabel}
+        </a>
+    </div>
+    <section id="citas" class="booking-bridge__mount" data-service-hint={serviceHint} data-entry-surface="booking_bridge_mount">
+        <BookingShellV3 locale={locale} />
+    </section>
+</section>

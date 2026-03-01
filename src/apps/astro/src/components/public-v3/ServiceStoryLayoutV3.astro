@@ -1,0 +1,29 @@
+﻿---
+const { story, locale = 'es' } = Astro.props;
+---
+
+<section class="service-story-v3" data-service-story data-section-tone={story.tone || 'porcelain'}>
+    <div>
+        <p>{story.eyebrow}</p>
+        <h2>{story.summary}</h2>
+    </div>
+    <div class="service-story-v3__grid">
+        <article>
+            <h3>{locale === 'en' ? 'Common indications' : 'Indicaciones frecuentes'}</h3>
+            <ul>{story.indications.map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>{locale === 'en' ? 'Audience' : 'Audiencia'}</h3>
+            <ul>{story.audience.map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>{locale === 'en' ? 'Doctors' : 'Doctores'}</h3>
+            <ul>{story.doctors.map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>FAQ</h3>
+            <ul>{story.faq.map((item) => <li>{item}</li>)}</ul>
+        </article>
+    </div>
+</section>
+

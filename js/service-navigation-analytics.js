@@ -194,7 +194,10 @@
         ) {
             return 'telemedicine';
         }
-        if (normalized.indexOf('/es/legal/') === 0 || normalized.indexOf('/en/legal/') === 0) {
+        if (
+            normalized.indexOf('/es/legal/') === 0 ||
+            normalized.indexOf('/en/legal/') === 0
+        ) {
             return 'legal';
         }
         return 'public';
@@ -202,7 +205,8 @@
 
     function getLinkEntryPoint(link) {
         if (!link) return 'link';
-        if (link.closest('.public-mega-panel__feature-card')) return 'mega_feature';
+        if (link.closest('.public-mega-panel__feature-card'))
+            return 'mega_feature';
         if (link.closest('.public-mega-panel__lists')) return 'mega_group';
         if (link.closest('.public-mega-panel__family')) return 'mega_family';
         if (link.closest('[data-stage-carousel]')) return 'hero_stage';
@@ -215,13 +219,16 @@
         if (link.closest('[data-booking-bridge-band]')) return 'booking_bridge';
         if (link.closest('.public-footer')) return 'footer';
         if (link.closest('.public-nav')) return 'nav';
-        if (link.closest('.sony-mobile-nav__quick-paths')) return 'mobile_quick_path';
-        if (link.closest('.sony-mobile-nav__features')) return 'mobile_mega_feature';
+        if (link.closest('.sony-mobile-nav__quick-paths'))
+            return 'mobile_quick_path';
+        if (link.closest('.sony-mobile-nav__features'))
+            return 'mobile_mega_feature';
         if (link.closest('.sony-mega__features')) return 'mega_feature';
         if (link.closest('.sony-mega__group')) return 'mega_group';
         if (link.closest('.sony-mobile-nav__group')) return 'mobile_group';
         if (link.closest('[data-service-finder]')) return 'service_finder';
-        if (link.closest('.sony-service-hub__feature')) return 'service_hub_feature';
+        if (link.closest('.sony-service-hub__feature'))
+            return 'service_hub_feature';
         if (link.closest('.sony-service-hub__grid')) return 'service_hub_grid';
         if (link.closest('.sony-mobile-nav')) return 'mobile_nav';
         if (link.closest('.sony-mega')) return 'mega_menu';
@@ -246,7 +253,8 @@
             destination = new URL(value, window.location.origin);
         } catch (_error) {
             if (value.indexOf('#citas') !== -1) return 'booking';
-            if (value.indexOf('#service-finder') !== -1) return 'service_finder';
+            if (value.indexOf('#service-finder') !== -1)
+                return 'service_finder';
             return 'navigation';
         }
 
@@ -267,6 +275,18 @@
         if (isServiceHubPath(destination.pathname)) return 'service_hub';
         if (isServiceDetailPath(destination.pathname)) return 'service_detail';
         return 'navigation';
+    }
+
+    function normalizeEntrySurface(value, fallback) {
+        var source = String(value || fallback || '')
+            .trim()
+            .toLowerCase();
+        if (!source) return 'link';
+        return source
+            .replace(/^v\d+_+/g, '')
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .replace(/_+/g, '_');
     }
 
     function inferServiceIntent(payload) {
@@ -303,7 +323,10 @@
                 ? 'pediatric'
                 : 'rejuvenation';
         }
-        if (details.routeProfile === 'diagnosis' || details.routeId === 'inperson') {
+        if (
+            details.routeProfile === 'diagnosis' ||
+            details.routeId === 'inperson'
+        ) {
             return details.routeCategory === 'children'
                 ? 'pediatric'
                 : 'diagnosis';
@@ -314,10 +337,7 @@
 
     function inferServiceCategory(payload) {
         var details = payload || {};
-        if (
-            details.routeCategory &&
-            VALID_CATEGORIES[details.routeCategory]
-        ) {
+        if (details.routeCategory && VALID_CATEGORIES[details.routeCategory]) {
             return details.routeCategory;
         }
 
@@ -347,14 +367,12 @@
         var details = payload || {};
         var category =
             details.explicitCatalogCategory ||
-            (details.catalogState &&
-            details.catalogState.category !== 'all'
+            (details.catalogState && details.catalogState.category !== 'all'
                 ? details.catalogState.category
                 : '');
         var intent =
             details.explicitCatalogIntent ||
-            (details.catalogState &&
-            details.catalogState.intent !== 'all'
+            (details.catalogState && details.catalogState.intent !== 'all'
                 ? details.catalogState.intent
                 : '');
 
@@ -564,7 +582,9 @@
                 }
                 var routeSlug =
                     cta.getAttribute('data-service-slug') ||
-                    normalizeSlugFromPath(destination ? destination.pathname : '') ||
+                    normalizeSlugFromPath(
+                        destination ? destination.pathname : ''
+                    ) ||
                     bookingHint;
                 var routeCategory =
                     cta.getAttribute('data-service-category') ||
@@ -575,7 +595,8 @@
                 var routeProfile = cta.getAttribute('data-route-profile') || '';
                 var routeId = cta.getAttribute('data-route-id') || '';
                 var serviceIntent = inferServiceIntent({
-                    serviceIntent: cta.getAttribute('data-service-intent') || '',
+                    serviceIntent:
+                        cta.getAttribute('data-service-intent') || '',
                     routeSlug: routeSlug,
                     routeCategory: routeCategory,
                     bookingHint: bookingHint,
@@ -601,18 +622,20 @@
                     ctaTarget: ctaTarget,
                 });
 
+                var entryPoint = normalizeEntrySurface(
+                    cta.getAttribute('data-entry-surface'),
+                    getLinkEntryPoint(cta)
+                );
+
                 trackEvent(eventName, {
                     source: getPageSurface(window.location.pathname),
-                    entry_point:
-                        cta.getAttribute('data-entry-surface') ||
-                        getLinkEntryPoint(cta),
+                    entry_point: entryPoint || 'link',
                     cta_target: ctaTarget,
                     service_slug: routeSlug || '',
                     service_category: routeCategory || '',
                     service_intent: serviceIntent,
                     route_profile: routeProfile,
-                    route_variant:
-                        cta.getAttribute('data-route-variant') || '',
+                    route_variant: cta.getAttribute('data-route-variant') || '',
                     route_id: routeId,
                     booking_hint: bookingHint,
                     catalog_category: catalogContext.category,
@@ -624,54 +647,58 @@
     }
 
     function trackRoutePlannerChanges() {
-        window.addEventListener('route-planner-profile-change', function (event) {
-            var detail = event && event.detail ? event.detail : {};
-            var key = [
-                String(detail.profile || ''),
-                String(detail.routeId || ''),
-                String(detail.variant || ''),
-                String(detail.currentService || ''),
-            ].join('|');
+        window.addEventListener(
+            'route-planner-profile-change',
+            function (event) {
+                var detail = event && event.detail ? event.detail : {};
+                var key = [
+                    String(detail.profile || ''),
+                    String(detail.routeId || ''),
+                    String(detail.variant || ''),
+                    String(detail.currentService || ''),
+                ].join('|');
 
-            if (!key || lastTrackedRoutePlannerKey === key) {
-                return;
+                if (!key || lastTrackedRoutePlannerKey === key) {
+                    return;
+                }
+                lastTrackedRoutePlannerKey = key;
+                var inferredIntent = inferServiceIntent({
+                    serviceIntent: detail.intent || '',
+                    routeSlug: detail.currentService || '',
+                    routeCategory: detail.category || '',
+                    routeProfile: detail.profile || '',
+                    routeId: detail.routeId || '',
+                });
+                var inferredCategory = inferServiceCategory({
+                    routeCategory: detail.category || '',
+                    routeSlug: detail.currentService || '',
+                    serviceIntent: inferredIntent,
+                    routeProfile: detail.profile || '',
+                    routeId: detail.routeId || '',
+                });
+                var catalogContext = resolveCatalogContext({
+                    routeCategory: inferredCategory,
+                    serviceIntent: inferredIntent,
+                    routeProfile: detail.profile || '',
+                    routeId: detail.routeId || '',
+                });
+
+                trackEvent('route_planner_profile_selected', {
+                    source: getPageSurface(window.location.pathname),
+                    route_profile: detail.profile || '',
+                    route_id: detail.routeId || '',
+                    route_variant: detail.variant || '',
+                    locale:
+                        detail.locale ||
+                        getLocaleFromPath(window.location.pathname),
+                    service_slug: detail.currentService || '',
+                    service_category: inferredCategory,
+                    service_intent: inferredIntent,
+                    catalog_category: catalogContext.category,
+                    catalog_intent: catalogContext.intent,
+                });
             }
-            lastTrackedRoutePlannerKey = key;
-            var inferredIntent = inferServiceIntent({
-                serviceIntent: detail.intent || '',
-                routeSlug: detail.currentService || '',
-                routeCategory: detail.category || '',
-                routeProfile: detail.profile || '',
-                routeId: detail.routeId || '',
-            });
-            var inferredCategory = inferServiceCategory({
-                routeCategory: detail.category || '',
-                routeSlug: detail.currentService || '',
-                serviceIntent: inferredIntent,
-                routeProfile: detail.profile || '',
-                routeId: detail.routeId || '',
-            });
-            var catalogContext = resolveCatalogContext({
-                routeCategory: inferredCategory,
-                serviceIntent: inferredIntent,
-                routeProfile: detail.profile || '',
-                routeId: detail.routeId || '',
-            });
-
-            trackEvent('route_planner_profile_selected', {
-                source: getPageSurface(window.location.pathname),
-                route_profile: detail.profile || '',
-                route_id: detail.routeId || '',
-                route_variant: detail.variant || '',
-                locale:
-                    detail.locale || getLocaleFromPath(window.location.pathname),
-                service_slug: detail.currentService || '',
-                service_category: inferredCategory,
-                service_intent: inferredIntent,
-                catalog_category: catalogContext.category,
-                catalog_intent: catalogContext.intent,
-            });
-        });
+        );
     }
 
     function trackFinderFilterEvents() {
@@ -697,7 +724,8 @@
             trackEvent('service_catalog_filter_applied', {
                 source: 'service_finder',
                 locale:
-                    detail.locale || getLocaleFromPath(window.location.pathname),
+                    detail.locale ||
+                    getLocaleFromPath(window.location.pathname),
                 service_intent: detail.intent || 'all',
                 visible_routes: Number(detail.visibleCount || 0),
             });
@@ -728,7 +756,8 @@
                 source: 'service_hub',
                 trigger_source: detail.triggerSource || 'service_hub',
                 locale:
-                    detail.locale || getLocaleFromPath(window.location.pathname),
+                    detail.locale ||
+                    getLocaleFromPath(window.location.pathname),
                 service_category: detail.category || 'all',
                 service_intent: detail.intent || 'all',
                 visible_families: Number(detail.visibleFamilies || 0),
@@ -766,7 +795,8 @@
                 context_surface: contextSurface,
                 trigger_source: detail.source || '',
                 locale:
-                    detail.locale || getLocaleFromPath(window.location.pathname),
+                    detail.locale ||
+                    getLocaleFromPath(window.location.pathname),
                 service_category: detail.category || 'all',
                 service_intent: detail.intent || 'all',
             });
@@ -815,7 +845,9 @@
 
             var citas = document.getElementById('citas');
             if (citas) {
-                var nav = document.querySelector('.nav, .sony-header, .public-nav');
+                var nav = document.querySelector(
+                    '.nav, .sony-header, .public-nav'
+                );
                 var offset = nav ? nav.offsetHeight + 18 : 96;
                 var top = Math.max(0, citas.offsetTop - offset);
                 window.scrollTo({ top: top, behavior: 'smooth' });

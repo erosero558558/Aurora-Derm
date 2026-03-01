@@ -1,0 +1,18 @@
+﻿---
+const { hero, locale = 'es' } = Astro.props;
+const mediaSrc = hero?.mediaMeta?.src || hero?.media || '';
+const mediaAlt = hero?.mediaMeta?.alt || hero?.title || '';
+const tone = hero?.tone || 'ink';
+---
+
+<section class="service-hero-v3" data-service-hero data-section-tone={tone}>
+    <div class="service-hero-v3__copy">
+        <p>{hero.eyebrow}</p>
+        <h1>{hero.title}</h1>
+        <p>{hero.deck}</p>
+        <div class="service-hero-v3__meta"><span>{hero.duration}</span><span>{`$${hero.price}`}</span></div>
+        <a href="#citas" class="hero-stage__cta hero-stage__cta--primary" data-analytics-event="start_booking_from_service" data-cta-target="booking" data-service-slug={hero.slug} data-service-category={hero.category} data-service-intent={hero.intent} data-catalog-category={hero.category} data-catalog-intent={hero.intent}>{locale === 'en' ? 'Book route' : 'Reservar ruta'}</a>
+    </div>
+    <div class="service-hero-v3__media"><img src={mediaSrc} alt={mediaAlt} loading="eager" /></div>
+</section>
+

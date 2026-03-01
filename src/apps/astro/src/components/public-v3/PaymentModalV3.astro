@@ -1,0 +1,82 @@
+---
+const { locale = 'es' } = Astro.props;
+---
+
+<div id="paymentModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content payment-modal public-modal public-modal--payment">
+        <button
+            type="button"
+            class="modal-close"
+            data-action="close-payment-modal"
+            aria-label={locale === 'en' ? 'Close payment modal' : 'Cerrar modal de pago'}
+        >
+            <i class="fas fa-times"></i>
+        </button>
+        <p class="public-modal__eyebrow">{locale === 'en' ? 'Checkout' : 'Checkout'}</p>
+        <h3>{locale === 'en' ? 'Choose a payment method' : 'Elige un metodo de pago'}</h3>
+        <p class="public-modal__deck">
+            {locale === 'en'
+                ? 'The booking runtime keeps the same payment logic, but the modal surface now belongs to the public V3 shell.'
+                : 'El runtime de reserva mantiene la misma logica de pago, pero la superficie visual ahora pertenece al shell publico V3.'}
+        </p>
+        <div class="payment-methods">
+            <div class="payment-method active" data-method="card">
+                <i class="fas fa-credit-card"></i>
+                <span>{locale === 'en' ? 'Card' : 'Tarjeta'}</span>
+            </div>
+            <div class="payment-method" data-method="transfer">
+                <i class="fas fa-university"></i>
+                <span>{locale === 'en' ? 'Transfer' : 'Transferencia'}</span>
+            </div>
+            <div class="payment-method" data-method="cash">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>{locale === 'en' ? 'Cash' : 'Efectivo'}</span>
+            </div>
+        </div>
+        <div class="payment-details" id="paymentDetails">
+            <div class="payment-form card-form">
+                <div class="form-group">
+                    <label>{locale === 'en' ? 'Cardholder name' : 'Nombre en la tarjeta'}</label>
+                    <input type="text" id="cardholderName" autocomplete="cc-name" />
+                </div>
+                <div class="form-group">
+                    <label>{locale === 'en' ? 'Card details' : 'Datos de tarjeta'}</label>
+                    <div id="stripeCardElement" class="stripe-card-element"></div>
+                </div>
+            </div>
+            <div class="payment-form transfer-form is-hidden">
+                <div class="bank-info">
+                    <p><strong>Banco Pichincha</strong></p>
+                    <p>Cuenta de Ahorros: 2200160272</p>
+                    <p>Titular: Rosero Caiza Javier Alejandro</p>
+                </div>
+                <div class="form-group">
+                    <label>{locale === 'en' ? 'Reference number' : 'Numero de referencia'}</label>
+                    <input type="text" id="transferReference" inputmode="numeric" />
+                </div>
+                <div class="form-group">
+                    <label>{locale === 'en' ? 'Receipt' : 'Comprobante'}</label>
+                    <input type="file" id="transferProofFile" accept=".jpg,.jpeg,.png,.webp,.pdf" />
+                    <small id="transferProofFileName" class="payment-help"></small>
+                </div>
+            </div>
+            <div class="payment-form cash-form is-hidden">
+                <p>
+                    {locale === 'en'
+                        ? 'Pay directly at the clinic on the appointment day.'
+                        : 'Paga directamente en el consultorio el dia de tu cita.'}
+                </p>
+            </div>
+        </div>
+        <div class="payment-summary">
+            <div class="payment-total">
+                <span>{locale === 'en' ? 'Total to pay:' : 'Total a pagar:'}</span>
+                <span id="paymentTotal">$0.00</span>
+            </div>
+        </div>
+        <div id="paymentError" class="payment-error is-hidden"></div>
+        <button type="button" class="btn btn-primary btn-full" data-action="process-payment">
+            <span>{locale === 'en' ? 'Confirm booking' : 'Confirmar reserva'}</span>
+        </button>
+    </div>
+</div>

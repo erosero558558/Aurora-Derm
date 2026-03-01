@@ -1,0 +1,51 @@
+{
+    "title": "Telemedicine | Piel en Armonia",
+    "description": "Remote dermatology presented as an integrated capability instead of a simple shortcut.",
+    "hero": {
+        "eyebrow": "Telemedicine",
+        "title": "A remote capability with clear fit and escalation logic.",
+        "deck": "This page explains when telemedicine works, what to send before the visit, and when to move to in-person review.",
+        "tone": "ink",
+        "media": "/images/optimized/service-telemedicina.webp",
+        "mediaMeta": {
+            "src": "/images/optimized/service-telemedicina.webp",
+            "alt": "Remote dermatology care through telemedicine",
+            "kind": "image"
+        }
+    },
+    "howItWorks": {
+        "eyebrow": "How it works",
+        "tone": "porcelain",
+        "points": [
+            "Choose video, WhatsApp, or phone depending on the case.",
+            "Share clinical context and images before the consultation.",
+            "Escalate to the clinic when evaluation or procedure requires it."
+        ]
+    },
+    "whoItFits": {
+        "eyebrow": "Who it fits",
+        "tone": "silver",
+        "points": [
+            "Acne and inflammation control",
+            "Dermatitis follow-up and treatment review",
+            "Early questions about spots, texture, or the right next route"
+        ]
+    },
+    "escalation": {
+        "eyebrow": "Escalation",
+        "tone": "porcelain",
+        "points": [
+            "Move to diagnostic assessment when the case is broad or uncertain.",
+            "Move to a service detail page when the procedural route is already clear.",
+            "Keep the same booking hooks and human support."
+        ]
+    },
+    "booking": {
+        "eyebrow": "Booking",
+        "title": "Remote booking reuses the same engine with a V3 presentation.",
+        "deck": "You can jump directly into the appointment flow with the online mode preselected.",
+        "actionLabel": "Book telemedicine",
+        "serviceHint": "video",
+        "tone": "silver"
+    }
+}

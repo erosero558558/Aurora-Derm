@@ -1,0 +1,31 @@
+{
+    "title": "Servicios | Piel en Armonia",
+    "description": "Catalogo publico de programas dermatologicos con lectura por familia y continuidad de reserva.",
+    "hero": {
+        "eyebrow": "Catalogo de programas",
+        "title": "Un hub de servicios tratado como portfolio clinico.",
+        "deck": "Navega por dermatologia clinica, estetica medica y pediatria con una jerarquia mas severa, menos ruido y mejores puntos de entrada.",
+        "tone": "ink",
+        "media": "/images/optimized/showcase-hero.webp",
+        "mediaMeta": {
+            "src": "/images/optimized/showcase-hero.webp",
+            "alt": "Catalogo de programas dermatologicos",
+            "kind": "image"
+        }
+    },
+    "telemedicine": {
+        "eyebrow": "Modo de atencion",
+        "title": "Telemedicina pertenece al mismo sistema y no a una subpagina decorativa.",
+        "deck": "Empieza remoto cuando el caso encaja y escala a consultorio cuando la revision o el procedimiento lo requieren.",
+        "href": "/es/telemedicina/",
+        "tone": "porcelain"
+    },
+    "booking": {
+        "eyebrow": "Puente de reserva",
+        "title": "Cada programa puede caer en booking sin perder contexto.",
+        "deck": "Los CTA siguen cargando la pista de servicio correcta y mantienen la taxonomia analitica del nuevo shell.",
+        "actionLabel": "Abrir reserva",
+        "serviceHint": "consulta",
+        "tone": "silver"
+    }
+}

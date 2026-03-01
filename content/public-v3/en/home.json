@@ -1,0 +1,164 @@
+{
+    "title": "Piel en Armonia | Sony V3",
+    "description": "Public dermatology frontend with a cinematic stage, program catalogue, and integrated booking.",
+    "slides": [
+        {
+            "id": "clinical-stage",
+            "eyebrow": "Medical diagnosis",
+            "category": "Medical diagnosis",
+            "title": "The right first decision starts with a cleaner clinical reading.",
+            "deck": "The home page now opens with diagnosis, continuity, and medical routes before any conversion push.",
+            "tone": "ink",
+            "media": "/images/optimized/showcase-hero.webp",
+            "mediaMeta": {
+                "src": "/images/optimized/showcase-hero.webp",
+                "alt": "Dermatology consultation with diagnostic focus",
+                "kind": "image"
+            },
+            "stats": ["Clinical route", "Medical priority", "Continuity"],
+            "primary": {
+                "label": "Book assessment",
+                "href": "#citas",
+                "target": "booking"
+            },
+            "secondary": {
+                "label": "Explore catalogue",
+                "href": "/en/services/",
+                "target": "service_hub"
+            }
+        },
+        {
+            "id": "aesthetic-stage",
+            "eyebrow": "Medical aesthetics",
+            "category": "Medical aesthetics",
+            "title": "Procedures explained as a care system, not as a stack of cards.",
+            "deck": "Laser, peels, toxin, and biostimulators are presented with fit, timing, and continuity.",
+            "tone": "silver",
+            "media": "/images/optimized/hero-woman.webp",
+            "mediaMeta": {
+                "src": "/images/optimized/hero-woman.webp",
+                "alt": "Patient in a medical aesthetics protocol",
+                "kind": "image"
+            },
+            "stats": ["Protocols", "Clinical fit", "Outcomes"],
+            "primary": {
+                "label": "View aesthetic programs",
+                "href": "/en/services/?category=aesthetic",
+                "target": "service_hub"
+            },
+            "secondary": {
+                "label": "WhatsApp",
+                "href": "https://wa.me/593982453672",
+                "target": "whatsapp"
+            }
+        },
+        {
+            "id": "tele-stage",
+            "eyebrow": "Telemedicine",
+            "category": "Telemedicine",
+            "title": "Remote care when it fits. In-person escalation when it does not.",
+            "deck": "Telemedicine no longer lives as an isolated shortcut. It belongs to the same clinical language and booking system.",
+            "tone": "porcelain",
+            "media": "/images/optimized/service-telemedicina.webp",
+            "mediaMeta": {
+                "src": "/images/optimized/service-telemedicina.webp",
+                "alt": "Telemedicine dermatology consultation",
+                "kind": "image"
+            },
+            "stats": ["Remote fit", "Escalation", "Single continuity"],
+            "primary": {
+                "label": "Open telemedicine",
+                "href": "/en/telemedicine/",
+                "target": "telemedicine"
+            },
+            "secondary": {
+                "label": "Start with diagnosis",
+                "href": "/en/services/diagnostico-integral/",
+                "target": "service_detail"
+            }
+        }
+    ],
+    "latest": [
+        {
+            "eyebrow": "Current route",
+            "title": "Initial triage can now start in telemedicine without breaking the clinical flow.",
+            "href": "/en/telemedicine/"
+        },
+        {
+            "eyebrow": "Aesthetic system",
+            "title": "The aesthetic family is navigated as a full program instead of a flat menu.",
+            "href": "/en/services/?category=aesthetic"
+        },
+        {
+            "eyebrow": "Pediatrics",
+            "title": "Children and teenagers keep a dedicated entry point with dermatology logic.",
+            "href": "/en/services/dermatologia-pediatrica/"
+        }
+    ],
+    "featuredStories": [
+        {
+            "eyebrow": "Clinical precision",
+            "title": "Diagnosis first. Then the right route.",
+            "deck": "Suspicious lesions, acne, hair, and nails now open with a more technical and less promotional medical module.",
+            "media": "/images/optimized/showcase-diagnostic.webp",
+            "href": "/en/services/diagnostico-integral/",
+            "alignment": "left"
+        },
+        {
+            "eyebrow": "Aesthetic protocols",
+            "title": "Each procedure opens with fit, timing, and continuity already visible.",
+            "deck": "Program reading comes before the form and keeps the page from feeling like one generic commercial grid.",
+            "media": "/images/optimized/service-rejuvenecimiento.webp",
+            "href": "/en/services/?category=aesthetic",
+            "alignment": "right"
+        },
+        {
+            "eyebrow": "Family entry",
+            "title": "Pediatric dermatology with its own language.",
+            "deck": "Dermatitis, adolescent acne, warts, and scalp concerns are presented as a clearer route for families.",
+            "media": "/images/optimized/showcase-clinic.webp",
+            "href": "/en/services/dermatologia-pediatrica/",
+            "alignment": "left"
+        }
+    ],
+    "telemedicine": {
+        "eyebrow": "Telemedicine",
+        "title": "Remote care inside the same clinical system.",
+        "deck": "Use video, phone, or WhatsApp for first guidance, acne or dermatitis follow-up, and structured escalation to clinic.",
+        "tone": "ink",
+        "points": [
+            "Video, phone, or WhatsApp as the entry point",
+            "In-person escalation when the case requires it",
+            "Booking continuity and support inside the same shell"
+        ],
+        "href": "/en/telemedicine/"
+    },
+    "doctors": [
+        {
+            "name": "Dr. Javier Rosero",
+            "role": "Clinical direction",
+            "deck": "Early detection, suspicious lesions, and diagnostic leadership across general dermatology.",
+            "media": "/images/optimized/team-rosero.webp",
+            "serviceSlugs": [
+                "diagnostico-integral",
+                "cancer-piel",
+                "piel-cabello-unas"
+            ]
+        },
+        {
+            "name": "Dr. Carolina Narvaez",
+            "role": "Medical aesthetics direction",
+            "deck": "Laser, injectables, skin quality, and rejuvenation sequences with medical framing.",
+            "media": "/images/optimized/team-narvaez.webp",
+            "serviceSlugs": ["botox", "laser-dermatologico", "mesoterapia"]
+        }
+    ],
+    "booking": {
+        "eyebrow": "Booking",
+        "title": "Booking no longer defines the page, but it stays ready to convert.",
+        "deck": "You can enter from general assessment, a specific detail page, or telemedicine without losing the same operational runtime.",
+        "actionLabel": "Open booking",
+        "tone": "silver",
+        "serviceHint": "consulta"
+    }
+}

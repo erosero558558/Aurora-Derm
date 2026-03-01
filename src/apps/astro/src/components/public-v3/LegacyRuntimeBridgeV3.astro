@@ -1,0 +1,41 @@
+---
+import CookieBannerV3 from './CookieBannerV3.astro';
+import RuntimeModalStackV3 from './RuntimeModalStackV3.astro';
+
+const { locale = 'es' } = Astro.props;
+---
+
+<div class="public-runtime-bridge" data-runtime-bridge-version="v3">
+    <div id="chatbotWidget" class="chatbot-widget">
+        <button type="button" class="chatbot-toggle" data-action="toggle-chatbot" aria-label={locale === 'en' ? 'Open chat' : 'Abrir chat'}>
+            <i class="fas fa-comments"></i>
+            <span class="chatbot-notification" id="chatNotification">1</span>
+        </button>
+        <div class="chatbot-container" id="chatbotContainer">
+            <div class="chatbot-header">
+                <div class="chatbot-avatar"><i class="fas fa-user-md"></i></div>
+                <div class="chatbot-info">
+                    <h4>{locale === 'en' ? 'Virtual doctor' : 'Doctor virtual'}</h4>
+                    <span class="chatbot-status"><i class="fas fa-circle"></i>{locale === 'en' ? 'Online' : 'En linea'}</span>
+                </div>
+                <div class="chatbot-actions">
+                    <button type="button" data-action="minimize-chat" aria-label={locale === 'en' ? 'Minimize' : 'Minimizar'}><i class="fas fa-minus"></i></button>
+                    <button type="button" data-action="toggle-chatbot" aria-label={locale === 'en' ? 'Close' : 'Cerrar'}><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="chatbot-messages" id="chatMessages"></div>
+            <div class="chatbot-quick-options" id="quickOptions">
+                <button type="button" data-action="quick-message" data-value="services">{locale === 'en' ? 'Services' : 'Servicios'}</button>
+                <button type="button" data-action="quick-message" data-value="appointment">{locale === 'en' ? 'Appointment' : 'Agendar cita'}</button>
+                <button type="button" data-action="quick-message" data-value="human">{locale === 'en' ? 'Human support' : 'Hablar con humano'}</button>
+            </div>
+            <p class="chatbot-disclaimer">{locale === 'en' ? 'General guidance only. This does not replace professional consultation.' : 'Orientacion general. No reemplaza una consulta profesional.'}</p>
+            <div class="chatbot-input-area">
+                <input type="text" id="chatInput" placeholder={locale === 'en' ? 'Write your message...' : 'Escribe tu mensaje...'} enterkeyhint="send" />
+                <button type="button" data-action="send-chat-message" aria-label={locale === 'en' ? 'Send' : 'Enviar'}><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+    <CookieBannerV3 locale={locale} />
+    <RuntimeModalStackV3 locale={locale} />
+</div>

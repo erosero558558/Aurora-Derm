@@ -26,7 +26,7 @@ El workflow `.github/workflows/deploy-hosting.yml` se encarga de:
 
 1.  Checkout del código.
 2.  Instalación de dependencias (`npm ci` + `composer install --no-dev`).
-3.  Build estático de `Public V2` (`npm run astro:build` + `npm run astro:sync`).
+3.  Build estático de `Public V3` (`npm run astro:build` + `npm run astro:sync`).
 4.  Canary de staging y gate de aceptación cuando staging está configurado.
 5.  Publicación a producción por `git-sync`, FTP o SFTP según la configuración activa.
 6.  Smoke post-deploy de routing público, conversión pública y manifiesto de cutover.
@@ -36,7 +36,9 @@ El workflow `.github/workflows/deploy-hosting.yml` se encarga de:
 Si `git-sync` no replica `origin/main` o GitHub runners no alcanzan el hosting, usar el runbook del VPS:
 
 - [PUBLIC_V2_MANUAL_DEPLOY.md](./PUBLIC_V2_MANUAL_DEPLOY.md)
-- Script reusable: `bin/deploy-public-v2-live.sh`
+- [PUBLIC_V3_MANUAL_DEPLOY.md](./PUBLIC_V3_MANUAL_DEPLOY.md)
+- Script reusable canónico: `bin/deploy-public-v3-live.sh`
+- Compatibilidad temporal: `bin/deploy-public-v2-live.sh` delega a V3
 
 ## 3. Feature Flags (Banderas de Funcionalidad)
 

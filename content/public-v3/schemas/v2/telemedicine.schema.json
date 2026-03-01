@@ -1,0 +1,176 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/telemedicine.v2.schema.json",
+    "title": "Public V3 Telemedicine V2",
+    "type": "object",
+    "required": [
+        "title",
+        "description",
+        "hero",
+        "howItWorks",
+        "whoItFits",
+        "escalation",
+        "booking"
+    ],
+    "properties": {
+        "title": {
+            "type": "string",
+            "minLength": 1
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1
+        },
+        "hero": {
+            "type": "object",
+            "required": ["eyebrow", "title", "deck", "tone", "mediaMeta"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tone": {
+                    "type": "string",
+                    "enum": ["ink", "porcelain", "silver"]
+                },
+                "media": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "mediaMeta": {
+                    "type": "object",
+                    "required": ["src", "alt", "kind"],
+                    "properties": {
+                        "src": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "alt": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "kind": {
+                            "type": "string",
+                            "enum": ["image", "video"]
+                        },
+                        "poster": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                }
+            }
+        },
+        "howItWorks": {
+            "type": "object",
+            "required": ["eyebrow", "tone", "points"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tone": {
+                    "type": "string",
+                    "enum": ["ink", "porcelain", "silver"]
+                },
+                "points": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "whoItFits": {
+            "type": "object",
+            "required": ["eyebrow", "tone", "points"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tone": {
+                    "type": "string",
+                    "enum": ["ink", "porcelain", "silver"]
+                },
+                "points": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "escalation": {
+            "type": "object",
+            "required": ["eyebrow", "tone", "points"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tone": {
+                    "type": "string",
+                    "enum": ["ink", "porcelain", "silver"]
+                },
+                "points": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "booking": {
+            "type": "object",
+            "required": [
+                "eyebrow",
+                "title",
+                "deck",
+                "actionLabel",
+                "serviceHint",
+                "tone"
+            ],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "actionLabel": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "serviceHint": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tone": {
+                    "type": "string",
+                    "enum": ["ink", "porcelain", "silver"]
+                }
+            }
+        }
+    }
+}

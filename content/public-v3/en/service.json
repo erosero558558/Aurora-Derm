@@ -1,0 +1,32 @@
+{
+    "heroTone": "ink",
+    "storyEyebrow": "Medical program",
+    "storySummary": "This detail page is framed as a clinical capability with fit, timing, contraindications, and continuity.",
+    "storyTone": "porcelain",
+    "evidenceEyebrow": "Fit and evidence",
+    "evidenceTitle": "What usually indicates fit, what requires caution, and how the next step should be read.",
+    "evidenceTone": "silver",
+    "evidenceFallbackBullets": [
+        "Final indication is confirmed in consultation according to skin, goals, and history."
+    ],
+    "evidenceOutcomes": [
+        "Initial clinical read",
+        "Expected sequence by treatment type",
+        "Escalation to procedure or follow-up when appropriate"
+    ],
+    "timelineEyebrow": "Care sequence",
+    "timelineTone": "ink",
+    "timelineSteps": [
+        "Assessment and fit confirmation",
+        "Preparation and medical briefing",
+        "Treatment or follow-up",
+        "Results review and continuity"
+    ],
+    "booking": {
+        "eyebrow": "Booking",
+        "title": "Keep the current program hint and enter the existing booking runtime.",
+        "deck": "The current route preserves service hint, conversion continuity, and UI ownership inside the V3 shell.",
+        "actionLabel": "Book this route",
+        "tone": "silver"
+    }
+}

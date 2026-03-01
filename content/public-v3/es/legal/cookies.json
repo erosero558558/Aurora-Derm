@@ -1,0 +1,39 @@
+{
+    "title": "Politica de cookies",
+    "description": "Uso de cookies esenciales y medicion opcional con consentimiento.",
+    "heading": "Politica de cookies",
+    "summary": "Las cookies esenciales sostienen seguridad y operacion. Las opcionales de medicion dependen de consentimiento.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Esenciales",
+            "title": "Mantienen continuidad minima del sitio y del booking.",
+            "body": "Sin ellas algunas partes de reserva, soporte o seguridad pueden degradarse."
+        },
+        {
+            "eyebrow": "Opcionales",
+            "title": "La medicion existe para entender uso y mejorar la experiencia.",
+            "body": "Se activa por consentimiento y no reemplaza decisiones clinicas."
+        }
+    ],
+    "sections": [
+        {
+            "title": "Cookies esenciales",
+            "body": "Soportan consentimiento, recursos cargados y continuidad tecnica del sitio.",
+            "items": [
+                "Persistencia de consentimiento.",
+                "Proteccion basica del flujo publico.",
+                "Integridad de recursos y componentes."
+            ]
+        },
+        {
+            "title": "Gestion de preferencias",
+            "body": "Puedes modificar preferencias desde el banner o desde tu navegador.",
+            "items": [
+                "Eliminar cookies existentes.",
+                "Bloquear terceros.",
+                "Revisar esta politica cuando el sitio cambie."
+            ]
+        }
+    ]
+}

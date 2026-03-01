@@ -1,0 +1,20 @@
+﻿---
+const { families = [] } = Astro.props;
+---
+
+<section class="featured-family-story-v3" data-featured-family-story>
+    {
+        families.map((family) => (
+            <article class="featured-story">
+                <div class="featured-story__media"><img src={family.media} alt={family.label} loading="lazy" /></div>
+                <div class="featured-story__copy">
+                    <p>{family.label}</p>
+                    <h2>{family.featured.title}</h2>
+                    <p>{family.deck}</p>
+                    <a href={family.featured.href} class="public-link-arrow">{family.featured.cta}</a>
+                </div>
+            </article>
+        ))
+    }
+</section>
+

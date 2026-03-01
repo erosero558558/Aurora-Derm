@@ -1,0 +1,11 @@
+﻿---
+const { eyebrow = '', points = [], locale = 'es', tone = 'porcelain' } = Astro.props;
+---
+
+<section class="service-story-v3" data-how-it-works data-section-tone={tone}>
+    <div><p>{eyebrow}</p><h2>{locale === 'en' ? 'How the remote route is structured.' : 'Como se estructura la ruta remota.'}</h2></div>
+    <div class="service-story-v3__grid">
+        {points.map((point) => <article><p>{point}</p></article>)}
+    </div>
+</section>
+

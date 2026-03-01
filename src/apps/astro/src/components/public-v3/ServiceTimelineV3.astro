@@ -1,0 +1,18 @@
+﻿---
+const { timeline } = Astro.props;
+---
+
+<section class="service-timeline-v3" data-service-timeline data-section-tone={timeline.tone || 'ink'}>
+    <p>{timeline.eyebrow}</p>
+    <div class="service-timeline-v3__steps">
+        {
+            timeline.steps.map((step, index) => (
+                <article>
+                    <span>{`0${index + 1}`}</span>
+                    <h3>{step}</h3>
+                </article>
+            ))
+        }
+    </div>
+</section>
+

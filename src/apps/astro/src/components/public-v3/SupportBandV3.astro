@@ -1,0 +1,18 @@
+﻿---
+const { eyebrow = '', title = '', deck = '', locale = 'es', tone = 'porcelain' } = Astro.props;
+const telemedicineHref = locale === 'en' ? '/en/telemedicine/' : '/es/telemedicina/';
+---
+
+<section class="support-band-v3" data-support-band data-section-tone={tone}>
+    <div>
+        <p>{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{deck}</p>
+    </div>
+    <div class="support-band-v3__actions">
+        <a href="#citas" class="hero-stage__cta hero-stage__cta--primary" data-analytics-event="open_public_cta" data-entry-surface="support_band_booking" data-cta-target="booking">{locale === 'en' ? 'Open booking' : 'Abrir reserva'}</a>
+        <a href={telemedicineHref} class="hero-stage__cta hero-stage__cta--secondary" data-analytics-event="open_public_cta" data-entry-surface="support_band_telemedicine" data-cta-target="telemedicine" data-service-category="all" data-service-intent="remote" data-catalog-category="all" data-catalog-intent="remote">{locale === 'en' ? 'Telemedicine' : 'Telemedicina'}</a>
+        <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer" class="hero-stage__cta hero-stage__cta--secondary" data-analytics-event="open_public_cta" data-entry-surface="support_band_whatsapp" data-cta-target="whatsapp">WhatsApp</a>
+    </div>
+</section>
+

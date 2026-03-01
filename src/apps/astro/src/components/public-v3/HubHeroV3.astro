@@ -1,0 +1,16 @@
+﻿---
+const { hero } = Astro.props;
+const mediaSrc = hero?.mediaMeta?.src || hero?.media || '';
+const mediaAlt = hero?.mediaMeta?.alt || hero?.title || '';
+const tone = hero?.tone || 'ink';
+---
+
+<section class="hub-hero-v3" data-hub-hero data-section-tone={tone}>
+    <div class="hub-hero-v3__copy">
+        <p>{hero.eyebrow}</p>
+        <h1>{hero.title}</h1>
+        <p>{hero.deck}</p>
+    </div>
+    <div class="hub-hero-v3__media"><img src={mediaSrc} alt={mediaAlt} loading="eager" /></div>
+</section>
+

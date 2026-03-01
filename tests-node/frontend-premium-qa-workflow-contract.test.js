@@ -94,7 +94,7 @@ test('frontend premium QA incluye gate de performance con evidencia', () => {
     );
 });
 
-test('frontend premium QA publica contrato de aprobacion Public V2 en el summary', () => {
+test('frontend premium QA publica contrato de aprobacion Public V3 en el summary', () => {
     const { raw, parsed } = loadWorkflow();
     const steps = parsed?.jobs?.['premium-qa']?.steps || [];
     const stepNames = getStepNames(steps);
@@ -109,6 +109,6 @@ test('frontend premium QA publica contrato de aprobacion Public V2 en el summary
             'echo "- approval_contract: \\`premium_frontend_qa + lighthouse + performance_gate + visual_baseline\\`";'
         ),
         true,
-        'falta contrato de aprobacion Public V2 en summary de frontend premium QA'
+        'falta contrato de aprobacion Public V3 en summary de frontend premium QA'
     );
 });

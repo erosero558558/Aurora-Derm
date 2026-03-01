@@ -1,0 +1,15 @@
+---
+import PaymentModalV3 from './PaymentModalV3.astro';
+import RescheduleModalV3 from './RescheduleModalV3.astro';
+import ReviewModalV3 from './ReviewModalV3.astro';
+import SuccessModalV3 from './SuccessModalV3.astro';
+import VideoModalV3 from './VideoModalV3.astro';
+
+const { locale = 'es' } = Astro.props;
+---
+
+<VideoModalV3 locale={locale} />
+<PaymentModalV3 locale={locale} />
+<SuccessModalV3 locale={locale} />
+<RescheduleModalV3 locale={locale} />
+<ReviewModalV3 locale={locale} />

@@ -1,0 +1,133 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/telemedicine.schema.json",
+    "title": "Public V3 Telemedicine",
+    "type": "object",
+    "required": [
+        "title",
+        "description",
+        "hero",
+        "howItWorks",
+        "whoItFits",
+        "escalation",
+        "booking"
+    ],
+    "properties": {
+        "title": {
+            "type": "string",
+            "minLength": 1
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1
+        },
+        "hero": {
+            "type": "object",
+            "required": ["eyebrow", "title", "deck", "media"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "media": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "howItWorks": {
+            "type": "object",
+            "required": ["eyebrow", "points"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "points": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "whoItFits": {
+            "type": "object",
+            "required": ["eyebrow", "points"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "points": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "escalation": {
+            "type": "object",
+            "required": ["eyebrow", "points"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "points": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "booking": {
+            "type": "object",
+            "required": [
+                "eyebrow",
+                "title",
+                "deck",
+                "actionLabel",
+                "serviceHint"
+            ],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "actionLabel": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "serviceHint": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        }
+    }
+}

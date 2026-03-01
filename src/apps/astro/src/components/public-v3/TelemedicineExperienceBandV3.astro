@@ -1,0 +1,24 @@
+﻿---
+const {
+    eyebrow = '',
+    title = '',
+    deck = '',
+    points = [],
+    href = '#',
+    locale = 'es',
+    tone = 'ink',
+} = Astro.props;
+---
+
+<section class="experience-band" data-telemedicine-band data-section-tone={tone}>
+    <div>
+        <p>{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{deck}</p>
+    </div>
+    <ul>
+        {points.map((point) => <li>{point}</li>)}
+    </ul>
+    <a href={href} class="hero-stage__cta hero-stage__cta--primary" data-analytics-event="open_public_cta" data-entry-surface="telemedicine_experience_band" data-cta-target="telemedicine" data-service-category="all" data-service-intent="remote" data-catalog-category="all" data-catalog-intent="remote">{locale === 'en' ? 'Explore' : 'Explorar'}</a>
+</section>
+

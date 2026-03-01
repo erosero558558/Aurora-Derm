@@ -1,0 +1,26 @@
+﻿---
+const { families = [], locale = 'es' } = Astro.props;
+---
+
+<section class="program-grid" data-program-grid>
+    <div class="program-grid__head">
+        <p>{locale === 'en' ? 'Program families' : 'Familias de programa'}</p>
+        <h2>{locale === 'en' ? 'Clinical, aesthetic, and pediatric paths organised as editorial programmes.' : 'Rutas clinicas, esteticas y pediatricas organizadas como programas editoriales.'}</h2>
+    </div>
+    <div class="program-grid__cards">
+        {
+            families.map((family) => (
+                <article class="program-grid__card">
+                    <img src={family.media} alt={family.eyebrow} loading="lazy" />
+                    <div>
+                        <p>{family.eyebrow}</p>
+                        <h3>{family.title}</h3>
+                        <p>{family.deck}</p>
+                        <a href={family.href} class="public-link-arrow" data-analytics-event="open_public_cta" data-entry-surface="program_family_grid" data-cta-target="service_hub" data-catalog-category={family.id} data-catalog-intent="all">{locale === 'en' ? 'View family' : 'Ver familia'}</a>
+                    </div>
+                </article>
+            ))
+        }
+    </div>
+</section>
+

@@ -1,0 +1,31 @@
+{
+    "title": "Services | Piel en Armonia",
+    "description": "Public catalogue of dermatology programs with family-based reading and booking continuity.",
+    "hero": {
+        "eyebrow": "Program catalogue",
+        "title": "A service hub treated like a clinical portfolio.",
+        "deck": "Browse clinical dermatology, medical aesthetics, and pediatrics with stricter hierarchy, less noise, and clearer entry points.",
+        "tone": "ink",
+        "media": "/images/optimized/showcase-hero.webp",
+        "mediaMeta": {
+            "src": "/images/optimized/showcase-hero.webp",
+            "alt": "Dermatology program catalogue",
+            "kind": "image"
+        }
+    },
+    "telemedicine": {
+        "eyebrow": "Care mode",
+        "title": "Telemedicine belongs to the same system, not to a decorative subpage.",
+        "deck": "Start remotely when the case fits and escalate to the clinic when evaluation or procedure requires it.",
+        "href": "/en/telemedicine/",
+        "tone": "porcelain"
+    },
+    "booking": {
+        "eyebrow": "Booking bridge",
+        "title": "Each program can fall into booking without losing context.",
+        "deck": "CTAs still load the correct service hint and keep analytics taxonomy aligned with the new shell.",
+        "actionLabel": "Open booking",
+        "serviceHint": "consulta",
+        "tone": "silver"
+    }
+}

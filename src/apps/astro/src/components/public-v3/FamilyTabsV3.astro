@@ -1,0 +1,12 @@
+﻿---
+const { families = [] } = Astro.props;
+---
+
+<nav class="family-tabs-v3" data-family-tabs>
+    {
+        families.map((family) => (
+            <a href={`#family-${family.id}`} class="family-tabs-v3__link" data-family-tab={family.id}>{family.label}</a>
+        ))
+    }
+</nav>
+

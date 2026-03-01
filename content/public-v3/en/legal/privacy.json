@@ -1,0 +1,39 @@
+{
+    "title": "Privacy policy",
+    "description": "How personal data and initial clinical context are processed.",
+    "heading": "Privacy policy",
+    "summary": "Contact data and initial clinical context are processed for care, operations, and support purposes.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Data",
+            "title": "We request only what is needed for booking, support, and continuity.",
+            "body": "Name, contact data, concern, images, and payment evidence are used according to the current step."
+        },
+        {
+            "eyebrow": "Purpose",
+            "title": "Information exists to coordinate care, not to recycle it outside the case.",
+            "body": "It is used to validate availability, prepare the appointment, and sustain follow-up."
+        }
+    ],
+    "sections": [
+        {
+            "title": "What we process",
+            "body": "The site may process contact data, initial clinical context, appointment preferences, and supporting images.",
+            "items": [
+                "Contact data for confirmation and follow-up.",
+                "Initial clinical context to orient the first consultation.",
+                "Minimum technical metadata for security and operations."
+            ]
+        },
+        {
+            "title": "How it is used",
+            "body": "Information supports availability, response, appointment preparation, and care continuity.",
+            "items": [
+                "Appointment confirmation or rescheduling.",
+                "WhatsApp or telemedicine support when appropriate.",
+                "Fraud prevention and operational error reduction."
+            ]
+        }
+    ]
+}

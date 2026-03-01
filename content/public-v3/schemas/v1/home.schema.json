@@ -1,0 +1,266 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/home.schema.json",
+    "title": "Public V3 Home",
+    "type": "object",
+    "required": [
+        "title",
+        "description",
+        "slides",
+        "latest",
+        "featuredStories",
+        "telemedicine",
+        "doctors",
+        "booking"
+    ],
+    "properties": {
+        "title": {
+            "type": "string",
+            "minLength": 1
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1
+        },
+        "slides": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "category",
+                    "title",
+                    "deck",
+                    "media",
+                    "primary",
+                    "secondary"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "category": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "deck": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "media": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "primary": {
+                        "type": "object",
+                        "required": ["label", "href", "target"],
+                        "properties": {
+                            "label": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "href": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "target": {
+                                "type": "string",
+                                "enum": [
+                                    "booking",
+                                    "service_hub",
+                                    "service_detail",
+                                    "telemedicine",
+                                    "legal",
+                                    "whatsapp"
+                                ]
+                            }
+                        }
+                    },
+                    "secondary": {
+                        "type": "object",
+                        "required": ["label", "href", "target"],
+                        "properties": {
+                            "label": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "href": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "target": {
+                                "type": "string",
+                                "enum": [
+                                    "booking",
+                                    "service_hub",
+                                    "service_detail",
+                                    "telemedicine",
+                                    "legal",
+                                    "whatsapp"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "latest": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["eyebrow", "title", "href"],
+                "properties": {
+                    "eyebrow": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "href": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "featuredStories": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["eyebrow", "title", "deck", "media", "href"],
+                "properties": {
+                    "eyebrow": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "deck": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "media": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "href": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "alignment": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "telemedicine": {
+            "type": "object",
+            "required": ["eyebrow", "title", "deck", "points", "href"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "points": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "href": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "doctors": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["name", "role", "deck", "media", "serviceSlugs"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "role": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "deck": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "media": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "serviceSlugs": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                }
+            }
+        },
+        "booking": {
+            "type": "object",
+            "required": [
+                "eyebrow",
+                "title",
+                "deck",
+                "actionLabel",
+                "serviceHint"
+            ],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "actionLabel": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "serviceHint": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        }
+    }
+}

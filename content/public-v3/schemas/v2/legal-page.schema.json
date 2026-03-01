@@ -1,0 +1,85 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/legal-page.v2.schema.json",
+    "title": "Public V3 Legal Page V2",
+    "type": "object",
+    "required": [
+        "title",
+        "description",
+        "heading",
+        "summary",
+        "tone",
+        "highlights",
+        "sections"
+    ],
+    "properties": {
+        "title": {
+            "type": "string",
+            "minLength": 1
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1
+        },
+        "heading": {
+            "type": "string",
+            "minLength": 1
+        },
+        "summary": {
+            "type": "string",
+            "minLength": 1
+        },
+        "tone": {
+            "type": "string",
+            "enum": ["ink", "porcelain", "silver"]
+        },
+        "highlights": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["eyebrow", "title", "body"],
+                "properties": {
+                    "eyebrow": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "body": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            }
+        },
+        "sections": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["title", "body", "items"],
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "body": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

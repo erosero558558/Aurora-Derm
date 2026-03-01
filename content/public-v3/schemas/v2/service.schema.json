@@ -1,0 +1,109 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "public-v3/service.v2.schema.json",
+    "title": "Public V3 Service Section Defaults V2",
+    "type": "object",
+    "required": [
+        "heroTone",
+        "storyEyebrow",
+        "storySummary",
+        "storyTone",
+        "evidenceEyebrow",
+        "evidenceTitle",
+        "evidenceTone",
+        "evidenceFallbackBullets",
+        "evidenceOutcomes",
+        "timelineEyebrow",
+        "timelineTone",
+        "timelineSteps",
+        "booking"
+    ],
+    "properties": {
+        "heroTone": {
+            "type": "string",
+            "enum": ["ink", "porcelain", "silver"]
+        },
+        "storyEyebrow": {
+            "type": "string",
+            "minLength": 1
+        },
+        "storySummary": {
+            "type": "string",
+            "minLength": 1
+        },
+        "storyTone": {
+            "type": "string",
+            "enum": ["ink", "porcelain", "silver"]
+        },
+        "evidenceEyebrow": {
+            "type": "string",
+            "minLength": 1
+        },
+        "evidenceTitle": {
+            "type": "string",
+            "minLength": 1
+        },
+        "evidenceTone": {
+            "type": "string",
+            "enum": ["ink", "porcelain", "silver"]
+        },
+        "evidenceFallbackBullets": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "evidenceOutcomes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "timelineEyebrow": {
+            "type": "string",
+            "minLength": 1
+        },
+        "timelineTone": {
+            "type": "string",
+            "enum": ["ink", "porcelain", "silver"]
+        },
+        "timelineSteps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "booking": {
+            "type": "object",
+            "required": ["eyebrow", "title", "deck", "actionLabel", "tone"],
+            "properties": {
+                "eyebrow": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "deck": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "actionLabel": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "tone": {
+                    "type": "string",
+                    "enum": ["ink", "porcelain", "silver"]
+                }
+            }
+        }
+    }
+}

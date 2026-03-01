@@ -1,0 +1,39 @@
+{
+    "title": "Cookie policy",
+    "description": "Use of essential cookies and optional measurement with consent.",
+    "heading": "Cookie policy",
+    "summary": "Essential cookies support security and operations. Optional measurement depends on consent.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Essential",
+            "title": "They preserve the minimum continuity of the site and booking.",
+            "body": "Without them, parts of booking, support, or security may degrade."
+        },
+        {
+            "eyebrow": "Optional",
+            "title": "Measurement exists to understand usage and improve the experience.",
+            "body": "It is enabled through consent and does not replace clinical judgement."
+        }
+    ],
+    "sections": [
+        {
+            "title": "Essential cookies",
+            "body": "They support consent persistence, loaded resources, and technical continuity of the site.",
+            "items": [
+                "Consent persistence.",
+                "Basic public-flow protection.",
+                "Integrity of resources and components."
+            ]
+        },
+        {
+            "title": "Preference management",
+            "body": "You can modify preferences from the banner or your browser.",
+            "items": [
+                "Delete existing cookies.",
+                "Block third parties.",
+                "Review this policy when the site changes."
+            ]
+        }
+    ]
+}

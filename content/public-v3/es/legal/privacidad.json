@@ -1,0 +1,39 @@
+{
+    "title": "Politica de privacidad",
+    "description": "Tratamiento de datos personales y contexto clinico inicial.",
+    "heading": "Politica de privacidad",
+    "summary": "Se procesan datos de contacto y contexto clinico inicial con finalidad asistencial, operativa y de soporte.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Datos",
+            "title": "Pedimos solo lo necesario para reserva, soporte y continuidad.",
+            "body": "Nombre, contacto, motivo de consulta, imagenes y evidencia de pago se usan segun el punto del recorrido."
+        },
+        {
+            "eyebrow": "Finalidad",
+            "title": "La informacion existe para coordinar atencion, no para reciclarla fuera del caso.",
+            "body": "Se utiliza para validar disponibilidad, preparar la cita y sostener seguimiento."
+        }
+    ],
+    "sections": [
+        {
+            "title": "Que datos tratamos",
+            "body": "El sitio puede procesar contacto, motivo clinico inicial, preferencias de cita e imagenes de apoyo.",
+            "items": [
+                "Datos de contacto para confirmacion y seguimiento.",
+                "Contexto clinico inicial para orientar la primera consulta.",
+                "Metadatos tecnicos minimos para seguridad y operacion."
+            ]
+        },
+        {
+            "title": "Como se usan",
+            "body": "La informacion soporta disponibilidad, respuesta, preparacion de cita y continuidad asistencial.",
+            "items": [
+                "Confirmacion o reprogramacion de citas.",
+                "Soporte por WhatsApp o telemedicina cuando corresponda.",
+                "Prevencion de fraude y errores operativos."
+            ]
+        }
+    ]
+}

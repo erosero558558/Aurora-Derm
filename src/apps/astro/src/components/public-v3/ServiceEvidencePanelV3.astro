@@ -1,0 +1,21 @@
+﻿---
+const { evidence, locale = 'es' } = Astro.props;
+---
+
+<section class="service-evidence-v3" data-service-evidence data-section-tone={evidence.tone || 'silver'}>
+    <div>
+        <p>{evidence.eyebrow}</p>
+        <h2>{evidence.title}</h2>
+    </div>
+    <div class="service-evidence-v3__grid">
+        <article>
+            <h3>{locale === 'en' ? 'Caution points' : 'Puntos de cautela'}</h3>
+            <ul>{evidence.bullets.map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>{locale === 'en' ? 'How outcomes are read' : 'Como se leen los resultados'}</h3>
+            <ul>{evidence.outcomes.map((item) => <li>{item}</li>)}</ul>
+        </article>
+    </div>
+</section>
+

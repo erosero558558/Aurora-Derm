@@ -1,22 +1,23 @@
----
-import PublicShellV2 from '../../../layouts/PublicShellV2.astro';
-import TelemedicineHeroV2 from '../../../components/public-v2/TelemedicineHeroV2.astro';
-import HowItWorksV2 from '../../../components/public-v2/HowItWorksV2.astro';
-import WhoItFitsV2 from '../../../components/public-v2/WhoItFitsV2.astro';
-import EscalationModelV2 from '../../../components/public-v2/EscalationModelV2.astro';
-import BookingBridgeBandV2 from '../../../components/public-v2/BookingBridgeBandV2.astro';
-import { getPublicNavigationModel, getTelemedicineV2Data } from '../../../lib/public-v2.js';
+﻿---
+import PublicShellV3 from '../../../layouts/PublicShellV3.astro';
+import TelemedicineHeroV3 from '../../../components/public-v3/TelemedicineHeroV3.astro';
+import HowItWorksV3 from '../../../components/public-v3/HowItWorksV3.astro';
+import WhoItFitsV3 from '../../../components/public-v3/WhoItFitsV3.astro';
+import EscalationModelV3 from '../../../components/public-v3/EscalationModelV3.astro';
+import BookingBridgeBandV3 from '../../../components/public-v3/BookingBridgeBandV3.astro';
+import { getPublicNavigationModel, getTelemedicineV3Data } from '../../../lib/public-v3.js';
 
 const locale = 'es';
 const pathname = '/es/telemedicina/';
-const page = getTelemedicineV2Data(locale);
+const page = getTelemedicineV3Data(locale);
 const navModel = getPublicNavigationModel(locale, pathname);
 ---
 
-<PublicShellV2 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath="/en/telemedicine/" pathname={pathname} navModel={navModel}>
-    <TelemedicineHeroV2 hero={page.hero} />
-    <HowItWorksV2 eyebrow={page.howItWorks.eyebrow} points={page.howItWorks.points} locale={locale} />
-    <WhoItFitsV2 eyebrow={page.whoItFits.eyebrow} points={page.whoItFits.points} locale={locale} />
-    <EscalationModelV2 eyebrow={page.escalation.eyebrow} points={page.escalation.points} locale={locale} />
-    <BookingBridgeBandV2 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} locale={locale} />
-</PublicShellV2>
+<PublicShellV3 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath="/en/telemedicine/" pathname={pathname} navModel={navModel}>
+    <TelemedicineHeroV3 hero={page.hero} />
+    <HowItWorksV3 eyebrow={page.howItWorks.eyebrow} points={page.howItWorks.points} tone={page.howItWorks.tone} locale={locale} />
+    <WhoItFitsV3 eyebrow={page.whoItFits.eyebrow} points={page.whoItFits.points} tone={page.whoItFits.tone} locale={locale} />
+    <EscalationModelV3 eyebrow={page.escalation.eyebrow} points={page.escalation.points} tone={page.escalation.tone} locale={locale} />
+    <BookingBridgeBandV3 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
+</PublicShellV3>
+

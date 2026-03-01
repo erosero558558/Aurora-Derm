@@ -1,0 +1,52 @@
+{
+    "brandEyebrow": "Dermatology systems",
+    "brandLine1": "Piel en",
+    "brandLine2": "Armonia",
+    "labels": {
+        "home": "Inicio",
+        "services": "Servicios",
+        "telemedicine": "Telemedicina",
+        "legal": "Legal",
+        "book": "Reservar",
+        "primaryNav": "Principal",
+        "featuredServices": "Rutas destacadas",
+        "openCatalogue": "Abrir catalogo"
+    },
+    "mega": {
+        "intro": {
+            "eyebrow": "Programas",
+            "title": "Dermatologia organizada como sistema, no como pagina de folletos.",
+            "deck": "Explora diagnostico, estetica medica, pediatria y telemedicina desde una sola shell publica con continuidad de booking."
+        },
+        "families": {
+            "clinical": {
+                "title": "Dermatologia clinica",
+                "deck": "Lesiones, pelo, unas, acne, rosacea y triage medico con lectura clara."
+            },
+            "aesthetic": {
+                "title": "Estetica medica",
+                "deck": "Laser, peelings, toxina y bioestimulacion agrupados como programas medicos."
+            },
+            "children": {
+                "title": "Dermatologia pediatrica",
+                "deck": "Entrada dedicada para ninos y adolescentes con seguimiento orientado a familia."
+            }
+        }
+    },
+    "footer": {
+        "eyebrow": "Public system",
+        "title": "Piel en Armonia",
+        "deck": "Una experiencia publica unificada para diagnostico, programas de cuidado, telemedicina y reserva.",
+        "ctaLabel": "Abrir reserva",
+        "catalogTitle": "Catalogo",
+        "careModesTitle": "Modos de atencion",
+        "legalTitle": "Legal",
+        "clinicTitle": "Consultorio",
+        "clinicCity": "Quito, Ecuador",
+        "clinicPhone": "+593 98 786 6885",
+        "clinicHours": "Lun-Vie 09:00-18:00",
+        "catalogClinical": "Dermatologia clinica",
+        "catalogAesthetic": "Estetica medica",
+        "catalogChildren": "Dermatologia pediatrica"
+    }
+}

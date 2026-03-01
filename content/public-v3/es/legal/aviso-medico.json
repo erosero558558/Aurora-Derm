@@ -1,0 +1,39 @@
+{
+    "title": "Aviso medico",
+    "description": "Alcance clinico del contenido, soporte y chatbot del sitio.",
+    "heading": "Aviso medico",
+    "summary": "La web publica informa y orienta, pero no sustituye valoracion profesional ni diagnostico definitivo.",
+    "tone": "porcelain",
+    "highlights": [
+        {
+            "eyebrow": "Orientacion",
+            "title": "La web ayuda a decidir el siguiente paso, no a diagnosticar.",
+            "body": "Servicios, telemedicina y soporte editorial conducen al funnel, pero no reemplazan criterio medico."
+        },
+        {
+            "eyebrow": "Urgencia",
+            "title": "Los casos agudos requieren atencion inmediata fuera del sitio.",
+            "body": "No dependas del formulario o del chatbot para una emergencia."
+        }
+    ],
+    "sections": [
+        {
+            "title": "Limites del contenido",
+            "body": "El contenido editorial y automatizado no reemplaza juicio medico individual.",
+            "items": [
+                "No constituye receta ni indicacion definitiva.",
+                "No garantiza elegibilidad para un procedimiento.",
+                "No sustituye examen fisico cuando hace falta."
+            ]
+        },
+        {
+            "title": "Cuando escalar",
+            "body": "Dolor intenso, sangrado o progresion rapida exigen atencion inmediata por el canal adecuado.",
+            "items": [
+                "No esperar respuesta asincrona del sitio.",
+                "Usar servicios de emergencia cuando corresponda.",
+                "Reservar seguimiento una vez controlado el evento agudo."
+            ]
+        }
+    ]
+}

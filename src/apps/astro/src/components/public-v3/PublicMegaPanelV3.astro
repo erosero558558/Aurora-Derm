@@ -1,0 +1,47 @@
+---
+const { mega, locale = 'es', labels = {} } = Astro.props;
+---
+
+<div class="public-mega-panel" data-public-mega>
+    <div class="public-mega-panel__intro">
+        <p class="public-mega-panel__eyebrow">{mega.intro.eyebrow}</p>
+        <h2>{mega.intro.title}</h2>
+        <p>{mega.intro.deck}</p>
+        <a href={mega.intro.href} class="public-link-arrow">
+            {labels.openCatalogue || (locale === 'en' ? 'Open catalogue' : 'Abrir catalogo')}
+        </a>
+    </div>
+    <div class="public-mega-panel__families">
+        {
+            mega.families.map((family) => (
+                <a href={family.href} class="public-mega-panel__family">
+                    <strong>{family.title}</strong>
+                    <span>{family.deck}</span>
+                </a>
+            ))
+        }
+    </div>
+    <div class="public-mega-panel__lists">
+        {
+            mega.groups.map((group) => (
+                <section>
+                    <h3>{group.title}</h3>
+                    <ul>
+                        {group.items.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+                    </ul>
+                </section>
+            ))
+        }
+    </div>
+    <div class="public-mega-panel__featured">
+        <h3>{labels.featuredServices || (locale === 'en' ? 'Featured services' : 'Servicios destacados')}</h3>
+        {
+            mega.featured.map((item) => (
+                <a href={item.href} class="public-mega-panel__feature-card">
+                    <span>{item.family}</span>
+                    <strong>{item.title}</strong>
+                </a>
+            ))
+        }
+    </div>
+</div>
