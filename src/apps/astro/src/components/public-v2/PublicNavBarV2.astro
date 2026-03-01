@@ -30,7 +30,7 @@ const currentPath = String(navModel.pathname || '/');
             }
         </nav>
         <div class="public-nav__actions">
-            <a href={navModel.switchHref} class="public-nav__lang">{navModel.switchLabel}</a>
+            <a href={navModel.switchHref} class="public-nav__lang sony-lang">{navModel.switchLabel}</a>
             <a href={navModel.bookingHref} class="public-nav__cta" data-analytics-event="open_public_cta" data-entry-surface="nav_primary_booking" data-cta-target="booking">
                 {navModel.locale === 'en' ? 'Book' : 'Reservar'}
             </a>
