@@ -1,5 +1,5 @@
 ---
-import PublicMegaPanelV2 from './PublicMegaPanelV2.astro';
+import PublicMegaPanelV3 from './PublicMegaPanelV3.astro';
 
 const { navModel } = Astro.props;
 const currentPath = String(navModel.pathname || '/');
@@ -8,10 +8,11 @@ const currentPath = String(navModel.pathname || '/');
 <header class="public-nav" data-public-nav>
     <div class="public-nav__bar">
         <a href={navModel.locale === 'en' ? '/en/' : '/es/'} class="public-nav__brand">
-            <span>Piel en</span>
-            <strong>Armonia</strong>
+            <em class="public-nav__brand-eyebrow">{navModel.brand.eyebrow}</em>
+            <span>{navModel.brand.line1}</span>
+            <strong>{navModel.brand.line2}</strong>
         </a>
-        <nav class="public-nav__links" aria-label={navModel.locale === 'en' ? 'Primary' : 'Principal'}>
+        <nav class="public-nav__links" aria-label={navModel.labels.primaryNav}>
             {
                 navModel.links.map((link) => (
                     link.kind === 'mega' ? (
@@ -19,7 +20,7 @@ const currentPath = String(navModel.pathname || '/');
                             <summary class:list={['public-nav__link', currentPath.startsWith(link.href) && 'is-active']}>
                                 {link.label}
                             </summary>
-                            <PublicMegaPanelV2 mega={navModel.mega} locale={navModel.locale} />
+                            <PublicMegaPanelV3 mega={navModel.mega} locale={navModel.locale} labels={navModel.labels} />
                         </details>
                     ) : (
                         <a class:list={['public-nav__link', currentPath.startsWith(link.href) && 'is-active']} href={link.href}>
@@ -30,9 +31,9 @@ const currentPath = String(navModel.pathname || '/');
             }
         </nav>
         <div class="public-nav__actions">
-            <a href={navModel.switchHref} class="public-nav__lang sony-lang">{navModel.switchLabel}</a>
+            <a class="public-nav__lang sony-lang" href={navModel.switchHref}>{navModel.switchLabel}</a>
             <a href={navModel.bookingHref} class="public-nav__cta" data-analytics-event="open_public_cta" data-entry-surface="nav_primary_booking" data-cta-target="booking">
-                {navModel.locale === 'en' ? 'Book' : 'Reservar'}
+                {navModel.labels.book}
             </a>
         </div>
     </div>
