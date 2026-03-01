@@ -21,16 +21,6 @@ on:
                 required: false
                 default: '180'
                 type: string
-            asset_hash_retry_count:
-                description: 'Reintentos por hash de asset'
-                required: false
-                default: '3'
-                type: string
-            asset_hash_retry_delay_sec:
-                description: 'Espera entre reintentos de hash (seg)'
-                required: false
-                default: '8'
-                type: string
             verify_retry_attempts:
                 description: 'Reintentos completos de verificacion de despliegue'
                 required: false
