@@ -1,0 +1,70 @@
+@font-face {
+    font-family: 'PlusJakarta';
+    src: url('./fonts/plus-jakarta-sans.woff2') format('woff2');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FrauncesSoft';
+    src: url('./fonts/fraunces.woff2') format('woff2');
+    font-display: swap;
+}
+
+:root {
+    --sony-bg: #070707;
+    --sony-bg-soft: #0d0d0d;
+    --sony-surface: #121212;
+    --sony-surface-2: #181818;
+    --sony-surface-3: #1f1f1f;
+    --sony-border: #2b2b2b;
+    --sony-text: #f4f4f4;
+    --sony-muted: #b4b4b4;
+    --sony-accent: #7fc7ff;
+    --sony-accent-strong: #4d9ad8;
+    --sony-info: #7fc7ff;
+    --sony-success: #4fcf9b;
+    --sony-warning: #f2bb63;
+    --sony-danger: #ef6b6b;
+    --sony-sidebar: #050505;
+    --sony-grid-gap: 14px;
+    --sony-radius: 12px;
+    --sony-shadow: 0 28px 58px rgb(0 0 0 / 42%);
+
+    /* Canonical aliases consumed across admin, kiosk, and TV runtime styles. */
+    --bg: var(--sony-bg);
+    --surface: var(--sony-surface);
+    --surface-soft: var(--sony-surface-2);
+    --surface-strong: var(--sony-surface-3);
+    --text: var(--sony-text);
+    --muted: var(--sony-muted);
+    --border: var(--sony-border);
+    --primary: var(--sony-accent);
+    --primary-strong: var(--sony-accent-strong);
+    --accent: var(--sony-accent);
+    --accent-soft: var(--sony-surface-3);
+    --success: var(--sony-success);
+    --warning: var(--sony-warning);
+    --danger: var(--sony-danger);
+    --shadow: var(--sony-shadow);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    color-scheme: dark;
+}
+
+body {
+    font-family: 'PlusJakarta', 'Segoe UI', sans-serif;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+}
+
+:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--primary) 62%, #ffffff 38%);
+    outline-offset: 2px;
+}

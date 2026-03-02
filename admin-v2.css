@@ -1,31 +1,17 @@
-@font-face {
-    font-family: 'PlusJakarta';
-    src: url('./fonts/plus-jakarta-sans.woff2') format('woff2');
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'FrauncesSoft';
-    src: url('./fonts/fraunces.woff2') format('woff2');
-    font-display: swap;
-}
+@import url('./ops-design-system.css?v=ops-20260302-rigor2');
 
 :root {
     --sony-bg: #090909;
-    --sony-surface: #121212;
     --sony-surface-2: #171717;
     --sony-border: #2a2a2a;
-    --sony-text: #f4f4f4;
     --sony-muted: #b7b7b7;
-    --sony-accent: #d8d8d8;
     --sony-success: #2ac080;
     --sony-warning: #efb13f;
     --sony-danger: #f05b5b;
     --sony-info: #7ed0ff;
-    --sony-sidebar: #050505;
-    --sony-grid-gap: 14px;
-    --sony-radius: 12px;
     --sony-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    --primary: var(--sony-info);
+    --accent: var(--sony-info);
 }
 
 html[data-admin-ui='sony_v2'],
@@ -35,9 +21,7 @@ html[data-admin-ui='sony_v2'] body {
 }
 
 body.admin-v2-mode {
-    font-family: 'PlusJakarta', 'Segoe UI', sans-serif;
     line-height: 1.45;
-    letter-spacing: 0.01em;
 }
 
 body.admin-v2-mode * {
