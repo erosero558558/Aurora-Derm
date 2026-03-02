@@ -57,19 +57,6 @@ jobs:
               with:
                   node-version: '20'
 
-            - name: Validar configuracion minima
-              shell: bash
-              run: |
-                  set -euo pipefail
-                  if [ -z "${SENTRY_AUTH_TOKEN}" ]; then
-                    echo "::error::Falta secret SENTRY_AUTH_TOKEN"
-                    exit 1
-                  fi
-                  if [ -z "${SENTRY_ORG}" ]; then
-                    echo "::error::Falta SENTRY_ORG (input org o repo var/secret SENTRY_ORG)"
-                    exit 1
-                  fi
-
             - name: Ejecutar verificacion Sentry (backend/frontend)
               id: verify
               shell: bash

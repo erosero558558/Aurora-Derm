@@ -152,6 +152,8 @@ Evidencia parcial (retencion + conversion/funnel):
 - Validacion remota del workflow semanal (rama de validacion): `Weekly KPI Report` run `22407607517` -> `success` (retention/latency/warnings expuestos en resumen; artifact `weekly-kpi-report` generado).
 - Validacion remota en `main` (post-merge conversion): `Weekly KPI Report` run `22408343562` -> `success` (artifact con `conversion.bookingConfirmedRatePct=100`, `conversionTrend.bookingConfirmedRateDeltaPct=null`, `warnings=[]`).
 - Validacion remota en `main` (post-merge funnel temprano): `Weekly KPI Report` run `22408612570` -> `success` (artifact con `conversion.viewBooking=305`, `conversion.startCheckoutRatePct=0.33`, `conversionTrend.startCheckoutRateDeltaPct=null`; warning no bloqueante `core_p95_alto_995.16ms`).
+- `bin/verify-sentry-events.js` ahora normaliza `verification/runtime/sentry-events-last.json` aun cuando falten credenciales o la API falle, exponiendo `status`, `failureReason` y `actionRequired`.
+- `bin/prod-readiness-summary.js` ahora consume evidencia Sentry desde el artifact mas reciente del workflow manual o desde `verification/runtime/sentry-events-last.json` local antes de clasificar `PM-SENTRY-001` como pendiente.
 
 ### Disciplina de ejecucion (Codex, 2026-02-25)
 
@@ -176,6 +178,7 @@ Evidencia parcial (retencion + conversion/funnel):
 - Concurrencia real Fase 2 (manual en produccion): workflow `Phase 2 Concurrency Write (Manual)` con `enable_write=true`
 - Verificacion Sentry (backend/frontend): `npm run verify:sentry:events` (requiere token/API env)
 - Verificacion Sentry (manual GitHub Actions): workflow `Sentry Events Verify (Manual)`
+- Artefacto runtime Sentry: `verification/runtime/sentry-events-last.json`
 - Errores chat agenda: `npm run test:chat-booking-calendar-errors`
 - Smoke produccion: `npm run smoke:prod`
 

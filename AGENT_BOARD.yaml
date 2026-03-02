@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 374
+  revision: 384
   updated_at: 2026-03-02
 
 tasks:
@@ -351,6 +351,120 @@ tasks:
     prompt: "Implementar guardrails de convivencia entre AGENT_BOARD y Plan Codex (handoffs, codex-check, conflict gate con excepciones temporales) alineado al bloque C4."
     created_at: 2026-02-24
     updated_at: 2026-03-01
+
+  - id: CDX-002
+    title: "Package P1: Sentry evidence normalization and readiness scorecard"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T06:43:22.066Z"
+    risk: medium
+    scope: observability
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "PLAN_MAESTRO_OPERATIVO_2026.md", "bin/verify-sentry-events.js", "bin/prod-readiness-summary.js", ".github/workflows/sentry-events-verify.yml", "docs/MONITORING_SETUP.md", "verification/agent-runs/CDX-002.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 70
+    sla_due_at: "2026-03-04T23:59:59.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T06:43:22.066Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Evidencia Sentry normalizada en runtime, consumida por prod-readiness-summary, y scorecard oficial de paquetes fijada en evidencia reusable."
+    acceptance_ref: "verification/agent-runs/CDX-002.md"
+    evidence_ref: "verification/agent-runs/CDX-002.md"
+    depends_on: []
+    prompt: "Ejecutar Package P1: normalizar sentry-events-last.json con razon accionable, integrar la evidencia en prod-readiness-summary y fijar la plantilla de scorecard de paquetes."
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: CDX-003
+    title: "Package P2: shared PowerShell kernel for production ops scripts"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T17:26:44.854Z"
+    risk: high
+    scope: ops
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "REPORTE-SEMANAL-PRODUCCION.ps1", "VERIFICAR-DESPLIEGUE.ps1", "MONITOR-PRODUCCION.ps1", "bin/powershell/Common.Http.ps1", "bin/powershell/Common.Metrics.ps1", "bin/powershell/Common.Warnings.ps1", "verification/agent-runs/CDX-003.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 82
+    sla_due_at: "2026-03-05T23:59:59.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T17:26:44.854Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "Kernel comun de PowerShell para HTTP, metricas y warnings/ciclo semanal; scripts raiz conservan flags y salida operativa."
+    acceptance_ref: "verification/agent-runs/CDX-003.md"
+    evidence_ref: "verification/agent-runs/CDX-003.md"
+    depends_on: ["CDX-002"]
+    prompt: "Ejecutar Package P2: extraer helpers comunes a bin/powershell y adelgazar REPORTE-SEMANAL-PRODUCCION, VERIFICAR-DESPLIEGUE y MONITOR-PRODUCCION sin romper contratos de CLI ni salida."
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: CDX-004
+    title: "Package P3: analytics controller decomposition into pure services"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T17:53:32.035Z"
+    risk: high
+    scope: analytics
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "controllers/AnalyticsController.php", "lib/analytics/FunnelMetricsService.php", "lib/analytics/RetentionReportService.php", "lib/analytics/PrometheusCounterParser.php", "lib/analytics/AnalyticsLabelNormalizer.php", "lib/analytics/RetentionCsvExporter.php", "tests/Integration/AnalyticsRetentionMetricsTest.php", "tests/Integration/AnalyticsServiceFunnelMetricsTest.php", "tests/Integration/AnalyticsRetentionReportTest.php", "tests/Integration/ServicePriorityControllerTest.php", "verification/agent-runs/CDX-004.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 84
+    sla_due_at: "2026-03-06T23:59:59.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T17:53:32.035Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: high
+    critical_zone: false
+    acceptance: "AnalyticsController queda como fachada HTTP/composicion; funnel, retention, labels, CSV e idempotency viven en servicios puros sin romper contratos JSON ni CSV."
+    acceptance_ref: "verification/agent-runs/CDX-004.md"
+    evidence_ref: "verification/agent-runs/CDX-004.md"
+    depends_on: ["CDX-003"]
+    prompt: "Ejecutar Package P3: extraer calculo de funnel, retention, parseo Prometheus, normalizacion y CSV fuera de AnalyticsController sin romper consumidores ni contratos."
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
 
   - id: AG-009
     title: "Mobile UX phase 4: fix chat/header overlap and spacing consistency"

@@ -251,6 +251,67 @@ Criterio de salida:
 - [x] Monitor diario falla si la API devuelve catalogo vacio por debajo de umbrales configurados.
 - [x] Contrato de workflow protegido por test automatizado.
 
+## C12 - Package P1: evidencia operativa Sentry y scorecard base
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Normalizar la evidencia Sentry de Fase 6 y hacer que `prod-readiness-summary` deje de tratarla como pendiente generico cuando ya existe artefacto verificable.
+
+Entregables:
+
+- [x] `bin/verify-sentry-events.js` siempre escribe `verification/runtime/sentry-events-last.json`, incluyendo `status`, `failureReason` y `actionRequired`.
+- [x] `.github/workflows/sentry-events-verify.yml` publica el artefacto `sentry-events-report` sin bloquear antes de generar el JSON.
+- [x] `bin/prod-readiness-summary.js` consume el artefacto remoto/local de Sentry y refleja `PM-SENTRY-001` segun la evidencia real.
+- [x] Scorecard oficial de paquetes fijada en `verification/agent-runs/CDX-002.md`.
+
+Criterio de salida:
+
+- [x] `npm run verify:sentry:events` deja evidencia utilizable o razon accionable cuando falta configuracion.
+- [x] `prod-readiness-summary` expone seccion `Sentry Evidence` y usa esa evidencia para `PM-SENTRY-001`.
+- [x] Cobertura Node agregada para script, workflow y summary.
+
+## C13 - Package P2: kernel comun PowerShell para produccion
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Extraer el kernel compartido de `REPORTE-SEMANAL-PRODUCCION.ps1`, `VERIFICAR-DESPLIEGUE.ps1` y `MONITOR-PRODUCCION.ps1` a `bin/powershell/*`, dejando scripts raiz mas delgados y sin breaking changes en flags ni salida.
+
+Entregables:
+
+- [x] `bin/powershell/Common.Http.ps1` concentra parseo JSON, wrappers HTTP/curl, descargas remotas, hashes y helpers reutilizables de deploy/monitor.
+- [x] `bin/powershell/Common.Metrics.ps1` concentra percentiles, benchmark y parseo Prometheus usado por el weekly report.
+- [x] `bin/powershell/Common.Warnings.ps1` concentra clasificacion de warnings, runbooks, ciclos semanales y serializacion pesada del reporte semanal.
+- [x] Los tres scripts raiz quedan dot-sourcing de helpers compartidos y conservan contratos de ejecucion desde `npm`.
+
+Criterio de salida:
+
+- [x] `REPORTE-SEMANAL-PRODUCCION.ps1` queda en `<= 1200` lineas.
+- [x] `VERIFICAR-DESPLIEGUE.ps1` queda en `<= 1300` lineas.
+- [x] `MONITOR-PRODUCCION.ps1` mantiene parametros y salida operativa.
+- [x] Validaciones de contratos Node y comandos ops pasan en verde.
+
+## C14 - Package P3: descomposicion del core analitico
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Convertir `controllers/AnalyticsController.php` en una fachada HTTP liviana y mover funnel, retention, parseo Prometheus, normalizacion y CSV a servicios puros reutilizables.
+
+Entregables:
+
+- [x] `lib/analytics/FunnelMetricsService.php` centraliza calculo de `funnel-metrics`, `serviceFunnel`, `surfaceFunnel` e idempotency.
+- [x] `lib/analytics/RetentionReportService.php` centraliza snapshot de retention, parametros, filtros, alertas y reporte diario.
+- [x] `lib/analytics/PrometheusCounterParser.php`, `lib/analytics/AnalyticsLabelNormalizer.php` y `lib/analytics/RetentionCsvExporter.php` absorben parsing/normalizacion/export.
+- [x] `controllers/AnalyticsController.php` conserva entrypoints `recordEvent`, `getFunnelMetrics`, `getRetentionReport` y `buildFunnelMetricsData` sin romper contratos.
+
+Criterio de salida:
+
+- [x] `AnalyticsController.php` queda en `<= 650` lineas.
+- [x] Contratos JSON y CSV permanecen intactos para analytics, service priorities y reporte semanal.
+- [x] Tests PHP de analytics/service priorities y contrato Node consumidor permanecen verdes.
+
 ## Contratos publicos
 
 - No se introducen cambios breaking en contratos HTTP existentes.
@@ -315,3 +376,6 @@ Criterio de salida:
 - 2026-02-26: cerrado C11 con endurecimiento de `MONITOR-PRODUCCION.ps1` para `service-priorities` (source/catalogVersion/counts + umbrales/overrides), cableado en `.github/workflows/prod-monitor.yml` (inputs/env/summary) y contrato Node nuevo `tests-node/prod-monitor-workflow-contract.test.js`.
 - 2026-03-01: extendida propagacion canónica de `public_v4_rollout_*` en pipeline de deploy/post-deploy: `deploy-hosting.yml` ahora resuelve politica efectiva con `resolve-public-v4-rollout-policy.js`, persiste variables de repo `PROD_MONITOR_ENABLE_PUBLIC_V4_ROLLOUT/PUBLIC_V4_ROLLOUT_*`, y despacha payload completo a `post-deploy-fast.yml`, `post-deploy-gate.yml` y `prod-monitor.yml`; `post-deploy-fast.yml` + `post-deploy-gate.yml` incorporan inputs/env/resolucion efectiva/summary/incidente para rollout publico V4; cobertura de contrato reforzada con `tests-node/public-v4-rollout-propagation-contract.test.js` y suites workflow en verde.
 - 2026-03-01: hardening de evidencia operativa para rollout publico V4: `deploy-hosting.yml` agrega manifest `.public-cutover/postdeploy-rollout-dispatch.json` dentro de `public-cutover-evidence`; `post-deploy-fast.yml` publica `verification/last-public-v4-rollout-fast.json` (`post-deploy-fast-public-v4-rollout-report`); `post-deploy-gate.yml` publica `verification/last-public-v4-rollout-gate.json` (`post-deploy-public-v4-rollout-report`); contratos Node actualizados para exigir steps/rutas de reporte y manifest.
+- 2026-03-02: cerrado C12/P1 con evidencia Sentry normalizada en `verification/runtime/sentry-events-last.json`, consumo remoto/local en `bin/prod-readiness-summary.js`, workflow manual `sentry-events-verify.yml` alineado al artefacto `sentry-events-report`, y scorecard base fijada en `verification/agent-runs/CDX-002.md`.
+- 2026-03-02: cerrado C13/P2 con kernel PowerShell compartido en `bin/powershell/Common.Http.ps1`, `bin/powershell/Common.Metrics.ps1` y `bin/powershell/Common.Warnings.ps1`; `REPORTE-SEMANAL-PRODUCCION.ps1` bajo de `2042` a `919` lineas, `VERIFICAR-DESPLIEGUE.ps1` de `1968` a `1216`, `MONITOR-PRODUCCION.ps1` de `368` a `290`; validado con contratos Node y con `npm run verify:prod:fast`, `npm run report:weekly:prod`, `npm run monitor:prod`.
+- 2026-03-02: cerrado C14/P3 con `AnalyticsController.php` reducido de `1111` a `93` lineas y nueva capa `lib/analytics/*` para funnel, retention, parseo Prometheus, normalizacion y CSV; validado con `php -d xdebug.mode=coverage vendor/bin/phpunit tests/Integration/AnalyticsRetentionMetricsTest.php tests/Integration/AnalyticsServiceFunnelMetricsTest.php tests/Integration/AnalyticsRetentionReportTest.php tests/Integration/ServicePriorityControllerTest.php`, `php tests/run-php-tests.php`, `node --test tests-node/weekly-report-script-contract.test.js` y `npm run agent:gate`.

@@ -16,86 +16,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $base = $Domain.TrimEnd('/')
 $todayDate = Get-Date -Format 'yyyy-MM-dd'
-
-function Invoke-EndpointCheck {
-    param(
-        [string]$Name,
-        [string]$Url,
-        [int]$RetryOnNetworkError = 1,
-        [int]$RetryDelaySec = 3
-    )
-
-    $attempt = 0
-    $maxAttempts = 1 + $RetryOnNetworkError
-    $lastResult = $null
-
-    while ($attempt -lt $maxAttempts) {
-        $attempt++
-        if ($attempt -gt 1) {
-            Write-Host "[RETRY] $Name (intento $attempt/$maxAttempts) tras ${RetryDelaySec}s..."
-            Start-Sleep -Seconds $RetryDelaySec
-        }
-
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
-        try {
-            $response = Invoke-WebRequest -Uri $Url -Method Get -TimeoutSec $TimeoutSec -UseBasicParsing
-            $sw.Stop()
-            return [pscustomobject]@{
-                Name = $Name
-                Url = $Url
-                Ok = $true
-                StatusCode = [int]$response.StatusCode
-                DurationMs = [int]$sw.ElapsedMilliseconds
-                Body = [string]$response.Content
-                Error = ''
-            }
-        } catch {
-            $sw.Stop()
-            $statusCode = 0
-            $body = ''
-            if ($_.Exception.Response) {
-                try { $statusCode = [int]$_.Exception.Response.StatusCode.value__ } catch {}
-                try {
-                    $stream = $_.Exception.Response.GetResponseStream()
-                    if ($stream) {
-                        $reader = New-Object System.IO.StreamReader($stream)
-                        $body = $reader.ReadToEnd()
-                        $reader.Close()
-                    }
-                } catch {}
-            }
-
-            $lastResult = [pscustomobject]@{
-                Name = $Name
-                Url = $Url
-                Ok = $false
-                StatusCode = $statusCode
-                DurationMs = [int]$sw.ElapsedMilliseconds
-                Body = $body
-                Error = $_.Exception.Message
-            }
-
-            # Only retry on network-level errors (status=0: connection refused, timeout)
-            if ($statusCode -ne 0) { break }
-        }
-    }
-
-    return $lastResult
-}
-
-function Parse-JsonBody {
-    param([string]$Body)
-    if ([string]::IsNullOrWhiteSpace($Body)) { return $null }
-    try {
-        $convertCmd = Get-Command ConvertFrom-Json -ErrorAction Stop
-        if ($convertCmd.Parameters.ContainsKey('Depth')) {
-            return ($Body | ConvertFrom-Json -Depth 10)
-        }
-        return ($Body | ConvertFrom-Json)
-    } catch {
-        return $null
-    }
-}
+$commonHttpPath = Join-Path $PSScriptRoot 'bin/powershell/Common.Http.ps1'
+. $commonHttpPath
 
 $checks = @(
     @{ Name = 'home'; Url = "$base/"; MaxLatencyMs = 5000 },  # full HTML page — higher threshold
@@ -116,7 +38,7 @@ Write-Host "Dominio: $base"
 Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
 foreach ($c in $checks) {
-    $r = Invoke-EndpointCheck -Name $c.Name -Url $c.Url
+    $r = Invoke-EndpointCheck -Name $c.Name -Url $c.Url -TimeoutSec $TimeoutSec
     $results += $r
 
     if ($r.StatusCode -ne 200) {
@@ -126,7 +48,7 @@ foreach ($c in $checks) {
             ($r.Name -eq 'availability' -or $r.Name -eq 'booked-slots') -and
             $r.StatusCode -eq 503
         ) {
-            $payload = Parse-JsonBody -Body $r.Body
+            $payload = Parse-JsonBody -Body $r.Body -Depth 10
             $code = ''
             try { $code = [string]$payload.code } catch {}
             if ($code -eq 'calendar_unreachable') {
@@ -151,7 +73,7 @@ foreach ($c in $checks) {
 
 $healthResult = $results | Where-Object { $_.Name -eq 'health' } | Select-Object -First 1
 if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
-    $health = Parse-JsonBody -Body $healthResult.Body
+    $health = Parse-JsonBody -Body $healthResult.Body -Depth 10
     if ($null -eq $health) {
         $failures += '[FAIL] health: JSON invalido'
     } else {
@@ -218,7 +140,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
 
 $figoResult = $results | Where-Object { $_.Name -eq 'figo-get' } | Select-Object -First 1
 if ($null -ne $figoResult -and $figoResult.StatusCode -eq 200) {
-    $figo = Parse-JsonBody -Body $figoResult.Body
+    $figo = Parse-JsonBody -Body $figoResult.Body -Depth 10
     if ($null -eq $figo) {
         $failures += '[FAIL] figo-get: JSON invalido'
     } else {
@@ -234,7 +156,7 @@ if ($null -ne $figoResult -and $figoResult.StatusCode -eq 200) {
 
 $availabilityResult = $results | Where-Object { $_.Name -eq 'availability' } | Select-Object -First 1
 if ($null -ne $availabilityResult -and $availabilityResult.StatusCode -eq 200) {
-    $availability = Parse-JsonBody -Body $availabilityResult.Body
+    $availability = Parse-JsonBody -Body $availabilityResult.Body -Depth 10
     if ($null -eq $availability) {
         $failures += '[FAIL] availability: JSON invalido'
     } else {
@@ -265,7 +187,7 @@ if ($null -ne $availabilityResult -and $availabilityResult.StatusCode -eq 200) {
 
 $bookedResult = $results | Where-Object { $_.Name -eq 'booked-slots' } | Select-Object -First 1
 if ($null -ne $bookedResult -and $bookedResult.StatusCode -eq 200) {
-    $booked = Parse-JsonBody -Body $bookedResult.Body
+    $booked = Parse-JsonBody -Body $bookedResult.Body -Depth 10
     if ($null -eq $booked) {
         $failures += '[FAIL] booked-slots: JSON invalido'
     } else {
@@ -296,7 +218,7 @@ if ($null -ne $bookedResult -and $bookedResult.StatusCode -eq 200) {
 
 $servicePrioritiesResult = $results | Where-Object { $_.Name -eq 'service-priorities' } | Select-Object -First 1
 if ($null -ne $servicePrioritiesResult -and $servicePrioritiesResult.StatusCode -eq 200) {
-    $servicePriorities = Parse-JsonBody -Body $servicePrioritiesResult.Body
+    $servicePriorities = Parse-JsonBody -Body $servicePrioritiesResult.Body -Depth 10
     if ($null -eq $servicePriorities) {
         $failures += '[FAIL] service-priorities: JSON invalido'
     } else {

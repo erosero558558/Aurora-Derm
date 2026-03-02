@@ -18,6 +18,7 @@ const { tmpdir } = require('os');
 const ROOT = resolve(__dirname, '..');
 const DEFAULT_JSON_OUT = 'verification/runtime/prod-readiness-summary.json';
 const DEFAULT_MD_OUT = 'verification/runtime/prod-readiness-summary.md';
+const DEFAULT_SENTRY_JSON_OUT = 'verification/runtime/sentry-events-last.json';
 const PHASE6_SCHEDULE_AT_RISK_THRESHOLD_MINUTES = 24 * 60;
 const CRITICAL_WORKFLOW_INPROGRESS_GRACE_MINUTES = 4;
 const WEEKLY_KPI_SCHEDULE_UTC = Object.freeze({
@@ -458,6 +459,40 @@ function findLatestWeeklyReportJson(outputDir) {
     return candidates[0] || null;
 }
 
+function findFileRecursive(rootDir, matcher) {
+    const stack = [rootDir];
+    const matches = [];
+    const matchFn =
+        typeof matcher === 'function' ? matcher : () => false;
+    while (stack.length > 0) {
+        const current = stack.pop();
+        let entries;
+        try {
+            entries = readdirSync(current, { withFileTypes: true });
+        } catch (_error) {
+            continue;
+        }
+        for (const entry of entries) {
+            const fullPath = join(current, entry.name);
+            if (entry.isDirectory()) {
+                stack.push(fullPath);
+                continue;
+            }
+            if (matchFn(entry.name, fullPath)) {
+                let mtimeMs;
+                try {
+                    mtimeMs = statSync(fullPath).mtimeMs;
+                } catch (_error) {
+                    mtimeMs = 0;
+                }
+                matches.push({ fullPath, name: entry.name, mtimeMs });
+            }
+        }
+    }
+    matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
+    return matches[0] || null;
+}
+
 function parseWeeklyReportPayload(payload, meta = {}) {
     const warningCounts = payload.warningCounts || {};
     const warningsBySeverity = payload.warningsBySeverity || {};
@@ -635,49 +670,15 @@ function readLatestWeeklyReport(outputDir) {
 }
 
 function findWeeklyReportJsonRecursive(rootDir) {
-    const stack = [rootDir];
-    const matches = [];
-    while (stack.length > 0) {
-        const current = stack.pop();
-        let entries;
-        try {
-            entries = readdirSync(current, { withFileTypes: true });
-        } catch (_error) {
-            continue;
-        }
-        for (const entry of entries) {
-            const fullPath = join(current, entry.name);
-            if (entry.isDirectory()) {
-                stack.push(fullPath);
-                continue;
-            }
-            if (/^weekly-report-\d{8}\.json$/i.test(entry.name)) {
-                let mtimeMs;
-                try {
-                    mtimeMs = statSync(fullPath).mtimeMs;
-                } catch (_error) {
-                    mtimeMs = 0;
-                }
-                matches.push({ fullPath, name: entry.name, mtimeMs });
-            }
-        }
-    }
-    matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
-    return matches[0] || null;
+    return findFileRecursive(rootDir, (name) =>
+        /^weekly-report-\d{8}\.json$/i.test(name)
+    );
 }
 
-function downloadWeeklyReportArtifact(runId) {
-    const tempBase = mkdtempSync(join(tmpdir(), 'prod-readiness-weekly-'));
+function downloadNamedArtifact(runId, artifactName, matcher, missingError) {
+    const tempBase = mkdtempSync(join(tmpdir(), 'prod-readiness-artifact-'));
     const res = runGh(
-        [
-            'run',
-            'download',
-            String(runId),
-            '-n',
-            'weekly-kpi-report',
-            '-D',
-            tempBase,
-        ],
+        ['run', 'download', String(runId), '-n', artifactName, '-D', tempBase],
         { allowFailure: true }
     );
     if (!res.ok) {
@@ -694,7 +695,7 @@ function downloadWeeklyReportArtifact(runId) {
         };
     }
 
-    const file = findWeeklyReportJsonRecursive(tempBase);
+    const file = findFileRecursive(tempBase, matcher);
     if (!file) {
         try {
             rmSync(tempBase, { recursive: true, force: true });
@@ -703,7 +704,7 @@ function downloadWeeklyReportArtifact(runId) {
         }
         return {
             ok: false,
-            error: 'Artifact weekly-kpi-report no contiene weekly-report-*.json',
+            error: missingError,
             tempDir: null,
             file: null,
         };
@@ -715,6 +716,15 @@ function downloadWeeklyReportArtifact(runId) {
         tempDir: tempBase,
         file,
     };
+}
+
+function downloadWeeklyReportArtifact(runId) {
+    return downloadNamedArtifact(
+        runId,
+        'weekly-kpi-report',
+        (name) => /^weekly-report-\d{8}\.json$/i.test(name),
+        'Artifact weekly-kpi-report no contiene weekly-report-*.json'
+    );
 }
 
 function readWeeklyReportFromRemoteArtifact(
@@ -805,6 +815,203 @@ function readWeeklyReportPreferred({ mode, weeklyDir, weeklyKpiRun }) {
             ...localReport,
             fallbackFromRemoteError: remoteReport.error || null,
             fallbackAttempted: true,
+        };
+    }
+
+    if (!remoteReport.found && !localReport.found) {
+        return {
+            ...localReport,
+            source: 'auto',
+            fallbackAttempted: true,
+            fallbackFromRemoteError: remoteReport.error || null,
+        };
+    }
+
+    return {
+        ...(remoteReport.found ? remoteReport : localReport),
+        fallbackAttempted: true,
+        fallbackFromRemoteError: remoteReport.error || null,
+    };
+}
+
+function parseSentryEvidencePayload(payload, meta = {}) {
+    const backend = payload.backend || {};
+    const frontend = payload.frontend || {};
+    const failureReason = payload.failureReason || {};
+    return {
+        found: true,
+        source: meta.source || 'local',
+        path: meta.path || null,
+        fileName: meta.fileName || (meta.path ? basename(meta.path) : null),
+        mtime:
+            meta.mtimeIso ||
+            (Number.isFinite(meta.mtimeMs)
+                ? new Date(meta.mtimeMs).toISOString()
+                : null),
+        reportRun: meta.reportRun || null,
+        generatedAt: toIso(payload.generatedAt),
+        ok: Boolean(payload.ok),
+        status: payload.status || (payload.ok ? 'ok' : 'unknown'),
+        baseUrl: payload.baseUrl || null,
+        org: payload.org || null,
+        lookbackHours: Number.isFinite(Number(payload.lookbackHours))
+            ? Number(payload.lookbackHours)
+            : null,
+        allowMissing: Boolean(payload.allowMissing),
+        maxAgeHours:
+            payload.maxAgeHours !== null &&
+            payload.maxAgeHours !== undefined &&
+            Number.isFinite(Number(payload.maxAgeHours))
+                ? Number(payload.maxAgeHours)
+                : null,
+        missingEnv: Array.isArray(payload.missingEnv) ? payload.missingEnv : [],
+        missingProjects: Array.isArray(payload.missingProjects)
+            ? payload.missingProjects
+            : [],
+        staleProjects: Array.isArray(payload.staleProjects)
+            ? payload.staleProjects
+            : [],
+        actionRequired: payload.actionRequired || null,
+        failureReason: failureReason.code || failureReason.message
+            ? {
+                  code: failureReason.code || null,
+                  message: failureReason.message || null,
+              }
+            : null,
+        backend: {
+            project: backend.project || null,
+            found: Boolean(backend.found),
+            latest: backend.latest || null,
+        },
+        frontend: {
+            project: frontend.project || null,
+            found: Boolean(frontend.found),
+            latest: frontend.latest || null,
+        },
+        error: null,
+    };
+}
+
+function readSentryEvidenceFromFile(filePath, meta = {}) {
+    let payload;
+    try {
+        payload = JSON.parse(readFileSync(filePath, 'utf8'));
+    } catch (error) {
+        return {
+            found: true,
+            source: meta.source || 'local',
+            path: filePath,
+            fileName: basename(filePath),
+            reportRun: meta.reportRun || null,
+            error: `No se pudo parsear JSON: ${error.message}`,
+        };
+    }
+
+    return parseSentryEvidencePayload(payload, {
+        ...meta,
+        path: filePath,
+    });
+}
+
+function readLatestSentryEvidence(localPath) {
+    const absolutePath = resolve(ROOT, localPath);
+    if (!existsSync(absolutePath)) {
+        return {
+            found: false,
+            source: 'local',
+            path: absolutePath,
+            error: null,
+        };
+    }
+
+    let mtimeMs = null;
+    try {
+        mtimeMs = statSync(absolutePath).mtimeMs;
+    } catch (_error) {
+        mtimeMs = null;
+    }
+
+    return readSentryEvidenceFromFile(absolutePath, {
+        source: 'local',
+        fileName: basename(absolutePath),
+        mtimeMs,
+    });
+}
+
+function downloadSentryEvidenceArtifact(runId) {
+    return downloadNamedArtifact(
+        runId,
+        'sentry-events-report',
+        (name) => /^sentry-events-last\.json$/i.test(name),
+        'Artifact sentry-events-report no contiene sentry-events-last.json'
+    );
+}
+
+function readSentryEvidenceFromRemoteArtifact(sentryRunWrapper, fallbackPath) {
+    const run = getWorkflowRunForHealth(sentryRunWrapper);
+    if (!sentryRunWrapper || !sentryRunWrapper.available || !run || !run.id) {
+        return {
+            found: false,
+            source: 'remote_artifact',
+            path: resolve(ROOT, fallbackPath || DEFAULT_SENTRY_JSON_OUT),
+            error: 'No hay run de Sentry Events Verify disponible para descargar artifact',
+        };
+    }
+    const downloaded = downloadSentryEvidenceArtifact(run.id);
+    if (!downloaded.ok) {
+        return {
+            found: false,
+            source: 'remote_artifact',
+            path: resolve(ROOT, fallbackPath || DEFAULT_SENTRY_JSON_OUT),
+            reportRun: {
+                id: run.id,
+                url: run.url || null,
+                conclusion: run.conclusion || null,
+                status: run.status || null,
+                updatedAt: run.updatedAt || null,
+            },
+            error: downloaded.error,
+        };
+    }
+
+    try {
+        return readSentryEvidenceFromFile(downloaded.file.fullPath, {
+            source: 'remote_artifact',
+            fileName: downloaded.file.name,
+            mtimeMs: downloaded.file.mtimeMs,
+            reportRun: {
+                id: run.id,
+                url: run.url || null,
+                conclusion: run.conclusion || null,
+                status: run.status || null,
+                updatedAt: run.updatedAt || null,
+                headSha: run.headSha || null,
+            },
+        });
+    } finally {
+        try {
+            rmSync(downloaded.tempDir, { recursive: true, force: true });
+        } catch (_error) {
+            // best effort
+        }
+    }
+}
+
+function readSentryEvidencePreferred({ localPath, sentryRun }) {
+    const remoteReport = readSentryEvidenceFromRemoteArtifact(
+        sentryRun,
+        localPath
+    );
+    if (remoteReport.found && !remoteReport.error) {
+        return remoteReport;
+    }
+
+    const localReport = readLatestSentryEvidence(localPath);
+    if (localReport.found && !localReport.error) {
+        return {
+            ...localReport,
+            fallbackAttempted: true,
+            fallbackFromRemoteError: remoteReport.error || null,
         };
     }
 
@@ -1121,6 +1328,7 @@ function computeProductionStability({
     openProdAlerts,
     weeklyLocalReport,
     weeklyKpiHistory,
+    sentryEvidence,
 }) {
     const criticalWorkflowKeys = ['ci', 'postDeployGate', 'deployHosting'];
     const reasons = [];
@@ -1186,6 +1394,13 @@ function computeProductionStability({
         advisories.push(
             `phase6_schedule_pace:${pace.signal}(${pace.reason || 'n/a'})`
         );
+    }
+    if (sentryEvidence?.found && !sentryEvidence.error) {
+        advisories.push(
+            `sentry_evidence:${sentryEvidence.ok ? 'ok' : sentryEvidence.status || 'unknown'}`
+        );
+    } else if (sentryEvidence?.error) {
+        advisories.push(`sentry_evidence:error(${sentryEvidence.error})`);
     }
 
     return {
@@ -1273,14 +1488,69 @@ function computePlanMasterProgress({
     openProdAlerts,
     weeklyLocalReport,
     weeklyKpiHistory,
+    sentryEvidence,
 }) {
     const pending = [];
+    const sentryNotesBase = [];
+    if (!sentryEvidence || !sentryEvidence.found) {
+        sentryNotesBase.push(
+            'No existe evidencia Sentry descargable ni artefacto local normalizado.'
+        );
+    } else if (sentryEvidence.error) {
+        sentryNotesBase.push(
+            `La evidencia Sentry existe pero no se pudo parsear/leer: ${sentryEvidence.error}.`
+        );
+    } else {
+        sentryNotesBase.push(
+            `source=${sentryEvidence.source || 'n/a'} generatedAt=${sentryEvidence.generatedAt || 'n/a'} status=${sentryEvidence.status || 'n/a'} ok=${sentryEvidence.ok ? 'true' : 'false'}.`
+        );
+        if (sentryEvidence.reportRun?.id) {
+            sentryNotesBase.push(
+                `run=${sentryEvidence.reportRun.id} conclusion=${sentryEvidence.reportRun.conclusion || sentryEvidence.reportRun.status || 'n/a'}.`
+            );
+        }
+        if (sentryEvidence.missingEnv?.length) {
+            sentryNotesBase.push(
+                `missing_env=${sentryEvidence.missingEnv.join(', ')}.`
+            );
+        }
+        if (sentryEvidence.missingProjects?.length) {
+            sentryNotesBase.push(
+                `missing_projects=${sentryEvidence.missingProjects.join(', ')}.`
+            );
+        }
+        if (sentryEvidence.staleProjects?.length) {
+            sentryNotesBase.push(
+                `stale_projects=${sentryEvidence.staleProjects
+                    .map((row) => `${row.project}:${row.ageHours}h`)
+                    .join(', ')}.`
+            );
+        }
+        if (sentryEvidence.actionRequired) {
+            sentryNotesBase.push(`action=${sentryEvidence.actionRequired}`);
+        }
+    }
+    let sentryStatus = 'pending_external';
+    let sentryOwner = 'manual/external';
+    if (sentryEvidence?.found && !sentryEvidence.error && sentryEvidence.ok) {
+        sentryStatus = 'done';
+        sentryOwner = 'ops';
+    } else if (
+        sentryEvidence?.found &&
+        !sentryEvidence.error &&
+        ['missing_events', 'stale_events'].includes(
+            String(sentryEvidence.status || '')
+        )
+    ) {
+        sentryStatus = 'in_progress_timebox';
+        sentryOwner = 'ops';
+    }
     pending.push({
         id: 'PM-SENTRY-001',
         title: 'Confirmar primer evento de Sentry (backend + frontend)',
-        status: 'pending_external',
-        owner: 'manual/external',
-        notes: 'Pendiente por acceso/token Sentry para evidencia de dashboard/API.',
+        status: sentryStatus,
+        owner: sentryOwner,
+        notes: sentryNotesBase.join(' '),
     });
 
     const weeklyRun = getWorkflowRunForHealth(workflows.weeklyKpi) || null;
@@ -1368,6 +1638,7 @@ function computeSuggestedActions({
     planMasterProgress,
     productionStability,
     executionEfficiency,
+    sentryEvidence,
 }) {
     const actions = [];
     const workflowLabels = {
@@ -1525,9 +1796,16 @@ function computeSuggestedActions({
             priority: 'P3',
             blocking: false,
             title: 'Cerrar evidencia Sentry (backend/frontend)',
-            reason: 'Pendiente externo/manual de confirmacion de eventos',
+            reason:
+                sentryEvidence?.failureReason?.message ||
+                sentryEvidence?.actionRequired ||
+                sentryPending.notes ||
+                'Pendiente externo/manual de confirmacion de eventos',
             command: 'npm run verify:sentry:events',
-            url: null,
+            url:
+                sentryEvidence?.reportRun?.url ||
+                getWorkflowRunForHealth(workflows?.sentryVerify)?.url ||
+                null,
         });
     }
 
@@ -1696,6 +1974,9 @@ function toMarkdown(summary) {
     );
     lines.push(markdownWorkflowLine('Weekly KPI Report', workflows.weeklyKpi));
     lines.push(
+        markdownWorkflowLine('Sentry Events Verify', workflows.sentryVerify)
+    );
+    lines.push(
         markdownWorkflowLine(
             'Repair Git Sync (Self-Heal)',
             workflows.repairGitSync
@@ -1855,6 +2136,96 @@ function toMarkdown(summary) {
                 weeklyLocalReport.conversion.bookingConfirmedRatePct ?? 'n/a'
             }`
         );
+    }
+    lines.push('');
+
+    lines.push('## Sentry Evidence');
+    lines.push('');
+    if (!summary.sentryEvidence || !summary.sentryEvidence.found) {
+        lines.push('- status: not_found');
+        lines.push(`- source: ${summary.sentryEvidence?.source || 'n/a'}`);
+        if (summary.sentryEvidence?.error) {
+            lines.push(`- error: ${summary.sentryEvidence.error}`);
+        }
+    } else if (summary.sentryEvidence.error) {
+        lines.push('- status: error');
+        lines.push(`- source: ${summary.sentryEvidence.source || 'n/a'}`);
+        lines.push(`- error: ${summary.sentryEvidence.error}`);
+        if (summary.sentryEvidence.path) {
+            lines.push(`- path: ${summary.sentryEvidence.path}`);
+        }
+    } else {
+        lines.push(`- source: ${summary.sentryEvidence.source || 'n/a'}`);
+        lines.push(`- ok: ${summary.sentryEvidence.ok ? 'true' : 'false'}`);
+        lines.push(`- status: ${summary.sentryEvidence.status || 'n/a'}`);
+        if (summary.sentryEvidence.reportRun?.id) {
+            lines.push(`- source_run_id: ${summary.sentryEvidence.reportRun.id}`);
+        }
+        if (summary.sentryEvidence.reportRun?.url) {
+            lines.push(
+                `- source_run_url: ${summary.sentryEvidence.reportRun.url}`
+            );
+        }
+        if (summary.sentryEvidence.fallbackAttempted) {
+            lines.push('- source_fallback_attempted: true');
+        }
+        if (summary.sentryEvidence.fallbackFromRemoteError) {
+            lines.push(
+                `- source_fallback_remote_error: ${summary.sentryEvidence.fallbackFromRemoteError}`
+            );
+        }
+        lines.push(`- path: ${summary.sentryEvidence.path || 'n/a'}`);
+        lines.push(
+            `- generatedAt: ${summary.sentryEvidence.generatedAt || 'n/a'}`
+        );
+        lines.push(`- mtime: ${summary.sentryEvidence.mtime || 'n/a'}`);
+        lines.push(
+            `- backend_found: ${summary.sentryEvidence.backend?.found ? 'true' : 'false'}`
+        );
+        lines.push(
+            `- frontend_found: ${summary.sentryEvidence.frontend?.found ? 'true' : 'false'}`
+        );
+        lines.push(
+            `- missing_env: ${
+                summary.sentryEvidence.missingEnv?.length
+                    ? summary.sentryEvidence.missingEnv.join(', ')
+                    : 'none'
+            }`
+        );
+        lines.push(
+            `- missing_projects: ${
+                summary.sentryEvidence.missingProjects?.length
+                    ? summary.sentryEvidence.missingProjects.join(', ')
+                    : 'none'
+            }`
+        );
+        lines.push(
+            `- stale_projects: ${
+                summary.sentryEvidence.staleProjects?.length
+                    ? summary.sentryEvidence.staleProjects
+                          .map(
+                              (row) =>
+                                  `${row.project} (${row.ageHours}h > ${row.maxAgeHours}h)`
+                          )
+                          .join(', ')
+                    : 'none'
+            }`
+        );
+        if (summary.sentryEvidence.failureReason?.code) {
+            lines.push(
+                `- failure_code: ${summary.sentryEvidence.failureReason.code}`
+            );
+        }
+        if (summary.sentryEvidence.failureReason?.message) {
+            lines.push(
+                `- failure_message: ${summary.sentryEvidence.failureReason.message}`
+            );
+        }
+        if (summary.sentryEvidence.actionRequired) {
+            lines.push(
+                `- action_required: ${summary.sentryEvidence.actionRequired}`
+            );
+        }
     }
     lines.push('');
 
@@ -2021,6 +2392,13 @@ function main() {
             },
             branch
         ),
+        sentryVerify: fetchLatestWorkflowRun(
+            {
+                workflowRef: '.github/workflows/sentry-events-verify.yml',
+                label: 'Sentry Events Verify',
+            },
+            branch
+        ),
         repairGitSync: fetchLatestWorkflowRun(
             {
                 workflowRef: '.github/workflows/repair-git-sync.yml',
@@ -2044,17 +2422,23 @@ function main() {
         weeklyDir,
         weeklyKpiRun: workflows.weeklyKpi,
     });
+    const sentryEvidence = readSentryEvidencePreferred({
+        localPath: DEFAULT_SENTRY_JSON_OUT,
+        sentryRun: workflows.sentryVerify,
+    });
     const productionStability = computeProductionStability({
         workflows,
         openProdAlerts,
         weeklyLocalReport,
         weeklyKpiHistory,
+        sentryEvidence,
     });
     const planMasterProgress = computePlanMasterProgress({
         workflows,
         openProdAlerts,
         weeklyLocalReport,
         weeklyKpiHistory,
+        sentryEvidence,
     });
     const executionEfficiency = computeExecutionEfficiency({
         branch,
@@ -2069,6 +2453,7 @@ function main() {
         planMasterProgress,
         productionStability,
         executionEfficiency,
+        sentryEvidence,
     });
     const releaseReadiness = computeReleaseReadiness({
         productionStability,
@@ -2095,6 +2480,7 @@ function main() {
         weeklyKpiHistory,
         openProdAlerts,
         weeklyLocalReport,
+        sentryEvidence,
         paths: {
             jsonOut,
             mdOut,

@@ -49,6 +49,38 @@ During planned maintenance or deployments, you can pause the monitor to avoid fa
 
 ---
 
+## Sentry Evidence Verification
+
+Sentry evidence is tracked through a normalized runtime artifact:
+
+- Local/runtime path: `verification/runtime/sentry-events-last.json`
+- Producer command: `npm run verify:sentry:events`
+- Manual workflow: `.github/workflows/sentry-events-verify.yml`
+- Uploaded artifact name: `sentry-events-report`
+
+Expected behavior:
+
+1. The script always writes JSON, even when verification fails.
+2. The JSON includes `status`, `failureReason`, and `actionRequired`.
+3. `bin/prod-readiness-summary.js` consumes the latest Sentry workflow artifact first and falls back to the local runtime file.
+
+Operational notes:
+
+- If the status is `ok`, backend and frontend already have recent evidence.
+- If the status is `needs_configuration`, the artifact should explicitly list missing env/secrets such as `SENTRY_AUTH_TOKEN` or `SENTRY_ORG`.
+- If the status is `missing_events` or `stale_events`, the integration exists but recent events must be generated or recovered.
+
+Recommended verification flow:
+
+```bash
+npm run verify:sentry:events
+node bin/prod-readiness-summary.js
+```
+
+If local credentials are unavailable, run the manual workflow and review the uploaded `sentry-events-report` artifact.
+
+---
+
 ## Option 2: Self-Hosted Grafana + Prometheus (Advanced)
 
 This guide explains how to spin up a local or self-hosted Grafana + Prometheus stack to monitor the PielArmonia application.

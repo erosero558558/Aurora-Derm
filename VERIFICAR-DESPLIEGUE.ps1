@@ -18,407 +18,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $base = $Domain.TrimEnd('/')
 $script:CurlBinary = $null
-
-function Get-CurlBinary {
-    if (-not [string]::IsNullOrWhiteSpace($script:CurlBinary)) {
-        return $script:CurlBinary
-    }
-
-    foreach ($candidate in @('curl.exe', 'curl')) {
-        $command = Get-Command $candidate -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($null -ne $command -and -not [string]::IsNullOrWhiteSpace($command.Source)) {
-            $script:CurlBinary = $command.Source
-            return $script:CurlBinary
-        }
-    }
-
-    throw 'No se encontro curl/curl.exe en el entorno de ejecucion.'
-}
-
-function New-CompatTemporaryFile {
-    try {
-        return [System.IO.Path]::GetTempFileName()
-    } catch {
-        throw "No se pudo crear archivo temporal: $($_.Exception.Message)"
-    }
-}
-
-function Invoke-CurlDownload {
-    param(
-        [string]$Url,
-        [string]$OutputPath,
-        [int]$MaxTimeSec = 20,
-        [int]$ConnectTimeoutSec = 8
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Url) -or [string]::IsNullOrWhiteSpace($OutputPath)) {
-        throw 'Invoke-CurlDownload requiere Url y OutputPath.'
-    }
-
-    $curlBinary = Get-CurlBinary
-    & $curlBinary -sS -L --max-time $MaxTimeSec --connect-timeout $ConnectTimeoutSec -o $OutputPath $Url | Out-Null
-    return ($LASTEXITCODE -eq 0)
-}
-
-function Get-RefFromIndex {
-    param(
-        [string]$IndexHtml,
-        [string]$Pattern
-    )
-
-    $match = [regex]::Match($IndexHtml, $Pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    if (-not $match.Success) {
-        return ''
-    }
-    return $match.Groups[1].Value
-}
-
-function Get-Url {
-    param(
-        [string]$Base,
-        [string]$Ref
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Ref)) {
-        return ''
-    }
-    if ($Ref.StartsWith('http://') -or $Ref.StartsWith('https://')) {
-        return $Ref
-    }
-    if ($Ref.StartsWith('/')) {
-        return "$Base$Ref"
-    }
-    return "$Base/$Ref"
-}
-
-function Get-RefPath {
-    param([string]$Ref)
-
-    if ([string]::IsNullOrWhiteSpace($Ref)) {
-        return ''
-    }
-
-    $clean = $Ref.Trim()
-    $hashIndex = $clean.IndexOf('#')
-    if ($hashIndex -ge 0) {
-        $clean = $clean.Substring(0, $hashIndex)
-    }
-
-    $queryIndex = $clean.IndexOf('?')
-    if ($queryIndex -ge 0) {
-        $clean = $clean.Substring(0, $queryIndex)
-    }
-
-    return $clean
-}
-
-function Add-QueryParam {
-    param(
-        [string]$Url,
-        [string]$Name,
-        [string]$Value
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Url) -or [string]::IsNullOrWhiteSpace($Name) -or [string]::IsNullOrWhiteSpace($Value)) {
-        return $Url
-    }
-
-    try {
-        $uri = [Uri]$Url
-        $pathAndQuery = $uri.PathAndQuery
-        $separator = if ($pathAndQuery.Contains('?')) { '&' } else { '?' }
-        return "$Url$separator$Name=$([Uri]::EscapeDataString($Value))"
-    } catch {
-        $separator = if ($Url.Contains('?')) { '&' } else { '?' }
-        return "$Url$separator$Name=$([Uri]::EscapeDataString($Value))"
-    }
-}
-
-function Get-CacheBypassUrl {
-    param(
-        [string]$Url,
-        [string]$AssetName,
-        [int]$Attempt = 0
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Url)) {
-        return $Url
-    }
-
-    $safeAsset = if ([string]::IsNullOrWhiteSpace($AssetName)) { 'asset' } else { $AssetName }
-    $nonce = "$([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())-$safeAsset-$Attempt"
-    $withVerify = Add-QueryParam -Url $Url -Name 'verify' -Value $nonce
-    return Add-QueryParam -Url $withVerify -Name 'ha' -Value "$Attempt"
-}
-
-function Get-RemoteSha256 {
-    param(
-        [string]$Url,
-        [switch]$NormalizeText
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Url)) {
-        return ''
-    }
-
-    $tmp = New-CompatTemporaryFile
-    try {
-        if (-not (Invoke-CurlDownload -Url $Url -OutputPath $tmp -MaxTimeSec 20 -ConnectTimeoutSec 8)) {
-            throw "No se pudo descargar $Url"
-        }
-
-        if ($NormalizeText) {
-            $text = [string](Get-Content -Path $tmp -Raw)
-            $normalized = $text -replace "`r`n", "`n" -replace "`r", "`n"
-            $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
-            $sha = [System.Security.Cryptography.SHA256]::Create()
-            return ([System.BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
-        }
-
-        return (Get-FileHash -Algorithm SHA256 -Path $tmp).Hash.ToLowerInvariant()
-    } finally {
-        Remove-Item -Force -ErrorAction SilentlyContinue $tmp
-    }
-}
-
-function Get-LocalSha256 {
-    param(
-        [string]$Path,
-        [switch]$NormalizeText
-    )
-    if (-not (Test-Path $Path)) {
-        return ''
-    }
-
-    if ($NormalizeText) {
-        $text = [string](Get-Content -Path $Path -Raw)
-        $normalized = $text -replace "`r`n", "`n" -replace "`r", "`n"
-        $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
-        $sha = [System.Security.Cryptography.SHA256]::Create()
-        return ([System.BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
-    }
-
-    return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
-}
-
-function Resolve-LocalAssetPath {
-    param(
-        [string]$PrimaryPath,
-        [string[]]$FallbackPaths = @()
-    )
-
-    if (-not [string]::IsNullOrWhiteSpace($PrimaryPath) -and (Test-Path $PrimaryPath)) {
-        return $PrimaryPath
-    }
-
-    foreach ($candidate in $FallbackPaths) {
-        if ([string]::IsNullOrWhiteSpace($candidate)) {
-            continue
-        }
-        if (Test-Path $candidate) {
-            return $candidate
-        }
-    }
-
-    return ''
-}
-
-function Get-ScriptVersionedRef {
-    param(
-        [string]$ScriptText,
-        [string]$FileName
-    )
-
-    if ([string]::IsNullOrWhiteSpace($ScriptText) -or [string]::IsNullOrWhiteSpace($FileName)) {
-        return ''
-    }
-
-    $escaped = [regex]::Escape($FileName)
-    $pattern = "([/a-zA-Z0-9._-]*$escaped\?v=[a-zA-Z0-9._-]+)"
-    $match = [regex]::Match($ScriptText, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    if ($match.Success) {
-        return $match.Groups[1].Value
-    }
-    return ''
-}
-
-function Get-LocalSha256FromGitHeadOrFile {
-    param(
-        [string]$Path,
-        [switch]$NormalizeText
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Path)) {
-        return ''
-    }
-
-    # NOTE:
-    # git show captured via PowerShell string pipelines can mangle encoding on large/non-ASCII assets.
-    # For deterministic parity against what the server actually serves, hash the checked-out local file.
-    return Get-LocalSha256 -Path $Path -NormalizeText:$NormalizeText
-}
-
-function Get-RemoteText {
-    param([string]$Url)
-
-    if ([string]::IsNullOrWhiteSpace($Url)) {
-        return ''
-    }
-
-    $tmp = New-CompatTemporaryFile
-    try {
-        if (-not (Invoke-CurlDownload -Url $Url -OutputPath $tmp -MaxTimeSec 20 -ConnectTimeoutSec 8)) {
-            return ''
-        }
-        return [string](Get-Content -Path $tmp -Raw)
-    } catch {
-        return ''
-    } finally {
-        Remove-Item -Force -ErrorAction SilentlyContinue $tmp
-    }
-}
-
-function Invoke-JsonGet {
-    param([string]$Url)
-
-    try {
-        $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
-            'Cache-Control' = 'no-cache'
-            'User-Agent' = 'PielArmoniaDeployCheck/1.0'
-        }
-
-        $status = [int]$resp.StatusCode
-        $body = [string]$resp.Content
-        if ($status -lt 200 -or $status -ge 300) {
-            throw "HTTP $status en $Url"
-        }
-
-        try {
-            $json = $body | ConvertFrom-Json
-        } catch {
-            throw "La respuesta de $Url no es JSON valido"
-        }
-
-        return [PSCustomObject]@{
-            Status = $status
-            Body = $body
-            Json = $json
-        }
-    } catch {
-        throw
-    }
-}
-
-function Get-LocalGitHeadInfo {
-    try {
-        $hashRaw = (& git rev-parse --short HEAD 2>$null)
-        $epochRaw = (& git log -1 --format=%ct HEAD 2>$null)
-        if ($LASTEXITCODE -ne 0) {
-            return $null
-        }
-
-        $hash = [string]$hashRaw
-        $epochText = [string]$epochRaw
-        if ([string]::IsNullOrWhiteSpace($hash) -or [string]::IsNullOrWhiteSpace($epochText)) {
-            return $null
-        }
-
-        $commitEpoch = 0L
-        if (-not [long]::TryParse($epochText.Trim(), [ref]$commitEpoch)) {
-            return $null
-        }
-
-        $commitUtc = [DateTimeOffset]::FromUnixTimeSeconds($commitEpoch).UtcDateTime
-        return [PSCustomObject]@{
-            Hash = $hash.Trim()
-            CommitUtc = $commitUtc
-            CommitEpoch = $commitEpoch
-        }
-    } catch {
-        return $null
-    }
-}
-
-function Test-HeadTouchesFrontendAssets {
-    try {
-        $changedRaw = (& git diff --name-only HEAD~1 HEAD 2>$null)
-        if ($LASTEXITCODE -ne 0 -or $null -eq $changedRaw) {
-            return $true
-        }
-
-        $changedFiles = @($changedRaw | ForEach-Object {
-            $line = [string]$_
-            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                $line.Trim().Replace('\', '/')
-            }
-        } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-
-        if ($changedFiles.Count -eq 0) {
-            return $true
-        }
-
-        $frontendPatterns = @(
-            '^index\.html$',
-            '^script\.js$',
-            '^styles\.css$',
-            '^styles-deferred\.css$',
-            '^js/engines/',
-            '^js/main\.js$',
-            '^src/apps/',
-            '^src/styles/',
-            '^rollup\.config\.mjs$'
-        )
-
-        foreach ($file in $changedFiles) {
-            foreach ($pattern in $frontendPatterns) {
-                if ($file -match $pattern) {
-                    return $true
-                }
-            }
-        }
-
-        return $false
-    } catch {
-        return $true
-    }
-}
-
-function Get-HeadChangedFiles {
-    try {
-        $changedRaw = (& git diff --name-only HEAD~1 HEAD 2>$null)
-        if ($LASTEXITCODE -ne 0 -or $null -eq $changedRaw) {
-            return $null
-        }
-
-        return @($changedRaw | ForEach-Object {
-            $line = [string]$_
-            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                $line.Trim().Replace('\', '/')
-            }
-        } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    } catch {
-        return $null
-    }
-}
-
-function Test-ChangedFilesMatchPatterns {
-    param(
-        [string[]]$ChangedFiles,
-        [string[]]$Patterns
-    )
-
-    if ($null -eq $ChangedFiles -or $ChangedFiles.Count -eq 0) {
-        return $false
-    }
-    foreach ($file in $ChangedFiles) {
-        foreach ($pattern in $Patterns) {
-            if ($file -match $pattern) {
-                return $true
-            }
-        }
-    }
-    return $false
-}
+$commonHttpPath = Join-Path $PSScriptRoot 'bin/powershell/Common.Http.ps1'
+. $commonHttpPath
 
 Write-Host "== Verificacion de despliegue =="
 Write-Host "Dominio: $base"
@@ -511,126 +112,10 @@ if ($localStyleRef -eq '' -and $localDeferredStyleRef -eq '' -and -not $localHas
     throw 'No se detecto CSS cargado desde index.html (styles.css, styles-deferred.css o inline)'
 }
 
-$remoteIndexRaw = ''
-$remoteIndexCandidates = @("$base/", "$base/index.html")
-foreach ($candidateUrl in $remoteIndexCandidates) {
-    $remoteIndexTmp = New-CompatTemporaryFile
-    try {
-        if (-not (Invoke-CurlDownload -Url $candidateUrl -OutputPath $remoteIndexTmp -MaxTimeSec 20 -ConnectTimeoutSec 8)) {
-            continue
-        }
-        $candidateHtml = [string](Get-Content -Path $remoteIndexTmp -Raw)
-        if ([regex]::IsMatch($candidateHtml, 'script\.js', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-            $remoteIndexRaw = $candidateHtml
-            break
-        }
-        if ($remoteIndexRaw -eq '') {
-            $remoteIndexRaw = $candidateHtml
-        }
-    } finally {
-        Remove-Item -Force -ErrorAction SilentlyContinue $remoteIndexTmp
-    }
-}
-$remoteIndexRaw = [string]$remoteIndexRaw
-if ($null -eq $remoteIndexRaw) {
-    $remoteIndexRaw = ''
-}
-
+$remoteIndexRaw = Get-RemoteIndexHtml -Base $base
 $results = @()
-
-try {
-    $homeResp = $null
-    $homeCandidates = @("$base/", "$base/index.html")
-    foreach ($homeCandidate in $homeCandidates) {
-        try {
-            $candidateResp = Invoke-WebRequest -Uri $homeCandidate -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
-                'Cache-Control' = 'no-cache'
-                'User-Agent' = 'PielArmoniaDeployCheck/1.0'
-            }
-            if ($candidateResp -and [int]$candidateResp.StatusCode -ge 200 -and [int]$candidateResp.StatusCode -lt 300) {
-                $homeResp = $candidateResp
-                break
-            }
-        } catch {
-            continue
-        }
-    }
-    if ($null -eq $homeResp) {
-        throw 'No se pudo obtener una respuesta 2xx desde / o /index.html'
-    }
-
-    $requiredSecurityHeaders = @(
-        'Content-Security-Policy',
-        'X-Content-Type-Options',
-        'Referrer-Policy'
-    )
-    $homeHtml = ''
-    try { $homeHtml = [string]$homeResp.Content } catch { $homeHtml = '' }
-    foreach ($headerName in $requiredSecurityHeaders) {
-        if ($null -ne $homeResp.Headers[$headerName]) {
-            Write-Host "[OK]  header presente: $headerName"
-        } else {
-            if ($headerName -eq 'Content-Security-Policy' -and $AllowMetaCspFallback -and [regex]::IsMatch($homeHtml, '<meta[^>]+http-equiv\s*=\s*["'']Content-Security-Policy["'']', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-                Write-Host "[WARN] header ausente: $headerName (fallback temporal por meta-CSP)"
-                continue
-            }
-            Write-Host "[FAIL] header ausente: $headerName"
-            $results += [PSCustomObject]@{
-                Asset = "header:$headerName"
-                Match = $false
-                LocalHash = 'required'
-                RemoteHash = 'missing'
-                RemoteUrl = "$base/"
-            }
-        }
-    }
-
-    $cspHeaderValues = @()
-    if ($null -ne $homeResp.Headers['Content-Security-Policy']) {
-        $rawCsp = $homeResp.Headers['Content-Security-Policy']
-        if ($rawCsp -is [System.Array]) {
-            $cspHeaderValues = @($rawCsp | ForEach-Object { [string]$_ })
-        } else {
-            $cspHeaderValues = @(([string]$rawCsp) -split "(\r?\n)+" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        }
-    }
-
-    if ($cspHeaderValues.Count -gt 1) {
-        Write-Host "[WARN] Se detectaron multiples cabeceras CSP ($($cspHeaderValues.Count)). Validando coherencia minima..."
-        $requiredCspOrigins = @(
-            'https://static.cloudflareinsights.com',
-            'https://cloudflareinsights.com'
-        )
-        foreach ($origin in $requiredCspOrigins) {
-            $missingIn = @()
-            for ($i = 0; $i -lt $cspHeaderValues.Count; $i++) {
-                if (-not $cspHeaderValues[$i].Contains($origin)) {
-                    $missingIn += ($i + 1)
-                }
-            }
-
-            if ($missingIn.Count -gt 0) {
-                Write-Host "[FAIL] CSP inconsistente: falta '$origin' en cabecera(s) #$($missingIn -join ', ')"
-                $results += [PSCustomObject]@{
-                    Asset = "header:csp-consistency:$origin"
-                    Match = $false
-                    LocalHash = 'required'
-                    RemoteHash = "missing_in_headers_$($missingIn -join '-')"
-                    RemoteUrl = "$base/"
-                }
-            }
-        }
-    }
-} catch {
-    Write-Host "[FAIL] No se pudieron validar headers de seguridad: $($_.Exception.Message)"
-    $results += [PSCustomObject]@{
-        Asset = 'headers:security'
-        Match = $false
-        LocalHash = ''
-        RemoteHash = ''
-        RemoteUrl = "$base/"
-    }
-}
+$securityHeaderCheck = Test-SecurityHeaders -Base $base -AllowMetaCspFallback:$AllowMetaCspFallback
+$results += @($securityHeaderCheck.Results)
 
 $remoteScriptRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern '<script[^>]+src="([^"]*script\.js[^"]*)"'
 $remoteStyleRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern '<link[^>]+href="([^"]*styles\.css[^"]*)"'
@@ -737,47 +222,15 @@ if ($deployFreshnessChecked -and $deployFreshnessStale) {
     }
 }
 
-try {
-    $assetHeaderChecks = @(
-        @{ Name = 'app-script'; Url = $appScriptRemoteUrl }
-    )
-    if (-not [string]::IsNullOrWhiteSpace($criticalCssRemoteUrl)) {
-        $assetHeaderChecks += @{ Name = 'critical-css'; Url = $criticalCssRemoteUrl }
-    } elseif (-not [string]::IsNullOrWhiteSpace($indexDeferredStylesRemoteUrl)) {
-        $assetHeaderChecks += @{ Name = 'critical-css-fallback'; Url = $indexDeferredStylesRemoteUrl }
-    }
-    foreach ($assetCheck in $assetHeaderChecks) {
-        if ([string]::IsNullOrWhiteSpace($assetCheck.Url)) {
-            continue
-        }
-        $assetResp = Invoke-WebRequest -Uri $assetCheck.Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
-            'Cache-Control' = 'no-cache'
-            'User-Agent' = 'PielArmoniaDeployCheck/1.0'
-        }
-        $cacheHeader = [string]$assetResp.Headers['Cache-Control']
-        if ([string]::IsNullOrWhiteSpace($cacheHeader) -or $cacheHeader -notmatch 'max-age') {
-            Write-Host "[FAIL] asset sin Cache-Control con max-age: $($assetCheck.Name)"
-            $results += [PSCustomObject]@{
-                Asset = "cache-header:$($assetCheck.Name)"
-                Match = $false
-                LocalHash = 'max-age'
-                RemoteHash = if ($cacheHeader) { $cacheHeader } else { 'missing' }
-                RemoteUrl = $assetCheck.Url
-            }
-        } else {
-            Write-Host "[OK]  cache header correcto en: $($assetCheck.Name)"
-        }
-    }
-} catch {
-    Write-Host "[FAIL] No se pudieron validar headers de cache de assets"
-    $results += [PSCustomObject]@{
-        Asset = 'cache-header:assets'
-        Match = $false
-        LocalHash = 'max-age'
-        RemoteHash = ''
-        RemoteUrl = "$base/"
-    }
+$assetHeaderChecks = @(
+    @{ Name = 'app-script'; Url = $appScriptRemoteUrl }
+)
+if (-not [string]::IsNullOrWhiteSpace($criticalCssRemoteUrl)) {
+    $assetHeaderChecks += @{ Name = 'critical-css'; Url = $criticalCssRemoteUrl }
+} elseif (-not [string]::IsNullOrWhiteSpace($indexDeferredStylesRemoteUrl)) {
+    $assetHeaderChecks += @{ Name = 'critical-css-fallback'; Url = $indexDeferredStylesRemoteUrl }
 }
+$results += @(Test-AssetCacheHeaders -Checks $assetHeaderChecks -FailureAsset 'cache-header:assets' -Base $base -FailureMessage '[FAIL] No se pudieron validar headers de cache de assets')
 
 try {
     $healthHeaderResp = Invoke-WebRequest -Uri "$base/api.php?resource=health" -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
@@ -811,249 +264,48 @@ try {
 $localScriptTextForRefs = Get-Content -Path 'script.js' -Raw
 $localI18nEngineTextForRefs = if (Test-Path 'i18n-engine.js') { Get-Content -Path 'i18n-engine.js' -Raw } else { '' }
 $localRescheduleGatewayTextForRefs = if (Test-Path 'reschedule-gateway-engine.js') { Get-Content -Path 'reschedule-gateway-engine.js' -Raw } else { '' }
-$chatEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'chat-engine.js'
-$chatEngineRemoteUrl = if ($chatEngineRef -ne '') {
-    Get-Url -Base $base -Ref $chatEngineRef
-} elseif ((Test-Path 'chat-engine.js') -or (Test-Path 'js/engines/chat-engine.js')) {
-    "$base/js/engines/chat-engine.js"
-} else {
-    ''
-}
-
-$chatUiEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'chat-ui-engine.js'
-$chatUiEngineRemoteUrl = if ($chatUiEngineRef -ne '') {
-    Get-Url -Base $base -Ref $chatUiEngineRef
-} elseif ((Test-Path 'chat-ui-engine.js') -or (Test-Path 'js/engines/chat-ui-engine.js')) {
-    "$base/js/engines/chat-ui-engine.js"
-} else {
-    ''
-}
-
-$chatWidgetEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'chat-widget-engine.js'
-$chatWidgetEngineRemoteUrl = if ($chatWidgetEngineRef -ne '') {
-    Get-Url -Base $base -Ref $chatWidgetEngineRef
-} elseif ((Test-Path 'chat-widget-engine.js') -or (Test-Path 'js/engines/chat-widget-engine.js')) {
-    "$base/js/engines/chat-widget-engine.js"
-} else {
-    ''
-}
-
-$deferredStylesRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'styles-deferred.css'
-$deferredStylesRemoteUrl = if ($indexDeferredStylesRemoteUrl -ne '') {
-    $indexDeferredStylesRemoteUrl
-} elseif ($deferredStylesRef -ne '') {
-    Get-Url -Base $base -Ref $deferredStylesRef
-} elseif (Test-Path 'styles-deferred.css') {
-    "$base/styles-deferred.css"
-} else {
-    ''
-}
-
-function Write-VerifyReport {
-    param(
-        [string]$Path,
-        [string]$Domain,
-        [Object[]]$Results,
-        [int]$FailedCount
-    )
-
-    try {
-        $reportDir = Split-Path -Path $Path -Parent
-        if (-not [string]::IsNullOrWhiteSpace($reportDir) -and -not (Test-Path $reportDir)) {
-            New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
-        }
-
-        $report = [PSCustomObject]@{
-            generatedAt = (Get-Date).ToString('o')
-            domain = $Domain
-            failed = $FailedCount
-            total = @($Results).Count
-            ok = [Math]::Max(0, (@($Results).Count - $FailedCount))
-            failures = @($Results | Where-Object { $_.Match -ne $true })
-            checks = @($Results)
-        }
-
-        $report | ConvertTo-Json -Depth 12 | Set-Content -Path $Path -Encoding UTF8
-        Write-Host "[INFO] reporte de verificacion guardado: $Path"
-    } catch {
-        Write-Host "[WARN] no se pudo escribir reporte de verificacion: $($_.Exception.Message)"
-    }
-}
-if (-not [string]::IsNullOrWhiteSpace($deferredStylesRemoteUrl)) {
-    if ($deferredStylesRemoteUrl -match '\?') {
-        $deferredStylesRemoteUrl = "$deferredStylesRemoteUrl&verify=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-    } else {
-        $deferredStylesRemoteUrl = "$deferredStylesRemoteUrl?verify=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-    }
-}
-
-$translationsEnRef = Get-ScriptVersionedRef -ScriptText $localI18nEngineTextForRefs -FileName 'translations-en.js'
-if ($translationsEnRef -eq '') {
-    $translationsEnRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'translations-en.js'
-}
-$hasTranslationsEnAsset = ($translationsEnRef -ne '') -or (Test-Path 'translations-en.js')
-$translationsEnRemoteUrl = if ($translationsEnRef -ne '') {
-    Get-Url -Base $base -Ref $translationsEnRef
-} elseif (Test-Path 'translations-en.js') {
-    "$base/translations-en.js"
-} else {
-    ''
-}
+$assetMap = Resolve-DeployAssetMap `
+    -Base $base `
+    -LocalScriptText $localScriptTextForRefs `
+    -LocalI18nEngineText $localI18nEngineTextForRefs `
+    -LocalRescheduleGatewayText $localRescheduleGatewayTextForRefs `
+    -IndexDeferredStylesRemoteUrl $indexDeferredStylesRemoteUrl
+$chatEngineRemoteUrl = [string]$assetMap.ChatEngineRemoteUrl
+$chatUiEngineRemoteUrl = [string]$assetMap.ChatUiEngineRemoteUrl
+$chatWidgetEngineRemoteUrl = [string]$assetMap.ChatWidgetEngineRemoteUrl
+$deferredStylesRemoteUrl = [string]$assetMap.DeferredStylesRemoteUrl
+$hasTranslationsEnAsset = [bool]$assetMap.HasTranslationsEnAsset
+$translationsEnRemoteUrl = [string]$assetMap.TranslationsEnRemoteUrl
+$bookingEngineRemoteUrl = [string]$assetMap.BookingEngineRemoteUrl
+$analyticsEngineRemoteUrl = [string]$assetMap.AnalyticsEngineRemoteUrl
+$uiEffectsRemoteUrl = [string]$assetMap.UiEffectsRemoteUrl
+$galleryInteractionsRemoteUrl = [string]$assetMap.GalleryInteractionsRemoteUrl
+$rescheduleEngineRemoteUrl = [string]$assetMap.RescheduleEngineRemoteUrl
+$bookingUiRemoteUrl = [string]$assetMap.BookingUiRemoteUrl
+$chatBookingEngineRemoteUrl = [string]$assetMap.ChatBookingEngineRemoteUrl
+$successModalEngineRemoteUrl = [string]$assetMap.SuccessModalEngineRemoteUrl
+$engagementFormsEngineRemoteUrl = [string]$assetMap.EngagementFormsEngineRemoteUrl
+$modalUxEngineRemoteUrl = [string]$assetMap.ModalUxEngineRemoteUrl
 if (-not $hasTranslationsEnAsset) {
     Write-Host '[INFO] translations-en.js no se detecta en local; se omite verificacion de hash.'
 }
-
-$bookingEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'booking-engine.js'
-$bookingEngineRemoteUrl = if ($bookingEngineRef -ne '') {
-    Get-Url -Base $base -Ref $bookingEngineRef
-} elseif ((Test-Path 'booking-engine.js') -or (Test-Path 'js/engines/booking-engine.js')) {
-    "$base/js/engines/booking-engine.js"
-} else {
-    ''
+if ([string]::IsNullOrWhiteSpace($rescheduleEngineRemoteUrl) -and -not (Test-Path 'reschedule-engine.js') -and -not (Test-Path 'js/engines/reschedule-engine.js')) {
+    Write-Host '[INFO] reschedule-engine.js no se detecta en local; se omite verificacion de hash.'
 }
-
-$analyticsEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'analytics-engine.js'
-$analyticsEngineRemoteUrl = if ($analyticsEngineRef -ne '') {
-    Get-Url -Base $base -Ref $analyticsEngineRef
-} elseif (Test-Path 'js/engines/analytics-engine.js') {
-    "$base/js/engines/analytics-engine.js"
-} else {
-    ''
-}
-
-$uiEffectsRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'ui-effects.js'
-$uiEffectsRemoteUrl = if ($uiEffectsRef -ne '') {
-    Get-Url -Base $base -Ref $uiEffectsRef
-} elseif (Test-Path 'ui-effects.js') {
-    "$base/ui-effects.js"
-} else {
-    ''
-}
-
-$galleryInteractionsRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'gallery-interactions.js'
-$galleryInteractionsRemoteUrl = if ($galleryInteractionsRef -ne '') {
-    Get-Url -Base $base -Ref $galleryInteractionsRef
-} elseif (Test-Path 'js/engines/gallery-interactions.js') {
-    "$base/js/engines/gallery-interactions.js"
-} else {
-    ''
-}
-
-$rescheduleEngineRef = Get-ScriptVersionedRef -ScriptText $localRescheduleGatewayTextForRefs -FileName 'reschedule-engine.js'
-if ($rescheduleEngineRef -eq '') {
-    $rescheduleEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'reschedule-engine.js'
-}
-$rescheduleEngineRemoteUrl = if ($rescheduleEngineRef -ne '') {
-    Get-Url -Base $base -Ref $rescheduleEngineRef
-} elseif (Test-Path 'reschedule-engine.js') {
-    "$base/reschedule-engine.js"
-} else {
-    ''
-}
-
-$bookingUiRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'booking-ui.js'
-$bookingUiRemoteUrl = if ($bookingUiRef -ne '') {
-    Get-Url -Base $base -Ref $bookingUiRef
-} elseif ((Test-Path 'booking-ui.js') -or (Test-Path 'js/engines/booking-ui.js')) {
-    "$base/js/engines/booking-ui.js"
-} else {
-    ''
-}
-
-$chatBookingEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'chat-booking-engine.js'
-$chatBookingEngineRemoteUrl = if ($chatBookingEngineRef -ne '') {
-    Get-Url -Base $base -Ref $chatBookingEngineRef
-} elseif ((Test-Path 'chat-booking-engine.js') -or (Test-Path 'js/engines/chat-booking-engine.js')) {
-    "$base/js/engines/chat-booking-engine.js"
-} else {
-    ''
-}
-
-$successModalEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'success-modal-engine.js'
-$successModalEngineRemoteUrl = if ($successModalEngineRef -ne '') {
-    Get-Url -Base $base -Ref $successModalEngineRef
-} elseif (Test-Path 'success-modal-engine.js') {
-    "$base/success-modal-engine.js"
-} else {
-    ''
-}
-
-$engagementFormsEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'engagement-forms-engine.js'
-$engagementFormsEngineRemoteUrl = if ($engagementFormsEngineRef -ne '') {
-    Get-Url -Base $base -Ref $engagementFormsEngineRef
-} elseif (Test-Path 'engagement-forms-engine.js') {
-    "$base/engagement-forms-engine.js"
-} else {
-    ''
-}
-
-$modalUxEngineRef = Get-ScriptVersionedRef -ScriptText $localScriptTextForRefs -FileName 'modal-ux-engine.js'
-$modalUxEngineRemoteUrl = if ($modalUxEngineRef -ne '') {
-    Get-Url -Base $base -Ref $modalUxEngineRef
-} elseif (Test-Path 'modal-ux-engine.js') {
-    "$base/modal-ux-engine.js"
-} else {
-    ''
-}
-
-try {
-    $assetHeaderChecks = @(
-        @{ Name = 'chat-widget-engine'; Url = $chatWidgetEngineRemoteUrl },
-        @{ Name = 'chat-engine'; Url = $chatEngineRemoteUrl },
-        @{ Name = 'chat-ui-engine'; Url = $chatUiEngineRemoteUrl },
-        @{ Name = 'styles-deferred'; Url = $deferredStylesRemoteUrl },
-        @{ Name = 'translations-en'; Url = $translationsEnRemoteUrl },
-        @{ Name = 'booking-engine'; Url = $bookingEngineRemoteUrl },
-        @{ Name = 'booking-ui'; Url = $bookingUiRemoteUrl },
-        @{ Name = 'chat-booking-engine'; Url = $chatBookingEngineRemoteUrl },
-        @{ Name = 'success-modal-engine'; Url = $successModalEngineRemoteUrl },
-        @{ Name = 'engagement-forms-engine'; Url = $engagementFormsEngineRemoteUrl },
-        @{ Name = 'modal-ux-engine'; Url = $modalUxEngineRemoteUrl },
-        @{ Name = 'reschedule-engine'; Url = $rescheduleEngineRemoteUrl },
-        @{ Name = 'ui-effects'; Url = $uiEffectsRemoteUrl },
-        @{ Name = 'gallery-interactions'; Url = $galleryInteractionsRemoteUrl }
-    )
-    foreach ($assetCheck in $assetHeaderChecks) {
-        if ([string]::IsNullOrWhiteSpace($assetCheck.Url)) {
-            continue
-        }
-        $assetResp = Invoke-WebRequest -Uri $assetCheck.Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
-            'Cache-Control' = 'no-cache'
-            'User-Agent' = 'PielArmoniaDeployCheck/1.0'
-        }
-        $cacheHeader = [string]$assetResp.Headers['Cache-Control']
-        if ([string]::IsNullOrWhiteSpace($cacheHeader) -or $cacheHeader -notmatch 'max-age') {
-            Write-Host "[FAIL] asset sin Cache-Control con max-age: $($assetCheck.Name)"
-            $results += [PSCustomObject]@{
-                Asset = "cache-header:$($assetCheck.Name)"
-                Match = $false
-                LocalHash = 'max-age'
-                RemoteHash = if ($cacheHeader) { $cacheHeader } else { 'missing' }
-                RemoteUrl = $assetCheck.Url
-            }
-        } else {
-            Write-Host "[OK]  cache header correcto en: $($assetCheck.Name)"
-        }
-    }
-} catch {
-    Write-Host "[FAIL] No se pudieron validar headers de cache de assets secundarios"
-    $results += [PSCustomObject]@{
-        Asset = 'cache-header:assets-secondary'
-        Match = $false
-        LocalHash = 'max-age'
-        RemoteHash = ''
-        RemoteUrl = "$base/"
-    }
-}
+$results += @(Test-AssetCacheHeaders -Checks $assetMap.SecondaryAssetHeaderChecks -FailureAsset 'cache-header:assets-secondary' -Base $base -FailureMessage '[FAIL] No se pudieron validar headers de cache de assets secundarios')
 
 if ([regex]::IsMatch([string]$remoteIndexRaw, '<[a-zA-Z][^>]*\son[a-z]+\s*=', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-    Write-Host "[FAIL] index remoto contiene event handlers inline (on*)"
-    $results += [PSCustomObject]@{
-        Asset = 'index-inline-handlers'
-        Match = $false
-        LocalHash = 'none'
-        RemoteHash = 'found'
-        RemoteUrl = "$base/"
+    if ($nonFrontendAdvisoryMode) {
+        Write-Host '[INFO] index remoto contiene event handlers inline (on*) en modo advisory por cambio sin frontend.'
+    } else {
+        Write-Host "[FAIL] index remoto contiene event handlers inline (on*)"
+        $results += [PSCustomObject]@{
+            Asset = 'index-inline-handlers'
+            Match = $false
+            LocalHash = 'none'
+            RemoteHash = 'found'
+            RemoteUrl = "$base/"
+        }
     }
 } else {
     Write-Host "[OK]  index remoto sin handlers inline (on*)"
@@ -1061,13 +313,17 @@ if ([regex]::IsMatch([string]$remoteIndexRaw, '<[a-zA-Z][^>]*\son[a-z]+\s*=', [S
 
 $inlineExecutableScriptPattern = '<script\b(?![^>]*\bsrc=)(?![^>]*\btype\s*=\s*["'']application/ld\+json["''])[^>]*>[\s\S]*?</script>'
 if ([regex]::IsMatch([string]$remoteIndexRaw, $inlineExecutableScriptPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-    Write-Host "[FAIL] index remoto contiene scripts inline ejecutables"
-    $results += [PSCustomObject]@{
-        Asset = 'index-inline-executable-script'
-        Match = $false
-        LocalHash = 'none'
-        RemoteHash = 'found'
-        RemoteUrl = "$base/"
+    if ($nonFrontendAdvisoryMode) {
+        Write-Host '[INFO] index remoto contiene scripts inline ejecutables en modo advisory por cambio sin frontend.'
+    } else {
+        Write-Host "[FAIL] index remoto contiene scripts inline ejecutables"
+        $results += [PSCustomObject]@{
+            Asset = 'index-inline-executable-script'
+            Match = $false
+            LocalHash = 'none'
+            RemoteHash = 'found'
+            RemoteUrl = "$base/"
+        }
     }
 } else {
     Write-Host "[OK]  index remoto sin scripts inline ejecutables"
@@ -1535,7 +791,7 @@ foreach ($check in $analyticsChecks) {
 
 $healthUrl = "$base/api.php?resource=health"
 try {
-    $healthResp = Invoke-JsonGet -Url $healthUrl
+    $healthResp = Invoke-JsonGetStrict -Url $healthUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
     $healthRequired = @(
         'timingMs',
         'version',
@@ -1638,7 +894,7 @@ try {
             } else {
                 "$healthUrl?verify=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
             }
-            $healthRetryResp = Invoke-JsonGet -Url $healthUrlNoCache
+            $healthRetryResp = Invoke-JsonGetStrict -Url $healthUrlNoCache -UserAgent 'PielArmoniaDeployCheck/1.0'
             $backupNode = $healthRetryResp.Json.checks.backup
             if ($null -ne $backupNode) {
                 Write-Host "[INFO] health checks.backup recuperado en segunda lectura"
@@ -1727,7 +983,7 @@ try {
 
 $availabilityUrl = "$base/api.php?resource=availability&doctor=indiferente&service=consulta&days=7"
 try {
-    $availabilityResp = Invoke-JsonGet -Url $availabilityUrl
+    $availabilityResp = Invoke-JsonGetStrict -Url $availabilityUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
     $availabilityMeta = $null
     try { $availabilityMeta = $availabilityResp.Json.meta } catch { $availabilityMeta = $null }
     if ($null -eq $availabilityMeta) {
@@ -1769,7 +1025,7 @@ try {
 
 $bookedSlotsUrl = "$base/api.php?resource=booked-slots&date=2030-01-15&doctor=indiferente&service=consulta"
 try {
-    $bookedResp = Invoke-JsonGet -Url $bookedSlotsUrl
+    $bookedResp = Invoke-JsonGetStrict -Url $bookedSlotsUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
     $bookedMeta = $null
     try { $bookedMeta = $bookedResp.Json.meta } catch { $bookedMeta = $null }
     if ($null -eq $bookedMeta) {
@@ -1811,7 +1067,7 @@ try {
 
 $figoUrl = "$base/figo-chat.php"
 try {
-    $figoResp = Invoke-JsonGet -Url $figoUrl
+    $figoResp = Invoke-JsonGetStrict -Url $figoUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
     $figoRequired = @('mode', 'recursiveConfigDetected', 'upstreamReachable')
     foreach ($field in $figoRequired) {
         if ($null -ne $figoResp.Json.PSObject.Properties[$field]) {
@@ -1893,7 +1149,7 @@ try {
 
 $figoBackendUrl = "$base/figo-backend.php"
 try {
-    $figoBackendResp = Invoke-JsonGet -Url $figoBackendUrl
+    $figoBackendResp = Invoke-JsonGetStrict -Url $figoBackendUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
     $figoBackendRequired = @('service', 'mode', 'provider', 'telegramConfigured', 'webhookSecretConfigured')
     foreach ($field in $figoBackendRequired) {
         if ($null -ne $figoBackendResp.Json.PSObject.Properties[$field]) {
