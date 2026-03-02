@@ -52,8 +52,15 @@ Si `git-sync` no replica `origin/main` o GitHub runners no alcanzan el hosting, 
 
 - [PUBLIC_V2_MANUAL_DEPLOY.md](./PUBLIC_V2_MANUAL_DEPLOY.md)
 - [PUBLIC_V3_MANUAL_DEPLOY.md](./PUBLIC_V3_MANUAL_DEPLOY.md)
+- [PUBLIC_MAIN_UPDATE_RUNBOOK.md](./PUBLIC_MAIN_UPDATE_RUNBOOK.md)
 - Script reusable canónico: `bin/deploy-public-v3-live.sh`
 - Compatibilidad temporal: `bin/deploy-public-v2-live.sh` delega a V3
+
+Runbook validado para el servidor actual:
+
+- el host ya tenia `/root/sync-pielarmonia.sh`
+- el bloqueo real fue `Permission denied` en `bin/deploy-public-v3-live.sh`
+- la recuperacion validada fue `chmod +x`, sync manual con `flock` y activacion de `admin_sony_ui_v3`
 
 ## 3. Feature Flags (Banderas de Funcionalidad)
 
@@ -86,6 +93,7 @@ Admin UI admin `sony_v2/sony_v3` usa este mismo modelo con las flags `admin_sony
 Para canary de `sony_v3`, mantener `admin_sony_ui=true` y activar `admin_sony_ui_v3` por env, storage de flags o rollout porcentual.
 Runbook operativo: `docs/ADMIN-UI-ROLLOUT.md`.
 Gate operativo por etapa: `GATE-ADMIN-ROLLOUT.ps1`.
+Para `canary/general`, el gate ahora exige tambien `tests/admin-v3-canary-runtime.spec.js` para validar boot real de `sony_v3`, assets aislados y navegacion base del shell.
 
 ## 4. Procedimiento de Rollback
 
@@ -133,7 +141,9 @@ php bin/verify-gate.php
 6.  [ ] El formulario de contacto/reserva se abre correctamente.
 7.  [ ] `admin.html` resuelve variante correcta (`legacy`, `sony_v2` o `sony_v3`) segun `admin_ui`, storage y flags admin.
 8.  [ ] `/api.php?resource=features` expone `admin_sony_ui` y `admin_sony_ui_v3` como boolean y alineados con la etapa (`internal`, `canary`, `general`, `rollback`).
-9.  [ ] Chunks admin sin residuos:
+9.  [ ] En `canary/general`, `GATE-ADMIN-ROLLOUT.ps1` valida `sony_v3` real con shell boot, assets v3 y navegacion base (`tests/admin-v3-canary-runtime.spec.js`).
+10. [ ] Chunks admin sin residuos:
     - `npm run chunks:admin:prune` (incluido en `npm run build`)
     - opcional: `node bin/clean-admin-chunks.js --dry-run`
-10. [ ] No hay errores de consola (F12) rojos.
+11. [ ] No hay errores de consola (F12) rojos.
+

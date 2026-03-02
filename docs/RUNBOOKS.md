@@ -117,9 +117,9 @@ Runbook rapido para ajuste:
 4. Confirmar que el comportamiento de incidentes semanales coincide con los nuevos umbrales.
 5. Si el cambio no es el esperado, volver a defaults y re-ejecutar.
 
-### 1.7 Admin UI v2 rollout y rollback
+### 1.7 Admin UI sony_v2/sony_v3 rollout y rollback
 
-Para el despliegue del admin Sony-like v2 usar el runbook dedicado:
+Para el despliegue del admin Sony-like `sony_v2/sony_v3` usar el runbook dedicado:
 
 - `docs/ADMIN-UI-ROLLOUT.md`
 
@@ -129,9 +129,11 @@ Comando operativo rapido:
 npm run admin:ui:contingency
 ```
 
-Este comando consulta el flag actual (`admin_sony_ui`) y muestra URLs de canary/rollback:
+Este comando consulta los flags actuales (`admin_sony_ui`, `admin_sony_ui_v3`) y muestra URLs de canary/rollback:
 
 - limpiar variante local: `admin_ui_reset=1`
+- sony_v2 session-only: `admin_ui=sony_v2&admin_ui_reset=1`
+- sony_v3 session-only: `admin_ui=sony_v3&admin_ui_reset=1`
 - legacy session-only: `admin_ui=legacy&admin_ui_reset=1`
 
 Gate recomendado por etapa:
@@ -141,6 +143,22 @@ npm run gate:admin:rollout
 npm run gate:admin:rollout:general
 npm run gate:admin:rollout:rollback
 ```
+
+Reglas operativas por etapa:
+
+1. `internal`
+    - permite QA con `admin_ui=sony_v3`.
+    - el gate puede tolerar `features API`/flags faltantes segun la politica efectiva del stage.
+2. `canary`
+    - requiere `admin_sony_ui=true` y `admin_sony_ui_v3=true`.
+    - el gate corre `admin-ui-runtime-smoke` y `admin-v3-canary-runtime`.
+    - en `post-deploy-fast`, el runtime smoke puede seguir omitido por default para mantener SLA corto.
+3. `general`
+    - requiere `admin_sony_ui=true` y `admin_sony_ui_v3=true`.
+    - el gate completo corre `admin-ui-runtime-smoke` y `admin-v3-canary-runtime`.
+4. `rollback`
+    - requiere `admin_sony_ui=false` y `admin_sony_ui_v3=false`.
+    - el gate vuelve al smoke base de variantes/CSP sin exigir shell `sony_v3`.
 
 Higiene de bundles admin (post-build / troubleshooting):
 
@@ -156,6 +174,8 @@ Propagacion automatizada desde deploy:
     - `run_postdeploy_gate`
     - `admin_rollout_stage`
     - flags `admin_rollout_*_fast` y `admin_rollout_*_gate`
+    - `post-deploy-fast.yml` usa perfil `progressive` y default `skip_runtime_smoke=true`
+    - `post-deploy-gate.yml` usa perfil `strict` y default `skip_runtime_smoke=false`
 2. Para ejecucion automatica, controlar con variables:
     - `RUN_POSTDEPLOY_FAST_FROM_DEPLOY_WORKFLOW_RUN` (preferido; recomendado `false`)
     - `RUN_POSTDEPLOY_GATE_FROM_DEPLOY_WORKFLOW_RUN` (preferido; recomendado `false`)

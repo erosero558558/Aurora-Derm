@@ -67,10 +67,17 @@ Operar rollout/cutover/rollback del admin `sony_v2` y `sony_v3` con fallback inm
 ```bash
 npx playwright test tests/admin-ui-variant.spec.js
 npx playwright test tests/admin-ui-runtime-smoke.spec.js --workers=1
+npx playwright test tests/admin-v3-canary-runtime.spec.js --workers=1
 npx playwright test tests/admin-v3-shell.spec.js tests/admin-v3-visual.spec.js --workers=1
 npm run lint
 npm run test:php
 ```
+
+Para gate por etapa:
+
+- `GATE-ADMIN-ROLLOUT.ps1 -Stage internal` corre `admin-ui-runtime-smoke` y agrega `admin-v3-canary-runtime` si `admin_sony_ui_v3=true`.
+- `GATE-ADMIN-ROLLOUT.ps1 -Stage canary` y `-Stage general` corren `admin-ui-runtime-smoke` + `admin-v3-canary-runtime`.
+- `GATE-ADMIN-ROLLOUT.ps1 -Stage rollback` se queda en el smoke base de variantes/CSP.
 
 ## Higiene de bundles admin
 
@@ -82,7 +89,7 @@ npm run test:php
 ## Notas operativas
 
 - El canary real de `sony_v3` depende del flag backend `admin_sony_ui_v3`; no se activa solo por query si el flag esta en `false`.
-- `GATE-ADMIN-ROLLOUT.ps1` valida ambas flags (`admin_sony_ui` y `admin_sony_ui_v3`) segun la etapa seleccionada.
+- `GATE-ADMIN-ROLLOUT.ps1` valida ambas flags (`admin_sony_ui` y `admin_sony_ui_v3`) segun la etapa seleccionada y ejecuta smoke stage-aware de `sony_v3`.
 - `sony_v3` preserva IDs y `data-action` criticos del admin actual.
 - `Turnero Sala` se mantiene compatible en `sony_v3`, pero su replanteamiento visual completo queda para fase 2.
 - La paleta `Ctrl+K` reemplaza el input visible permanente de comando rapido en `sony_v3`.

@@ -6,8 +6,8 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 340
-  updated_at: 2026-03-01
+  revision: 374
+  updated_at: 2026-03-02
 
 tasks:
   - id: AG-001
@@ -5329,3 +5329,421 @@ tasks:
     prompt: "Admin sony_v3 canary smoke docs and clean commit"
     created_at: 2026-03-01
     updated_at: 2026-03-01
+
+  - id: AG-140
+    title: "Admin sony_v3 section refinement workbenches"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-01T22:49:17.499Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/sections/dashboard.js", "src/apps/admin-v3/sections/appointments.js", "src/apps/admin-v3/sections/callbacks.js", "src/apps/admin-v3/ui/frame.js", "src/apps/admin-v3/ui/dom.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-01T22:49:17.499Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Admin sony_v3 section refinement workbenches"
+    acceptance_ref: "verification/agent-runs/AG-140.md"
+    evidence_ref: "verification/agent-runs/AG-140.md"
+    depends_on: ["AG-139"]
+    prompt: "Admin sony_v3 section refinement workbenches"
+    created_at: 2026-03-01
+    updated_at: 2026-03-01
+
+  - id: AG-141
+    title: "Admin sony_v3 reviews and availability refinement"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-01T22:57:52.051Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/sections/reviews.js", "src/apps/admin-v3/sections/availability.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-01T22:57:52.051Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Admin sony_v3 reviews and availability refinement"
+    acceptance_ref: "verification/agent-runs/AG-141.md"
+    evidence_ref: "verification/agent-runs/AG-141.md"
+    depends_on: ["AG-140"]
+    prompt: "Admin sony_v3 reviews and availability refinement"
+    created_at: 2026-03-01
+    updated_at: 2026-03-01
+
+  - id: AG-142
+    title: "Admin sony_v3 editorial visual refinement"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T04:06:44.573Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["admin-v3.css"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T04:06:44.573Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Admin sony_v3 editorial visual refinement"
+    acceptance_ref: "verification/agent-runs/AG-142.md"
+    evidence_ref: "verification/agent-runs/AG-142.md"
+    depends_on: []
+    prompt: "Admin sony_v3 editorial visual refinement"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-143
+    title: "Admin sony_v3 canary rollout hardening"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T04:21:29.761Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["GATE-ADMIN-ROLLOUT.ps1", "tests/admin-v3-canary-runtime.spec.js", "docs/ADMIN-UI-ROLLOUT.md", "docs/DEPLOYMENT.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T04:21:29.761Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Admin sony_v3 canary rollout hardening"
+    acceptance_ref: "verification/agent-runs/AG-143.md"
+    evidence_ref: "verification/agent-runs/AG-143.md"
+    depends_on: []
+    prompt: "Admin sony_v3 canary rollout hardening"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-144
+    title: "Admin sony_v3 rollout contract closeout"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T04:26:37.915Z"
+    risk: medium
+    scope: tooling
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["docs/RUNBOOKS.md", "tests-node/post-deploy-fast-workflow-contract.test.js", "tests-node/post-deploy-gate-workflow-contract.test.js", "tests-node/deploy-hosting-workflow-contract.test.js", "tests-node/admin-rollout-gate-contract.test.js", "package.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T04:26:37.915Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Admin sony_v3 rollout contract closeout"
+    acceptance_ref: "verification/agent-runs/AG-144.md"
+    evidence_ref: "verification/agent-runs/AG-144.md"
+    depends_on: []
+    prompt: "Admin sony_v3 rollout contract closeout"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-145
+    title: "Production deploy sony_v3 rollout"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T05:54:43.618Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/deploy-hosting.yml", ".github/workflows/post-deploy-fast.yml", ".github/workflows/post-deploy-gate.yml", "GATE-ADMIN-ROLLOUT.ps1", "docs/DEPLOYMENT.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T05:54:43.618Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Production deploy sony_v3 rollout"
+    acceptance_ref: "verification/agent-runs/AG-145.md"
+    evidence_ref: "verification/agent-runs/AG-145.md"
+    depends_on: ["AG-139", "AG-143", "AG-144"]
+    prompt: "Production deploy sony_v3 rollout"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-146
+    title: "Safe cron auto-sync for public deploy"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T05:45:20.897Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["bin/deploy-public-v3-cron-sync.sh", "docs/PUBLIC_V3_CRON_INSTALL.md", "verification/agent-runs/AG-146.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T05:45:20.897Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Safe cron auto-sync for public deploy"
+    acceptance_ref: "verification/agent-runs/AG-146.md"
+    evidence_ref: "verification/agent-runs/AG-146.md"
+    depends_on: []
+    prompt: "Safe cron auto-sync for public deploy"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-147
+    title: "Document validated public deploy recovery and cron path"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T06:00:56.582Z"
+    risk: medium
+    scope: docs
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "docs/PUBLIC_V3_CRON_INSTALL.md", "docs/DEPLOYMENT.md", "verification/agent-runs/AG-147.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T06:00:56.582Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Document validated public deploy recovery and cron path"
+    acceptance_ref: "verification/agent-runs/AG-147.md"
+    evidence_ref: "verification/agent-runs/AG-147.md"
+    depends_on: []
+    prompt: "Document validated public deploy recovery and cron path"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-148
+    title: "Production verify sony_v3 live"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T06:03:44.320Z"
+    risk: medium
+    scope: monitoring
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["verification/agent-runs/AG-148.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T06:03:44.320Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Production verify sony_v3 live"
+    acceptance_ref: "verification/agent-runs/AG-148.md"
+    evidence_ref: "verification/agent-runs/AG-148.md"
+    depends_on: []
+    prompt: "Production verify sony_v3 live"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-149
+    title: "Production smoke public plus admin live"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T06:09:19.653Z"
+    risk: medium
+    scope: monitoring
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["verification/agent-runs/AG-149.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T06:09:19.653Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Production smoke public plus admin live"
+    acceptance_ref: "verification/agent-runs/AG-149.md"
+    evidence_ref: "verification/agent-runs/AG-149.md"
+    depends_on: []
+    prompt: "Production smoke public plus admin live"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02
+
+  - id: AG-150
+    title: "Align telemedicine production smoke with v3 markup"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-02T06:09:03.369Z"
+    risk: medium
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/telemedicina-conversion-qa.spec.js", "verification/agent-runs/AG-150.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-02T06:09:03.369Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Align telemedicine production smoke with v3 markup"
+    acceptance_ref: "verification/agent-runs/AG-150.md"
+    evidence_ref: "verification/agent-runs/AG-150.md"
+    depends_on: []
+    prompt: "Align telemedicine production smoke with v3 markup"
+    created_at: 2026-03-02
+    updated_at: 2026-03-02

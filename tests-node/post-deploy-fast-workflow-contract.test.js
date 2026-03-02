@@ -138,6 +138,26 @@ test('post-deploy-fast integra gate admin rollout con resumen operativo', () => 
         true,
         'falta ruta canonica del reporte public_v4 rollout fast'
     );
+    assert.equal(
+        raw.includes('-Stage $env:ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE'),
+        true,
+        'falta propagacion de stage efectivo al gate admin rollout fast'
+    );
+    assert.equal(
+        raw.includes('-SkipRuntimeSmoke:$skipRuntimeSmoke'),
+        true,
+        'falta propagacion de skip runtime smoke al gate admin rollout fast'
+    );
+    assert.equal(
+        raw.includes('-AllowFeatureApiFailure:$allowFeatureApiFailure'),
+        true,
+        'falta propagacion de allow feature api failure al gate admin rollout fast'
+    );
+    assert.equal(
+        raw.includes('-AllowMissingAdminFlag:$allowMissingFlag'),
+        true,
+        'falta propagacion de allow missing admin flag al gate admin rollout fast'
+    );
 });
 
 test('post-deploy-fast usa resolver central de politica admin rollout', () => {
@@ -152,6 +172,11 @@ test('post-deploy-fast usa resolver central de politica admin rollout', () => {
         raw.includes('--default-stage canary'),
         true,
         'falta default-stage canary al resolver politica en fast lane'
+    );
+    assert.equal(
+        raw.includes('--default-skip-runtime-smoke true'),
+        true,
+        'falta default-skip-runtime-smoke true en fast lane'
     );
     assert.equal(
         raw.includes(
@@ -229,3 +254,4 @@ test('post-deploy-fast expone inputs para propagacion de admin rollout y public_
         );
     }
 });
+

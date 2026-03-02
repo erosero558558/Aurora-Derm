@@ -159,6 +159,26 @@ test('post-deploy-gate ejecuta gate admin rollout y lo reporta en summary', () =
         true,
         'falta ruta canonica de reporte public_v4 rollout en post-deploy-gate'
     );
+    assert.equal(
+        raw.includes('-Stage $env:ADMIN_ROLLOUT_STAGE_EFFECTIVE'),
+        true,
+        'falta propagacion de stage efectivo al gate admin rollout'
+    );
+    assert.equal(
+        raw.includes('-SkipRuntimeSmoke:$skipRuntimeSmoke'),
+        true,
+        'falta propagacion de skip runtime smoke al gate admin rollout'
+    );
+    assert.equal(
+        raw.includes('-AllowFeatureApiFailure:$allowFeatureApiFailure'),
+        true,
+        'falta propagacion de allow feature api failure al gate admin rollout'
+    );
+    assert.equal(
+        raw.includes('-AllowMissingAdminFlag:$allowMissingFlag'),
+        true,
+        'falta propagacion de allow missing admin flag al gate admin rollout'
+    );
 });
 
 test('post-deploy-gate mantiene ciclo de incidentes solo en modo no-manual', () => {
@@ -200,6 +220,11 @@ test('post-deploy-gate usa resolver central de politica admin rollout con trazab
         raw.includes('--default-stage general'),
         true,
         'falta default-stage general al resolver politica en post-deploy-gate'
+    );
+    assert.equal(
+        raw.includes('--default-skip-runtime-smoke false'),
+        true,
+        'falta default-skip-runtime-smoke false en post-deploy-gate'
     );
     assert.equal(
         raw.includes(
@@ -248,3 +273,4 @@ test('post-deploy-gate usa resolver central de politica admin rollout con trazab
         'falta trazabilidad de policy source public_v4 en incidente de post-deploy-gate'
     );
 });
+

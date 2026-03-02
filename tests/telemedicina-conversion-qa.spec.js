@@ -45,7 +45,7 @@ test.describe('Telemedicine V3', () => {
         await gotoPublicRoute(page, '/es/telemedicina/');
         await page
             .locator(
-                '[data-booking-bridge-band] a[data-analytics-event="open_public_cta"]'
+                '[data-booking-bridge-band] a[data-cta-target="booking"]'
             )
             .click();
         await expect(page).toHaveURL(/#citas$/);

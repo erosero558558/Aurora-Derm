@@ -108,6 +108,16 @@ test('deploy-hosting contiene pasos de dispatch hacia post-deploy', () => {
         true,
         'falta propagacion de stage public_v4 al dispatch de post-deploy-gate'
     );
+    assert.equal(
+        raw.includes('verification/last-admin-ui-rollout-gate-deploy-hosting.json'),
+        true,
+        'falta reporte canonico admin rollout para deploy-hosting'
+    );
+    assert.equal(
+        raw.includes('deploy-hosting-admin-rollout-report'),
+        true,
+        'falta publicacion de artefacto admin rollout en deploy-hosting'
+    );
 });
 
 test('deploy-hosting aplica guardrail de dispatch por tipo de evento', () => {
@@ -274,4 +284,48 @@ test('deploy-hosting aplica guardrail de dispatch por tipo de evento', () => {
         true,
         'falta propagacion de monitor public_v4 al dispatch de prod-monitor'
     );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_skip_runtime_smoke: process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de skip runtime smoke al dispatch fast'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_allow_feature_api_failure: process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de allow feature api failure al dispatch fast'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_allow_missing_flag: process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de allow missing flag al dispatch fast'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_skip_runtime_smoke: process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de skip runtime smoke al dispatch gate'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_allow_feature_api_failure: process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de allow feature api failure al dispatch gate'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_allow_missing_flag: process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de allow missing flag al dispatch gate'
+    );
 });
+
+
