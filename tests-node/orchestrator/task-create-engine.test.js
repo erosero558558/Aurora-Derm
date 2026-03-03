@@ -10,7 +10,7 @@ const { join } = require('path');
 const taskCreate = require('../../tools/agent-orchestrator/domain/task-create');
 
 const TEMPLATES = {
-    docs: { executor: 'kimi', status: 'ready', risk: 'low', scope: 'docs' },
+    docs: { executor: 'codex', status: 'ready', risk: 'low', scope: 'docs' },
     bugfix: {
         executor: 'codex',
         status: 'ready',
@@ -24,7 +24,7 @@ test('task-create engine resuelve template valido e invalido', () => {
         templates: TEMPLATES,
     });
     assert.equal(docs.name, 'docs');
-    assert.equal(docs.executor, 'kimi');
+    assert.equal(docs.executor, 'codex');
 
     assert.throws(
         () =>
@@ -64,7 +64,7 @@ test('task-create engine infiere scope/risk y suggested_executor desde files', (
             inferTaskDomain: () => 'calendar',
             findCriticalScopeKeyword: (scope) =>
                 String(scope).includes('calendar') ? 'calendar' : null,
-            criticalScopeAllowedExecutors: new Set(['codex', 'claude']),
+            criticalScopeAllowedExecutors: new Set(['codex']),
         }
     );
 
@@ -72,7 +72,7 @@ test('task-create engine infiere scope/risk y suggested_executor desde files', (
     assert.equal(inferred.risk, 'high');
     assert.equal(inferred.critical_scope, 'calendar');
     assert.equal(inferred.suggested_executor, 'codex');
-    assert.deepEqual(inferred.allowed_executors_for_scope, ['codex', 'claude']);
+    assert.deepEqual(inferred.allowed_executors_for_scope, ['codex']);
 });
 
 test('task-create engine normaliza task apply y valida campos', () => {
@@ -90,7 +90,7 @@ test('task-create engine normaliza task apply y valida campos', () => {
         },
         {
             currentDate: () => '2026-02-24',
-            allowedTaskExecutors: new Set(['codex', 'kimi']),
+            allowedTaskExecutors: new Set(['codex', 'ci']),
             allowedStatuses: new Set(['backlog', 'ready', 'in_progress']),
         }
     );
@@ -166,7 +166,7 @@ test('task-create engine construye diff de preview con campos cambiados', () => 
         id: 'AG-001',
         title: 'A',
         owner: 'x',
-        executor: 'kimi',
+        executor: 'codex',
         status: 'backlog',
         risk: 'low',
         scope: 'docs',

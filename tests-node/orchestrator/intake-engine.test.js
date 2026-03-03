@@ -140,6 +140,34 @@ test('intake inferWorkflowFileFromSignal mapea slugs extendidos de post-deploy y
     assert.equal(repair, '.github/workflows/repair-git-sync.yml');
 });
 
+test('intake inferWorkflowFileFromSignal mapea workflows activos codex-only', () => {
+    const deployHosting = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:deploy-hosting:main',
+    });
+    const premiumQa = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:frontend-premium-qa:main',
+    });
+    const weeklyKpi = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:weekly-kpi-report:main',
+    });
+
+    assert.equal(deployHosting, '.github/workflows/deploy-hosting.yml');
+    assert.equal(premiumQa, '.github/workflows/frontend-premium-qa.yml');
+    assert.equal(weeklyKpi, '.github/workflows/weekly-kpi-report.yml');
+});
+
+test('intake inferWorkflowFileFromSignal ignora workflows retirados', () => {
+    const legacyAutopilot = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:agent-kimi-autopilot:main',
+    });
+    const legacyJulesPr = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:jules-pr:main',
+    });
+
+    assert.equal(legacyAutopilot, '');
+    assert.equal(legacyJulesPr, '');
+});
+
 test('intake inferFilesFromSignal prioriza post-deploy sobre token generico git sync', () => {
     const files = intake.inferFilesFromSignal(
         {
@@ -151,4 +179,26 @@ test('intake inferFilesFromSignal prioriza post-deploy sobre token generico git 
     );
 
     assert.deepEqual(files, ['.github/workflows/post-deploy-gate.yml']);
+});
+
+test('intake inferFilesFromSignal usa heuristicas de corpus para workflows activos', () => {
+    const deployHostingFiles = intake.inferFilesFromSignal(
+        {
+            source: 'workflow',
+            title: 'Deploy Hosting: production failed',
+            labels: [],
+        },
+        'ops'
+    );
+    const premiumQaFiles = intake.inferFilesFromSignal(
+        {
+            source: 'workflow',
+            title: 'Frontend Premium QA regression detected',
+            labels: [],
+        },
+        'ops'
+    );
+
+    assert.deepEqual(deployHostingFiles, ['.github/workflows/deploy-hosting.yml']);
+    assert.deepEqual(premiumQaFiles, ['.github/workflows/frontend-premium-qa.yml']);
 });

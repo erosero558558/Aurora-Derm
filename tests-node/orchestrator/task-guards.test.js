@@ -22,7 +22,7 @@ const CRITICAL_SCOPE_KEYWORDS = [
     'env',
     'security',
 ];
-const ALLOWED_EXECUTORS = new Set(['codex', 'claude']);
+const ALLOWED_EXECUTORS = new Set(['codex']);
 const ACTIVE_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
 
 test('task-guards detecta keyword critica en scope', () => {
@@ -115,7 +115,7 @@ test('task-guards prechecks combinan scope guard y depends_on', () => {
                 {
                     id: 'AG-010',
                     scope: 'calendar-hardening',
-                    executor: 'kimi',
+                    executor: 'jules',
                     depends_on: ['AG-001'],
                 },
                 {

@@ -177,15 +177,22 @@ function mapWorkflowSlugToFile(slugRaw) {
     if (slug.startsWith('post-deploy-gate')) {
         return '.github/workflows/post-deploy-gate.yml';
     }
+    if (slug.startsWith('post-deploy-fast')) {
+        return '.github/workflows/post-deploy-fast.yml';
+    }
     if (slug.startsWith('repair-git-sync')) {
         return '.github/workflows/repair-git-sync.yml';
     }
     if (slug === 'ci') return '.github/workflows/ci.yml';
     if (slug === 'agent-governance') return '.github/workflows/agent-governance.yml';
     if (slug === 'agent-intake') return '.github/workflows/agent-intake.yml';
-    if (slug === 'agent-autopilot') return '.github/workflows/agent-autopilot.yml';
-    if (slug === 'kimi-autopilot' || slug === 'agent-kimi-autopilot') {
-        return '.github/workflows/agent-kimi-autopilot.yml';
+    if (slug === 'deploy-hosting') return '.github/workflows/deploy-hosting.yml';
+    if (slug === 'deploy-staging') return '.github/workflows/deploy-staging.yml';
+    if (
+        slug === 'deploy-frontend-selfhosted' ||
+        slug === 'deploy-frontend-self-hosted'
+    ) {
+        return '.github/workflows/deploy-frontend-selfhosted.yml';
     }
     if (
         slug === 'production-monitor' ||
@@ -193,11 +200,72 @@ function mapWorkflowSlugToFile(slugRaw) {
     ) {
         return '.github/workflows/prod-monitor.yml';
     }
-    if (slug === 'jules-pr-automation' || slug === 'jules-pr') {
-        return '.github/workflows/jules-pr.yml';
+    if (slug === 'frontend-premium-qa') {
+        return '.github/workflows/frontend-premium-qa.yml';
+    }
+    if (slug === 'nightly-stability') {
+        return '.github/workflows/nightly-stability.yml';
+    }
+    if (
+        slug === 'weekly-kpi-report' ||
+        slug === 'weekly-kpi'
+    ) {
+        return '.github/workflows/weekly-kpi-report.yml';
+    }
+    if (slug === 'sentry-events-verify' || slug === 'verify-sentry-events') {
+        return '.github/workflows/sentry-events-verify.yml';
     }
     if (slug === 'calendar-write-smoke' || slug === 'calendar-write-smoke-manual') {
         return '.github/workflows/calendar-write-smoke.yml';
+    }
+    return '';
+}
+
+function inferWorkflowFileFromCorpus(corpusRaw) {
+    const corpus = normalizeWorkflowSlug(corpusRaw);
+    if (!corpus) return '';
+
+    if (corpus.includes('deploy-hosting')) {
+        return '.github/workflows/deploy-hosting.yml';
+    }
+    if (corpus.includes('deploy-staging')) {
+        return '.github/workflows/deploy-staging.yml';
+    }
+    if (corpus.includes('deploy-frontend-selfhosted')) {
+        return '.github/workflows/deploy-frontend-selfhosted.yml';
+    }
+    if (corpus.includes('frontend-premium-qa')) {
+        return '.github/workflows/frontend-premium-qa.yml';
+    }
+    if (corpus.includes('nightly-stability')) {
+        return '.github/workflows/nightly-stability.yml';
+    }
+    if (corpus.includes('weekly-kpi-report') || corpus.includes('weekly-kpi')) {
+        return '.github/workflows/weekly-kpi-report.yml';
+    }
+    if (corpus.includes('sentry-events-verify') || corpus.includes('verify-sentry-events')) {
+        return '.github/workflows/sentry-events-verify.yml';
+    }
+    if (corpus.includes('post-deploy-fast')) {
+        return '.github/workflows/post-deploy-fast.yml';
+    }
+    if (corpus.includes('post-deploy-gate')) {
+        return '.github/workflows/post-deploy-gate.yml';
+    }
+    if (corpus.includes('repair-git-sync')) {
+        return '.github/workflows/repair-git-sync.yml';
+    }
+    if (corpus.includes('calendar-write-smoke')) {
+        return '.github/workflows/calendar-write-smoke.yml';
+    }
+    if (corpus.includes('agent-governance')) {
+        return '.github/workflows/agent-governance.yml';
+    }
+    if (corpus.includes('agent-intake')) {
+        return '.github/workflows/agent-intake.yml';
+    }
+    if (corpus.includes('prod-monitor') || corpus.includes('production-monitor')) {
+        return '.github/workflows/prod-monitor.yml';
     }
     return '';
 }
@@ -231,6 +299,10 @@ function inferFilesFromSignal(signal, scope) {
         const workflowFile = inferWorkflowFileFromSignal(signal);
         if (workflowFile) {
             return [workflowFile];
+        }
+        const corpusWorkflowFile = inferWorkflowFileFromCorpus(corpus);
+        if (corpusWorkflowFile) {
+            return [corpusWorkflowFile];
         }
         if (corpus.includes('post-deploy')) {
             return ['.github/workflows/post-deploy-gate.yml'];
