@@ -7,11 +7,15 @@ async function gotoPublicRoute(page, route) {
 }
 
 async function waitForBookingHooks(page, expectedValue) {
-    await expect(page.locator('#citas')).toBeVisible();
-    await expect(page.locator('#appointmentForm')).toBeVisible({
+    await expect(page.locator('#v5-booking, #citas')).toBeVisible();
+    await expect(
+        page.locator('#v5-booking-form, #appointmentForm')
+    ).toBeVisible({
         timeout: 20000,
     });
-    await expect(page.locator('#serviceSelect')).toBeVisible({
+    await expect(
+        page.locator('#v5-service-select, #serviceSelect')
+    ).toBeVisible({
         timeout: 20000,
     });
     if (expectedValue) {
@@ -19,7 +23,9 @@ async function waitForBookingHooks(page, expectedValue) {
             .poll(
                 async () =>
                     page.evaluate(() => {
-                        const select = document.getElementById('serviceSelect');
+                        const select =
+                            document.getElementById('v5-service-select') ||
+                            document.getElementById('serviceSelect');
                         return select ? select.value : '';
                     }),
                 { timeout: 12000 }

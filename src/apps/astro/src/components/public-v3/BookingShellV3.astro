@@ -46,6 +46,18 @@ const activeServiceOption =
     serviceOptions.find((option) => option.selected && option.value) ||
     serviceOptions.find((option) => option.value) ||
     serviceOptions[0];
+const activeServiceBase = Number(activeServiceOption?.price || 0);
+const activeServiceTaxRate = Number(activeServiceOption?.tax || 0);
+const activeServiceTotalRaw = Number(activeServiceOption?.total || 0);
+const activeServiceTaxAmount = activeServiceBase * activeServiceTaxRate;
+const activeServiceTotal =
+    activeServiceTotalRaw > 0
+        ? activeServiceTotalRaw
+        : activeServiceBase + activeServiceTaxAmount;
+const showInitialPriceSummary = activeServiceBase > 0;
+const initialPriceHintClass = showInitialPriceSummary
+    ? 'price-summary-hint is-hidden'
+    : 'price-summary-hint';
 
 const serviceTypeLabelByValue =
     locale === 'en'
@@ -385,6 +397,13 @@ const evolutionOptions = [
                     data-i18n="placeholder_phone"
                     placeholder={dict.placeholder_phone}
                 />
+                <small id="bookingPhoneFormatHelp" class="form-help">
+                    {
+                        locale === 'en'
+                            ? 'Recommended format: +593 9XXXXXXXX or 09XXXXXXXX.'
+                            : 'Formato recomendado: +593 9XXXXXXXX o 09XXXXXXXX.'
+                    }
+                </small>
             </div>
 
             <div class="form-group">
@@ -459,21 +478,21 @@ const evolutionOptions = [
                 </a>
             </p>
 
-            <div class="price-summary is-hidden" id="priceSummary">
+            <div class={showInitialPriceSummary ? 'price-summary' : 'price-summary is-hidden'} id="priceSummary">
                 <div class="price-row">
                     <span data-i18n="summary_subtotal">{dict.summary_subtotal}</span>
-                    <span id="subtotalPrice">$0.00</span>
+                    <span id="subtotalPrice">{`$${activeServiceBase.toFixed(2)}`}</span>
                 </div>
                 <div class="price-row">
                     <span data-i18n="summary_iva">{dict.summary_iva}</span>
-                    <span id="ivaPrice">$0.00</span>
+                    <span id="ivaPrice">{`$${activeServiceTaxAmount.toFixed(2)}`}</span>
                 </div>
                 <div class="price-row total">
                     <span data-i18n="summary_total">{dict.summary_total}</span>
-                    <span id="totalPrice">$0.00</span>
+                    <span id="totalPrice">{`$${activeServiceTotal.toFixed(2)}`}</span>
                 </div>
             </div>
-            <p class="price-summary-hint" id="priceHint" data-i18n="booking_price_hint">
+            <p class={initialPriceHintClass} id="priceHint" data-i18n="booking_price_hint">
                 {dict.booking_price_hint}
             </p>
 

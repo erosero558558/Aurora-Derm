@@ -1,15 +1,15 @@
 {
     "title": "Telemedicina | Piel en Armonia",
-    "description": "Dermatologia remota presentada como capacidad integrada y no como simple acceso rapido.",
+    "description": "Dermatologia remota integrada al mismo sistema clinico de la sede Quito.",
     "hero": {
-        "eyebrow": "Telemedicina",
-        "title": "Una capability remota con criterio de fit y escalamiento.",
-        "deck": "La pagina explica cuando usar telemedicina, que enviar antes de la consulta y cuando pasar a revision presencial.",
+        "eyebrow": "Telemedicina clinica",
+        "title": "Orientacion remota con criterio medico y ruta de escalamiento clara.",
+        "deck": "Esta pagina explica cuando iniciar remoto, que informacion enviar y cuando pasar a consulta presencial.",
         "tone": "ink",
         "media": "/images/optimized/service-telemedicina.webp",
         "mediaMeta": {
             "src": "/images/optimized/service-telemedicina.webp",
-            "alt": "Atencion dermatologica remota por telemedicina",
+            "alt": "Atencion dermatologica remota con triage clinico",
             "kind": "image"
         }
     },
@@ -17,33 +17,33 @@
         "eyebrow": "Como funciona",
         "tone": "porcelain",
         "points": [
-            "Elige video, WhatsApp o llamada segun el caso.",
-            "Comparte contexto clinico e imagenes antes de la consulta.",
-            "Escala a presencial cuando la revision o el procedimiento lo exijan."
+            "Seleccione video, llamada o WhatsApp segun su contexto.",
+            "Comparta motivo, evolucion e imagenes utiles antes de la consulta.",
+            "Escalamos a consultorio cuando evaluacion fisica o procedimiento sea necesario."
         ]
     },
     "whoItFits": {
-        "eyebrow": "Para quien encaja",
+        "eyebrow": "Cuando suele encajar",
         "tone": "silver",
         "points": [
-            "Control de acne e inflamacion",
-            "Seguimiento de dermatitis y revision de tratamiento",
-            "Dudas iniciales sobre manchas, textura o siguiente ruta"
+            "Control de acne, rosacea y otras inflamaciones en seguimiento.",
+            "Revision de respuesta a tratamiento en curso.",
+            "Orientacion inicial sobre manchas, textura o lesion reciente."
         ]
     },
     "escalation": {
-        "eyebrow": "Escalamiento",
+        "eyebrow": "Modelo de escalamiento",
         "tone": "porcelain",
         "points": [
-            "Pasa a valoracion diagnostica cuando el caso es amplio o incierto.",
-            "Pasa a una ficha de servicio cuando la ruta procedural ya esta clara.",
-            "Mantiene los mismos hooks de booking y soporte humano."
+            "Escale a diagnostico integral cuando el caso sea amplio o incierto.",
+            "Escale a ficha de procedimiento cuando la indicacion ya este definida.",
+            "Mantenga la misma reserva y el mismo soporte humano durante todo el proceso."
         ]
     },
     "booking": {
         "eyebrow": "Reserva",
-        "title": "La reserva remota reutiliza el mismo motor con una presentacion V3.",
-        "deck": "Puedes entrar directo al flujo de cita con la modalidad online preseleccionada.",
+        "title": "La reserva remota conserva la misma seguridad operativa del flujo principal.",
+        "deck": "Puede ingresar a la cita con modalidad online preseleccionada y contexto clinico listo.",
         "actionLabel": "Reservar telemedicina",
         "serviceHint": "video",
         "tone": "silver"

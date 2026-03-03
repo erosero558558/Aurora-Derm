@@ -2,18 +2,18 @@
     "title": "Terminos y condiciones",
     "description": "Marco operativo de reservas, pagos, soporte y uso del sitio publico.",
     "heading": "Terminos y condiciones",
-    "summary": "Esta pagina explica como se organiza la reserva, la validacion operativa y la continuidad del cuidado dentro del sitio publico.",
+    "summary": "Esta pagina describe como se organiza la reserva, la validacion operativa y la continuidad de atencion dentro del sitio publico.",
     "tone": "porcelain",
     "highlights": [
         {
             "eyebrow": "Reserva",
-            "title": "La cita se confirma con agenda, datos y validacion operativa.",
-            "body": "Cada servicio puede requerir soporte adicional, pago o confirmacion manual segun modalidad y disponibilidad real."
+            "title": "La cita se confirma con agenda disponible, datos completos y validacion operativa.",
+            "body": "Segun modalidad y disponibilidad en vivo, un servicio puede requerir soporte adicional, pago previo o confirmacion manual."
         },
         {
             "eyebrow": "Cambios",
             "title": "Reprogramacion y cancelacion siguen una politica publica visible.",
-            "body": "La anticipacion, la disponibilidad viva y el estado del pago definen el siguiente paso."
+            "body": "La anticipacion, la disponibilidad en vivo y el estado del pago definen el siguiente paso."
         }
     ],
     "sections": [
@@ -21,7 +21,7 @@
             "title": "Alcance del servicio",
             "body": "El sitio organiza informacion publica, rutas de servicio y reserva para consulta presencial o telemedicina.",
             "items": [
-                "Los precios publicados pueden ser referenciales o de entrada.",
+                "Los precios publicados pueden funcionar como valores de entrada.",
                 "La indicacion final depende de valoracion medica.",
                 "La modalidad puede cambiar por criterio clinico."
             ]
@@ -31,7 +31,7 @@
             "body": "La continuidad del booking depende de agenda viva, metodo de pago y validacion del caso.",
             "items": [
                 "La disponibilidad puede cerrarse si otra reserva confirma antes.",
-                "Los requisitos previos se informan antes de confirmar.",
+                "Los requisitos previos se informan antes de confirmar la cita.",
                 "Las politicas de no show y reembolso aplican segun canal y caso."
             ]
         }

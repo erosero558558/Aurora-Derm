@@ -1,0 +1,514 @@
+---
+import {
+    getDictionary,
+    getLocalizedBookingOptions,
+    legalBasePath,
+} from '../../lib/content.js';
+
+const { locale = 'es', serviceHint = 'consulta' } = Astro.props;
+
+const dict = getDictionary(locale);
+const legalPath = legalBasePath(locale);
+const termsHref = `${legalPath}${locale === 'en' ? 'terms/' : 'terminos/'}`;
+const privacyHref = `${legalPath}${locale === 'en' ? 'privacy/' : 'privacidad/'}`;
+const cancellationPolicyHref = `${termsHref}${locale === 'en' ? '#cancellations' : '#cancelaciones'}`;
+
+const serviceOptions = [
+    {
+        value: '',
+        label: dict.select_service,
+        price: '0',
+        tax: '0',
+        total: '0',
+        priceRule: '',
+        priceLabelShort: '',
+        priceDisclaimer: '',
+        serviceType: '',
+        durationMin: '0',
+        selected: false,
+    },
+    ...getLocalizedBookingOptions(locale).map((option) => ({
+        value: option.id,
+        label: option.optionLabel,
+        price: String(option.price),
+        tax: String(option.taxRate),
+        total: String(option.total),
+        priceRule: option.finalPriceRule,
+        priceLabelShort: option.priceLabelShort,
+        priceDisclaimer: option.priceDisclaimer,
+        serviceType: option.serviceType,
+        durationMin: String(option.durationMin || 0),
+        selected: option.id === serviceHint,
+    })),
+];
+
+const activeServiceOption =
+    serviceOptions.find((option) => option.selected && option.value) ||
+    serviceOptions.find((option) => option.value) ||
+    serviceOptions[0];
+const activeServiceBase = Number(activeServiceOption?.price || 0);
+const activeServiceTaxRate = Number(activeServiceOption?.tax || 0);
+const activeServiceTotalRaw = Number(activeServiceOption?.total || 0);
+const activeServiceTaxAmount = activeServiceBase * activeServiceTaxRate;
+const activeServiceTotal =
+    activeServiceTotalRaw > 0
+        ? activeServiceTotalRaw
+        : activeServiceBase + activeServiceTaxAmount;
+const showInitialPriceSummary = activeServiceBase > 0;
+const initialPriceHintClass = showInitialPriceSummary
+    ? 'price-summary-hint is-hidden'
+    : 'price-summary-hint';
+
+const serviceTypeLabelByValue =
+    locale === 'en'
+        ? {
+              clinical: 'Clinical route',
+              telemedicine: 'Remote-first route',
+              procedure: 'Procedure route',
+              aesthetic: 'Medical aesthetics route',
+          }
+        : {
+              clinical: 'Ruta clínica',
+              telemedicine: 'Ruta remota',
+              procedure: 'Ruta de procedimiento',
+              aesthetic: 'Ruta de estética médica',
+          };
+
+const bookingPricingModelTitle =
+    locale === 'en'
+        ? 'Transparent pricing model'
+        : 'Modelo de precio transparente';
+const bookingPricingLabelShort =
+    locale === 'en' ? 'Public route price' : 'Precio público de la ruta';
+const bookingPricingRuleLabel =
+    locale === 'en' ? 'Calculation rule' : 'Regla de cálculo';
+const bookingPricingMetaLabel =
+    locale === 'en' ? 'Care type and duration' : 'Tipo de atención y duración';
+const bookingPricingRuleValue =
+    locale === 'en'
+        ? 'Total = base price + applicable tax'
+        : 'Total = precio base + impuesto aplicable';
+const bookingServiceTypeFallback =
+    locale === 'en' ? 'Select a route to see details' : 'Selecciona una ruta para ver detalles';
+
+const companionTitle =
+    locale === 'en'
+        ? 'Complementary routes'
+        : 'Rutas complementarias';
+const companionDeck =
+    locale === 'en'
+        ? 'Use telemedicine or WhatsApp for orientation, then continue in the same booking and clinical flow.'
+        : 'Usa telemedicina o WhatsApp para orientación y continúa en el mismo flujo clínico y de reserva.';
+const companionNote =
+    locale === 'en'
+        ? 'If warning signs are present, move directly to booking for priority triage.'
+        : 'Si hay señales de alarma, pasa directo a reserva para triage prioritario.';
+const companionTelemedicineHref =
+    locale === 'en' ? '/en/telemedicine/' : '/es/telemedicina/';
+const companionTelemedicineLabel =
+    locale === 'en' ? 'Open telemedicine' : 'Abrir telemedicina';
+const companionWhatsAppLabel = 'WhatsApp';
+
+const bookingAssuranceTitle =
+    locale === 'en'
+        ? 'Operational trust layer'
+        : 'Capa operativa de confianza';
+const bookingAssuranceItems = [
+    {
+        icon: 'fas fa-check-circle',
+        title: locale === 'en' ? 'Real-time slot validation' : 'Validación de cupo en tiempo real',
+        deck:
+            locale === 'en'
+                ? 'We confirm schedule before payment authorization.'
+                : 'Confirmamos la agenda antes de autorizar el pago.',
+    },
+    {
+        icon: 'fas fa-lock',
+        title: locale === 'en' ? 'Secure payment path' : 'Ruta de pago segura',
+        deck: `${dict.payment_trust_ssl} · ${dict.payment_trust_stripe}`,
+    },
+    {
+        icon: 'fas fa-user-shield',
+        title: locale === 'en' ? 'Visible policy and support' : 'Política visible y soporte humano',
+        deck:
+            locale === 'en'
+                ? 'Rescheduling and cancellation terms remain visible before checkout.'
+                : 'Los términos de reprogramación y cancelación están visibles antes del checkout.',
+    },
+];
+
+const doctorOptions = [
+    { value: '', label: dict.select_doctor },
+    { value: 'rosero', label: dict.opt_rosero },
+    { value: 'narvaez', label: dict.opt_narvaez },
+    { value: 'indiferente', label: dict.opt_any },
+];
+
+const areaOptions = [
+    { value: '', label: dict.select_area },
+    { value: 'rostro', label: dict.area_face },
+    { value: 'cuello', label: dict.area_neck },
+    { value: 'cuero_cabelludo', label: dict.area_scalp },
+    { value: 'tronco', label: dict.area_torso },
+    { value: 'brazos_manos', label: dict.area_arms },
+    { value: 'piernas_pies', label: dict.area_legs },
+    { value: 'otra', label: dict.area_other },
+];
+
+const evolutionOptions = [
+    { value: '', label: dict.select_evolution },
+    { value: 'menos_1_semana', label: dict.evolution_1w },
+    { value: '1_4_semanas', label: dict.evolution_1m },
+    { value: '1_3_meses', label: dict.evolution_3m },
+    { value: '3_12_meses', label: dict.evolution_12m },
+    { value: 'mas_1_ano', label: dict.evolution_year },
+];
+---
+
+<div
+    id="v5-booking"
+    class="appointment-container public-booking-shell"
+    data-public-booking-shell
+    data-v5-service-hint={serviceHint}
+>
+    <div class="appointment-info">
+        <h2 class="section-title" data-i18n="appointment_title">{dict.appointment_title}</h2>
+        <p class="appointment-desc" data-i18n="appointment_desc">{dict.appointment_desc}</p>
+
+        <section
+            class="booking-assurance"
+            aria-label={bookingAssuranceTitle}
+            data-booking-assurance
+        >
+            <p>{bookingAssuranceTitle}</p>
+            <div class="booking-assurance__grid">
+                {
+                    bookingAssuranceItems.map((item) => (
+                        <article class="booking-assurance__item">
+                            <i class={item.icon} aria-hidden="true"></i>
+                            <h3>{item.title}</h3>
+                            <p>{item.deck}</p>
+                        </article>
+                    ))
+                }
+            </div>
+        </section>
+
+        <div class="appointment-benefits">
+            <div class="benefit-item">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                <span data-i18n="benefit_1">{dict.benefit_1}</span>
+            </div>
+            <div class="benefit-item">
+                <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                <span data-i18n="benefit_2">{dict.benefit_2}</span>
+            </div>
+            <div class="benefit-item">
+                <i class="fas fa-sync" aria-hidden="true"></i>
+                <div class="benefit-copy">
+                    <span data-i18n="benefit_3">{dict.benefit_3}</span>
+                    <a href={termsHref} class="benefit-link" data-i18n="benefit_3_link">
+                        {dict.benefit_3_link}
+                    </a>
+                    <small class="benefit-note" data-i18n="benefit_3_note">
+                        {dict.benefit_3_note}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <section class="booking-companion-routes" aria-label={companionTitle}>
+            <p>{companionTitle}</p>
+            <p>{companionDeck}</p>
+            <div class="booking-companion-routes__actions">
+                <a
+                    href={companionTelemedicineHref}
+                    class="hero-stage__cta hero-stage__cta--secondary"
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="booking_companion_telemedicine"
+                    data-cta-target="telemedicine"
+                    data-booking-hint={serviceHint}
+                    data-service-category="all"
+                    data-service-intent="remote"
+                    data-catalog-category="all"
+                    data-catalog-intent="remote"
+                >
+                    {companionTelemedicineLabel}
+                </a>
+                <a
+                    href="https://wa.me/593982453672"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="hero-stage__cta hero-stage__cta--secondary"
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="booking_companion_whatsapp"
+                    data-cta-target="whatsapp"
+                    data-booking-hint={serviceHint}
+                    data-service-category="all"
+                    data-service-intent="remote"
+                    data-catalog-category="all"
+                    data-catalog-intent="remote"
+                >
+                    {companionWhatsAppLabel}
+                </a>
+            </div>
+            <small class="booking-companion-routes__note">{companionNote}</small>
+        </section>
+    </div>
+
+    <div class="appointment-form-container">
+        <form id="v5-booking-form" class="appointment-form">
+            <h3 data-i18n="form_title">{dict.form_title}</h3>
+            <p class="booking-form-meta" data-i18n="booking_form_intro">
+                {dict.booking_form_intro}
+            </p>
+            <div
+                class="booking-steps"
+                aria-label={locale === 'en' ? 'Booking steps' : 'Pasos de reserva'}
+            >
+                <span class="booking-step-pill" data-i18n="booking_step_availability">
+                    {dict.booking_step_availability}
+                </span>
+                <span class="booking-step-pill" data-i18n="booking_step_payment">
+                    {dict.booking_step_payment}
+                </span>
+                <span class="booking-step-pill" data-i18n="booking_step_confirmation">
+                    {dict.booking_step_confirmation}
+                </span>
+            </div>
+            <div
+                id="v5-booking-feedback" data-v5-booking-feedback
+                class="booking-inline-feedback is-hidden"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+            ></div>
+
+            <div class="form-group">
+                <label for="v5-service-select" data-i18n="label_service">{dict.label_service}</label>
+                <select name="service" id="v5-service-select" required>
+                    {serviceOptions.map((option) => (
+                        <option
+                            value={option.value}
+                            data-price={option.price}
+                            data-service-tax={option.tax}
+                            data-price-total={option.total}
+                            data-price-rule={option.priceRule}
+                            data-price-label-short={option.priceLabelShort}
+                            data-price-disclaimer={option.priceDisclaimer}
+                            data-service-type={option.serviceType}
+                            data-duration-min={option.durationMin}
+                            selected={option.selected}
+                        >
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            <section class="booking-pricing-model" aria-live="polite" aria-atomic="true">
+                <p>{bookingPricingModelTitle}</p>
+                <div class="booking-pricing-model__row">
+                    <span>{bookingPricingLabelShort}</span>
+                    <strong id="selectedPriceLabel">
+                        {activeServiceOption?.priceLabelShort || '-'}
+                    </strong>
+                </div>
+                <div class="booking-pricing-model__row">
+                    <span>{bookingPricingRuleLabel}</span>
+                    <strong id="selectedPriceRule">{bookingPricingRuleValue}</strong>
+                </div>
+                <div class="booking-pricing-model__row">
+                    <span>{bookingPricingMetaLabel}</span>
+                    <strong id="selectedServiceMeta">
+                        {
+                            activeServiceOption?.serviceType
+                                ? `${serviceTypeLabelByValue[activeServiceOption.serviceType] || bookingServiceTypeFallback}${
+                                      Number(activeServiceOption.durationMin || 0) > 0
+                                          ? ` · ${activeServiceOption.durationMin} min`
+                                          : ''
+                                  }`
+                                : bookingServiceTypeFallback
+                        }
+                    </strong>
+                </div>
+                <p id="selectedPriceDisclaimer">
+                    {activeServiceOption?.priceDisclaimer || dict.booking_price_hint}
+                </p>
+                <div class="booking-pricing-model__notes">
+                    <p class="booking-pricing-model__note">{dict.summary_includes}</p>
+                    <p class="booking-pricing-model__note">{dict.summary_excludes}</p>
+                </div>
+                <a
+                    href={cancellationPolicyHref}
+                    class="booking-pricing-model__policy"
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="booking_pricing_policy"
+                    data-cta-target="legal"
+                    data-booking-hint={serviceHint}
+                >
+                    {dict.payment_policy_link}
+                </a>
+            </section>
+
+            <div class="form-group">
+                <label for="v5-doctor-select" data-i18n="label_doctor">{dict.label_doctor}</label>
+                <select name="doctor" id="v5-doctor-select" required>
+                    {doctorOptions.map((option) => (
+                        <option value={option.value}>{option.label}</option>
+                    ))}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="v5-date" data-i18n="label_date">{dict.label_date}</label>
+                    <input type="date" id="v5-date" name="date" required />
+                </div>
+                <div class="form-group">
+                    <label for="v5-time" data-i18n="label_time">{dict.label_time}</label>
+                    <select name="time" id="v5-time" required>
+                        <option value="">{dict.select_time}</option>
+                        <option value="09:00">09:00</option>
+                        <option value="10:00">10:00</option>
+                        <option value="11:00">11:00</option>
+                        <option value="12:00">12:00</option>
+                        <option value="15:00">15:00</option>
+                        <option value="16:00">16:00</option>
+                        <option value="17:00">17:00</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentName" data-i18n="label_name">{dict.label_name}</label>
+                <input type="text" id="appointmentName" name="name" required />
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentEmail" data-i18n="label_email">{dict.label_email}</label>
+                <input type="email" id="appointmentEmail" name="email" required />
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentPhone" data-i18n="label_phone">{dict.label_phone}</label>
+                <input
+                    type="tel"
+                    id="appointmentPhone"
+                    name="phone"
+                    required
+                    inputmode="tel"
+                    autocomplete="tel"
+                    data-i18n="placeholder_phone"
+                    placeholder={dict.placeholder_phone}
+                />
+                <small id="bookingPhoneFormatHelp" class="form-help">
+                    {
+                        locale === 'en'
+                            ? 'Recommended format: +593 9XXXXXXXX or 09XXXXXXXX.'
+                            : 'Formato recomendado: +593 9XXXXXXXX o 09XXXXXXXX.'
+                    }
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="appointmentReason" data-i18n="label_reason">{dict.label_reason}</label>
+                <textarea
+                    id="appointmentReason"
+                    name="reason"
+                    rows="3"
+                    data-i18n="placeholder_reason"
+                    placeholder={dict.placeholder_reason}
+                ></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="affectedAreaSelect" data-i18n="label_area">{dict.label_area}</label>
+                    <select name="affectedArea" id="affectedAreaSelect">
+                        {areaOptions.map((option) => (
+                            <option value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="evolutionTimeSelect" data-i18n="label_evolution">
+                        {dict.label_evolution}
+                    </label>
+                    <select name="evolutionTime" id="evolutionTimeSelect">
+                        {evolutionOptions.map((option) => (
+                            <option value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="casePhotos" data-i18n="label_case_photos">{dict.label_case_photos}</label>
+                <input
+                    type="file"
+                    id="casePhotos"
+                    name="casePhotos"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    multiple
+                />
+                <small class="form-help" data-i18n="case_photos_help">{dict.case_photos_help}</small>
+            </div>
+
+            <div class="form-consent">
+                <label class="checkbox-line" for="privacyConsent">
+                    <input type="checkbox" id="privacyConsent" name="privacyConsent" required />
+                    <span data-i18n="privacy_consent_label">{dict.privacy_consent_label}</span>
+                </label>
+                <p class="form-privacy-note">
+                    <span data-i18n="privacy_images_note">{dict.privacy_images_note}</span>
+                    <a href={privacyHref} data-i18n="privacy_link_label">{dict.privacy_link_label}</a>
+                </p>
+            </div>
+            <p class="form-help booking-policy-note">
+                {
+                    locale === 'en'
+                        ? 'Free rescheduling or cancellation up to 24 hours before.'
+                        : 'Reprogramacion o cancelacion sin costo hasta 24 horas antes.'
+                }
+                {' '}
+                <a
+                    href={cancellationPolicyHref}
+                    data-analytics-event="open_public_cta"
+                    data-entry-surface="booking_form_policy_note"
+                    data-cta-target="legal"
+                    data-booking-hint={serviceHint}
+                >
+                    {locale === 'en' ? 'View policy' : 'Ver politica'}
+                </a>
+            </p>
+
+            <div class={showInitialPriceSummary ? 'price-summary' : 'price-summary is-hidden'} id="priceSummary">
+                <div class="price-row">
+                    <span data-i18n="summary_subtotal">{dict.summary_subtotal}</span>
+                    <span id="subtotalPrice">{`$${activeServiceBase.toFixed(2)}`}</span>
+                </div>
+                <div class="price-row">
+                    <span data-i18n="summary_iva">{dict.summary_iva}</span>
+                    <span id="ivaPrice">{`$${activeServiceTaxAmount.toFixed(2)}`}</span>
+                </div>
+                <div class="price-row total">
+                    <span data-i18n="summary_total">{dict.summary_total}</span>
+                    <span id="totalPrice">{`$${activeServiceTotal.toFixed(2)}`}</span>
+                </div>
+            </div>
+            <p class={initialPriceHintClass} id="priceHint" data-i18n="booking_price_hint">
+                {dict.booking_price_hint}
+            </p>
+
+            <button type="submit" class="btn btn-primary btn-full">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                <span data-i18n="btn_continue">{dict.btn_continue}</span>
+            </button>
+            <p class="booking-submit-note" data-i18n="booking_submit_note">
+                {dict.booking_submit_note}
+            </p>
+        </form>
+    </div>
+</div>
+

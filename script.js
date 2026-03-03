@@ -18,8 +18,8 @@ let s = [],
     l = !1,
     d = 0,
     g = null,
-    p = !1,
-    m = [];
+    m = !1,
+    p = [];
 function f() {
     return n;
 }
@@ -60,18 +60,18 @@ function M(e) {
     g = e;
 }
 function A() {
-    return p;
-}
-function j(e) {
-    p = e;
-}
-function L() {
     return m;
 }
-function T(e) {
+function j(e) {
     m = e;
 }
-function I() {
+function L() {
+    return p;
+}
+function I(e) {
+    p = e;
+}
+function T() {
     try {
         const e = localStorage.getItem('chatHistory'),
             t = e ? JSON.parse(e) : [],
@@ -86,12 +86,12 @@ function I() {
         return [];
     }
 }
-function D(e) {
+function B(e) {
     try {
         localStorage.setItem('chatHistory', JSON.stringify(e));
     } catch {}
 }
-const B = {
+const D = {
         currentLang: [
             f,
             function (e) {
@@ -117,23 +117,23 @@ const B = {
         ],
         reviewsCache: [w, b],
         chatbotOpen: [A, j],
-        conversationContext: [L, T],
+        conversationContext: [L, I],
     },
     O = new Proxy(
         { bookedSlotsCache: c },
         {
             get: (e, t, n) =>
                 'chatHistory' === t
-                    ? I()
-                    : Object.prototype.hasOwnProperty.call(B, t)
-                      ? B[t][0]()
+                    ? T()
+                    : Object.prototype.hasOwnProperty.call(D, t)
+                      ? D[t][0]()
                       : Reflect.get(e, t, n),
             set: (e, t, n, o) =>
                 'chatHistory' === t
-                    ? (D(n), !0)
+                    ? (B(n), !0)
                     : 'bookedSlotsCache' !== t &&
-                      (Object.prototype.hasOwnProperty.call(B, t)
-                          ? (B[t][1](n), !0)
+                      (Object.prototype.hasOwnProperty.call(D, t)
+                          ? (D[t][1](n), !0)
                           : Reflect.set(e, t, n, o)),
         }
     ),
@@ -401,7 +401,7 @@ function de() {
 async function ge(e) {
     return ne(de, (t) => t.changeLanguage(e));
 }
-async function pe(e, t = {}) {
+async function me(e, t = {}) {
     const n = String(t.method || 'GET').toUpperCase(),
         o = new URLSearchParams({ resource: e });
     t.query &&
@@ -501,17 +501,17 @@ async function pe(e, t = {}) {
     }
     throw g || new Error('No se pudo completar la solicitud');
 }
-const me = $('/js/engines/booking-utils.js');
+const pe = $('/js/engines/booking-utils.js');
 function fe() {
     return Q({
         cacheKey: 'booking-utils',
-        src: me,
+        src: pe,
         scriptDataAttribute: 'data-booking-utils',
         resolveModule: () => window.Piel && window.Piel.PaymentGatewayEngine,
         isModuleReady: (e) => !(!e || 'function' != typeof e.init),
         onModuleReady: (e) =>
             e.init({
-                apiRequest: pe,
+                apiRequest: me,
                 getCurrentLang: f,
                 getPaymentConfig: v,
                 setPaymentConfig: k,
@@ -655,14 +655,17 @@ function _e() {
 }
 function Se() {
     const e = ee(() => _e(), { markWarmOnSuccess: !0 });
-    (X('#appointmentForm', 'focusin', e, !1),
+    (X('#v5-booking-form', 'focusin', e, !1),
+        X('#v5-booking-form', 'pointerdown', e),
+        X('#appointmentForm', 'focusin', e, !1),
         X('#appointmentForm', 'pointerdown', e),
         X('#chatbotWidget .chatbot-toggle', 'pointerdown', e),
-        te(document.getElementById('citas'), e, {
-            threshold: 0.05,
-            rootMargin: '260px 0px',
-            onNoObserver: e,
-        }),
+        te(
+            document.getElementById('v5-booking') ||
+                document.getElementById('citas'),
+            e,
+            { threshold: 0.05, rootMargin: '260px 0px', onNoObserver: e }
+        ),
         Y(e, { idleTimeout: 1800, fallbackDelay: 900 }));
 }
 async function Ce(e, t = {}) {
@@ -684,18 +687,18 @@ async function je(e, t = '', n = '') {
 async function Le(e, t = {}) {
     return ne(_e, (n) => n.createAppointmentRecord(e, t));
 }
-async function Te(e) {
+async function Ie(e) {
     return ne(_e, (t) => t.createCallbackRecord(e));
 }
-async function Ie(e) {
+async function Te(e) {
     return ne(_e, (t) => t.createReviewRecord(e));
 }
-async function De(e, t = {}) {
+async function Be(e, t = {}) {
     return ne(_e, (n) => n.uploadTransferProof(e, t));
 }
-let Be = null;
+let De = null;
 function Oe(e = {}) {
-    return (Be || (Be = import('./js/chunks/engagement-CxyxLpwi.js')), Be).then(
+    return (De || (De = import('./js/chunks/engagement-CxyxLpwi.js')), De).then(
         (t) => t.loadPublicReviews(e)
     );
 }
@@ -1042,7 +1045,7 @@ async function tt(e) {
                                 const e = r;
                                 r += 1;
                                 const o = t[e],
-                                    i = await De(o, { retries: 2 });
+                                    i = await Be(o, { retries: 2 });
                                 n[e] = {
                                     name: i.transferProofName || o.name || '',
                                     url: i.transferProofUrl || '',
@@ -1097,7 +1100,7 @@ function nt() {
                 buildAppointmentPayload: tt,
                 stripTransientAppointmentFields: et,
                 createAppointmentRecord: Le,
-                uploadTransferProof: De,
+                uploadTransferProof: Be,
                 getCaptchaToken: Pe,
                 showSuccessModal: Ze,
                 showToast: V,
@@ -1113,6 +1116,9 @@ function nt() {
 function ot() {
     const e = ee(() => nt(), { markWarmOnSuccess: !0 });
     ([
+        '.nav-cta[href="#v5-booking"]',
+        '.quick-dock-item[href="#v5-booking"]',
+        '.hero-actions a[href="#v5-booking"]',
         '.nav-cta[href="#citas"]',
         '.quick-dock-item[href="#citas"]',
         '.hero-actions a[href="#citas"]',
@@ -1169,7 +1175,7 @@ function dt() {
         setCheckoutStep: it,
         trackEvent: Ve,
         normalizeAnalyticsLabel: Ge,
-        openPaymentModal: mt,
+        openPaymentModal: pt,
         debugLog: K,
         setCurrentAppointment: y,
     };
@@ -1203,7 +1209,7 @@ function gt(e) {
         }
     }
 }
-function pt() {
+function mt() {
     const e = ee(() =>
             Q({
                 cacheKey: 'booking-ui',
@@ -1219,16 +1225,20 @@ function pt() {
                 logLabel: 'Booking UI',
             })
         ),
-        t = document.getElementById('citas');
+        t =
+            document.getElementById('v5-booking') ||
+            document.getElementById('citas');
     te(t, e, { threshold: 0.05, rootMargin: '320px 0px', onNoObserver: e });
-    const n = document.getElementById('appointmentForm');
+    const n =
+        document.getElementById('v5-booking-form') ||
+        document.getElementById('appointmentForm');
     (n &&
         (n.addEventListener('focusin', e, { once: !0 }),
         n.addEventListener('pointerdown', e, { once: !0, passive: !0 }),
         setTimeout(e, 120)),
         (t || n) && Y(e, { idleTimeout: 1800, fallbackDelay: 1100 }));
 }
-function mt(e) {
+function pt(e) {
     oe(
         nt,
         (t) => t.openPaymentModal(e),
@@ -1247,7 +1257,9 @@ function ft(e = {}) {
     const t = e && !0 === e.skipAbandonTrack,
         n = e && 'string' == typeof e.reason ? e.reason : 'modal_close';
     (t || ct(n), (O.checkoutSession.active = !1));
-    const o = document.getElementById('paymentModal');
+    const o =
+        document.getElementById('v5-payment-modal') ||
+        document.getElementById('paymentModal');
     (o && o.classList.remove('active'), (document.body.style.overflow = ''));
 }
 async function ht() {
@@ -1307,23 +1319,27 @@ function Lt() {
         .then((e) => e.closeRescheduleModal())
         .catch(() => {});
 }
-function Tt() {
+function It() {
     Et()
         .then((e) => e.submitReschedule())
         .catch(() => {});
 }
-function It(e) {
+function Tt(e) {
     return async (...t) =>
-        (await import('./js/chunks/shell-CjkQnRo5.js'))[e](...t);
+        (await import('./js/chunks/shell-CuA1ovOc.js'))[e](...t);
 }
-const Dt = $('/js/engines/data-bundle.js?v=20260225-data-consolidation1');
-function Bt(e) {
-    const t = document.getElementById('serviceSelect');
+const Bt = $('/js/engines/data-bundle.js?v=20260225-data-consolidation1');
+function Dt(e) {
+    const t =
+        document.getElementById('v5-service-select') ||
+        document.getElementById('serviceSelect');
     if (t) {
         ((t.value = e),
             t.dispatchEvent(new Event('change')),
             He('service_select'));
-        const n = document.getElementById('citas');
+        const n =
+            document.getElementById('v5-booking') ||
+            document.getElementById('citas');
         if (n) {
             const e = document.querySelector('.nav')?.offsetHeight || 80,
                 t = n.offsetTop - e - 20;
@@ -1334,7 +1350,7 @@ function Bt(e) {
 function Ot() {
     return Q({
         cacheKey: 'action-router-engine',
-        src: Dt,
+        src: Bt,
         scriptDataAttribute: 'data-data-bundle',
         resolveModule: () =>
             (window.Piel && window.Piel.ActionRouterEngine) ||
@@ -1353,15 +1369,15 @@ function Ot() {
                 processPayment: ht,
                 closeSuccessModal: jt,
                 closeRescheduleModal: Lt,
-                submitReschedule: Tt,
-                toggleChatbot: It('toggleChatbot'),
-                sendChatMessage: It('sendChatMessage'),
-                handleChatBookingSelection: It('handleChatBookingSelection'),
-                sendQuickMessage: It('sendQuickMessage'),
-                minimizeChatbot: It('minimizeChatbot'),
-                startChatBooking: It('startChatBooking'),
-                handleChatDateSelect: It('handleChatDateSelect'),
-                selectService: Bt,
+                submitReschedule: It,
+                toggleChatbot: Tt('toggleChatbot'),
+                sendChatMessage: Tt('sendChatMessage'),
+                handleChatBookingSelection: Tt('handleChatBookingSelection'),
+                sendQuickMessage: Tt('sendQuickMessage'),
+                minimizeChatbot: Tt('minimizeChatbot'),
+                startChatBooking: Tt('startChatBooking'),
+                handleChatDateSelect: Tt('handleChatDateSelect'),
+                selectService: Dt,
             }),
         missingApiError: 'action-router-engine loaded without API',
         loadError: 'No se pudo cargar action-router-engine.js',
@@ -1393,7 +1409,7 @@ let xt = null,
     qt = null,
     Ut = null;
 function Wt() {
-    return (Ut || (Ut = import('./js/chunks/shell-CjkQnRo5.js')), Ut);
+    return (Ut || (Ut = import('./js/chunks/shell-CuA1ovOc.js')), Ut);
 }
 let Kt = null,
     zt = null,
@@ -1559,7 +1575,9 @@ let un = '',
 function gn(e) {
     const t = String(e || '').trim();
     if (!t) return !1;
-    const n = document.getElementById('serviceSelect');
+    const n =
+        document.getElementById('v5-service-select') ||
+        document.getElementById('serviceSelect');
     return (
         !!n &&
         !!Array.from(n.options || []).some(function (e) {
@@ -1572,7 +1590,7 @@ function gn(e) {
         !0)
     );
 }
-function pn() {
+function mn() {
     if (!un || null !== ln) return;
     const e = function () {
         if (((ln = null), un)) {
@@ -1587,7 +1605,7 @@ function pn() {
     };
     ln = window.setTimeout(e, 0);
 }
-let mn = !1;
+let pn = !1;
 (document.addEventListener('DOMContentLoaded', function () {
     (document.querySelectorAll('a[href^="URL_"]').forEach((e) => {
         (e.removeAttribute('href'),
@@ -1595,8 +1613,8 @@ let mn = !1;
             e.classList.add('is-disabled-link'));
     }),
         Nt(),
-        mn ||
-            ((mn = !0),
+        pn ||
+            ((pn = !0),
             document.addEventListener('click', async function (e) {
                 const t = e.target instanceof Element ? e.target : null;
                 if (!t) return;
@@ -1643,6 +1661,9 @@ let mn = !1;
                                 (t && ((un = t), (dn = 0)),
                                     (function () {
                                         const e =
+                                            document.getElementById(
+                                                'v5-booking'
+                                            ) ||
                                             document.getElementById('citas');
                                         if (!e) return;
                                         const t =
@@ -1655,7 +1676,7 @@ let mn = !1;
                                         });
                                     })(),
                                     gn(t),
-                                    pn());
+                                    mn());
                             })(r));
                 }
             }),
@@ -1760,7 +1781,7 @@ let mn = !1;
         Ht.then(({ loadDeferredContent: e }) => e())
             .catch(() => !1)
             .then(() => {
-                (pn(), oe(Nt, (e) => e.initCookieBanner()));
+                (mn(), oe(Nt, (e) => e.initCookieBanner()));
                 const e = Z(() => {
                         (!(function () {
                             const e = () => {
@@ -1784,7 +1805,7 @@ let mn = !1;
                         })(),
                             Se(),
                             ot(),
-                            pt(),
+                            mt(),
                             Wt()
                                 .then((e) => {
                                     (e.initChatUiEngineWarmup(),
@@ -1834,7 +1855,7 @@ let mn = !1;
                                 .catch(() => {}));
                     }),
                     n = Z(() => {
-                        (e(), t(), pt());
+                        (e(), t(), mt());
                     });
                 (window.addEventListener('pointerdown', n, {
                     once: !0,
@@ -1878,7 +1899,9 @@ let mn = !1;
                         }
                         (e(document.getElementById('booking-btn')),
                             document
-                                .querySelectorAll('a[href="#citas"]')
+                                .querySelectorAll(
+                                    'a[href="#v5-booking"], a[href="#citas"]'
+                                )
                                 .forEach(function (t) {
                                     'booking-btn' !== t.id && e(t);
                                 }));
@@ -1902,7 +1925,7 @@ let mn = !1;
         t.preventDefault();
         const a = e ? e.offsetHeight : 0,
             c = i.offsetTop - a - 20;
-        ('#citas' === r && He(`cta_click_${on()}`),
+        (('#v5-booking' !== r && '#citas' !== r) || He(`cta_click_${on()}`),
             window.scrollTo({ top: c, behavior: nn() }));
     }),
         document.addEventListener('click', function (e) {
@@ -1982,8 +2005,8 @@ export {
     te as G,
     b as H,
     w as I,
-    Ie as J,
-    Te as K,
+    Te as J,
+    Ie as K,
     z as L,
     G as M,
     Ce as N,
@@ -1997,11 +2020,11 @@ export {
     q as f,
     A as g,
     N as h,
-    D as i,
-    I as j,
+    B as i,
+    T as j,
     h as k,
     Q as l,
-    T as m,
+    I as m,
     L as n,
     K as o,
     O as p,
@@ -2010,7 +2033,7 @@ export {
     V as s,
     Ve as t,
     f as u,
-    mt as v,
+    pt as v,
     ne as w,
     Pe as x,
     Le as y,

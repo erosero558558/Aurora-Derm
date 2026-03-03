@@ -1,0 +1,61 @@
+---
+const { navModel } = Astro.props;
+const links = Array.isArray(navModel?.links) ? navModel.links : [];
+const labels = navModel?.labels || {};
+const mega = navModel?.mega || {};
+const megaGroups = Array.isArray(mega?.groups) ? mega.groups : [];
+---
+
+<div class="public-nav-drawer-v5" data-public-nav-drawer hidden>
+    <div class="public-nav-drawer-v5__scrim" data-action="close-nav-drawer"></div>
+    <aside class="public-nav-drawer-v5__panel" aria-label={labels.primaryNav || (navModel?.locale === 'en' ? 'Primary' : 'Principal')}>
+        <header class="public-nav-drawer-v5__head">
+            <p>{navModel?.brand?.eyebrow}</p>
+            <button
+                type="button"
+                class="public-nav-drawer-v5__close"
+                data-action="close-nav-drawer"
+                aria-label={labels.closeMenu || (navModel?.locale === 'en' ? 'Close menu' : 'Cerrar menu')}
+            >
+                {labels.closeMenu || (navModel?.locale === 'en' ? 'Close' : 'Cerrar')}
+            </button>
+        </header>
+
+        <nav class="public-nav-drawer-v5__links" aria-label={labels.primaryNav || ''}>
+            {
+                links.map((link) => (
+                    <a href={link.href} class="public-nav-drawer-v5__link">
+                        <span>{link.label}</span>
+                    </a>
+                ))
+            }
+        </nav>
+
+        <section class="public-nav-drawer-v5__mega">
+            <h3>{labels.services || (navModel?.locale === 'en' ? 'Services' : 'Servicios')}</h3>
+            {
+                megaGroups.map((group) => (
+                    <article>
+                        <h4>{group.title}</h4>
+                        <ul>
+                            {(group.items || []).map((item) => (
+                                <li>
+                                    <a href={item.href}>{item.label}</a>
+                                </li>
+                            ))}
+                        </ul>
+                    </article>
+                ))
+            }
+        </section>
+
+        <div class="public-nav-drawer-v5__actions">
+            <a href={navModel?.bookingHref} class="public-nav-drawer-v5__cta">
+                {labels.book || (navModel?.locale === 'en' ? 'Book' : 'Reservar')}
+            </a>
+            <a href={navModel?.switchHref} class="public-nav-drawer-v5__lang">
+                {navModel?.switchLabel}
+            </a>
+        </div>
+    </aside>
+</div>

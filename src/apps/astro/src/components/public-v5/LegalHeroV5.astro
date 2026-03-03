@@ -1,0 +1,15 @@
+---
+const { page } = Astro.props;
+const locale = Astro.props.locale === 'en' ? 'en' : 'es';
+---
+
+<section
+    class="legal-hero-v5 legal-hero-v3"
+    data-legal-hero
+    data-template-block="legal_hero_v5"
+    data-section-tone={page.tone || 'porcelain'}
+>
+    <p>{locale === 'en' ? 'Legal' : 'Marco legal'}</p>
+    <h1>{page.heading}</h1>
+    <p>{page.summary}</p>
+</section>

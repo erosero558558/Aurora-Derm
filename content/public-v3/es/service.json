@@ -1,31 +1,31 @@
 {
     "heroTone": "ink",
     "storyEyebrow": "Programa medico",
-    "storySummary": "Ficha clinica con indicaciones, audiencia, cautelas, duracion y precio consistente con el checkout.",
+    "storySummary": "Ficha clinica con indicaciones, audiencia, cautelas, duracion y precio coherente con checkout.",
     "storyTone": "porcelain",
-    "evidenceEyebrow": "Fit y evidencia",
-    "evidenceTitle": "Que suele indicar ajuste, que exige cautela y como se interpreta el siguiente paso.",
+    "evidenceEyebrow": "Criterio y evidencia",
+    "evidenceTitle": "Que sugiere ajuste clinico, que requiere cautela y como decidir el siguiente paso.",
     "evidenceTone": "silver",
     "evidenceFallbackBullets": [
-        "La indicacion final se confirma en consulta segun piel, objetivos y antecedentes."
+        "La indicacion final se confirma en consulta, segun piel, antecedentes y objetivo clinico."
     ],
     "evidenceOutcomes": [
         "Lectura clinica inicial",
         "Secuencia esperada por tipo de tratamiento",
-        "Escalamiento a procedimiento o seguimiento cuando corresponda"
+        "Escalamiento a seguimiento o procedimiento cuando corresponda"
     ],
     "timelineEyebrow": "Secuencia de cuidado",
     "timelineTone": "ink",
     "timelineSteps": [
         "Valoracion y confirmacion de ajuste",
-        "Preparacion e indicacion medica",
-        "Tratamiento o seguimiento",
+        "Preparacion e indicaciones medicas",
+        "Tratamiento o control evolutivo",
         "Revision de resultados y continuidad"
     ],
     "booking": {
         "eyebrow": "Reserva",
-        "title": "Reserva esta ruta con precio, impuesto, politica y soporte visibles.",
-        "deck": "La reserva conserva service hint, coherencia de precio y trazabilidad operativa desde disponibilidad hasta pago.",
+        "title": "Reserve esta ruta con precio, politica y soporte visibles.",
+        "deck": "La reserva conserva contexto clinico desde disponibilidad hasta pago seguro.",
         "actionLabel": "Reservar esta ruta",
         "tone": "silver"
     }

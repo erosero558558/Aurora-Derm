@@ -1,0 +1,720 @@
+{
+    "version": "2026.03-v5",
+    "updated_at": "2026-03-03",
+    "currency": "USD",
+    "locale_defaults": {
+        "primary": "es",
+        "secondary": "en"
+    },
+    "feature_flags_defaults": {
+        "public_v5_enabled": true,
+        "public_v5_ratio": 1,
+        "public_v5_force_locale": "",
+        "public_v5_kill_switch": false
+    },
+    "pricing_contract": {
+        "fields_required": [
+            "base_price_usd",
+            "tax_rate",
+            "final_price_rule",
+            "price_label_short",
+            "price_disclaimer_es",
+            "price_disclaimer_en"
+        ],
+        "rules": {
+            "final_price_rule": ["base_plus_tax"],
+            "tax_rate_range": [0, 1]
+        }
+    },
+    "home_contract": {
+        "max_primary_blocks": 6,
+        "max_primary_cta_per_block": 2,
+        "required_blocks": [
+            "hero_editorial",
+            "clinical_paths",
+            "medical_authority",
+            "booking"
+        ]
+    },
+    "booking_options": [
+        {
+            "id": "consulta",
+            "label_es": "Consulta dermatologica integral",
+            "label_en": "Comprehensive dermatology consultation",
+            "base_price_usd": 40,
+            "tax_rate": 0,
+            "duration_min": 30,
+            "service_type": "clinical",
+            "final_price_rule": "base_plus_tax",
+            "price_label_short": "USD 40.00 + IVA 0%",
+            "price_label_short_en": "USD 40.00 + Tax 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization."
+        },
+        {
+            "id": "telefono",
+            "label_es": "Consulta telefonica de seguimiento",
+            "label_en": "Follow-up phone consultation",
+            "base_price_usd": 25,
+            "tax_rate": 0,
+            "duration_min": 30,
+            "service_type": "telemedicine",
+            "final_price_rule": "base_plus_tax",
+            "price_label_short": "USD 25.00 + IVA 0%",
+            "price_label_short_en": "USD 25.00 + Tax 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization."
+        },
+        {
+            "id": "video",
+            "label_es": "Video consulta dermatologica",
+            "label_en": "Dermatology video consultation",
+            "base_price_usd": 30,
+            "tax_rate": 0,
+            "duration_min": 30,
+            "service_type": "telemedicine",
+            "final_price_rule": "base_plus_tax",
+            "price_label_short": "USD 30.00 + IVA 0%",
+            "price_label_short_en": "USD 30.00 + Tax 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization."
+        },
+        {
+            "id": "acne",
+            "label_es": "Control medico de acne y rosacea",
+            "label_en": "Medical acne and rosacea control",
+            "base_price_usd": 80,
+            "tax_rate": 0,
+            "duration_min": 30,
+            "service_type": "clinical",
+            "final_price_rule": "base_plus_tax",
+            "price_label_short": "USD 80.00 + IVA 0%",
+            "price_label_short_en": "USD 80.00 + Tax 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization."
+        },
+        {
+            "id": "cancer",
+            "label_es": "Evaluacion de lesiones sospechosas",
+            "label_en": "Suspicious lesion evaluation",
+            "base_price_usd": 70,
+            "tax_rate": 0,
+            "duration_min": 30,
+            "service_type": "clinical",
+            "final_price_rule": "base_plus_tax",
+            "price_label_short": "USD 70.00 + IVA 0%",
+            "price_label_short_en": "USD 70.00 + Tax 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization."
+        },
+        {
+            "id": "laser",
+            "label_es": "Laser dermatologico medico",
+            "label_en": "Medical dermatology laser",
+            "base_price_usd": 150,
+            "tax_rate": 0.15,
+            "duration_min": 60,
+            "service_type": "procedure",
+            "final_price_rule": "base_plus_tax",
+            "price_label_short": "USD 150.00 + IVA 15%",
+            "price_label_short_en": "USD 150.00 + Tax 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax."
+        },
+        {
+            "id": "rejuvenecimiento",
+            "label_es": "Rejuvenecimiento dermatologico medico",
+            "label_en": "Medical dermatology rejuvenation",
+            "base_price_usd": 120,
+            "tax_rate": 0.15,
+            "duration_min": 60,
+            "service_type": "aesthetic",
+            "final_price_rule": "base_plus_tax",
+            "price_label_short": "USD 120.00 + IVA 15%",
+            "price_label_short_en": "USD 120.00 + Tax 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax."
+        }
+    ],
+    "services": [
+        {
+            "slug": "diagnostico-integral",
+            "category": "clinical",
+            "subcategory": "core",
+            "audience": ["children", "adults", "seniors"],
+            "doctor_profile": ["rosero", "narvaez"],
+            "hero": "Diagnostico integral de piel, cabello y unas",
+            "summary": "Consulta especializada para identificar causa clinica y definir un plan dermatologico completo.",
+            "indications": [
+                "brotes recurrentes",
+                "lesiones nuevas o cambiantes",
+                "caida de cabello",
+                "fragilidad ungueal"
+            ],
+            "contraindications": [],
+            "duration": "30-45 min",
+            "faq": [
+                "Que incluye la primera consulta?",
+                "Necesito examenes previos?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-consulta.webp",
+                "asset_id": "service-consulta",
+                "alt_es": "Consulta dermatologica integral para piel, cabello y unas en entorno clinico",
+                "alt_en": "Comprehensive dermatology consultation for skin, hair, and nails in a clinical setting",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Reservar evaluacion integral",
+                "label_en": "Book comprehensive assessment"
+            },
+            "runtime_service_id": "consulta",
+            "base_price_usd": 40,
+            "tax_rate": 0,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 40,
+            "is_from_price": false,
+            "price_label_short": "USD 40.00 + IVA 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization.",
+            "price_from": 40,
+            "iva": 0
+        },
+        {
+            "slug": "acne-rosacea",
+            "category": "clinical",
+            "subcategory": "inflammatory",
+            "audience": ["children", "adults"],
+            "doctor_profile": ["rosero", "narvaez"],
+            "hero": "Control medico de acne y rosacea",
+            "summary": "Manejo de inflamacion, brotes y marcas con protocolos progresivos y seguimiento.",
+            "indications": [
+                "acne inflamatorio",
+                "rosacea",
+                "marcas postinflamatorias"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "faq": [
+                "En que etapa se suelen notar cambios?",
+                "Se puede combinar con peeling o laser?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-acne.webp",
+                "asset_id": "service-acne",
+                "alt_es": "Evaluacion medica de acne y rosacea con protocolo antiinflamatorio",
+                "alt_en": "Medical acne and rosacea evaluation with an anti-inflammatory protocol",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "acne",
+                "label_es": "Iniciar ruta de acne y rosacea",
+                "label_en": "Start acne and rosacea route"
+            },
+            "runtime_service_id": "acne",
+            "base_price_usd": 80,
+            "tax_rate": 0,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 80,
+            "is_from_price": false,
+            "price_label_short": "USD 80.00 + IVA 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization.",
+            "price_from": 80,
+            "iva": 0
+        },
+        {
+            "slug": "verrugas",
+            "category": "clinical",
+            "subcategory": "procedures",
+            "audience": ["children", "adults", "seniors"],
+            "doctor_profile": ["rosero"],
+            "hero": "Manejo dermatologico de verrugas",
+            "summary": "Opciones de tratamiento segun tipo, ubicacion y edad del paciente.",
+            "indications": [
+                "verrugas comunes",
+                "verrugas plantares",
+                "verrugas periungueales"
+            ],
+            "contraindications": [],
+            "duration": "20-30 min",
+            "faq": [
+                "El procedimiento genera molestias?",
+                "Cuantas sesiones pueden requerirse?"
+            ],
+            "media": {
+                "src": "/images/optimized/showcase-treatment.webp",
+                "asset_id": "service-treatment",
+                "alt_es": "Procedimiento dermatologico para eliminacion controlada de verrugas",
+                "alt_en": "Dermatology procedure for controlled wart removal",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Evaluar verrugas",
+                "label_en": "Evaluate wart care options"
+            },
+            "runtime_service_id": "consulta",
+            "base_price_usd": 40,
+            "tax_rate": 0,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 40,
+            "is_from_price": false,
+            "price_label_short": "USD 40.00 + IVA 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization.",
+            "price_from": 40,
+            "iva": 0
+        },
+        {
+            "slug": "granitos-brazos-piernas",
+            "category": "clinical",
+            "subcategory": "texture",
+            "audience": ["children", "adults"],
+            "doctor_profile": ["narvaez"],
+            "hero": "Manejo de granitos en brazos y piernas",
+            "summary": "Protocolo clinico para textura aspera y cambios foliculares compatibles con queratosis pilar.",
+            "indications": [
+                "queratosis pilar",
+                "textura aspera persistente",
+                "enrojecimiento folicular"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "faq": [
+                "Que rutina diaria ayuda a estabilizar la piel?",
+                "Cada cuanto conviene el control?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-acne.webp",
+                "asset_id": "service-acne",
+                "alt_es": "Manejo clinico de queratosis pilar y textura aspera en extremidades",
+                "alt_en": "Clinical management of keratosis pilaris and rough skin texture on limbs",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Revisar textura de la piel",
+                "label_en": "Review skin texture route"
+            },
+            "runtime_service_id": "consulta",
+            "base_price_usd": 40,
+            "tax_rate": 0,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 40,
+            "is_from_price": false,
+            "price_label_short": "USD 40.00 + IVA 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization.",
+            "price_from": 40,
+            "iva": 0
+        },
+        {
+            "slug": "cicatrices",
+            "category": "clinical",
+            "subcategory": "repair",
+            "audience": ["adults", "seniors"],
+            "doctor_profile": ["narvaez"],
+            "hero": "Manejo medico de cicatrices",
+            "summary": "Estrategias combinadas para mejorar relieve, color y textura con criterio dermatologico.",
+            "indications": [
+                "cicatrices de acne",
+                "cicatrices quirurgicas",
+                "marcas postinflamatorias"
+            ],
+            "contraindications": [],
+            "duration": "30-60 min",
+            "faq": [
+                "Que tecnica se adapta mejor al caso?",
+                "Cuantas sesiones suele requerir?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-laser.webp",
+                "asset_id": "service-laser",
+                "alt_es": "Tratamiento de cicatrices con plataforma laser dermatologica",
+                "alt_en": "Scar treatment with a dermatology laser platform",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "laser",
+                "label_es": "Evaluar cicatrices",
+                "label_en": "Assess scar treatment route"
+            },
+            "runtime_service_id": "laser",
+            "base_price_usd": 150,
+            "tax_rate": 0.15,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 172.5,
+            "is_from_price": true,
+            "price_label_short": "USD 150.00 + IVA 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax.",
+            "price_from": 150,
+            "iva": 0.15
+        },
+        {
+            "slug": "cancer-piel",
+            "category": "clinical",
+            "subcategory": "oncology-screening",
+            "audience": ["adults", "seniors"],
+            "doctor_profile": ["rosero"],
+            "hero": "Evaluacion oportuna de lesiones sospechosas",
+            "summary": "Dermatoscopia clinica para detectar signos de alarma y definir prioridad de manejo.",
+            "indications": [
+                "lunares nuevos",
+                "lesiones que cambian",
+                "antecedente familiar de cancer de piel"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "faq": [
+                "Cada cuanto conviene control preventivo?",
+                "Que signos requieren valoracion prioritaria?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-cancer.webp",
+                "asset_id": "service-cancer",
+                "alt_es": "Dermatoscopia para deteccion temprana de lesiones sospechosas",
+                "alt_en": "Dermoscopy for early detection of suspicious skin lesions",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "cancer",
+                "label_es": "Solicitar evaluacion prioritaria",
+                "label_en": "Request priority evaluation"
+            },
+            "runtime_service_id": "cancer",
+            "base_price_usd": 70,
+            "tax_rate": 0,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 70,
+            "is_from_price": false,
+            "price_label_short": "USD 70.00 + IVA 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization.",
+            "price_from": 70,
+            "iva": 0
+        },
+        {
+            "slug": "peeling-quimico",
+            "category": "aesthetic",
+            "subcategory": "skin-renewal",
+            "audience": ["adults"],
+            "doctor_profile": ["narvaez"],
+            "hero": "Peeling quimico medico",
+            "summary": "Renovacion cutanea para tono, textura y manchas con protocolos definidos por evaluacion dermatologica.",
+            "indications": [
+                "fotoenvejecimiento",
+                "manchas superficiales",
+                "acne leve activo"
+            ],
+            "contraindications": [
+                "embarazo segun formula",
+                "piel irritada en fase aguda"
+            ],
+            "duration": "30-45 min",
+            "faq": [
+                "Que recuperacion suele esperarse?",
+                "Puede combinarse con otros procedimientos?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-rejuvenecimiento.webp",
+                "asset_id": "aesthetic-showcase",
+                "alt_es": "Peeling quimico medico para renovacion controlada de la piel",
+                "alt_en": "Medical chemical peel for controlled skin renewal",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Explorar protocolo de peeling",
+                "label_en": "Explore chemical peel protocol"
+            },
+            "runtime_service_id": "rejuvenecimiento",
+            "base_price_usd": 120,
+            "tax_rate": 0.15,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 138,
+            "is_from_price": true,
+            "price_label_short": "USD 120.00 + IVA 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax.",
+            "price_from": 120,
+            "iva": 0.15
+        },
+        {
+            "slug": "mesoterapia",
+            "category": "aesthetic",
+            "subcategory": "injectables",
+            "audience": ["adults"],
+            "doctor_profile": ["narvaez"],
+            "hero": "Mesoterapia dermatologica",
+            "summary": "Microinfiltraciones orientadas a hidratacion, luminosidad y calidad cutanea en un plan escalonado.",
+            "indications": [
+                "piel opaca",
+                "deshidratacion cutanea",
+                "senales iniciales de envejecimiento"
+            ],
+            "contraindications": ["embarazo", "alergia conocida a componentes"],
+            "duration": "30 min",
+            "faq": [
+                "Existe tiempo de recuperacion?",
+                "Quien suele beneficiarse de esta ruta?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-rejuvenecimiento.webp",
+                "asset_id": "aesthetic-showcase",
+                "alt_es": "Sesion de mesoterapia dermatologica enfocada en hidratacion y textura",
+                "alt_en": "Dermatology mesotherapy session focused on hydration and texture",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Revisar opcion de mesoterapia",
+                "label_en": "Review mesotherapy option"
+            },
+            "runtime_service_id": "rejuvenecimiento",
+            "base_price_usd": 120,
+            "tax_rate": 0.15,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 138,
+            "is_from_price": true,
+            "price_label_short": "USD 120.00 + IVA 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax.",
+            "price_from": 120,
+            "iva": 0.15
+        },
+        {
+            "slug": "laser-dermatologico",
+            "category": "aesthetic",
+            "subcategory": "devices",
+            "audience": ["adults", "seniors"],
+            "doctor_profile": ["narvaez"],
+            "hero": "Laser dermatologico medico",
+            "summary": "Procedimientos con laser para manchas, cicatrices y rejuvenecimiento con parametros clinicos controlados.",
+            "indications": ["manchas", "cicatrices", "fotoenvejecimiento"],
+            "contraindications": [
+                "bronceado reciente",
+                "fotosensibilidad en fase aguda"
+            ],
+            "duration": "45-60 min",
+            "faq": [
+                "Cuanto dura cada sesion?",
+                "Que cuidados requiere despues del laser?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-laser.webp",
+                "asset_id": "service-laser",
+                "alt_es": "Aplicacion de laser dermatologico para manchas y textura",
+                "alt_en": "Dermatology laser application for spots and texture",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "laser",
+                "label_es": "Valorar protocolo con laser",
+                "label_en": "Evaluate laser protocol"
+            },
+            "runtime_service_id": "laser",
+            "base_price_usd": 150,
+            "tax_rate": 0.15,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 172.5,
+            "is_from_price": true,
+            "price_label_short": "USD 150.00 + IVA 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax.",
+            "price_from": 150,
+            "iva": 0.15
+        },
+        {
+            "slug": "botox",
+            "category": "aesthetic",
+            "subcategory": "injectables",
+            "audience": ["adults"],
+            "doctor_profile": ["narvaez"],
+            "hero": "Botox medico",
+            "summary": "Manejo de lineas de expresion con dosis y plan de seguimiento definidos por evaluacion medica.",
+            "indications": ["lineas frontales", "entrecejo", "patas de gallo"],
+            "contraindications": [
+                "embarazo",
+                "lactancia segun criterio medico"
+            ],
+            "duration": "20-30 min",
+            "faq": [
+                "Cuando suelen observarse cambios?",
+                "Cada cuanto se reevalua la aplicacion?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-rejuvenecimiento.webp",
+                "asset_id": "aesthetic-showcase",
+                "alt_es": "Aplicacion medica de toxina botulinica con enfoque natural",
+                "alt_en": "Medical botulinum toxin application with a natural-looking approach",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Evaluar botox medico",
+                "label_en": "Assess medical botox route"
+            },
+            "runtime_service_id": "rejuvenecimiento",
+            "base_price_usd": 120,
+            "tax_rate": 0.15,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 138,
+            "is_from_price": true,
+            "price_label_short": "USD 120.00 + IVA 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax.",
+            "price_from": 120,
+            "iva": 0.15
+        },
+        {
+            "slug": "bioestimuladores-colageno",
+            "category": "aesthetic",
+            "subcategory": "injectables",
+            "audience": ["adults", "seniors"],
+            "doctor_profile": ["narvaez"],
+            "hero": "Bioestimuladores de colageno",
+            "summary": "Estimulo progresivo de colageno para mejorar soporte, firmeza y calidad de la piel.",
+            "indications": [
+                "flacidez leve a moderada",
+                "perdida de soporte facial",
+                "deterioro de calidad cutanea"
+            ],
+            "contraindications": [
+                "infeccion activa en zona de aplicacion",
+                "embarazo"
+            ],
+            "duration": "30-45 min",
+            "faq": [
+                "En que plazo se observan cambios?",
+                "Cuantas sesiones suele requerir el plan?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-rejuvenecimiento.webp",
+                "asset_id": "aesthetic-showcase",
+                "alt_es": "Infiltracion de bioestimuladores para activar colageno dermico",
+                "alt_en": "Biostimulator injections to activate dermal collagen production",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "rejuvenecimiento",
+                "label_es": "Valorar bioestimulacion",
+                "label_en": "Assess collagen stimulation plan"
+            },
+            "runtime_service_id": "rejuvenecimiento",
+            "base_price_usd": 120,
+            "tax_rate": 0.15,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 138,
+            "is_from_price": true,
+            "price_label_short": "USD 120.00 + IVA 15%",
+            "price_disclaimer_es": "El valor final se calcula con precio base e impuesto aplicable.",
+            "price_disclaimer_en": "Final amount is calculated from base price and applicable tax.",
+            "price_from": 120,
+            "iva": 0.15
+        },
+        {
+            "slug": "piel-cabello-unas",
+            "category": "clinical",
+            "subcategory": "integral",
+            "audience": ["children", "adults", "seniors"],
+            "doctor_profile": ["rosero", "narvaez"],
+            "hero": "Consulta de piel, cabello y unas",
+            "summary": "Ruta clinica integral para diagnostico y tratamiento dermatologico en distintas etapas de vida.",
+            "indications": [
+                "dermatitis",
+                "alopecia",
+                "alteraciones de unas",
+                "prurito cronico"
+            ],
+            "contraindications": [],
+            "duration": "30-45 min",
+            "faq": [
+                "Atienden ninos, adultos y adultos mayores?",
+                "Se puede iniciar por telemedicina?"
+            ],
+            "media": {
+                "src": "/images/optimized/service-consulta.webp",
+                "asset_id": "service-consulta",
+                "alt_es": "Valoracion dermatologica integral de piel, cabello y unas",
+                "alt_en": "Comprehensive dermatology assessment for skin, hair, and nails",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Abrir consulta integral",
+                "label_en": "Open comprehensive consultation"
+            },
+            "runtime_service_id": "consulta",
+            "base_price_usd": 40,
+            "tax_rate": 0,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 40,
+            "is_from_price": false,
+            "price_label_short": "USD 40.00 + IVA 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization.",
+            "price_from": 40,
+            "iva": 0
+        },
+        {
+            "slug": "dermatologia-pediatrica",
+            "category": "children",
+            "subcategory": "pediatric",
+            "audience": ["children"],
+            "doctor_profile": ["rosero", "narvaez"],
+            "hero": "Dermatologia pediatrica",
+            "summary": "Diagnostico y seguimiento para ninos y adolescentes con lenguaje clinico orientado a familia.",
+            "indications": [
+                "dermatitis atopica",
+                "acne adolescente",
+                "verrugas",
+                "cambios en cuero cabelludo"
+            ],
+            "contraindications": [],
+            "duration": "30 min",
+            "faq": [
+                "Que informacion conviene llevar a la consulta pediatrica?",
+                "El seguimiento puede hacerse por telemedicina?"
+            ],
+            "media": {
+                "src": "/images/optimized/showcase-clinic.webp",
+                "asset_id": "clinic-showcase",
+                "alt_es": "Consulta dermatologica pediatrica para ninos y adolescentes",
+                "alt_en": "Pediatric dermatology consultation for children and adolescents",
+                "kind": "image"
+            },
+            "cta": {
+                "type": "booking",
+                "service_hint": "consulta",
+                "label_es": "Reservar ruta pediatrica",
+                "label_en": "Book pediatric dermatology route"
+            },
+            "runtime_service_id": "consulta",
+            "base_price_usd": 40,
+            "tax_rate": 0,
+            "final_price_rule": "base_plus_tax",
+            "final_price_usd": 40,
+            "is_from_price": false,
+            "price_label_short": "USD 40.00 + IVA 0%",
+            "price_disclaimer_es": "El valor final se confirma antes de autorizar el pago.",
+            "price_disclaimer_en": "Final amount is confirmed before payment authorization.",
+            "price_from": 40,
+            "iva": 0
+        }
+    ]
+}

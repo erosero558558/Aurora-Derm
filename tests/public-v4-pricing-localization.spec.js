@@ -155,13 +155,13 @@ test.describe('Public V4 pricing + localization parity', () => {
                         ? select.options[select.selectedIndex]
                         : null;
                 const heroPrice = document
-                    .querySelector('.service-hero-v3__meta span:last-child')
+                    .querySelector('.sony-service-hero__meta span:last-child')
                     ?.textContent?.trim();
                 const storyText =
-                    document.querySelector('[data-service-story]')
-                        ?.textContent || '';
+                    document.querySelector('.sony-service-fit')?.textContent ||
+                    '';
                 const heroMediaImage = document.querySelector(
-                    '.service-hero-v3__media img'
+                    '.sony-service-hero__media img'
                 );
                 const companionWhatsApp = document.querySelector(
                     '[data-entry-surface="booking_companion_whatsapp"]'

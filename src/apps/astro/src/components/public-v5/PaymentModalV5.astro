@@ -1,0 +1,131 @@
+---
+import { getDictionary, legalBasePath } from '../../lib/content.js';
+
+const { locale = 'es' } = Astro.props;
+const dict = getDictionary(locale);
+const legalPath = legalBasePath(locale);
+const termsHref = `${legalPath}${locale === 'en' ? 'terms/' : 'terminos/'}`;
+const cancellationPolicyHref = `${termsHref}${locale === 'en' ? '#cancellations' : '#cancelaciones'}`;
+---
+
+<div id="v5-payment-modal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content payment-modal public-modal public-modal--payment">
+        <button
+            type="button"
+            class="modal-close"
+            data-action="close-payment-modal"
+            aria-label={locale === 'en' ? 'Close payment modal' : 'Cerrar modal de pago'}
+        >
+            <i class="fas fa-times"></i>
+        </button>
+        <p class="public-modal__eyebrow">{locale === 'en' ? 'Checkout' : 'Checkout'}</p>
+        <h3>{dict.payment_title}</h3>
+        <p class="public-modal__deck">
+            {locale === 'en'
+                ? 'Your reservation data is protected and the final amount is always confirmed before payment.'
+                : 'Tus datos de reserva estan protegidos y el valor final se confirma antes del pago.'}
+        </p>
+        <div class="payment-methods">
+            <div class="payment-method active" data-method="card">
+                <i class="fas fa-credit-card"></i>
+                <span>{dict.pay_card}</span>
+            </div>
+            <div class="payment-method" data-method="transfer">
+                <i class="fas fa-university"></i>
+                <span>{dict.pay_transfer}</span>
+            </div>
+            <div class="payment-method" data-method="cash">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>{dict.pay_cash}</span>
+            </div>
+        </div>
+        <div class="payment-details" id="v5-payment-details">
+            <div class="payment-form card-form">
+                <div class="form-group">
+                    <label>{dict.label_card_name}</label>
+                    <input type="text" id="cardholderName" autocomplete="cc-name" />
+                </div>
+                <div class="form-group">
+                    <label>{dict.label_card_number}</label>
+                    <div id="stripeCardElement" class="stripe-card-element"></div>
+                    <small class="payment-help">{dict.payment_card_help}</small>
+                </div>
+            </div>
+            <div class="payment-form transfer-form is-hidden">
+                <div class="bank-info">
+                    <p><strong>{dict.bank_name}</strong></p>
+                    <p>{dict.bank_account}</p>
+                    <p>{dict.bank_owner}</p>
+                </div>
+                <div class="form-group">
+                    <label>{dict.label_transfer_ref}</label>
+                    <input type="text" id="transferReference" inputmode="numeric" />
+                </div>
+                <div class="form-group">
+                    <label>{dict.label_transfer_proof}</label>
+                    <input type="file" id="transferProofFile" accept=".jpg,.jpeg,.png,.webp,.pdf" />
+                    <small id="transferProofFileName" class="payment-help"></small>
+                    <small class="payment-help">{dict.payment_transfer_eta}</small>
+                </div>
+            </div>
+            <div class="payment-form cash-form is-hidden">
+                <p>{dict.cash_info}</p>
+            </div>
+        </div>
+        <div class="payment-summary">
+            <div class="payment-total">
+                <span>{dict.payment_total}</span>
+                <span id="v5-payment-total">$0.00</span>
+            </div>
+        </div>
+        <section class="payment-trust" aria-label={locale === 'en' ? 'Payment trust' : 'Confianza de pago'}>
+            <p class="payment-trust__eyebrow">{locale === 'en' ? 'Payment trust' : 'Confianza de pago'}</p>
+            <ul class="payment-trust__list">
+                <li>
+                    <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                    <span>{dict.payment_trust_ssl}</span>
+                </li>
+                <li>
+                    <i class="fas fa-credit-card" aria-hidden="true"></i>
+                    <span>{dict.payment_trust_stripe}</span>
+                </li>
+                <li>
+                    <i class="fas fa-comment-dots" aria-hidden="true"></i>
+                    <span>{dict.payment_trust_invoice}</span>
+                </li>
+            </ul>
+            <a
+                href={cancellationPolicyHref}
+                class="payment-trust__policy"
+                data-analytics-event="open_public_cta"
+                data-entry-surface="payment_modal_policy"
+                data-cta-target="legal"
+            >
+                {dict.payment_policy_link}
+            </a>
+        </section>
+        <section class="payment-faq" aria-label={dict.payment_faq_title}>
+            <p class="payment-faq__eyebrow">{dict.payment_faq_title}</p>
+            <details open>
+                <summary>{dict.payment_faq_refund_q}</summary>
+                <p>{dict.payment_faq_refund_a}</p>
+            </details>
+            <details>
+                <summary>{dict.payment_faq_reschedule_q}</summary>
+                <p>{dict.payment_faq_reschedule_a}</p>
+            </details>
+            <details>
+                <summary>{dict.payment_faq_billing_q}</summary>
+                <p>{dict.payment_faq_billing_a}</p>
+            </details>
+            <details>
+                <summary>{dict.payment_faq_include_q}</summary>
+                <p>{dict.payment_faq_include_a}</p>
+            </details>
+        </section>
+        <div id="paymentError" class="payment-error is-hidden"></div>
+        <button type="button" class="btn btn-primary btn-full" data-action="process-payment">
+            <span>{dict.btn_pay}</span>
+        </button>
+    </div>
+</div>

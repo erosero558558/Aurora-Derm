@@ -156,6 +156,36 @@ async function waitForPort(host, port, timeoutMs) {
     return false;
 }
 
+async function startChromeSession(chromePath, profileDir, debugPort) {
+    fs.mkdirSync(profileDir, { recursive: true });
+    const chromeProcess = spawn(
+        chromePath,
+        [
+            `--remote-debugging-port=${debugPort}`,
+            `--user-data-dir=${profileDir}`,
+            '--headless',
+            '--disable-gpu',
+            '--no-sandbox',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-dev-shm-usage',
+            'about:blank',
+        ],
+        {
+            stdio: 'ignore',
+            shell: false,
+        }
+    );
+
+    const chromeReady = await waitForPort('127.0.0.1', debugPort, 15000);
+    if (!chromeReady) {
+        killProcess(chromeProcess);
+        throw new Error(`Chrome debug port ${debugPort} did not open.`);
+    }
+
+    return chromeProcess;
+}
+
 function requestOnce(urlString) {
     return new Promise((resolve) => {
         const url = new URL(urlString);
@@ -375,37 +405,11 @@ async function run() {
         }
     }
 
-    const chromeProfileDir = path.join(runDir, 'chrome-profile');
-    fs.mkdirSync(chromeProfileDir, { recursive: true });
     const debugPort = Number(
         process.env.LIGHTHOUSE_DEBUG_PORT || DEFAULT_DEBUG_PORT
     );
 
-    const chromeProcess = spawn(
-        chromePath,
-        [
-            `--remote-debugging-port=${debugPort}`,
-            `--user-data-dir=${chromeProfileDir}`,
-            '--headless',
-            '--disable-gpu',
-            '--no-sandbox',
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--disable-dev-shm-usage',
-            'about:blank',
-        ],
-        {
-            stdio: 'ignore',
-            shell: false,
-        }
-    );
-
     try {
-        const chromeReady = await waitForPort('127.0.0.1', debugPort, 15000);
-        if (!chromeReady) {
-            throw new Error(`Chrome debug port ${debugPort} did not open.`);
-        }
-
         const summary = {
             label: args.label,
             baseUrl: baseUrl.toString(),
@@ -415,7 +419,12 @@ async function run() {
             passed: true,
         };
 
-        for (const routePath of args.routes) {
+        for (
+            let routeIndex = 0;
+            routeIndex < args.routes.length;
+            routeIndex += 1
+        ) {
+            const routePath = args.routes[routeIndex];
             const targetUrl = joinRoute(baseUrl, routePath);
             const slug =
                 routePath
@@ -423,15 +432,45 @@ async function run() {
                     .replace(/[^a-zA-Z0-9_-]+/g, '_') || 'home';
             const outputBase = path.join(runDir, `lighthouse-${slug}`);
             const reportPath = `${outputBase}.report.json`;
+            const routeDebugPort = debugPort + routeIndex;
+            const chromeProfileDir = path.join(runDir, 'chrome-profile', slug);
+            let chromeProcess = null;
 
             console.log(`[performance-gate] Auditing ${targetUrl}`);
+            try {
+                chromeProcess = await startChromeSession(
+                    chromePath,
+                    chromeProfileDir,
+                    routeDebugPort
+                );
+            } catch (error) {
+                summary.passed = false;
+                summary.routes.push({
+                    route: routePath,
+                    status: 'failed',
+                    failures: [error.message],
+                    scores: {
+                        performance: 0,
+                        accessibility: 0,
+                        bestPractices: 0,
+                        seo: 0,
+                    },
+                    metrics: {
+                        lcpMs: Infinity,
+                        cls: Infinity,
+                        inpMs: Infinity,
+                    },
+                });
+                continue;
+            }
+
             const runResult = spawnSync(
                 'npx',
                 [
                     '--yes',
                     'lighthouse',
                     targetUrl,
-                    `--port=${debugPort}`,
+                    `--port=${routeDebugPort}`,
                     '--output=json',
                     '--output=html',
                     `--output-path=${outputBase}`,
@@ -452,6 +491,8 @@ async function run() {
                 combinedLog,
                 'utf8'
             );
+            killProcess(chromeProcess);
+            chromeProcess = null;
 
             if (runResult.status !== 0 || !fs.existsSync(reportPath)) {
                 summary.passed = false;
@@ -475,6 +516,7 @@ async function run() {
                         inpMs: Infinity,
                     },
                 });
+                await sleep(120);
                 continue;
             }
 
@@ -520,6 +562,7 @@ async function run() {
             }
 
             summary.routes.push(routeSummary);
+            await sleep(120);
         }
 
         const artifacts = writeSummary(runDir, summary);
@@ -544,7 +587,6 @@ async function run() {
         console.error(`[performance-gate] Failed: ${error.message}`);
         process.exitCode = 1;
     } finally {
-        killProcess(chromeProcess);
         killProcess(serverProcess);
     }
 }

@@ -21,7 +21,17 @@ function t(esText, enText) {
 }
 
 function getBookingFeedbackEl() {
-    return document.getElementById('bookingInlineFeedback');
+    return (
+        document.getElementById('v5-booking-feedback') ||
+        document.getElementById('bookingInlineFeedback')
+    );
+}
+
+function getBookingElement(primaryId, legacyId) {
+    return (
+        document.getElementById(primaryId) ||
+        (legacyId ? document.getElementById(legacyId) : null)
+    );
 }
 
 function setBookingFeedback(message, type = 'info') {
@@ -308,7 +318,10 @@ export function init(inputDeps) {
         return { init };
     }
 
-    const serviceSelect = document.getElementById('serviceSelect');
+    const serviceSelect = getBookingElement(
+        'v5-service-select',
+        'serviceSelect'
+    );
     const priceSummary = document.getElementById('priceSummary');
     const subtotalEl = document.getElementById('subtotalPrice');
     const ivaEl = document.getElementById('ivaPrice');
@@ -321,11 +334,20 @@ export function init(inputDeps) {
     const selectedPriceDisclaimerEl = document.getElementById(
         'selectedPriceDisclaimer'
     );
-    const dateInput = document.querySelector('input[name="date"]');
-    const timeSelect = document.querySelector('select[name="time"]');
-    const doctorSelect = document.querySelector('select[name="doctor"]');
+    const dateInput =
+        getBookingElement('v5-date', 'appointmentDate') ||
+        document.querySelector('input[name="date"]');
+    const timeSelect =
+        getBookingElement('v5-time', 'timeSelect') ||
+        document.querySelector('select[name="time"]');
+    const doctorSelect =
+        getBookingElement('v5-doctor-select', 'doctorSelect') ||
+        document.querySelector('select[name="doctor"]');
     const phoneInput = document.querySelector('input[name="phone"]');
-    const appointmentForm = document.getElementById('appointmentForm');
+    const appointmentForm = getBookingElement(
+        'v5-booking-form',
+        'appointmentForm'
+    );
 
     if (
         !serviceSelect ||

@@ -415,10 +415,7 @@ async function processChatBookingStep(userInput) {
                     })
                     .sort();
 
-                if (
-                    deps &&
-                    typeof deps.removeTypingIndicator === 'function'
-                ) {
+                if (deps && typeof deps.removeTypingIndicator === 'function') {
                     deps.removeTypingIndicator();
                 }
 
@@ -453,10 +450,7 @@ async function processChatBookingStep(userInput) {
                 addBotMessage(msg);
             } catch (error) {
                 const isCalendarUnavailable = isCalendarUnavailableError(error);
-                if (
-                    deps &&
-                    typeof deps.removeTypingIndicator === 'function'
-                ) {
+                if (deps && typeof deps.removeTypingIndicator === 'function') {
                     deps.removeTypingIndicator();
                 }
                 addBotMessage(
@@ -476,7 +470,9 @@ async function processChatBookingStep(userInput) {
                     error_code: isCalendarUnavailable
                         ? 'calendar_unreachable'
                         : normalizeAnalyticsErrorCode(
-                              error && error.code ? error.code : 'availability_error',
+                              error && error.code
+                                  ? error.code
+                                  : 'availability_error',
                               'availability_error'
                           ),
                 });
@@ -683,16 +679,10 @@ async function finalizeChatBooking() {
             if (deps && typeof deps.removeTypingIndicator === 'function') {
                 deps.removeTypingIndicator();
             }
-            if (
-                result &&
-                typeof deps.setCurrentAppointment === 'function'
-            ) {
+            if (result && typeof deps.setCurrentAppointment === 'function') {
                 deps.setCurrentAppointment(result.appointment);
             }
-            if (
-                deps &&
-                typeof deps.completeCheckoutSession === 'function'
-            ) {
+            if (deps && typeof deps.completeCheckoutSession === 'function') {
                 deps.completeCheckoutSession('cash');
             }
             if (deps && typeof deps.setCheckoutStep === 'function') {
@@ -796,8 +786,8 @@ async function finalizeChatBooking() {
             );
             addBotMessage(
                 t(
-                    `No se pudo registrar la cita: ${escapeHtml(safeError)}. Intenta de nuevo o agenda desde <a href="#citas" data-action="minimize-chat">el formulario</a>.`,
-                    `Could not register your appointment: ${escapeHtml(safeError)}. Try again or use the <a href="#citas" data-action="minimize-chat">booking form</a>.`
+                    `No se pudo registrar la cita: ${escapeHtml(safeError)}. Intenta de nuevo o agenda desde <a href="#v5-booking" data-action="minimize-chat">el formulario</a>.`,
+                    `Could not register your appointment: ${escapeHtml(safeError)}. Try again or use the <a href="#v5-booking" data-action="minimize-chat">booking form</a>.`
                 )
             );
             trackChatCheckoutError({

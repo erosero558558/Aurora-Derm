@@ -224,6 +224,7 @@
         if (link.closest('[data-services-grid]')) return 'service_hub_grid';
         if (link.closest('[data-related-programs]')) return 'related_programs';
         if (link.closest('[data-support-band]')) return 'support_band';
+        if (link.closest('[data-booking-band]')) return 'booking';
         if (link.closest('[data-booking-bridge-band]')) return 'booking_bridge';
         if (link.closest('.public-footer')) return 'footer';
         if (link.closest('.public-nav')) return 'nav';
@@ -325,14 +326,44 @@
         var fromCookie = String(readCookie('pa_public_surface') || '')
             .trim()
             .toLowerCase();
-        if (fromCookie === 'legacy' || fromCookie === 'v4') {
+        if (
+            fromCookie === 'legacy' ||
+            fromCookie === 'v4' ||
+            fromCookie === 'v5'
+        ) {
             return fromCookie;
         }
         var path = normalizePath(window.location.pathname);
         if (path === '/legacy.php/' || path === '/legacy/') {
             return 'legacy';
         }
-        return 'v4';
+        return 'v5';
+    }
+
+    function resolveSurfaceVersion() {
+        var body = document.body;
+        if (body) {
+            var attr = String(
+                body.getAttribute('data-public-shell-version') || ''
+            )
+                .trim()
+                .toLowerCase();
+            if (attr) return attr;
+        }
+        var publicSurface = resolvePublicSurface();
+        if (publicSurface === 'legacy') return 'legacy';
+        return publicSurface === 'v4' ? 'v4' : 'v5';
+    }
+
+    function resolveTemplateId() {
+        var body = document.body;
+        if (!body) return 'public_page';
+        var templateId = String(
+            body.getAttribute('data-public-template-id') || ''
+        )
+            .trim()
+            .toLowerCase();
+        return templateId || 'public_page';
     }
 
     function inferFunnelStep(eventName, payload) {
@@ -413,6 +444,12 @@
         }
         if (!params.public_surface) {
             params.public_surface = resolvePublicSurface();
+        }
+        if (!params.surface_version) {
+            params.surface_version = resolveSurfaceVersion();
+        }
+        if (!params.template_id) {
+            params.template_id = resolveTemplateId();
         }
         return params;
     }

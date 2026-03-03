@@ -23,12 +23,20 @@ test('public cutover manifest composes routing/conversion evidence and bootstrap
 
     fs.writeFileSync(
         routingPath,
-        JSON.stringify({ passed: true, failures: [], checks: [{ route: '/es/' }] }),
+        JSON.stringify({
+            passed: true,
+            failures: [],
+            checks: [{ route: '/es/' }],
+        }),
         'utf8'
     );
     fs.writeFileSync(
         conversionPath,
-        JSON.stringify({ passed: true, failures: [], checks: [{ route: '/en/' }] }),
+        JSON.stringify({
+            passed: true,
+            failures: [],
+            checks: [{ route: '/en/' }],
+        }),
         'utf8'
     );
 
@@ -58,7 +66,10 @@ test('public cutover manifest composes routing/conversion evidence and bootstrap
     assert.equal(result.status, 0, result.stderr || result.stdout);
 
     const manifest = JSON.parse(
-        fs.readFileSync(path.join(outDir, 'public-cutover-manifest.json'), 'utf8')
+        fs.readFileSync(
+            path.join(outDir, 'public-cutover-manifest.json'),
+            'utf8'
+        )
     );
     assert.equal(manifest.passed, true);
     assert.equal(manifest.startedAt, '2026-02-27T20:00:00.000Z');
@@ -71,4 +82,67 @@ test('public cutover manifest composes routing/conversion evidence and bootstrap
         manifest.monitorBootstrap.inputs.public_cutover_started_at,
         '2026-02-27T20:00:00.000Z'
     );
+});
+
+test('public cutover manifest treats skipped conversion report as passing evidence', () => {
+    const tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'public-cutover-skip-')
+    );
+    const routingPath = path.join(tempDir, 'routing.json');
+    const conversionPath = path.join(tempDir, 'conversion.json');
+    const outDir = path.join(tempDir, 'manifest');
+
+    fs.writeFileSync(
+        routingPath,
+        JSON.stringify({
+            passed: true,
+            failures: [],
+            checks: [{ route: '/es/' }],
+        }),
+        'utf8'
+    );
+    fs.writeFileSync(
+        conversionPath,
+        JSON.stringify(
+            {
+                passed: true,
+                skipped: true,
+                failures: [],
+                checks: [],
+                reason: 'manual_override_skip_public_conversion_smoke',
+            },
+            null,
+            2
+        ),
+        'utf8'
+    );
+
+    const result = spawnSync(
+        process.execPath,
+        [
+            SCRIPT_PATH,
+            '--base-url',
+            'https://pielarmonia.com',
+            '--out-dir',
+            outDir,
+            '--routing-report',
+            routingPath,
+            '--conversion-report',
+            conversionPath,
+        ],
+        { encoding: 'utf8' }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const manifest = JSON.parse(
+        fs.readFileSync(
+            path.join(outDir, 'public-cutover-manifest.json'),
+            'utf8'
+        )
+    );
+    assert.equal(manifest.passed, true);
+    assert.equal(manifest.summary.conversionPassed, true);
+    assert.equal(manifest.summary.conversionSkipped, true);
+    assert.deepEqual(manifest.summary.conversionFailures, []);
 });

@@ -7,10 +7,7 @@ import {
     observeOnceWhenVisible,
     scheduleDeferredTask,
 } from './loader.js';
-import {
-    state,
-    setCurrentAppointment,
-} from './state.js';
+import { state, setCurrentAppointment } from './state.js';
 import {
     loadPaymentConfig,
     loadStripeSdk,
@@ -39,9 +36,32 @@ const BOOKING_ENGINE_URL = withDeployAssetVersion(
 const BOOKING_UI_URL = withDeployAssetVersion(
     '/js/engines/booking-ui.js?v=figo-booking-ui-20260222-slotservicefix1'
 );
-const BOOKING_UTILS_URL = withDeployAssetVersion('/js/engines/booking-utils.js');
+const BOOKING_UTILS_URL = withDeployAssetVersion(
+    '/js/engines/booking-utils.js'
+);
 const CASE_PHOTO_UPLOAD_CONCURRENCY = 2;
 let successModalRuntimePromise = null;
+
+function getBookingSection() {
+    return (
+        document.getElementById('v5-booking') ||
+        document.getElementById('citas')
+    );
+}
+
+function getBookingForm() {
+    return (
+        document.getElementById('v5-booking-form') ||
+        document.getElementById('appointmentForm')
+    );
+}
+
+function getPaymentModal() {
+    return (
+        document.getElementById('v5-payment-modal') ||
+        document.getElementById('paymentModal')
+    );
+}
 
 function loadSuccessModalRuntime() {
     if (!successModalRuntimePromise) {
@@ -137,9 +157,13 @@ function getBookingEngineDeps() {
     return {
         getCurrentLang: () => state.currentLang,
         getCurrentAppointment: () => state.currentAppointment,
-        setCurrentAppointment: (appt) => { state.currentAppointment = appt; },
+        setCurrentAppointment: (appt) => {
+            state.currentAppointment = appt;
+        },
         getCheckoutSession: () => state.checkoutSession,
-        setCheckoutSessionActive: (active) => { state.checkoutSession.active = (active === true); },
+        setCheckoutSessionActive: (active) => {
+            state.checkoutSession.active = active === true;
+        },
         startCheckoutSession,
         setCheckoutStep,
         completeCheckoutSession,
@@ -182,6 +206,9 @@ export function initBookingEngineWarmup() {
     });
 
     const selectors = [
+        '.nav-cta[href="#v5-booking"]',
+        '.quick-dock-item[href="#v5-booking"]',
+        '.hero-actions a[href="#v5-booking"]',
         '.nav-cta[href="#citas"]',
         '.quick-dock-item[href="#citas"]',
         '.hero-actions a[href="#citas"]',
@@ -230,15 +257,18 @@ export function loadBookingCalendarEngine() {
         src: BOOKING_UTILS_URL,
         scriptDataAttribute: 'data-booking-utils',
         resolveModule: () => window.Piel && window.Piel.BookingCalendarEngine,
-        isModuleReady: (module) => !!(module && typeof module.initCalendar === 'function'),
+        isModuleReady: (module) =>
+            !!(module && typeof module.initCalendar === 'function'),
         missingApiError: 'booking-calendar-engine loaded without API',
         loadError: 'No se pudo cargar booking-calendar-engine',
-        logLabel: 'Booking Calendar engine'
+        logLabel: 'Booking Calendar engine',
     });
 }
 
 export async function updateAvailableTimes(elements) {
-    return runDeferredModule(loadBookingCalendarEngine, (engine) => engine.updateAvailableTimes(getBookingUiDeps(), elements));
+    return runDeferredModule(loadBookingCalendarEngine, (engine) =>
+        engine.updateAvailableTimes(getBookingUiDeps(), elements)
+    );
 }
 
 // BOOKING UI
@@ -336,14 +366,14 @@ export function loadBookingUi() {
 export function initBookingUiWarmup() {
     const warmup = createWarmupRunner(() => loadBookingUi());
 
-    const bookingSection = document.getElementById('citas');
+    const bookingSection = getBookingSection();
     observeOnceWhenVisible(bookingSection, warmup, {
         threshold: 0.05,
         rootMargin: '320px 0px',
         onNoObserver: warmup,
     });
 
-    const appointmentForm = document.getElementById('appointmentForm');
+    const appointmentForm = getBookingForm();
     if (appointmentForm) {
         appointmentForm.addEventListener('focusin', warmup, { once: true });
         appointmentForm.addEventListener('pointerdown', warmup, {
@@ -394,7 +424,7 @@ export function closePaymentModal(options = {}) {
     }
 
     state.checkoutSession.active = false;
-    const modal = document.getElementById('paymentModal');
+    const modal = getPaymentModal();
     if (modal) {
         modal.classList.remove('active');
     }

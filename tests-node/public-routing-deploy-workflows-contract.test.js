@@ -88,6 +88,7 @@ test('deploy-staging incluye validacion de routing y conversion ES/EN post-deplo
 
 test('deploy-hosting valida routing y conversion publica en canary y produccion', () => {
     const { raw, parsed } = loadWorkflow(HOSTING_WORKFLOW_PATH);
+    const inputs = parsed?.on?.workflow_dispatch?.inputs || {};
     const canarySteps = parsed?.jobs?.['deploy-canary']?.steps || [];
     const prodSteps = parsed?.jobs?.['deploy-prod']?.steps || [];
 
@@ -120,6 +121,26 @@ test('deploy-hosting valida routing y conversion publica en canary y produccion'
         'falta step de conversion en deploy-prod'
     );
     assert.equal(
+        Object.prototype.hasOwnProperty.call(inputs, 'force_transport_deploy'),
+        true,
+        'falta input force_transport_deploy en deploy-hosting'
+    );
+    assert.equal(
+        Object.prototype.hasOwnProperty.call(
+            inputs,
+            'skip_public_conversion_smoke'
+        ),
+        true,
+        'falta input skip_public_conversion_smoke en deploy-hosting'
+    );
+    assert.equal(
+        stepNames(prodSteps).includes(
+            'Skipped public conversion smoke summary (Prod)'
+        ),
+        true,
+        'falta step de resumen para skip_public_conversion_smoke'
+    );
+    assert.equal(
         raw.includes(
             'node bin/check-public-routing-smoke.js --base-url "${STAGING_URL}" --label "staging-canary" --output ".staging-acceptance/routing-smoke.json"'
         ),
@@ -146,6 +167,20 @@ test('deploy-hosting valida routing y conversion publica en canary y produccion'
         ),
         true,
         'falta comando smoke de conversion para produccion'
+    );
+    assert.equal(
+        raw.includes(
+            "FORCE_TRANSPORT_DEPLOY: ${{ github.event.inputs.force_transport_deploy || 'false' }}"
+        ),
+        true,
+        'falta wiring FORCE_TRANSPORT_DEPLOY en deploy-hosting'
+    );
+    assert.equal(
+        raw.includes(
+            "SKIP_PUBLIC_CONVERSION_SMOKE: ${{ github.event.inputs.skip_public_conversion_smoke || 'false' }}"
+        ),
+        true,
+        'falta wiring SKIP_PUBLIC_CONVERSION_SMOKE en deploy-hosting'
     );
     assert.equal(
         stepNames(canarySteps).includes(

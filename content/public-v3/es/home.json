@@ -1,28 +1,28 @@
 {
     "title": "Piel en Armonia | Dermatologia de precision en Quito",
-    "description": "Dermatologia clinica y estetica con rutas claras, precios transparentes y reserva integrada.",
+    "description": "Dermatologia clinica y estetica medica con criterio, continuidad y reserva segura para Quito.",
     "slides": [
         {
             "id": "clinical-stage",
-            "eyebrow": "Diagnostico medico",
-            "category": "Diagnostico medico",
-            "title": "La primera decision correcta empieza con una lectura clinica limpia.",
-            "deck": "La home abre con diagnostico, continuidad y rutas medicas visibles antes de cualquier empuje de conversion.",
+            "eyebrow": "Diagnostico clinico",
+            "category": "Diagnostico clinico",
+            "title": "Cuando la piel cambia, la primera lectura debe ser precisa.",
+            "deck": "Su recorrido inicia con evaluacion medica, evidencia visible y una decision clara para el siguiente paso.",
             "tone": "ink",
-            "media": "/images/optimized/showcase-hero.webp",
+            "media": "/images/optimized/showcase-diagnostic.webp",
             "mediaMeta": {
-                "src": "/images/optimized/showcase-hero.webp",
-                "alt": "Consulta dermatologica con enfoque diagnostico",
+                "src": "/images/optimized/showcase-diagnostic.webp",
+                "alt": "Diagnostico dermatologico en consultorio clinico",
                 "kind": "image"
             },
-            "stats": ["Ruta clinica", "Prioridad medica", "Continuidad"],
+            "stats": ["Lectura medica", "Decision fundada", "Continuidad"],
             "primary": {
-                "label": "Reservar valoracion",
+                "label": "Reservar evaluacion",
                 "href": "#citas",
                 "target": "booking"
             },
             "secondary": {
-                "label": "Explorar catalogo",
+                "label": "Ver rutas clinicas",
                 "href": "/es/servicios/",
                 "target": "service_hub"
             }
@@ -31,23 +31,27 @@
             "id": "aesthetic-stage",
             "eyebrow": "Estetica medica",
             "category": "Estetica medica",
-            "title": "Procedimientos explicados como sistema de cuidado, no como lista de tarjetas.",
-            "deck": "Laser, peelings, toxina y bioestimuladores se presentan con elegibilidad, tiempos y continuidad.",
+            "title": "La estetica medica se presenta como protocolo, no como promesa.",
+            "deck": "Cada programa define elegibilidad, tiempos y limites antes de cualquier procedimiento.",
             "tone": "silver",
-            "media": "/images/optimized/hero-woman.webp",
+            "media": "/images/optimized/showcase-treatment.webp",
             "mediaMeta": {
-                "src": "/images/optimized/hero-woman.webp",
-                "alt": "Paciente en protocolo de estetica medica",
+                "src": "/images/optimized/showcase-treatment.webp",
+                "alt": "Procedimiento de estetica medica con supervision dermatologica",
                 "kind": "image"
             },
-            "stats": ["Protocolos", "Fit clinico", "Resultados"],
+            "stats": [
+                "Criterio medico",
+                "Secuencia clara",
+                "Resultado trazable"
+            ],
             "primary": {
-                "label": "Ver programas esteticos",
+                "label": "Explorar programas esteticos",
                 "href": "/es/servicios/?category=aesthetic",
                 "target": "service_hub"
             },
             "secondary": {
-                "label": "WhatsApp",
+                "label": "Hablar por WhatsApp",
                 "href": "https://wa.me/593982453672",
                 "target": "whatsapp"
             }
@@ -56,23 +60,27 @@
             "id": "tele-stage",
             "eyebrow": "Telemedicina",
             "category": "Telemedicina",
-            "title": "Atencion remota cuando encaja. Escalamiento presencial cuando hace falta.",
-            "deck": "Telemedicina ya no vive como atajo aislado: forma parte del mismo lenguaje clinico y del mismo booking.",
+            "title": "Telemedicina cuando aporta claridad. Consultorio cuando el caso lo exige.",
+            "deck": "La atencion remota mantiene la misma historia clinica, la misma priorizacion y la misma reserva.",
             "tone": "porcelain",
             "media": "/images/optimized/service-telemedicina.webp",
             "mediaMeta": {
                 "src": "/images/optimized/service-telemedicina.webp",
-                "alt": "Consulta de telemedicina dermatologica",
+                "alt": "Consulta dermatologica remota con criterio clinico",
                 "kind": "image"
             },
-            "stats": ["Ajuste remoto", "Escalamiento", "Misma continuidad"],
+            "stats": [
+                "Evaluacion remota",
+                "Escalamiento oportuno",
+                "Un solo flujo"
+            ],
             "primary": {
                 "label": "Abrir telemedicina",
                 "href": "/es/telemedicina/",
                 "target": "telemedicine"
             },
             "secondary": {
-                "label": "Ir a diagnostico",
+                "label": "Ir a diagnostico integral",
                 "href": "/es/servicios/diagnostico-integral/",
                 "target": "service_detail"
             }
@@ -81,41 +89,41 @@
     "latest": [
         {
             "eyebrow": "Ruta actual",
-            "title": "El triage inicial ya puede comenzar por telemedicina sin romper el flujo clinico.",
+            "title": "La orientacion remota puede iniciar sin romper la continuidad clinica.",
             "href": "/es/telemedicina/"
         },
         {
-            "eyebrow": "Sistema estetico",
-            "title": "La familia estetica se navega como programa completo y no como menu plano.",
+            "eyebrow": "Programa estetico",
+            "title": "La familia estetica se ordena por indicacion medica y no por ruido comercial.",
             "href": "/es/servicios/?category=aesthetic"
         },
         {
-            "eyebrow": "Pediatria",
-            "title": "Ninos y adolescentes mantienen una entrada propia con criterio dermatologico.",
+            "eyebrow": "Atencion pediatrica",
+            "title": "Ninos y adolescentes conservan una entrada propia con lenguaje para familia.",
             "href": "/es/servicios/dermatologia-pediatrica/"
         }
     ],
     "featuredStories": [
         {
-            "eyebrow": "Precision clinica",
-            "title": "Primero diagnostico. Despues la ruta correcta.",
-            "deck": "Lesiones sospechosas, acne, pelo y unas empiezan por un modulo medico mas tecnico y menos promocional.",
+            "eyebrow": "Lectura clinica",
+            "title": "Primero la causa. Despues la ruta.",
+            "deck": "Lesiones, acne, cabello y unas inician con un modulo medico legible, sereno y sin sobrepromesa.",
             "media": "/images/optimized/showcase-diagnostic.webp",
             "href": "/es/servicios/diagnostico-integral/",
             "alignment": "left"
         },
         {
-            "eyebrow": "Protocolos esteticos",
-            "title": "Cada procedimiento entra con fit, tiempos y continuidad visibles.",
-            "deck": "La lectura del programa llega antes del formulario y evita que la pagina se sienta como una sola grilla comercial.",
+            "eyebrow": "Estetica con criterio",
+            "title": "Cada procedimiento entra con fit clinico, tiempos y seguimiento.",
+            "deck": "La pagina explica indicacion y limites antes del formulario para proteger su decision.",
             "media": "/images/optimized/service-rejuvenecimiento.webp",
             "href": "/es/servicios/?category=aesthetic",
             "alignment": "right"
         },
         {
-            "eyebrow": "Entrada familiar",
-            "title": "Pediatria dermatologica con lenguaje propio.",
-            "deck": "Dermatitis, acne adolescente, verrugas y cuero cabelludo se presentan como una ruta clara para familias.",
+            "eyebrow": "Ruta familiar",
+            "title": "Dermatologia pediatrica con estructura propia.",
+            "deck": "Dermatitis, acne adolescente y verrugas se presentan con secuencia clara para madres, padres y cuidadores.",
             "media": "/images/optimized/showcase-clinic.webp",
             "href": "/es/servicios/dermatologia-pediatrica/",
             "alignment": "left"
@@ -123,13 +131,13 @@
     ],
     "telemedicine": {
         "eyebrow": "Telemedicina",
-        "title": "Atencion remota dentro del mismo sistema clinico.",
-        "deck": "Video, llamada o WhatsApp para orientacion inicial y escalamiento presencial cuando el caso lo requiere.",
+        "title": "Atencion remota integrada al mismo sistema clinico.",
+        "deck": "Video, llamada o WhatsApp para orientacion inicial y escalamiento presencial cuando sea necesario.",
         "tone": "ink",
         "points": [
-            "Video, llamada o WhatsApp como punto de entrada",
-            "Escalamiento presencial cuando el caso lo pide",
-            "Continuidad de booking y soporte en la misma experiencia clinica"
+            "Ingreso remoto con datos clinicos utiles",
+            "Escalamiento a consultorio segun criterio medico",
+            "Continuidad de reserva y soporte en la misma experiencia"
         ],
         "href": "/es/telemedicina/"
     },
@@ -137,7 +145,7 @@
         {
             "name": "Dr. Javier Rosero",
             "role": "Direccion clinica",
-            "deck": "Deteccion temprana, lesiones sospechosas y lectura diagnostica en dermatologia general.",
+            "deck": "Lectura diagnostica para lesiones sospechosas, dermatologia general y continuidad medica.",
             "media": "/images/optimized/team-rosero.webp",
             "serviceSlugs": [
                 "diagnostico-integral",
@@ -148,15 +156,15 @@
         {
             "name": "Dra. Carolina Narvaez",
             "role": "Direccion de estetica medica",
-            "deck": "Laser, inyectables, calidad de piel y secuencias de rejuvenecimiento con criterio medico.",
+            "deck": "Protocolos de laser e inyectables con evaluacion previa y seguimiento por etapas.",
             "media": "/images/optimized/team-narvaez.webp",
             "serviceSlugs": ["botox", "laser-dermatologico", "mesoterapia"]
         }
     ],
     "booking": {
         "eyebrow": "Reserva",
-        "title": "Reserva integrada con precio claro y continuidad clinica.",
-        "deck": "Puedes reservar desde diagnostico, servicio especifico o telemedicina con el mismo flujo operativo.",
+        "title": "Reserva integrada con precio visible y continuidad clinica.",
+        "deck": "Desde diagnostico, servicio o telemedicina, la operacion mantiene el mismo criterio de seguridad y trazabilidad.",
         "actionLabel": "Abrir reserva",
         "tone": "silver",
         "serviceHint": "consulta"

@@ -15,31 +15,190 @@
             var triggers = Array.from(
                 root.querySelectorAll('[data-stage-trigger]')
             );
-            if (!slides.length || slides.length !== triggers.length) return;
+            if (!slides.length) return;
 
-            var current = 0;
+            var prevButton = root.querySelector('[data-stage-prev]');
+            var nextButton = root.querySelector('[data-stage-next]');
+            var toggleButton = root.querySelector('[data-stage-toggle]');
+            var autoplayMs = Number(
+                root.getAttribute('data-stage-autoplay-ms') || 7000
+            );
+            if (!Number.isFinite(autoplayMs) || autoplayMs < 2000) {
+                autoplayMs = 7000;
+            }
+
+            var current = slides.findIndex(function (slide) {
+                return slide.classList.contains('is-active');
+            });
+            if (current < 0) current = 0;
+
+            var timer = null;
+            var paused = false;
+            var focusableSelector =
+                'a[href], button, input, select, textarea, [tabindex]';
+
+            var syncSlideInteractivity = function (slide, isActive) {
+                if (!slide) return;
+                if (isActive) {
+                    slide.removeAttribute('inert');
+                } else {
+                    slide.setAttribute('inert', '');
+                }
+
+                Array.from(slide.querySelectorAll(focusableSelector)).forEach(
+                    function (node) {
+                        var previous = node.getAttribute(
+                            'data-stage-prev-tabindex'
+                        );
+
+                        if (isActive) {
+                            if (previous !== null) {
+                                if (previous) {
+                                    node.setAttribute('tabindex', previous);
+                                } else {
+                                    node.removeAttribute('tabindex');
+                                }
+                                node.removeAttribute(
+                                    'data-stage-prev-tabindex'
+                                );
+                            }
+                            return;
+                        }
+
+                        if (previous === null) {
+                            var current = node.getAttribute('tabindex');
+                            node.setAttribute(
+                                'data-stage-prev-tabindex',
+                                current === null ? '' : current
+                            );
+                        }
+                        node.setAttribute('tabindex', '-1');
+                    }
+                );
+            };
+
+            var syncState = function () {
+                var state = paused ? 'paused' : 'playing';
+                root.setAttribute('data-stage-state', state);
+                root.dataset.stageState = state;
+
+                if (!toggleButton) return;
+
+                var ariaPlaying =
+                    toggleButton.getAttribute('data-stage-label-playing') ||
+                    'Pause autoplay';
+                var ariaPaused =
+                    toggleButton.getAttribute('data-stage-label-paused') ||
+                    'Resume autoplay';
+                var textPlaying =
+                    toggleButton.getAttribute('data-stage-text-playing') ||
+                    'Pause';
+                var textPaused =
+                    toggleButton.getAttribute('data-stage-text-paused') ||
+                    'Play';
+
+                toggleButton.setAttribute('data-stage-state', state);
+                toggleButton.dataset.stageState = state;
+                toggleButton.setAttribute(
+                    'aria-label',
+                    paused ? ariaPaused : ariaPlaying
+                );
+                toggleButton.setAttribute(
+                    'aria-pressed',
+                    paused ? 'true' : 'false'
+                );
+                toggleButton.textContent = paused ? textPaused : textPlaying;
+            };
+
             var activate = function (index) {
-                current = index;
+                if (!slides.length) return;
+                var nextIndex = index;
+                if (nextIndex < 0) {
+                    nextIndex = slides.length - 1;
+                }
+                if (nextIndex >= slides.length) {
+                    nextIndex = 0;
+                }
+
+                current = nextIndex;
                 slides.forEach(function (slide, slideIndex) {
-                    slide.classList.toggle('is-active', slideIndex === index);
+                    var isActive = slideIndex === nextIndex;
+                    slide.classList.toggle('is-active', isActive);
+                    slide.hidden = !isActive;
+                    slide.setAttribute(
+                        'aria-hidden',
+                        isActive ? 'false' : 'true'
+                    );
+                    syncSlideInteractivity(slide, isActive);
                 });
                 triggers.forEach(function (trigger, triggerIndex) {
-                    trigger.classList.toggle(
-                        'is-active',
-                        triggerIndex === index
-                    );
+                    var isActive = triggerIndex === nextIndex;
+                    trigger.classList.toggle('is-active', isActive);
+                    if (isActive) {
+                        trigger.setAttribute('aria-current', 'true');
+                    } else {
+                        trigger.removeAttribute('aria-current');
+                    }
                 });
+            };
+
+            var stopAutoplay = function () {
+                if (timer === null) return;
+                window.clearInterval(timer);
+                timer = null;
+            };
+
+            var startAutoplay = function () {
+                stopAutoplay();
+                if (paused || slides.length < 2) return;
+                timer = window.setInterval(function () {
+                    activate(current + 1);
+                }, autoplayMs);
             };
 
             triggers.forEach(function (trigger, index) {
                 trigger.addEventListener('click', function () {
                     activate(index);
+                    startAutoplay();
                 });
             });
 
-            window.setInterval(function () {
-                activate((current + 1) % slides.length);
-            }, 7000);
+            if (prevButton) {
+                prevButton.addEventListener('click', function () {
+                    activate(current - 1);
+                    startAutoplay();
+                });
+            }
+
+            if (nextButton) {
+                nextButton.addEventListener('click', function () {
+                    activate(current + 1);
+                    startAutoplay();
+                });
+            }
+
+            if (toggleButton) {
+                toggleButton.addEventListener('click', function () {
+                    paused = !paused;
+                    syncState();
+                    if (paused) {
+                        stopAutoplay();
+                    } else {
+                        startAutoplay();
+                    }
+                });
+            }
+
+            if (slides.length < 2) {
+                paused = true;
+                if (prevButton) prevButton.disabled = true;
+                if (nextButton) nextButton.disabled = true;
+                if (toggleButton) toggleButton.disabled = true;
+            }
+
+            activate(current);
+            syncState();
+            startAutoplay();
         });
     }
 

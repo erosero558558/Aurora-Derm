@@ -1,29 +1,29 @@
 {
     "title": "Servicios | Piel en Armonia",
-    "description": "Catalogo dermatologico con filtros por categoria, intencion y audiencia, con continuidad de reserva.",
+    "description": "Catalogo dermatologico editorial con rutas medicas claras, filtros utiles y continuidad de reserva.",
     "hero": {
-        "eyebrow": "Catalogo de programas",
-        "title": "Un hub de servicios tratado como portfolio clinico.",
-        "deck": "Navega por dermatologia clinica, estetica medica y pediatria con una jerarquia mas severa, menos ruido y mejores puntos de entrada.",
+        "eyebrow": "Catalogo clinico",
+        "title": "Un hub editorial para decidir con criterio medico.",
+        "deck": "Dermatologia clinica, estetica medica y pediatria en una arquitectura clara para Quito.",
         "tone": "ink",
-        "media": "/images/optimized/showcase-hero.webp",
+        "media": "/images/optimized/showcase-diagnostic.webp",
         "mediaMeta": {
-            "src": "/images/optimized/showcase-hero.webp",
-            "alt": "Catalogo de programas dermatologicos",
+            "src": "/images/optimized/showcase-diagnostic.webp",
+            "alt": "Mapa editorial de programas dermatologicos",
             "kind": "image"
         }
     },
     "telemedicine": {
         "eyebrow": "Modo de atencion",
-        "title": "Telemedicina pertenece al mismo sistema y no a una subpagina decorativa.",
-        "deck": "Empieza remoto cuando el caso encaja y escala a consultorio cuando la revision o el procedimiento lo requieren.",
+        "title": "Telemedicina forma parte del sistema clinico, no de un atajo aislado.",
+        "deck": "Inicie remoto cuando el caso lo permita y escale a consultorio cuando el criterio medico lo indique.",
         "href": "/es/telemedicina/",
         "tone": "porcelain"
     },
     "booking": {
-        "eyebrow": "Puente de reserva",
-        "title": "Cada programa puede caer en booking con confianza operativa visible.",
-        "deck": "Cada CTA conserva contexto de servicio y alinea precio, impuesto, politica y soporte en el mismo flujo.",
+        "eyebrow": "Continuidad",
+        "title": "Cada ruta desemboca en booking con contexto clinico visible.",
+        "deck": "Precio, impuesto, politica y soporte se mantienen alineados en una sola secuencia operativa.",
         "actionLabel": "Abrir reserva",
         "serviceHint": "consulta",
         "tone": "silver"

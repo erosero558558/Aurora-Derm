@@ -44,7 +44,7 @@ test('intake mergeSignals deduplica por fingerprint', () => {
     assert.ok(merged[0].labels.includes('prod-alert'));
 });
 
-test('intake buildTaskFromSignal asigna codex para señal crítica', () => {
+test('intake buildTaskFromSignal asigna codex para señal crítica con lane backend', () => {
     const task = intake.buildTaskFromSignal(
         {
             source: 'issue',
@@ -58,11 +58,39 @@ test('intake buildTaskFromSignal asigna codex para señal crítica', () => {
     );
 
     assert.equal(task.executor, 'codex');
+    assert.equal(task.codex_instance, 'codex_backend_ops');
+    assert.equal(task.domain_lane, 'backend_ops');
+    assert.equal(task.lane_lock, 'strict');
+    assert.equal(task.cross_domain, false);
     assert.equal(task.critical_zone, true);
     assert.equal(task.runtime_impact, 'high');
     assert.equal(task.source_ref, 'issue#279');
     assert.ok(Array.isArray(task.files));
     assert.ok(task.files.length > 0);
+});
+
+test('intake buildTaskFromSignal asigna codex_frontend para señales puramente frontend', () => {
+    const task = intake.buildTaskFromSignal(
+        {
+            source: 'issue',
+            source_ref: 'issue#301',
+            title: 'Landing page copy regression',
+            severity: 'medium',
+            critical: false,
+            runtime_impact: 'low',
+        },
+        {
+            nowIso: '2026-02-25T10:00:00Z',
+            owner: 'ernesto',
+            files: ['templates/index.template.html', 'content/home/hero.md'],
+        }
+    );
+
+    assert.equal(task.executor, 'codex');
+    assert.equal(task.codex_instance, 'codex_frontend');
+    assert.equal(task.domain_lane, 'frontend_content');
+    assert.equal(task.lane_lock, 'strict');
+    assert.equal(task.cross_domain, false);
 });
 
 test('intake normalizeTaskForScoring escala a codex tras 2 intentos', () => {
@@ -112,6 +140,34 @@ test('intake inferWorkflowFileFromSignal mapea slugs extendidos de post-deploy y
     assert.equal(repair, '.github/workflows/repair-git-sync.yml');
 });
 
+test('intake inferWorkflowFileFromSignal mapea workflows activos codex-only', () => {
+    const deployHosting = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:deploy-hosting:main',
+    });
+    const premiumQa = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:frontend-premium-qa:main',
+    });
+    const weeklyKpi = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:weekly-kpi-report:main',
+    });
+
+    assert.equal(deployHosting, '.github/workflows/deploy-hosting.yml');
+    assert.equal(premiumQa, '.github/workflows/frontend-premium-qa.yml');
+    assert.equal(weeklyKpi, '.github/workflows/weekly-kpi-report.yml');
+});
+
+test('intake inferWorkflowFileFromSignal ignora workflows retirados', () => {
+    const legacyAutopilot = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:agent-kimi-autopilot:main',
+    });
+    const legacyJulesPr = intake.inferWorkflowFileFromSignal({
+        source_ref: 'workflow:jules-pr:main',
+    });
+
+    assert.equal(legacyAutopilot, '');
+    assert.equal(legacyJulesPr, '');
+});
+
 test('intake inferFilesFromSignal prioriza post-deploy sobre token generico git sync', () => {
     const files = intake.inferFilesFromSignal(
         {
@@ -123,4 +179,30 @@ test('intake inferFilesFromSignal prioriza post-deploy sobre token generico git 
     );
 
     assert.deepEqual(files, ['.github/workflows/post-deploy-gate.yml']);
+});
+
+test('intake inferFilesFromSignal usa heuristicas de corpus para workflows activos', () => {
+    const deployHostingFiles = intake.inferFilesFromSignal(
+        {
+            source: 'workflow',
+            title: 'Deploy Hosting: production failed',
+            labels: [],
+        },
+        'ops'
+    );
+    const premiumQaFiles = intake.inferFilesFromSignal(
+        {
+            source: 'workflow',
+            title: 'Frontend Premium QA regression detected',
+            labels: [],
+        },
+        'ops'
+    );
+
+    assert.deepEqual(deployHostingFiles, [
+        '.github/workflows/deploy-hosting.yml',
+    ]);
+    assert.deepEqual(premiumQaFiles, [
+        '.github/workflows/frontend-premium-qa.yml',
+    ]);
 });

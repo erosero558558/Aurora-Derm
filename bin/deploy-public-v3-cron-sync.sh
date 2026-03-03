@@ -97,6 +97,7 @@ write_status() {
   "log_path": "$(json_escape "$LOG_PATH")"
 }
 EOF
+    chmod 0644 "$tmp_file"
     mv "$tmp_file" "$PUBLIC_SYNC_STATUS_PATH"
 }
 
@@ -153,12 +154,6 @@ fi
     git fetch "$REMOTE_NAME" --prune
     REMOTE_HEAD="$(git rev-parse "$REMOTE_NAME/$REMOTE_REF")"
 
-    if [ -n "$(git status --porcelain)" ]; then
-        LAST_ERROR_MESSAGE="working_tree_dirty"
-        echo "Working tree is dirty. Refusing to overwrite local changes."
-        exit 1
-    fi
-
     if [ "$CURRENT_HEAD" = "$REMOTE_HEAD" ]; then
         STATE="idle"
         DEPLOYED_COMMIT="$CURRENT_HEAD"
@@ -167,6 +162,13 @@ fi
         write_status "$STATE" "" "$FINISHED_AT" "$CHECKED_AT" "$LAST_SUCCESS_AT" ""
         echo "No remote changes detected at $REMOTE_NAME/$REMOTE_REF."
         exit 0
+    fi
+
+    if [ -n "$(git status --porcelain)" ]; then
+        LAST_ERROR_MESSAGE="working_tree_dirty"
+        echo "Working tree is dirty. Refusing to overwrite local changes."
+        git status --short || true
+        exit 1
     fi
 
     echo "Deploying new commit ${REMOTE_HEAD:0:7} with $(basename "$DEPLOY_SCRIPT")"

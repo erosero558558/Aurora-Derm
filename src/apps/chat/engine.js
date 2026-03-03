@@ -100,7 +100,9 @@ function getConversationContextSafe() {
         const value = deps.getConversationContext();
         return Array.isArray(value) ? value.slice() : [];
     }
-    return Array.isArray(conversationContext) ? conversationContext.slice() : [];
+    return Array.isArray(conversationContext)
+        ? conversationContext.slice()
+        : [];
 }
 
 function setConversationContextSafe(nextContext) {
@@ -166,7 +168,10 @@ function isOpenClawQueueError(error) {
         return true;
     }
 
-    if (typeof error.provider === 'string' && error.provider === 'openclaw_queue') {
+    if (
+        typeof error.provider === 'string' &&
+        error.provider === 'openclaw_queue'
+    ) {
         return true;
     }
 
@@ -196,10 +201,7 @@ async function processWithKimi(message) {
     }
 
     // Si hay un booking en curso, desviar al flujo conversacional
-    if (
-        typeof isChatBookingActive === 'function' &&
-        isChatBookingActive()
-    ) {
+    if (typeof isChatBookingActive === 'function' && isChatBookingActive()) {
         const handled = await processChatBookingStep(message);
         if (handled !== false) {
             return;
@@ -223,7 +225,7 @@ async function processWithKimi(message) {
     if (isOutOfScopeIntent(message)) {
         removeTypingIndicator();
         addBotMessage(
-            `Puedo ayudarte con temas de <strong>Piel en Armonía</strong> (servicios, precios, citas, pagos, horarios y ubicación).<br><br>Si deseas, te ayudo ahora con:<br>- <a href="#servicios" data-action="minimize-chat">Servicios y tratamientos</a><br>- <a href="#citas" data-action="minimize-chat">Reservar cita</a><br>- <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp directo</a>`,
+            `Puedo ayudarte con temas de <strong>Piel en Armonía</strong> (servicios, precios, citas, pagos, horarios y ubicación).<br><br>Si deseas, te ayudo ahora con:<br>- <a href="#servicios" data-action="minimize-chat">Servicios y tratamientos</a><br>- <a href="#v5-booking" data-action="minimize-chat">Reservar cita</a><br>- <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp directo</a>`,
             false
         );
         isProcessingMessage = false;
@@ -273,8 +275,9 @@ function isPaymentIntent(text) {
 }
 
 function buildPaymentGuidance(normalizedMsg) {
-    const asksCard =
-        /(tarjeta|visa|mastercard|debito|credito|stripe)/.test(normalizedMsg);
+    const asksCard = /(tarjeta|visa|mastercard|debito|credito|stripe)/.test(
+        normalizedMsg
+    );
     const asksTransfer =
         /(transferencia|deposito|comprobante|referencia|banco)/.test(
             normalizedMsg
@@ -284,7 +287,7 @@ function buildPaymentGuidance(normalizedMsg) {
 
     let response = `Asi puedes realizar tu pago en la web:<br><br>
 <strong>1) Reserva tu cita</strong><br>
-Ve a <a href="#citas" data-action="minimize-chat">Reservar Cita</a>, completa tus datos y selecciona fecha/hora.<br><br>
+Ve a <a href="#v5-booking" data-action="minimize-chat">Reservar Cita</a>, completa tus datos y selecciona fecha/hora.<br><br>
 
 <strong>2) Abre el modulo de pago</strong><br>
 Al enviar el formulario se abre la ventana de pago automaticamente.<br><br>
@@ -451,10 +454,8 @@ function buildAppointmentContextSummary() {
         parts.push(`servicio=${currentAppointment.service}`);
     if (currentAppointment.doctor)
         parts.push(`doctor=${currentAppointment.doctor}`);
-    if (currentAppointment.date)
-        parts.push(`fecha=${currentAppointment.date}`);
-    if (currentAppointment.time)
-        parts.push(`hora=${currentAppointment.time}`);
+    if (currentAppointment.date) parts.push(`fecha=${currentAppointment.date}`);
+    if (currentAppointment.time) parts.push(`hora=${currentAppointment.time}`);
     if (currentAppointment.price)
         parts.push(`precio=${currentAppointment.price}`);
 
@@ -463,9 +464,11 @@ function buildAppointmentContextSummary() {
 
 function getChatRuntimeContext() {
     const section = window.location.hash || '#inicio';
-    const paymentModalOpen = !!document
-        .getElementById('paymentModal')
-        ?.classList.contains('active');
+    const paymentModalOpen =
+        !!document
+            .getElementById('v5-payment-modal')
+            ?.classList.contains('active') ||
+        !!document.getElementById('paymentModal')?.classList.contains('active');
     const appointmentSummary = buildAppointmentContextSummary();
 
     return `CONTEXTO WEB EN TIEMPO REAL:
@@ -588,9 +591,7 @@ async function requestFigoCompletion(
                 : '';
         throw createFigoError(`HTTP ${response.status}${reasonHint}`, {
             provider:
-                data && typeof data.provider === 'string'
-                    ? data.provider
-                    : '',
+                data && typeof data.provider === 'string' ? data.provider : '',
             code:
                 data && typeof data.errorCode === 'string'
                     ? data.errorCode
@@ -618,10 +619,7 @@ async function requestFigoCompletion(
             ? Number(data.upstreamStatus)
             : 0,
         queued: false,
-        provider:
-            typeof data.provider === 'string'
-                ? data.provider
-                : '',
+        provider: typeof data.provider === 'string' ? data.provider : '',
         jobId: typeof data.jobId === 'string' ? data.jobId : '',
         pollUrl: typeof data.pollUrl === 'string' ? data.pollUrl : '',
         pollAfterMs: Number.isFinite(data.pollAfterMs)
@@ -771,11 +769,7 @@ async function tryRealAI(message) {
         const messages = buildFigoMessages();
 
         debugLog('?? Enviando a:', KIMI_CONFIG.apiUrl);
-        debugLog(
-            '?? Contexto actual:',
-            conversationContext.length,
-            'mensajes'
-        );
+        debugLog('?? Contexto actual:', conversationContext.length, 'mensajes');
         let primaryReply = await requestFigoCompletion(
             messages,
             {},
@@ -794,10 +788,7 @@ async function tryRealAI(message) {
         if (!botResponse) {
             throw new Error('Respuesta vacia del backend de chat');
         }
-        debugLog(
-            'Respuesta recibida:',
-            botResponse.substring(0, 100) + '...'
-        );
+        debugLog('Respuesta recibida:', botResponse.substring(0, 100) + '...');
         if (
             primaryReply.mode === 'degraded' ||
             primaryReply.source === 'fallback'
@@ -809,8 +800,7 @@ async function tryRealAI(message) {
         }
 
         const canRefine =
-            primaryReply.mode === 'live' &&
-            primaryReply.source !== 'fallback';
+            primaryReply.mode === 'live' && primaryReply.source !== 'fallback';
         if (canRefine && shouldRefineWithFigo(botResponse)) {
             debugLog(
                 'Respuesta generica detectada, solicitando precision adicional a Figo'
@@ -928,7 +918,7 @@ Puedes consultarme sobre:<br>
 - Precios y formas de pago<br>
 - Agenda de citas y horarios<br>
 - Ubicacion y contacto<br><br>
-Si quieres, te llevo directo a <a href="#citas" data-action="minimize-chat">Reservar Cita</a> o te conecto por <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp</a>.`;
+Si quieres, te llevo directo a <a href="#v5-booking" data-action="minimize-chat">Reservar Cita</a> o te conecto por <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp</a>.`;
         addBotMessage(response, isOffline);
         return;
     }
@@ -1033,9 +1023,7 @@ O llámanos al +593 98 245 3672.`;
     }
     // DOCTORES
     else if (
-        /doctor|medico|especialista|rosero|narvaez|dr|dra/.test(
-            normalizedMsg
-        )
+        /doctor|medico|especialista|rosero|narvaez|dr|dra/.test(normalizedMsg)
     ) {
         response = `Contamos con dos excelentes especialistas:
 
@@ -1097,7 +1085,7 @@ Si tienes más dudas, no dudes en escribirme. También puedes contactarnos direc
 3) <strong>Pagos</strong><br><br>
 Tambien puedes ir directo:<br>
 - <a href="#servicios" data-action="minimize-chat">Servicios</a><br>
-- <a href="#citas" data-action="minimize-chat">Reservar Cita</a><br>
+- <a href="#v5-booking" data-action="minimize-chat">Reservar Cita</a><br>
 - <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp 098 245 3672</a>`;
     }
 

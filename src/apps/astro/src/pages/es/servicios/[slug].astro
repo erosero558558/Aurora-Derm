@@ -1,12 +1,8 @@
-﻿---
-import PublicShellV3 from '../../../layouts/PublicShellV3.astro';
-import ServiceHeroV3 from '../../../components/public-v3/ServiceHeroV3.astro';
-import ServiceStoryLayoutV3 from '../../../components/public-v3/ServiceStoryLayoutV3.astro';
-import ServiceEvidencePanelV3 from '../../../components/public-v3/ServiceEvidencePanelV3.astro';
-import ServiceTimelineV3 from '../../../components/public-v3/ServiceTimelineV3.astro';
-import RelatedProgramsV3 from '../../../components/public-v3/RelatedProgramsV3.astro';
-import BookingBridgeBandV3 from '../../../components/public-v3/BookingBridgeBandV3.astro';
-import { getPublicNavigationModel, getServiceDetailV3Data } from '../../../lib/public-v3.js';
+---
+import PublicShellV5 from '../../../layouts/PublicShellV5.astro';
+import ServiceDetailV5 from '../../../components/public-v5/ServiceDetailV5.astro';
+import BookingBandV5 from '../../../components/public-v5/BookingBandV5.astro';
+import { getPublicNavigationModel, getServiceDetailV5Data } from '../../../lib/public-v5.js';
 import { getServices, servicePath } from '../../../lib/content.js';
 
 export async function getStaticPaths() {
@@ -15,18 +11,46 @@ export async function getStaticPaths() {
 
 const locale = 'es';
 const { slug } = Astro.params;
-const page = getServiceDetailV3Data(slug, locale);
+const page = getServiceDetailV5Data(slug, locale);
 if (!page) throw new Error(`Servicio no encontrado: ${slug}`);
 const pathname = servicePath(locale, slug);
 const navModel = getPublicNavigationModel(locale, pathname);
+const heroMediaMeta = page?.hero?.mediaMeta || {};
+const heroMediaSources = Array.isArray(heroMediaMeta?.sources)
+    ? heroMediaMeta.sources
+    : [];
+const preferredHeroSource =
+    heroMediaSources.find((source) => source?.type === 'image/webp') ||
+    heroMediaSources.find((source) => source?.type === 'image/avif') ||
+    heroMediaSources[0] ||
+    null;
+const preferredHeroSrcSet = String(preferredHeroSource?.srcset || '').trim();
+const preloadImageSrc =
+    (preferredHeroSrcSet.split(',')[0] || '').trim().split(/\s+/u)[0] ||
+    heroMediaMeta?.src ||
+    page?.hero?.media ||
+    '';
+const preloadImageSrcSet = preferredHeroSrcSet || heroMediaMeta?.srcset || '';
+const preloadImageSizes =
+    heroMediaMeta?.sizes || '(max-width: 1024px) 100vw, 46vw';
+const preloadImageType = String(preferredHeroSource?.type || 'image/webp').trim();
 ---
 
-<PublicShellV3 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath={servicePath('en', slug)} pathname={pathname} navModel={navModel} compatServiceBookingHref={`${pathname}?service=${encodeURIComponent(page.booking.serviceHint)}#citas`}>
-    <ServiceHeroV3 hero={page.hero} locale={locale} />
-    <ServiceStoryLayoutV3 story={page.story} locale={locale} />
-    <ServiceEvidencePanelV3 evidence={page.evidence} locale={locale} />
-    <ServiceTimelineV3 timeline={page.timeline} />
-    <RelatedProgramsV3 items={page.related} locale={locale} />
-    <BookingBridgeBandV3 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
-</PublicShellV3>
-
+<PublicShellV5
+    title={page.title}
+    description={page.description}
+    locale={locale}
+    canonicalPath={pathname}
+    alternatePath={servicePath('en', slug)}
+    pathname={pathname}
+    navModel={navModel}
+    templateId="service_detail_v5"
+    compactFooter={true}
+    preloadImageSrc={preloadImageSrc}
+    preloadImageSrcSet={preloadImageSrcSet}
+    preloadImageSizes={preloadImageSizes}
+    preloadImageType={preloadImageType}
+>
+    <ServiceDetailV5 page={page} locale={locale} />
+    <BookingBandV5 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
+</PublicShellV5>

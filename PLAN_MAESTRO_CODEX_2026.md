@@ -4,6 +4,15 @@ Inicio: 2026-02-24
 Cadencia: por commit (cada commit deja evidencia verificable)
 Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite por control)
 
+<!-- CODEX_ACTIVE
+codex_instance: codex_backend_ops
+block: C16
+task_id: CDX-006
+status: in_progress
+files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "lib/figo_queue.php", "lib/QueueService.php", "lib/figo_queue/QueueConfig.php", "lib/figo_queue/JobRepository.php", "lib/figo_queue/GatewayClient.php", "lib/figo_queue/JobProcessor.php", "lib/queue/TicketFactory.php", "lib/queue/TicketPriorityPolicy.php", "lib/queue/QueueSummaryBuilder.php", "figo-backend.php", "figo-chat.php", "tests/test_queue_service.php", "verification/agent-runs/CDX-006.md"]
+updated_at: 2026-03-03
+-->
+
 ## Proposito
 
 - Blindar confiabilidad de reserva/chat/reprogramacion.
@@ -333,6 +342,27 @@ Criterio de salida:
 - [x] `lib/backup.php` queda en `<= 750` lineas.
 - [x] `store.json`, `store.sqlite`, backups, restore y cifrado mantienen formato y semantica.
 - [x] Tests PHP de storage/backup/disaster recovery y `npm run gate:prod:backend` quedan verdes.
+
+## C16 - Package P5: cola y servicio de turnos
+
+Estado: `IN_PROGRESS`
+Objetivo:
+
+- Reducir acoplamiento procedural en `lib/figo_queue.php` y complejidad de priorizacion/resumen en `lib/QueueService.php`, manteniendo contratos de bridge, payloads y estados.
+
+Entregables:
+
+- [ ] `lib/figo_queue/QueueConfig.php`, `lib/figo_queue/JobRepository.php`, `lib/figo_queue/GatewayClient.php` y `lib/figo_queue/JobProcessor.php` absorben config, acceso a archivos, gateway y reintentos/procesamiento.
+- [ ] `lib/queue/TicketFactory.php`, `lib/queue/TicketPriorityPolicy.php` y `lib/queue/QueueSummaryBuilder.php` absorben creacion, prioridad y resumen de tickets.
+- [ ] `lib/figo_queue.php` queda como facade procedural estable.
+- [ ] `lib/QueueService.php` conserva API publica y delega construccion/prioridad/resumen a modulos puros.
+
+Criterio de salida:
+
+- [ ] `lib/figo_queue.php` queda en `<= 650` lineas.
+- [ ] `lib/QueueService.php` queda en `<= 500` lineas.
+- [ ] Se preservan estados de ticket, payloads de cola, bridge Figo y codigos de error.
+- [ ] Tests PHP/Node/smoke de queue y chat quedan verdes.
 
 ## Contratos publicos
 

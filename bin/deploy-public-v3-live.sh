@@ -24,6 +24,26 @@ require_cmd systemctl
 test -x "$NGINX_BIN"
 test -d "$REPO"
 
+reset_generated_vendor_metadata() {
+    local generated_files=(
+        "vendor/composer/autoload_real.php"
+        "vendor/composer/autoload_static.php"
+        "vendor/composer/installed.php"
+    )
+    local file
+    local tracked_files=()
+    for file in "${generated_files[@]}"; do
+        if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+            tracked_files+=("$file")
+        fi
+    done
+
+    if [ "${#tracked_files[@]}" -gt 0 ]; then
+        git checkout -- "${tracked_files[@]}"
+        echo "Reset tracked Composer-generated metadata."
+    fi
+}
+
 cd "$REPO"
 
 if [ "$DISABLE_DESTRUCTIVE_SYNC_CRON" = "true" ] && command -v crontab >/dev/null 2>&1; then
@@ -60,6 +80,7 @@ if [ "$INSTALL_DEPS" = "true" ]; then
     echo "== Dependencies =="
     if command -v composer >/dev/null 2>&1; then
         composer install --no-dev --optimize-autoloader --prefer-dist --no-progress
+        reset_generated_vendor_metadata
     else
         echo "Composer not found; skipping composer install."
     fi

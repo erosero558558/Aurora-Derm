@@ -103,12 +103,16 @@ const DATA_BUNDLE_URL = withDeployAssetVersion(
 );
 
 function selectService(value) {
-    const select = document.getElementById('serviceSelect');
+    const select =
+        document.getElementById('v5-service-select') ||
+        document.getElementById('serviceSelect');
     if (select) {
         select.value = value;
         select.dispatchEvent(new Event('change'));
         markBookingViewed('service_select');
-        const appointmentSection = document.getElementById('citas');
+        const appointmentSection =
+            document.getElementById('v5-booking') ||
+            document.getElementById('citas');
         if (appointmentSection) {
             const navHeight =
                 document.querySelector('.nav')?.offsetHeight || 80;

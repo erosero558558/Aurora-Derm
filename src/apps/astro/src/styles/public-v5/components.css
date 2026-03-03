@@ -1,0 +1,2296 @@
+body[data-public-shell-version='v5'] .hero-stage {
+    margin-top: 24px;
+}
+
+body[data-public-shell-version='v5'] .hero-stage__viewport {
+    border-radius: 24px;
+    border: 1px solid rgba(228, 236, 245, 0.26);
+    box-shadow: 0 28px 56px rgba(8, 12, 18, 0.3);
+}
+
+body[data-public-shell-version='v5'] .hero-stage__overlay {
+    padding: clamp(22px, 4vw, 44px);
+}
+
+body[data-public-shell-version='v5'] .hero-stage__overlay h1 {
+    font-size: clamp(2.6rem, 5.4vw, 5rem);
+    letter-spacing: -0.055em;
+}
+
+body[data-public-shell-version='v5'] .program-grid__card,
+body[data-public-shell-version='v5'] .doctor-band__card,
+body[data-public-shell-version='v5'] .service-card-v3,
+body[data-public-shell-version='v5'] .booking-bridge__mount,
+body[data-public-shell-version='v5'] .hub-hero-v3__copy,
+body[data-public-shell-version='v5'] .service-hero-v3__copy,
+body[data-public-shell-version='v5'] .service-story-v3,
+body[data-public-shell-version='v5'] .service-evidence-v3,
+body[data-public-shell-version='v5'] .service-timeline-v3__steps article,
+body[data-public-shell-version='v5'] .legal-article-v3__highlights article,
+body[data-public-shell-version='v5'] .legal-article-v3__sections article,
+body[data-public-shell-version='v5'] .services-editorial-grid__feature,
+body[data-public-shell-version='v5'] .family-tabs-v3__link,
+body[data-public-shell-version='v5'] .legal-tabs-v3__link {
+    border-radius: var(--public-v5-radius-md);
+    background: linear-gradient(180deg, #fbfdff 0%, #eef3f8 100%);
+    border: 1px solid var(--public-v5-line);
+    box-shadow: none;
+}
+
+body[data-public-shell-version='v5'] .booking-band {
+    display: grid;
+    grid-template-columns: 0.86fr 1.14fr;
+    gap: var(--public-v5-gap-card);
+    align-items: stretch;
+    content-visibility: auto;
+    contain-intrinsic-size: 1120px;
+}
+
+body[data-public-shell-version='v5'] .booking-band__intro {
+    border-radius: var(--public-v5-radius-md);
+    padding: clamp(22px, 3vw, 32px);
+    background:
+        radial-gradient(circle at 100% 0%, rgba(83, 135, 255, 0.2), transparent 48%),
+        linear-gradient(165deg, #0d1627 0%, #162338 100%);
+    border: 1px solid rgba(237, 244, 255, 0.2);
+    color: #f4f8ff;
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    box-shadow: 0 26px 54px rgba(8, 12, 20, 0.26);
+}
+
+body[data-public-shell-version='v5'] .booking-band__intro h2 {
+    margin: 0;
+    font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.042em;
+}
+
+body[data-public-shell-version='v5'] .booking-band__intro p {
+    margin: 0;
+    line-height: 1.68;
+    color: rgba(232, 239, 250, 0.9);
+}
+
+body[data-public-shell-version='v5'] .booking-band__intro p:first-child {
+    color: rgba(230, 238, 248, 0.74);
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .booking-band__mount {
+    min-height: 360px;
+    border-radius: var(--public-v5-radius-md);
+    border: 1px solid var(--public-v5-line);
+    background: linear-gradient(180deg, #fbfdff 0%, #edf3f9 100%);
+    box-shadow: 0 22px 46px rgba(7, 12, 20, 0.1);
+    overflow: clip;
+}
+
+body[data-public-shell-version='v5'] .booking-band .hero-stage__cta {
+    min-height: 46px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 0.84rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .booking-band .hero-stage__cta--primary {
+    background: #f5f8fd;
+    color: #101c2e;
+    border-color: rgba(245, 248, 253, 0.82);
+}
+
+body[data-public-shell-version='v5'] .booking-band .hero-stage__cta--secondary {
+    border-color: rgba(237, 243, 255, 0.34);
+    color: #f0f5ff;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-container {
+    grid-template-columns: 0.92fr 1.08fr;
+    gap: 0;
+    min-height: 100%;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-info {
+    padding: clamp(20px, 3vw, 30px);
+    background:
+        radial-gradient(circle at 100% 0%, rgba(92, 142, 255, 0.15), transparent 44%),
+        linear-gradient(180deg, #f8fbff 0%, #edf3fa 100%);
+    border-right: 1px solid rgba(13, 20, 32, 0.08);
+    display: grid;
+    align-content: start;
+    gap: 16px;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-info .section-title {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.4vw, 1.8rem);
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-info .appointment-desc {
+    margin: 0;
+    color: #2e4360;
+    line-height: 1.65;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-assurance,
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-companion-routes {
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(13, 20, 32, 0.1);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-assurance__grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-assurance__item {
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.92);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-assurance__item h3 {
+    font-size: 0.94rem;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-assurance__item p {
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-benefits {
+    border-radius: 14px;
+    border: 1px solid rgba(13, 20, 32, 0.09);
+    background: rgba(255, 255, 255, 0.72);
+    padding: 14px;
+    gap: 12px;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .benefit-item i {
+    color: #1955d8;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-companion-routes__actions {
+    gap: 8px;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-companion-routes__actions .hero-stage__cta {
+    min-height: 40px;
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form-container {
+    padding: clamp(20px, 3vw, 30px);
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form h3 {
+    margin: 0;
+    font-size: clamp(1.35rem, 2.1vw, 1.65rem);
+    letter-spacing: -0.03em;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-form-meta {
+    margin: 0;
+    color: #3b516d;
+    line-height: 1.62;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-steps {
+    gap: 8px;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-step-pill {
+    padding: 7px 11px;
+    border: 1px solid rgba(13, 20, 32, 0.1);
+    background: #edf3fb;
+    color: #233750;
+    letter-spacing: 0.075em;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-pricing-model {
+    border-radius: 16px;
+    border: 1px solid rgba(31, 94, 255, 0.18);
+    background:
+        radial-gradient(circle at 0% 0%, rgba(120, 167, 255, 0.2), transparent 44%),
+        #f6faff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-pricing-model > p:first-child {
+    color: #27466f;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-pricing-model__row span {
+    color: #2f4d73;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-pricing-model__row strong {
+    color: #0d213d;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-pricing-model__notes {
+    border-top-color: rgba(22, 51, 87, 0.18);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-pricing-model__policy {
+    color: #0f4dc0;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form .form-group {
+    gap: 7px;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form label {
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #2a4466;
+    font-weight: 650;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form input,
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form select,
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form textarea {
+    min-height: 50px;
+    border-radius: 14px;
+    border: 1px solid rgba(13, 20, 32, 0.16);
+    background: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form input:focus,
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form select:focus,
+body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form textarea:focus,
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-form input:focus,
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-form select:focus,
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-form textarea:focus,
+body[data-public-shell-version='v5'] .public-runtime-bridge #reviewForm input:focus,
+body[data-public-shell-version='v5'] .public-runtime-bridge #reviewForm textarea:focus,
+body[data-public-shell-version='v5'] .public-runtime-bridge #rescheduleModal input:focus,
+body[data-public-shell-version='v5'] .public-runtime-bridge #rescheduleModal select:focus {
+    outline: 2px solid rgba(31, 94, 255, 0.44);
+    outline-offset: 1px;
+    border-color: rgba(31, 94, 255, 0.56);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .form-help,
+body[data-public-shell-version='v5'] .booking-bridge__mount .booking-submit-note,
+body[data-public-shell-version='v5'] .booking-bridge__mount .form-privacy-note,
+body[data-public-shell-version='v5'] .booking-bridge__mount .price-summary-hint {
+    color: #48607d;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .price-summary {
+    border-radius: 14px;
+    border: 1px solid rgba(13, 20, 32, 0.1);
+    background: linear-gradient(180deg, #f7fbff 0%, #edf4fd 100%);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .price-row {
+    color: #27415f;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .price-row.total {
+    color: #0f213c;
+    border-top-color: rgba(13, 20, 32, 0.12);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .btn,
+body[data-public-shell-version='v5'] .public-runtime-bridge .btn,
+body[data-public-shell-version='v5'] .public-runtime-bridge .cookie-btn {
+    min-height: 48px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    font-size: 0.81rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 0 18px;
+    transition: transform 140ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .btn:hover,
+body[data-public-shell-version='v5'] .public-runtime-bridge .btn:hover,
+body[data-public-shell-version='v5'] .public-runtime-bridge .cookie-btn:hover {
+    transform: translateY(-1px);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .btn-primary,
+body[data-public-shell-version='v5'] .public-runtime-bridge .btn-primary,
+body[data-public-shell-version='v5'] .public-runtime-bridge .cookie-btn.btn-primary {
+    color: #f4f8ff;
+    background: linear-gradient(140deg, #123263 0%, #163f76 42%, #1a4f97 100%);
+    box-shadow: 0 14px 26px rgba(20, 53, 100, 0.24);
+    border-color: rgba(20, 53, 100, 0.44);
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .btn-primary:disabled,
+body[data-public-shell-version='v5'] .public-runtime-bridge .btn-primary:disabled {
+    opacity: 0.58;
+    box-shadow: none;
+}
+
+body[data-public-shell-version='v5'] .booking-bridge__mount .btn-secondary,
+body[data-public-shell-version='v5'] .public-runtime-bridge .btn-secondary,
+body[data-public-shell-version='v5'] .public-runtime-bridge .cookie-btn.btn-secondary {
+    color: #193459;
+    background: #f8fbff;
+    border-color: rgba(13, 20, 32, 0.15);
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .modal {
+    background: rgba(6, 11, 20, 0.78);
+    backdrop-filter: blur(15px);
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .modal-content {
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(90, 141, 255, 0.14), transparent 44%),
+        linear-gradient(180deg, #fcfeff 0%, #eef4fb 100%);
+    border: 1px solid rgba(13, 20, 32, 0.14);
+    box-shadow: 0 34px 78px rgba(8, 12, 20, 0.3);
+    color: #0e1f37;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .modal-content h3 {
+    font-size: clamp(1.48rem, 2.6vw, 2.02rem);
+    line-height: 1.05;
+    letter-spacing: -0.032em;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .public-modal__deck,
+body[data-public-shell-version='v5'] .public-runtime-bridge .modal-content > p {
+    color: #2f4968;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .modal-close {
+    border-color: rgba(13, 20, 32, 0.14);
+    background: rgba(245, 249, 255, 0.94);
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-methods {
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-method {
+    min-height: 94px;
+    border-radius: 14px;
+    background: #f8fbff;
+    border: 1px solid rgba(13, 20, 32, 0.12);
+    align-content: start;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-method.active {
+    border-color: rgba(29, 81, 165, 0.66);
+    box-shadow: 0 0 0 1px rgba(29, 81, 165, 0.2);
+    background: linear-gradient(180deg, #edf4ff 0%, #e3efff 100%);
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-method.disabled {
+    opacity: 0.5;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-form,
+body[data-public-shell-version='v5'] .public-runtime-bridge #reviewForm,
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-summary,
+body[data-public-shell-version='v5'] .public-runtime-bridge #appointmentDetails,
+body[data-public-shell-version='v5'] .public-runtime-bridge #rescheduleInfo,
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-trust,
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-faq,
+body[data-public-shell-version='v5'] .public-runtime-bridge .bank-info,
+body[data-public-shell-version='v5'] .public-runtime-bridge .star-rating {
+    border-radius: 14px;
+    border: 1px solid rgba(13, 20, 32, 0.1);
+    background: rgba(255, 255, 255, 0.84);
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-total {
+    font-size: 1.04rem;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-total #paymentTotal {
+    font-weight: 800;
+    color: #102b50;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-trust__list li {
+    color: #183253;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-trust__policy {
+    color: #1248a8;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-faq summary {
+    color: #102e51;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-faq p {
+    color: #2f4968;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .payment-error,
+body[data-public-shell-version='v5'] .public-runtime-bridge .form-error {
+    border: 1px solid rgba(158, 34, 47, 0.28);
+    background: rgba(191, 33, 49, 0.08);
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .success-icon {
+    background: rgba(22, 126, 71, 0.12);
+    color: #167e47;
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .chatbot-toggle {
+    border-radius: 16px;
+    background: linear-gradient(180deg, #111d31 0%, #16253c 100%);
+}
+
+body[data-public-shell-version='v5'] .public-runtime-bridge .cookie-banner {
+    border-radius: 16px;
+    left: 16px;
+    right: 16px;
+    bottom: 14px;
+    padding: 12px 14px;
+    background: rgba(12, 18, 30, 0.96);
+}
+
+@media (max-width: 1120px) {
+    body[data-public-shell-version='v5'] .booking-band,
+    body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-container {
+        grid-template-columns: 1fr;
+    }
+
+    body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-info {
+        border-right: 0;
+        border-bottom: 1px solid rgba(13, 20, 32, 0.08);
+    }
+
+    body[data-public-shell-version='v5'] .public-runtime-bridge .payment-methods {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 780px) {
+    body[data-public-shell-version='v5'] .booking-band__intro,
+    body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-info,
+    body[data-public-shell-version='v5'] .booking-bridge__mount .appointment-form-container {
+        padding: 18px;
+    }
+
+    body[data-public-shell-version='v5'] .booking-bridge__mount .form-row,
+    body[data-public-shell-version='v5'] .public-runtime-bridge .payment-methods {
+        grid-template-columns: 1fr;
+    }
+
+    body[data-public-shell-version='v5'] .public-runtime-bridge .modal {
+        padding: 12px;
+    }
+
+    body[data-public-shell-version='v5'] .public-runtime-bridge .modal-content {
+        border-radius: 18px;
+        padding: 18px;
+    }
+
+    body[data-public-shell-version='v5'] .public-runtime-bridge .cookie-banner {
+        display: grid;
+        justify-items: stretch;
+        gap: 10px;
+    }
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero,
+body[data-public-shell-version='v5'] .sony-home-paths,
+body[data-public-shell-version='v5'] .sony-home-authority,
+body[data-public-shell-version='v5'] .sony-home-pricing,
+body[data-public-shell-version='v5'] .sony-home-booking {
+    border-radius: var(--public-v5-radius-md);
+    border: 1px solid var(--public-v5-line);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero {
+    display: grid;
+    grid-template-columns: 1.02fr 0.98fr;
+    gap: var(--public-v5-gap-card);
+    padding: clamp(20px, 3vw, 30px);
+    background: linear-gradient(130deg, #0d1626 0%, #17253a 100%);
+    color: #f4f8ff;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy {
+    display: grid;
+    gap: 16px;
+    align-content: center;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy > p:first-child,
+body[data-public-shell-version='v5'] .sony-home-head > p,
+body[data-public-shell-version='v5'] .sony-home-booking > div:first-child > p {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(226, 236, 250, 0.82);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4.4vw, 3.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy > p {
+    margin: 0;
+    color: rgba(231, 239, 251, 0.88);
+    line-height: 1.6;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__chips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__chips li {
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(231, 239, 251, 0.24);
+    font-size: 0.74rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__media img {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    object-fit: cover;
+    border-radius: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths,
+body[data-public-shell-version='v5'] .sony-home-authority,
+body[data-public-shell-version='v5'] .sony-home-pricing,
+body[data-public-shell-version='v5'] .sony-home-booking {
+    padding: clamp(20px, 3vw, 28px);
+    background: linear-gradient(180deg, #fbfdff 0%, #eef3f8 100%);
+}
+
+body[data-public-shell-version='v5'] .sony-home-head {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-head h2,
+body[data-public-shell-version='v5'] .sony-home-booking h2 {
+    margin: 0;
+    font-size: clamp(1.45rem, 2.7vw, 2rem);
+    letter-spacing: -0.03em;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths__grid,
+body[data-public-shell-version='v5'] .sony-home-authority__grid,
+body[data-public-shell-version='v5'] .sony-home-pricing__grid {
+    display: grid;
+    gap: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body[data-public-shell-version='v5'] .sony-home-card,
+body[data-public-shell-version='v5'] .sony-home-price {
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid var(--public-v5-line);
+    background: #f8fbff;
+}
+
+body[data-public-shell-version='v5'] .sony-home-card h3,
+body[data-public-shell-version='v5'] .sony-home-price h3,
+body[data-public-shell-version='v5'] .sony-home-doctor h3 {
+    margin: 0;
+    font-size: 1.08rem;
+    line-height: 1.3;
+}
+
+body[data-public-shell-version='v5'] .sony-home-card p,
+body[data-public-shell-version='v5'] .sony-home-price p,
+body[data-public-shell-version='v5'] .sony-home-doctor p,
+body[data-public-shell-version='v5'] .sony-home-booking p {
+    margin: 0;
+    color: #334862;
+    line-height: 1.6;
+}
+
+body[data-public-shell-version='v5'] .sony-home-authority__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-public-shell-version='v5'] .sony-home-doctor {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--public-v5-line);
+    background: #f8fbff;
+}
+
+body[data-public-shell-version='v5'] .sony-home-doctor img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-doctor div {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+}
+
+body[data-public-shell-version='v5'] .sony-home-doctor p:first-child {
+    font-size: 0.75rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: #516683;
+}
+
+body[data-public-shell-version='v5'] .sony-home-pricing__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-price small {
+    display: block;
+    margin-top: 8px;
+    color: #5f738e;
+    line-height: 1.5;
+}
+
+body[data-public-shell-version='v5'] .sony-home-booking {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+}
+
+body[data-public-shell-version='v5'] .sony-home-booking > div:first-child {
+    display: grid;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-booking__actions {
+    display: grid;
+    gap: 10px;
+}
+
+@media (max-width: 1120px) {
+    body[data-public-shell-version='v5'] .booking-band {
+        grid-template-columns: 1fr;
+    }
+    body[data-public-shell-version='v5'] .sony-home-hero {
+        grid-template-columns: 1fr;
+    }
+    body[data-public-shell-version='v5'] .sony-home-paths__grid,
+    body[data-public-shell-version='v5'] .sony-home-pricing__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    body[data-public-shell-version='v5'] .sony-home-booking {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    body[data-public-shell-version='v5'] .sony-home-paths__grid,
+    body[data-public-shell-version='v5'] .sony-home-authority__grid,
+    body[data-public-shell-version='v5'] .sony-home-pricing__grid,
+    body[data-public-shell-version='v5'] .sony-home-doctor {
+        grid-template-columns: 1fr;
+    }
+    body[data-public-shell-version='v5'] .sony-home-doctor img {
+        height: 220px;
+    }
+    body[data-public-shell-version='v5'] .sony-home-hero__actions {
+        display: grid;
+    }
+}
+
+body[data-public-shell-version='v5'] .public-footer.is-compact .public-footer__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero,
+body[data-public-shell-version='v5'] .sony-tele-block,
+body[data-public-shell-version='v5'] .sony-tele-escalation {
+    border-radius: var(--public-v5-radius-md);
+    border: 1px solid var(--public-v5-line);
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--public-v5-gap-card);
+    padding: clamp(20px, 3vw, 30px);
+    background: linear-gradient(150deg, #0d1625 0%, #1a2a41 100%);
+    color: #f5f8fe;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero__copy {
+    display: grid;
+    gap: 14px;
+    align-content: center;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero__copy p:first-child {
+    margin: 0;
+    font-size: 0.74rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(231, 240, 252, 0.78);
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero__copy h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3.05rem);
+    letter-spacing: -0.05em;
+    line-height: 0.95;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero__copy > p {
+    margin: 0;
+    color: rgba(236, 243, 252, 0.9);
+    line-height: 1.65;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero__chips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero__chips li {
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(229, 239, 252, 0.26);
+    font-size: 0.72rem;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-hero__media img {
+    width: 100%;
+    height: 100%;
+    min-height: 310px;
+    border-radius: 14px;
+    object-fit: cover;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block {
+    padding: clamp(20px, 3vw, 28px);
+    background: linear-gradient(180deg, #fbfdff 0%, #edf3f9 100%);
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__head {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__head p {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #536987;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__head h2 {
+    margin: 0;
+    font-size: clamp(1.42rem, 2.5vw, 1.95rem);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__grid article {
+    border-radius: 14px;
+    border: 1px solid rgba(13, 20, 32, 0.1);
+    background: rgba(255, 255, 255, 0.84);
+    padding: 14px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__grid article span {
+    display: inline-flex;
+    width: fit-content;
+    min-width: 40px;
+    justify-content: center;
+    align-items: center;
+    height: 24px;
+    border-radius: 999px;
+    background: #e7eef9;
+    color: #16345b;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__grid article p {
+    margin: 0;
+    color: #2d4563;
+    line-height: 1.6;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-escalation {
+    padding: clamp(20px, 3vw, 28px);
+    background:
+        radial-gradient(circle at 0% 0%, rgba(121, 168, 255, 0.2), transparent 46%),
+        linear-gradient(180deg, #f8fbff 0%, #ebf2fa 100%);
+    display: grid;
+    gap: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-escalation > p {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #4f6788;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article {
+    border-radius: 14px;
+    border: 1px solid rgba(13, 20, 32, 0.11);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 14px;
+    display: grid;
+    gap: 9px;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article span {
+    display: inline-flex;
+    width: fit-content;
+    min-width: 36px;
+    height: 24px;
+    padding: 0 9px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #dce8fa;
+    color: #153965;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+}
+
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.4;
+    color: #1f395a;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero,
+body[data-public-shell-version='v5'] .sony-hub-grid,
+body[data-public-shell-version='v5'] .sony-booking-teaser,
+body[data-public-shell-version='v5'] .sony-service-hero,
+body[data-public-shell-version='v5'] .sony-service-fit,
+body[data-public-shell-version='v5'] .sony-service-evidence,
+body[data-public-shell-version='v5'] .sony-service-related {
+    border-radius: var(--public-v5-radius-md);
+    border: 1px solid var(--public-v5-line);
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--public-v5-gap-card);
+    padding: clamp(20px, 3vw, 30px);
+    background: linear-gradient(150deg, #0d1625 0%, #1a2a41 100%);
+    color: #f5f8fe;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero__copy {
+    display: grid;
+    gap: 14px;
+    align-content: center;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero__copy p:first-child,
+body[data-public-shell-version='v5'] .sony-hub-grid__head p,
+body[data-public-shell-version='v5'] .sony-service-fit__head p,
+body[data-public-shell-version='v5'] .sony-service-evidence__head p,
+body[data-public-shell-version='v5'] .sony-service-related__head p,
+body[data-public-shell-version='v5'] .sony-booking-teaser__copy p:first-child {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero__copy p:first-child {
+    color: rgba(230, 238, 250, 0.8);
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-service-hero__copy h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4.3vw, 3.2rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero__copy p {
+    margin: 0;
+    line-height: 1.7;
+    color: rgba(233, 241, 252, 0.9);
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero__media picture,
+body[data-public-shell-version='v5'] .sony-hub-hero__media img,
+body[data-public-shell-version='v5'] .sony-service-hero__media picture,
+body[data-public-shell-version='v5'] .sony-service-hero__media img {
+    width: 100%;
+    height: 100%;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-hero__media img,
+body[data-public-shell-version='v5'] .sony-service-hero__media img {
+    object-fit: cover;
+    border-radius: 14px;
+    min-height: 320px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid,
+body[data-public-shell-version='v5'] .sony-service-fit,
+body[data-public-shell-version='v5'] .sony-service-evidence,
+body[data-public-shell-version='v5'] .sony-service-related,
+body[data-public-shell-version='v5'] .sony-booking-teaser {
+    padding: clamp(20px, 3vw, 28px);
+    background: linear-gradient(180deg, #fbfdff 0%, #edf2f8 100%);
+}
+
+body[data-public-shell-version='v5'] .sony-service-related {
+    content-visibility: auto;
+    contain-intrinsic-size: 420px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid {
+    display: grid;
+    gap: 18px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__head {
+    display: grid;
+    gap: 8px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__head h2,
+body[data-public-shell-version='v5'] .sony-service-fit__head h2,
+body[data-public-shell-version='v5'] .sony-service-evidence__head h2,
+body[data-public-shell-version='v5'] .sony-service-related__head h2,
+body[data-public-shell-version='v5'] .sony-booking-teaser__copy h2 {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+    letter-spacing: -0.03em;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters label {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--public-v5-line);
+    background: #f7fbff;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters span {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #465c79;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters select {
+    border-radius: 10px;
+    border: 1px solid var(--public-v5-line);
+    background: #fff;
+    font: inherit;
+    color: #142238;
+    padding: 10px 11px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__families {
+    display: grid;
+    gap: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--public-v5-line);
+    background: #f8fbff;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family__head p,
+body[data-public-shell-version='v5'] .sony-hub-card p:first-child,
+body[data-public-shell-version='v5'] .sony-service-related__card p:first-child {
+    margin: 0;
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #506784;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family__head h3 {
+    margin: 6px 0 0;
+    font-size: 1.16rem;
+    line-height: 1.35;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family__cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-card {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--public-v5-line);
+    background: #fff;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-card h4,
+body[data-public-shell-version='v5'] .sony-service-related__card h3 {
+    margin: 0;
+    font-size: 1.08rem;
+    line-height: 1.35;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-card p,
+body[data-public-shell-version='v5'] .sony-service-related__card p {
+    margin: 0;
+    line-height: 1.55;
+    color: #354b66;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-card__meta,
+body[data-public-shell-version='v5'] .sony-service-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-card__meta span,
+body[data-public-shell-version='v5'] .sony-service-hero__meta span {
+    padding: 6px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--public-v5-line);
+    background: #f2f7ff;
+    font-size: 0.75rem;
+    color: #0f2036;
+}
+
+body[data-public-shell-version='v5'] .sony-booking-teaser {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+}
+
+body[data-public-shell-version='v5'] .sony-booking-teaser__copy {
+    display: grid;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-booking-teaser__copy p {
+    margin: 0;
+    color: #304862;
+}
+
+body[data-public-shell-version='v5'] .sony-booking-teaser__actions {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+}
+
+body[data-public-shell-version='v5'] .sony-booking-teaser__mount {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--public-v5-gap-card);
+    padding: clamp(20px, 3vw, 30px);
+    background: linear-gradient(145deg, #0f1828 0%, #17253d 100%);
+    color: #f6f9ff;
+}
+
+body[data-public-shell-version='v5'] .sony-service-hero__copy {
+    display: grid;
+    gap: 12px;
+    align-content: center;
+}
+
+body[data-public-shell-version='v5'] .sony-service-hero__copy p:first-child {
+    margin: 0;
+    font-size: 0.74rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(231, 239, 252, 0.82);
+}
+
+body[data-public-shell-version='v5'] .sony-service-hero__copy > p {
+    margin: 0;
+    color: rgba(232, 241, 253, 0.9);
+    line-height: 1.65;
+}
+
+body[data-public-shell-version='v5'] .sony-service-hero__disclaimer {
+    font-size: 0.92rem;
+    color: rgba(224, 235, 250, 0.86);
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit {
+    display: grid;
+    gap: 16px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit__head,
+body[data-public-shell-version='v5'] .sony-service-evidence__head,
+body[data-public-shell-version='v5'] .sony-service-related__head {
+    display: grid;
+    gap: 8px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit__grid article,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid article,
+body[data-public-shell-version='v5'] .sony-service-related__card {
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--public-v5-line);
+    background: #f9fbff;
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit__grid h3,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit__grid ul,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid ul,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid ol {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 7px;
+    color: #344a65;
+}
+
+body[data-public-shell-version='v5'] .sony-service-evidence {
+    display: grid;
+    gap: 16px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-evidence__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-related {
+    display: grid;
+    gap: 16px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-related__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 1120px) {
+    body[data-public-shell-version='v5'] .public-footer.is-compact .public-footer__grid,
+    body[data-public-shell-version='v5'] .sony-service-fit__grid,
+    body[data-public-shell-version='v5'] .sony-service-evidence__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    body[data-public-shell-version='v5'] .sony-hub-hero,
+    body[data-public-shell-version='v5'] .sony-service-hero,
+    body[data-public-shell-version='v5'] .sony-booking-teaser,
+    body[data-public-shell-version='v5'] .sony-tele-hero {
+        grid-template-columns: 1fr;
+    }
+    body[data-public-shell-version='v5'] .sony-tele-block__grid,
+    body[data-public-shell-version='v5'] .sony-tele-escalation__steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 780px) {
+    body[data-public-shell-version='v5'] .sony-hub-grid__filters,
+    body[data-public-shell-version='v5'] .sony-hub-family__cards,
+    body[data-public-shell-version='v5'] .sony-service-fit__grid,
+    body[data-public-shell-version='v5'] .sony-service-evidence__grid,
+    body[data-public-shell-version='v5'] .sony-service-related__grid,
+    body[data-public-shell-version='v5'] .sony-tele-block__grid,
+    body[data-public-shell-version='v5'] .sony-tele-escalation__steps,
+    body[data-public-shell-version='v5'] .public-footer.is-compact .public-footer__grid {
+        grid-template-columns: 1fr;
+    }
+    body[data-public-shell-version='v5'] .sony-hub-family__head {
+        display: grid;
+    }
+    body[data-public-shell-version='v5'] .sony-booking-teaser__actions {
+        width: 100%;
+    }
+    body[data-public-shell-version='v5'] .sony-tele-hero,
+    body[data-public-shell-version='v5'] .sony-tele-block,
+    body[data-public-shell-version='v5'] .sony-tele-escalation {
+        padding: 18px;
+    }
+    body[data-public-shell-version='v5'] .sony-tele-hero__media img {
+        min-height: 220px;
+    }
+}
+
+/* FE-V5-P5 editorial pass: rhythm, hierarchy and motion polish */
+body[data-public-shell-version='v5'] .sony-home-hero,
+body[data-public-shell-version='v5'] .sony-home-paths,
+body[data-public-shell-version='v5'] .sony-home-authority,
+body[data-public-shell-version='v5'] .sony-home-pricing,
+body[data-public-shell-version='v5'] .sony-home-booking,
+body[data-public-shell-version='v5'] .sony-hub-hero,
+body[data-public-shell-version='v5'] .sony-hub-grid,
+body[data-public-shell-version='v5'] .sony-booking-teaser,
+body[data-public-shell-version='v5'] .sony-service-hero,
+body[data-public-shell-version='v5'] .sony-service-fit,
+body[data-public-shell-version='v5'] .sony-service-evidence,
+body[data-public-shell-version='v5'] .sony-service-related,
+body[data-public-shell-version='v5'] .sony-tele-hero,
+body[data-public-shell-version='v5'] .sony-tele-block,
+body[data-public-shell-version='v5'] .sony-tele-escalation {
+    position: relative;
+    overflow: clip;
+    box-shadow: 0 20px 54px rgba(9, 14, 22, 0.09);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero::before,
+body[data-public-shell-version='v5'] .sony-hub-hero::before,
+body[data-public-shell-version='v5'] .sony-service-hero::before,
+body[data-public-shell-version='v5'] .sony-tele-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 5% 0%, rgba(109, 157, 255, 0.14), transparent 44%),
+        radial-gradient(circle at 100% 0%, rgba(16, 28, 46, 0.22), transparent 40%);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero > *,
+body[data-public-shell-version='v5'] .sony-hub-hero > *,
+body[data-public-shell-version='v5'] .sony-service-hero > *,
+body[data-public-shell-version='v5'] .sony-tele-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-hub-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-service-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-tele-hero__copy h1 {
+    font-size: clamp(2.25rem, 4.8vw, 3.7rem);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+}
+
+body[data-public-shell-version='v5'] .sony-home-head h2,
+body[data-public-shell-version='v5'] .sony-hub-grid__head h2,
+body[data-public-shell-version='v5'] .sony-service-fit__head h2,
+body[data-public-shell-version='v5'] .sony-service-evidence__head h2,
+body[data-public-shell-version='v5'] .sony-service-related__head h2,
+body[data-public-shell-version='v5'] .sony-booking-teaser__copy h2,
+body[data-public-shell-version='v5'] .sony-tele-block__head h2 {
+    line-height: 1.02;
+    letter-spacing: -0.038em;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy > p,
+body[data-public-shell-version='v5'] .sony-hub-hero__copy p:last-child,
+body[data-public-shell-version='v5'] .sony-service-hero__copy > p,
+body[data-public-shell-version='v5'] .sony-tele-hero__copy > p {
+    max-width: 54ch;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__media img,
+body[data-public-shell-version='v5'] .sony-hub-hero__media img,
+body[data-public-shell-version='v5'] .sony-service-hero__media img,
+body[data-public-shell-version='v5'] .sony-tele-hero__media img {
+    min-height: 360px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths__grid,
+body[data-public-shell-version='v5'] .sony-home-authority__grid,
+body[data-public-shell-version='v5'] .sony-home-pricing__grid,
+body[data-public-shell-version='v5'] .sony-hub-family__cards,
+body[data-public-shell-version='v5'] .sony-service-fit__grid,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid,
+body[data-public-shell-version='v5'] .sony-service-related__grid,
+body[data-public-shell-version='v5'] .sony-tele-block__grid,
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps {
+    gap: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-card,
+body[data-public-shell-version='v5'] .sony-home-price,
+body[data-public-shell-version='v5'] .sony-hub-card,
+body[data-public-shell-version='v5'] .sony-service-fit__grid article,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid article,
+body[data-public-shell-version='v5'] .sony-service-related__card,
+body[data-public-shell-version='v5'] .sony-tele-block__grid article,
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f8fd 100%);
+    border-color: rgba(13, 20, 32, 0.11);
+    box-shadow: 0 10px 26px rgba(13, 20, 32, 0.06);
+    transition:
+        transform 240ms var(--public-v5-ease),
+        box-shadow 280ms var(--public-v5-ease),
+        border-color 280ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-home-card:hover,
+body[data-public-shell-version='v5'] .sony-home-price:hover,
+body[data-public-shell-version='v5'] .sony-hub-card:hover,
+body[data-public-shell-version='v5'] .sony-service-related__card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(23, 55, 104, 0.28);
+    box-shadow: 0 16px 34px rgba(12, 22, 38, 0.13);
+}
+
+body[data-public-shell-version='v5'] .sony-home-booking,
+body[data-public-shell-version='v5'] .sony-booking-teaser {
+    align-items: start;
+}
+
+body[data-public-shell-version='v5'] .sony-home-booking__actions,
+body[data-public-shell-version='v5'] .sony-booking-teaser__actions {
+    min-width: clamp(220px, 24vw, 290px);
+}
+
+body[data-public-shell-version='v5'] .sony-service-hero__meta span,
+body[data-public-shell-version='v5'] .sony-hub-card__meta span {
+    background: linear-gradient(180deg, #f9fcff 0%, #ecf3fd 100%);
+}
+
+@keyframes publicV5SectionRise {
+    from {
+        transform: translate3d(0, 14px, 0);
+        filter: saturate(0.96);
+    }
+    to {
+        transform: translate3d(0, 0, 0);
+        filter: saturate(1);
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    body[data-public-shell-version='v5'] main > section {
+        animation: publicV5SectionRise 460ms var(--public-v5-ease) both;
+    }
+
+    body[data-public-shell-version='v5'] main > section:nth-of-type(2) {
+        animation-delay: 70ms;
+    }
+
+    body[data-public-shell-version='v5'] main > section:nth-of-type(3) {
+        animation-delay: 120ms;
+    }
+
+    body[data-public-shell-version='v5'] main > section:nth-of-type(4) {
+        animation-delay: 170ms;
+    }
+}
+
+@media (max-width: 1120px) {
+    body[data-public-shell-version='v5'] .sony-home-hero__media img,
+    body[data-public-shell-version='v5'] .sony-hub-hero__media img,
+    body[data-public-shell-version='v5'] .sony-service-hero__media img,
+    body[data-public-shell-version='v5'] .sony-tele-hero__media img {
+        min-height: 300px;
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-booking__actions,
+    body[data-public-shell-version='v5'] .sony-booking-teaser__actions {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 780px) {
+    body[data-public-shell-version='v5'] .sony-home-hero__copy h1,
+    body[data-public-shell-version='v5'] .sony-hub-hero__copy h1,
+    body[data-public-shell-version='v5'] .sony-service-hero__copy h1,
+    body[data-public-shell-version='v5'] .sony-tele-hero__copy h1 {
+        font-size: clamp(2rem, 9.4vw, 2.55rem);
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-hero__media img,
+    body[data-public-shell-version='v5'] .sony-hub-hero__media img,
+    body[data-public-shell-version='v5'] .sony-service-hero__media img,
+    body[data-public-shell-version='v5'] .sony-tele-hero__media img {
+        min-height: 236px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-public-shell-version='v5'] main > section,
+    body[data-public-shell-version='v5'] .sony-home-card,
+    body[data-public-shell-version='v5'] .sony-home-price,
+    body[data-public-shell-version='v5'] .sony-hub-card,
+    body[data-public-shell-version='v5'] .sony-service-related__card {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* FE-V5-P6: typography + motion strict pass */
+body[data-public-shell-version='v5'] .sony-home-hero,
+body[data-public-shell-version='v5'] .sony-hub-hero,
+body[data-public-shell-version='v5'] .sony-service-hero,
+body[data-public-shell-version='v5'] .sony-tele-hero {
+    font-family: var(--public-v5-font);
+}
+
+body[data-public-shell-version='v5'] .public-nav__link {
+    transition: color 220ms var(--public-v5-ease), opacity 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .public-nav__cta {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        background-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .public-link-arrow {
+    transition:
+        color 220ms var(--public-v5-ease),
+        text-decoration-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-home-card {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-home-price {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-hub-card {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-service-related__card {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit__grid article {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-service-evidence__grid article {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-tele-block__grid article {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease);
+}
+
+body[data-public-shell-version='v5'] .hero-stage__cta {
+    transition:
+        transform 220ms var(--public-v5-ease),
+        box-shadow 220ms var(--public-v5-ease),
+        border-color 220ms var(--public-v5-ease),
+        background-color 220ms var(--public-v5-ease);
+}
+
+/* FE-V5-P8: Sony visual macro reset */
+body[data-public-shell-version='v5'] .sony-home-hero,
+body[data-public-shell-version='v5'] .sony-hub-hero,
+body[data-public-shell-version='v5'] .sony-service-hero,
+body[data-public-shell-version='v5'] .sony-tele-hero {
+    border-radius: 30px;
+    border: 1px solid rgba(236, 243, 255, 0.2);
+    padding: clamp(28px, 3.8vw, 42px);
+    box-shadow: 0 24px 62px rgba(7, 12, 22, 0.26);
+    background:
+        radial-gradient(circle at 0% 0%, rgba(110, 157, 255, 0.16), transparent 38%),
+        linear-gradient(155deg, #08101d 0%, #101a2b 100%);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-hub-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-service-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-tele-hero__copy h1 {
+    font-size: clamp(2.5rem, 5.2vw, 4.3rem);
+    line-height: 0.9;
+    letter-spacing: -0.058em;
+    max-width: 13ch;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy > p,
+body[data-public-shell-version='v5'] .sony-hub-hero__copy p:last-child,
+body[data-public-shell-version='v5'] .sony-service-hero__copy > p,
+body[data-public-shell-version='v5'] .sony-tele-hero__copy > p {
+    max-width: 58ch;
+    color: rgba(237, 244, 255, 0.92);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__chips li,
+body[data-public-shell-version='v5'] .sony-tele-hero__chips li {
+    padding: 8px 13px;
+    border: 1px solid rgba(230, 239, 255, 0.3);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(239, 246, 255, 0.96);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__media img,
+body[data-public-shell-version='v5'] .sony-hub-hero__media img,
+body[data-public-shell-version='v5'] .sony-service-hero__media img,
+body[data-public-shell-version='v5'] .sony-tele-hero__media img {
+    border-radius: 18px;
+    min-height: 400px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths,
+body[data-public-shell-version='v5'] .sony-home-authority,
+body[data-public-shell-version='v5'] .sony-home-pricing,
+body[data-public-shell-version='v5'] .sony-home-booking,
+body[data-public-shell-version='v5'] .sony-hub-grid,
+body[data-public-shell-version='v5'] .sony-service-fit,
+body[data-public-shell-version='v5'] .sony-service-evidence,
+body[data-public-shell-version='v5'] .sony-service-related,
+body[data-public-shell-version='v5'] .sony-booking-teaser,
+body[data-public-shell-version='v5'] .sony-tele-block,
+body[data-public-shell-version='v5'] .sony-tele-escalation {
+    border-radius: 26px;
+    border: 1px solid rgba(10, 16, 27, 0.08);
+    background: linear-gradient(180deg, #ffffff 0%, #f6f9fd 100%);
+    padding: clamp(24px, 3.2vw, 34px);
+    box-shadow: 0 12px 34px rgba(10, 16, 27, 0.08);
+}
+
+body[data-public-shell-version='v5'] .sony-home-head,
+body[data-public-shell-version='v5'] .sony-hub-grid__head,
+body[data-public-shell-version='v5'] .sony-service-fit__head,
+body[data-public-shell-version='v5'] .sony-service-evidence__head,
+body[data-public-shell-version='v5'] .sony-service-related__head,
+body[data-public-shell-version='v5'] .sony-tele-block__head {
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-head h2,
+body[data-public-shell-version='v5'] .sony-hub-grid__head h2,
+body[data-public-shell-version='v5'] .sony-service-fit__head h2,
+body[data-public-shell-version='v5'] .sony-service-evidence__head h2,
+body[data-public-shell-version='v5'] .sony-service-related__head h2,
+body[data-public-shell-version='v5'] .sony-booking-teaser__copy h2,
+body[data-public-shell-version='v5'] .sony-tele-block__head h2 {
+    font-size: clamp(1.62rem, 2.8vw, 2.28rem);
+    line-height: 0.98;
+    letter-spacing: -0.043em;
+    max-width: 22ch;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-public-shell-version='v5'] .sony-home-pricing__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-public-shell-version='v5'] .sony-home-authority__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-public-shell-version='v5'] .sony-home-card,
+body[data-public-shell-version='v5'] .sony-home-price,
+body[data-public-shell-version='v5'] .sony-hub-family,
+body[data-public-shell-version='v5'] .sony-hub-card,
+body[data-public-shell-version='v5'] .sony-service-fit__grid article,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid article,
+body[data-public-shell-version='v5'] .sony-service-related__card,
+body[data-public-shell-version='v5'] .sony-tele-block__grid article,
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article {
+    border-radius: 18px;
+    border: 1px solid rgba(10, 16, 27, 0.1);
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(10, 16, 27, 0.05);
+    padding: 18px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-card p,
+body[data-public-shell-version='v5'] .sony-home-price p,
+body[data-public-shell-version='v5'] .sony-hub-card p,
+body[data-public-shell-version='v5'] .sony-service-related__card p,
+body[data-public-shell-version='v5'] .sony-tele-block__grid article p {
+    color: #2e4058;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters {
+    gap: 14px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters label {
+    border-radius: 14px;
+    border: 1px solid rgba(10, 16, 27, 0.11);
+    background: #ffffff;
+    padding: 14px 15px;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters select {
+    border-radius: 12px;
+    border-color: rgba(10, 16, 27, 0.2);
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family__cards,
+body[data-public-shell-version='v5'] .sony-service-fit__grid,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid,
+body[data-public-shell-version='v5'] .sony-service-related__grid,
+body[data-public-shell-version='v5'] .sony-tele-block__grid,
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps {
+    gap: 16px;
+}
+
+body[data-public-shell-version='v5'] .sony-service-fit__grid,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid,
+body[data-public-shell-version='v5'] .sony-tele-block__grid,
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-public-shell-version='v5'] .sony-booking-teaser,
+body[data-public-shell-version='v5'] .sony-home-booking {
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: center;
+}
+
+body[data-public-shell-version='v5'] .hero-stage__cta {
+    min-height: 48px;
+    border-radius: 999px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .legal-hero-v5,
+body[data-public-shell-version='v5'] .legal-article-v5,
+body[data-public-shell-version='v5'] .legal-tabs-v5,
+body[data-public-shell-version='v5'] .support-band-v5 {
+    border-radius: 24px;
+}
+
+body[data-public-shell-version='v5'] .legal-hero-v5 {
+    border: 1px solid rgba(236, 243, 255, 0.2);
+    background:
+        radial-gradient(circle at 0% 0%, rgba(105, 151, 255, 0.16), transparent 40%),
+        linear-gradient(160deg, #08101d 0%, #101a2b 100%);
+    color: #f3f8ff;
+    padding: clamp(28px, 3.8vw, 42px);
+}
+
+body[data-public-shell-version='v5'] .legal-tabs-v5 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(10, 16, 27, 0.1);
+    background: #ffffff;
+}
+
+body[data-public-shell-version='v5'] .legal-tabs-v5__link {
+    border-radius: 999px;
+    justify-content: center;
+    text-align: center;
+}
+
+body[data-public-shell-version='v5'] .legal-article-v5 {
+    border: 1px solid rgba(10, 16, 27, 0.1);
+    background: linear-gradient(180deg, #ffffff 0%, #f6f9fd 100%);
+    padding: clamp(24px, 3vw, 32px);
+}
+
+body[data-public-shell-version='v5'] .support-band-v5 {
+    border: 1px solid rgba(236, 243, 255, 0.2);
+    background:
+        radial-gradient(circle at 100% 0%, rgba(102, 150, 255, 0.16), transparent 40%),
+        linear-gradient(160deg, #08101d 0%, #101a2b 100%);
+    color: #f4f8ff;
+    padding: clamp(24px, 3.2vw, 32px);
+}
+
+@media (max-width: 1120px) {
+    body[data-public-shell-version='v5'] .sony-home-hero__media img,
+    body[data-public-shell-version='v5'] .sony-hub-hero__media img,
+    body[data-public-shell-version='v5'] .sony-service-hero__media img,
+    body[data-public-shell-version='v5'] .sony-tele-hero__media img {
+        min-height: 320px;
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-booking,
+    body[data-public-shell-version='v5'] .sony-booking-teaser {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+}
+
+@media (max-width: 760px) {
+    body[data-public-shell-version='v5'] .sony-home-paths__grid,
+    body[data-public-shell-version='v5'] .sony-home-pricing__grid,
+    body[data-public-shell-version='v5'] .sony-home-authority__grid,
+    body[data-public-shell-version='v5'] .sony-hub-family__cards,
+    body[data-public-shell-version='v5'] .sony-service-fit__grid,
+    body[data-public-shell-version='v5'] .sony-service-evidence__grid,
+    body[data-public-shell-version='v5'] .sony-service-related__grid,
+    body[data-public-shell-version='v5'] .sony-tele-block__grid,
+    body[data-public-shell-version='v5'] .sony-tele-escalation__steps,
+    body[data-public-shell-version='v5'] .legal-tabs-v5 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* FE-V5-P13: Sony canonical visual refinement (non-cosmetic) */
+body[data-public-shell-version='v5'] .sony-home-hero,
+body[data-public-shell-version='v5'] .sony-hub-hero,
+body[data-public-shell-version='v5'] .sony-service-hero,
+body[data-public-shell-version='v5'] .sony-tele-hero {
+    border-radius: 20px;
+    border: 1px solid rgba(245, 248, 255, 0.22);
+    background: linear-gradient(170deg, #07090d 0%, #0f141d 100%);
+    box-shadow: 0 22px 50px rgba(7, 9, 13, 0.32);
+    padding: clamp(26px, 3.2vw, 38px);
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-hub-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-service-hero__copy h1,
+body[data-public-shell-version='v5'] .sony-tele-hero__copy h1 {
+    font-size: clamp(2.45rem, 5vw, 4.18rem);
+    line-height: 0.9;
+    letter-spacing: -0.056em;
+    max-width: 12.5ch;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__copy > p,
+body[data-public-shell-version='v5'] .sony-hub-hero__copy p:last-child,
+body[data-public-shell-version='v5'] .sony-service-hero__copy > p,
+body[data-public-shell-version='v5'] .sony-tele-hero__copy > p {
+    color: rgba(240, 244, 252, 0.9);
+    max-width: 56ch;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__chips li,
+body[data-public-shell-version='v5'] .sony-tele-hero__chips li {
+    border-radius: 999px;
+    border: 1px solid rgba(233, 239, 251, 0.28);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(239, 245, 255, 0.95);
+    padding: 7px 12px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths,
+body[data-public-shell-version='v5'] .sony-home-authority,
+body[data-public-shell-version='v5'] .sony-home-pricing,
+body[data-public-shell-version='v5'] .sony-home-booking,
+body[data-public-shell-version='v5'] .sony-hub-grid,
+body[data-public-shell-version='v5'] .sony-service-fit,
+body[data-public-shell-version='v5'] .sony-service-evidence,
+body[data-public-shell-version='v5'] .sony-service-related,
+body[data-public-shell-version='v5'] .sony-booking-teaser,
+body[data-public-shell-version='v5'] .sony-tele-block,
+body[data-public-shell-version='v5'] .sony-tele-escalation {
+    border-radius: 18px;
+    border: 1px solid rgba(10, 10, 10, 0.1);
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(10, 10, 10, 0.06);
+    padding: clamp(22px, 3vw, 30px);
+}
+
+body[data-public-shell-version='v5'] .sony-home-card,
+body[data-public-shell-version='v5'] .sony-home-price,
+body[data-public-shell-version='v5'] .sony-hub-family,
+body[data-public-shell-version='v5'] .sony-hub-card,
+body[data-public-shell-version='v5'] .sony-service-fit__grid article,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid article,
+body[data-public-shell-version='v5'] .sony-service-related__card,
+body[data-public-shell-version='v5'] .sony-tele-block__grid article,
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article {
+    border-radius: 14px;
+    border: 1px solid rgba(10, 10, 10, 0.12);
+    background: #fcfcfd;
+    box-shadow: 0 5px 14px rgba(10, 10, 10, 0.05);
+}
+
+body[data-public-shell-version='v5'] .sony-home-card p,
+body[data-public-shell-version='v5'] .sony-home-price p,
+body[data-public-shell-version='v5'] .sony-hub-card p,
+body[data-public-shell-version='v5'] .sony-service-related__card p,
+body[data-public-shell-version='v5'] .sony-tele-block__grid article p {
+    color: #313642;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters label {
+    border-radius: 12px;
+    border: 1px solid rgba(10, 10, 10, 0.12);
+    background: #ffffff;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-grid__filters select {
+    border-radius: 10px;
+    border: 1px solid rgba(10, 10, 10, 0.2);
+}
+
+body[data-public-shell-version='v5'] .hero-stage__cta--primary {
+    background: #0b0d12;
+    border-color: #0b0d12;
+    color: #f7f8fb;
+}
+
+body[data-public-shell-version='v5'] .hero-stage__cta--secondary {
+    background: #ffffff;
+    border-color: rgba(10, 10, 10, 0.2);
+    color: #0f1117;
+}
+
+/* FE-V5-P14: Sony editorial rhythm + restrained motion */
+body[data-public-shell-version='v5'] main > section[data-template-block] {
+    margin-block: clamp(14px, 2.1vw, 24px);
+}
+
+body[data-public-shell-version='v5'] .sony-home-head h2,
+body[data-public-shell-version='v5'] .sony-hub-grid__head h2,
+body[data-public-shell-version='v5'] .sony-service-fit__head h2,
+body[data-public-shell-version='v5'] .sony-service-evidence__head h2,
+body[data-public-shell-version='v5'] .sony-service-related__head h2,
+body[data-public-shell-version='v5'] .sony-booking-teaser__copy h2,
+body[data-public-shell-version='v5'] .sony-tele-block__head h2 {
+    font-weight: 560;
+    letter-spacing: -0.039em;
+}
+
+body[data-public-shell-version='v5'] .sony-home-card,
+body[data-public-shell-version='v5'] .sony-home-price,
+body[data-public-shell-version='v5'] .sony-hub-card,
+body[data-public-shell-version='v5'] .sony-service-fit__grid article,
+body[data-public-shell-version='v5'] .sony-service-evidence__grid article,
+body[data-public-shell-version='v5'] .sony-service-related__card,
+body[data-public-shell-version='v5'] .sony-tele-block__grid article,
+body[data-public-shell-version='v5'] .sony-tele-escalation__steps article {
+    transition:
+        transform 200ms ease,
+        box-shadow 220ms ease,
+        border-color 220ms ease;
+}
+
+body[data-public-shell-version='v5'] .sony-home-card:hover,
+body[data-public-shell-version='v5'] .sony-home-price:hover,
+body[data-public-shell-version='v5'] .sony-hub-card:hover,
+body[data-public-shell-version='v5'] .sony-service-related__card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(10, 10, 10, 0.08);
+    border-color: rgba(10, 10, 10, 0.2);
+}
+
+@keyframes publicV5HeroCalmRise {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero,
+body[data-public-shell-version='v5'] .sony-hub-hero,
+body[data-public-shell-version='v5'] .sony-service-hero,
+body[data-public-shell-version='v5'] .sony-tele-hero {
+    animation: publicV5HeroCalmRise 420ms ease both;
+}
+
+/* FE-V5-P15: CTA hierarchy cleanup + hub navigation dedupe */
+body[data-public-shell-version='v5'] .sony-quiet-link {
+    font-family: var(--public-v5-font);
+    font-size: 0.84rem;
+    font-weight: 560;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.28em;
+    transition:
+        color 200ms ease,
+        opacity 200ms ease,
+        text-decoration-color 200ms ease;
+}
+
+body[data-public-shell-version='v5'] .sony-home-hero__actions .sony-quiet-link {
+    color: rgba(239, 245, 255, 0.9);
+    text-decoration-color: rgba(239, 245, 255, 0.46);
+}
+
+body[data-public-shell-version='v5']
+    .sony-home-hero__actions
+    .sony-quiet-link:is(:hover, :focus-visible) {
+    color: #ffffff;
+    text-decoration-color: currentColor;
+}
+
+body[data-public-shell-version='v5'] .sony-home-booking__actions .sony-quiet-link {
+    color: #111620;
+    text-decoration-color: rgba(17, 22, 32, 0.38);
+}
+
+body[data-public-shell-version='v5']
+    .sony-home-booking__actions
+    .sony-quiet-link:is(:hover, :focus-visible) {
+    color: #0a0a0a;
+    text-decoration-color: currentColor;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family__head {
+    align-items: flex-start;
+}
+
+body[data-public-shell-version='v5'] .sony-hub-family__count {
+    margin: 0;
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #4f5562;
+}
+
+/* FE-V5-P16: editorial labels + link affordance parity */
+body[data-public-shell-version='v5'] .sony-home-pricing__policy-note {
+    margin: 0;
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4f5562;
+}
+
+body[data-public-shell-version='v5'] .public-link-arrow,
+body[data-public-shell-version='v5'] .sony-quiet-link {
+    font-size: 0.82rem;
+    font-weight: 560;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .public-link-arrow {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.28em;
+}
+
+@media (max-width: 900px) {
+    body[data-public-shell-version='v5']
+        .sony-home-paths__grid
+        article:nth-child(n + 3)
+        .public-link-arrow {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-public-shell-version='v5'] .sony-home-hero,
+    body[data-public-shell-version='v5'] .sony-hub-hero,
+    body[data-public-shell-version='v5'] .sony-service-hero,
+    body[data-public-shell-version='v5'] .sony-tele-hero {
+        animation: none !important;
+    }
+}
+
+/* FE-V5-P17: home hero carousel controls + accessibility */
+body[data-public-shell-version='v5'] .sony-home-stage.hero-stage {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 290px;
+    gap: 16px;
+    align-items: stretch;
+    margin-top: 24px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__viewport {
+    min-height: 700px;
+    border-radius: 24px;
+    border: 1px solid rgba(236, 243, 255, 0.24);
+    background: #07090d;
+    box-shadow: 0 24px 54px rgba(7, 9, 13, 0.34);
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__slide {
+    transition: opacity 420ms ease;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__slide img {
+    min-height: 700px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__overlay {
+    padding: clamp(28px, 4vw, 44px);
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__overlay h1,
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__overlay h2 {
+    max-width: 12.5ch;
+    margin: 12px 0 16px;
+    font-size: clamp(2.48rem, 5vw, 4.22rem);
+    line-height: 0.9;
+    letter-spacing: -0.056em;
+}
+
+body[data-public-shell-version='v5'] .sony-home-paths .sony-home-head > p,
+body[data-public-shell-version='v5'] .sony-home-authority .sony-home-head > p,
+body[data-public-shell-version='v5'] .sony-home-pricing .sony-home-head > p,
+body[data-public-shell-version='v5'] .sony-home-booking > div:first-child > p:first-child {
+    color: #4f5562;
+}
+
+body[data-public-shell-version='v5'] .sony-home-booking > div:first-child > p {
+    color: #2e4058;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__actions {
+    align-items: center;
+    gap: 12px 18px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__actions .sony-quiet-link {
+    color: rgba(239, 245, 255, 0.9);
+    text-decoration-color: rgba(239, 245, 255, 0.46);
+}
+
+body[data-public-shell-version='v5']
+    .sony-home-stage
+    .hero-stage__actions
+    .sony-quiet-link:is(:hover, :focus-visible) {
+    color: #ffffff;
+    text-decoration-color: currentColor;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__rail {
+    align-content: start;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__dot {
+    cursor: pointer;
+    min-height: 104px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__dot span {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__dot strong {
+    font-size: 1rem;
+    line-height: 1.28;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__controls {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__control {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 22, 32, 0.2);
+    background: #ffffff;
+    color: #111620;
+    font-size: 0.73rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        border-color 180ms ease,
+        color 180ms ease,
+        background-color 180ms ease;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__control:hover {
+    border-color: rgba(17, 22, 32, 0.4);
+}
+
+body[data-public-shell-version='v5']
+    .sony-home-stage
+    .hero-stage__control[data-stage-state='paused'] {
+    background: #0b0d12;
+    border-color: #0b0d12;
+    color: #f7f8fb;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__control:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__control:focus-visible,
+body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__dot:focus-visible {
+    outline: 2px solid #2d5bff;
+    outline-offset: 2px;
+}
+
+@media (max-width: 1120px) {
+    body[data-public-shell-version='v5'] .sony-home-stage.hero-stage {
+        grid-template-columns: 1fr;
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__viewport,
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__slide img {
+        min-height: 560px;
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__rail {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__controls {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 760px) {
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__viewport,
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__slide img {
+        min-height: 480px;
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__overlay {
+        padding: 24px;
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__overlay h1,
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__overlay h2 {
+        font-size: clamp(2.2rem, 10.4vw, 3.2rem);
+    }
+
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__rail {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__slide,
+    body[data-public-shell-version='v5'] .sony-home-stage .hero-stage__control {
+        transition: none !important;
+    }
+}

@@ -1,43 +1,65 @@
-# Runbook 24/7 de Orquestación de Agentes
+# Runbook 24/7 de Orquestacion de Agentes
 
 Fecha base: 2026-03-03
-Fuente canónica: `AGENTS.md`
+Fuente canonica: `AGENTS.md`
 
 ## Objetivo
 
-Operar el sistema `codex_backend_ops + codex_frontend + CI` sin solapes y con publicación rápida a `main` mediante checkpoints validados.
+Operar el sistema en modo `codex-only` con dos lanes humanos activos:
 
-## Flujos operativos
+- `codex_backend_ops`
+- `codex_frontend`
 
-- `agent-intake.yml`
-    - workflow manual de mantenimiento `codex-only`
-    - ejecuta `intake`, `score`, `stale --strict`, `conflicts --strict`, `board doctor`, `codex-check`, `jobs status`, `validate-agent-governance`
-- `agent-governance.yml`
-    - valida contratos y bloquea incoherencias críticas
+`ci` queda como validador. `jules`, `kimi` y `claude` quedan retirados para trabajo activo.
 
-## Publicación rápida
+## Flujos automaticos
 
-1. `node agent-orchestrator.js codex start <CDX-ID> --block <Cx|Fx> --expect-rev <rev>`
-2. implementar cambios dentro del scope reservado
-3. `node agent-orchestrator.js publish checkpoint <CDX-ID> --summary "..." --expect-rev <rev> --json`
-4. confirmar que `jobs verify public_main_sync --json` y `api.php?resource=health` reflejan el commit desplegado
-5. cerrar tarea con evidencia
+- `agent-intake.yml`: cada 15 min.
+    - Ejecuta `intake -> score -> stale --strict -> conflicts --strict -> board doctor -> codex-check -> jobs status`.
+- `agent-governance.yml`: push/PR/manual.
+    - Valida contratos, policy, mirror Codex y jobs tracked.
+- `public_main_sync`:
+    - Cron externo productivo `* * * * *`
+    - `job_id=8d31e299-7e57-4959-80b5-aaa2d73e9674`
+    - status runtime: `/var/lib/pielarmonia/public-sync-status.json`
 
-## Comandos de guardia
+## Operacion diaria
 
-```bash
-node agent-orchestrator.js status --explain-red
-node agent-orchestrator.js conflicts --strict
-node agent-orchestrator.js board doctor --json
-node agent-orchestrator.js codex-check --json
-node agent-orchestrator.js jobs status --json
-node agent-orchestrator.js jobs verify public_main_sync --json
-php bin/validate-agent-governance.php
-```
+1. Revisar salud:
+    - `node agent-orchestrator.js status --json --explain-red`
+    - `node agent-orchestrator.js board doctor --json`
+    - `node agent-orchestrator.js jobs verify public_main_sync --json`
+2. Reservar trabajo:
+    - `node agent-orchestrator.js codex start <CDX-ID> --block <BLOCK> --expect-rev <n>`
+3. Implementar y validar gates por superficie.
+4. Publicar checkpoint:
+    - `node agent-orchestrator.js publish checkpoint <CDX-ID> --summary "..." --expect-rev <n> --json`
+5. Confirmar producción:
+    - `curl -s https://pielarmonia.com/api.php?resource=health`
 
-## Criterios de salud diaria
+## Guardrails
 
-- No hay conflictos `blocking`.
-- No hay tareas activas con executor retirado.
-- `public_main_sync` está configurado y verificable en producción.
-- Cada checkpoint publicado queda confirmado por `health.checks.publicSync.deployedCommit`.
+- No crear tareas activas con `executor=jules|kimi|claude`.
+- No usar `dispatch --agent jules` ni `dispatch --agent kimi`.
+- `JULES_TASKS.md` y `KIMI_TASKS.md` quedan como tombstones historicos.
+- `public_main_sync` debe permanecer `healthy=true` y `ageSeconds <= 120`.
+
+## SLA y escalamiento
+
+1. Si `stale --strict` falla por señales criticas sin tarea activa:
+    - correr `intake --strict`
+    - crear/escalar a `codex`
+2. Si `conflicts --strict` falla:
+    - resolver con `handoffs create/close` o replanificar archivos
+3. Si `board doctor` reporta lease expirado o heartbeat stale:
+    - refrescar con `leases heartbeat <task_id> --ttl-hours 4 --expect-rev <n> --json`
+4. Si `jobs verify public_main_sync --json` falla:
+    - revisar cron VPS, status file y `health`
+
+## Evidencia
+
+- Board canonico: `AGENT_BOARD.yaml`
+- Handoffs: `AGENT_HANDOFFS.yaml`
+- Jobs tracked: `AGENT_JOBS.yaml`
+- Evidencias por tarea: `verification/agent-runs/<task_id>.md`
+- Eventos de publish: `verification/agent-publish-events.jsonl`

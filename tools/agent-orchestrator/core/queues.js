@@ -43,90 +43,26 @@ function formatOptionalMetaLine(key, rawValue) {
     return value ? `${key}: ${value}` : `${key}:`;
 }
 
+function renderRetiredQueueTombstone() {
+    return [
+        '# Retired Derived Queue',
+        '',
+        'Este archivo queda preservado solo por compatibilidad historica.',
+        'Desde 2026-03-03 el orquestador opera en modo codex-only y ya no genera ni sincroniza esta cola.',
+        '',
+    ].join('\n');
+}
+
 function renderQueueFile(executor, tasks, existingMeta) {
-    const header =
-        executor === 'jules'
-            ? '# JULES_TASKS.md - Cola derivada desde AGENT_BOARD.yaml'
-            : '# KIMI_TASKS.md - Cola derivada desde AGENT_BOARD.yaml';
-    const runnerHint =
-        executor === 'jules'
-            ? 'JULES_API_KEY=xxx node jules-dispatch.js dispatch'
-            : 'node kimi-run.js --dispatch';
-    const validStatuses =
-        executor === 'jules'
-            ? 'pending | dispatched | done | failed'
-            : 'pending | running | done | failed';
-
-    const lines = [];
-    lines.push(header);
-    lines.push('');
-    lines.push('> Archivo generado por `node agent-orchestrator.js sync`.');
-    lines.push('> No editar manualmente; los cambios se sobrescriben.');
-    lines.push(`> Ejecutar cola: \`${runnerHint}\``);
-    lines.push('');
-    lines.push('---');
-    lines.push('');
-    lines.push('## Formato de tarea');
-    lines.push('');
-    lines.push('```');
-    lines.push('<!-- TASK');
-    lines.push(`status: ${validStatuses}`);
-    lines.push('task_id: AG-XXX');
-    lines.push('risk: low|medium|high');
-    lines.push('scope: docs|frontend|backend|platform|security|ops');
-    lines.push('files: path1,path2');
-    lines.push('acceptance_ref: verification/agent-runs/AG-XXX.md');
-    lines.push('dispatched_by: agent-orchestrator');
-    if (executor === 'jules') {
-        lines.push('session:');
-        lines.push('dispatched:');
-    }
-    lines.push('-->');
-    lines.push('### Titulo');
-    lines.push('');
-    lines.push('Prompt...');
-    lines.push('');
-    lines.push('<!-- /TASK -->');
-    lines.push('```');
-    lines.push('');
-    lines.push('---');
-    lines.push('');
-    lines.push('## Tareas');
-    lines.push('');
-
-    for (const task of tasks) {
-        const meta = existingMeta.get(task.id) || {};
-        const queueStatus = boardToQueueStatus(task.status, executor);
-        const files = Array.isArray(task.files) ? task.files.join(',') : '';
-        const acceptanceRef =
-            task.acceptance_ref || `verification/agent-runs/${task.id}.md`;
-
-        lines.push('<!-- TASK');
-        lines.push(`status: ${queueStatus}`);
-        lines.push(`task_id: ${task.id}`);
-        lines.push(`risk: ${task.risk || 'medium'}`);
-        lines.push(`scope: ${task.scope || 'general'}`);
-        lines.push(`files: ${files}`);
-        lines.push(`acceptance_ref: ${acceptanceRef}`);
-        lines.push('dispatched_by: agent-orchestrator');
-        if (executor === 'jules') {
-            lines.push(formatOptionalMetaLine('session', meta.session));
-            lines.push(formatOptionalMetaLine('dispatched', meta.dispatched));
-        }
-        lines.push('-->');
-        lines.push(`### ${task.title}`);
-        lines.push('');
-        lines.push(task.prompt || task.title);
-        lines.push('');
-        lines.push('<!-- /TASK -->');
-        lines.push('');
-    }
-
-    return `${lines.join('\n').trimEnd()}\n`;
+    void executor;
+    void tasks;
+    void existingMeta;
+    return renderRetiredQueueTombstone();
 }
 
 module.exports = {
     parseTaskMetaMap,
     boardToQueueStatus,
+    renderRetiredQueueTombstone,
     renderQueueFile,
 };

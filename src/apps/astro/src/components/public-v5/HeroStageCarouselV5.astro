@@ -1,0 +1,246 @@
+---
+import ResponsiveMediaImageV5 from './ResponsiveMediaImageV5.astro';
+
+const {
+    slides = [],
+    locale = 'es',
+    bookingHref = locale === 'en' ? '/en/services/#v5-booking' : '/es/servicios/#v5-booking',
+    serviceHubHref = locale === 'en' ? '/en/services/' : '/es/servicios/',
+} = Astro.props;
+
+function normalizeHref(value, fallback) {
+    const href = String(value || '').trim();
+    if (!href) return fallback;
+    if (href === '#citas' || href === '#v5-booking') return bookingHref;
+    return href;
+}
+
+function stageSurface(id, action) {
+    const stageId = String(id || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    return `stage_${stageId || 'slide'}_${action}`;
+}
+
+const normalizedSlides = Array.isArray(slides)
+    ? slides
+          .filter((slide) => slide && typeof slide === 'object')
+          .map((slide, index) => {
+              const primary = slide?.primary || {};
+              const secondary = slide?.secondary || {};
+              const primaryHref = normalizeHref(primary.href, bookingHref);
+              const secondaryHref = normalizeHref(secondary.href, serviceHubHref);
+              return {
+                  id: slide.id || `home-stage-${index + 1}`,
+                  eyebrow:
+                      slide.eyebrow ||
+                      (locale === 'en' ? 'Clinical route' : 'Ruta clinica'),
+                  title:
+                      slide.title ||
+                      (locale === 'en'
+                          ? 'Clinical dermatology with clear decisions.'
+                          : 'Dermatologia clinica con decisiones claras.'),
+                  deck:
+                      slide.deck ||
+                      (locale === 'en'
+                          ? 'Diagnosis, evidence and continuity in a single flow.'
+                          : 'Diagnostico, evidencia y continuidad en un solo flujo.'),
+                  tone: slide.tone || 'ink',
+                  stats: Array.isArray(slide.stats) ? slide.stats.slice(0, 3) : [],
+                  mediaMeta: slide.mediaMeta || slide.media || null,
+                  media: slide.media || '',
+                  primary: {
+                      href: primaryHref,
+                      label:
+                          primary.label ||
+                          (locale === 'en' ? 'Book assessment' : 'Reservar valoracion'),
+                      target: primary.target || 'booking',
+                  },
+                  secondary: secondaryHref
+                      ? {
+                            href: secondaryHref,
+                            label:
+                                secondary.label ||
+                                (locale === 'en' ? 'View services' : 'Ver servicios'),
+                            target: secondary.target || 'service_hub',
+                        }
+                      : null,
+              };
+          })
+    : [];
+
+const fallbackSlides = [
+    {
+        id: 'home-stage-1',
+        eyebrow: locale === 'en' ? 'Medical diagnosis' : 'Diagnostico medico',
+        title:
+            locale === 'en'
+                ? 'The right first decision starts with a cleaner clinical reading.'
+                : 'La primera decision correcta empieza con una lectura clinica limpia.',
+        deck:
+            locale === 'en'
+                ? 'Diagnosis, evidence and continuity in a single flow.'
+                : 'Diagnostico, evidencia y continuidad en un solo flujo.',
+        tone: 'ink',
+        stats:
+            locale === 'en'
+                ? ['Clinical route', 'Medical priority', 'Continuity']
+                : ['Ruta clinica', 'Prioridad medica', 'Continuidad'],
+        mediaMeta: null,
+        media: '/images/optimized/showcase-diagnostic.webp',
+        primary: {
+            href: bookingHref,
+            label: locale === 'en' ? 'Book assessment' : 'Reservar valoracion',
+            target: 'booking',
+        },
+        secondary: {
+            href: serviceHubHref,
+            label: locale === 'en' ? 'View services' : 'Ver servicios',
+            target: 'service_hub',
+        },
+    },
+];
+
+const stageSlides = normalizedSlides.length > 0 ? normalizedSlides : fallbackSlides;
+const stageImageSizes = '(max-width: 1120px) 100vw, 50vw';
+const controlsLabel =
+    locale === 'en' ? 'Hero stage controls' : 'Controles del carrusel inicial';
+const prevLabel = locale === 'en' ? 'Previous slide' : 'Slide anterior';
+const nextLabel = locale === 'en' ? 'Next slide' : 'Siguiente slide';
+const pauseLabel = locale === 'en' ? 'Pause autoplay' : 'Pausar reproduccion';
+const playLabel = locale === 'en' ? 'Resume autoplay' : 'Reanudar reproduccion';
+---
+
+<section
+    class="hero-stage sony-home-stage"
+    data-stage-carousel
+    data-stage-autoplay-ms="7000"
+    data-stage-state="playing"
+    data-template-block="home_hero_v5"
+>
+    <div class="hero-stage__viewport">
+        {
+            stageSlides.map((slide, index) => (
+                <article
+                    class:list={[
+                        'hero-stage__slide',
+                        `hero-stage__slide--${slide.tone || 'ink'}`,
+                        index === 0 && 'is-active',
+                    ]}
+                    data-stage-slide
+                    data-stage-tone={slide.tone || 'ink'}
+                    aria-hidden={index === 0 ? 'false' : 'true'}
+                    hidden={index !== 0}
+                    inert={index !== 0}
+                >
+                    <ResponsiveMediaImageV5
+                        media={slide.mediaMeta || slide.media}
+                        fallbackSrc={slide.media || '/images/optimized/showcase-diagnostic.webp'}
+                        fallbackAlt={slide.title}
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                        fetchpriority={index === 0 ? 'high' : 'low'}
+                        sizes={stageImageSizes}
+                    />
+                    <div class="hero-stage__overlay">
+                        <p class="hero-stage__category">{slide.eyebrow}</p>
+                        {index === 0 ? <h1>{slide.title}</h1> : <h2>{slide.title}</h2>}
+                        <p>{slide.deck}</p>
+                        {
+                            slide.stats.length ? (
+                                <ul
+                                    class="hero-stage__stats"
+                                    aria-label={
+                                        locale === 'en'
+                                            ? 'Stage signals'
+                                            : 'Senales de stage'
+                                    }
+                                >
+                                    {slide.stats.map((item) => <li>{item}</li>)}
+                                </ul>
+                            ) : null
+                        }
+                        <div class="hero-stage__actions">
+                            <a
+                                href={slide.primary.href}
+                                class="hero-stage__cta hero-stage__cta--primary"
+                                data-analytics-event="open_public_cta"
+                                data-entry-surface={stageSurface(slide.id, 'primary')}
+                                data-cta-target={slide.primary.target}
+                            >
+                                {slide.primary.label}
+                            </a>
+                            {
+                                slide.secondary?.href ? (
+                                    <a
+                                        href={slide.secondary.href}
+                                        class="sony-quiet-link"
+                                        data-analytics-event="open_public_cta"
+                                        data-entry-surface={stageSurface(slide.id, 'secondary')}
+                                        data-cta-target={slide.secondary.target}
+                                    >
+                                        {slide.secondary.label}
+                                    </a>
+                                ) : null
+                            }
+                        </div>
+                    </div>
+                </article>
+            ))
+        }
+    </div>
+    <div
+        class="hero-stage__rail"
+        aria-label={
+            locale === 'en' ? 'Featured stories' : 'Historias destacadas'
+        }
+    >
+        {
+            stageSlides.map((slide, index) => (
+                <button
+                    type="button"
+                    class:list={['hero-stage__dot', index === 0 && 'is-active']}
+                    data-stage-trigger
+                    data-index={index}
+                    aria-current={index === 0 ? 'true' : undefined}
+                    aria-label={`${slide.eyebrow}. ${slide.title}`}
+                >
+                    <span>{slide.eyebrow}</span>
+                    <strong>{slide.title}</strong>
+                </button>
+            ))
+        }
+    </div>
+    <div class="hero-stage__controls" role="group" aria-label={controlsLabel}>
+        <button
+            type="button"
+            class="hero-stage__control"
+            data-stage-prev
+            aria-label={prevLabel}
+        >
+            {locale === 'en' ? 'Prev' : 'Anterior'}
+        </button>
+        <button
+            type="button"
+            class="hero-stage__control"
+            data-stage-next
+            aria-label={nextLabel}
+        >
+            {locale === 'en' ? 'Next' : 'Siguiente'}
+        </button>
+        <button
+            type="button"
+            class="hero-stage__control hero-stage__control--toggle"
+            data-stage-toggle
+            data-stage-state="playing"
+            aria-pressed="false"
+            aria-label={pauseLabel}
+            data-stage-label-playing={pauseLabel}
+            data-stage-label-paused={playLabel}
+            data-stage-text-playing={locale === 'en' ? 'Pause' : 'Pausar'}
+            data-stage-text-paused={locale === 'en' ? 'Play' : 'Reanudar'}
+        >
+            {locale === 'en' ? 'Pause' : 'Pausar'}
+        </button>
+    </div>
+</section>

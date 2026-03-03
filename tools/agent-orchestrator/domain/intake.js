@@ -1,5 +1,7 @@
 'use strict';
 
+const taskGuards = require('./task-guards');
+
 function normalizeText(value) {
     return String(value || '').trim();
 }
@@ -109,7 +111,9 @@ function severityToPriority(severity) {
 function computePriorityScore(signal, options = {}) {
     const nowTs = Number(options.nowTs || Date.now());
     const base = severityToPriority(signal.severity || inferSeverity(signal));
-    const updatedTs = Date.parse(String(signal.updated_at || signal.detected_at || ''));
+    const updatedTs = Date.parse(
+        String(signal.updated_at || signal.detected_at || '')
+    );
     if (!Number.isFinite(updatedTs)) return base;
     const ageHours = Math.max(0, Math.round((nowTs - updatedTs) / 3600000));
     if (ageHours >= 24) return Math.min(100, base + 12);
@@ -119,7 +123,9 @@ function computePriorityScore(signal, options = {}) {
 
 function computeSlaDueAt(signal, options = {}) {
     const nowTs = Number(options.nowTs || Date.now());
-    const severity = String(signal.severity || inferSeverity(signal)).toLowerCase();
+    const severity = String(
+        signal.severity || inferSeverity(signal)
+    ).toLowerCase();
     let hours = 48;
     if (severity === 'critical') hours = 4;
     else if (severity === 'high') hours = 12;
@@ -175,33 +181,109 @@ function mapWorkflowSlugToFile(slugRaw) {
     if (slug.startsWith('post-deploy-gate')) {
         return '.github/workflows/post-deploy-gate.yml';
     }
+    if (slug.startsWith('post-deploy-fast')) {
+        return '.github/workflows/post-deploy-fast.yml';
+    }
     if (slug.startsWith('repair-git-sync')) {
         return '.github/workflows/repair-git-sync.yml';
     }
     if (slug === 'ci') return '.github/workflows/ci.yml';
-    if (slug === 'agent-governance') return '.github/workflows/agent-governance.yml';
+    if (slug === 'agent-governance')
+        return '.github/workflows/agent-governance.yml';
     if (slug === 'agent-intake') return '.github/workflows/agent-intake.yml';
-    if (slug === 'agent-autopilot') return '.github/workflows/agent-autopilot.yml';
-    if (slug === 'kimi-autopilot' || slug === 'agent-kimi-autopilot') {
-        return '.github/workflows/agent-kimi-autopilot.yml';
-    }
+    if (slug === 'deploy-hosting')
+        return '.github/workflows/deploy-hosting.yml';
+    if (slug === 'deploy-staging')
+        return '.github/workflows/deploy-staging.yml';
     if (
-        slug === 'production-monitor' ||
-        slug === 'prod-monitor'
+        slug === 'deploy-frontend-selfhosted' ||
+        slug === 'deploy-frontend-self-hosted'
     ) {
+        return '.github/workflows/deploy-frontend-selfhosted.yml';
+    }
+    if (slug === 'production-monitor' || slug === 'prod-monitor') {
         return '.github/workflows/prod-monitor.yml';
     }
-    if (slug === 'jules-pr-automation' || slug === 'jules-pr') {
-        return '.github/workflows/jules-pr.yml';
+    if (slug === 'frontend-premium-qa') {
+        return '.github/workflows/frontend-premium-qa.yml';
     }
-    if (slug === 'calendar-write-smoke' || slug === 'calendar-write-smoke-manual') {
+    if (slug === 'nightly-stability') {
+        return '.github/workflows/nightly-stability.yml';
+    }
+    if (slug === 'weekly-kpi-report' || slug === 'weekly-kpi') {
+        return '.github/workflows/weekly-kpi-report.yml';
+    }
+    if (slug === 'sentry-events-verify' || slug === 'verify-sentry-events') {
+        return '.github/workflows/sentry-events-verify.yml';
+    }
+    if (
+        slug === 'calendar-write-smoke' ||
+        slug === 'calendar-write-smoke-manual'
+    ) {
         return '.github/workflows/calendar-write-smoke.yml';
     }
     return '';
 }
 
+function inferWorkflowFileFromCorpus(corpusRaw) {
+    const corpus = normalizeWorkflowSlug(corpusRaw);
+    if (!corpus) return '';
+
+    if (corpus.includes('deploy-hosting')) {
+        return '.github/workflows/deploy-hosting.yml';
+    }
+    if (corpus.includes('deploy-staging')) {
+        return '.github/workflows/deploy-staging.yml';
+    }
+    if (corpus.includes('deploy-frontend-selfhosted')) {
+        return '.github/workflows/deploy-frontend-selfhosted.yml';
+    }
+    if (corpus.includes('frontend-premium-qa')) {
+        return '.github/workflows/frontend-premium-qa.yml';
+    }
+    if (corpus.includes('nightly-stability')) {
+        return '.github/workflows/nightly-stability.yml';
+    }
+    if (corpus.includes('weekly-kpi-report') || corpus.includes('weekly-kpi')) {
+        return '.github/workflows/weekly-kpi-report.yml';
+    }
+    if (
+        corpus.includes('sentry-events-verify') ||
+        corpus.includes('verify-sentry-events')
+    ) {
+        return '.github/workflows/sentry-events-verify.yml';
+    }
+    if (corpus.includes('post-deploy-fast')) {
+        return '.github/workflows/post-deploy-fast.yml';
+    }
+    if (corpus.includes('post-deploy-gate')) {
+        return '.github/workflows/post-deploy-gate.yml';
+    }
+    if (corpus.includes('repair-git-sync')) {
+        return '.github/workflows/repair-git-sync.yml';
+    }
+    if (corpus.includes('calendar-write-smoke')) {
+        return '.github/workflows/calendar-write-smoke.yml';
+    }
+    if (corpus.includes('agent-governance')) {
+        return '.github/workflows/agent-governance.yml';
+    }
+    if (corpus.includes('agent-intake')) {
+        return '.github/workflows/agent-intake.yml';
+    }
+    if (
+        corpus.includes('prod-monitor') ||
+        corpus.includes('production-monitor')
+    ) {
+        return '.github/workflows/prod-monitor.yml';
+    }
+    return '';
+}
+
 function inferWorkflowFileFromSignal(signal) {
-    const sourceRef = String(signal?.source_ref || signal?.sourceRef || '').trim();
+    const sourceRef = String(
+        signal?.source_ref || signal?.sourceRef || ''
+    ).trim();
     const labels = Array.isArray(signal?.labels) ? signal.labels : [];
     const candidates = [];
 
@@ -224,11 +306,16 @@ function inferWorkflowFileFromSignal(signal) {
 }
 
 function inferFilesFromSignal(signal, scope) {
-    const corpus = `${String(signal?.title || '')} ${Array.isArray(signal?.labels) ? signal.labels.join(' ') : ''}`.toLowerCase();
+    const corpus =
+        `${String(signal?.title || '')} ${Array.isArray(signal?.labels) ? signal.labels.join(' ') : ''}`.toLowerCase();
     if (String(scope || '').toLowerCase() === 'ops') {
         const workflowFile = inferWorkflowFileFromSignal(signal);
         if (workflowFile) {
             return [workflowFile];
+        }
+        const corpusWorkflowFile = inferWorkflowFileFromCorpus(corpus);
+        if (corpusWorkflowFile) {
+            return [corpusWorkflowFile];
         }
         if (corpus.includes('post-deploy')) {
             return ['.github/workflows/post-deploy-gate.yml'];
@@ -248,20 +335,9 @@ function inferFilesFromSignal(signal, scope) {
 }
 
 function chooseExecutor(signal, scope) {
-    const criticalScope = ['payments', 'auth', 'calendar', 'deploy', 'env', 'security'].includes(
-        String(scope || '').toLowerCase()
-    );
-    if (
-        signal.critical_zone ||
-        String(signal.runtime_impact) === 'high' ||
-        criticalScope
-    ) {
-        return 'codex';
-    }
-    if (String(signal.source || '').toLowerCase() === 'workflow') {
-        return 'jules';
-    }
-    return 'kimi';
+    void signal;
+    void scope;
+    return 'codex';
 }
 
 function nextSignalId(signals) {
@@ -283,9 +359,15 @@ function normalizeSignal(raw, options = {}) {
     const nowIso = String(options.nowIso || new Date().toISOString());
     const source = normalizeText(raw.source || 'manual').toLowerCase();
     const sourceRef = normalizeText(raw.source_ref || raw.sourceRef || '');
-    const title = normalizeText(raw.title || raw.name || sourceRef || 'Untitled signal');
-    const detectedAt = normalizeText(raw.detected_at || raw.created_at || nowIso);
-    const updatedAt = normalizeText(raw.updated_at || raw.updatedAt || detectedAt);
+    const title = normalizeText(
+        raw.title || raw.name || sourceRef || 'Untitled signal'
+    );
+    const detectedAt = normalizeText(
+        raw.detected_at || raw.created_at || nowIso
+    );
+    const updatedAt = normalizeText(
+        raw.updated_at || raw.updatedAt || detectedAt
+    );
     const labels = Array.isArray(raw.labels)
         ? raw.labels.map((item) => normalizeText(item)).filter(Boolean)
         : [];
@@ -304,7 +386,9 @@ function normalizeSignal(raw, options = {}) {
             )
         ) ||
         title.toLowerCase().includes('[alerta prod]');
-    const severity = normalizeText(raw.severity || inferSeverity({ ...raw, title })).toLowerCase();
+    const severity = normalizeText(
+        raw.severity || inferSeverity({ ...raw, title })
+    ).toLowerCase();
     const status = normalizeText(raw.status || 'open').toLowerCase();
 
     return {
@@ -349,7 +433,8 @@ function mergeSignals(existingSignals, incomingSignals, options = {}) {
         existing.severity = normalized.severity || existing.severity;
         existing.critical = normalized.critical || existing.critical;
         existing.status = normalized.status || existing.status;
-        existing.runtime_impact = normalized.runtime_impact || existing.runtime_impact;
+        existing.runtime_impact =
+            normalized.runtime_impact || existing.runtime_impact;
         existing.url = normalized.url || existing.url;
         existing.updated_at = normalized.updated_at || existing.updated_at;
         existing.labels = Array.from(
@@ -366,13 +451,23 @@ function buildTaskFromSignal(signal, options = {}) {
     const scope = normalizePathScopeFromText(
         `${signal.title} ${Array.isArray(signal.labels) ? signal.labels.join(' ') : ''}`
     );
-    const severity = String(signal.severity || inferSeverity(signal)).toLowerCase();
-    const risk = severity === 'critical' || severity === 'high' ? 'high' : 'medium';
-    const priorityScore = computePriorityScore({ ...signal, severity }, options);
-    const runtimeImpact = String(signal.runtime_impact || inferRuntimeImpact(signal.title)).toLowerCase();
+    const severity = String(
+        signal.severity || inferSeverity(signal)
+    ).toLowerCase();
+    const risk =
+        severity === 'critical' || severity === 'high' ? 'high' : 'medium';
+    const priorityScore = computePriorityScore(
+        { ...signal, severity },
+        options
+    );
+    const runtimeImpact = String(
+        signal.runtime_impact || inferRuntimeImpact(signal.title)
+    ).toLowerCase();
     const criticalZone = Boolean(signal.critical) || runtimeImpact === 'high';
     const owner = normalizeText(options.owner || 'orchestrator');
-    const sourceRef = normalizeText(signal.source_ref || signal.sourceRef || '');
+    const sourceRef = normalizeText(
+        signal.source_ref || signal.sourceRef || ''
+    );
     const executor = chooseExecutor(
         {
             source: signal.source,
@@ -391,7 +486,7 @@ function buildTaskFromSignal(signal, options = {}) {
             ? 'Resolver fallo workflow'
             : 'Resolver alerta';
 
-    return {
+    const task = {
         id: '',
         title: `${titlePrefix}: ${signal.title}`.slice(0, 160),
         owner,
@@ -417,6 +512,7 @@ function buildTaskFromSignal(signal, options = {}) {
         created_at: String(nowIso).slice(0, 10),
         updated_at: String(nowIso).slice(0, 10),
     };
+    return taskGuards.ensureTaskDualCodexDefaults(task);
 }
 
 function normalizeTaskForScoring(task, options = {}) {
@@ -439,7 +535,8 @@ function normalizeTaskForScoring(task, options = {}) {
         );
     }
     const attempts = Number.parseInt(String(task.attempts || '0'), 10);
-    taskNext.attempts = Number.isFinite(attempts) && attempts >= 0 ? attempts : 0;
+    taskNext.attempts =
+        Number.isFinite(attempts) && attempts >= 0 ? attempts : 0;
     if (taskNext.attempts >= 2) {
         taskNext.executor = 'codex';
         if (!String(taskNext.blocked_reason || '').trim()) {

@@ -41,8 +41,10 @@ test('agent-board-weekly-snapshot sincroniza main con sync-main-safe al commitea
     assert.equal(raw.includes('node bin/sync-main-safe.js'), true);
     assert.equal(
         raw.includes(
-            'git diff --quiet -- AGENT_BOARD.yaml JULES_TASKS.md KIMI_TASKS.md verification/board-snapshots'
+            'git diff --quiet -- AGENT_BOARD.yaml verification/board-snapshots'
         ),
         true
     );
+    assert.equal(raw.includes('JULES_TASKS.md'), false);
+    assert.equal(raw.includes('KIMI_TASKS.md'), false);
 });

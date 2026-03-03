@@ -1,0 +1,50 @@
+{
+    "version": "2026.03-v5",
+    "updated_at": "2026-03-02",
+    "theme": "sony-dermatology",
+    "color": {
+        "bg": "#f2f4f7",
+        "ink": "#0a0f16",
+        "surface": "#ffffff",
+        "surface_alt": "#e8edf3",
+        "line": "rgba(10, 15, 22, 0.12)",
+        "muted": "#5f6d80",
+        "accent": "#0d3cff",
+        "accent_soft": "rgba(13, 60, 255, 0.12)",
+        "tone_ink": "#0a0f16",
+        "tone_silver": "#eef1f5",
+        "tone_porcelain": "#f8fafc"
+    },
+    "typography": {
+        "font_ui": "'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+        "font_editorial": "'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+        "display_tracking": "-0.055em",
+        "caps_tracking": "0.2em"
+    },
+    "spacing": {
+        "section_y": "44px",
+        "section_y_mobile": "28px",
+        "container_x": "24px",
+        "grid_gap": "18px"
+    },
+    "radius": {
+        "lg": "24px",
+        "md": "16px",
+        "sm": "10px",
+        "pill": "999px"
+    },
+    "shadow": {
+        "soft": "0 20px 70px rgba(10, 15, 22, 0.1)",
+        "card": "0 16px 44px rgba(10, 15, 22, 0.08)"
+    },
+    "motion": {
+        "duration_fast_ms": 160,
+        "duration_base_ms": 260,
+        "duration_slow_ms": 460,
+        "easing_standard": "cubic-bezier(0.2, 0.8, 0.2, 1)"
+    },
+    "density": {
+        "home_max_primary_blocks": 6,
+        "home_max_primary_cta_per_block": 2
+    }
+}

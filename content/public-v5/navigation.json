@@ -1,0 +1,306 @@
+{
+    "es": {
+        "brand": {
+            "eyebrow": "Dermatologia de precision",
+            "line1": "Piel en",
+            "line2": "Armonia"
+        },
+        "labels": {
+            "primaryNav": "Principal",
+            "home": "Inicio",
+            "services": "Servicios",
+            "telemedicine": "Telemedicina",
+            "legal": "Legal",
+            "book": "Reservar",
+            "openCatalogue": "Abrir catalogo",
+            "featuredServices": "Rutas destacadas",
+            "menu": "Menu",
+            "closeMenu": "Cerrar menu"
+        },
+        "links": [
+            {
+                "id": "home",
+                "href": "/es/",
+                "label": "Inicio"
+            },
+            {
+                "id": "services",
+                "href": "/es/servicios/",
+                "label": "Servicios",
+                "kind": "mega"
+            },
+            {
+                "id": "telemedicine",
+                "href": "/es/telemedicina/",
+                "label": "Telemedicina"
+            },
+            {
+                "id": "legal",
+                "href": "/es/legal/terminos/",
+                "label": "Legal"
+            }
+        ],
+        "mega": {
+            "intro": {
+                "eyebrow": "Sistema clinico",
+                "title": "Todas las rutas en un mapa editorial de decision clinica.",
+                "deck": "Priorice diagnostico, continuidad y booking directo sin ruido comercial.",
+                "href": "/es/servicios/"
+            },
+            "families": [
+                {
+                    "id": "clinical",
+                    "title": "Dermatologia clinica",
+                    "deck": "Lesiones, triage y seguimiento con criterio medico",
+                    "href": "/es/servicios/?category=clinical"
+                },
+                {
+                    "id": "aesthetic",
+                    "title": "Estetica medica",
+                    "deck": "Protocolos de rejuvenecimiento y procedimiento dermatologico",
+                    "href": "/es/servicios/?category=aesthetic"
+                },
+                {
+                    "id": "children",
+                    "title": "Pediatrica",
+                    "deck": "Atencion para ninos y adolescentes con enfoque familiar",
+                    "href": "/es/servicios/?category=children"
+                }
+            ],
+            "groups": [
+                {
+                    "title": "Rutas de entrada",
+                    "items": [
+                        {
+                            "label": "Diagnostico integral",
+                            "href": "/es/servicios/diagnostico-integral/"
+                        },
+                        {
+                            "label": "Acne y rosacea",
+                            "href": "/es/servicios/acne-rosacea/"
+                        },
+                        {
+                            "label": "Cancer de piel",
+                            "href": "/es/servicios/cancer-piel/"
+                        }
+                    ]
+                },
+                {
+                    "title": "Procedimientos",
+                    "items": [
+                        {
+                            "label": "Laser dermatologico",
+                            "href": "/es/servicios/laser-dermatologico/"
+                        },
+                        {
+                            "label": "Peeling quimico",
+                            "href": "/es/servicios/peeling-quimico/"
+                        },
+                        {
+                            "label": "Bioestimuladores",
+                            "href": "/es/servicios/bioestimuladores-colageno/"
+                        }
+                    ]
+                },
+                {
+                    "title": "Modos de atencion",
+                    "items": [
+                        {
+                            "label": "Telemedicina",
+                            "href": "/es/telemedicina/"
+                        },
+                        {
+                            "label": "Reserva directa",
+                            "href": "/es/servicios/#v5-booking"
+                        },
+                        {
+                            "label": "WhatsApp",
+                            "href": "https://wa.me/593982453672"
+                        }
+                    ]
+                }
+            ],
+            "featured": [
+                {
+                    "family": "Diagnostico",
+                    "title": "Lectura clinica y plan de manejo",
+                    "href": "/es/servicios/diagnostico-integral/"
+                },
+                {
+                    "family": "Rejuvenecimiento",
+                    "title": "Protocolo estetico medico",
+                    "href": "/es/servicios/mesoterapia/"
+                }
+            ]
+        },
+        "footer": {
+            "eyebrow": "Experiencia publica",
+            "title": "Piel en Armonia",
+            "deck": "Experiencia publica unificada para diagnostico, tratamiento, telemedicina y reserva con precios claros.",
+            "ctaLabel": "Abrir reserva",
+            "catalogTitle": "Catalogo",
+            "catalogClinical": "Dermatologia clinica",
+            "catalogAesthetic": "Estetica medica",
+            "catalogChildren": "Pediatrica",
+            "careModesTitle": "Modos de atencion",
+            "legalTitle": "Legal",
+            "clinicTitle": "Consultorio",
+            "clinicCity": "Quito, Ecuador",
+            "clinicPhone": "+593 98 786 6885",
+            "clinicHours": "Lun-Vie 09:00-18:00"
+        },
+        "bookingHref": "/es/servicios/#v5-booking"
+    },
+    "en": {
+        "brand": {
+            "eyebrow": "Precision dermatology",
+            "line1": "Piel en",
+            "line2": "Armonia"
+        },
+        "labels": {
+            "primaryNav": "Primary",
+            "home": "Home",
+            "services": "Services",
+            "telemedicine": "Telemedicine",
+            "legal": "Legal",
+            "book": "Book",
+            "openCatalogue": "Open catalogue",
+            "featuredServices": "Featured routes",
+            "menu": "Menu",
+            "closeMenu": "Close menu"
+        },
+        "links": [
+            {
+                "id": "home",
+                "href": "/en/",
+                "label": "Home"
+            },
+            {
+                "id": "services",
+                "href": "/en/services/",
+                "label": "Services",
+                "kind": "mega"
+            },
+            {
+                "id": "telemedicine",
+                "href": "/en/telemedicine/",
+                "label": "Telemedicine"
+            },
+            {
+                "id": "legal",
+                "href": "/en/legal/terms/",
+                "label": "Legal"
+            }
+        ],
+        "mega": {
+            "intro": {
+                "eyebrow": "Clinical system",
+                "title": "All routes in one editorial decision map.",
+                "deck": "Prioritize diagnosis, continuity, and direct booking access with less commercial noise.",
+                "href": "/en/services/"
+            },
+            "families": [
+                {
+                    "id": "clinical",
+                    "title": "Clinical dermatology",
+                    "deck": "Lesions, triage, and follow-up with clinical judgment",
+                    "href": "/en/services/?category=clinical"
+                },
+                {
+                    "id": "aesthetic",
+                    "title": "Medical aesthetics",
+                    "deck": "Rejuvenation and procedural dermatology protocols",
+                    "href": "/en/services/?category=aesthetic"
+                },
+                {
+                    "id": "children",
+                    "title": "Pediatric",
+                    "deck": "Care for children and teens with family guidance",
+                    "href": "/en/services/?category=children"
+                }
+            ],
+            "groups": [
+                {
+                    "title": "Entry routes",
+                    "items": [
+                        {
+                            "label": "Comprehensive diagnosis",
+                            "href": "/en/services/diagnostico-integral/"
+                        },
+                        {
+                            "label": "Acne and rosacea",
+                            "href": "/en/services/acne-rosacea/"
+                        },
+                        {
+                            "label": "Skin cancer",
+                            "href": "/en/services/cancer-piel/"
+                        }
+                    ]
+                },
+                {
+                    "title": "Procedures",
+                    "items": [
+                        {
+                            "label": "Dermatology laser",
+                            "href": "/en/services/laser-dermatologico/"
+                        },
+                        {
+                            "label": "Chemical peeling",
+                            "href": "/en/services/peeling-quimico/"
+                        },
+                        {
+                            "label": "Biostimulators",
+                            "href": "/en/services/bioestimuladores-colageno/"
+                        }
+                    ]
+                },
+                {
+                    "title": "Care modes",
+                    "items": [
+                        {
+                            "label": "Telemedicine",
+                            "href": "/en/telemedicine/"
+                        },
+                        {
+                            "label": "Direct booking",
+                            "href": "/en/services/#v5-booking"
+                        },
+                        {
+                            "label": "WhatsApp",
+                            "href": "https://wa.me/593982453672"
+                        }
+                    ]
+                }
+            ],
+            "featured": [
+                {
+                    "family": "Diagnosis",
+                    "title": "Clinical reading and care plan",
+                    "href": "/en/services/diagnostico-integral/"
+                },
+                {
+                    "family": "Rejuvenation",
+                    "title": "Medical aesthetics protocol",
+                    "href": "/en/services/mesoterapia/"
+                }
+            ]
+        },
+        "footer": {
+            "eyebrow": "Public experience",
+            "title": "Piel en Armonia",
+            "deck": "Unified public experience for diagnosis, treatment, telemedicine, and booking with transparent pricing.",
+            "ctaLabel": "Open booking",
+            "catalogTitle": "Catalogue",
+            "catalogClinical": "Clinical dermatology",
+            "catalogAesthetic": "Medical aesthetics",
+            "catalogChildren": "Pediatric",
+            "careModesTitle": "Care modes",
+            "legalTitle": "Legal",
+            "clinicTitle": "Clinic",
+            "clinicCity": "Quito, Ecuador",
+            "clinicPhone": "+593 98 786 6885",
+            "clinicHours": "Mon-Fri 09:00-18:00"
+        },
+        "bookingHref": "/en/services/#v5-booking"
+    }
+}

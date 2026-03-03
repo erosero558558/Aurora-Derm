@@ -435,11 +435,13 @@ function initBookingCalendarLazyInit() {
     const bookingBtn = document.getElementById('booking-btn');
     wireBookingCalendarLazyLoad(bookingBtn);
 
-    document.querySelectorAll('a[href="#citas"]').forEach(function (button) {
-        if (button.id !== 'booking-btn') {
-            wireBookingCalendarLazyLoad(button);
-        }
-    });
+    document
+        .querySelectorAll('a[href="#v5-booking"], a[href="#citas"]')
+        .forEach(function (button) {
+            if (button.id !== 'booking-btn') {
+                wireBookingCalendarLazyLoad(button);
+            }
+        });
 }
 
 let pendingBookingServiceSelection = '';
@@ -456,7 +458,9 @@ function clearPendingBookingServiceSelection() {
 }
 
 function scrollToBookingSection() {
-    const appointmentSection = document.getElementById('citas');
+    const appointmentSection =
+        document.getElementById('v5-booking') ||
+        document.getElementById('citas');
     if (!appointmentSection) {
         return;
     }
@@ -475,7 +479,9 @@ function applyBookingServiceSelection(value) {
         return false;
     }
 
-    const select = document.getElementById('serviceSelect');
+    const select =
+        document.getElementById('v5-service-select') ||
+        document.getElementById('serviceSelect');
     if (!select) {
         return false;
     }
@@ -748,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const navHeight = nav ? nav.offsetHeight : 0;
         const targetPosition = target.offsetTop - navHeight - 20;
 
-        if (href === '#citas') {
+        if (href === '#v5-booking' || href === '#citas') {
             markBookingViewed(`cta_click_${getHeroVariant()}`);
         }
 

@@ -9,9 +9,17 @@ function a(t, n) {
         : n;
 }
 function i() {
-    return document.getElementById('bookingInlineFeedback');
+    return (
+        document.getElementById('v5-booking-feedback') ||
+        document.getElementById('bookingInlineFeedback')
+    );
 }
-function r(e, t = 'info') {
+function r(e, t) {
+    return (
+        document.getElementById(e) || (t ? document.getElementById(t) : null)
+    );
+}
+function c(e, t = 'info') {
     const n = i();
     if (!n) return;
     const o = 'error' === t || 'success' === t ? t : 'info';
@@ -21,7 +29,7 @@ function r(e, t = 'info') {
         n.setAttribute('aria-live', 'error' === o ? 'assertive' : 'polite'),
         n.classList.toggle('is-hidden', '' === n.textContent));
 }
-function c() {
+function s() {
     const e = i();
     e &&
         ((e.textContent = ''),
@@ -29,19 +37,19 @@ function c() {
         e.setAttribute('role', 'status'),
         e.setAttribute('aria-live', 'polite'));
 }
-function s(e, t) {
+function l(e, t) {
     return e && t ? e.querySelector(`[name="${t}"]`) : null;
 }
-function l(e) {
+function d(e) {
     return e ? e.closest('.form-group') || e.closest('.form-consent') : null;
 }
-function d(e) {
+function u(e) {
     if (!e) return;
     e.setAttribute('aria-invalid', 'true');
-    const t = l(e);
+    const t = d(e);
     t && t.classList.add('has-error');
 }
-function u(e) {
+function m(e) {
     if (e && 'function' == typeof e.focus) {
         try {
             e.focus({ preventScroll: !0 });
@@ -52,7 +60,7 @@ function u(e) {
             e.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
-function m(e) {
+function p(e) {
     const t = String(e || '').trim();
     if ('' === t) return '';
     const n = t.replace(/\D/g, '');
@@ -66,13 +74,13 @@ function m(e) {
               ? `+${t.slice(1).replace(/\D/g, '')}`
               : t;
 }
-function p(e) {
+function g(e) {
     const t = (function (e) {
         return String(e || '').replace(/\D/g, '');
     })(e);
     return t.length >= 7 && t.length <= 15;
 }
-function g(t, a = {}, i = {}) {
+function f(t, a = {}, i = {}) {
     if (!e || 'function' != typeof e.trackEvent || !t) return;
     ((o.started = !0), (o.lastStep = t));
     const r = i && !1 !== i.once;
@@ -83,7 +91,7 @@ function g(t, a = {}, i = {}) {
         'function' == typeof e.setCheckoutStep &&
             e.setCheckoutStep(t, { checkoutEntry: 'booking_form', ...a }));
 }
-function f(t = 'form_exit') {
+function h(t = 'form_exit') {
     e &&
         'function' == typeof e.trackEvent &&
         o.started &&
@@ -98,30 +106,36 @@ function f(t = 'form_exit') {
 }
 ((window.Piel = window.Piel || {}),
     (window.Piel.BookingUi = {
-        init: function n(h) {
-            if (((e = h || e), t)) return { init: n };
-            const v = document.getElementById('serviceSelect'),
-                b = document.getElementById('priceSummary'),
-                y = document.getElementById('subtotalPrice'),
-                X = document.getElementById('ivaPrice'),
-                k = document.getElementById('totalPrice'),
-                _ = document.getElementById('selectedPriceLabel'),
-                E = document.getElementById('selectedPriceRule'),
-                S = document.getElementById('selectedServiceMeta'),
-                L = document.getElementById('selectedPriceDisclaimer'),
-                C = document.querySelector('input[name="date"]'),
-                w = document.querySelector('select[name="time"]'),
-                x = document.querySelector('select[name="doctor"]'),
-                I = document.querySelector('input[name="phone"]'),
-                T = document.getElementById('appointmentForm');
-            if (!(v && b && y && X && k && T)) return { init: n };
-            async function A() {
+        init: function n(v) {
+            if (((e = v || e), t)) return { init: n };
+            const b = r('v5-service-select', 'serviceSelect'),
+                y = document.getElementById('priceSummary'),
+                X = document.getElementById('subtotalPrice'),
+                k = document.getElementById('ivaPrice'),
+                _ = document.getElementById('totalPrice'),
+                E = document.getElementById('selectedPriceLabel'),
+                S = document.getElementById('selectedPriceRule'),
+                L = document.getElementById('selectedServiceMeta'),
+                C = document.getElementById('selectedPriceDisclaimer'),
+                w =
+                    r('v5-date', 'appointmentDate') ||
+                    document.querySelector('input[name="date"]'),
+                I =
+                    r('v5-time', 'timeSelect') ||
+                    document.querySelector('select[name="time"]'),
+                x =
+                    r('v5-doctor-select', 'doctorSelect') ||
+                    document.querySelector('select[name="doctor"]'),
+                T = document.querySelector('input[name="phone"]'),
+                A = r('v5-booking-form', 'appointmentForm');
+            if (!(b && y && X && k && _ && A)) return { init: n };
+            async function P() {
                 try {
                     await e.updateAvailableTimes({
-                        dateInput: C,
-                        timeSelect: w,
+                        dateInput: w,
+                        timeSelect: I,
                         doctorSelect: x,
-                        serviceSelect: v,
+                        serviceSelect: b,
                         t: a,
                     });
                 } catch (t) {
@@ -161,7 +175,7 @@ function f(t = 'form_exit') {
                 (o.submitted = !1),
                 (o.abandonedTracked = !1),
                 (o.lastStep = ''),
-                v.addEventListener('change', function () {
+                b.addEventListener('change', function () {
                     const e = this.options[this.selectedIndex],
                         t = parseFloat(e.dataset.price) || 0,
                         n = parseFloat(e.dataset.serviceTax) || 0,
@@ -175,12 +189,12 @@ function f(t = 'form_exit') {
                         u = t * n,
                         m = o > 0 ? o : t + u;
                     if (
-                        ((y.textContent = `$${t.toFixed(2)}`),
-                        (X.textContent = `$${u.toFixed(2)}`),
-                        (k.textContent = `$${m.toFixed(2)}`),
-                        _ && (_.textContent = i || '-'),
-                        E &&
-                            (E.textContent =
+                        ((X.textContent = `$${t.toFixed(2)}`),
+                        (k.textContent = `$${u.toFixed(2)}`),
+                        (_.textContent = `$${m.toFixed(2)}`),
+                        E && (E.textContent = i || '-'),
+                        S &&
+                            (S.textContent =
                                 'base_plus_tax' === r
                                     ? a(
                                           'Total = precio base + impuesto aplicable',
@@ -190,7 +204,7 @@ function f(t = 'form_exit') {
                                           'Regla de precio según catálogo',
                                           'Pricing rule according to catalogue'
                                       )),
-                        S)
+                        L)
                     ) {
                         const e = (function (e) {
                             const t = String(e || '')
@@ -220,39 +234,39 @@ function f(t = 'form_exit') {
                                       'Select a route to see details'
                                   );
                         })(s);
-                        S.textContent = l > 0 ? `${e} · ${l} min` : e;
+                        L.textContent = l > 0 ? `${e} · ${l} min` : e;
                     }
-                    (L &&
-                        (L.textContent =
+                    (C &&
+                        (C.textContent =
                             c ||
                             a(
                                 'El valor final se confirma antes de autorizar el pago.',
                                 'Final amount is confirmed before payment authorization.'
                             )),
                         t > 0
-                            ? (b.classList.remove('is-hidden'),
+                            ? (y.classList.remove('is-hidden'),
                               d && d.classList.add('is-hidden'))
-                            : (b.classList.add('is-hidden'),
+                            : (y.classList.add('is-hidden'),
                               d && d.classList.remove('is-hidden')),
                         this.value &&
-                            g('service_selected', { service: this.value }),
-                        A().catch(() => {}));
+                            f('service_selected', { service: this.value }),
+                        P().catch(() => {}));
                 }),
-                C &&
-                    ((C.min = new Date().toISOString().split('T')[0]),
-                    C.addEventListener('change', () => {
-                        (C.value && g('date_selected'), A().catch(() => {}));
+                w &&
+                    ((w.min = new Date().toISOString().split('T')[0]),
+                    w.addEventListener('change', () => {
+                        (w.value && f('date_selected'), P().catch(() => {}));
                     })),
                 x &&
                     x.addEventListener('change', () => {
-                        (x.value && g('doctor_selected', { doctor: x.value }),
-                            A().catch(() => {}));
-                    }),
-                w &&
-                    w.addEventListener('change', () => {
-                        w.value && g('time_selected');
+                        (x.value && f('doctor_selected', { doctor: x.value }),
+                            P().catch(() => {}));
                     }),
                 I &&
+                    I.addEventListener('change', () => {
+                        I.value && f('time_selected');
+                    }),
+                T &&
                     ((function (e) {
                         if (!e) return;
                         const t = a('+593 9XXXXXXXX', '+593 9XXXXXXXX');
@@ -273,12 +287,12 @@ function f(t = 'form_exit') {
                                 'Formato recomendado: +593 9XXXXXXXX o 09XXXXXXXX.',
                                 'Recommended format: +593 9XXXXXXXX or 09XXXXXXXX.'
                             )));
-                    })(I),
-                    I.addEventListener('blur', () => {
-                        const e = m(I.value);
-                        '' !== e && (I.value = e);
-                        const t = p(e);
-                        (I.setCustomValidity(
+                    })(T),
+                    T.addEventListener('blur', () => {
+                        const e = p(T.value);
+                        '' !== e && (T.value = e);
+                        const t = g(e);
+                        (T.setCustomValidity(
                             t
                                 ? ''
                                 : a(
@@ -286,39 +300,39 @@ function f(t = 'form_exit') {
                                       'Enter a valid phone number (example: +593 9XXXXXXXX).'
                                   )
                         ),
-                            t && g('phone_added'));
+                            t && f('phone_added'));
                     }),
-                    I.addEventListener('input', () => {
-                        I.setCustomValidity('');
+                    T.addEventListener('input', () => {
+                        T.setCustomValidity('');
                     })));
-            const P = T.querySelector('input[name="name"]');
-            P &&
-                P.addEventListener('blur', () => {
-                    (P.value || '').trim().length >= 2 && g('name_added');
-                });
-            const q = T.querySelector('input[name="email"]');
+            const q = A.querySelector('input[name="name"]');
             q &&
                 q.addEventListener('blur', () => {
-                    const e = (q.value || '').trim();
-                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && g('email_added');
+                    (q.value || '').trim().length >= 2 && f('name_added');
                 });
-            const B = T.querySelector('textarea[name="reason"]'),
-                $ = T.querySelector('select[name="affectedArea"]'),
-                F = T.querySelector('select[name="evolutionTime"]'),
-                R = () => {
-                    const e = B ? (B.value || '').trim() : '',
-                        t = $ ? ($.value || '').trim() : '',
-                        n = F ? (F.value || '').trim() : '';
-                    (e || t || n) && g('clinical_context_added');
+            const B = A.querySelector('input[name="email"]');
+            B &&
+                B.addEventListener('blur', () => {
+                    const e = (B.value || '').trim();
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && f('email_added');
+                });
+            const $ = A.querySelector('textarea[name="reason"]'),
+                F = A.querySelector('select[name="affectedArea"]'),
+                R = A.querySelector('select[name="evolutionTime"]'),
+                V = () => {
+                    const e = $ ? ($.value || '').trim() : '',
+                        t = F ? (F.value || '').trim() : '',
+                        n = R ? (R.value || '').trim() : '';
+                    (e || t || n) && f('clinical_context_added');
                 };
-            (B && B.addEventListener('blur', R),
-                $ && $.addEventListener('change', R),
-                F && F.addEventListener('change', R));
-            const V = T.querySelector('input[name="privacyConsent"]');
+            ($ && $.addEventListener('blur', V),
+                F && F.addEventListener('change', V),
+                R && R.addEventListener('change', V));
+            const D = A.querySelector('input[name="privacyConsent"]');
             return (
-                V &&
-                    V.addEventListener('change', () => {
-                        V.checked && g('privacy_consent_checked');
+                D &&
+                    D.addEventListener('change', () => {
+                        D.checked && f('privacy_consent_checked');
                     }),
                 (function (t) {
                     if (!t) return;
@@ -329,7 +343,7 @@ function f(t = 'form_exit') {
                     const o = n.querySelector('a');
                     o &&
                         o.addEventListener('click', () => {
-                            (g('reschedule_policy_opened', {}, { once: !1 }),
+                            (f('reschedule_policy_opened', {}, { once: !1 }),
                                 e &&
                                     'function' == typeof e.trackEvent &&
                                     e.trackEvent('booking_policy_opened', {
@@ -340,7 +354,7 @@ function f(t = 'form_exit') {
                     i && i.parentNode
                         ? i.insertAdjacentElement('afterend', n)
                         : t.appendChild(n);
-                })(T),
+                })(A),
                 (function (e) {
                     if (!e || 'true' === e.dataset.bookingInlineResetBound)
                         return;
@@ -357,7 +371,7 @@ function f(t = 'form_exit') {
                         !(function (e) {
                             if (!e) return;
                             e.removeAttribute('aria-invalid');
-                            const t = l(e);
+                            const t = d(e);
                             t && t.classList.remove('has-error');
                         })(n);
                         const o = i();
@@ -365,17 +379,17 @@ function f(t = 'form_exit') {
                             o.classList.contains(
                                 'booking-inline-feedback--error'
                             ) &&
-                            c();
+                            s();
                     };
                     (e.addEventListener('input', t),
                         e.addEventListener('change', t),
                         (e.dataset.bookingInlineResetBound = 'true'));
-                })(T),
-                v.value && v.dispatchEvent(new Event('change')),
-                T.addEventListener('submit', async function (t) {
+                })(A),
+                b.value && b.dispatchEvent(new Event('change')),
+                A.addEventListener('submit', async function (t) {
                     if (
                         (t.preventDefault(),
-                        c(),
+                        s(),
                         this &&
                             (this.querySelectorAll(
                                 '[aria-invalid="true"]'
@@ -391,8 +405,8 @@ function f(t = 'form_exit') {
                             this.reportValidity();
                         const e = this.querySelector(':invalid');
                         return (
-                            e && (d(e), u(e)),
-                            void r(
+                            e && (u(e), m(e)),
+                            void c(
                                 a(
                                     'Revisa los campos obligatorios antes de continuar.',
                                     'Please review the required fields before continuing.'
@@ -409,7 +423,7 @@ function f(t = 'form_exit') {
                         (n.innerHTML =
                             '<i class="fas fa-spinner fa-spin"></i> Validando agenda...')),
                         this.setAttribute('aria-busy', 'true'),
-                        r(
+                        c(
                             a(
                                 'Validando disponibilidad en tiempo real. Esto toma unos segundos.',
                                 'Checking real-time availability. This takes a few seconds.'
@@ -430,8 +444,8 @@ function f(t = 'form_exit') {
                             );
                             throw ((e.fieldName = 'privacyConsent'), e);
                         }
-                        const c = m(t.get('phone'));
-                        if (!p(c)) {
+                        const r = p(t.get('phone'));
+                        if (!g(r)) {
                             const e = new Error(
                                 a(
                                     'Ingresa un telefono valido (ejemplo: +593 9XXXXXXXX).',
@@ -440,14 +454,14 @@ function f(t = 'form_exit') {
                             );
                             throw ((e.fieldName = 'phone'), e);
                         }
-                        const l = {
+                        const s = {
                             service: t.get('service'),
                             doctor: t.get('doctor'),
                             date: t.get('date'),
                             time: t.get('time'),
                             name: t.get('name'),
                             email: t.get('email'),
-                            phone: c,
+                            phone: r,
                             reason: t.get('reason') || '',
                             affectedArea: t.get('affectedArea') || '',
                             evolutionTime: t.get('evolutionTime') || '',
@@ -455,71 +469,71 @@ function f(t = 'form_exit') {
                             casePhotoFiles: n,
                             casePhotoUploads: [],
                             checkoutEntry: 'booking_form',
-                            price: k.textContent,
+                            price: _.textContent,
                         };
                         if (
-                            (g('form_submitted', {}, { once: !1 }),
-                            l.service &&
-                                g('service_selected', { service: l.service }),
-                            l.doctor &&
-                                g('doctor_selected', { doctor: l.doctor }),
-                            l.date && g('date_selected'),
-                            l.time && g('time_selected'),
-                            (l.name || '').trim().length >= 2 &&
-                                g('name_added'),
+                            (f('form_submitted', {}, { once: !1 }),
+                            s.service &&
+                                f('service_selected', { service: s.service }),
+                            s.doctor &&
+                                f('doctor_selected', { doctor: s.doctor }),
+                            s.date && f('date_selected'),
+                            s.time && f('time_selected'),
+                            (s.name || '').trim().length >= 2 &&
+                                f('name_added'),
                             /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-                                (l.email || '').trim()
-                            ) && g('email_added'),
-                            (l.phone || '').replace(/\D/g, '').length >= 7 &&
-                                g('phone_added'),
-                            i && g('privacy_consent_checked'),
+                                (s.email || '').trim()
+                            ) && f('email_added'),
+                            (s.phone || '').replace(/\D/g, '').length >= 7 &&
+                                f('phone_added'),
+                            i && f('privacy_consent_checked'),
                             (function (e) {
                                 return !!(
                                     (e.get('reason') || '').trim() ||
                                     (e.get('affectedArea') || '').trim() ||
                                     (e.get('evolutionTime') || '').trim()
                                 );
-                            })(t) && g('clinical_context_added'),
+                            })(t) && f('clinical_context_added'),
                             e.markBookingViewed('form_submit'),
                             (
                                 await e.getBookedSlots(
-                                    l.date,
-                                    l.doctor,
-                                    l.service || 'consulta'
+                                    s.date,
+                                    s.doctor,
+                                    s.service || 'consulta'
                                 )
-                            ).includes(l.time))
+                            ).includes(s.time))
                         ) {
                             const t = a(
                                 'Este horario ya fue reservado. Elige otro para continuar.',
                                 'This time slot was just booked. Please choose another one.'
                             );
-                            r(t, 'error');
-                            const n = s(this, 'time');
+                            c(t, 'error');
+                            const n = l(this, 'time');
                             return (
-                                n && (d(n), u(n)),
+                                n && (u(n), m(n)),
                                 e.showToast(t, 'error'),
-                                void (await A())
+                                void (await P())
                             );
                         }
-                        (e.setCurrentAppointment(l),
-                            e.startCheckoutSession(l, {
+                        (e.setCurrentAppointment(s),
+                            e.startCheckoutSession(s, {
                                 checkoutEntry: 'booking_form',
                                 step: 'booking_form_validated',
                             }),
                             e.trackEvent('start_checkout', {
-                                service: l.service || '',
-                                doctor: l.doctor || '',
+                                service: s.service || '',
+                                doctor: s.doctor || '',
                                 checkout_entry: 'booking_form',
                             }),
                             (o.submitted = !0),
-                            r(
+                            c(
                                 a(
                                     'Horario validado. Continuamos al paso de pago.',
                                     'Time slot validated. Continuing to the payment step.'
                                 ),
                                 'success'
                             ),
-                            e.openPaymentModal(l));
+                            e.openPaymentModal(s));
                     } catch (t) {
                         const n =
                                 (t && t.message) ||
@@ -528,8 +542,8 @@ function f(t = 'form_exit') {
                                     'Could not prepare booking. Please try again.'
                                 ),
                             o = t && t.fieldName,
-                            i = o ? s(this, o) : null;
-                        (i && (d(i), u(i)),
+                            i = o ? l(this, o) : null;
+                        (i && (u(i), m(i)),
                             e.trackEvent('booking_error', {
                                 stage: 'booking_form',
                                 error_code: e.normalizeAnalyticsLabel(
@@ -537,7 +551,7 @@ function f(t = 'form_exit') {
                                     'booking_prepare_failed'
                                 ),
                             }),
-                            r(n, 'error'),
+                            c(n, 'error'),
                             e.showToast(n, 'error'));
                     } finally {
                         (this.removeAttribute('aria-busy'),
@@ -549,10 +563,10 @@ function f(t = 'form_exit') {
                 }),
                 document.addEventListener('visibilitychange', () => {
                     'hidden' === document.visibilityState &&
-                        f('form_visibility_hidden');
+                        h('form_visibility_hidden');
                 }),
                 window.addEventListener('pagehide', () => {
-                    f('form_page_hide');
+                    h('form_page_hide');
                 }),
                 { init: n }
             );

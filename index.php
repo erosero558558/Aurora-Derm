@@ -72,22 +72,22 @@ function public_parse_ratio($value, float $default): float
 
 /**
  * @return array{
- *   public_v4_enabled:bool,
- *   public_v4_ratio:float,
- *   public_v4_force_locale:string,
- *   public_v4_kill_switch:bool
+ *   public_v5_enabled:bool,
+ *   public_v5_ratio:float,
+ *   public_v5_force_locale:string,
+ *   public_v5_kill_switch:bool
  * }
  */
-function read_public_v4_catalog_defaults(): array
+function read_public_v5_catalog_defaults(): array
 {
     $defaults = [
-        'public_v4_enabled' => true,
-        'public_v4_ratio' => 1.0,
-        'public_v4_force_locale' => '',
-        'public_v4_kill_switch' => false,
+        'public_v5_enabled' => true,
+        'public_v5_ratio' => 1.0,
+        'public_v5_force_locale' => '',
+        'public_v5_kill_switch' => false,
     ];
 
-    $catalogPath = __DIR__ . DIRECTORY_SEPARATOR . 'content' . DIRECTORY_SEPARATOR . 'public-v4' . DIRECTORY_SEPARATOR . 'catalog.json';
+    $catalogPath = __DIR__ . DIRECTORY_SEPARATOR . 'content' . DIRECTORY_SEPARATOR . 'public-v5' . DIRECTORY_SEPARATOR . 'catalog.json';
     if (!is_file($catalogPath)) {
         return $defaults;
     }
@@ -106,22 +106,22 @@ function read_public_v4_catalog_defaults(): array
         ? $decoded['feature_flags_defaults']
         : [];
 
-    $forceLocaleRaw = strtolower(trim((string) ($featureFlags['public_v4_force_locale'] ?? '')));
+    $forceLocaleRaw = strtolower(trim((string) ($featureFlags['public_v5_force_locale'] ?? '')));
     $forceLocale = in_array($forceLocaleRaw, ['es', 'en'], true) ? $forceLocaleRaw : '';
 
     return [
-        'public_v4_enabled' => public_parse_bool(
-            $featureFlags['public_v4_enabled'] ?? $defaults['public_v4_enabled'],
-            $defaults['public_v4_enabled']
+        'public_v5_enabled' => public_parse_bool(
+            $featureFlags['public_v5_enabled'] ?? $defaults['public_v5_enabled'],
+            $defaults['public_v5_enabled']
         ),
-        'public_v4_ratio' => public_parse_ratio(
-            $featureFlags['public_v4_ratio'] ?? $defaults['public_v4_ratio'],
-            $defaults['public_v4_ratio']
+        'public_v5_ratio' => public_parse_ratio(
+            $featureFlags['public_v5_ratio'] ?? $defaults['public_v5_ratio'],
+            $defaults['public_v5_ratio']
         ),
-        'public_v4_force_locale' => $forceLocale,
-        'public_v4_kill_switch' => public_parse_bool(
-            $featureFlags['public_v4_kill_switch'] ?? $defaults['public_v4_kill_switch'],
-            $defaults['public_v4_kill_switch']
+        'public_v5_force_locale' => $forceLocale,
+        'public_v5_kill_switch' => public_parse_bool(
+            $featureFlags['public_v5_kill_switch'] ?? $defaults['public_v5_kill_switch'],
+            $defaults['public_v5_kill_switch']
         ),
     ];
 }
@@ -189,8 +189,8 @@ function persist_rollout_cookie(string $surface, float $ratio): void
 {
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
     $cohort = 'legacy';
-    if ($surface === 'v4') {
-        $cohort = $ratio < 1.0 ? 'v4_canary' : 'v4_general';
+    if ($surface === 'v5') {
+        $cohort = $ratio < 1.0 ? 'v5_canary' : 'v5_general';
     } elseif ($ratio > 0.0) {
         $cohort = 'legacy_control';
     }
@@ -212,23 +212,23 @@ function emit_public_gateway_headers(
     string $forcedLocale
 ): void {
     header('X-Public-Surface: ' . $surface);
-    header('X-Public-V4-Enabled: ' . ($enabled ? 'true' : 'false'));
-    header('X-Public-V4-Ratio: ' . sprintf('%.4F', $ratio));
-    header('X-Public-V4-Kill-Switch: ' . ($killSwitch ? 'true' : 'false'));
-    header('X-Public-V4-Force-Locale: ' . ($forcedLocale !== '' ? $forcedLocale : 'auto'));
+    header('X-Public-V5-Enabled: ' . ($enabled ? 'true' : 'false'));
+    header('X-Public-V5-Ratio: ' . sprintf('%.4F', $ratio));
+    header('X-Public-V5-Kill-Switch: ' . ($killSwitch ? 'true' : 'false'));
+    header('X-Public-V5-Force-Locale: ' . ($forcedLocale !== '' ? $forcedLocale : 'auto'));
 }
 
-$catalogDefaults = read_public_v4_catalog_defaults();
-$enabled = public_env_bool('PIELARMONIA_PUBLIC_V4_ENABLED', $catalogDefaults['public_v4_enabled']);
-$ratio = public_env_ratio('PIELARMONIA_PUBLIC_V4_RATIO', $catalogDefaults['public_v4_ratio']);
-$killSwitch = public_env_bool('PIELARMONIA_PUBLIC_V4_KILL_SWITCH', $catalogDefaults['public_v4_kill_switch']);
+$catalogDefaults = read_public_v5_catalog_defaults();
+$enabled = public_env_bool('PIELARMONIA_PUBLIC_V5_ENABLED', $catalogDefaults['public_v5_enabled']);
+$ratio = public_env_ratio('PIELARMONIA_PUBLIC_V5_RATIO', $catalogDefaults['public_v5_ratio']);
+$killSwitch = public_env_bool('PIELARMONIA_PUBLIC_V5_KILL_SWITCH', $catalogDefaults['public_v5_kill_switch']);
 
-$forcedLocaleEnvRaw = getenv('PIELARMONIA_PUBLIC_V4_FORCE_LOCALE');
+$forcedLocaleEnvRaw = getenv('PIELARMONIA_PUBLIC_V5_FORCE_LOCALE');
 $forcedLocaleRaw = '';
 if (is_string($forcedLocaleEnvRaw) && trim($forcedLocaleEnvRaw) !== '') {
     $forcedLocaleRaw = strtolower(trim($forcedLocaleEnvRaw));
 } else {
-    $forcedLocaleRaw = strtolower(trim((string) ($catalogDefaults['public_v4_force_locale'] ?? '')));
+    $forcedLocaleRaw = strtolower(trim((string) ($catalogDefaults['public_v5_force_locale'] ?? '')));
 }
 $forcedLocale = in_array($forcedLocaleRaw, ['es', 'en'], true) ? $forcedLocaleRaw : '';
 
@@ -249,24 +249,27 @@ if ($legacyOverride === '1' || $surfaceOverride === 'legacy') {
 }
 
 $surface = '';
-if ($surfaceOverride === 'v4') {
-    $surface = 'v4';
-    persist_surface_cookie('v4');
-    persist_rollout_cookie('v4', $ratio);
+if ($surfaceOverride === 'v5' || $surfaceOverride === 'v4') {
+    $surface = 'v5';
+    persist_surface_cookie('v5');
+    persist_rollout_cookie('v5', $ratio);
 } elseif ($surfaceOverrideAuto) {
     $surface = '';
 } else {
     $surface = strtolower(trim((string) ($_COOKIE['pa_public_surface'] ?? '')));
+    if ($surface === 'v4') {
+        $surface = 'v5';
+    }
 }
 
-if (!in_array($surface, ['v4', 'legacy'], true)) {
+if (!in_array($surface, ['v5', 'legacy'], true)) {
     if (!$enabled || $killSwitch || $ratio <= 0) {
         $surface = 'legacy';
     } elseif ($ratio >= 1) {
-        $surface = 'v4';
+        $surface = 'v5';
     } else {
         $sample = random_int(1, 10000) / 10000;
-        $surface = $sample <= $ratio ? 'v4' : 'legacy';
+        $surface = $sample <= $ratio ? 'v5' : 'legacy';
     }
     persist_surface_cookie($surface);
     persist_rollout_cookie($surface, $ratio);
@@ -288,7 +291,7 @@ $targetLocale = resolve_public_locale($forcedLocale);
 $targetPath = $targetLocale === 'en' ? '/en/' : '/es/';
 
 header('Cache-Control: no-store, private, max-age=0');
-emit_public_gateway_headers('v4', $enabled, $ratio, $killSwitch, $forcedLocale);
+emit_public_gateway_headers('v5', $enabled, $ratio, $killSwitch, $forcedLocale);
 header('X-Public-Target-Locale: ' . $targetLocale);
 header('Location: ' . $targetPath, true, 302);
 exit;

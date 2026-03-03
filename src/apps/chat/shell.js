@@ -352,7 +352,7 @@ export function startChatBooking() {
         (engine) => engine.startChatBooking(),
         () => {
             addBotMessage(
-                'No pude iniciar la reserva por chat. Puedes continuar desde <a href="#citas" data-action="minimize-chat">el formulario</a>.'
+                'No pude iniciar la reserva por chat. Puedes continuar desde <a href="#v5-booking" data-action="minimize-chat">el formulario</a>.'
             );
         }
     );

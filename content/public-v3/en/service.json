@@ -1,31 +1,31 @@
 {
     "heroTone": "ink",
     "storyEyebrow": "Medical program",
-    "storySummary": "Clinical detail with indications, audience, cautions, duration, and pricing consistent with checkout.",
+    "storySummary": "Clinical detail with indication, audience, cautions, duration, and pricing aligned with checkout.",
     "storyTone": "porcelain",
-    "evidenceEyebrow": "Fit and evidence",
-    "evidenceTitle": "What usually indicates fit, what requires caution, and how the next step should be read.",
+    "evidenceEyebrow": "Criteria and evidence",
+    "evidenceTitle": "What suggests clinical fit, what requires caution, and how to choose the next step.",
     "evidenceTone": "silver",
     "evidenceFallbackBullets": [
-        "Final indication is confirmed in consultation according to skin, goals, and history."
+        "Final indication is confirmed in consultation according to skin profile, history, and clinical objective."
     ],
     "evidenceOutcomes": [
         "Initial clinical read",
         "Expected sequence by treatment type",
-        "Escalation to procedure or follow-up when appropriate"
+        "Escalation to follow-up or procedure when appropriate"
     ],
     "timelineEyebrow": "Care sequence",
     "timelineTone": "ink",
     "timelineSteps": [
         "Assessment and fit confirmation",
-        "Preparation and medical briefing",
-        "Treatment or follow-up",
-        "Results review and continuity"
+        "Preparation and medical guidance",
+        "Treatment or progressive follow-up",
+        "Outcome review and continuity"
     ],
     "booking": {
         "eyebrow": "Booking",
         "title": "Book this route with visible pricing, policy, and support.",
-        "deck": "Booking keeps service hint, pricing consistency, and operational traceability from availability to payment.",
+        "deck": "Booking keeps clinical context intact from live availability to secure payment.",
         "actionLabel": "Book this route",
         "tone": "silver"
     }

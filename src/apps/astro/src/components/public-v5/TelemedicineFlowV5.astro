@@ -1,0 +1,20 @@
+---
+const { eyebrow = '', points = [], locale = 'es', tone = 'porcelain' } = Astro.props;
+---
+
+<section class="sony-tele-block sony-tele-block--flow" data-how-it-works data-section-tone={tone} data-template-block="tele_flow_v5">
+    <div class="sony-tele-block__head">
+        <p>{eyebrow}</p>
+        <h2>{locale === 'en' ? 'How the remote route is organized.' : 'Como se organiza la ruta remota.'}</h2>
+    </div>
+    <div class="sony-tele-block__grid">
+        {
+            points.map((point, index) => (
+                <article>
+                    <span>{`0${index + 1}`}</span>
+                    <p>{point}</p>
+                </article>
+            ))
+        }
+    </div>
+</section>

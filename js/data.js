@@ -19,6 +19,13 @@ const DATA_ENGINE_URL = withDeployAssetVersion(
     '/js/engines/data-bundle.js?v=20260225-data-consolidation1'
 );
 
+function getBookingSectionElement() {
+    return (
+        document.getElementById('v5-booking') ||
+        document.getElementById('citas')
+    );
+}
+
 function getDataEngineDeps() {
     return {
         getCurrentLang: () => state.currentLang,
@@ -49,11 +56,13 @@ export function initDataEngineWarmup() {
         markWarmOnSuccess: true,
     });
 
+    bindWarmupTarget('#v5-booking-form', 'focusin', warmup, false);
+    bindWarmupTarget('#v5-booking-form', 'pointerdown', warmup);
     bindWarmupTarget('#appointmentForm', 'focusin', warmup, false);
     bindWarmupTarget('#appointmentForm', 'pointerdown', warmup);
     bindWarmupTarget('#chatbotWidget .chatbot-toggle', 'pointerdown', warmup);
 
-    const bookingSection = document.getElementById('citas');
+    const bookingSection = getBookingSectionElement();
     observeOnceWhenVisible(bookingSection, warmup, {
         threshold: 0.05,
         rootMargin: '260px 0px',
@@ -72,13 +81,21 @@ export async function apiRequest(resource, options = {}) {
     );
 }
 
-export function invalidateBookedSlotsCache(date = '', doctor = '', service = '') {
+export function invalidateBookedSlotsCache(
+    date = '',
+    doctor = '',
+    service = ''
+) {
     if (
         window.Piel &&
         window.Piel.DataEngine &&
         typeof window.Piel.DataEngine.invalidateBookedSlotsCache === 'function'
     ) {
-        window.Piel.DataEngine.invalidateBookedSlotsCache(date, doctor, service);
+        window.Piel.DataEngine.invalidateBookedSlotsCache(
+            date,
+            doctor,
+            service
+        );
         return;
     }
     withDeferredModule(loadDataEngine, (engine) =>

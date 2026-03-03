@@ -1,0 +1,425 @@
+body[data-public-shell-version='v5'] .public-nav {
+    background: rgba(248, 250, 253, 0.9);
+    border-bottom: 1px solid rgba(10, 16, 27, 0.09);
+    backdrop-filter: blur(18px);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+body[data-public-shell-version='v5'] .public-nav__bar {
+    min-height: 88px;
+    grid-template-columns: 170px 1fr auto;
+}
+
+body[data-public-shell-version='v5'] .public-nav__brand-eyebrow,
+body[data-public-shell-version='v5'] .public-footer__eyebrow {
+    color: var(--public-v5-muted);
+}
+
+body[data-public-shell-version='v5'] .public-nav__link,
+body[data-public-shell-version='v5'] .public-nav__mega-shell > summary {
+    color: #16263d;
+    letter-spacing: 0.02em;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link.is-active {
+    color: var(--public-v5-ink);
+}
+
+body[data-public-shell-version='v5'] .public-nav__lang,
+body[data-public-shell-version='v5'] .public-nav__cta {
+    border-color: var(--public-v5-line);
+}
+
+body[data-public-shell-version='v5'] .public-nav__cta {
+    background: linear-gradient(180deg, #0d1729, #111f34);
+    border-color: #111f34;
+    color: #f5f8fd;
+    box-shadow: 0 10px 22px rgba(8, 13, 21, 0.2);
+}
+
+body[data-public-shell-version='v5'] .public-footer {
+    margin-top: clamp(58px, 9vw, 96px);
+    border-radius: 36px 36px 0 0;
+    background: linear-gradient(180deg, #0a0f17 0%, #0e1623 100%);
+    border: 1px solid rgba(243, 248, 255, 0.12);
+    overflow: clip;
+}
+
+body[data-public-shell-version='v5'] .public-footer__top,
+body[data-public-shell-version='v5'] .public-footer__grid {
+    gap: 22px;
+}
+
+body[data-public-shell-version='v5'] .public-footer__cta {
+    background: #f4f8ff;
+    color: #0f1a2c;
+}
+
+/* FE-V5-P13: Sony canonical shell refinement */
+body[data-public-shell-version='v5'] .public-nav {
+    background: rgba(252, 252, 253, 0.92);
+    border-bottom: 1px solid rgba(10, 10, 10, 0.08);
+    backdrop-filter: blur(16px);
+}
+
+body[data-public-shell-version='v5'] .public-nav__bar {
+    min-height: 84px;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link,
+body[data-public-shell-version='v5'] .public-nav__mega-shell > summary {
+    color: #151922;
+    letter-spacing: 0.01em;
+}
+
+body[data-public-shell-version='v5'] .public-nav__lang {
+    border-color: rgba(10, 10, 10, 0.16);
+    color: #0f1117;
+    background: rgba(255, 255, 255, 0.86);
+}
+
+body[data-public-shell-version='v5'] .public-nav__cta {
+    background: #0b0d12;
+    border-color: #0b0d12;
+    color: #f7f8fb;
+    box-shadow: 0 8px 18px rgba(10, 10, 12, 0.2);
+}
+
+body[data-public-shell-version='v5'] .public-footer {
+    border-radius: 28px 28px 0 0;
+    background: linear-gradient(180deg, #07090d 0%, #0f141d 100%);
+    border: 1px solid rgba(243, 247, 255, 0.14);
+}
+
+body[data-public-shell-version='v5'] .public-footer__cta {
+    background: #ffffff;
+    color: #0f1117;
+}
+
+/* FE-V5-P14: Sony shell precision */
+body[data-public-shell-version='v5'] .public-nav__menu {
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link {
+    position: relative;
+    padding-bottom: 8px;
+    font-weight: 520;
+    letter-spacing: 0.012em;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 1px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.72;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 220ms ease;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link:is(:hover, :focus-visible, .is-active)::after {
+    transform: scaleX(1);
+}
+
+body[data-public-shell-version='v5'] .public-nav__cta {
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 650;
+}
+
+body[data-public-shell-version='v5'] .public-footer__legal a {
+    color: rgba(235, 241, 252, 0.9);
+}
+
+body[data-public-shell-version='v5'] .public-footer__legal a:hover {
+    color: #ffffff;
+}
+
+/* FE-V5-P18: Sony shell deep parity (mega + mobile drawer) */
+body[data-public-shell-version='v5'] .public-nav {
+    background: rgba(251, 252, 253, 0.94);
+    border-bottom: 1px solid rgba(13, 15, 20, 0.08);
+}
+
+body[data-public-shell-version='v5'] .public-nav__bar {
+    grid-template-columns: 186px minmax(0, 1fr) auto;
+    gap: 18px;
+}
+
+body[data-public-shell-version='v5'] .public-nav__links {
+    gap: 16px;
+    justify-content: center;
+}
+
+body[data-public-shell-version='v5'] .public-nav__mega-shell--v5 {
+    position: static;
+}
+
+body[data-public-shell-version='v5'] .public-nav__mega-shell--v5 > summary {
+    list-style: none;
+}
+
+body[data-public-shell-version='v5'] .public-nav__mega-shell--v5 > summary::-webkit-details-marker {
+    display: none;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: calc(100% + 10px);
+    width: min(1240px, calc(100vw - 40px));
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1.2fr 0.95fr;
+    gap: 18px;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(12, 14, 19, 0.09);
+    background: #ffffff;
+    box-shadow: 0 24px 64px rgba(12, 14, 19, 0.18);
+    z-index: 45;
+}
+
+body[data-public-shell-version='v5'] .public-nav__mega-shell--v5:not([open]) .public-mega-panel-v5 {
+    display: none;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__intro h2 {
+    margin: 8px 0 10px;
+    font-size: clamp(1.5rem, 2.2vw, 2.1rem);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__intro > p:last-of-type {
+    margin: 0 0 12px;
+    color: #394152;
+    line-height: 1.52;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__families,
+body[data-public-shell-version='v5'] .public-mega-panel-v5__groups {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__family,
+body[data-public-shell-version='v5'] .public-mega-panel-v5__feature {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(13, 16, 23, 0.11);
+    background: #f8fafd;
+    color: #121923;
+    text-decoration: none;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__family:hover,
+body[data-public-shell-version='v5'] .public-mega-panel-v5__feature:hover {
+    border-color: rgba(45, 91, 255, 0.34);
+    background: #f4f7ff;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__family strong,
+body[data-public-shell-version='v5'] .public-mega-panel-v5__groups h3,
+body[data-public-shell-version='v5'] .public-mega-panel-v5__featured h3 {
+    margin: 0;
+    font-size: 0.84rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__family span,
+body[data-public-shell-version='v5'] .public-mega-panel-v5__groups li a,
+body[data-public-shell-version='v5'] .public-mega-panel-v5__feature strong {
+    font-size: 0.92rem;
+    color: #111620;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__groups ul {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__groups li a {
+    text-decoration: none;
+    color: #1d2636;
+}
+
+body[data-public-shell-version='v5'] .public-mega-panel-v5__groups li a:hover {
+    color: #2d5bff;
+}
+
+body[data-public-shell-version='v5'] .public-nav__menu-toggle {
+    display: none;
+    min-height: 40px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(11, 13, 18, 0.16);
+    background: #ffffff;
+    color: #111620;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 620;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5 {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 10, 15, 0.52);
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(420px, 100vw);
+    height: 100%;
+    overflow-y: auto;
+    background: #f8f9fc;
+    border-left: 1px solid rgba(14, 17, 23, 0.13);
+    padding: 18px;
+    display: grid;
+    gap: 16px;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__head p {
+    margin: 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #4f5562;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__close {
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(11, 13, 18, 0.2);
+    background: #ffffff;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__links,
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__mega {
+    display: grid;
+    gap: 8px;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__link {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(11, 13, 18, 0.1);
+    background: #ffffff;
+    color: #111620;
+    text-decoration: none;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__mega article {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(11, 13, 18, 0.08);
+    background: #ffffff;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__mega h4 {
+    margin: 0 0 6px;
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__mega ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__mega a {
+    text-decoration: none;
+    color: #16263d;
+    font-size: 0.92rem;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__actions {
+    display: flex;
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__cta,
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__lang {
+    flex: 1;
+    min-height: 42px;
+    border-radius: 999px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__cta {
+    background: #0b0d12;
+    border: 1px solid #0b0d12;
+    color: #f7f8fb;
+}
+
+body[data-public-shell-version='v5'] .public-nav-drawer-v5__lang {
+    border: 1px solid rgba(11, 13, 18, 0.2);
+    background: #ffffff;
+    color: #111620;
+}
+
+@media (max-width: 1040px) {
+    body[data-public-shell-version='v5'] .public-nav__links {
+        display: none;
+    }
+
+    body[data-public-shell-version='v5'] .public-nav__menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 760px) {
+    body[data-public-shell-version='v5'] .public-nav__actions > .public-nav__lang,
+    body[data-public-shell-version='v5'] .public-nav__actions > .public-nav__cta {
+        display: none;
+    }
+
+    body[data-public-shell-version='v5'] .public-nav__bar {
+        grid-template-columns: 1fr auto;
+        min-height: 74px;
+    }
+}

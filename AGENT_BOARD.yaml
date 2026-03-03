@@ -504,6 +504,44 @@ tasks:
     created_at: 2026-03-03
     updated_at: 2026-03-03
 
+  - id: CDX-006
+    title: "Package P5: queue and figo chat core extraction"
+    owner: Ernesto
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-03T03:06:48.944Z"
+    risk: high
+    scope: chat
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "lib/figo_queue.php", "lib/QueueService.php", "lib/figo_queue/QueueConfig.php", "lib/figo_queue/JobRepository.php", "lib/figo_queue/GatewayClient.php", "lib/figo_queue/JobProcessor.php", "lib/queue/TicketFactory.php", "lib/queue/TicketPriorityPolicy.php", "lib/queue/QueueSummaryBuilder.php", "figo-backend.php", "figo-chat.php", "tests/test_queue_service.php", "verification/agent-runs/CDX-006.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 88
+    sla_due_at: "2026-03-09T23:59:59.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_CDX-006_20260303030648944_259fc7"
+    lease_owner: "Ernesto"
+    lease_created_at: "2026-03-03T03:06:48.944Z"
+    heartbeat_at: "2026-03-03T15:42:25.325Z"
+    lease_expires_at: "2026-03-03T19:42:25.325Z"
+    lease_reason: "leases_heartbeat"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: high
+    critical_zone: false
+    acceptance: "figo_queue.php queda como facade procedural estable y QueueService delega creacion, prioridad y resumen a modulos internos sin romper payloads, estados ni codigos de error."
+    acceptance_ref: "verification/agent-runs/CDX-006.md"
+    evidence_ref: "verification/agent-runs/CDX-006.md"
+    depends_on: ["CDX-005"]
+    prompt: "Ejecutar Package P5: extraer configuracion, repositorio, gateway y procesamiento desde figo_queue.php, y politica de prioridad/resumen desde QueueService.php, manteniendo contratos de chat, backend y cola."
+    created_at: 2026-03-03
+    updated_at: 2026-03-03
+
   - id: AG-009
     title: "Mobile UX phase 4: fix chat/header overlap and spacing consistency"
     owner: ernes

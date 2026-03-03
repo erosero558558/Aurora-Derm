@@ -1,0 +1,71 @@
+---
+import BookingShellV5 from './BookingShellV5.astro';
+
+const {
+    eyebrow = '',
+    title = '',
+    deck = '',
+    actionLabel = '',
+    serviceHint = 'consulta',
+    locale = 'es',
+    tone = 'silver',
+} = Astro.props;
+
+const cleanTechnicalCopy = (value) =>
+    String(value || '')
+        .replace(/\bbridge\b/giu, locale === 'en' ? 'booking' : 'reserva')
+        .replace(/\bruntime\b/giu, locale === 'en' ? 'flow' : 'flujo')
+        .replace(/\bshell\b/giu, locale === 'en' ? 'experience' : 'experiencia')
+        .replace(/\b(booking)\s+\1\b/giu, '$1')
+        .replace(/\b(reserva)\s+\1\b/giu, '$1')
+        .replace(/\s{2,}/gu, ' ')
+        .trim();
+
+const safeEyebrow =
+    cleanTechnicalCopy(eyebrow) ||
+    (locale === 'en' ? 'Clinical booking' : 'Reserva clinica');
+const safeTitle =
+    cleanTechnicalCopy(title) ||
+    (locale === 'en'
+        ? 'Book with transparent pricing and medical context.'
+        : 'Reserva con precio transparente y contexto medico.');
+const safeDeck = cleanTechnicalCopy(deck);
+---
+
+<section
+    class="booking-band booking-bridge"
+    data-v5-booking-band
+    data-booking-band
+    data-section-tone={tone}
+    data-template-block="service_booking_v5"
+>
+    <div class="booking-band__intro booking-bridge__intro">
+        <p>{safeEyebrow}</p>
+        <h2>{safeTitle}</h2>
+        <p>{safeDeck}</p>
+        <a
+            href="#v5-booking"
+            class="hero-stage__cta hero-stage__cta--primary"
+            data-analytics-event="open_public_cta"
+            data-entry-surface="booking_primary"
+            data-cta-target="booking"
+            data-booking-hint={serviceHint}
+            data-v5-service-hint={serviceHint}
+            data-service-category="all"
+            data-service-intent="all"
+            data-catalog-category="all"
+            data-catalog-intent="all"
+        >
+            {actionLabel}
+        </a>
+    </div>
+    <section
+        class="booking-band__mount booking-bridge__mount"
+        data-service-hint={serviceHint}
+        data-v5-service-hint={serviceHint}
+        data-entry-surface="booking_mount"
+    >
+        <BookingShellV5 locale={locale} serviceHint={serviceHint} />
+    </section>
+</section>
+

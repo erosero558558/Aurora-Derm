@@ -1030,7 +1030,7 @@ main > nav { width: var(--public-width); margin: 0 auto; }
     right: 24px;
     bottom: 24px;
     z-index: 60;
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 18px;
@@ -1039,9 +1039,17 @@ main > nav { width: var(--public-width); margin: 0 auto; }
     background: rgba(15, 18, 23, 0.96);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 28px 60px rgba(9, 12, 16, 0.35);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 180ms ease, transform 180ms ease;
 }
 .public-runtime-bridge .cookie-banner.active {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
 }
 .public-runtime-bridge .cookie-text {
     margin: 0;

@@ -5,10 +5,11 @@ const { locale = 'es' } = Astro.props;
 
 const dict = getDictionary(locale);
 const cookiesHref = `${legalBasePath(locale)}cookies/`;
+const titleId = locale === 'en' ? 'cookieBannerTitleEn' : 'cookieBannerTitleEs';
 ---
 
-<div id="cookieBanner" class="cookie-banner" role="dialog" aria-live="polite">
-    <p class="cookie-text" data-i18n="cookie_banner_text">{dict.cookie_banner_text}</p>
+<div id="cookieBanner" class="cookie-banner" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-live="polite">
+    <p id={titleId} class="cookie-text" data-i18n="cookie_banner_text">{dict.cookie_banner_text}</p>
     <div class="cookie-actions">
         <button
             type="button"

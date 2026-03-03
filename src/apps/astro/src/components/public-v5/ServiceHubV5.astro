@@ -1,0 +1,141 @@
+---
+import ResponsiveMediaImageV5 from './ResponsiveMediaImageV5.astro';
+import BookingTeaserV5 from './BookingTeaserV5.astro';
+
+const { page = {}, locale = 'es' } = Astro.props;
+
+const hero = page?.hero || {};
+const rawFamilies = Array.isArray(page?.families) ? page.families : [];
+const filters = page?.filters || {};
+const families = rawFamilies.map((family) => ({
+    ...family,
+    cards: Array.isArray(family?.cards) ? family.cards.slice(0, 2) : [],
+}));
+
+const firstCard =
+    families.flatMap((family) => family.cards || []).find(Boolean) || null;
+const bookingPrimaryHref =
+    firstCard?.href ||
+    (locale === 'en'
+        ? '/en/services/diagnostico-integral/'
+        : '/es/servicios/diagnostico-integral/');
+const bookingPrimaryLabel =
+    firstCard?.cta ||
+    (locale === 'en' ? 'Book assessment' : 'Reservar valoracion');
+const bookingHint = firstCard?.serviceHint || page?.booking?.serviceHint || 'consulta';
+const heroMedia =
+    hero?.mediaMeta && typeof hero.mediaMeta === 'object'
+        ? { ...hero.mediaMeta, sources: [] }
+        : hero?.media;
+---
+
+<section class="sony-hub-hero" data-template-block="hub_hero_v5">
+    <div class="sony-hub-hero__copy">
+        <p>{hero?.eyebrow || (locale === 'en' ? 'Clinical catalogue' : 'Catalogo clinico')}</p>
+        <h1>{hero?.title || (locale === 'en' ? 'Dermatology routes with cleaner hierarchy.' : 'Rutas dermatologicas con jerarquia mas limpia.')}</h1>
+        <p>{hero?.deck || (locale === 'en' ? 'Pick intent, audience and route in fewer steps.' : 'Elige intencion, audiencia y ruta en menos pasos.')}</p>
+    </div>
+    <div class="sony-hub-hero__media">
+        <ResponsiveMediaImageV5
+            media={heroMedia}
+            fallbackSrc={hero?.media || '/images/optimized/showcase-diagnostic.webp'}
+            fallbackAlt={hero?.title || (locale === 'en' ? 'Dermatology route overview' : 'Resumen de rutas dermatologicas')}
+            loading="eager"
+            fetchpriority="high"
+            sizes="(max-width: 1024px) 100vw, 44vw"
+        />
+    </div>
+</section>
+
+<section class="sony-hub-grid" data-services-grid data-template-block="hub_grid_v5">
+    <div class="sony-hub-grid__head">
+        <p>{locale === 'en' ? 'Route selection' : 'Seleccion de ruta'}</p>
+        <h2>{locale === 'en' ? 'Filter by intent and audience, then open one route.' : 'Filtre por intencion y audiencia, luego abra una ruta.'}</h2>
+    </div>
+    <div class="sony-hub-grid__filters" data-services-filters>
+        <label>
+            <span>{locale === 'en' ? 'Intent' : 'Intencion'}</span>
+            <select data-filter-intent>
+                <option value="">{locale === 'en' ? 'All intents' : 'Todas las intenciones'}</option>
+                {
+                    (filters?.intents || []).map((item) => (
+                        <option value={item.id}>{item.label}</option>
+                    ))
+                }
+            </select>
+        </label>
+        <label>
+            <span>{locale === 'en' ? 'Audience' : 'Audiencia'}</span>
+            <select data-filter-audience>
+                <option value="">{locale === 'en' ? 'All audiences' : 'Todas las audiencias'}</option>
+                {
+                    (filters?.audiences || []).map((item) => (
+                        <option value={item.id}>{item.label}</option>
+                    ))
+                }
+            </select>
+        </label>
+    </div>
+    <div class="sony-hub-grid__families">
+        {
+            families.map((family) => (
+                <article class="sony-hub-family" data-family-section={family.id} id={`family-${family.id}`}>
+                    <header class="sony-hub-family__head">
+                        <div>
+                            <p>{family.label}</p>
+                            <h3>{family.deck}</h3>
+                        </div>
+                        <p class="sony-hub-family__count">
+                            {
+                                locale === 'en'
+                                    ? `${(family.cards || []).length} highlighted routes`
+                                    : `${(family.cards || []).length} rutas destacadas`
+                            }
+                        </p>
+                    </header>
+                    <div class="sony-hub-family__cards">
+                        {
+                            (family.cards || []).map((card) => (
+                                <article
+                                    class="sony-hub-card"
+                                    data-service-card
+                                    data-card-category={family.id}
+                                    data-card-intents={(card.intents || []).join(',')}
+                                    data-card-audience={(card.audienceKeys || []).join(',')}
+                                >
+                                    <p>{card.label}</p>
+                                    <h4>{card.title}</h4>
+                                    <p>{card.deck}</p>
+                                    <div class="sony-hub-card__meta">
+                                        <span>{card.duration}</span>
+                                        <span>{card.priceLabel}</span>
+                                    </div>
+                                    <a
+                                        href={card.href}
+                                        class="public-link-arrow"
+                                        data-analytics-event="open_public_cta"
+                                        data-entry-surface="v5_hub_card"
+                                        data-cta-target="service_detail"
+                                        data-service-slug={card.slug}
+                                        data-service-category={card.family}
+                                        data-catalog-category={card.family}
+                                        data-catalog-intent={(card.intents || [])[0] || 'all'}
+                                    >
+                                        {card.cta}
+                                    </a>
+                                </article>
+                            ))
+                        }
+                    </div>
+                </article>
+            ))
+        }
+    </div>
+</section>
+
+<BookingTeaserV5
+    locale={locale}
+    serviceHint={bookingHint}
+    primaryHref={bookingPrimaryHref}
+    primaryLabel={bookingPrimaryLabel}
+/>

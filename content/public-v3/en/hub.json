@@ -1,29 +1,29 @@
 {
     "title": "Services | Piel en Armonia",
-    "description": "Dermatology catalog with filters by category, intent, and audience, plus booking continuity.",
+    "description": "Editorial dermatology catalogue with clear medical routes, useful filters, and booking continuity.",
     "hero": {
-        "eyebrow": "Program catalogue",
-        "title": "A service hub treated like a clinical portfolio.",
-        "deck": "Browse clinical dermatology, medical aesthetics, and pediatrics with stricter hierarchy, less noise, and clearer entry points.",
+        "eyebrow": "Clinical catalogue",
+        "title": "An editorial hub for medically grounded decisions.",
+        "deck": "Clinical dermatology, medical aesthetics, and pediatrics arranged in one clear architecture for Quito.",
         "tone": "ink",
-        "media": "/images/optimized/showcase-hero.webp",
+        "media": "/images/optimized/showcase-diagnostic.webp",
         "mediaMeta": {
-            "src": "/images/optimized/showcase-hero.webp",
-            "alt": "Dermatology program catalogue",
+            "src": "/images/optimized/showcase-diagnostic.webp",
+            "alt": "Editorial map of dermatology programs",
             "kind": "image"
         }
     },
     "telemedicine": {
         "eyebrow": "Care mode",
-        "title": "Telemedicine belongs to the same system, not to a decorative subpage.",
-        "deck": "Start remotely when the case fits and escalate to the clinic when evaluation or procedure requires it.",
+        "title": "Telemedicine belongs to the clinical system, not to a disconnected shortcut.",
+        "deck": "Start remotely when appropriate and escalate to clinic when medical judgment requires it.",
         "href": "/en/telemedicine/",
         "tone": "porcelain"
     },
     "booking": {
-        "eyebrow": "Booking bridge",
-        "title": "Each program can fall into booking with visible operational trust.",
-        "deck": "Each CTA keeps service context and aligns pricing, tax, policy, and support in a single flow.",
+        "eyebrow": "Continuity",
+        "title": "Every route lands in booking with clinical context still visible.",
+        "deck": "Pricing, tax, policy, and support remain aligned in a single operational sequence.",
         "actionLabel": "Open booking",
         "serviceHint": "consulta",
         "tone": "silver"

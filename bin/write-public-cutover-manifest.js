@@ -78,6 +78,20 @@ function readJson(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function reportPassed(report) {
+    if (!report || typeof report !== 'object') {
+        return false;
+    }
+    if (report.skipped === true) {
+        return true;
+    }
+    return Boolean(report.passed);
+}
+
+function reportFailures(report) {
+    return Array.isArray(report?.failures) ? report.failures : [];
+}
+
 function toIso(value) {
     if (!value) {
         return null;
@@ -112,7 +126,9 @@ function main() {
     const monitorUntil = addHours(startedAt, args.windowHours);
     const routingReport = readJson(args.routingReport);
     const conversionReport = readJson(args.conversionReport);
-    const passed = Boolean(routingReport?.passed) && Boolean(conversionReport?.passed);
+    const routingPassed = reportPassed(routingReport);
+    const conversionPassed = reportPassed(conversionReport);
+    const passed = routingPassed && conversionPassed;
 
     fs.mkdirSync(args.outDir, { recursive: true });
     const manifest = {
@@ -128,10 +144,11 @@ function main() {
             conversion: args.conversionReport || '',
         },
         summary: {
-            routingPassed: Boolean(routingReport?.passed),
-            conversionPassed: Boolean(conversionReport?.passed),
-            routingFailures: routingReport?.failures || [],
-            conversionFailures: conversionReport?.failures || [],
+            routingPassed,
+            conversionPassed,
+            conversionSkipped: Boolean(conversionReport?.skipped),
+            routingFailures: reportFailures(routingReport),
+            conversionFailures: reportFailures(conversionReport),
         },
         monitorBootstrap: {
             workflow: 'prod-monitor.yml',
@@ -146,7 +163,11 @@ function main() {
 
     const jsonPath = path.join(args.outDir, 'public-cutover-manifest.json');
     const mdPath = path.join(args.outDir, 'public-cutover-manifest.md');
-    fs.writeFileSync(jsonPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(
+        jsonPath,
+        `${JSON.stringify(manifest, null, 2)}\n`,
+        'utf8'
+    );
 
     const lines = [
         '# Public Cutover Manifest',
@@ -162,6 +183,7 @@ function main() {
         '',
         `- Routing report: \`${manifest.reports.routing || 'n/a'}\``,
         `- Conversion report: \`${manifest.reports.conversion || 'n/a'}\``,
+        `- Conversion skipped: \`${manifest.summary.conversionSkipped ? 'true' : 'false'}\``,
         '',
         '## Production Monitor Bootstrap',
         '',

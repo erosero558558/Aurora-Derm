@@ -9,6 +9,11 @@ on:
             - main
     workflow_dispatch:
         inputs:
+            force_transport_deploy:
+                description: 'Forzar upload directo (FTP/FTPS/SFTP) aunque vars.DEPLOY_METHOD sea git-sync'
+                required: false
+                default: false
+                type: boolean
             protocol:
                 description: 'Protocolo de deploy'
                 required: false
@@ -88,6 +93,11 @@ on:
                 type: boolean
             run_postdeploy_gate:
                 description: 'Disparar post-deploy-gate al finalizar deploy'
+                required: false
+                default: false
+                type: boolean
+            skip_public_conversion_smoke:
+                description: 'Omitir conversion smoke publico ES/EN en produccion (solo emergencia/backend)'
                 required: false
                 default: false
                 type: boolean
@@ -408,6 +418,7 @@ jobs:
         env:
             # Production Configuration
             DEPLOY_METHOD: ${{ vars.DEPLOY_METHOD || 'git-sync' }}
+            FORCE_TRANSPORT_DEPLOY: ${{ github.event.inputs.force_transport_deploy || 'false' }}
             DEPLOY_PROTOCOL: ${{ github.event.inputs.protocol || vars.FTP_PROTOCOL || 'ftps' }}
             FTP_SERVER_PORT: ${{ github.event.inputs.server_port || vars.FTP_SERVER_PORT || '21' }}
             FTP_SECURITY: ${{ github.event.inputs.security || vars.FTP_SECURITY || 'strict' }}
@@ -437,6 +448,7 @@ jobs:
             RUN_POSTDEPLOY_FAST_AUTOMATION: ${{ vars.RUN_POSTDEPLOY_FAST_FROM_DEPLOY_WORKFLOW_RUN || vars.RUN_POSTDEPLOY_FAST_FROM_DEPLOY || 'false' }}
             RUN_POSTDEPLOY_GATE_AUTOMATION: ${{ vars.RUN_POSTDEPLOY_GATE_FROM_DEPLOY_WORKFLOW_RUN || vars.RUN_POSTDEPLOY_GATE_FROM_DEPLOY || 'false' }}
             POSTDEPLOY_FAST_WAIT_SECONDS: ${{ github.event.inputs.postdeploy_fast_wait_seconds || vars.POSTDEPLOY_FAST_WAIT_SECONDS || '45' }}
+            SKIP_PUBLIC_CONVERSION_SMOKE: ${{ github.event.inputs.skip_public_conversion_smoke || 'false' }}
             ADMIN_ROLLOUT_STAGE_PROPAGATED: ${{ github.event.inputs.admin_rollout_stage || vars.ADMIN_ROLLOUT_STAGE_DEPLOY_AUTOMATION || vars.ADMIN_ROLLOUT_STAGE || 'general' }}
             ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke_fast || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST || 'true' }}
             ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure_fast || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST || 'false' }}
@@ -473,7 +485,7 @@ jobs:
               run: composer install --no-dev --optimize-autoloader --prefer-dist --no-progress
 
             - name: Validar secretos requeridos (Prod)
-              if: ${{ env.DEPLOY_METHOD != 'git-sync' }}
+              if: ${{ env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -491,7 +503,7 @@ jobs:
                   fi
 
             - name: Preflight red (Prod)
-              if: ${{ env.DEPLOY_METHOD != 'git-sync' }}
+              if: ${{ env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -506,7 +518,7 @@ jobs:
                   fi
 
             - name: Preparar bundle de deploy (Prod)
-              if: ${{ env.DEPLOY_METHOD != 'git-sync' }}
+              if: ${{ env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -533,7 +545,7 @@ jobs:
                     ./ _deploy_bundle/
 
             - name: Deploy a Produccion (FTP/FTPS)
-              if: ${{ env.DEPLOY_METHOD != 'git-sync' && env.DEPLOY_PROTOCOL != 'sftp' }}
+              if: ${{ (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.DEPLOY_PROTOCOL != 'sftp' }}
               uses: SamKirkland/FTP-Deploy-Action@v4.3.6
               with:
                   server: ${{ secrets.FTP_SERVER }}
@@ -550,7 +562,7 @@ jobs:
                   state-name: .ftp-deploy-sync-state.json
 
             - name: Deploy a Produccion (SFTP)
-              if: ${{ env.DEPLOY_METHOD != 'git-sync' && env.DEPLOY_PROTOCOL == 'sftp' }}
+              if: ${{ (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.DEPLOY_PROTOCOL == 'sftp' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -570,7 +582,7 @@ jobs:
                   "
 
             - name: Esperar sincronizacion Git del hosting (modo git-sync)
-              if: ${{ env.DEPLOY_METHOD == 'git-sync' && env.FTP_DRY_RUN != 'true' }}
+              if: ${{ env.FORCE_TRANSPORT_DEPLOY != 'true' && env.DEPLOY_METHOD == 'git-sync' && env.FTP_DRY_RUN != 'true' }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -578,7 +590,7 @@ jobs:
                   sleep "${GIT_SYNC_WAIT_SEC}"
 
             - name: Manual fallback notes for git-sync
-              if: ${{ always() && env.DEPLOY_METHOD == 'git-sync' && env.FTP_DRY_RUN != 'true' }}
+              if: ${{ always() && env.FORCE_TRANSPORT_DEPLOY != 'true' && env.DEPLOY_METHOD == 'git-sync' && env.FTP_DRY_RUN != 'true' }}
               shell: bash
               run: |
                   {
@@ -587,6 +599,7 @@ jobs:
                     echo "- El script recompone \`es/\`, \`en/\`, \`_astro/\`, valida \`/usr/sbin/nginx -t\` y recarga Nginx.";
                     echo "- Tambien corrige redirects canonicos para evitar \`:8080\` detras de Cloudflare.";
                     echo "- Compat temporal: \`deploy-public-v2-live.sh\` existe como shim y delega a V3.";
+                    echo "- Override manual disponible: \`force_transport_deploy=true\` para subir bundle directo por \`${DEPLOY_PROTOCOL}\` sin esperar git-sync.";
                   } >> "$GITHUB_STEP_SUMMARY"
 
             - name: Smoke Tests (Prod)
@@ -947,11 +960,36 @@ jobs:
                   node bin/check-public-routing-smoke.js --base-url "${PROD_URL}" --label "production" --output ".public-cutover/routing-smoke.json"
 
             - name: Validate public conversion hooks ES/EN (Prod)
-              if: ${{ env.FTP_DRY_RUN != 'true' }}
+              if: ${{ env.FTP_DRY_RUN != 'true' && env.SKIP_PUBLIC_CONVERSION_SMOKE != 'true' }}
               shell: bash
               run: |
                   set -euo pipefail
                   node bin/check-public-conversion-smoke.js --base-url "${PROD_URL}" --label "production-conversion" --output ".public-cutover/conversion-smoke.json"
+
+            - name: Skipped public conversion smoke summary (Prod)
+              if: ${{ env.FTP_DRY_RUN != 'true' && env.SKIP_PUBLIC_CONVERSION_SMOKE == 'true' }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  mkdir -p .public-cutover
+                  node <<'NODE'
+                  const fs = require('node:fs');
+                  const payload = {
+                    label: 'production-conversion',
+                    passed: true,
+                    skipped: true,
+                    failures: [],
+                    checks: [],
+                    reason: 'manual_override_skip_public_conversion_smoke',
+                    generated_at: new Date().toISOString(),
+                  };
+                  fs.writeFileSync('.public-cutover/conversion-smoke.json', JSON.stringify(payload, null, 2));
+                  NODE
+                  {
+                    echo "## Public conversion smoke";
+                    echo "- skipped: \`true\`";
+                    echo "- reason: \`manual_override_skip_public_conversion_smoke\`";
+                  } >> "$GITHUB_STEP_SUMMARY"
 
             - name: Write public cutover manifest
               if: ${{ env.FTP_DRY_RUN != 'true' }}

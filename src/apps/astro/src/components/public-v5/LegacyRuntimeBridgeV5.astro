@@ -1,0 +1,11 @@
+---
+import CookieBannerV3 from '../public-v3/CookieBannerV3.astro';
+import RuntimeModalStackV5 from './RuntimeModalStackV5.astro';
+
+const { locale = 'es' } = Astro.props;
+---
+
+<div class="public-runtime-bridge" data-runtime-version="v5">
+    <CookieBannerV3 locale={locale} />
+    <RuntimeModalStackV5 locale={locale} />
+</div>
