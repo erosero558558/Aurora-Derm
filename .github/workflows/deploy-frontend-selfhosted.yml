@@ -30,7 +30,7 @@ permissions:
 jobs:
     deploy:
         name: Publicar frontend via self-hosted
-        runs-on: [self-hosted, Windows, kimi]
+        runs-on: [self-hosted, Windows]
         timeout-minutes: 40
         env:
             TARGET_DOMAIN: https://pielarmonia.com
@@ -346,4 +346,3 @@ jobs:
                   "title=$title" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
                   "css=$css" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
                   "has_public_v4_flags=$hasV4" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-

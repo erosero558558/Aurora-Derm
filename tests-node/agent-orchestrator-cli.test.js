@@ -559,13 +559,13 @@ test('task claim/start/finish actualiza board y evidencia sin editar YAML manual
     );
 
     // `task` ops should also keep derived queues in sync for non-codex executors.
-    assert.equal(
-        typeof readFileSync(join(dir, 'JULES_TASKS.md'), 'utf8'),
-        'string'
+    assert.match(
+        readFileSync(join(dir, 'JULES_TASKS.md'), 'utf8'),
+        /Retired Derived Queue/
     );
-    assert.equal(
-        typeof readFileSync(join(dir, 'KIMI_TASKS.md'), 'utf8'),
-        'string'
+    assert.match(
+        readFileSync(join(dir, 'KIMI_TASKS.md'), 'utf8'),
+        /Retired Derived Queue/
     );
 });
 
@@ -773,13 +773,13 @@ test('task create crea AG siguiente y sincroniza colas derivadas', (t) => {
     assert.match(board, /files: \["docs\/nueva-tarea\.md", "docs\/otra\.md"\]/);
     assert.match(board, /depends_on: \["AG-010"\]/);
 
-    assert.equal(
-        typeof readFileSync(join(dir, 'JULES_TASKS.md'), 'utf8'),
-        'string'
+    assert.match(
+        readFileSync(join(dir, 'JULES_TASKS.md'), 'utf8'),
+        /Retired Derived Queue/
     );
-    assert.equal(
-        typeof readFileSync(join(dir, 'KIMI_TASKS.md'), 'utf8'),
-        'string'
+    assert.match(
+        readFileSync(join(dir, 'KIMI_TASKS.md'), 'utf8'),
+        /Retired Derived Queue/
     );
 });
 

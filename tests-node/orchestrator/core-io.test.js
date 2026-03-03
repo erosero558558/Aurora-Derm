@@ -150,7 +150,7 @@ test('core-io writeCodexActiveBlockFile usa upsert y persiste contenido', () => 
     ]);
 });
 
-test('core-io syncDerivedQueuesFiles escribe colas derivadas y puede silenciar log', () => {
+test('core-io syncDerivedQueuesFiles preserva tombstones legacy y puede silenciar log', () => {
     const writes = [];
     const logs = [];
 
@@ -166,7 +166,7 @@ test('core-io syncDerivedQueuesFiles escribe colas derivadas y puede silenciar l
             }),
             parseTaskMetaMap: (path) => ({ path }),
             renderQueueFile: (kind, tasks, meta) =>
-                `${kind}:${tasks.length}:${meta.path}\n`,
+                `tombstone:${kind}:${tasks.length}:${meta.path}\n`,
             julesPath: 'JULES_TASKS.md',
             kimiPath: 'KIMI_TASKS.md',
             writeFile: (...args) => writes.push(args),
@@ -179,12 +179,12 @@ test('core-io syncDerivedQueuesFiles escribe colas derivadas y puede silenciar l
     assert.equal(writes.length, 2);
     assert.deepEqual(writes[0], [
         'JULES_TASKS.md',
-        'jules:1:JULES_TASKS.md\n',
+        'tombstone:jules:1:JULES_TASKS.md\n',
         'utf8',
     ]);
     assert.deepEqual(writes[1], [
         'KIMI_TASKS.md',
-        'kimi:1:KIMI_TASKS.md\n',
+        'tombstone:kimi:1:KIMI_TASKS.md\n',
         'utf8',
     ]);
 });

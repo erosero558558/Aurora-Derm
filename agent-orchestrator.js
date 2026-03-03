@@ -3,7 +3,7 @@
  * Agent Orchestrator
  *
  * Canonical source: AGENT_BOARD.yaml
- * Derived queues:   JULES_TASKS.md, KIMI_TASKS.md
+ * Legacy tombstones: JULES_TASKS.md, KIMI_TASKS.md
  *
  * Commands:
  *   node agent-orchestrator.js status [--json]

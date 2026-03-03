@@ -1,5 +1,7 @@
 'use strict';
 
+const taskGuards = require('./task-guards');
+
 function normalizeText(value) {
     return String(value || '').trim();
 }
@@ -248,20 +250,9 @@ function inferFilesFromSignal(signal, scope) {
 }
 
 function chooseExecutor(signal, scope) {
-    const criticalScope = ['payments', 'auth', 'calendar', 'deploy', 'env', 'security'].includes(
-        String(scope || '').toLowerCase()
-    );
-    if (
-        signal.critical_zone ||
-        String(signal.runtime_impact) === 'high' ||
-        criticalScope
-    ) {
-        return 'codex';
-    }
-    if (String(signal.source || '').toLowerCase() === 'workflow') {
-        return 'jules';
-    }
-    return 'kimi';
+    void signal;
+    void scope;
+    return 'codex';
 }
 
 function nextSignalId(signals) {
@@ -391,7 +382,7 @@ function buildTaskFromSignal(signal, options = {}) {
             ? 'Resolver fallo workflow'
             : 'Resolver alerta';
 
-    return {
+    const task = {
         id: '',
         title: `${titlePrefix}: ${signal.title}`.slice(0, 160),
         owner,
@@ -417,6 +408,7 @@ function buildTaskFromSignal(signal, options = {}) {
         created_at: String(nowIso).slice(0, 10),
         updated_at: String(nowIso).slice(0, 10),
     };
+    return taskGuards.ensureTaskDualCodexDefaults(task);
 }
 
 function normalizeTaskForScoring(task, options = {}) {

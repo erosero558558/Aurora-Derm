@@ -211,7 +211,7 @@ function syncDerivedQueuesFiles(options = {}, deps = {}) {
 
     if (!silent) {
         log(
-            `Sync completado: ${julesTasks.length} tareas Jules, ${kimiTasks.length} tareas Kimi.`
+            `Sync completado: tombstones retirados preservados (legacy_jules_tasks=${julesTasks.length}, legacy_kimi_tasks=${kimiTasks.length}).`
         );
     }
 

@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 394
+  revision: 395
   updated_at: 2026-03-03
 
 tasks:
@@ -527,8 +527,8 @@ tasks:
     lease_id: "lease_CDX-006_20260303030648944_259fc7"
     lease_owner: "Ernesto"
     lease_created_at: "2026-03-03T03:06:48.944Z"
-    heartbeat_at: "2026-03-03T09:17:07.277Z"
-    lease_expires_at: "2026-03-03T13:17:07.277Z"
+    heartbeat_at: "2026-03-03T15:42:25.325Z"
+    lease_expires_at: "2026-03-03T19:42:25.325Z"
     lease_reason: "leases_heartbeat"
     lease_cleared_at: ""
     lease_cleared_reason: ""
