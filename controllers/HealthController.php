@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
+
 class HealthController
 {
     public static function check(array $context): void
@@ -62,6 +64,9 @@ class HealthController
         $redisStatus = getenv('PIELARMONIA_REDIS_HOST') ? 'configured' : 'disabled';
         $idempotencySnapshot = self::collectIdempotencySnapshot();
         $store = isset($context['store']) && is_array($context['store']) ? $context['store'] : read_store();
+        $telemedicineSnapshot = class_exists('TelemedicineOpsSnapshot')
+            ? TelemedicineOpsSnapshot::build($store)
+            : ['configured' => false];
         $appointments = isset($store['appointments']) && is_array($store['appointments']) ? $store['appointments'] : [];
         $confirmedAppointments = 0;
         foreach ($appointments as $appointment) {
@@ -157,6 +162,9 @@ class HealthController
             'servicesCatalogConfigured' => (bool) ($servicesCatalog['configured'] ?? false),
             'idempotencyRequestsWithKey' => (int) ($idempotencySnapshot['requestsWithKey'] ?? 0),
             'idempotencyConflictRatePct' => (float) ($idempotencySnapshot['conflictRatePct'] ?? 0.0),
+            'telemedicineReviewQueueCount' => (int) ($telemedicineSnapshot['reviewQueue']['count'] ?? 0),
+            'telemedicineUnlinkedIntakesCount' => (int) ($telemedicineSnapshot['integrity']['unlinkedIntakesCount'] ?? 0),
+            'telemedicineStagedLegacyUploadsCount' => (int) ($telemedicineSnapshot['integrity']['stagedLegacyUploadsCount'] ?? 0),
             'publicSyncConfigured' => (bool) ($publicSyncCheck['configured'] ?? false),
             'publicSyncHealthy' => (bool) ($publicSyncCheck['healthy'] ?? false),
             'publicSyncState' => (string) ($publicSyncCheck['state'] ?? 'unknown'),
@@ -231,6 +239,9 @@ class HealthController
                     'configured' => (bool) ($servicesCatalog['configured'] ?? false),
                 ],
                 'idempotency' => $idempotencySnapshot,
+                'telemedicine' => class_exists('TelemedicineOpsSnapshot')
+                    ? TelemedicineOpsSnapshot::forHealth($telemedicineSnapshot)
+                    : ['configured' => false],
                 'backup' => $backupCheck,
                 'publicSync' => $publicSyncCheck,
                 'storeCounts' => $storeCounts

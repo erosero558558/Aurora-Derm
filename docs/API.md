@@ -89,6 +89,33 @@ Sin cambiar el frontend actual, los flujos legacy con `service=telefono` y
 La compatibilidad publica se mantiene: no hay endpoints breaking ni cambios
 obligatorios de frontend en esta fase.
 
+## Observabilidad Operativa de Telemedicina
+
+La fase backend-only agrega observabilidad aditiva sin abrir endpoints nuevos:
+
+- `GET /api.php?resource=health` incluye `checks.telemedicine` con resumen
+  operativo sin PHI:
+    - conteos de intakes
+    - conteos por `status`, `suitability` y `channel`
+    - integridad (`linkedAppointmentsCount`, `unlinkedIntakesCount`,
+      `stagedLegacyUploadsCount`, etc.)
+    - `reviewQueueCount`
+    - `latestActivityAt`
+- `GET /api.php?resource=data` incluye `data.telemedicineMeta` para staff/admin:
+    - `summary` con el mismo snapshot resumido
+    - `reviewQueue` con items accionables para triage manual
+- `GET /api.php?resource=metrics` exporta gauges Prometheus de telemedicina,
+  incluyendo:
+    - `pielarmonia_telemedicine_intakes_total`
+    - `pielarmonia_telemedicine_review_queue_total`
+    - `pielarmonia_telemedicine_unlinked_intakes_total`
+    - `pielarmonia_telemedicine_staged_legacy_uploads_total`
+
+Regla de seguridad:
+
+- `health` no expone cola detallada ni datos de paciente.
+- la cola detallada solo aparece en `/data`, que sigue siendo endpoint admin.
+
 ### Consultar Disponibilidad
 
 ```http

@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 402
+  revision: 407
   updated_at: 2026-03-03
 
 tasks:
@@ -577,6 +577,44 @@ tasks:
     evidence_ref: "verification/agent-runs/CDX-007.md"
     depends_on: ["CDX-005"]
     prompt: "Rehacer telemedicina backend desde cero con dominio propio de intake, suitability shadow, media clinica separada de payment proof, persistencia JSON/SQLite, bridge legacy sobre payment-intent/appointments/transfer-proof y backfill historico sin tocar frontend."
+    created_at: 2026-03-03
+    updated_at: 2026-03-03
+
+  - id: CDX-008
+    title: "Telemedicine ops hardening: health snapshot, metrics and admin triage"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-03T23:34:45.597Z"
+    risk: high
+    scope: telemedicine
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "controllers/HealthController.php", "controllers/AdminDataController.php", "controllers/SystemController.php", "lib/telemedicine/TelemedicineOpsSnapshot.php", "docs/API.md", "docs/openapi.yaml", "tests/Integration/TelemedicineHealthSnapshotTest.php", "tests/Integration/TelemedicineAdminReadModelTest.php", "tests/Integration/TelemedicineMetricsExportTest.php", "verification/agent-runs/CDX-008.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 84
+    sla_due_at: "2026-03-10T23:59:59.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-03T23:34:45.597Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "health, metrics y /data exponen snapshot operacional de telemedicina con conteos, review queue y drift clinico sin romper contratos publicos ni admin legacy."
+    acceptance_ref: "verification/agent-runs/CDX-008.md"
+    evidence_ref: "verification/agent-runs/CDX-008.md"
+    depends_on: ["CDX-007"]
+    prompt: "Endurecer operacion backend de telemedicina con snapshot reusable para health, metrics y admin data, de modo que staff vea review_required, staged uploads, counts por suitability y consistencia de linkage sin tocar frontend."
     created_at: 2026-03-03
     updated_at: 2026-03-03
 

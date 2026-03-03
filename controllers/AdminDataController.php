@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/QueueService.php';
+require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 
 class AdminDataController
 {
@@ -87,6 +88,10 @@ class AdminDataController
         } catch (\Throwable $th) {
             $store['queueMeta'] = null;
         }
+
+        $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(
+            TelemedicineOpsSnapshot::build($store)
+        );
 
         json_response([
             'ok' => true,

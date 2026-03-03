@@ -219,11 +219,90 @@ components:
                     type: object
                     additionalProperties: true
 
+        TelemedicineOpsSummary:
+            type: object
+            description: Telemedicine operational snapshot without PHI. Exposed in health checks and admin summary.
+            properties:
+                configured:
+                    type: boolean
+                intakes:
+                    type: object
+                    additionalProperties: true
+                media:
+                    type: object
+                    additionalProperties: true
+                integrity:
+                    type: object
+                    additionalProperties: true
+                reviewQueueCount:
+                    type: integer
+                latestActivityAt:
+                    type: string
+                    format: date-time
+            additionalProperties: true
+
+        TelemedicineReviewQueueItem:
+            type: object
+            description: Admin-only review queue item for telemedicine triage.
+            properties:
+                intakeId:
+                    type: integer
+                appointmentId:
+                    type: integer
+                channel:
+                    type: string
+                    enum: [phone, secure_video]
+                status:
+                    type: string
+                suitability:
+                    type: string
+                    enum: [fit, review_required, unsuitable]
+                reasons:
+                    type: array
+                    items:
+                        type: string
+                escalationRecommendation:
+                    type: string
+                requestedDate:
+                    type: string
+                    format: date
+                requestedTime:
+                    type: string
+                requestedDoctor:
+                    type: string
+                patientName:
+                    type: string
+                patientEmail:
+                    type: string
+                    format: email
+                patientPhone:
+                    type: string
+                clinicalMediaCount:
+                    type: integer
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+            additionalProperties: true
+
+        TelemedicineAdminMeta:
+            type: object
+            properties:
+                summary:
+                    $ref: '#/components/schemas/TelemedicineOpsSummary'
+                reviewQueue:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TelemedicineReviewQueueItem'
+            additionalProperties: true
+
 paths:
     /api.php?resource=health:
         get:
             summary: API Health Check
-            description: Returns the health status of the API and storage.
+            description: Returns the health status of the API and storage, including additive publicSync and telemedicine operational summaries.
             tags: [System]
             responses:
                 '200':
@@ -278,10 +357,26 @@ paths:
                                         type: boolean
                                     checks:
                                         type: object
+                                        properties:
+                                            telemedicine:
+                                                $ref: '#/components/schemas/TelemedicineOpsSummary'
                                         additionalProperties: true
                                     timestamp:
                                         type: string
                                         format: date-time
+
+    /api.php?resource=metrics:
+        get:
+            summary: Export Metrics
+            description: Exports Prometheus metrics including telemedicine operational gauges.
+            tags: [System, Observability]
+            responses:
+                '200':
+                    description: Prometheus plaintext metrics.
+                    content:
+                        text/plain:
+                            schema:
+                                type: string
 
     /api.php?resource=payment-config:
         get:
@@ -1074,13 +1169,26 @@ paths:
     /api.php?resource=data:
         get:
             summary: Get All Data
-            description: Dump of the entire data store. Requires Admin authentication.
+            description: Dump of the entire data store. Requires Admin authentication. Includes additive telemedicineMeta for operational triage.
             tags: [System, Admin]
             security:
                 - cookieAuth: []
             responses:
                 '200':
                     description: Success
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    data:
+                                        type: object
+                                        properties:
+                                            telemedicineMeta:
+                                                $ref: '#/components/schemas/TelemedicineAdminMeta'
+                                        additionalProperties: true
 
     /api.php?resource=import:
         post:
@@ -1102,6 +1210,10 @@ paths:
                                 callbacks:
                                     type: array
                                 reviews:
+                                    type: array
+                                telemedicine_intakes:
+                                    type: array
+                                clinical_uploads:
                                     type: array
                                 availability:
                                     $ref: '#/components/schemas/Availability'

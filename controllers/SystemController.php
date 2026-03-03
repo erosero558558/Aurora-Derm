@@ -6,6 +6,7 @@ require_once __DIR__ . '/../lib/monitoring.php';
 require_once __DIR__ . '/../lib/metrics.php';
 require_once __DIR__ . '/../lib/features.php';
 require_once __DIR__ . '/../lib/prediction.php';
+require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 
 class SystemController
 {
@@ -216,6 +217,10 @@ class SystemController
             echo "\npielarmonia_service_popularity_total{service=\"$svc\"} $count";
         }
 
+        echo TelemedicineOpsSnapshot::renderPrometheusMetrics(
+            TelemedicineOpsSnapshot::build($store)
+        );
+
         // Lead Time (Last 30 days)
         $leadTimes = [];
         $now = time();
@@ -239,6 +244,10 @@ class SystemController
             $avgLead = array_sum($leadTimes) / count($leadTimes);
             echo "\n# TYPE pielarmonia_lead_time_seconds_avg gauge";
             echo "\npielarmonia_lead_time_seconds_avg $avgLead\n";
+        }
+
+        if (defined('TESTING_ENV') && !defined('TESTING_FORCE_EXIT')) {
+            return;
         }
 
         exit;
