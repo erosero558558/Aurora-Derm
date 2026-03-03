@@ -29,12 +29,13 @@ require_once __DIR__ . '/../lib/db.php';
 $storeFile = data_file_path();
 require_once __DIR__ . '/../lib/backup.php';
 
-function fail($msg, $dir)
+function fail($msg, $dir = null)
 {
+    global $tempDir;
     echo "FAILED: $msg\n";
-    // Cleanup
-    if (isset($tempDir) && $tempDir) {
-        recursiveRemove($tempDir);
+    $cleanupDir = $dir ?? $tempDir;
+    if ($cleanupDir) {
+        recursiveRemove($cleanupDir);
     }
     exit(1);
 }
@@ -43,6 +44,9 @@ function recursiveRemove($dir)
 {
     if (!$dir || !is_dir($dir)) {
         return;
+    }
+    if (function_exists('close_db_connection')) {
+        close_db_connection();
     }
     $files = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
@@ -53,6 +57,37 @@ function recursiveRemove($dir)
         $todo($fileinfo->getRealPath());
     }
     rmdir($dir);
+}
+
+function run_restore_command(string $restoreScript, string $backupPath, string $dataDir): array
+{
+    $command = [PHP_BINARY, $restoreScript, $backupPath, '--force'];
+    $descriptors = [
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $env = array_merge($_ENV, ['PIELARMONIA_DATA_DIR' => $dataDir]);
+    $pipes = [];
+    $process = proc_open($command, $descriptors, $pipes, null, $env);
+    if (!is_resource($process)) {
+        return [
+            'code' => 1,
+            'output' => ['Could not start restore process.'],
+        ];
+    }
+
+    $stdout = stream_get_contents($pipes[1]);
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    $status = proc_close($process);
+    $combined = trim((string) $stdout . PHP_EOL . (string) $stderr);
+
+    return [
+        'code' => $status,
+        'output' => $combined === '' ? [] : preg_split('/\R+/', $combined),
+    ];
 }
 
 try {
@@ -94,6 +129,9 @@ try {
     }
 
     // 3. Simulate Data Loss (Delete Store)
+    if (function_exists('close_db_connection')) {
+        close_db_connection();
+    }
     if (file_exists($storeFile)) {
         unlink($storeFile);
     }
@@ -107,20 +145,9 @@ try {
     // However, to satisfy the "Corrupt Data" step concept, we'll verify we can restore even if file is missing.
 
     // 4. Restore using CLI script
-    // Close DB connection to release file lock before external script acts on it
-    if (function_exists('close_db_connection')) {
-        close_db_connection();
-    }
-
-    // We use --force to skip confirmation
-    $cmd = sprintf(
-        'PIELARMONIA_DATA_DIR=%s php %s %s --force',
-        escapeshellarg($tempDir),
-        escapeshellarg($restoreScript),
-        escapeshellarg($backupPath)
-    );
-
-    exec($cmd, $output, $returnVar);
+    $run = run_restore_command($restoreScript, $backupPath, $tempDir);
+    $output = $run['output'];
+    $returnVar = (int) ($run['code'] ?? 1);
 
     if ($returnVar !== 0) {
         echo "\nRestore script output:\n" . implode("\n", $output) . "\n";

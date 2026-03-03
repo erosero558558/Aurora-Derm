@@ -9,7 +9,7 @@ const DEFAULT_CRITICAL_SCOPE_KEYWORDS = [
     'security',
 ];
 
-const DEFAULT_ALLOWED_EXECUTORS = new Set(['codex', 'claude']);
+const DEFAULT_ALLOWED_EXECUTORS = new Set(['codex']);
 const DEFAULT_ALLOWED_CODEX_INSTANCES = new Set([
     'codex_backend_ops',
     'codex_frontend',

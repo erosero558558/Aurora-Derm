@@ -1,6 +1,6 @@
 'use strict';
 
-function handleStatusCommand(ctx) {
+async function handleStatusCommand(ctx) {
     const {
         args,
         parseBoard,
@@ -24,6 +24,8 @@ function handleStatusCommand(ctx) {
         formatPpDelta,
         summarizeDiagnostics,
         buildWarnFirstDiagnostics,
+        loadJobsSnapshot,
+        summarizeJobsSnapshot,
     } = ctx;
     const wantsJson = args.includes('--json');
     const wantsExplainRed = args.includes('--explain-red');
@@ -50,6 +52,8 @@ function handleStatusCommand(ctx) {
     const domainHealthHistory = wantsExplainRed
         ? buildDomainHealthHistorySummary(loadDomainHealthHistory(), 7)
         : null;
+    const jobs =
+        typeof loadJobsSnapshot === 'function' ? await loadJobsSnapshot() : [];
     const data = {
         version: board.version,
         policy: board.policy,
@@ -67,6 +71,10 @@ function handleStatusCommand(ctx) {
             handoff: conflictAnalysis.handoffCovered.length,
             total_pairs: conflictAnalysis.all.length,
         },
+        jobs:
+            typeof summarizeJobsSnapshot === 'function'
+                ? summarizeJobsSnapshot(jobs)
+                : null,
     };
 
     if (wantsExplainRed) {
@@ -89,6 +97,7 @@ function handleStatusCommand(ctx) {
                 handoffData,
                 conflictAnalysis,
                 metricsSnapshot,
+                jobsSnapshot: jobs,
             })
         )
     );

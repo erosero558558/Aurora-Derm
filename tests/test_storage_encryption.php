@@ -11,10 +11,7 @@ $testKey = 'test_key_123456789012345678901234'; // 32 chars
 putenv("PIELARMONIA_DATA_ENCRYPTION_KEY=$testKey");
 putenv("PIELARMONIA_STORAGE_JSON_FALLBACK=true");
 
-if (is_dir($tmpDataDir)) {
-    exec("rm -rf " . escapeshellarg($tmpDataDir));
-}
-mkdir($tmpDataDir, 0777, true);
+ensure_clean_directory($tmpDataDir);
 
 require_once __DIR__ . '/../lib/storage.php';
 
@@ -65,6 +62,6 @@ run_test('write_store_json_fallback should write encrypted file', function () us
 });
 
 // Cleanup
-exec("rm -rf " . escapeshellarg($tmpDataDir));
+delete_path_recursive($tmpDataDir);
 
 print_test_summary();

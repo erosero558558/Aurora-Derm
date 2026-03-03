@@ -34,6 +34,7 @@ async function handleTaskCommand(ctx) {
         resolveTaskCreateTemplate,
         inferTaskCreateFromFiles,
         ALLOWED_TASK_EXECUTORS,
+        RETIRED_TASK_EXECUTORS,
         findCriticalScopeKeyword,
         CRITICAL_SCOPE_KEYWORDS,
         CRITICAL_SCOPE_ALLOWED_EXECUTORS,
@@ -115,6 +116,7 @@ async function handleTaskCommand(ctx) {
             resolveTaskCreateTemplate,
             inferTaskCreateFromFiles,
             ALLOWED_TASK_EXECUTORS,
+            RETIRED_TASK_EXECUTORS,
             findCriticalScopeKeyword,
             CRITICAL_SCOPE_KEYWORDS,
             CRITICAL_SCOPE_ALLOWED_EXECUTORS,
@@ -151,6 +153,7 @@ async function handleTaskCommand(ctx) {
             parseBoard,
             detectDefaultOwner,
             ALLOWED_TASK_EXECUTORS,
+            RETIRED_TASK_EXECUTORS,
             ALLOWED_STATUSES,
             parseCsvList,
             validateTaskGovernancePrechecks,
@@ -181,6 +184,7 @@ async function handleTaskCommand(ctx) {
             parseBoard,
             detectDefaultOwner,
             ALLOWED_TASK_EXECUTORS,
+            RETIRED_TASK_EXECUTORS,
             ACTIVE_STATUSES,
             parseCsvList,
             validateTaskGovernancePrechecks,
@@ -453,6 +457,21 @@ function hasFlag(flags = {}, kebabName, snakeName) {
     );
 }
 
+function isRetiredExecutor(executor, retiredExecutors) {
+    return retiredExecutors.has(
+        String(executor || '')
+            .trim()
+            .toLowerCase()
+    );
+}
+
+function createRetiredExecutorError(executor, commandLabel) {
+    const error = new Error(`${commandLabel}: executor retirado (${executor})`);
+    error.code = 'executor_retired';
+    error.error_code = 'executor_retired';
+    return error;
+}
+
 function applyDualCodexOverrides(task, flags = {}, helpers = {}) {
     if (!task || typeof task !== 'object') return;
     const {
@@ -514,6 +533,7 @@ function handleTaskClaim(ctx) {
         parseBoard,
         detectDefaultOwner,
         ALLOWED_TASK_EXECUTORS,
+        RETIRED_TASK_EXECUTORS,
         ALLOWED_STATUSES,
         parseCsvList,
         validateTaskGovernancePrechecks,
@@ -550,6 +570,9 @@ function handleTaskClaim(ctx) {
         if (!ALLOWED_TASK_EXECUTORS.has(nextExecutor)) {
             throw new Error(`Executor invalido: ${nextExecutor}`);
         }
+        if (isRetiredExecutor(nextExecutor, RETIRED_TASK_EXECUTORS)) {
+            throw createRetiredExecutorError(nextExecutor, 'task claim');
+        }
         task.executor = nextExecutor;
     }
     if (flags.status) {
@@ -572,6 +595,9 @@ function handleTaskClaim(ctx) {
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
     });
+    if (isRetiredExecutor(task.executor, RETIRED_TASK_EXECUTORS)) {
+        throw createRetiredExecutorError(task.executor, 'task claim');
+    }
     const handoffData = parseHandoffs();
     validateTaskGovernancePrechecks(board, task, {
         allowSelf: true,
@@ -659,6 +685,7 @@ function handleTaskStart(ctx) {
         parseBoard,
         detectDefaultOwner,
         ALLOWED_TASK_EXECUTORS,
+        RETIRED_TASK_EXECUTORS,
         ACTIVE_STATUSES,
         parseCsvList,
         validateTaskGovernancePrechecks,
@@ -697,6 +724,9 @@ function handleTaskStart(ctx) {
         if (!ALLOWED_TASK_EXECUTORS.has(nextExecutor)) {
             throw new Error(`Executor invalido: ${nextExecutor}`);
         }
+        if (isRetiredExecutor(nextExecutor, RETIRED_TASK_EXECUTORS)) {
+            throw createRetiredExecutorError(nextExecutor, 'task start');
+        }
         task.executor = nextExecutor;
     }
     if (flags.scope) {
@@ -719,6 +749,9 @@ function handleTaskStart(ctx) {
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
     });
+    if (isRetiredExecutor(task.executor, RETIRED_TASK_EXECUTORS)) {
+        throw createRetiredExecutorError(task.executor, 'task start');
+    }
     validateTaskGovernancePrechecks(board, task, {
         allowSelf: true,
         handoffs: handoffData.handoffs,
@@ -899,6 +932,7 @@ async function handleTaskCreate(ctx) {
         resolveTaskCreateTemplate,
         inferTaskCreateFromFiles,
         ALLOWED_TASK_EXECUTORS,
+        RETIRED_TASK_EXECUTORS,
         findCriticalScopeKeyword,
         CRITICAL_SCOPE_KEYWORDS,
         CRITICAL_SCOPE_ALLOWED_EXECUTORS,
@@ -1251,6 +1285,12 @@ async function handleTaskCreate(ctx) {
         const task = normalizeTaskForCreateApply(
             sourcePayload.task_full || sourcePayload.task
         );
+        if (isRetiredExecutor(task.executor, RETIRED_TASK_EXECUTORS)) {
+            throw createRetiredExecutorError(
+                task.executor,
+                'task create --apply'
+            );
+        }
         const originalTaskId = task.id;
         const originalTaskStatus = task.status;
         const originalTaskOwner = task.owner;
@@ -1529,6 +1569,9 @@ async function handleTaskCreate(ctx) {
     }
     if (!ALLOWED_TASK_EXECUTORS.has(executor)) {
         throw new Error(`task create: executor invalido (${executor})`);
+    }
+    if (isRetiredExecutor(executor, RETIRED_TASK_EXECUTORS)) {
+        throw createRetiredExecutorError(executor, 'task create');
     }
 
     const explicitCodexInstance = readStringFlag(

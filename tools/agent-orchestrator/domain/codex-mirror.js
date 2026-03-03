@@ -1,6 +1,6 @@
 'use strict';
 
-function buildCodexActiveComment(block, deps = {}) {
+function serializeBlock(block, deps = {}) {
     const {
         serializeArrayInline = (values) =>
             JSON.stringify(Array.isArray(values) ? values : []),
@@ -9,6 +9,9 @@ function buildCodexActiveComment(block, deps = {}) {
     if (!block) return '';
     const lines = [];
     lines.push('<!-- CODEX_ACTIVE');
+    lines.push(
+        `codex_instance: ${block.codex_instance || 'codex_backend_ops'}`
+    );
     lines.push(`block: ${block.block || 'C1'}`);
     lines.push(`task_id: ${block.task_id}`);
     lines.push(`status: ${block.status}`);
@@ -18,18 +21,69 @@ function buildCodexActiveComment(block, deps = {}) {
     return lines.join('\n');
 }
 
+function parseBlocks(raw = '') {
+    const regex = /<!--\s*CODEX_ACTIVE\s*\n([\s\S]*?)-->\s*/g;
+    const blocks = [];
+    let match;
+    while ((match = regex.exec(String(raw || ''))) !== null) {
+        const block = {};
+        for (const line of String(match[1] || '').split('\n')) {
+            const prop = line.trim().match(/^([a-zA-Z_][\w-]*):\s*(.*)$/);
+            if (!prop) continue;
+            const key = prop[1];
+            const value = String(prop[2] || '').trim();
+            if (key === 'files') {
+                try {
+                    block.files = JSON.parse(value);
+                } catch {
+                    block.files = value ? [value] : [];
+                }
+            } else {
+                block[key] = value;
+            }
+        }
+        if (!Array.isArray(block.files)) {
+            block.files = block.files ? [String(block.files)] : [];
+        }
+        block.codex_instance = String(
+            block.codex_instance || 'codex_backend_ops'
+        )
+            .trim()
+            .toLowerCase();
+        blocks.push(block);
+    }
+    return blocks;
+}
+
 function upsertCodexActiveBlock(planRaw, block, deps = {}) {
     const {
-        buildComment = (b) => buildCodexActiveComment(b, deps),
+        buildComment = (value) => serializeBlock(value, deps),
         anchorText = 'Relacion con Operativo 2026:',
+        codexInstance = block?.codex_instance || null,
     } = deps;
-    const regex = /<!--\s*CODEX_ACTIVE\s*\n[\s\S]*?-->\s*/g;
-    const withoutBlocks = String(planRaw || '').replace(regex, '');
-    if (!block) {
+    const withoutBlocks = String(planRaw || '').replace(
+        /<!--\s*CODEX_ACTIVE\s*\n[\s\S]*?-->\s*/g,
+        ''
+    );
+    const existingBlocks = parseBlocks(planRaw).filter((item) => {
+        if (!codexInstance) return false;
+        return (
+            String(item.codex_instance || 'codex_backend_ops') !==
+            String(codexInstance || 'codex_backend_ops')
+        );
+    });
+    const nextBlocks = block ? [...existingBlocks, block] : existingBlocks;
+    nextBlocks.sort((left, right) =>
+        String(left.codex_instance || '').localeCompare(
+            String(right.codex_instance || '')
+        )
+    );
+    const comments = nextBlocks.map((item) => buildComment(item)).join('\n\n');
+    if (!comments) {
         return withoutBlocks.replace(/\n{3,}/g, '\n\n');
     }
 
-    const comment = `${buildComment(block)}\n\n`;
+    const comment = `${comments}\n\n`;
     const anchorIndex = withoutBlocks.indexOf(anchorText);
     if (anchorIndex === -1) {
         return `${comment}${withoutBlocks}`.replace(/\n{3,}/g, '\n\n');
@@ -91,18 +145,33 @@ function buildCodexCheckReport(input = {}, deps = {}) {
             return acc;
         }, {});
 
-    if (codexInProgress.length > 1) {
-        errors.push(
-            `Mas de un CDX in_progress (${codexInProgress.map((t) => t.id).join(', ')})`
-        );
-    }
-
     for (const [instance, count] of Object.entries(codexInProgressByInstance)) {
         if (count > 1) {
             errors.push(
                 `Mas de una tarea in_progress para ${instance} (${count})`
             );
         }
+    }
+
+    const seenBlockInstances = new Map();
+    for (const block of codexBlocks) {
+        const instance = String(block?.codex_instance || 'codex_backend_ops')
+            .trim()
+            .toLowerCase();
+        seenBlockInstances.set(
+            instance,
+            (seenBlockInstances.get(instance) || 0) + 1
+        );
+    }
+    for (const [instance, count] of seenBlockInstances.entries()) {
+        if (count > 1) {
+            errors.push(
+                `Mas de un bloque CODEX_ACTIVE para ${instance} en ${codexPlanPath}`
+            );
+        }
+    }
+    if (codexBlocks.length > 2) {
+        errors.push(`Mas de dos bloques CODEX_ACTIVE en ${codexPlanPath}`);
     }
 
     for (const task of tasks) {
@@ -147,74 +216,88 @@ function buildCodexCheckReport(input = {}, deps = {}) {
         }
     }
 
-    if (codexBlocks.length > 1) {
-        errors.push(`Mas de un bloque CODEX_ACTIVE en ${codexPlanPath}`);
-    }
+    const blockByInstance = new Map(
+        codexBlocks.map((block) => [
+            String(block.codex_instance || 'codex_backend_ops')
+                .trim()
+                .toLowerCase(),
+            block,
+        ])
+    );
 
-    if (codexBlocks.length === 0) {
-        if (activeCodexTasks.length > 0) {
+    for (const task of activeCodexTasks) {
+        const instance = String(task.codex_instance || 'codex_backend_ops')
+            .trim()
+            .toLowerCase();
+        const block = blockByInstance.get(instance);
+        if (!block) {
             errors.push(
-                `Hay tareas CDX activas sin bloque CODEX_ACTIVE: ${activeCodexTasks
-                    .map((task) => task.id)
-                    .join(', ')}`
+                `Hay tarea CDX activa sin bloque CODEX_ACTIVE para ${instance}: ${task.id}`
+            );
+            continue;
+        }
+        if (
+            String(block.task_id || '').trim() !== String(task.id || '').trim()
+        ) {
+            errors.push(
+                `${instance}: task_id desalineado plan(${String(block.task_id || '')}) != board(${task.id})`
+            );
+            continue;
+        }
+        if (
+            String(block.status || '').trim() !==
+            String(task.status || '').trim()
+        ) {
+            errors.push(
+                `${task.id}: status desalineado plan(${String(block.status || '')}) != board(${task.status})`
             );
         }
-    } else {
-        const block = codexBlocks[0];
-        const taskId = String(block.task_id || '').trim();
-        const blockStatus = String(block.status || '').trim();
         const blockFiles = Array.isArray(block.files)
             ? block.files.map(normalizePathToken)
             : [];
-        const task = tasks.find((item) => String(item.id) === taskId);
-
-        if (!taskId) {
-            errors.push('CODEX_ACTIVE.task_id vacio');
-        }
-        if (!/^CDX-\d+$/.test(taskId)) {
-            errors.push(`CODEX_ACTIVE.task_id invalido (${taskId || 'vacio'})`);
-        }
-        if (!task) {
-            errors.push(
-                `CODEX_ACTIVE.task_id no existe en board: ${taskId || 'vacio'}`
-            );
-        } else {
-            if (String(task.executor) !== 'codex') {
+        const boardFiles = new Set((task.files || []).map(normalizePathToken));
+        for (const file of blockFiles) {
+            if (!boardFiles.has(file)) {
                 errors.push(
-                    `${task.id}: executor debe ser codex (actual: ${task.executor})`
+                    `${task.id}: file del bloque CODEX_ACTIVE no reservado en board (${file})`
                 );
             }
-            if (blockStatus !== String(task.status)) {
-                errors.push(
-                    `${task.id}: status desalineado plan(${blockStatus || 'vacio'}) != board(${task.status})`
-                );
-            }
-            const boardFiles = new Set(
-                (task.files || []).map(normalizePathToken)
-            );
-            for (const file of blockFiles) {
-                if (!boardFiles.has(file)) {
-                    errors.push(
-                        `${task.id}: file del bloque CODEX_ACTIVE no reservado en board (${file})`
-                    );
-                }
-            }
-        }
-
-        if (activeCodexTasks.length === 0 && activeStatuses.has(blockStatus)) {
-            errors.push(
-                'CODEX_ACTIVE indica tarea activa pero no hay CDX activo en board'
-            );
         }
     }
 
-    const activeBlock = codexBlocks[0] || null;
-    const activeBlockTaskId = activeBlock
-        ? String(activeBlock.task_id || '').trim()
-        : '';
-    const activeBlockTask = activeBlockTaskId
-        ? tasks.find((item) => String(item.id) === activeBlockTaskId) || null
-        : null;
+    for (const block of codexBlocks) {
+        const taskId = String(block.task_id || '').trim();
+        const instance = String(block.codex_instance || 'codex_backend_ops')
+            .trim()
+            .toLowerCase();
+        const task = tasks.find((item) => String(item.id || '') === taskId);
+        if (!taskId) {
+            errors.push(`CODEX_ACTIVE.task_id vacio para ${instance}`);
+            continue;
+        }
+        if (!/^CDX-\d+$/.test(taskId)) {
+            errors.push(`CODEX_ACTIVE.task_id invalido (${taskId || 'vacio'})`);
+            continue;
+        }
+        if (!task) {
+            errors.push(`CODEX_ACTIVE.task_id no existe en board: ${taskId}`);
+            continue;
+        }
+        if (String(task.executor || '') !== 'codex') {
+            errors.push(
+                `${task.id}: executor debe ser codex (actual: ${task.executor})`
+            );
+        }
+        if (
+            String(task.codex_instance || 'codex_backend_ops')
+                .trim()
+                .toLowerCase() !== instance
+        ) {
+            errors.push(
+                `${task.id}: codex_instance desalineado plan(${instance}) != board(${task.codex_instance || 'codex_backend_ops'})`
+            );
+        }
+    }
 
     return {
         version: 1,
@@ -232,32 +315,19 @@ function buildCodexCheckReport(input = {}, deps = {}) {
         codex_task_ids: codexTasks.map((task) => String(task.id)),
         codex_in_progress_ids: codexInProgress.map((task) => String(task.id)),
         codex_active_ids: activeCodexTasks.map((task) => String(task.id)),
-        plan_block: activeBlock
-            ? {
-                  block: String(activeBlock.block || ''),
-                  task_id: String(activeBlock.task_id || ''),
-                  status: String(activeBlock.status || ''),
-                  files: Array.isArray(activeBlock.files)
-                      ? activeBlock.files
-                      : [],
-                  updated_at: String(activeBlock.updated_at || ''),
-              }
-            : null,
-        board_task_for_plan_block: activeBlockTask
-            ? {
-                  id: String(activeBlockTask.id || ''),
-                  executor: String(activeBlockTask.executor || ''),
-                  status: String(activeBlockTask.status || ''),
-                  files: Array.isArray(activeBlockTask.files)
-                      ? activeBlockTask.files
-                      : [],
-              }
-            : null,
+        plan_blocks: codexBlocks.map((block) => ({
+            codex_instance: String(block.codex_instance || ''),
+            block: String(block.block || ''),
+            task_id: String(block.task_id || ''),
+            status: String(block.status || ''),
+            files: Array.isArray(block.files) ? block.files : [],
+            updated_at: String(block.updated_at || ''),
+        })),
     };
 }
 
 module.exports = {
-    buildCodexActiveComment,
+    buildCodexActiveComment: serializeBlock,
     upsertCodexActiveBlock,
     buildCodexCheckReport,
 };

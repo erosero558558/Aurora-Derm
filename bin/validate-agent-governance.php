@@ -22,6 +22,7 @@ $claudePath = $root . '/CLAUDE.md';
 $boardPath = $root . '/AGENT_BOARD.yaml';
 $handoffsPath = $root . '/AGENT_HANDOFFS.yaml';
 $signalsPath = $root . '/AGENT_SIGNALS.yaml';
+$jobsPath = $root . '/AGENT_JOBS.yaml';
 $governancePolicyPath = $root . '/governance-policy.json';
 $julesPath = $root . '/JULES_TASKS.md';
 $kimiPath = $root . '/KIMI_TASKS.md';
@@ -367,6 +368,73 @@ function parseSignalsYaml(string $content): array
 }
 
 /**
+ * @return array{version:mixed, updated_at:mixed, jobs:array<int,array<string,mixed>>}
+ */
+function parseJobsYaml(string $content): array
+{
+    $lines = explode("\n", $content);
+    $data = [
+        'version' => 1,
+        'updated_at' => '',
+        'jobs' => [],
+    ];
+    $inJobs = false;
+    $job = null;
+
+    foreach ($lines as $lineRaw) {
+        $line = str_replace("\t", '    ', $lineRaw);
+        $trimmed = trim($line);
+        if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+            continue;
+        }
+
+        if (!$inJobs && preg_match('/^version:\s*(.+)$/', $line, $m) === 1) {
+            $data['version'] = parseScalar((string) $m[1]);
+            continue;
+        }
+
+        if (!$inJobs && preg_match('/^updated_at:\s*(.+)$/', $line, $m) === 1) {
+            $data['updated_at'] = parseScalar((string) $m[1]);
+            continue;
+        }
+
+        if ($trimmed === 'jobs:') {
+            $inJobs = true;
+            if (is_array($job)) {
+                $data['jobs'][] = $job;
+                $job = null;
+            }
+            continue;
+        }
+
+        if (!$inJobs) {
+            continue;
+        }
+
+        if (preg_match('/^\s{2}-\s+key:\s*(.+)$/', $line, $m) === 1) {
+            if (is_array($job)) {
+                $data['jobs'][] = $job;
+            }
+            $job = ['key' => parseScalar((string) $m[1])];
+            continue;
+        }
+
+        if (
+            is_array($job) &&
+            preg_match('/^\s{4}([a-zA-Z_][\w-]*):\s*(.*)$/', $line, $m) === 1
+        ) {
+            $job[(string) $m[1]] = parseScalar((string) $m[2]);
+        }
+    }
+
+    if (is_array($job)) {
+        $data['jobs'][] = $job;
+    }
+
+    return $data;
+}
+
+/**
  * @return array<int,array<string,mixed>>
  */
 function parseCodexActiveBlocks(string $content): array
@@ -534,6 +602,7 @@ $claude = readFileStrict($claudePath, $errors);
 $boardRaw = readFileStrict($boardPath, $errors);
 $handoffsRaw = readFileStrict($handoffsPath, $errors);
 $signalsRaw = readFileStrict($signalsPath, $errors);
+$jobsRaw = readFileStrict($jobsPath, $errors);
 $governancePolicyRaw = readFileStrict($governancePolicyPath, $errors);
 $julesRaw = readFileStrict($julesPath, $errors);
 $kimiRaw = readFileStrict($kimiPath, $errors);
@@ -590,6 +659,7 @@ $requiredDualTaskKeys = [
 ];
 $allowedStatuses = ['backlog', 'ready', 'in_progress', 'review', 'done', 'blocked', 'failed'];
 $allowedExecutors = ['codex', 'claude', 'kimi', 'jules', 'ci'];
+$retiredExecutors = ['claude', 'kimi', 'jules'];
 $allowedCodexInstances = ['codex_backend_ops', 'codex_frontend'];
 $allowedDomainLanes = ['backend_ops', 'frontend_content'];
 $allowedLaneLocks = ['strict', 'handoff_allowed'];
@@ -657,6 +727,9 @@ foreach ($board['tasks'] as $idx => $task) {
     if (!in_array($executor, $allowedExecutors, true)) {
         $errors[] = "Task {$id} tiene executor invalido: {$executor}";
     }
+    if ($status !== 'done' && $status !== 'failed' && in_array($executor, $retiredExecutors, true)) {
+        $errors[] = "Task {$id} no terminal no puede usar executor retirado: {$executor}";
+    }
 
     $scope = strtolower((string) ($task['scope'] ?? ''));
     $runtimeImpact = strtolower((string) ($task['runtime_impact'] ?? ''));
@@ -673,12 +746,12 @@ foreach ($board['tasks'] as $idx => $task) {
     }
     $criticalZone = (bool) ($task['critical_zone'] ?? false);
     if ($criticalZone || $runtimeImpact === 'high') {
-        if (!in_array($executor, ['codex', 'claude'], true)) {
+        if ($executor !== 'codex') {
             $errors[] = "Task critica {$id} por runtime/critical_zone no puede asignarse a {$executor}";
         }
     }
     foreach ($criticalScopes as $keyword) {
-        if (str_contains($scope, $keyword) && !in_array($executor, ['codex', 'claude'], true)) {
+        if (str_contains($scope, $keyword) && $executor !== 'codex') {
             $errors[] = "Task critica {$id} ({$scope}) no puede asignarse a executor {$executor}";
             break;
         }
@@ -784,6 +857,59 @@ if ((string) ($signals['version'] ?? '') !== '1') {
     $errors[] = 'AGENT_SIGNALS.yaml debe declarar version: 1';
 }
 
+$jobs = [
+    'version' => 1,
+    'updated_at' => '',
+    'jobs' => [],
+];
+if ($jobsRaw !== '') {
+    $jobs = parseJobsYaml($jobsRaw);
+}
+
+if ((string) ($jobs['version'] ?? '') !== '1') {
+    $errors[] = 'AGENT_JOBS.yaml debe declarar version: 1';
+}
+if (!is_array($jobs['jobs'] ?? null) || count($jobs['jobs']) === 0) {
+    $errors[] = 'AGENT_JOBS.yaml debe contener al menos un job';
+} else {
+    $jobKeys = [];
+    foreach ($jobs['jobs'] as $job) {
+        $jobKey = trim((string) ($job['key'] ?? ''));
+        if ($jobKey === '') {
+            $errors[] = 'AGENT_JOBS.yaml contiene job sin key';
+            continue;
+        }
+        if (isset($jobKeys[$jobKey])) {
+            $errors[] = "AGENT_JOBS.yaml contiene job duplicado: {$jobKey}";
+        }
+        $jobKeys[$jobKey] = true;
+        if (!array_key_exists('job_id', $job) || trim((string) ($job['job_id'] ?? '')) === '') {
+            $errors[] = "AGENT_JOBS {$jobKey} requiere job_id";
+        }
+        if (!array_key_exists('status_path', $job) || trim((string) ($job['status_path'] ?? '')) === '') {
+            $errors[] = "AGENT_JOBS {$jobKey} requiere status_path";
+        }
+        if (!array_key_exists('health_url', $job) || trim((string) ($job['health_url'] ?? '')) === '') {
+            $errors[] = "AGENT_JOBS {$jobKey} requiere health_url";
+        }
+    }
+    $publicSyncJob = null;
+    foreach ($jobs['jobs'] as $job) {
+        if (trim((string) ($job['key'] ?? '')) === 'public_main_sync') {
+            $publicSyncJob = $job;
+            break;
+        }
+    }
+    if (!is_array($publicSyncJob)) {
+        $errors[] = 'AGENT_JOBS.yaml requiere public_main_sync';
+    } else {
+        $publicSyncJobId = trim((string) ($publicSyncJob['job_id'] ?? ''));
+        if ($publicSyncJobId !== '8d31e299-7e57-4959-80b5-aaa2d73e9674') {
+            $errors[] = 'AGENT_JOBS.yaml public_main_sync.job_id invalido';
+        }
+    }
+}
+
 if ((string) ($handoffs['version'] ?? '') !== '1') {
     $errors[] = 'AGENT_HANDOFFS.yaml debe declarar version: 1';
 }
@@ -878,6 +1004,40 @@ if (is_array($governancePolicy)) {
         $yellowThreshold = $thresholds['domain_score_priority_yellow_below'] ?? null;
         if (!is_numeric($yellowThreshold) || (float) $yellowThreshold < 0) {
             $errors[] = 'governance-policy.json tiene threshold invalido: summary.thresholds.domain_score_priority_yellow_below';
+        }
+    }
+
+    $agentsPolicy = $governancePolicy['agents'] ?? null;
+    if (!is_array($agentsPolicy)) {
+        $errors[] = 'governance-policy.json requiere agents como objeto';
+    } else {
+        foreach (['active_executors', 'retired_executors'] as $listKey) {
+            if (!isset($agentsPolicy[$listKey]) || !is_array($agentsPolicy[$listKey])) {
+                $errors[] = "governance-policy.json requiere agents.{$listKey} como lista";
+            }
+        }
+        if (
+            array_key_exists('allow_legacy_terminal_executors', $agentsPolicy) &&
+            !is_bool($agentsPolicy['allow_legacy_terminal_executors'])
+        ) {
+            $errors[] = 'governance-policy.json requiere agents.allow_legacy_terminal_executors boolean';
+        }
+    }
+
+    $publishingPolicy = $governancePolicy['publishing'] ?? null;
+    if (!is_array($publishingPolicy)) {
+        $errors[] = 'governance-policy.json requiere publishing como objeto';
+    } else {
+        if (array_key_exists('enabled', $publishingPolicy) && !is_bool($publishingPolicy['enabled'])) {
+            $errors[] = 'governance-policy.json requiere publishing.enabled boolean';
+        }
+        foreach (['checkpoint_cooldown_seconds', 'max_live_wait_seconds'] as $numericKey) {
+            if (
+                array_key_exists($numericKey, $publishingPolicy) &&
+                (!is_numeric($publishingPolicy[$numericKey]) || (int) $publishingPolicy[$numericKey] <= 0)
+            ) {
+                $errors[] = "governance-policy.json requiere publishing.{$numericKey} > 0";
+            }
         }
     }
 
@@ -1138,6 +1298,9 @@ $codexBlocks = $codexPlanRaw !== '' ? parseCodexActiveBlocks($codexPlanRaw) : []
 $codexTasks = [];
 $codexInProgress = [];
 $codexActive = [];
+$codexInProgressByInstance = [];
+$codexActiveByInstance = [];
+$allowedCodexInstances = ['codex_backend_ops', 'codex_frontend'];
 foreach ($board['tasks'] as $task) {
     $id = (string) ($task['id'] ?? '');
     if (!str_starts_with($id, 'CDX-')) {
@@ -1148,37 +1311,86 @@ foreach ($board['tasks'] as $task) {
         $errors[] = "Task Codex con id invalido: {$id} (esperado CDX-###)";
     }
     $status = (string) ($task['status'] ?? '');
+    $codexInstance = trim((string) ($task['codex_instance'] ?? ''));
+    if ($codexInstance !== '' && !in_array($codexInstance, $allowedCodexInstances, true)) {
+        $errors[] = "Task {$id} tiene codex_instance invalido: {$codexInstance}";
+    }
     if ($status === 'in_progress') {
         $codexInProgress[] = $id;
+        if ($codexInstance !== '') {
+            $codexInProgressByInstance[$codexInstance][] = $id;
+        }
     }
     if (isActiveStatus($status)) {
         $codexActive[] = $id;
+        if ($codexInstance === '') {
+            $errors[] = "Task {$id} activa requiere codex_instance";
+        } else {
+            $codexActiveByInstance[$codexInstance][] = $id;
+        }
     }
 }
 
-if (count($codexInProgress) > 1) {
-    $errors[] = 'Mas de una tarea CDX in_progress: ' . implode(', ', $codexInProgress);
+if (count($codexInProgress) > 2) {
+    $errors[] = 'Mas de dos tareas CDX in_progress: ' . implode(', ', $codexInProgress);
+}
+foreach ($codexInProgressByInstance as $codexInstance => $taskIds) {
+    if (count($taskIds) > 1) {
+        $errors[] = "Mas de una tarea CDX in_progress para {$codexInstance}: " . implode(', ', $taskIds);
+    }
+}
+if (count($codexActive) > 2) {
+    $errors[] = 'Mas de dos tareas CDX activas: ' . implode(', ', $codexActive);
+}
+foreach ($codexActiveByInstance as $codexInstance => $taskIds) {
+    if (count($taskIds) > 1) {
+        $errors[] = "Mas de una tarea CDX activa para {$codexInstance}: " . implode(', ', $taskIds);
+    }
 }
 
-if (count($codexBlocks) > 1) {
-    $errors[] = 'PLAN_MAESTRO_CODEX_2026.md contiene mas de un bloque CODEX_ACTIVE';
+if (count($codexBlocks) > 2) {
+    $errors[] = 'PLAN_MAESTRO_CODEX_2026.md contiene mas de dos bloques CODEX_ACTIVE';
 }
 
-if (count($codexBlocks) === 0) {
+$codexBlocksByInstance = [];
+foreach ($codexBlocks as $block) {
+    $blockInstance = trim((string) ($block['codex_instance'] ?? ''));
+    if ($blockInstance === '') {
+        $errors[] = 'CODEX_ACTIVE.codex_instance vacio en PLAN_MAESTRO_CODEX_2026.md';
+        continue;
+    }
+    if (!in_array($blockInstance, $allowedCodexInstances, true)) {
+        $errors[] = "CODEX_ACTIVE.codex_instance invalido: {$blockInstance}";
+        continue;
+    }
+    if (isset($codexBlocksByInstance[$blockInstance])) {
+        $errors[] = "PLAN_MAESTRO_CODEX_2026.md contiene mas de un bloque CODEX_ACTIVE para {$blockInstance}";
+        continue;
+    }
+    $codexBlocksByInstance[$blockInstance] = $block;
+}
+
+if (count($codexBlocksByInstance) === 0) {
     if (!empty($codexActive)) {
         $errors[] = 'Hay tareas CDX activas sin bloque CODEX_ACTIVE: ' . implode(', ', $codexActive);
     }
-} elseif (count($codexBlocks) === 1) {
-    $block = $codexBlocks[0];
+}
+
+foreach ($codexActiveByInstance as $codexInstance => $taskIds) {
+    if (!isset($codexBlocksByInstance[$codexInstance])) {
+        $errors[] = "Hay tarea CDX activa sin bloque CODEX_ACTIVE para {$codexInstance}: " . implode(', ', $taskIds);
+    }
+}
+
+foreach ($codexBlocksByInstance as $blockInstance => $block) {
     $blockTaskId = trim((string) ($block['task_id'] ?? ''));
     $blockStatus = trim((string) ($block['status'] ?? ''));
-    $blockFiles = is_array($block['files'] ?? null) ? $block['files'] : [];
     $boardTask = $taskMap[$blockTaskId] ?? null;
 
     if ($blockTaskId === '') {
-        $errors[] = 'CODEX_ACTIVE.task_id vacio en PLAN_MAESTRO_CODEX_2026.md';
+        $errors[] = "CODEX_ACTIVE.task_id vacio para {$blockInstance} en PLAN_MAESTRO_CODEX_2026.md";
     } elseif (preg_match('/^CDX-\d+$/', $blockTaskId) !== 1) {
-        $errors[] = "CODEX_ACTIVE.task_id invalido: {$blockTaskId}";
+        $errors[] = "CODEX_ACTIVE.task_id invalido para {$blockInstance}: {$blockTaskId}";
     }
 
     if ($boardTask === null) {
@@ -1190,13 +1402,16 @@ if (count($codexBlocks) === 0) {
         if ($blockStatus !== (string) ($boardTask['status'] ?? '')) {
             $errors[] = "Task {$blockTaskId} tiene status desalineado entre CODEX_ACTIVE y AGENT_BOARD";
         }
+        if (trim((string) ($boardTask['codex_instance'] ?? '')) !== $blockInstance) {
+            $errors[] = "Task {$blockTaskId} tiene codex_instance desalineado entre CODEX_ACTIVE y AGENT_BOARD";
+        }
 
         // Nota H6: la comparacion detallada de files entre CODEX_ACTIVE y AGENT_BOARD
         // queda canonica en Node (`codex-check`). PHP conserva existencia/estatus/executor.
     }
 
-    if (isActiveStatus($blockStatus) && empty($codexActive)) {
-        $errors[] = 'CODEX_ACTIVE indica status activo pero no hay tareas CDX activas en AGENT_BOARD';
+    if (isActiveStatus($blockStatus) && empty($codexActiveByInstance[$blockInstance])) {
+        $errors[] = "CODEX_ACTIVE indica status activo pero no hay tarea CDX activa para {$blockInstance} en AGENT_BOARD";
     }
 }
 

@@ -13,7 +13,8 @@ Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite po
 ## Gobernanza
 
 - Este archivo es la fuente de control de la linea Codex.
-- Solo un bloque Codex puede estar `IN_PROGRESS`.
+- Maximo un bloque `CODEX_ACTIVE` por `codex_instance`.
+- Maximo dos bloques `CODEX_ACTIVE` activos en total, uno por lane.
 - No se toman tareas del Operativo que ya esten `IN_PROGRESS`, salvo soporte de calidad (tests/guardrails).
 - Definicion de done por commit:
 - objetivo tecnico explicito.
@@ -312,6 +313,27 @@ Criterio de salida:
 - [x] Contratos JSON y CSV permanecen intactos para analytics, service priorities y reporte semanal.
 - [x] Tests PHP de analytics/service priorities y contrato Node consumidor permanecen verdes.
 
+## C15 - Package P4: nucleo de durabilidad de datos
+
+Estado: `COMPLETED`
+Objetivo:
+
+- Separar paths, config, cifrado y persistencia de `lib/storage.php`, y health/replicacion/configuracion de `lib/backup.php`, manteniendo wrappers publicos y formatos existentes.
+
+Entregables:
+
+- [x] `lib/storage/StorePaths.php` y `lib/storage/StorageConfig.php` concentran resolucion de directorios, archivos y toggles de backend.
+- [x] `lib/storage/StoreCrypto.php` y `lib/storage/StorePersistence.php` concentran cifrado JSON fallback, lectura/escritura y backups asociados.
+- [x] `lib/backup/BackupConfig.php`, `lib/backup/BackupCrypto.php`, `lib/backup/BackupHealthService.php` y `lib/backup/BackupReplicationService.php` absorben configuracion, receiver crypto, health y replicacion/offsite.
+- [x] `lib/storage.php` y `lib/backup.php` quedan como wrappers de compatibilidad sin cambios breaking en funciones globales.
+
+Criterio de salida:
+
+- [x] `lib/storage.php` queda en `<= 650` lineas.
+- [x] `lib/backup.php` queda en `<= 750` lineas.
+- [x] `store.json`, `store.sqlite`, backups, restore y cifrado mantienen formato y semantica.
+- [x] Tests PHP de storage/backup/disaster recovery y `npm run gate:prod:backend` quedan verdes.
+
 ## Contratos publicos
 
 - No se introducen cambios breaking en contratos HTTP existentes.
@@ -379,3 +401,4 @@ Criterio de salida:
 - 2026-03-02: cerrado C12/P1 con evidencia Sentry normalizada en `verification/runtime/sentry-events-last.json`, consumo remoto/local en `bin/prod-readiness-summary.js`, workflow manual `sentry-events-verify.yml` alineado al artefacto `sentry-events-report`, y scorecard base fijada en `verification/agent-runs/CDX-002.md`.
 - 2026-03-02: cerrado C13/P2 con kernel PowerShell compartido en `bin/powershell/Common.Http.ps1`, `bin/powershell/Common.Metrics.ps1` y `bin/powershell/Common.Warnings.ps1`; `REPORTE-SEMANAL-PRODUCCION.ps1` bajo de `2042` a `919` lineas, `VERIFICAR-DESPLIEGUE.ps1` de `1968` a `1216`, `MONITOR-PRODUCCION.ps1` de `368` a `290`; validado con contratos Node y con `npm run verify:prod:fast`, `npm run report:weekly:prod`, `npm run monitor:prod`.
 - 2026-03-02: cerrado C14/P3 con `AnalyticsController.php` reducido de `1111` a `93` lineas y nueva capa `lib/analytics/*` para funnel, retention, parseo Prometheus, normalizacion y CSV; validado con `php -d xdebug.mode=coverage vendor/bin/phpunit tests/Integration/AnalyticsRetentionMetricsTest.php tests/Integration/AnalyticsServiceFunnelMetricsTest.php tests/Integration/AnalyticsRetentionReportTest.php tests/Integration/ServicePriorityControllerTest.php`, `php tests/run-php-tests.php`, `node --test tests-node/weekly-report-script-contract.test.js` y `npm run agent:gate`.
+- 2026-03-03: cerrado C15/P4 con `lib/storage.php` reducido de `1030` a `231` lineas y `lib/backup.php` de `1174` a `270`, extrayendo `lib/storage/*` y `lib/backup/*`; restore/disaster recovery endurecido para Windows con `proc_open` + env directo, validado con storage/backup tests, disaster recovery, `npm run test:php` y `npm run gate:prod:backend`.

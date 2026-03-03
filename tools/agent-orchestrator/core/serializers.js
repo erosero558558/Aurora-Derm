@@ -164,10 +164,50 @@ function serializeSignals(data, options = {}) {
     return `${lines.join('\n').trimEnd()}\n`;
 }
 
+function serializeJobs(data, options = {}) {
+    const getDate = options.currentDate || currentDate;
+    const safe = data || { version: 1, updated_at: getDate(), jobs: [] };
+    const lines = [];
+    lines.push(`version: ${safe.version || 1}`);
+    lines.push(`updated_at: ${quote(safe.updated_at || getDate())}`);
+    lines.push('jobs:');
+
+    const jobs = Array.isArray(safe.jobs) ? safe.jobs : [];
+    for (const job of jobs) {
+        lines.push(`  - key: ${job.key || ''}`);
+        lines.push(`    job_id: ${quote(job.job_id || '')}`);
+        lines.push(`    enabled: ${job.enabled === false ? 'false' : 'true'}`);
+        lines.push(`    type: ${job.type || 'external_cron'}`);
+        lines.push(`    owner: ${job.owner || 'codex_backend_ops'}`);
+        lines.push(`    environment: ${job.environment || 'production'}`);
+        lines.push(`    repo_path: ${job.repo_path || ''}`);
+        lines.push(`    branch: ${job.branch || 'main'}`);
+        lines.push(`    schedule: ${quote(job.schedule || '')}`);
+        lines.push(`    command: ${job.command || ''}`);
+        lines.push(`    wrapper_fallback: ${job.wrapper_fallback || ''}`);
+        lines.push(`    lock_file: ${job.lock_file || ''}`);
+        lines.push(`    log_path: ${job.log_path || ''}`);
+        lines.push(`    status_path: ${job.status_path || ''}`);
+        lines.push(`    health_url: ${job.health_url || ''}`);
+        lines.push(
+            `    expected_max_lag_seconds: ${Number.isFinite(Number(job.expected_max_lag_seconds)) ? Number(job.expected_max_lag_seconds) : 0}`
+        );
+        lines.push(
+            `    source_of_truth: ${job.source_of_truth || 'host_cron'}`
+        );
+        lines.push(
+            `    publish_strategy: ${job.publish_strategy || 'main_auto_guarded'}`
+        );
+    }
+
+    return `${lines.join('\n').trimEnd()}\n`;
+}
+
 module.exports = {
     quote,
     serializeArrayInline,
     serializeHandoffs,
     serializeBoard,
     serializeSignals,
+    serializeJobs,
 };

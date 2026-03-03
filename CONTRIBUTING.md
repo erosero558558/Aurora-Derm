@@ -39,10 +39,12 @@ If any tool fails, the commit will be aborted. You can bypass this with `git com
 
 - Canonical policy: `AGENTS.md`
 - Canonical backlog: `AGENT_BOARD.yaml`
-- Derived queues: `JULES_TASKS.md`, `KIMI_TASKS.md`
+- Codex lanes activos: `codex_backend_ops`, `codex_frontend`
+- Tombstones historicos: `JULES_TASKS.md`, `KIMI_TASKS.md`
 
 Before opening a PR:
 
 1. `npm run agent:status`
 2. `npm run agent:conflicts`
-3. `npm run agent:validate`
+3. `npm run agent:jobs:status`
+4. `npm run agent:validate`

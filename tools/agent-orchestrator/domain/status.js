@@ -12,6 +12,18 @@ function buildStatusReport(input = {}) {
     const tasks = Array.isArray(board?.tasks) ? board.tasks : [];
     const byStatus = input.byStatus || {};
     const byExecutor = input.byExecutor || {};
+    const legacyTerminalExecutorTasks = tasks.filter((task) => {
+        const executor = String(task?.executor || '')
+            .trim()
+            .toLowerCase();
+        const status = String(task?.status || '')
+            .trim()
+            .toLowerCase();
+        return (
+            ['claude', 'jules', 'kimi'].includes(executor) &&
+            ['done', 'failed'].includes(status)
+        );
+    });
 
     const data = {
         version: board?.version ?? 1,
@@ -20,6 +32,16 @@ function buildStatusReport(input = {}) {
             tasks: tasks.length,
             byStatus,
             byExecutor,
+        },
+        legacy_terminal_executor_tasks: {
+            total: legacyTerminalExecutorTasks.length,
+            by_executor: legacyTerminalExecutorTasks.reduce((acc, task) => {
+                const executor = String(task?.executor || '')
+                    .trim()
+                    .toLowerCase();
+                acc[executor] = Number(acc[executor] || 0) + 1;
+                return acc;
+            }, {}),
         },
         contribution: contribution || null,
         contribution_trend: contributionTrend || null,
@@ -51,6 +73,16 @@ function renderStatusText(data, options = {}) {
     lines.push(
         `Conflicts eximidos por handoff: ${data?.conflicts_breakdown?.handoff ?? 0}`
     );
+    if (data?.jobs) {
+        lines.push(
+            `Jobs: tracked=${data.jobs.tracked ?? 0}, healthy=${data.jobs.healthy ?? 0}, failing=${data.jobs.failing ?? 0}`
+        );
+    }
+    if (data?.legacy_terminal_executor_tasks) {
+        lines.push(
+            `Legacy terminal executors: ${data.legacy_terminal_executor_tasks.total ?? 0}`
+        );
+    }
     lines.push('');
     lines.push('Por estado:');
     for (const [status, count] of Object.entries(

@@ -29,6 +29,22 @@ test('gitignore incluye caches locales de PHP y cobertura', () => {
     }
 });
 
+test('gitignore permite versionar evidencia por tarea en verification/agent-runs', () => {
+    const raw = readRepoFile('.gitignore');
+    const requiredEntries = [
+        '!verification/agent-runs/AG-*.md',
+        '!verification/agent-runs/CDX-*.md',
+    ];
+
+    for (const entry of requiredEntries) {
+        assert.equal(
+            raw.includes(entry),
+            true,
+            `falta exception en .gitignore: ${entry}`
+        );
+    }
+});
+
 test('prettierignore excluye colas derivadas de agentes', () => {
     const raw = readRepoFile('.prettierignore');
     const requiredEntries = ['JULES_TASKS.md', 'KIMI_TASKS.md'];

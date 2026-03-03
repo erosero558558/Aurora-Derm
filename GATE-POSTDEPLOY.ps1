@@ -63,6 +63,7 @@ while ($verifyAttempts -lt $verifyMaxAttempts) {
         -AllowMetaCspFallback:$AllowMetaCspFallback `
         -RequireWebhookSecret:$RequireWebhookSecret `
         -RequireBackupHealthy:$RequireBackupHealthy `
+        -RequireCronReady:$RequireCronReady `
         -RequireStableDataDir:$RequireStableDataDir `
         -SkipAssetHashChecks:$effectiveSkipAssetHashChecks `
         -ForceAssetHashChecks:$ForceAssetHashChecks `

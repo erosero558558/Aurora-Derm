@@ -28,7 +28,7 @@ if (empty($args)) {
 }
 
 // Check if running as root
-if (posix_getuid() === 0) {
+if (function_exists('posix_getuid') && posix_getuid() === 0) {
     echo "WARNING: You are running this script as root.\n";
     echo "The restored file may have incorrect ownership (root:root).\n";
     echo "Please ensure the web server (e.g., www-data) can write to the data file after restoration.\n";
@@ -91,6 +91,9 @@ if (!$force) {
 
 echo "Creating safety backup of current store...\n";
 $currentStorePath = data_file_path();
+if (function_exists('close_db_connection')) {
+    close_db_connection();
+}
 if (file_exists($currentStorePath)) {
     $safetyBackupPath = $currentStorePath . '.pre-restore-' . date('Ymd-His') . '.bak';
     if (!copy($currentStorePath, $safetyBackupPath)) {

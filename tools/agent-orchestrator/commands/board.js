@@ -1,6 +1,6 @@
 'use strict';
 
-function handleBoardCommand(ctx) {
+async function handleBoardCommand(ctx) {
     const {
         args = [],
         parseFlags,
@@ -11,6 +11,7 @@ function handleBoardCommand(ctx) {
         buildBoardDoctorReport,
         attachDiagnostics,
         buildWarnFirstDiagnostics,
+        loadMetricsSnapshot,
         summarizeDiagnostics,
         listBoardLeases,
         getTaskLeaseSummary,
@@ -25,6 +26,7 @@ function handleBoardCommand(ctx) {
         statsBoardEvents,
         readJsonlFile,
         printJson = (v) => console.log(JSON.stringify(v, null, 2)),
+        loadJobsSnapshot,
     } = ctx;
     const subcommand = String(args[0] || 'doctor')
         .trim()
@@ -41,6 +43,10 @@ function handleBoardCommand(ctx) {
         );
         const policy = getGovernancePolicy();
         const leasePolicy = normalizeBoardLeasesPolicy(policy);
+        const jobs =
+            typeof loadJobsSnapshot === 'function'
+                ? await loadJobsSnapshot()
+                : [];
         const baseReport = buildBoardDoctorReport(
             {
                 board,
@@ -64,6 +70,11 @@ function handleBoardCommand(ctx) {
             board,
             handoffData,
             conflictAnalysis,
+            metricsSnapshot:
+                typeof loadMetricsSnapshot === 'function'
+                    ? loadMetricsSnapshot()
+                    : null,
+            jobsSnapshot: jobs,
         });
         const mergedDiagnostics = [
             ...(Array.isArray(baseReport.diagnostics)

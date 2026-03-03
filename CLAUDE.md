@@ -11,7 +11,7 @@ Si existe cualquier contradiccion con `AGENTS.md`, prevalece `AGENTS.md`.
 1. Fuente de verdad operativa: `AGENTS.md`.
 2. `CLAUDE.md` no redefine politicas globales, solo comportamiento de rol.
 3. Backlog canonico: `AGENT_BOARD.yaml`.
-4. Colas de ejecucion derivadas: `JULES_TASKS.md`, `KIMI_TASKS.md`.
+4. `JULES_TASKS.md` y `KIMI_TASKS.md` quedan solo como tombstones historicos.
 
 ## Rol principal de Claude
 
@@ -28,9 +28,9 @@ orquestador canonico.
 Claude debe seguir el arbol oficial definido en `AGENTS.md`. Resumen:
 
 ```text
-Zona critica -> Claude/Codex lideran con plan + checklist + gate.
-No critica + PR remoto async -> Jules.
-No critica local de bajo riesgo -> Kimi.
+Zona critica -> codex_backend_ops lidera con plan + checklist + gate.
+No critica frontend -> codex_frontend.
+No critica backend/docs -> codex_backend_ops.
 Solape de archivos -> bloquear y replanificar.
 Cambio runtime -> tests + smoke + gate.
 ```
@@ -47,14 +47,16 @@ Cambio runtime -> tests + smoke + gate.
 ```bash
 node agent-orchestrator.js status
 node agent-orchestrator.js conflicts
-node agent-orchestrator.js sync
+node agent-orchestrator.js jobs status --json
 php bin/validate-agent-governance.php
 ```
 
 ## Handoff obligatorio
 
 Para tareas con impacto runtime, usar plantilla:
+
 - `templates/agent-handoff.md`
 
 y registrar evidencia en:
+
 - `verification/agent-runs/<task_id>.md`

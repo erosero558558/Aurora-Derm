@@ -28,7 +28,6 @@ const coreSerializers = require('./tools/agent-orchestrator/core/serializers');
 const corePolicy = require('./tools/agent-orchestrator/core/policy');
 const coreTime = require('./tools/agent-orchestrator/core/time');
 const coreIo = require('./tools/agent-orchestrator/core/io');
-const coreQueues = require('./tools/agent-orchestrator/core/queues');
 const coreOutput = require('./tools/agent-orchestrator/core/output');
 const domainConflicts = require('./tools/agent-orchestrator/domain/conflicts');
 const domainHandoffs = require('./tools/agent-orchestrator/domain/handoffs');
@@ -39,6 +38,7 @@ const domainTaskShape = require('./tools/agent-orchestrator/domain/task-shape');
 const domainDiagnostics = require('./tools/agent-orchestrator/domain/diagnostics');
 const domainMetrics = require('./tools/agent-orchestrator/domain/metrics');
 const domainStatus = require('./tools/agent-orchestrator/domain/status');
+const domainJobs = require('./tools/agent-orchestrator/domain/jobs');
 const domainBoardLeases = require('./tools/agent-orchestrator/domain/board-leases');
 const domainBoardDoctor = require('./tools/agent-orchestrator/domain/board-doctor');
 const domainBoardEvents = require('./tools/agent-orchestrator/domain/board-events');
@@ -54,6 +54,8 @@ const closeCommandHandlers = require('./tools/agent-orchestrator/commands/close'
 const taskCommandHandlers = require('./tools/agent-orchestrator/commands/task');
 const leasesCommandHandlers = require('./tools/agent-orchestrator/commands/leases');
 const boardCommandHandlers = require('./tools/agent-orchestrator/commands/board');
+const jobsCommandHandlers = require('./tools/agent-orchestrator/commands/jobs');
+const publishCommandHandlers = require('./tools/agent-orchestrator/commands/publish');
 const domainIntake = require('./tools/agent-orchestrator/domain/intake');
 const runtimeGovernanceCommands = require('./tools/agent-orchestrator/commands/runtime-governance');
 const runtimeIntakeCommands = require('./tools/agent-orchestrator/commands/runtime-intake');
@@ -62,6 +64,7 @@ const ROOT = __dirname;
 const BOARD_PATH = resolve(ROOT, 'AGENT_BOARD.yaml');
 const HANDOFFS_PATH = resolve(ROOT, 'AGENT_HANDOFFS.yaml');
 const SIGNALS_PATH = resolve(ROOT, 'AGENT_SIGNALS.yaml');
+const JOBS_PATH = resolve(ROOT, 'AGENT_JOBS.yaml');
 const JULES_PATH = resolve(ROOT, 'JULES_TASKS.md');
 const KIMI_PATH = resolve(ROOT, 'KIMI_TASKS.md');
 const CODEX_PLAN_PATH = resolve(ROOT, 'PLAN_MAESTRO_CODEX_2026.md');
@@ -83,6 +86,11 @@ const BOARD_EVENTS_PATH = resolve(
     'verification',
     'agent-board-events.jsonl'
 );
+const PUBLISH_EVENTS_PATH = resolve(
+    ROOT,
+    'verification',
+    'agent-publish-events.jsonl'
+);
 const DEFAULT_GITHUB_REPOSITORY =
     process.env.AGENT_GITHUB_REPOSITORY ||
     process.env.GITHUB_REPOSITORY ||
@@ -101,6 +109,22 @@ const DEFAULT_DOMAIN_SIGNAL_SCORES = {
 };
 const DEFAULT_GOVERNANCE_POLICY = {
     version: 1,
+    agents: {
+        active_executors: ['codex', 'ci'],
+        retired_executors: ['claude', 'jules', 'kimi'],
+        allow_legacy_terminal_executors: true,
+    },
+    publishing: {
+        enabled: true,
+        mode: 'main_auto_guarded',
+        trigger: 'validated_checkpoint',
+        branch: 'main',
+        gate_profile: 'fast_targeted',
+        checkpoint_cooldown_seconds: 90,
+        max_live_wait_seconds: 180,
+        health_url: 'https://pielarmonia.com/api.php?resource=health',
+        required_job_key: 'public_main_sync',
+    },
     domain_health: {
         priority_domains: DEFAULT_PRIORITY_DOMAINS,
         domain_weights: DEFAULT_DOMAIN_HEALTH_WEIGHTS,
@@ -139,6 +163,13 @@ const DEFAULT_GOVERNANCE_POLICY = {
             done_without_evidence: { severity: 'warning', enabled: true },
             wip_limit_executor: { severity: 'warning', enabled: true },
             wip_limit_scope: { severity: 'warning', enabled: true },
+            retired_executor_active: { severity: 'warning', enabled: true },
+            public_main_sync_unconfigured: {
+                severity: 'warning',
+                enabled: true,
+            },
+            public_main_sync_stale: { severity: 'warning', enabled: true },
+            public_main_sync_failed: { severity: 'warning', enabled: true },
         },
         board_leases: {
             enabled: true,
@@ -165,9 +196,7 @@ const DEFAULT_GOVERNANCE_POLICY = {
             count_statuses: ['in_progress', 'review', 'blocked'],
             by_executor: {
                 codex: 3,
-                claude: 3,
-                jules: 5,
-                kimi: 5,
+                ci: 3,
             },
             by_scope: {
                 calendar: 2,
@@ -207,6 +236,7 @@ const ALLOWED_TASK_EXECUTORS = new Set([
     'kimi',
     'ci',
 ]);
+const RETIRED_TASK_EXECUTORS = new Set(['claude', 'jules', 'kimi']);
 const CRITICAL_SCOPE_KEYWORDS = [
     'payments',
     'auth',
@@ -215,7 +245,7 @@ const CRITICAL_SCOPE_KEYWORDS = [
     'env',
     'security',
 ];
-const CRITICAL_SCOPE_ALLOWED_EXECUTORS = new Set(['codex', 'claude']);
+const CRITICAL_SCOPE_ALLOWED_EXECUTORS = new Set(['codex']);
 const ALLOWED_CODEX_INSTANCES = new Set([
     'codex_backend_ops',
     'codex_frontend',
@@ -226,7 +256,7 @@ const DUAL_CODEX_OWNERSHIP_MATRIX =
     domainTaskGuards.DEFAULT_DUAL_CODEX_OWNERSHIP;
 const TASK_CREATE_TEMPLATES = {
     docs: {
-        executor: 'kimi',
+        executor: 'codex',
         status: 'ready',
         risk: 'low',
         scope: 'docs',
@@ -329,6 +359,16 @@ function parseSignals() {
         exists: existsSync,
         readFile: readFileSync,
         parseSignalsContent: coreParsers.parseSignalsContent,
+        currentDate,
+    });
+}
+
+function parseJobs() {
+    return coreIo.readJobsFile({
+        jobsPath: JOBS_PATH,
+        exists: existsSync,
+        readFile: readFileSync,
+        parseJobsContent: coreParsers.parseJobsContent,
         currentDate,
     });
 }
@@ -802,20 +842,22 @@ function buildCodexActiveComment(block) {
     });
 }
 
-function upsertCodexActiveBlock(planRaw, block) {
+function upsertCodexActiveBlock(planRaw, block, options = {}) {
     return domainCodexMirror.upsertCodexActiveBlock(planRaw, block, {
         buildComment: buildCodexActiveComment,
         anchorText: 'Relacion con Operativo 2026:',
+        codexInstance: options.codexInstance || options.codex_instance || null,
     });
 }
 
-function writeCodexActiveBlock(block) {
+function writeCodexActiveBlock(block, options = {}) {
     return coreIo.writeCodexActiveBlockFile(block, {
         codexPlanPath: CODEX_PLAN_PATH,
         exists: existsSync,
         readFile: readFileSync,
         writeFile: writeFileSync,
         upsertCodexActiveBlock,
+        codexInstance: options.codex_instance || block?.codex_instance || null,
     });
 }
 
@@ -933,6 +975,19 @@ function buildDomainHealthHistorySummary(history, days = 7) {
     return domainMetrics.buildDomainHealthHistorySummary(history, days);
 }
 
+async function loadJobsSnapshot() {
+    const registry = parseJobs();
+    return domainJobs.buildJobsSnapshot(registry, {
+        existsSync,
+        readFileSync,
+        fetchImpl: typeof fetch === 'function' ? fetch : null,
+    });
+}
+
+function summarizeJobsSnapshot(jobs) {
+    return domainJobs.summarizeJobsSnapshot(jobs);
+}
+
 function loadMetricsSnapshot() {
     if (!existsSync(METRICS_PATH)) return null;
     try {
@@ -1040,6 +1095,7 @@ function buildWarnFirstDiagnostics({
     conflictAnalysis = null,
     metricsSnapshot = null,
     policyReport = null,
+    jobsSnapshot = null,
 }) {
     return domainDiagnostics.buildWarnFirstDiagnostics({
         source,
@@ -1049,6 +1105,7 @@ function buildWarnFirstDiagnostics({
         conflictAnalysis,
         metricsSnapshot,
         policyReport,
+        jobsSnapshot,
         activeStatuses: ACTIVE_STATUSES,
     });
 }
@@ -1064,8 +1121,8 @@ function buildTaskCreateWarnDiagnostics(input = {}) {
     });
 }
 
-function cmdStatus(args) {
-    statusCommandHandlers.handleStatusCommand({
+async function cmdStatus(args) {
+    return statusCommandHandlers.handleStatusCommand({
         args,
         parseBoard,
         parseHandoffs,
@@ -1088,6 +1145,8 @@ function cmdStatus(args) {
         formatPpDelta,
         summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
         buildWarnFirstDiagnostics,
+        loadJobsSnapshot,
+        summarizeJobsSnapshot,
     });
 }
 
@@ -1231,6 +1290,7 @@ function cmdBoard(args) {
         buildBoardDoctorReport: domainBoardDoctor.buildBoardDoctorReport,
         attachDiagnostics,
         buildWarnFirstDiagnostics,
+        loadMetricsSnapshot,
         summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
         listBoardLeases: domainBoardLeases.listBoardLeases,
         getTaskLeaseSummary,
@@ -1245,6 +1305,7 @@ function cmdBoard(args) {
         statsBoardEvents: domainBoardEvents.statsBoardEvents,
         readJsonlFile: coreIo.readJsonlFile,
         printJson: coreOutput.printJson,
+        loadJobsSnapshot,
     });
 }
 
@@ -1282,6 +1343,7 @@ async function cmdTask(args) {
         resolveTaskCreateTemplate,
         inferTaskCreateFromFiles,
         ALLOWED_TASK_EXECUTORS,
+        RETIRED_TASK_EXECUTORS,
         findCriticalScopeKeyword,
         CRITICAL_SCOPE_KEYWORDS,
         CRITICAL_SCOPE_ALLOWED_EXECUTORS,
@@ -1300,26 +1362,60 @@ async function cmdTask(args) {
     });
 }
 
+function renderRetiredQueueTombstone() {
+    return (
+        '# Retired Derived Queue\n\n' +
+        'Este archivo queda preservado solo por compatibilidad historica.\n' +
+        'Desde 2026-03-03 el orquestador opera en modo codex-only y ya no genera ni sincroniza esta cola.\n'
+    );
+}
+
 function syncDerivedQueues(options = {}) {
-    return coreIo.syncDerivedQueuesFiles(options, {
-        parseBoard,
-        parseTaskMetaMap: (path) =>
-            coreQueues.parseTaskMetaMap(path, {
-                exists: existsSync,
-                readFile: readFileSync,
-                normalize: normalizeEol,
-            }),
-        renderQueueFile: coreQueues.renderQueueFile,
-        julesPath: JULES_PATH,
-        kimiPath: KIMI_PATH,
-        writeFile: writeFileSync,
-        log: (msg) => console.log(msg),
-    });
+    const { silent = false } = options;
+    const tombstone = renderRetiredQueueTombstone();
+    writeFileSync(JULES_PATH, tombstone, 'utf8');
+    writeFileSync(KIMI_PATH, tombstone, 'utf8');
+    if (!silent) {
+        console.log(
+            'Sync completado: colas derivadas retiradas, se preservan tombstones.'
+        );
+    }
+    return {
+        retired: true,
+        jules_tasks: 0,
+        kimi_tasks: 0,
+    };
 }
 
 function cmdSync() {
     syncCommandHandlers.handleSyncCommand({
         syncDerivedQueues,
+    });
+}
+
+async function cmdJobs(args) {
+    return jobsCommandHandlers.handleJobsCommand({
+        args,
+        parseFlags,
+        parseJobs,
+        buildJobsSnapshot: loadJobsSnapshot,
+        findJobSnapshot: domainJobs.findJobSnapshot,
+        printJson: coreOutput.printJson,
+    });
+}
+
+async function cmdPublish(args) {
+    return publishCommandHandlers.handlePublishCommand({
+        args,
+        parseFlags,
+        parseBoard,
+        ensureTask,
+        parseJobs,
+        buildJobsSnapshot: loadJobsSnapshot,
+        findJobSnapshot: domainJobs.findJobSnapshot,
+        printJson: coreOutput.printJson,
+        rootPath: ROOT,
+        publishEventsPath: PUBLISH_EVENTS_PATH,
     });
 }
 
@@ -1810,6 +1906,8 @@ async function main() {
         leases: () => cmdLeases(args),
         board: () => cmdBoard(args),
         task: () => cmdTask(args),
+        jobs: () => cmdJobs(args),
+        publish: () => cmdPublish(args),
         sync: () => cmdSync(),
         close: () => cmdClose(args),
         metrics: () => cmdMetrics(args),
@@ -1822,6 +1920,41 @@ async function main() {
 }
 
 main().catch((error) => {
+    const argv = process.argv.slice(2);
+    const wantsJson = argv.includes('--json');
+    if (wantsJson) {
+        const [command = 'status', subcommand = ''] = argv;
+        const payload = {
+            version: 1,
+            ok: false,
+            command:
+                command === 'board' && subcommand
+                    ? `${command} ${subcommand}`
+                    : command,
+            error: String(error && error.message ? error.message : error),
+            error_code: error?.error_code || error?.code || 'command_failed',
+        };
+        if (
+            ['task', 'handoffs', 'leases', 'codex'].includes(command) &&
+            subcommand
+        ) {
+            payload.action = subcommand;
+        }
+        for (const key of [
+            'expected_revision',
+            'actual_revision',
+            'task_id',
+            'expected',
+            'actual',
+        ]) {
+            if (Object.prototype.hasOwnProperty.call(error || {}, key)) {
+                payload[key] = error[key];
+            }
+        }
+        console.log(JSON.stringify(payload, null, 2));
+        process.exit(1);
+        return;
+    }
     console.error(`ERROR: ${error.message}`);
     process.exit(1);
 });

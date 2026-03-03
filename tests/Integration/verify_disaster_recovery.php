@@ -49,6 +49,9 @@ function recursiveRemove($dir)
     if (!$dir || !is_dir($dir)) {
         return;
     }
+    if (function_exists('close_db_connection')) {
+        close_db_connection();
+    }
     $files = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
         RecursiveIteratorIterator::CHILD_FIRST
@@ -58,6 +61,37 @@ function recursiveRemove($dir)
         $todo($fileinfo->getRealPath());
     }
     rmdir($dir);
+}
+
+function run_restore_command(string $restoreScript, string $backupPath, string $dataDir): array
+{
+    $command = [PHP_BINARY, $restoreScript, $backupPath, '--force'];
+    $descriptors = [
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $env = array_merge($_ENV, ['PIELARMONIA_DATA_DIR' => $dataDir]);
+    $pipes = [];
+    $process = proc_open($command, $descriptors, $pipes, null, $env);
+    if (!is_resource($process)) {
+        return [
+            'code' => 1,
+            'output' => ['Could not start restore process.'],
+        ];
+    }
+
+    $stdout = stream_get_contents($pipes[1]);
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    $status = proc_close($process);
+    $combined = trim((string) $stdout . PHP_EOL . (string) $stderr);
+
+    return [
+        'code' => $status,
+        'output' => $combined === '' ? [] : preg_split('/\R+/', $combined),
+    ];
 }
 
 try {
@@ -127,15 +161,9 @@ try {
         close_db_connection();
     }
 
-    // We use --force to skip confirmation
-    $cmd = sprintf(
-        'PIELARMONIA_DATA_DIR=%s php %s %s --force 2>&1',
-        escapeshellarg($tempDir),
-        escapeshellarg($restoreScript),
-        escapeshellarg($safeBackupPath)
-    );
-
-    exec($cmd, $output, $returnVar);
+    $run = run_restore_command($restoreScript, $safeBackupPath, $tempDir);
+    $output = $run['output'];
+    $returnVar = (int) ($run['code'] ?? 1);
 
     if ($returnVar !== 0) {
         echo "\nRestore script output:\n" . implode("\n", $output) . "\n";

@@ -8,6 +8,7 @@ const { resolve } = require('path');
 const DEFAULT_OPTIONS = {
     remote: 'origin',
     branch: 'main',
+    sourceRef: '',
     boardPath: 'AGENT_BOARD.yaml',
     autoStash: true,
     autoDiscardDerivedQueueNoise: true,
@@ -31,6 +32,11 @@ function parseArgs(argv = []) {
         }
         if (arg === '--branch') {
             opts.branch = String(argv[i + 1] || '').trim() || opts.branch;
+            i += 1;
+            continue;
+        }
+        if (arg === '--source-ref') {
+            opts.sourceRef = String(argv[i + 1] || '').trim() || opts.sourceRef;
             i += 1;
             continue;
         }
@@ -437,7 +443,13 @@ function run(argv = process.argv.slice(2), deps = {}) {
 
             const pushResult = runner(
                 'git',
-                ['push', options.remote, options.branch],
+                [
+                    'push',
+                    options.remote,
+                    options.sourceRef
+                        ? `${options.sourceRef}:${options.branch}`
+                        : options.branch,
+                ],
                 options
             );
             result.steps.push({ name: `push${suffix}`, ...pushResult });

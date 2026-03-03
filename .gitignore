@@ -19,6 +19,8 @@ verification/*
 !verification/agent-runs/
 verification/agent-runs/*
 !verification/agent-runs/.gitkeep
+!verification/agent-runs/AG-*.md
+!verification/agent-runs/CDX-*.md
 
 # PHP Composer
 vendor/

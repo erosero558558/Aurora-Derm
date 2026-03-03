@@ -259,6 +259,7 @@ function basePlanWithCodexBlock({ status = 'in_progress' } = {}) {
 # Plan Maestro Codex 2026 (Fixture)
 
 <!-- CODEX_ACTIVE
+codex_instance: codex_backend_ops
 block: C1
 task_id: CDX-001
 status: ${status}
@@ -281,7 +282,7 @@ policy:
   updated_at: ${DATE}
 tasks:
   - id: AG-001
-    executor: jules
+    executor: ci
     status: in_progress
     files: ["controllers/AppointmentController.php"]
   - id: CDX-001
@@ -301,7 +302,7 @@ policy:
   updated_at: ${DATE}
 tasks:
   - id: AG-001
-    executor: jules
+    executor: codex
     status: in_progress
     files: ["tests/agenda.spec.js", "lib/booking.php"]
   - id: CDX-001
@@ -323,7 +324,7 @@ tasks:
   - id: AG-010
     title: Task fixture
     owner: unassigned
-    executor: jules
+    executor: codex
     status: ready
     risk: low
     scope: docs
@@ -349,7 +350,7 @@ tasks:
   - id: AG-020
     title: Active task
     owner: ernesto
-    executor: jules
+    executor: codex
     status: in_progress
     risk: medium
     scope: backend
@@ -363,7 +364,7 @@ tasks:
   - id: AG-021
     title: Candidate task
     owner: unassigned
-    executor: kimi
+    executor: codex
     status: done
     risk: low
     scope: audit
@@ -528,7 +529,7 @@ test('task claim/start/finish actualiza board y evidencia sin editar YAML manual
         '--owner',
         'ernesto',
         '--executor',
-        'jules',
+        'codex',
     ]);
     assert.match(result.stdout, /Task claim OK: AG-010/);
 
@@ -650,11 +651,11 @@ test('task ls soporta filtros y --json con summary estable', (t) => {
         '--json',
         '--active',
         '--executor',
-        'jules',
+        'codex',
     ]);
     json = parseJsonStdout(result);
     assert.equal(json.filters.active, true);
-    assert.equal(json.filters.executor, 'jules');
+    assert.equal(json.filters.executor, 'codex');
     assert.equal(json.summary.matched, 1);
     assert.equal(json.summary.returned, 1);
     assert.equal(json.summary.matched_active, 1);
@@ -668,18 +669,18 @@ test('task ls soporta filtros y --json con summary estable', (t) => {
         '--status',
         'done',
         '--executor',
-        'kimi',
+        'codex',
         '--limit',
         '1',
     ]);
     json = parseJsonStdout(result);
     assert.deepEqual(json.filters.status, ['done']);
-    assert.equal(json.filters.executor, 'kimi');
+    assert.equal(json.filters.executor, 'codex');
     assert.equal(json.filters.limit, 1);
     assert.equal(json.summary.matched, 1);
     assert.equal(json.summary.returned, 1);
     assert.equal(json.tasks[0].id, 'AG-021');
-    assert.equal(json.tasks[0].executor, 'kimi');
+    assert.equal(json.tasks[0].executor, 'codex');
 });
 
 test('task ls texto imprime matched y filtros', (t) => {
@@ -739,7 +740,7 @@ test('task create crea AG siguiente y sincroniza colas derivadas', (t) => {
             '--title',
             'Nueva tarea fixture',
             '--executor',
-            'kimi',
+            'codex',
             '--status',
             'ready',
             '--risk',
@@ -761,13 +762,13 @@ test('task create crea AG siguiente y sincroniza colas derivadas', (t) => {
     assert.equal(json.ok, true);
     assert.equal(json.task.id, 'AG-011');
     assert.equal(json.task.owner, 'ernesto');
-    assert.equal(json.task.executor, 'kimi');
+    assert.equal(json.task.executor, 'codex');
     assert.equal(json.task.status, 'ready');
 
     const board = readBoard(dir);
     assert.match(board, /- id: AG-011/);
     assert.match(board, /title: "Nueva tarea fixture"/);
-    assert.match(board, /executor: kimi/);
+    assert.match(board, /executor: codex/);
     assert.match(board, /status: ready/);
     assert.match(board, /files: \["docs\/nueva-tarea\.md", "docs\/otra\.md"\]/);
     assert.match(board, /depends_on: \["AG-010"\]/);
@@ -802,7 +803,7 @@ test('task create soporta --template docs y permite override de defaults', (t) =
             '--template',
             'docs',
             '--executor',
-            'jules',
+            'ci',
             '--files',
             'docs/template.md',
             '--json',
@@ -817,11 +818,11 @@ test('task create soporta --template docs y permite override de defaults', (t) =
     assert.equal(json.task.status, 'ready');
     assert.equal(json.task.risk, 'low');
     assert.equal(json.task.scope, 'docs');
-    assert.equal(json.task.executor, 'jules'); // explicit flag overrides template
+    assert.equal(json.task.executor, 'ci'); // explicit flag overrides template
     assert.equal(json.executor_source, 'flag');
 
     const board = readBoard(dir);
-    assert.match(board, /executor: jules/);
+    assert.match(board, /executor: ci/);
     assert.match(board, /risk: low/);
     assert.match(board, /scope: docs/);
 });
@@ -894,12 +895,11 @@ test('task create --from-files autoajusta executor para scope critico si no se p
     assert.equal(json.file_inference.suggested_executor, 'codex');
     assert.deepEqual(json.file_inference.allowed_executors_for_scope, [
         'codex',
-        'claude',
     ]);
     assert.equal(json.task.scope, 'calendar');
     assert.equal(json.task.risk, 'high');
     assert.equal(json.task.executor, 'codex');
-    assert.equal(json.executor_source, 'from_files_auto');
+    assert.equal(json.executor_source, 'template');
 });
 
 test('task create --from-files agrega diagnostics cuando cae en scope general por fallback', (t) => {
@@ -922,7 +922,7 @@ test('task create --from-files agrega diagnostics cuando cae en scope general po
         '--files',
         '/',
         '--executor',
-        'kimi',
+        'codex',
         '--json',
     ]);
     const json = parseJsonStdout(result);
@@ -1037,7 +1037,7 @@ test('task create bloquea crear tarea activa con conflicto blocking', (t) => {
             '--title',
             'Conflicting task',
             '--executor',
-            'jules',
+            'codex',
             '--status',
             'in_progress',
             '--risk',
@@ -1072,7 +1072,7 @@ test('task create valida depends_on existente y bloquea referencias invalidas', 
             '--title',
             'Deps invalidas',
             '--executor',
-            'kimi',
+            'codex',
             '--files',
             'docs/deps.md',
             '--depends-on',
@@ -1091,7 +1091,7 @@ test('task create valida depends_on existente y bloquea referencias invalidas', 
             '--title',
             'Deps duplicadas',
             '--executor',
-            'kimi',
+            'codex',
             '--files',
             'docs/deps-dup.md',
             '--depends-on',
@@ -1120,7 +1120,7 @@ test('task create bloquea scope critico para executor no permitido', (t) => {
             '--title',
             'Cambio deploy',
             '--executor',
-            'jules',
+            'ci',
             '--scope',
             'deploy-hotfix',
             '--files',
@@ -1130,7 +1130,7 @@ test('task create bloquea scope critico para executor no permitido', (t) => {
     );
 
     assert.match(result.stderr, /task critica/i);
-    assert.match(result.stderr, /executor jules/i);
+    assert.match(result.stderr, /executor ci/i);
 });
 
 test('task create template critical exige scope critico explicito', (t) => {
@@ -1216,7 +1216,7 @@ test('task create --interactive solicita campos minimos y mantiene JSON limpio',
 
     assert.equal(json.task.id, 'AG-011');
     assert.equal(json.task.owner, 'ernesto');
-    assert.equal(json.task.executor, 'kimi');
+    assert.equal(json.task.executor, 'codex');
     assert.equal(json.task.scope, 'docs');
     assert.equal(json.task.risk, 'low');
     assert.equal(json.template, 'docs');
@@ -1268,7 +1268,7 @@ test('task create --explain imprime razon de inferencia y soporta JSON estable',
         '--files',
         'docs/explain.md',
         '--executor',
-        'kimi',
+        'codex',
         '--json',
     ]);
     const json = parseJsonStdout(result);
@@ -1778,12 +1778,20 @@ test('task start bloquea scope critico para executor no permitido', (t) => {
 
     const result = runCli(
         dir,
-        ['task', 'start', 'AG-010', '--scope', 'payments-prod'],
+        [
+            'task',
+            'start',
+            'AG-010',
+            '--scope',
+            'payments-prod',
+            '--executor',
+            'ci',
+        ],
         1
     );
 
     assert.match(result.stderr, /task critica/i);
-    assert.match(result.stderr, /executor jules/i);
+    assert.match(result.stderr, /executor ci/i);
 });
 
 test('leases lifecycle: task start crea lease, heartbeat renueva y clear limpia', (t) => {
@@ -2208,14 +2216,14 @@ test('status texto muestra leaderboard con semaforo y delta vs baseline cuando h
                 baseline_contribution: {
                     executors: [
                         {
-                            executor: 'jules',
-                            weighted_done_points_pct: 100,
-                            done_tasks_pct: 100,
-                        },
-                        {
-                            executor: 'kimi',
+                            executor: 'codex',
                             weighted_done_points_pct: 0,
                             done_tasks_pct: 0,
+                        },
+                        {
+                            executor: 'ci',
+                            weighted_done_points_pct: 100,
+                            done_tasks_pct: 100,
                         },
                     ],
                 },
@@ -2232,10 +2240,8 @@ test('status texto muestra leaderboard con semaforo y delta vs baseline cuando h
     assert.match(result.stdout, /\[GREEN\]\s+payments:/);
     assert.match(result.stdout, /Aporte \(ranking por completado ponderado\)/);
     assert.match(result.stdout, /Baseline de comparacion:\s+metrics/);
-    assert.match(result.stdout, /\[GREEN\]\s+#1 kimi/);
+    assert.match(result.stdout, /\[GREEN\]\s+#1 codex/);
     assert.match(result.stdout, /delta \+100pp vs baseline/);
-    assert.match(result.stdout, /\[YELLOW\]\s+#2 jules/);
-    assert.match(result.stdout, /delta -100pp vs baseline/);
 });
 
 test('status --json --explain-red expone causas de rojo por conflictos activos', (t) => {
@@ -2367,8 +2373,9 @@ test('conflicts, handoffs y codex-check soportan --json con salida estable', (t)
     assert.equal(json.ok, false);
     assert.ok(json.error_count >= 1);
     assert.match(json.errors.join(' | '), /status desalineado/i);
-    assert.equal(json.plan_block.task_id, 'CDX-001');
-    assert.equal(json.board_task_for_plan_block.id, 'CDX-001');
+    assert.equal(Array.isArray(json.plan_blocks), true);
+    assert.equal(json.plan_blocks[0].task_id, 'CDX-001');
+    assert.equal(json.codex_active_ids.includes('CDX-001'), true);
 });
 
 test('handoffs create/close escriben eventos append-only en board events', (t) => {
@@ -2442,7 +2449,7 @@ tasks:
   - id: AG-001
     title: "Task 1"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: in_progress
     risk: low
     scope: docs
@@ -2455,7 +2462,7 @@ tasks:
   - id: AG-002
     title: "Task 2"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: ready
     risk: low
     scope: docs
@@ -2468,7 +2475,7 @@ tasks:
   - id: AG-003
     title: "Task 3"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: ready
     risk: low
     scope: docs
@@ -2527,7 +2534,7 @@ tasks:
                 enabled: true,
                 mode: 'warn',
                 count_statuses: ['in_progress', 'review', 'blocked'],
-                by_executor: { jules: 1, codex: 3, claude: 3, kimi: 5 },
+                by_executor: { codex: 1, ci: 2 },
                 by_scope: { docs: 1, default: 4 },
             },
         },
@@ -2545,7 +2552,7 @@ tasks:
     );
 
     const dispatchJson = parseJsonStdout(
-        runCli(dir, ['dispatch', '--agent', 'jules', '--json'])
+        runCli(dir, ['dispatch', '--agent', 'codex', '--json'])
     );
     assert.equal(Array.isArray(dispatchJson.diagnostics), true);
     assert.equal(

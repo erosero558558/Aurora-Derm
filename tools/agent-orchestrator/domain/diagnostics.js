@@ -194,6 +194,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         handoffData = null,
         metricsSnapshot = null,
         policyReport = null,
+        jobsSnapshot = null,
         activeStatuses = new Set(),
         now = new Date(),
     } = input;
@@ -322,6 +323,111 @@ function buildWarnFirstDiagnostics(input = {}) {
                 })
             );
         }
+    }
+
+    if (warnPolicyEnabled(warnPolicyMap, 'retired_executor_active')) {
+        const retiredExecutors = Array.isArray(
+            policy?.agents?.retired_executors
+        )
+            ? policy.agents.retired_executors.map((value) =>
+                  String(value || '')
+                      .trim()
+                      .toLowerCase()
+              )
+            : [];
+        const retiredSet = new Set(retiredExecutors);
+        const activeRetiredTasks = (
+            Array.isArray(board?.tasks) ? board.tasks : []
+        )
+            .filter((task) =>
+                activeStatuses.has(String(task?.status || '').trim())
+            )
+            .filter((task) =>
+                retiredSet.has(
+                    String(task?.executor || '')
+                        .trim()
+                        .toLowerCase()
+                )
+            );
+        if (activeRetiredTasks.length > 0) {
+            diagnostics.push(
+                makeDiagnostic({
+                    code: 'warn.board.retired_executor_active',
+                    severity: warnPolicySeverity(
+                        warnPolicyMap,
+                        'retired_executor_active'
+                    ),
+                    source,
+                    message: `Tareas activas usan executors retirados: ${activeRetiredTasks
+                        .map((task) => String(task.id || ''))
+                        .join(', ')}`,
+                    task_ids: activeRetiredTasks.map((task) =>
+                        String(task.id || '')
+                    ),
+                })
+            );
+        }
+    }
+
+    const publicSyncJob = Array.isArray(jobsSnapshot)
+        ? jobsSnapshot.find(
+              (job) => String(job?.key || '') === 'public_main_sync'
+          )
+        : null;
+    if (warnPolicyEnabled(warnPolicyMap, 'public_main_sync_unconfigured')) {
+        if (!publicSyncJob || publicSyncJob.configured === false) {
+            diagnostics.push(
+                makeDiagnostic({
+                    code: 'warn.jobs.public_main_sync_unconfigured',
+                    severity: warnPolicySeverity(
+                        warnPolicyMap,
+                        'public_main_sync_unconfigured'
+                    ),
+                    source,
+                    message:
+                        'public_main_sync no esta configurado o no pudo verificarse',
+                })
+            );
+        }
+    }
+    if (
+        publicSyncJob &&
+        warnPolicyEnabled(warnPolicyMap, 'public_main_sync_stale') &&
+        publicSyncJob.verified !== false &&
+        publicSyncJob.age_seconds !== null &&
+        publicSyncJob.age_seconds >
+            Number(publicSyncJob.expected_max_lag_seconds || 0)
+    ) {
+        diagnostics.push(
+            makeDiagnostic({
+                code: 'warn.jobs.public_main_sync_stale',
+                severity: warnPolicySeverity(
+                    warnPolicyMap,
+                    'public_main_sync_stale'
+                ),
+                source,
+                message: `public_main_sync stale: age=${publicSyncJob.age_seconds}s max=${publicSyncJob.expected_max_lag_seconds}s`,
+            })
+        );
+    }
+    if (
+        publicSyncJob &&
+        warnPolicyEnabled(warnPolicyMap, 'public_main_sync_failed') &&
+        publicSyncJob.verified !== false &&
+        (!publicSyncJob.healthy ||
+            String(publicSyncJob.state || '') === 'failed')
+    ) {
+        diagnostics.push(
+            makeDiagnostic({
+                code: 'warn.jobs.public_main_sync_failed',
+                severity: warnPolicySeverity(
+                    warnPolicyMap,
+                    'public_main_sync_failed'
+                ),
+                source,
+                message: `public_main_sync unhealthy: state=${publicSyncJob.state || 'unknown'} source=${publicSyncJob.verification_source || 'unknown'}`,
+            })
+        );
     }
 
     return diagnostics;

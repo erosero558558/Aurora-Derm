@@ -6,6 +6,8 @@ declare(strict_types=1);
  * Simple PHP Testing Framework
  */
 
+require_once __DIR__ . '/test_filesystem.php';
+
 $test_passed = 0;
 $test_failed = 0;
 

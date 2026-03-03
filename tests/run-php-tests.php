@@ -15,6 +15,76 @@ $includePosixOnWindows = filter_var((string) getenv('PIELARMONIA_TEST_INCLUDE_PO
 $includeIntegration = filter_var((string) getenv('PIELARMONIA_TEST_INCLUDE_INTEGRATION'), FILTER_VALIDATE_BOOLEAN);
 $hasPdoSqlite = extension_loaded('pdo_sqlite');
 
+function output_indicates_failure(string $output): bool
+{
+    if ($output === '') {
+        return false;
+    }
+
+    $patterns = [
+        '/^\s*\[FAIL\]/m',
+        '/^\s*FAIL:\s/m',
+        '/^\s*FAILED:\s/m',
+        '/^\s*❌\s*FAIL:\s/mu'
+    ];
+
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $output) === 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function run_php_test(string $file): array
+{
+    $stdoutFile = tempnam(sys_get_temp_dir(), 'php-test-out-');
+    $stderrFile = tempnam(sys_get_temp_dir(), 'php-test-err-');
+    if ($stdoutFile === false || $stderrFile === false) {
+        throw new RuntimeException('Failed to allocate temp files for PHP test execution.');
+    }
+
+    $command = [
+        PHP_BINARY,
+        '-d',
+        'assert.active=1',
+        '-d',
+        'assert.exception=1',
+        $file
+    ];
+
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['file', $stdoutFile, 'w'],
+        2 => ['file', $stderrFile, 'w']
+    ];
+
+    $process = proc_open($command, $descriptors, $pipes, $GLOBALS['testDir']);
+    if (!is_resource($process)) {
+        @unlink($stdoutFile);
+        @unlink($stderrFile);
+        throw new RuntimeException("Failed to start PHP test process: {$file}");
+    }
+
+    if (isset($pipes[0]) && is_resource($pipes[0])) {
+        fclose($pipes[0]);
+    }
+
+    $exitCode = proc_close($process);
+    $stdout = (string) @file_get_contents($stdoutFile);
+    $stderr = (string) @file_get_contents($stderrFile);
+    @unlink($stdoutFile);
+    @unlink($stderrFile);
+
+    return [
+        'exit_code' => $exitCode,
+        'stdout' => $stdout,
+        'stderr' => $stderr,
+        'output_failed' => output_indicates_failure($stdout . $stderr)
+    ];
+}
+
 $patterns = [
     'test*.php',
     '*_test.php',
@@ -23,6 +93,7 @@ $patterns = [
 ];
 
 $excludedFiles = [
+    'test_filesystem.php',
     'test_framework.php',
     'router.php',
     'penetration_test.php',
@@ -36,8 +107,7 @@ $posixOnlyFiles = [
     'CriticalFlowsE2ETest.php',
     'verify_backups_p0.php',
     'verify_disaster_recovery_cli.php',
-    'verify_restore_procedure.php',
-    'test_storage_backup.php'
+    'verify_restore_procedure.php'
 ];
 
 $integrationOnlyFiles = [
@@ -49,6 +119,7 @@ $integrationOnlyFiles = [
 ];
 
 $sqliteRequiredFiles = [
+    'test_storage_backup.php',
     'verify_backups_p0.php',
     'verify_disaster_recovery_cli.php',
     'verify_restore_procedure.php'
@@ -100,14 +171,23 @@ foreach ($testFiles as $file) {
     $relative = str_replace($testDir . DIRECTORY_SEPARATOR, 'tests' . DIRECTORY_SEPARATOR, $file);
     echo "Testing {$relative}...\n";
 
-    $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($file);
-    passthru($cmd, $exitCode);
+    $result = run_php_test($file);
+    if ($result['stdout'] !== '') {
+        echo $result['stdout'];
+    }
+    if ($result['stderr'] !== '') {
+        fwrite(STDERR, $result['stderr']);
+    }
 
-    if ($exitCode === 0) {
+    if ($result['exit_code'] === 0 && !$result['output_failed']) {
         $passed++;
     } else {
         $failed++;
-        echo "FAILED: {$relative}\n";
+        echo "FAILED: {$relative}";
+        if ($result['exit_code'] === 0 && $result['output_failed']) {
+            echo " (failure marker detected in output)";
+        }
+        echo "\n";
     }
 }
 
