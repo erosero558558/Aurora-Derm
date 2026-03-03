@@ -23,7 +23,14 @@
         "test:analytics:rollout:contract": "node --test tests-node/analytics-rollout-contract.test.js",
         "test:frontend:lighthouse:premium": "node bin/run-lighthouse-premium.js",
         "test:frontend:performance:gate": "node bin/run-public-performance-gate.js",
+        "score:public:v5:sony": "node bin/score-public-v5-sony.js --min-score 82 --min-checkpoints 28",
+        "audit:public:v5:surface": "node bin/audit-public-v5-surface.js --strict",
+        "test:public:v5:gateway": "node --test tests-node/public-v5-gateway-flags.test.js",
+        "test:frontend:qa:v5": "npx playwright test tests/public-v5-pricing-localization.spec.js tests/public-v5-booking-payment-flow.spec.js tests/public-v5-service-matrix.spec.js tests/service-booking-hints-parity.spec.js && npm run test:public:v5:gateway",
+        "gate:public:v5:acceptance": "npm run content:public-v5:validate && npm run audit:public:v5:surface && npm run test:frontend:qa:v5 && npm run test:frontend:performance:gate && npm run score:public:v5:sony",
         "baseline:public:screenshots": "node bin/capture-public-baseline.js",
+        "baseline:public:compare": "node bin/compare-public-baseline.js",
+        "gate:public:v5:8point": "node bin/gate-public-v5-8point.js",
         "gate:staging:acceptance": "node bin/run-staging-acceptance-gate.js",
         "test:frontend:qa:public": "npx playwright test tests/homepage.spec.js tests/telemedicina-conversion-qa.spec.js tests/service-pages-qa.spec.js tests/mobile-overflow-regression.spec.js tests/deferred-content-fallback.spec.js tests/home-deferred-hydration.spec.js tests/cookie-consent.spec.js tests/legal.spec.js tests/public-v3-entry-surface-taxonomy.spec.js",
         "test:frontend:qa:admin": "npx playwright test tests/admin-ui-variant.spec.js tests/admin.spec.js tests/admin-navigation-responsive.spec.js tests/admin-appointments-responsive.spec.js tests/admin-callbacks-triage.spec.js tests/admin-v2-callbacks-triage.spec.js tests/admin-v2-availability-workflow.spec.js tests/admin-availability-responsive.spec.js tests/admin-availability-readonly.spec.js tests/funnel-retention-admin.spec.js",
@@ -35,7 +42,7 @@
         "lint": "npm run lint:js && npm run lint:php",
         "lint:js": "eslint .",
         "lint:php": "node bin/lint-php-syntax.js",
-        "build": "npm run content:public-v4:validate && rollup -c && npm run chunks:admin:prune && npm run build:html && npm run services:build && npm run astro:build && npm run astro:sync",
+        "build": "npm run content:public-v4:validate && npm run content:public-v5:validate && rollup -c && npm run chunks:admin:prune && npm run build:html && npm run services:build && npm run astro:build && npm run astro:sync",
         "chunks:admin:prune": "node bin/clean-admin-chunks.js",
         "astro:dev": "cd src/apps/astro && astro dev",
         "astro:build": "cd src/apps/astro && astro build",
@@ -100,7 +107,8 @@
         "agent:jules:reconcile": "node jules-dispatch.js reconcile",
         "agent:kimi:dispatch": "node kimi-run.js --dispatch --no-diff",
         "prepare": "husky",
-        "content:public-v4:validate": "node bin/validate-public-v4-catalog.js"
+        "content:public-v4:validate": "node bin/validate-public-v4-catalog.js",
+        "content:public-v5:validate": "node bin/validate-public-v5-catalog.js"
     },
     "lint-staged": {
         "*.php": "node bin/run-php-cs-fixer.js fix",

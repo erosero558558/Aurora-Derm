@@ -15,6 +15,8 @@ const ROUTES = [
     { id: 'home-en', path: '/en/' },
     { id: 'hub-es', path: '/es/servicios/' },
     { id: 'hub-en', path: '/en/services/' },
+    { id: 'booking-es', path: '/es/servicios/#citas' },
+    { id: 'booking-en', path: '/en/services/#citas' },
     { id: 'telemedicina-es', path: '/es/telemedicina/' },
     { id: 'telemedicine-en', path: '/en/telemedicine/' },
     {
@@ -148,12 +150,20 @@ function stopProcess(proc) {
 
 function joinRoute(baseUrl, routePath) {
     const basePath = String(baseUrl.pathname || '').replace(/^\/+|\/+$/g, '');
-    const normalizedRoute = `/${String(routePath || '/').replace(/^\/+/, '')}`;
+    const rawRoute = String(routePath || '/').trim() || '/';
+    const hashIndex = rawRoute.indexOf('#');
+    const routeWithoutHash =
+        hashIndex >= 0 ? rawRoute.slice(0, hashIndex) : rawRoute;
+    const routeHash = hashIndex >= 0 ? rawRoute.slice(hashIndex + 1) : '';
+    const normalizedRoute = `/${routeWithoutHash.replace(/^\/+/, '')}`;
     const fullPath = basePath
         ? `/${basePath}${normalizedRoute}`
         : normalizedRoute;
     const target = new URL(baseUrl.origin);
     target.pathname = fullPath;
+    if (routeHash) {
+        target.hash = routeHash;
+    }
     return target.toString();
 }
 

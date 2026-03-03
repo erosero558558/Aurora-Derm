@@ -1,0 +1,20 @@
+---
+const { eyebrow = '', points = [], locale = 'es', tone = 'porcelain' } = Astro.props;
+const safeEyebrow =
+    String(eyebrow || '').trim() ||
+    (locale === 'en' ? 'Escalation model' : 'Modelo de escalamiento');
+---
+
+<section class="sony-tele-escalation" data-escalation-model data-section-tone={tone} data-template-block="tele_escalation_v5">
+    <p>{safeEyebrow}</p>
+    <div class="sony-tele-escalation__steps service-timeline-v3__steps">
+        {
+            points.map((point, index) => (
+                <article>
+                    <span>{`0${index + 1}`}</span>
+                    <h3>{point}</h3>
+                </article>
+            ))
+        }
+    </div>
+</section>

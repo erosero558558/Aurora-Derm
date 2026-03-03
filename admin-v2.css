@@ -1,4 +1,4 @@
-@import url('./ops-design-system.css?v=ops-20260302-rigor2');
+@import url('./ops-design-system.css?v=ops-20260303-rigor3');
 
 :root {
     --sony-bg: #090909;
@@ -141,12 +141,10 @@ body.admin-v2-mode .admin-header {
     align-items: center;
     padding: 14px 16px;
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
-        linear-gradient(180deg, rgba(8, 8, 8, 0.92), rgba(17, 17, 17, 0.88));
-    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.34);
-    backdrop-filter: blur(16px);
+    border: 1px solid var(--ops-shell-border);
+    background: var(--ops-shell-bg);
+    box-shadow: var(--ops-shell-shadow);
+    backdrop-filter: blur(var(--ops-shell-blur));
 }
 
 body.admin-v2-mode .admin-header-title-wrap {
@@ -404,12 +402,10 @@ body.admin-v2-mode .sony-grid-three {
 
 body.admin-v2-mode .sony-kpi,
 body.admin-v2-mode .sony-panel {
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    background:
-        linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
-        linear-gradient(180deg, rgba(9, 9, 9, 0.9), rgba(16, 16, 16, 0.86));
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+    border-radius: var(--ops-card-radius);
+    border: 1px solid var(--ops-card-border);
+    background: var(--ops-card-bg);
+    box-shadow: var(--ops-card-shadow);
 }
 
 body.admin-v2-mode .sony-kpi {

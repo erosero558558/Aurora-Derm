@@ -1,11 +1,15 @@
-﻿---
-import PublicShellV3 from '../../../layouts/PublicShellV3.astro';
-import LegalHeroV3 from '../../../components/public-v3/LegalHeroV3.astro';
-import LegalPolicyTabsV3 from '../../../components/public-v3/LegalPolicyTabsV3.astro';
-import LegalArticleLayoutV3 from '../../../components/public-v3/LegalArticleLayoutV3.astro';
-import SupportBandV3 from '../../../components/public-v3/SupportBandV3.astro';
-import BookingBridgeBandV3 from '../../../components/public-v3/BookingBridgeBandV3.astro';
-import { getLegalIndex, getLegalPageV3Data, getPublicNavigationModel } from '../../../lib/public-v3.js';
+---
+import PublicShellV5 from '../../../layouts/PublicShellV5.astro';
+import LegalHeroV5 from '../../../components/public-v5/LegalHeroV5.astro';
+import LegalPolicyTabsV5 from '../../../components/public-v5/LegalPolicyTabsV5.astro';
+import LegalArticleLayoutV5 from '../../../components/public-v5/LegalArticleLayoutV5.astro';
+import SupportBandV5 from '../../../components/public-v5/SupportBandV5.astro';
+import BookingBandV5 from '../../../components/public-v5/BookingBandV5.astro';
+import {
+    getLegalIndexV5,
+    getLegalPageV5Data,
+    getPublicNavigationModel,
+} from '../../../lib/public-v5.js';
 
 export async function getStaticPaths() {
     return ['terms', 'privacy', 'cookies', 'medical-disclaimer'].map((slug) => ({ params: { slug } }));
@@ -13,19 +17,18 @@ export async function getStaticPaths() {
 
 const locale = 'en';
 const { slug } = Astro.params;
-const page = getLegalPageV3Data(slug, locale);
+const page = getLegalPageV5Data(slug, locale);
 if (!page) throw new Error(`Legal page not found: ${slug}`);
 const pathname = `/en/legal/${slug}/`;
 const navModel = getPublicNavigationModel(locale, pathname);
-const legalIndex = getLegalIndex(locale);
+const legalIndex = getLegalIndexV5(locale);
 const altMap = { terms: 'terminos', privacy: 'privacidad', cookies: 'cookies', 'medical-disclaimer': 'aviso-medico' };
 ---
 
-<PublicShellV3 title={`${page.title} | Piel en Armonia`} description={page.description} locale={locale} canonicalPath={pathname} alternatePath={`/es/legal/${altMap[slug]}/`} pathname={pathname} navModel={navModel}>
-    <LegalHeroV3 page={page} />
-    <LegalPolicyTabsV3 items={legalIndex} currentHref={pathname} />
-    <LegalArticleLayoutV3 page={page} />
-    <SupportBandV3 eyebrow={page.supportBand.eyebrow} title={page.supportBand.title} deck={page.supportBand.deck} tone={page.supportBand.tone} locale={locale} />
-    <BookingBridgeBandV3 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
-</PublicShellV3>
-
+<PublicShellV5 title={`${page.title} | Piel en Armonia`} description={page.description} locale={locale} canonicalPath={pathname} alternatePath={`/es/legal/${altMap[slug]}/`} pathname={pathname} navModel={navModel} templateId="legal_v5">
+    <LegalHeroV5 page={page} />
+    <LegalPolicyTabsV5 items={legalIndex} currentHref={pathname} />
+    <LegalArticleLayoutV5 page={page} />
+    <SupportBandV5 eyebrow={page.supportBand.eyebrow} title={page.supportBand.title} deck={page.supportBand.deck} tone={page.supportBand.tone} locale={locale} />
+    <BookingBandV5 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
+</PublicShellV5>

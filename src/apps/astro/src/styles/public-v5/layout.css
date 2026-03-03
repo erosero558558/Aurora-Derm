@@ -1,0 +1,144 @@
+body[data-public-shell-version='v5'] .public-nav {
+    background: rgba(248, 250, 253, 0.9);
+    border-bottom: 1px solid rgba(10, 16, 27, 0.09);
+    backdrop-filter: blur(18px);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+body[data-public-shell-version='v5'] .public-nav__bar {
+    min-height: 88px;
+    grid-template-columns: 170px 1fr auto;
+}
+
+body[data-public-shell-version='v5'] .public-nav__brand-eyebrow,
+body[data-public-shell-version='v5'] .public-footer__eyebrow {
+    color: var(--public-v5-muted);
+}
+
+body[data-public-shell-version='v5'] .public-nav__link,
+body[data-public-shell-version='v5'] .public-nav__mega-shell > summary {
+    color: #16263d;
+    letter-spacing: 0.02em;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link.is-active {
+    color: var(--public-v5-ink);
+}
+
+body[data-public-shell-version='v5'] .public-nav__lang,
+body[data-public-shell-version='v5'] .public-nav__cta {
+    border-color: var(--public-v5-line);
+}
+
+body[data-public-shell-version='v5'] .public-nav__cta {
+    background: linear-gradient(180deg, #0d1729, #111f34);
+    border-color: #111f34;
+    color: #f5f8fd;
+    box-shadow: 0 10px 22px rgba(8, 13, 21, 0.2);
+}
+
+body[data-public-shell-version='v5'] .public-footer {
+    margin-top: clamp(58px, 9vw, 96px);
+    border-radius: 36px 36px 0 0;
+    background: linear-gradient(180deg, #0a0f17 0%, #0e1623 100%);
+    border: 1px solid rgba(243, 248, 255, 0.12);
+    overflow: clip;
+}
+
+body[data-public-shell-version='v5'] .public-footer__top,
+body[data-public-shell-version='v5'] .public-footer__grid {
+    gap: 22px;
+}
+
+body[data-public-shell-version='v5'] .public-footer__cta {
+    background: #f4f8ff;
+    color: #0f1a2c;
+}
+
+/* FE-V5-P13: Sony canonical shell refinement */
+body[data-public-shell-version='v5'] .public-nav {
+    background: rgba(252, 252, 253, 0.92);
+    border-bottom: 1px solid rgba(10, 10, 10, 0.08);
+    backdrop-filter: blur(16px);
+}
+
+body[data-public-shell-version='v5'] .public-nav__bar {
+    min-height: 84px;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link,
+body[data-public-shell-version='v5'] .public-nav__mega-shell > summary {
+    color: #151922;
+    letter-spacing: 0.01em;
+}
+
+body[data-public-shell-version='v5'] .public-nav__lang {
+    border-color: rgba(10, 10, 10, 0.16);
+    color: #0f1117;
+    background: rgba(255, 255, 255, 0.86);
+}
+
+body[data-public-shell-version='v5'] .public-nav__cta {
+    background: #0b0d12;
+    border-color: #0b0d12;
+    color: #f7f8fb;
+    box-shadow: 0 8px 18px rgba(10, 10, 12, 0.2);
+}
+
+body[data-public-shell-version='v5'] .public-footer {
+    border-radius: 28px 28px 0 0;
+    background: linear-gradient(180deg, #07090d 0%, #0f141d 100%);
+    border: 1px solid rgba(243, 247, 255, 0.14);
+}
+
+body[data-public-shell-version='v5'] .public-footer__cta {
+    background: #ffffff;
+    color: #0f1117;
+}
+
+/* FE-V5-P14: Sony shell precision */
+body[data-public-shell-version='v5'] .public-nav__menu {
+    gap: 10px;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link {
+    position: relative;
+    padding-bottom: 8px;
+    font-weight: 520;
+    letter-spacing: 0.012em;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 1px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.72;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 220ms ease;
+}
+
+body[data-public-shell-version='v5'] .public-nav__link:is(:hover, :focus-visible, .is-active)::after {
+    transform: scaleX(1);
+}
+
+body[data-public-shell-version='v5'] .public-nav__cta {
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 650;
+}
+
+body[data-public-shell-version='v5'] .public-footer__legal a {
+    color: rgba(235, 241, 252, 0.9);
+}
+
+body[data-public-shell-version='v5'] .public-footer__legal a:hover {
+    color: #ffffff;
+}

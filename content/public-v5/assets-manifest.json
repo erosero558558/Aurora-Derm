@@ -1,0 +1,196 @@
+{
+    "version": "2026.03-v5",
+    "updated_at": "2026-03-02",
+    "source_policy": "stock_premium_only",
+    "default_license": "premium-stock-commercial-license",
+    "assets": [
+        {
+            "id": "hero-clinical-stage",
+            "src": "/images/optimized/showcase-hero.webp",
+            "derivatives": [
+                "/images/optimized/showcase-hero.avif",
+                "/images/optimized/showcase-hero-640.webp",
+                "/images/optimized/showcase-hero-1024.webp",
+                "/images/optimized/showcase-hero-1400.webp",
+                "/images/optimized/showcase-hero.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["home", "hub", "service-detail"],
+            "focal_point": "center 35%",
+            "alt_es": "Consulta dermatologica con enfoque diagnostico y entorno clinico moderno",
+            "alt_en": "Dermatology consultation with diagnostic focus in a modern clinical setting"
+        },
+        {
+            "id": "hero-aesthetic-stage",
+            "src": "/images/optimized/hero-woman.webp",
+            "derivatives": [
+                "/images/optimized/hero-woman-640.webp",
+                "/images/optimized/hero-woman-1024.webp",
+                "/images/optimized/hero-woman-1344.webp",
+                "/images/optimized/hero-woman.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["home", "services", "telemedicine"],
+            "focal_point": "center 40%",
+            "alt_es": "Paciente en protocolo dermatologico estetico con iluminacion clinica",
+            "alt_en": "Patient in a medical dermatology aesthetics protocol with clinical lighting"
+        },
+        {
+            "id": "hero-telemedicine",
+            "src": "/images/optimized/service-telemedicina.webp",
+            "derivatives": [
+                "/images/optimized/service-telemedicina.avif",
+                "/images/optimized/service-telemedicina-400.webp",
+                "/images/optimized/service-telemedicina.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["home", "telemedicine"],
+            "focal_point": "center 32%",
+            "alt_es": "Consulta dermatologica remota con evaluacion guiada",
+            "alt_en": "Remote dermatology consultation with guided evaluation"
+        },
+        {
+            "id": "clinical-showcase",
+            "src": "/images/optimized/showcase-diagnostic.webp",
+            "derivatives": [
+                "/images/optimized/showcase-diagnostic.avif",
+                "/images/optimized/showcase-diagnostic-640.webp",
+                "/images/optimized/showcase-diagnostic-800.webp",
+                "/images/optimized/showcase-diagnostic.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["services", "service-detail", "home"],
+            "focal_point": "center 45%",
+            "alt_es": "Detalle de procedimiento dermatologico en consultorio",
+            "alt_en": "Close-up of a dermatology procedure in clinic"
+        },
+        {
+            "id": "aesthetic-showcase",
+            "src": "/images/optimized/service-rejuvenecimiento.webp",
+            "derivatives": [
+                "/images/optimized/service-rejuvenecimiento.avif",
+                "/images/optimized/service-rejuvenecimiento-400.webp",
+                "/images/optimized/service-rejuvenecimiento.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["services", "service-detail", "home"],
+            "focal_point": "center 42%",
+            "alt_es": "Sesion de rejuvenecimiento dermatologico de alta precision",
+            "alt_en": "High-precision dermatology rejuvenation session"
+        },
+        {
+            "id": "clinic-showcase",
+            "src": "/images/optimized/showcase-clinic.webp",
+            "derivatives": [
+                "/images/optimized/showcase-clinic.avif",
+                "/images/optimized/showcase-clinic-640.webp",
+                "/images/optimized/showcase-clinic-800.webp",
+                "/images/optimized/showcase-clinic.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["home", "children", "services", "service-detail"],
+            "focal_point": "center 38%",
+            "alt_es": "Espacio clinico dermatologico orientado a atencion familiar",
+            "alt_en": "Dermatology clinical space designed for family care"
+        },
+        {
+            "id": "doctor-rosero",
+            "src": "/images/optimized/team-rosero.webp",
+            "derivatives": [
+                "/images/optimized/team-rosero.avif",
+                "/images/optimized/team-rosero-500.webp",
+                "/images/optimized/team-rosero.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["home", "service-detail"],
+            "focal_point": "center 30%",
+            "alt_es": "Retrato profesional del director clinico de dermatologia",
+            "alt_en": "Professional portrait of the clinical dermatology director"
+        },
+        {
+            "id": "doctor-narvaez",
+            "src": "/images/optimized/team-narvaez.webp",
+            "derivatives": [
+                "/images/optimized/team-narvaez.avif",
+                "/images/optimized/team-narvaez-500.webp",
+                "/images/optimized/team-narvaez.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["home", "service-detail"],
+            "focal_point": "center 30%",
+            "alt_es": "Retrato profesional de la direccion de estetica medica",
+            "alt_en": "Professional portrait of the medical aesthetics lead"
+        },
+        {
+            "id": "service-acne",
+            "src": "/images/optimized/service-acne.webp",
+            "derivatives": [
+                "/images/optimized/service-acne.avif",
+                "/images/optimized/service-acne-400.webp",
+                "/images/optimized/service-acne.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["services", "service-detail"],
+            "focal_point": "center 42%",
+            "alt_es": "Evaluacion medica de acne y rosacea con protocolo antiinflamatorio",
+            "alt_en": "Medical acne and rosacea evaluation with anti-inflammatory protocol"
+        },
+        {
+            "id": "service-cancer",
+            "src": "/images/optimized/service-cancer.webp",
+            "derivatives": [
+                "/images/optimized/service-cancer.avif",
+                "/images/optimized/service-cancer-400.webp",
+                "/images/optimized/service-cancer.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["services", "service-detail"],
+            "focal_point": "center 42%",
+            "alt_es": "Revision clinica de lesiones pigmentadas y tamizaje oncologico dermatologico",
+            "alt_en": "Clinical review of pigmented lesions and dermatology oncology screening"
+        },
+        {
+            "id": "service-consulta",
+            "src": "/images/optimized/service-consulta.webp",
+            "derivatives": [
+                "/images/optimized/service-consulta.avif",
+                "/images/optimized/service-consulta-400.webp",
+                "/images/optimized/service-consulta.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["services", "service-detail"],
+            "focal_point": "center 42%",
+            "alt_es": "Consulta dermatologica integral con lectura diagnostica inicial",
+            "alt_en": "Comprehensive dermatology consultation with initial diagnostic review"
+        },
+        {
+            "id": "service-laser",
+            "src": "/images/optimized/service-laser.webp",
+            "derivatives": [
+                "/images/optimized/service-laser.avif",
+                "/images/optimized/service-laser-400.webp",
+                "/images/optimized/service-laser.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["services", "service-detail"],
+            "focal_point": "center 42%",
+            "alt_es": "Procedimiento laser dermatologico con enfoque medico y precision",
+            "alt_en": "Medical dermatology laser procedure with precision focus"
+        },
+        {
+            "id": "service-treatment",
+            "src": "/images/optimized/showcase-treatment.webp",
+            "derivatives": [
+                "/images/optimized/showcase-treatment.avif",
+                "/images/optimized/showcase-treatment-640.webp",
+                "/images/optimized/showcase-treatment-900.webp",
+                "/images/optimized/showcase-treatment.jpg"
+            ],
+            "license": "premium-stock-commercial-license",
+            "usage_scope": ["services", "service-detail", "home"],
+            "focal_point": "center 45%",
+            "alt_es": "Procedimiento dermatologico de precision para tratamientos focalizados",
+            "alt_en": "Precision dermatology procedure for targeted treatment paths"
+        }
+    ]
+}

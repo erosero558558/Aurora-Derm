@@ -1,0 +1,92 @@
+---
+import BookingShellV3 from '../public-v3/BookingShellV3.astro';
+
+const {
+    locale = 'es',
+    serviceHint = 'consulta',
+    primaryHref = '',
+    primaryLabel = '',
+    id = 'citas',
+    tone = 'silver',
+    mountBookingShell = false,
+} = Astro.props;
+
+const fallbackPrimaryHref =
+    locale === 'en'
+        ? '/en/services/diagnostico-integral/'
+        : '/es/servicios/diagnostico-integral/';
+const safePrimaryHref = String(primaryHref || fallbackPrimaryHref).trim();
+const safePrimaryLabel =
+    String(primaryLabel || '').trim() ||
+    (locale === 'en' ? 'Book assessment' : 'Reservar valoracion');
+const telemedicineHref =
+    locale === 'en' ? '/en/telemedicine/' : '/es/telemedicina/';
+const eyebrow = locale === 'en' ? 'Booking continuity' : 'Continuidad de reserva';
+const title =
+    locale === 'en'
+        ? 'Choose the route and continue to booking without visual noise.'
+        : 'Elige la ruta y continua a la reserva sin ruido visual.';
+const deck =
+    locale === 'en'
+        ? 'The detailed booking and secure payment flow remains active from the selected service route.'
+        : 'El flujo completo de reserva y pago seguro se mantiene activo desde la ruta de servicio elegida.';
+---
+
+<section
+    id={id}
+    class="sony-booking-teaser"
+    data-service-hint={serviceHint}
+    data-section-tone={tone}
+    data-template-block="booking_teaser_v5"
+>
+    <div class="sony-booking-teaser__copy">
+        <p>{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{deck}</p>
+    </div>
+    <div class="sony-booking-teaser__actions">
+        <div data-booking-bridge-band data-section-tone={tone}>
+            <a
+                href={safePrimaryHref}
+                class="hero-stage__cta hero-stage__cta--primary"
+                data-analytics-event="open_public_cta"
+                data-entry-surface="v5_booking_teaser_primary"
+                data-cta-target="service_detail"
+                data-booking-hint={serviceHint}
+            >
+                {safePrimaryLabel}
+            </a>
+        </div>
+        <a
+            href={telemedicineHref}
+            class="hero-stage__cta hero-stage__cta--secondary"
+            data-analytics-event="open_public_cta"
+            data-entry-surface="v5_booking_teaser_telemedicine"
+            data-cta-target="telemedicine"
+        >
+            {locale === 'en' ? 'Telemedicine' : 'Telemedicina'}
+        </a>
+        <a
+            href="https://wa.me/593982453672"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="public-link-arrow"
+            data-analytics-event="open_public_cta"
+            data-entry-surface="v5_booking_teaser_whatsapp"
+            data-cta-target="whatsapp"
+        >
+            WhatsApp
+        </a>
+    </div>
+    {
+        mountBookingShell && (
+            <section
+                class="sony-booking-teaser__mount"
+                data-service-hint={serviceHint}
+                data-entry-surface="booking_mount"
+            >
+                <BookingShellV3 locale={locale} serviceHint={serviceHint} />
+            </section>
+        )
+    }
+</section>

@@ -1,0 +1,55 @@
+---
+const { navModel } = Astro.props;
+const normalizePath = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '/';
+    const withSlash = raw.startsWith('/') ? raw : `/${raw}`;
+    return withSlash.endsWith('/') ? withSlash : `${withSlash}/`;
+};
+const currentPath = normalizePath(navModel.pathname || '/');
+const isHomePath = (value) =>
+    value === '/es/' || value === '/en/' || value === '/';
+const isActiveLink = (href) => {
+    const target = normalizePath(href);
+    if (isHomePath(target)) {
+        return currentPath === target;
+    }
+    return currentPath === target || currentPath.startsWith(target);
+};
+---
+
+<header class="public-nav public-nav--v5" data-public-nav>
+    <div class="public-nav__bar">
+        <a href={navModel.locale === 'en' ? '/en/' : '/es/'} class="public-nav__brand">
+            <em class="public-nav__brand-eyebrow">{navModel.brand.eyebrow}</em>
+            <span>{navModel.brand.line1}</span>
+            <strong>{navModel.brand.line2}</strong>
+        </a>
+        <nav class="public-nav__links" aria-label={navModel.labels.primaryNav}>
+            {
+                navModel.links.map((link) => (
+                    <a
+                        class:list={['public-nav__link', isActiveLink(link.href) && 'is-active']}
+                        href={link.href}
+                    >
+                        {link.label}
+                    </a>
+                ))
+            }
+        </nav>
+        <div class="public-nav__actions">
+            <a class="public-nav__lang sony-lang" href={navModel.switchHref}>
+                {navModel.switchLabel}
+            </a>
+            <a
+                href={navModel.bookingHref}
+                class="public-nav__cta"
+                data-analytics-event="open_public_cta"
+                data-entry-surface="nav_booking_primary"
+                data-cta-target="booking"
+            >
+                {navModel.labels.book}
+            </a>
+        </div>
+    </div>
+</header>

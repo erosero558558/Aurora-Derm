@@ -149,6 +149,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-consulta.webp",
+                "asset_id": "service-consulta",
                 "alt_es": "Consulta dermatologica integral para piel, cabello y unas en entorno clinico",
                 "alt_en": "Comprehensive dermatology consultation for skin, hair, and nails in a clinical setting",
                 "kind": "image"
@@ -192,6 +193,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-acne.webp",
+                "asset_id": "service-acne",
                 "alt_es": "Evaluacion medica de acne y rosacea con protocolo antiinflamatorio",
                 "alt_en": "Medical acne and rosacea evaluation with an anti-inflammatory protocol",
                 "kind": "image"
@@ -235,6 +237,7 @@
             ],
             "media": {
                 "src": "/images/optimized/showcase-treatment.webp",
+                "asset_id": "service-treatment",
                 "alt_es": "Procedimiento dermatologico para eliminacion controlada de verrugas",
                 "alt_en": "Dermatology procedure for controlled wart removal",
                 "kind": "image"
@@ -278,6 +281,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-acne.webp",
+                "asset_id": "service-acne",
                 "alt_es": "Manejo clinico de queratosis pilar y textura aspera en extremidades",
                 "alt_en": "Clinical management of keratosis pilaris and rough skin texture on limbs",
                 "kind": "image"
@@ -321,6 +325,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-laser.webp",
+                "asset_id": "service-laser",
                 "alt_es": "Tratamiento de cicatrices con plataforma laser dermatologica",
                 "alt_en": "Scar treatment with a dermatology laser platform",
                 "kind": "image"
@@ -364,6 +369,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-cancer.webp",
+                "asset_id": "service-cancer",
                 "alt_es": "Dermatoscopia para deteccion temprana de lesiones sospechosas",
                 "alt_en": "Dermoscopy for early detection of suspicious skin lesions",
                 "kind": "image"
@@ -410,6 +416,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-rejuvenecimiento.webp",
+                "asset_id": "aesthetic-showcase",
                 "alt_es": "Peeling quimico medico para renovacion controlada de la piel",
                 "alt_en": "Medical chemical peel for controlled skin renewal",
                 "kind": "image"
@@ -453,6 +460,7 @@
             ],
             "media": {
                 "src": "/images/optimized/showcase-treatment.webp",
+                "asset_id": "service-treatment",
                 "alt_es": "Sesion de mesoterapia dermatologica para hidratacion y luminosidad",
                 "alt_en": "Dermatology mesotherapy session for hydration and radiance",
                 "kind": "image"
@@ -495,6 +503,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-laser.webp",
+                "asset_id": "service-laser",
                 "alt_es": "Aplicacion de laser dermatologico para manchas y textura",
                 "alt_en": "Dermatology laser application for spots and texture",
                 "kind": "image"
@@ -537,6 +546,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-rejuvenecimiento.webp",
+                "asset_id": "aesthetic-showcase",
                 "alt_es": "Aplicacion medica de toxina botulinica con enfoque natural",
                 "alt_en": "Medical botulinum toxin application with a natural-looking approach",
                 "kind": "image"
@@ -580,6 +590,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-rejuvenecimiento.webp",
+                "asset_id": "aesthetic-showcase",
                 "alt_es": "Infiltracion de bioestimuladores para activar colageno dermico",
                 "alt_en": "Biostimulator injections to activate dermal collagen production",
                 "kind": "image"
@@ -624,6 +635,7 @@
             ],
             "media": {
                 "src": "/images/optimized/service-consulta.webp",
+                "asset_id": "service-consulta",
                 "alt_es": "Valoracion dermatologica integral de piel, cabello y unas",
                 "alt_en": "Comprehensive dermatology assessment for skin, hair, and nails",
                 "kind": "image"
@@ -668,6 +680,7 @@
             ],
             "media": {
                 "src": "/images/optimized/showcase-clinic.webp",
+                "asset_id": "clinic-showcase",
                 "alt_es": "Consulta dermatologica pediatrica para ninos y adolescentes",
                 "alt_en": "Pediatric dermatology consultation for children and adolescents",
                 "kind": "image"

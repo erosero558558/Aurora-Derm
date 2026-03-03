@@ -1,0 +1,158 @@
+---
+import '../styles/public-v5/index.css';
+import PublicNavBarV5 from '../components/public-v5/PublicNavBarV5.astro';
+import PublicFooterV5 from '../components/public-v5/PublicFooterV5.astro';
+import LegacyRuntimeBridgeV5 from '../components/public-v5/LegacyRuntimeBridgeV5.astro';
+import { getV5Catalog } from '../lib/content.js';
+
+const {
+    title = 'Piel en Armonia',
+    description = '',
+    locale = 'es',
+    canonicalPath = '/es/',
+    alternatePath = '/en/',
+    pathname = '/es/',
+    navModel,
+    templateId = 'public_page_v5',
+    enableRuntimeBridge = true,
+    compactFooter = false,
+    preloadImageSrc = '',
+    preloadImageSrcSet = '',
+    preloadImageSizes = '',
+    preloadImageType = 'image/webp',
+} = Astro.props;
+
+const origin = 'https://pielarmonia.com';
+const canonical = new URL(canonicalPath, origin).toString();
+const alternate = new URL(alternatePath, origin).toString();
+const xDefault = locale === 'en' ? alternate : canonical;
+const v5Catalog = getV5Catalog();
+const featureDefaults = v5Catalog?.feature_flags_defaults || {};
+
+const parseFlagBool = (value, fallback) => {
+    const raw = String(value ?? '').trim().toLowerCase();
+    if (!raw) return fallback;
+    if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+    if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+    return fallback;
+};
+
+const parseFlagRatio = (value, fallback) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    if (parsed < 0) return 0;
+    if (parsed > 1) return 1;
+    return parsed;
+};
+
+const normalizeLocaleFlag = (value) => {
+    const raw = String(value ?? '')
+        .trim()
+        .toLowerCase();
+    return ['es', 'en'].includes(raw) ? raw : '';
+};
+
+const defaultEnabled = parseFlagBool(featureDefaults.public_v5_enabled, true);
+const defaultRatio = parseFlagRatio(featureDefaults.public_v5_ratio, 1);
+const defaultForcedLocale = normalizeLocaleFlag(
+    featureDefaults.public_v5_force_locale
+);
+const defaultKillSwitch = parseFlagBool(
+    featureDefaults.public_v5_kill_switch,
+    false
+);
+
+const v5Enabled = parseFlagBool(
+    import.meta.env.PUBLIC_PUBLIC_V5_ENABLED,
+    defaultEnabled
+);
+const v5Ratio = parseFlagRatio(import.meta.env.PUBLIC_PUBLIC_V5_RATIO, defaultRatio);
+const v5ForcedLocale = normalizeLocaleFlag(
+    import.meta.env.PUBLIC_PUBLIC_V5_FORCE_LOCALE || defaultForcedLocale
+);
+const v5KillSwitch = parseFlagBool(
+    import.meta.env.PUBLIC_PUBLIC_V5_KILL_SWITCH,
+    defaultKillSwitch
+);
+const publicV5Flags = {
+    public_v5_enabled: v5Enabled,
+    public_v5_ratio: Number.isFinite(v5Ratio) ? v5Ratio : 1,
+    public_v5_force_locale: v5ForcedLocale,
+    public_v5_kill_switch: v5KillSwitch,
+};
+const publicV5FlagsJson = JSON.stringify(publicV5Flags);
+const preloadImageHref = String(preloadImageSrc || '').trim();
+const preloadImageSrcSetAttr = String(preloadImageSrcSet || '').trim();
+const preloadImageSizesAttr = String(preloadImageSizes || '').trim();
+const preloadImageTypeAttr = String(preloadImageType || '').trim();
+---
+
+<!doctype html>
+<html lang={locale}>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <meta name="robots" content="index,follow,max-image-preview:large" />
+        <link rel="canonical" href={canonical} />
+        <link rel="alternate" href={alternate} hreflang={locale === 'es' ? 'en' : 'es'} />
+        <link rel="alternate" href={canonical} hreflang={locale} />
+        <link rel="alternate" href={xDefault} hreflang="x-default" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Piel en Armonia" />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content="https://pielarmonia.com/images/optimized/showcase-hero.jpg" />
+        <meta name="theme-color" content="#0a0f1b" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="manifest" href="/manifest.json" />
+        <link
+            rel="preload"
+            href="/fonts/plus-jakarta-sans.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        {
+            preloadImageHref ? (
+                <link
+                    rel="preload"
+                    as="image"
+                    href={preloadImageHref}
+                    type={preloadImageTypeAttr || undefined}
+                    imagesrcset={preloadImageSrcSetAttr || undefined}
+                    imagesizes={preloadImageSizesAttr || undefined}
+                    fetchpriority="high"
+                />
+            ) : null
+        }
+        <script src="/js/public-v5-shell.js?v=public-v5-shell-20260302-v1" defer></script>
+        <script src="/js/service-navigation-analytics.js?v=service-analytics-20260302-v7" defer></script>
+        <script is:inline set:html={`window.__PUBLIC_V5_FLAGS = ${publicV5FlagsJson};`}></script>
+    </head>
+    <body
+        data-public-shell
+        data-public-shell-version="v5"
+        data-public-surface={pathname}
+        data-public-template-id={templateId}
+        data-public-v5-enabled={v5Enabled ? 'true' : 'false'}
+        data-public-v5-ratio={Number.isFinite(v5Ratio) ? String(v5Ratio) : '1'}
+        data-public-v5-force-locale={v5ForcedLocale}
+        data-public-v5-kill-switch={v5KillSwitch ? 'true' : 'false'}
+    >
+        <a class="public-skip-link" href="#main-content">{locale === 'en' ? 'Skip to content' : 'Saltar al contenido'}</a>
+        <PublicNavBarV5 navModel={navModel} />
+        <main id="main-content">
+            <slot />
+        </main>
+        <PublicFooterV5
+            locale={locale}
+            footer={navModel.footer}
+            compact={compactFooter}
+            bookingHref={navModel?.bookingHref || '#citas'}
+        />
+        {enableRuntimeBridge ? <LegacyRuntimeBridgeV5 locale={locale} /> : null}
+    </body>
+</html>

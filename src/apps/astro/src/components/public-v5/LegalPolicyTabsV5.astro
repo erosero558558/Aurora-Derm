@@ -1,0 +1,22 @@
+---
+const { items = [], currentHref = '' } = Astro.props;
+---
+
+<nav class="legal-tabs-v5 legal-tabs-v3" data-legal-tabs data-template-block="legal_tabs_v5">
+    {
+        items.map((item) => (
+            <a
+                href={item.href}
+                class:list={[
+                    'legal-tabs-v5__link',
+                    'legal-tabs-v3__link',
+                    currentHref === item.href && 'is-active',
+                ]}
+                aria-current={currentHref === item.href ? 'page' : undefined}
+            >
+                {item.title}
+            </a>
+        ))
+    }
+</nav>
+

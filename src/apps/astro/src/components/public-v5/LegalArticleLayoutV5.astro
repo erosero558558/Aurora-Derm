@@ -1,0 +1,34 @@
+---
+const { page } = Astro.props;
+---
+
+<section
+    class="legal-article-v5 legal-article-v3"
+    data-legal-article
+    data-template-block="legal_article_v5"
+    data-section-tone={page.tone || 'porcelain'}
+>
+    <div class="legal-article-v5__highlights legal-article-v3__highlights">
+        {
+            page.highlights.map((item) => (
+                <article>
+                    <p>{item.eyebrow}</p>
+                    <h2>{item.title}</h2>
+                    <p>{item.body}</p>
+                </article>
+            ))
+        }
+    </div>
+    <div class="legal-article-v5__sections legal-article-v3__sections">
+        {
+            page.sections.map((section) => (
+                <article>
+                    <h3>{section.title}</h3>
+                    <p>{section.body}</p>
+                    <ul>{section.items.map((item) => <li>{item}</li>)}</ul>
+                </article>
+            ))
+        }
+    </div>
+</section>
+

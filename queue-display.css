@@ -1,4 +1,4 @@
-@import url('./ops-design-system.css?v=ops-20260302-rigor2');
+@import url('./ops-design-system.css?v=ops-20260303-rigor3');
 
 body {
     margin: 0;
@@ -16,15 +16,13 @@ body {
     align-items: flex-start;
     gap: 1rem;
     padding: 0.95rem 1.24rem;
-    border-bottom: 1px solid rgb(255 255 255 / 10%);
-    background:
-        linear-gradient(140deg, rgb(255 255 255 / 8%), rgb(255 255 255 / 1%)),
-        linear-gradient(180deg, rgb(6 6 6 / 92%), rgb(14 14 14 / 88%));
+    border-bottom: 1px solid var(--ops-shell-border);
+    background: var(--ops-shell-bg);
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: 0 18px 44px rgb(0 0 0 / 35%);
-    backdrop-filter: blur(12px);
+    box-shadow: var(--ops-shell-shadow);
+    backdrop-filter: blur(var(--ops-shell-blur));
 }
 
 .display-brand {
@@ -110,10 +108,10 @@ body {
 }
 
 .display-control-btn {
-    border: 1px solid rgb(255 255 255 / 16%);
-    border-radius: 11px;
+    border: 1px solid var(--ops-control-border);
+    border-radius: var(--ops-control-radius);
     padding: 0.4rem 0.64rem;
-    background: var(--surface-soft);
+    background: var(--ops-control-bg);
     color: var(--text);
     cursor: pointer;
     font-size: 0.82rem;
@@ -123,7 +121,7 @@ body {
 }
 
 .display-control-btn:hover {
-    border-color: color-mix(in srgb, var(--accent) 44%, var(--border) 56%);
+    border-color: var(--ops-control-border-hover);
     transform: translateY(-1px);
 }
 
@@ -139,14 +137,11 @@ body {
 }
 
 .display-panel {
-    border: 1px solid rgb(255 255 255 / 12%);
-    background:
-        radial-gradient(circle at top right, rgb(255 255 255 / 7%), transparent 32%),
-        linear-gradient(155deg, rgb(255 255 255 / 5%), rgb(255 255 255 / 1%)),
-        var(--surface);
-    border-radius: 21px;
+    border: 1px solid var(--ops-card-border);
+    background: var(--ops-card-bg);
+    border-radius: var(--ops-card-radius);
     padding: 1rem;
-    box-shadow: var(--shadow);
+    box-shadow: var(--ops-card-shadow);
 }
 
 .display-panel h1,

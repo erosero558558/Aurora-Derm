@@ -1,0 +1,63 @@
+---
+const {
+    media = null,
+    fallbackSrc = '',
+    fallbackAlt = '',
+    loading = 'lazy',
+    decoding = 'async',
+    fetchpriority,
+    className = '',
+    sizes = '',
+} = Astro.props;
+
+const mediaObject =
+    media && typeof media === 'object' && !Array.isArray(media)
+        ? media
+        : {
+              src:
+                  typeof media === 'string'
+                      ? String(media).trim()
+                      : String(fallbackSrc || '').trim(),
+              alt: String(fallbackAlt || '').trim(),
+          };
+
+const src = String(mediaObject?.src || fallbackSrc || '').trim();
+const alt = String(mediaObject?.alt || fallbackAlt || '').trim();
+const imgSrcSet = String(mediaObject?.srcset || '').trim();
+const imgSizes = String(mediaObject?.sizes || sizes || '').trim();
+const sources = Array.isArray(mediaObject?.sources)
+    ? mediaObject.sources.filter(
+          (item) =>
+              item &&
+              typeof item === 'object' &&
+              String(item.type || '').trim() &&
+              String(item.srcset || '').trim()
+      )
+    : [];
+---
+
+{
+    src ? (
+        <picture data-asset-id={mediaObject?.assetId || undefined} data-asset-license={mediaObject?.license || undefined}>
+            {
+                sources.map((source) => (
+                    <source
+                        type={String(source.type).trim()}
+                        srcset={String(source.srcset).trim()}
+                        sizes={imgSizes || undefined}
+                    />
+                ))
+            }
+            <img
+                src={src}
+                alt={alt}
+                loading={loading}
+                decoding={decoding}
+                fetchpriority={fetchpriority}
+                class={className || undefined}
+                srcset={imgSrcSet || undefined}
+                sizes={imgSizes || undefined}
+            />
+        </picture>
+    ) : null
+}

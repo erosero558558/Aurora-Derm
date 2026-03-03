@@ -1,0 +1,53 @@
+---
+import ResponsiveMediaImageV5 from './ResponsiveMediaImageV5.astro';
+
+const { hero = {}, locale = 'es' } = Astro.props;
+
+const tone = String(hero?.tone || 'ink').trim() || 'ink';
+const media =
+    hero?.mediaMeta && typeof hero.mediaMeta === 'object'
+        ? hero.mediaMeta
+        : hero?.media;
+const fallbackSrc =
+    String(hero?.mediaMeta?.src || hero?.media || '').trim() ||
+    '/images/optimized/service-telemedicina.webp';
+const fallbackAlt =
+    String(hero?.mediaMeta?.alt || hero?.title || '').trim() ||
+    (locale === 'en'
+        ? 'Remote dermatology triage in a secure telemedicine setting'
+        : 'Triage dermatologico remoto en entorno seguro de telemedicina');
+
+const chips =
+    locale === 'en'
+        ? [
+              'Remote triage',
+              'Clinical follow-up',
+              'Escalation to in-person when needed',
+          ]
+        : [
+              'Triage remoto',
+              'Seguimiento clinico',
+              'Escalamiento presencial cuando se necesita',
+          ];
+---
+
+<section class="sony-tele-hero" data-telemedicine-hero data-section-tone={tone} data-template-block="tele_hero_v5">
+    <div class="sony-tele-hero__copy">
+        <p>{hero?.eyebrow}</p>
+        <h1>{hero?.title}</h1>
+        <p>{hero?.deck}</p>
+        <ul class="sony-tele-hero__chips">
+            {chips.map((chip) => <li>{chip}</li>)}
+        </ul>
+    </div>
+    <div class="sony-tele-hero__media">
+        <ResponsiveMediaImageV5
+            media={media}
+            fallbackSrc={fallbackSrc}
+            fallbackAlt={fallbackAlt}
+            loading="eager"
+            fetchpriority="high"
+            sizes="(max-width: 1024px) 100vw, 46vw"
+        />
+    </div>
+</section>

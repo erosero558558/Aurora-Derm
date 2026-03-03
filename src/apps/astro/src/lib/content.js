@@ -360,6 +360,15 @@ function loadCache() {
         return cache;
     }
 
+    const v5Catalog = readJsonOptional(
+        path.join('content', 'public-v5', 'catalog.json')
+    );
+    const v5UiTokens = readJsonOptional(
+        path.join('content', 'public-v5', 'ui-tokens.json')
+    );
+    const v5AssetsManifest = readJsonOptional(
+        path.join('content', 'public-v5', 'assets-manifest.json')
+    );
     const v4Catalog = readJsonOptional(
         path.join('content', 'public-v4', 'catalog.json')
     );
@@ -372,10 +381,40 @@ function loadCache() {
         nav: readJson(path.join('content', 'navigation.json')),
         services: readJson(path.join('content', 'services.json')),
         deferred: readJson(path.join('content', 'index.json')),
+        v5Catalog,
+        v5UiTokens,
+        v5AssetsManifest,
         v4Catalog,
         v4AssetsManifest,
     };
     return cache;
+}
+
+export function getV5Catalog() {
+    const data = loadCache();
+    const catalog = data.v5Catalog;
+    if (!catalog || typeof catalog !== 'object' || Array.isArray(catalog)) {
+        return null;
+    }
+    return catalog;
+}
+
+export function getV5UiTokens() {
+    const data = loadCache();
+    const tokens = data.v5UiTokens;
+    if (!tokens || typeof tokens !== 'object' || Array.isArray(tokens)) {
+        return null;
+    }
+    return tokens;
+}
+
+export function getV5AssetsManifest() {
+    const data = loadCache();
+    const manifest = data.v5AssetsManifest;
+    if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+        return null;
+    }
+    return manifest;
 }
 
 export function getV4Catalog() {
@@ -448,7 +487,7 @@ export function getPublicAssetById(assetId) {
     if (!normalized) {
         return null;
     }
-    const manifest = getV4AssetsManifest();
+    const manifest = getV5AssetsManifest();
     const assets = Array.isArray(manifest?.assets) ? manifest.assets : [];
     return (
         assets.find(
@@ -465,7 +504,7 @@ export function getPublicAssetBySrc(assetSrc) {
     if (!normalized) {
         return null;
     }
-    const manifest = getV4AssetsManifest();
+    const manifest = getV5AssetsManifest();
     const assets = Array.isArray(manifest?.assets) ? manifest.assets : [];
     return (
         assets.find((asset) => normalizeAssetPath(asset?.src) === normalized) ||
@@ -575,17 +614,17 @@ export function getNavigation() {
 
 export function getServices() {
     const data = loadCache();
-    const catalogServices = Array.isArray(data.v4Catalog?.services)
-        ? data.v4Catalog.services
-        : null;
-    if (catalogServices) {
-        return catalogServices;
+    const v5Services = Array.isArray(data.v5Catalog?.services)
+        ? data.v5Catalog.services
+        : [];
+    if (v5Services.length > 0) {
+        return v5Services;
     }
     return Array.isArray(data.services?.services) ? data.services.services : [];
 }
 
 export function getBookingOptions() {
-    const catalog = getV4Catalog();
+    const catalog = getV5Catalog();
     if (catalog && Array.isArray(catalog.booking_options)) {
         return catalog.booking_options;
     }

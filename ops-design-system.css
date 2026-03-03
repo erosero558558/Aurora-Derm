@@ -46,6 +46,30 @@
     --warning: var(--sony-warning);
     --danger: var(--sony-danger);
     --shadow: var(--sony-shadow);
+
+    /* Shared ops shell primitives (admin + kiosk + TV). */
+    --ops-shell-bg:
+        linear-gradient(140deg, rgb(255 255 255 / 8%), rgb(255 255 255 / 1%)),
+        linear-gradient(180deg, rgb(6 6 6 / 92%), rgb(14 14 14 / 88%));
+    --ops-shell-border: rgb(255 255 255 / 10%);
+    --ops-shell-shadow: 0 18px 44px rgb(0 0 0 / 35%);
+    --ops-shell-blur: 12px;
+
+    --ops-card-bg:
+        radial-gradient(circle at top right, rgb(255 255 255 / 7%), transparent 32%),
+        linear-gradient(155deg, rgb(255 255 255 / 5%), rgb(255 255 255 / 1%)),
+        var(--surface);
+    --ops-card-border: rgb(255 255 255 / 12%);
+    --ops-card-radius: 21px;
+    --ops-card-shadow: var(--shadow);
+
+    --ops-pill-radius: 999px;
+    --ops-control-radius: 12px;
+    --ops-control-border: rgb(255 255 255 / 16%);
+    --ops-control-border-hover: color-mix(in srgb, var(--accent) 44%, var(--border) 56%);
+    --ops-control-bg:
+        linear-gradient(180deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 1%)),
+        var(--surface-soft);
 }
 
 *,
@@ -67,4 +91,28 @@ body {
 :focus-visible {
     outline: 2px solid color-mix(in srgb, var(--primary) 62%, #ffffff 38%);
     outline-offset: 2px;
+}
+
+:where(.kiosk-header, .display-header, body.admin-v2-mode .admin-header) {
+    background: var(--ops-shell-bg);
+    box-shadow: var(--ops-shell-shadow);
+    backdrop-filter: blur(var(--ops-shell-blur));
+}
+
+:where(.kiosk-card, .display-panel, body.admin-v2-mode .sony-panel, body.admin-v2-mode .sony-kpi) {
+    border: 1px solid var(--ops-card-border);
+    border-radius: var(--ops-card-radius);
+    background: var(--ops-card-bg);
+    box-shadow: var(--ops-card-shadow);
+}
+
+:where(.kiosk-header-help-btn, .display-control-btn) {
+    border: 1px solid var(--ops-control-border);
+    border-radius: var(--ops-control-radius);
+    background: var(--ops-control-bg);
+}
+
+:where(.kiosk-header-help-btn, .display-control-btn):hover {
+    border-color: var(--ops-control-border-hover);
+    transform: translateY(-1px);
 }

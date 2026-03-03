@@ -1,23 +1,66 @@
-﻿---
-import PublicShellV3 from '../../../layouts/PublicShellV3.astro';
-import TelemedicineHeroV3 from '../../../components/public-v3/TelemedicineHeroV3.astro';
-import HowItWorksV3 from '../../../components/public-v3/HowItWorksV3.astro';
-import WhoItFitsV3 from '../../../components/public-v3/WhoItFitsV3.astro';
-import EscalationModelV3 from '../../../components/public-v3/EscalationModelV3.astro';
-import BookingBridgeBandV3 from '../../../components/public-v3/BookingBridgeBandV3.astro';
-import { getPublicNavigationModel, getTelemedicineV3Data } from '../../../lib/public-v3.js';
+---
+import PublicShellV5 from '../../../layouts/PublicShellV5.astro';
+import TelemedicineHeroV5 from '../../../components/public-v5/TelemedicineHeroV5.astro';
+import TelemedicineFlowV5 from '../../../components/public-v5/TelemedicineFlowV5.astro';
+import TelemedicineFitV5 from '../../../components/public-v5/TelemedicineFitV5.astro';
+import TelemedicineEscalationV5 from '../../../components/public-v5/TelemedicineEscalationV5.astro';
+import BookingTeaserV5 from '../../../components/public-v5/BookingTeaserV5.astro';
+import {
+    getPublicNavigationModel,
+    getTelemedicineV5Data,
+} from '../../../lib/public-v5.js';
 
 const locale = 'en';
 const pathname = '/en/telemedicine/';
-const page = getTelemedicineV3Data(locale);
+const page = getTelemedicineV5Data(locale);
 const navModel = getPublicNavigationModel(locale, pathname);
+const heroMediaMeta = page?.hero?.mediaMeta || {};
+const preloadImageSrc = heroMediaMeta?.src || page?.hero?.media || '';
+const preloadImageSrcSet = heroMediaMeta?.srcset || '';
+const preloadImageSizes =
+    heroMediaMeta?.sizes || '(max-width: 1024px) 100vw, 46vw';
 ---
 
-<PublicShellV3 title={page.title} description={page.description} locale={locale} canonicalPath={pathname} alternatePath="/es/telemedicina/" pathname={pathname} navModel={navModel}>
-    <TelemedicineHeroV3 hero={page.hero} />
-    <HowItWorksV3 eyebrow={page.howItWorks.eyebrow} points={page.howItWorks.points} tone={page.howItWorks.tone} locale={locale} />
-    <WhoItFitsV3 eyebrow={page.whoItFits.eyebrow} points={page.whoItFits.points} tone={page.whoItFits.tone} locale={locale} />
-    <EscalationModelV3 eyebrow={page.escalation.eyebrow} points={page.escalation.points} tone={page.escalation.tone} locale={locale} />
-    <BookingBridgeBandV3 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
-</PublicShellV3>
-
+<PublicShellV5
+    title={page.title}
+    description={page.description}
+    locale={locale}
+    canonicalPath={pathname}
+    alternatePath="/es/telemedicina/"
+    pathname={pathname}
+    navModel={navModel}
+    templateId="telemedicine_v5"
+    enableRuntimeBridge={false}
+    compactFooter={true}
+    preloadImageSrc={preloadImageSrc}
+    preloadImageSrcSet={preloadImageSrcSet}
+    preloadImageSizes={preloadImageSizes}
+>
+    <TelemedicineHeroV5 hero={page.hero} locale={locale} />
+    <TelemedicineFlowV5
+        eyebrow={page.howItWorks.eyebrow}
+        points={page.howItWorks.points}
+        tone={page.howItWorks.tone}
+        locale={locale}
+    />
+    <TelemedicineFitV5
+        eyebrow={page.whoItFits.eyebrow}
+        points={page.whoItFits.points}
+        tone={page.whoItFits.tone}
+        locale={locale}
+    />
+    <TelemedicineEscalationV5
+        eyebrow={page.escalation.eyebrow}
+        points={page.escalation.points}
+        tone={page.escalation.tone}
+        locale={locale}
+    />
+    <BookingTeaserV5
+        locale={locale}
+        serviceHint={page.booking.serviceHint}
+        primaryHref="#citas"
+        primaryLabel={page.booking.actionLabel}
+        tone={page.booking.tone}
+        mountBookingShell={true}
+    />
+</PublicShellV5>

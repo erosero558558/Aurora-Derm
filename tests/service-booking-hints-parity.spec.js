@@ -36,46 +36,33 @@ test.describe('Service booking hints parity ES/EN', () => {
             await expect(bookingCta).toBeVisible();
 
             const href = String((await bookingCta.getAttribute('href')) || '');
-            expect(href, `CTA href mismatch for ${entry.route}`).toMatch(
-                new RegExp(`\\?service=${entry.expectedHint}#citas$`)
-            );
+            expect(href, `CTA href mismatch for ${entry.route}`).toBe('#citas');
 
             await bookingCta.click();
-            const rootPath = entry.route.startsWith('/en/') ? '/en/' : '/es/';
             await expect(page).toHaveURL(
-                new RegExp(
-                    `${rootPath.replace(/\//g, '\\/')}\\?service=${entry.expectedHint}#citas$`
-                )
+                new RegExp(`${entry.route.replace(/\//g, '\\/')}#citas$`)
             );
             await waitForBookingHooks(page, entry.expectedHint);
         }
     });
 
-    test('direct home query preselect works for both locales with shared hints', async ({
+    test('direct service query preselect works for both locales with shared hints', async ({
         page,
     }) => {
         const directCases = [
             {
-                route: '/es/?service=rejuvenecimiento#citas',
+                route: '/es/servicios/botox/?service=rejuvenecimiento#citas',
                 expected: 'rejuvenecimiento',
             },
-            { route: '/en/?service=cancer#citas', expected: 'cancer' },
+            {
+                route: '/en/services/cancer-piel/?service=cancer#citas',
+                expected: 'cancer',
+            },
         ];
 
         for (const entry of directCases) {
-            await page.goto(entry.route, { waitUntil: 'domcontentloaded' });
-            await expect(page.locator('#appointmentForm')).toBeVisible();
-            await expect
-                .poll(
-                    async () =>
-                        page.evaluate(() => {
-                            const select =
-                                document.getElementById('serviceSelect');
-                            return select ? select.value : null;
-                        }),
-                    { timeout: 12000 }
-                )
-                .toBe(entry.expected);
+            await gotoPublicRoute(page, entry.route);
+            await waitForBookingHooks(page, entry.expected);
         }
     });
 });

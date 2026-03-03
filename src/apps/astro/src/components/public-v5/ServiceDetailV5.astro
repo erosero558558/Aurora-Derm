@@ -1,0 +1,131 @@
+---
+import ResponsiveMediaImageV5 from './ResponsiveMediaImageV5.astro';
+
+const { page = {}, locale = 'es' } = Astro.props;
+
+const hero = page?.hero || {};
+const story = page?.story || {};
+const evidence = page?.evidence || {};
+const timeline = page?.timeline || {};
+const related = Array.isArray(page?.related) ? page.related.slice(0, 2) : [];
+const serviceHint = page?.bookingHint || hero?.serviceHint || 'consulta';
+---
+
+<section class="sony-service-hero" data-template-block="service_hero_v5">
+    <div class="sony-service-hero__copy">
+        <p>{hero.eyebrow}</p>
+        <h1>{hero.title}</h1>
+        <p>{hero.deck}</p>
+        <div class="sony-service-hero__meta">
+            <span>{hero.duration}</span>
+            <span>{hero.priceLabel}</span>
+        </div>
+        <p class="sony-service-hero__disclaimer">{hero.priceDisclaimer}</p>
+        <a
+            href="#citas"
+            class="hero-stage__cta hero-stage__cta--primary"
+            data-analytics-event="start_booking_from_service"
+            data-entry-surface="v5_service_hero_primary"
+            data-cta-target="booking"
+            data-booking-hint={serviceHint}
+            data-service-slug={hero.slug}
+            data-service-category={hero.category}
+            data-service-intent={hero.intent}
+            data-catalog-category={hero.category}
+            data-catalog-intent={hero.intent}
+        >
+            {locale === 'en' ? 'Book route' : 'Reservar ruta'}
+        </a>
+    </div>
+    <div class="sony-service-hero__media">
+        <ResponsiveMediaImageV5
+            media={hero?.mediaMeta || hero?.media}
+            fallbackSrc={hero?.media || '/images/optimized/showcase-diagnostic.webp'}
+            fallbackAlt={hero?.title || (locale === 'en' ? 'Dermatology service' : 'Servicio dermatologico')}
+            loading="eager"
+            fetchpriority="high"
+            sizes="(max-width: 1024px) 100vw, 46vw"
+        />
+    </div>
+</section>
+
+<section class="sony-service-fit" data-template-block="service_fit_v5">
+    <div class="sony-service-fit__head">
+        <p>{story.eyebrow}</p>
+        <h2>{story.summary}</h2>
+    </div>
+    <div class="sony-service-fit__grid">
+        <article>
+            <h3>{locale === 'en' ? 'Clinical fit' : 'Fit clinico'}</h3>
+            <ul>{(story.indications || []).slice(0, 6).map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>{locale === 'en' ? 'Audience' : 'Audiencia'}</h3>
+            <ul>{(story.audience || []).slice(0, 4).map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>{locale === 'en' ? 'Medical team' : 'Equipo medico'}</h3>
+            <ul>{(story.doctors || []).slice(0, 3).map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>FAQ</h3>
+            <ul>{(story.faq || []).slice(0, 4).map((item) => <li>{item}</li>)}</ul>
+        </article>
+    </div>
+</section>
+
+<section class="sony-service-evidence" data-template-block="service_evidence_v5">
+    <div class="sony-service-evidence__head">
+        <p>{evidence.eyebrow}</p>
+        <h2>{evidence.title}</h2>
+    </div>
+    <div class="sony-service-evidence__grid">
+        <article>
+            <h3>{locale === 'en' ? 'Caution points' : 'Puntos de cautela'}</h3>
+            <ul>{(evidence.bullets || []).slice(0, 6).map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>{locale === 'en' ? 'Outcome reading' : 'Lectura de resultados'}</h3>
+            <ul>{(evidence.outcomes || []).slice(0, 5).map((item) => <li>{item}</li>)}</ul>
+        </article>
+        <article>
+            <h3>{timeline.eyebrow}</h3>
+            <ol>
+                {(timeline.steps || []).slice(0, 4).map((item) => <li>{item}</li>)}
+            </ol>
+        </article>
+    </div>
+</section>
+
+{
+    related.length ? (
+        <section class="sony-service-related" data-template-block="service_related_v5">
+            <div class="sony-service-related__head">
+                <p>{locale === 'en' ? 'Related routes' : 'Rutas relacionadas'}</p>
+                <h2>{locale === 'en' ? 'Continue inside the same care direction.' : 'Continua dentro de la misma direccion de cuidado.'}</h2>
+            </div>
+            <div class="sony-service-related__grid">
+                {
+                    related.map((item) => (
+                        <article class="sony-service-related__card">
+                            <p>{item.label}</p>
+                            <h3>{item.title}</h3>
+                            <p>{item.deck}</p>
+                            <a
+                                href={item.href}
+                                class="public-link-arrow"
+                                data-analytics-event="open_public_cta"
+                                data-entry-surface="v5_service_related"
+                                data-cta-target="service_detail"
+                                data-service-slug={item.slug}
+                                data-service-category={item.family}
+                            >
+                                {item.cta}
+                            </a>
+                        </article>
+                    ))
+                }
+            </div>
+        </section>
+    ) : null
+}
