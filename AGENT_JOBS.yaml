@@ -1,0 +1,21 @@
+version: 1
+updated_at: "2026-03-03T00:00:00Z"
+jobs:
+  - key: public_main_sync
+    job_id: "8d31e299-7e57-4959-80b5-aaa2d73e9674"
+    enabled: true
+    type: external_cron
+    owner: codex_backend_ops
+    environment: production
+    repo_path: /var/www/figo
+    branch: main
+    schedule: "* * * * *"
+    command: /root/sync-pielarmonia.sh
+    wrapper_fallback: /var/www/figo/bin/deploy-public-v3-cron-sync.sh
+    lock_file: /tmp/sync-pielarmonia.lock
+    log_path: /var/log/sync-pielarmonia.log
+    status_path: /var/lib/pielarmonia/public-sync-status.json
+    health_url: https://pielarmonia.com/api.php?resource=health
+    expected_max_lag_seconds: 120
+    source_of_truth: host_cron
+    publish_strategy: main_auto_guarded

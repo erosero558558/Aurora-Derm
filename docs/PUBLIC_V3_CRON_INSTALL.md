@@ -1,71 +1,46 @@
 # Public Deploy Cron Install
 
-Use this only on the VPS/OpenClaw host when you want production to auto-publish the latest `origin/main` without running the manual deploy every time.
+## Regla principal
 
-## Current production note
+El scheduler de verdad en producción es el cron ya existente con `JOB_ID=8d31e299-7e57-4959-80b5-aaa2d73e9674`.
 
-El servidor validado el `2026-03-02` ya tenia un sync operativo en `/root/sync-pielarmonia.sh`.
+No crear un segundo cron en el host validado si ya existe `/root/sync-pielarmonia.sh`.
 
-En ese servidor, la accion correcta fue:
+## Host validado
 
-1. corregir permisos de `bin/deploy-public-v3-live.sh`
-2. ejecutar `/usr/bin/flock -n /tmp/sync-pielarmonia.lock /root/sync-pielarmonia.sh`
-3. subir ese cron existente a `* * * * *`
+- repo: `/var/www/figo`
+- job key: `public_main_sync`
+- job id: `8d31e299-7e57-4959-80b5-aaa2d73e9674`
+- lock: `/tmp/sync-pielarmonia.lock`
+- log: `/var/log/sync-pielarmonia.log`
+- status runtime: `/var/lib/pielarmonia/public-sync-status.json`
 
-No crear un segundo cron si el host ya tiene ese sync. Para ese caso, usar primero [PUBLIC_MAIN_UPDATE_RUNBOOK.md](./PUBLIC_MAIN_UPDATE_RUNBOOK.md).
+Cron canónico:
 
-## What this does
+```cron
+* * * * * JOB_ID=8d31e299-7e57-4959-80b5-aaa2d73e9674 PUBLIC_SYNC_JOB_KEY=public_main_sync PUBLIC_SYNC_STATUS_PATH=/var/lib/pielarmonia/public-sync-status.json /usr/bin/flock -n /tmp/sync-pielarmonia.lock /root/sync-pielarmonia.sh >> /var/log/sync-pielarmonia.log 2>&1
+```
 
-- runs every minute
-- fetches `origin/main`
-- skips when there is no new commit
-- uses `flock` so two deploys cannot overlap
-- refuses to deploy if the repo working tree is dirty
-- calls `bin/deploy-public-v3-live.sh` when present, otherwise falls back to `bin/deploy-public-v2-live.sh`
-- writes a persistent log
+## Si el host no tiene `/root/sync-pielarmonia.sh`
 
-## Install the cron wrapper
-
-Usa este wrapper solo si el servidor no tiene ya un sync productivo equivalente.
-
-From the repo root on the server:
+Usar el wrapper del repo:
 
 ```bash
 cd /var/www/figo
 chmod +x bin/deploy-public-v3-cron-sync.sh
+crontab -l 2>/dev/null | {
+  cat
+  echo '* * * * * JOB_ID=8d31e299-7e57-4959-80b5-aaa2d73e9674 PUBLIC_SYNC_JOB_KEY=public_main_sync PUBLIC_SYNC_STATUS_PATH=/var/lib/pielarmonia/public-sync-status.json /usr/bin/flock -n /tmp/sync-pielarmonia.lock /var/www/figo/bin/deploy-public-v3-cron-sync.sh >> /var/log/sync-pielarmonia.log 2>&1'
+} | crontab -
 ```
 
-Install the cron entry:
-
-```bash
-crontab -l 2>/dev/null | { cat; echo '* * * * * REPO=/var/www/figo LOG_PATH=/var/log/pielarmonia-public-deploy.log /usr/bin/env bash /var/www/figo/bin/deploy-public-v3-cron-sync.sh'; } | crontab -
-```
-
-## Verify
+## Verificación
 
 ```bash
 crontab -l
-tail -n 50 /var/log/pielarmonia-public-deploy.log
+tail -n 50 /var/log/sync-pielarmonia.log
+cat /var/lib/pielarmonia/public-sync-status.json
+curl -s https://pielarmonia.com/api.php?resource=health
 ```
 
-Expected idle log line:
-
-```text
-No remote changes detected at origin/main.
-```
-
-Expected deploy log line:
-
-```text
-Deploying new commit <sha> with deploy-public-v3-live.sh
-```
-
-## Remove it
-
-```bash
-crontab -l | grep -v 'deploy-public-v3-cron-sync.sh' | crontab -
-```
-
-## Important tradeoff
-
-This reduces manual deploy friction, but it also means any new `origin/main` commit can reach production within one minute. Only use it if `main` is already treated as production-ready.
+El `health` público debe exponer `checks.publicSync.jobId=8d31e299-7e57-4959-80b5-aaa2d73e9674`.

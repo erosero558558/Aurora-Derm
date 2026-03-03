@@ -157,6 +157,7 @@ function handleCodexCommand(ctx) {
                   })
                 : [];
         writeCodexActiveBlock({
+            codex_instance: taskInstance,
             block,
             task_id: taskId,
             status: 'in_progress',
@@ -189,8 +190,18 @@ function handleCodexCommand(ctx) {
     });
 
     if (ACTIVE_STATUSES.has(nextStatus)) {
-        const existingBlock = parseCodexActiveBlocks()[0] || {};
+        const taskInstance = String(task.codex_instance || 'codex_backend_ops')
+            .trim()
+            .toLowerCase();
+        const existingBlock =
+            parseCodexActiveBlocks().find(
+                (item) =>
+                    String(item.codex_instance || 'codex_backend_ops')
+                        .trim()
+                        .toLowerCase() === taskInstance
+            ) || {};
         writeCodexActiveBlock({
+            codex_instance: taskInstance,
             block: String(flags.block || existingBlock.block || 'C1'),
             task_id: taskId,
             status: nextStatus,
@@ -198,7 +209,11 @@ function handleCodexCommand(ctx) {
             updated_at: currentDate(),
         });
     } else {
-        writeCodexActiveBlock(null);
+        writeCodexActiveBlock(null, {
+            codex_instance: String(task.codex_instance || 'codex_backend_ops')
+                .trim()
+                .toLowerCase(),
+        });
     }
     runCodexCheck();
     console.log(`Codex stop OK: ${taskId} -> ${nextStatus}`);

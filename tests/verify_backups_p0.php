@@ -5,6 +5,8 @@ declare(strict_types=1);
 // Self-contained Backup Verification Test
 // Similar to BookingFlowTest.php but specifically checks backup creation.
 
+require_once __DIR__ . '/test_filesystem.php';
+
 // Pick a random port to avoid collisions
 $port = rand(8100, 8999);
 $host = "localhost:$port";
@@ -54,7 +56,7 @@ if ($attempts === 20) {
     if ($pid) {
         exec("kill $pid");
     }
-    exec("rm -rf " . escapeshellarg($tempDir));
+    delete_path_recursive($tempDir);
     exit(1);
 }
 
@@ -98,7 +100,7 @@ if ($httpCode !== 201) {
     echo "FAILED: Booking creation failed. Response: $response\n";
     // Cleanup
     exec("kill $pid");
-    exec("rm -rf " . escapeshellarg($tempDir));
+    delete_path_recursive($tempDir);
     exit(1);
 }
 
@@ -113,7 +115,7 @@ echo "Backups after write: $countAfter\n";
 // Cleanup
 echo "Stopping server (PID $pid)...\n";
 exec("kill $pid");
-exec("rm -rf " . escapeshellarg($tempDir));
+delete_path_recursive($tempDir);
 
 if ($countAfter > $countBefore) {
     echo "SUCCESS: Backup created successfully.\n";

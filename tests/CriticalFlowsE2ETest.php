@@ -225,7 +225,7 @@ try {
 
     // Recursive delete data dir
     if (is_dir($dataDir)) {
-        exec("rm -rf " . escapeshellarg($dataDir));
+        delete_path_recursive($dataDir);
     }
 }
 

@@ -160,10 +160,7 @@ try {
 
     // Recursive delete data dir
     if (is_dir($dataDir)) {
-        // exec("rm -rf $dataDir"); // Dangerous?
-        // Let's just leave it or use a safer delete.
-        // rm -rf is fine for temp dir.
-        exec("rm -rf " . escapeshellarg($dataDir));
+        delete_path_recursive($dataDir);
     }
 }
 

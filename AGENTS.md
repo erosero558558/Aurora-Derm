@@ -5,14 +5,16 @@ CANONICAL_AGENT_POLICY: AGENTS.md
 AUTONOMY_MODEL: semi_autonomous_guardrails
 PRIMARY_KPI: reduce_rework
 
-Este documento es la fuente de verdad operativa para todos los agentes del
-repositorio: Codex, Claude, Kimi, Jules y CI (GitHub Actions).
+Este documento es la fuente de verdad operativa del modo `codex-only` del
+repositorio: `codex_backend_ops`, `codex_frontend` y `CI` (GitHub Actions).
+`Claude`, `Kimi` y `Jules` quedan solo como referencias historicas de tareas
+terminales ya cerradas.
 
 ## Reglas de precedencia
 
 1. Si hay conflicto entre documentos, prevalece `AGENTS.md`.
 2. `CLAUDE.md` es guia de rol para Claude; no puede contradecir este archivo.
-3. `JULES_TASKS.md` y `KIMI_TASKS.md` son colas derivadas.
+3. `JULES_TASKS.md` y `KIMI_TASKS.md` quedan preservados solo como tombstones historicos.
 4. El backlog canonico es `AGENT_BOARD.yaml`.
 5. En caso de duda operativa, se aplica la opcion mas conservadora.
 
@@ -32,16 +34,12 @@ Metas de operacion:
 
 ```text
 La tarea toca zona critica? (pagos/auth/calendar prod/deploy/env/seguridad)
-  Si -> Codex o Claude lideran con plan + checklist + tests + gate backend.
+  Si -> codex_backend_ops lidera con plan + checklist + tests + gate backend.
   No -> continuar.
 
-Requiere PR remoto y puede esperar asincronia?
-  Si -> Jules.
-  No -> continuar.
-
-Es refactor/analisis/documentacion local de bajo riesgo?
-  Si -> Kimi.
-  No -> Codex o Claude.
+La tarea es puramente frontend/publica?
+  Si -> codex_frontend.
+  No -> codex_backend_ops.
 
 Hay solape de archivos con tarea activa?
   Si -> bloquear dispatch y replanificar.
@@ -66,7 +64,7 @@ Usar orquestacion completa cuando:
 
 - Hay trabajo paralelo multiagente o backlog con dependencias.
 - Hay probabilidad de solape de archivos entre tareas activas.
-- Se requiere reparto asincrono (Jules/Kimi) o seguimiento continuo 24/7.
+- Se requiere coordinacion explicita entre `codex_backend_ops` y `codex_frontend`.
 
 Regla de SLA:
 
@@ -93,11 +91,10 @@ Para zona critica es obligatorio:
 
 ## Modelo de asignacion por agente
 
-- Codex: implementacion local multiarchivo, fixes urgentes, coordinacion tecnica.
-- Claude: arquitectura, debugging interactivo, revision y decisiones de diseno.
-- Kimi: tareas locales no criticas (refactor, auditoria, documentacion).
-- Jules: tareas async con PR remoto y cambios aislados.
-- CI: arbitro de consistencia, conflictos y calidad minima.
+- `codex_backend_ops`: backend, cron, deploy, workflows, seguridad, runtime critico.
+- `codex_frontend`: `src/apps/**`, `templates/**`, `content/**`, `*.html`, `js/**`, `styles*.css`.
+- `ci`: arbitro de consistencia, conflictos y calidad minima.
+- `claude`, `kimi`, `jules`: retirados para trabajo activo; solo tolerados en tareas terminales historicas.
 
 ## Dual Codex Matrix (Dominios Fijos)
 
@@ -158,9 +155,7 @@ node agent-orchestrator.js status --json --explain-red
 node agent-orchestrator.js intake --strict
 node agent-orchestrator.js score
 node agent-orchestrator.js stale --strict
-node agent-orchestrator.js reconcile --json
 node agent-orchestrator.js budget --json
-node agent-orchestrator.js dispatch --agent jules --json
 node agent-orchestrator.js conflicts
 node agent-orchestrator.js conflicts --json
 node agent-orchestrator.js handoffs status
@@ -179,6 +174,8 @@ node agent-orchestrator.js leases heartbeat AG-003 --ttl-hours 4 --expect-rev 12
 node agent-orchestrator.js leases clear AG-003 --reason manual_release --json
 node agent-orchestrator.js codex-check
 node agent-orchestrator.js codex-check --json
+node agent-orchestrator.js jobs status --json
+node agent-orchestrator.js jobs verify public_main_sync --json
 node agent-orchestrator.js codex start CDX-001 --block C1
 node agent-orchestrator.js codex start CDX-001 --block C1 --expect-rev 12
 node agent-orchestrator.js codex stop CDX-001 --to review
@@ -191,7 +188,7 @@ node agent-orchestrator.js task claim AG-003 --owner ernesto --expect-rev 12 --j
 node agent-orchestrator.js task ls --active --json
 node agent-orchestrator.js task ls --mine --active --json
 node agent-orchestrator.js task ls --executor codex --status in_progress --json
-node agent-orchestrator.js task create --title "..." --executor kimi --files path/a,path/b --status ready --risk low --scope docs --json
+node agent-orchestrator.js task create --title "..." --executor codex --files path/a,path/b --status ready --risk low --scope docs --json
 node agent-orchestrator.js task create --title "..." --template docs --files docs/a.md --json
 node agent-orchestrator.js task create --title "..." --template bugfix --from-files --files lib/calendar/CalendarBookingService.php --executor codex --json
 node agent-orchestrator.js task create --interactive --json
@@ -211,6 +208,7 @@ node agent-orchestrator.js task start AG-003 --status in_progress --expect-rev 1
 node agent-orchestrator.js task finish AG-003 --evidence verification/agent-runs/AG-003.md
 node agent-orchestrator.js task start AG-003 --json
 node agent-orchestrator.js sync
+node agent-orchestrator.js publish checkpoint CDX-001 --summary "..." --expect-rev 12 --json
 node agent-orchestrator.js close <task_id>
 node agent-orchestrator.js close AG-003 --json
 node agent-orchestrator.js close AG-003 --evidence verification/agent-runs/AG-003.md --expect-rev 12 --json
@@ -242,9 +240,10 @@ Flujo recomendado:
 2. Ejecutar `npm run agent:test` si cambiaste el orquestador/validadores.
 3. Ejecutar `npm run agent:gate` (o al menos `conflicts`, `handoffs lint`, `codex-check`).
    Para diagnostico semantico del board (leases, stale, WIP, evidencia), ejecutar `node agent-orchestrator.js board doctor --json` (warn-first, no bloqueante por defecto).
-4. Ejecutar `node agent-orchestrator.js sync`.
-5. Ejecutar validaciones del cambio (`npm run lint`, tests aplicables).
-6. Confirmar evidencia y cerrar (`close`, `codex stop`, `handoffs close`) cuando aplique.
+4. Si el cambio debe salir rapido a `main`, ejecutar `node agent-orchestrator.js publish checkpoint <CDX-ID> --summary "..." --expect-rev <rev> --json`.
+5. Ejecutar `node agent-orchestrator.js sync` cuando haga falta refrescar tombstones/estado derivado.
+6. Ejecutar validaciones del cambio (`npm run lint`, tests aplicables).
+7. Confirmar evidencia y cerrar (`close`, `codex stop`, `handoffs close`) cuando aplique.
 
 Candado de concurrencia:
 
@@ -270,7 +269,7 @@ Nota:
 - `metrics` acepta `--profile local|ci` (por defecto escribe; `local` implica read-only salvo `--write`).
 - `metrics --dry-run` muestra preview de archivos runtime que escribiria y no persiste cambios.
 - `metrics baseline <show|set|reset>` permite gestionar baseline explicito en `verification/agent-metrics.json` (recomendado usar `set --from current` tras cambios estructurales del board/politica).
-- `task create`, `task claim` (si cambia `status` a activo) y `task start` aplican guardrails locales de gobernanza: validan `depends_on` (IDs existentes, sin duplicados) y bloquean scopes criticos asignados a ejecutores no permitidos (`codex|claude`).
+- `task create`, `task claim` (si cambia `status` a activo) y `task start` aplican guardrails locales de gobernanza: validan `depends_on` (IDs existentes, sin duplicados) y bloquean scopes criticos asignados a ejecutores no permitidos (`codex`).
 - `task create --template <docs|bugfix|critical>` aplica defaults de `executor/status/risk/scope`; los flags explicitos sobreescriben la plantilla. `critical` exige `--scope` con keyword critica (`payments|auth|calendar|deploy|env|security`).
 - `task create --from-files` infiere `scope` y `risk` desde rutas de `files` (precedencia: flags explicitos > inferencia por files > template > defaults). Si detecta scope critico y no se paso `--executor`, puede autoajustar `executor` a `codex` para evitar fallo por guardrail.
 - `task create --interactive` solicita por prompt los campos minimos (incluye opcion de activar `--from-files`); con `--json` los prompts salen por `stderr` para no romper el payload.
@@ -318,7 +317,8 @@ Nota:
 - `AGENT_BOARD.yaml` sigue siendo el tablero canonico de locks/ejecucion para todos los agentes, incluida la linea Codex.
 - `PLAN_MAESTRO_CODEX_2026.md` sigue siendo la fuente de estrategia/evidencia de la linea Codex.
 - Toda ejecucion activa de Codex debe tener tarea espejo `CDX-*` en `AGENT_BOARD.yaml` con `executor: codex`.
-- Solo una tarea `CDX-*` puede estar `in_progress` a la vez.
+- Maximo una tarea `CDX-*` activa por `codex_instance`.
+- Maximo dos tareas `CDX-*` activas en total, una por lane.
 - El bloqueo por solape se decide por `files` en tareas activas del board (`ready`, `in_progress`, `review`, `blocked`).
 - Excepcion permitida: handoff temporal y explicito en `AGENT_HANDOFFS.yaml` (TTL + archivos acotados).
 - Si hay drift entre el bloque `CODEX_ACTIVE` del plan Codex y el task `CDX-*` espejo, CI debe fallar.

@@ -257,6 +257,67 @@ function parseSignalsContent(content) {
     return data;
 }
 
+function parseJobsContent(content) {
+    const lines = normalizeEol(content).split('\n');
+    const data = { version: 1, updated_at: '', jobs: [] };
+    let inJobs = false;
+    let job = null;
+
+    for (const rawLine of lines) {
+        const line = rawLine.replace(/\t/g, '    ');
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+
+        const versionMatch = line.match(/^version:\s*(.+)$/);
+        if (versionMatch && !inJobs) {
+            data.version = parseScalar(versionMatch[1]);
+            continue;
+        }
+        const updatedAtMatch = line.match(/^updated_at:\s*(.+)$/);
+        if (updatedAtMatch && !inJobs) {
+            data.updated_at = String(parseScalar(updatedAtMatch[1]) || '');
+            continue;
+        }
+        if (trimmed === 'jobs:') {
+            inJobs = true;
+            if (job) {
+                data.jobs.push(job);
+                job = null;
+            }
+            continue;
+        }
+        if (!inJobs) continue;
+
+        const jobStart = line.match(/^\s{2}-\s+key:\s*(.+)$/);
+        if (jobStart) {
+            if (job) data.jobs.push(job);
+            job = { key: parseScalar(jobStart[1]) };
+            continue;
+        }
+
+        const prop = line.match(/^\s{4}([a-zA-Z_][\w-]*):\s*(.*)$/);
+        if (job && prop) {
+            job[prop[1]] = parseScalar(prop[2]);
+        }
+    }
+
+    if (job) data.jobs.push(job);
+
+    for (const item of data.jobs) {
+        item.key = String(item.key || '').trim();
+        item.enabled = parseBooleanLike(item.enabled, true);
+        item.expected_max_lag_seconds = Number.parseInt(
+            String(item.expected_max_lag_seconds || '0'),
+            10
+        );
+        if (!Number.isFinite(item.expected_max_lag_seconds)) {
+            item.expected_max_lag_seconds = 0;
+        }
+    }
+
+    return data;
+}
+
 module.exports = {
     normalizeEol,
     unquote,
@@ -266,4 +327,5 @@ module.exports = {
     parseHandoffsContent,
     parseCodexActiveBlocksContent,
     parseSignalsContent,
+    parseJobsContent,
 };

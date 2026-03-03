@@ -46,7 +46,6 @@ function readGovernancePolicyStrict(options) {
 function validateGovernancePolicy(rawPolicy, options = {}) {
     const {
         defaultPolicy,
-        policyPath = 'governance-policy.json',
         policyExists = false,
     } = options;
     const errors = [];
@@ -174,6 +173,103 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
         errors.push(
             `summary.thresholds.domain_score_priority_yellow_below invalido (${merged?.summary?.thresholds?.domain_score_priority_yellow_below ?? 'vacio'})`
         );
+    }
+
+    const agents = merged?.agents;
+    if (agents !== undefined) {
+        if (!agents || typeof agents !== 'object' || Array.isArray(agents)) {
+            errors.push('agents debe ser objeto');
+        } else {
+            for (const key of ['active_executors', 'retired_executors']) {
+                if (
+                    Object.prototype.hasOwnProperty.call(agents, key) &&
+                    !Array.isArray(agents[key])
+                ) {
+                    errors.push(`agents.${key} debe ser array`);
+                }
+            }
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    agents,
+                    'allow_legacy_terminal_executors'
+                ) &&
+                typeof agents.allow_legacy_terminal_executors !== 'boolean'
+            ) {
+                errors.push(
+                    'agents.allow_legacy_terminal_executors debe ser boolean'
+                );
+            }
+            warnUnknownKeys(
+                sourcePolicy?.agents,
+                [
+                    'active_executors',
+                    'retired_executors',
+                    'allow_legacy_terminal_executors',
+                ],
+                'agents'
+            );
+        }
+    }
+
+    const publishing = merged?.publishing;
+    if (publishing !== undefined) {
+        if (
+            !publishing ||
+            typeof publishing !== 'object' ||
+            Array.isArray(publishing)
+        ) {
+            errors.push('publishing debe ser objeto');
+        } else {
+            if (
+                Object.prototype.hasOwnProperty.call(publishing, 'enabled') &&
+                typeof publishing.enabled !== 'boolean'
+            ) {
+                errors.push('publishing.enabled debe ser boolean');
+            }
+            for (const key of [
+                'mode',
+                'trigger',
+                'branch',
+                'gate_profile',
+                'health_url',
+                'required_job_key',
+            ]) {
+                if (
+                    Object.prototype.hasOwnProperty.call(publishing, key) &&
+                    typeof publishing[key] !== 'string'
+                ) {
+                    errors.push(`publishing.${key} debe ser string`);
+                }
+            }
+            for (const key of [
+                'checkpoint_cooldown_seconds',
+                'max_live_wait_seconds',
+            ]) {
+                if (Object.prototype.hasOwnProperty.call(publishing, key)) {
+                    const n = Number(publishing[key]);
+                    if (!Number.isFinite(n) || n <= 0) {
+                        errors.push(
+                            `publishing.${key} invalido (${publishing[key]})`
+                        );
+                    }
+                }
+            }
+            warnUnknownKeys(
+                sourcePolicy?.publishing,
+                [
+                    'enabled',
+                    'mode',
+                    'trigger',
+                    'branch',
+                    'gate_profile',
+                    'checkpoint_cooldown_seconds',
+                    'max_live_wait_seconds',
+                    'health_url',
+                    'required_job_key',
+                ],
+                'publishing'
+            );
+        }
     }
 
     const enforcement = merged?.enforcement;
@@ -527,7 +623,7 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
 
     warnUnknownKeys(
         sourcePolicy,
-        ['version', 'domain_health', 'summary', 'enforcement'],
+        ['version', 'domain_health', 'summary', 'agents', 'publishing', 'enforcement'],
         'root'
     );
     warnUnknownKeys(
@@ -576,6 +672,58 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                         ? threshold
                         : null,
                 },
+            },
+            agents: {
+                active_executors: Array.isArray(agents?.active_executors)
+                    ? agents.active_executors.map((value) => String(value))
+                    : [],
+                retired_executors: Array.isArray(agents?.retired_executors)
+                    ? agents.retired_executors.map((value) => String(value))
+                    : [],
+                allow_legacy_terminal_executors:
+                    typeof agents?.allow_legacy_terminal_executors === 'boolean'
+                        ? agents.allow_legacy_terminal_executors
+                        : null,
+            },
+            publishing: {
+                enabled:
+                    typeof publishing?.enabled === 'boolean'
+                        ? publishing.enabled
+                        : null,
+                mode:
+                    typeof publishing?.mode === 'string'
+                        ? publishing.mode
+                        : '',
+                trigger:
+                    typeof publishing?.trigger === 'string'
+                        ? publishing.trigger
+                        : '',
+                branch:
+                    typeof publishing?.branch === 'string'
+                        ? publishing.branch
+                        : '',
+                gate_profile:
+                    typeof publishing?.gate_profile === 'string'
+                        ? publishing.gate_profile
+                        : '',
+                checkpoint_cooldown_seconds: Number.isFinite(
+                    Number(publishing?.checkpoint_cooldown_seconds)
+                )
+                    ? Number(publishing.checkpoint_cooldown_seconds)
+                    : null,
+                max_live_wait_seconds: Number.isFinite(
+                    Number(publishing?.max_live_wait_seconds)
+                )
+                    ? Number(publishing.max_live_wait_seconds)
+                    : null,
+                health_url:
+                    typeof publishing?.health_url === 'string'
+                        ? publishing.health_url
+                        : '',
+                required_job_key:
+                    typeof publishing?.required_job_key === 'string'
+                        ? publishing.required_job_key
+                        : '',
             },
             enforcement:
                 enforcement &&

@@ -103,6 +103,27 @@ class HealthController
                 'replicaMode' => function_exists('backup_replica_mode') ? backup_replica_mode() : 'none'
             ];
         }
+        $publicSyncCheck = function_exists('public_sync_health_snapshot')
+            ? public_sync_health_snapshot()
+            : [
+                'configured' => false,
+                'jobId' => '',
+                'jobKey' => 'public_main_sync',
+                'mode' => 'external_cron',
+                'schedule' => '',
+                'statusPath' => '',
+                'logPath' => '',
+                'lockFile' => '',
+                'state' => 'unknown',
+                'healthy' => false,
+                'ageSeconds' => null,
+                'expectedMaxLagSeconds' => 120,
+                'lastCheckedAt' => '',
+                'lastSuccessAt' => '',
+                'lastErrorAt' => '',
+                'lastErrorMessage' => '',
+                'deployedCommit' => '',
+            ];
 
         $timingMs = (int) round((microtime(true) - $requestStartedAt) * 1000);
 
@@ -136,6 +157,10 @@ class HealthController
             'servicesCatalogConfigured' => (bool) ($servicesCatalog['configured'] ?? false),
             'idempotencyRequestsWithKey' => (int) ($idempotencySnapshot['requestsWithKey'] ?? 0),
             'idempotencyConflictRatePct' => (float) ($idempotencySnapshot['conflictRatePct'] ?? 0.0),
+            'publicSyncConfigured' => (bool) ($publicSyncCheck['configured'] ?? false),
+            'publicSyncHealthy' => (bool) ($publicSyncCheck['healthy'] ?? false),
+            'publicSyncState' => (string) ($publicSyncCheck['state'] ?? 'unknown'),
+            'publicSyncAgeSeconds' => $publicSyncCheck['ageSeconds'] ?? null,
         ]);
         json_response([
             'ok' => true,
@@ -207,6 +232,7 @@ class HealthController
                 ],
                 'idempotency' => $idempotencySnapshot,
                 'backup' => $backupCheck,
+                'publicSync' => $publicSyncCheck,
                 'storeCounts' => $storeCounts
             ],
             'timestamp' => local_date('c')

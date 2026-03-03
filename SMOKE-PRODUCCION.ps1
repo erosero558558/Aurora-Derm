@@ -642,6 +642,41 @@ if ($null -ne $healthResult -and $healthResult.Ok) {
             Write-Host "[FAIL] Health API reporta figoRecursiveConfig=true"
             $contractFailures += 1
         }
+
+        if ($RequireCronReady) {
+            $publicSync = $null
+            try { $publicSync = $healthJson.checks.publicSync } catch { $publicSync = $null }
+            if ($null -eq $publicSync) {
+                Write-Host "[FAIL] Health API sin checks.publicSync"
+                $contractFailures += 1
+            } else {
+                $jobId = ''
+                $configured = $false
+                $healthy = $false
+                $ageSeconds = 999999
+                try { $jobId = [string]$publicSync.jobId } catch { $jobId = '' }
+                try { $configured = [bool]$publicSync.configured } catch { $configured = $false }
+                try { $healthy = [bool]$publicSync.healthy } catch { $healthy = $false }
+                try { $ageSeconds = [int]$publicSync.ageSeconds } catch { $ageSeconds = 999999 }
+
+                if (-not $configured) {
+                    Write-Host "[FAIL] checks.publicSync.configured=false"
+                    $contractFailures += 1
+                }
+                if ($jobId -ne '8d31e299-7e57-4959-80b5-aaa2d73e9674') {
+                    Write-Host "[FAIL] checks.publicSync.jobId invalido: $jobId"
+                    $contractFailures += 1
+                }
+                if (-not $healthy) {
+                    Write-Host "[FAIL] checks.publicSync.healthy=false"
+                    $contractFailures += 1
+                }
+                if ($ageSeconds -gt 120) {
+                    Write-Host "[FAIL] checks.publicSync.ageSeconds alto: $ageSeconds"
+                    $contractFailures += 1
+                }
+            }
+        }
     } catch {
         Write-Host "[FAIL] Health API no devolvio JSON valido"
         $contractFailures += 1

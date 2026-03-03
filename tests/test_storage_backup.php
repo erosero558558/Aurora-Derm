@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/test_framework.php';
+
 // Set up temporary environment for testing
 $tmpDataDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pielarmonia-test-storage-' . uniqid();
 putenv("PIELARMONIA_DATA_DIR=$tmpDataDir");
 
-// Clean up any existing directory
-if (is_dir($tmpDataDir)) {
-    exec("rm -rf " . escapeshellarg($tmpDataDir));
-}
-mkdir($tmpDataDir, 0777, true);
+ensure_clean_directory($tmpDataDir);
 
 // Include dependencies
-require_once __DIR__ . '/test_framework.php';
 require_once __DIR__ . '/../lib/storage.php';
 require_once __DIR__ . '/../lib/db.php';
 
@@ -110,6 +107,6 @@ run_test('Backup rotation (max backups)', function () use ($tmpDataDir) {
 });
 
 // Cleanup
-exec("rm -rf " . escapeshellarg($tmpDataDir));
+delete_path_recursive($tmpDataDir);
 
 print_test_summary();

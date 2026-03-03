@@ -1,86 +1,83 @@
 name: Agent Intake
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 concurrency:
-    group: agent-state-sync-${{ github.ref }}
-    cancel-in-progress: false
+  group: agent-state-sync-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
-    contents: write
-    actions: read
-    issues: read
-    pull-requests: read
+  contents: write
+  actions: read
+  issues: read
+  pull-requests: read
 
 jobs:
-    intake:
-        runs-on: ubuntu-latest
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-            JULES_MAX_DISPATCH_PER_RUN: ${{ vars.JULES_MAX_DISPATCH_PER_RUN || '2' }}
-            JULES_MAX_ACTIVE_SESSIONS: ${{ vars.JULES_MAX_ACTIVE_SESSIONS || '6' }}
-            JULES_DAILY_LIMIT: ${{ vars.JULES_DAILY_LIMIT || '80' }}
-            KIMI_DAILY_LIMIT: ${{ vars.KIMI_DAILY_LIMIT || '180' }}
-            CODEX_DAILY_LIMIT: ${{ vars.CODEX_DAILY_LIMIT || '999' }}
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+  intake:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CODEX_DAILY_LIMIT: ${{ vars.CODEX_DAILY_LIMIT || '999' }}
+      CI_DAILY_LIMIT: ${{ vars.CI_DAILY_LIMIT || '999' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Setup Node
-              uses: actions/setup-node@v4
-              with:
-                  node-version: '20'
-                  cache: 'npm'
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
 
-            - name: Setup PHP
-              uses: shivammathur/setup-php@v2
-              with:
-                  php-version: '8.2'
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
 
-            - name: Install dependencies
-              run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-            - name: Intake -> score -> stale -> conflict gate
-              run: |
-                  node agent-orchestrator.js intake --strict
-                  node agent-orchestrator.js score
-                  node agent-orchestrator.js stale --strict
-                  node agent-orchestrator.js conflicts --strict
-                  node agent-orchestrator.js budget --strict --agent jules
-                  node agent-orchestrator.js budget --strict --agent kimi
+      - name: Intake -> score -> stale -> conflicts
+        run: |
+          node agent-orchestrator.js intake --strict
+          node agent-orchestrator.js score
+          node agent-orchestrator.js stale --strict
+          node agent-orchestrator.js conflicts --strict
 
-            - name: Dispatch Jules queue from orchestrator
-              run: node agent-orchestrator.js dispatch --agent jules
+      - name: Board doctor
+        run: node agent-orchestrator.js board doctor --json
 
-            - name: Reconcile queue and merged PR evidence
-              run: node agent-orchestrator.js reconcile --strict
+      - name: Codex mirror check
+        run: node agent-orchestrator.js codex-check --json
 
-            - name: Legacy board drift auto-normalize (terminal tasks)
-              run: node bin/board-legacy-drift-guard.js --write --json
+      - name: Policy lint
+        run: node agent-orchestrator.js policy lint --json
 
-            - name: Governance validation
-              run: php bin/validate-agent-governance.php
+      - name: Jobs status
+        run: node agent-orchestrator.js jobs status --json
 
-            - name: Status snapshot
-              run: node agent-orchestrator.js status --explain-red
+      - name: Governance validation
+        run: php bin/validate-agent-governance.php
 
-            - name: Commit state changes
-              run: |
-                  if git diff --quiet -- AGENT_BOARD.yaml AGENT_SIGNALS.yaml JULES_TASKS.md KIMI_TASKS.md; then
-                    echo "No orchestrator changes to commit."
-                    exit 0
-                  fi
+      - name: Status snapshot
+        run: node agent-orchestrator.js status --explain-red
 
-                  git config user.name "github-actions[bot]"
-                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-                  git add AGENT_BOARD.yaml AGENT_SIGNALS.yaml JULES_TASKS.md KIMI_TASKS.md
-                  git commit -m "chore(agents): intake/score/reconcile sync [skip ci]" || {
-                    echo "No changes to commit after staging."
-                    exit 0
-                  }
-                  if ! node bin/sync-main-safe.js --remote origin --branch "${GITHUB_REF_NAME}" --max-sync-attempts 3 --json; then
-                    echo "::warning::Queue sync failed after retries; skipping push. Next run will reconcile."
-                    exit 0
-                  fi
+      - name: Commit state changes
+        run: |
+          if git diff --quiet -- AGENT_BOARD.yaml AGENT_SIGNALS.yaml; then
+            echo "No orchestrator changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add AGENT_BOARD.yaml AGENT_SIGNALS.yaml
+          git commit -m "chore(agents): codex-only intake sync [skip ci]" || {
+            echo "No changes to commit after staging."
+            exit 0
+          }
+          if ! node bin/sync-main-safe.js --remote origin --branch "${GITHUB_REF_NAME}" --max-sync-attempts 3 --json; then
+            echo "::warning::State sync failed after retries; skipping push. Next run will reconcile."
+            exit 0
+          fi

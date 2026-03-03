@@ -13,6 +13,22 @@ const ORCHESTRATOR = resolve(ROOT, 'agent-orchestrator.js');
 const GOVERNANCE_POLICY_PATH = resolve(ROOT, 'governance-policy.json');
 const DEFAULT_GOVERNANCE_POLICY = {
     version: 1,
+    agents: {
+        active_executors: ['codex', 'ci'],
+        retired_executors: ['claude', 'jules', 'kimi'],
+        allow_legacy_terminal_executors: true,
+    },
+    publishing: {
+        enabled: true,
+        mode: 'main_auto_guarded',
+        trigger: 'validated_checkpoint',
+        branch: 'main',
+        gate_profile: 'fast_targeted',
+        checkpoint_cooldown_seconds: 90,
+        max_live_wait_seconds: 180,
+        health_url: 'https://pielarmonia.com/api.php?resource=health',
+        required_job_key: 'public_main_sync',
+    },
     domain_health: {
         priority_domains: ['calendar', 'chat', 'payments'],
         domain_weights: {
@@ -58,6 +74,13 @@ const DEFAULT_GOVERNANCE_POLICY = {
             task_in_progress_stale: { severity: 'warning', enabled: true },
             task_blocked_stale: { severity: 'warning', enabled: true },
             done_without_evidence: { severity: 'warning', enabled: true },
+            retired_executor_active: { severity: 'warning', enabled: true },
+            public_main_sync_unconfigured: {
+                severity: 'warning',
+                enabled: true,
+            },
+            public_main_sync_stale: { severity: 'warning', enabled: true },
+            public_main_sync_failed: { severity: 'warning', enabled: true },
             wip_limit_executor: { severity: 'warning', enabled: true },
             wip_limit_scope: { severity: 'warning', enabled: true },
         },
@@ -86,9 +109,7 @@ const DEFAULT_GOVERNANCE_POLICY = {
             count_statuses: ['in_progress', 'review', 'blocked'],
             by_executor: {
                 codex: 3,
-                claude: 3,
-                jules: 5,
-                kimi: 5,
+                ci: 2,
             },
             by_scope: {
                 calendar: 2,

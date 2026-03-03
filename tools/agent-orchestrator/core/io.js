@@ -75,6 +75,34 @@ function writeSignalsFile(data, deps = {}) {
     return data;
 }
 
+function readJobsFile(deps = {}) {
+    const {
+        jobsPath,
+        exists = existsSync,
+        readFile = readFileSync,
+        parseJobsContent,
+        currentDate = () => '',
+    } = deps;
+    if (!jobsPath) throw new Error('readJobsFile requiere jobsPath');
+    if (typeof parseJobsContent !== 'function') {
+        throw new Error('readJobsFile requiere parseJobsContent');
+    }
+    if (!exists(jobsPath)) {
+        return { version: 1, updated_at: currentDate(), jobs: [] };
+    }
+    return parseJobsContent(readFile(jobsPath, 'utf8'));
+}
+
+function writeJobsFile(data, deps = {}) {
+    const { jobsPath, serializeJobs, writeFile = writeFileSync } = deps;
+    if (!jobsPath) throw new Error('writeJobsFile requiere jobsPath');
+    if (typeof serializeJobs !== 'function') {
+        throw new Error('writeJobsFile requiere serializeJobs');
+    }
+    writeFile(jobsPath, serializeJobs(data), 'utf8');
+    return data;
+}
+
 function resolveTaskEvidencePath(taskId, flags = {}, deps = {}) {
     const { rootPath = '', evidenceDirPath, resolvePath } = deps;
     if (typeof resolvePath !== 'function') {
@@ -125,6 +153,7 @@ function writeCodexActiveBlockFile(block, deps = {}) {
         readFile = readFileSync,
         writeFile = writeFileSync,
         upsertCodexActiveBlock,
+        codexInstance = null,
     } = deps;
     if (!codexPlanPath) {
         throw new Error('writeCodexActiveBlockFile requiere codexPlanPath');
@@ -138,7 +167,7 @@ function writeCodexActiveBlockFile(block, deps = {}) {
         throw new Error(`No existe ${codexPlanPath}`);
     }
     const raw = readFile(codexPlanPath, 'utf8');
-    const next = upsertCodexActiveBlock(raw, block);
+    const next = upsertCodexActiveBlock(raw, block, { codexInstance });
     writeFile(codexPlanPath, next, 'utf8');
     return next;
 }
@@ -199,6 +228,8 @@ module.exports = {
     writeJsonFile,
     readSignalsFile,
     writeSignalsFile,
+    readJobsFile,
+    writeJobsFile,
     appendJsonlFile,
     readJsonlFile,
     resolveTaskEvidencePath,

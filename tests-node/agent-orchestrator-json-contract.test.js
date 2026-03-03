@@ -51,7 +51,7 @@ tasks:
   - id: AG-001
     title: "Fixture task"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: done
     risk: low
     scope: docs
@@ -88,6 +88,7 @@ handoffs: []
 # Plan Maestro Codex 2026 (Fixture)
 
 <!-- CODEX_ACTIVE
+codex_instance: codex_backend_ops
 block: C1
 task_id: CDX-001
 status: in_progress
@@ -378,7 +379,7 @@ tasks:
   - id: AG-001
     title: "Conflict fixture"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: in_progress
     risk: low
     scope: docs
@@ -427,6 +428,7 @@ tasks:
             `# Plan Maestro Codex 2026 (Fixture)
 
 <!-- CODEX_ACTIVE
+codex_instance: codex_backend_ops
 block: C1
 task_id: CDX-001
 status: review
@@ -491,7 +493,7 @@ tasks:
   - id: AG-001
     title: "Done without evidence"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: done
     risk: low
     scope: docs
@@ -548,7 +550,7 @@ tasks:
   - id: AG-001
     title: "Dormant fixture"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: done
     risk: low
     scope: docs
@@ -603,7 +605,7 @@ tasks:
   - id: AG-001
     title: "Budget fixture"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: in_progress
     risk: low
     scope: docs
@@ -630,18 +632,18 @@ signals: []
 
         const budget = runJsonExpectStatusWithOptions(
             dir,
-            ['budget', '--strict', '--agent', 'jules'],
+            ['budget', '--strict', '--agent', 'codex'],
             1,
-            { env: { JULES_DAILY_LIMIT: '0' } }
+            { env: { CODEX_DAILY_LIMIT: '0' } }
         );
         assertVersionLike(budget.version);
         assert.equal(budget.command, 'budget');
         assert.equal(budget.ok, false);
         assert.equal(Array.isArray(budget.exceeded), true);
-        assert.equal(budget.exceeded.includes('jules'), true);
+        assert.equal(budget.exceeded.includes('codex'), true);
         assert.equal(typeof budget.usage, 'object');
         assert.equal(typeof budget.remaining, 'object');
-        assert.equal(budget.remaining.jules, 0);
+        assert.equal(budget.remaining.codex, 0);
 
         writeFileSync(
             join(dir, 'AGENT_BOARD.yaml'),
@@ -655,7 +657,7 @@ tasks:
   - id: AG-001
     title: "Score invalid fixture"
     owner: ernesto
-    executor: jules
+    executor: codex
     status: invalid_status
     risk: low
     scope: docs
@@ -860,6 +862,37 @@ test('JSON contract minimo estable para metrics baseline show/set/reset', () => 
     }
 });
 
+test('board doctor no emite metrics_baseline_missing cuando existe baseline explicito', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+
+        const seeded = runJson(dir, ['metrics', '--profile', 'ci']);
+        assertVersionLike(seeded.version);
+
+        const baselineSet = runJson(dir, [
+            'metrics',
+            'baseline',
+            'set',
+            '--from',
+            'current',
+        ]);
+        assertVersionLike(baselineSet.version);
+        assert.equal(baselineSet.ok, true);
+
+        const boardDoctor = runJson(dir, ['board', 'doctor']);
+        assertVersionLike(boardDoctor.version);
+        assert.equal(
+            boardDoctor.diagnostics.some(
+                (diag) => diag.code === 'warn.metrics.baseline_missing'
+            ),
+            false
+        );
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
 test('JSON contract minimo estable para task ls/create/claim/start/finish', () => {
     const dir = createFixtureDir();
     try {
@@ -878,7 +911,7 @@ test('JSON contract minimo estable para task ls/create/claim/start/finish', () =
             '--title',
             'Task contrato JSON',
             '--executor',
-            'kimi',
+            'codex',
             '--files',
             'docs/contract-json.md',
             '--scope',

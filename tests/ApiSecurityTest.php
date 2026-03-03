@@ -142,7 +142,7 @@ try {
     echo "Stopping server (PID $pid)...\n";
     exec("kill $pid");
     if (is_dir($dataDir)) {
-        exec("rm -rf " . escapeshellarg($dataDir));
+        delete_path_recursive($dataDir);
     }
 }
 

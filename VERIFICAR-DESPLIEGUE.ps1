@@ -6,6 +6,7 @@ param(
     [switch]$AllowMetaCspFallback,
     [switch]$RequireWebhookSecret,
     [switch]$RequireBackupHealthy,
+    [switch]$RequireCronReady,
     [switch]$RequireStableDataDir,
     [int]$MaxHealthTimingMs = 2000,
     [int]$AssetHashRetryCount = 2,
@@ -956,6 +957,87 @@ try {
             Write-Host "[OK]  backup offsite configurado"
         } else {
             Write-Host "[WARN] backup offsite no configurado"
+        }
+    }
+
+    $publicSyncNode = $null
+    try {
+        $publicSyncNode = $healthResp.Json.checks.publicSync
+    } catch {
+        $publicSyncNode = $null
+    }
+    if ($null -eq $publicSyncNode) {
+        Write-Host "[WARN] health no incluye checks.publicSync"
+        if ($RequireCronReady) {
+            $results += [PSCustomObject]@{
+                Asset = 'health-public-sync-missing'
+                Match = $false
+                LocalHash = 'present'
+                RemoteHash = 'missing'
+                RemoteUrl = $healthUrl
+            }
+        }
+    } else {
+        $publicSyncConfigured = $false
+        $publicSyncHealthy = $false
+        $publicSyncJobId = ''
+        $publicSyncAgeSeconds = 999999
+        $publicSyncState = ''
+        $publicSyncDeployedCommit = ''
+        try { $publicSyncConfigured = [bool]$publicSyncNode.configured } catch { $publicSyncConfigured = $false }
+        try { $publicSyncHealthy = [bool]$publicSyncNode.healthy } catch { $publicSyncHealthy = $false }
+        try { $publicSyncJobId = [string]$publicSyncNode.jobId } catch { $publicSyncJobId = '' }
+        try { $publicSyncAgeSeconds = [int]$publicSyncNode.ageSeconds } catch { $publicSyncAgeSeconds = 999999 }
+        try { $publicSyncState = [string]$publicSyncNode.state } catch { $publicSyncState = '' }
+        try { $publicSyncDeployedCommit = [string]$publicSyncNode.deployedCommit } catch { $publicSyncDeployedCommit = '' }
+
+        if ($publicSyncConfigured) {
+            Write-Host "[OK]  public sync configurado (jobId=$publicSyncJobId, state=$publicSyncState, ageSeconds=$publicSyncAgeSeconds)"
+        } else {
+            Write-Host "[WARN] public sync no configurado"
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($publicSyncDeployedCommit)) {
+            Write-Host "[INFO] public sync deployedCommit=$publicSyncDeployedCommit"
+        }
+
+        if ($RequireCronReady) {
+            if (-not $publicSyncConfigured) {
+                $results += [PSCustomObject]@{
+                    Asset = 'health-public-sync-configured'
+                    Match = $false
+                    LocalHash = 'true'
+                    RemoteHash = 'false'
+                    RemoteUrl = $healthUrl
+                }
+            }
+            if ($publicSyncJobId -ne '8d31e299-7e57-4959-80b5-aaa2d73e9674') {
+                $results += [PSCustomObject]@{
+                    Asset = 'health-public-sync-job-id'
+                    Match = $false
+                    LocalHash = '8d31e299-7e57-4959-80b5-aaa2d73e9674'
+                    RemoteHash = if ($publicSyncJobId) { $publicSyncJobId } else { 'missing' }
+                    RemoteUrl = $healthUrl
+                }
+            }
+            if (-not $publicSyncHealthy) {
+                $results += [PSCustomObject]@{
+                    Asset = 'health-public-sync-healthy'
+                    Match = $false
+                    LocalHash = 'true'
+                    RemoteHash = 'false'
+                    RemoteUrl = $healthUrl
+                }
+            }
+            if ($publicSyncAgeSeconds -gt 120) {
+                $results += [PSCustomObject]@{
+                    Asset = 'health-public-sync-age'
+                    Match = $false
+                    LocalHash = '<=120'
+                    RemoteHash = [string]$publicSyncAgeSeconds
+                    RemoteUrl = $healthUrl
+                }
+            }
         }
     }
 

@@ -80,6 +80,13 @@ Si tu hosting hace `git pull` automatico, ahora se usa esquema de 2 carriles:
 El modo estricto de hardening se mantiene (`RequireStableDataDir`, `RequireBackupHealthy`, `RequireBackupReceiverReady`, `RequireCronReady`).
 Si falla un workflow de salud programado, crea/actualiza issue de incidente automaticamente; al recuperar, lo cierra.
 
+Para la publicacion rapida desde el orquestador, el camino operativo es:
+
+1. `node agent-orchestrator.js publish checkpoint <CDX-ID> --summary "..." --expect-rev <rev> --json`
+2. push a `main`
+3. esperar confirmacion por `https://pielarmonia.com/api.php?resource=health`
+4. validar `checks.publicSync.deployedCommit == SHA publicado`
+
 Variable recomendada para fase de agenda real:
 
 - `REQUIRE_GOOGLE_CALENDAR` (repo variable)

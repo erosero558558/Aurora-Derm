@@ -87,3 +87,40 @@ test('policy-config falla enforcement invalido', () => {
         true
     );
 });
+
+test('policy-config acepta sections agents y publishing sin marcarlas como unknown keys', () => {
+    const report = validateGovernancePolicy(
+        {
+            version: 1,
+            agents: {
+                active_executors: ['codex', 'ci'],
+                retired_executors: ['claude', 'jules', 'kimi'],
+                allow_legacy_terminal_executors: true,
+            },
+            publishing: {
+                enabled: true,
+                mode: 'main_auto_guarded',
+                trigger: 'validated_checkpoint',
+                branch: 'main',
+                gate_profile: 'fast_targeted',
+                checkpoint_cooldown_seconds: 90,
+                max_live_wait_seconds: 180,
+                health_url: 'https://pielarmonia.com/api.php?resource=health',
+                required_job_key: 'public_main_sync',
+            },
+        },
+        { defaultPolicy: DEFAULT_POLICY, policyExists: true }
+    );
+
+    assert.equal(report.ok, true);
+    assert.equal(
+        report.warnings.some((warning) =>
+            /root\.agents unknown key|root\.publishing unknown key/i.test(
+                String(warning)
+            )
+        ),
+        false
+    );
+    assert.deepEqual(report.effective.agents.active_executors, ['codex', 'ci']);
+    assert.equal(report.effective.publishing.required_job_key, 'public_main_sync');
+});

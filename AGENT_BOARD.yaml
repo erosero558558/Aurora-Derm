@@ -6,8 +6,8 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 384
-  updated_at: 2026-03-02
+  revision: 394
+  updated_at: 2026-03-03
 
 tasks:
   - id: AG-001
@@ -41,8 +41,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Validar checksum SHA-256, cifrado en reposo y limpieza por retencion."
-    acceptance_ref: "tests/BackupReceiverTest.php"
-    evidence_ref: "queue:jules"
+    acceptance_ref: "verification/agent-runs/AG-001.md"
+    evidence_ref: "verification/agent-runs/AG-001.md"
     depends_on: []
     prompt: "Implementar checksum SHA-256 por header, cifrado AES-256-CBC y prueba de integridad con test."
     created_at: 2026-02-24
@@ -79,8 +79,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Aplicar sliding window real, limites por usuario e instrumentacion de eventos."
-    acceptance_ref: "tests/RateLimiterTest.php"
-    evidence_ref: "queue:jules"
+    acceptance_ref: "verification/agent-runs/AG-002.md"
+    evidence_ref: "verification/agent-runs/AG-002.md"
     depends_on: []
     prompt: "Actualizar rate-limiter a sliding window, incluir limite por user token y pruebas de regresion."
     created_at: 2026-02-24
@@ -117,8 +117,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Especificacion OpenAPI 3.1 completa y utilizable en preview local."
-    acceptance_ref: "docs/openapi.yaml,README.md"
-    evidence_ref: "queue:jules"
+    acceptance_ref: "verification/agent-runs/AG-003.md"
+    evidence_ref: "verification/agent-runs/AG-003.md"
     depends_on: []
     prompt: "Generar OpenAPI 3.1 para api.php recursos principales y documentar como visualizarla localmente."
     created_at: 2026-02-24
@@ -156,7 +156,7 @@ tasks:
     critical_zone: false
     acceptance: "Envio de confirmaciones y cola de reintentos de email con pruebas."
     acceptance_ref: "verification/agent-runs/AG-004.md"
-    evidence_ref: "queue:jules"
+    evidence_ref: "verification/agent-runs/AG-004.md"
     depends_on: ["CDX-001"]
     prompt: "Implementar wrapper PHPMailer para confirmaciones y recordatorios con templates HTML y test."
     created_at: 2026-02-24
@@ -193,8 +193,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Reporte en markdown con codigo muerto, logs y TODO/FIXME."
-    acceptance_ref: "docs/dead-code-audit.md"
-    evidence_ref: "queue:kimi"
+    acceptance_ref: "verification/agent-runs/AG-005.md"
+    evidence_ref: "verification/agent-runs/AG-005.md"
     depends_on: ["CDX-001"]
     prompt: "Auditar js/engines y generar docs/dead-code-audit.md sin tocar logica de JS."
     created_at: 2026-02-24
@@ -231,8 +231,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Normalizar reglas de indentacion y EOL sin tocar codigo de aplicacion."
-    acceptance_ref: ".editorconfig,.gitattributes"
-    evidence_ref: "queue:kimi"
+    acceptance_ref: "verification/agent-runs/AG-006.md"
+    evidence_ref: "verification/agent-runs/AG-006.md"
     depends_on: []
     prompt: "Crear/ajustar .editorconfig y .gitattributes para estandarizar indentacion y finales de linea."
     created_at: 2026-02-24
@@ -269,8 +269,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Agregar PHPDoc faltante en funciones public/protected sin cambiar logica."
-    acceptance_ref: "lib/audit.php,lib/ratelimit.php,lib/email.php"
-    evidence_ref: "queue:kimi"
+    acceptance_ref: "verification/agent-runs/AG-007.md"
+    evidence_ref: "verification/agent-runs/AG-007.md"
     depends_on: []
     prompt: "Agregar PHPDoc faltantes en librerias core sin modificar comportamiento funcional."
     created_at: 2026-02-24
@@ -307,8 +307,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "La tarea se ejecuta por Kimi Autopilot y marca estado de cola sin cambios funcionales."
-    acceptance_ref: "KIMI_TASKS.md"
-    evidence_ref: "queue:kimi"
+    acceptance_ref: "verification/agent-runs/AG-008.md"
+    evidence_ref: "verification/agent-runs/AG-008.md"
     depends_on: []
     prompt: "Smoke test: no hagas cambios de codigo. Solo confirma ejecucion y finaliza sin modificar archivos."
     created_at: 2026-02-24
@@ -345,8 +345,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Convivencia Codex/orquestador con espejo de tarea, handoffs y gates de gobernanza bloqueantes en CI."
-    acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"
-    evidence_ref: "PLAN_MAESTRO_CODEX_2026.md"
+    acceptance_ref: "verification/agent-runs/CDX-001.md"
+    evidence_ref: "verification/agent-runs/CDX-001.md"
     depends_on: []
     prompt: "Implementar guardrails de convivencia entre AGENT_BOARD y Plan Codex (handoffs, codex-check, conflict gate con excepciones temporales) alineado al bloque C4."
     created_at: 2026-02-24
@@ -466,6 +466,82 @@ tasks:
     created_at: 2026-03-02
     updated_at: 2026-03-02
 
+  - id: CDX-005
+    title: "Package P4: durable storage and backup core extraction"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-03T03:03:46.434Z"
+    risk: high
+    scope: lib
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "lib/storage.php", "lib/backup.php", "lib/storage/StorePaths.php", "lib/storage/StoreCrypto.php", "lib/storage/StorePersistence.php", "lib/storage/StorageConfig.php", "lib/backup/BackupConfig.php", "lib/backup/BackupCrypto.php", "lib/backup/BackupHealthService.php", "lib/backup/BackupReplicationService.php", "tests/test_storage_backup.php", "tests/test_storage_encryption.php", "tests/BackupReceiverTest.php", "tests/verify_disaster_recovery_cli.php", "tests/Integration/verify_disaster_recovery.php", "tests/Unit/Storage/StorageSQLiteFallbackTest.php", "verification/agent-runs/CDX-005.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 86
+    sla_due_at: "2026-03-08T23:59:59.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-03T03:03:46.434Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "storage.php y backup.php quedan como wrappers de compatibilidad, con config/paths/cifrado/persistencia y health/replicacion extraidos a modulos internos sin romper formatos ni restore."
+    acceptance_ref: "verification/agent-runs/CDX-005.md"
+    evidence_ref: "verification/agent-runs/CDX-005.md"
+    depends_on: ["CDX-004"]
+    prompt: "Ejecutar Package P4: extraer paths, config, cifrado, persistencia, health y replicacion desde storage.php y backup.php sin breaking changes en funciones globales, formatos de archivos ni validaciones."
+    created_at: 2026-03-03
+    updated_at: 2026-03-03
+
+  - id: CDX-006
+    title: "Package P5: queue and figo chat core extraction"
+    owner: Ernesto
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-03T03:06:48.944Z"
+    risk: high
+    scope: chat
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "lib/figo_queue.php", "lib/QueueService.php", "lib/figo_queue/QueueConfig.php", "lib/figo_queue/JobRepository.php", "lib/figo_queue/GatewayClient.php", "lib/figo_queue/JobProcessor.php", "lib/queue/TicketFactory.php", "lib/queue/TicketPriorityPolicy.php", "lib/queue/QueueSummaryBuilder.php", "figo-backend.php", "figo-chat.php", "tests/test_queue_service.php", "verification/agent-runs/CDX-006.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 88
+    sla_due_at: "2026-03-09T23:59:59.000Z"
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_CDX-006_20260303030648944_259fc7"
+    lease_owner: "Ernesto"
+    lease_created_at: "2026-03-03T03:06:48.944Z"
+    heartbeat_at: "2026-03-03T09:17:07.277Z"
+    lease_expires_at: "2026-03-03T13:17:07.277Z"
+    lease_reason: "leases_heartbeat"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: high
+    critical_zone: false
+    acceptance: "figo_queue.php queda como facade procedural estable y QueueService delega creacion, prioridad y resumen a modulos internos sin romper payloads, estados ni codigos de error."
+    acceptance_ref: "verification/agent-runs/CDX-006.md"
+    evidence_ref: "verification/agent-runs/CDX-006.md"
+    depends_on: ["CDX-005"]
+    prompt: "Ejecutar Package P5: extraer configuracion, repositorio, gateway y procesamiento desde figo_queue.php, y politica de prioridad/resumen desde QueueService.php, manteniendo contratos de chat, backend y cola."
+    created_at: 2026-03-03
+    updated_at: 2026-03-03
+
   - id: AG-009
     title: "Mobile UX phase 4: fix chat/header overlap and spacing consistency"
     owner: ernes
@@ -498,7 +574,7 @@ tasks:
     critical_zone: false
     acceptance: "Layout movil usable en 360x800/390x844/412x915 sin solapes de chat, header ni CTA dock."
     acceptance_ref: "verification/agent-runs/AG-009.md"
-    evidence_ref: "queue:kimi"
+    evidence_ref: "verification/agent-runs/AG-009.md"
     depends_on: ["CDX-001"]
     prompt: "Corregir solapes y espaciado en mobile-first sin romper desktop."
     created_at: 2026-02-25
@@ -574,7 +650,7 @@ tasks:
     critical_zone: false
     acceptance: "Reducir peso inicial y mover inicializaciones no criticas a carga diferida sin regresion funcional."
     acceptance_ref: "verification/agent-runs/AG-011.md"
-    evidence_ref: "queue:kimi"
+    evidence_ref: "verification/agent-runs/AG-011.md"
     depends_on: ["CDX-001"]
     prompt: "Aplicar particion adicional de JS no critico y verificar que no rompa interacciones clave."
     created_at: 2026-02-25
@@ -611,8 +687,8 @@ tasks:
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal issue#279 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "verification/agent-runs/AG-026.md"
+    acceptance_ref: "verification/agent-runs/AG-012.md"
+    evidence_ref: "verification/agent-runs/AG-012.md"
     depends_on: []
     prompt: "Resolver señal issue#279. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -649,8 +725,8 @@ tasks:
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal issue#263 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-013.md"
+    evidence_ref: "verification/agent-runs/AG-013.md"
     depends_on: []
     prompt: "Resolver señal issue#263. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -687,8 +763,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal run#22379873691 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-014.md"
+    evidence_ref: "verification/agent-runs/AG-014.md"
     depends_on: []
     prompt: "Resolver señal run#22379873691. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -725,8 +801,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal run#22379426844 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-015.md"
+    evidence_ref: "verification/agent-runs/AG-015.md"
     depends_on: []
     prompt: "Resolver señal run#22379426844. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -763,8 +839,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal run#22379136316 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-016.md"
+    evidence_ref: "verification/agent-runs/AG-016.md"
     depends_on: []
     prompt: "Resolver señal run#22379136316. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -801,8 +877,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal run#22379059437 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-017.md"
+    evidence_ref: "verification/agent-runs/AG-017.md"
     depends_on: []
     prompt: "Resolver señal run#22379059437. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -839,8 +915,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal workflow:ci:main con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-018.md"
+    evidence_ref: "verification/agent-runs/AG-018.md"
     depends_on: ["CDX-001"]
     prompt: "Resolver señal workflow:ci:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -877,8 +953,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Un único bundle canónico de datos sin duplicación. Bundle size no incrementa. Tests pasan."
-    acceptance_ref: "docs/agent-runs/AG-019.md"
-    evidence_ref: "docs/agent-runs/AG-019.md"
+    acceptance_ref: "verification/agent-runs/AG-019.md"
+    evidence_ref: "verification/agent-runs/AG-019.md"
     depends_on: ["CDX-001"]
     prompt: "Auditar src/bundles/data-engine.js y src/bundles/data-bundle.js. Identificar exports duplicados. Consolidar en un único módulo canónico actualizado en rollup.config.mjs. Agregar test de no-regresión de tamaño de bundle."
     created_at: 2026-02-24
@@ -991,8 +1067,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "telemedicina.html carga styles.css (no styles-critical.css). npm run build:html produce telemedicina.html limpio. Pagina carga sin regresion visual."
-    acceptance_ref: "templates/partials/tele-head-links.html"
-    evidence_ref: "templates/partials/tele-head-links.html"
+    acceptance_ref: "verification/agent-runs/AG-023.md"
+    evidence_ref: "verification/agent-runs/AG-023.md"
     depends_on: ["CDX-001"]
     prompt: "En templates/partials/tele-head-links.html reemplaza <link rel='stylesheet' href='styles-critical.css' /> y <link rel='stylesheet' href='styles-telemedicina.css' /> por <link rel='stylesheet' href='styles.css?v=inline-20260224-extracted1' />. El archivo styles.css es ahora el CSS critico canonico (extraido del monolito index.html el 2026-02-24, 1760 lineas). Ejecuta npm run build:html para regenerar telemedicina.html. Verifica que la pagina carga sin regresion visual (colores, fuentes, layout). styles-critical.css queda como archivo legacy no enlazado."
     created_at: 2026-02-24
@@ -1029,8 +1105,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal workflow:agent-governance:main con evidencia verificable."
-    acceptance_ref: "verification/agent-runs/AG-024.md"
-    evidence_ref: "verification/agent-runs/AG-024.md"
+    acceptance_ref: "verification/agent-runs/AG-022.md"
+    evidence_ref: "verification/agent-runs/AG-022.md"
     depends_on: []
     prompt: "Resolver señal workflow:agent-governance:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -1067,8 +1143,8 @@ tasks:
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal issue#282 con evidencia verificable."
-    acceptance_ref: "verification/agent-runs/AG-025.md"
-    evidence_ref: "verification/agent-runs/AG-025.md"
+    acceptance_ref: "verification/agent-runs/AG-024.md"
+    evidence_ref: "verification/agent-runs/AG-024.md"
     depends_on: []
     prompt: "Resolver señal issue#282. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -1105,8 +1181,8 @@ tasks:
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal issue#281 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-025.md"
+    evidence_ref: "verification/agent-runs/AG-025.md"
     depends_on: []
     prompt: "Resolver señal issue#281. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -1181,8 +1257,8 @@ tasks:
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal workflow:post-deploy-gate-git-sync:main con evidencia verificable."
-    acceptance_ref: "docs/agent-runs/AG-027.md"
-    evidence_ref: "docs/agent-runs/AG-027.md"
+    acceptance_ref: "verification/agent-runs/AG-027.md"
+    evidence_ref: "verification/agent-runs/AG-027.md"
     depends_on: []
     prompt: "Resolver señal workflow:post-deploy-gate-git-sync:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -1219,8 +1295,8 @@ tasks:
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal workflow:repair-git-sync-self-heal:main con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-028.md"
+    evidence_ref: "verification/agent-runs/AG-028.md"
     depends_on: []
     prompt: "Resolver señal workflow:repair-git-sync-self-heal:main. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -1257,8 +1333,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Cerrar señal workflow:ci:codex/prod-readiness-workflows-20260225 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-029.md"
+    evidence_ref: "verification/agent-runs/AG-029.md"
     depends_on: []
     prompt: "Resolver señal workflow:ci:codex/prod-readiness-workflows-20260225. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -1295,8 +1371,8 @@ tasks:
     runtime_impact: high
     critical_zone: true
     acceptance: "Cerrar señal workflow:post-deploy-gate-git-sync:codex/prod-readiness-workflows-20260225 con evidencia verificable."
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-030.md"
+    evidence_ref: "verification/agent-runs/AG-030.md"
     depends_on: []
     prompt: "Resolver señal workflow:post-deploy-gate-git-sync:codex/prod-readiness-workflows-20260225. Verificar causa raíz, aplicar fix mínimo seguro y adjuntar evidencia en verification/agent-runs/."
     created_at: 2026-02-25
@@ -1333,8 +1409,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Intake ignores transient branch failures and keeps latest main workflow state only"
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-031.md"
+    evidence_ref: "verification/agent-runs/AG-031.md"
     depends_on: []
     prompt: "Stabilize CI signal intake for transient branch failures"
     created_at: 2026-02-25
@@ -1371,8 +1447,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Autopilot failures expose single-shot triage hints and owner action in run summary"
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-032.md"
+    evidence_ref: "verification/agent-runs/AG-032.md"
     depends_on: []
     prompt: "Harden autopilot run diagnostics for fast triage"
     created_at: 2026-02-25
@@ -1409,8 +1485,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Gate retries classify transient timeouts separately and avoid red status when contracts still pass"
-    acceptance_ref: "signal_resolved:auto"
-    evidence_ref: "signal_resolved:auto"
+    acceptance_ref: "verification/agent-runs/AG-033.md"
+    evidence_ref: "verification/agent-runs/AG-033.md"
     depends_on: []
     prompt: "Reduce post-deploy gate false failures from transient network delays"
     created_at: 2026-02-25
@@ -2815,8 +2891,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Frontend admin: availability shortcuts and calendar productivity hardening"
-    acceptance_ref: "verification/agent-runs/AG-064.md"
-    evidence_ref: "verification/agent-runs/AG-064.md"
+    acceptance_ref: "verification/agent-runs/AG-070.md"
+    evidence_ref: "verification/agent-runs/AG-070.md"
     depends_on: []
     prompt: "Frontend admin: availability shortcuts and calendar productivity hardening"
     created_at: 2026-02-26
@@ -2891,8 +2967,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "C4 ops: separar incidente weekly general vs SLA operativo"
-    acceptance_ref: "verification/agent-runs/AG-070.md"
-    evidence_ref: "verification/agent-runs/AG-070.md"
+    acceptance_ref: "verification/agent-runs/AG-072.md"
+    evidence_ref: "verification/agent-runs/AG-072.md"
     depends_on: []
     prompt: "C4 ops: separar incidente weekly general vs SLA operativo"
     created_at: 2026-02-26
@@ -3119,8 +3195,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Frontend P0: Hero service intent shortcuts + booking prefill conversion block"
-    acceptance_ref: "verification/agent-runs/AG-079.md"
-    evidence_ref: "verification/agent-runs/AG-079.md"
+    acceptance_ref: "verification/agent-runs/AG-078.md"
+    evidence_ref: "verification/agent-runs/AG-078.md"
     depends_on: []
     prompt: "Frontend P0: Hero service intent shortcuts + booking prefill conversion block"
     created_at: 2026-02-26
@@ -3157,8 +3233,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Auto-resolver colisiones semanticas de task en AGENT_BOARD durante sync"
-    acceptance_ref: "verification/agent-runs/AG-078.md"
-    evidence_ref: "verification/agent-runs/AG-078.md"
+    acceptance_ref: "verification/agent-runs/AG-079.md"
+    evidence_ref: "verification/agent-runs/AG-079.md"
     depends_on: []
     prompt: "Auto-resolver colisiones semanticas de task en AGENT_BOARD durante sync"
     created_at: 2026-02-26
@@ -3195,8 +3271,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Frontend admin UX: command bar + contextual actions + refresh status"
-    acceptance_ref: "verification/agent-runs/AG-079.md"
-    evidence_ref: "verification/agent-runs/AG-079.md"
+    acceptance_ref: "verification/agent-runs/AG-080.md"
+    evidence_ref: "verification/agent-runs/AG-080.md"
     depends_on: []
     prompt: "Frontend admin UX: command bar + contextual actions + refresh status"
     created_at: 2026-02-26
@@ -3575,8 +3651,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "C3 hardening: severidad operativa y labels de incidente en weekly-kpi"
-    acceptance_ref: "verification/agent-runs/AG-089.md"
-    evidence_ref: "verification/agent-runs/AG-089.md"
+    acceptance_ref: "verification/agent-runs/AG-090.md"
+    evidence_ref: "verification/agent-runs/AG-090.md"
     depends_on: []
     prompt: "C3 hardening: severidad operativa y labels de incidente en weekly-kpi"
     created_at: 2026-02-26
@@ -3613,8 +3689,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "Frontend public: fuente canonica unica para service pages acne/laser"
-    acceptance_ref: "verification/agent-runs/AG-090.md"
-    evidence_ref: "verification/agent-runs/AG-090.md"
+    acceptance_ref: "verification/agent-runs/AG-091.md"
+    evidence_ref: "verification/agent-runs/AG-091.md"
     depends_on: []
     prompt: "Frontend public: fuente canonica unica para service pages acne/laser"
     created_at: 2026-02-26
@@ -3689,8 +3765,8 @@ tasks:
     runtime_impact: low
     critical_zone: false
     acceptance: "C5 hardening: calendar write smoke incident lifecycle + contract gate"
-    acceptance_ref: "verification/agent-runs/AG-091.md"
-    evidence_ref: "verification/agent-runs/AG-091.md"
+    acceptance_ref: "verification/agent-runs/AG-093.md"
+    evidence_ref: "verification/agent-runs/AG-093.md"
     depends_on: []
     prompt: "C5 hardening: calendar write smoke incident lifecycle + contract gate"
     created_at: 2026-02-26

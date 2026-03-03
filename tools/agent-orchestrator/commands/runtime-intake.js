@@ -29,11 +29,10 @@ function createRuntimeIntakeCommands(ctx = {}) {
 
     function buildBudgetSnapshot(board, today, procEnv) {
         const limits = {
-            jules: parseDailyLimitFromEnv(procEnv.JULES_DAILY_LIMIT, 80),
-            kimi: parseDailyLimitFromEnv(procEnv.KIMI_DAILY_LIMIT, 180),
             codex: parseDailyLimitFromEnv(procEnv.CODEX_DAILY_LIMIT, 999),
+            ci: parseDailyLimitFromEnv(procEnv.CI_DAILY_LIMIT, 999),
         };
-        const usage = { jules: 0, kimi: 0, codex: 0 };
+        const usage = { codex: 0, ci: 0 };
         for (const task of board.tasks) {
             const attemptAt = String(task.last_attempt_at || '');
             const executor = String(task.executor || '').toLowerCase();
@@ -44,9 +43,8 @@ function createRuntimeIntakeCommands(ctx = {}) {
             }
         }
         const remaining = {
-            jules: limits.jules - usage.jules,
-            kimi: limits.kimi - usage.kimi,
             codex: limits.codex - usage.codex,
+            ci: limits.ci - usage.ci,
         };
         return { limits, usage, remaining };
     }
@@ -194,9 +192,7 @@ function createRuntimeIntakeCommands(ctx = {}) {
                     task.blocked_reason = normalized.blocked_reason;
                     if (
                         ctx.findCriticalScopeKeyword(task.scope) &&
-                        !['codex', 'claude'].includes(
-                            String(task.executor || '').toLowerCase()
-                        )
+                        String(task.executor || '').toLowerCase() !== 'codex'
                     ) {
                         task.executor = 'codex';
                     }
@@ -298,6 +294,28 @@ function createRuntimeIntakeCommands(ctx = {}) {
             const agentFilter = String(flags.agent || 'all')
                 .trim()
                 .toLowerCase();
+            if (['jules', 'kimi', 'claude'].includes(agentFilter)) {
+                if (wantsJson) {
+                    return printJsonError(
+                        'budget',
+                        `budget bloqueado: executor retirado (${agentFilter})`,
+                        { error_code: 'executor_retired' }
+                    );
+                }
+                throw new Error(
+                    `budget bloqueado: executor retirado (${agentFilter})`
+                );
+            }
+            if (agentFilter !== 'all' && !['codex', 'ci'].includes(agentFilter)) {
+                if (wantsJson) {
+                    return printJsonError(
+                        'budget',
+                        `budget requiere --agent codex|ci|all`,
+                        { error_code: 'invalid_agent' }
+                    );
+                }
+                throw new Error('budget requiere --agent codex|ci|all');
+            }
             const today = ctx.currentDate();
             const board = ctx.parseBoard();
             const { limits, usage, remaining } = buildBudgetSnapshot(
@@ -305,7 +323,7 @@ function createRuntimeIntakeCommands(ctx = {}) {
                 today,
                 proc.env
             );
-            const agents = ['jules', 'kimi', 'codex'].filter(
+            const agents = ['codex', 'ci'].filter(
                 (a) => agentFilter === 'all' || a === agentFilter
             );
             const exceeded = agents.filter((a) => remaining[a] <= 0);
@@ -342,40 +360,32 @@ function createRuntimeIntakeCommands(ctx = {}) {
             const agent = String(flags.agent || '')
                 .trim()
                 .toLowerCase();
-            if (!['jules', 'kimi', 'codex'].includes(agent)) {
+            if (['jules', 'kimi', 'claude'].includes(agent)) {
                 if (wantsJson) {
                     return printJsonError(
                         'dispatch',
-                        'dispatch requiere --agent jules|kimi|codex',
+                        `dispatch bloqueado: executor retirado (${agent})`,
+                        { error_code: 'executor_retired' }
+                    );
+                }
+                throw new Error(`dispatch bloqueado: executor retirado (${agent})`);
+            }
+            if (!['codex', 'ci'].includes(agent)) {
+                if (wantsJson) {
+                    return printJsonError(
+                        'dispatch',
+                        'dispatch requiere --agent codex|ci',
                         { error_code: 'invalid_agent' }
                     );
                 }
-                throw new Error('dispatch requiere --agent jules|kimi|codex');
+                throw new Error('dispatch requiere --agent codex|ci');
             }
             const board = ctx.parseBoard();
-            const signals = ctx.parseSignals();
             const nowIso = new Date().toISOString();
             const today = ctx.currentDate();
-            if (
-                agent === 'kimi' &&
-                ctx.detectKimiRateLimitActive({
-                    board,
-                    signals: signals.signals || [],
-                })
-            ) {
-                console.log(
-                    'WARN: Kimi rate-limit activo detectado - dispatch bloqueado.'
-                );
-                return;
-            }
             const nowDate = ctx.currentDate();
             const defaultPerRun = 2;
-            const envPerRun =
-                agent === 'jules'
-                    ? proc.env.JULES_MAX_DISPATCH_PER_RUN
-                    : agent === 'kimi'
-                      ? proc.env.KIMI_MAX_DISPATCH_PER_RUN
-                      : null;
+            const envPerRun = agent === 'ci' ? proc.env.CI_MAX_DISPATCH_PER_RUN : null;
             const perRunLimit = Number.parseInt(
                 String(envPerRun || defaultPerRun),
                 10

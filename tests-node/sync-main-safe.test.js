@@ -19,6 +19,7 @@ test('sync-main-safe parseArgs aplica defaults', () => {
     const opts = parseArgs([]);
     assert.equal(opts.remote, 'origin');
     assert.equal(opts.branch, 'main');
+    assert.equal(opts.sourceRef, '');
     assert.equal(opts.boardPath, 'AGENT_BOARD.yaml');
     assert.equal(opts.autoStash, true);
     assert.equal(opts.autoDiscardDerivedQueueNoise, true);
@@ -36,6 +37,8 @@ test('sync-main-safe parseArgs reconoce flags principales', () => {
         'release',
         '--board',
         'AGENT_BOARD.yaml',
+        '--source-ref',
+        'HEAD',
         '--no-stash',
         '--no-auto-discard-derived-queue-noise',
         '--no-push',
@@ -46,6 +49,7 @@ test('sync-main-safe parseArgs reconoce flags principales', () => {
     ]);
     assert.equal(opts.remote, 'upstream');
     assert.equal(opts.branch, 'release');
+    assert.equal(opts.sourceRef, 'HEAD');
     assert.equal(opts.boardPath, 'AGENT_BOARD.yaml');
     assert.equal(opts.autoStash, false);
     assert.equal(opts.autoDiscardDerivedQueueNoise, false);
