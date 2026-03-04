@@ -1,0 +1,10 @@
+---
+const { status = {}, locale = 'es', sectionId = '' } = Astro.props;
+---
+
+<section id={sectionId || undefined} class="v6-booking-status" data-v6-booking-status>
+    <p>{status.eyebrow || (locale === 'en' ? 'Booking status' : 'Estado de agenda')}</p>
+    <h2>{status.title}</h2>
+    <p>{status.description}</p>
+    <a href={status.ctaHref || '#'}>{status.ctaLabel || (locale === 'en' ? 'Open routes' : 'Abrir rutas')}</a>
+</section>

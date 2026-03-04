@@ -1,0 +1,205 @@
+{
+    "title": "Piel en Armonia | Dermatologia de precision en Quito",
+    "description": "Dermatologia de precision con lenguaje editorial premium: evaluacion clinica, rutas terapeuticas, telemedicina y marco legal claro.",
+    "hero": {
+        "autoplayMs": 7000,
+        "slides": [
+            {
+                "id": "s1",
+                "category": "Diagnostico clinico",
+                "title": "Cuando la piel cambia, la lectura debe ser precisa.",
+                "description": "Evaluacion integral de piel, cabello y unas para definir un mapa terapeutico antes de intervenir.",
+                "image": "/images/optimized/showcase-diagnostic.webp",
+                "srcset": "/images/optimized/showcase-diagnostic-640.webp 640w, /images/optimized/showcase-diagnostic-800.webp 800w, /images/optimized/showcase-diagnostic.webp 1200w",
+                "alt": "Evaluacion diagnostica dermatologica",
+                "href": "/es/servicios/diagnostico-integral/"
+            },
+            {
+                "id": "s2",
+                "category": "Estetica medica",
+                "title": "Protocolo, evidencia y seguimiento: nunca promesas vacias.",
+                "description": "Peeling, laser y bioestimulacion con jerarquia medica y tiempos de control definidos.",
+                "image": "/images/optimized/showcase-treatment.webp",
+                "srcset": "/images/optimized/showcase-treatment-640.webp 640w, /images/optimized/showcase-treatment-900.webp 900w, /images/optimized/showcase-treatment.webp 1200w",
+                "alt": "Procedimiento dermatologico de precision",
+                "href": "/es/servicios/laser-dermatologico/"
+            },
+            {
+                "id": "s3",
+                "category": "Telemedicina",
+                "title": "Remoto cuando aporta claridad. Presencial cuando el caso lo exige.",
+                "description": "Triage digital con escalamiento seguro al consultorio si la lesion o evolucion lo requieren.",
+                "image": "/images/optimized/service-telemedicina.webp",
+                "srcset": "/images/optimized/service-telemedicina-400.webp 400w, /images/optimized/service-telemedicina.webp 900w",
+                "alt": "Consulta remota con criterio dermatologico",
+                "href": "/es/telemedicina/"
+            },
+            {
+                "id": "s4",
+                "category": "Direccion medica",
+                "title": "La continuidad clinica reduce ruido y acelera decisiones.",
+                "description": "Cada control mantiene historia, fotografia clinica y ajuste de plan segun respuesta real.",
+                "image": "/images/optimized/showcase-clinic.webp",
+                "srcset": "/images/optimized/showcase-clinic-640.webp 640w, /images/optimized/showcase-clinic-800.webp 800w, /images/optimized/showcase-clinic.webp 1200w",
+                "alt": "Espacio clinico dermatologico",
+                "href": "/es/servicios/piel-cabello-unas/"
+            },
+            {
+                "id": "s5",
+                "category": "Equipo",
+                "title": "Dermatologia contemporanea para Quito: criterio humano y tecnica precisa.",
+                "description": "Equipo especializado en piel clinica, pediatrica y estetica medica con comunicacion clara.",
+                "image": "/images/optimized/team-rosero.webp",
+                "srcset": "/images/optimized/team-rosero-500.webp 500w, /images/optimized/team-rosero.webp 900w",
+                "alt": "Direccion clinica de Piel en Armonia",
+                "href": "/es/servicios/"
+            }
+        ]
+    },
+    "newsStrip": {
+        "label": "Actualizacion Clinica",
+        "headline": "Agenda en fase de recalibracion V6: rutas, legal y telemedicina ya operativas.",
+        "href": "/es/servicios/"
+    },
+    "editorial": {
+        "eyebrow": "Direccion editorial",
+        "title": "Rutas que combinan criterio medico, tecnologia y acompanamiento humano.",
+        "deck": "Arquitectura inspirada en portales corporativos de alto nivel: bloques amplios, ritmo preciso y lectura progresiva.",
+        "cards": [
+            {
+                "id": "c1",
+                "type": "video",
+                "size": "tall",
+                "category": "Programa clinico",
+                "title": "Del primer hallazgo a la estrategia completa de manejo",
+                "copy": "Consulta integral para lesiones nuevas, brotes recurrentes y cambios de textura.",
+                "href": "/es/servicios/diagnostico-integral/",
+                "image": "/images/optimized/service-consulta.webp",
+                "alt": "Programa de diagnostico integral"
+            },
+            {
+                "id": "c2",
+                "type": "info",
+                "size": "wide",
+                "category": "Inflamacion",
+                "title": "Acne y rosacea: control sostenido, no soluciones instantaneas",
+                "copy": "Ajustes progresivos, foto de control y objetivos por etapa para evitar recaidas.",
+                "href": "/es/servicios/acne-rosacea/",
+                "image": "/images/optimized/service-acne.webp",
+                "alt": "Control de acne y rosacea"
+            },
+            {
+                "id": "c3",
+                "type": "video",
+                "size": "standard",
+                "category": "Tecnologia",
+                "title": "Laser dermatologico con parametros trazables",
+                "copy": "Indicacion por fototipo, lesion y tolerancia, con seguimiento post procedimiento.",
+                "href": "/es/servicios/laser-dermatologico/",
+                "image": "/images/optimized/service-laser.webp",
+                "alt": "Tecnologia laser dermatologica"
+            },
+            {
+                "id": "c4",
+                "type": "info",
+                "size": "tall",
+                "category": "Telemedicina",
+                "title": "Consulta remota para filtrar urgencia y definir proximos pasos",
+                "copy": "Canal util cuando usted necesita orientacion inicial antes de acudir al consultorio.",
+                "href": "/es/telemedicina/",
+                "image": "/images/optimized/service-telemedicina.webp",
+                "alt": "Ruta de telemedicina"
+            },
+            {
+                "id": "c5",
+                "type": "info",
+                "size": "standard",
+                "category": "Pediatria",
+                "title": "Dermatologia pediatrica con comunicacion familiar clara",
+                "copy": "Plan terapeutico explicado para madres, padres y cuidadores en lenguaje comprensible.",
+                "href": "/es/servicios/dermatologia-pediatrica/",
+                "image": "/images/optimized/showcase-clinic.webp",
+                "alt": "Atencion dermatologica pediatrica"
+            },
+            {
+                "id": "c6",
+                "type": "video",
+                "size": "wide",
+                "category": "Direccion medica",
+                "title": "Matriz de decisiones clinicas para cada perfil de paciente",
+                "copy": "La ruta no se improvisa: se documenta, se explica y se corrige con evidencia.",
+                "href": "/es/servicios/piel-cabello-unas/",
+                "image": "/images/optimized/team-narvaez.webp",
+                "alt": "Direccion medica y toma de decisiones"
+            }
+        ]
+    },
+    "corporateMatrix": {
+        "eyebrow": "Bloque Corporativo",
+        "title": "Programas y Unidades Dermatologicas",
+        "deck": "Estructura de lectura tipo portal corporativo: ficha visual amplia, categoria clara y siguiente paso directo.",
+        "cards": [
+            {
+                "id": "m1",
+                "category": "Diagnostico",
+                "title": "Unidad de Diagnostico Integral",
+                "copy": "Lectura transversal de piel, cabello y unas con mapa de control clinico.",
+                "href": "/es/servicios/diagnostico-integral/",
+                "image": "/images/optimized/service-consulta.webp",
+                "alt": "Unidad de diagnostico integral"
+            },
+            {
+                "id": "m2",
+                "category": "Inflamacion",
+                "title": "Programa Acne y Rosacea",
+                "copy": "Control de brotes, ajuste terapeutico y seguimiento fotografico por etapas.",
+                "href": "/es/servicios/acne-rosacea/",
+                "image": "/images/optimized/service-acne.webp",
+                "alt": "Programa acne y rosacea"
+            },
+            {
+                "id": "m3",
+                "category": "Tecnologia",
+                "title": "Plataforma Laser Dermatologica",
+                "copy": "Protocolos con parametros trazables por fototipo y respuesta cutanea.",
+                "href": "/es/servicios/laser-dermatologico/",
+                "image": "/images/optimized/service-laser.webp",
+                "alt": "Plataforma laser dermatologica"
+            },
+            {
+                "id": "m4",
+                "category": "Oncologia cutanea",
+                "title": "Tamizaje de Lesiones de Riesgo",
+                "copy": "Evaluacion temprana de senales de alarma con ruta de escalamiento definido.",
+                "href": "/es/servicios/cancer-piel/",
+                "image": "/images/optimized/service-cancer.webp",
+                "alt": "Tamizaje de lesiones de riesgo"
+            },
+            {
+                "id": "m5",
+                "category": "Telemedicina",
+                "title": "Triage Remoto y Continuidad",
+                "copy": "Orientacion inicial cuando usted necesita decidir si escalar a consultorio.",
+                "href": "/es/telemedicina/",
+                "image": "/images/optimized/service-telemedicina.webp",
+                "alt": "Triage remoto dermatologico"
+            },
+            {
+                "id": "m6",
+                "category": "Rejuvenecimiento",
+                "title": "Unidad de Soporte Dermoestetico",
+                "copy": "Mesoterapia, bioestimulacion y protocolos combinados bajo criterio medico.",
+                "href": "/es/servicios/bioestimuladores-colageno/",
+                "image": "/images/optimized/service-rejuvenecimiento.webp",
+                "alt": "Unidad de soporte dermoestetico"
+            }
+        ]
+    },
+    "bookingStatus": {
+        "eyebrow": "Estado transaccional",
+        "title": "Agenda en actualizacion",
+        "description": "Durante esta fase V6 no se procesan pagos ni formularios. Revise rutas clinicas y vuelva para apertura de agenda.",
+        "ctaLabel": "Ver catalogo clinico",
+        "ctaHref": "/es/servicios/"
+    }
+}

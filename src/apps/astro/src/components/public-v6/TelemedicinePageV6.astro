@@ -1,0 +1,200 @@
+---
+import BookingStatusV6 from './BookingStatusV6.astro';
+import InternalStatementBandV6 from './InternalStatementBandV6.astro';
+import PageHeadV6 from './PageHeadV6.astro';
+
+const { page = {}, locale = 'es', navModel = {} } = Astro.props;
+const switchLabel = navModel?.header?.switchLabel || (locale === 'en' ? 'ES' : 'EN');
+const switchHref = navModel?.header?.switchHref || (locale === 'en' ? '/es/' : '/en/');
+const menuLabel = navModel?.header?.menuLabel || 'Menu';
+const breadcrumb = Array.isArray(page.breadcrumb) ? page.breadcrumb : [];
+const blocks = Array.isArray(page.blocks) ? page.blocks : [];
+const initiativesRaw = Array.isArray(page.initiatives) ? page.initiatives : [];
+const mediaFallbacks = [
+    '/images/optimized/service-telemedicina.webp',
+    '/images/optimized/showcase-diagnostic.webp',
+    '/images/optimized/showcase-clinic.webp',
+    '/images/optimized/service-consulta.webp',
+];
+const blockModels = blocks.map((block, index) => {
+    const items = Array.isArray(block.items) ? block.items : [];
+    const mediaSrc = block.image || mediaFallbacks[index % mediaFallbacks.length];
+    return {
+        ...block,
+        items,
+        mediaSrc,
+        anchorId: `v6-tele-block-${index + 1}`,
+    };
+});
+const totalCriteria = blockModels.reduce((total, block) => total + block.items.length, 0);
+const initiatives = initiativesRaw.length
+    ? initiativesRaw.map((item, index) => ({
+        title: item.title || '',
+        copy: item.copy || '',
+        image: item.image || mediaFallbacks[index % mediaFallbacks.length],
+        href: item.href || `#v6-tele-block-${Math.min(index + 1, Math.max(1, blockModels.length))}`,
+    }))
+    : blockModels.map((block, index) => ({
+        title: block.title || '',
+        copy: block.items[0] || '',
+        image: block.mediaSrc,
+        href: `#${block.anchorId}`,
+    }));
+
+const pageMenuItems = blockModels.map((block) => ({
+    label: block.title || '',
+    href: `#${block.anchorId}`,
+}));
+if (initiatives.length) {
+    pageMenuItems.unshift({
+        label: locale === 'en' ? 'Remote initiatives' : 'Iniciativas remotas',
+        href: '#v6-tele-initiatives',
+    });
+}
+pageMenuItems.push({
+    label: locale === 'en' ? 'Schedule status' : 'Estado de agenda',
+    href: '#v6-booking-status',
+});
+const thesisEyebrow = locale === 'en' ? 'Remote clinical design' : 'Diseno clinico remoto';
+const thesisTitle =
+    locale === 'en'
+        ? 'Decide online only when the case can be read with confidence'
+        : 'Decida online solo cuando el caso pueda leerse con confianza';
+const thesisBody =
+    locale === 'en'
+        ? 'This surface keeps explicit triage criteria, operational checkpoints, and escalation routes to clinic when warning signs appear.'
+        : 'Esta superficie mantiene criterios explicitos de triage, puntos operativos y rutas de escalamiento al consultorio cuando aparecen senales de alerta.';
+const statement = {
+    eyebrow: locale === 'en' ? 'Remote clinical direction' : 'Direccion clinica remota',
+    title:
+        locale === 'en'
+            ? 'Telemedicine is useful only when diagnostic confidence remains high'
+            : 'La telemedicina es util solo cuando la confianza diagnostica se mantiene alta',
+    body:
+        page.lead ||
+        (locale === 'en'
+            ? 'Remote guidance follows strict escalation rules to preserve patient safety and continuity.'
+            : 'La orientacion remota sigue reglas estrictas de escalamiento para preservar seguridad y continuidad.'),
+    signature:
+        locale === 'en'
+            ? 'Hybrid triage protocol, Quito'
+            : 'Protocolo de triage hibrido, Quito',
+    image: '/images/optimized/team-narvaez.webp',
+    alt:
+        locale === 'en'
+            ? 'Telemedicine leadership portrait'
+            : 'Retrato de liderazgo en telemedicina',
+};
+---
+
+<PageHeadV6
+    breadcrumb={breadcrumb}
+    heading={page.heading}
+    locale={locale}
+    switchLabel={switchLabel}
+    switchHref={switchHref}
+    menuLabel={menuLabel}
+    menuItems={pageMenuItems}
+/>
+
+<section class="v6-page-hero-media is-internal" data-v6-internal-hero>
+    <img src={page?.heroImage?.src} srcset={page?.heroImage?.srcset || undefined} alt={page?.heroImage?.alt || ''} sizes="100vw" loading="eager" fetchpriority="high" />
+</section>
+
+<section class="v6-internal-message" data-v6-internal-message>
+    <h2>{page.lead}</h2>
+    <p>
+        {
+            locale === 'en'
+                ? 'Remote dermatology triage with explicit criteria to continue online or escalate to clinic.'
+                : 'Triage dermatologico remoto con criterios explicitos para continuar online o escalar al consultorio.'
+        }
+    </p>
+</section>
+
+<InternalStatementBandV6 locale={locale} statement={statement} variant="tele" />
+
+<section class="v6-internal-thesis" data-v6-internal-thesis>
+    <p>{thesisEyebrow}</p>
+    <h2>{thesisTitle}</h2>
+    <p>{thesisBody}</p>
+</section>
+
+<div class="v6-internal-shell" data-v6-internal-shell>
+    <aside class="v6-internal-rail" data-v6-internal-rail>
+        <p>{locale === 'en' ? 'Flow map' : 'Mapa de flujo'}</p>
+        <nav aria-label={locale === 'en' ? 'Telemedicine sections' : 'Secciones de telemedicina'}>
+            {
+                pageMenuItems.map((item) => (
+                    <a href={item.href}>{item.label}</a>
+                ))
+            }
+        </nav>
+    </aside>
+
+    <div class="v6-internal-shell__body">
+        <section class="v6-tele-kpis v6-tele-kpis--shell" aria-label={locale === 'en' ? 'Telemedicine overview' : 'Resumen de telemedicina'}>
+            <article>
+                <p>{locale === 'en' ? 'Route blocks' : 'Bloques de ruta'}</p>
+                <h3>{String(blockModels.length).padStart(2, '0')}</h3>
+            </article>
+            <article>
+                <p>{locale === 'en' ? 'Clinical criteria' : 'Criterios clinicos'}</p>
+                <h3>{String(totalCriteria).padStart(2, '0')}</h3>
+            </article>
+            <article>
+                <p>{locale === 'en' ? 'Escalation model' : 'Modelo de escalamiento'}</p>
+                <h3>{locale === 'en' ? 'Hybrid' : 'Hibrido'}</h3>
+            </article>
+        </section>
+
+        {
+            initiatives.length ? (
+                <section id="v6-tele-initiatives" class="v6-tele-initiatives v6-tele-initiatives--shell" aria-label={locale === 'en' ? 'Telemedicine initiatives' : 'Iniciativas de telemedicina'}>
+                    {
+                        initiatives.map((item) => (
+                            <a href={item.href} data-v6-tele-initiative>
+                                <figure>
+                                    <img src={item.image} alt={item.title || ''} loading="lazy" decoding="async" />
+                                </figure>
+                                <div>
+                                    <h3>{item.title}</h3>
+                                    <p>{item.copy}</p>
+                                    <strong>
+                                        {locale === 'en' ? 'Open section' : 'Abrir seccion'}
+                                        <span aria-hidden="true">></span>
+                                    </strong>
+                                </div>
+                            </a>
+                        ))
+                    }
+                </section>
+            ) : null
+        }
+
+        <section class="v6-tele-grid v6-tele-grid--shell">
+            {
+                blockModels.map((block, index) => (
+                    <article id={block.anchorId} class:list={[index === 0 && 'is-lead']} data-v6-tele-block>
+                        <figure class="v6-tele-grid__media">
+                            <img src={block.mediaSrc} alt={block.title || ''} loading="lazy" decoding="async" />
+                        </figure>
+                        <div class="v6-tele-grid__body">
+                            <p class="v6-tele-grid__index">{String(index + 1).padStart(2, '0')}</p>
+                            <h3>{block.title}</h3>
+                            <ul>
+                                {block.items.map((item) => <li>{item}</li>)}
+                            </ul>
+                            <a href="#v6-booking-status">
+                                {locale === 'en' ? 'Review scheduling status' : 'Revisar estado de agenda'}
+                                <span aria-hidden="true">></span>
+                            </a>
+                        </div>
+                    </article>
+                ))
+            }
+        </section>
+    </div>
+</div>
+
+<BookingStatusV6 status={page.bookingStatus} locale={locale} sectionId="v6-booking-status" />

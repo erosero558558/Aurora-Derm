@@ -1,0 +1,108 @@
+{
+    "title": "Legal | Piel en Armonia",
+    "description": "V6 legal framework with clear and operational language for patients in Quito.",
+    "index": [
+        { "slug": "terms", "title": "Terms", "href": "/en/legal/terms/" },
+        { "slug": "privacy", "title": "Privacy", "href": "/en/legal/privacy/" },
+        { "slug": "cookies", "title": "Cookies", "href": "/en/legal/cookies/" },
+        {
+            "slug": "medical-disclaimer",
+            "title": "Medical disclaimer",
+            "href": "/en/legal/medical-disclaimer/"
+        }
+    ],
+    "pages": {
+        "terms": {
+            "heading": "Terms and conditions",
+            "summary": "Conditions for using public clinical routes, telemedicine guidance, and website content.",
+            "heroImage": "/images/optimized/showcase-hero.webp",
+            "sections": [
+                {
+                    "title": "Website usage",
+                    "items": [
+                        "Informational content does not replace in-person medical care.",
+                        "You agree to provide truthful information in official channels.",
+                        "Misuse of the platform may result in restricted access."
+                    ]
+                },
+                {
+                    "title": "Intellectual property",
+                    "items": [
+                        "Text, design, and visual assets belong to Piel en Armonia.",
+                        "Full reproduction is not authorized without written permission.",
+                        "Third-party marks appear only as comparative references."
+                    ]
+                }
+            ]
+        },
+        "privacy": {
+            "heading": "Privacy policy",
+            "summary": "Responsible handling of personal data with minimal exposure principles.",
+            "heroImage": "/images/optimized/showcase-clinic.webp",
+            "sections": [
+                {
+                    "title": "Data collected",
+                    "items": [
+                        "Contact data you share through official channels.",
+                        "Technical metadata for security and UX improvement.",
+                        "Clinical information only when you provide it for guidance."
+                    ]
+                },
+                {
+                    "title": "Usage and protection",
+                    "items": [
+                        "Data is used for continuity of care and support operations.",
+                        "Technical safeguards limit unauthorized access.",
+                        "You can request correction or deletion under applicable regulation."
+                    ]
+                }
+            ]
+        },
+        "cookies": {
+            "heading": "Cookie policy",
+            "summary": "Cookie usage for technical features, aggregate analytics, and continuous improvement.",
+            "heroImage": "/images/optimized/showcase-diagnostic.webp",
+            "sections": [
+                {
+                    "title": "Cookie categories",
+                    "items": [
+                        "Essential cookies for navigation and stability.",
+                        "Analytics cookies for aggregate route usage measurement.",
+                        "Preference cookies to remember interface settings."
+                    ]
+                },
+                {
+                    "title": "Consent control",
+                    "items": [
+                        "You may accept or reject non-essential cookies.",
+                        "Choices can be updated through browser controls.",
+                        "Rejecting optional cookies does not block core content."
+                    ]
+                }
+            ]
+        },
+        "medical-disclaimer": {
+            "heading": "Medical disclaimer",
+            "summary": "Public information guides decisions but does not replace personalized diagnosis.",
+            "heroImage": "/images/optimized/service-consulta.webp",
+            "sections": [
+                {
+                    "title": "Limits of digital guidance",
+                    "items": [
+                        "Public text is not a prescription or final diagnosis.",
+                        "All treatment decisions require individualized medical review.",
+                        "Warning signs should be addressed in urgent care settings."
+                    ]
+                },
+                {
+                    "title": "Shared responsibility",
+                    "items": [
+                        "You should report history and symptoms accurately.",
+                        "The clinical team defines direction based on available evidence.",
+                        "Adherence to plan influences case evolution."
+                    ]
+                }
+            ]
+        }
+    }
+}

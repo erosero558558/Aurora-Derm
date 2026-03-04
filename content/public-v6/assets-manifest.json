@@ -1,0 +1,86 @@
+{
+    "version": "2026.03-v6",
+    "updated_at": "2026-03-03",
+    "assets": [
+        {
+            "id": "hero-main",
+            "src": "/images/optimized/showcase-hero.webp",
+            "srcset": "/images/optimized/showcase-hero-640.webp 640w, /images/optimized/showcase-hero-1024.webp 1024w, /images/optimized/showcase-hero-1400.webp 1400w",
+            "sizes": "(max-width: 900px) 100vw, 38vw",
+            "alt_es": "Equipo dermatologico analizando imagenes clinicas para decisiones de precision",
+            "alt_en": "Dermatology team reviewing clinical imaging for precision decisions"
+        },
+        {
+            "id": "hero-diagnostic",
+            "src": "/images/optimized/showcase-diagnostic.webp",
+            "srcset": "/images/optimized/showcase-diagnostic-640.webp 640w, /images/optimized/showcase-diagnostic-800.webp 800w, /images/optimized/showcase-diagnostic.webp 1200w",
+            "sizes": "(max-width: 900px) 100vw, 32vw",
+            "alt_es": "Lectura diagnostica dermatologica en consultorio",
+            "alt_en": "Dermatology diagnostic review in clinic"
+        },
+        {
+            "id": "hero-treatment",
+            "src": "/images/optimized/showcase-treatment.webp",
+            "srcset": "/images/optimized/showcase-treatment-640.webp 640w, /images/optimized/showcase-treatment-900.webp 900w, /images/optimized/showcase-treatment.webp 1200w",
+            "sizes": "(max-width: 900px) 100vw, 32vw",
+            "alt_es": "Procedimiento dermatologico con protocolo controlado",
+            "alt_en": "Dermatology procedure under controlled protocol"
+        },
+        {
+            "id": "hero-tele",
+            "src": "/images/optimized/service-telemedicina.webp",
+            "srcset": "/images/optimized/service-telemedicina-400.webp 400w, /images/optimized/service-telemedicina.webp 900w",
+            "sizes": "(max-width: 900px) 100vw, 32vw",
+            "alt_es": "Consulta remota para continuidad clinica",
+            "alt_en": "Remote consultation for clinical continuity"
+        },
+        {
+            "id": "grid-clinic",
+            "src": "/images/optimized/showcase-clinic.webp",
+            "srcset": "/images/optimized/showcase-clinic-640.webp 640w, /images/optimized/showcase-clinic-800.webp 800w, /images/optimized/showcase-clinic.webp 1200w",
+            "sizes": "(max-width: 900px) 100vw, 48vw",
+            "alt_es": "Area clinica preparada para evaluacion dermatologica",
+            "alt_en": "Clinical area prepared for dermatology assessment"
+        },
+        {
+            "id": "service-consulta",
+            "src": "/images/optimized/service-consulta.webp",
+            "srcset": "/images/optimized/service-consulta-400.webp 400w, /images/optimized/service-consulta.webp 900w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Consulta integral de piel cabello y unas",
+            "alt_en": "Comprehensive skin hair and nail consultation"
+        },
+        {
+            "id": "service-acne",
+            "src": "/images/optimized/service-acne.webp",
+            "srcset": "/images/optimized/service-acne-400.webp 400w, /images/optimized/service-acne.webp 900w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Control de acne y rosacea con seguimiento",
+            "alt_en": "Acne and rosacea control with follow-up"
+        },
+        {
+            "id": "service-laser",
+            "src": "/images/optimized/service-laser.webp",
+            "srcset": "/images/optimized/service-laser-400.webp 400w, /images/optimized/service-laser.webp 900w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Plataforma laser dermatologica medica",
+            "alt_en": "Medical dermatology laser platform"
+        },
+        {
+            "id": "doctor-rosero",
+            "src": "/images/optimized/team-rosero.webp",
+            "srcset": "/images/optimized/team-rosero-500.webp 500w, /images/optimized/team-rosero.webp 900w",
+            "sizes": "(max-width: 900px) 100vw, 40vw",
+            "alt_es": "Direccion clinica dermatologica",
+            "alt_en": "Clinical dermatology leadership"
+        },
+        {
+            "id": "doctor-narvaez",
+            "src": "/images/optimized/team-narvaez.webp",
+            "srcset": "/images/optimized/team-narvaez-500.webp 500w, /images/optimized/team-narvaez.webp 900w",
+            "sizes": "(max-width: 900px) 100vw, 40vw",
+            "alt_es": "Direccion de estetica medica dermatologica",
+            "alt_en": "Medical aesthetics dermatology leadership"
+        }
+    ]
+}

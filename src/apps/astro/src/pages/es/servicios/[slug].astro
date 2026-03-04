@@ -1,56 +1,48 @@
 ---
-import PublicShellV5 from '../../../layouts/PublicShellV5.astro';
-import ServiceDetailV5 from '../../../components/public-v5/ServiceDetailV5.astro';
-import BookingBandV5 from '../../../components/public-v5/BookingBandV5.astro';
-import { getPublicNavigationModel, getServiceDetailV5Data } from '../../../lib/public-v5.js';
-import { getServices, servicePath } from '../../../lib/content.js';
+import PublicShellV6 from '../../../layouts/PublicShellV6.astro';
+import ServiceDetailV6 from '../../../components/public-v6/ServiceDetailV6.astro';
+import {
+    getV6NavigationModel,
+    getV6ServiceBySlug,
+    getV6ServiceSlugs,
+    v6ServicePath,
+} from '../../../lib/public-v6.js';
 
 export async function getStaticPaths() {
-    return getServices().map((service) => ({ params: { slug: service.slug } }));
+    return getV6ServiceSlugs().map((slug) => ({ params: { slug } }));
 }
 
 const locale = 'es';
 const { slug } = Astro.params;
-const page = getServiceDetailV5Data(slug, locale);
-if (!page) throw new Error(`Servicio no encontrado: ${slug}`);
-const pathname = servicePath(locale, slug);
-const navModel = getPublicNavigationModel(locale, pathname);
-const heroMediaMeta = page?.hero?.mediaMeta || {};
-const heroMediaSources = Array.isArray(heroMediaMeta?.sources)
-    ? heroMediaMeta.sources
-    : [];
-const preferredHeroSource =
-    heroMediaSources.find((source) => source?.type === 'image/webp') ||
-    heroMediaSources.find((source) => source?.type === 'image/avif') ||
-    heroMediaSources[0] ||
-    null;
-const preferredHeroSrcSet = String(preferredHeroSource?.srcset || '').trim();
-const preloadImageSrc =
-    (preferredHeroSrcSet.split(',')[0] || '').trim().split(/\s+/u)[0] ||
-    heroMediaMeta?.src ||
-    page?.hero?.media ||
-    '';
-const preloadImageSrcSet = preferredHeroSrcSet || heroMediaMeta?.srcset || '';
-const preloadImageSizes =
-    heroMediaMeta?.sizes || '(max-width: 1024px) 100vw, 46vw';
-const preloadImageType = String(preferredHeroSource?.type || 'image/webp').trim();
+const pathname = v6ServicePath(locale, slug);
+const navModel = getV6NavigationModel(locale, pathname);
+const service = getV6ServiceBySlug(locale, slug);
+if (!service) throw new Error(`Servicio no encontrado en V6: ${slug}`);
+const related = (service.related || [])
+    .map((relatedSlug) => getV6ServiceBySlug(locale, relatedSlug))
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((item) => ({ ...item, href: v6ServicePath(locale, item.slug) }));
 ---
 
-<PublicShellV5
-    title={page.title}
-    description={page.description}
+<PublicShellV6
+    title={`${service.title} | Piel en Armonia`}
+    description={service.summary}
     locale={locale}
     canonicalPath={pathname}
-    alternatePath={servicePath('en', slug)}
+    alternatePath={v6ServicePath('en', slug)}
     pathname={pathname}
     navModel={navModel}
-    templateId="service_detail_v5"
-    compactFooter={true}
-    preloadImageSrc={preloadImageSrc}
-    preloadImageSrcSet={preloadImageSrcSet}
-    preloadImageSizes={preloadImageSizes}
-    preloadImageType={preloadImageType}
+    templateId="service_detail_v6"
+    preloadImageSrc={service.heroImage}
+    preloadImageSizes="100vw"
 >
-    <ServiceDetailV5 page={page} locale={locale} />
-    <BookingBandV5 eyebrow={page.booking.eyebrow} title={page.booking.title} deck={page.booking.deck} actionLabel={page.booking.actionLabel} serviceHint={page.booking.serviceHint} tone={page.booking.tone} locale={locale} />
-</PublicShellV5>
+    <ServiceDetailV6
+        service={service}
+        locale={locale}
+        navModel={navModel}
+        servicePath={pathname}
+        hubPath="/es/servicios/"
+        related={related}
+    />
+</PublicShellV6>

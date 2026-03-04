@@ -1,0 +1,23 @@
+---
+const { item = {}, navModel = {}, locale = 'es' } = Astro.props;
+const switchLabel = navModel?.header?.switchLabel || (locale === 'en' ? 'ES' : 'EN');
+const switchHref = navModel?.header?.switchHref || (locale === 'en' ? '/es/' : '/en/');
+const activeLang = locale === 'en' ? 'EN' : 'ES';
+---
+
+<section class="v6-news-strip" data-v6-news-strip>
+    <div class="v6-news-strip__left">
+        <span>{item.label || (locale === 'en' ? 'Latest News' : 'Novedad') }</span>
+        <button type="button" aria-label={locale === 'en' ? 'Expand' : 'Expandir'}>
+            <span aria-hidden="true">v</span>
+        </button>
+    </div>
+    <div class="v6-news-strip__right">
+        <a class="v6-news-strip__headline" href={item.href || '#'}>{item.headline || ''}</a>
+        <div class="v6-news-strip__locale" aria-label={locale === 'en' ? 'Language switch' : 'Selector de idioma'}>
+            <strong>{activeLang}</strong>
+            <span aria-hidden="true">/</span>
+            <a class="v6-news-strip__lang" href={switchHref}>{switchLabel}</a>
+        </div>
+    </div>
+</section>

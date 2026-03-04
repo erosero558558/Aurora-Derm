@@ -1,0 +1,37 @@
+---
+const { section = {}, locale = 'es' } = Astro.props;
+const cards = Array.isArray(section.cards) ? section.cards : [];
+const ctaLabel = locale === 'en' ? 'Learn more' : 'Conocer mas';
+---
+
+{
+    cards.length ? (
+        <section class="v6-corporate-matrix" data-v6-corporate-matrix>
+            <div class="v6-corporate-matrix__head">
+                <p>{section.eyebrow || (locale === 'en' ? 'Business Surface' : 'Superficie Corporativa')}</p>
+                <h2>{section.title || (locale === 'en' ? 'Clinical Programs' : 'Programas Clinicos')}</h2>
+                {section.deck ? <p>{section.deck}</p> : null}
+            </div>
+            <div class="v6-corporate-matrix__grid">
+                {
+                    cards.map((card) => (
+                        <a class="v6-corporate-matrix__card" href={card.href}>
+                            <figure>
+                                <img src={card.image} alt={card.alt || ''} loading="lazy" decoding="async" />
+                            </figure>
+                            <div class="v6-corporate-matrix__meta">
+                                <p><span>{card.category}</span></p>
+                                <h3>{card.title}</h3>
+                                <p>{card.copy}</p>
+                                <strong>
+                                    {ctaLabel}
+                                    <span aria-hidden="true">></span>
+                                </strong>
+                            </div>
+                        </a>
+                    ))
+                }
+            </div>
+        </section>
+    ) : null
+}

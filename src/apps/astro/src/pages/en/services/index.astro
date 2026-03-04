@@ -1,20 +1,15 @@
 ---
-import PublicShellV5 from '../../../layouts/PublicShellV5.astro';
-import ServiceHubV5 from '../../../components/public-v5/ServiceHubV5.astro';
-import { getHubV5Data, getPublicNavigationModel } from '../../../lib/public-v5.js';
+import PublicShellV6 from '../../../layouts/PublicShellV6.astro';
+import ServiceHubV6 from '../../../components/public-v6/ServiceHubV6.astro';
+import { getV6HubData, getV6NavigationModel } from '../../../lib/public-v6.js';
 
 const locale = 'en';
 const pathname = '/en/services/';
-const page = getHubV5Data(locale);
-const navModel = getPublicNavigationModel(locale, pathname);
-const heroMediaMeta = page?.hero?.mediaMeta || {};
-const preloadImageSrc = heroMediaMeta?.src || page?.hero?.media || '';
-const preloadImageSrcSet = heroMediaMeta?.srcset || '';
-const preloadImageSizes =
-    heroMediaMeta?.sizes || '(max-width: 1024px) 100vw, 44vw';
+const page = getV6HubData(locale);
+const navModel = getV6NavigationModel(locale, pathname);
 ---
 
-<PublicShellV5
+<PublicShellV6
     title={page.title}
     description={page.description}
     locale={locale}
@@ -22,12 +17,10 @@ const preloadImageSizes =
     alternatePath="/es/servicios/"
     pathname={pathname}
     navModel={navModel}
-    templateId="service_hub_v5"
-    enableRuntimeBridge={false}
-    compactFooter={true}
-    preloadImageSrc={preloadImageSrc}
-    preloadImageSrcSet={preloadImageSrcSet}
-    preloadImageSizes={preloadImageSizes}
+    templateId="hub_v6"
+    preloadImageSrc={page?.heroImage?.src}
+    preloadImageSrcSet={page?.heroImage?.srcset}
+    preloadImageSizes="100vw"
 >
-    <ServiceHubV5 page={page} locale={locale} />
-</PublicShellV5>
+    <ServiceHubV6 page={page} locale={locale} navModel={navModel} />
+</PublicShellV6>

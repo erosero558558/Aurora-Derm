@@ -1,0 +1,25 @@
+:root {
+    --v6-color-black: #090909;
+    --v6-color-ink: #14161b;
+    --v6-color-white: #ffffff;
+    --v6-color-smoke: #ededf0;
+    --v6-color-muted: #b8bcc4;
+    --v6-color-line: #2a2d34;
+    --v6-color-blue-a: #001940;
+    --v6-color-blue-b: #0f2d68;
+    --v6-color-blue-c: #0a3e88;
+    --v6-color-glow: rgba(67, 138, 255, 0.28);
+    --v6-radius-sm: 10px;
+    --v6-radius-md: 14px;
+    --v6-radius-lg: 18px;
+    --v6-space-1: 8px;
+    --v6-space-2: 12px;
+    --v6-space-3: 16px;
+    --v6-space-4: 24px;
+    --v6-space-5: 32px;
+    --v6-space-6: 48px;
+    --v6-space-7: 72px;
+    --v6-shadow-soft: 0 18px 36px rgba(3, 8, 24, 0.24);
+    --v6-max-width: 1260px;
+    --v6-font-sans: "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}

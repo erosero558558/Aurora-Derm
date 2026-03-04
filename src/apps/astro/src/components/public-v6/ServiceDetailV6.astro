@@ -1,0 +1,230 @@
+---
+import BookingStatusV6 from './BookingStatusV6.astro';
+import InternalStatementBandV6 from './InternalStatementBandV6.astro';
+import PageHeadV6 from './PageHeadV6.astro';
+
+const {
+    service = {},
+    locale = 'es',
+    navModel = {},
+    servicePath = '#',
+    hubPath = '#',
+    related = [],
+} = Astro.props;
+
+const switchLabel = navModel?.header?.switchLabel || (locale === 'en' ? 'ES' : 'EN');
+const switchHref = navModel?.header?.switchHref || (locale === 'en' ? '/es/' : '/en/');
+const menuLabel = navModel?.header?.menuLabel || 'Menu';
+const checkpoints = Array.isArray(service.bullets) ? service.bullets : [];
+const processSteps = Array.isArray(service.process) ? service.process : [];
+const faqItems = Array.isArray(service.faq) ? service.faq : [];
+const sectionMenuItems = [
+    {
+        label: locale === 'en' ? 'Clinical glance' : 'Vista clinica',
+        href: '#v6-service-glance',
+    },
+    {
+        label: locale === 'en' ? 'Clinical checkpoints' : 'Puntos clinicos',
+        href: '#v6-service-checkpoints',
+    },
+    {
+        label: locale === 'en' ? 'Process' : 'Proceso',
+        href: '#v6-service-process',
+    },
+    {
+        label: locale === 'en' ? 'Frequently asked questions' : 'Preguntas frecuentes',
+        href: '#v6-service-faq',
+    },
+];
+
+if (related.length) {
+    sectionMenuItems.push({
+        label: locale === 'en' ? 'Related routes' : 'Rutas relacionadas',
+        href: '#v6-service-related',
+    });
+}
+
+sectionMenuItems.push({
+    label: locale === 'en' ? 'Schedule status' : 'Estado de agenda',
+    href: '#v6-booking-status',
+});
+
+const breadcrumb = [
+    { label: locale === 'en' ? 'Home' : 'Inicio', href: locale === 'en' ? '/en/' : '/es/' },
+    { label: locale === 'en' ? 'Services' : 'Servicios', href: hubPath },
+    { label: service.title || '', href: servicePath },
+];
+const thesisEyebrow = locale === 'en' ? 'Clinical editorial' : 'Editorial clinica';
+const thesisTitle =
+    locale === 'en'
+        ? `${service.title || 'Clinical route'} with operational criteria`
+        : `${service.title || 'Ruta clinica'} con criterios operativos`;
+const thesisBody =
+    locale === 'en'
+        ? 'Each stage defines what to observe, what to decide, and when to escalate to preserve continuity and safety.'
+        : 'Cada etapa define que observar, que decidir y cuando escalar para preservar continuidad y seguridad.';
+const statement = {
+    eyebrow: locale === 'en' ? 'Medical direction' : 'Direccion medica',
+    title:
+        locale === 'en'
+            ? `${service.title || 'Clinical route'} starts with criteria before intervention`
+            : `${service.title || 'Ruta clinica'} inicia con criterios antes de intervenir`,
+    body:
+        service.lead ||
+        (locale === 'en'
+            ? 'The route is built with explicit checkpoints, expected outcomes, and review timing.'
+            : 'La ruta se construye con puntos de control explicitos, resultados esperados y tiempos de revision.'),
+    signature:
+        locale === 'en'
+            ? 'Clinical direction, Quito'
+            : 'Direccion clinica, Quito',
+    image: '/images/optimized/team-rosero.webp',
+    alt:
+        locale === 'en'
+            ? 'Clinical direction portrait'
+            : 'Retrato de direccion clinica',
+};
+---
+
+<PageHeadV6
+    breadcrumb={breadcrumb}
+    heading={service.title}
+    locale={locale}
+    switchLabel={switchLabel}
+    switchHref={switchHref}
+    menuLabel={menuLabel}
+    menuItems={sectionMenuItems}
+/>
+
+<section class="v6-page-hero-media is-internal" data-v6-internal-hero>
+    <img src={service.heroImage} alt={service.heroAlt || service.title} loading="eager" fetchpriority="high" />
+</section>
+
+<section class="v6-internal-message" data-v6-internal-message>
+    <h2>{service.summary}</h2>
+    <p>{service.lead || (locale === 'en' ? 'Clinical route with staged execution and traceable criteria.' : 'Ruta clinica con ejecucion escalonada y criterios trazables.')}</p>
+</section>
+
+<InternalStatementBandV6 locale={locale} statement={statement} variant="service" />
+
+<section class="v6-internal-thesis" data-v6-internal-thesis>
+    <p>{thesisEyebrow}</p>
+    <h2>{thesisTitle}</h2>
+    <p>{thesisBody}</p>
+</section>
+
+<div class="v6-internal-shell" data-v6-internal-shell>
+    <aside class="v6-internal-rail" data-v6-internal-rail>
+        <p>{locale === 'en' ? 'Route map' : 'Mapa de ruta'}</p>
+        <nav aria-label={locale === 'en' ? 'Route sections' : 'Secciones de ruta'}>
+            {
+                sectionMenuItems.map((item) => (
+                    <a href={item.href}>{item.label}</a>
+                ))
+            }
+        </nav>
+    </aside>
+
+    <div class="v6-internal-shell__body">
+        <section id="v6-service-glance" class="v6-service-glance v6-service-glance--shell">
+            <article>
+                <p>{locale === 'en' ? 'Route Type' : 'Tipo de ruta'}</p>
+                <h3>{service.category || (locale === 'en' ? 'Clinical route' : 'Ruta clinica')}</h3>
+            </article>
+            <article>
+                <p>{locale === 'en' ? 'Clinical checkpoints' : 'Puntos clinicos'}</p>
+                <h3>{checkpoints.length}</h3>
+            </article>
+            <article>
+                <p>{locale === 'en' ? 'Process stages' : 'Etapas de proceso'}</p>
+                <h3>{processSteps.length}</h3>
+            </article>
+        </section>
+
+        <section class="v6-service-detail v6-service-detail--shell">
+            <article id="v6-service-checkpoints" class="v6-service-detail__column">
+                <h3>{locale === 'en' ? 'Clinical checkpoints' : 'Puntos clinicos'}</h3>
+                <ul class="v6-service-checklist">
+                    {
+                        checkpoints.map((item) => (
+                            <li>
+                                <span class="v6-service-checklist__dot" aria-hidden="true"></span>
+                                <p>{item}</p>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </article>
+
+            <article id="v6-service-process" class="v6-service-detail__column">
+                <h3>{locale === 'en' ? 'Clinical process' : 'Proceso clinico'}</h3>
+                <ol class="v6-service-process">
+                    {
+                        processSteps.map((item, index) => (
+                            <li>
+                                <span>{String(index + 1).padStart(2, '0')}</span>
+                                <p>{item}</p>
+                            </li>
+                        ))
+                    }
+                </ol>
+            </article>
+
+            <article id="v6-service-faq" class="v6-service-detail__column v6-service-detail__full">
+                <h3>{locale === 'en' ? 'Frequently asked questions' : 'Preguntas frecuentes'}</h3>
+                <div class="v6-service-faq-grid">
+                    {
+                        faqItems.map((item, index) => (
+                            <article>
+                                <p>{locale === 'en' ? `Q${index + 1}` : `P${index + 1}`}</p>
+                                <h4>{item}</h4>
+                                <small>
+                                    {
+                                        locale === 'en'
+                                            ? 'Resolved during consultation with your clinical context.'
+                                            : 'Se resuelve en consulta segun su contexto clinico.'
+                                    }
+                                </small>
+                            </article>
+                        ))
+                    }
+                </div>
+            </article>
+        </section>
+
+        {
+            related.length ? (
+                <section id="v6-service-related" class="v6-related-grid v6-related-grid--shell">
+                    <h2>{locale === 'en' ? 'Related routes' : 'Rutas relacionadas'}</h2>
+                    <div>
+                        {
+                            related.map((item) => (
+                                <a href={item.href}>
+                                    <img src={item.heroImage} alt={item.title} loading="lazy" decoding="async" />
+                                    <p>{item.category}</p>
+                                    <h3>{item.title}</h3>
+                                    <p>{item.summary}</p>
+                                    <strong>{locale === 'en' ? 'Open route' : 'Abrir ruta'}</strong>
+                                </a>
+                            ))
+                        }
+                    </div>
+                </section>
+            ) : null
+        }
+    </div>
+</div>
+
+<BookingStatusV6
+    status={{
+        title: locale === 'en' ? 'Schedule in update' : 'Agenda en actualizacion',
+        description:
+            locale === 'en'
+                ? 'Booking and payment remain paused in this V6 phase. Continue through route review and telemedicine triage.'
+                : 'La reserva y el pago estan pausados en esta fase V6. Siga con revision de rutas y triage por telemedicina.',
+        ctaLabel: locale === 'en' ? 'Open telemedicine' : 'Abrir telemedicina',
+        ctaHref: locale === 'en' ? '/en/telemedicine/' : '/es/telemedicina/',
+    }}
+    locale={locale}
+    sectionId="v6-booking-status"
+/>

@@ -1,0 +1,37 @@
+---
+const { section = {}, locale = 'es' } = Astro.props;
+const cards = Array.isArray(section.cards) ? section.cards : [];
+const ctaLabel = locale === 'en' ? 'Learn more' : 'Conocer mas';
+---
+
+<section class="v6-editorial" data-v6-editorial>
+    <div class="v6-editorial__head">
+        <p>{section.eyebrow}</p>
+        <h2>{section.title}</h2>
+        <p>{section.deck}</p>
+    </div>
+
+    <div class="v6-editorial__grid">
+        {
+            cards.map((card) => (
+                <article class:list={['v6-editorial__card', `is-${card.size || 'standard'}`, card.type === 'video' && 'is-video']}>
+                    <a href={card.href}>
+                        <figure>
+                            <img src={card.image} alt={card.alt || ''} loading="lazy" decoding="async" />
+                            {card.type === 'video' ? <span class="v6-editorial__play" aria-hidden="true">{'>'}</span> : null}
+                        </figure>
+                        <div class="v6-editorial__meta">
+                            <p>{card.category}</p>
+                            <h3>{card.title}</h3>
+                            <p>{card.copy}</p>
+                            <span class="v6-editorial__cta">
+                                {ctaLabel}
+                                <strong aria-hidden="true">{'>'}</strong>
+                            </span>
+                        </div>
+                    </a>
+                </article>
+            ))
+        }
+    </div>
+</section>

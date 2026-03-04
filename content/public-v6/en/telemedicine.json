@@ -1,0 +1,76 @@
+{
+    "title": "Telemedicine | Piel en Armonia",
+    "description": "Remote dermatology route with triage, escalation criteria, and clinical continuity.",
+    "breadcrumb": [
+        { "label": "Home", "href": "/en/" },
+        { "label": "Telemedicine", "href": "/en/telemedicine/" }
+    ],
+    "heading": "Dermatology Telemedicine",
+    "heroImage": {
+        "src": "/images/optimized/service-telemedicina.webp",
+        "srcset": "/images/optimized/service-telemedicina-400.webp 400w, /images/optimized/service-telemedicina.webp 900w",
+        "alt": "Remote dermatology consultation"
+    },
+    "lead": "Remote consultation works when it increases diagnostic clarity and lowers decision friction.",
+    "blocks": [
+        {
+            "title": "How it works",
+            "items": [
+                "You share background information and clinical photos with context.",
+                "Medical priority and remote resolution probability are defined.",
+                "Initial plan, prescription when needed, and review timing are set.",
+                "Risk signals trigger immediate in-person escalation."
+            ]
+        },
+        {
+            "title": "When it usually fits",
+            "items": [
+                "Known inflammatory flares",
+                "Active treatment follow-up",
+                "Questions about symptom evolution",
+                "Guidance before traveling to clinic"
+            ]
+        },
+        {
+            "title": "When to escalate",
+            "items": [
+                "Rapidly changing or bleeding lesions",
+                "Intense pain or accelerated spread",
+                "Insufficient response to remote protocol",
+                "Need for in-clinic diagnostic procedure"
+            ]
+        }
+    ],
+    "initiatives": [
+        {
+            "title": "Visual triage",
+            "copy": "Early classification with contextual clinical images to prioritize risk.",
+            "image": "/images/optimized/showcase-diagnostic.webp",
+            "href": "#v6-tele-block-1"
+        },
+        {
+            "title": "Flare control",
+            "copy": "Remote follow-up for inflammatory cases with response-based adjustments.",
+            "image": "/images/optimized/service-acne.webp",
+            "href": "#v6-tele-block-2"
+        },
+        {
+            "title": "In-clinic escalation",
+            "copy": "Referral to the clinic when warning signs appear or procedures are required.",
+            "image": "/images/optimized/showcase-clinic.webp",
+            "href": "#v6-tele-block-3"
+        },
+        {
+            "title": "Quito continuity",
+            "copy": "Clinical sequencing for patients in Quito with remote review and in-person care when needed.",
+            "image": "/images/optimized/service-telemedicina.webp",
+            "href": "#v6-booking-status"
+        }
+    ],
+    "bookingStatus": {
+        "title": "Transactional schedule in update",
+        "description": "Booking form and payment return in the next V6 phase. Medical guidance and triage criteria remain active now.",
+        "ctaLabel": "Open services",
+        "ctaHref": "/en/services/"
+    }
+}

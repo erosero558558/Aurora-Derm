@@ -1,181 +1,35 @@
 ---
-import PublicShellV5 from '../../layouts/PublicShellV5.astro';
-import HeroStageCarouselV5 from '../../components/public-v5/HeroStageCarouselV5.astro';
-import { getLocalizedBookingOptions } from '../../lib/content.js';
-import { getHomeV5Data, getPublicNavigationModel } from '../../lib/public-v5.js';
+import PublicShellV6 from '../../layouts/PublicShellV6.astro';
+import HeroShowcaseV6 from '../../components/public-v6/HeroShowcaseV6.astro';
+import NewsStripV6 from '../../components/public-v6/NewsStripV6.astro';
+import EditorialGridV6 from '../../components/public-v6/EditorialGridV6.astro';
+import CorporateMatrixV6 from '../../components/public-v6/CorporateMatrixV6.astro';
+import BookingStatusV6 from '../../components/public-v6/BookingStatusV6.astro';
+import { getV6HomeData, getV6NavigationModel } from '../../lib/public-v6.js';
 
 const locale = 'en';
 const pathname = '/en/';
-const page = getHomeV5Data(locale);
-const navModelBase = getPublicNavigationModel(locale, pathname);
-const navModel = {
-    ...navModelBase,
-    bookingHref: '/en/services/#v5-booking',
-};
-
-const homeSlides = Array.isArray(page.slides) ? page.slides.slice(0, 3) : [];
-const hero = homeSlides[0] || null;
-const families = Array.isArray(page.families) ? page.families.slice(0, 3) : [];
-const doctors = Array.isArray(page.doctors) ? page.doctors.slice(0, 2) : [];
-const pricing = getLocalizedBookingOptions(locale).slice(0, 4);
-const heroMediaMeta = hero?.mediaMeta || {};
-const heroMediaSources = Array.isArray(heroMediaMeta?.sources)
-    ? heroMediaMeta.sources
-    : [];
-const preferredHeroSource =
-    heroMediaSources.find((source) => source?.type === 'image/webp') ||
-    heroMediaSources.find((source) => source?.type === 'image/avif') ||
-    heroMediaSources[0] ||
-    null;
-const preferredHeroSrcSet = String(preferredHeroSource?.srcset || '').trim();
-const preferredHeroCandidates = preferredHeroSrcSet
-    .split(',')
-    .map((entry) => {
-        const parts = String(entry || '')
-            .trim()
-            .split(/\s+/u);
-        return {
-            src: parts[0] || '',
-            descriptor: parts[1] || '',
-        };
-    })
-    .filter((entry) => entry.src);
-const preloadImageSrc =
-    preferredHeroCandidates.find((entry) => entry.descriptor === '1024w')?.src ||
-    preferredHeroCandidates[Math.min(1, preferredHeroCandidates.length - 1)]?.src ||
-    preferredHeroCandidates[0]?.src ||
-    heroMediaMeta?.src ||
-    hero?.media ||
-    '/images/optimized/showcase-diagnostic.webp';
-const preloadImageSrcSet = preferredHeroSrcSet || heroMediaMeta?.srcset || '';
-const preloadImageSizes = '(max-width: 1120px) 100vw, 50vw';
-const preloadImageType = String(preferredHeroSource?.type || 'image/webp').trim();
+const page = getV6HomeData(locale);
+const navModel = getV6NavigationModel(locale, pathname);
+const firstSlide = (page?.hero?.slides || [])[0] || {};
 ---
 
-<PublicShellV5
+<PublicShellV6
     title={page.title}
     description={page.description}
     locale={locale}
-    canonicalPath="/en/"
+    canonicalPath={pathname}
     alternatePath="/es/"
     pathname={pathname}
     navModel={navModel}
-    templateId="home_v5"
-    enableRuntimeBridge={false}
-    compactFooter={true}
-    preloadImageSrc={preloadImageSrc}
-    preloadImageSrcSet={preloadImageSrcSet}
-    preloadImageSizes={preloadImageSizes}
-    preloadImageType={preloadImageType}
+    templateId="home_v6"
+    preloadImageSrc={firstSlide.image}
+    preloadImageSrcSet={firstSlide.srcset}
+    preloadImageSizes="(max-width: 900px) 100vw, 38vw"
 >
-    <HeroStageCarouselV5
-        slides={homeSlides}
-        locale={locale}
-        bookingHref="/en/services/#v5-booking"
-        serviceHubHref="/en/services/"
-    />
-
-    <section class="sony-home-paths" data-template-block="home_paths_v5">
-        <div class="sony-home-head">
-            <p>Clinical paths</p>
-            <h2>Choose the right route from the first medical reading.</h2>
-        </div>
-        <div class="sony-home-paths__grid">
-            {
-                families.map((family) => (
-                    <article class="sony-home-card">
-                        <h3>{family.label}</h3>
-                        <p>{family.deck}</p>
-                        <a
-                            href={family.href}
-                            class="public-link-arrow"
-                            data-analytics-event="open_public_cta"
-                            data-entry-surface="home_clinical_paths"
-                            data-cta-target="service_hub"
-                            data-catalog-category={family.id}
-                            data-catalog-intent="all"
-                        >
-                            Open clinical route
-                        </a>
-                    </article>
-                ))
-            }
-        </div>
-    </section>
-
-    <section class="sony-home-authority" data-template-block="home_authority_v5">
-        <div class="sony-home-head">
-            <p>Medical authority</p>
-            <h2>Visible clinical leadership connected to each care program.</h2>
-        </div>
-        <div class="sony-home-authority__grid">
-            {
-                doctors.map((doctor) => (
-                    <article class="sony-home-doctor">
-                        <img
-                            src={doctor?.mediaMeta?.src || doctor?.media || '/images/optimized/showcase-clinic.webp'}
-                            alt={doctor?.name || 'Dermatology specialist'}
-                            loading="lazy"
-                            decoding="async"
-                            fetchpriority="low"
-                        />
-                        <div>
-                            <p>{doctor.role}</p>
-                            <h3>{doctor.name}</h3>
-                            <p>{doctor.deck}</p>
-                        </div>
-                    </article>
-                ))
-            }
-        </div>
-    </section>
-
-    <section class="sony-home-pricing" data-template-block="home_pricing_v5">
-        <div class="sony-home-head">
-            <p>Visible clinical pricing</p>
-            <h2>Clear public values before booking and payment authorization.</h2>
-        </div>
-        <div class="sony-home-pricing__grid">
-            {
-                pricing.map((item) => (
-                    <article class="sony-home-price">
-                        <h3>{item.label}</h3>
-                        <p>{item.priceLabelShort}</p>
-                        <small>{item.priceDisclaimer}</small>
-                    </article>
-                ))
-            }
-        </div>
-        <p class="sony-home-pricing__policy-note">
-            Cancellation, rescheduling, and refund policy is available in the legal section.
-        </p>
-    </section>
-
-    <section class="sony-home-booking" data-template-block="home_booking_v5">
-        <div>
-            <p>Booking</p>
-            <h2>Booking with clinical continuity and operational security.</h2>
-            <p>Complete booking and secure payment remain in the services route to keep the home surface clear.</p>
-        </div>
-        <div class="sony-home-booking__actions">
-            <a
-                href="/en/services/#v5-booking"
-                class="hero-stage__cta hero-stage__cta--primary"
-                data-analytics-event="open_public_cta"
-                data-entry-surface="home_booking_primary"
-                data-cta-target="booking"
-            >
-                Open booking
-            </a>
-            <a
-                href="/en/telemedicine/"
-                class="sony-quiet-link"
-                data-analytics-event="open_public_cta"
-                data-entry-surface="home_booking_secondary"
-                data-cta-target="telemedicine"
-            >
-                Clinical telemedicine
-            </a>
-        </div>
-    </section>
-</PublicShellV5>
+    <HeroShowcaseV6 hero={page.hero} locale={locale} />
+    <NewsStripV6 item={page.newsStrip} navModel={navModel} locale={locale} />
+    <EditorialGridV6 section={page.editorial} locale={locale} />
+    <CorporateMatrixV6 section={page.corporateMatrix} locale={locale} />
+    <BookingStatusV6 status={page.bookingStatus} locale={locale} />
+</PublicShellV6>

@@ -1,0 +1,238 @@
+---
+const { navModel = {} } = Astro.props;
+
+const locale = navModel?.locale === 'en' ? 'en' : 'es';
+const header = navModel?.header && typeof navModel.header === 'object' ? navModel.header : {};
+const mega = navModel?.mega && typeof navModel.mega === 'object' ? navModel.mega : {};
+const brand = navModel?.brand && typeof navModel.brand === 'object' ? navModel.brand : {};
+const links = Array.isArray(header.links) ? header.links : [];
+
+const normalizePath = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '/';
+    const withLeading = raw.startsWith('/') ? raw : `/${raw}`;
+    return withLeading.endsWith('/') ? withLeading : `${withLeading}/`;
+};
+
+const currentPath = normalizePath(navModel?.pathname || '/');
+const homeHref = locale === 'en' ? '/en/' : '/es/';
+
+const isActive = (href) => {
+    const target = normalizePath(href);
+    if (target === '/es/' || target === '/en/' || target === '/') {
+        return currentPath === target;
+    }
+    return currentPath === target || currentPath.startsWith(target);
+};
+
+const megaLink = links.find((item) => item.kind === 'mega') || null;
+const standardLinks = links.filter((item) => item.kind !== 'mega');
+const megaColumns = Array.isArray(mega.columns) ? mega.columns : [];
+const megaPanelId = 'v6-mega-panel';
+const megaLabel = mega.title || (locale === 'en' ? 'Programs & Protocols' : 'Programas y Protocolos');
+const megaRootHref = megaLink?.href || homeHref;
+
+const getColumnContext = (column) => (column?.context && typeof column.context === 'object' ? column.context : null);
+---
+
+<header class="v6-header" data-v6-header>
+    <div class="v6-header__bar">
+        <a class="v6-header__logo" href={homeHref}>
+            <span class="v6-header__logo-mark">{brand.logo || 'Piel en Armonia'}</span>
+            <small class="v6-header__logo-tag">{brand.tag || (locale === 'en' ? 'Precision dermatology' : 'Dermatologia de precision')}</small>
+        </a>
+
+        <nav class="v6-header__nav" aria-label={locale === 'en' ? 'Primary navigation' : 'Navegacion principal'}>
+            {
+                standardLinks.slice(0, 1).map((link) => (
+                    <a class:list={['v6-header__link', isActive(link.href) && 'is-active']} href={link.href}>{link.label}</a>
+                ))
+            }
+            {
+                megaLink ? (
+                    <button
+                        class:list={['v6-header__link', isActive(megaLink.href) && 'is-active']}
+                        type="button"
+                        data-v6-mega-trigger
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-controls={megaPanelId}
+                    >
+                        {megaLink.label}
+                    </button>
+                ) : null
+            }
+            {
+                standardLinks.slice(1).map((link) => (
+                    <a class:list={['v6-header__link', isActive(link.href) && 'is-active']} href={link.href}>{link.label}</a>
+                ))
+            }
+        </nav>
+
+        <div class="v6-header__actions">
+            <a class="v6-header__contact" href={header.contactHref || '#'} target="_blank" rel="noopener noreferrer">{header.contactLabel || (locale === 'en' ? 'Contact Us' : 'Contacto')}</a>
+            <button class="v6-header__search" type="button" aria-label={header.searchLabel || (locale === 'en' ? 'Search' : 'Buscar')}>
+                <span aria-hidden="true">&#9906;</span>
+            </button>
+            <button class="v6-header__menu" type="button" data-v6-drawer-open aria-label={header.menuLabel || 'Menu'}>{header.menuLabel || 'Menu'}</button>
+        </div>
+    </div>
+
+    <div id={megaPanelId} class="v6-mega" data-v6-mega hidden>
+        <div class="v6-mega__shell">
+            <div class="v6-mega__head">
+                <a class="v6-mega__root" href={megaRootHref} data-v6-mega-focusable>
+                    <span>{megaLabel}</span>
+                    <span class="v6-mega__arrow" aria-hidden="true">&gt;</span>
+                </a>
+                <button type="button" data-v6-mega-close aria-label={mega.closeLabel || (locale === 'en' ? 'Close panel' : 'Cerrar panel')}>&times;</button>
+            </div>
+
+            <div class="v6-mega__menu" data-v6-mega-layout>
+                <nav
+                    class="v6-mega__categories"
+                    data-v6-mega-categories
+                    aria-label={locale === 'en' ? 'Mega category tabs' : 'Pestanas de categoria del mega menu'}
+                >
+                    {
+                        megaColumns.map((column, index) => {
+                            const detailPanelId = `v6-mega-detail-${index + 1}`;
+                            return (
+                                <button
+                                    class:list={['v6-mega__tab', index === 0 && 'is-active']}
+                                    type="button"
+                                    data-v6-mega-tab
+                                    data-v6-mega-focusable
+                                    data-v6-target={detailPanelId}
+                                    aria-controls={detailPanelId}
+                                    aria-selected={index === 0 ? 'true' : 'false'}
+                                >
+                                    <span>{column.heading}</span>
+                                    <span class="v6-mega__arrow" aria-hidden="true">&gt;</span>
+                                </button>
+                            );
+                        })
+                    }
+                </nav>
+
+                <div class="v6-mega__details" data-v6-mega-details>
+                    {
+                        megaColumns.map((column, index) => {
+                            const context = getColumnContext(column);
+                            const sectionHref = context?.href || megaRootHref;
+                            const detailPanelId = `v6-mega-detail-${index + 1}`;
+                            return (
+                                <section
+                                    id={detailPanelId}
+                                    class:list={['v6-mega__section', 'v6-mega__detail', index === 0 && 'is-active']}
+                                    data-v6-mega-section
+                                    data-v6-mega-detail
+                                    data-v6-column-id={column.id || detailPanelId}
+                                    hidden={index !== 0}
+                                >
+                                    <a class="v6-mega__context" href={sectionHref} data-v6-mega-focusable>
+                                        <p>{context?.eyebrow || (locale === 'en' ? 'Category context' : 'Contexto de categoria')}</p>
+                                        <h3>{context?.title || column.heading}</h3>
+                                        {context?.deck ? <p>{context.deck}</p> : null}
+                                        <strong>
+                                            {locale === 'en' ? 'Open category' : 'Abrir categoria'}
+                                            <span aria-hidden="true">&gt;</span>
+                                        </strong>
+                                    </a>
+
+                                    <ul class="v6-mega__items">
+                                        {(column.items || []).map((item) => (
+                                            <li>
+                                                <a href={item.href} data-v6-mega-focusable>
+                                                    <span>{item.label}</span>
+                                                    <span class="v6-mega__arrow" aria-hidden="true">&gt;</span>
+                                                </a>
+                                                {
+                                                    Array.isArray(item.children) && item.children.length ? (
+                                                        <ul class="v6-mega__subitems">
+                                                            {item.children.map((child) => (
+                                                                <li>
+                                                                    <a href={child.href} data-v6-mega-focusable>
+                                                                        <span class="v6-mega__branch" aria-hidden="true">L</span>
+                                                                        <span>{child.label}</span>
+                                                                    </a>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : null
+                                                }
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            );
+                        })
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="v6-drawer" data-v6-drawer hidden>
+        <div class="v6-drawer__scrim" data-v6-drawer-close></div>
+        <aside class="v6-drawer__panel" aria-label={locale === 'en' ? 'Mobile navigation' : 'Navegacion movil'}>
+            <header>
+                <strong>{brand.logo || 'Piel en Armonia'}</strong>
+                <button type="button" data-v6-drawer-close>{header.closeMenuLabel || (locale === 'en' ? 'Close' : 'Cerrar')}</button>
+            </header>
+            <nav>
+                {
+                    links.map((link) => (
+                        <a href={link.href}>
+                            <span>{link.label}</span>
+                            <span aria-hidden="true">&gt;</span>
+                        </a>
+                    ))
+                }
+            </nav>
+            <section class="v6-drawer__mega">
+                <h3>{megaLabel}</h3>
+                {
+                    megaColumns.map((column, index) => (
+                        <article class="v6-drawer__group">
+                            <button
+                                type="button"
+                                class:list={['v6-drawer__group-toggle', index === 0 && 'is-active']}
+                                data-v6-drawer-group-toggle
+                                data-v6-target={`v6-drawer-group-${index + 1}`}
+                                aria-controls={`v6-drawer-group-${index + 1}`}
+                                aria-expanded={index === 0 ? 'true' : 'false'}
+                            >
+                                <span>{column.heading}</span>
+                                <span aria-hidden="true">+</span>
+                            </button>
+                            <div id={`v6-drawer-group-${index + 1}`} data-v6-drawer-group-panel hidden={index !== 0}>
+                                <ul>
+                                    {(column.items || []).map((item) => (
+                                        <li>
+                                            <a href={item.href}>
+                                                <span>{item.label}</span>
+                                                <span aria-hidden="true">&gt;</span>
+                                            </a>
+                                            {
+                                                Array.isArray(item.children) && item.children.length ? (
+                                                    <ul class="v6-drawer__subitems">
+                                                        {item.children.map((child) => <li><a href={child.href}>{child.label}</a></li>)}
+                                                    </ul>
+                                                ) : null
+                                            }
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </article>
+                    ))
+                }
+            </section>
+            <footer>
+                <a href={header.switchHref || (locale === 'en' ? '/es/' : '/en/')}>{header.switchLabel || (locale === 'en' ? 'ES' : 'EN')}</a>
+                <a href={header.contactHref || '#'} target="_blank" rel="noopener noreferrer">{header.contactLabel || (locale === 'en' ? 'Contact Us' : 'Contacto')}</a>
+            </footer>
+        </aside>
+    </div>
+</header>

@@ -1,0 +1,47 @@
+---
+const {
+    locale = 'es',
+    variant = 'service',
+    statement = {},
+} = Astro.props;
+
+const safeStatement = statement && typeof statement === 'object' ? statement : {};
+const eyebrow =
+    safeStatement.eyebrow ||
+    (locale === 'en' ? 'Clinical direction' : 'Direccion clinica');
+const title =
+    safeStatement.title ||
+    (locale === 'en'
+        ? 'Clinical criteria with transparent reasoning'
+        : 'Criterio clinico con razonamiento transparente');
+const body =
+    safeStatement.body ||
+    (locale === 'en'
+        ? 'Each decision is explained before intervention, with explicit expected outcomes and checkpoints.'
+        : 'Cada decision se explica antes de intervenir, con resultados esperados y puntos de control explicitos.');
+const signature =
+    safeStatement.signature ||
+    (locale === 'en' ? 'Medical direction' : 'Direccion medica');
+const image = safeStatement.image || '/images/optimized/team-rosero.webp';
+const alt =
+    safeStatement.alt ||
+    (locale === 'en'
+        ? 'Medical direction portrait'
+        : 'Retrato de direccion medica');
+---
+
+<section
+    class:list={['v6-statement-band', `is-${variant}`]}
+    data-v6-statement-band
+    data-v6-statement-band-variant={variant}
+>
+    <figure class="v6-statement-band__media">
+        <img src={image} alt={alt} loading="lazy" decoding="async" />
+    </figure>
+    <div class="v6-statement-band__content">
+        <p>{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{body}</p>
+        <strong>{signature}</strong>
+    </div>
+</section>

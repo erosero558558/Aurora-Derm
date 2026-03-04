@@ -1,0 +1,76 @@
+{
+    "title": "Telemedicina | Piel en Armonia",
+    "description": "Ruta remota dermatologica con triage, criterios de escalamiento y continuidad clinica.",
+    "breadcrumb": [
+        { "label": "Inicio", "href": "/es/" },
+        { "label": "Telemedicina", "href": "/es/telemedicina/" }
+    ],
+    "heading": "Telemedicina Dermatologica",
+    "heroImage": {
+        "src": "/images/optimized/service-telemedicina.webp",
+        "srcset": "/images/optimized/service-telemedicina-400.webp 400w, /images/optimized/service-telemedicina.webp 900w",
+        "alt": "Consulta dermatologica remota"
+    },
+    "lead": "La consulta remota funciona cuando aporta claridad diagnostica y permite decidir con menos friccion.",
+    "blocks": [
+        {
+            "title": "Como funciona",
+            "items": [
+                "Usted comparte antecedentes y fotografias clinicas con contexto.",
+                "Se establece prioridad y probabilidad de resolucion remota.",
+                "Se define plan inicial, receta cuando aplica y fecha de control.",
+                "Si hay senales de riesgo, se escala a consulta presencial inmediata."
+            ]
+        },
+        {
+            "title": "Cuando suele encajar",
+            "items": [
+                "Brotes inflamatorios conocidos",
+                "Seguimiento de tratamientos activos",
+                "Dudas sobre evolucion de sintomas",
+                "Orientacion previa antes de desplazarse"
+            ]
+        },
+        {
+            "title": "Cuando escalar",
+            "items": [
+                "Lesiones de cambio rapido o sangrado",
+                "Dolor intenso o extension acelerada",
+                "Respuesta insuficiente al protocolo remoto",
+                "Necesidad de procedimiento diagnostico en consultorio"
+            ]
+        }
+    ],
+    "initiatives": [
+        {
+            "title": "Triage visual",
+            "copy": "Clasificacion preliminar con imagenes clinicas de contexto para priorizar riesgo.",
+            "image": "/images/optimized/showcase-diagnostic.webp",
+            "href": "#v6-tele-block-1"
+        },
+        {
+            "title": "Control de brotes",
+            "copy": "Seguimiento remoto para casos inflamatorios con ajustes por respuesta.",
+            "image": "/images/optimized/service-acne.webp",
+            "href": "#v6-tele-block-2"
+        },
+        {
+            "title": "Escala presencial",
+            "copy": "Derivacion al consultorio cuando hay senales de alarma o necesidad de procedimiento.",
+            "image": "/images/optimized/showcase-clinic.webp",
+            "href": "#v6-tele-block-3"
+        },
+        {
+            "title": "Continuidad Quito",
+            "copy": "Secuencia clinica para pacientes en Quito con control remoto y cita cuando corresponde.",
+            "image": "/images/optimized/service-telemedicina.webp",
+            "href": "#v6-booking-status"
+        }
+    ],
+    "bookingStatus": {
+        "title": "Agenda transaccional en actualizacion",
+        "description": "El formulario y pago se reactivan en siguiente fase V6. Esta ruta mantiene contenido medico y criterios de decision activos.",
+        "ctaLabel": "Ir a servicios",
+        "ctaHref": "/es/servicios/"
+    }
+}

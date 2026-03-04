@@ -1,0 +1,178 @@
+---
+import BookingStatusV6 from './BookingStatusV6.astro';
+import PageHeadV6 from './PageHeadV6.astro';
+
+const { page = {}, locale = 'es', navModel = {} } = Astro.props;
+const breadcrumb = Array.isArray(page.breadcrumb) ? page.breadcrumb : [];
+const sections = Array.isArray(page.sections) ? page.sections : [];
+const featured = Array.isArray(page.featured) ? page.featured : [];
+const initiatives = Array.isArray(page.initiatives) ? page.initiatives : [];
+const sectionLinks = sections.map((section, index) => ({
+    id: section.id || `section-${index + 1}`,
+    title: section.title || '',
+}));
+const pageMenuItems = [];
+if (featured.length) {
+    pageMenuItems.push({
+        label: locale === 'en' ? 'Featured programs' : 'Programas destacados',
+        href: '#v6-hub-featured',
+    });
+}
+pageMenuItems.push(...sectionLinks.map((section) => ({
+    label: section.title,
+    href: `#v6-${section.id}`,
+})));
+if (initiatives.length) {
+    pageMenuItems.push({
+        label: locale === 'en' ? 'New initiatives' : 'Nuevas iniciativas',
+        href: '#v6-hub-initiatives',
+    });
+}
+const switchLabel = navModel?.header?.switchLabel || (locale === 'en' ? 'ES' : 'EN');
+const switchHref = navModel?.header?.switchHref || (locale === 'en' ? '/es/' : '/en/');
+const menuLabel = navModel?.header?.menuLabel || 'Menu';
+const ctaLabel = locale === 'en' ? 'Learn more' : 'Conocer mas';
+const routeLabel = locale === 'en' ? 'routes' : 'rutas';
+---
+
+<PageHeadV6
+    breadcrumb={breadcrumb}
+    heading={page.heading}
+    locale={locale}
+    switchLabel={switchLabel}
+    switchHref={switchHref}
+    menuLabel={menuLabel}
+    menuItems={pageMenuItems}
+/>
+
+<section class="v6-page-hero-media">
+    <img src={page?.heroImage?.src} srcset={page?.heroImage?.srcset || undefined} sizes="100vw" alt={page?.heroImage?.alt || ''} loading="eager" fetchpriority="high" />
+</section>
+
+<section class="v6-page-intro">
+    <h2>{page.introTitle}</h2>
+    <p>{page.introDeck}</p>
+</section>
+
+{
+    featured.length ? (
+        <section id="v6-hub-featured" class="v6-hub-featured" data-v6-hub-featured>
+            <header class="v6-hub-featured__head">
+                <p>{locale === 'en' ? 'Business highlights' : 'Destacados corporativos'}</p>
+                <h2>{locale === 'en' ? 'Core programs' : 'Programas principales'}</h2>
+            </header>
+            <div class="v6-hub-featured__grid">
+                {
+                    featured.map((item, index) => (
+                        <a class:list={['v6-catalog-card', 'v6-catalog-card--feature', index === 0 && 'is-lead']} href={item.href} data-v6-hub-featured-card>
+                            <figure>
+                                <img src={item.image} alt={item.title || ''} loading="lazy" decoding="async" />
+                            </figure>
+                            <div class="v6-catalog-card__meta">
+                                <p><span>{item.category}</span></p>
+                                <h3>{item.title}</h3>
+                                <p>{item.copy}</p>
+                                <strong>
+                                    {ctaLabel}
+                                    <span aria-hidden="true">></span>
+                                </strong>
+                            </div>
+                        </a>
+                    ))
+                }
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    sectionLinks.length ? (
+        <nav class="v6-catalog-rail" data-v6-catalog-rail aria-label={locale === 'en' ? 'Service sections' : 'Secciones de servicios'}>
+            {
+                sectionLinks.map((section) => (
+                    <a href={`#v6-${section.id}`}>{section.title}</a>
+                ))
+            }
+        </nav>
+    ) : null
+}
+
+<section class="v6-catalog-stream" data-v6-service-grid>
+    {
+        sections.map((section, sectionIndex) => (
+            <article class="v6-catalog-block" id={`v6-${section.id || `section-${sectionIndex + 1}`}`} data-v6-catalog-block>
+                <header class="v6-catalog-block__head">
+                    <div>
+                        <p>{locale === 'en' ? `Section ${String(sectionIndex + 1).padStart(2, '0')}` : `Seccion ${String(sectionIndex + 1).padStart(2, '0')}`}</p>
+                        <h2>{section.title}</h2>
+                        {section.deck ? <span class="v6-catalog-block__deck">{section.deck}</span> : null}
+                    </div>
+                    <strong class="v6-catalog-block__count">
+                        {String((section.cards || []).length).padStart(2, '0')} {routeLabel}
+                    </strong>
+                </header>
+                <div class:list={['v6-catalog-grid', (section.cards || []).length >= 4 && 'is-four']}>
+                    {
+                        (section.cards || []).map((card, cardIndex) => (
+                            <a
+                                class:list={[
+                                    'v6-catalog-card',
+                                    `is-tone-${(sectionIndex % 3) + 1}`,
+                                    cardIndex === 0 && 'is-lead',
+                                ]}
+                                href={card.href}
+                                data-v6-catalog-card
+                            >
+                                <figure>
+                                    <img src={card.image} alt={card.title || ''} loading="lazy" decoding="async" />
+                                </figure>
+                                <div class="v6-catalog-card__meta">
+                                    <p><span>{card.category}</span></p>
+                                    <h3>{card.title}</h3>
+                                    <p>{card.copy}</p>
+                                    <strong>
+                                        {ctaLabel}
+                                        <span aria-hidden="true">></span>
+                                    </strong>
+                                </div>
+                            </a>
+                        ))
+                    }
+                </div>
+            </article>
+        ))
+    }
+</section>
+
+{
+    initiatives.length ? (
+        <section id="v6-hub-initiatives" class="v6-hub-initiatives" data-v6-hub-initiatives>
+            <header class="v6-hub-initiatives__head">
+                <p>{locale === 'en' ? 'Program extension' : 'Extension de programa'}</p>
+                <h2>{locale === 'en' ? 'New Initiatives' : 'Nuevas iniciativas'}</h2>
+            </header>
+            <div class="v6-hub-initiatives__grid">
+                {
+                    initiatives.map((item) => (
+                        <a href={item.href} data-v6-hub-initiative-card>
+                            <figure>
+                                <img src={item.image} alt={item.title || ''} loading="lazy" decoding="async" />
+                            </figure>
+                            <div>
+                                <p><span>{item.category}</span></p>
+                                <h3>{item.title}</h3>
+                                <p>{item.copy}</p>
+                                <strong>
+                                    {ctaLabel}
+                                    <span aria-hidden="true">></span>
+                                </strong>
+                            </div>
+                        </a>
+                    ))
+                }
+            </div>
+        </section>
+    ) : null
+}
+
+<BookingStatusV6 status={page.bookingStatus} locale={locale} sectionId="v6-booking-status" />

@@ -1,0 +1,205 @@
+{
+    "title": "Piel en Armonia | Precision dermatology in Quito",
+    "description": "Precision dermatology with premium editorial language: clinical evaluation, treatment routes, telemedicine, and legal clarity.",
+    "hero": {
+        "autoplayMs": 7000,
+        "slides": [
+            {
+                "id": "s1",
+                "category": "Clinical diagnosis",
+                "title": "When skin changes, the first reading must be precise.",
+                "description": "Comprehensive review of skin, hair, and nails before deciding any intervention.",
+                "image": "/images/optimized/showcase-diagnostic.webp",
+                "srcset": "/images/optimized/showcase-diagnostic-640.webp 640w, /images/optimized/showcase-diagnostic-800.webp 800w, /images/optimized/showcase-diagnostic.webp 1200w",
+                "alt": "Clinical dermatology diagnosis",
+                "href": "/en/services/diagnostico-integral/"
+            },
+            {
+                "id": "s2",
+                "category": "Medical aesthetics",
+                "title": "Protocol, evidence, follow-up: never empty promises.",
+                "description": "Peels, laser, and biostimulation under medical hierarchy and defined checkpoints.",
+                "image": "/images/optimized/showcase-treatment.webp",
+                "srcset": "/images/optimized/showcase-treatment-640.webp 640w, /images/optimized/showcase-treatment-900.webp 900w, /images/optimized/showcase-treatment.webp 1200w",
+                "alt": "Precision dermatology procedure",
+                "href": "/en/services/laser-dermatologico/"
+            },
+            {
+                "id": "s3",
+                "category": "Telemedicine",
+                "title": "Remote when it adds clarity. In-person when the case demands it.",
+                "description": "Digital triage with safe escalation to clinic when lesion behavior requires direct review.",
+                "image": "/images/optimized/service-telemedicina.webp",
+                "srcset": "/images/optimized/service-telemedicina-400.webp 400w, /images/optimized/service-telemedicina.webp 900w",
+                "alt": "Remote dermatology consultation",
+                "href": "/en/telemedicine/"
+            },
+            {
+                "id": "s4",
+                "category": "Medical direction",
+                "title": "Clinical continuity reduces noise and accelerates decisions.",
+                "description": "Every follow-up keeps visual records and route adjustments based on real response.",
+                "image": "/images/optimized/showcase-clinic.webp",
+                "srcset": "/images/optimized/showcase-clinic-640.webp 640w, /images/optimized/showcase-clinic-800.webp 800w, /images/optimized/showcase-clinic.webp 1200w",
+                "alt": "Dermatology clinical space",
+                "href": "/en/services/piel-cabello-unas/"
+            },
+            {
+                "id": "s5",
+                "category": "Team",
+                "title": "Contemporary dermatology for Quito: human judgment and precise execution.",
+                "description": "Specialized team in clinical skin care, pediatric dermatology, and medical aesthetics.",
+                "image": "/images/optimized/team-rosero.webp",
+                "srcset": "/images/optimized/team-rosero-500.webp 500w, /images/optimized/team-rosero.webp 900w",
+                "alt": "Clinical leadership at Piel en Armonia",
+                "href": "/en/services/"
+            }
+        ]
+    },
+    "newsStrip": {
+        "label": "Clinical Update",
+        "headline": "Schedule is in V6 recalibration: clinical routes, legal pages, and telemedicine remain available.",
+        "href": "/en/services/"
+    },
+    "editorial": {
+        "eyebrow": "Editorial direction",
+        "title": "Routes that combine medical judgment, technology, and human guidance.",
+        "deck": "Structure inspired by high-end corporate portals: broad blocks, deliberate pacing, progressive reading.",
+        "cards": [
+            {
+                "id": "c1",
+                "type": "video",
+                "size": "tall",
+                "category": "Clinical program",
+                "title": "From first finding to full treatment strategy",
+                "copy": "Comprehensive consultation for new lesions, recurrent flares, and texture changes.",
+                "href": "/en/services/diagnostico-integral/",
+                "image": "/images/optimized/service-consulta.webp",
+                "alt": "Comprehensive diagnosis program"
+            },
+            {
+                "id": "c2",
+                "type": "info",
+                "size": "wide",
+                "category": "Inflammation",
+                "title": "Acne and rosacea: sustained control, not instant fixes",
+                "copy": "Progressive adjustments, visual follow-up, and stage-based clinical objectives.",
+                "href": "/en/services/acne-rosacea/",
+                "image": "/images/optimized/service-acne.webp",
+                "alt": "Acne and rosacea route"
+            },
+            {
+                "id": "c3",
+                "type": "video",
+                "size": "standard",
+                "category": "Technology",
+                "title": "Dermatology laser with traceable parameters",
+                "copy": "Indication by phototype, lesion profile, and tolerance with post-session follow-up.",
+                "href": "/en/services/laser-dermatologico/",
+                "image": "/images/optimized/service-laser.webp",
+                "alt": "Dermatology laser technology"
+            },
+            {
+                "id": "c4",
+                "type": "info",
+                "size": "tall",
+                "category": "Telemedicine",
+                "title": "Remote consultation to filter urgency and define next steps",
+                "copy": "A useful route when you need initial guidance before attending in person.",
+                "href": "/en/telemedicine/",
+                "image": "/images/optimized/service-telemedicina.webp",
+                "alt": "Telemedicine route"
+            },
+            {
+                "id": "c5",
+                "type": "info",
+                "size": "standard",
+                "category": "Pediatric",
+                "title": "Pediatric dermatology with clear family communication",
+                "copy": "Therapeutic plans explained in plain, responsible language for caregivers.",
+                "href": "/en/services/dermatologia-pediatrica/",
+                "image": "/images/optimized/showcase-clinic.webp",
+                "alt": "Pediatric dermatology care"
+            },
+            {
+                "id": "c6",
+                "type": "video",
+                "size": "wide",
+                "category": "Medical direction",
+                "title": "Clinical decision matrix for each patient profile",
+                "copy": "Routes are documented, explained, and corrected through evidence.",
+                "href": "/en/services/piel-cabello-unas/",
+                "image": "/images/optimized/team-narvaez.webp",
+                "alt": "Medical direction and decisions"
+            }
+        ]
+    },
+    "corporateMatrix": {
+        "eyebrow": "Corporate Block",
+        "title": "Dermatology Programs and Units",
+        "deck": "Corporate-portal reading rhythm: large visual card, clear category, and direct next step.",
+        "cards": [
+            {
+                "id": "m1",
+                "category": "Diagnosis",
+                "title": "Comprehensive Diagnosis Unit",
+                "copy": "Cross-route reading of skin, hair, and nails with a structured follow-up map.",
+                "href": "/en/services/diagnostico-integral/",
+                "image": "/images/optimized/service-consulta.webp",
+                "alt": "Comprehensive diagnosis unit"
+            },
+            {
+                "id": "m2",
+                "category": "Inflammation",
+                "title": "Acne and Rosacea Program",
+                "copy": "Flare control, therapeutic adjustment, and staged visual follow-up.",
+                "href": "/en/services/acne-rosacea/",
+                "image": "/images/optimized/service-acne.webp",
+                "alt": "Acne and rosacea program"
+            },
+            {
+                "id": "m3",
+                "category": "Technology",
+                "title": "Dermatology Laser Platform",
+                "copy": "Traceable protocols by phototype and measured tissue response.",
+                "href": "/en/services/laser-dermatologico/",
+                "image": "/images/optimized/service-laser.webp",
+                "alt": "Dermatology laser platform"
+            },
+            {
+                "id": "m4",
+                "category": "Skin oncology",
+                "title": "Risk Lesion Screening Unit",
+                "copy": "Early warning-sign review with a defined escalation route.",
+                "href": "/en/services/cancer-piel/",
+                "image": "/images/optimized/service-cancer.webp",
+                "alt": "Risk lesion screening"
+            },
+            {
+                "id": "m5",
+                "category": "Telemedicine",
+                "title": "Remote Triage and Continuity",
+                "copy": "Initial orientation when you need to decide whether in-clinic escalation is required.",
+                "href": "/en/telemedicine/",
+                "image": "/images/optimized/service-telemedicina.webp",
+                "alt": "Remote dermatology triage"
+            },
+            {
+                "id": "m6",
+                "category": "Rejuvenation",
+                "title": "Dermoaesthetic Support Unit",
+                "copy": "Mesotherapy, biostimulation, and combined protocols under medical criteria.",
+                "href": "/en/services/bioestimuladores-colageno/",
+                "image": "/images/optimized/service-rejuvenecimiento.webp",
+                "alt": "Dermoaesthetic support unit"
+            }
+        ]
+    },
+    "bookingStatus": {
+        "eyebrow": "Transactional status",
+        "title": "Schedule in update",
+        "description": "During this V6 phase, payment and booking forms remain paused. Review clinical routes and return for booking reopen.",
+        "ctaLabel": "Open clinical catalogue",
+        "ctaHref": "/en/services/"
+    }
+}

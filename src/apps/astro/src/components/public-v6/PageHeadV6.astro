@@ -1,0 +1,79 @@
+---
+const {
+    breadcrumb = [],
+    heading = '',
+    locale = 'es',
+    switchHref = locale === 'en' ? '/es/' : '/en/',
+    switchLabel = locale === 'en' ? 'ES' : 'EN',
+    menuLabel = 'Menu',
+    menuItems = [],
+} = Astro.props;
+
+const crumbs = Array.isArray(breadcrumb) ? breadcrumb : [];
+const activeLang = locale === 'en' ? 'EN' : 'ES';
+const safeMenuItems = Array.isArray(menuItems)
+    ? menuItems.filter((item) => item && item.href && item.label)
+    : [];
+const menuPanelId = 'v6-page-menu-panel';
+---
+
+<section class="v6-corp-head" data-v6-page-head>
+    <div class="v6-corp-head__inner">
+        <div class="v6-corp-head__top">
+            <nav class="v6-corp-head__crumbs" aria-label={locale === 'en' ? 'Breadcrumb' : 'Miga de pan'}>
+                {
+                    crumbs.map((item, index) => (
+                        <>
+                            <a href={item.href}>{item.label}</a>
+                            {index < crumbs.length - 1 ? <span aria-hidden="true">></span> : null}
+                        </>
+                    ))
+                }
+            </nav>
+            <div class="v6-corp-head__tools">
+                <div class="v6-corp-head__lang" aria-label={locale === 'en' ? 'Language switch' : 'Selector de idioma'}>
+                    {switchLabel ? <a href={switchHref}>{switchLabel}</a> : null}
+                    <span aria-hidden="true">|</span>
+                    <strong>{activeLang}</strong>
+                </div>
+                <button
+                    class="v6-corp-head__menu"
+                    type="button"
+                    data-v6-page-menu
+                    aria-expanded="false"
+                    aria-haspopup="true"
+                    aria-controls={menuPanelId}
+                >
+                    {menuLabel}
+                    <span aria-hidden="true">v</span>
+                </button>
+                <div
+                    id={menuPanelId}
+                    class="v6-corp-head__menu-panel"
+                    data-v6-page-menu-panel
+                    hidden
+                >
+                    <p>{locale === 'en' ? 'Page navigation' : 'Navegacion de pagina'}</p>
+                    {
+                        safeMenuItems.length ? (
+                            <ul>
+                                {
+                                    safeMenuItems.map((item) => (
+                                        <li>
+                                            <a data-v6-page-menu-link href={item.href}>{item.label}</a>
+                                        </li>
+                                    ))
+                                }
+                            </ul>
+                        ) : (
+                            <p class="v6-corp-head__menu-empty">
+                                {locale === 'en' ? 'No sections available' : 'Sin secciones disponibles'}
+                            </p>
+                        )
+                    }
+                </div>
+            </div>
+        </div>
+        <h1>{heading}</h1>
+    </div>
+</section>

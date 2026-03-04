@@ -1,27 +1,15 @@
 ---
-import PublicShellV5 from '../../../layouts/PublicShellV5.astro';
-import TelemedicineHeroV5 from '../../../components/public-v5/TelemedicineHeroV5.astro';
-import TelemedicineFlowV5 from '../../../components/public-v5/TelemedicineFlowV5.astro';
-import TelemedicineFitV5 from '../../../components/public-v5/TelemedicineFitV5.astro';
-import TelemedicineEscalationV5 from '../../../components/public-v5/TelemedicineEscalationV5.astro';
-import BookingTeaserV5 from '../../../components/public-v5/BookingTeaserV5.astro';
-import {
-    getPublicNavigationModel,
-    getTelemedicineV5Data,
-} from '../../../lib/public-v5.js';
+import PublicShellV6 from '../../../layouts/PublicShellV6.astro';
+import TelemedicinePageV6 from '../../../components/public-v6/TelemedicinePageV6.astro';
+import { getV6NavigationModel, getV6TelemedicineData } from '../../../lib/public-v6.js';
 
 const locale = 'en';
 const pathname = '/en/telemedicine/';
-const page = getTelemedicineV5Data(locale);
-const navModel = getPublicNavigationModel(locale, pathname);
-const heroMediaMeta = page?.hero?.mediaMeta || {};
-const preloadImageSrc = heroMediaMeta?.src || page?.hero?.media || '';
-const preloadImageSrcSet = heroMediaMeta?.srcset || '';
-const preloadImageSizes =
-    heroMediaMeta?.sizes || '(max-width: 1024px) 100vw, 46vw';
+const page = getV6TelemedicineData(locale);
+const navModel = getV6NavigationModel(locale, pathname);
 ---
 
-<PublicShellV5
+<PublicShellV6
     title={page.title}
     description={page.description}
     locale={locale}
@@ -29,38 +17,10 @@ const preloadImageSizes =
     alternatePath="/es/telemedicina/"
     pathname={pathname}
     navModel={navModel}
-    templateId="telemedicine_v5"
-    enableRuntimeBridge={false}
-    compactFooter={true}
-    preloadImageSrc={preloadImageSrc}
-    preloadImageSrcSet={preloadImageSrcSet}
-    preloadImageSizes={preloadImageSizes}
+    templateId="telemedicine_v6"
+    preloadImageSrc={page?.heroImage?.src}
+    preloadImageSrcSet={page?.heroImage?.srcset}
+    preloadImageSizes="100vw"
 >
-    <TelemedicineHeroV5 hero={page.hero} locale={locale} />
-    <TelemedicineFlowV5
-        eyebrow={page.howItWorks.eyebrow}
-        points={page.howItWorks.points}
-        tone={page.howItWorks.tone}
-        locale={locale}
-    />
-    <TelemedicineFitV5
-        eyebrow={page.whoItFits.eyebrow}
-        points={page.whoItFits.points}
-        tone={page.whoItFits.tone}
-        locale={locale}
-    />
-    <TelemedicineEscalationV5
-        eyebrow={page.escalation.eyebrow}
-        points={page.escalation.points}
-        tone={page.escalation.tone}
-        locale={locale}
-    />
-    <BookingTeaserV5
-        locale={locale}
-        serviceHint={page.booking.serviceHint}
-        primaryHref="#v5-booking"
-        primaryLabel={page.booking.actionLabel}
-        tone={page.booking.tone}
-        mountBookingShell={true}
-    />
-</PublicShellV5>
+    <TelemedicinePageV6 page={page} locale={locale} navModel={navModel} />
+</PublicShellV6>

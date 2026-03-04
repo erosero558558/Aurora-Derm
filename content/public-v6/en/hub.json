@@ -1,0 +1,198 @@
+{
+    "title": "Services | Piel en Armonia",
+    "description": "Editorial catalogue of dermatology routes with high-hierarchy corporate structure.",
+    "breadcrumb": [
+        { "label": "Home", "href": "/en/" },
+        { "label": "Services", "href": "/en/services/" }
+    ],
+    "heading": "Programs & Protocols",
+    "heroImage": {
+        "src": "/images/optimized/showcase-hero.webp",
+        "srcset": "/images/optimized/showcase-hero-640.webp 640w, /images/optimized/showcase-hero-1024.webp 1024w, /images/optimized/showcase-hero-1400.webp 1400w",
+        "alt": "Medical team and dermatology analytics technology"
+    },
+    "introTitle": "Dermatology decisions with clinical rigor and contemporary execution",
+    "introDeck": "Each block connects patient need, medical reading, and next action so you can move forward with clarity and continuity.",
+    "featured": [
+        {
+            "category": "Clinical Program",
+            "title": "Precision diagnosis unit",
+            "copy": "Integrated skin, hair, and nail reading to decide with evidence from the first consultation.",
+            "image": "/images/optimized/service-consulta.webp",
+            "href": "/en/services/diagnostico-integral/"
+        },
+        {
+            "category": "Medical Technology",
+            "title": "Phototype-calibrated therapies",
+            "copy": "Laser and renewal protocols with traceable parameters aligned to each skin objective.",
+            "image": "/images/optimized/service-laser.webp",
+            "href": "/en/services/laser-dermatologico/"
+        },
+        {
+            "category": "Continuity",
+            "title": "Hybrid in-clinic and remote route",
+            "copy": "Telemedicine triage and in-clinic escalation based on clinical priority.",
+            "image": "/images/optimized/service-telemedicina.webp",
+            "href": "/en/telemedicine/"
+        }
+    ],
+    "sections": [
+        {
+            "id": "clinical-core",
+            "title": "Core Clinical Routes",
+            "deck": "Assessment and control of frequent conditions with medical reading and phased follow-up.",
+            "cards": [
+                {
+                    "slug": "diagnostico-integral",
+                    "category": "Diagnosis",
+                    "title": "Comprehensive diagnosis",
+                    "copy": "Skin, hair, and nail assessment to define a full plan.",
+                    "image": "/images/optimized/service-consulta.webp",
+                    "href": "/en/services/diagnostico-integral/"
+                },
+                {
+                    "slug": "acne-rosacea",
+                    "category": "Inflammation",
+                    "title": "Acne and rosacea",
+                    "copy": "Anti-inflammatory control with stage-based follow-up.",
+                    "image": "/images/optimized/service-acne.webp",
+                    "href": "/en/services/acne-rosacea/"
+                },
+                {
+                    "slug": "cancer-piel",
+                    "category": "Screening",
+                    "title": "Skin cancer",
+                    "copy": "Early review of suspicious or changing lesions.",
+                    "image": "/images/optimized/service-cancer.webp",
+                    "href": "/en/services/cancer-piel/"
+                }
+            ]
+        },
+        {
+            "id": "procedures",
+            "title": "Technology & Rejuvenation",
+            "deck": "Traceable interventions to improve texture, tone, and structural skin support.",
+            "cards": [
+                {
+                    "slug": "laser-dermatologico",
+                    "category": "Technology",
+                    "title": "Dermatology laser",
+                    "copy": "Traceable medical parameters for lesion, phototype, and target.",
+                    "image": "/images/optimized/service-laser.webp",
+                    "href": "/en/services/laser-dermatologico/"
+                },
+                {
+                    "slug": "peeling-quimico",
+                    "category": "Protocol",
+                    "title": "Chemical peel",
+                    "copy": "Skin renewal through formula selection by clinical profile.",
+                    "image": "/images/optimized/showcase-treatment.webp",
+                    "href": "/en/services/peeling-quimico/"
+                },
+                {
+                    "slug": "bioestimuladores-colageno",
+                    "category": "Rejuvenation",
+                    "title": "Collagen biostimulators",
+                    "copy": "Support skin firmness with responsible indication criteria.",
+                    "image": "/images/optimized/service-rejuvenecimiento.webp",
+                    "href": "/en/services/bioestimuladores-colageno/"
+                }
+            ]
+        },
+        {
+            "id": "extended",
+            "title": "Extended Programs",
+            "deck": "Continuity pathways for family care, mixed cases, and remote clinical guidance.",
+            "cards": [
+                {
+                    "slug": "dermatologia-pediatrica",
+                    "category": "Pediatric",
+                    "title": "Pediatric dermatology",
+                    "copy": "Care for children and teenagers with clear family guidance.",
+                    "image": "/images/optimized/showcase-clinic.webp",
+                    "href": "/en/services/dermatologia-pediatrica/"
+                },
+                {
+                    "slug": "piel-cabello-unas",
+                    "category": "Continuity",
+                    "title": "Skin, hair and nails",
+                    "copy": "Cross-route coverage for mixed or evolving conditions.",
+                    "image": "/images/optimized/showcase-diagnostic.webp",
+                    "href": "/en/services/piel-cabello-unas/"
+                },
+                {
+                    "slug": "telemedicine",
+                    "category": "Remote",
+                    "title": "Telemedicine",
+                    "copy": "Initial digital orientation with escalation to clinic.",
+                    "image": "/images/optimized/service-telemedicina.webp",
+                    "href": "/en/telemedicine/"
+                }
+            ]
+        }
+    ],
+    "initiatives": [
+        {
+            "category": "New models",
+            "title": "Clinical photo route",
+            "copy": "Capture standard for comparative follow-up at every review point.",
+            "image": "/images/optimized/showcase-diagnostic.webp",
+            "href": "/en/telemedicine/"
+        },
+        {
+            "category": "Continuity",
+            "title": "Quarterly follow-up",
+            "copy": "Preventive block for patients with recurrent disease history.",
+            "image": "/images/optimized/service-consulta.webp",
+            "href": "/en/services/piel-cabello-unas/"
+        },
+        {
+            "category": "Pediatrics",
+            "title": "Family pathway",
+            "copy": "Structured support protocol for dermatology decisions at home.",
+            "image": "/images/optimized/showcase-clinic.webp",
+            "href": "/en/services/dermatologia-pediatrica/"
+        },
+        {
+            "category": "Screening",
+            "title": "Lesion mapping",
+            "copy": "Sequential reading to prioritize in-clinic review and follow-up.",
+            "image": "/images/optimized/service-cancer.webp",
+            "href": "/en/services/cancer-piel/"
+        },
+        {
+            "category": "Technology",
+            "title": "Calibrated session",
+            "copy": "Laser parameter tuning based on response and skin tolerance.",
+            "image": "/images/optimized/service-laser.webp",
+            "href": "/en/services/laser-dermatologico/"
+        },
+        {
+            "category": "Rejuvenation",
+            "title": "Support plan",
+            "copy": "Combined sequence to improve texture and firmness progressively.",
+            "image": "/images/optimized/service-rejuvenecimiento.webp",
+            "href": "/en/services/bioestimuladores-colageno/"
+        },
+        {
+            "category": "Legal",
+            "title": "Operational policies",
+            "copy": "Clear legal framework for consent, privacy, and responsible use.",
+            "image": "/images/optimized/showcase-hero.webp",
+            "href": "/en/legal/terms/"
+        },
+        {
+            "category": "Telemedicine",
+            "title": "Remote escalation",
+            "copy": "Criteria to decide when to continue online and when to move in-clinic.",
+            "image": "/images/optimized/service-telemedicina.webp",
+            "href": "/en/telemedicine/"
+        }
+    ],
+    "bookingStatus": {
+        "title": "Schedule in update",
+        "description": "Transactional UI returns in a later V6 phase. Clinical and legal routes remain fully available.",
+        "ctaLabel": "Explore telemedicine",
+        "ctaHref": "/en/telemedicine/"
+    }
+}

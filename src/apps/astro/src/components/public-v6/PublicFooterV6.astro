@@ -1,0 +1,45 @@
+---
+const { navModel = {}, locale = 'es' } = Astro.props;
+const footer = navModel?.footer && typeof navModel.footer === 'object' ? navModel.footer : {};
+const columns = Array.isArray(footer.columns) ? footer.columns : [];
+const policies = Array.isArray(footer.policies) ? footer.policies : [];
+---
+
+<footer class="v6-footer" data-v6-footer>
+    <div class="v6-footer__inner">
+        <section class="v6-footer__intro">
+            <h2>{footer.headline}</h2>
+            <p>{footer.deck}</p>
+        </section>
+
+        <div class="v6-footer__cols">
+            {
+                columns.map((column) => (
+                    <article>
+                        <h3>{column.title}</h3>
+                        {
+                            Array.isArray(column.links)
+                                ? column.links.map((link) => <a href={link.href}>{link.label}</a>)
+                                : null
+                        }
+                        {
+                            Array.isArray(column.lines)
+                                ? column.lines.map((line) => <p>{line}</p>)
+                                : null
+                        }
+                    </article>
+                ))
+            }
+        </div>
+
+        <nav class="v6-footer__policy" aria-label={locale === 'en' ? 'Policies' : 'Politicas'}>
+            {
+                policies.map((policy) => (
+                    <a href={policy.href}>{policy.label}</a>
+                ))
+            }
+        </nav>
+
+        <p class="v6-footer__copy">{footer.copyright}</p>
+    </div>
+</footer>

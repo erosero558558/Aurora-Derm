@@ -1,0 +1,85 @@
+---
+import '../styles/public-v6/index.css';
+import PublicHeaderV6 from '../components/public-v6/PublicHeaderV6.astro';
+import PublicFooterV6 from '../components/public-v6/PublicFooterV6.astro';
+
+const {
+    title = 'Piel en Armonia',
+    description = '',
+    locale = 'es',
+    canonicalPath = '/es/',
+    alternatePath = '/en/',
+    pathname = '/es/',
+    navModel = {},
+    templateId = 'public_v6',
+    preloadImageSrc = '',
+    preloadImageSrcSet = '',
+    preloadImageSizes = '',
+    preloadImageType = 'image/webp',
+} = Astro.props;
+
+const origin = 'https://pielarmonia.com';
+const canonical = new URL(canonicalPath, origin).toString();
+const alternate = new URL(alternatePath, origin).toString();
+const xDefault = locale === 'en' ? alternate : canonical;
+
+const preloadHref = String(preloadImageSrc || '').trim();
+const preloadSrcSet = String(preloadImageSrcSet || '').trim();
+const preloadSizes = String(preloadImageSizes || '').trim();
+const preloadType = String(preloadImageType || '').trim();
+
+const flags = {
+    version: 'v6-r2',
+    locale,
+    templateId,
+    fromScratch: true,
+};
+const flagsJson = JSON.stringify(flags);
+---
+
+<!doctype html>
+<html lang={locale}>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <meta name="robots" content="index,follow,max-image-preview:large" />
+        <link rel="canonical" href={canonical} />
+        <link rel="alternate" href={alternate} hreflang={locale === 'es' ? 'en' : 'es'} />
+        <link rel="alternate" href={canonical} hreflang={locale} />
+        <link rel="alternate" href={xDefault} hreflang="x-default" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Piel en Armonia" />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content="https://pielarmonia.com/images/optimized/showcase-hero.jpg" />
+        <meta name="theme-color" content="#0b0b0d" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        {
+            preloadHref ? (
+                <link
+                    rel="preload"
+                    as="image"
+                    href={preloadHref}
+                    type={preloadType || undefined}
+                    imagesrcset={preloadSrcSet || undefined}
+                    imagesizes={preloadSizes || undefined}
+                    fetchpriority="high"
+                />
+            ) : null
+        }
+        <script src="/js/public-v6-shell.js?v=public-v6-shell-20260303-r2" defer></script>
+        <script is:inline set:html={`window.__PUBLIC_V6_FLAGS = ${flagsJson};`}></script>
+    </head>
+    <body data-public-shell data-public-shell-version="v6" data-public-surface={pathname} data-public-template-id={templateId}>
+        <a class="v6-skip-link" href="#main-content">{locale === 'en' ? 'Skip to content' : 'Saltar al contenido'}</a>
+        <PublicHeaderV6 navModel={navModel} />
+        <main id="main-content" class="v6-main">
+            <slot />
+        </main>
+        <PublicFooterV6 navModel={navModel} locale={locale} />
+        <button class="v6-back-to-top" type="button" data-v6-back-top aria-label={locale === 'en' ? 'Back to top' : 'Volver arriba'}>^</button>
+    </body>
+</html>
