@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 418
+  revision: 420
   updated_at: 2026-03-09
 
 tasks:
@@ -6125,5 +6125,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-153.md"
     depends_on: ["AG-152"]
     prompt: "FE-V6-R8: normalizar helpers y naming de tests V6 para que la superficie publica deje de colgar de public-v3 en la capa QA."
+    created_at: 2026-03-09
+    updated_at: 2026-03-09
+
+  - id: AG-154
+    title: "FE-V6-R9 align public smoke suites with V6 surface contracts"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-09T23:55:00.000Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "src/apps/astro/src/lib/public-v6.js", "tests/helpers/public-v6.js", "tests/homepage.spec.js", "tests/telemedicina-conversion-qa.spec.js", "tests/service-pages-qa.spec.js", "tests/service-pages-premium-new.spec.js", "tests/legal.spec.js", "tests/language-route-equivalence.spec.js", "tests/mobile-overflow-regression.spec.js", "tests/premium-navigation-ia.spec.js", "tests/staging-acceptance-gate.spec.js", "tests/deferred-content-fallback.spec.js", "tests/home-deferred-hydration.spec.js", "tests/public-v3-entry-surface-taxonomy.spec.js", "tests/service-booking-hints-parity.spec.js", "verification/agent-runs/AG-154.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-09T18:54:34.3419883-05:00"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Las suites smoke publicas activas verifican superficie V6 real y dejan de exigir booking hooks legacy."
+    acceptance_ref: "verification/agent-runs/AG-154.md"
+    evidence_ref: "verification/agent-runs/AG-154.md"
+    depends_on: ["AG-153"]
+    prompt: "FE-V6-R9: reescribir smokes publicos activos para home, service, tele, legal, fallback e idioma sobre contrato V6, sin anclas #citas ni hooks appointmentForm/serviceSelect."
     created_at: 2026-03-09
     updated_at: 2026-03-09

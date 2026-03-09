@@ -1,54 +1,112 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute } = require('./helpers/public-v3');
+const {
+    expectNoLegacyPublicShell,
+    gotoPublicRoute,
+} = require('./helpers/public-v6');
 
 const ROUTES = [
-    '/es/',
-    '/es/servicios/',
-    '/es/servicios/botox/',
-    '/es/telemedicina/',
-    '/es/legal/terminos/',
+    {
+        route: '/es/',
+        templateId: 'home_v6',
+        selectors: [
+            '[data-v6-hero]',
+            '[data-v6-news-strip]',
+            '[data-v6-editorial]',
+            '[data-v6-corporate-matrix]',
+            '[data-v6-booking-status]',
+        ],
+    },
+    {
+        route: '/es/servicios/',
+        templateId: 'hub_v6',
+        selectors: [
+            '[data-v6-page-head]',
+            '[data-v6-hub-featured]',
+            '[data-v6-catalog-rail]',
+            '[data-v6-service-grid]',
+            '[data-v6-booking-status]',
+        ],
+    },
+    {
+        route: '/es/servicios/botox/',
+        templateId: 'service_detail_v6',
+        selectors: [
+            '[data-v6-page-head]',
+            '[data-v6-internal-hero]',
+            '[data-v6-internal-rail]',
+            '#v6-service-glance',
+            '#v6-booking-status',
+        ],
+    },
+    {
+        route: '/es/telemedicina/',
+        templateId: 'telemedicine_v6',
+        selectors: [
+            '[data-v6-page-head]',
+            '[data-v6-internal-hero]',
+            '[data-v6-internal-rail]',
+            '[data-v6-tele-block]',
+            '#v6-booking-status',
+        ],
+    },
+    {
+        route: '/es/legal/terminos/',
+        templateId: 'legal_v6',
+        selectors: [
+            '[data-v6-page-head]',
+            '[data-v6-internal-hero]',
+            '.v6-legal-tabs',
+            '[data-v6-statement-band]',
+            '[data-v6-legal-block]',
+        ],
+    },
 ];
 
-const REQUIRED_SURFACES = [
-    'nav_primary_booking',
-    'footer_booking',
-    'booking_bridge_primary',
-    'booking_bridge_mount',
-    'support_band_booking',
-    'support_band_telemedicine',
-];
-
-test.describe('Public V3 entry surface taxonomy', () => {
-    test('uses a normalized snake_case taxonomy without legacy prefixes', async ({
+test.describe('Public V6 surface taxonomy', () => {
+    test('maps each public route to the expected V6 template and required surfaces', async ({
         page,
     }) => {
-        const surfaces = new Set();
-
-        for (const route of ROUTES) {
-            await gotoPublicRoute(page, route);
-            const routeSurfaces = await page.evaluate(() =>
-                Array.from(document.querySelectorAll('[data-entry-surface]'))
-                    .map(
-                        (element) =>
-                            element.getAttribute('data-entry-surface') || ''
-                    )
-                    .filter(Boolean)
+        for (const item of ROUTES) {
+            await gotoPublicRoute(page, item.route);
+            await expect(page.locator('body')).toHaveAttribute(
+                'data-public-shell-version',
+                'v6'
             );
-            routeSurfaces.forEach((surface) => surfaces.add(surface));
+            await expect(page.locator('body')).toHaveAttribute(
+                'data-public-template-id',
+                item.templateId
+            );
+            await expectNoLegacyPublicShell(page);
+
+            for (const selector of item.selectors) {
+                await expect(
+                    page.locator(selector).first(),
+                    `${item.route} should expose ${selector}`
+                ).toBeVisible();
+            }
+        }
+    });
+
+    test('template ids stay normalized and V6-scoped', async ({ page }) => {
+        const templateIds = [];
+
+        for (const item of ROUTES) {
+            await gotoPublicRoute(page, item.route);
+            templateIds.push(
+                await page
+                    .locator('body')
+                    .getAttribute('data-public-template-id')
+            );
         }
 
-        const values = Array.from(surfaces.values()).sort();
-        expect(values.length).toBeGreaterThan(0);
-
-        values.forEach((surface) => {
-            expect(surface.startsWith('v2_')).toBeFalsy();
-            expect(surface.startsWith('v3_')).toBeFalsy();
-            expect(/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(surface)).toBeTruthy();
-        });
-
-        REQUIRED_SURFACES.forEach((surface) => {
-            expect(values).toContain(surface);
+        templateIds.forEach((templateId) => {
+            expect(templateId).toBeTruthy();
+            expect(templateId.startsWith('v3')).toBeFalsy();
+            expect(templateId.startsWith('v5')).toBeFalsy();
+            expect(
+                templateId.endsWith('_v6') || templateId.includes('_v6')
+            ).toBeTruthy();
         });
     });
 });

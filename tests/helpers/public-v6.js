@@ -14,6 +14,49 @@ async function waitForBookingStatus(page, expectedText) {
     }
 }
 
+async function expectNoLegacyPublicShell(page) {
+    const legacySelectors = [
+        '[data-public-nav]',
+        '[data-stage-carousel]',
+        '[data-booking-bridge-band]',
+        '#appointmentForm',
+        '#serviceSelect',
+        '#citas',
+        '[data-legal-hero]',
+        '[data-service-hero]',
+        '[data-telemedicine-hero]',
+    ];
+
+    for (const selector of legacySelectors) {
+        await expect(
+            page.locator(selector),
+            `${selector} should not be present on the V6 public surface`
+        ).toHaveCount(0);
+    }
+}
+
+async function waitForHomeV6Runtime(page) {
+    await expect
+        .poll(
+            () =>
+                page.evaluate(() => {
+                    const header = document.querySelector('[data-v6-header]');
+                    const hero = document.querySelector('[data-v6-hero]');
+                    return {
+                        mega: header?.dataset.v6MegaReady || '',
+                        drawer: header?.dataset.v6DrawerReady || '',
+                        hero: hero?.dataset.v6HeroReady || '',
+                    };
+                }),
+            { timeout: 15000 }
+        )
+        .toEqual({
+            mega: 'true',
+            drawer: 'true',
+            hero: 'true',
+        });
+}
+
 async function hideDynamicUi(page) {
     await page.evaluate(() => {
         ['#cookieBanner', '#chatbotWidget', '.quick-dock'].forEach(
@@ -74,10 +117,26 @@ async function waitForAnalyticsBridge(page) {
         .toBeGreaterThan(0);
 }
 
+async function findLocaleSwitch(page) {
+    const homeSwitch = page
+        .locator('[data-v6-news-strip] .v6-news-strip__lang')
+        .first();
+    if ((await homeSwitch.count()) > 0) {
+        return homeSwitch;
+    }
+
+    return page
+        .locator('[data-v6-page-head] .v6-corp-head__lang-option[href]')
+        .first();
+}
+
 module.exports = {
+    expectNoLegacyPublicShell,
+    findLocaleSwitch,
     getTrackedEvents,
     gotoPublicRoute,
     hideDynamicUi,
     waitForAnalyticsBridge,
     waitForBookingStatus,
+    waitForHomeV6Runtime,
 };

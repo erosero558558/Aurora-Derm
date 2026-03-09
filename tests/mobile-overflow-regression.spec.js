@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute } = require('./helpers/public-v3');
+const { gotoPublicRoute } = require('./helpers/public-v6');
 
 const ROUTES = ['/es/', '/en/', '/es/servicios/', '/es/telemedicina/'];
 const MOBILE_VIEWPORTS = [
@@ -9,7 +9,7 @@ const MOBILE_VIEWPORTS = [
     { width: 412, height: 915, label: '412x915' },
 ];
 
-test.describe('Mobile overflow regressions V3', () => {
+test.describe('Mobile overflow regressions V6', () => {
     test('key public routes stay inside the viewport on mobile', async ({
         page,
     }) => {
@@ -29,27 +29,23 @@ test.describe('Mobile overflow regressions V3', () => {
         }
     });
 
-    test('chat container stays visible on mobile when opened', async ({
+    test('header drawer stays visible on mobile when opened', async ({
         page,
     }) => {
         for (const viewport of MOBILE_VIEWPORTS) {
             await page.setViewportSize(viewport);
             await gotoPublicRoute(page, '/es/');
-            await page.evaluate(() => {
-                const banner = document.getElementById('cookieBanner');
-                if (banner instanceof HTMLElement) {
-                    banner.style.display = 'none';
-                }
-            });
 
-            const toggle = page.locator('.chatbot-toggle');
+            const toggle = page.locator('[data-v6-drawer-open]').first();
             await expect(toggle).toBeVisible();
             await toggle.click();
 
-            const chatContainer = page.locator('#chatbotContainer');
-            await expect(chatContainer).toBeVisible();
+            const drawer = page
+                .locator('[data-v6-drawer] .v6-drawer__panel')
+                .first();
+            await expect(drawer).toBeVisible();
 
-            const chatRect = await chatContainer.boundingBox();
+            const chatRect = await drawer.boundingBox();
             const currentViewport = page.viewportSize();
             expect(chatRect).not.toBeNull();
             expect(currentViewport).not.toBeNull();

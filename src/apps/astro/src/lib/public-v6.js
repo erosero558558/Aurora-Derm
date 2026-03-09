@@ -80,6 +80,40 @@ function mapLegalSwitch(pathname, locale) {
     return `/es/legal/${mapped}/`;
 }
 
+function mapPublicSectionSwitch(pathname, locale) {
+    const safePath = normalizePath(pathname);
+
+    if (locale === 'es') {
+        if (safePath === '/es/servicios/') {
+            return '/en/services/';
+        }
+        if (safePath.startsWith('/es/servicios/')) {
+            return `/en/services/${safePath.slice('/es/servicios/'.length)}`;
+        }
+        if (safePath === '/es/telemedicina/') {
+            return '/en/telemedicine/';
+        }
+        if (safePath.startsWith('/es/telemedicina/')) {
+            return `/en/telemedicine/${safePath.slice('/es/telemedicina/'.length)}`;
+        }
+        return null;
+    }
+
+    if (safePath === '/en/services/') {
+        return '/es/servicios/';
+    }
+    if (safePath.startsWith('/en/services/')) {
+        return `/es/servicios/${safePath.slice('/en/services/'.length)}`;
+    }
+    if (safePath === '/en/telemedicine/') {
+        return '/es/telemedicina/';
+    }
+    if (safePath.startsWith('/en/telemedicine/')) {
+        return `/es/telemedicina/${safePath.slice('/en/telemedicine/'.length)}`;
+    }
+    return null;
+}
+
 function buildLocaleSwitchHref(locale, pathname) {
     const safeLocale = normalizeLocale(locale);
     const safePath = normalizePath(pathname);
@@ -87,6 +121,11 @@ function buildLocaleSwitchHref(locale, pathname) {
     const legalSwitch = mapLegalSwitch(safePath, safeLocale);
     if (legalSwitch) {
         return legalSwitch;
+    }
+
+    const sectionSwitch = mapPublicSectionSwitch(safePath, safeLocale);
+    if (sectionSwitch) {
+        return sectionSwitch;
     }
 
     if (safeLocale === 'es') {

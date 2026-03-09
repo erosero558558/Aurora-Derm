@@ -1,6 +1,10 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v3');
+const {
+    expectNoLegacyPublicShell,
+    findLocaleSwitch,
+    gotoPublicRoute,
+} = require('./helpers/public-v6');
 
 const LEGAL_CASES = [
     {
@@ -25,59 +29,39 @@ const LEGAL_CASES = [
     },
 ];
 
-test.describe('Legal V3', () => {
+test.describe('Legal V6', () => {
     for (const legalCase of LEGAL_CASES) {
-        test(`renders ${legalCase.route} with clean legal shell`, async ({
+        test(`renders ${legalCase.route} with the V6 legal shell`, async ({
             page,
         }) => {
             await gotoPublicRoute(page, legalCase.route);
 
-            await expect(page.locator('[data-legal-hero]')).toBeVisible();
-            await expect(page.locator('[data-legal-hero] h1')).toHaveText(
+            await expect(page.locator('[data-v6-page-head] h1')).toHaveText(
                 legalCase.heading
             );
+            await expect(page.locator('[data-v6-internal-hero]')).toBeVisible();
+            await expect(page.locator('.v6-legal-tabs a')).toHaveCount(4);
+            await expect(page.locator('.v6-legal-tabs .is-active')).toHaveCount(
+                1
+            );
             await expect(
-                page.locator('[data-legal-tabs] .legal-tabs-v3__link')
-            ).toHaveCount(4);
-            await expect(
-                page.locator('[data-legal-tabs] [aria-current="page"]')
-            ).toHaveCount(1);
-            await expect(
-                page.locator(
-                    '[data-legal-article] .legal-article-v3__highlights article'
-                )
-            ).toHaveCount(2);
-            await expect(page.locator('[data-support-band]')).toBeVisible();
-            await expect(
-                page.locator('[data-booking-bridge-band]')
+                page.locator('[data-v6-statement-band]')
             ).toBeVisible();
-            await expect(page.locator('[data-legal-hero]')).toHaveAttribute(
-                'data-section-tone',
-                /^(ink|porcelain|silver)$/
-            );
-            await expect(page.locator('[data-legal-article]')).toHaveAttribute(
-                'data-section-tone',
-                /^(ink|porcelain|silver)$/
-            );
-            await expect(page.locator('[data-support-band]')).toHaveAttribute(
-                'data-section-tone',
-                /^(ink|porcelain|silver)$/
-            );
             await expect(
-                page.locator('[data-booking-bridge-band]')
-            ).toHaveAttribute('data-section-tone', /^(ink|porcelain|silver)$/);
-            await expect(page.locator('.public-nav__lang')).toHaveAttribute(
+                page.locator('[data-v6-internal-thesis]')
+            ).toBeVisible();
+            await expect(page.locator('[data-v6-legal-index] a')).toHaveCount(
+                4
+            );
+            expect(
+                await page.locator('[data-v6-legal-block]').count()
+            ).toBeGreaterThan(0);
+            const switcher = await findLocaleSwitch(page);
+            await expect(switcher).toHaveAttribute(
                 'href',
                 legalCase.switchHref
             );
-            await expect(page.locator('.sony-legal-card')).toHaveCount(0);
+            await expectNoLegacyPublicShell(page);
         });
     }
-
-    test('legal pages keep booking hooks available through the bridge', async ({
-        page,
-    }) => {
-        await gotoPublicRoute(page, '/es/legal/terminos/');
-        await waitForBookingHooks(page, 'consulta');
-    });
 });

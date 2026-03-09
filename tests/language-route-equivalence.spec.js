@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute } = require('./helpers/public-v3');
+const { findLocaleSwitch, gotoPublicRoute } = require('./helpers/public-v6');
 
 const CASES = [
     { from: '/es/', expectedSwitchHref: '/en/', expectedAfterClick: '/en/' },
@@ -46,14 +46,14 @@ const CASES = [
     },
 ];
 
-test.describe('Language route equivalence', () => {
+test.describe('Language route equivalence V6', () => {
     for (const testCase of CASES) {
-        test(`switches ${testCase.from} to the equivalent V3 route`, async ({
+        test(`switches ${testCase.from} to the equivalent V6 route`, async ({
             page,
         }) => {
             await gotoPublicRoute(page, testCase.from);
 
-            const switcher = page.locator('.public-nav__lang').first();
+            const switcher = await findLocaleSwitch(page);
             await expect(switcher).toBeVisible();
             await expect(switcher).toHaveAttribute(
                 'href',

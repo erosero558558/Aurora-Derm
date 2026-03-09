@@ -1,9 +1,15 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute, waitForBookingHooks } = require('./helpers/public-v3');
+const {
+    expectNoLegacyPublicShell,
+    findLocaleSwitch,
+    gotoPublicRoute,
+    waitForBookingStatus,
+    waitForHomeV6Runtime,
+} = require('./helpers/public-v6');
 
-test.describe('Staging acceptance gate V3', () => {
-    test('home ES and EN keep the clean shell, locale switch, and critical hooks', async ({
+test.describe('Staging acceptance gate V6', () => {
+    test('home ES and EN keep the V6 shell, locale switch, and booking status', async ({
         page,
     }) => {
         const cases = [
@@ -17,13 +23,19 @@ test.describe('Staging acceptance gate V3', () => {
                 'lang',
                 item.lang
             );
-            await expect(page.locator('[data-public-nav]')).toBeVisible();
-            await expect(page.locator('.public-nav__lang')).toHaveAttribute(
+            await waitForHomeV6Runtime(page);
+            await expect(page.locator('[data-v6-header]')).toBeVisible();
+            await expect(await findLocaleSwitch(page)).toHaveAttribute(
                 'href',
                 item.switchHref
             );
-            await waitForBookingHooks(page);
-            await expect(page.locator('#chatbotWidget')).toHaveCount(1);
+            await waitForBookingStatus(
+                page,
+                item.lang === 'es'
+                    ? 'Reserva online en mantenimiento'
+                    : 'Online booking under maintenance'
+            );
+            await expectNoLegacyPublicShell(page);
         }
     });
 
@@ -31,7 +43,7 @@ test.describe('Staging acceptance gate V3', () => {
         page,
     }) => {
         await gotoPublicRoute(page, '/es/servicios/acne-rosacea/');
-        const switcher = page.locator('.public-nav__lang').first();
+        const switcher = await findLocaleSwitch(page);
         await expect(switcher).toHaveAttribute(
             'href',
             '/en/services/acne-rosacea/'
@@ -43,24 +55,29 @@ test.describe('Staging acceptance gate V3', () => {
         await expect(page).toHaveURL(/\/en\/services\/acne-rosacea\/$/);
     });
 
-    test('service detail keeps booking preselection through the bridge', async ({
+    test('service detail keeps booking status reachable from the internal rail', async ({
         page,
     }) => {
         await gotoPublicRoute(page, '/es/servicios/botox/');
-        await waitForBookingHooks(page, 'rejuvenecimiento');
+        const bookingLink = page
+            .locator('[data-v6-internal-rail] a[href="#v6-booking-status"]')
+            .first();
+        await expect(bookingLink).toBeVisible();
+        await bookingLink.click();
+        await expect(page).toHaveURL(/#v6-booking-status$/);
+        await waitForBookingStatus(page, 'Reserva online en mantenimiento');
     });
 
-    test('telemedicine booking bridge reaches the booking section', async ({
+    test('telemedicine CTA reaches the booking status section', async ({
         page,
     }) => {
         await gotoPublicRoute(page, '/es/telemedicina/');
         await page
-            .locator(
-                '[data-booking-bridge-band] a[data-analytics-event="open_public_cta"]'
-            )
+            .locator('[data-v6-tele-block] a[href="#v6-booking-status"]')
+            .first()
             .click();
-        await expect(page).toHaveURL(/#citas$/);
-        await waitForBookingHooks(page);
+        await expect(page).toHaveURL(/#v6-booking-status$/);
+        await waitForBookingStatus(page, 'Reserva online en mantenimiento');
     });
 
     test('mobile keeps key public routes without horizontal overflow', async ({

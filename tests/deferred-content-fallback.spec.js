@@ -1,31 +1,36 @@
 const { test, expect } = require('@playwright/test');
+const { expectNoLegacyPublicShell } = require('./helpers/public-v6');
 
 test.describe('Deferred content fallback', () => {
-    test('keeps the Public V3 shell and booking bridge visible if public runtime config API fails', async ({
+    test('keeps the statically rendered V6 surface visible if the V6 runtime script fails', async ({
         page,
     }) => {
-        await page.route(
-            '**/api.php?resource=public-runtime-config**',
-            (route) => route.abort()
-        );
+        await page.route('**/js/public-v6-shell.js*', (route) => route.abort());
 
         await page.goto('/es/', { waitUntil: 'domcontentloaded' });
         await page
             .waitForLoadState('load', { timeout: 20000 })
             .catch(() => null);
 
-        const stage = page.locator('[data-stage-carousel]');
-        await expect(stage).toBeVisible();
-
-        const families = page.locator('[data-program-grid]');
-        await expect(families).toBeVisible();
-        await expect(families.locator('.program-grid__card')).toHaveCount(3);
-
-        const featuredStories = page.locator('[data-featured-story]');
-        await expect(featuredStories).toBeVisible();
-        await expect(featuredStories.locator('.featured-story')).toHaveCount(3);
-
-        await expect(page.locator('#appointmentForm')).toBeVisible();
-        await expect(page.locator('[data-booking-bridge-band]')).toBeVisible();
+        await expect(page.locator('[data-v6-header]')).toBeVisible();
+        await expect(page.locator('[data-v6-hero]')).toBeVisible();
+        expect(
+            await page.locator('[data-v6-slide]').count()
+        ).toBeGreaterThanOrEqual(3);
+        await expect(page.locator('[data-v6-news-strip]')).toBeVisible();
+        expect(
+            await page
+                .locator('[data-v6-editorial] .v6-editorial__card')
+                .count()
+        ).toBeGreaterThanOrEqual(4);
+        expect(
+            await page
+                .locator(
+                    '[data-v6-corporate-matrix] .v6-corporate-matrix__card'
+                )
+                .count()
+        ).toBeGreaterThanOrEqual(3);
+        await expect(page.locator('[data-v6-booking-status]')).toBeVisible();
+        await expectNoLegacyPublicShell(page);
     });
 });
