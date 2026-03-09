@@ -1,5 +1,7 @@
 # Public Deploy Cron Install
 
+Nota: el wrapper `deploy-public-v3-cron-sync.sh` conserva un nombre histórico. El cron publica el set actual de artefactos V6.
+
 ## Regla principal
 
 El scheduler de verdad en producción es el cron ya existente con `JOB_ID=8d31e299-7e57-4959-80b5-aaa2d73e9674`.

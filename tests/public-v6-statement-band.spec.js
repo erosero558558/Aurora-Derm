@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute } = require('./helpers/public-v3');
+const { gotoPublicRoute } = require('./helpers/public-v6');
 
 function countCols(value) {
     return String(value || '')

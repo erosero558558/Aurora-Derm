@@ -175,7 +175,7 @@ test('publish checkpoint classifyPublishSurface y buildGateCommands cubren union
         'lint-php',
         'test-php',
         'lint-js',
-        'services-check',
+        'public-v6-artifacts-check',
         'smoke-public-routing',
     ]);
 });

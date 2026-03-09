@@ -11,7 +11,7 @@ const syncEntries = ['es', 'en', '_astro'];
 
 function copyDirectory(sourceDir, targetDir) {
     if (!fs.existsSync(sourceDir)) {
-        return;
+        throw new Error(`Astro dist missing expected entry: ${sourceDir}`);
     }
     fs.rmSync(targetDir, { recursive: true, force: true });
     fs.cpSync(sourceDir, targetDir, { recursive: true, force: true });
@@ -28,7 +28,7 @@ function run() {
         copyDirectory(source, target);
     }
 
-    console.log('Astro dist sincronizado en /es, /en y /_astro');
+    console.log('Public V6 artifacts synchronized in /es, /en and /_astro');
 }
 
 run();

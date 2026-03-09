@@ -19,48 +19,51 @@ const SCRIPT_PATH = path.resolve(
 const BASE_PREFIX = '/staging';
 
 function homeHtml(locale, options = {}) {
-    const bookingHref = locale === 'en' ? '/en/#citas' : '/es/#citas';
-    const langSwitch = locale === 'en' ? '/es/' : '/en/';
-    const includeServiceSelect = options.includeServiceSelect !== false;
+    const switchHref = locale === 'en' ? '/es/' : '/en/';
+    const bookingTitle =
+        locale === 'en'
+            ? 'Online booking under maintenance'
+            : 'Reserva online en mantenimiento';
+    const withoutHero = options.withoutHero === true;
+
     return `<!doctype html>
 <html lang="${locale}">
 <body>
-  <a class="sony-lang" href="${langSwitch}">switch</a>
-  <a class="sony-cta" href="${bookingHref}">book</a>
-  <section id="citas"></section>
-  <form id="appointmentForm">
-    ${includeServiceSelect ? '<select id="serviceSelect"></select>' : ''}
-  </form>
-  <div id="chatbotWidget"></div>
+  <header data-v6-header></header>
+  ${withoutHero ? '' : '<section data-v6-hero></section>'}
+  <section data-v6-news-strip><a href="${switchHref}">switch</a></section>
+  <section data-v6-booking-status>
+    <h2>${bookingTitle}</h2>
+    <a href="${locale === 'en' ? '/en/services/' : '/es/servicios/'}">cta</a>
+  </section>
 </body>
 </html>`;
 }
 
-function serviceHtml(routeHint) {
+function standardPageHtml(locale, routeType = 'hub') {
     return `<!doctype html>
-<html lang="es">
+<html lang="${locale}">
 <body>
-  <a data-analytics-event="start_booking_from_service" href="/es/?service=${routeHint}#citas">book</a>
-</body>
-</html>`;
-}
-
-function serviceHtmlEn(routeHint) {
-    return `<!doctype html>
-<html lang="en">
-<body>
-  <a data-analytics-event="start_booking_from_service" href="/en/?service=${routeHint}#citas">book</a>
+  <header data-v6-header></header>
+  ${
+      routeType === 'hub'
+          ? '<section data-v6-page-head></section>'
+          : '<section data-v6-page-head></section><section data-v6-booking-status><a href="/' +
+            (locale === 'en' ? 'en/telemedicine/' : 'es/telemedicina/') +
+            '">cta</a></section>'
+  }
 </body>
 </html>`;
 }
 
 function teleHtml(locale) {
-    const bookingHref = locale === 'en' ? '/en/#citas' : '/es/#citas';
     return `<!doctype html>
 <html lang="${locale}">
 <body>
-  <a href="${bookingHref}">book tele</a>
-  <a href="https://wa.me/593982453672">wa</a>
+  <section data-v6-page-head></section>
+  <section data-v6-booking-status>
+    <a href="https://wa.me/593982453672">wa</a>
+  </section>
 </body>
 </html>`;
 }
@@ -70,23 +73,31 @@ function legalHtml(locale) {
     return `<!doctype html>
 <html lang="${locale}">
 <body>
+  <section data-v6-page-head></section>
   <a href="${homeHref}">home</a>
 </body>
 </html>`;
 }
 
 function createHandler(options = {}) {
-    const breakHomeServiceSelect = options.breakHomeServiceSelect === true;
+    const breakHomeHero = options.breakHomeHero === true;
     const pages = new Map([
-        ['/es/', homeHtml('es', { includeServiceSelect: !breakHomeServiceSelect })],
+        ['/es/', homeHtml('es', { withoutHero: breakHomeHero })],
         ['/en/', homeHtml('en')],
-        ['/es/servicios/botox/', serviceHtml('rejuvenecimiento')],
-        ['/es/servicios/cancer-piel/', serviceHtml('cancer')],
-        ['/en/services/botox/', serviceHtmlEn('rejuvenecimiento')],
+        ['/es/servicios/', standardPageHtml('es', 'hub')],
+        ['/en/services/', standardPageHtml('en', 'hub')],
+        [
+            '/es/servicios/diagnostico-integral/',
+            standardPageHtml('es', 'service'),
+        ],
+        [
+            '/en/services/diagnostico-integral/',
+            standardPageHtml('en', 'service'),
+        ],
         ['/es/telemedicina/', teleHtml('es')],
         ['/en/telemedicine/', teleHtml('en')],
         ['/es/legal/privacidad/', legalHtml('es')],
-        ['/en/legal/terms/', legalHtml('en')],
+        ['/en/legal/privacy/', legalHtml('en')],
     ]);
 
     return (req, res) => {
@@ -97,29 +108,8 @@ function createHandler(options = {}) {
             return;
         }
 
-        const relativePath = requestUrl.pathname.slice(BASE_PREFIX.length) || '/';
-        if (
-            relativePath === '/api.php' &&
-            requestUrl.searchParams.get('resource') === 'public-runtime-config'
-        ) {
-            res.writeHead(200, { 'content-type': 'application/json' });
-            res.end(
-                JSON.stringify({
-                    ok: true,
-                    data: {
-                        captcha: {
-                            provider: 'turnstile',
-                            siteKey: 'test-site-key',
-                            scriptUrl: 'https://example.test/captcha.js',
-                        },
-                        features: { publicRuntimeConfig: true },
-                        deployVersion: 'test-2026-02-27',
-                    },
-                })
-            );
-            return;
-        }
-
+        const relativePath =
+            requestUrl.pathname.slice(BASE_PREFIX.length) || '/';
         const html = pages.get(relativePath);
         if (!html) {
             res.writeHead(404);
@@ -170,13 +160,20 @@ function runConversionSmoke(baseUrl, outputPath = '') {
     });
 }
 
-test('public conversion smoke passes with expected hooks and CTAs', async () => {
+test('public conversion smoke passes with V6 signals and booking freeze copy', async () => {
     const { server, port } = await startServer(createHandler());
-    const outputPath = path.join(os.tmpdir(), `public-conversion-smoke-${Date.now()}.json`);
+    const outputPath = path.join(
+        os.tmpdir(),
+        `public-conversion-smoke-${Date.now()}.json`
+    );
     try {
         const baseUrl = `http://127.0.0.1:${port}/staging`;
         const result = await runConversionSmoke(baseUrl, outputPath);
-        assert.equal(result.code, 0, `Expected success but got:\n${result.stderr}`);
+        assert.equal(
+            result.code,
+            0,
+            `Expected success but got:\n${result.stderr}`
+        );
         assert.equal(
             result.stdout.includes('All public conversion checks passed.'),
             true,
@@ -184,16 +181,20 @@ test('public conversion smoke passes with expected hooks and CTAs', async () => 
         );
         const report = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
         assert.equal(report.passed, true, 'expected JSON report to pass');
-        assert.equal(Array.isArray(report.checks), true, 'expected checks array');
+        assert.equal(
+            Array.isArray(report.checks),
+            true,
+            'expected checks array'
+        );
     } finally {
         fs.rmSync(outputPath, { force: true });
         await new Promise((resolve) => server.close(resolve));
     }
 });
 
-test('public conversion smoke fails when booking hook is missing on home', async () => {
+test('public conversion smoke fails when V6 hero is missing on home', async () => {
     const { server, port } = await startServer(
-        createHandler({ breakHomeServiceSelect: true })
+        createHandler({ breakHomeHero: true })
     );
     try {
         const baseUrl = `http://127.0.0.1:${port}/staging`;
@@ -201,9 +202,9 @@ test('public conversion smoke fails when booking hook is missing on home', async
         assert.equal(result.code, 1, 'Expected non-zero exit code');
         const combined = `${result.stdout}\n${result.stderr}`;
         assert.equal(
-            combined.includes('Route /es/ missing booking select #serviceSelect'),
+            combined.includes('Route /es/ missing data-v6-hero'),
             true,
-            'Expected missing serviceSelect error in output'
+            'Expected missing V6 hero error in output'
         );
     } finally {
         await new Promise((resolve) => server.close(resolve));

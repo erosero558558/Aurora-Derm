@@ -10,6 +10,7 @@ RewriteCond %{HTTPS} !=on
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # ── Migración canónica pública ES/EN (301) ─────────────
+# Las rutas legacy sobreviven solo como redirects; ya no dependen de archivos HTML físicos.
 RewriteRule ^$ /es/ [R=301,L]
 RewriteRule ^index\.html$ /es/ [R=301,L,NC]
 

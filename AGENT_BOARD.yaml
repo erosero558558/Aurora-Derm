@@ -6,8 +6,8 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 411
-  updated_at: 2026-03-04
+  revision: 418
+  updated_at: 2026-03-09
 
 tasks:
   - id: AG-001
@@ -18,8 +18,8 @@ tasks:
     status_since_at: "2026-02-24"
     risk: high
     scope: platform
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
     files: ["backup-receiver.php", "verify-backup.php", "lib/backup.php", "tests/BackupReceiverTest.php", "env.example.php", "docs/RUNBOOKS.md"]
@@ -56,8 +56,8 @@ tasks:
     status_since_at: "2026-02-24"
     risk: medium
     scope: backend
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
     files: ["lib/ratelimit.php", "tests/RateLimiterTest.php", "tests/Security/RateLimiterTest.php", "tests/Unit/Security/RateLimiterTest.php", "env.example.php"]
@@ -6051,3 +6051,79 @@ tasks:
     prompt: "FE-V6-R6 copy final home-hub-tele-legal-nav"
     created_at: 2026-03-04
     updated_at: 2026-03-04
+
+  - id: AG-152
+    title: "FE-V6-R7 canonical public source"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-09T22:50:08.273Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["package.json", ".htaccess", "nginx-pielarmonia.conf", "bin/check-public-conversion-smoke.js", "bin/check-public-routing-smoke.js", "bin/check-public-v6-artifacts.js", "bin/assert-public-v6-single-source.js", "bin/lib/public-v6-local-server.js", "bin/run-staging-acceptance-gate.js", "docs/DEPLOYMENT.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "docs/PUBLIC_V2_MANUAL_DEPLOY.md", "docs/PUBLIC_V3_CRON_INSTALL.md", "docs/PUBLIC_V3_MANUAL_DEPLOY.md", "docs/public-v6-canonical-source.md", "README.md", "src/apps/astro/scripts/sync-dist.mjs", "tests-node/public-conversion-smoke.test.js", "tests-node/publish-checkpoint-command.test.js", "tools/agent-orchestrator/commands/publish.js", "verification/public-v6-canonical/summary.md", "verification/public-v6-canonical/routes.json", "verification/public-v6-canonical/publish-contract.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-09T22:50:08.273Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "FE-V6-R7 canonical public source"
+    acceptance_ref: "verification/public-v6-canonical/summary.md"
+    evidence_ref: "verification/public-v6-canonical/summary.md"
+    depends_on: []
+    prompt: "FE-V6-R7 canonical public source"
+    created_at: 2026-03-09
+    updated_at: 2026-03-09
+
+  - id: AG-153
+    title: "FE-V6-R8 normalize V6 test helpers and naming"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-09T23:38:00.000Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["package.json", "AGENT_BOARD.yaml", "tests/helpers/public-v3.js", "tests/helpers/public-v6.js", "tests/public-v6-header-mega.spec.js", "tests/public-v6-hero-stage.spec.js", "tests/public-v6-news-strip.spec.js", "tests/public-v6-editorial-grid.spec.js", "tests/public-v6-copy.spec.js", "tests/public-v6-page-menu.spec.js", "tests/public-v6-hub-featured.spec.js", "tests/public-v6-hub-initiatives.spec.js", "tests/public-v6-internal-geometry.spec.js", "tests/public-v6-internal-rail.spec.js", "tests/public-v6-internal-surfaces.spec.js", "tests/public-v6-mega-two-panel.spec.js", "tests/public-v6-statement-band.spec.js", "tests-node/public-v6-test-helper-contract.test.js", "verification/agent-runs/AG-153.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-09T23:38:00.000Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "V6 QA usa helper propio y un contrato bloquea imports legacy public-v3 en specs V6."
+    acceptance_ref: "verification/agent-runs/AG-153.md"
+    evidence_ref: "verification/agent-runs/AG-153.md"
+    depends_on: ["AG-152"]
+    prompt: "FE-V6-R8: normalizar helpers y naming de tests V6 para que la superficie publica deje de colgar de public-v3 en la capa QA."
+    created_at: 2026-03-09
+    updated_at: 2026-03-09

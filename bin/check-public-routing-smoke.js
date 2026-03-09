@@ -3,7 +3,12 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+    startLocalPublicServer,
+    stopLocalPublicServer,
+} = require('./lib/public-v6-local-server.js');
 
+const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_RETRIES = 2;
 
@@ -24,7 +29,6 @@ function parseArgs(argv) {
         if (token === '--output') {
             args.output = String(argv[i + 1] || '').trim();
             i += 1;
-            continue;
         }
     }
     return args;
@@ -49,7 +53,9 @@ function cleanRoutePath(pathname) {
 function joinWithBasePath(baseUrl, routePath, query = '') {
     const basePath = String(baseUrl.pathname || '').replace(/^\/+|\/+$/g, '');
     const normalizedRoute = cleanRoutePath(routePath);
-    const combinedPath = basePath ? `/${basePath}${normalizedRoute}` : normalizedRoute;
+    const combinedPath = basePath
+        ? `/${basePath}${normalizedRoute}`
+        : normalizedRoute;
     const result = new URL(baseUrl.origin);
     result.pathname = combinedPath;
     result.search = query ? `?${query.replace(/^\?/, '')}` : '';
@@ -91,7 +97,11 @@ function writeReport(outputPath, report) {
         return;
     }
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(
+        outputPath,
+        `${JSON.stringify(report, null, 2)}\n`,
+        'utf8'
+    );
 }
 
 function areSearchParamsEqual(actualUrl, expectedUrl) {
@@ -133,7 +143,9 @@ async function checkCanonicalRoutes(baseUrl, failures, checks) {
                 status: 'passed',
                 httpStatus: response.status,
             });
-            console.log(`[routing-smoke] canonical OK ${route} -> ${response.status}`);
+            console.log(
+                `[routing-smoke] canonical OK ${route} -> ${response.status}`
+            );
             continue;
         }
 
@@ -154,13 +166,20 @@ async function checkCanonicalRoutes(baseUrl, failures, checks) {
 }
 
 async function checkRedirectRoutes(baseUrl, failures, checks) {
-    const query = 'utm_source=routing_smoke&utm_medium=deploy&utm_campaign=sony_cutover';
+    const query =
+        'utm_source=routing_smoke&utm_medium=deploy&utm_campaign=v6_canonical';
     const redirects = [
         { from: '/', to: '/es/' },
         { from: '/index.html', to: '/es/' },
         { from: '/telemedicina.html', to: '/es/telemedicina/' },
-        { from: '/servicios/acne-rosacea.html', to: '/es/servicios/acne-rosacea/' },
-        { from: '/ninos/dermatologia-pediatrica.html', to: '/es/servicios/dermatologia-pediatrica/' },
+        {
+            from: '/servicios/acne-rosacea.html',
+            to: '/es/servicios/acne-rosacea/',
+        },
+        {
+            from: '/ninos/dermatologia-pediatrica.html',
+            to: '/es/servicios/dermatologia-pediatrica/',
+        },
         { from: '/terminos.html', to: '/es/legal/terminos/' },
     ];
 
@@ -199,7 +218,9 @@ async function checkRedirectRoutes(baseUrl, failures, checks) {
                 httpStatus: response.status,
                 location: '',
             });
-            failures.push(`Redirect ${rule.from} returned 301 without Location header`);
+            failures.push(
+                `Redirect ${rule.from} returned 301 without Location header`
+            );
             continue;
         }
 
@@ -213,7 +234,9 @@ async function checkRedirectRoutes(baseUrl, failures, checks) {
                 httpStatus: response.status,
                 location,
             });
-            failures.push(`Redirect ${rule.from} returned invalid Location: ${location}`);
+            failures.push(
+                `Redirect ${rule.from} returned invalid Location: ${location}`
+            );
             continue;
         }
 
@@ -284,15 +307,20 @@ async function checkRedirectRoutes(baseUrl, failures, checks) {
 
 async function main() {
     const args = parseArgs(process.argv.slice(2));
-    const baseInput = args.baseUrl || process.env.PUBLIC_BASE_URL || process.env.PROD_URL || '';
-    const baseUrl = ensureUrl(baseInput);
+    let baseUrl = ensureUrl(
+        args.baseUrl ||
+            process.env.PUBLIC_BASE_URL ||
+            process.env.PROD_URL ||
+            ''
+    );
+    let localServer = null;
 
     if (!baseUrl) {
-        console.error(
-            '[routing-smoke] Missing or invalid base URL. Use --base-url https://example.com'
+        localServer = await startLocalPublicServer(ROOT);
+        baseUrl = localServer.baseUrl;
+        console.log(
+            `[routing-smoke] Using local public V6 server at ${baseUrl.toString()}`
         );
-        process.exitCode = 2;
-        return;
     }
 
     console.log(
@@ -301,8 +329,15 @@ async function main() {
 
     const failures = [];
     const checks = [];
-    await checkCanonicalRoutes(baseUrl, failures, checks);
-    await checkRedirectRoutes(baseUrl, failures, checks);
+
+    try {
+        await checkCanonicalRoutes(baseUrl, failures, checks);
+        await checkRedirectRoutes(baseUrl, failures, checks);
+    } finally {
+        if (localServer) {
+            await stopLocalPublicServer(localServer.server);
+        }
+    }
 
     const report = {
         label: args.label,
@@ -318,9 +353,9 @@ async function main() {
         console.error(
             `[routing-smoke] FAILED with ${failures.length} issue(s):`
         );
-        for (const failure of failures) {
-            console.error(` - ${failure}`);
-        }
+        failures.forEach((failure) =>
+            console.error(`[routing-smoke] - ${failure}`)
+        );
         process.exitCode = 1;
         return;
     }
@@ -329,6 +364,10 @@ async function main() {
 }
 
 main().catch((error) => {
-    console.error(`[routing-smoke] Unexpected error: ${error.message}`);
+    console.error(
+        `[routing-smoke] Fatal error: ${
+            error instanceof Error ? error.message : String(error)
+        }`
+    );
     process.exitCode = 1;
 });

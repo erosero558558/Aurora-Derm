@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute } = require('./helpers/public-v3');
+const { gotoPublicRoute } = require('./helpers/public-v6');
 
 test.describe('Public V6 internal thesis and rail', () => {
     test('service and tele pages expose sticky internal rails with full anchor maps', async ({

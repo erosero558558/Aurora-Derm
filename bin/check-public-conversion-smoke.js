@@ -3,9 +3,38 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+    startLocalPublicServer,
+    stopLocalPublicServer,
+} = require('./lib/public-v6-local-server.js');
 
+const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_RETRIES = 2;
+
+const HOME_ROUTES = [
+    {
+        route: '/es/',
+        localeSwitchHref: '/en/',
+        bookingStatusTitle: 'Reserva online en mantenimiento',
+    },
+    {
+        route: '/en/',
+        localeSwitchHref: '/es/',
+        bookingStatusTitle: 'Online booking under maintenance',
+    },
+];
+
+const HUB_ROUTES = ['/es/servicios/', '/en/services/'];
+const SERVICE_ROUTES = [
+    '/es/servicios/diagnostico-integral/',
+    '/en/services/diagnostico-integral/',
+];
+const TELEMEDICINE_ROUTES = ['/es/telemedicina/', '/en/telemedicine/'];
+const LEGAL_ROUTES = [
+    { route: '/es/legal/privacidad/', returnHref: '/es/' },
+    { route: '/en/legal/privacy/', returnHref: '/en/' },
+];
 
 function parseArgs(argv) {
     const args = { baseUrl: '', label: 'public-conversion', output: '' };
@@ -24,16 +53,13 @@ function parseArgs(argv) {
         if (token === '--output') {
             args.output = String(argv[i + 1] || '').trim();
             i += 1;
-            continue;
         }
     }
     return args;
 }
 
 function ensureUrl(value) {
-    if (!value) {
-        return null;
-    }
+    if (!value) return null;
     try {
         return new URL(value);
     } catch (_error) {
@@ -46,7 +72,7 @@ function cleanRoutePath(pathname) {
     return normalized === '/' ? '/' : normalized.replace(/\/{2,}/g, '/');
 }
 
-function joinWithBasePath(baseUrl, routePath, query = '') {
+function joinWithBasePath(baseUrl, routePath) {
     const basePath = String(baseUrl.pathname || '').replace(/^\/+|\/+$/g, '');
     const normalizedRoute = cleanRoutePath(routePath);
     const combinedPath = basePath
@@ -54,7 +80,6 @@ function joinWithBasePath(baseUrl, routePath, query = '') {
         : normalizedRoute;
     const result = new URL(baseUrl.origin);
     result.pathname = combinedPath;
-    result.search = query ? `?${query.replace(/^\?/, '')}` : '';
     return result.toString();
 }
 
@@ -81,9 +106,7 @@ async function requestWithRetry(url, init, retries = DEFAULT_RETRIES) {
 }
 
 function writeReport(outputPath, report) {
-    if (!outputPath) {
-        return;
-    }
+    if (!outputPath) return;
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(
         outputPath,
@@ -92,382 +115,320 @@ function writeReport(outputPath, report) {
     );
 }
 
-function hasMatch(text, pattern) {
-    return pattern.test(String(text || ''));
-}
-
-function escapeForRegex(value) {
+function escapeRegExp(value) {
     return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function buildLanguageSwitchPattern(targetHref) {
-    const escapedHref = escapeForRegex(targetHref);
-    return new RegExp(
-        `<a[^>]*(?:class=["'][^"']*sony-lang[^"']*["'][^>]*href=["']${escapedHref}["']|href=["']${escapedHref}["'][^>]*class=["'][^"']*sony-lang[^"']*["'])`,
-        'i'
-    );
+function recordCheck(checks, entry) {
+    checks.push(entry);
 }
 
-function expectMatch(failures, route, html, pattern, description) {
-    if (!hasMatch(html, pattern)) {
-        failures.push(`Route ${route} missing ${description}`);
-    }
-}
-
-async function fetchHtml(baseUrl, route, failures) {
-    const url = joinWithBasePath(baseUrl, route);
-    const response = await requestWithRetry(url, {
-        method: 'GET',
-        redirect: 'manual',
-        headers: { accept: 'text/html,*/*;q=0.8' },
+function recordFailure(failures, checks, route, detail, extra = {}) {
+    failures.push(`Route ${route} ${detail}`);
+    checks.push({
+        route,
+        status: 'failed',
+        detail,
+        ...extra,
     });
-    if (!(response.status >= 200 && response.status < 300)) {
-        failures.push(`Route ${route} expected 2xx but got ${response.status}`);
-        return '';
-    }
-    return response.text();
 }
 
-async function checkHomeConversionHooks(baseUrl, failures) {
-    const routeChecks = [
-        {
-            route: '/es/',
-            lang: /<html[^>]+lang=["']es["']/i,
-            bookingHref: /href=["']\/es\/#citas["']/i,
-            switchHref: buildLanguageSwitchPattern('/en/'),
-        },
-        {
-            route: '/en/',
-            lang: /<html[^>]+lang=["']en["']/i,
-            bookingHref: /href=["']\/en\/#citas["']/i,
-            switchHref: buildLanguageSwitchPattern('/es/'),
-        },
-    ];
-    const checks = [];
-
-    for (const item of routeChecks) {
-        const html = await fetchHtml(baseUrl, item.route, failures);
-        if (!html) {
-            checks.push({
-                type: 'home',
-                route: item.route,
-                status: 'failed',
-                issues: failures.filter((entry) => entry.includes(item.route)),
-            });
-            continue;
-        }
-
-        const beforeCount = failures.length;
-        expectMatch(failures, item.route, html, item.lang, 'lang attribute');
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            /id=["']citas["']/i,
-            'booking anchor #citas'
-        );
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            /id=["']appointmentForm["']/i,
-            'booking form #appointmentForm'
-        );
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            /id=["']serviceSelect["']/i,
-            'booking select #serviceSelect'
-        );
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            /id=["']chatbotWidget["']/i,
-            'chat mount #chatbotWidget'
-        );
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            item.bookingHref,
-            'primary booking CTA href'
-        );
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            item.switchHref,
-            'language switch href'
-        );
-
-        const routeIssues = failures.slice(beforeCount);
-        checks.push({
-            type: 'home',
-            route: item.route,
-            status: routeIssues.length === 0 ? 'passed' : 'failed',
-            issues: routeIssues,
-        });
-
-        if (routeIssues.length === 0) {
-            console.log(`[conversion-smoke] home OK ${item.route}`);
-        }
-    }
-
-    return checks;
-}
-
-function serviceHrefPattern(hint) {
-    return new RegExp(`href=["'][^"']*\\?service=${hint}#citas["']`, 'i');
-}
-
-async function checkServiceCtas(baseUrl, failures) {
-    const routeChecks = [
-        { route: '/es/servicios/botox/', hint: 'rejuvenecimiento' },
-        { route: '/es/servicios/cancer-piel/', hint: 'cancer' },
-        { route: '/en/services/botox/', hint: 'rejuvenecimiento' },
-    ];
-    const checks = [];
-
-    for (const item of routeChecks) {
-        const html = await fetchHtml(baseUrl, item.route, failures);
-        if (!html) {
-            checks.push({
-                type: 'service_cta',
-                route: item.route,
-                status: 'failed',
-                issues: failures.filter((entry) => entry.includes(item.route)),
-            });
-            continue;
-        }
-
-        const beforeCount = failures.length;
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            /data-analytics-event=["']start_booking_from_service["']/i,
-            'service conversion analytics CTA'
-        );
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            serviceHrefPattern(item.hint),
-            `service booking hint ${item.hint}`
-        );
-
-        const routeIssues = failures.slice(beforeCount);
-        checks.push({
-            type: 'service_cta',
-            route: item.route,
-            status: routeIssues.length === 0 ? 'passed' : 'failed',
-            issues: routeIssues,
-            hint: item.hint,
-        });
-
-        if (routeIssues.length === 0) {
-            console.log(`[conversion-smoke] service CTA OK ${item.route}`);
-        }
-    }
-
-    return checks;
-}
-
-async function checkTelemedicineCtas(baseUrl, failures) {
-    const routeChecks = [
-        { route: '/es/telemedicina/', href: /href=["']\/es\/#citas["']/i },
-        { route: '/en/telemedicine/', href: /href=["']\/en\/#citas["']/i },
-    ];
-    const checks = [];
-
-    for (const item of routeChecks) {
-        const html = await fetchHtml(baseUrl, item.route, failures);
-        if (!html) {
-            checks.push({
-                type: 'telemedicine_cta',
-                route: item.route,
-                status: 'failed',
-                issues: failures.filter((entry) => entry.includes(item.route)),
-            });
-            continue;
-        }
-
-        const beforeCount = failures.length;
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            item.href,
-            'telemedicine booking CTA'
-        );
-        expectMatch(
-            failures,
-            item.route,
-            html,
-            /wa\.me\/593982453672/i,
-            'telemedicine WhatsApp CTA'
-        );
-
-        const routeIssues = failures.slice(beforeCount);
-        checks.push({
-            type: 'telemedicine_cta',
-            route: item.route,
-            status: routeIssues.length === 0 ? 'passed' : 'failed',
-            issues: routeIssues,
-        });
-
-        if (routeIssues.length === 0) {
-            console.log(`[conversion-smoke] telemedicine CTA OK ${item.route}`);
-        }
-    }
-
-    return checks;
-}
-
-async function checkLegalReturnLinks(baseUrl, failures) {
-    const routeChecks = [
-        { route: '/es/legal/privacidad/', back: /href=["']\/es\/["']/i },
-        { route: '/en/legal/terms/', back: /href=["']\/en\/["']/i },
-    ];
-    const checks = [];
-
-    for (const item of routeChecks) {
-        const html = await fetchHtml(baseUrl, item.route, failures);
-        if (!html) {
-            checks.push({
-                type: 'legal_return',
-                route: item.route,
-                status: 'failed',
-                issues: failures.filter((entry) => entry.includes(item.route)),
-            });
-            continue;
-        }
-
-        const beforeCount = failures.length;
-        expectMatch(failures, item.route, html, item.back, 'home return link');
-        const routeIssues = failures.slice(beforeCount);
-        checks.push({
-            type: 'legal_return',
-            route: item.route,
-            status: routeIssues.length === 0 ? 'passed' : 'failed',
-            issues: routeIssues,
-        });
-        if (routeIssues.length === 0) {
-            console.log(`[conversion-smoke] legal return OK ${item.route}`);
-        }
-    }
-
-    return checks;
-}
-
-async function checkPublicRuntimeConfig(baseUrl, failures) {
-    const check = {
-        type: 'runtime_config',
-        route: '/api.php?resource=public-runtime-config',
+function recordPass(checks, route, detail, extra = {}) {
+    checks.push({
+        route,
         status: 'passed',
-        issues: [],
-    };
-    const url = joinWithBasePath(
-        baseUrl,
-        '/api.php',
-        'resource=public-runtime-config'
-    );
-    const response = await requestWithRetry(url, {
+        detail,
+        ...extra,
+    });
+}
+
+async function fetchHtml(baseUrl, route) {
+    const response = await requestWithRetry(joinWithBasePath(baseUrl, route), {
         method: 'GET',
         redirect: 'manual',
-        headers: { accept: 'application/json' },
     });
+    const html = await response.text();
+    return { response, html };
+}
 
-    if (!(response.status >= 200 && response.status < 300)) {
-        failures.push(
-            `Route /api.php?resource=public-runtime-config expected 2xx but got ${response.status}`
+function ensurePattern({
+    route,
+    html,
+    checks,
+    failures,
+    pattern,
+    detail,
+    httpStatus,
+}) {
+    if (!pattern.test(html)) {
+        recordFailure(failures, checks, route, `missing ${detail}`, {
+            httpStatus,
+        });
+        return false;
+    }
+    recordPass(checks, route, `found ${detail}`, { httpStatus });
+    return true;
+}
+
+async function checkHomeRoutes(baseUrl, checks, failures) {
+    for (const item of HOME_ROUTES) {
+        const { response, html } = await fetchHtml(baseUrl, item.route);
+        if (!(response.status >= 200 && response.status < 300)) {
+            recordFailure(
+                failures,
+                checks,
+                item.route,
+                `expected 2xx but got ${response.status}`,
+                { httpStatus: response.status }
+            );
+            continue;
+        }
+
+        const patterns = [
+            { pattern: /data-v6-header/iu, detail: 'data-v6-header' },
+            { pattern: /data-v6-hero/iu, detail: 'data-v6-hero' },
+            { pattern: /data-v6-news-strip/iu, detail: 'data-v6-news-strip' },
+            {
+                pattern: /data-v6-booking-status/iu,
+                detail: 'data-v6-booking-status',
+            },
+            {
+                pattern: new RegExp(
+                    `href=["']${escapeRegExp(item.localeSwitchHref)}["']`,
+                    'iu'
+                ),
+                detail: `language switch ${item.localeSwitchHref}`,
+            },
+            {
+                pattern: new RegExp(
+                    escapeRegExp(item.bookingStatusTitle),
+                    'iu'
+                ),
+                detail: `booking status copy "${item.bookingStatusTitle}"`,
+            },
+        ];
+
+        patterns.forEach((entry) =>
+            ensurePattern({
+                route: item.route,
+                html,
+                checks,
+                failures,
+                pattern: entry.pattern,
+                detail: entry.detail,
+                httpStatus: response.status,
+            })
         );
-        check.status = 'failed';
-        check.issues = failures.filter((entry) =>
-            entry.includes('public-runtime-config')
+
+        if (/#citas|appointmentForm|serviceSelect/iu.test(html)) {
+            recordFailure(
+                failures,
+                checks,
+                item.route,
+                'still exposes legacy booking hooks',
+                { httpStatus: response.status }
+            );
+        } else {
+            recordPass(checks, item.route, 'legacy booking hooks removed', {
+                httpStatus: response.status,
+            });
+        }
+    }
+}
+
+async function checkStandardRoutes(baseUrl, routes, checks, failures, detail) {
+    for (const route of routes) {
+        const { response, html } = await fetchHtml(baseUrl, route);
+        if (!(response.status >= 200 && response.status < 300)) {
+            recordFailure(
+                failures,
+                checks,
+                route,
+                `expected 2xx but got ${response.status}`,
+                { httpStatus: response.status }
+            );
+            continue;
+        }
+
+        if (/#citas|appointmentForm|serviceSelect/iu.test(html)) {
+            recordFailure(
+                failures,
+                checks,
+                route,
+                `still exposes legacy booking hooks on ${detail}`,
+                { httpStatus: response.status }
+            );
+            continue;
+        }
+
+        recordPass(
+            checks,
+            route,
+            `2xx and no legacy booking hooks on ${detail}`,
+            {
+                httpStatus: response.status,
+            }
         );
-        return check;
     }
+}
 
-    let payload;
-    try {
-        payload = await response.json();
-    } catch (_error) {
-        failures.push('public-runtime-config response is not valid JSON');
-        check.status = 'failed';
-        check.issues = failures.filter((entry) =>
-            entry.includes('public-runtime-config')
+async function checkTelemedicineRoutes(baseUrl, checks, failures) {
+    for (const route of TELEMEDICINE_ROUTES) {
+        const { response, html } = await fetchHtml(baseUrl, route);
+        if (!(response.status >= 200 && response.status < 300)) {
+            recordFailure(
+                failures,
+                checks,
+                route,
+                `expected 2xx but got ${response.status}`,
+                { httpStatus: response.status }
+            );
+            continue;
+        }
+
+        ensurePattern({
+            route,
+            html,
+            checks,
+            failures,
+            pattern: /data-v6-page-head/iu,
+            detail: 'data-v6-page-head',
+            httpStatus: response.status,
+        });
+        ensurePattern({
+            route,
+            html,
+            checks,
+            failures,
+            pattern: /data-v6-booking-status/iu,
+            detail: 'data-v6-booking-status',
+            httpStatus: response.status,
+        });
+
+        const usefulCta =
+            /https:\/\/wa\.me\/593982453672/iu.test(html) ||
+            /data-v6-booking-status[\s\S]*?<a[^>]+href=["'](?!#|\/(?:en|es)\/#citas)([^"']+)["']/iu.test(
+                html
+            );
+        if (!usefulCta) {
+            recordFailure(
+                failures,
+                checks,
+                route,
+                'missing useful telemedicine CTA',
+                { httpStatus: response.status }
+            );
+            continue;
+        }
+
+        if (/#citas|appointmentForm|serviceSelect/iu.test(html)) {
+            recordFailure(
+                failures,
+                checks,
+                route,
+                'still exposes legacy booking hooks',
+                { httpStatus: response.status }
+            );
+            continue;
+        }
+
+        recordPass(
+            checks,
+            route,
+            'telemedicine CTA and booking freeze are coherent',
+            {
+                httpStatus: response.status,
+            }
         );
-        return check;
     }
+}
 
-    const data = payload && typeof payload === 'object' ? payload.data : null;
-    if (!data || typeof data !== 'object') {
-        failures.push('public-runtime-config missing data object');
-        check.status = 'failed';
-        check.issues = failures.filter((entry) =>
-            entry.includes('public-runtime-config')
-        );
-        return check;
-    }
-    const captcha = data.captcha;
-    if (!captcha || typeof captcha !== 'object') {
-        failures.push('public-runtime-config missing captcha object');
-    }
-    if (!Object.prototype.hasOwnProperty.call(data, 'features')) {
-        failures.push('public-runtime-config missing features field');
-    }
-    if (!Object.prototype.hasOwnProperty.call(data, 'deployVersion')) {
-        failures.push('public-runtime-config missing deployVersion field');
-    }
+async function checkLegalRoutes(baseUrl, checks, failures) {
+    for (const item of LEGAL_ROUTES) {
+        const { response, html } = await fetchHtml(baseUrl, item.route);
+        if (!(response.status >= 200 && response.status < 300)) {
+            recordFailure(
+                failures,
+                checks,
+                item.route,
+                `expected 2xx but got ${response.status}`,
+                { httpStatus: response.status }
+            );
+            continue;
+        }
 
-    check.issues = failures.filter((entry) =>
-        entry.includes('public-runtime-config')
-    );
-    if (check.issues.length > 0) {
-        check.status = 'failed';
+        ensurePattern({
+            route: item.route,
+            html,
+            checks,
+            failures,
+            pattern: /data-v6-page-head/iu,
+            detail: 'data-v6-page-head',
+            httpStatus: response.status,
+        });
+        ensurePattern({
+            route: item.route,
+            html,
+            checks,
+            failures,
+            pattern: new RegExp(
+                `href=["']${escapeRegExp(item.returnHref)}["']`,
+                'iu'
+            ),
+            detail: `return link ${item.returnHref}`,
+            httpStatus: response.status,
+        });
     }
-
-    if (check.status === 'passed') {
-        console.log(
-            '[conversion-smoke] runtime config OK /api.php?resource=public-runtime-config'
-        );
-    }
-
-    return check;
 }
 
 async function main() {
     const args = parseArgs(process.argv.slice(2));
-    const baseInput =
+    let baseUrl = ensureUrl(
         args.baseUrl ||
-        process.env.PUBLIC_BASE_URL ||
-        process.env.PROD_URL ||
-        '';
-    const baseUrl = ensureUrl(baseInput);
+            process.env.PUBLIC_BASE_URL ||
+            process.env.PROD_URL ||
+            ''
+    );
+    let localServer = null;
 
     if (!baseUrl) {
-        console.error(
-            '[conversion-smoke] Missing or invalid base URL. Use --base-url https://example.com'
+        localServer = await startLocalPublicServer(ROOT);
+        baseUrl = localServer.baseUrl;
+        console.log(
+            `[conversion-smoke] Using local public V6 server at ${baseUrl.toString()}`
         );
-        process.exitCode = 2;
-        return;
     }
 
-    console.log(
-        `[conversion-smoke] Running ${args.label} checks against ${baseUrl.toString()}`
-    );
-
+    const checks = [];
     const failures = [];
-    const checks = [
-        ...(await checkHomeConversionHooks(baseUrl, failures)),
-        ...(await checkServiceCtas(baseUrl, failures)),
-        ...(await checkTelemedicineCtas(baseUrl, failures)),
-        ...(await checkLegalReturnLinks(baseUrl, failures)),
-        await checkPublicRuntimeConfig(baseUrl, failures),
-    ];
+
+    try {
+        console.log(
+            `[conversion-smoke] Running ${args.label} checks against ${baseUrl.toString()}`
+        );
+
+        await checkHomeRoutes(baseUrl, checks, failures);
+        await checkStandardRoutes(
+            baseUrl,
+            HUB_ROUTES,
+            checks,
+            failures,
+            'hub route'
+        );
+        await checkStandardRoutes(
+            baseUrl,
+            SERVICE_ROUTES,
+            checks,
+            failures,
+            'service route'
+        );
+        await checkTelemedicineRoutes(baseUrl, checks, failures);
+        await checkLegalRoutes(baseUrl, checks, failures);
+    } finally {
+        if (localServer) {
+            await stopLocalPublicServer(localServer.server);
+        }
+    }
 
     const report = {
         label: args.label,
@@ -479,13 +440,13 @@ async function main() {
     };
     writeReport(args.output, report);
 
-    if (failures.length > 0) {
+    if (failures.length) {
         console.error(
             `[conversion-smoke] FAILED with ${failures.length} issue(s):`
         );
-        for (const failure of failures) {
-            console.error(` - ${failure}`);
-        }
+        failures.forEach((failure) =>
+            console.error(`[conversion-smoke] - ${failure}`)
+        );
         process.exitCode = 1;
         return;
     }
@@ -494,6 +455,10 @@ async function main() {
 }
 
 main().catch((error) => {
-    console.error(`[conversion-smoke] Unexpected error: ${error.message}`);
+    console.error(
+        `[conversion-smoke] Fatal error: ${
+            error instanceof Error ? error.message : String(error)
+        }`
+    );
     process.exitCode = 1;
 });

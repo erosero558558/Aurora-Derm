@@ -1,31 +1,38 @@
 # Public Main Update Runbook
 
-Runbook operativo para que un checkpoint publicado a `main` quede visible en la web y verificable por `health`.
+Operational runbook to verify that a commit pushed to `main` becomes visible on the live public site.
 
-## Fuente de verdad
+## Source of truth
 
-- cron real: `/root/sync-pielarmonia.sh`
+- current public source: V6 Astro + `content/public-v6/**`
+- generated artifacts committed to the repo: `es/**`, `en/**`, `_astro/**`
+- production repo: `/var/www/figo`
+- publish mechanism: git-sync cron
 - job key: `public_main_sync`
 - job id: `8d31e299-7e57-4959-80b5-aaa2d73e9674`
 - lock: `/tmp/sync-pielarmonia.lock`
 - log: `/var/log/sync-pielarmonia.log`
 - status: `/var/lib/pielarmonia/public-sync-status.json`
 
-## Flujo corto recomendado
+## Recommended release flow
 
-1. Publicar desde el repo:
+1. Build and verify locally:
 
 ```bash
-node agent-orchestrator.js publish checkpoint CDX-006 --summary "..." --expect-rev <rev> --json
+npm run build:public:v6
+npm run check:public:v6:artifacts
+npm run gate:public:v6:canonical-publish
 ```
 
-2. Si hay que forzar el sync en el host:
+2. Push the verified commit to `main`.
+
+3. If you need to force the host sync:
 
 ```bash
 /usr/bin/flock -n /tmp/sync-pielarmonia.lock /root/sync-pielarmonia.sh
 ```
 
-3. Verificar:
+4. Verify host state:
 
 ```bash
 cat /var/lib/pielarmonia/public-sync-status.json
@@ -33,9 +40,17 @@ tail -n 20 /var/log/sync-pielarmonia.log
 curl -s https://pielarmonia.com/api.php?resource=health
 ```
 
-## Fallback manual de deploy
+## Success criteria
 
-Si `vars.DEPLOY_METHOD=git-sync` esta roto o el host no esta recogiendo `main`, usar el pipeline manual de deploy con upload directo:
+- `checks.publicSync.configured=true`
+- `checks.publicSync.jobId=8d31e299-7e57-4959-80b5-aaa2d73e9674`
+- `checks.publicSync.healthy=true`
+- `checks.publicSync.ageSeconds <= 120`
+- `checks.publicSync.deployedCommit` matches the commit pushed to `main`
+
+## Transport fallback
+
+If git-sync is unhealthy or blocked, use the transport fallback workflow:
 
 ```bash
 gh workflow run deploy-hosting.yml --ref main \
@@ -48,16 +63,14 @@ gh workflow run deploy-hosting.yml --ref main \
   -f skip_public_conversion_smoke=true
 ```
 
-Uso correcto del override:
+Use this only to unblock transport. It does not change the canonical public source model:
 
-- `force_transport_deploy=true` solo para destrabar `git-sync` roto o estancado.
-- `skip_public_conversion_smoke=true` solo para cambios backend/ops donde el smoke de conversion no refleja el scope del cambio.
-- Despues del deploy, volver a verificar `health` y reactivar gates normales en el siguiente corte estable.
+1. `main` stays canonical
+2. V6 artifacts stay canonical
+3. git-sync stays the preferred publish path
 
-## Criterio de éxito
+## Historical wrappers
 
-- `checks.publicSync.configured=true`
-- `checks.publicSync.jobId=8d31e299-7e57-4959-80b5-aaa2d73e9674`
-- `checks.publicSync.healthy=true`
-- `checks.publicSync.ageSeconds <= 120`
-- `checks.publicSync.deployedCommit` coincide con el SHA publicado
+The repo still contains `deploy-public-v3-live.sh` and `deploy-public-v3-cron-sync.sh` because the server wrapper naming is historical.
+
+Those scripts deploy the current V6 artifact set. Their names are legacy only.

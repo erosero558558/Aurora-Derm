@@ -149,9 +149,9 @@ function buildGateCommands(surface = {}) {
             'lint:js',
         ]);
         add(
-            'services-check',
+            'public-v6-artifacts-check',
             process.platform === 'win32' ? 'npm.cmd' : 'npm',
-            ['run', 'services:check']
+            ['run', 'check:public:v6:artifacts']
         );
         add(
             'smoke-public-routing',

@@ -108,12 +108,25 @@ El proyecto utiliza Playwright para pruebas de extremo a extremo (E2E).
     npm run test:ui
     ```
 
-## ðŸ“¦ Despliegue
+## Despliegue
 
-Para instrucciones detalladas sobre cÃ³mo desplegar en producciÃ³n, por favor revisa el archivo [DESPLIEGUE-PIELARMONIA.md](DESPLIEGUE-PIELARMONIA.md).
-Para el cutover de agenda local a Google real, usa [CALENDAR-CUTOVER.md](CALENDAR-CUTOVER.md).
-Para la operacion diaria de estabilidad (carril rapido + nightly), usa [PLAN_ESTABILIDAD_14DIAS.md](PLAN_ESTABILIDAD_14DIAS.md).
-Estado unico de operacion (producto vs agentes): [ESTADO_PRODUCTO_OPERATIVO.md](ESTADO_PRODUCTO_OPERATIVO.md).
+La web publica canónica se genera desde Astro V6 y `content/public-v6/**`.
+
+Flujo oficial:
+
+1. `npm run build:public:v6`
+2. `npm run check:public:v6:artifacts`
+3. `git push` a `main`
+4. el cron git-sync del servidor publica `/var/www/figo`
+
+Documentacion operativa:
+
+- [docs/public-v6-canonical-source.md](docs/public-v6-canonical-source.md)
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- [docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md](docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md)
+- [CALENDAR-CUTOVER.md](CALENDAR-CUTOVER.md)
+- [PLAN_ESTABILIDAD_14DIAS.md](PLAN_ESTABILIDAD_14DIAS.md)
+- [ESTADO_PRODUCTO_OPERATIVO.md](ESTADO_PRODUCTO_OPERATIVO.md)
 
 Comandos rÃ¡pidos post-deploy:
 
@@ -143,11 +156,14 @@ Modo transicion (solo temporal): si el servidor aun no envia header CSP pero tu 
 
 - powershell -NoProfile -ExecutionPolicy Bypass -File .\GATE-POSTDEPLOY.ps1 -Domain "https://tu-dominio.com" -AllowMetaCspFallback
 
-## ðŸ“‚ Estructura del Proyecto
+## Estructura del Proyecto
 
 - `api.php`: Punto de entrada principal para la API.
 - `admin.html` / `admin.js`: Frontend del panel administrativo.
-- `index.html`: PÃ¡gina principal.
+- `src/apps/astro/src/pages/**`: Fuente canónica de rutas publicas V6.
+- `src/apps/astro/src/components/public-v6/**`: Componentes publicos V6.
+- `content/public-v6/**`: Copy y modelo de contenido publico V6.
+- `es/**`, `en/**`, `_astro/**`: Artefactos generados para deploy por git-sync.
 - `booking-engine.js`: LÃ³gica del sistema de reservas.
 - `chat-engine.js`: LÃ³gica del cliente del chatbot.
 - `data/`: Directorio para almacenamiento de datos (JSON, logs).
@@ -159,7 +175,9 @@ Este proyecto es privado y propiedad de Piel ArmonÃ­a.
 
 ## Deploy automatico por GitHub Actions
 
-Si no puedes subir archivos manualmente, deploy con:
+GitHub Actions queda como validacion y fallback de transporte. No reemplaza `main` ni el cron git-sync como fuente de verdad operativa.
+
+Si necesitas fallback manual de transporte, usa:
 
 - `.github/workflows/deploy-hosting.yml`
 - `.github/workflows/post-deploy-fast.yml` (carril rapido bloqueante en `push/main`, verify+smoke)
@@ -171,7 +189,7 @@ Si no puedes subir archivos manualmente, deploy con:
 
 Nota: `post-deploy-fast`, `post-deploy-gate` y `prod-monitor` crean/actualizan un issue de incidente cuando fallan y lo cierran automaticamente cuando recuperan.
 
-Nota: si tu servidor ya hace `git pull`/sync automatico cada 5 minutos, usa ese flujo como principal y deja este workflow solo como respaldo manual.
+Nota: si tu servidor ya hace `git pull`/sync automatico, ese flujo es el principal y estos workflows quedan como respaldo manual.
 
 Configura en GitHub (repo -> Settings -> Secrets and variables -> Actions):
 

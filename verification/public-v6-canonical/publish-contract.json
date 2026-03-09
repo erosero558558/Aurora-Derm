@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-03-09T22:45:08.929Z",
+  "commit": {
+    "short": "a25ab7e",
+    "full": "a25ab7e0a61ad58ae87d1b43ec1a077e34ca82d0"
+  },
+  "sourceOfTruth": {
+    "authoring": [
+      "src/apps/astro/src/pages/**",
+      "src/apps/astro/src/components/public-v6/**",
+      "src/apps/astro/src/layouts/PublicShellV6.astro",
+      "src/apps/astro/src/lib/public-v6.js",
+      "src/apps/astro/src/styles/public-v6/**",
+      "content/public-v6/**",
+      "js/public-v6-shell.js",
+      "images/optimized/**"
+    ],
+    "artifacts": [
+      "es/**",
+      "en/**",
+      "_astro/**"
+    ],
+    "legacyRemovedFromCanonicalFlow": [
+      "bin/build-html.js",
+      "servicios/build-service-pages.js",
+      "templates/index.template.html",
+      "templates/telemedicina.template.html",
+      "src/apps/astro/scripts/serve-public-v3.mjs",
+      "index.html",
+      "telemedicina.html",
+      "servicios/**/*.html",
+      "ninos/**/*.html"
+    ]
+  },
+  "publishModel": {
+    "truthBranch": "main",
+    "serverDelivery": "git-sync cron",
+    "buildCommand": "npm run build:public:v6",
+    "artifactCheckCommand": "npm run check:public:v6:artifacts",
+    "gateCommand": "npm run gate:public:v6:canonical-publish",
+    "githubActionsRole": [
+      "validation",
+      "manual fallback"
+    ]
+  },
+  "publicRuntime": {
+    "bookingState": "frozen",
+    "bookingMessages": {
+      "es": "Reserva online en mantenimiento",
+      "en": "Online booking under maintenance"
+    },
+    "forbiddenLegacyHooks": [
+      "#citas",
+      "#appointmentForm",
+      "#serviceSelect",
+      "?service=...#citas"
+    ]
+  },
+  "verification": {
+    "buildPublicV6": {
+      "ok": true
+    },
+    "artifactCheck": {
+      "ok": true,
+      "driftCount": 0,
+      "report": "verification/public-v6-canonical/artifact-drift.json"
+    },
+    "routingSmoke": {
+      "ok": true
+    },
+    "conversionSmoke": {
+      "ok": true
+    },
+    "copyAudit": {
+      "ok": true,
+      "findings": 0
+    },
+    "visualContract": {
+      "ok": true,
+      "passed": 104,
+      "total": 104
+    },
+    "sonyParity": {
+      "ok": true,
+      "points": 50,
+      "total": 50,
+      "report": "verification/public-v6-audit/sony-parity-50.json"
+    },
+    "frontendQaV6": {
+      "ok": true,
+      "playwrightSpecs": 32,
+      "copyContractTests": 4
+    },
+    "canonicalGate": {
+      "ok": true
+    }
+  }
+}

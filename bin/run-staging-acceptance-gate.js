@@ -28,7 +28,8 @@ function parseArgs(argv) {
             continue;
         }
         if (token === '--out-dir') {
-            parsed.outDir = String(argv[index + 1] || '').trim() || parsed.outDir;
+            parsed.outDir =
+                String(argv[index + 1] || '').trim() || parsed.outDir;
             index += 1;
             continue;
         }
@@ -173,8 +174,8 @@ function writeManualChecklist(runDir, context) {
                 id: 'functional',
                 title: 'Functional sign-off',
                 items: [
-                    'Booking hooks criticos presentes: #citas, #appointmentForm, #serviceSelect.',
-                    'Chat hooks visibles/inyectables: #chatbotWidget, #chatbotContainer.',
+                    'Home ES/EN muestra header, hero, news strip y estado de agenda V6.',
+                    'La agenda congelada comunica "Reserva online en mantenimiento" / "Online booking under maintenance" con CTA util.',
                     'Cambio de idioma conserva ruta equivalente ES/EN.',
                 ],
             },
@@ -225,7 +226,11 @@ function writeManualChecklist(runDir, context) {
     }
 
     fs.writeFileSync(mdPath, `${lines.join('\n')}\n`, 'utf8');
-    fs.writeFileSync(jsonPath, `${JSON.stringify(checklist, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(
+        jsonPath,
+        `${JSON.stringify(checklist, null, 2)}\n`,
+        'utf8'
+    );
     return { mdPath, jsonPath };
 }
 
@@ -241,7 +246,8 @@ function main() {
     }
 
     const stamp = nowStamp();
-    const labelSafe = slugify(args.label || 'staging-acceptance') || 'staging-acceptance';
+    const labelSafe =
+        slugify(args.label || 'staging-acceptance') || 'staging-acceptance';
     const runDir = path.resolve(args.outDir, `${stamp}-${labelSafe}`);
     fs.mkdirSync(runDir, { recursive: true });
 
@@ -389,8 +395,12 @@ function main() {
     const checklist = writeManualChecklist(runDir, summary);
     console.log(`[staging-acceptance] Summary JSON: ${output.jsonPath}`);
     console.log(`[staging-acceptance] Summary MD: ${output.mdPath}`);
-    console.log(`[staging-acceptance] Manual checklist MD: ${checklist.mdPath}`);
-    console.log(`[staging-acceptance] Manual checklist JSON: ${checklist.jsonPath}`);
+    console.log(
+        `[staging-acceptance] Manual checklist MD: ${checklist.mdPath}`
+    );
+    console.log(
+        `[staging-acceptance] Manual checklist JSON: ${checklist.jsonPath}`
+    );
 
     if (!passed) {
         process.exitCode = 1;

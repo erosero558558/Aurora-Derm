@@ -1,10 +1,11 @@
 const { expect } = require('@playwright/test');
-
-async function gotoPublicRoute(page, route) {
-    await page.goto(route, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('load', { timeout: 20000 }).catch(() => null);
-    await page.waitForTimeout(400);
-}
+const {
+    getTrackedEvents,
+    gotoPublicRoute,
+    hideDynamicUi,
+    waitForAnalyticsBridge,
+    waitForBookingStatus,
+} = require('./public-v6');
 
 async function waitForBookingHooks(page, expectedValue) {
     await expect(page.locator('#v5-booking, #citas')).toBeVisible();
@@ -34,70 +35,11 @@ async function waitForBookingHooks(page, expectedValue) {
     }
 }
 
-async function hideDynamicUi(page) {
-    await page.evaluate(() => {
-        ['#cookieBanner', '#chatbotWidget', '.quick-dock'].forEach(
-            (selector) => {
-                document.querySelectorAll(selector).forEach((node) => {
-                    if (node instanceof HTMLElement) {
-                        node.style.display = 'none';
-                    }
-                });
-            }
-        );
-    });
-}
-
-async function getTrackedEvents(page, eventName) {
-    return page.evaluate((name) => {
-        const dl = Array.isArray(window.dataLayer) ? window.dataLayer : [];
-        return dl
-            .map((item) => {
-                if (
-                    item &&
-                    typeof item === 'object' &&
-                    !Array.isArray(item) &&
-                    item.event
-                ) {
-                    return item;
-                }
-
-                if (
-                    item &&
-                    typeof item === 'object' &&
-                    item[0] === 'event' &&
-                    typeof item[1] === 'string'
-                ) {
-                    return Object.assign(
-                        { event: item[1] },
-                        item[2] && typeof item[2] === 'object' ? item[2] : {}
-                    );
-                }
-
-                return null;
-            })
-            .filter((item) => item && item.event === name);
-    }, eventName);
-}
-
-async function waitForAnalyticsBridge(page) {
-    await expect
-        .poll(
-            async () =>
-                page.evaluate(() =>
-                    Array.isArray(window.dataLayer)
-                        ? window.dataLayer.length
-                        : 0
-                ),
-            { timeout: 15000 }
-        )
-        .toBeGreaterThan(0);
-}
-
 module.exports = {
     getTrackedEvents,
     gotoPublicRoute,
     hideDynamicUi,
     waitForAnalyticsBridge,
     waitForBookingHooks,
+    waitForBookingStatus,
 };

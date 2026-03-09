@@ -4,6 +4,8 @@ Este documento queda como alias histórico. El runbook canónico es:
 
 - [PUBLIC_V3_MANUAL_DEPLOY.md](./PUBLIC_V3_MANUAL_DEPLOY.md)
 
+El nombre `PUBLIC_V3_MANUAL_DEPLOY.md` también es histórico: hoy publica artefactos V6.
+
 Comando canónico:
 
 ```bash

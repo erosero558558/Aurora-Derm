@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-03-09T22:45:08.929Z",
+  "canonicalRoutes": [
+    {
+      "path": "/es/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    },
+    {
+      "path": "/en/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    },
+    {
+      "path": "/es/telemedicina/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    },
+    {
+      "path": "/en/telemedicine/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    },
+    {
+      "path": "/es/servicios/acne-rosacea/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    },
+    {
+      "path": "/en/services/acne-rosacea/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    },
+    {
+      "path": "/es/legal/privacidad/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    },
+    {
+      "path": "/en/legal/privacy/",
+      "expectedStatus": 200,
+      "validatedBy": "smoke:public:routing"
+    }
+  ],
+  "redirectRoutes": [
+    {
+      "from": "/",
+      "to": "/es/",
+      "expectedStatus": 301,
+      "preserveQuery": true
+    },
+    {
+      "from": "/index.html",
+      "to": "/es/",
+      "expectedStatus": 301,
+      "preserveQuery": true
+    },
+    {
+      "from": "/telemedicina.html",
+      "to": "/es/telemedicina/",
+      "expectedStatus": 301,
+      "preserveQuery": true
+    },
+    {
+      "from": "/servicios/acne-rosacea.html",
+      "to": "/es/servicios/acne-rosacea/",
+      "expectedStatus": 301,
+      "preserveQuery": true
+    },
+    {
+      "from": "/ninos/dermatologia-pediatrica.html",
+      "to": "/es/servicios/dermatologia-pediatrica/",
+      "expectedStatus": 301,
+      "preserveQuery": true
+    },
+    {
+      "from": "/terminos.html",
+      "to": "/es/legal/terminos/",
+      "expectedStatus": 301,
+      "preserveQuery": true
+    }
+  ],
+  "notes": [
+    "Legacy public HTML entrypoints are redirect-only and no longer treated as canonical source files.",
+    "Redirect validation was executed against the local V6 static server used by the smoke scripts."
+  ]
+}
+

@@ -1,6 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute } = require('./helpers/public-v3');
+const {
+    gotoPublicRoute,
+    waitForBookingStatus,
+} = require('./helpers/public-v6');
 
 const prohibited = [
     /garantizado/i,
@@ -29,6 +32,7 @@ test.describe('Public V6 copy integrity', () => {
     }) => {
         for (const route of ['/es/', '/es/servicios/', '/es/telemedicina/']) {
             await gotoPublicRoute(page, route);
+            await waitForBookingStatus(page, 'Reserva online en mantenimiento');
             const text = await page.locator('body').innerText();
             expect(text.toLowerCase()).toContain('usted');
             expect(text.toLowerCase()).toContain('telemedicina');
@@ -49,6 +53,10 @@ test.describe('Public V6 copy integrity', () => {
     }) => {
         for (const route of ['/en/', '/en/services/', '/en/telemedicine/']) {
             await gotoPublicRoute(page, route);
+            await waitForBookingStatus(
+                page,
+                'Online booking under maintenance'
+            );
             const text = await page.locator('body').innerText();
             expect(text.toLowerCase()).toContain('telemedicine');
             expect(text.toLowerCase()).toContain(

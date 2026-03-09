@@ -1,23 +1,28 @@
-# Public V3 Manual Deploy
+# Public Deploy Wrapper (Legacy Name)
 
-Use this runbook when `origin/main` already contains the target commit but GitHub-hosted deploy paths do not publish it to the live host.
+This runbook keeps its historical filename because the VPS wrapper is still named `deploy-public-v3-live.sh`.
+
+Current reality:
+
+- the current public source is V6
+- the deploy script publishes V6 artifacts from `main`
+- `es/**`, `en/**` and `_astro/**` are the only public artifacts expected in the repo root
 
 ## Target host
 
-- Repo: `/var/www/figo`
-- Docroot: `/var/www/figo`
-- Nginx site: `/etc/nginx/sites-enabled/pielarmonia`
-- Expected public commit for AG-117: `ba55460`
+- repo: `/var/www/figo`
+- docroot: `/var/www/figo`
+- nginx site: `/etc/nginx/sites-enabled/pielarmonia`
 
 ## When to use it
 
-Use this path if any of these conditions is true:
+Use this only if:
 
-- `Deploy Hosting (Canary Pipeline)` finishes green but production still serves the previous shell.
-- `git-sync` on the hosting panel reports an older commit than `origin/main`.
-- GitHub runners cannot reach the hosting FTP or SFTP ports.
+- `origin/main` already contains the target commit
+- the server cron git-sync did not materialize the new commit
+- you need an emergency publish path on the VPS
 
-## Publish steps
+## Publish
 
 Run as `root` on the VPS or through OpenClaw:
 
@@ -30,10 +35,10 @@ To publish a specific commit:
 
 ```bash
 cd /var/www/figo
-TARGET_COMMIT=ba55460 bash ./bin/deploy-public-v3-live.sh
+TARGET_COMMIT=<commit-sha> bash ./bin/deploy-public-v3-live.sh
 ```
 
-## Verify generated routes
+## Verify artifacts
 
 ```bash
 cd /var/www/figo
@@ -54,33 +59,16 @@ curl -I https://pielarmonia.com/es/telemedicina/
 curl -I https://pielarmonia.com/telemedicina.html
 ```
 
-Expected results:
+Expected:
 
 - `/` returns `301` to `/es/`
-- `/index.html` returns `301` to `https://pielarmonia.com/es/`
+- `/index.html` returns `301` to `/es/`
+- `/telemedicina.html` returns `301` to `/es/telemedicina/`
 - `/es/` returns `200`
 - `/en/` returns `200`
-- `/es/telemedicina/` returns `200`
-- `/telemedicina.html` returns `301` to `/es/telemedicina/`
 
-The script also patches the live Nginx site to:
+## Notes
 
-- force `https://$host/es/` for `/` and `/index.html`
-- force canonical legacy redirects like `/telemedicina.html` and `/servicios/*.html` to `https://$host/...`
-- avoid leaking the internal `:8080` port behind Cloudflare
-- use `/usr/sbin/nginx` directly so the shell `PATH` does not matter
-
-## Compatibility alias
-
-During migration, `bin/deploy-public-v2-live.sh` remains available as a shim and delegates to `deploy-public-v3-live.sh`.
-
-## Rollback
-
-If the new static shell must be reverted quickly:
-
-```bash
-cd /var/www/figo
-git fetch origin --prune
-git reset --hard <previous-stable-commit>
-/usr/sbin/nginx -t && systemctl reload nginx
-```
+- The wrapper name is legacy.
+- The public artifact set is V6.
+- Legacy public HTML files such as root `index.html`, `telemedicina.html`, `servicios/**/*.html` and `ninos/**/*.html` are redirect-only and should not exist as authoring source anymore.
