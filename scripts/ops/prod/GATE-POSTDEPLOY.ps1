@@ -25,6 +25,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+$verifyScriptPath = Join-Path $PSScriptRoot 'VERIFICAR-DESPLIEGUE.ps1'
+$smokeScriptPath = Join-Path $PSScriptRoot 'SMOKE-PRODUCCION.ps1'
+$benchScriptPath = Join-Path $PSScriptRoot 'BENCH-API-PRODUCCION.ps1'
+
 Write-Host "== Gate Post-Deploy ==" -ForegroundColor Cyan
 Write-Host "Dominio: $Domain"
 Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
@@ -57,7 +61,7 @@ $verifyMaxAttempts = [Math]::Max(1, $VerifyRetryAttempts + 1)
 $verifyPassed = $false
 
 while ($verifyAttempts -lt $verifyMaxAttempts) {
-    & .\VERIFICAR-DESPLIEGUE.ps1 `
+    & $verifyScriptPath `
         -Domain $Domain `
         -AllowDegradedFigo:$AllowDegradedFigo `
         -AllowRecursiveFigo:$AllowRecursiveFigo `
@@ -90,7 +94,7 @@ if (-not $verifyPassed) {
 
 Write-Host ""
 Write-Host "[2/3] Smoke de produccion..." -ForegroundColor Yellow
-& .\SMOKE-PRODUCCION.ps1 `
+& $smokeScriptPath `
     -Domain $Domain `
     -TestFigoPost `
     -AllowFigoRateLimit `
@@ -113,13 +117,13 @@ if ($SkipBenchmark) {
     Write-Host "[3/3] Benchmark API..." -ForegroundColor Yellow
     if ($SkipFigoPostBench) {
         Write-Host "[WARN] Benchmark figo-post omitido para este gate."
-        & .\BENCH-API-PRODUCCION.ps1 `
+        & $benchScriptPath `
             -Domain $Domain `
             -Runs $BenchRuns `
             -CoreP95MaxMs $CoreP95MaxMs `
             -FigoPostP95MaxMs $FigoPostP95MaxMs
     } else {
-        & .\BENCH-API-PRODUCCION.ps1 `
+        & $benchScriptPath `
             -Domain $Domain `
             -Runs $BenchRuns `
             -CoreP95MaxMs $CoreP95MaxMs `

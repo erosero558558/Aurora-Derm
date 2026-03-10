@@ -4,6 +4,7 @@ env.php
 # Datos locales
 data/
 uploads/
+cookies.txt
 
 # Node / Tests
 node_modules/

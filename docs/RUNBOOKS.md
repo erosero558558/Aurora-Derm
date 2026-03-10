@@ -30,6 +30,11 @@ Si el despliegue automÃ¡tico falla, se puede subir manualmente.
 2.  Conectarse al servidor FTP (credenciales en gestor de contraseÃ±as del equipo).
 3.  Subir el contenido del ZIP a `public_html/`.
 4.  **Importante:** No sobrescribir la carpeta `data/` si ya contiene datos de producciÃ³n.
+5.  Si el bundle y los reportes locales ya no se necesitan, ejecutar
+    `npm run clean:local:artifacts` para limpiar `_deploy_bundle/`,
+    `.lighthouseci/`, `lhci_reports/`, `playwright-report/`,
+    `test-results/`, `php_server.log`, `.php-cs-fixer.cache`,
+    `.phpunit.cache/`, `coverage.xml` y `cookies.txt`.
 
 ### 1.3 ValidaciÃ³n Post-Despliegue
 

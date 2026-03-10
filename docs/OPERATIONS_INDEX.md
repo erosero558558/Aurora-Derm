@@ -24,6 +24,18 @@ Overrides:
 - Runbooks operativos: `docs/RUNBOOKS.md`
 - Gobernanza de agentes: `AGENTS.md`
 
+## Higiene local
+
+Comandos:
+
+- `npm run check:local:artifacts`
+- `npm run clean:local:artifacts`
+
+Notas:
+
+- Limpia solo artefactos locales efimeros: `cookies.txt`, `.lighthouseci/`, `lhci_reports/`, `_deploy_bundle/`, `playwright-report/`, `test-results/`, `php_server.log`, `.php-cs-fixer.cache`, `.phpunit.cache/` y `coverage.xml`.
+- No toca `verification/agent-runs/` ni otros artefactos canonicos de evidencia.
+
 ## Que quieres hacer
 
 ### 1. Cambiar la web publica
@@ -147,6 +159,7 @@ Para mutaciones del board, seguir `AGENTS.md` y usar `--expect-rev`.
 
 ### Daily local
 
+- `npm run check:local:artifacts`
 - `npm run build:public:v6`
 - `npm run benchmark:local`
 - `npm run test:frontend:qa:v6`

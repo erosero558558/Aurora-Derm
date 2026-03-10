@@ -28,6 +28,26 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
 $commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'
 . $commonHttpPath
 
+$localIndexCandidatePaths = @(
+    (Join-Path $repoRoot 'index.html'),
+    (Join-Path $repoRoot 'es/index.html'),
+    (Join-Path $repoRoot 'en/index.html')
+)
+$localIndexPath = ''
+foreach ($candidatePath in $localIndexCandidatePaths) {
+    if (Test-Path $candidatePath) {
+        $localIndexPath = [string](Resolve-Path $candidatePath)
+        break
+    }
+}
+$localScriptPath = Join-Path $repoRoot 'script.js'
+$localI18nEnginePath = Join-Path $repoRoot 'i18n-engine.js'
+$localRescheduleGatewayPath = Join-Path $repoRoot 'reschedule-gateway-engine.js'
+$smokeScriptPath = Join-Path $PSScriptRoot 'SMOKE-PRODUCCION.ps1'
+$primaryScriptRefPattern = '<script[^>]+src="([^"]*(?:script\.js|public-v6-shell\.js)[^"]*)"'
+$primaryStyleRefPattern = '<link[^>]+href="([^"]*(?:styles\.css|_astro/[^"]+\.css)[^"]*)"'
+$deferredStyleRefPattern = '<link[^>]+href="([^"]*styles-deferred\.css[^"]*)"'
+
 Write-Host "== Verificacion de despliegue =="
 Write-Host "Dominio: $base"
 Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
@@ -59,8 +79,12 @@ $headTouchesEngineAssets = $false
 if ($changedFilesKnown) {
     $headTouchesFrontendAssets = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @(
         '^index\.html$',
+        '^es/',
+        '^en/',
+        '^_astro/',
         '^admin\.html$',
         '^script\.js$',
+        '^js/public-v6-shell\.js$',
         '^admin\.js$',
         '^styles\.css$',
         '^styles-deferred\.css$',
@@ -72,6 +96,7 @@ if ($changedFilesKnown) {
     )
     $headTouchesScriptFamily = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @(
         '^script\.js$',
+        '^js/public-v6-shell\.js$',
         '^admin\.js$',
         '^js/main\.js$',
         '^js/(loader|state|utils|main)\.js$',
@@ -89,9 +114,9 @@ if ($changedFilesKnown) {
         $changedFiles | Where-Object { $_ -match '^js/engines/.+\.js$' }
     )
     $headTouchesEngineAssets = $changedEngineAssets.Count -gt 0
-    $headTouchesStyles = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @('^styles\.css$')
+    $headTouchesStyles = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @('^styles\.css$', '^_astro/.+\.css$')
     $headTouchesDeferredStyles = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @('^styles-deferred\.css$')
-    $headTouchesIndex = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @('^index\.html$')
+    $headTouchesIndex = Test-ChangedFilesMatchPatterns -ChangedFiles $changedFiles -Patterns @('^index\.html$', '^es/index\.html$', '^en/index\.html$')
 }
 
 if (-not $headTouchesFrontendAssets -and $changedFilesKnown) {
@@ -106,17 +131,28 @@ if (-not $headTouchesFrontendAssets -and $changedFilesKnown) {
     }
 }
 
-$indexRaw = Get-Content -Path 'index.html' -Raw
-$localScriptRef = Get-RefFromIndex -IndexHtml $indexRaw -Pattern '<script[^>]+src="([^"]*script\.js[^"]*)"'
-$localStyleRef = Get-RefFromIndex -IndexHtml $indexRaw -Pattern '<link[^>]+href="([^"]*styles\.css[^"]*)"'
-$localDeferredStyleRef = Get-RefFromIndex -IndexHtml $indexRaw -Pattern '<link[^>]+href="([^"]*styles-deferred\.css[^"]*)"'
-$localHasInlineCriticalCss = [regex]::IsMatch($indexRaw, '<style\b[^>]*>[\s\S]*?</style>', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-
-if ($localScriptRef -eq '') {
-    throw 'No se pudo detectar referencia de script.js en index.html'
+$indexRaw = ''
+if (-not [string]::IsNullOrWhiteSpace($localIndexPath)) {
+    $indexRaw = Get-Content -Path $localIndexPath -Raw
+} elseif ($nonFrontendAdvisoryMode) {
+    Write-Host '[INFO] index local canónico no disponible; se omite lectura local de entry HTML en modo advisory.'
+} else {
+    throw 'No se encontro index local canónico (index.html, es/index.html o en/index.html)'
 }
-if ($localStyleRef -eq '' -and $localDeferredStyleRef -eq '' -and -not $localHasInlineCriticalCss) {
-    throw 'No se detecto CSS cargado desde index.html (styles.css, styles-deferred.css o inline)'
+$localScriptRef = if ($indexRaw -ne '') { Get-RefFromIndex -IndexHtml $indexRaw -Pattern $primaryScriptRefPattern } else { '' }
+$localStyleRef = if ($indexRaw -ne '') { Get-RefFromIndex -IndexHtml $indexRaw -Pattern $primaryStyleRefPattern } else { '' }
+$localDeferredStyleRef = if ($indexRaw -ne '') { Get-RefFromIndex -IndexHtml $indexRaw -Pattern $deferredStyleRefPattern } else { '' }
+$localHasInlineCriticalCss = if ($indexRaw -ne '') {
+    [regex]::IsMatch($indexRaw, '<style\b[^>]*>[\s\S]*?</style>', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+} else {
+    $false
+}
+
+if ($indexRaw -ne '' -and $localScriptRef -eq '') {
+    throw 'No se pudo detectar referencia del script principal (script.js o public-v6-shell.js) en el index local'
+}
+if ($indexRaw -ne '' -and $localStyleRef -eq '' -and $localDeferredStyleRef -eq '' -and -not $localHasInlineCriticalCss) {
+    throw 'No se detecto CSS cargado desde el index local (styles.css, styles-deferred.css, _astro/*.css o inline)'
 }
 
 $remoteIndexRaw = Get-RemoteIndexHtml -Base $base
@@ -124,9 +160,9 @@ $results = @()
 $securityHeaderCheck = Test-SecurityHeaders -Base $base -AllowMetaCspFallback:$AllowMetaCspFallback
 $results += @($securityHeaderCheck.Results)
 
-$remoteScriptRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern '<script[^>]+src="([^"]*script\.js[^"]*)"'
-$remoteStyleRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern '<link[^>]+href="([^"]*styles\.css[^"]*)"'
-$remoteDeferredStyleRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern '<link[^>]+href="([^"]*styles-deferred\.css[^"]*)"'
+$remoteScriptRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern $primaryScriptRefPattern
+$remoteStyleRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern $primaryStyleRefPattern
+$remoteDeferredStyleRef = Get-RefFromIndex -IndexHtml $remoteIndexRaw -Pattern $deferredStyleRefPattern
 $remoteHasInlineCriticalCss = [regex]::IsMatch($remoteIndexRaw, '<style\b[^>]*>[\s\S]*?</style>', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 $appScriptRemoteUrl = Get-Url -Base $base -Ref $remoteScriptRef
 $criticalCssRemoteUrl = Get-Url -Base $base -Ref $localStyleRef
@@ -268,9 +304,9 @@ try {
     }
 }
 
-$localScriptTextForRefs = Get-Content -Path 'script.js' -Raw
-$localI18nEngineTextForRefs = if (Test-Path 'i18n-engine.js') { Get-Content -Path 'i18n-engine.js' -Raw } else { '' }
-$localRescheduleGatewayTextForRefs = if (Test-Path 'reschedule-gateway-engine.js') { Get-Content -Path 'reschedule-gateway-engine.js' -Raw } else { '' }
+$localScriptTextForRefs = if (Test-Path $localScriptPath) { Get-Content -Path $localScriptPath -Raw } else { '' }
+$localI18nEngineTextForRefs = if (Test-Path $localI18nEnginePath) { Get-Content -Path $localI18nEnginePath -Raw } else { '' }
+$localRescheduleGatewayTextForRefs = if (Test-Path $localRescheduleGatewayPath) { Get-Content -Path $localRescheduleGatewayPath -Raw } else { '' }
 $assetMap = Resolve-DeployAssetMap `
     -Base $base `
     -LocalScriptText $localScriptTextForRefs `
@@ -355,15 +391,15 @@ if ($nonFrontendAdvisoryMode) {
     if ($remoteScriptRef -eq '') {
         if ($indexAssetRefAdvisory) {
             if ($indexAssetRefAdvisoryAsInfo) {
-                Write-Host "[INFO] No se pudo detectar referencia de script.js en index remoto ($indexAssetRefAdvisoryReason)"
+                Write-Host "[INFO] No se pudo detectar referencia del script principal en index remoto ($indexAssetRefAdvisoryReason)"
             } else {
-                Write-Host "[WARN] No se pudo detectar referencia de script.js en index remoto ($indexAssetRefAdvisoryReason)"
+                Write-Host "[WARN] No se pudo detectar referencia del script principal en index remoto ($indexAssetRefAdvisoryReason)"
             }
             Write-Host "       Local : $localScriptRef"
         } else {
-            Write-Host "[FAIL] No se pudo detectar referencia de script.js en index remoto"
+            Write-Host "[FAIL] No se pudo detectar referencia del script principal en index remoto"
             $results += [PSCustomObject]@{
-                Asset = 'index-asset-refs:script'
+                Asset = 'index-asset-refs:script-entry'
                 Match = $false
                 LocalHash = $localScriptRef
                 RemoteHash = $remoteScriptRef
@@ -371,22 +407,22 @@ if ($nonFrontendAdvisoryMode) {
             }
         }
     } elseif ((Get-RefPath -Ref $remoteScriptRef) -eq (Get-RefPath -Ref $localScriptRef)) {
-        Write-Host "[OK]  index remoto usa misma referencia de script.js"
+        Write-Host "[OK]  index remoto usa misma referencia de script principal"
     } else {
         if ($indexAssetRefAdvisory) {
             if ($indexAssetRefAdvisoryAsInfo) {
-                Write-Host "[INFO] index remoto script.js diferente ($indexAssetRefAdvisoryReason)"
+                Write-Host "[INFO] index remoto script principal diferente ($indexAssetRefAdvisoryReason)"
             } else {
-                Write-Host "[WARN] index remoto script.js diferente ($indexAssetRefAdvisoryReason)"
+                Write-Host "[WARN] index remoto script principal diferente ($indexAssetRefAdvisoryReason)"
             }
             Write-Host "       Local : $localScriptRef"
             Write-Host "       Remote: $remoteScriptRef"
         } else {
-            Write-Host "[FAIL] index remoto script.js diferente"
+            Write-Host "[FAIL] index remoto script principal diferente"
             Write-Host "       Local : $localScriptRef"
             Write-Host "       Remote: $remoteScriptRef"
             $results += [PSCustomObject]@{
-                Asset = 'index-ref:script.js'
+                Asset = 'index-ref:script-entry'
                 Match = $false
                 LocalHash = $localScriptRef
                 RemoteHash = $remoteScriptRef
@@ -400,15 +436,15 @@ if ($nonFrontendAdvisoryMode) {
         if ($remoteStyleRef -eq '') {
             if ($styleRefAdvisory) {
                 if ($indexAssetRefAdvisoryAsInfo) {
-                    Write-Host "[INFO] index remoto sin referencia de styles.css ($indexAssetRefAdvisoryReason)"
+                    Write-Host "[INFO] index remoto sin referencia del stylesheet principal ($indexAssetRefAdvisoryReason)"
                 } else {
-                    Write-Host "[WARN] index remoto sin referencia de styles.css ($indexAssetRefAdvisoryReason)"
+                    Write-Host "[WARN] index remoto sin referencia del stylesheet principal ($indexAssetRefAdvisoryReason)"
                 }
                 Write-Host "       Local : $localStyleRef"
             } else {
-                Write-Host "[FAIL] index remoto sin referencia de styles.css"
+                Write-Host "[FAIL] index remoto sin referencia del stylesheet principal"
                 $results += [PSCustomObject]@{
-                    Asset = 'index-asset-refs:styles.css'
+                    Asset = 'index-asset-refs:style-entry'
                     Match = $false
                     LocalHash = $localStyleRef
                     RemoteHash = ''
@@ -416,22 +452,22 @@ if ($nonFrontendAdvisoryMode) {
                 }
             }
         } elseif ($remoteStyleRef -eq $localStyleRef) {
-            Write-Host "[OK]  index remoto usa misma referencia de styles.css"
+            Write-Host "[OK]  index remoto usa misma referencia de stylesheet principal"
         } else {
             if ($styleRefAdvisory) {
                 if ($indexAssetRefAdvisoryAsInfo) {
-                    Write-Host "[INFO] index remoto styles.css diferente ($indexAssetRefAdvisoryReason)"
+                    Write-Host "[INFO] index remoto stylesheet principal diferente ($indexAssetRefAdvisoryReason)"
                 } else {
-                    Write-Host "[WARN] index remoto styles.css diferente ($indexAssetRefAdvisoryReason)"
+                    Write-Host "[WARN] index remoto stylesheet principal diferente ($indexAssetRefAdvisoryReason)"
                 }
                 Write-Host "       Local : $localStyleRef"
                 Write-Host "       Remote: $remoteStyleRef"
             } else {
-                Write-Host "[FAIL] index remoto styles.css diferente"
+                Write-Host "[FAIL] index remoto stylesheet principal diferente"
                 Write-Host "       Local : $localStyleRef"
                 Write-Host "       Remote: $remoteStyleRef"
                 $results += [PSCustomObject]@{
-                    Asset = 'index-ref:styles.css'
+                    Asset = 'index-ref:style-entry'
                     Match = $false
                     LocalHash = $localStyleRef
                     RemoteHash = $remoteStyleRef
@@ -1412,7 +1448,7 @@ try {
 if ($RunSmoke) {
     Write-Host ""
     Write-Host "Ejecutando smoke..."
-    & .\SMOKE-PRODUCCION.ps1 -Domain $base -TestFigoPost -AllowDegradedFigo:$AllowDegradedFigo -AllowRecursiveFigo:$AllowRecursiveFigo -AllowMetaCspFallback:$AllowMetaCspFallback -RequireWebhookSecret:$RequireWebhookSecret
+    & $smokeScriptPath -Domain $base -TestFigoPost -AllowDegradedFigo:$AllowDegradedFigo -AllowRecursiveFigo:$AllowRecursiveFigo -AllowMetaCspFallback:$AllowMetaCspFallback -RequireWebhookSecret:$RequireWebhookSecret
 }
 
 $failed = @($results | Where-Object { $_.Match -ne $true }).Count

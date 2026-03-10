@@ -50,6 +50,15 @@ $env:TEST_LOCAL_SERVER_PORT = "8011"
 $env:TEST_BASE_URL = "http://127.0.0.1:8011"
 ```
 
+Higiene local:
+
+- `npm run check:local:artifacts`
+- `npm run clean:local:artifacts`
+- Limpia `cookies.txt`, `.lighthouseci/`, `lhci_reports/`, `_deploy_bundle/`,
+  `playwright-report/`, `test-results/`, `php_server.log`,
+  `.php-cs-fixer.cache`, `.phpunit.cache/` y `coverage.xml`.
+- No toca `verification/agent-runs/` ni evidencia canonica.
+
 ## Flujos rapidos
 
 ### Web publica V6

@@ -260,6 +260,71 @@ test('scripts activos de prod delegan a implementaciones canonicas fuera de la r
     );
 });
 
+test('gate postdeploy canonico invoca siblings de prod sin reentrar por wrappers root', () => {
+    const raw = readRepoFile('scripts/ops/prod/GATE-POSTDEPLOY.ps1');
+    const requiredEntries = [
+        "$verifyScriptPath = Join-Path $PSScriptRoot 'VERIFICAR-DESPLIEGUE.ps1'",
+        "$smokeScriptPath = Join-Path $PSScriptRoot 'SMOKE-PRODUCCION.ps1'",
+        "$benchScriptPath = Join-Path $PSScriptRoot 'BENCH-API-PRODUCCION.ps1'",
+        '& $verifyScriptPath',
+        '& $smokeScriptPath',
+        '& $benchScriptPath',
+    ];
+
+    for (const entry of requiredEntries) {
+        assert.equal(
+            raw.includes(entry),
+            true,
+            `GATE-POSTDEPLOY canonico debe incluir ${entry}`
+        );
+    }
+
+    for (const legacyEntry of [
+        '& .\\VERIFICAR-DESPLIEGUE.ps1',
+        '& .\\SMOKE-PRODUCCION.ps1',
+        '& .\\BENCH-API-PRODUCCION.ps1',
+    ]) {
+        assert.equal(
+            raw.includes(legacyEntry),
+            false,
+            `GATE-POSTDEPLOY no debe depender de wrapper/root path legacy: ${legacyEntry}`
+        );
+    }
+});
+
+test('verify deploy soporta layout publico v6 y rutas locales canonicas', () => {
+    const raw = readRepoFile('scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1');
+    const requiredEntries = [
+        "Join-Path $repoRoot 'es/index.html'",
+        "Join-Path $repoRoot 'en/index.html'",
+        "Join-Path $repoRoot 'script.js'",
+        "Join-Path $PSScriptRoot 'SMOKE-PRODUCCION.ps1'",
+        'public-v6-shell\\.js',
+        '_astro/[^"]+\\.css',
+        'Get-Content -Path $localIndexPath -Raw',
+        '& $smokeScriptPath -Domain $base',
+    ];
+
+    for (const entry of requiredEntries) {
+        assert.equal(
+            raw.includes(entry),
+            true,
+            `VERIFICAR-DESPLIEGUE debe incluir ${entry}`
+        );
+    }
+
+    assert.equal(
+        raw.includes("Get-Content -Path 'index.html' -Raw"),
+        false,
+        'VERIFICAR-DESPLIEGUE no debe depender solo de index.html en raiz'
+    );
+    assert.equal(
+        raw.includes('& .\\SMOKE-PRODUCCION.ps1'),
+        false,
+        'VERIFICAR-DESPLIEGUE no debe reentrar a SMOKE-PRODUCCION por wrapper root'
+    );
+});
+
 test('legacy admin css sale de la raiz activa y el bundle de deploy usa estilos canonicos', () => {
     const legacyRootCss = ['admin.css', 'admin-v2.css', 'admin.min.css'];
     const archivedLegacyCss = legacyRootCss.map((file) =>
@@ -915,5 +980,191 @@ test('php self-hosted tests usan helper portable y salen del carril posix-only',
             contributing.includes('Windows o Unix'),
         true,
         'CONTRIBUTING debe documentar el helper portable del runner PHP'
+    );
+});
+
+test('artefactos locales efimeros salen del repo activo y tienen limpieza canonica', () => {
+    const gitignore = readRepoFile('.gitignore');
+    const packageJson = readRepoFile('package.json');
+    const readme = readRepoFile('README.md');
+    const operationsIndex = readRepoFile('docs/OPERATIONS_INDEX.md');
+    const runbooks = readRepoFile('docs/RUNBOOKS.md');
+    const cleaner = readRepoFile('bin/clean-local-artifacts.js');
+
+    assert.equal(
+        existsSync(resolve(REPO_ROOT, 'cookies.txt')),
+        false,
+        'cookies.txt no debe seguir versionado en la raiz activa'
+    );
+    assert.equal(
+        gitignore.includes('cookies.txt'),
+        true,
+        '.gitignore debe ignorar cookies.txt'
+    );
+    for (const entry of [
+        'playwright-report/',
+        'test-results/',
+        'php_server.log',
+        '.php-cs-fixer.cache',
+        '.phpunit.cache/',
+        'coverage.xml',
+    ]) {
+        assert.equal(
+            gitignore.includes(entry),
+            true,
+            `.gitignore debe ignorar ${entry}`
+        );
+    }
+
+    for (const snippet of [
+        '"check:local:artifacts": "node bin/clean-local-artifacts.js --dry-run"',
+        '"clean:local:artifacts": "node bin/clean-local-artifacts.js"',
+    ]) {
+        assert.equal(
+            packageJson.includes(snippet),
+            true,
+            `package.json debe exponer ${snippet}`
+        );
+    }
+
+    for (const snippet of [
+        'cookies.txt',
+        '.lighthouseci',
+        'lhci_reports',
+        '_deploy_bundle',
+        'playwright-report',
+        'test-results',
+        'php_server.log',
+        '.php-cs-fixer.cache',
+        '.phpunit.cache',
+        'coverage.xml',
+        'DRY RUN',
+    ]) {
+        assert.equal(
+            cleaner.includes(snippet),
+            true,
+            `clean-local-artifacts debe incluir ${snippet}`
+        );
+    }
+
+    assert.equal(
+        readme.includes('npm run check:local:artifacts'),
+        true,
+        'README.md debe documentar el dry-run de limpieza local'
+    );
+    assert.equal(
+        readme.includes('npm run clean:local:artifacts'),
+        true,
+        'README.md debe documentar la limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('npm run check:local:artifacts'),
+        true,
+        'OPERATIONS_INDEX debe documentar el dry-run de limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('npm run clean:local:artifacts'),
+        true,
+        'OPERATIONS_INDEX debe documentar la limpieza local'
+    );
+    assert.equal(
+        runbooks.includes('npm run clean:local:artifacts'),
+        true,
+        'RUNBOOKS debe documentar la limpieza de artefactos locales'
+    );
+    assert.equal(
+        readme.includes('playwright-report/'),
+        true,
+        'README.md debe incluir playwright-report/ en la limpieza local'
+    );
+    assert.equal(
+        readme.includes('test-results/'),
+        true,
+        'README.md debe incluir test-results/ en la limpieza local'
+    );
+    assert.equal(
+        readme.includes('php_server.log'),
+        true,
+        'README.md debe incluir php_server.log en la limpieza local'
+    );
+    assert.equal(
+        readme.includes('.php-cs-fixer.cache'),
+        true,
+        'README.md debe incluir .php-cs-fixer.cache en la limpieza local'
+    );
+    assert.equal(
+        readme.includes('.phpunit.cache/'),
+        true,
+        'README.md debe incluir .phpunit.cache/ en la limpieza local'
+    );
+    assert.equal(
+        readme.includes('coverage.xml'),
+        true,
+        'README.md debe incluir coverage.xml en la limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('playwright-report/'),
+        true,
+        'OPERATIONS_INDEX debe incluir playwright-report/ en la limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('test-results/'),
+        true,
+        'OPERATIONS_INDEX debe incluir test-results/ en la limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('php_server.log'),
+        true,
+        'OPERATIONS_INDEX debe incluir php_server.log en la limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('.php-cs-fixer.cache'),
+        true,
+        'OPERATIONS_INDEX debe incluir .php-cs-fixer.cache en la limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('.phpunit.cache/'),
+        true,
+        'OPERATIONS_INDEX debe incluir .phpunit.cache/ en la limpieza local'
+    );
+    assert.equal(
+        operationsIndex.includes('coverage.xml'),
+        true,
+        'OPERATIONS_INDEX debe incluir coverage.xml en la limpieza local'
+    );
+    assert.equal(
+        runbooks.includes('_deploy_bundle/'),
+        true,
+        'RUNBOOKS debe seguir documentando el bundle de deploy temporal'
+    );
+    assert.equal(
+        runbooks.includes('playwright-report/'),
+        true,
+        'RUNBOOKS debe incluir playwright-report/ en la limpieza local'
+    );
+    assert.equal(
+        runbooks.includes('test-results/'),
+        true,
+        'RUNBOOKS debe incluir test-results/ en la limpieza local'
+    );
+    assert.equal(
+        runbooks.includes('php_server.log'),
+        true,
+        'RUNBOOKS debe incluir php_server.log en la limpieza local'
+    );
+    assert.equal(
+        runbooks.includes('.php-cs-fixer.cache'),
+        true,
+        'RUNBOOKS debe incluir .php-cs-fixer.cache en la limpieza local'
+    );
+    assert.equal(
+        runbooks.includes('.phpunit.cache/'),
+        true,
+        'RUNBOOKS debe incluir .phpunit.cache/ en la limpieza local'
+    );
+    assert.equal(
+        runbooks.includes('coverage.xml'),
+        true,
+        'RUNBOOKS debe incluir coverage.xml en la limpieza local'
     );
 });
