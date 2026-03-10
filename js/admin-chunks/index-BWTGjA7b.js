@@ -862,100 +862,97 @@ function st(e) {
         ? e
               .map((e) => {
                   const n = Q(e);
-                  return (
-                      it(e),
-                      `\n                <tr class="appointment-row" data-appointment-id="${Number(e.id || 0)}">\n                    <td data-label="Paciente">\n                        <div class="appointment-person">\n                            <strong>${t(e.name || 'Sin nombre')}</strong>\n                            <span>${t(e.email || 'Sin email')}</span>\n                            <small>${t(e.phone || 'Sin telefono')}</small>\n                        </div>\n                    </td>\n                    <td data-label="Servicio">${(function (
-                          e
-                      ) {
-                          const n = it(e);
-                          return `\n        <div class="appointment-service">\n            <strong>${t(J(e.service, 'Servicio pendiente'))}</strong>\n            <span>Especialista: ${t(J(e.doctor, 'Sin asignar'))}</span>\n            <small>${t(n.label)} | ${t(n.note)}</small>\n        </div>\n    `;
-                      })(
-                          e
-                      )}</td>\n                    <td data-label="Fecha">\n                        <div class="appointment-date-stack">\n                            <strong>${t(a(e.date))}</strong>\n                            <span>${t(e.time || '--:--')}</span>\n                            <small>${t(X(n))}</small>\n                        </div>\n                    </td>\n                    <td data-label="Pago">${(function (
-                          e
-                      ) {
-                          const n = e.paymentStatus || e.payment_status || '',
-                              a = String(
-                                  e.transferProofUrl ||
-                                      e.transferProofURL ||
-                                      e.transfer_proof_url ||
-                                      ''
-                              ).trim();
-                          return `\n        <div class="appointment-payment-stack">\n            <span class="appointment-pill" data-tone="${t(
+                  return `\n                <tr class="appointment-row" data-appointment-id="${Number(e.id || 0)}">\n                    <td data-label="Paciente">\n                        <div class="appointment-person">\n                            <strong>${t(e.name || 'Sin nombre')}</strong>\n                            <span>${t(e.email || 'Sin email')}</span>\n                            <small>${t(e.phone || 'Sin telefono')}</small>\n                        </div>\n                    </td>\n                    <td data-label="Servicio">${(function (
+                      e
+                  ) {
+                      const n = it(e);
+                      return `\n        <div class="appointment-service">\n            <strong>${t(J(e.service, 'Servicio pendiente'))}</strong>\n            <span>Especialista: ${t(J(e.doctor, 'Sin asignar'))}</span>\n            <small>${t(n.label)} | ${t(n.note)}</small>\n        </div>\n    `;
+                  })(
+                      e
+                  )}</td>\n                    <td data-label="Fecha">\n                        <div class="appointment-date-stack">\n                            <strong>${t(a(e.date))}</strong>\n                            <span>${t(e.time || '--:--')}</span>\n                            <small>${t(X(n))}</small>\n                        </div>\n                    </td>\n                    <td data-label="Pago">${(function (
+                      e
+                  ) {
+                      const n = e.paymentStatus || e.payment_status || '',
+                          a = String(
+                              e.transferProofUrl ||
+                                  e.transferProofURL ||
+                                  e.transfer_proof_url ||
+                                  ''
+                          ).trim();
+                      return `\n        <div class="appointment-payment-stack">\n            <span class="appointment-pill" data-tone="${t(
+                          (function (t) {
+                              const e = K(t);
+                              return 'paid' === e
+                                  ? 'success'
+                                  : 'failed' === e
+                                    ? 'danger'
+                                    : 'pending_cash' === e
+                                      ? 'neutral'
+                                      : 'warning';
+                          })(n)
+                      )}">${t(Y(n))}</span>\n            <small>Metodo: ${t(((i = e.paymentMethod || e.payment_method || ''), { transfer: 'Transferencia', cash: 'Consultorio', card: 'Tarjeta', gateway: 'Pasarela' }[K(i)] || J(i, 'Metodo pendiente')))}</small>\n            ${a ? `<a href="${t(a)}" target="_blank" rel="noopener">Ver comprobante</a>` : '<small>Sin comprobante adjunto</small>'}\n        </div>\n    `;
+                      var i;
+                  })(
+                      e
+                  )}</td>\n                    <td data-label="Estado">${(function (
+                      e
+                  ) {
+                      const n = W(e.status),
+                          a = G(e),
+                          i = it(e),
+                          o = [];
+                      return (
+                          'pending_transfer_review' === a &&
+                              o.push('Transferencia por validar'),
+                          'no_show' === n && o.push('Paciente ausente'),
+                          'cancelled' === n && o.push('Cita cerrada'),
+                          `\n        <div class="appointment-status-stack">\n            <span class="appointment-pill" data-tone="${t(
                               (function (t) {
                                   const e = K(t);
-                                  return 'paid' === e
+                                  return 'completed' === e
                                       ? 'success'
-                                      : 'failed' === e
+                                      : 'cancelled' === e || 'no_show' === e
                                         ? 'danger'
-                                        : 'pending_cash' === e
-                                          ? 'neutral'
-                                          : 'warning';
+                                        : 'pending' === e
+                                          ? 'warning'
+                                          : 'neutral';
                               })(n)
-                          )}">${t(Y(n))}</span>\n            <small>Metodo: ${t(((i = e.paymentMethod || e.payment_method || ''), { transfer: 'Transferencia', cash: 'Consultorio', card: 'Tarjeta', gateway: 'Pasarela' }[K(i)] || J(i, 'Metodo pendiente')))}</small>\n            ${a ? `<a href="${t(a)}" target="_blank" rel="noopener">Ver comprobante</a>` : '<small>Sin comprobante adjunto</small>'}\n        </div>\n    `;
-                          var i;
-                      })(
-                          e
-                      )}</td>\n                    <td data-label="Estado">${(function (
-                          e
-                      ) {
-                          const n = W(e.status),
-                              a = G(e),
-                              i = it(e),
-                              o = [];
-                          return (
-                              'pending_transfer_review' === a &&
-                                  o.push('Transferencia por validar'),
-                              'no_show' === n && o.push('Paciente ausente'),
-                              'cancelled' === n && o.push('Cita cerrada'),
-                              `\n        <div class="appointment-status-stack">\n            <span class="appointment-pill" data-tone="${t(
-                                  (function (t) {
-                                      const e = K(t);
-                                      return 'completed' === e
-                                          ? 'success'
-                                          : 'cancelled' === e || 'no_show' === e
-                                            ? 'danger'
-                                            : 'pending' === e
-                                              ? 'warning'
-                                              : 'neutral';
-                                  })(n)
-                              )}">${t(Z(n))}</span>\n            <small>${t(o[0] || i.note)}</small>\n        </div>\n    `
-                          );
-                      })(
-                          e
-                      )}</td>\n                    <td data-label="Acciones">${(function (
-                          e
-                      ) {
-                          const n = Number(e.id || 0),
-                              a = G(e),
-                              i = (function (t) {
-                                  const e = String(t || '').replace(/\D+/g, '');
-                                  return e ? `https://wa.me/${e}` : '';
-                              })(e.phone || ''),
-                              o = [];
-                          return (
-                              i &&
-                                  o.push(
-                                      `<a href="${t(i)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${t(e.name || 'Paciente')}" title="WhatsApp para seguimiento">WhatsApp</a>`
-                                  ),
-                              ('pending_transfer_review' !== a &&
-                                  'pending_transfer' !== a) ||
-                                  (o.push(
-                                      `<button type="button" data-action="approve-transfer" data-id="${n}">Aprobar</button>`
-                                  ),
-                                  o.push(
-                                      `<button type="button" data-action="reject-transfer" data-id="${n}">Rechazar</button>`
-                                  )),
+                          )}">${t(Z(n))}</span>\n            <small>${t(o[0] || i.note)}</small>\n        </div>\n    `
+                      );
+                  })(
+                      e
+                  )}</td>\n                    <td data-label="Acciones">${(function (
+                      e
+                  ) {
+                      const n = Number(e.id || 0),
+                          a = G(e),
+                          i = (function (t) {
+                              const e = String(t || '').replace(/\D+/g, '');
+                              return e ? `https://wa.me/${e}` : '';
+                          })(e.phone || ''),
+                          o = [];
+                      return (
+                          i &&
                               o.push(
-                                  `<button type="button" data-action="mark-no-show" data-id="${n}">No show</button>`
+                                  `<a href="${t(i)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${t(e.name || 'Paciente')}" title="WhatsApp para seguimiento">WhatsApp</a>`
+                              ),
+                          ('pending_transfer_review' !== a &&
+                              'pending_transfer' !== a) ||
+                              (o.push(
+                                  `<button type="button" data-action="approve-transfer" data-id="${n}">Aprobar</button>`
                               ),
                               o.push(
-                                  `<button type="button" data-action="cancel-appointment" data-id="${n}">Cancelar</button>`
-                              ),
-                              `<div class="table-actions">${o.join('')}</div>`
-                          );
-                      })(e)}</td>\n                </tr>\n            `
-                  );
+                                  `<button type="button" data-action="reject-transfer" data-id="${n}">Rechazar</button>`
+                              )),
+                          o.push(
+                              `<button type="button" data-action="mark-no-show" data-id="${n}">No show</button>`
+                          ),
+                          o.push(
+                              `<button type="button" data-action="cancel-appointment" data-id="${n}">Cancelar</button>`
+                          ),
+                          `<div class="table-actions">${o.join('')}</div>`
+                      );
+                  })(e)}</td>\n                </tr>\n            `;
               })
               .join('')
         : `<tr class="table-empty-row"><td colspan="6">${t('No hay citas para el filtro actual.')}</td></tr>`;
@@ -3492,6 +3489,162 @@ function In(t, e = 220) {
         : 'Sin comentario escrito.';
 }
 function Hn() {
+    const e = b(),
+        n = Array.isArray(e?.data?.reviews) ? e.data.reviews : [],
+        a = (function (t) {
+            return t.slice().sort((t, e) => Bn(e) - Bn(t));
+        })(n),
+        o = (function (t) {
+            return t.length
+                ? t.reduce((t, e) => t + Number(e.rating || 0), 0) / t.length
+                : 0;
+        })(n),
+        s = (function (t, e = 30) {
+            const n = Date.now();
+            return t.filter((t) => {
+                const a = Bn(t);
+                return !!a && n - a <= 24 * e * 60 * 60 * 1e3;
+            }).length;
+        })(n),
+        l = (function (t) {
+            return t.filter((t) => Number(t.rating || 0) <= 3).length;
+        })(n),
+        u = (function (t) {
+            const e = t.find((t) => Number(t.rating || 0) <= 3);
+            if (e)
+                return {
+                    item: e,
+                    eyebrow: 'Feedback accionable',
+                    summary:
+                        'Empieza por la resena mas fragil para entender si hay friccion operativa real.',
+                };
+            const n = t.find((t) => Number(t.rating || 0) >= 5);
+            return n
+                ? {
+                      item: n,
+                      eyebrow: 'Senal a repetir',
+                      summary:
+                          'Usa este comentario como referencia del recorrido que conviene proteger.',
+                  }
+                : t[0]
+                  ? {
+                        item: t[0],
+                        eyebrow: 'Ultima voz',
+                        summary:
+                            'Es la resena mas reciente dentro del corte actual.',
+                    }
+                  : {
+                        item: null,
+                        eyebrow: 'Sin spotlight',
+                        summary:
+                            'Cuando entren resenas apareceran aqui con lectura prioritaria.',
+                    };
+        })(a),
+        { latestAuthor: d, latestDate: p } = (function (t) {
+            const e = t[0];
+            return {
+                latestDate: e ? i(e.date || e.createdAt || '') : '-',
+                latestAuthor: e ? String(e.name || 'Anonimo') : 'Sin datos',
+            };
+        })(a);
+    if (
+        (r('#reviewsAverageRating', o.toFixed(1)),
+        r(
+            '#reviewsFiveStarCount',
+            (function (t) {
+                return t.filter((t) => Number(t.rating || 0) >= 5).length;
+            })(n)
+        ),
+        r('#reviewsRecentCount', s),
+        r('#reviewsTotalCount', n.length),
+        r(
+            '#reviewsSentimentLabel',
+            (function (t, e, n) {
+                return e
+                    ? n > 0 && t < 4
+                        ? 'Atencion requerida'
+                        : t >= 4.7
+                          ? 'Confianza alta'
+                          : t >= 4.2
+                            ? 'Tono solido'
+                            : t >= 3.5
+                              ? 'Lectura mixta'
+                              : 'Atencion requerida'
+                    : 'Sin senal suficiente';
+            })(o, n.length, l)
+        ),
+        c(
+            '#reviewsSummaryRail',
+            (function ({
+                latestAuthor: e,
+                latestDate: n,
+                recentCount: a,
+                lowRatedCount: i,
+            }) {
+                return `\n        <article class="reviews-rail-card">\n            <span>Ultima resena</span>\n            <strong>${t(e)}</strong>\n            <small>${t(n)}</small>\n        </article>\n        <article class="reviews-rail-card">\n            <span>Cadencia</span>\n            <strong>${t(String(a))} en 30 dias</strong>\n            <small>Volumen reciente de feedback.</small>\n        </article>\n        <article class="reviews-rail-card">\n            <span>Riesgo</span>\n            <strong>${t(i > 0 ? `${i} por revisar` : 'Sin alertas')}</strong>\n            <small>${t(i > 0 ? 'Hay comentarios que requieren lectura completa.' : 'La conversacion reciente esta estable.')}</small>\n        </article>\n    `;
+            })({
+                latestAuthor: d,
+                latestDate: p,
+                recentCount: s,
+                lowRatedCount: l,
+            })
+        ),
+        !n.length)
+    )
+        return (
+            c(
+                '#reviewsSpotlight',
+                '\n        <div class="reviews-empty-state" data-admin-empty-state="reviews">\n            <strong>Sin feedback reciente</strong>\n            <p>No hay resenas registradas todavia.</p>\n        </div>\n    '
+            ),
+            void c(
+                '#reviewsGrid',
+                '\n        <div class="reviews-empty-state" data-admin-empty-state="reviews-grid">\n            <strong>No hay resenas registradas.</strong>\n            <p>Cuando entren comentarios, apareceran aqui con spotlight y lectura editorial.</p>\n        </div>\n    '
+            )
+        );
+    (u.item
+        ? c(
+              '#reviewsSpotlight',
+              (function (e) {
+                  const n = e.item;
+                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${t(Pn(n.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${t(e.eyebrow)}</small>\n                    <strong>${t(n.name || 'Anonimo')}</strong>\n                    <small>${t(i(n.date || n.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${t(xn(n.rating))}</p>\n            <p>${t(In(n.comment || n.review || '', 320))}</p>\n            <small>${t(e.summary)}</small>\n        </article>\n    `;
+              })(u)
+          )
+        : c(
+              '#reviewsSpotlight',
+              `\n        <div class="reviews-empty-state" data-admin-empty-state="reviews-spotlight">\n            <strong>Sin spotlight disponible</strong>\n            <p>${t(u.summary)}</p>\n        </div>\n    `
+          ),
+        c(
+            '#reviewsGrid',
+            (function (e, n) {
+                return e
+                    .map((e) =>
+                        (function (e, { featured: n = !1 } = {}) {
+                            const a = Number(e.rating || 0),
+                                o =
+                                    a >= 5
+                                        ? 'success'
+                                        : a <= 3
+                                          ? 'danger'
+                                          : 'neutral',
+                                s =
+                                    a >= 5
+                                        ? 'Resena de alta confianza'
+                                        : a <= 3
+                                          ? 'Revisar posible friccion'
+                                          : 'Resena util para contexto';
+                            return `\n        <article class="review-card${n ? ' is-featured' : ''}" data-rating="${t(String(a))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${t(Pn(e.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${t(e.name || 'Anonimo')}</strong>\n                        <small>${t(i(e.date || e.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${t(o)}">${t(xn(a))}</span>\n            </header>\n            <p>${t(In(e.comment || e.review || ''))}</p>\n            <small>${t(s)}</small>\n        </article>\n    `;
+                        })(e, {
+                            featured:
+                                n.item &&
+                                Dn(e.name) === Dn(n.item.name) &&
+                                Bn(e) === Bn(n.item),
+                        })
+                    )
+                    .join('');
+            })(a, u)
+        ));
+}
+function Fn() {
     const t = (function () {
         const t = b(),
             e = Number(t.ui.lastRefreshAt || 0);
@@ -3509,8 +3662,8 @@ function Hn() {
                 : t.replace('Datos: ', 'Estado: ')
         ));
 }
-async function Fn(e = !1) {
-    const n = await (async function () {
+async function Rn(t = !1) {
+    const e = await (async function () {
         try {
             const [t, e] = await Promise.all([
                     k('data'),
@@ -3644,153 +3797,19 @@ async function Fn(e = !1) {
         Nn(b()),
         rt(),
         $t(),
-        (function () {
-            const e = b(),
-                n = Array.isArray(e?.data?.reviews) ? e.data.reviews : [],
-                a = (function (t) {
-                    return t.slice().sort((t, e) => Bn(e) - Bn(t));
-                })(n),
-                o = (function (t) {
-                    return t.length
-                        ? t.reduce((t, e) => t + Number(e.rating || 0), 0) /
-                              t.length
-                        : 0;
-                })(n),
-                s = n.filter((t) => Number(t.rating || 0) >= 5).length,
-                l = (function (t, e = 30) {
-                    const n = Date.now();
-                    return t.filter((t) => {
-                        const a = Bn(t);
-                        return !!a && n - a <= 24 * e * 60 * 60 * 1e3;
-                    }).length;
-                })(n),
-                u = (function (t) {
-                    return t.filter((t) => Number(t.rating || 0) <= 3).length;
-                })(n),
-                d = (function (t) {
-                    const e = t.find((t) => Number(t.rating || 0) <= 3);
-                    if (e)
-                        return {
-                            item: e,
-                            eyebrow: 'Feedback accionable',
-                            summary:
-                                'Empieza por la resena mas fragil para entender si hay friccion operativa real.',
-                        };
-                    const n = t.find((t) => Number(t.rating || 0) >= 5);
-                    return n
-                        ? {
-                              item: n,
-                              eyebrow: 'Senal a repetir',
-                              summary:
-                                  'Usa este comentario como referencia del recorrido que conviene proteger.',
-                          }
-                        : t[0]
-                          ? {
-                                item: t[0],
-                                eyebrow: 'Ultima voz',
-                                summary:
-                                    'Es la resena mas reciente dentro del corte actual.',
-                            }
-                          : {
-                                item: null,
-                                eyebrow: 'Sin spotlight',
-                                summary:
-                                    'Cuando entren resenas apareceran aqui con lectura prioritaria.',
-                            };
-                })(a);
-            if (
-                (r('#reviewsAverageRating', o.toFixed(1)),
-                r('#reviewsFiveStarCount', s),
-                r('#reviewsRecentCount', l),
-                r('#reviewsTotalCount', n.length),
-                r(
-                    '#reviewsSentimentLabel',
-                    (function (t, e, n) {
-                        return e
-                            ? n > 0 && t < 4
-                                ? 'Atencion requerida'
-                                : t >= 4.7
-                                  ? 'Confianza alta'
-                                  : t >= 4.2
-                                    ? 'Tono solido'
-                                    : t >= 3.5
-                                      ? 'Lectura mixta'
-                                      : 'Atencion requerida'
-                            : 'Sin senal suficiente';
-                    })(o, n.length, u)
-                ),
-                c(
-                    '#reviewsSummaryRail',
-                    (function (e, n, a) {
-                        const o = e[0],
-                            s = o ? i(o.date || o.createdAt || '') : '-';
-                        return `\n        <article class="reviews-rail-card">\n            <span>Ultima resena</span>\n            <strong>${t(o ? String(o.name || 'Anonimo') : 'Sin datos')}</strong>\n            <small>${t(s)}</small>\n        </article>\n        <article class="reviews-rail-card">\n            <span>Cadencia</span>\n            <strong>${t(String(n))} en 30 dias</strong>\n            <small>Volumen reciente de feedback.</small>\n        </article>\n        <article class="reviews-rail-card">\n            <span>Riesgo</span>\n            <strong>${t(a > 0 ? `${a} por revisar` : 'Sin alertas')}</strong>\n            <small>${t(a > 0 ? 'Hay comentarios que requieren lectura completa.' : 'La conversacion reciente esta estable.')}</small>\n        </article>\n    `;
-                    })(a, l, u)
-                ),
-                !n.length)
-            )
-                return (
-                    c(
-                        '#reviewsSpotlight',
-                        '\n                <div class="reviews-empty-state" data-admin-empty-state="reviews">\n                    <strong>Sin feedback reciente</strong>\n                    <p>No hay resenas registradas todavia.</p>\n                </div>\n            '
-                    ),
-                    void c(
-                        '#reviewsGrid',
-                        '\n                <div class="reviews-empty-state" data-admin-empty-state="reviews-grid">\n                    <strong>No hay resenas registradas.</strong>\n                    <p>Cuando entren comentarios, apareceran aqui con spotlight y lectura editorial.</p>\n                </div>\n            '
-                    )
-                );
-            if (d.item) {
-                const e = d.item;
-                c(
-                    '#reviewsSpotlight',
-                    `\n                <article class="reviews-spotlight-card">\n                    <div class="reviews-spotlight-top">\n                        <span class="review-avatar">${t(Pn(e.name || 'Anonimo'))}</span>\n                        <div>\n                            <small>${t(d.eyebrow)}</small>\n                            <strong>${t(e.name || 'Anonimo')}</strong>\n                            <small>${t(i(e.date || e.createdAt || ''))}</small>\n                        </div>\n                    </div>\n                    <p class="reviews-spotlight-stars">${t(xn(e.rating))}</p>\n                    <p>${t(In(e.comment || e.review || '', 320))}</p>\n                    <small>${t(d.summary)}</small>\n                </article>\n            `
-                );
-            } else
-                c(
-                    '#reviewsSpotlight',
-                    `\n                <div class="reviews-empty-state" data-admin-empty-state="reviews-spotlight">\n                    <strong>Sin spotlight disponible</strong>\n                    <p>${t(d.summary)}</p>\n                </div>\n            `
-                );
-            c(
-                '#reviewsGrid',
-                a
-                    .map((e) =>
-                        (function (e, { featured: n = !1 } = {}) {
-                            const a = Number(e.rating || 0),
-                                o =
-                                    a >= 5
-                                        ? 'success'
-                                        : a <= 3
-                                          ? 'danger'
-                                          : 'neutral',
-                                s =
-                                    a >= 5
-                                        ? 'Resena de alta confianza'
-                                        : a <= 3
-                                          ? 'Revisar posible friccion'
-                                          : 'Resena util para contexto';
-                            return `\n        <article class="review-card${n ? ' is-featured' : ''}" data-rating="${t(String(a))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${t(Pn(e.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${t(e.name || 'Anonimo')}</strong>\n                        <small>${t(i(e.date || e.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${t(o)}">${t(xn(a))}</span>\n            </header>\n            <p>${t(In(e.comment || e.review || ''))}</p>\n            <small>${t(s)}</small>\n        </article>\n    `;
-                        })(e, {
-                            featured:
-                                d.item &&
-                                Dn(e.name) === Dn(d.item.name) &&
-                                Bn(e) === Bn(d.item),
-                        })
-                    )
-                    .join('')
-            );
-        })(),
+        Hn(),
         Jt(),
         Ke(),
-        Hn(),
-        e &&
+        Fn(),
+        t &&
             s(
-                n ? 'Datos actualizados' : 'Datos cargados desde cache local',
-                n ? 'success' : 'warning'
+                e ? 'Datos actualizados' : 'Datos cargados desde cache local',
+                e ? 'success' : 'warning'
             ),
-        n
+        e
     );
 }
-function Rn() {
+function On() {
     (B(!1),
         I(),
         P(!1),
@@ -3801,7 +3820,7 @@ function Rn() {
                 'Usa tu clave de administrador para acceder al centro operativo.',
         }));
 }
-async function On(t) {
+async function jn(t) {
     t.preventDefault();
     const e = document.getElementById('adminPassword'),
         n = document.getElementById('admin2FACode'),
@@ -3904,7 +3923,7 @@ async function On(t) {
             N(),
             B(!1),
             I({ clearPassword: !0 }),
-            await Fn(!1),
+            await Rn(!1),
             s('Sesion iniciada', 'success'));
     } catch (t) {
         (x({
@@ -3920,7 +3939,7 @@ async function On(t) {
         P(!1);
     }
 }
-async function jn(t, e) {
+async function zn(t, e) {
     switch (t) {
         case 'appointment-quick-filter':
             return (lt(String(e.dataset.filterValue || 'all')), !0);
@@ -4021,7 +4040,7 @@ async function jn(t, e) {
             return !1;
     }
 }
-async function zn(t, n) {
+async function Vn(t, n) {
     switch (t) {
         case 'change-month':
             return (
@@ -4298,7 +4317,7 @@ async function zn(t, n) {
             return !1;
     }
 }
-const Vn = new Set([
+const Un = new Set([
     'dashboard',
     'appointments',
     'callbacks',
@@ -4306,13 +4325,13 @@ const Vn = new Set([
     'availability',
     'queue',
 ]);
-function Un(t, e = 'dashboard') {
+function Kn(t, e = 'dashboard') {
     const n = String(t || '')
         .trim()
         .toLowerCase();
-    return Vn.has(n) ? n : e;
+    return Un.has(n) ? n : e;
 }
-function Kn(t) {
+function Qn(t) {
     !(function (t) {
         const e = String(t || '').replace(/^#/, ''),
             n = e ? `#${e}` : '';
@@ -4322,13 +4341,13 @@ function Kn(t) {
                 '',
                 `${window.location.pathname}${window.location.search}${n}`
             );
-    })(Un(t));
+    })(Kn(t));
 }
-const Qn = 'themeMode',
-    Gn = new Set(['light', 'dark', 'system']);
-const Wn = 'adminLastSection',
-    Jn = 'adminSidebarCollapsed';
-function Yn(t, { persist: e = !1 } = {}) {
+const Gn = 'themeMode',
+    Wn = new Set(['light', 'dark', 'system']);
+const Jn = 'adminLastSection',
+    Yn = 'adminSidebarCollapsed';
+function Zn(t, { persist: e = !1 } = {}) {
     const n = (function (t) {
         const e = (function (t) {
             return 'light' === t || 'dark' === t
@@ -4347,8 +4366,8 @@ function Yn(t, { persist: e = !1 } = {}) {
     (g((e) => ({ ...e, ui: { ...e.ui, themeMode: t, theme: n } })),
         e &&
             (function (t) {
-                const e = Gn.has(t) ? t : 'system';
-                we(Qn, e);
+                const e = Wn.has(t) ? t : 'system';
+                we(Gn, e);
             })(t),
         Array.from(
             document.querySelectorAll('.admin-theme-btn[data-theme-mode]')
@@ -4358,14 +4377,14 @@ function Yn(t, { persist: e = !1 } = {}) {
                 e.setAttribute('aria-pressed', String(n)));
         }));
 }
-function Zn() {
-    const t = b();
-    (we(Wn, t.ui.activeSection), we(Jn, t.ui.sidebarCollapsed ? '1' : '0'));
-}
 function Xn() {
+    const t = b();
+    (we(Jn, t.ui.activeSection), we(Yn, t.ui.sidebarCollapsed ? '1' : '0'));
+}
+function ta() {
     return window.matchMedia('(max-width: 1024px)').matches;
 }
-function ta(t) {
+function ea(t) {
     return (
         t instanceof HTMLElement &&
         !t.hidden &&
@@ -4374,9 +4393,9 @@ function ta(t) {
         t.getClientRects().length > 0
     );
 }
-function ea() {
+function na() {
     const t = b(),
-        n = Xn(),
+        n = ta(),
         a = e('#adminSidebar'),
         i = a instanceof HTMLElement && a.classList.contains('is-open');
     (!(function ({ open: t, collapsed: n }) {
@@ -4411,8 +4430,8 @@ function ea() {
                     });
             })());
 }
-async function na(t, e = {}) {
-    const n = Un(t, 'dashboard'),
+async function aa(t, e = {}) {
+    const n = Kn(t, 'dashboard'),
         { force: a = !1 } = e,
         i = b().ui.activeSection;
     return (
@@ -4426,12 +4445,12 @@ async function na(t, e = {}) {
             )
         ) &&
         ((function (t) {
-            const e = Un(t, 'dashboard');
+            const e = Kn(t, 'dashboard');
             (g((t) => ({ ...t, ui: { ...t.ui, activeSection: e } })),
                 D(e),
                 F(b()),
-                Kn(e),
-                Zn());
+                Qn(e),
+                Xn());
         })(n),
         'queue' === n &&
             'queue' !== i &&
@@ -4446,7 +4465,7 @@ async function na(t, e = {}) {
         !0)
     );
 }
-function aa() {
+function ia() {
     (g((t) => ({
         ...t,
         ui: {
@@ -4455,27 +4474,27 @@ function aa() {
             sidebarOpen: t.ui.sidebarOpen,
         },
     })),
-        ea(),
-        Zn());
+        na(),
+        Xn());
 }
-function ia() {
+function oa() {
     (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !t.ui.sidebarOpen } })),
-        ea());
+        na());
 }
-function oa({ restoreFocus: t = !1 } = {}) {
+function sa({ restoreFocus: t = !1 } = {}) {
     if (
-        (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !1 } })), ea(), N(), t)
+        (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !1 } })), na(), N(), t)
     ) {
         const t = e('#adminMenuToggle');
         t instanceof HTMLElement && t.focus();
     }
 }
-function sa() {
+function ra() {
     E();
     const t = document.getElementById('adminQuickCommand');
     t instanceof HTMLInputElement && t.focus();
 }
-function ra() {
+function ca() {
     const t = b().ui.activeSection;
     if ('appointments' === t) {
         const t = document.getElementById('searchAppointments');
@@ -4490,46 +4509,46 @@ function ra() {
         t instanceof HTMLInputElement && t.focus();
     }
 }
-async function ca(t) {
+async function la(t) {
     switch (t) {
         case 'appointments_pending_transfer':
-            (await na('appointments'), lt('pending_transfer'), ut(''));
+            (await aa('appointments'), lt('pending_transfer'), ut(''));
             break;
         case 'appointments_all':
-            (await na('appointments'), lt('all'), ut(''));
+            (await aa('appointments'), lt('all'), ut(''));
             break;
         case 'appointments_no_show':
-            (await na('appointments'), lt('no_show'), ut(''));
+            (await aa('appointments'), lt('no_show'), ut(''));
             break;
         case 'callbacks_pending':
-            (await na('callbacks'), Lt('pending'));
+            (await aa('callbacks'), Lt('pending'));
             break;
         case 'callbacks_contacted':
-            (await na('callbacks'), Lt('contacted'));
+            (await aa('callbacks'), Lt('contacted'));
             break;
         case 'callbacks_sla_urgent':
-            (await na('callbacks'), Lt('sla_urgent'));
+            (await aa('callbacks'), Lt('sla_urgent'));
             break;
         case 'queue_sla_risk':
-            (await na('queue'), Xe('sla_risk'));
+            (await aa('queue'), Xe('sla_risk'));
             break;
         case 'queue_waiting':
-            (await na('queue'), Xe('waiting'));
+            (await aa('queue'), Xe('waiting'));
             break;
         case 'queue_called':
-            (await na('queue'), Xe('called'));
+            (await aa('queue'), Xe('called'));
             break;
         case 'queue_no_show':
-            (await na('queue'), Xe('no_show'));
+            (await aa('queue'), Xe('no_show'));
             break;
         case 'queue_all':
-            (await na('queue'), Xe('all'));
+            (await aa('queue'), Xe('all'));
             break;
         case 'queue_call_next':
-            (await na('queue'), await on(b().queue.stationConsultorio));
+            (await aa('queue'), await on(b().queue.stationConsultorio));
     }
 }
-function la(t) {
+function ua(t) {
     const e = String(t || '')
         .trim()
         .toLowerCase();
@@ -4547,7 +4566,7 @@ function la(t) {
                     : null
         : null;
 }
-async function ua(t, e) {
+async function da(t, e) {
     switch (t) {
         case 'callback-quick-filter':
             return (Lt(String(e.dataset.filterValue || 'all')), !0);
@@ -4564,7 +4583,7 @@ async function ua(t, e) {
         case 'callbacks-triage-next':
         case 'context-open-callbacks-next':
             return (
-                await na('callbacks'),
+                await aa('callbacks'),
                 Lt('pending'),
                 (function () {
                     const t = document.querySelector(
@@ -4617,22 +4636,22 @@ async function ua(t, e) {
                 !0
             );
         case 'context-open-callbacks-pending':
-            return (await na('callbacks'), Lt('pending'), !0);
+            return (await aa('callbacks'), Lt('pending'), !0);
         default:
             return !1;
     }
 }
-async function da(t) {
+async function pa(t) {
     switch (t) {
         case 'context-open-appointments-transfer':
-            return (await na('appointments'), lt('pending_transfer'), !0);
+            return (await aa('appointments'), lt('pending_transfer'), !0);
         case 'context-open-dashboard':
-            return (await na('dashboard'), !0);
+            return (await aa('dashboard'), !0);
         default:
             return !1;
     }
 }
-async function pa(t, e) {
+async function ma(t, e) {
     switch (t) {
         case 'queue-refresh-state':
             return (await en(), !0);
@@ -4778,29 +4797,29 @@ async function pa(t, e) {
             return !1;
     }
 }
-async function ma(t, e) {
+async function ba(t, e) {
     switch (t) {
         case 'close-toast':
             return (e.closest('.toast')?.remove(), !0);
         case 'set-admin-theme':
             return (
-                Yn(String(e.dataset.themeMode || 'system'), { persist: !0 }),
+                Zn(String(e.dataset.themeMode || 'system'), { persist: !0 }),
                 !0
             );
         case 'toggle-sidebar-collapse':
-            return (aa(), !0);
+            return (ia(), !0);
         case 'refresh-admin-data':
-            return (await Fn(!0), !0);
+            return (await Rn(!0), !0);
         case 'run-admin-command': {
             const t = document.getElementById('adminQuickCommand');
             if (t instanceof HTMLInputElement) {
-                const e = la(t.value);
-                e && (await ca(e), (t.value = ''), N());
+                const e = ua(t.value);
+                e && (await la(e), (t.value = ''), N());
             }
             return !0;
         }
         case 'open-command-palette':
-            return (E(), sa(), !0);
+            return (E(), ra(), !0);
         case 'close-command-palette':
             return (N(), !0);
         case 'logout':
@@ -4824,7 +4843,7 @@ async function ma(t, e) {
                 })(),
                 _(),
                 N(),
-                Rn(),
+                On(),
                 s('Sesion cerrada', 'info'),
                 !0
             );
@@ -4846,7 +4865,7 @@ async function ma(t, e) {
             return !1;
     }
 }
-async function ba() {
+async function ga() {
     (M(),
         (function () {
             const t = e('#adminMainContent');
@@ -4872,7 +4891,7 @@ async function ba() {
                 t.preventDefault();
                 try {
                     await (async function (t, e) {
-                        const n = [ma, jn, ua, zn, pa, da];
+                        const n = [ba, zn, da, Vn, ma, pa];
                         for (const a of n) if (await a(t, e)) return !0;
                         return !1;
                     })(n, e);
@@ -4891,10 +4910,10 @@ async function ba() {
                 a = e.classList.contains('nav-item');
             if (!n && !a) return;
             t.preventDefault();
-            const i = await na(
+            const i = await aa(
                 String(e.getAttribute('data-section') || 'dashboard')
             );
-            Xn() && !1 !== i && oa();
+            ta() && !1 !== i && sa();
         }),
         document.addEventListener('click', (t) => {
             const e =
@@ -4962,8 +4981,8 @@ async function ba() {
             }));
         })(),
         (function () {
-            const t = Un(ke(Wn, 'dashboard')),
-                e = '1' === ke(Jn, '0');
+            const t = Kn(ke(Jn, 'dashboard')),
+                e = '1' === ke(Yn, '0');
             (g((n) => ({
                 ...n,
                 ui: {
@@ -4974,8 +4993,8 @@ async function ba() {
                 },
             })),
                 D(t),
-                Kn(t),
-                ea());
+                Qn(t),
+                na());
         })(),
         (function () {
             const t = {
@@ -5016,15 +5035,15 @@ async function ba() {
             })),
                 De(b()));
         })(),
-        Yn(
+        Zn(
             (function () {
-                const t = String(ke(Qn, 'system') || 'system')
+                const t = String(ke(Gn, 'system') || 'system')
                     .trim()
                     .toLowerCase();
-                return Gn.has(t) ? t : 'system';
+                return Wn.has(t) ? t : 'system';
             })()
         ),
-        Rn(),
+        On(),
         (function () {
             const t = document.getElementById('appointmentFilter');
             t instanceof HTMLSelectElement &&
@@ -5071,8 +5090,8 @@ async function ba() {
                 (c = r).addEventListener('keydown', async (t) => {
                     if ('Enter' !== t.key) return;
                     t.preventDefault();
-                    const e = la(c.value);
-                    e && (await ca(e));
+                    const e = ua(c.value);
+                    e && (await la(e));
                 });
         })(),
         (function () {
@@ -5080,19 +5099,19 @@ async function ba() {
                 n = e('#adminMenuClose'),
                 a = e('#adminSidebarBackdrop');
             (t?.addEventListener('click', () => {
-                Xn() ? ia() : aa();
+                ta() ? oa() : ia();
             }),
-                n?.addEventListener('click', () => oa({ restoreFocus: !0 })),
-                a?.addEventListener('click', () => oa({ restoreFocus: !0 })),
+                n?.addEventListener('click', () => sa({ restoreFocus: !0 })),
+                a?.addEventListener('click', () => sa({ restoreFocus: !0 })),
                 window.addEventListener('resize', () => {
-                    Xn() ? ea() : oa();
+                    ta() ? na() : sa();
                 }),
                 document.addEventListener('keydown', (t) => {
-                    if (!Xn() || !b().ui.sidebarOpen) return;
+                    if (!ta() || !b().ui.sidebarOpen) return;
                     if ('Escape' === t.key)
                         return (
                             t.preventDefault(),
-                            void oa({ restoreFocus: !0 })
+                            void sa({ restoreFocus: !0 })
                         );
                     if ('Tab' !== t.key) return;
                     const n = (function () {
@@ -5106,7 +5125,7 @@ async function ba() {
                                 t.querySelectorAll('.nav-item[data-section]')
                             ).filter((t) => t !== a),
                             o = t.querySelector('.logout-btn');
-                        return [n, a, ...i, o].filter(ta);
+                        return [n, a, ...i, o].filter(ea);
                     })();
                     if (!n.length) return;
                     const a = n.indexOf(document.activeElement);
@@ -5118,7 +5137,7 @@ async function ba() {
                 }),
                 window.addEventListener('hashchange', async () => {
                     const t = (function (t = 'dashboard') {
-                        return Un(
+                        return Kn(
                             String(window.location.hash || '').replace(
                                 /^#/,
                                 ''
@@ -5126,17 +5145,17 @@ async function ba() {
                             t
                         );
                     })(b().ui.activeSection);
-                    await na(t, { force: !0 });
+                    await aa(t, { force: !0 });
                 }),
                 window.addEventListener('storage', (t) => {
-                    'themeMode' === t.key && Yn(String(t.newValue || 'system'));
+                    'themeMode' === t.key && Zn(String(t.newValue || 'system'));
                 }));
         })(),
         window.addEventListener('beforeunload', (t) => {
             oe() && (t.preventDefault(), (t.returnValue = ''));
         }));
     const t = document.getElementById('loginForm');
-    (t instanceof HTMLFormElement && t.addEventListener('submit', On),
+    (t instanceof HTMLFormElement && t.addEventListener('submit', jn),
         (function (t) {
             const {
                 navigateToSection: e,
@@ -5218,13 +5237,13 @@ async function ba() {
                 }
             });
         })({
-            navigateToSection: na,
-            focusQuickCommand: sa,
-            focusCurrentSearch: ra,
-            runQuickAction: ca,
-            closeSidebar: () => oa({ restoreFocus: !0 }),
+            navigateToSection: aa,
+            focusQuickCommand: ra,
+            focusCurrentSearch: ca,
+            runQuickAction: la,
+            closeSidebar: () => sa({ restoreFocus: !0 }),
             toggleMenu: () => {
-                Xn() ? ia() : aa();
+                ta() ? oa() : ia();
             },
             dismissQueueSensitiveDialog: ln,
             toggleQueueHelp: () => dn(),
@@ -5256,10 +5275,10 @@ async function ba() {
     })();
     (n
         ? (await (async function () {
-              (L(), N(), await Fn(!1));
+              (L(), N(), await Rn(!1));
           })(),
           D(b().ui.activeSection))
-        : (_(), N(), Rn()),
+        : (_(), N(), On()),
         (async function () {
             const t = (function () {
                 const t = 'Notification' in window,
@@ -5303,22 +5322,22 @@ async function ba() {
                 }));
         })(),
         window.setInterval(() => {
-            Hn();
+            Fn();
         }, 3e4));
 }
-const ga = (
+const fa = (
     'loading' === document.readyState
         ? new Promise((t, e) => {
               document.addEventListener(
                   'DOMContentLoaded',
                   () => {
-                      ba().then(t).catch(e);
+                      ga().then(t).catch(e);
                   },
                   { once: !0 }
               );
           })
-        : ba()
+        : ga()
 ).catch((t) => {
     throw (console.error('admin-v3 boot failed', t), t);
 });
-export { ga as default };
+export { fa as default };
