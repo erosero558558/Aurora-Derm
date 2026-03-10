@@ -9,7 +9,8 @@
             "pause": "Pausar",
             "play": "Reproducir",
             "openRoute": "Abrir ruta",
-            "indicators": "Indicadores del carrusel"
+            "indicators": "Indicadores del carrusel",
+            "indicatorItemPrefix": "Ir al panel"
         },
         "slides": [
             {

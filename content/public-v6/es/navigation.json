@@ -5,6 +5,10 @@
         "tag": "Dermatologia medica en Quito"
     },
     "ui": {
+        "shell": {
+            "skipToContent": "Saltar al contenido",
+            "backToTop": "Volver arriba"
+        },
         "header": {
             "primaryNavAria": "Navegacion principal",
             "megaCategoryTabsAria": "Categorias del mega menu",

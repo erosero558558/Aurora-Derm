@@ -9,7 +9,8 @@
             "pause": "Pause",
             "play": "Play",
             "openRoute": "Open route",
-            "indicators": "Carousel indicators"
+            "indicators": "Carousel indicators",
+            "indicatorItemPrefix": "Go to panel"
         },
         "slides": [
             {

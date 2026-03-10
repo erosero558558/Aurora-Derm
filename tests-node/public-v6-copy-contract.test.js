@@ -52,6 +52,8 @@ test('public-v6 copy contract: required ui labels exist in ES and EN', () => {
 
     const requiredByFile = {
         'navigation.json': [
+            'ui.shell.skipToContent',
+            'ui.shell.backToTop',
             'ui.header.primaryNavAria',
             'ui.header.megaCategoryTabsAria',
             'ui.header.openCategoryLabel',
@@ -68,6 +70,7 @@ test('public-v6 copy contract: required ui labels exist in ES and EN', () => {
             'hero.labels.next',
             'hero.labels.pause',
             'hero.labels.play',
+            'hero.labels.indicatorItemPrefix',
             'newsStrip.expandLabel',
             'editorial.ctaLabel',
             'corporateMatrix.ctaLabel',

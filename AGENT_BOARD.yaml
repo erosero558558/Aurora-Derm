@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 431
+  revision: 434
   updated_at: 2026-03-10
 
 tasks:
@@ -6353,5 +6353,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-159.md"
     depends_on: []
     prompt: "Refine public V6 home and navigation editorial copy"
+    created_at: 2026-03-10
+    updated_at: 2026-03-10
+
+  - id: AG-160
+    title: "Externalize V6 shell labels and hero microcopy"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-10T03:42:25.835Z"
+    risk: low
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/astro/src/layouts/PublicShellV6.astro", "src/apps/astro/src/components/public-v6/HeroShowcaseV6.astro", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "content/public-v6/es/home.json", "content/public-v6/en/home.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-10T03:42:25.835Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Externalize V6 shell labels and hero microcopy"
+    acceptance_ref: "verification/agent-runs/AG-160.md"
+    evidence_ref: "verification/agent-runs/AG-160.md"
+    depends_on: []
+    prompt: "Externalize V6 shell labels and hero microcopy"
     created_at: 2026-03-10
     updated_at: 2026-03-10

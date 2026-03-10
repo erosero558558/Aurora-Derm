@@ -5,6 +5,10 @@
         "tag": "Medical dermatology in Quito"
     },
     "ui": {
+        "shell": {
+            "skipToContent": "Skip to content",
+            "backToTop": "Back to top"
+        },
         "header": {
             "primaryNavAria": "Primary navigation",
             "megaCategoryTabsAria": "Mega menu categories",

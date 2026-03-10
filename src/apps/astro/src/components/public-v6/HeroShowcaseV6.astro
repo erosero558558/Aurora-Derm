@@ -5,6 +5,13 @@ const autoplayMs = Number(hero.autoplayMs || 7000);
 const safeAutoplay = Number.isFinite(autoplayMs) && autoplayMs > 1000 ? autoplayMs : 7000;
 const first = slides[0] || {};
 const labels = hero.labels && typeof hero.labels === 'object' ? hero.labels : {};
+const indicatorPrefix = String(labels.indicatorItemPrefix || '').trim();
+
+const buildIndicatorLabel = (slide, index) => {
+    const base = [indicatorPrefix, String(index + 1)].filter(Boolean).join(' ');
+    const category = String(slide?.category || '').trim();
+    return category ? `${base}: ${category}` : base;
+};
 ---
 
 <section
@@ -74,7 +81,7 @@ const labels = hero.labels && typeof hero.labels === 'object' ? hero.labels : {}
                                     data-v6-target={index}
                                     role="tab"
                                     aria-selected={index === 0 ? 'true' : 'false'}
-                                    aria-label={`${slide.category || ''} ${index + 1}`}
+                                    aria-label={buildIndicatorLabel(slide, index)}
                                 >
                                     <span class="v6-hero__indicator-track" aria-hidden="true">
                                         <span class="v6-hero__indicator-fill" data-v6-indicator-fill></span>

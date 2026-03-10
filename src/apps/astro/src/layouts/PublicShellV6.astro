@@ -27,6 +27,7 @@ const preloadHref = String(preloadImageSrc || '').trim();
 const preloadSrcSet = String(preloadImageSrcSet || '').trim();
 const preloadSizes = String(preloadImageSizes || '').trim();
 const preloadType = String(preloadImageType || '').trim();
+const shellUi = navModel?.ui?.shell && typeof navModel.ui.shell === 'object' ? navModel.ui.shell : {};
 
 const flags = {
     version: 'v6-r2',
@@ -74,12 +75,12 @@ const flagsJson = JSON.stringify(flags);
         <script is:inline set:html={`window.__PUBLIC_V6_FLAGS = ${flagsJson};`}></script>
     </head>
     <body data-public-shell data-public-shell-version="v6" data-public-surface={pathname} data-public-template-id={templateId}>
-        <a class="v6-skip-link" href="#main-content">{locale === 'en' ? 'Skip to content' : 'Saltar al contenido'}</a>
+        <a class="v6-skip-link" href="#main-content">{shellUi.skipToContent || ''}</a>
         <PublicHeaderV6 navModel={navModel} />
         <main id="main-content" class="v6-main">
             <slot />
         </main>
         <PublicFooterV6 navModel={navModel} locale={locale} />
-        <button class="v6-back-to-top" type="button" data-v6-back-top aria-label={locale === 'en' ? 'Back to top' : 'Volver arriba'}>^</button>
+        <button class="v6-back-to-top" type="button" data-v6-back-top aria-label={shellUi.backToTop || ''}>^</button>
     </body>
 </html>
