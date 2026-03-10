@@ -33,36 +33,32 @@ const checkpoints = Array.isArray(service.bullets) ? service.bullets : [];
 const processSteps = Array.isArray(service.process) ? service.process : [];
 const faqItems = Array.isArray(service.faq) ? service.faq : [];
 const faqAnswers = Array.isArray(service.faqAnswers) ? service.faqAnswers : [];
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+const makeMenuItem = (label, href) => (hasText(label) ? { label: label.trim(), href } : null);
+const faqModels = faqItems
+    .map((question, index) => ({
+        question,
+        answer: faqAnswers[index],
+    }))
+    .filter((item) => hasText(item.question) && hasText(item.answer));
 const sectionMenuItems = [
-    {
-        label: menuUi.glance || '',
-        href: '#v6-service-glance',
-    },
-    {
-        label: menuUi.checkpoints || '',
-        href: '#v6-service-checkpoints',
-    },
-    {
-        label: menuUi.process || '',
-        href: '#v6-service-process',
-    },
-    {
-        label: menuUi.faq || '',
-        href: '#v6-service-faq',
-    },
-];
+    makeMenuItem(menuUi.glance || '', '#v6-service-glance'),
+    makeMenuItem(menuUi.checkpoints || '', '#v6-service-checkpoints'),
+    makeMenuItem(menuUi.process || '', '#v6-service-process'),
+    makeMenuItem(menuUi.faq || '', '#v6-service-faq'),
+].filter(Boolean);
 
 if (related.length) {
-    sectionMenuItems.push({
-        label: menuUi.related || '',
-        href: '#v6-service-related',
-    });
+    const relatedItem = makeMenuItem(menuUi.related || '', '#v6-service-related');
+    if (relatedItem) {
+        sectionMenuItems.push(relatedItem);
+    }
 }
 
-sectionMenuItems.push({
-    label: menuUi.booking || '',
-    href: '#v6-booking-status',
-});
+const bookingMenuItem = makeMenuItem(menuUi.booking || '', '#v6-booking-status');
+if (bookingMenuItem) {
+    sectionMenuItems.push(bookingMenuItem);
+}
 
 const breadcrumb = [
     { label: breadcrumbUi.home || '', href: locale === 'en' ? '/en/' : '/es/' },
@@ -76,12 +72,11 @@ const statementTitleTemplate = statementUi.titleTemplate || '{service}';
 const statement = {
     eyebrow: statementUi.eyebrow || '',
     title: statementTitleTemplate.replace('{service}', service.title || ''),
-    body: service.lead || '',
+    body: service.lead,
     signature: statementUi.signature || '',
     image: statementUi.image || '',
     alt: statementUi.alt || '',
 };
-const faqAnswerNote = ui.faqAnswerNote || '';
 const relatedCta = ui.relatedCta || '';
 const faqPrefix = ui.faqPrefix || '';
 ---
@@ -103,7 +98,7 @@ const faqPrefix = ui.faqPrefix || '';
 
 <section class="v6-internal-message" data-v6-internal-message>
     <h2>{service.summary}</h2>
-    <p>{service.lead || ''}</p>
+    {service.lead ? <p>{service.lead}</p> : null}
 </section>
 
 <InternalStatementBandV6 statement={statement} variant="service" />
@@ -116,7 +111,7 @@ const faqPrefix = ui.faqPrefix || '';
 
 <div class="v6-internal-shell" data-v6-internal-shell>
     <aside class="v6-internal-rail" data-v6-internal-rail>
-        <p>{railUi.title || ''}</p>
+        {railUi.title ? <p>{railUi.title}</p> : null}
         <nav data-v6-section-nav="internal" aria-label={railUi.aria || ''}>
             {
                 sectionMenuItems.map((item) => (
@@ -175,11 +170,11 @@ const faqPrefix = ui.faqPrefix || '';
                 <h3>{sectionsUi.faqTitle || ''}</h3>
                 <div class="v6-service-faq-grid">
                     {
-                        faqItems.map((item, index) => (
+                        faqModels.map((item, index) => (
                             <article>
                                 <p>{`${faqPrefix}${index + 1}`}</p>
-                                <h4>{item}</h4>
-                                <small>{faqAnswers[index] || faqAnswerNote}</small>
+                                <h4>{item.question}</h4>
+                                <small>{item.answer}</small>
                             </article>
                         ))
                     }
@@ -196,10 +191,10 @@ const faqPrefix = ui.faqPrefix || '';
                             related.map((item) => (
                                 <a href={item.href}>
                                     <img src={item.heroImage} alt={item.title} loading="lazy" decoding="async" />
-                                    <p>{item.category}</p>
+                                    {item.category ? <p>{item.category}</p> : null}
                                     <h3>{item.title}</h3>
-                                    <p>{item.summary}</p>
-                                    <strong>{relatedCta}</strong>
+                                    {item.summary ? <p>{item.summary}</p> : null}
+                                    {relatedCta ? <strong>{relatedCta}</strong> : null}
                                 </a>
                             ))
                         }

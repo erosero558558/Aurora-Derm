@@ -12,26 +12,31 @@ const menuUi = ui.menu && typeof ui.menu === 'object' ? ui.menu : {};
 const featuredUi = ui.featured && typeof ui.featured === 'object' ? ui.featured : {};
 const initiativesUi = ui.initiatives && typeof ui.initiatives === 'object' ? ui.initiatives : {};
 const pageHeadUi = navModel?.ui?.pageHead && typeof navModel.ui.pageHead === 'object' ? navModel.ui.pageHead : {};
-const sectionLinks = sections.map((section, index) => ({
-    id: section.id || `section-${index + 1}`,
-    title: section.title || '',
-}));
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+const makeMenuItem = (label, href) => (hasText(label) ? { label: label.trim(), href } : null);
+const sectionLinks = sections
+    .map((section, index) => ({
+        id: section.id || `section-${index + 1}`,
+        title: section.title || '',
+    }))
+    .filter((section) => hasText(section.id) && hasText(section.title));
 const pageMenuItems = [];
 if (featured.length) {
-    pageMenuItems.push({
-        label: menuUi.featured || '',
-        href: '#v6-hub-featured',
-    });
+    const featuredItem = makeMenuItem(menuUi.featured || '', '#v6-hub-featured');
+    if (featuredItem) {
+        pageMenuItems.push(featuredItem);
+    }
 }
-pageMenuItems.push(...sectionLinks.map((section) => ({
-    label: section.title,
-    href: `#v6-${section.id}`,
-})));
+pageMenuItems.push(
+    ...sectionLinks
+        .map((section) => makeMenuItem(section.title, `#v6-${section.id}`))
+        .filter(Boolean)
+);
 if (initiatives.length) {
-    pageMenuItems.push({
-        label: menuUi.initiatives || '',
-        href: '#v6-hub-initiatives',
-    });
+    const initiativesItem = makeMenuItem(menuUi.initiatives || '', '#v6-hub-initiatives');
+    if (initiativesItem) {
+        pageMenuItems.push(initiativesItem);
+    }
 }
 const switchLabel = navModel?.header?.switchLabel || '';
 const switchHref = navModel?.header?.switchHref || '#';
@@ -54,7 +59,7 @@ const railAria = ui.railAria || '';
 />
 
 <section class="v6-page-hero-media">
-    <img src={page?.heroImage?.src} srcset={page?.heroImage?.srcset || undefined} sizes="100vw" alt={page?.heroImage?.alt || ''} loading="eager" fetchpriority="high" />
+    <img src={page?.heroImage?.src} srcset={page?.heroImage?.srcset || undefined} sizes="100vw" alt={page?.heroImage?.alt || page.heading} loading="eager" fetchpriority="high" />
 </section>
 
 <section class="v6-page-intro">
@@ -66,24 +71,26 @@ const railAria = ui.railAria || '';
     featured.length ? (
         <section id="v6-hub-featured" class="v6-hub-featured" data-v6-hub-featured>
             <header class="v6-hub-featured__head">
-                <p>{featuredUi.eyebrow || ''}</p>
-                <h2>{featuredUi.title || ''}</h2>
+                {featuredUi.eyebrow ? <p>{featuredUi.eyebrow}</p> : null}
+                {featuredUi.title ? <h2>{featuredUi.title}</h2> : null}
             </header>
             <div class="v6-hub-featured__grid">
                 {
                     featured.map((item, index) => (
                         <a class:list={['v6-catalog-card', 'v6-catalog-card--feature', index === 0 && 'is-lead']} href={item.href} data-v6-hub-featured-card>
                             <figure>
-                                <img src={item.image} alt={item.title || ''} loading="lazy" decoding="async" />
+                                <img src={item.image} alt={item.title} loading="lazy" decoding="async" />
                             </figure>
                             <div class="v6-catalog-card__meta">
-                                <p><span>{item.category}</span></p>
+                                {item.category ? <p><span>{item.category}</span></p> : null}
                                 <h3>{item.title}</h3>
                                 <p>{item.copy}</p>
-                                <strong>
-                                    {ctaLabel}
-                                    <span aria-hidden="true">></span>
-                                </strong>
+                                {ctaLabel ? (
+                                    <strong>
+                                        {ctaLabel}
+                                        <span aria-hidden="true">></span>
+                                    </strong>
+                                ) : null}
                             </div>
                         </a>
                     ))
@@ -132,16 +139,18 @@ const railAria = ui.railAria || '';
                                 data-v6-catalog-card
                             >
                                 <figure>
-                                    <img src={card.image} alt={card.title || ''} loading="lazy" decoding="async" />
+                                    <img src={card.image} alt={card.title} loading="lazy" decoding="async" />
                                 </figure>
                                 <div class="v6-catalog-card__meta">
-                                    <p><span>{card.category}</span></p>
+                                    {card.category ? <p><span>{card.category}</span></p> : null}
                                     <h3>{card.title}</h3>
                                     <p>{card.copy}</p>
-                                    <strong>
-                                        {ctaLabel}
-                                        <span aria-hidden="true">></span>
-                                    </strong>
+                                    {ctaLabel ? (
+                                        <strong>
+                                            {ctaLabel}
+                                            <span aria-hidden="true">></span>
+                                        </strong>
+                                    ) : null}
                                 </div>
                             </a>
                         ))
@@ -156,24 +165,26 @@ const railAria = ui.railAria || '';
     initiatives.length ? (
         <section id="v6-hub-initiatives" class="v6-hub-initiatives" data-v6-hub-initiatives>
             <header class="v6-hub-initiatives__head">
-                <p>{initiativesUi.eyebrow || ''}</p>
-                <h2>{initiativesUi.title || ''}</h2>
+                {initiativesUi.eyebrow ? <p>{initiativesUi.eyebrow}</p> : null}
+                {initiativesUi.title ? <h2>{initiativesUi.title}</h2> : null}
             </header>
             <div class="v6-hub-initiatives__grid">
                 {
                     initiatives.map((item) => (
                         <a href={item.href} data-v6-hub-initiative-card>
                             <figure>
-                                <img src={item.image} alt={item.title || ''} loading="lazy" decoding="async" />
+                                <img src={item.image} alt={item.title} loading="lazy" decoding="async" />
                             </figure>
                             <div>
-                                <p><span>{item.category}</span></p>
+                                {item.category ? <p><span>{item.category}</span></p> : null}
                                 <h3>{item.title}</h3>
                                 <p>{item.copy}</p>
-                                <strong>
-                                    {ctaLabel}
-                                    <span aria-hidden="true">></span>
-                                </strong>
+                                {ctaLabel ? (
+                                    <strong>
+                                        {ctaLabel}
+                                        <span aria-hidden="true">></span>
+                                    </strong>
+                                ) : null}
                             </div>
                         </a>
                     ))

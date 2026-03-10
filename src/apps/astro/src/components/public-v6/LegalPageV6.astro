@@ -21,6 +21,8 @@ const breadcrumbUi = ui?.breadcrumb && typeof ui.breadcrumb === 'object' ? ui.br
 const sectionLabel = ui.sectionLabel || '';
 const blockLabel = ui.blockLabel || '';
 const clausesLabel = ui.clausesLabel || '';
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+const makeMenuItem = (label, href) => (hasText(label) ? { label: label.trim(), href } : null);
 
 const switchLabel = navModel?.header?.switchLabel || '';
 const switchHref = navModel?.header?.switchHref || '#';
@@ -46,7 +48,7 @@ const indexCards = indexItems.map((item, index) => {
         title: item.title,
         href: item.href,
         summary: source.summary || '',
-        image: source.heroImage || page.heroImage,
+        image: source.heroImage || '',
         sectionLabel: `${sectionLabel} ${String(index + 1).padStart(2, '0')}`.trim(),
         clauses,
     };
@@ -57,32 +59,27 @@ const sectionModels = sections.map((section, index) => ({
     anchorId: `v6-legal-section-${index + 1}`,
 }));
 const pageMenuItems = [
-    {
-        label: menuUi.legalIndex || '',
-        href: '#v6-legal-tabs',
-    },
-];
+    makeMenuItem(menuUi.legalIndex || '', '#v6-legal-tabs'),
+].filter(Boolean);
 
 if (sectionHighlights.length) {
-    pageMenuItems.push({
-        label: menuUi.clausesSummary || '',
-        href: '#v6-legal-summary',
-    });
+    const clausesItem = makeMenuItem(menuUi.clausesSummary || '', '#v6-legal-summary');
+    if (clausesItem) {
+        pageMenuItems.push(clausesItem);
+    }
 }
 
 if (indexCards.length) {
-    pageMenuItems.push({
-        label: menuUi.policyIndex || '',
-        href: '#v6-legal-index-grid',
-    });
+    const policyItem = makeMenuItem(menuUi.policyIndex || '', '#v6-legal-index-grid');
+    if (policyItem) {
+        pageMenuItems.push(policyItem);
+    }
 }
 
 sectionModels.forEach((section) => {
-    if (section.title) {
-        pageMenuItems.push({
-            label: section.title,
-            href: `#${section.anchorId}`,
-        });
+    const item = makeMenuItem(section.title, `#${section.anchorId}`);
+    if (item) {
+        pageMenuItems.push(item);
     }
 });
 
@@ -96,7 +93,7 @@ const thesisBody = thesisUi.body || '';
 const statement = {
     eyebrow: statementUi.eyebrow || '',
     title: statementUi.title || '',
-    body: page.summary || internalMessageUi.description || '',
+    body: page.summary || '',
     signature: statementUi.signature || '',
     image: statementUi.image || '',
     alt: statementUi.alt || '',
@@ -128,7 +125,7 @@ const statement = {
 
 <section class="v6-internal-message" data-v6-internal-message>
     <h2>{page.summary}</h2>
-    <p>{internalMessageUi.description || ''}</p>
+    {internalMessageUi.description ? <p>{internalMessageUi.description}</p> : null}
 </section>
 
 <InternalStatementBandV6 statement={statement} variant="legal" />

@@ -57,6 +57,7 @@
     "blocks": [
         {
             "title": "How it works",
+            "image": "/images/optimized/service-telemedicina.webp",
             "items": [
                 "You share key history and clinical images taken with enough context to guide first review.",
                 "We prioritize risk to decide whether the case can be handled remotely.",
@@ -66,6 +67,7 @@
         },
         {
             "title": "When it usually fits",
+            "image": "/images/optimized/showcase-diagnostic.webp",
             "items": [
                 "Previously assessed inflammatory flares that need adjustment",
                 "Follow-up of active treatment plans with recent change",
@@ -75,6 +77,7 @@
         },
         {
             "title": "When escalation is required",
+            "image": "/images/optimized/showcase-clinic.webp",
             "items": [
                 "Rapidly changing, bleeding, or non-healing lesions",
                 "Intense pain, accelerated spread, or functional impact",

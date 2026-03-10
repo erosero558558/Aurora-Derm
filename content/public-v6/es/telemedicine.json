@@ -57,6 +57,7 @@
     "blocks": [
         {
             "title": "Como funciona",
+            "image": "/images/optimized/service-telemedicina.webp",
             "items": [
                 "Usted comparte antecedentes clave y fotografias tomadas con contexto clinico.",
                 "Priorizamos riesgo para definir si su caso puede resolverse de forma remota.",
@@ -66,6 +67,7 @@
         },
         {
             "title": "Cuando suele encajar",
+            "image": "/images/optimized/showcase-diagnostic.webp",
             "items": [
                 "Brotes inflamatorios ya evaluados que requieren ajuste",
                 "Seguimiento de tratamientos activos con cambios recientes",
@@ -75,6 +77,7 @@
         },
         {
             "title": "Cuando debe escalar",
+            "image": "/images/optimized/showcase-clinic.webp",
             "items": [
                 "Lesiones que cambian rapido, sangran o no cicatrizan",
                 "Dolor intenso, extension acelerada o compromiso funcional",

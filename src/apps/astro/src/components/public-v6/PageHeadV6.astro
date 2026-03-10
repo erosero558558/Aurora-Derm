@@ -11,6 +11,7 @@ const {
 } = Astro.props;
 
 const crumbs = Array.isArray(breadcrumb) ? breadcrumb : [];
+const safeCrumbs = crumbs.filter((item) => item && item.href && item.label);
 const activeLang = locale === 'en' ? 'EN' : 'ES';
 const safeMenuItems = Array.isArray(menuItems)
     ? menuItems.filter((item) => item && item.href && item.label)
@@ -21,6 +22,7 @@ const languageSwitchAria = copy.languageSwitchAria || '';
 const pageNavigationLabel = copy.pageNavigationLabel || '';
 const pageNavigationTitle = copy.pageNavigationTitle || '';
 const noSections = copy.noSections || '';
+const hasSwitch = Boolean(switchLabel && switchHref);
 ---
 
 <section class="v6-corp-head" data-v6-page-head>
@@ -28,22 +30,22 @@ const noSections = copy.noSections || '';
         <div class="v6-corp-head__top">
             <nav class="v6-corp-head__crumbs" aria-label={breadcrumbAria}>
                 {
-                    crumbs.map((item, index) => (
+                    safeCrumbs.map((item, index) => (
                         <>
                             <a href={item.href}>{item.label}</a>
-                            {index < crumbs.length - 1 ? <span aria-hidden="true">></span> : null}
+                            {index < safeCrumbs.length - 1 ? <span aria-hidden="true">></span> : null}
                         </>
                     ))
                 }
             </nav>
             <div class="v6-corp-head__tools" data-v6-page-tools>
                 <div class="v6-corp-head__lang" aria-label={languageSwitchAria}>
-                    {switchLabel ? (
+                    {hasSwitch ? (
                         <a class="v6-corp-head__lang-option" href={switchHref}>
                             {switchLabel}
                         </a>
                     ) : null}
-                    <span aria-hidden="true">/</span>
+                    {hasSwitch ? <span aria-hidden="true">/</span> : null}
                     <strong class="v6-corp-head__lang-option is-active">{activeLang}</strong>
                 </div>
                 <button
@@ -65,7 +67,7 @@ const noSections = copy.noSections || '';
                     aria-label={pageNavigationLabel}
                     hidden
                 >
-                    <p>{pageNavigationTitle}</p>
+                    {pageNavigationTitle ? <p>{pageNavigationTitle}</p> : null}
                     {
                         safeMenuItems.length ? (
                             <ul>
@@ -77,11 +79,11 @@ const noSections = copy.noSections || '';
                                     ))
                                 }
                             </ul>
-                        ) : (
+                        ) : noSections ? (
                             <p class="v6-corp-head__menu-empty">
                                 {noSections}
                             </p>
-                        )
+                        ) : null
                     }
                 </div>
             </div>
