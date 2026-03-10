@@ -172,33 +172,35 @@ const actionClass = (variant = 'secondary') => [
         </div>
 
         <div class="v6-suite-hero__stage">
-            {
-                heroMetrics.length ? (
-                    <div class="v6-suite-metrics">
-                        {heroMetrics.map((metric) => (
-                            <article class="v6-suite-metric">
-                                <strong>{metric.value}</strong>
-                                <h3>{metric.label}</h3>
-                                {metric.detail ? <p>{metric.detail}</p> : null}
-                            </article>
-                        ))}
-                    </div>
-                ) : null
-            }
+            <div class="v6-suite-hero__board">
+                {
+                    heroMetrics.length ? (
+                        <div class="v6-suite-metrics">
+                            {heroMetrics.map((metric) => (
+                                <article class="v6-suite-metric">
+                                    <strong>{metric.value}</strong>
+                                    <h3>{metric.label}</h3>
+                                    {metric.detail ? <p>{metric.detail}</p> : null}
+                                </article>
+                            ))}
+                        </div>
+                    ) : null
+                }
 
-            {
-                heroPanels.length ? (
-                    <div class="v6-suite-panel-grid">
-                        {heroPanels.map((panel) => (
-                            <article class="v6-suite-panel">
-                                {panel.eyebrow ? <p>{panel.eyebrow}</p> : null}
-                                <h3>{panel.title}</h3>
-                                {panel.copy ? <span>{panel.copy}</span> : null}
-                            </article>
-                        ))}
-                    </div>
-                ) : null
-            }
+                {
+                    heroPanels.length ? (
+                        <div class="v6-suite-panel-grid">
+                            {heroPanels.map((panel) => (
+                                <article class="v6-suite-panel">
+                                    {panel.eyebrow ? <p>{panel.eyebrow}</p> : null}
+                                    <h3>{panel.title}</h3>
+                                    {panel.copy ? <span>{panel.copy}</span> : null}
+                                </article>
+                            ))}
+                        </div>
+                    ) : null
+                }
+            </div>
         </div>
     </div>
 </section>
@@ -357,7 +359,7 @@ const actionClass = (variant = 'secondary') => [
                 </header>
 
                 <div class="v6-suite-surface-grid">
-                    {surfaceCards.map((card) => (
+                    {surfaceCards.map((card, index) => (
                         <article
                             class:list={[
                                 'v6-suite-surface-card',
@@ -365,6 +367,7 @@ const actionClass = (variant = 'secondary') => [
                             ]}
                             data-v6-suite-surface-card
                             data-v6-suite-surface-kind={resolveMockupKind(card.mockup)}
+                            data-v6-suite-card-index={index + 1}
                         >
                             <div class="v6-suite-surface-card__copy">
                                 {card.eyebrow ? <p>{card.eyebrow}</p> : null}
@@ -375,7 +378,9 @@ const actionClass = (variant = 'secondary') => [
                                     <span aria-hidden="true">></span>
                                 </a>
                             </div>
-                            <SoftwareMockupV6 mockup={card.mockup} compact={true} />
+                            <div class="v6-suite-surface-card__stage">
+                                <SoftwareMockupV6 mockup={card.mockup} compact={true} />
+                            </div>
                         </article>
                     ))}
                 </div>

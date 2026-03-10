@@ -41,35 +41,37 @@ const hasHeader = Boolean(eyebrow || title);
         <span></span>
         <span></span>
     </div>
-    {
-        hasHeader || chips.length ? (
-            <header class="v6-suite-mockup__head">
-                <div>
-                    {eyebrow ? <p>{eyebrow}</p> : null}
-                    {title ? <h3>{title}</h3> : null}
-                </div>
-                {
-                    chips.length ? (
-                        <ul class="v6-suite-mockup__chips" aria-label={title || undefined}>
-                            {chips.map((chip) => <li>{chip}</li>)}
-                        </ul>
-                    ) : null
-                }
-            </header>
-        ) : null
-    }
+    <div class="v6-suite-mockup__screen">
+        {
+            hasHeader || chips.length ? (
+                <header class="v6-suite-mockup__head">
+                    <div>
+                        {eyebrow ? <p>{eyebrow}</p> : null}
+                        {title ? <h3>{title}</h3> : null}
+                    </div>
+                    {
+                        chips.length ? (
+                            <ul class="v6-suite-mockup__chips" aria-label={title || undefined}>
+                                {chips.map((chip) => <li>{chip}</li>)}
+                            </ul>
+                        ) : null
+                    }
+                </header>
+            ) : null
+        }
 
-    <div class="v6-suite-mockup__body">
-        {rows.map((row, index) => (
-            <article class:list={['v6-suite-mockup__row', index === 0 && 'is-primary']}>
-                <div class="v6-suite-mockup__row-head">
-                    <p>{row.label}</p>
-                    {row.meta ? <span>{row.meta}</span> : null}
-                </div>
-                <strong>{row.value}</strong>
-            </article>
-        ))}
+        <div class="v6-suite-mockup__body">
+            {rows.map((row, index) => (
+                <article class:list={['v6-suite-mockup__row', index === 0 && 'is-primary']}>
+                    <div class="v6-suite-mockup__row-head">
+                        <p>{row.label}</p>
+                        {row.meta ? <span>{row.meta}</span> : null}
+                    </div>
+                    <strong>{row.value}</strong>
+                </article>
+            ))}
+        </div>
+
+        {footer ? <footer class="v6-suite-mockup__footer">{footer}</footer> : null}
     </div>
-
-    {footer ? <footer class="v6-suite-mockup__footer">{footer}</footer> : null}
 </article>

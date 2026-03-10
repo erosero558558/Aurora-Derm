@@ -156,14 +156,16 @@ const actionClass = (variant = 'secondary') => [
 
         {
             heroMetrics.length ? (
-                <div class="v6-suite-metrics v6-suite-metrics--surface">
-                    {heroMetrics.map((metric) => (
-                        <article class="v6-suite-metric">
-                            <strong>{metric.value}</strong>
-                            <h3>{metric.label}</h3>
-                            {metric.detail ? <p>{metric.detail}</p> : null}
-                        </article>
-                    ))}
+                <div class="v6-suite-hero__board v6-suite-hero__board--surface">
+                    <div class="v6-suite-metrics v6-suite-metrics--surface">
+                        {heroMetrics.map((metric) => (
+                            <article class="v6-suite-metric">
+                                <strong>{metric.value}</strong>
+                                <h3>{metric.label}</h3>
+                                {metric.detail ? <p>{metric.detail}</p> : null}
+                            </article>
+                        ))}
+                    </div>
                 </div>
             ) : null
         }
@@ -277,7 +279,9 @@ const actionClass = (variant = 'secondary') => [
                     data-v6-suite-showcase
                     data-v6-suite-surface-kind={showcaseKind}
                 >
-                    <SoftwareMockupV6 mockup={mockup} />
+                    <div class="v6-suite-showcase__stage">
+                        <SoftwareMockupV6 mockup={mockup} />
+                    </div>
                     <article class:list={['v6-suite-card', 'v6-suite-card--copy', `is-${showcaseKind}`]}>
                         {mockup.eyebrow ? <p>{mockup.eyebrow}</p> : null}
                         <h3>{mockup.title || page.heading}</h3>

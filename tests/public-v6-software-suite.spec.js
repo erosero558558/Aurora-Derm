@@ -37,6 +37,7 @@ test.describe('Public V6 software suite', () => {
         await expect(
             page.locator('[data-v6-suite-map="landing"] [aria-current="page"]').first()
         ).toHaveAttribute('href', '/es/software/turnero-clinicas/');
+        await expect(page.locator('.v6-suite-hero__board').first()).toBeVisible();
         await expect(
             page.locator('.v6-suite-hero .v6-suite-actions a')
         ).toHaveCount(4);
@@ -45,6 +46,9 @@ test.describe('Public V6 software suite', () => {
         ).toHaveCount(7);
         await expect(
             page.locator('.v6-suite-surface-grid .v6-suite-surface-card')
+        ).toHaveCount(3);
+        await expect(
+            page.locator('.v6-suite-surface-grid .v6-suite-surface-card__stage')
         ).toHaveCount(3);
         await expect(page.locator('.v6-suite-faq__item')).toHaveCount(4);
 
@@ -70,6 +74,7 @@ test.describe('Public V6 software suite', () => {
             page.locator('[data-v6-section-nav="software-surface"] [data-v6-section-link]')
         ).toHaveCount(5);
         await expect(page.locator('.v6-suite-surface-hero .v6-suite-actions a')).toHaveCount(2);
+        await expect(page.locator('.v6-suite-showcase__stage').first()).toBeVisible();
         await expect(page.locator('.v6-suite-showcase .v6-suite-mockup__row')).toHaveCount(3);
         await expect(page.locator('.v6-suite-list-grid .v6-suite-list-item')).toHaveCount(4);
 
