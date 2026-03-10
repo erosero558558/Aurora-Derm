@@ -15,10 +15,10 @@
                 "eyebrow": "Busqueda rapida",
                 "inputLabel": "Escriba un servicio o tema",
                 "placeholder": "Acne, laser, telemedicina, cicatrices...",
-                "hint": "Use palabras simples. Filtramos por rutas clinicas activas en Piel en Armonia.",
+                "hint": "Use palabras simples. Le mostramos rutas clinicas activas y el siguiente paso mas util.",
                 "resultsAria": "Resultados de busqueda",
-                "emptyTitle": "No encontramos una ruta con esa busqueda",
-                "emptyBody": "Pruebe con acne, laser, telemedicina o diagnostico para abrir una ruta activa.",
+                "emptyTitle": "No encontramos una ruta activa con esa busqueda",
+                "emptyBody": "Pruebe con diagnostico, acne, laser o telemedicina para abrir una ruta vigente.",
                 "closeLabel": "Cerrar buscador",
                 "resultsLimit": 8
             }
@@ -37,7 +37,7 @@
     "header": {
         "contactLabel": "Contacto",
         "contactHref": "https://wa.me/593982453672",
-        "searchLabel": "Buscar servicio",
+        "searchLabel": "Buscar rutas",
         "menuLabel": "Menu",
         "closeMenuLabel": "Cerrar menu",
         "switchLabel": "EN",
@@ -75,7 +75,7 @@
             },
             {
                 "id": "team",
-                "label": "Equipo medico",
+                "label": "Equipo",
                 "href": "/es/servicios/piel-cabello-unas/",
                 "kind": "standard"
             },
@@ -91,7 +91,7 @@
                 "label": "Diagnostico integral",
                 "href": "/es/servicios/diagnostico-integral/",
                 "eyebrow": "Consulta inicial",
-                "deck": "Primera lectura completa para definir prioridad, riesgo y siguiente paso."
+                "deck": "Primera lectura completa para definir prioridad, riesgo y siguiente paso con claridad."
             },
             {
                 "label": "Acne y rosacea",
@@ -109,7 +109,7 @@
                 "label": "Peeling quimico",
                 "href": "/es/servicios/peeling-quimico/",
                 "eyebrow": "Tratamientos medicos",
-                "deck": "Protocolos por textura, pigmento y tolerancia de la piel."
+                "deck": "Protocolos calibrados por textura, pigmento y tolerancia de la piel."
             },
             {
                 "label": "Bioestimuladores de colageno",
@@ -121,19 +121,19 @@
                 "label": "Botox medico",
                 "href": "/es/servicios/botox/",
                 "eyebrow": "Tratamientos medicos",
-                "deck": "Indicacion precisa para armonia facial y seguimiento clinico."
+                "deck": "Indicacion precisa para armonia facial con seguimiento clinico."
             },
             {
                 "label": "Mesoterapia",
                 "href": "/es/servicios/mesoterapia/",
                 "eyebrow": "Tratamientos medicos",
-                "deck": "Ruta de soporte dermico cuando el caso necesita refuerzo localizado."
+                "deck": "Refuerzo dermico localizado cuando el caso lo necesita."
             },
             {
                 "label": "Piel, cabello y unas",
                 "href": "/es/servicios/piel-cabello-unas/",
                 "eyebrow": "Consulta integral",
-                "deck": "Ruta transversal para sintomas, cambios y control evolutivo."
+                "deck": "Ruta integral para sintomas, cambios visibles y continuidad."
             },
             {
                 "label": "Cancer de piel",
@@ -145,7 +145,7 @@
                 "label": "Dermatologia pediatrica",
                 "href": "/es/servicios/dermatologia-pediatrica/",
                 "eyebrow": "Pediatria",
-                "deck": "Indicaciones claras para familias, escuela y control domiciliario."
+                "deck": "Indicaciones claras para familias, escuela y control en casa."
             },
             {
                 "label": "Cicatrices",
@@ -169,7 +169,7 @@
                 "label": "Legal y consentimiento",
                 "href": "/es/legal/terminos/",
                 "eyebrow": "Marco legal",
-                "deck": "Condiciones, privacidad y bases de consentimiento para la atencion."
+                "deck": "Terminos, privacidad y bases de consentimiento para la atencion."
             }
         ]
     },
@@ -182,8 +182,8 @@
                 "heading": "Consulta inicial",
                 "context": {
                     "eyebrow": "Primera evaluacion",
-                    "title": "Empiece por la ruta que aclara su caso",
-                    "deck": "En la primera consulta definimos prioridad, riesgo y seguimiento para que usted avance con confianza.",
+                    "title": "Empiece por la ruta que mejor ordena su caso",
+                    "deck": "La primera consulta define prioridad, riesgo y seguimiento para que usted avance con criterio desde el inicio.",
                     "href": "/es/servicios/diagnostico-integral/"
                 },
                 "items": [
@@ -224,7 +224,7 @@
                                 "href": "/es/servicios/dermatologia-pediatrica/"
                             },
                             {
-                                "label": "Control evolutivo",
+                                "label": "Rutas activas",
                                 "href": "/es/servicios/"
                             }
                         ]
@@ -236,7 +236,7 @@
                 "heading": "Tratamientos medicos",
                 "context": {
                     "eyebrow": "Intervencion indicada",
-                    "title": "Tecnologia y procedimientos con criterio dermatologico",
+                    "title": "Tratamientos y tecnologia con criterio dermatologico",
                     "deck": "Indicamos cada tratamiento por fototipo, tolerancia y objetivo clinico, con control posterior definido.",
                     "href": "/es/servicios/laser-dermatologico/"
                 },
@@ -278,7 +278,7 @@
                                 "href": "/es/servicios/bioestimuladores-colageno/"
                             },
                             {
-                                "label": "Plan combinado",
+                                "label": "Ver todas las rutas",
                                 "href": "/es/servicios/"
                             }
                         ]
@@ -287,11 +287,11 @@
             },
             {
                 "id": "extended-care",
-                "heading": "Seguimiento y soporte",
+                "heading": "Continuidad y claridad",
                 "context": {
                     "eyebrow": "Continuidad",
-                    "title": "Telemedicina y legal para decisiones informadas",
-                    "deck": "Esta capa une orientacion remota, consentimiento claro y proximos pasos concretos.",
+                    "title": "Telemedicina, consentimiento y siguientes pasos claros",
+                    "deck": "Esta capa une orientacion remota, consentimiento entendible y acciones concretas para continuar.",
                     "href": "/es/telemedicina/"
                 },
                 "items": [
@@ -328,11 +328,11 @@
                         "href": "/es/servicios/",
                         "children": [
                             {
-                                "label": "Revisar rutas activas",
+                                "label": "Abrir servicios",
                                 "href": "/es/servicios/"
                             },
                             {
-                                "label": "Contactar al consultorio",
+                                "label": "Escribir por WhatsApp",
                                 "href": "https://wa.me/593982453672"
                             }
                         ]
@@ -342,17 +342,17 @@
         ],
         "featured": {
             "eyebrow": "Direccion medica",
-            "title": "Cada ruta explica que observar, que decidir y cuando escalar",
-            "deck": "Nuestra promesa: claridad medica, lenguaje humano y seguimiento que usted puede comprender.",
+            "title": "Cada ruta explica que observar, como decidir y cuando escalar",
+            "deck": "La promesa de la casa es simple: criterio medico, lenguaje humano y seguimiento comprensible.",
             "href": "/es/servicios/"
         }
     },
     "footer": {
-        "headline": "Dermatologia medica de precision para Quito",
-        "deck": "Cuidado clinico contemporaneo con decisiones claras, trato humano y continuidad real.",
+        "headline": "Dermatologia medica clara para Quito",
+        "deck": "Cuidado clinico contemporaneo con decisiones explicadas, trato humano y continuidad real.",
         "columns": [
             {
-                "title": "Servicios activos",
+                "title": "Rutas activas",
                 "links": [
                     {
                         "label": "Servicios",
@@ -369,7 +369,7 @@
                 ]
             },
             {
-                "title": "Marco legal",
+                "title": "Politicas y consentimiento",
                 "links": [
                     {
                         "label": "Terminos",
