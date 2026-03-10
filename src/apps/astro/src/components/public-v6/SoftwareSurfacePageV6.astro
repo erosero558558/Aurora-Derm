@@ -26,13 +26,32 @@ const switchLabel = navModel?.header?.switchLabel || '';
 const switchHref = navModel?.header?.switchHref || '#';
 const menuLabel = navModel?.header?.menuLabel || '';
 
+const heroActions = Array.isArray(hero.actions) ? hero.actions : [];
+const heroMetrics = Array.isArray(hero.metrics) ? hero.metrics : [];
+const stepItems = Array.isArray(steps.items) ? steps.items : [];
+const advantageCards = Array.isArray(advantages.cards) ? advantages.cards : [];
+const connectionItems = Array.isArray(connections.items) ? connections.items : [];
+const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
+
+const hasShowcase = Boolean(mockup.title || mockup.rows?.length || mockup.chips?.length);
+const hasSteps = Boolean(steps.title && stepItems.length);
+const hasAdvantages = Boolean(advantages.title && advantageCards.length);
+const hasConnections = Boolean(connections.title && connectionItems.length);
+const hasFinalCta = Boolean(finalCta.title || finalCta.deck || finalActions.length);
+
 const sectionDefs = [
-    { id: 'v6-suite-surface-demo', label: mockup.title || page.heading || '' },
-    { id: 'v6-suite-surface-steps', label: steps.title || '' },
-    { id: 'v6-suite-surface-advantages', label: advantages.title || '' },
-    { id: 'v6-suite-surface-connections', label: connections.title || '' },
-    { id: 'v6-suite-surface-final', label: finalCta.title || '' },
-].filter((item) => item.label);
+    hasShowcase
+        ? { id: 'v6-suite-surface-demo', label: mockup.title || page.heading || '' }
+        : null,
+    hasSteps ? { id: 'v6-suite-surface-steps', label: steps.title } : null,
+    hasAdvantages
+        ? { id: 'v6-suite-surface-advantages', label: advantages.title }
+        : null,
+    hasConnections
+        ? { id: 'v6-suite-surface-connections', label: connections.title }
+        : null,
+    hasFinalCta ? { id: 'v6-suite-surface-final', label: finalCta.title || page.heading || '' } : null,
+].filter((item) => item && item.label);
 
 const menuItems = sectionDefs.map((item) => ({
     label: item.label,
@@ -64,12 +83,12 @@ const actionClass = (variant = 'secondary') => [
     <div class="v6-suite-shell v6-suite-surface-hero__shell">
         <div class="v6-suite-surface-hero__copy">
             {hero.eyebrow ? <p class="v6-suite-eyebrow">{hero.eyebrow}</p> : null}
-            <h2>{hero.title}</h2>
+            {hero.title ? <h2>{hero.title}</h2> : null}
             {hero.deck ? <p class="v6-suite-lead">{hero.deck}</p> : null}
             {
-                Array.isArray(hero.actions) && hero.actions.length ? (
+                heroActions.length ? (
                     <div class="v6-suite-actions">
-                        {hero.actions.map((action) => (
+                        {heroActions.map((action) => (
                             <a class:list={actionClass(action.variant)} href={action.href}>
                                 {action.label}
                             </a>
@@ -80,12 +99,12 @@ const actionClass = (variant = 'secondary') => [
         </div>
 
         {
-            Array.isArray(hero.metrics) && hero.metrics.length ? (
+            heroMetrics.length ? (
                 <div class="v6-suite-metrics v6-suite-metrics--surface">
-                    {hero.metrics.map((metric) => (
+                    {heroMetrics.map((metric) => (
                         <article class="v6-suite-metric">
-                            <strong>{metric.value || ''}</strong>
-                            <h3>{metric.label || ''}</h3>
+                            <strong>{metric.value}</strong>
+                            <h3>{metric.label}</h3>
                             {metric.detail ? <p>{metric.detail}</p> : null}
                         </article>
                     ))}
@@ -110,81 +129,101 @@ const actionClass = (variant = 'secondary') => [
     }
 
     <div class="v6-suite-surface-shell__body">
-        <section id="v6-suite-surface-demo" class="v6-suite-showcase">
-            <SoftwareMockupV6 mockup={mockup} />
-            <article class="v6-suite-card v6-suite-card--copy">
-                {mockup.eyebrow ? <p>{mockup.eyebrow}</p> : null}
-                <h3>{mockup.title || page.heading || ''}</h3>
-                {mockup.footer ? <span>{mockup.footer}</span> : null}
-            </article>
-        </section>
-
-        <section id="v6-suite-surface-steps" class="v6-suite-section is-tight">
-            <header class="v6-suite-section__head">
-                {steps.eyebrow ? <p>{steps.eyebrow}</p> : null}
-                <h2>{steps.title}</h2>
-            </header>
-
-            <div class="v6-suite-steps">
-                {(steps.items || []).map((item, index) => (
-                    <article class="v6-suite-step">
-                        <strong>{String(index + 1).padStart(2, '0')}</strong>
-                        <p>{item}</p>
+        {
+            hasShowcase ? (
+                <section id="v6-suite-surface-demo" class="v6-suite-showcase">
+                    <SoftwareMockupV6 mockup={mockup} />
+                    <article class="v6-suite-card v6-suite-card--copy">
+                        {mockup.eyebrow ? <p>{mockup.eyebrow}</p> : null}
+                        <h3>{mockup.title || page.heading}</h3>
+                        {mockup.footer ? <span>{mockup.footer}</span> : null}
                     </article>
-                ))}
-            </div>
-        </section>
+                </section>
+            ) : null
+        }
 
-        <section id="v6-suite-surface-advantages" class="v6-suite-section is-tight">
-            <header class="v6-suite-section__head">
-                {advantages.eyebrow ? <p>{advantages.eyebrow}</p> : null}
-                <h2>{advantages.title}</h2>
-            </header>
+        {
+            hasSteps ? (
+                <section id="v6-suite-surface-steps" class="v6-suite-section is-tight">
+                    <header class="v6-suite-section__head">
+                        {steps.eyebrow ? <p>{steps.eyebrow}</p> : null}
+                        <h2>{steps.title}</h2>
+                    </header>
 
-            <div class="v6-suite-grid v6-suite-grid--three">
-                {(advantages.cards || []).map((card) => (
-                    <article class="v6-suite-card">
-                        <h3>{card.title || ''}</h3>
-                        {card.copy ? <span>{card.copy}</span> : null}
-                    </article>
-                ))}
-            </div>
-        </section>
+                    <div class="v6-suite-steps">
+                        {stepItems.map((item, index) => (
+                            <article class="v6-suite-step">
+                                <strong>{String(index + 1).padStart(2, '0')}</strong>
+                                <p>{item}</p>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+            ) : null
+        }
 
-        <section id="v6-suite-surface-connections" class="v6-suite-section is-tight is-slate">
-            <header class="v6-suite-section__head">
-                {connections.eyebrow ? <p>{connections.eyebrow}</p> : null}
-                <h2>{connections.title}</h2>
-            </header>
+        {
+            hasAdvantages ? (
+                <section id="v6-suite-surface-advantages" class="v6-suite-section is-tight">
+                    <header class="v6-suite-section__head">
+                        {advantages.eyebrow ? <p>{advantages.eyebrow}</p> : null}
+                        <h2>{advantages.title}</h2>
+                    </header>
 
-            <div class="v6-suite-list-grid">
-                {(connections.items || []).map((item) => (
-                    <article class="v6-suite-list-item">
-                        <strong>+</strong>
-                        <p>{item}</p>
-                    </article>
-                ))}
-            </div>
-        </section>
+                    <div class="v6-suite-grid v6-suite-grid--three">
+                        {advantageCards.map((card) => (
+                            <article class="v6-suite-card">
+                                <h3>{card.title}</h3>
+                                {card.copy ? <span>{card.copy}</span> : null}
+                            </article>
+                        ))}
+                    </div>
+                </section>
+            ) : null
+        }
 
-        <section id="v6-suite-surface-final" class="v6-suite-final is-inline">
-            <div class="v6-suite-final__shell">
-                <div>
-                    <h2>{finalCta.title || ''}</h2>
-                    {finalCta.deck ? <p>{finalCta.deck}</p> : null}
-                </div>
-                {
-                    Array.isArray(finalCta.actions) && finalCta.actions.length ? (
-                        <div class="v6-suite-actions">
-                            {finalCta.actions.map((action) => (
-                                <a class:list={actionClass(action.variant)} href={action.href}>
-                                    {action.label}
-                                </a>
-                            ))}
+        {
+            hasConnections ? (
+                <section id="v6-suite-surface-connections" class="v6-suite-section is-tight is-slate">
+                    <header class="v6-suite-section__head">
+                        {connections.eyebrow ? <p>{connections.eyebrow}</p> : null}
+                        <h2>{connections.title}</h2>
+                    </header>
+
+                    <div class="v6-suite-list-grid">
+                        {connectionItems.map((item) => (
+                            <article class="v6-suite-list-item">
+                                <strong>+</strong>
+                                <p>{item}</p>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+            ) : null
+        }
+
+        {
+            hasFinalCta ? (
+                <section id="v6-suite-surface-final" class="v6-suite-final is-inline">
+                    <div class="v6-suite-final__shell">
+                        <div>
+                            {finalCta.title ? <h2>{finalCta.title}</h2> : null}
+                            {finalCta.deck ? <p>{finalCta.deck}</p> : null}
                         </div>
-                    ) : null
-                }
-            </div>
-        </section>
+                        {
+                            finalActions.length ? (
+                                <div class="v6-suite-actions">
+                                    {finalActions.map((action) => (
+                                        <a class:list={actionClass(action.variant)} href={action.href}>
+                                            {action.label}
+                                        </a>
+                                    ))}
+                                </div>
+                            ) : null
+                        }
+                    </div>
+                </section>
+            ) : null
+        }
     </div>
 </div>

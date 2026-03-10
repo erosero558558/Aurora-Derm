@@ -30,15 +30,40 @@ const switchLabel = navModel?.header?.switchLabel || '';
 const switchHref = navModel?.header?.switchHref || '#';
 const menuLabel = navModel?.header?.menuLabel || '';
 
+const heroActions = Array.isArray(hero.actions) ? hero.actions : [];
+const heroMetrics = Array.isArray(hero.metrics) ? hero.metrics : [];
+const heroPanels = Array.isArray(hero.panels) ? hero.panels : [];
+const moduleCards = Array.isArray(modules.cards) ? modules.cards : [];
+const journeyLanes = Array.isArray(journeys.lanes) ? journeys.lanes : [];
+const surfaceCards = Array.isArray(surfaces.cards) ? surfaces.cards : [];
+const integrationGroups = Array.isArray(integrations.groups)
+    ? integrations.groups
+    : [];
+const pricingPlans = Array.isArray(pricing.plans) ? pricing.plans : [];
+const securityCards = Array.isArray(security.cards) ? security.cards : [];
+const faqItems = Array.isArray(faq.items) ? faq.items : [];
+const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
+
+const hasModules = Boolean(modules.title && moduleCards.length);
+const hasJourneys = Boolean(journeys.title && journeyLanes.length);
+const hasSurfaces = Boolean(surfaces.title && surfaceCards.length);
+const hasIntegrations = Boolean(integrations.title && integrationGroups.length);
+const hasPricing = Boolean(pricing.title && pricingPlans.length);
+const hasSecurity = Boolean(security.title && securityCards.length);
+const hasFaq = Boolean(faq.title && faqItems.length);
+const hasFinalCta = Boolean(finalCta.title || finalCta.deck || finalActions.length);
+
 const sectionDefs = [
-    { id: 'v6-suite-modules', label: modules.title || '' },
-    { id: 'v6-suite-journeys', label: journeys.title || '' },
-    { id: 'v6-suite-surfaces', label: surfaces.title || '' },
-    { id: 'v6-suite-integrations', label: integrations.title || '' },
-    { id: 'v6-suite-pricing', label: pricing.title || '' },
-    { id: 'v6-suite-security', label: security.title || '' },
-    { id: 'v6-suite-faq', label: faq.title || '' },
-].filter((item) => item.label);
+    hasModules ? { id: 'v6-suite-modules', label: modules.title } : null,
+    hasJourneys ? { id: 'v6-suite-journeys', label: journeys.title } : null,
+    hasSurfaces ? { id: 'v6-suite-surfaces', label: surfaces.title } : null,
+    hasIntegrations
+        ? { id: 'v6-suite-integrations', label: integrations.title }
+        : null,
+    hasPricing ? { id: 'v6-suite-pricing', label: pricing.title } : null,
+    hasSecurity ? { id: 'v6-suite-security', label: security.title } : null,
+    hasFaq ? { id: 'v6-suite-faq', label: faq.title } : null,
+].filter((item) => item && item.label);
 
 const menuItems = sectionDefs.map((item) => ({
     label: item.label,
@@ -70,7 +95,7 @@ const actionClass = (variant = 'secondary') => [
     <div class="v6-suite-shell v6-suite-hero__shell">
         <div class="v6-suite-hero__copy">
             {hero.eyebrow ? <p class="v6-suite-eyebrow">{hero.eyebrow}</p> : null}
-            <h2>{hero.title}</h2>
+            {hero.title ? <h2>{hero.title}</h2> : null}
             {hero.deck ? <p class="v6-suite-lead">{hero.deck}</p> : null}
 
             {
@@ -82,9 +107,9 @@ const actionClass = (variant = 'secondary') => [
             }
 
             {
-                Array.isArray(hero.actions) && hero.actions.length ? (
+                heroActions.length ? (
                     <div class="v6-suite-actions">
-                        {hero.actions.map((action) => (
+                        {heroActions.map((action) => (
                             <a class:list={actionClass(action.variant)} href={action.href}>
                                 {action.label}
                             </a>
@@ -96,12 +121,12 @@ const actionClass = (variant = 'secondary') => [
 
         <div class="v6-suite-hero__stage">
             {
-                Array.isArray(hero.metrics) && hero.metrics.length ? (
+                heroMetrics.length ? (
                     <div class="v6-suite-metrics">
-                        {hero.metrics.map((metric) => (
+                        {heroMetrics.map((metric) => (
                             <article class="v6-suite-metric">
-                                <strong>{metric.value || ''}</strong>
-                                <h3>{metric.label || ''}</h3>
+                                <strong>{metric.value}</strong>
+                                <h3>{metric.label}</h3>
                                 {metric.detail ? <p>{metric.detail}</p> : null}
                             </article>
                         ))}
@@ -110,12 +135,12 @@ const actionClass = (variant = 'secondary') => [
             }
 
             {
-                Array.isArray(hero.panels) && hero.panels.length ? (
+                heroPanels.length ? (
                     <div class="v6-suite-panel-grid">
-                        {hero.panels.map((panel) => (
+                        {heroPanels.map((panel) => (
                             <article class="v6-suite-panel">
                                 {panel.eyebrow ? <p>{panel.eyebrow}</p> : null}
-                                <h3>{panel.title || ''}</h3>
+                                <h3>{panel.title}</h3>
                                 {panel.copy ? <span>{panel.copy}</span> : null}
                             </article>
                         ))}
@@ -136,188 +161,224 @@ const actionClass = (variant = 'secondary') => [
     ) : null
 }
 
-<section id="v6-suite-modules" class="v6-suite-section">
-    <div class="v6-suite-shell">
-        <header class="v6-suite-section__head">
-            {modules.eyebrow ? <p>{modules.eyebrow}</p> : null}
-            <h2>{modules.title}</h2>
-            {modules.deck ? <span>{modules.deck}</span> : null}
-        </header>
+{
+    hasModules ? (
+        <section id="v6-suite-modules" class="v6-suite-section">
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    {modules.eyebrow ? <p>{modules.eyebrow}</p> : null}
+                    <h2>{modules.title}</h2>
+                    {modules.deck ? <span>{modules.deck}</span> : null}
+                </header>
 
-        <div class="v6-suite-grid v6-suite-grid--four">
-            {(modules.cards || []).map((card) => (
-                <article class="v6-suite-card">
-                    {card.eyebrow ? <p>{card.eyebrow}</p> : null}
-                    <h3>{card.title || ''}</h3>
-                    {card.copy ? <span>{card.copy}</span> : null}
-                    <ul>
-                        {(card.bullets || []).map((bullet) => <li>{bullet}</li>)}
-                    </ul>
-                </article>
-            ))}
-        </div>
-    </div>
-</section>
-
-<section id="v6-suite-journeys" class="v6-suite-section is-muted">
-    <div class="v6-suite-shell">
-        <header class="v6-suite-section__head">
-            {journeys.eyebrow ? <p>{journeys.eyebrow}</p> : null}
-            <h2>{journeys.title}</h2>
-            {journeys.deck ? <span>{journeys.deck}</span> : null}
-        </header>
-
-        <div class="v6-suite-grid v6-suite-grid--three">
-            {(journeys.lanes || []).map((lane) => (
-                <article class="v6-suite-lane">
-                    {lane.eyebrow ? <p>{lane.eyebrow}</p> : null}
-                    <h3>{lane.title || ''}</h3>
-                    <ol>
-                        {(lane.steps || []).map((step, index) => (
-                            <li>
-                                <span>{String(index + 1).padStart(2, '0')}</span>
-                                <p>{step}</p>
-                            </li>
-                        ))}
-                    </ol>
-                </article>
-            ))}
-        </div>
-    </div>
-</section>
-
-<section id="v6-suite-surfaces" class="v6-suite-section">
-    <div class="v6-suite-shell">
-        <header class="v6-suite-section__head">
-            {surfaces.eyebrow ? <p>{surfaces.eyebrow}</p> : null}
-            <h2>{surfaces.title}</h2>
-            {surfaces.deck ? <span>{surfaces.deck}</span> : null}
-        </header>
-
-        <div class="v6-suite-surface-grid">
-            {(surfaces.cards || []).map((card) => (
-                <article class="v6-suite-surface-card">
-                    <div class="v6-suite-surface-card__copy">
-                        {card.eyebrow ? <p>{card.eyebrow}</p> : null}
-                        <h3>{card.title || ''}</h3>
-                        {card.copy ? <span>{card.copy}</span> : null}
-                        <a class="v6-suite-inline-link" href={card.href}>
-                            {card.ctaLabel || ''}
-                            <span aria-hidden="true">></span>
-                        </a>
-                    </div>
-                    <SoftwareMockupV6 mockup={card.mockup} compact={true} />
-                </article>
-            ))}
-        </div>
-    </div>
-</section>
-
-<section id="v6-suite-integrations" class="v6-suite-section is-slate">
-    <div class="v6-suite-shell">
-        <header class="v6-suite-section__head">
-            {integrations.eyebrow ? <p>{integrations.eyebrow}</p> : null}
-            <h2>{integrations.title}</h2>
-            {integrations.deck ? <span>{integrations.deck}</span> : null}
-        </header>
-
-        <div class="v6-suite-grid v6-suite-grid--three">
-            {(integrations.groups || []).map((group) => (
-                <article class="v6-suite-card v6-suite-card--dark">
-                    <h3>{group.title || ''}</h3>
-                    <ul>
-                        {(group.items || []).map((item) => <li>{item}</li>)}
-                    </ul>
-                </article>
-            ))}
-        </div>
-    </div>
-</section>
-
-<section id="v6-suite-pricing" class="v6-suite-section">
-    <div class="v6-suite-shell">
-        <header class="v6-suite-section__head">
-            {pricing.eyebrow ? <p>{pricing.eyebrow}</p> : null}
-            <h2>{pricing.title}</h2>
-            {pricing.deck ? <span>{pricing.deck}</span> : null}
-        </header>
-
-        <div class="v6-suite-grid v6-suite-grid--three">
-            {(pricing.plans || []).map((plan) => (
-                <article class:list={['v6-suite-plan', plan.highlight && 'is-highlight']}>
-                    <header>
-                        <p>{plan.name || ''}</p>
-                        <h3>{plan.price || ''}</h3>
-                        {plan.note ? <span>{plan.note}</span> : null}
-                    </header>
-                    {plan.fit ? <p class="v6-suite-plan__fit">{plan.fit}</p> : null}
-                    <ul>
-                        {(plan.features || []).map((feature) => <li>{feature}</li>)}
-                    </ul>
-                    <a class:list={actionClass(plan.highlight ? 'primary' : 'secondary')} href={plan.ctaHref}>
-                        {plan.ctaLabel || ''}
-                    </a>
-                </article>
-            ))}
-        </div>
-    </div>
-</section>
-
-<section id="v6-suite-security" class="v6-suite-section is-muted">
-    <div class="v6-suite-shell">
-        <header class="v6-suite-section__head">
-            {security.eyebrow ? <p>{security.eyebrow}</p> : null}
-            <h2>{security.title}</h2>
-            {security.deck ? <span>{security.deck}</span> : null}
-        </header>
-
-        <div class="v6-suite-grid v6-suite-grid--three">
-            {(security.cards || []).map((card) => (
-                <article class="v6-suite-card">
-                    <h3>{card.title || ''}</h3>
-                    <ul>
-                        {(card.items || []).map((item) => <li>{item}</li>)}
-                    </ul>
-                </article>
-            ))}
-        </div>
-    </div>
-</section>
-
-<section id="v6-suite-faq" class="v6-suite-section">
-    <div class="v6-suite-shell">
-        <header class="v6-suite-section__head">
-            {faq.eyebrow ? <p>{faq.eyebrow}</p> : null}
-            <h2>{faq.title}</h2>
-        </header>
-
-        <div class="v6-suite-faq">
-            {(faq.items || []).map((item, index) => (
-                <details class="v6-suite-faq__item" open={index === 0}>
-                    <summary>{item.question || ''}</summary>
-                    <p>{item.answer || ''}</p>
-                </details>
-            ))}
-        </div>
-    </div>
-</section>
-
-<section class="v6-suite-final">
-    <div class="v6-suite-shell v6-suite-final__shell">
-        <div>
-            <h2>{finalCta.title || ''}</h2>
-            {finalCta.deck ? <p>{finalCta.deck}</p> : null}
-        </div>
-        {
-            Array.isArray(finalCta.actions) && finalCta.actions.length ? (
-                <div class="v6-suite-actions">
-                    {finalCta.actions.map((action) => (
-                        <a class:list={actionClass(action.variant)} href={action.href}>
-                            {action.label}
-                        </a>
+                <div class="v6-suite-grid v6-suite-grid--four">
+                    {moduleCards.map((card) => (
+                        <article class="v6-suite-card">
+                            {card.eyebrow ? <p>{card.eyebrow}</p> : null}
+                            <h3>{card.title}</h3>
+                            {card.copy ? <span>{card.copy}</span> : null}
+                            {card.bullets.length ? (
+                                <ul>
+                                    {card.bullets.map((bullet) => <li>{bullet}</li>)}
+                                </ul>
+                            ) : null}
+                        </article>
                     ))}
                 </div>
-            ) : null
-        }
-    </div>
-</section>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasJourneys ? (
+        <section id="v6-suite-journeys" class="v6-suite-section is-muted">
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    {journeys.eyebrow ? <p>{journeys.eyebrow}</p> : null}
+                    <h2>{journeys.title}</h2>
+                    {journeys.deck ? <span>{journeys.deck}</span> : null}
+                </header>
+
+                <div class="v6-suite-grid v6-suite-grid--three">
+                    {journeyLanes.map((lane) => (
+                        <article class="v6-suite-lane">
+                            {lane.eyebrow ? <p>{lane.eyebrow}</p> : null}
+                            <h3>{lane.title}</h3>
+                            <ol>
+                                {lane.steps.map((step, index) => (
+                                    <li>
+                                        <span>{String(index + 1).padStart(2, '0')}</span>
+                                        <p>{step}</p>
+                                    </li>
+                                ))}
+                            </ol>
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasSurfaces ? (
+        <section id="v6-suite-surfaces" class="v6-suite-section">
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    {surfaces.eyebrow ? <p>{surfaces.eyebrow}</p> : null}
+                    <h2>{surfaces.title}</h2>
+                    {surfaces.deck ? <span>{surfaces.deck}</span> : null}
+                </header>
+
+                <div class="v6-suite-surface-grid">
+                    {surfaceCards.map((card) => (
+                        <article class="v6-suite-surface-card">
+                            <div class="v6-suite-surface-card__copy">
+                                {card.eyebrow ? <p>{card.eyebrow}</p> : null}
+                                <h3>{card.title}</h3>
+                                {card.copy ? <span>{card.copy}</span> : null}
+                                <a class="v6-suite-inline-link" href={card.href}>
+                                    {card.ctaLabel}
+                                    <span aria-hidden="true">></span>
+                                </a>
+                            </div>
+                            <SoftwareMockupV6 mockup={card.mockup} compact={true} />
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasIntegrations ? (
+        <section id="v6-suite-integrations" class="v6-suite-section is-slate">
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    {integrations.eyebrow ? <p>{integrations.eyebrow}</p> : null}
+                    <h2>{integrations.title}</h2>
+                    {integrations.deck ? <span>{integrations.deck}</span> : null}
+                </header>
+
+                <div class="v6-suite-grid v6-suite-grid--three">
+                    {integrationGroups.map((group) => (
+                        <article class="v6-suite-card v6-suite-card--dark">
+                            <h3>{group.title}</h3>
+                            <ul>
+                                {group.items.map((item) => <li>{item}</li>)}
+                            </ul>
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasPricing ? (
+        <section id="v6-suite-pricing" class="v6-suite-section">
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    {pricing.eyebrow ? <p>{pricing.eyebrow}</p> : null}
+                    <h2>{pricing.title}</h2>
+                    {pricing.deck ? <span>{pricing.deck}</span> : null}
+                </header>
+
+                <div class="v6-suite-grid v6-suite-grid--three">
+                    {pricingPlans.map((plan) => (
+                        <article class:list={['v6-suite-plan', plan.highlight && 'is-highlight']}>
+                            <header>
+                                <p>{plan.name}</p>
+                                <h3>{plan.price}</h3>
+                                {plan.note ? <span>{plan.note}</span> : null}
+                            </header>
+                            {plan.fit ? <p class="v6-suite-plan__fit">{plan.fit}</p> : null}
+                            {plan.features.length ? (
+                                <ul>
+                                    {plan.features.map((feature) => <li>{feature}</li>)}
+                                </ul>
+                            ) : null}
+                            <a class:list={actionClass(plan.highlight ? 'primary' : 'secondary')} href={plan.ctaHref}>
+                                {plan.ctaLabel}
+                            </a>
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasSecurity ? (
+        <section id="v6-suite-security" class="v6-suite-section is-muted">
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    {security.eyebrow ? <p>{security.eyebrow}</p> : null}
+                    <h2>{security.title}</h2>
+                    {security.deck ? <span>{security.deck}</span> : null}
+                </header>
+
+                <div class="v6-suite-grid v6-suite-grid--three">
+                    {securityCards.map((card) => (
+                        <article class="v6-suite-card">
+                            <h3>{card.title}</h3>
+                            <ul>
+                                {card.items.map((item) => <li>{item}</li>)}
+                            </ul>
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasFaq ? (
+        <section id="v6-suite-faq" class="v6-suite-section">
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    {faq.eyebrow ? <p>{faq.eyebrow}</p> : null}
+                    <h2>{faq.title}</h2>
+                </header>
+
+                <div class="v6-suite-faq">
+                    {faqItems.map((item, index) => (
+                        <details class="v6-suite-faq__item" open={index === 0}>
+                            <summary>{item.question}</summary>
+                            <p>{item.answer}</p>
+                        </details>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasFinalCta ? (
+        <section class="v6-suite-final">
+            <div class="v6-suite-shell v6-suite-final__shell">
+                <div>
+                    {finalCta.title ? <h2>{finalCta.title}</h2> : null}
+                    {finalCta.deck ? <p>{finalCta.deck}</p> : null}
+                </div>
+                {
+                    finalActions.length ? (
+                        <div class="v6-suite-actions">
+                            {finalActions.map((action) => (
+                                <a class:list={actionClass(action.variant)} href={action.href}>
+                                    {action.label}
+                                </a>
+                            ))}
+                        </div>
+                    ) : null
+                }
+            </div>
+        </section>
+    ) : null
+}

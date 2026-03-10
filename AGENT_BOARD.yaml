@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 459
+  revision: 461
   updated_at: 2026-03-10
 
 tasks:
@@ -6733,5 +6733,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-169.md"
     depends_on: []
     prompt: "Fix post-rebase V6 build and booking copy regressions"
+    created_at: 2026-03-10
+    updated_at: 2026-03-10
+
+  - id: AG-170
+    title: "Harden software V6 render contracts and QA"
+    owner: ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-10T07:39:57.334Z"
+    risk: low
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/pages/en/software/clinic-flow-suite/index.astro", "src/apps/astro/src/pages/es/software/turnero-clinicas/index.astro", "src/apps/astro/src/pages/en/software/clinic-flow-suite/[surface].astro", "src/apps/astro/src/pages/es/software/turnero-clinicas/[surface].astro", "content/public-v6/en/software.json", "content/public-v6/es/software.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-10T07:39:57.334Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Harden software V6 render contracts and QA"
+    acceptance_ref: "verification/agent-runs/AG-170.md"
+    evidence_ref: "verification/agent-runs/AG-170.md"
+    depends_on: []
+    prompt: "Harden software V6 render contracts and QA"
     created_at: 2026-03-10
     updated_at: 2026-03-10

@@ -1,36 +1,60 @@
 ---
 const { mockup = {}, compact = false } = Astro.props;
 
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+const normalizeText = (value) => (hasText(value) ? value.trim() : '');
 const kind = ['phone', 'status', 'dashboard'].includes(mockup?.kind)
     ? mockup.kind
     : 'status';
-const eyebrow = mockup?.eyebrow || '';
-const title = mockup?.title || '';
-const chips = Array.isArray(mockup?.chips) ? mockup.chips : [];
-const rows = Array.isArray(mockup?.rows) ? mockup.rows : [];
-const footer = mockup?.footer || '';
+const eyebrow = normalizeText(mockup?.eyebrow);
+const title = normalizeText(mockup?.title);
+const chips = Array.isArray(mockup?.chips)
+    ? mockup.chips.map(normalizeText).filter(Boolean)
+    : [];
+const rows = Array.isArray(mockup?.rows)
+    ? mockup.rows
+          .map((row) => {
+              const label = normalizeText(row?.label);
+              const value = normalizeText(row?.value);
+              if (!label || !value) {
+                  return null;
+              }
+              return {
+                  label,
+                  value,
+                  meta: normalizeText(row?.meta),
+              };
+          })
+          .filter(Boolean)
+    : [];
+const footer = normalizeText(mockup?.footer);
+const hasHeader = Boolean(eyebrow || title);
 ---
 
 <article class:list={['v6-suite-mockup', `is-${kind}`, compact && 'is-compact']}>
-    <header class="v6-suite-mockup__head">
-        <div>
-            {eyebrow ? <p>{eyebrow}</p> : null}
-            <h3>{title}</h3>
-        </div>
-        {
-            chips.length ? (
-                <ul class="v6-suite-mockup__chips" aria-label={title}>
-                    {chips.map((chip) => <li>{chip}</li>)}
-                </ul>
-            ) : null
-        }
-    </header>
+    {
+        hasHeader || chips.length ? (
+            <header class="v6-suite-mockup__head">
+                <div>
+                    {eyebrow ? <p>{eyebrow}</p> : null}
+                    {title ? <h3>{title}</h3> : null}
+                </div>
+                {
+                    chips.length ? (
+                        <ul class="v6-suite-mockup__chips" aria-label={title || undefined}>
+                            {chips.map((chip) => <li>{chip}</li>)}
+                        </ul>
+                    ) : null
+                }
+            </header>
+        ) : null
+    }
 
     <div class="v6-suite-mockup__body">
         {rows.map((row, index) => (
             <article class:list={['v6-suite-mockup__row', index === 0 && 'is-primary']}>
-                <p>{row.label || ''}</p>
-                <strong>{row.value || ''}</strong>
+                <p>{row.label}</p>
+                <strong>{row.value}</strong>
                 {row.meta ? <span>{row.meta}</span> : null}
             </article>
         ))}

@@ -343,6 +343,433 @@ function sanitizeHubData(payload) {
     };
 }
 
+function sanitizeTextList(items) {
+    return Array.isArray(items) ? items.map(normalizeText).filter(Boolean) : [];
+}
+
+function sanitizeSoftwareAction(action) {
+    const label = normalizeText(action?.label);
+    const href = normalizeHref(action?.href);
+    if (!label || !href) {
+        return null;
+    }
+    return {
+        label,
+        href,
+        variant: normalizeText(action?.variant),
+    };
+}
+
+function sanitizeSoftwareMetric(metric) {
+    const value = normalizeText(metric?.value);
+    const label = normalizeText(metric?.label);
+    if (!value || !label) {
+        return null;
+    }
+    return {
+        value,
+        label,
+        detail: normalizeText(metric?.detail),
+    };
+}
+
+function sanitizeSoftwarePanel(panel) {
+    const title = normalizeText(panel?.title);
+    if (!title) {
+        return null;
+    }
+    return {
+        eyebrow: normalizeText(panel?.eyebrow),
+        title,
+        copy: normalizeText(panel?.copy),
+    };
+}
+
+function sanitizeSoftwareMockupRow(row) {
+    const label = normalizeText(row?.label);
+    const value = normalizeText(row?.value);
+    if (!label || !value) {
+        return null;
+    }
+    return {
+        label,
+        value,
+        meta: normalizeText(row?.meta),
+    };
+}
+
+function sanitizeSoftwareMockup(mockup, fallbackTitle = '') {
+    const source = isObject(mockup) ? mockup : {};
+    const allowedKinds = new Set(['phone', 'status', 'dashboard']);
+    const kind = allowedKinds.has(source.kind) ? source.kind : 'status';
+    const title = normalizeText(source.title) || normalizeText(fallbackTitle);
+    const rows = Array.isArray(source.rows)
+        ? source.rows.map(sanitizeSoftwareMockupRow).filter(Boolean)
+        : [];
+    return {
+        kind,
+        eyebrow: normalizeText(source.eyebrow),
+        title,
+        chips: sanitizeTextList(source.chips),
+        rows,
+        footer: normalizeText(source.footer),
+    };
+}
+
+function sanitizeSoftwareModuleCard(card) {
+    const title = normalizeText(card?.title);
+    if (!title) {
+        return null;
+    }
+    return {
+        eyebrow: normalizeText(card?.eyebrow),
+        title,
+        copy: normalizeText(card?.copy),
+        bullets: sanitizeTextList(card?.bullets),
+    };
+}
+
+function sanitizeSoftwareJourneyLane(lane) {
+    const title = normalizeText(lane?.title);
+    const steps = sanitizeTextList(lane?.steps);
+    if (!title || !steps.length) {
+        return null;
+    }
+    return {
+        eyebrow: normalizeText(lane?.eyebrow),
+        title,
+        steps,
+    };
+}
+
+function sanitizeSoftwareSurfaceCard(card) {
+    const title = normalizeText(card?.title);
+    const href = normalizeHref(card?.href);
+    const ctaLabel = normalizeText(card?.ctaLabel);
+    const mockup = sanitizeSoftwareMockup(card?.mockup, title);
+    const hasMockup = Boolean(mockup.title || mockup.rows.length || mockup.chips.length);
+    if (!title || !href || !ctaLabel || !hasMockup) {
+        return null;
+    }
+    return {
+        eyebrow: normalizeText(card?.eyebrow),
+        title,
+        copy: normalizeText(card?.copy),
+        href,
+        ctaLabel,
+        mockup,
+    };
+}
+
+function sanitizeSoftwareIntegrationGroup(group) {
+    const title = normalizeText(group?.title);
+    const items = sanitizeTextList(group?.items);
+    if (!title || !items.length) {
+        return null;
+    }
+    return {
+        title,
+        items,
+    };
+}
+
+function sanitizeSoftwarePlan(plan) {
+    const name = normalizeText(plan?.name);
+    const price = normalizeText(plan?.price);
+    const ctaLabel = normalizeText(plan?.ctaLabel);
+    const ctaHref = normalizeHref(plan?.ctaHref);
+    if (!name || !price || !ctaLabel || !ctaHref) {
+        return null;
+    }
+    return {
+        name,
+        price,
+        note: normalizeText(plan?.note),
+        fit: normalizeText(plan?.fit),
+        features: sanitizeTextList(plan?.features),
+        ctaLabel,
+        ctaHref,
+        highlight: Boolean(plan?.highlight),
+    };
+}
+
+function sanitizeSoftwareSecurityCard(card) {
+    const title = normalizeText(card?.title);
+    const items = sanitizeTextList(card?.items);
+    if (!title || !items.length) {
+        return null;
+    }
+    return {
+        title,
+        items,
+    };
+}
+
+function sanitizeSoftwareFaqItem(item) {
+    const question = normalizeText(item?.question);
+    const answer = normalizeText(item?.answer);
+    if (!question || !answer) {
+        return null;
+    }
+    return {
+        question,
+        answer,
+    };
+}
+
+function sanitizeSoftwareSearchEntry(entry) {
+    const label = normalizeText(entry?.label);
+    const href = normalizeHref(entry?.href);
+    if (!label || !href) {
+        return null;
+    }
+    return {
+        label,
+        href,
+        eyebrow: normalizeText(entry?.eyebrow),
+        deck: normalizeText(entry?.deck),
+    };
+}
+
+function sanitizeSoftwareHeaderLink(link) {
+    const label = normalizeText(link?.label);
+    const href = normalizeHref(link?.href);
+    if (!label || !href) {
+        return null;
+    }
+    return {
+        id: normalizeText(link?.id),
+        label,
+        href,
+        kind: normalizeText(link?.kind) || 'standard',
+    };
+}
+
+function sanitizeSoftwareFooterColumn(column) {
+    const title = normalizeText(column?.title);
+    const links = Array.isArray(column?.links)
+        ? column.links
+              .map((link) => {
+                  const label = normalizeText(link?.label);
+                  const href = normalizeHref(link?.href);
+                  return label && href ? { label, href } : null;
+              })
+              .filter(Boolean)
+        : [];
+    const lines = sanitizeTextList(column?.lines);
+    if (!title || (!links.length && !lines.length)) {
+        return null;
+    }
+    return {
+        title,
+        links,
+        lines,
+    };
+}
+
+function sanitizeSoftwareNav(nav) {
+    const source = isObject(nav) ? nav : {};
+    const header = isObject(source.header) ? source.header : {};
+    const footer = isObject(source.footer) ? source.footer : {};
+    const ui = isObject(source.ui) ? source.ui : {};
+    const headerUi = isObject(ui.header) ? ui.header : {};
+    const searchUi = isObject(headerUi.search) ? headerUi.search : {};
+    const rawLimit = Number(searchUi.resultsLimit || 8);
+    return {
+        brand: {
+            tag: normalizeText(source?.brand?.tag),
+        },
+        ui: {
+            header: {
+                search: {
+                    dialogAria: normalizeText(searchUi.dialogAria),
+                    eyebrow: normalizeText(searchUi.eyebrow),
+                    inputLabel: normalizeText(searchUi.inputLabel),
+                    placeholder: normalizeText(searchUi.placeholder),
+                    hint: normalizeText(searchUi.hint),
+                    resultsAria: normalizeText(searchUi.resultsAria),
+                    emptyTitle: normalizeText(searchUi.emptyTitle),
+                    emptyBody: normalizeText(searchUi.emptyBody),
+                    closeLabel: normalizeText(searchUi.closeLabel),
+                    resultsLimit:
+                        Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 8,
+                },
+            },
+        },
+        header: {
+            contactLabel: normalizeText(header.contactLabel),
+            contactHref: normalizeHref(header.contactHref),
+            searchLabel: normalizeText(header.searchLabel),
+            links: Array.isArray(header.links)
+                ? header.links.map(sanitizeSoftwareHeaderLink).filter(Boolean)
+                : [],
+            searchEntries: Array.isArray(header.searchEntries)
+                ? header.searchEntries.map(sanitizeSoftwareSearchEntry).filter(Boolean)
+                : [],
+        },
+        footer: {
+            headline: normalizeText(footer.headline),
+            deck: normalizeText(footer.deck),
+            columns: Array.isArray(footer.columns)
+                ? footer.columns.map(sanitizeSoftwareFooterColumn).filter(Boolean)
+                : [],
+        },
+    };
+}
+
+function sanitizeSoftwareHero(hero) {
+    const source = isObject(hero) ? hero : {};
+    return {
+        eyebrow: normalizeText(source.eyebrow),
+        title: normalizeText(source.title),
+        deck: normalizeText(source.deck),
+        pills: sanitizeTextList(source.pills),
+        actions: Array.isArray(source.actions)
+            ? source.actions.map(sanitizeSoftwareAction).filter(Boolean)
+            : [],
+        metrics: Array.isArray(source.metrics)
+            ? source.metrics.map(sanitizeSoftwareMetric).filter(Boolean)
+            : [],
+        panels: Array.isArray(source.panels)
+            ? source.panels.map(sanitizeSoftwarePanel).filter(Boolean)
+            : [],
+    };
+}
+
+function sanitizeSoftwareFinalCta(finalCta) {
+    const source = isObject(finalCta) ? finalCta : {};
+    return {
+        title: normalizeText(source.title),
+        deck: normalizeText(source.deck),
+        actions: Array.isArray(source.actions)
+            ? source.actions.map(sanitizeSoftwareAction).filter(Boolean)
+            : [],
+    };
+}
+
+function sanitizeSoftwareLandingPage(page) {
+    const source = isObject(page) ? page : {};
+    const modules = isObject(source.modules) ? source.modules : {};
+    const journeys = isObject(source.journeys) ? source.journeys : {};
+    const surfaces = isObject(source.surfaces) ? source.surfaces : {};
+    const integrations = isObject(source.integrations) ? source.integrations : {};
+    const pricing = isObject(source.pricing) ? source.pricing : {};
+    const security = isObject(source.security) ? source.security : {};
+    const faq = isObject(source.faq) ? source.faq : {};
+    return {
+        title: normalizeText(source.title),
+        description: normalizeText(source.description),
+        breadcrumb: sanitizeBreadcrumb(source.breadcrumb),
+        heading: normalizeText(source.heading),
+        hero: sanitizeSoftwareHero(source.hero),
+        modules: {
+            eyebrow: normalizeText(modules.eyebrow),
+            title: normalizeText(modules.title),
+            deck: normalizeText(modules.deck),
+            cards: Array.isArray(modules.cards)
+                ? modules.cards.map(sanitizeSoftwareModuleCard).filter(Boolean)
+                : [],
+        },
+        journeys: {
+            eyebrow: normalizeText(journeys.eyebrow),
+            title: normalizeText(journeys.title),
+            deck: normalizeText(journeys.deck),
+            lanes: Array.isArray(journeys.lanes)
+                ? journeys.lanes.map(sanitizeSoftwareJourneyLane).filter(Boolean)
+                : [],
+        },
+        surfaces: {
+            eyebrow: normalizeText(surfaces.eyebrow),
+            title: normalizeText(surfaces.title),
+            deck: normalizeText(surfaces.deck),
+            cards: Array.isArray(surfaces.cards)
+                ? surfaces.cards.map(sanitizeSoftwareSurfaceCard).filter(Boolean)
+                : [],
+        },
+        integrations: {
+            eyebrow: normalizeText(integrations.eyebrow),
+            title: normalizeText(integrations.title),
+            deck: normalizeText(integrations.deck),
+            groups: Array.isArray(integrations.groups)
+                ? integrations.groups
+                      .map(sanitizeSoftwareIntegrationGroup)
+                      .filter(Boolean)
+                : [],
+        },
+        pricing: {
+            eyebrow: normalizeText(pricing.eyebrow),
+            title: normalizeText(pricing.title),
+            deck: normalizeText(pricing.deck),
+            plans: Array.isArray(pricing.plans)
+                ? pricing.plans.map(sanitizeSoftwarePlan).filter(Boolean)
+                : [],
+        },
+        security: {
+            eyebrow: normalizeText(security.eyebrow),
+            title: normalizeText(security.title),
+            deck: normalizeText(security.deck),
+            cards: Array.isArray(security.cards)
+                ? security.cards.map(sanitizeSoftwareSecurityCard).filter(Boolean)
+                : [],
+        },
+        faq: {
+            eyebrow: normalizeText(faq.eyebrow),
+            title: normalizeText(faq.title),
+            items: Array.isArray(faq.items)
+                ? faq.items.map(sanitizeSoftwareFaqItem).filter(Boolean)
+                : [],
+        },
+        finalCta: sanitizeSoftwareFinalCta(source.finalCta),
+    };
+}
+
+function sanitizeSoftwareSurfacePage(page) {
+    const source = isObject(page) ? page : {};
+    const steps = isObject(source.steps) ? source.steps : {};
+    const advantages = isObject(source.advantages) ? source.advantages : {};
+    const connections = isObject(source.connections) ? source.connections : {};
+    return {
+        title: normalizeText(source.title),
+        description: normalizeText(source.description),
+        breadcrumb: sanitizeBreadcrumb(source.breadcrumb),
+        heading: normalizeText(source.heading),
+        hero: sanitizeSoftwareHero(source.hero),
+        mockup: sanitizeSoftwareMockup(source.mockup, source.heading),
+        steps: {
+            eyebrow: normalizeText(steps.eyebrow),
+            title: normalizeText(steps.title),
+            items: sanitizeTextList(steps.items),
+        },
+        advantages: {
+            eyebrow: normalizeText(advantages.eyebrow),
+            title: normalizeText(advantages.title),
+            cards: Array.isArray(advantages.cards)
+                ? advantages.cards.map(sanitizeSoftwareModuleCard).filter(Boolean)
+                : [],
+        },
+        connections: {
+            eyebrow: normalizeText(connections.eyebrow),
+            title: normalizeText(connections.title),
+            items: sanitizeTextList(connections.items),
+        },
+        finalCta: sanitizeSoftwareFinalCta(source.finalCta),
+    };
+}
+
+function sanitizeSoftwareData(payload) {
+    const source = isObject(payload) ? payload : {};
+    const pages = isObject(source.pages) ? source.pages : {};
+    return {
+        nav: sanitizeSoftwareNav(source.nav),
+        pages: {
+            landing: sanitizeSoftwareLandingPage(pages.landing),
+            demo: sanitizeSoftwareSurfacePage(pages.demo),
+            status: sanitizeSoftwareSurfacePage(pages.status),
+            dashboard: sanitizeSoftwareSurfacePage(pages.dashboard),
+        },
+    };
+}
+
 function mapLegalSwitch(pathname, locale) {
     const safePath = normalizePath(pathname);
     const parts = safePath.split('/').filter(Boolean);
@@ -499,7 +926,7 @@ export function getV6ServiceData(locale) {
 }
 
 export function getV6SoftwareData(locale) {
-    return readLocaleJson(normalizeLocale(locale), 'software.json');
+    return sanitizeSoftwareData(readLocaleJson(normalizeLocale(locale), 'software.json'));
 }
 
 export function getV6SoftwarePage(locale, pageKey = 'landing') {
