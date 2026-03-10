@@ -4483,10 +4483,14 @@ async function la(t, e = {}) {
         i = b().ui.activeSection;
     return (
         !(
-            !a &&
-            'availability' === b().ui.activeSection &&
-            'availability' !== n &&
-            oe() &&
+            (function (t, e) {
+                return (
+                    !e &&
+                    'availability' === b().ui.activeSection &&
+                    'availability' !== t &&
+                    oe()
+                );
+            })(n, a) &&
             !window.confirm(
                 'Hay cambios pendientes en disponibilidad. ¿Deseas salir sin guardar?'
             )
@@ -4512,36 +4516,32 @@ async function la(t, e = {}) {
         !0)
     );
 }
-function ua() {
-    (g((t) => ({
-        ...t,
-        ui: {
-            ...t.ui,
-            sidebarCollapsed: !t.ui.sidebarCollapsed,
-            sidebarOpen: t.ui.sidebarOpen,
-        },
+function ua(t) {
+    g((e) => ({ ...e, ui: { ...e.ui, ...t(e.ui) } }));
+}
+function da() {
+    (ua((t) => ({
+        sidebarCollapsed: !t.sidebarCollapsed,
+        sidebarOpen: t.sidebarOpen,
     })),
         ca(),
         oa());
 }
-function da() {
-    (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !t.ui.sidebarOpen } })),
-        ca());
+function pa() {
+    (ua((t) => ({ sidebarOpen: !t.sidebarOpen })), ca());
 }
-function pa({ restoreFocus: t = !1 } = {}) {
-    if (
-        (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !1 } })), ca(), N(), t)
-    ) {
+function ma({ restoreFocus: t = !1 } = {}) {
+    if ((ua(() => ({ sidebarOpen: !1 })), ca(), N(), t)) {
         const t = e('#adminMenuToggle');
         t instanceof HTMLElement && t.focus();
     }
 }
-function ma() {
+function ba() {
     E();
     const t = document.getElementById('adminQuickCommand');
     t instanceof HTMLInputElement && t.focus();
 }
-function ba() {
+function ga() {
     const t = b().ui.activeSection;
     if ('appointments' === t) {
         const t = document.getElementById('searchAppointments');
@@ -4556,46 +4556,49 @@ function ba() {
         t instanceof HTMLInputElement && t.focus();
     }
 }
-async function ga(t) {
-    switch (t) {
-        case 'appointments_pending_transfer':
-            (await la('appointments'), lt('pending_transfer'), ut(''));
-            break;
-        case 'appointments_all':
-            (await la('appointments'), lt('all'), ut(''));
-            break;
-        case 'appointments_no_show':
-            (await la('appointments'), lt('no_show'), ut(''));
-            break;
-        case 'callbacks_pending':
-            (await la('callbacks'), Lt('pending'));
-            break;
-        case 'callbacks_contacted':
-            (await la('callbacks'), Lt('contacted'));
-            break;
-        case 'callbacks_sla_urgent':
-            (await la('callbacks'), Lt('sla_urgent'));
-            break;
-        case 'queue_sla_risk':
-            (await la('queue'), Xe('sla_risk'));
-            break;
-        case 'queue_waiting':
-            (await la('queue'), Xe('waiting'));
-            break;
-        case 'queue_called':
-            (await la('queue'), Xe('called'));
-            break;
-        case 'queue_no_show':
-            (await la('queue'), Xe('no_show'));
-            break;
-        case 'queue_all':
-            (await la('queue'), Xe('all'));
-            break;
-        case 'queue_call_next':
-            (await la('queue'), await rn(b().queue.stationConsultorio));
-    }
+const fa = {
+    appointments_pending_transfer: async () => {
+        (await la('appointments'), lt('pending_transfer'), ut(''));
+    },
+    appointments_all: async () => {
+        (await la('appointments'), lt('all'), ut(''));
+    },
+    appointments_no_show: async () => {
+        (await la('appointments'), lt('no_show'), ut(''));
+    },
+    callbacks_pending: async () => {
+        (await la('callbacks'), Lt('pending'));
+    },
+    callbacks_contacted: async () => {
+        (await la('callbacks'), Lt('contacted'));
+    },
+    callbacks_sla_urgent: async () => {
+        (await la('callbacks'), Lt('sla_urgent'));
+    },
+    queue_sla_risk: async () => {
+        (await la('queue'), Xe('sla_risk'));
+    },
+    queue_waiting: async () => {
+        (await la('queue'), Xe('waiting'));
+    },
+    queue_called: async () => {
+        (await la('queue'), Xe('called'));
+    },
+    queue_no_show: async () => {
+        (await la('queue'), Xe('no_show'));
+    },
+    queue_all: async () => {
+        (await la('queue'), Xe('all'));
+    },
+    queue_call_next: async () => {
+        (await la('queue'), await rn(b().queue.stationConsultorio));
+    },
+};
+async function ha(t) {
+    const e = fa[t];
+    'function' == typeof e && (await e());
 }
-function fa(t) {
+function ya(t) {
     const e = String(t || '')
         .trim()
         .toLowerCase();
@@ -4613,7 +4616,7 @@ function fa(t) {
                     : null
         : null;
 }
-async function ha(t, e) {
+async function va(t, e) {
     switch (t) {
         case 'callback-quick-filter':
             return (Lt(String(e.dataset.filterValue || 'all')), !0);
@@ -4688,7 +4691,7 @@ async function ha(t, e) {
             return !1;
     }
 }
-async function ya(t) {
+async function ka(t) {
     switch (t) {
         case 'context-open-appointments-transfer':
             return (await la('appointments'), lt('pending_transfer'), !0);
@@ -4698,7 +4701,7 @@ async function ya(t) {
             return !1;
     }
 }
-async function va(t, e) {
+async function wa(t, e) {
     switch (t) {
         case 'queue-refresh-state':
             return (await an(), !0);
@@ -4844,7 +4847,7 @@ async function va(t, e) {
             return !1;
     }
 }
-async function ka(t, e) {
+async function Sa(t, e) {
     switch (t) {
         case 'close-toast':
             return (e.closest('.toast')?.remove(), !0);
@@ -4854,19 +4857,19 @@ async function ka(t, e) {
                 !0
             );
         case 'toggle-sidebar-collapse':
-            return (ua(), !0);
+            return (da(), !0);
         case 'refresh-admin-data':
             return (await Kn(!0), !0);
         case 'run-admin-command': {
             const t = document.getElementById('adminQuickCommand');
             if (t instanceof HTMLInputElement) {
-                const e = fa(t.value);
-                e && (await ga(e), (t.value = ''), N());
+                const e = ya(t.value);
+                e && (await ha(e), (t.value = ''), N());
             }
             return !0;
         }
         case 'open-command-palette':
-            return (E(), ma(), !0);
+            return (E(), ba(), !0);
         case 'close-command-palette':
             return (N(), !0);
         case 'logout':
@@ -4912,7 +4915,7 @@ async function ka(t, e) {
             return !1;
     }
 }
-async function wa() {
+async function Ca() {
     (M(),
         (function () {
             const t = e('#adminMainContent');
@@ -4938,7 +4941,7 @@ async function wa() {
                 t.preventDefault();
                 try {
                     await (async function (t, e) {
-                        const n = [ka, Wn, ha, Jn, va, ya];
+                        const n = [Sa, Wn, va, Jn, wa, ka];
                         for (const a of n) if (await a(t, e)) return !0;
                         return !1;
                     })(n, e);
@@ -4960,7 +4963,7 @@ async function wa() {
             const i = await la(
                 String(e.getAttribute('data-section') || 'dashboard')
             );
-            sa() && !1 !== i && pa();
+            sa() && !1 !== i && ma();
         }),
         document.addEventListener('click', (t) => {
             const e =
@@ -5126,8 +5129,8 @@ async function wa() {
                 (c = r).addEventListener('keydown', async (t) => {
                     if ('Enter' !== t.key) return;
                     t.preventDefault();
-                    const e = fa(c.value);
-                    e && (await ga(e));
+                    const e = ya(c.value);
+                    e && (await ha(e));
                 });
         })(),
         (function () {
@@ -5135,19 +5138,19 @@ async function wa() {
                 n = e('#adminMenuClose'),
                 a = e('#adminSidebarBackdrop');
             (t?.addEventListener('click', () => {
-                sa() ? da() : ua();
+                sa() ? pa() : da();
             }),
-                n?.addEventListener('click', () => pa({ restoreFocus: !0 })),
-                a?.addEventListener('click', () => pa({ restoreFocus: !0 })),
+                n?.addEventListener('click', () => ma({ restoreFocus: !0 })),
+                a?.addEventListener('click', () => ma({ restoreFocus: !0 })),
                 window.addEventListener('resize', () => {
-                    sa() ? ca() : pa();
+                    sa() ? ca() : ma();
                 }),
                 document.addEventListener('keydown', (t) => {
                     if (!sa() || !b().ui.sidebarOpen) return;
                     if ('Escape' === t.key)
                         return (
                             t.preventDefault(),
-                            void pa({ restoreFocus: !0 })
+                            void ma({ restoreFocus: !0 })
                         );
                     if ('Tab' !== t.key) return;
                     const n = (function () {
@@ -5274,12 +5277,12 @@ async function wa() {
             });
         })({
             navigateToSection: la,
-            focusQuickCommand: ma,
-            focusCurrentSearch: ba,
-            runQuickAction: ga,
-            closeSidebar: () => pa({ restoreFocus: !0 }),
+            focusQuickCommand: ba,
+            focusCurrentSearch: ga,
+            runQuickAction: ha,
+            closeSidebar: () => ma({ restoreFocus: !0 }),
             toggleMenu: () => {
-                sa() ? da() : ua();
+                sa() ? pa() : da();
             },
             dismissQueueSensitiveDialog: dn,
             toggleQueueHelp: () => mn(),
@@ -5361,19 +5364,19 @@ async function wa() {
             Un();
         }, 3e4));
 }
-const Sa = (
+const qa = (
     'loading' === document.readyState
         ? new Promise((t, e) => {
               document.addEventListener(
                   'DOMContentLoaded',
                   () => {
-                      wa().then(t).catch(e);
+                      Ca().then(t).catch(e);
                   },
                   { once: !0 }
               );
           })
-        : wa()
+        : Ca()
 ).catch((t) => {
     throw (console.error('admin-v3 boot failed', t), t);
 });
-export { Sa as default };
+export { qa as default };
