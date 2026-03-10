@@ -111,7 +111,7 @@
     ],
     "bookingStatus": {
         "eyebrow": "Ruta activa",
-        "title": "Telemedicina disponible para orientar su primer paso",
+        "title": "Reserva online en mantenimiento",
         "description": "Si despues necesita comparar otras rutas, puede volver a servicios y seguir desde ahi.",
         "ctaLabel": "Ver servicios",
         "ctaHref": "/es/servicios/"

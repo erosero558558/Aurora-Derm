@@ -1,13 +1,13 @@
 ---
-import PublicShellV6 from '../../../../../layouts/PublicShellV6.astro';
-import SoftwareSurfacePageV6 from '../../../../../components/public-v6/SoftwareSurfacePageV6.astro';
+import PublicShellV6 from '../../../../layouts/PublicShellV6.astro';
+import SoftwareSurfacePageV6 from '../../../../components/public-v6/SoftwareSurfacePageV6.astro';
 import {
     getV6NavigationModel,
     getV6SoftwareNavOverrides,
     getV6SoftwarePage,
     mergeV6NavModel,
     v6SoftwarePath,
-} from '../../../../../lib/public-v6.js';
+} from '../../../../lib/public-v6.js';
 
 const SURFACE_PAGE_MAP = {
     demo: 'demo',
@@ -16,7 +16,7 @@ const SURFACE_PAGE_MAP = {
 };
 
 export async function getStaticPaths() {
-    return Object.keys(SURFACE_PAGE_MAP).map((surface) => ({
+    return ['demo', 'estado-turno', 'dashboard'].map((surface) => ({
         params: { surface },
     }));
 }

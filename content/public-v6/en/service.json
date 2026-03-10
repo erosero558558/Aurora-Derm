@@ -48,7 +48,7 @@
         "relatedCta": "Open route",
         "bookingStatus": {
             "eyebrow": "Digital access",
-            "title": "Start with telemedicine or the right route",
+            "title": "Online booking under maintenance",
             "description": "If you are not sure whether you need an in-clinic visit yet, begin with telemedicine and clarify the next step.",
             "ctaLabel": "Open telemedicine",
             "ctaHref": "/en/telemedicine/"

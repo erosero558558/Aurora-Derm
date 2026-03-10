@@ -48,7 +48,7 @@
         "relatedCta": "Abrir ruta",
         "bookingStatus": {
             "eyebrow": "Atencion digital",
-            "title": "Empiece por telemedicina o por la ruta adecuada",
+            "title": "Reserva online en mantenimiento",
             "description": "Si todavia no sabe si necesita consulta presencial, empiece por telemedicina y ordene el siguiente paso con criterio.",
             "ctaLabel": "Abrir telemedicina",
             "ctaHref": "/es/telemedicina/"

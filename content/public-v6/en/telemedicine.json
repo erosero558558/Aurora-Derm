@@ -111,7 +111,7 @@
     ],
     "bookingStatus": {
         "eyebrow": "Active route",
-        "title": "Telemedicine is available to guide your first step",
+        "title": "Online booking under maintenance",
         "description": "If you need to compare other paths afterwards, you can return to services and continue from there.",
         "ctaLabel": "View services",
         "ctaHref": "/en/services/"

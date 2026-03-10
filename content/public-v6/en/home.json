@@ -68,11 +68,11 @@
     "newsStrip": {
         "label": "First step",
         "headline": "Telemedicine and active clinical routes are ready today without relying on a traditional booking page.",
-        "href": "/en/telemedicine/",
+        "href": "/en/services/",
         "expandLabel": "Expand",
         "collapseLabel": "Collapse",
-        "detail": "You can begin with telemedicine, message on WhatsApp, or open the clinical route that organizes your case from the first consultation.",
-        "ctaLabel": "Open telemedicine",
+        "detail": "While online booking returns, you can start with telemedicine or open the service route that best organizes your case today.",
+        "ctaLabel": "Open services",
         "localeAria": "Language switch"
     },
     "editorial": {
@@ -213,7 +213,7 @@
     },
     "bookingStatus": {
         "eyebrow": "Digital access",
-        "title": "Start today through telemedicine or the right clinical route",
+        "title": "Online booking under maintenance",
         "description": "If you need to move forward without calling first, open telemedicine or choose the route that best organizes your case today.",
         "ctaLabel": "Open telemedicine",
         "ctaHref": "/en/telemedicine/"

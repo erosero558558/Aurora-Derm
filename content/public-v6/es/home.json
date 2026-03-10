@@ -68,11 +68,11 @@
     "newsStrip": {
         "label": "Primer paso",
         "headline": "Telemedicina y rutas clinicas activas para iniciar hoy sin depender de una agenda web tradicional.",
-        "href": "/es/telemedicina/",
+        "href": "/es/servicios/",
         "expandLabel": "Expandir",
         "collapseLabel": "Contraer",
-        "detail": "Puede empezar por telemedicina, escribir por WhatsApp o abrir la ruta clinica que mejor ordene su caso desde la primera consulta.",
-        "ctaLabel": "Abrir telemedicina",
+        "detail": "Mientras vuelve la agenda web, usted puede empezar por telemedicina o abrir la consulta que mejor ordene su caso hoy.",
+        "ctaLabel": "Abrir servicios",
         "localeAria": "Selector de idioma"
     },
     "editorial": {
@@ -213,7 +213,7 @@
     },
     "bookingStatus": {
         "eyebrow": "Atencion digital",
-        "title": "Empiece hoy por telemedicina o por su ruta clinica",
+        "title": "Reserva online en mantenimiento",
         "description": "Si necesita avanzar sin llamar primero, abra telemedicina o revise la ruta que mejor ordena su caso hoy.",
         "ctaLabel": "Abrir telemedicina",
         "ctaHref": "/es/telemedicina/"

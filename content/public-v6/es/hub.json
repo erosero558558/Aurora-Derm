@@ -215,7 +215,7 @@
     ],
     "bookingStatus": {
         "eyebrow": "Primer paso",
-        "title": "Abra la ruta que mejor ordena su caso hoy",
+        "title": "Reserva online en mantenimiento",
         "description": "Puede empezar por telemedicina o entrar a la ruta clinica que mejor corresponda a sus sintomas y prioridad.",
         "ctaLabel": "Abrir telemedicina",
         "ctaHref": "/es/telemedicina/"

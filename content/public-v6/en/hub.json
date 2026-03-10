@@ -215,7 +215,7 @@
     ],
     "bookingStatus": {
         "eyebrow": "First step",
-        "title": "Open the route that organizes your case today",
+        "title": "Online booking under maintenance",
         "description": "You can begin with telemedicine or choose the clinical route that best fits your symptoms and priority.",
         "ctaLabel": "Open telemedicine",
         "ctaHref": "/en/telemedicine/"
