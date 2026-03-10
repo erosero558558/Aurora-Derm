@@ -2351,10 +2351,9 @@ function Ke(e = () => {}) {
     const n = b(),
         { queueMeta: a } = Be(),
         i = xe(),
-        o = Ie().length,
+        o = Ie(),
         s = He(),
-        l = le(a.nextTickets),
-        u = Number(a.waitingCount || a.counts?.waiting || 0);
+        l = Fe(n.queue.stationConsultorio);
     (!(function (t, e) {
         const n = b(),
             a =
@@ -2418,94 +2417,142 @@ function Ke(e = () => {}) {
         }
         Ve = 'live';
     })(a, e),
-        c(
-            '#queueTableBody',
-            i.length
-                ? i.map(Ue).join('')
-                : '<tr><td colspan="7">No hay tickets para filtro</td></tr>'
-        ));
-    const d =
-        n.queue.fallbackPartial && l.length && u > l.length
-            ? `<li><span>-</span><strong>Mostrando primeros ${l.length} de ${u} en espera</strong></li>`
-            : '';
-    c(
-        '#queueNextAdminList',
-        l.length
-            ? `${d}${l.map((e) => `<li><span>${t(e.ticketCode || e.ticket_code || '--')}</span><strong>${t(e.patientInitials || e.patient_initials || '--')}</strong></li>`).join('')}`
-            : '<li><span>-</span><strong>Sin siguientes</strong></li>'
-    );
-    const p = i.filter(
-            (t) =>
-                'waiting' === t.status &&
-                (Math.max(
-                    0,
-                    Math.round((Date.now() - de(t.createdAt)) / 6e4)
-                ) >= 20 ||
-                    'appt_overdue' === se(t.priorityClass))
-        ).length,
-        m = [p > 0 ? `riesgo: ${p}` : 'sin riesgo'];
-    (o > 0 && m.push(`seleccion: ${o}`),
-        n.queue.fallbackPartial && m.push('fallback parcial'),
-        r('#queueTriageSummary', m.join(' | ')),
-        r('#queueSelectedCount', o));
-    const g = document.getElementById('queueSelectionChip');
-    g instanceof HTMLElement && g.classList.toggle('is-hidden', 0 === o);
-    const f = document.getElementById('queueSelectVisibleBtn');
-    f instanceof HTMLButtonElement && (f.disabled = 0 === i.length);
-    const h = document.getElementById('queueClearSelectionBtn');
-    (h instanceof HTMLButtonElement && (h.disabled = 0 === o),
-        document
-            .querySelectorAll(
-                '[data-action="queue-bulk-action"], [data-action="queue-bulk-reprint"]'
-            )
-            .forEach((t) => {
-                t instanceof HTMLButtonElement && (t.disabled = 0 === s.length);
-            }),
-        r('#queueStationBadge', `Estación C${n.queue.stationConsultorio}`),
-        r(
-            '#queueStationModeBadge',
-            'locked' === n.queue.stationMode ? 'Bloqueado' : 'Libre'
-        ));
-    const y = document.getElementById('queuePracticeModeBadge');
-    y instanceof HTMLElement && (y.hidden = !n.queue.practiceMode);
-    const v = document.getElementById('queueShortcutPanel');
-    v instanceof HTMLElement && (v.hidden = !n.queue.helpOpen);
-    const k = document.querySelector('[data-action="queue-clear-call-key"]');
-    k instanceof HTMLElement && (k.hidden = !n.queue.customCallKey);
-    const w = document.querySelector('[data-action="queue-toggle-one-tap"]');
-    (w instanceof HTMLElement &&
-        (w.setAttribute('aria-pressed', String(Boolean(n.queue.oneTap))),
-        (w.textContent = n.queue.oneTap ? '1 tecla ON' : '1 tecla OFF')),
-        document
-            .querySelectorAll(
-                '[data-action="queue-call-next"][data-queue-consultorio]'
-            )
-            .forEach((t) => {
-                if (!(t instanceof HTMLButtonElement)) return;
-                const e = 2 === Number(t.dataset.queueConsultorio || 1) ? 2 : 1;
-                t.disabled =
-                    'locked' === n.queue.stationMode &&
-                    e !== Number(n.queue.stationConsultorio || 1);
-            }));
-    const S = Fe(n.queue.stationConsultorio);
-    (document
-        .querySelectorAll(
-            '[data-action="queue-release-station"][data-queue-consultorio]'
-        )
-        .forEach((t) => {
-            if (!(t instanceof HTMLButtonElement)) return;
-            const e = 2 === Number(t.dataset.queueConsultorio || 1) ? 2 : 1,
-                a = Fe(e);
-            ((t.disabled = !a),
-                'locked' === n.queue.stationMode &&
-                    e !== Number(n.queue.stationConsultorio || 1) &&
-                    (t.disabled = !0));
+        (function (t) {
+            c(
+                '#queueTableBody',
+                t.length
+                    ? t.map(Ue).join('')
+                    : '<tr><td colspan="7">No hay tickets para filtro</td></tr>'
+            );
+        })(i),
+        (function (e, n) {
+            const a = le(e.nextTickets),
+                i = Number(e.waitingCount || e.counts?.waiting || 0),
+                o =
+                    n && a.length && i > a.length
+                        ? `<li><span>-</span><strong>Mostrando primeros ${a.length} de ${i} en espera</strong></li>`
+                        : '';
+            c(
+                '#queueNextAdminList',
+                a.length
+                    ? `${o}${a.map((e) => `<li><span>${t(e.ticketCode || e.ticket_code || '--')}</span><strong>${t(e.patientInitials || e.patient_initials || '--')}</strong></li>`).join('')}`
+                    : '<li><span>-</span><strong>Sin siguientes</strong></li>'
+            );
+        })(a, n.queue.fallbackPartial),
+        (function ({
+            state: t,
+            visible: e,
+            selectedCount: n,
+            activeStationTicket: a,
+        }) {
+            const i = (function (t) {
+                    return t.filter(
+                        (t) =>
+                            'waiting' === t.status &&
+                            (Math.max(
+                                0,
+                                Math.round((Date.now() - de(t.createdAt)) / 6e4)
+                            ) >= 20 ||
+                                'appt_overdue' === se(t.priorityClass))
+                    ).length;
+                })(e),
+                o = [i > 0 ? `riesgo: ${i}` : 'sin riesgo'];
+            (n > 0 && o.push(`seleccion: ${n}`),
+                t.queue.fallbackPartial && o.push('fallback parcial'),
+                a &&
+                    o.push(
+                        `activo: ${a.ticketCode} en C${t.queue.stationConsultorio}`
+                    ),
+                r('#queueTriageSummary', o.join(' | ')));
+        })({
+            state: n,
+            visible: i,
+            selectedCount: o.length,
+            activeStationTicket: l,
         }),
-        S &&
-            (m.push(
-                `activo: ${S.ticketCode} en C${n.queue.stationConsultorio}`
-            ),
-            r('#queueTriageSummary', m.join(' | '))),
+        (function ({ visibleCount: t, selectedCount: e, bulkTargetCount: n }) {
+            r('#queueSelectedCount', e);
+            const a = document.getElementById('queueSelectionChip');
+            a instanceof HTMLElement &&
+                a.classList.toggle('is-hidden', 0 === e);
+            const i = document.getElementById('queueSelectVisibleBtn');
+            i instanceof HTMLButtonElement && (i.disabled = 0 === t);
+            const o = document.getElementById('queueClearSelectionBtn');
+            (o instanceof HTMLButtonElement && (o.disabled = 0 === e),
+                document
+                    .querySelectorAll(
+                        '[data-action="queue-bulk-action"], [data-action="queue-bulk-reprint"]'
+                    )
+                    .forEach((t) => {
+                        t instanceof HTMLButtonElement &&
+                            (t.disabled = 0 === n);
+                    }));
+        })({
+            visibleCount: i.length,
+            selectedCount: o.length,
+            bulkTargetCount: s.length,
+        }),
+        (function (t, e) {
+            (r('#queueStationBadge', `Estación C${t.queue.stationConsultorio}`),
+                r(
+                    '#queueStationModeBadge',
+                    'locked' === t.queue.stationMode ? 'Bloqueado' : 'Libre'
+                ),
+                document
+                    .querySelectorAll(
+                        '[data-action="queue-call-next"][data-queue-consultorio]'
+                    )
+                    .forEach((e) => {
+                        if (!(e instanceof HTMLButtonElement)) return;
+                        const n =
+                            2 === Number(e.dataset.queueConsultorio || 1)
+                                ? 2
+                                : 1;
+                        e.disabled =
+                            'locked' === t.queue.stationMode &&
+                            n !== Number(t.queue.stationConsultorio || 1);
+                    }),
+                document
+                    .querySelectorAll(
+                        '[data-action="queue-release-station"][data-queue-consultorio]'
+                    )
+                    .forEach((n) => {
+                        if (!(n instanceof HTMLButtonElement)) return;
+                        const a =
+                                2 === Number(n.dataset.queueConsultorio || 1)
+                                    ? 2
+                                    : 1,
+                            i =
+                                a === Number(t.queue.stationConsultorio || 1)
+                                    ? e
+                                    : Fe(a);
+                        ((n.disabled = !i),
+                            'locked' === t.queue.stationMode &&
+                                a !== Number(t.queue.stationConsultorio || 1) &&
+                                (n.disabled = !0));
+                    }));
+        })(n, l),
+        (function (t) {
+            const e = document.getElementById('queuePracticeModeBadge');
+            e instanceof HTMLElement && (e.hidden = !t.queue.practiceMode);
+            const n = document.getElementById('queueShortcutPanel');
+            n instanceof HTMLElement && (n.hidden = !t.queue.helpOpen);
+            const a = document.querySelector(
+                '[data-action="queue-clear-call-key"]'
+            );
+            a instanceof HTMLElement && (a.hidden = !t.queue.customCallKey);
+            const i = document.querySelector(
+                '[data-action="queue-toggle-one-tap"]'
+            );
+            i instanceof HTMLElement &&
+                (i.setAttribute(
+                    'aria-pressed',
+                    String(Boolean(t.queue.oneTap))
+                ),
+                (i.textContent = t.queue.oneTap
+                    ? '1 tecla ON'
+                    : '1 tecla OFF'));
+        })(n),
         Oe());
 }
 function Qe(t) {
