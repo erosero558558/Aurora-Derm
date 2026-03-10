@@ -1759,40 +1759,44 @@ function Jt() {
                 r(
                     '#availabilitySyncStatus',
                     o ? `Google Calendar | ${l}` : `Store local | ${l}`
-                ));
-            const u = e('#addSlotForm'),
-                d = e('#availabilityQuickSlotPresets');
-            (u && u.classList.toggle('is-hidden', o),
-                d && d.classList.toggle('is-hidden', o));
-            const p = e('#newSlotTime');
-            p instanceof HTMLInputElement && (p.disabled = o);
-            const m = e('[data-action="add-time-slot"]');
-            m instanceof HTMLButtonElement && (m.disabled = o);
-            const g = Array.isArray(t.availability.clipboard)
+                ),
+                (function (t) {
+                    const n = e('#addSlotForm'),
+                        a = e('#availabilityQuickSlotPresets');
+                    (n && n.classList.toggle('is-hidden', t),
+                        a && a.classList.toggle('is-hidden', t));
+                    const i = e('#newSlotTime');
+                    i instanceof HTMLInputElement && (i.disabled = t);
+                    const o = e('[data-action="add-time-slot"]');
+                    o instanceof HTMLButtonElement && (o.disabled = t);
+                })(o));
+            const u = Array.isArray(t.availability.clipboard)
                 ? t.availability.clipboard.length
                 : 0;
-            let f = Gt(i, o);
+            let d = Gt(i, o);
             (o
-                ? (f = 'Edicion bloqueada por proveedor Google')
+                ? (d = 'Edicion bloqueada por proveedor Google')
                 : t.availability.lastAction
-                  ? (f = String(t.availability.lastAction))
-                  : g && (f = `Portapapeles: ${g} slots`),
-                r('#availabilityDayActionsStatus', f),
-                document
-                    .querySelectorAll(
-                        '#availabilityDayActions [data-action], #availabilitySaveDraftBtn, #availabilityDiscardDraftBtn'
-                    )
-                    .forEach((e) => {
-                        e instanceof HTMLButtonElement &&
-                            ('availabilityDiscardDraftBtn' !== e.id &&
-                            'availabilitySaveDraftBtn' !== e.id
-                                ? 'paste-availability-day' !==
-                                  String(e.dataset.action || '')
-                                    ? (e.disabled = o)
-                                    : (e.disabled = o || 0 === g)
-                                : (e.disabled =
-                                      o || !t.availability.draftDirty));
-                    }));
+                  ? (d = String(t.availability.lastAction))
+                  : u && (d = `Portapapeles: ${u} slots`),
+                r('#availabilityDayActionsStatus', d),
+                (function (t, e, n) {
+                    document
+                        .querySelectorAll(
+                            '#availabilityDayActions [data-action], #availabilitySaveDraftBtn, #availabilityDiscardDraftBtn'
+                        )
+                        .forEach((a) => {
+                            a instanceof HTMLButtonElement &&
+                                ('availabilityDiscardDraftBtn' !== a.id &&
+                                'availabilitySaveDraftBtn' !== a.id
+                                    ? 'paste-availability-day' !==
+                                      String(a.dataset.action || '')
+                                        ? (a.disabled = e)
+                                        : (a.disabled = e || 0 === n)
+                                    : (a.disabled =
+                                          e || !t.availability.draftDirty));
+                        });
+                })(t, o, u));
         })(),
         zt());
 }
