@@ -42,6 +42,23 @@ const SOFTWARE_ROUTE_MAP = {
     },
 };
 
+function hasText(value) {
+    return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizeText(value) {
+    return hasText(value) ? value.trim() : '';
+}
+
+function normalizeHref(value) {
+    const raw = normalizeText(value);
+    return raw && raw !== '#' ? raw : '';
+}
+
+function isObject(value) {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 function normalizeLocale(locale) {
     return locale === 'en' ? 'en' : 'es';
 }
@@ -70,6 +87,260 @@ function normalizePath(pathname) {
     }
     const withLeading = raw.startsWith('/') ? raw : `/${raw}`;
     return withLeading.endsWith('/') ? withLeading : `${withLeading}/`;
+}
+
+function sanitizeBreadcrumb(items) {
+    return Array.isArray(items)
+        ? items
+              .map((item) => {
+                  const label = normalizeText(item?.label);
+                  const href = normalizeHref(item?.href);
+                  return label && href ? { label, href } : null;
+              })
+              .filter(Boolean)
+        : [];
+}
+
+function sanitizeImageAsset(asset, fallbackAlt = '') {
+    const source = isObject(asset) ? asset : {};
+    const src = normalizeText(source.src || source.image);
+    const srcset = normalizeText(source.srcset);
+    const alt = normalizeText(source.alt) || normalizeText(fallbackAlt);
+    return {
+        src,
+        srcset,
+        alt,
+    };
+}
+
+function sanitizeBookingStatus(status) {
+    if (!isObject(status)) {
+        return {};
+    }
+    return {
+        eyebrow: normalizeText(status.eyebrow),
+        title: normalizeText(status.title),
+        description: normalizeText(status.description),
+        ctaLabel: normalizeText(status.ctaLabel),
+        ctaHref: normalizeHref(status.ctaHref),
+    };
+}
+
+function sanitizeHomeHero(hero) {
+    const source = isObject(hero) ? hero : {};
+    const rawAutoplay = Number(source.autoplayMs || 7000);
+    const labels = isObject(source.labels) ? source.labels : {};
+    const slides = Array.isArray(source.slides)
+        ? source.slides
+              .map((slide, index) => {
+                  const title = normalizeText(slide?.title);
+                  const description = normalizeText(slide?.description);
+                  const image = normalizeText(slide?.image);
+                  const href = normalizeHref(slide?.href);
+                  if (!title || !description || !image || !href) {
+                      return null;
+                  }
+                  return {
+                      id: normalizeText(slide?.id) || `v6-hero-slide-${index + 1}`,
+                      category: normalizeText(slide?.category),
+                      title,
+                      description,
+                      image,
+                      srcset: normalizeText(slide?.srcset),
+                      alt: normalizeText(slide?.alt) || title,
+                      href,
+                  };
+              })
+              .filter(Boolean)
+        : [];
+
+    return {
+        autoplayMs:
+            Number.isFinite(rawAutoplay) && rawAutoplay > 1000 ? rawAutoplay : 7000,
+        labels: {
+            prev: normalizeText(labels.prev),
+            next: normalizeText(labels.next),
+            pause: normalizeText(labels.pause),
+            play: normalizeText(labels.play),
+            openRoute: normalizeText(labels.openRoute),
+            indicators: normalizeText(labels.indicators),
+            indicatorItemPrefix: normalizeText(labels.indicatorItemPrefix),
+        },
+        slides,
+    };
+}
+
+function buildPreloadImage(image, fallbackAlt = '') {
+    const safeImage = sanitizeImageAsset(image, fallbackAlt);
+    return {
+        src: safeImage.src,
+        srcset: safeImage.srcset,
+        alt: safeImage.alt,
+    };
+}
+
+function buildPreloadImageFromHero(hero) {
+    const firstSlide = Array.isArray(hero?.slides) ? hero.slides[0] : null;
+    if (!firstSlide) {
+        return { src: '', srcset: '', alt: '' };
+    }
+    return {
+        src: normalizeText(firstSlide.image),
+        srcset: normalizeText(firstSlide.srcset),
+        alt: normalizeText(firstSlide.alt) || normalizeText(firstSlide.title),
+    };
+}
+
+function sanitizeNewsStrip(item) {
+    if (!isObject(item)) {
+        return {};
+    }
+    return {
+        label: normalizeText(item.label),
+        headline: normalizeText(item.headline),
+        href: normalizeHref(item.href),
+        expandLabel: normalizeText(item.expandLabel),
+        collapseLabel: normalizeText(item.collapseLabel),
+        detail: normalizeText(item.detail),
+        ctaLabel: normalizeText(item.ctaLabel),
+        localeAria: normalizeText(item.localeAria),
+    };
+}
+
+function sanitizeEditorialCard(card, index) {
+    const title = normalizeText(card?.title);
+    const href = normalizeHref(card?.href);
+    const image = normalizeText(card?.image);
+    if (!title || !href || !image) {
+        return null;
+    }
+    return {
+        id: normalizeText(card?.id) || `editorial-card-${index + 1}`,
+        type: normalizeText(card?.type),
+        size: normalizeText(card?.size),
+        category: normalizeText(card?.category),
+        title,
+        copy: normalizeText(card?.copy),
+        href,
+        image,
+        alt: normalizeText(card?.alt) || title,
+    };
+}
+
+function sanitizeHomeSection(section) {
+    if (!isObject(section)) {
+        return {};
+    }
+    return {
+        eyebrow: normalizeText(section.eyebrow),
+        title: normalizeText(section.title),
+        deck: normalizeText(section.deck),
+        ctaLabel: normalizeText(section.ctaLabel),
+        cards: Array.isArray(section.cards)
+            ? section.cards.map(sanitizeEditorialCard).filter(Boolean)
+            : [],
+    };
+}
+
+function sanitizeHubCard(item) {
+    const title = normalizeText(item?.title);
+    const href = normalizeHref(item?.href);
+    const image = normalizeText(item?.image);
+    if (!title || !href || !image) {
+        return null;
+    }
+    return {
+        slug: normalizeText(item?.slug),
+        category: normalizeText(item?.category),
+        title,
+        copy: normalizeText(item?.copy),
+        image,
+        href,
+    };
+}
+
+function sanitizeHubUi(ui) {
+    const source = isObject(ui) ? ui : {};
+    const menu = isObject(source.menu) ? source.menu : {};
+    const featured = isObject(source.featured) ? source.featured : {};
+    const initiatives = isObject(source.initiatives) ? source.initiatives : {};
+    return {
+        menu: {
+            featured: normalizeText(menu.featured),
+            initiatives: normalizeText(menu.initiatives),
+        },
+        featured: {
+            eyebrow: normalizeText(featured.eyebrow),
+            title: normalizeText(featured.title),
+        },
+        sectionLabelPrefix: normalizeText(source.sectionLabelPrefix),
+        routeLabel: normalizeText(source.routeLabel),
+        ctaLabel: normalizeText(source.ctaLabel),
+        railAria: normalizeText(source.railAria),
+        initiatives: {
+            eyebrow: normalizeText(initiatives.eyebrow),
+            title: normalizeText(initiatives.title),
+        },
+    };
+}
+
+function sanitizeHubSection(section, index) {
+    const title = normalizeText(section?.title);
+    const cards = Array.isArray(section?.cards)
+        ? section.cards.map(sanitizeHubCard).filter(Boolean)
+        : [];
+    if (!title || !cards.length) {
+        return null;
+    }
+    return {
+        id: normalizeText(section?.id) || `section-${index + 1}`,
+        title,
+        deck: normalizeText(section?.deck),
+        cards,
+    };
+}
+
+function sanitizeHomeData(payload) {
+    const source = isObject(payload) ? payload : {};
+    const hero = sanitizeHomeHero(source.hero);
+    return {
+        ...source,
+        title: normalizeText(source.title),
+        description: normalizeText(source.description),
+        hero,
+        preloadImage: buildPreloadImageFromHero(hero),
+        newsStrip: sanitizeNewsStrip(source.newsStrip),
+        editorial: sanitizeHomeSection(source.editorial),
+        corporateMatrix: sanitizeHomeSection(source.corporateMatrix),
+        bookingStatus: sanitizeBookingStatus(source.bookingStatus),
+    };
+}
+
+function sanitizeHubData(payload) {
+    const source = isObject(payload) ? payload : {};
+    const heroImage = sanitizeImageAsset(source.heroImage, source.heading);
+    return {
+        ...source,
+        title: normalizeText(source.title),
+        description: normalizeText(source.description),
+        breadcrumb: sanitizeBreadcrumb(source.breadcrumb),
+        heading: normalizeText(source.heading),
+        heroImage,
+        preloadImage: buildPreloadImage(heroImage, source.heading),
+        introTitle: normalizeText(source.introTitle),
+        introDeck: normalizeText(source.introDeck),
+        ui: sanitizeHubUi(source.ui),
+        featured: Array.isArray(source.featured)
+            ? source.featured.map(sanitizeHubCard).filter(Boolean)
+            : [],
+        sections: Array.isArray(source.sections)
+            ? source.sections.map(sanitizeHubSection).filter(Boolean)
+            : [],
+        initiatives: Array.isArray(source.initiatives)
+            ? source.initiatives.map(sanitizeHubCard).filter(Boolean)
+            : [],
+        bookingStatus: sanitizeBookingStatus(source.bookingStatus),
+    };
 }
 
 function mapLegalSwitch(pathname, locale) {
@@ -190,11 +461,11 @@ export function getV6NavigationModel(locale, pathname = '/') {
 }
 
 export function getV6HomeData(locale) {
-    return readLocaleJson(normalizeLocale(locale), 'home.json');
+    return sanitizeHomeData(readLocaleJson(normalizeLocale(locale), 'home.json'));
 }
 
 export function getV6HubData(locale) {
-    return readLocaleJson(normalizeLocale(locale), 'hub.json');
+    return sanitizeHubData(readLocaleJson(normalizeLocale(locale), 'hub.json'));
 }
 
 export function getV6TelemedicineData(locale) {

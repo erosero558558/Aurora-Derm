@@ -11,7 +11,6 @@ const locale = 'es';
 const pathname = '/es/';
 const page = getV6HomeData(locale);
 const navModel = getV6NavigationModel(locale, pathname);
-const firstSlide = (page?.hero?.slides || [])[0] || {};
 ---
 
 <PublicShellV6
@@ -23,8 +22,8 @@ const firstSlide = (page?.hero?.slides || [])[0] || {};
     pathname={pathname}
     navModel={navModel}
     templateId="home_v6"
-    preloadImageSrc={firstSlide.image}
-    preloadImageSrcSet={firstSlide.srcset}
+    preloadImageSrc={page?.preloadImage?.src}
+    preloadImageSrcSet={page?.preloadImage?.srcset}
     preloadImageSizes="(max-width: 900px) 100vw, 38vw"
 >
     <HeroShowcaseV6 hero={page.hero} locale={locale} />

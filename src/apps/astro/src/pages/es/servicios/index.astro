@@ -18,8 +18,8 @@ const navModel = getV6NavigationModel(locale, pathname);
     pathname={pathname}
     navModel={navModel}
     templateId="hub_v6"
-    preloadImageSrc={page?.heroImage?.src}
-    preloadImageSrcSet={page?.heroImage?.srcset}
+    preloadImageSrc={page?.preloadImage?.src}
+    preloadImageSrcSet={page?.preloadImage?.srcset}
     preloadImageSizes="100vw"
 >
     <ServiceHubV6 page={page} locale={locale} navModel={navModel} />

@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 454
+  revision: 457
   updated_at: 2026-03-10
 
 tasks:
@@ -6657,5 +6657,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-167.md"
     depends_on: []
     prompt: "Align V6 news strip copy with active regression contract"
+    created_at: 2026-03-10
+    updated_at: 2026-03-10
+
+  - id: AG-168
+    title: "Harden V6 content loader contracts"
+    owner: ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-10T06:15:29.128Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/astro/src/lib/public-v6.js", "src/apps/astro/src/pages/es/index.astro", "src/apps/astro/src/pages/en/index.astro", "src/apps/astro/src/pages/es/servicios/index.astro", "src/apps/astro/src/pages/en/services/index.astro"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-10T06:15:29.128Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Harden V6 content loader contracts"
+    acceptance_ref: "verification/agent-runs/AG-168.md"
+    evidence_ref: "verification/agent-runs/AG-168.md"
+    depends_on: []
+    prompt: "Harden V6 content loader contracts"
     created_at: 2026-03-10
     updated_at: 2026-03-10
