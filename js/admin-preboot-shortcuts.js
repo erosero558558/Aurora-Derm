@@ -30,38 +30,6 @@
         '&': 'digit6',
     });
     const LAST_SECTION_KEY = 'adminLastSection';
-    const LEGACY_VARIANT_STORAGE_KEY = 'adminUiVariant';
-    const LEGACY_VARIANT_QUERY_KEYS = ['admin_ui', 'admin_ui_reset'];
-
-    function normalizeUrl() {
-        try {
-            const url = new URL(window.location.href);
-            let mutated = false;
-
-            LEGACY_VARIANT_QUERY_KEYS.forEach((key) => {
-                if (url.searchParams.has(key)) {
-                    url.searchParams.delete(key);
-                    mutated = true;
-                }
-            });
-
-            if (!mutated) return;
-
-            const search = url.searchParams.toString();
-            const nextUrl = `${url.pathname}${search ? `?${search}` : ''}${url.hash}`;
-            window.history.replaceState(null, '', nextUrl);
-        } catch (_error) {
-            // no-op
-        }
-    }
-
-    function clearLegacyVariantStorage() {
-        try {
-            localStorage.removeItem(LEGACY_VARIANT_STORAGE_KEY);
-        } catch (_error) {
-            // no-op
-        }
-    }
 
     function isTypingTarget(target) {
         if (!(target instanceof HTMLElement)) return false;
@@ -120,8 +88,6 @@
     }
 
     document.documentElement.setAttribute('data-admin-ui', 'sony_v3');
-    normalizeUrl();
-    clearLegacyVariantStorage();
 
     window.addEventListener(
         'keydown',

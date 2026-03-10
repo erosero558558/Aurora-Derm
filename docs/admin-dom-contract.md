@@ -9,11 +9,11 @@ This document freezes the active admin frontend contract after the total cutover
 - `GET /admin.html`
 - `GET /operador-turnos.html`
 - The admin always boots in `sony_v3`.
-- Legacy compatibility inputs are ignored and cleaned from the URL:
+- Legacy compatibility inputs are inert:
     - `admin_ui=legacy|sony_v2|sony_v3`
     - `admin_ui_reset=1`
-- Legacy storage compatibility:
-    - `localStorage.adminUiVariant` is removed opportunistically during preboot/runtime boot.
+- Legacy storage compatibility key:
+    - `localStorage.adminUiVariant` may still exist, but preboot/runtime no longer reads or mutates it.
 - Admin CSP hardening:
     - `script-src 'self'`
     - `style-src 'self'`
@@ -105,7 +105,7 @@ This document freezes the active admin frontend contract after the total cutover
     - `queueNumpadHelpOpen`
     - `queueOpeningChecklistV1`
 - Retired compatibility key:
-    - `adminUiVariant`
+    - `adminUiVariant` (historical only; not read or cleaned by runtime)
 
 ## Keyboard Contract
 

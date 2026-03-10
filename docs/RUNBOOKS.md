@@ -24,6 +24,9 @@ Si el despliegue automÃ¡tico falla, se puede subir manualmente.
 **Pasos:**
 
 1.  Ejecutar `npm run bundle:deploy` para generar el paquete ZIP en `_deploy_bundle/`.
+    El ZIP preserva los wrappers raiz junto con `scripts/ops/prod`,
+    `scripts/ops/setup` y `bin/powershell` para que el tooling incluido siga
+    funcionando fuera del repo.
 2.  Conectarse al servidor FTP (credenciales en gestor de contraseÃ±as del equipo).
 3.  Subir el contenido del ZIP a `public_html/`.
 4.  **Importante:** No sobrescribir la carpeta `data/` si ya contiene datos de producciÃ³n.
@@ -35,6 +38,8 @@ DespuÃ©s de cualquier despliegue, ejecutar el script de verificaciÃ³n:
 ```powershell
 .\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com"
 ```
+
+Implementacion canonica: `scripts/ops/prod/GATE-POSTDEPLOY.ps1`.
 
 Esto verificarÃ¡:
 
@@ -274,6 +279,7 @@ Para rÃ©plica remota real:
   `PIELARMONIA_BACKUP_OFFSITE_URL=https://DESTINO/backup-receiver.php`
   `PIELARMONIA_BACKUP_OFFSITE_TOKEN=<mismo_token>`
 - Usa `CONFIGURAR-BACKUP-OFFSITE.ps1` para generar token y comandos.
+  Implementacion canonica: `scripts/ops/setup/CONFIGURAR-BACKUP-OFFSITE.ps1`.
 
 Validacion manual del ultimo backup cifrado en destino:
 
@@ -297,6 +303,8 @@ Utilizar los scripts de PowerShell incluidos en el repositorio para mÃ©tricas.
 
 - **Latencia:** `.\BENCH-API-PRODUCCION.ps1` mide el tiempo de respuesta de la API.
 - **Disponibilidad:** `.\SMOKE-PRODUCCION.ps1` realiza un recorrido rÃ¡pido por las URLs principales.
+- Implementaciones canonicas: `scripts/ops/prod/BENCH-API-PRODUCCION.ps1` y
+  `scripts/ops/prod/SMOKE-PRODUCCION.ps1`.
 
 ---
 

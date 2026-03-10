@@ -57,14 +57,16 @@ function updateSubscribeButton(isSubscribed) {
         subscribeBtn.dataset.action = 'unsubscribe';
         subscribeBtn.classList.remove('btn-primary');
         subscribeBtn.classList.add('btn-secondary');
-        subscribeBtn.innerHTML = '<i class="fas fa-bell-slash"></i> Desactivar Notificaciones';
+        subscribeBtn.innerHTML =
+            '<i class="fas fa-bell-slash"></i> Desactivar Notificaciones';
         return;
     }
 
     subscribeBtn.dataset.action = 'subscribe';
     subscribeBtn.classList.remove('btn-secondary');
     subscribeBtn.classList.add('btn-primary');
-    subscribeBtn.innerHTML = '<i class="fas fa-bell"></i> Activar Notificaciones';
+    subscribeBtn.innerHTML =
+        '<i class="fas fa-bell"></i> Activar Notificaciones';
 }
 
 async function getPushConfig() {
@@ -80,7 +82,10 @@ async function checkSubscriptionState() {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
     updateSubscribeButton(Boolean(subscription));
-    setPushStatus(subscription ? 'activo' : 'disponible', subscription ? 'ok' : 'muted');
+    setPushStatus(
+        subscription ? 'activo' : 'disponible',
+        subscription ? 'ok' : 'muted'
+    );
     return subscription;
 }
 
@@ -99,12 +104,12 @@ async function subscribe() {
 
     const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey)
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
     });
 
     await apiRequest('push-subscribe', {
         method: 'POST',
-        body: { subscription }
+        body: { subscription },
     });
 
     return subscription;
@@ -119,7 +124,7 @@ async function unsubscribe() {
 
     await apiRequest('push-unsubscribe', {
         method: 'POST',
-        body: { endpoint: subscription.endpoint }
+        body: { endpoint: subscription.endpoint },
     });
 
     await subscription.unsubscribe();
@@ -132,7 +137,8 @@ async function onToggleSubscription() {
 
     const previous = subscribeBtn.innerHTML;
     subscribeBtn.disabled = true;
-    subscribeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    subscribeBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Procesando...';
 
     try {
         if (action === 'unsubscribe') {
@@ -152,7 +158,10 @@ async function onToggleSubscription() {
         await checkSubscriptionState().catch(() => {
             updateSubscribeButton(false);
         });
-        if (subscribeBtn.dataset.action !== 'subscribe' && subscribeBtn.dataset.action !== 'unsubscribe') {
+        if (
+            subscribeBtn.dataset.action !== 'subscribe' &&
+            subscribeBtn.dataset.action !== 'unsubscribe'
+        ) {
             subscribeBtn.innerHTML = previous;
         }
     }
@@ -169,12 +178,18 @@ async function onTestNotification() {
     }
 
     try {
-        const payload = await apiRequest('push-test', { method: 'POST', body: {} });
+        const payload = await apiRequest('push-test', {
+            method: 'POST',
+            body: {},
+        });
         const result = payload.result || {};
         const success = Number(result.success || 0);
         const failed = Number(result.failed || 0);
         if (failed > 0) {
-            showToast(`Push test: ${success} ok, ${failed} fallidos`, 'warning');
+            showToast(
+                `Push test: ${success} ok, ${failed} fallidos`,
+                'warning'
+            );
         } else {
             showToast(`Push test enviado (${success})`, 'success');
         }
@@ -199,12 +214,11 @@ export async function initPushNotifications() {
         return;
     }
 
-    const supported = (
+    const supported =
         typeof window !== 'undefined' &&
         'serviceWorker' in navigator &&
         'PushManager' in window &&
-        typeof Notification !== 'undefined'
-    );
+        typeof Notification !== 'undefined';
 
     if (!supported) {
         setButtonsVisibility(false);
@@ -225,6 +239,9 @@ export async function initPushNotifications() {
         setPushStatus('sin configurar', 'warn');
         // Keep admin UX clean when push is not enabled in this environment.
         // The controls stay hidden and the dashboard remains fully functional.
-        console.info('Push no configurado en servidor:', error?.message || error);
+        console.info(
+            'Push no configurado en servidor:',
+            error?.message || error
+        );
     }
 }

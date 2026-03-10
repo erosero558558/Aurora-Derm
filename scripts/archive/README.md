@@ -9,3 +9,4 @@ Reglas:
 - No forman parte del carril diario recomendado.
 - Para comandos activos preferir `package.json`, `bin/**` y
   `docs/OPERATIONS_INDEX.md`.
+- Incluye runners retirados del admin legacy/v2, como `run-admin-queue-v2.js`.

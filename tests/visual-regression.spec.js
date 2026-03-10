@@ -21,7 +21,6 @@ async function prepareStableVisualState(page) {
                     at: '2026-01-01T00:00:00.000Z',
                 })
             );
-            localStorage.removeItem('adminUiVariant');
         } catch (_) {
             // Ignore storage failures in locked-down contexts.
         }
@@ -91,7 +90,7 @@ test.describe('@visual Pruebas de regresion visual', () => {
     test('visual-admin-login-stable-v2', async ({ page }) => {
         await page.setViewportSize({ width: 1440, height: 960 });
         await prepareStableVisualState(page);
-        await page.goto('/admin.html?admin_ui=sony_v3&admin_ui_reset=1');
+        await page.goto('/admin.html');
         await page
             .waitForLoadState('load', { timeout: 20000 })
             .catch(() => null);

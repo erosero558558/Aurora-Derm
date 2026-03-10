@@ -48,8 +48,8 @@ $env:PIELARMONIA_ADMIN_PASSWORD = "admin123"
 ### Admin
 
 - `npm run gate:admin:rollout`
+- `npm run chunks:admin:check`
 - `npm run chunks:admin:prune`
-- `node bin/clean-admin-chunks.js --dry-run`
 - Implementacion PowerShell canonica: `scripts/ops/admin/**` (wrappers compatibles en raiz)
 
 ### LeadOps IA interna
@@ -88,6 +88,7 @@ $env:PIELARMONIA_ADMIN_PASSWORD = "admin123"
 - `src/apps/astro/src/components/public-v6/**`: componentes publicos V6
 - `content/public-v6/**`: copy y contenido canonico publico
 - `src/apps/admin-v3/**`: UI admin activa
+- `src/apps/archive/**`: codigo historico archivado fuera del runtime activo
 - `admin.html`: shell admin servido
 - `admin.js`: bundle admin generado
 - `controllers/**`, `lib/**`: backend y servicios

@@ -49,7 +49,8 @@ Sube estos archivos a la raiz del hosting (`public_html` o equivalente):
 - `legal.css`
 - `hero-woman.jpg`
 - `admin.html`
-- `admin.css`
+- `admin-v3.css`
+- `queue-ops.css`
 - `admin.js`
 - `api.php`
 - `api-lib.php`
@@ -69,6 +70,10 @@ Atajo recomendado para preparar un paquete listo para subir:
 
 - `npm run bundle:deploy`
 - Esto genera un `.zip` en `_deploy_bundle/` con `manifest-sha256.txt`.
+- El ZIP conserva los wrappers raiz junto con `scripts/ops/prod`,
+  `scripts/ops/setup` y `bin/powershell`, para que `GATE-POSTDEPLOY.ps1`,
+  `VERIFICAR-DESPLIEGUE.ps1` y `CONFIGURAR-TELEGRAM-WEBHOOK.ps1` sigan
+  funcionando fuera del repo.
 
 Notas:
 
@@ -76,6 +81,7 @@ Notas:
 - El motor pesado del chat se carga en diferido desde `chat-engine.js`.
 - El flujo de reserva/pago se carga en diferido desde `booking-engine.js`.
 - El CSS se divide en `styles.css` (critico) y `styles-deferred.css` (diferido).
+- El admin canonico despliega `admin-v3.css` + `queue-ops.css`; `admin.css` queda archivado como legacy.
 - Las traducciones EN se cargan bajo demanda desde `translations-en.js`.
 - `.htaccess` ahora aplica Brotli/gzip y politicas de cache: estaticos con `max-age`, API critica con `no-store`.
 - `index.php` ahora entrega la home con cabeceras de seguridad (incluye CSP) cuando el servidor enruta `/` a PHP.
@@ -175,6 +181,7 @@ Ejemplo recomendado de `data/figo-config.json`:
 
 - `.\CONFIGURAR-TELEGRAM-WEBHOOK.ps1 -BotToken "TOKEN_ROTADO" -WebhookUrl "https://pielarmonia.com/figo-backend.php"`
 - Guarda el secret mostrado por el script en `FIGO_TELEGRAM_WEBHOOK_SECRET`.
+- Implementacion canonica: `scripts/ops/setup/CONFIGURAR-TELEGRAM-WEBHOOK.ps1`.
 
 4. Sitio:
 
@@ -236,6 +243,7 @@ fi
   `PIELARMONIA_BACKUP_OFFSITE_URL=https://DESTINO/backup-receiver.php`
   `PIELARMONIA_BACKUP_OFFSITE_TOKEN=<TOKEN>`
 - Script de ayuda: `.\CONFIGURAR-BACKUP-OFFSITE.ps1`
+- Implementacion canonica: `scripts/ops/setup/CONFIGURAR-BACKUP-OFFSITE.ps1`
 
 ## Despliegue con Docker y Kubernetes (Fase 4)
 

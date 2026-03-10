@@ -18,19 +18,22 @@ El admin opera en modo `sony_v3 only`.
 - Stylesheet canonico: `admin-v3.css`
 - `js/admin-runtime.js` queda solo como alias de compatibilidad hacia `admin.js`
 
-## Compatibilidad heredada
+## Inputs legacy inertes
 
-Los siguientes inputs se aceptan solo como ruido heredado y se limpian:
+Los siguientes inputs pueden seguir llegando como ruido heredado, pero ya no
+participan del preboot ni del runtime:
 
 - `admin_ui=legacy|sony_v2|sony_v3`
 - `admin_ui_reset=1`
 - `localStorage.adminUiVariant`
 
-No cambian la UI final. El admin sigue arrancando en `sony_v3`.
+No cambian la UI final. El admin sigue arrancando en `sony_v3` y ya no los
+reescribe ni los limpia de forma oportunista.
 
 ## Validacion recomendada
 
 ```powershell
+npm run chunks:admin:check
 npm run test:admin:runtime-smoke
 npm run test:frontend:qa:admin
 npm run gate:admin:rollout
@@ -38,7 +41,8 @@ npm run gate:admin:rollout
 
 ## Gate operativo
 
-`GATE-ADMIN-ROLLOUT.ps1` valida:
+`GATE-ADMIN-ROLLOUT.ps1` valida (implementacion canonica:
+`scripts/ops/admin/GATE-ADMIN-ROLLOUT.ps1`):
 
 - `admin.html` responde correctamente
 - el shell referencia `admin-v3.css`
@@ -67,8 +71,13 @@ Despues de regenerar `admin.js`:
 
 ```powershell
 npx rollup -c rollup.config.mjs
+npm run chunks:admin:check
 npm run chunks:admin:prune
 ```
+
+El prune debe dejar `js/admin-chunks/**` solo con archivos alcanzables desde
+`admin.js`. Si reaparecen chunks huerfanos, se trata como drift del runtime
+canonico.
 
 O usar el build canonico del repo:
 
@@ -78,6 +87,8 @@ npm run build
 
 ## Notas
 
-- `sony_v2` y `legacy` pueden seguir existiendo como codigo muerto temporal en el repo.
-- No pueden seguir siendo parte del runtime, del gate ni de la operacion diaria.
+- `sony_v2` y `legacy` quedan archivados en `src/apps/archive/admin-v2/` y
+  `src/apps/archive/admin-legacy/`.
+- No forman parte del runtime, del gate ni de la operacion diaria.
 - `admin.html` debe cargar `admin.js` directamente; el bridge heredado no forma parte del shell canonico.
+- Los CSS legacy retirados del front door viven en `styles/archive/admin/`.

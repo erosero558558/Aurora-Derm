@@ -14,8 +14,8 @@ async function requestJson(url, options = {}) {
         method: options.method || 'GET',
         credentials: 'same-origin',
         headers: {
-            Accept: 'application/json'
-        }
+            Accept: 'application/json',
+        },
     };
 
     if (csrfToken && options.method && options.method !== 'GET') {
@@ -49,5 +49,8 @@ export async function apiRequest(resource, options = {}) {
 }
 
 export async function authRequest(action, options = {}) {
-    return requestJson(`${AUTH_ENDPOINT}?action=${encodeURIComponent(action)}`, options);
+    return requestJson(
+        `${AUTH_ENDPOINT}?action=${encodeURIComponent(action)}`,
+        options
+    );
 }

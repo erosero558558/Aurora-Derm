@@ -9,16 +9,36 @@ export let currentQueueTickets = [];
 export let currentQueueMeta = null;
 export let csrfToken = '';
 
-export function setAppointments(data) { currentAppointments = data || []; }
-export function setCallbacks(data) { currentCallbacks = data || []; }
-export function setReviews(data) { currentReviews = data || []; }
-export function setAvailability(data) { currentAvailability = data || {}; }
-export function setAvailabilityMeta(data) { currentAvailabilityMeta = data || {}; }
-export function setFunnelMetrics(data) { currentFunnelMetrics = data; }
-export function setHealthStatus(data) { currentHealthStatus = data || null; }
-export function setQueueTickets(data) { currentQueueTickets = Array.isArray(data) ? data : []; }
-export function setQueueMeta(data) { currentQueueMeta = data && typeof data === 'object' ? data : null; }
-export function setCsrfToken(token) { csrfToken = token; }
+export function setAppointments(data) {
+    currentAppointments = data || [];
+}
+export function setCallbacks(data) {
+    currentCallbacks = data || [];
+}
+export function setReviews(data) {
+    currentReviews = data || [];
+}
+export function setAvailability(data) {
+    currentAvailability = data || {};
+}
+export function setAvailabilityMeta(data) {
+    currentAvailabilityMeta = data || {};
+}
+export function setFunnelMetrics(data) {
+    currentFunnelMetrics = data;
+}
+export function setHealthStatus(data) {
+    currentHealthStatus = data || null;
+}
+export function setQueueTickets(data) {
+    currentQueueTickets = Array.isArray(data) ? data : [];
+}
+export function setQueueMeta(data) {
+    currentQueueMeta = data && typeof data === 'object' ? data : null;
+}
+export function setCsrfToken(token) {
+    csrfToken = token;
+}
 
 export function getEmptyFunnelMetrics() {
     return {
@@ -29,7 +49,7 @@ export function getEmptyFunnelMetrics() {
             checkoutAbandon: 0,
             startRatePct: 0,
             confirmedRatePct: 0,
-            abandonRatePct: 0
+            abandonRatePct: 0,
         },
         checkoutAbandonByStep: [],
         checkoutAbandonByReason: [],
@@ -45,13 +65,13 @@ export function getEmptyFunnelMetrics() {
                 confirmed: 0,
                 completed: 0,
                 noShow: 0,
-                cancelled: 0
+                cancelled: 0,
             },
             noShowRatePct: 0,
             completionRatePct: 0,
             uniquePatients: 0,
             recurrentPatients: 0,
-            recurrenceRatePct: 0
-        }
+            recurrenceRatePct: 0,
+        },
     };
 }

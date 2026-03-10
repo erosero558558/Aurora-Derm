@@ -3,8 +3,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync } = require('fs');
+const { readFileSync, readdirSync } = require('fs');
 const { resolve } = require('path');
+const { spawnSync } = require('child_process');
 
 const WRAPPER_PATH = resolve(__dirname, '..', 'GATE-ADMIN-ROLLOUT.ps1');
 const SCRIPT_PATH = resolve(
@@ -17,6 +18,29 @@ const SCRIPT_PATH = resolve(
 );
 const ADMIN_HTML_PATH = resolve(__dirname, '..', 'admin.html');
 const ADMIN_RUNTIME_PATH = resolve(__dirname, '..', 'js', 'admin-runtime.js');
+const ADMIN_ENTRY_PATH = resolve(
+    __dirname,
+    '..',
+    'src',
+    'apps',
+    'admin',
+    'index.js'
+);
+const ADMIN_PREBOOT_PATH = resolve(
+    __dirname,
+    '..',
+    'js',
+    'admin-preboot-shortcuts.js'
+);
+const ADMIN_BUNDLE_PATH = resolve(__dirname, '..', 'admin.js');
+const ADMIN_CHUNKS_DIR = resolve(__dirname, '..', 'js', 'admin-chunks');
+const CLEAN_ADMIN_CHUNKS_PATH = resolve(
+    __dirname,
+    '..',
+    'bin',
+    'clean-admin-chunks.js'
+);
+const PACKAGE_JSON_PATH = resolve(__dirname, '..', 'package.json');
 const SW_PATH = resolve(__dirname, '..', 'sw.js');
 
 function loadScript() {
@@ -29,6 +53,19 @@ function loadWrapper() {
 
 function loadFile(path) {
     return readFileSync(path, 'utf8');
+}
+
+function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractAssetVersion(content, assetPath) {
+    const pattern = new RegExp(
+        `${escapeRegExp(assetPath)}\\?v=([^"'\\s]+)`,
+        'i'
+    );
+    const match = content.match(pattern);
+    return match ? match[1] : '';
 }
 
 test('admin rollout root wrapper delega a la implementacion canonica de admin ops', () => {
@@ -118,6 +155,27 @@ test('admin shell usa el bundle canonico v3 y deja runtime bridge solo como alia
     );
 });
 
+test('admin entrypoint y preboot ya no limpian compatibilidad legacy', () => {
+    const entry = loadFile(ADMIN_ENTRY_PATH);
+    const preboot = loadFile(ADMIN_PREBOOT_PATH);
+
+    assert.match(
+        entry,
+        /import\('\.\.\/admin-v3\/index\.js'\)/,
+        'entrypoint activo debe cargar admin-v3'
+    );
+    assert.doesNotMatch(
+        entry,
+        /adminUiVariant|admin_ui_reset|admin_ui/,
+        'entrypoint activo no debe mutar compatibilidad legacy'
+    );
+    assert.doesNotMatch(
+        preboot,
+        /adminUiVariant|admin_ui_reset|admin_ui/,
+        'preboot admin no debe mutar compatibilidad legacy'
+    );
+});
+
 test('service worker precachea el shell admin canonico sin assets legacy', () => {
     const sw = loadFile(SW_PATH);
 
@@ -138,6 +196,41 @@ test('service worker precachea el shell admin canonico sin assets legacy', () =>
         sw,
         /'\/js\/admin-runtime\.js\?v=/,
         'sw no debe precachear el runtime bridge heredado'
+    );
+});
+
+test('shell admin y service worker comparten versiones canonicas de assets admin', () => {
+    const html = loadFile(ADMIN_HTML_PATH);
+    const sw = loadFile(SW_PATH);
+    const adminAssets = [
+        'admin-v3.css',
+        'admin.js',
+        'queue-ops.css',
+        'js/admin-preboot-shortcuts.js',
+    ];
+
+    for (const asset of adminAssets) {
+        const htmlVersion = extractAssetVersion(html, asset);
+        const swVersion = extractAssetVersion(sw, `/${asset}`);
+
+        assert.notEqual(htmlVersion, '', `admin.html debe versionar ${asset}`);
+        assert.equal(
+            swVersion,
+            htmlVersion,
+            `sw.js debe precachear ${asset} con la misma version del shell`
+        );
+    }
+});
+
+test('package.json expone check canonico para chunks admin', () => {
+    const packageJson = loadFile(PACKAGE_JSON_PATH);
+
+    assert.equal(
+        packageJson.includes(
+            '"chunks:admin:check": "node bin/clean-admin-chunks.js --dry-run --strict"'
+        ),
+        true,
+        'package.json debe exponer chunks:admin:check como diagnostico canonico'
     );
 });
 
@@ -198,5 +291,41 @@ test('admin rollout gate persiste resultados suite por suite', () => {
         raw.includes('specs = @($suiteResult.specs)'),
         true,
         'falta lista de specs por suite en el reporte'
+    );
+});
+
+test('admin runtime no deja chunks huerfanos respecto a admin.js canonico', () => {
+    const result = spawnSync(
+        process.execPath,
+        [CLEAN_ADMIN_CHUNKS_PATH, '--dry-run', '--strict'],
+        {
+            cwd: resolve(__dirname, '..'),
+            encoding: 'utf8',
+        }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.doesNotMatch(
+        result.stdout,
+        /Se eliminarian \d+ chunk\(s\)/,
+        'js/admin-chunks no debe conservar residuos fuera del grafo activo'
+    );
+});
+
+test('admin.js apunta al unico chunk index canonico del runtime', () => {
+    const adminBundle = loadFile(ADMIN_BUNDLE_PATH);
+    const indexChunks = readdirSync(ADMIN_CHUNKS_DIR).filter((file) =>
+        /^index-[A-Za-z0-9_-]+\.js$/.test(file)
+    );
+
+    assert.equal(
+        indexChunks.length,
+        1,
+        `js/admin-chunks debe conservar un solo index activo, encontrados: ${indexChunks.join(', ')}`
+    );
+    assert.match(
+        adminBundle,
+        new RegExp(`js/admin-chunks/${escapeRegExp(indexChunks[0])}`),
+        'admin.js debe importar el unico chunk index activo'
     );
 });

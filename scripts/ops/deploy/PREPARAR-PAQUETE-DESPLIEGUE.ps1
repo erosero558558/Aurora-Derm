@@ -50,11 +50,13 @@ function Add-DirectoryToStage {
 }
 
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$bundleRoot = Join-Path (Get-Location) $OutputDir
+$bundleRoot = [System.IO.Path]::GetFullPath(
+    (Join-Path (Get-Location) $OutputDir)
+)
 Ensure-Directory -Path $bundleRoot
 
 $stageDirName = "pielarmonia-deploy-$timestamp"
-$stageDir = Join-Path $bundleRoot $stageDirName
+$stageDir = [System.IO.Path]::GetFullPath((Join-Path $bundleRoot $stageDirName))
 Ensure-Directory -Path $stageDir
 
 $files = @(
@@ -90,7 +92,8 @@ $files = @(
     'ui-effects.js',
     'ui-bridge-engine.js',
     'admin.html',
-    'admin.css',
+    'admin-v3.css',
+    'queue-ops.css',
     'admin.js',
     'admin-auth.php',
     'api.php',
@@ -111,6 +114,11 @@ $files = @(
     'nginx-pielarmonia.conf'
 )
 
+$directories = @(
+    'images/optimized',
+    'servicios'
+)
+
 if ($IncludeTooling) {
     $files += @(
         'SMOKE-PRODUCCION.ps1',
@@ -121,12 +129,12 @@ if ($IncludeTooling) {
         'DESPLIEGUE-PIELARMONIA.md',
         'CHECKLIST-PRUEBAS-PRODUCCION.md'
     )
+    $directories += @(
+        'bin/powershell',
+        'scripts/ops/prod',
+        'scripts/ops/setup'
+    )
 }
-
-$directories = @(
-    'images/optimized',
-    'servicios'
-)
 
 $missing = New-Object 'System.Collections.Generic.List[string]'
 foreach ($file in $files) {

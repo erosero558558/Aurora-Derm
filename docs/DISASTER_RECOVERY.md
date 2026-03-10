@@ -22,9 +22,10 @@ El plan cubre:
 La aplicación realiza automáticamente copias de seguridad rotativas en `data/backups/` cada vez que se escribe en el almacén de datos (citas nuevas, actualizaciones). Se guardan hasta 30 versiones anteriores.
 
 ### Requisitos
--   Acceso SSH al servidor.
--   PHP CLI instalado.
--   Un archivo de backup válido (JSON).
+
+- Acceso SSH al servidor.
+- PHP CLI instalado.
+- Un archivo de backup válido (JSON).
 
 Adicionalmente, el cron soporta:
 
@@ -66,7 +67,7 @@ Las credenciales y claves de API (Stripe, SMTP, Admin Pass) deben estar document
     ```bash
     sudo -u www-data php bin/restore-backup.php data/backups/store-20231027-100000-a1b2c3.json
     ```
-    *Nota: Ejecutar como `www-data` asegura que los permisos del archivo restaurado sean correctos para el servidor web.*
+    _Nota: Ejecutar como `www-data` asegura que los permisos del archivo restaurado sean correctos para el servidor web._
 
 ### Escenario 2: Pérdida Total del Servidor (Hosting caído o borrado)
 
@@ -84,6 +85,7 @@ Las credenciales y claves de API (Stripe, SMTP, Admin Pass) deben estar document
     - Si no, contactar al proveedor de hosting anterior para intentar recuperar backups de sistema.
 4.  **Redirigir DNS:** Apuntar el dominio `pielarmonia.com` a la nueva IP.
 5.  **Verificación:** Ejecutar `GATE-POSTDEPLOY.ps1`.
+    Implementacion canonica: `scripts/ops/prod/GATE-POSTDEPLOY.ps1`.
 
 ### Escenario 3: Compromiso de Seguridad (Hackeo)
 
@@ -97,22 +99,22 @@ Las credenciales y claves de API (Stripe, SMTP, Admin Pass) deben estar document
 4.  **Rotar Secretos:** Cambiar `PIELARMONIA_ADMIN_PASSWORD`, claves de Stripe, SMTP, etc.
 5.  **Auditar Datos:** Revisar `store.json` línea por línea para asegurar que no hay inyecciones o datos falsos.
 
-1.  **Detener el servidor web** (opcional pero recomendado para evitar escrituras concurrentes).
-2.  **Respaldar el archivo actual:**
+6.  **Detener el servidor web** (opcional pero recomendado para evitar escrituras concurrentes).
+7.  **Respaldar el archivo actual:**
     ```bash
     cp data/store.json data/store.json.bak
     ```
-3.  **Copiar el backup:**
+8.  **Copiar el backup:**
     ```bash
     cp <ruta_al_backup> data/store.json
     ```
     Nota: Si el backup está en formato raw (copia directa), esto funcionará. Si es un snapshot offsite, asegúrese de que sea compatible (el sistema maneja automáticamente el cifrado al leer, siempre que la clave de cifrado sea la misma).
-4.  **Verificar permisos:**
+9.  **Verificar permisos:**
     ```bash
     chmod 664 data/store.json
     chown www-data:www-data data/store.json
     ```
-5.  **Reiniciar el servidor web** si fue detenido.
+10. **Reiniciar el servidor web** si fue detenido.
 
 Se recomienda realizar un simulacro de restauración semestralmente:
 

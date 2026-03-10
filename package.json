@@ -61,6 +61,7 @@
         "lint:js": "eslint .",
         "lint:php": "node bin/lint-php-syntax.js",
         "build": "npm run content:public-v4:validate && npm run content:public-v5:validate && rollup -c && npm run chunks:admin:prune && npm run build:public:v6",
+        "chunks:admin:check": "node bin/clean-admin-chunks.js --dry-run --strict",
         "chunks:admin:prune": "node bin/clean-admin-chunks.js",
         "astro:dev": "cd src/apps/astro && astro dev",
         "astro:build": "cd src/apps/astro && astro build",

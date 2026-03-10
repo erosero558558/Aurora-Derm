@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v15-operator-apps-20260310-2';
+const CACHE_NAME = 'pielarmonia-v15-operator-apps-20260310-3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
     '/admin-v3.css?v=admin-v3-20260309-v3-only',
     '/admin.js?v=admin-20260310-v3-canonical1',
     '/queue-ops.css?v=queue-ops-20260310-apps1',
-    '/js/admin-preboot-shortcuts.js?v=admin-20260309-v3-only',
+    '/js/admin-preboot-shortcuts.js?v=admin-20260310-v3-inert1',
     '/js/queue-operator.js?v=queue-operator-20260310-src1',
     '/queue-kiosk.css?v=queue-20260227-fix1',
     '/js/queue-kiosk.js?v=queue-20260227-fix1',

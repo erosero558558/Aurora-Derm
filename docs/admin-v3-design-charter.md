@@ -37,14 +37,15 @@ Definir la gramatica de `sony_v3` para que el admin comparta lenguaje con la hom
 
 ## Implementacion
 
-- Variant loader: `legacy | sony_v2 | sony_v3`
+- Boot canonico: `src/apps/admin/index.js -> src/apps/admin-v3/index.js`
 - Shell propio: `src/apps/admin-v3/**`
 - CSS dedicada: `admin-v3.css`
-- Runtime compartido absorbido dentro de `admin-v3` para evitar dependencia estructural del shell `sony_v3` sobre `admin-v2`
+- Runtimes historicos preservados en `src/apps/archive/admin-legacy/**` y
+  `src/apps/archive/admin-v2/**`
 
 ## Criterios de aceptacion
 
 - `sony_v3` se siente parte del mismo sistema que la home publica.
 - El primer viewport de cada seccion responde una sola pregunta operacional.
 - La UI nueva reduce ruido visual sin perder accesos ni contratos.
-- `sony_v2` sigue siendo rollback inmediato.
+- El rollback se resuelve por `revert + deploy`, no por variante runtime.

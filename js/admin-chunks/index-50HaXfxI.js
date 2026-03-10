@@ -227,10 +227,17 @@ async function w(e, t = {}) {
         throw new Error(s.error || s.message || `HTTP ${i.status}`);
     return s;
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function q(e) {
     k = String(e || '');
 }
 async function S(e, t = {}) {
+========
+function S(e) {
+    k = String(e || '');
+}
+async function q(e, t = {}) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     return w(`/api.php?resource=${encodeURIComponent(e)}`, t);
 }
 async function C(e, t = {}) {
@@ -263,7 +270,11 @@ function T(e, t, a, n = !1) {
     return `\n        <a\n            href="#${e}"\n            class="nav-item${n ? ' active' : ''}"\n            data-section="${e}"\n            ${n ? 'aria-current="page"' : ''}\n        >\n            ${A(a)}\n            <span>${t}</span>\n            <span class="badge" id="${e}Badge">0</span>\n        </a>\n    `;
 }
 function M() {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
     return `\n        <div class="admin-v3-shell">\n            \n        <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n            <header class="sidebar-header">\n                <div class="admin-v3-sidebar__brand">\n                    <strong>Piel en Armonia</strong>\n                    <small>Admin sony_v3</small>\n                </div>\n                <div class="toolbar-group">\n                    <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${A('menu')}</button>\n                    <button type="button" id="adminMenuClose">Cerrar</button>\n                </div>\n            </header>\n            <nav class="sidebar-nav" id="adminSidebarNav">\n                \n        ${T('dashboard', 'Dashboard', 'dashboard', !0)}\n        ${T('appointments', 'Citas', 'appointments')}\n        ${T('callbacks', 'Callbacks', 'callbacks')}\n        ${T('reviews', 'Resenas', 'reviews')}\n        ${T('availability', 'Disponibilidad', 'availability')}\n        ${T('queue', 'Turnero Sala', 'queue')}\n    \n            </nav>\n            <footer class="sidebar-footer">\n                <button type="button" class="logout-btn" data-action="logout">${A('logout')}<span>Cerrar sesion</span></button>\n            </footer>\n        </aside>\n        <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n    \n            \n        <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n            \n        <header class="admin-v3-topbar">\n            <div class="admin-v3-topbar__copy">\n                <p class="sony-kicker">Sony V3</p>\n                <h2 id="pageTitle">Dashboard</h2>\n            </div>\n            <div class="admin-v3-topbar__actions">\n                <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${A('menu')}<span>Menu</span></button>\n                <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Ctrl+K</button>\n                <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                ${$('admin-theme-switcher-header')}\n            </div>\n        </header>\n    \n            \n        <section class="admin-v3-context-strip" id="adminProductivityStrip">\n            <div class="admin-v3-context-copy" data-admin-section-hero>\n                <p class="sony-kicker" id="adminSectionEyebrow">Resumen Diario</p>\n                <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                <p id="adminContextSummary">Lee agenda, callbacks y disponibilidad desde un frente claro y sin ruido.</p>\n                <div id="adminContextActions" class="sony-context-actions"></div>\n            </div>\n            <div class="admin-v3-status-rail" data-admin-priority-rail>\n                <article class="sony-status-tile">\n                    <span>Push</span>\n                    <strong id="pushStatusIndicator">Inicializando</strong>\n                    <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                </article>\n                <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                    <span>Sesion</span>\n                    <strong id="adminSessionState">No autenticada</strong>\n                    <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                </article>\n                <article class="sony-status-tile">\n                    <span>Sincronizacion</span>\n                    <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                    <small id="adminSyncState">Listo para primera sincronizacion</small>\n                </article>\n            </div>\n        </section>\n    \n            \n        \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                \n        <article class="sony-panel dashboard-hero-panel">\n            <div class="dashboard-hero-copy">\n                <p class="sony-kicker">Resumen diario</p>\n                <h3>Prioridades de hoy</h3>\n                <p id="dashboardHeroSummary">\n                    Agenda, callbacks y disponibilidad con una lectura mas clara y directa.\n                </p>\n            </div>\n            <div class="dashboard-hero-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Ver transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Ir a callbacks</button>\n                <button type="button" data-action="refresh-admin-data">Actualizar tablero</button>\n            </div>\n            <div class="dashboard-hero-metrics">\n                <div class="dashboard-hero-metric">\n                    <span>Rating</span>\n                    <strong id="dashboardHeroRating">0.0</strong>\n                </div>\n                <div class="dashboard-hero-metric">\n                    <span>Reseñas 30d</span>\n                    <strong id="dashboardHeroRecentReviews">0</strong>\n                </div>\n                <div class="dashboard-hero-metric">\n                    <span>Urgentes SLA</span>\n                    <strong id="dashboardHeroUrgentCallbacks">0</strong>\n                </div>\n                <div class="dashboard-hero-metric">\n                    <span>Transferencias</span>\n                    <strong id="dashboardHeroPendingTransfers">0</strong>\n                </div>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel dashboard-signal-panel">\n            <header>\n                <div>\n                    <h3>Señal operativa</h3>\n                    <small id="operationRefreshSignal">Tiempo real</small>\n                </div>\n                <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n            </header>\n            <p id="dashboardLiveMeta">\n                Sin alertas criticas en la operacion actual.\n            </p>\n            <div class="dashboard-signal-stack">\n                <article class="dashboard-signal-card">\n                    <span>Push</span>\n                    <strong id="dashboardPushStatus">Sin validar</strong>\n                    <small id="dashboardPushMeta">Permisos del navegador</small>\n                </article>\n                <article class="dashboard-signal-card">\n                    <span>Atencion</span>\n                    <strong id="dashboardQueueHealth">Cola: estable</strong>\n                    <small id="dashboardFlowStatus">Sin cuellos de botella</small>\n                </article>\n            </div>\n            <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-grid sony-grid-kpi">\n            <article class="sony-kpi"><h3>Citas hoy</h3><strong id="todayAppointments">0</strong></article>\n            <article class="sony-kpi"><h3>Total citas</h3><strong id="totalAppointments">0</strong></article>\n            <article class="sony-kpi"><h3>Callbacks pendientes</h3><strong id="pendingCallbacks">0</strong></article>\n            <article class="sony-kpi"><h3>Reseñas</h3><strong id="totalReviewsCount">0</strong></article>\n            <article class="sony-kpi"><h3>No show</h3><strong id="totalNoShows">0</strong></article>\n            <article class="sony-kpi"><h3>Rating</h3><strong id="avgRating">0.0</strong></article>\n        </div>\n    \n            \n        <div class="sony-grid sony-grid-two">\n            <article class="sony-panel dashboard-card-operations">\n                <header>\n                    <h3>Centro operativo</h3>\n                    <small id="operationDeckMeta">Prioridades y acciones</small>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                    <div><span>Callbacks</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                    <div><span>Carga hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                </div>\n                <p id="operationQueueHealth">Cola: estable</p>\n                <div id="operationActionList" class="operations-action-list"></div>\n            </article>\n\n            <article class="sony-panel" id="funnelSummary">\n                <header><h3>Embudo</h3></header>\n                <div class="sony-panel-stats">\n                    <div><span>View Booking</span><strong id="funnelViewBooking">0</strong></div>\n                    <div><span>Start Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                    <div><span>Booking Confirmed</span><strong id="funnelBookingConfirmed">0</strong></div>\n                    <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                </div>\n            </article>\n        </div>\n    \n            \n        <div class="sony-grid sony-grid-three">\n            <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n        </div>\n    \n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n    \n        \n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                \n        <article class="sony-panel appointments-command-deck">\n            <header class="section-header appointments-command-head">\n                <div>\n                    <p class="sony-kicker">Agenda clinica</p>\n                    <h3>Citas</h3>\n                    <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                </div>\n                <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n            </header>\n            <div class="appointments-ops-grid">\n                <article class="appointments-ops-card tone-warning">\n                    <span>Transferencias</span>\n                    <strong id="appointmentsOpsPendingTransfer">0</strong>\n                    <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                </article>\n                <article class="appointments-ops-card tone-neutral">\n                    <span>Proximas 48h</span>\n                    <strong id="appointmentsOpsUpcomingCount">0</strong>\n                    <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                </article>\n                <article class="appointments-ops-card tone-danger">\n                    <span>No show</span>\n                    <strong id="appointmentsOpsNoShowCount">0</strong>\n                    <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                </article>\n                <article class="appointments-ops-card tone-success">\n                    <span>Hoy</span>\n                    <strong id="appointmentsOpsTodayCount">0</strong>\n                    <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                </article>\n            </div>\n            <div class="appointments-command-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel appointments-focus-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                    <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                    <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                </div>\n            </header>\n            <div class="appointments-focus-grid">\n                <div class="appointments-focus-stat">\n                    <span>Siguiente ventana</span>\n                    <strong id="appointmentsFocusWindow">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Pago</span>\n                    <strong id="appointmentsFocusPayment">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Estado</span>\n                    <strong id="appointmentsFocusStatus">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Contacto</span>\n                    <strong id="appointmentsFocusContact">-</strong>\n                </div>\n            </div>\n            <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n            <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel appointments-workbench">\n            <header class="section-header appointments-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                </div>\n                <div class="toolbar-group" id="appointmentsDensityToggle">\n                    <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                    <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                </div>\n            </div>\n            <div class="toolbar-row appointments-toolbar">\n                <label>\n                    <span class="sr-only">Filtro</span>\n                    <select id="appointmentFilter">\n                        <option value="all">Todas</option>\n                        <option value="pending_transfer">Transferencias por validar</option>\n                        <option value="upcoming_48h">Proximas 48h</option>\n                        <option value="no_show">No show</option>\n                        <option value="triage_attention">Triage accionable</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden</span>\n                    <select id="appointmentSort">\n                        <option value="datetime_desc">Fecha reciente</option>\n                        <option value="datetime_asc">Fecha ascendente</option>\n                        <option value="patient_az">Paciente (A-Z)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                <p id="appointmentsToolbarState">Sin filtros activos</p>\n            </div>\n\n            <div class="table-scroll appointments-table-shell">\n                <table id="appointmentsTable" class="sony-table">\n                    <thead>\n                        <tr>\n                            <th>Paciente</th>\n                            <th>Servicio</th>\n                            <th>Fecha</th>\n                            <th>Pago</th>\n                            <th>Estado</th>\n                            <th>Acciones</th>\n                        </tr>\n                    </thead>\n                    <tbody id="appointmentsTableBody"></tbody>\n                </table>\n            </div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                \n        <article class="sony-panel callbacks-command-deck">\n            <header class="section-header callbacks-command-head">\n                <div>\n                    <p class="sony-kicker">SLA telefonico</p>\n                    <h3>Callbacks</h3>\n                    <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                </div>\n                <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n            </header>\n            <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hot</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n            </div>\n            <div class="callbacks-command-actions">\n                <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel callbacks-next-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                    <h3 id="callbacksOpsNext">Sin telefono</h3>\n                    <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                </div>\n                <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n            </header>\n            <div class="callbacks-next-grid">\n                <div class="callbacks-next-stat">\n                    <span>Espera</span>\n                    <strong id="callbacksNextWait">0 min</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Servicio</span>\n                    <strong id="callbacksNextPreference">-</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Accion</span>\n                    <strong id="callbacksNextState">Pendiente</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Estado IA</span>\n                    <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                </div>\n            </div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel callbacks-workbench">\n            <header class="section-header callbacks-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p>Ordena por prioridad comercial, genera borradores IA y registra el outcome sin salir del panel.</p>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                </div>\n            </div>\n            <div class="toolbar-row callbacks-toolbar">\n                <label>\n                    <span class="sr-only">Filtro callbacks</span>\n                    <select id="callbackFilter">\n                        <option value="all">Todos</option>\n                        <option value="pending">Pendientes</option>\n                        <option value="contacted">Contactados</option>\n                        <option value="today">Hoy</option>\n                        <option value="sla_urgent">Urgentes SLA</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden callbacks</span>\n                    <select id="callbackSort">\n                        <option value="priority_desc">Prioridad comercial</option>\n                        <option value="recent_desc">Mas recientes</option>\n                        <option value="waiting_desc">Mayor espera (SLA)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchCallbacks" placeholder="Buscar telefono o servicio" />\n                <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="callbacksToolbarMeta">Mostrando 0</p>\n                <p id="callbacksToolbarState">Sin filtros activos</p>\n            </div>\n            <div id="callbacksGrid" class="callbacks-grid"></div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                \n        <header class="section-header availability-header">\n            <div class="availability-calendar">\n                <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                <div class="availability-badges">\n                    <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                    <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                    <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                </div>\n            </div>\n            <div class="toolbar-group calendar-header">\n                <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                <strong id="calendarMonth"></strong>\n                <button type="button" data-action="change-month" data-delta="1">Next</button>\n                <button type="button" data-action="availability-today">Hoy</button>\n                <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n            </div>\n        </header>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n            <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n            <p id="availabilitySyncStatus">Sincronizado</p>\n        </div>\n    \n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n                \n        <div id="availabilityDetailGrid" class="availability-detail-grid">\n            <article class="sony-panel soft">\n                <h4 id="selectedDate">-</h4>\n                <div id="timeSlotsList" class="time-slots-list"></div>\n            </article>\n\n            <article class="sony-panel soft">\n                <div id="availabilityQuickSlotPresets" class="slot-presets">\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                </div>\n                <div id="addSlotForm" class="add-slot-form">\n                    <input type="time" id="newSlotTime" />\n                    <button type="button" data-action="add-time-slot">Agregar</button>\n                </div>\n                <div id="availabilityDayActions" class="toolbar-group wrap">\n                    <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                    <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                    <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                    <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                    <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                    <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                </div>\n                <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                <div class="toolbar-group">\n                    <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                    <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                </div>\n            </article>\n        </div>\n    \n            </div>\n        </section>\n    \n        \n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                \n        <header class="section-header">\n            <div>\n                <h3>Turnero Sala</h3>\n                <p>\n                    Apps operativas, cola en vivo y flujo simple para recepción,\n                    kiosco y TV.\n                </p>\n            </div>\n            <div class="queue-admin-header-actions">\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                <button type="button" data-action="queue-refresh-state">Refrescar</button>\n            </div>\n        </header>\n    \n                \n        <div id="queueAppsHub" class="queue-apps-hub sony-panel soft">\n            <div class="queue-apps-hub__header">\n                <div>\n                    <h4>Apps operativas</h4>\n                    <p>\n                        Instala Operador, Kiosco y Sala TV desde el mismo centro de\n                        control para separar cada equipo por uso.\n                    </p>\n                </div>\n                <span id="queueAppsPlatformChip" class="queue-apps-platform-chip">\n                    Plataforma detectada\n                </span>\n            </div>\n            <div id="queueOpsPilot" class="queue-ops-pilot"></div>\n            <div id="queueAppDownloadsCards" class="queue-apps-grid"></div>\n            <div id="queueSurfaceTelemetry" class="queue-surface-telemetry"></div>\n            <div id="queueOpeningChecklist" class="queue-opening-checklist"></div>\n            <div id="queueContingencyDeck" class="queue-contingency-deck"></div>\n            <div id="queueInstallConfigurator" class="queue-install-configurator"></div>\n        </div>\n    \n                \n        <div class="sony-grid sony-grid-kpi slim">\n            <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n        </div>\n    \n                \n        <div id="queueStationControl" class="toolbar-row">\n            <span id="queueStationBadge">Estacion: libre</span>\n            <span id="queueStationModeBadge">Modo: free</span>\n            <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n            <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n            <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n            <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n            <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n            <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n            <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n            <button type="button" data-action="queue-stop-practice">Salir practica</button>\n            <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n            <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n        </div>\n    \n                \n        <div id="queueShortcutPanel" hidden>\n            <p>Numpad Enter llama siguiente.</p>\n            <p>Numpad Decimal prepara completar.</p>\n            <p>Numpad Subtract prepara no_show.</p>\n            <p>Numpad Add re-llama el ticket activo.</p>\n        </div>\n    \n                \n        <div id="queueTriageToolbar" class="toolbar-row">\n            <button type="button" data-queue-filter="all">Todo</button>\n            <button type="button" data-queue-filter="called">Llamados</button>\n            <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n            <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n            <button type="button" data-action="queue-clear-search">Limpiar</button>\n            <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n            <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n            <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n        </div>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="queueTriageSummary">Sin riesgo</p>\n            <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n        </div>\n    \n                \n        <ul id="queueNextAdminList" class="sony-list"></ul>\n\n        <div class="table-scroll">\n            <table class="sony-table queue-admin-table">\n                <thead>\n                    <tr>\n                        <th>Sel</th>\n                        <th>Ticket</th>\n                        <th>Tipo</th>\n                        <th>Estado</th>\n                        <th>Consultorio</th>\n                        <th>Espera</th>\n                        <th>Acciones</th>\n                    </tr>\n                </thead>\n                <tbody id="queueTableBody"></tbody>\n            </table>\n        </div>\n\n        <div id="queueActivityPanel" class="sony-panel soft">\n            <h4>Actividad</h4>\n            <ul id="queueActivityList" class="sony-list"></ul>\n        </div>\n\n        <div id="queueHelpRequestsPanel" class="sony-panel soft">\n            <h4>Apoyos en sala</h4>\n            <ul id="queueHelpRequestsList" class="sony-list"></ul>\n        </div>\n    \n            </div>\n\n            \n        <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n            <form method="dialog">\n                <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                <div class="toolbar-group">\n                    <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                    <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                </div>\n            </form>\n        </dialog>\n    \n        </section>\n    \n    \n        </main>\n    \n            \n        <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n            <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n            <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                <div class="admin-command-dialog__head">\n                    <div>\n                        <p class="sony-kicker">Command Palette</p>\n                        <h3 id="adminCommandPaletteTitle">Accion rapida</h3>\n                    </div>\n                    <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                </div>\n                <div class="admin-command-box">\n                    <input id="adminQuickCommand" type="text" placeholder="Ej. callbacks urgentes, citas transferencias, queue riesgo SLA" />\n                    <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                </div>\n                <div class="admin-command-dialog__hints">\n                    <span>Ctrl+K abre esta paleta</span>\n                    <span>/ enfoca la busqueda de la seccion activa</span>\n                </div>\n            </div>\n        </div>\n    \n        </div>\n    `;
+========
+    return `\n        <div class="admin-v3-shell">\n            \n        <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n            <header class="sidebar-header">\n                <div class="admin-v3-sidebar__brand">\n                    <strong>Piel en Armonia</strong>\n                    <small>Admin sony_v3</small>\n                </div>\n                <div class="toolbar-group">\n                    <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${A('menu')}</button>\n                    <button type="button" id="adminMenuClose">Cerrar</button>\n                </div>\n            </header>\n            <nav class="sidebar-nav" id="adminSidebarNav">\n                \n        ${T('dashboard', 'Dashboard', 'dashboard', !0)}\n        ${T('appointments', 'Citas', 'appointments')}\n        ${T('callbacks', 'Callbacks', 'callbacks')}\n        ${T('reviews', 'Resenas', 'reviews')}\n        ${T('availability', 'Disponibilidad', 'availability')}\n        ${T('queue', 'Turnero Sala', 'queue')}\n    \n            </nav>\n            <footer class="sidebar-footer">\n                <button type="button" class="logout-btn" data-action="logout">${A('logout')}<span>Cerrar sesion</span></button>\n            </footer>\n        </aside>\n        <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n    \n            \n        <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n            \n        <header class="admin-v3-topbar">\n            <div class="admin-v3-topbar__copy">\n                <p class="sony-kicker">Sony V3</p>\n                <h2 id="pageTitle">Dashboard</h2>\n            </div>\n            <div class="admin-v3-topbar__actions">\n                <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${A('menu')}<span>Menu</span></button>\n                <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Ctrl+K</button>\n                <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                ${$('admin-theme-switcher-header')}\n            </div>\n        </header>\n    \n            \n        <section class="admin-v3-context-strip" id="adminProductivityStrip">\n            <div class="admin-v3-context-copy" data-admin-section-hero>\n                <p class="sony-kicker" id="adminSectionEyebrow">Resumen Diario</p>\n                <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                <p id="adminContextSummary">Lee agenda, callbacks y disponibilidad desde un frente claro y sin ruido.</p>\n                <div id="adminContextActions" class="sony-context-actions"></div>\n            </div>\n            <div class="admin-v3-status-rail" data-admin-priority-rail>\n                <article class="sony-status-tile">\n                    <span>Push</span>\n                    <strong id="pushStatusIndicator">Inicializando</strong>\n                    <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                </article>\n                <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                    <span>Sesion</span>\n                    <strong id="adminSessionState">No autenticada</strong>\n                    <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                </article>\n                <article class="sony-status-tile">\n                    <span>Sincronizacion</span>\n                    <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                    <small id="adminSyncState">Listo para primera sincronizacion</small>\n                </article>\n            </div>\n        </section>\n    \n            \n        \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                \n        <article class="sony-panel dashboard-hero-panel">\n            <div class="dashboard-hero-copy">\n                <p class="sony-kicker">Resumen diario</p>\n                <h3>Prioridades de hoy</h3>\n                <p id="dashboardHeroSummary">\n                    Agenda, callbacks y disponibilidad con una lectura mas clara y directa.\n                </p>\n            </div>\n            <div class="dashboard-hero-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Ver transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Ir a callbacks</button>\n                <button type="button" data-action="refresh-admin-data">Actualizar tablero</button>\n            </div>\n            <div class="dashboard-hero-metrics">\n                <div class="dashboard-hero-metric">\n                    <span>Rating</span>\n                    <strong id="dashboardHeroRating">0.0</strong>\n                </div>\n                <div class="dashboard-hero-metric">\n                    <span>Reseñas 30d</span>\n                    <strong id="dashboardHeroRecentReviews">0</strong>\n                </div>\n                <div class="dashboard-hero-metric">\n                    <span>Urgentes SLA</span>\n                    <strong id="dashboardHeroUrgentCallbacks">0</strong>\n                </div>\n                <div class="dashboard-hero-metric">\n                    <span>Transferencias</span>\n                    <strong id="dashboardHeroPendingTransfers">0</strong>\n                </div>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel dashboard-signal-panel">\n            <header>\n                <div>\n                    <h3>Señal operativa</h3>\n                    <small id="operationRefreshSignal">Tiempo real</small>\n                </div>\n                <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n            </header>\n            <p id="dashboardLiveMeta">\n                Sin alertas criticas en la operacion actual.\n            </p>\n            <div class="dashboard-signal-stack">\n                <article class="dashboard-signal-card">\n                    <span>Push</span>\n                    <strong id="dashboardPushStatus">Sin validar</strong>\n                    <small id="dashboardPushMeta">Permisos del navegador</small>\n                </article>\n                <article class="dashboard-signal-card">\n                    <span>Atencion</span>\n                    <strong id="dashboardQueueHealth">Cola: estable</strong>\n                    <small id="dashboardFlowStatus">Sin cuellos de botella</small>\n                </article>\n            </div>\n            <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-grid sony-grid-kpi">\n            <article class="sony-kpi"><h3>Citas hoy</h3><strong id="todayAppointments">0</strong></article>\n            <article class="sony-kpi"><h3>Total citas</h3><strong id="totalAppointments">0</strong></article>\n            <article class="sony-kpi"><h3>Callbacks pendientes</h3><strong id="pendingCallbacks">0</strong></article>\n            <article class="sony-kpi"><h3>Reseñas</h3><strong id="totalReviewsCount">0</strong></article>\n            <article class="sony-kpi"><h3>No show</h3><strong id="totalNoShows">0</strong></article>\n            <article class="sony-kpi"><h3>Rating</h3><strong id="avgRating">0.0</strong></article>\n        </div>\n    \n            \n        <div class="sony-grid sony-grid-two">\n            <article class="sony-panel dashboard-card-operations">\n                <header>\n                    <h3>Centro operativo</h3>\n                    <small id="operationDeckMeta">Prioridades y acciones</small>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                    <div><span>Callbacks</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                    <div><span>Carga hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                </div>\n                <p id="operationQueueHealth">Cola: estable</p>\n                <div id="operationActionList" class="operations-action-list"></div>\n            </article>\n\n            <article class="sony-panel" id="funnelSummary">\n                <header><h3>Embudo</h3></header>\n                <div class="sony-panel-stats">\n                    <div><span>View Booking</span><strong id="funnelViewBooking">0</strong></div>\n                    <div><span>Start Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                    <div><span>Booking Confirmed</span><strong id="funnelBookingConfirmed">0</strong></div>\n                    <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                </div>\n            </article>\n        </div>\n    \n            \n        <div class="sony-grid sony-grid-three">\n            <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n            <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n        </div>\n    \n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n    \n        \n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                \n        <article class="sony-panel appointments-command-deck">\n            <header class="section-header appointments-command-head">\n                <div>\n                    <p class="sony-kicker">Agenda clinica</p>\n                    <h3>Citas</h3>\n                    <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                </div>\n                <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n            </header>\n            <div class="appointments-ops-grid">\n                <article class="appointments-ops-card tone-warning">\n                    <span>Transferencias</span>\n                    <strong id="appointmentsOpsPendingTransfer">0</strong>\n                    <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                </article>\n                <article class="appointments-ops-card tone-neutral">\n                    <span>Proximas 48h</span>\n                    <strong id="appointmentsOpsUpcomingCount">0</strong>\n                    <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                </article>\n                <article class="appointments-ops-card tone-danger">\n                    <span>No show</span>\n                    <strong id="appointmentsOpsNoShowCount">0</strong>\n                    <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                </article>\n                <article class="appointments-ops-card tone-success">\n                    <span>Hoy</span>\n                    <strong id="appointmentsOpsTodayCount">0</strong>\n                    <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                </article>\n            </div>\n            <div class="appointments-command-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel appointments-focus-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                    <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                    <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                </div>\n            </header>\n            <div class="appointments-focus-grid">\n                <div class="appointments-focus-stat">\n                    <span>Siguiente ventana</span>\n                    <strong id="appointmentsFocusWindow">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Pago</span>\n                    <strong id="appointmentsFocusPayment">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Estado</span>\n                    <strong id="appointmentsFocusStatus">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Contacto</span>\n                    <strong id="appointmentsFocusContact">-</strong>\n                </div>\n            </div>\n            <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n            <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel appointments-workbench">\n            <header class="section-header appointments-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                </div>\n                <div class="toolbar-group" id="appointmentsDensityToggle">\n                    <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                    <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                </div>\n            </div>\n            <div class="toolbar-row appointments-toolbar">\n                <label>\n                    <span class="sr-only">Filtro</span>\n                    <select id="appointmentFilter">\n                        <option value="all">Todas</option>\n                        <option value="pending_transfer">Transferencias por validar</option>\n                        <option value="upcoming_48h">Proximas 48h</option>\n                        <option value="no_show">No show</option>\n                        <option value="triage_attention">Triage accionable</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden</span>\n                    <select id="appointmentSort">\n                        <option value="datetime_desc">Fecha reciente</option>\n                        <option value="datetime_asc">Fecha ascendente</option>\n                        <option value="patient_az">Paciente (A-Z)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                <p id="appointmentsToolbarState">Sin filtros activos</p>\n            </div>\n\n            <div class="table-scroll appointments-table-shell">\n                <table id="appointmentsTable" class="sony-table">\n                    <thead>\n                        <tr>\n                            <th>Paciente</th>\n                            <th>Servicio</th>\n                            <th>Fecha</th>\n                            <th>Pago</th>\n                            <th>Estado</th>\n                            <th>Acciones</th>\n                        </tr>\n                    </thead>\n                    <tbody id="appointmentsTableBody"></tbody>\n                </table>\n            </div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                \n        <article class="sony-panel callbacks-command-deck">\n            <header class="section-header callbacks-command-head">\n                <div>\n                    <p class="sony-kicker">SLA telefonico</p>\n                    <h3>Callbacks</h3>\n                    <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                </div>\n                <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n            </header>\n            <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hot</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n            </div>\n            <div class="callbacks-command-actions">\n                <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel callbacks-next-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                    <h3 id="callbacksOpsNext">Sin telefono</h3>\n                    <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                </div>\n                <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n            </header>\n            <div class="callbacks-next-grid">\n                <div class="callbacks-next-stat">\n                    <span>Espera</span>\n                    <strong id="callbacksNextWait">0 min</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Servicio</span>\n                    <strong id="callbacksNextPreference">-</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Accion</span>\n                    <strong id="callbacksNextState">Pendiente</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Estado IA</span>\n                    <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                </div>\n            </div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel callbacks-workbench">\n            <header class="section-header callbacks-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p>Ordena por prioridad comercial, genera borradores IA y registra el outcome sin salir del panel.</p>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                </div>\n            </div>\n            <div class="toolbar-row callbacks-toolbar">\n                <label>\n                    <span class="sr-only">Filtro callbacks</span>\n                    <select id="callbackFilter">\n                        <option value="all">Todos</option>\n                        <option value="pending">Pendientes</option>\n                        <option value="contacted">Contactados</option>\n                        <option value="today">Hoy</option>\n                        <option value="sla_urgent">Urgentes SLA</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden callbacks</span>\n                    <select id="callbackSort">\n                        <option value="priority_desc">Prioridad comercial</option>\n                        <option value="recent_desc">Mas recientes</option>\n                        <option value="waiting_desc">Mayor espera (SLA)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchCallbacks" placeholder="Buscar telefono o servicio" />\n                <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="callbacksToolbarMeta">Mostrando 0</p>\n                <p id="callbacksToolbarState">Sin filtros activos</p>\n            </div>\n            <div id="callbacksGrid" class="callbacks-grid"></div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                \n        <header class="section-header availability-header">\n            <div class="availability-calendar">\n                <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                <div class="availability-badges">\n                    <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                    <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                    <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                </div>\n            </div>\n            <div class="toolbar-group calendar-header">\n                <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                <strong id="calendarMonth"></strong>\n                <button type="button" data-action="change-month" data-delta="1">Next</button>\n                <button type="button" data-action="availability-today">Hoy</button>\n                <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n            </div>\n        </header>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n            <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n            <p id="availabilitySyncStatus">Sincronizado</p>\n        </div>\n    \n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n                \n        <div id="availabilityDetailGrid" class="availability-detail-grid">\n            <article class="sony-panel soft">\n                <h4 id="selectedDate">-</h4>\n                <div id="timeSlotsList" class="time-slots-list"></div>\n            </article>\n\n            <article class="sony-panel soft">\n                <div id="availabilityQuickSlotPresets" class="slot-presets">\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                </div>\n                <div id="addSlotForm" class="add-slot-form">\n                    <input type="time" id="newSlotTime" />\n                    <button type="button" data-action="add-time-slot">Agregar</button>\n                </div>\n                <div id="availabilityDayActions" class="toolbar-group wrap">\n                    <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                    <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                    <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                    <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                    <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                    <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                </div>\n                <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                <div class="toolbar-group">\n                    <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                    <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                </div>\n            </article>\n        </div>\n    \n            </div>\n        </section>\n    \n        \n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                \n        <header class="section-header">\n            <div>\n                <h3>Turnero Sala</h3>\n                <p>\n                    Apps operativas, cola en vivo y flujo simple para recepción,\n                    kiosco y TV.\n                </p>\n            </div>\n            <div class="queue-admin-header-actions">\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                <button type="button" data-action="queue-refresh-state">Refrescar</button>\n            </div>\n        </header>\n    \n                \n        <div id="queueAppsHub" class="queue-apps-hub sony-panel soft">\n            <div class="queue-apps-hub__header">\n                <div>\n                    <h4>Apps operativas</h4>\n                    <p>\n                        Instala Operador, Kiosco y Sala TV desde el mismo centro de\n                        control para separar cada equipo por uso.\n                    </p>\n                </div>\n                <span id="queueAppsPlatformChip" class="queue-apps-platform-chip">\n                    Plataforma detectada\n                </span>\n            </div>\n            <div id="queueOpsPilot" class="queue-ops-pilot"></div>\n            <div id="queueAppDownloadsCards" class="queue-apps-grid"></div>\n            <div id="queueSurfaceTelemetry" class="queue-surface-telemetry"></div>\n            <div id="queueOpeningChecklist" class="queue-opening-checklist"></div>\n            <div id="queueContingencyDeck" class="queue-contingency-deck"></div>\n            <div id="queueInstallConfigurator" class="queue-install-configurator"></div>\n        </div>\n    \n                \n        <div class="sony-grid sony-grid-kpi slim">\n            <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n        </div>\n    \n                \n        <div id="queueStationControl" class="toolbar-row">\n            <span id="queueStationBadge">Estacion: libre</span>\n            <span id="queueStationModeBadge">Modo: free</span>\n            <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n            <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n            <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n            <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n            <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n            <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n            <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n            <button type="button" data-action="queue-stop-practice">Salir practica</button>\n            <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n            <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n        </div>\n    \n                \n        <div id="queueShortcutPanel" hidden>\n            <p>Numpad Enter llama siguiente.</p>\n            <p>Numpad Decimal prepara completar.</p>\n            <p>Numpad Subtract prepara no_show.</p>\n            <p>Numpad Add re-llama el ticket activo.</p>\n        </div>\n    \n                \n        <div id="queueTriageToolbar" class="toolbar-row">\n            <button type="button" data-queue-filter="all">Todo</button>\n            <button type="button" data-queue-filter="called">Llamados</button>\n            <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n            <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n            <button type="button" data-action="queue-clear-search">Limpiar</button>\n            <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n            <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n            <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n        </div>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="queueTriageSummary">Sin riesgo</p>\n            <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n        </div>\n    \n                \n        <ul id="queueNextAdminList" class="sony-list"></ul>\n\n        <div class="table-scroll">\n            <table class="sony-table queue-admin-table">\n                <thead>\n                    <tr>\n                        <th>Sel</th>\n                        <th>Ticket</th>\n                        <th>Tipo</th>\n                        <th>Estado</th>\n                        <th>Consultorio</th>\n                        <th>Espera</th>\n                        <th>Acciones</th>\n                    </tr>\n                </thead>\n                <tbody id="queueTableBody"></tbody>\n            </table>\n        </div>\n\n        <div id="queueActivityPanel" class="sony-panel soft">\n            <h4>Actividad</h4>\n            <ul id="queueActivityList" class="sony-list"></ul>\n        </div>\n    \n            </div>\n\n            \n        <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n            <form method="dialog">\n                <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                <div class="toolbar-group">\n                    <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                    <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                </div>\n            </form>\n        </dialog>\n    \n        </section>\n    \n    \n        </main>\n    \n            \n        <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n            <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n            <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                <div class="admin-command-dialog__head">\n                    <div>\n                        <p class="sony-kicker">Command Palette</p>\n                        <h3 id="adminCommandPaletteTitle">Accion rapida</h3>\n                    </div>\n                    <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                </div>\n                <div class="admin-command-box">\n                    <input id="adminQuickCommand" type="text" placeholder="Ej. callbacks urgentes, citas transferencias, queue riesgo SLA" />\n                    <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                </div>\n                <div class="admin-command-dialog__hints">\n                    <span>Ctrl+K abre esta paleta</span>\n                    <span>/ enfoca la busqueda de la seccion activa</span>\n                </div>\n            </div>\n        </div>\n    \n        </div>\n    `;
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
 }
 const L = {
         dashboard: {
@@ -505,7 +516,7 @@ function x(e) {
             (s.textContent = e
                 ? 'El backend ya valido la clave. Falta la segunda verificacion.'
                 : 'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.'),
-        H(!1));
+        F(!1));
 }
 function O({
     tone: e = 'neutral',
@@ -519,7 +530,7 @@ function O({
         o && (o.textContent = a),
         s && (s.textContent = n));
 }
-function H(e) {
+function F(e) {
     const a = t('#loginBtn'),
         n = t('#loginReset2FABtn'),
         i = t('#adminPassword'),
@@ -539,7 +550,7 @@ function H(e) {
                   : 'Ingresar')),
         n instanceof HTMLButtonElement && (n.disabled = Boolean(e)));
 }
-function F({ clearPassword: e = !1 } = {}) {
+function H({ clearPassword: e = !1 } = {}) {
     const a = t('#adminPassword'),
         n = t('#admin2FACode');
     (a instanceof HTMLInputElement && e && (a.value = ''),
@@ -1258,7 +1269,7 @@ function be(e, t) {
         ue());
 }
 async function ge(e, t) {
-    await S('appointments', {
+    await q('appointments', {
         method: 'PATCH',
         body: { id: Number(e || 0), ...t },
     });
@@ -1276,11 +1287,15 @@ function we(e) {
     const t = ke(e);
     return ye.has(t) ? t : 'all';
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function qe(e) {
+========
+function Se(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const t = ke(e);
     return ve.has(t) ? t : 'priority_desc';
 }
-function Se(e) {
+function qe(e) {
     const t = ke(e);
     return t.includes('contact') || 'resolved' === t || 'atendido' === t
         ? 'contacted'
@@ -1363,7 +1378,11 @@ function Ie(e) {
 function xe(e) {
     try {
         (localStorage.setItem(he, JSON.stringify(we(e.filter))),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             localStorage.setItem(fe, JSON.stringify(qe(e.sort))));
+========
+            localStorage.setItem(fe, JSON.stringify(Se(e.sort))));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     } catch (e) {}
 }
 function Oe() {
@@ -1375,7 +1394,11 @@ function Oe() {
                 : null,
         o = t.callbacks,
         s = (function (e, t) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             const a = qe(t),
+========
+            const a = Se(t),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 n = [...e];
             return 'waiting_desc' === a
                 ? (n.sort((e, t) => _e(e) - _e(t)), n)
@@ -1415,13 +1438,13 @@ function Oe() {
                 (function (e, t) {
                     const a = we(t);
                     return 'pending' === a || 'contacted' === a
-                        ? e.filter((e) => Se(e.status) === a)
+                        ? e.filter((e) => qe(e.status) === a)
                         : 'today' === a
                           ? e.filter((e) => Ie(e.fecha || e.createdAt))
                           : 'sla_urgent' === a
                             ? e.filter(
                                   (e) =>
-                                      'pending' === Se(e.status) && Ae(e) >= 120
+                                      'pending' === qe(e.status) && Ae(e) >= 120
                               )
                             : e;
                 })(a, o.filter),
@@ -1432,7 +1455,7 @@ function Oe() {
         ),
         c = new Set((o.selected || []).map((e) => Number(e || 0))),
         u = (function (e, t = null) {
-            const a = e.filter((e) => 'pending' === Se(e.status)),
+            const a = e.filter((e) => 'pending' === qe(e.status)),
                 n = a.filter((e) => Ae(e) >= 120),
                 i = a.filter((e) => 3 === Le(e)),
                 o = a.slice().sort((e, t) => {
@@ -1545,9 +1568,15 @@ function Oe() {
                                             : 'Urgentes SLA'
                                 ),
                             ke(e.search) && t.push(`Busqueda: ${e.search}`),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                             'priority_desc' === qe(e.sort)
                                 ? t.push('Orden: Prioridad comercial')
                                 : 'waiting_desc' === qe(e.sort)
+========
+                            'priority_desc' === Se(e.sort)
+                                ? t.push('Orden: Prioridad comercial')
+                                : 'waiting_desc' === Se(e.sort)
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                                   ? t.push('Orden: Mayor espera (SLA)')
                                   : t.push('Orden: Mas recientes'),
                             t
@@ -1557,7 +1586,11 @@ function Oe() {
             const n = document.getElementById('callbackFilter');
             n instanceof HTMLSelectElement && (n.value = we(e.filter));
             const i = document.getElementById('callbackSort');
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             i instanceof HTMLSelectElement && (i.value = qe(e.sort));
+========
+            i instanceof HTMLSelectElement && (i.value = Se(e.sort));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             const o = document.getElementById('searchCallbacks');
             (o instanceof HTMLInputElement &&
                 o.value !== e.search &&
@@ -1625,13 +1658,18 @@ function Oe() {
                 r('#callbacksSelectedCount', n));
         })(u, s.length, a.length, c.size));
 }
-function He(e, { persist: t = !0 } = {}) {
+function Fe(e, { persist: t = !0 } = {}) {
     (g((t) => ({ ...t, callbacks: { ...t.callbacks, ...e } })),
         t && xe(b().callbacks),
         Oe());
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function Fe(e) {
     He({ filter: we(e), selected: [] });
+========
+function He(e) {
+    Fe({ filter: we(e), selected: [] });
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
 }
 function je(e) {
     const t = Number(e?.id || 0);
@@ -1655,7 +1693,7 @@ function je(e) {
 async function Re(e, t) {
     const a = Number(e || 0);
     if (a <= 0) return null;
-    const n = await S('callbacks', { method: 'PATCH', body: { id: a, ...t } });
+    const n = await q('callbacks', { method: 'PATCH', body: { id: a, ...t } });
     return n?.data || null;
 }
 async function ze(e, t = '') {
@@ -2058,10 +2096,14 @@ function wt(e, t) {
         null
     );
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function qt(e) {
+========
+function St(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     return e ? String(e.ticketCode || e.ticket_code || 'A-000') : 'Sin llamado';
 }
-function St(e, t, a, n) {
+function qt(e, t, a, n) {
     const i = document.getElementById(e);
     i instanceof HTMLButtonElement &&
         ((i.hidden = !a),
@@ -2334,11 +2376,16 @@ function xt(e, t = []) {
 function Ot(e, t) {
     return Object.prototype.hasOwnProperty.call(e || {}, t);
 }
-function Ht(e) {
+function Ft(e) {
     return e?.counts && 'object' == typeof e.counts ? e.counts : null;
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function Ft(e) {
     const t = Dt(e, 0);
+========
+function Ht(e) {
+    const t = Nt(e, 0);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     return t.id > 0 ? `id:${t.id}` : `code:${Ct(t.ticketCode || '')}`;
 }
 function jt(e, t) {
@@ -2347,7 +2394,7 @@ function jt(e, t) {
     (Lt(t?.createdAt, t?.created_at) || (a.createdAt = ''),
         Lt(t?.priorityClass, t?.priority_class) || (a.priorityClass = ''),
         Lt(t?.queueType, t?.queue_type) || (a.queueType = ''),
-        e.set(Ft(a), a));
+        e.set(Ht(a), a));
 }
 function Rt(e) {
     const t = xt(e),
@@ -2787,6 +2834,280 @@ function va(t) {
     return `\n        <article class="queue-app-card">\n            <div>\n                <p class="queue-app-card__eyebrow">${e(a.eyebrow)}</p>\n                <h5 class="queue-app-card__title">${e(a.title)}</h5>\n                <p class="queue-app-card__description">${e(a.description)}</p>\n            </div>\n            <p class="queue-app-card__meta">\n                v${e(t.version || '0.1.0')} · ${e(i(t.updatedAt || ''))}\n            </p>\n            <span class="queue-app-card__tag">Ideal para ${e(a.recommendedFor)}</span>\n            <div class="queue-app-card__actions">\n                <a\n                    href="${e(r)}"\n                    class="queue-app-card__cta-primary"\n                    target="_blank"\n                    rel="noopener"\n                >\n                    Mostrar QR de instalación\n                </a>\n                <a href="${e(s)}" download>Descargar APK</a>\n            </div>\n            <div class="queue-app-card__links">\n                <a href="${e(t.webFallbackUrl || '/sala-turnos.html')}">\n                    Abrir fallback web\n                </a>\n                <a href="${e(aa('sala_tv', n, t))}">\n                    Centro de instalación\n                </a>\n                <button\n                    type="button"\n                    data-action="queue-copy-install-link"\n                    data-queue-install-url="${e(sa(s))}"\n                >\n                    Copiar enlace\n                </button>\n            </div>\n            <ul class="queue-app-card__notes">\n                ${a.notes.map((t) => `<li>${e(t)}</li>`).join('')}\n            </ul>\n        </article>\n    `;
 }
 function ka(e) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
+========
+    const t = _a(e),
+        a = t.latest && 'object' == typeof t.latest ? t.latest : null;
+    return {
+        group: t,
+        latest: a,
+        details: a?.details && 'object' == typeof a.details ? a.details : {},
+    };
+}
+function wa(e) {
+    const t = la(e),
+        a = 'c2' === t.station ? 'c2' : 'c1',
+        n = ka('operator'),
+        i = ka('kiosk'),
+        o = ka('display'),
+        s = String(n.details.station || '').toLowerCase(),
+        r = String(n.details.connection || 'live').toLowerCase(),
+        l = !t.lock || !s || s === a,
+        c =
+            'ready' === n.group.status &&
+            !n.group.stale &&
+            Boolean(n.details.numpadSeen) &&
+            l &&
+            'fallback' !== r,
+        u = String(i.details.connection || '').toLowerCase(),
+        d =
+            'ready' === i.group.status &&
+            !i.group.stale &&
+            Boolean(i.details.printerPrinted) &&
+            'live' === u,
+        p = String(o.details.connection || '').toLowerCase(),
+        m =
+            'ready' === o.group.status &&
+            !o.group.stale &&
+            Boolean(o.details.bellPrimed) &&
+            !Boolean(o.details.bellMuted) &&
+            'live' === p,
+        g =
+            c &&
+            m &&
+            (function (e = 21600) {
+                const t = zt().queueMeta;
+                return (
+                    Number(t?.calledCount || 0) > 0 ||
+                    !!(
+                        Array.isArray(b().data?.queueTickets)
+                            ? b().data.queueTickets
+                            : []
+                    ).some((e) => 'called' === String(e.status || '')) ||
+                    (b().queue?.activity || []).some((t) => {
+                        const a = String(t?.message || '');
+                        if (!/(Llamado C\d ejecutado|Re-llamar)/i.test(a))
+                            return !1;
+                        const n = Date.parse(String(t?.at || ''));
+                        return !Number.isFinite(n) || Date.now() - n <= 1e3 * e;
+                    })
+                );
+            })(),
+        f = {
+            operator_ready: {
+                suggested: c,
+                reason: c
+                    ? `Heartbeat operador listo${t.lock ? ` en ${a.toUpperCase()} fijo` : ''} con numpad detectado.`
+                    : 'unknown' === n.group.status
+                      ? 'Todavía no hay heartbeat reciente del operador.'
+                      : l
+                        ? n.details.numpadSeen
+                            ? 'Confirma el operador manualmente antes de abrir consulta.'
+                            : 'Falta una pulsación real del Genius Numpad 1000 para validar el equipo.'
+                        : `El operador reporta ${s.toUpperCase() || 'otra estación'}. Ajusta el perfil antes de confirmar.`,
+            },
+            kiosk_ready: {
+                suggested: d,
+                reason: d
+                    ? 'El kiosco ya reportó impresión OK y conexión en vivo.'
+                    : 'unknown' === i.group.status
+                      ? 'Todavía no hay heartbeat reciente del kiosco.'
+                      : Boolean(i.details.printerPrinted)
+                        ? 'live' !== u
+                            ? 'El kiosco no está reportando cola en vivo todavía.'
+                            : 'Confirma el kiosco manualmente antes de abrir autoservicio.'
+                        : 'Falta imprimir un ticket real o de prueba para validar la térmica.',
+            },
+            sala_ready: {
+                suggested: m,
+                reason: m
+                    ? 'La Sala TV reporta audio listo, campanilla activa y conexión estable.'
+                    : 'unknown' === o.group.status
+                      ? 'Todavía no hay heartbeat reciente de la Sala TV.'
+                      : Boolean(o.details.bellMuted)
+                        ? 'La TV sigue en mute o con campanilla apagada.'
+                        : Boolean(o.details.bellPrimed)
+                          ? 'live' !== p
+                              ? 'La Sala TV no está reportando conexión en vivo todavía.'
+                              : 'Confirma la Sala TV manualmente antes del primer llamado.'
+                          : 'Falta ejecutar la prueba de campanilla en la TV.',
+            },
+            smoke_ready: {
+                suggested: g,
+                reason: g
+                    ? 'Ya hubo un llamado reciente con Operador y Sala TV listos.'
+                    : 'Haz un llamado real o de prueba para validar el flujo end-to-end antes de abrir completamente.',
+            },
+        },
+        h = Object.entries(f)
+            .filter(([e, t]) => Boolean(t?.suggested))
+            .map(([e]) => e);
+    return { suggestedIds: h, suggestions: f, suggestedCount: h.length };
+}
+function Sa(t, a = 'secondary') {
+    if (!t) return '';
+    const n =
+        'primary' === a
+            ? 'queue-ops-pilot__action queue-ops-pilot__action--primary'
+            : 'queue-ops-pilot__action';
+    return 'button' === t.kind
+        ? `\n            <button\n                ${t.id ? `id="${e(t.id)}"` : ''}\n                type="button"\n                class="${n}"\n                ${t.action ? `data-action="${e(t.action)}"` : ''}\n            >\n                ${e(t.label || 'Continuar')}\n            </button>\n        `
+        : `\n        <a\n            ${t.id ? `id="${e(t.id)}"` : ''}\n            href="${e(t.href || '/')}"\n            class="${n}"\n            target="_blank"\n            rel="noopener"\n        >\n            ${e(t.label || 'Continuar')}\n        </a>\n    `;
+}
+function qa(t, a) {
+    if (!(document.getElementById('queueOpsPilot') instanceof HTMLElement))
+        return;
+    const n = (function (e, t) {
+        const a = ma(),
+            n = va(e, t),
+            i = wa(t),
+            o = Ta(),
+            s = [_a('operator'), _a('kiosk'), _a('display')],
+            r = n.filter((e) => a.steps[e.id]).length,
+            l = i.suggestedCount,
+            c = n
+                .filter((e) => !a.steps[e.id])
+                .filter((e) => !i.suggestions[e.id]?.suggested),
+            u = s.filter((e) => 'ready' === e.status && !e.stale).length,
+            d =
+                s.filter((e) => 'ready' !== e.status || e.stale).length +
+                ('ready' === o.state ? 0 : 1),
+            p =
+                n.length > 0
+                    ? Math.max(
+                          0,
+                          Math.min(100, Math.round((r / n.length) * 100))
+                      )
+                    : 0;
+        let m = 'idle',
+            b = 'Siguiente paso',
+            g = 'Centro de apertura listo',
+            f =
+                'Sigue la siguiente acción sugerida para terminar la apertura sin revisar cada tarjeta por separado.',
+            h = null,
+            y = null,
+            v = '';
+        return (
+            'alert' === o.state
+                ? ((m = 'alert'),
+                  (g = 'Resuelve la cola antes de abrir'),
+                  (f =
+                      'Hay fallback o sincronización degradada. Prioriza el refresh de cola antes de validar hardware o instalación.'),
+                  (h = {
+                      kind: 'button',
+                      id: 'queueOpsPilotRefreshBtn',
+                      action: 'queue-refresh-state',
+                      label: 'Refrescar cola ahora',
+                  }),
+                  (y = {
+                      kind: 'anchor',
+                      href: '/admin.html#queue',
+                      label: 'Abrir cola admin',
+                  }),
+                  (v =
+                      'Cuando el sync vuelva a vivo, el panel te devolverá el siguiente paso operativo.'))
+                : l > 0
+                  ? ((m = 'suggested'),
+                    (g = `Confirma ${l} paso(s) ya validados`),
+                    (f =
+                        c.length > 0
+                            ? `${l} paso(s) ya aparecen listos por heartbeat. Después te quedará ${c[0].title}.`
+                            : 'El sistema ya detectó los pasos pendientes como listos. Confírmalos para cerrar la apertura.'),
+                    (h = {
+                        kind: 'button',
+                        id: 'queueOpsPilotApplyBtn',
+                        label: `Confirmar sugeridos (${l})`,
+                    }),
+                    (y = c.length
+                        ? {
+                              kind: 'anchor',
+                              href: c[0].href,
+                              label: c[0].actionLabel,
+                          }
+                        : {
+                              kind: 'anchor',
+                              href: '/admin.html#queue',
+                              label: 'Volver a la cola',
+                          }),
+                    (v =
+                        'Usa este botón cuando ya confías en la telemetría y solo quieres avanzar sin recorrer el checklist uno por uno.'))
+                  : c.length > 0
+                    ? ((m = 'warning' === o.state ? 'warning' : 'active'),
+                      (g = `Siguiente paso: ${c[0].title}`),
+                      (f =
+                          c.length > 1
+                              ? `Quedan ${c.length} validaciones manuales. Empieza por esta para mantener el flujo simple.`
+                              : 'Solo queda una validación manual para dejar la apertura lista.'),
+                      (h = {
+                          kind: 'anchor',
+                          href: c[0].href,
+                          label: c[0].actionLabel,
+                      }),
+                      (y =
+                          'warning' === o.state
+                              ? {
+                                    kind: 'button',
+                                    id: 'queueOpsPilotRefreshBtn',
+                                    action: 'queue-refresh-state',
+                                    label: 'Refrescar cola',
+                                }
+                              : {
+                                    kind: 'anchor',
+                                    href: '/admin.html#queue',
+                                    label: 'Abrir cola admin',
+                                }),
+                      (v = String(
+                          i.suggestions[c[0].id]?.reason || c[0].hint || ''
+                      )))
+                    : ((m = 'ready'),
+                      (b = 'Operación lista'),
+                      (g = 'Apertura completada'),
+                      (f =
+                          'Operador, kiosco y sala ya están confirmados. Puedes seguir atendiendo o hacer un llamado de prueba final desde la cola.'),
+                      (h = {
+                          kind: 'anchor',
+                          href: '/admin.html#queue',
+                          label: 'Abrir cola admin',
+                      }),
+                      (y = {
+                          kind: 'anchor',
+                          href: fa('operator', e.operator || Yt.operator, {
+                              ...la(t),
+                          }),
+                          label: 'Abrir operador',
+                      }),
+                      (v =
+                          'Si cambia un equipo a warning o alert, este panel volverá a priorizar la acción correcta.')),
+            {
+                tone: m,
+                eyebrow: b,
+                title: g,
+                summary: f,
+                supportCopy: v,
+                progressPct: p,
+                confirmedCount: r,
+                suggestedCount: l,
+                totalSteps: n.length,
+                readyEquipmentCount: u,
+                issueCount: d,
+                primaryAction: h,
+                secondaryAction: y,
+            }
+        );
+    })(t, a);
+    l(
+        '#queueOpsPilot',
+        `\n            <section class="queue-ops-pilot__shell" data-state="${e(n.tone)}">\n                <div class="queue-ops-pilot__layout">\n                    <div class="queue-ops-pilot__copy">\n                        <p class="queue-app-card__eyebrow">${e(n.eyebrow)}</p>\n                        <h5 id="queueOpsPilotTitle" class="queue-app-card__title">${e(n.title)}</h5>\n                        <p id="queueOpsPilotSummary" class="queue-ops-pilot__summary">${e(n.summary)}</p>\n                        <p class="queue-ops-pilot__support">${e(n.supportCopy)}</p>\n                        <div class="queue-ops-pilot__actions">\n                            ${Sa(n.primaryAction, 'primary')}\n                            ${Sa(n.secondaryAction, 'secondary')}\n                        </div>\n                    </div>\n                    <div class="queue-ops-pilot__status">\n                        <div class="queue-ops-pilot__progress">\n                            <div class="queue-ops-pilot__progress-head">\n                                <span>Apertura confirmada</span>\n                                <strong id="queueOpsPilotProgressValue">${e(`${n.confirmedCount}/${n.totalSteps}`)}</strong>\n                            </div>\n                            <div class="queue-ops-pilot__bar" aria-hidden="true">\n                                <span style="width:${e(String(n.progressPct))}%"></span>\n                            </div>\n                        </div>\n                        <div class="queue-ops-pilot__chips">\n                            <span id="queueOpsPilotChipConfirmed" class="queue-ops-pilot__chip">\n                                Confirmados ${e(String(n.confirmedCount))}\n                            </span>\n                            <span id="queueOpsPilotChipSuggested" class="queue-ops-pilot__chip">\n                                Sugeridos ${e(String(n.suggestedCount))}\n                            </span>\n                            <span id="queueOpsPilotChipEquipment" class="queue-ops-pilot__chip">\n                                Equipos listos ${e(String(n.readyEquipmentCount))}/3\n                            </span>\n                            <span id="queueOpsPilotChipIssues" class="queue-ops-pilot__chip">\n                                Incidencias ${e(String(n.issueCount))}\n                            </span>\n                        </div>\n                    </div>\n                </div>\n            </section>\n        `
+    );
+    const i = document.getElementById('queueOpsPilotApplyBtn');
+    i instanceof HTMLButtonElement &&
+        (i.onclick = () => {
+            const e = wa(a);
+            e.suggestedIds.length && (ba(e.suggestedIds), qa(t, a), La(t, a));
+        });
+}
+function Ca(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const t = Number(e);
     if (!Number.isFinite(t) || t < 0) return 'sin señal';
     if (t < 60) return `${t}s`;
@@ -2913,8 +3234,281 @@ function Ca(t, a) {
         )
     )
         return;
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
     const n = (function (e, t) {
             const a = fa(t);
+========
+    const { syncHealth: n, cards: i } = (function (e, t) {
+            const a = la(t),
+                n = e.operator || Yt.operator,
+                i = e.kiosk || Yt.kiosk,
+                o = e.sala_tv || Yt.sala_tv,
+                s = Ta(),
+                r = 'c2' === a.station ? 'C2' : 'C1',
+                l = a.lock ? `${r} fijo` : 'modo libre',
+                c = fa('operator', n, { ...a }),
+                u = fa('kiosk', i, { ...a }),
+                d = fa('sala_tv', o, { ...a });
+            return {
+                syncHealth: s,
+                cards: [
+                    {
+                        id: 'operator_issue',
+                        state: 'neutral',
+                        badge: 'Numpad',
+                        title: 'Numpad no responde',
+                        summary: `Abre Operador en ${l}${a.oneTap ? ' con 1 tecla' : ''}, recalibra la tecla externa y confirma Enter, Decimal y Subtract del Genius Numpad 1000.`,
+                        steps: [
+                            'Confirma que el receptor USB 2.4 GHz siga conectado en el PC operador.',
+                            'Dentro de Operador usa "Calibrar tecla" si el Enter del numpad no dispara llamada.',
+                            'Mientras corriges el teclado, puedes seguir operando por clics sin cambiar de equipo.',
+                        ],
+                        actions: [
+                            {
+                                type: 'link',
+                                href: c,
+                                label: 'Abrir operador',
+                                primary: !0,
+                            },
+                            { type: 'copy', url: c, label: 'Copiar ruta' },
+                            {
+                                type: 'link',
+                                href: ra('operator', a, n),
+                                label: 'Centro de instalación',
+                                external: !0,
+                            },
+                        ],
+                    },
+                    {
+                        id: 'kiosk_issue',
+                        state: 'neutral',
+                        badge: 'Térmica',
+                        title: 'Térmica no imprime',
+                        summary:
+                            'Abre Kiosco, genera un ticket de prueba y confirma "Impresion OK" antes de volver al autoservicio.',
+                        steps: [
+                            'Revisa papel, energía y cable USB de la impresora térmica.',
+                            'Si el equipo sigue estable, usa el kiosco web preparado mientras validas la app desktop.',
+                            'No cierres el flujo de check-in hasta imprimir al menos un ticket de prueba correcto.',
+                        ],
+                        actions: [
+                            {
+                                type: 'link',
+                                href: u,
+                                label: 'Abrir kiosco',
+                                primary: !0,
+                            },
+                            { type: 'copy', url: u, label: 'Copiar ruta' },
+                            {
+                                type: 'link',
+                                href: ra('kiosk', a, i),
+                                label: 'Centro de instalación',
+                                external: !0,
+                            },
+                        ],
+                    },
+                    {
+                        id: 'sala_issue',
+                        state: 'neutral',
+                        badge: 'Audio',
+                        title: 'Sala TV sin campanilla',
+                        summary:
+                            'Abre la Sala TV, ejecuta la prueba de campanilla y deja la TCL C655 con volumen fijo y Ethernet activo.',
+                        steps: [
+                            'Confirma que la TV no esté en mute y que la app siga en foreground.',
+                            'Si la APK falla, usa `sala-turnos.html` como respaldo inmediato en el navegador de la TV.',
+                            'Solo reinstala la APK si ya probaste campanilla, red y energía de la pantalla.',
+                        ],
+                        actions: [
+                            {
+                                type: 'link',
+                                href: d,
+                                label: 'Abrir sala TV',
+                                primary: !0,
+                            },
+                            {
+                                type: 'link',
+                                href: ra('sala_tv', a, o),
+                                label: 'Instalar APK',
+                                external: !0,
+                            },
+                            {
+                                type: 'copy',
+                                url: d,
+                                label: 'Copiar fallback web',
+                            },
+                        ],
+                    },
+                    {
+                        id: 'sync_issue',
+                        state: s.state,
+                        badge: s.badge,
+                        title: s.title,
+                        summary: s.summary,
+                        steps: s.steps,
+                        actions: [
+                            {
+                                type: 'button',
+                                action: 'queue-refresh-state',
+                                label: 'Refrescar cola',
+                                primary: 'ready' !== s.state,
+                            },
+                            {
+                                type: 'link',
+                                href: c,
+                                label: 'Abrir operador web',
+                            },
+                            {
+                                type: 'copy',
+                                url: u,
+                                label: 'Copiar kiosco web',
+                            },
+                        ],
+                    },
+                ],
+            };
+        })(t, a),
+        o =
+            'alert' === n.state
+                ? 'Contingencia activa'
+                : 'warning' === n.state
+                  ? 'Contingencia preventiva'
+                  : 'Contingencia rápida lista',
+        s =
+            'alert' === n.state
+                ? 'Resuelve primero la sincronización y luego ataca hardware puntual. Las rutas de abajo ya quedan preparadas para operar sin perder tiempo.'
+                : 'warning' === n.state
+                  ? 'Hay señal de retraso en la cola. Usa estas rutas directas antes de que el operador quede fuera de contexto.'
+                  : 'Las tarjetas de abajo sirven como ruta corta cuando algo falla en medio de la jornada, sin mezclar instalación con operación.';
+    l(
+        '#queueContingencyDeck',
+        `\n            <section class="queue-contingency-deck__shell">\n                <div class="queue-contingency-deck__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Contingencia rápida</p>\n                        <h5 id="queueContingencyTitle" class="queue-app-card__title">${e(o)}</h5>\n                        <p id="queueContingencySummary" class="queue-contingency-deck__summary">${e(s)}</p>\n                    </div>\n                    <span\n                        id="queueContingencyStatus"\n                        class="queue-contingency-deck__status"\n                        data-state="${e(n.state)}"\n                    >\n                        ${e(n.badge)}\n                    </span>\n                </div>\n                <div id="queueContingencyCards" class="queue-contingency-deck__grid" role="list" aria-label="Tarjetas de contingencia rápida">\n                    ${i
+            .map(
+                (t) =>
+                    `\n                                <article\n                                    class="queue-contingency-card"\n                                    ${'sync_issue' === t.id ? 'id="queueContingencySyncCard"' : ''}\n                                    data-state="${e(t.state)}"\n                                    role="listitem"\n                                >\n                                    <div class="queue-contingency-card__header">\n                                        <div>\n                                            <strong>${e(t.title)}</strong>\n                                            <p class="queue-contingency-card__summary">${e(t.summary)}</p>\n                                        </div>\n                                        <span class="queue-contingency-card__badge">${e(t.badge)}</span>\n                                    </div>\n                                    <ul class="queue-contingency-card__steps">\n                                        ${t.steps.map((t) => `<li>${e(t)}</li>`).join('')}\n                                    </ul>\n                                    <div class="queue-contingency-card__actions">\n                                        ${t.actions
+                        .map((a, n) =>
+                            (function (t, a, n) {
+                                const i = e(a.label || 'Abrir'),
+                                    o = a.primary
+                                        ? 'queue-contingency-card__action queue-contingency-card__action--primary'
+                                        : 'queue-contingency-card__action';
+                                return 'button' === a.type
+                                    ? `\n            <button\n                type="button"\n                class="${o}"\n                data-action="${e(a.action || '')}"\n                data-queue-contingency-card="${e(t)}"\n                data-queue-contingency-action-index="${e(String(n))}"\n            >\n                ${i}\n            </button>\n        `
+                                    : 'copy' === a.type
+                                      ? `\n            <button\n                type="button"\n                class="${o}"\n                data-action="queue-copy-install-link"\n                data-queue-install-url="${e(a.url || '')}"\n                data-queue-contingency-card="${e(t)}"\n                data-queue-contingency-action-index="${e(String(n))}"\n            >\n                ${i}\n            </button>\n        `
+                                      : `\n        <a\n            href="${e(a.href || '/')}"\n            class="${o}"\n            ${a.external ? 'target="_blank" rel="noopener"' : ''}\n        >\n            ${i}\n        </a>\n    `;
+                            })(t.id, a, n)
+                        )
+                        .join(
+                            ''
+                        )}\n                                    </div>\n                                </article>\n                            `
+            )
+            .join(
+                ''
+            )}\n                </div>\n            </section>\n        `
+    );
+}
+function La(t, a) {
+    const n = document.getElementById('queueOpeningChecklist');
+    if (!(n instanceof HTMLElement)) return;
+    const i = ma(),
+        o = va(t, a),
+        s = wa(a),
+        r = o.filter((e) => i.steps[e.id]).length,
+        c = o.filter(
+            (e) => !i.steps[e.id] && Boolean(s.suggestions[e.id]?.suggested)
+        ).length,
+        u = o.length - r,
+        d =
+            u <= 0
+                ? 'Operador, kiosco y sala TV ya quedaron probados en este navegador admin para hoy.'
+                : c > 0
+                  ? `${c} paso(s) ya aparecen listos por telemetría o actividad reciente. Confírmalos en bloque y deja solo las validaciones pendientes.`
+                  : 'Sigue cada paso desde esta vista y marca listo solo después de validar el equipo real. El avance se guarda en este navegador.';
+    (l(
+        '#queueOpeningChecklist',
+        `\n            <section class="queue-opening-checklist__shell">\n                <div class="queue-opening-checklist__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Apertura diaria</p>\n                        <h5 id="queueOpeningChecklistTitle" class="queue-app-card__title">${e(u <= 0 ? 'Apertura diaria lista' : c > 0 ? 'Apertura diaria asistida' : r <= 0 ? 'Apertura diaria pendiente' : `Apertura diaria: faltan ${u} paso(s)`)}</h5>\n                        <p id="queueOpeningChecklistSummary" class="queue-opening-checklist__summary">${e(d)}</p>\n                    </div>\n                    <div class="queue-opening-checklist__meta">\n                        <span\n                            id="queueOpeningChecklistAssistChip"\n                            class="queue-opening-checklist__assist"\n                            data-state="${c > 0 ? 'suggested' : u <= 0 ? 'ready' : 'idle'}"\n                        >\n                            ${e(c > 0 ? `Sugeridos ${c}` : u <= 0 ? 'Checklist completo' : `Confirmados ${r}/${o.length}`)}\n                        </span>\n                        <button\n                            id="queueOpeningChecklistApplyBtn"\n                            type="button"\n                            class="queue-opening-checklist__apply"\n                            ${c > 0 ? '' : 'disabled'}\n                        >\n                            ${c > 0 ? `Confirmar sugeridos (${c})` : 'Sin sugeridos todavía'}\n                        </button>\n                        <button\n                            id="queueOpeningChecklistResetBtn"\n                            type="button"\n                            class="queue-opening-checklist__reset"\n                        >\n                            Reiniciar apertura de hoy\n                        </button>\n                        <span id="queueOpeningChecklistDate" class="queue-opening-checklist__date">\n                            ${e(
+            (function (e) {
+                const t = String(e || '').trim(),
+                    a = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+                return a ? `${a[3]}/${a[2]}/${a[1]}` : t || '--';
+            })(i.date)
+        )}\n                        </span>\n                    </div>\n                </div>\n                <div id="queueOpeningChecklistSteps" class="queue-opening-checklist__steps" role="list" aria-label="Checklist de apertura diaria">\n                    ${o
+            .map((t) => {
+                const a = Boolean(i.steps[t.id]),
+                    n = !a && Boolean(s.suggestions[t.id]?.suggested),
+                    o = a ? 'ready' : n ? 'suggested' : 'pending',
+                    r = a ? 'Confirmado' : n ? 'Sugerido' : 'Pendiente',
+                    l = String(s.suggestions[t.id]?.reason || t.hint);
+                return `\n                                <article\n                                    class="queue-opening-step"\n                                    data-state="${o}"\n                                    role="listitem"\n                                >\n                                    <div class="queue-opening-step__header">\n                                        <div>\n                                            <strong>${e(t.title)}</strong>\n                                            <p class="queue-opening-step__detail">${e(t.detail)}</p>\n                                        </div>\n                                        <span class="queue-opening-step__state">\n                                            ${e(r)}\n                                        </span>\n                                    </div>\n                                    <p class="queue-opening-step__hint">${e(t.hint)}</p>\n                                    <p class="queue-opening-step__evidence">${e(l)}</p>\n                                    <div class="queue-opening-step__actions">\n                                        <a\n                                            href="${e(t.href)}"\n                                            target="_blank"\n                                            rel="noopener"\n                                            class="queue-opening-step__primary"\n                                        >\n                                            ${e(t.actionLabel)}\n                                        </a>\n                                        <button\n                                            id="queueOpeningToggle_${e(t.id)}"\n                                            type="button"\n                                            class="queue-opening-step__toggle"\n                                            data-queue-opening-step="${e(t.id)}"\n                                            data-state="${o}"\n                                        >\n                                            ${a ? 'Marcar pendiente' : n ? 'Confirmar sugerido' : 'Marcar listo'}\n                                        </button>\n                                    </div>\n                                </article>\n                            `;
+            })
+            .join(
+                ''
+            )}\n                </div>\n            </section>\n        `
+    ),
+        n.querySelectorAll('[data-queue-opening-step]').forEach((e) => {
+            e instanceof HTMLButtonElement &&
+                (e.onclick = () => {
+                    const n = String(e.dataset.queueOpeningStep || ''),
+                        i = ma();
+                    (!(function (e, t) {
+                        const a = ma();
+                        ta.includes(e) &&
+                            pa({
+                                ...a,
+                                steps: { ...a.steps, [e]: Boolean(t) },
+                            });
+                    })(n, !Boolean(i.steps[n])),
+                        qa(t, a),
+                        La(t, a));
+                });
+        }));
+    const p = document.getElementById('queueOpeningChecklistApplyBtn');
+    p instanceof HTMLButtonElement &&
+        (p.onclick = () => {
+            s.suggestedIds.length && (ba(s.suggestedIds), qa(t, a), La(t, a));
+        });
+    const m = document.getElementById('queueOpeningChecklistResetBtn');
+    m instanceof HTMLButtonElement &&
+        (m.onclick = () => {
+            (pa(ua(ca())), qa(t, a), La(t, a));
+        });
+}
+function Ea(t, a) {
+    const n = document.getElementById('queueInstallConfigurator');
+    if (!(n instanceof HTMLElement)) return;
+    const i = la(a),
+        o =
+            'kiosk' === i.surface || 'sala_tv' === i.surface
+                ? i.surface
+                : 'operator',
+        s = t[o];
+    if (!s) return void (n.innerHTML = '');
+    const r =
+            'sala_tv' === o
+                ? 'android_tv'
+                : 'mac' === i.platform
+                  ? 'mac'
+                  : 'win',
+        c = (s.targets && s.targets[r]) || ga(s, a) || null,
+        u = fa(o, s, i),
+        d = sa(('sala_tv' === o && c && c.url) || u),
+        p = ra(o, i, s),
+        m = (function (e) {
+            if ('sala_tv' === e.surface)
+                return [
+                    'Abre el QR desde otra pantalla o descarga la APK directamente.',
+                    'Instala la app en la TCL C655 y prioriza Ethernet sobre Wi-Fi.',
+                    'Valida audio, reconexión y que la sala refleje llamados reales.',
+                ];
+            if ('kiosk' === e.surface)
+                return [
+                    'Instala la app en el mini PC o PC del kiosco.',
+                    'Deja la impresora térmica conectada y la app en fullscreen.',
+                    'Usa la versión web como respaldo inmediato si el equipo se reinicia.',
+                ];
+            const t = 'c2' === e.station ? 'C2' : 'C1';
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             return [
                 {
                     key: 'operator',
@@ -3054,6 +3648,53 @@ function Ca(t, a) {
         '#queueSurfaceTelemetry',
         `\n        <section class="queue-surface-telemetry__shell">\n            <div class="queue-surface-telemetry__header">\n                <div>\n                    <p class="queue-app-card__eyebrow">Equipos en vivo</p>\n                    <h5 id="queueSurfaceTelemetryTitle" class="queue-app-card__title">${e(o ? 'Equipos con atención urgente' : s ? 'Equipos con señal parcial' : 'Equipos en vivo')}</h5>\n                    <p id="queueSurfaceTelemetrySummary" class="queue-surface-telemetry__summary">${e(r)}</p>\n                    <div id="queueSurfaceTelemetryAutoMeta" class="queue-surface-telemetry__auto-meta">\n                        <span id="queueSurfaceTelemetryAutoState" class="queue-surface-telemetry__auto-state" data-state="${e(i.state)}">${e(i.label)}</span>\n                        <span class="queue-surface-telemetry__auto-copy">${e(i.meta)}</span>\n                    </div>\n                </div>\n                <span id="queueSurfaceTelemetryStatus" class="queue-surface-telemetry__status" data-state="${e(u)}">${e(c)}</span>\n            </div>\n            <div id="queueSurfaceTelemetryCards" class="queue-surface-telemetry__grid" role="list" aria-label="Estado vivo por equipo">\n                ${n.map((t) => `\n                    <article class="queue-surface-card" data-state="${e(t.state)}" role="listitem">\n                        <div class="queue-surface-card__header">\n                            <div>\n                                <strong>${e(t.title)}</strong>\n                                <p class="queue-surface-card__meta">${e(t.deviceLabel)}</p>\n                            </div>\n                            <span class="queue-surface-card__badge">${e(t.badge)}</span>\n                        </div>\n                        <p class="queue-surface-card__summary">${e(t.summary)}</p>\n                        <p class="queue-surface-card__age">${e(t.ageLabel)}</p>\n                        <div class="queue-surface-card__chips">${t.chips.map((t) => `<span class="queue-surface-card__chip">${e(t)}</span>`).join('')}</div>\n                        <div class="queue-surface-card__actions">\n                            <a href="${e(t.route)}" target="_blank" rel="noopener" class="queue-surface-card__action queue-surface-card__action--primary">${e(t.actionLabel)}</a>\n                            <button type="button" class="queue-surface-card__action" data-action="queue-copy-install-link" data-queue-install-url="${e(t.route)}">Copiar ruta</button>\n                            <button type="button" class="queue-surface-card__action" data-action="refresh-admin-data">Actualizar estado</button>\n                        </div>\n                    </article>\n                `).join('')}\n            </div>\n        </section>\n    `
     );
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
+========
+    const b = document.getElementById('queueInstallSurfaceSelect');
+    b instanceof HTMLSelectElement &&
+        (b.onchange = () => {
+            ((aa = { ...i, surface: b.value }),
+                qa(t, a),
+                $a(t, a),
+                Ma(t, a),
+                La(t, a),
+                Ea(t, a));
+        });
+    const g = document.getElementById('queueInstallProfileSelect');
+    g instanceof HTMLSelectElement &&
+        (g.onchange = () => {
+            ((aa = {
+                ...i,
+                station: 'c2_locked' === g.value ? 'c2' : 'c1',
+                lock: 'free' !== g.value,
+            }),
+                qa(t, a),
+                $a(t, a),
+                Ma(t, a),
+                La(t, a),
+                Ea(t, a));
+        });
+    const f = document.getElementById('queueInstallPlatformSelect');
+    f instanceof HTMLSelectElement &&
+        (f.onchange = () => {
+            ((aa = { ...i, platform: 'mac' === f.value ? 'mac' : 'win' }),
+                qa(t, a),
+                $a(t, a),
+                Ma(t, a),
+                La(t, a),
+                Ea(t, a));
+        });
+    const h = document.getElementById('queueInstallOneTapInput');
+    h instanceof HTMLInputElement &&
+        (h.onchange = () => {
+            ((aa = { ...i, oneTap: h.checked }),
+                qa(t, a),
+                $a(t, a),
+                Ma(t, a),
+                La(t, a),
+                Ea(t, a));
+        });
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
 }
 function _a(e, t) {
     const a = fa(t),
@@ -3274,6 +3915,7 @@ function Ma() {
             ya('kiosk', n.kiosk, t),
             va(n.sala_tv),
         ].join('')
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
     );
     const i = () => {
         ((function (t, a, n) {
@@ -3801,6 +4443,14 @@ function Ma() {
             })(n, t, i));
     };
     i();
+========
+    ),
+        qa(a, e),
+        $a(a, e),
+        Ma(a, e),
+        La(a, e),
+        Ea(a, e));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
 }
 function La(t = () => {}) {
     const a = b(),
@@ -3809,7 +4459,11 @@ function La(t = () => {}) {
         o = Kt(),
         s = Qt(),
         c = Gt(a.queue.stationConsultorio);
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
     (Ma(),
+========
+    (Ba(),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         (function (e, t) {
             const a = b();
             (!(function (e) {
@@ -3825,12 +4479,17 @@ function La(t = () => {}) {
                 (function (e) {
                     const t = wt(e, 1),
                         a = wt(e, 2),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                         n = qt(t),
                         i = qt(a);
+========
+                        n = St(t),
+                        i = St(a);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                     (r('#queueC1Now', n),
                         r('#queueC2Now', i),
-                        St('queueReleaseC1', 1, t, n),
-                        St('queueReleaseC2', 2, a, i));
+                        qt('queueReleaseC1', 1, t, n),
+                        qt('queueReleaseC2', 2, a, i));
                 })(e),
                 (function (e, t, a) {
                     const n = document.getElementById('queueSyncStatus');
@@ -3889,52 +4548,6 @@ function La(t = () => {}) {
                     : '<li><span>-</span><strong>Sin siguientes</strong></li>'
             );
         })(n, a.queue.fallbackPartial),
-        (function (t) {
-            const a = $t(t.activeHelpRequests);
-            l(
-                '#queueHelpRequestsList',
-                a.length
-                    ? a
-                          .map((t) => {
-                              const a = Number(t?.id || 0) || 0,
-                                  n = String(
-                                      t?.ticketCode ||
-                                          t?.ticket_code ||
-                                          'Sin ticket'
-                                  ),
-                                  i = String(
-                                      t?.patientInitials ||
-                                          t?.patient_initials ||
-                                          '--'
-                                  ),
-                                  o = String(
-                                      t?.reasonLabel ||
-                                          t?.reason_label ||
-                                          'Apoyo operativo'
-                                  ),
-                                  s = String(
-                                      t?.status || 'pending'
-                                  ).toLowerCase(),
-                                  r = (function (e) {
-                                      const t = String(e || '')
-                                          .trim()
-                                          .toLowerCase();
-                                      return 'attended' === t
-                                          ? 'Atendido'
-                                          : 'resolved' === t
-                                            ? 'Resuelto'
-                                            : 'Pendiente';
-                                  })(s),
-                                  l =
-                                      'resolved' === s
-                                          ? ''
-                                          : `\n                                    ${'pending' === s ? `<button type="button" data-action="queue-help-request-status" data-queue-help-id="${a}" data-queue-help-status="attended">Atender</button>` : ''}\n                                    <button type="button" data-action="queue-help-request-status" data-queue-help-id="${a}" data-queue-help-status="resolved">Resolver</button>\n                                `;
-                              return `\n                            <li>\n                                <span>${e(n)} · ${e(i)}</span>\n                                <strong>${e(o)} · ${e(r)}</strong>\n                                ${l ? `<div class="table-actions">${l}</div>` : ''}\n                            </li>\n                        `;
-                          })
-                          .join('')
-                    : '<li><span>-</span><strong>Sin apoyos pendientes</strong></li>'
-            );
-        })(n),
         (function ({
             state: e,
             visible: t,
@@ -4086,7 +4699,11 @@ function Pa(e, t) {
         localStorage.setItem(e, String(t));
     } catch (e) {}
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function Ia(e, t) {
+========
+function Fa(e, t) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     try {
         const a = localStorage.getItem(e);
         return a ? JSON.parse(a) : t;
@@ -4094,18 +4711,27 @@ function Ia(e, t) {
         return t;
     }
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function xa(e, t) {
+========
+function Ha(e, t) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     try {
         localStorage.setItem(e, JSON.stringify(t));
     } catch (e) {}
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function Oa(e) {
+========
+function ja(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     try {
         return new URL(window.location.href).searchParams.get(e) || '';
     } catch (e) {
         return '';
     }
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 const Ha = 'queueStationMode',
     Fa = 'queueStationConsultorio',
     ja = 'queueOneTapAdvance',
@@ -4124,12 +4750,37 @@ function Qa(e) {
         Pa(za, e.queue.helpOpen ? '1' : '0'),
         e.queue.customCallKey
             ? xa(Ra, e.queue.customCallKey)
+========
+const Ra = 'queueStationMode',
+    za = 'queueStationConsultorio',
+    Va = 'queueOneTapAdvance',
+    Ua = 'queueCallKeyBindingV1',
+    Ka = 'queueNumpadHelpOpen',
+    Qa = 'queueAdminLastSnapshot',
+    Ga = new Map([
+        [1, !1],
+        [2, !1],
+    ]),
+    Wa = new Set(['no_show', 'cancelar']);
+function Ja(e) {
+    (Oa(Ra, e.queue.stationMode || 'free'),
+        Oa(za, e.queue.stationConsultorio || 1),
+        Oa(Va, e.queue.oneTap ? '1' : '0'),
+        Oa(Ka, e.queue.helpOpen ? '1' : '0'),
+        e.queue.customCallKey
+            ? Ha(Ua, e.queue.customCallKey)
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             : (function (e) {
                   try {
                       localStorage.removeItem(e);
                   } catch (e) {}
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
               })(Ra),
         xa(Va, {
+========
+              })(Ua),
+        Ha(Qa, {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             queueMeta: e.data.queueMeta,
             queueTickets: e.data.queueTickets,
             updatedAt: new Date().toISOString(),
@@ -4270,7 +4921,7 @@ function Xa(e, t = {}) {
                     );
                 })(e) ||
                 !!(function (e) {
-                    const t = Ht(e);
+                    const t = Ft(e);
                     return Boolean(
                         t &&
                         (Ot(t, 'waiting') ||
@@ -4315,7 +4966,7 @@ function Xa(e, t = {}) {
     const s = 'fallback' === Ct(t.syncMode) ? 'fallback' : 'live',
         r = xt(a, i),
         l = (function (e) {
-            const t = Ht(e),
+            const t = Ft(e),
                 a =
                     Ot(e, 'waitingCount') ||
                     Ot(e, 'waiting_count') ||
@@ -4338,8 +4989,13 @@ function Xa(e, t = {}) {
     const d =
         Number(r.waitingCount || 0) >
         c.filter((e) => 'waiting' === e.status).length;
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
     if (o.length) return void Ga(o, r, { fallbackPartial: !1, syncMode: s });
     const p = new Map(i.map((e) => [Ft(e), e]));
+========
+    if (o.length) return void Ya(o, r, { fallbackPartial: !1, syncMode: s });
+    const p = new Map(i.map((e) => [Ht(e), e]));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     ((function (e, t, a) {
         const n = t.callingNowByConsultorio || {},
             i = Number(t.calledCount || t.counts?.called || 0),
@@ -4349,9 +5005,9 @@ function Xa(e, t = {}) {
                 const t = new Set(),
                     a = e[1] || e[1] || null,
                     n = e[2] || e[2] || null;
-                return (a && t.add(Ft(a)), n && t.add(Ft(n)), t);
+                return (a && t.add(Ht(a)), n && t.add(Ht(n)), t);
             })(n),
-            l = new Set(s.map((e) => Ft(e))),
+            l = new Set(s.map((e) => Ht(e))),
             c = r.size > 0 || 0 === i,
             u = l.size > 0 || 0 === o,
             d = l.size > 0 && o > l.size;
@@ -4380,12 +5036,16 @@ function Xa(e, t = {}) {
         Ga(
             (function (e, t, a) {
                 for (const a of t) {
-                    const t = Ft(a),
+                    const t = Ht(a),
                         n = e.get(t) || null;
                     e.set(t, Dt(Za(n, a), e.size));
                 }
                 if (a && 'object' == typeof a) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     const t = Ft(Dt(a, e.size)),
+========
+                    const t = Ht(Nt(a, e.size)),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                         n = e.get(t) || null;
                     e.set(
                         t,
@@ -4403,8 +5063,13 @@ function Xa(e, t = {}) {
             { fallbackPartial: d, syncMode: s }
         ));
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function en() {
     return Ia(Va, null);
+========
+function nn() {
+    return Fa(Qa, null);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
 }
 function tn(e, t = '') {
     return (
@@ -4419,8 +5084,13 @@ function tn(e, t = '') {
 }
 async function an() {
     try {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         (Xa(await S('queue-state'), { syncMode: 'live' }),
             Ea('Queue refresh realizado'));
+========
+        (an(await q('queue-state'), { syncMode: 'live' }),
+            Da('Queue refresh realizado'));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     } catch (e) {
         (Ea('Queue refresh con error'), tn(en()));
     }
@@ -4481,6 +5151,7 @@ const on = 'appointments',
     };
 function hn() {
     return {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         appointments: Ia(on, []),
         callbacks: Ia(sn, []),
         reviews: Ia(rn, []),
@@ -4496,13 +5167,34 @@ function hn() {
     };
 }
 function yn(e) {
+========
+        appointments: Fa(ln, []),
+        callbacks: Fa(cn, []),
+        reviews: Fa(un, []),
+        availability: Fa(dn, {}),
+        availabilityMeta: Fa(pn, {}),
+        queueTickets: Fa(mn, []),
+        queueMeta: Fa(bn, null),
+        leadOpsMeta: Fa(gn, null),
+        queueSurfaceStatus: Fa(fn, null),
+        appDownloads: Fa(hn, null),
+        health: Fa(yn, null),
+        funnelMetrics: vn,
+    };
+}
+function wn(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     return Array.isArray(e.queue_tickets)
         ? e.queue_tickets
         : Array.isArray(e.queueTickets)
           ? e.queueTickets
           : [];
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function vn(e) {
+========
+function Sn(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     g((t) => {
         const a = (function (e, t) {
             return {
@@ -4541,7 +5233,11 @@ function vn(e) {
         };
     });
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function kn() {
+========
+function qn() {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const e = b(),
         t = Number(e.ui.lastRefreshAt || 0);
     if (!t) return 'Datos: sin sincronizar';
@@ -4550,14 +5246,14 @@ function kn() {
 }
 async function wn(e) {
     if (e.funnelMetrics) return e.funnelMetrics;
-    const t = await S('funnel-metrics').catch(() => null);
+    const t = await q('funnel-metrics').catch(() => null);
     return t?.data || null;
 }
 async function qn() {
     try {
         const [e, t] = await Promise.all([
-                S('data'),
-                S('health').catch(() => null),
+                q('data'),
+                q('health').catch(() => null),
             ]),
             a = e.data || {},
             n = hn(),
@@ -4577,7 +5273,11 @@ async function qn() {
                         'object' == typeof e.availabilityMeta
                             ? e.availabilityMeta
                             : {},
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     queueTickets: yn(e),
+========
+                    queueTickets: wn(e),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                     queueMeta:
                         e.queueMeta && 'object' == typeof e.queueMeta
                             ? e.queueMeta
@@ -4605,6 +5305,7 @@ async function qn() {
                 };
             })({ ...a, funnelMetrics: await wn(a) }, t, n);
         return (
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             vn(i),
             (function (e) {
                 (xa(on, e.appointments || []),
@@ -4618,11 +5319,30 @@ async function qn() {
                     xa(mn, e.queueSurfaceStatus || null),
                     xa(bn, e.appDownloads || null),
                     xa(gn, e.health || null));
+========
+            Sn(i),
+            (function (e) {
+                (Ha(ln, e.appointments || []),
+                    Ha(cn, e.callbacks || []),
+                    Ha(un, e.reviews || []),
+                    Ha(dn, e.availability || {}),
+                    Ha(pn, e.availabilityMeta || {}),
+                    Ha(mn, e.queueTickets || []),
+                    Ha(bn, e.queueMeta || null),
+                    Ha(gn, e.leadOpsMeta || null),
+                    Ha(fn, e.queueSurfaceStatus || null),
+                    Ha(hn, e.appDownloads || null),
+                    Ha(yn, e.health || null));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             })(i),
             !0
         );
     } catch (e) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         return (vn(hn()), !1);
+========
+        return (Sn(kn()), !1);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     }
 }
 let Sn = !1,
@@ -4722,7 +5442,11 @@ async function Tn(e = 'timer') {
             }),
             La(),
             (function () {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 const e = kn();
+========
+                const e = qn();
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 (r('#adminRefreshStatus', e),
                     r(
                         '#adminSyncState',
@@ -4802,9 +5526,15 @@ async function Bn({ ticketId: e, action: t, consultorio: a }) {
                           : Dn(e, 'waiting', null)
                       : Dn(e, 'called', 2 === Number(a || 1) ? 2 : 1);
               })(n, i, a),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
               void Ea(`Practica: accion ${i} en ticket ${n}`))
             : (Xa(
                   await S('queue-ticket', {
+========
+              void Da(`Practica: accion ${i} en ticket ${n}`))
+            : (an(
+                  await q('queue-ticket', {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                       method: 'PATCH',
                       body: { id: n, action: i, consultorio: Number(a || 0) },
                   }),
@@ -4815,7 +5545,11 @@ async function Bn({ ticketId: e, action: t, consultorio: a }) {
 async function Pn(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = b();
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
     if (!Ua.get(t)) {
+========
+    if (!Ga.get(t)) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         if (
             'locked' === a.queue.stationMode &&
             a.queue.stationConsultorio !== t
@@ -4847,10 +5581,17 @@ async function Pn(e) {
                   void Ea(`Practica: llamado ${e.ticketCode} en C${t}`))
                 : void Ea('Practica: sin tickets en espera');
         }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         Ua.set(t, !0);
         try {
             (Xa(
                 await S('queue-call-next', {
+========
+        Ga.set(t, !0);
+        try {
+            (an(
+                await q('queue-call-next', {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                     method: 'POST',
                     body: { consultorio: t },
                 }),
@@ -4861,11 +5602,19 @@ async function Pn(e) {
             (Ea(`Error llamando siguiente en C${t}`),
                 s(`Error llamando siguiente en C${t}`, 'error'));
         } finally {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             Ua.set(t, !1);
         }
     }
 }
 async function In(e, t, a = 0) {
+========
+            Ga.set(t, !1);
+        }
+    }
+}
+async function Fn(e, t, a = 0) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const n = {
             ticketId: Number(e || 0),
             action: At(t),
@@ -4881,7 +5630,11 @@ async function In(e, t, a = 0) {
         })(n.ticketId);
     if (
         !i.queue.practiceMode &&
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         Ka.has(n.action) &&
+========
+        Wa.has(n.action) &&
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         (function (e, t) {
             const a = At(e);
             return (
@@ -4896,14 +5649,25 @@ async function In(e, t, a = 0) {
         return (vt(n), void Ea(`Accion ${n.action} pendiente de confirmacion`));
     await Bn(n);
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 async function xn() {
+========
+async function Hn() {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const e = b().queue.pendingSensitiveAction;
     e ? (kt(), await Bn(e)) : kt();
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function On() {
     (kt(), Ea('Accion sensible cancelada'));
 }
 function Hn() {
+========
+function jn() {
+    (kt(), Da('Accion sensible cancelada'));
+}
+function Rn() {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const e = document.getElementById('queueSensitiveConfirmDialog'),
         t = b().queue.pendingSensitiveAction;
     return !(
@@ -4912,16 +5676,26 @@ function Hn() {
                 ? e.open
                 : e instanceof HTMLElement &&
                   (!e.hidden || e.hasAttribute('open')))) ||
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         (On(), 0)
+========
+        (jn(), 0)
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     );
 }
 async function Fn(e) {
     const t = Number(e || 0);
     t &&
         (b().queue.practiceMode
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             ? Ea(`Practica: reprint ticket ${t}`)
             : (await S('queue-reprint', { method: 'POST', body: { id: t } }),
               Ea(`Reimpresion ticket ${t}`)));
+========
+            ? Da(`Practica: reprint ticket ${t}`)
+            : (await q('queue-reprint', { method: 'POST', body: { id: t } }),
+              Da(`Reimpresion ticket ${t}`)));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
 }
 function jn() {
     Ja({ helpOpen: !b().queue.helpOpen });
@@ -4931,7 +5705,11 @@ function Rn(e) {
     (Ja({ practiceMode: t, pendingSensitiveAction: null }),
         Ea(t ? 'Modo practica activo' : 'Modo practica desactivado'));
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function zn(e) {
+========
+function Kn(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const t = Wt();
     return (
         !!t &&
@@ -4976,7 +5754,11 @@ async function Vn(e) {
                 ('enter' === a && 3 === Number(e.location || 0))
             );
         })(e, a, n);
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
     if (i && t.queue.pendingSensitiveAction) return void (await xn());
+========
+    if (i && t.queue.pendingSensitiveAction) return void (await Hn());
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const o = (function (e, t) {
         return 'numpad2' === e || '2' === t
             ? 2
@@ -4986,8 +5768,13 @@ async function Vn(e) {
     })(a, n);
     if (!o)
         return i
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             ? (t.queue.oneTap && zn(t) && (await xn()),
               void (await Pn(t.queue.stationConsultorio)))
+========
+            ? (t.queue.oneTap && Kn(t) && (await Hn()),
+              void (await On(t.queue.stationConsultorio)))
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             : void ((function (e, t) {
                   return (
                       'numpaddecimal' === e ||
@@ -5022,7 +5809,11 @@ async function Vn(e) {
                       (await (async function (e) {
                           const t = Wt();
                           t &&
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                               (await In(
+========
+                              (await Fn(
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                                   t.id,
                                   're-llamar',
                                   e.queue.stationConsultorio
@@ -5042,10 +5833,17 @@ async function Vn(e) {
             : (Ja({ stationConsultorio: e }), Ea(`Numpad: estacion C${e}`));
     })(o, t);
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function Un(e, t) {
     return 'c2' === e || '2' === e ? 2 : 'c1' === e || '1' === e ? 1 : t;
 }
 function Kn(e, t) {
+========
+function Gn(e, t) {
+    return 'c2' === e || '2' === e ? 2 : 'c1' === e || '1' === e ? 1 : t;
+}
+function Wn(e, t) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     return '1' === e || 'true' === e ? 'locked' : t;
 }
 function Qn(e, t) {
@@ -5636,8 +6434,13 @@ function li() {
             })(n, u)
         ));
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function ci() {
     const e = kn();
+========
+function pi() {
+    const e = qn();
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     (r('#adminRefreshStatus', e),
         r(
             '#adminSyncState',
@@ -5662,9 +6465,15 @@ async function ui(e = !1) {
             }),
                 lt());
         })(),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         await nn(),
         R(b()),
         ai(b()),
+========
+        await rn(),
+        R(b()),
+        oi(b()),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         ue(),
         Oe(),
         li(),
@@ -5681,8 +6490,8 @@ async function ui(e = !1) {
 }
 function di() {
     (x(!1),
-        F(),
-        H(!1),
+        H(),
+        F(!1),
         O({
             tone: 'neutral',
             title: 'Proteccion activa',
@@ -5697,7 +6506,7 @@ async function pi(e) {
         n = t instanceof HTMLInputElement ? t.value : '',
         i = a instanceof HTMLInputElement ? a.value : '';
     try {
-        H(!0);
+        F(!0);
         const e = b();
         if (
             (O({
@@ -5720,7 +6529,11 @@ async function pi(e) {
                     }),
                     n = String(a.csrfToken || '');
                 return (
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     q(n),
+========
+                    S(n),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                     g((e) => ({
                         ...e,
                         auth: {
@@ -5757,7 +6570,11 @@ async function pi(e) {
                     );
                 const n = String(a.csrfToken || '');
                 return (
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     q(n),
+========
+                    S(n),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                     g((e) => ({
                         ...e,
                         auth: {
@@ -5792,9 +6609,15 @@ async function pi(e) {
             D(),
             P(),
             x(!1),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             F({ clearPassword: !0 }),
             await ui(!1),
             Mn({
+========
+            H({ clearPassword: !0 }),
+            await mi(!1),
+            Bn({
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 immediate: 'queue' === b().ui.activeSection,
                 reason: 'login',
             }),
@@ -5810,7 +6633,7 @@ async function pi(e) {
             j(b().auth.requires2FA ? '2fa' : 'password'),
             s(e?.message || 'No se pudo iniciar sesion', 'error'));
     } finally {
-        H(!1);
+        F(!1);
     }
 }
 async function mi(e, t) {
@@ -6126,7 +6949,7 @@ async function bi(e, a) {
                 await (async function () {
                     if (it()) return;
                     const e = nt(),
-                        t = await S('availability', {
+                        t = await q('availability', {
                             method: 'POST',
                             body: { availability: e },
                         }),
@@ -6217,9 +7040,15 @@ function hi(e) {
             );
     })(fi(e));
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 const yi = 'themeMode',
     vi = new Set(['light', 'dark', 'system']);
 function ki(e, { persist: t = !1 } = {}) {
+========
+const wi = 'themeMode',
+    Si = new Set(['light', 'dark', 'system']);
+function qi(e, { persist: t = !1 } = {}) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const a = (function (e) {
         const t = (function (e) {
             return 'light' === e || 'dark' === e
@@ -6238,8 +7067,13 @@ function ki(e, { persist: t = !1 } = {}) {
     (g((t) => ({ ...t, ui: { ...t.ui, themeMode: e, theme: a } })),
         t &&
             (function (e) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 const t = vi.has(e) ? e : 'system';
                 Pa(yi, t);
+========
+                const t = Si.has(e) ? e : 'system';
+                Oa(wi, t);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             })(e),
         Array.from(
             document.querySelectorAll('.admin-theme-btn[data-theme-mode]')
@@ -6327,8 +7161,13 @@ async function $i(e, t = {}) {
             (g((e) => ({ ...e, ui: { ...e.ui, activeSection: t } })),
                 I(t),
                 R(b()),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 hi(t),
                 Ai());
+========
+                ki(t),
+                Mi());
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         })(a),
         Mn({
             immediate: 'queue' === a,
@@ -6398,6 +7237,7 @@ const Bi = {
         (await $i('appointments'), pe('no_show'), me(''));
     },
     callbacks_pending: async () => {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         (await $i('callbacks'), Fe('pending'));
     },
     callbacks_contacted: async () => {
@@ -6405,6 +7245,15 @@ const Bi = {
     },
     callbacks_sla_urgent: async () => {
         (await $i('callbacks'), Fe('sla_urgent'));
+========
+        (await Li('callbacks'), He('pending'));
+    },
+    callbacks_contacted: async () => {
+        (await Li('callbacks'), He('contacted'));
+    },
+    callbacks_sla_urgent: async () => {
+        (await Li('callbacks'), He('sla_urgent'));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     },
     queue_sla_risk: async () => {
         (await $i('queue'), Ya('sla_risk'));
@@ -6429,7 +7278,11 @@ async function Pi(e) {
     const t = Bi[e];
     'function' == typeof t && (await t());
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 function Ii(e) {
+========
+function Fi(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     const t = String(e || '')
         .trim()
         .toLowerCase();
@@ -6447,13 +7300,17 @@ function Ii(e) {
                     : null
         : null;
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 async function xi(e, t) {
+========
+async function Hi(e, t) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     switch (e) {
         case 'callback-quick-filter':
-            return (Fe(String(t.dataset.filterValue || 'all')), !0);
+            return (He(String(t.dataset.filterValue || 'all')), !0);
         case 'clear-callback-filters':
             return (
-                He({
+                Fe({
                     filter: 'all',
                     sort: 'priority_desc',
                     search: '',
@@ -6464,8 +7321,13 @@ async function xi(e, t) {
         case 'callbacks-triage-next':
         case 'context-open-callbacks-next':
             return (
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 await $i('callbacks'),
                 Fe('pending'),
+========
+                await Li('callbacks'),
+                He('pending'),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 (function () {
                     const e = document.querySelector(
                         '#callbacksGrid .callback-card.pendiente button[data-action="mark-contacted"]'
@@ -6488,7 +7350,7 @@ async function xi(e, t) {
                 await (async function (e, t = 'whatsapp_draft') {
                     const a = Number(e || 0);
                     if (a <= 0) return null;
-                    const n = await S('lead-ai-request', {
+                    const n = await q('lead-ai-request', {
                         method: 'POST',
                         body: { callbackId: a, objective: t },
                     });
@@ -6537,7 +7399,7 @@ async function xi(e, t) {
         }
         case 'callbacks-bulk-select-visible':
             return (
-                He(
+                Fe(
                     {
                         selected: Array.from(
                             document.querySelectorAll(
@@ -6554,7 +7416,7 @@ async function xi(e, t) {
                 !0
             );
         case 'callbacks-bulk-clear':
-            return (He({ selected: [] }, { persist: !1 }), !0);
+            return (Fe({ selected: [] }, { persist: !1 }), !0);
         case 'callbacks-bulk-mark':
             return (
                 await (async function () {
@@ -6569,12 +7431,20 @@ async function xi(e, t) {
                 !0
             );
         case 'context-open-callbacks-pending':
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             return (await $i('callbacks'), Fe('pending'), !0);
+========
+            return (await Li('callbacks'), He('pending'), !0);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         default:
             return !1;
     }
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 async function Oi(e) {
+========
+async function ji(e) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     switch (e) {
         case 'context-open-appointments-transfer':
             return (await $i('appointments'), pe('pending_transfer'), !0);
@@ -6584,7 +7454,11 @@ async function Oi(e) {
             return !1;
     }
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 async function Hi(e, t) {
+========
+async function Ri(e, t) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     switch (e) {
         case 'queue-bulk-action':
             return (
@@ -6592,7 +7466,11 @@ async function Hi(e, t) {
                     const t = Qt(),
                         a = At(e);
                     if (t.length) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                         if (Ka.has(a)) {
+========
+                        if (Wa.has(a)) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                             const e = window.confirm(
                                 `${(function (e) {
                                     return 'no_show' === e
@@ -6655,9 +7533,15 @@ async function Fi(e, t) {
 async function ji(e) {
     switch (e) {
         case 'queue-sensitive-confirm':
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             return (await xn(), !0);
         case 'queue-sensitive-cancel':
             return (On(), !0);
+========
+            return (await Hn(), !0);
+        case 'queue-sensitive-cancel':
+            return (jn(), !0);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         default:
             return !1;
     }
@@ -6680,9 +7564,15 @@ async function Vi(e, t) {
                     const t = 2 === Number(e || 0) ? 2 : 1,
                         a = Gt(t);
                     a
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                         ? await In(a.id, 'liberar', t)
                         : Ea(`Sin ticket activo para liberar en C${t}`);
                 })(Ri(t)),
+========
+                        ? await Fn(a.id, 'liberar', t)
+                        : Da(`Sin ticket activo para liberar en C${t}`);
+                })(Ui(t)),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 !0
             );
         case 'queue-toggle-shortcuts':
@@ -6731,7 +7621,11 @@ async function Vi(e, t) {
             return !1;
     }
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 async function Ui(e, t) {
+========
+async function Gi(e, t) {
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     switch (e) {
         case 'queue-toggle-ticket-select':
             return (
@@ -6749,8 +7643,13 @@ async function Ui(e, t) {
             return (Da(), !0);
         case 'queue-ticket-action':
             return (
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 await In(
                     zi(t),
+========
+                await Fn(
+                    Ki(t),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                     (function (e, t = '') {
                         return String(e?.dataset?.queueAction || t);
                     })(t),
@@ -6759,7 +7658,11 @@ async function Ui(e, t) {
                 !0
             );
         case 'queue-reprint-ticket':
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             return (await Fn(zi(t)), !0);
+========
+            return (await zn(Ki(t)), !0);
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         case 'queue-clear-search':
             return (
                 (function () {
@@ -6773,8 +7676,13 @@ async function Ui(e, t) {
             return !1;
     }
 }
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
 async function Ki(e, t) {
     const a = [Vi, Ui, Hi, ji, Fi];
+========
+async function Wi(e, t) {
+    const a = [Qi, Gi, Ri, Vi, zi];
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
     for (const n of a) if (await n(e, t)) return !0;
     return !1;
 }
@@ -6784,7 +7692,11 @@ async function Qi(e, t) {
             return (t.closest('.toast')?.remove(), !0);
         case 'set-admin-theme':
             return (
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 ki(String(t.dataset.themeMode || 'system'), { persist: !0 }),
+========
+                qi(String(t.dataset.themeMode || 'system'), { persist: !0 }),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 !0
             );
         case 'toggle-sidebar-collapse':
@@ -6794,8 +7706,13 @@ async function Qi(e, t) {
         case 'run-admin-command': {
             const e = document.getElementById('adminQuickCommand');
             if (e instanceof HTMLInputElement) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 const t = Ii(e.value);
                 t && (await Pi(t), (e.value = ''), P());
+========
+                const t = Fi(e.value);
+                t && (await Oi(t), (e.value = ''), P());
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             }
             return !0;
         }
@@ -6809,7 +7726,11 @@ async function Qi(e, t) {
                     try {
                         await C('logout', { method: 'POST' });
                     } catch (e) {}
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     (q(''),
+========
+                    (S(''),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                         g((e) => ({
                             ...e,
                             auth: {
@@ -6833,7 +7754,7 @@ async function Qi(e, t) {
             return (
                 g((e) => ({ ...e, auth: { ...e.auth, requires2FA: !1 } })),
                 x(!1),
-                F(),
+                H(),
                 O({
                     tone: 'neutral',
                     title: 'Ingreso protegido',
@@ -6880,7 +7801,11 @@ async function Gi() {
                 e.preventDefault();
                 try {
                     await (async function (e, t) {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                         const a = [Qi, mi, xi, bi, Ki, Oi];
+========
+                        const a = [Ji, fi, Hi, hi, Wi, ji];
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                         for (const n of a) if (await n(e, t)) return !0;
                         return !1;
                     })(a, t);
@@ -6948,7 +7873,11 @@ async function Gi() {
             } catch (e) {}
             g((a) => ({
                 ...a,
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 callbacks: { ...a.callbacks, filter: we(e), sort: qe(t) },
+========
+                callbacks: { ...a.callbacks, filter: we(e), sort: Se(t) },
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             }));
         })(),
         (function () {
@@ -6988,6 +7917,7 @@ async function Gi() {
         (function () {
             const e = {
                     stationMode:
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                         'locked' === Ct(Ba(Ha, 'free')) ? 'locked' : 'free',
                     stationConsultorio: 2 === Number(Ba(Fa, '1')) ? 2 : 1,
                     oneTap: '1' === Ba(ja, '0'),
@@ -6997,13 +7927,30 @@ async function Gi() {
                 t = Ct(Oa('station')),
                 a = Ct(Oa('lock')),
                 n = Ct(Oa('one_tap'));
+========
+                        'locked' === Ct(xa(Ra, 'free')) ? 'locked' : 'free',
+                    stationConsultorio: 2 === Number(xa(za, '1')) ? 2 : 1,
+                    oneTap: '1' === xa(Va, '0'),
+                    helpOpen: '1' === xa(Ka, '0'),
+                    customCallKey: Fa(Ua, null),
+                },
+                t = Ct(ja('station')),
+                a = Ct(ja('lock')),
+                n = Ct(ja('one_tap'));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             (g((i) => ({
                 ...i,
                 queue: {
                     ...i.queue,
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     stationMode: Kn(a, e.stationMode),
                     stationConsultorio: Un(t, e.stationConsultorio),
                     oneTap: Qn(n, e.oneTap),
+========
+                    stationMode: Wn(a, e.stationMode),
+                    stationConsultorio: Gn(t, e.stationConsultorio),
+                    oneTap: Jn(n, e.oneTap),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                     helpOpen: e.helpOpen,
                     customCallKey:
                         e.customCallKey && 'object' == typeof e.customCallKey
@@ -7013,12 +7960,21 @@ async function Gi() {
             })),
                 Qa(b()));
         })(),
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
         ki(
             (function () {
                 const e = String(Ba(yi, 'system') || 'system')
                     .trim()
                     .toLowerCase();
                 return vi.has(e) ? e : 'system';
+========
+        qi(
+            (function () {
+                const e = String(xa(wi, 'system') || 'system')
+                    .trim()
+                    .toLowerCase();
+                return Si.has(e) ? e : 'system';
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
             })()
         ),
         di(),
@@ -7041,19 +7997,23 @@ async function Gi() {
             const n = document.getElementById('callbackFilter');
             n instanceof HTMLSelectElement &&
                 n.addEventListener('change', () => {
-                    Fe(n.value);
+                    He(n.value);
                 });
             const i = document.getElementById('callbackSort');
             i instanceof HTMLSelectElement &&
                 i.addEventListener('change', () => {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     He({ sort: qe(i.value), selected: [] });
+========
+                    Fe({ sort: Se(i.value), selected: [] });
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 });
             const o = document.getElementById('searchCallbacks');
             o instanceof HTMLInputElement &&
                 o.addEventListener('input', () => {
                     var e;
                     ((e = o.value),
-                        He({ search: String(e || ''), selected: [] }));
+                        Fe({ search: String(e || ''), selected: [] }));
                 });
             const s = document.getElementById('queueSearchInput');
             s instanceof HTMLInputElement &&
@@ -7068,8 +8028,13 @@ async function Gi() {
                 (l = r).addEventListener('keydown', async (e) => {
                     if ('Enter' !== e.key) return;
                     e.preventDefault();
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     const t = Ii(l.value);
                     t && (await Pi(t));
+========
+                    const t = Fi(l.value);
+                    t && (await Oi(t));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 });
         })(),
         (function () {
@@ -7126,7 +8091,11 @@ async function Gi() {
                     await $i(e, { force: !0 });
                 }),
                 window.addEventListener('storage', (e) => {
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                     'themeMode' === e.key && ki(String(e.newValue || 'system'));
+========
+                    'themeMode' === e.key && qi(String(e.newValue || 'system'));
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 }));
         })(),
         window.addEventListener('beforeunload', (e) => {
@@ -7144,9 +8113,15 @@ async function Gi() {
             toggleMenu: () => {
                 Si() ? Li() : Mi();
             },
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
             dismissQueueSensitiveDialog: Hn,
             toggleQueueHelp: () => jn(),
             queueNumpadAction: Vn,
+========
+            dismissQueueSensitiveDialog: Rn,
+            toggleQueueHelp: () => Vn(),
+            queueNumpadAction: Qn,
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
         }),
         window.addEventListener('keydown', (e) => {
             (function (e, t) {
@@ -7235,7 +8210,11 @@ async function Gi() {
                 t = !0 === e.authenticated,
                 a = t ? String(e.csrfToken || '') : '';
             return (
+<<<<<<<< HEAD:js/admin-chunks/index-50HaXfxI.js
                 q(a),
+========
+                S(a),
+>>>>>>>> 41d65406 (Archive legacy admin runtime and harden v3 rollout):js/admin-chunks/index-CzmgacXF.js
                 g((e) => ({
                     ...e,
                     auth: {

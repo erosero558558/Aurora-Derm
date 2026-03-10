@@ -1,5 +1,3 @@
-const LEGACY_VARIANT_QUERY_KEYS = ['admin_ui', 'admin_ui_reset'];
-const LEGACY_VARIANT_STORAGE_KEY = 'adminUiVariant';
 const ADMIN_LAST_SECTION_STORAGE_KEY = 'adminLastSection';
 const PREBOOT_SECTION_SHORTCUTS = new Map([
     ['digit1', 'dashboard'],
@@ -41,38 +39,6 @@ function setDocumentReadyState(ready) {
         'data-admin-ready',
         ready ? 'true' : 'false'
     );
-}
-
-function clearLegacyVariantStorage() {
-    try {
-        localStorage.removeItem(LEGACY_VARIANT_STORAGE_KEY);
-    } catch (_error) {
-        // no-op
-    }
-}
-
-function stripLegacyVariantParams() {
-    try {
-        const url = new URL(window.location.href);
-        let mutated = false;
-
-        LEGACY_VARIANT_QUERY_KEYS.forEach((key) => {
-            if (url.searchParams.has(key)) {
-                url.searchParams.delete(key);
-                mutated = true;
-            }
-        });
-
-        if (!mutated) {
-            return;
-        }
-
-        const search = url.searchParams.toString();
-        const nextUrl = `${url.pathname}${search ? `?${search}` : ''}${url.hash}`;
-        window.history.replaceState(null, '', nextUrl);
-    } catch (_error) {
-        // no-op
-    }
 }
 
 function isTypingTarget(target) {
@@ -185,8 +151,6 @@ async function loadSonyV3Variant() {
 (async function bootstrapAdmin() {
     setDocumentVariant();
     setDocumentReadyState(false);
-    clearLegacyVariantStorage();
-    stripLegacyVariantParams();
     const removePrebootShortcutCapture = installPrebootShortcutCapture();
 
     try {

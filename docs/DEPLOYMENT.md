@@ -62,6 +62,10 @@ Runbook validado para el servidor actual:
 - el bloqueo real fue `Permission denied` en `bin/deploy-public-v3-live.sh`
 - la recuperacion validada fue `chmod +x`, sync manual con `flock` y verificacion posterior del admin `sony_v3`
 
+Si se usa `npm run bundle:deploy`, el ZIP conserva los wrappers raiz junto con
+`scripts/ops/prod`, `scripts/ops/setup` y `bin/powershell` para mantener
+operativos los scripts PowerShell incluidos fuera del repo.
+
 ## 3. Feature Flags (Banderas de Funcionalidad)
 
 Para mitigar riesgos, las nuevas funcionalidades deben ocultarse tras **Feature Flags** (`lib/features.php`) antes de fusionarse a `main`.
@@ -92,7 +96,8 @@ El sistema soporta despliegues porcentuales para probar con un subconjunto de us
 El admin ya no usa feature flags para resolver UI runtime.
 `admin.html` arranca siempre en `sony_v3`.
 Runbook operativo: `docs/ADMIN-UI-ROLLOUT.md`.
-Gate operativo: `GATE-ADMIN-ROLLOUT.ps1`.
+Gate operativo: `GATE-ADMIN-ROLLOUT.ps1` (implementacion canonica:
+`scripts/ops/admin/GATE-ADMIN-ROLLOUT.ps1`).
 La validacion activa usa `tests/admin-ui-runtime-smoke.spec.js` y `tests/admin-v3-canary-runtime.spec.js` como contrato estable de V3-only.
 
 ## 4. Procedimiento de Rollback
@@ -125,6 +130,8 @@ Despu√©s de cada despliegue, es **obligatorio** ejecutar las validaciones autom√
 .\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com"
 ```
 
+Implementacion canonica: `scripts/ops/prod/GATE-POSTDEPLOY.ps1`.
+
 **Linux/Mac (PHP):**
 
 ```bash
@@ -141,7 +148,8 @@ php bin/verify-gate.php
 6.  [ ] El formulario de contacto/reserva se abre correctamente.
 7.  [ ] `admin.html` arranca en `sony_v3` aunque reciba params legacy (`admin_ui`, `admin_ui_reset`).
 8.  [ ] `GATE-ADMIN-ROLLOUT.ps1` valida shell `sony_v3`, ausencia de CSS legacy y runtime smoke V3-only.
+        Implementacion canonica: `scripts/ops/admin/GATE-ADMIN-ROLLOUT.ps1`.
 9.  [ ] Chunks admin sin residuos:
     - `npm run chunks:admin:prune` (incluido en `npm run build`)
-    - opcional: `node bin/clean-admin-chunks.js --dry-run`
+    - opcional: `npm run chunks:admin:check`
 10. [ ] No hay errores de consola (F12) rojos.

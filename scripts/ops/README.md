@@ -9,5 +9,5 @@ Subcarpetas:
 - `prod/`: verificaciones, smoke, monitoreo y reportes de produccion.
 - `setup/`: scripts de configuracion puntual para integraciones operativas.
 
-Los `.ps1` de la raiz se mantienen como wrappers compatibles para no romper
+Los archivos de raiz se mantienen como wrappers compatibles para no romper
 `package.json`, workflows ni runbooks existentes.

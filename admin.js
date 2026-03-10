@@ -1,5 +1,4 @@
-const t = ['admin_ui', 'admin_ui_reset'],
-    e = new Map([
+const t = new Map([
         ['digit1', 'dashboard'],
         ['digit2', 'appointments'],
         ['digit3', 'callbacks'],
@@ -19,7 +18,7 @@ const t = ['admin_ui', 'admin_ui_reset'],
         ['5', 'availability'],
         ['6', 'queue'],
     ]),
-    n = Object.freeze({
+    e = Object.freeze({
         '!': 'digit1',
         '@': 'digit2',
         '#': 'digit3',
@@ -29,78 +28,55 @@ const t = ['admin_ui', 'admin_ui_reset'],
         '"': 'digit2',
         '&': 'digit6',
     });
-function a(t) {
+function n(t) {
     document.documentElement.setAttribute(
         'data-admin-ready',
         t ? 'true' : 'false'
     );
 }
 !(async function () {
-    (document.documentElement.setAttribute('data-admin-ui', 'sony_v3'),
-        a(!1),
-        (function () {
-            try {
-                localStorage.removeItem('adminUiVariant');
-            } catch (t) {}
-        })(),
-        (function () {
-            try {
-                const e = new URL(window.location.href);
-                let n = !1;
-                if (
-                    (t.forEach((t) => {
-                        e.searchParams.has(t) &&
-                            (e.searchParams.delete(t), (n = !0));
-                    }),
-                    !n)
-                )
-                    return;
-                const a = e.searchParams.toString(),
-                    i = `${e.pathname}${a ? `?${a}` : ''}${e.hash}`;
-                window.history.replaceState(null, '', i);
-            } catch (t) {}
-        })());
+    (document.documentElement.setAttribute('data-admin-ui', 'sony_v3'), n(!1));
     const i = (function () {
-        const t = (t) => {
+        const n = (n) => {
             if (
                 'true' ===
                 document.documentElement.getAttribute('data-admin-ready')
             )
                 return;
             if (
-                (a = t.target) instanceof HTMLElement &&
-                (a.isContentEditable ||
+                (i = n.target) instanceof HTMLElement &&
+                (i.isContentEditable ||
                     Boolean(
-                        a.closest(
+                        i.closest(
                             'input, textarea, select, [contenteditable="true"]'
                         )
                     ))
             )
                 return;
-            var a;
-            const i = (function (t) {
-                if (!t.altKey || !t.shiftKey || t.ctrlKey || t.metaKey)
+            var i;
+            const a = (function (n) {
+                if (!n.altKey || !n.shiftKey || n.ctrlKey || n.metaKey)
                     return '';
-                const a = String(t.key || '').toLowerCase(),
-                    i = String(t.code || '').toLowerCase(),
+                const i = String(n.key || '').toLowerCase(),
+                    a = String(n.code || '').toLowerCase(),
                     o = [];
-                (i && o.push(i), a && o.push(a));
-                const c = n[a];
+                (a && o.push(a), i && o.push(i));
+                const c = e[i];
                 c && o.push(c);
-                for (const t of o) {
-                    const n = e.get(t);
+                for (const e of o) {
+                    const n = t.get(e);
                     if (n) return n;
                 }
                 return '';
-            })(t);
-            i &&
-                (t.preventDefault(),
+            })(n);
+            a &&
+                (n.preventDefault(),
                 (function (t) {
                     if (t)
                         try {
                             localStorage.setItem('adminLastSection', t);
                         } catch (t) {}
-                })(i),
+                })(a),
                 (function (t) {
                     if (t)
                         try {
@@ -112,11 +88,11 @@ function a(t) {
                                     `${e.pathname}${e.search}${e.hash}`
                                 ));
                         } catch (t) {}
-                })(i));
+                })(a));
         };
         return (
-            window.addEventListener('keydown', t, !0),
-            () => window.removeEventListener('keydown', t, !0)
+            window.addEventListener('keydown', n, !0),
+            () => window.removeEventListener('keydown', n, !0)
         );
     })();
     try {
@@ -134,9 +110,9 @@ function a(t) {
                     : await n();
             })(t);
         })(),
-            a(!0));
+            n(!0));
     } catch (t) {
-        throw (a(!1), t);
+        throw (n(!1), t);
     } finally {
         i();
     }

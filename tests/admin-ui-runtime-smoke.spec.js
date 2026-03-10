@@ -2,7 +2,12 @@
 const { test, expect } = require('@playwright/test');
 const { skipIfPhpRuntimeMissing } = require('./helpers/php-backend');
 
-async function expectSonyV3Runtime(page, expectedPathname = '/admin.html') {
+async function expectSonyV3Runtime(
+    page,
+    expectedPathname = '/admin.html',
+    expectedSearch = '',
+    expectedVariant = 'legacy'
+) {
     await expect(page.locator('html')).toHaveAttribute(
         'data-admin-ui',
         'sony_v3'
@@ -24,13 +29,13 @@ async function expectSonyV3Runtime(page, expectedPathname = '/admin.html') {
         )
         .toEqual({
             pathname: expectedPathname,
-            search: '',
-            staleVariant: null,
+            search: expectedSearch,
+            staleVariant: expectedVariant,
         });
 }
 
 test.describe('Admin UI runtime smoke', () => {
-    test('siempre arranca en sony_v3 y limpia parametros legacy', async ({
+    test('siempre arranca en sony_v3 y deja compatibilidad legacy como ruido inerte', async ({
         page,
         request,
     }) => {
@@ -50,7 +55,9 @@ test.describe('Admin UI runtime smoke', () => {
 
         for (const url of legacyUrls) {
             await page.goto(url);
-            await expectSonyV3Runtime(page);
+            const expectedSearch = new URL(url, 'https://pielarmonia.test')
+                .search;
+            await expectSonyV3Runtime(page, '/admin.html', expectedSearch);
         }
     });
 

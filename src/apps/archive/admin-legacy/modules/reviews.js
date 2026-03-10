@@ -2,12 +2,19 @@ import { currentReviews } from './state.js';
 import { escapeHtml } from './ui.js';
 
 export function loadReviews() {
-    const avgRating = currentReviews.length > 0
-        ? (currentReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / currentReviews.length).toFixed(1)
-        : '0.0';
+    const avgRating =
+        currentReviews.length > 0
+            ? (
+                  currentReviews.reduce(
+                      (sum, r) => sum + (Number(r.rating) || 0),
+                      0
+                  ) / currentReviews.length
+              ).toFixed(1)
+            : '0.0';
 
     document.getElementById('adminAvgRating').textContent = avgRating;
-    document.getElementById('totalReviewsCount').textContent = `${currentReviews.length} reseñas`;
+    document.getElementById('totalReviewsCount').textContent =
+        `${currentReviews.length} reseñas`;
 
     const starsContainer = document.getElementById('adminRatingStars');
     const fullStars = Math.floor(Number(avgRating));
@@ -20,14 +27,18 @@ export function loadReviews() {
 
     const grid = document.getElementById('reviewsGrid');
     if (currentReviews.length === 0) {
-        grid.innerHTML = '<p class="empty-message">No hay reseñas registradas</p>';
+        grid.innerHTML =
+            '<p class="empty-message">No hay reseñas registradas</p>';
         return;
     }
 
     grid.innerHTML = currentReviews
         .slice()
-        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-        .map(r => `
+        .sort((a, b) =>
+            String(b.date || '').localeCompare(String(a.date || ''))
+        )
+        .map(
+            (r) => `
             <div class="review-card-admin">
                 <div class="review-header-admin">
                     <strong>${escapeHtml(r.name || 'Paciente')}</strong>
@@ -37,5 +48,7 @@ export function loadReviews() {
                 <p>${escapeHtml(r.text || '')}</p>
                 <small>${escapeHtml(new Date(r.date).toLocaleDateString('es-EC'))}</small>
             </div>
-        `).join('');
+        `
+        )
+        .join('');
 }

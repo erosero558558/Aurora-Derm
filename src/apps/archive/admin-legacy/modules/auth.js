@@ -30,13 +30,13 @@ export async function logout() {
 export async function login(password) {
     return authRequest('login', {
         method: 'POST',
-        body: { password }
+        body: { password },
     });
 }
 
 export async function login2FA(code) {
     return authRequest('login-2fa', {
         method: 'POST',
-        body: { code }
+        body: { code },
     });
 }

@@ -48,8 +48,8 @@ Comandos:
 - `npm run gate:admin:rollout`
 - `npm run test:admin:runtime-smoke`
 - `npm run test:frontend:qa:admin`
+- `npm run chunks:admin:check`
 - `npm run chunks:admin:prune`
-- `node bin/clean-admin-chunks.js --dry-run`
 
 Notas:
 
@@ -79,12 +79,14 @@ Comandos:
 - `npm run gate:prod:strict`
 - `npm run nightly:stability`
 - `npm run monitor:prod`
+- `npm run report:weekly:prod`
 
 Implementacion canonica:
 
-- `scripts/ops/**`
+- `scripts/ops/prod/**`
+- `scripts/ops/setup/**`
+- `bin/powershell/**`
 - Los `.ps1` de raiz siguen existiendo como wrappers compatibles.
-- `npm run report:weekly:prod`
 
 ### 5. Operar LeadOps interno con OpenClaw
 
@@ -140,7 +142,7 @@ Para mutaciones del board, seguir `AGENTS.md` y usar `--expect-rev`.
 
 ### Troubleshooting admin bundles
 
+- `npm run chunks:admin:check`
 - `npm run chunks:admin:prune`
-- `node bin/clean-admin-chunks.js --dry-run`
 
 Si `admin.html` y `admin.js` quedan desalineados, revisar `docs/ADMIN-UI-ROLLOUT.md`.
