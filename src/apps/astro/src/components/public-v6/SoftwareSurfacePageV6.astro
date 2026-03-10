@@ -32,6 +32,44 @@ const stepItems = Array.isArray(steps.items) ? steps.items : [];
 const advantageCards = Array.isArray(advantages.cards) ? advantages.cards : [];
 const connectionItems = Array.isArray(connections.items) ? connections.items : [];
 const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
+const suiteRouteMeta =
+    locale === 'en'
+        ? {
+              software: {
+                  eyebrow: 'Core suite',
+                  deck: 'See the full operating stack connected together.',
+              },
+              demo: {
+                  eyebrow: 'Patient entry',
+                  deck: 'Arrival confirmation before the front desk.',
+              },
+              status: {
+                  eyebrow: 'Patient visibility',
+                  deck: 'Private progress after check-in.',
+              },
+              dashboard: {
+                  eyebrow: 'Management',
+                  deck: 'KPIs for wait time, no-show, and site load.',
+              },
+          }
+        : {
+              software: {
+                  eyebrow: 'Suite base',
+                  deck: 'Ver toda la operacion conectada en una sola lectura.',
+              },
+              demo: {
+                  eyebrow: 'Entrada paciente',
+                  deck: 'Confirmacion de llegada antes del mostrador.',
+              },
+              status: {
+                  eyebrow: 'Visibilidad paciente',
+                  deck: 'Progreso privado despues del check-in.',
+              },
+              dashboard: {
+                  eyebrow: 'Gerencia',
+                  deck: 'KPIs de espera, no-show y carga por sede.',
+              },
+          };
 
 const hasShowcase = Boolean(mockup.title || mockup.rows?.length || mockup.chips?.length);
 const hasSteps = Boolean(steps.title && stepItems.length);
@@ -57,6 +95,43 @@ const menuItems = sectionDefs.map((item) => ({
     label: item.label,
     href: `#${item.id}`,
 }));
+const normalizeText = (value) =>
+    typeof value === 'string' && value.trim().length ? value.trim() : '';
+const normalizeHref = (value) => {
+    const raw = normalizeText(value);
+    return raw && raw !== '#' ? raw : '';
+};
+const normalizePath = (value) => {
+    const raw = normalizeHref(value);
+    if (!raw) return '';
+    return raw.endsWith('/') ? raw : `${raw}/`;
+};
+const currentPath = normalizePath(breadcrumb.at(-1)?.href);
+const suiteMapItems = Array.isArray(navModel?.header?.links)
+    ? navModel.header.links
+          .map((item, index) => {
+              const id = normalizeText(item?.id);
+              const href = normalizeHref(item?.href);
+              const label = normalizeText(item?.label);
+              if (
+                  !['software', 'demo', 'status', 'dashboard'].includes(id) ||
+                  !href ||
+                  !label
+              ) {
+                  return null;
+              }
+              const meta = suiteRouteMeta[id] || {};
+              return {
+                  href,
+                  label,
+                  eyebrow: normalizeText(meta.eyebrow),
+                  deck: normalizeText(meta.deck),
+                  index: String(index + 1).padStart(2, '0'),
+                  isActive: normalizePath(href) === currentPath,
+              };
+          })
+          .filter(Boolean)
+    : [];
 
 const actionClass = (variant = 'secondary') => [
     'v6-suite-action',
@@ -113,6 +188,30 @@ const actionClass = (variant = 'secondary') => [
         }
     </div>
 </section>
+
+{
+    suiteMapItems.length ? (
+        <section class="v6-suite-map-band is-surface" data-v6-suite-map="surface">
+            <div class="v6-suite-shell">
+                <div class="v6-suite-map">
+                    {suiteMapItems.map((item) => (
+                        <a
+                            class:list={['v6-suite-map__item', item.isActive && 'is-active']}
+                            href={item.href}
+                            data-v6-suite-map-link
+                            aria-current={item.isActive ? 'page' : undefined}
+                        >
+                            <span class="v6-suite-map__index">{item.index}</span>
+                            {item.eyebrow ? <p>{item.eyebrow}</p> : null}
+                            <strong>{item.label}</strong>
+                            {item.deck ? <span>{item.deck}</span> : null}
+                        </a>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
 
 <div class="v6-suite-shell v6-suite-surface-shell">
     {

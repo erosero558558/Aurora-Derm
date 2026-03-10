@@ -32,6 +32,12 @@ test.describe('Public V6 software suite', () => {
 
         await expect(page.locator('[data-v6-page-head]').first()).toBeVisible();
         await expect(
+            page.locator('[data-v6-suite-map="landing"] [data-v6-suite-map-link]')
+        ).toHaveCount(4);
+        await expect(
+            page.locator('[data-v6-suite-map="landing"] [aria-current="page"]').first()
+        ).toHaveAttribute('href', '/es/software/turnero-clinicas/');
+        await expect(
             page.locator('.v6-suite-hero .v6-suite-actions a')
         ).toHaveCount(4);
         await expect(
@@ -54,6 +60,12 @@ test.describe('Public V6 software suite', () => {
         await gotoPublicRoute(page, '/en/software/clinic-flow-suite/queue-status/');
 
         await expect(page.locator('[data-v6-page-head]').first()).toBeVisible();
+        await expect(
+            page.locator('[data-v6-suite-map="surface"] [data-v6-suite-map-link]')
+        ).toHaveCount(4);
+        await expect(
+            page.locator('[data-v6-suite-map="surface"] [aria-current="page"]').first()
+        ).toHaveAttribute('href', '/en/software/clinic-flow-suite/queue-status/');
         await expect(
             page.locator('[data-v6-section-nav="software-surface"] [data-v6-section-link]')
         ).toHaveCount(5);
@@ -186,5 +198,26 @@ test.describe('Public V6 software suite', () => {
             .first();
         await expect(result).toBeVisible();
         await expect(result).toContainText(/dashboard/i);
+    });
+
+    test('software suite map navigates between sibling surfaces and updates active state', async ({
+        page,
+    }) => {
+        await gotoPublicRoute(page, '/es/software/turnero-clinicas/demo/');
+
+        const suiteMap = page.locator('[data-v6-suite-map="surface"]').first();
+        const dashboardLink = suiteMap.locator(
+            '[data-v6-suite-map-link][href="/es/software/turnero-clinicas/dashboard/"]'
+        );
+
+        await expect(
+            suiteMap.locator('[data-v6-suite-map-link][aria-current="page"]').first()
+        ).toHaveAttribute('href', '/es/software/turnero-clinicas/demo/');
+
+        await dashboardLink.click();
+        await expect(page).toHaveURL(/\/es\/software\/turnero-clinicas\/dashboard\/$/);
+        await expect(
+            suiteMap.locator('[data-v6-suite-map-link][aria-current="page"]').first()
+        ).toHaveAttribute('href', '/es/software/turnero-clinicas/dashboard/');
     });
 });

@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 464
+  revision: 466
   updated_at: 2026-03-10
 
 tasks:
@@ -6809,5 +6809,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-171.md"
     depends_on: []
     prompt: "Refine software V6 rail and geometry contracts"
+    created_at: 2026-03-10
+    updated_at: 2026-03-10
+
+  - id: AG-172
+    title: "Connect software V6 surfaces with suite map"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-10T16:02:16.239Z"
+    risk: low
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/components/public-v6/SoftwareMockupV6.astro", "src/apps/astro/src/styles/public-v6/components.css"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-10T16:02:16.239Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Connect software V6 surfaces with suite map"
+    acceptance_ref: "verification/agent-runs/AG-172.md"
+    evidence_ref: "verification/agent-runs/AG-172.md"
+    depends_on: []
+    prompt: "Connect software V6 surfaces with suite map"
     created_at: 2026-03-10
     updated_at: 2026-03-10
