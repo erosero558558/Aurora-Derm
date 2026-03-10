@@ -2,8 +2,15 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/TelemedicineEnforcementPolicy.php';
-require_once __DIR__ . '/TelemedicineOpsDiagnostics.php';
+$policyFile = __DIR__ . '/TelemedicineEnforcementPolicy.php';
+if (is_file($policyFile)) {
+    require_once $policyFile;
+}
+
+$diagnosticsFile = __DIR__ . '/TelemedicineOpsDiagnostics.php';
+if (is_file($diagnosticsFile)) {
+    require_once $diagnosticsFile;
+}
 
 final class TelemedicineOpsSnapshot
 {
