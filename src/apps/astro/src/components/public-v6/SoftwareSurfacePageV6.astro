@@ -32,6 +32,27 @@ const stepItems = Array.isArray(steps.items) ? steps.items : [];
 const advantageCards = Array.isArray(advantages.cards) ? advantages.cards : [];
 const connectionItems = Array.isArray(connections.items) ? connections.items : [];
 const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
+const suiteStory =
+    page?.suiteStory && typeof page.suiteStory === 'object' ? page.suiteStory : {};
+const suiteStoryCurrent =
+    suiteStory?.current && typeof suiteStory.current === 'object'
+        ? suiteStory.current
+        : null;
+const suiteStoryPrevious =
+    suiteStory?.previous && typeof suiteStory.previous === 'object'
+        ? suiteStory.previous
+        : null;
+const suiteStoryNext =
+    suiteStory?.next && typeof suiteStory.next === 'object' ? suiteStory.next : null;
+const suiteStoryLabels =
+    suiteStory?.labels && typeof suiteStory.labels === 'object'
+        ? suiteStory.labels
+        : {};
+const hasSuiteStory = Boolean(
+    suiteStoryCurrent &&
+        suiteStoryCurrent.label &&
+        (suiteStoryCurrent.deck || suiteStoryPrevious?.href || suiteStoryNext?.href)
+);
 
 const hasShowcase = Boolean(mockup.title || mockup.rows?.length || mockup.chips?.length);
 const hasSteps = Boolean(steps.title && stepItems.length);
@@ -167,6 +188,54 @@ const actionClass = (variant = 'secondary') => [
                             {item.deck ? <span>{item.deck}</span> : null}
                         </a>
                     ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasSuiteStory ? (
+        <section class="v6-suite-progress-band is-surface" data-v6-suite-progress="surface">
+            <div class="v6-suite-shell">
+                <div
+                    class:list={[
+                        'v6-suite-progress',
+                        suiteStoryPrevious && 'has-previous',
+                        suiteStoryNext && 'has-next',
+                    ]}
+                >
+                    {
+                        suiteStoryPrevious ? (
+                            <a class="v6-suite-progress__nav is-previous" href={suiteStoryPrevious.href}>
+                                {suiteStoryLabels.previous ? <p>{suiteStoryLabels.previous}</p> : null}
+                                <strong>{suiteStoryPrevious.label}</strong>
+                                {suiteStoryPrevious.deck ? <span>{suiteStoryPrevious.deck}</span> : null}
+                            </a>
+                        ) : null
+                    }
+
+                    <article class="v6-suite-progress__current">
+                        {suiteStoryLabels.progress ? (
+                            <p class="v6-suite-progress__eyebrow">{suiteStoryLabels.progress}</p>
+                        ) : null}
+                        <div class="v6-suite-progress__stage">
+                            <strong>{String(suiteStory.currentIndex || 1).padStart(2, '0')}</strong>
+                            <span>/ {String(suiteStory.total || 0).padStart(2, '0')}</span>
+                        </div>
+                        <h2>{suiteStoryCurrent.label}</h2>
+                        {suiteStoryCurrent.deck ? <span>{suiteStoryCurrent.deck}</span> : null}
+                    </article>
+
+                    {
+                        suiteStoryNext ? (
+                            <a class="v6-suite-progress__nav is-next" href={suiteStoryNext.href}>
+                                {suiteStoryLabels.next ? <p>{suiteStoryLabels.next}</p> : null}
+                                <strong>{suiteStoryNext.label}</strong>
+                                {suiteStoryNext.deck ? <span>{suiteStoryNext.deck}</span> : null}
+                            </a>
+                        ) : null
+                    }
                 </div>
             </div>
         </section>

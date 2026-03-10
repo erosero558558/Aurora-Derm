@@ -58,6 +58,19 @@ const SOFTWARE_PAGE_KEY_BY_NAV_ID = {
     dashboard: 'dashboard',
 };
 
+const SOFTWARE_STORY_LABELS = {
+    es: {
+        progress: 'Recorrido de la suite',
+        previous: 'Paso anterior',
+        next: 'Siguiente paso',
+    },
+    en: {
+        progress: 'Suite progression',
+        previous: 'Previous step',
+        next: 'Next step',
+    },
+};
+
 function hasText(value) {
     return typeof value === 'string' && value.trim().length > 0;
 }
@@ -705,6 +718,30 @@ function buildSoftwareSuiteRoutes(locale, nav = {}, pages = {}) {
     }).filter(Boolean);
 }
 
+function buildSoftwareSuiteStory(locale, pageKey = 'landing', suiteRoutes = []) {
+    const safeLocale = normalizeLocale(locale);
+    const safePageKey = normalizeSoftwarePageKey(pageKey);
+    const labels = SOFTWARE_STORY_LABELS[safeLocale];
+    const currentIndex = suiteRoutes.findIndex(
+        (route) => route.pageKey === safePageKey
+    );
+    const current = currentIndex >= 0 ? suiteRoutes[currentIndex] : null;
+    const previous = currentIndex > 0 ? suiteRoutes[currentIndex - 1] : null;
+    const next =
+        currentIndex >= 0 && currentIndex < suiteRoutes.length - 1
+            ? suiteRoutes[currentIndex + 1]
+            : null;
+
+    return {
+        labels,
+        total: suiteRoutes.length,
+        currentIndex: currentIndex >= 0 ? currentIndex + 1 : 0,
+        current,
+        previous,
+        next,
+    };
+}
+
 function sanitizeSoftwareHero(hero) {
     const source = isObject(hero) ? hero : {};
     return {
@@ -871,6 +908,7 @@ function finalizeSoftwareLandingPage(locale, page = {}, suiteRoutes = []) {
         suiteRoute:
             suiteRoutes.find((route) => route.pageKey === 'landing') || null,
         suiteMap: suiteRoutes,
+        suiteStory: buildSoftwareSuiteStory(locale, 'landing', suiteRoutes),
         surfaces: {
             ...(isObject(page?.surfaces) ? page.surfaces : {}),
             cards: surfaceCards,
@@ -878,7 +916,12 @@ function finalizeSoftwareLandingPage(locale, page = {}, suiteRoutes = []) {
     };
 }
 
-function finalizeSoftwareSurfacePage(page = {}, pageKey = 'landing', suiteRoutes = []) {
+function finalizeSoftwareSurfacePage(
+    locale,
+    page = {},
+    pageKey = 'landing',
+    suiteRoutes = []
+) {
     const safePageKey = normalizeSoftwarePageKey(pageKey);
     return {
         ...page,
@@ -886,6 +929,7 @@ function finalizeSoftwareSurfacePage(page = {}, pageKey = 'landing', suiteRoutes
         suiteRoute:
             suiteRoutes.find((route) => route.pageKey === safePageKey) || null,
         suiteMap: suiteRoutes,
+        suiteStory: buildSoftwareSuiteStory(locale, safePageKey, suiteRoutes),
     };
 }
 
@@ -915,16 +959,19 @@ function sanitizeSoftwareData(locale, payload) {
                 suiteRoutes
             ),
             demo: finalizeSoftwareSurfacePage(
+                locale,
                 sanitizedPages.demo,
                 'demo',
                 suiteRoutes
             ),
             status: finalizeSoftwareSurfacePage(
+                locale,
                 sanitizedPages.status,
                 'status',
                 suiteRoutes
             ),
             dashboard: finalizeSoftwareSurfacePage(
+                locale,
                 sanitizedPages.dashboard,
                 'dashboard',
                 suiteRoutes

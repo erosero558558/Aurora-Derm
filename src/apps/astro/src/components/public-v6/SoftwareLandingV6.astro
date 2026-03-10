@@ -43,6 +43,23 @@ const pricingPlans = Array.isArray(pricing.plans) ? pricing.plans : [];
 const securityCards = Array.isArray(security.cards) ? security.cards : [];
 const faqItems = Array.isArray(faq.items) ? faq.items : [];
 const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
+const suiteStory =
+    page?.suiteStory && typeof page.suiteStory === 'object' ? page.suiteStory : {};
+const suiteStoryCurrent =
+    suiteStory?.current && typeof suiteStory.current === 'object'
+        ? suiteStory.current
+        : null;
+const suiteStoryNext =
+    suiteStory?.next && typeof suiteStory.next === 'object' ? suiteStory.next : null;
+const suiteStoryLabels =
+    suiteStory?.labels && typeof suiteStory.labels === 'object'
+        ? suiteStory.labels
+        : {};
+const hasSuiteStory = Boolean(
+    suiteStoryCurrent &&
+        suiteStoryCurrent.label &&
+        (suiteStoryCurrent.deck || suiteStoryNext?.href)
+);
 
 const hasModules = Boolean(modules.title && moduleCards.length);
 const hasJourneys = Boolean(journeys.title && journeyLanes.length);
@@ -204,6 +221,43 @@ const actionClass = (variant = 'secondary') => [
                             {item.deck ? <span>{item.deck}</span> : null}
                         </a>
                     ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasSuiteStory ? (
+        <section class="v6-suite-progress-band" data-v6-suite-progress="landing">
+            <div class="v6-suite-shell">
+                <div
+                    class:list={[
+                        'v6-suite-progress',
+                        suiteStoryNext && 'has-next',
+                    ]}
+                >
+                    <article class="v6-suite-progress__current">
+                        {suiteStoryLabels.progress ? (
+                            <p class="v6-suite-progress__eyebrow">{suiteStoryLabels.progress}</p>
+                        ) : null}
+                        <div class="v6-suite-progress__stage">
+                            <strong>{String(suiteStory.currentIndex || 1).padStart(2, '0')}</strong>
+                            <span>/ {String(suiteStory.total || 0).padStart(2, '0')}</span>
+                        </div>
+                        <h2>{suiteStoryCurrent.label}</h2>
+                        {suiteStoryCurrent.deck ? <span>{suiteStoryCurrent.deck}</span> : null}
+                    </article>
+
+                    {
+                        suiteStoryNext ? (
+                            <a class="v6-suite-progress__nav is-next" href={suiteStoryNext.href}>
+                                {suiteStoryLabels.next ? <p>{suiteStoryLabels.next}</p> : null}
+                                <strong>{suiteStoryNext.label}</strong>
+                                {suiteStoryNext.deck ? <span>{suiteStoryNext.deck}</span> : null}
+                            </a>
+                        ) : null
+                    }
                 </div>
             </div>
         </section>
