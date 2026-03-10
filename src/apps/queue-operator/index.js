@@ -1,5 +1,6 @@
 import { getState, subscribe, updateState } from '../admin-v3/shared/core/store.js';
 import { hasFocusedInput, setText, createToast } from '../admin-v3/shared/ui/render.js';
+import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
 import {
     checkAuthStatus,
     loginWith2FA,
@@ -26,8 +27,10 @@ import {
 } from '../admin-v3/core/boot/listeners/action-groups/queue.js';
 
 const QUEUE_REFRESH_MS = 8000;
+const OPERATOR_HEARTBEAT_MS = 15000;
 
 let refreshIntervalId = 0;
+let operatorHeartbeat = null;
 const operatorRuntime = {
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
     numpadSeen: false,
@@ -37,6 +40,82 @@ const operatorRuntime = {
 
 function getById(id) {
     return document.getElementById(id);
+}
+
+function resolveOperatorAppMode() {
+    return typeof window.turneroDesktop === 'object' &&
+        window.turneroDesktop !== null &&
+        typeof window.turneroDesktop.openSettings === 'function'
+        ? 'desktop'
+        : 'web';
+}
+
+function resolveOperatorInstance() {
+    const state = getState();
+    if (state.queue.stationMode === 'locked') {
+        return Number(state.queue.stationConsultorio || 1) === 2 ? 'c2' : 'c1';
+    }
+    return 'free';
+}
+
+function buildOperatorHeartbeatPayload() {
+    const state = getState();
+    const stationNumber = Number(state.queue.stationConsultorio || 1) === 2 ? 2 : 1;
+    const stationKey = `c${stationNumber}`;
+    const locked = state.queue.stationMode === 'locked';
+    const stationLabel = locked ? `Operador C${stationNumber} fijo` : 'Operador modo libre';
+    const readyForLiveUse = operatorRuntime.online && operatorRuntime.numpadSeen;
+    const status = !operatorRuntime.online
+        ? 'alert'
+        : readyForLiveUse
+          ? 'ready'
+          : 'warning';
+    const summary = !operatorRuntime.online
+        ? 'Equipo sin red; recupera conectividad antes de operar.'
+        : readyForLiveUse
+          ? `Equipo listo para operar en ${locked ? `C${stationNumber} fijo` : 'modo libre'}.`
+          : 'Falta validar el numpad antes del primer llamado.';
+
+    return {
+        instance: resolveOperatorInstance(),
+        deviceLabel: stationLabel,
+        appMode: resolveOperatorAppMode(),
+        status,
+        summary,
+        networkOnline: operatorRuntime.online,
+        lastEvent: operatorRuntime.numpadSeen ? 'numpad_detected' : 'heartbeat',
+        lastEventAt: operatorRuntime.lastNumpadAt || new Date().toISOString(),
+        details: {
+            station: stationKey,
+            stationMode: locked ? 'locked' : 'free',
+            oneTap: Boolean(state.queue.oneTap),
+            numpadSeen: Boolean(operatorRuntime.numpadSeen),
+            lastNumpadCode: String(operatorRuntime.lastNumpadCode || ''),
+            shellMode: resolveOperatorAppMode(),
+        },
+    };
+}
+
+function ensureOperatorHeartbeat() {
+    if (operatorHeartbeat) {
+        return operatorHeartbeat;
+    }
+
+    operatorHeartbeat = createSurfaceHeartbeatClient({
+        surface: 'operator',
+        intervalMs: OPERATOR_HEARTBEAT_MS,
+        getPayload: buildOperatorHeartbeatPayload,
+    });
+    return operatorHeartbeat;
+}
+
+function syncOperatorHeartbeat(reason = 'state_change') {
+    if (!getState().auth.authenticated) {
+        operatorHeartbeat?.stop();
+        return;
+    }
+    const heartbeat = ensureOperatorHeartbeat();
+    heartbeat.notify(reason);
 }
 
 function setLoginStatus(state, title, message) {
@@ -194,6 +273,7 @@ function noteNumpadActivity(event) {
     operatorRuntime.numpadSeen = true;
     operatorRuntime.lastNumpadCode = code;
     operatorRuntime.lastNumpadAt = new Date().toISOString();
+    syncOperatorHeartbeat('numpad');
 }
 
 function updateOperatorActionGuide() {
@@ -267,6 +347,7 @@ function updateOperatorChrome() {
     renderQueueSection();
     updateOperatorActionGuide();
     updateOperatorReadiness();
+    syncOperatorHeartbeat('render');
 }
 
 function mountAuthenticatedView() {
@@ -297,6 +378,7 @@ async function bootAuthenticatedSurface(showToast = false) {
     mountAuthenticatedView();
     const ok = await refreshAdminData();
     await hydrateQueueFromData();
+    ensureOperatorHeartbeat().start({ immediate: false });
     updateOperatorChrome();
     startRefreshLoop();
     if (showToast) {
@@ -394,6 +476,7 @@ async function handleDocumentClick(event) {
     if (actionNode.id === 'operatorLogoutBtn') {
         event.preventDefault();
         stopRefreshLoop();
+        operatorHeartbeat?.stop();
         await logoutSession();
         mountLoggedOutView();
         resetLoginForm({ clearPassword: true });

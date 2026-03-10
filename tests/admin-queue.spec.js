@@ -3623,6 +3623,12 @@ test.describe('Admin turnero sala', () => {
     test('queue muestra hub de apps operativas con desktop y Android TV', async ({
         page,
     }) => {
+        let dataRequestCount = 0;
+
+        await page.addInitScript(() => {
+            window.__QUEUE_AUTO_REFRESH_INTERVAL_MS__ = 120;
+        });
+
         await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
             json(route, {
                 ok: true,
@@ -3642,6 +3648,7 @@ test.describe('Admin turnero sala', () => {
             }
 
             if (resource === 'data') {
+                dataRequestCount += 1;
                 return json(route, {
                     ok: true,
                     data: {
@@ -3672,6 +3679,74 @@ test.describe('Admin turnero sala', () => {
                             callingNow: [],
                             nextTickets: [],
                         }),
+                        queueSurfaceStatus: {
+                            operator: {
+                                surface: 'operator',
+                                label: 'Operador',
+                                status: 'ready',
+                                updatedAt: new Date().toISOString(),
+                                ageSec: dataRequestCount > 1 ? 3 : 8,
+                                stale: false,
+                                summary:
+                                    dataRequestCount > 1
+                                        ? 'Equipo listo para operar en C1 fijo. Pulso renovado.'
+                                        : 'Equipo listo para operar en C1 fijo.',
+                                latest: {
+                                    deviceLabel: 'Operador C1 fijo',
+                                    appMode: 'desktop',
+                                    ageSec: dataRequestCount > 1 ? 3 : 8,
+                                    details: {
+                                        station: 'c1',
+                                        stationMode: 'locked',
+                                        oneTap: false,
+                                        numpadSeen: true,
+                                    },
+                                },
+                                instances: [],
+                            },
+                            kiosk: {
+                                surface: 'kiosk',
+                                label: 'Kiosco',
+                                status: 'warning',
+                                updatedAt: new Date().toISOString(),
+                                ageSec: 18,
+                                stale: false,
+                                summary:
+                                    'Falta probar ticket térmico antes de abrir autoservicio.',
+                                latest: {
+                                    deviceLabel: 'Kiosco principal',
+                                    appMode: 'desktop',
+                                    ageSec: 18,
+                                    details: {
+                                        connection: 'live',
+                                        pendingOffline: 0,
+                                        printerPrinted: false,
+                                    },
+                                },
+                                instances: [],
+                            },
+                            display: {
+                                surface: 'display',
+                                label: 'Sala TV',
+                                status: 'ready',
+                                updatedAt: new Date().toISOString(),
+                                ageSec: 12,
+                                stale: false,
+                                summary:
+                                    'Sala TV lista: cola en vivo, audio activo y respaldo local disponible.',
+                                latest: {
+                                    deviceLabel: 'Sala TV TCL C655',
+                                    appMode: 'android_tv',
+                                    ageSec: 12,
+                                    details: {
+                                        connection: 'live',
+                                        bellMuted: false,
+                                        bellPrimed: true,
+                                    },
+                                },
+                                instances: [],
+                            },
+                        },
                     },
                 });
             }
@@ -3692,6 +3767,61 @@ test.describe('Admin turnero sala', () => {
 
         await page.locator('.nav-item[data-section="queue"]').click();
         await expect(page.locator('#queueAppsHub')).toBeVisible();
+        await expect(page.locator('#queueOpsPilot')).toBeVisible();
+        await expect(page.locator('#queueSurfaceTelemetry')).toBeVisible();
+        await expect(page.locator('#queueSurfaceTelemetryAutoState')).toContainText(
+            'Auto-refresh activo'
+        );
+        await expect(page.locator('#queueSurfaceTelemetryAutoMeta')).toContainText(
+            'ultimo ciclo'
+        );
+        await expect(page.locator('#queueOpsPilotTitle')).toContainText(
+            'Confirma 2 paso(s) ya validados'
+        );
+        await expect(page.locator('#queueOpsPilotChipSuggested')).toContainText(
+            'Sugeridos 2'
+        );
+        await expect(page.locator('#queueOpsPilotChipEquipment')).toContainText(
+            'Equipos listos 2/3'
+        );
+        await expect(page.locator('#queueOpeningChecklist')).toBeVisible();
+        await expect(page.locator('#queueContingencyDeck')).toBeVisible();
+        await expect(page.locator('#queueSurfaceTelemetryTitle')).toContainText(
+            'Equipos con señal parcial'
+        );
+        await expect(page.locator('#queueSurfaceTelemetry')).toContainText(
+            'Operador C1 fijo'
+        );
+        await expect(page.locator('#queueSurfaceTelemetry')).toContainText(
+            'Android TV'
+        );
+        await expect(page.locator('#queueSurfaceTelemetry')).toContainText(
+            'Térmica pendiente'
+        );
+        await expect(page.locator('#queueOpeningChecklistTitle')).toContainText(
+            'Apertura diaria asistida'
+        );
+        await expect(page.locator('#queueOpeningChecklistAssistChip')).toContainText(
+            'Sugeridos 2'
+        );
+        await expect(page.locator('#queueOpeningChecklistApplyBtn')).toContainText(
+            'Confirmar sugeridos (2)'
+        );
+        await expect(page.locator('#queueContingencyTitle')).toContainText(
+            'Contingencia rápida lista'
+        );
+        await expect(page.locator('#queueContingencyDeck')).toContainText(
+            'Numpad no responde'
+        );
+        await expect(page.locator('#queueContingencyDeck')).toContainText(
+            'Térmica no imprime'
+        );
+        await expect(page.locator('#queueContingencyDeck')).toContainText(
+            'Sala TV sin campanilla'
+        );
+        await expect(page.locator('#queueContingencySyncCard')).toContainText(
+            'Cola sincronizada'
+        );
         await expect(page.locator('#queueAppDownloadsCards')).toContainText(
             'Operador'
         );
@@ -3710,6 +3840,22 @@ test.describe('Admin turnero sala', () => {
         await expect(page.locator('#queueInstallConfigurator')).toContainText(
             'Asistente de instalación'
         );
+        await page.locator('#queueOpsPilotApplyBtn').click();
+        await expect(page.locator('#queueOpsPilotTitle')).toContainText(
+            'Siguiente paso: Kiosco + ticket térmico'
+        );
+        await expect(page.locator('#queueOpeningChecklistTitle')).toContainText(
+            'faltan 2 paso(s)'
+        );
+        const openingChecklist = await page.evaluate(() =>
+            JSON.parse(localStorage.getItem('queueOpeningChecklistV1') || '{}')
+        );
+        expect(openingChecklist.steps.operator_ready).toBe(true);
+        expect(openingChecklist.steps.sala_ready).toBe(true);
+        await page.locator('#queueOpeningChecklistResetBtn').click();
+        await expect(page.locator('#queueOpeningChecklistTitle')).toContainText(
+            'Apertura diaria asistida'
+        );
         await expect(page.locator('#queueInstallConfigurator')).toContainText(
             'Operador'
         );
@@ -3724,6 +3870,12 @@ test.describe('Admin turnero sala', () => {
 
         await expect(page.locator('#queueInstallConfigurator')).toContainText(
             'Operador C2 fijo'
+        );
+        await expect(page.locator('#queueSurfaceTelemetry')).toContainText(
+            'Abrir operador'
+        );
+        await expect(page.locator('#queueContingencyDeck')).toContainText(
+            'C2 fijo'
         );
         await expect(page.locator('#queueInstallConfigurator')).toContainText(
             'station=c2'
@@ -3743,6 +3895,14 @@ test.describe('Admin turnero sala', () => {
         );
         await expect(page.locator('#queueInstallConfigurator')).toContainText(
             'Abrir centro público'
+        );
+
+        const dataCountAtQueueOpen = dataRequestCount;
+        await expect.poll(() => dataRequestCount).toBeGreaterThan(
+            dataCountAtQueueOpen
+        );
+        await expect(page.locator('#queueSurfaceTelemetry')).toContainText(
+            'Pulso renovado'
         );
     });
 });

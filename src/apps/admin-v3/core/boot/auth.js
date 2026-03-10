@@ -1,6 +1,7 @@
 import { getState, updateState } from '../../shared/core/store.js';
 import { createToast } from '../../shared/ui/render.js';
 import { loginWith2FA, loginWithPassword } from '../../shared/modules/auth.js';
+import { syncQueueAutoRefresh } from '../../shared/modules/queue.js';
 import {
     focusLoginField,
     hideCommandPalette,
@@ -94,6 +95,10 @@ export async function handleLoginSubmit(event) {
         setLogin2FAVisibility(false);
         resetLoginForm({ clearPassword: true });
         await refreshDataAndRender(false);
+        syncQueueAutoRefresh({
+            immediate: getState().ui.activeSection === 'queue',
+            reason: 'login',
+        });
         createToast('Sesion iniciada', 'success');
     } catch (error) {
         setLoginFeedback({

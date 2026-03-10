@@ -29,6 +29,7 @@ function register_api_routes(Router $router): void
     $router->add('POST', 'telemedicine-policy-simulate', [TelemedicinePolicyController::class, 'simulate']);
 
     $router->add('GET', 'queue-state', [QueueController::class, 'state']);
+    $router->add('POST', 'queue-surface-heartbeat', [QueueController::class, 'surfaceHeartbeat']);
     $router->add('POST', 'queue-checkin', [QueueController::class, 'checkin']);
     $router->add('POST', 'queue-ticket', [QueueController::class, 'ticket']);
     $router->add('POST', 'queue-call-next', [QueueController::class, 'callNext']);

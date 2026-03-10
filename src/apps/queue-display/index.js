@@ -1,3 +1,5 @@
+import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
+
 const API_ENDPOINT = '/api.php';
 const POLL_MS = 2500;
 const POLL_MAX_MS = 15000;
@@ -11,6 +13,7 @@ const DISPLAY_BELL_FLASH_CLASS = 'display-bell-flash';
 const DISPLAY_BELL_FLASH_DURATION_MS = 1300;
 const DISPLAY_BELL_COOLDOWN_MS = 1200;
 const DISPLAY_BELL_BLOCKED_HINT_COOLDOWN_MS = 20000;
+const DISPLAY_HEARTBEAT_MS = 15000;
 
 const state = {
     lastCalledSignature: '',
@@ -36,6 +39,8 @@ const state = {
     lastBellOutcome: 'idle',
 };
 
+let displayHeartbeat = null;
+
 function emitQueueOpsEvent(eventName, detail = {}) {
     try {
         window.dispatchEvent(
@@ -55,6 +60,78 @@ function emitQueueOpsEvent(eventName, detail = {}) {
 
 function getById(id) {
     return document.getElementById(id);
+}
+
+function resolveDisplayAppMode() {
+    const agent = `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
+    if (agent.includes('android') || agent.includes('google tv') || agent.includes('aft')) {
+        return 'android_tv';
+    }
+    return 'web';
+}
+
+function buildDisplayHeartbeatPayload() {
+    const connectionState = String(state.connectionState || 'paused');
+    const healthySync = Boolean(state.lastHealthySyncAt);
+
+    let status = 'warning';
+    let summary = 'Sala TV pendiente de validación.';
+    if (connectionState === 'offline') {
+        status = 'alert';
+        summary = 'Sala TV sin conexión; usa respaldo local y confirma llamados manuales.';
+    } else if (state.bellMuted) {
+        status = 'warning';
+        summary = 'La campanilla está en silencio; reactivarla antes de operar.';
+    } else if (state.lastBellOutcome === 'blocked' || !state.bellPrimed) {
+        status = 'alert';
+        summary = 'La TV no confirmó audio; repite la prueba de campanilla.';
+    } else if (connectionState === 'live' && healthySync) {
+        status = 'ready';
+        summary = 'Sala TV lista: cola en vivo, audio activo y respaldo local disponible.';
+    }
+
+    return {
+        instance: 'main',
+        deviceLabel: 'Sala TV TCL C655',
+        appMode: resolveDisplayAppMode(),
+        status,
+        summary,
+        networkOnline: navigator.onLine !== false,
+        lastEvent:
+            state.lastBellOutcome === 'played'
+                ? 'bell_ok'
+                : state.lastBellOutcome === 'blocked'
+                  ? 'bell_blocked'
+                  : 'heartbeat',
+        lastEventAt:
+            state.lastBellAt > 0
+                ? new Date(state.lastBellAt).toISOString()
+                : new Date().toISOString(),
+        details: {
+            connection: connectionState,
+            bellMuted: Boolean(state.bellMuted),
+            bellPrimed: Boolean(state.bellPrimed),
+            bellOutcome: String(state.lastBellOutcome || 'idle'),
+            healthySync,
+        },
+    };
+}
+
+function ensureDisplayHeartbeat() {
+    if (displayHeartbeat) {
+        return displayHeartbeat;
+    }
+
+    displayHeartbeat = createSurfaceHeartbeatClient({
+        surface: 'display',
+        intervalMs: DISPLAY_HEARTBEAT_MS,
+        getPayload: buildDisplayHeartbeatPayload,
+    });
+    return displayHeartbeat;
+}
+
+function notifyDisplayHeartbeat(reason = 'state_change') {
+    ensureDisplayHeartbeat().notify(reason);
 }
 
 function escapeHtml(value) {
@@ -714,6 +791,7 @@ function renderDisplaySetupStatus() {
             `
         )
         .join('');
+    notifyDisplayHeartbeat('setup_status');
 }
 
 function ensureDisplayMetricsEl() {
@@ -1690,6 +1768,7 @@ function initDisplay() {
     renderBellToggle();
     renderSnapshotHint();
     renderDisplaySetupStatus();
+    ensureDisplayHeartbeat().start({ immediate: false });
 
     setConnectionStatus('paused', 'Sincronizacion lista');
     if (!renderFromSnapshot(state.lastSnapshot, { mode: 'startup' })) {
@@ -1722,6 +1801,7 @@ function initDisplay() {
 
     window.addEventListener('beforeunload', () => {
         stopDisplayPolling({ reason: 'paused' });
+        displayHeartbeat?.stop();
         if (state.clockId) {
             window.clearInterval(state.clockId);
             state.clockId = 0;

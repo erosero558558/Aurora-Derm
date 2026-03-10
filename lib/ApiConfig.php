@@ -38,6 +38,7 @@ class ApiConfig
             'queue-checkin:POST' => [20, 60],
             'queue-ticket:POST' => [20, 60],
             'lead-ai-result:POST' => [60, 60],
+            'queue-surface-heartbeat:POST' => [240, 60],
 
             // Webhooks
             'stripe-webhook:POST' => [60, 60],
@@ -88,6 +89,7 @@ class ApiConfig
             ['method' => 'POST', 'resource' => 'queue-ticket'],
             ['method' => 'GET', 'resource' => 'lead-ai-queue'],
             ['method' => 'POST', 'resource' => 'lead-ai-result'],
+            ['method' => 'POST', 'resource' => 'queue-surface-heartbeat'],
             ['method' => 'GET', 'resource' => 'reschedule'],
             ['method' => 'PATCH', 'resource' => 'reschedule'],
             ['method' => 'GET', 'resource' => 'content'],

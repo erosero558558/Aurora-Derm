@@ -5,6 +5,7 @@ import {
     showLoginView,
 } from '../../../../ui/frame.js';
 import { logoutSession } from '../../../../shared/modules/auth.js';
+import { syncQueueAutoRefresh } from '../../../../shared/modules/queue.js';
 import { primeLoginSurface, resetTwoFactorStage } from '../../auth.js';
 import {
     focusQuickCommand,
@@ -52,6 +53,7 @@ export async function handleShellAction(action, element) {
             return true;
         case 'logout':
             await logoutSession();
+            syncQueueAutoRefresh({ immediate: false, reason: 'logout' });
             showLoginView();
             hideCommandPalette();
             primeLoginSurface();

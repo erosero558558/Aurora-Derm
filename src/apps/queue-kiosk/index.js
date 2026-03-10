@@ -1,3 +1,5 @@
+import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
+
 const API_ENDPOINT = '/api.php';
 const CHAT_ENDPOINT = '/figo-chat.php';
 const QUEUE_POLL_MS = 2500;
@@ -23,6 +25,7 @@ const KIOSK_STAR_STYLE_ID = 'kioskStarInlineStyles';
 const KIOSK_WELCOME_HIDE_MS = 1800;
 const KIOSK_WELCOME_REMOVE_MS = 2600;
 const KIOSK_VOICE_GUIDE_LANG = 'es-EC';
+const KIOSK_HEARTBEAT_MS = 15000;
 
 const state = {
     queueState: null,
@@ -54,6 +57,8 @@ const state = {
     voiceGuideUtterance: null,
 };
 
+let kioskHeartbeat = null;
+
 function emitQueueOpsEvent(eventName, detail = {}) {
     try {
         window.dispatchEvent(
@@ -82,6 +87,78 @@ function escapeHtml(value) {
 
 function getById(id) {
     return document.getElementById(id);
+}
+
+function resolveKioskAppMode() {
+    return typeof window.turneroDesktop === 'object' &&
+        window.turneroDesktop !== null &&
+        typeof window.turneroDesktop.openSettings === 'function'
+        ? 'desktop'
+        : 'web';
+}
+
+function buildKioskHeartbeatPayload() {
+    const connectionState = String(state.lastConnectionState || 'paused');
+    const pendingCount = Number(state.offlineOutbox.length || 0);
+    const printer = state.printerState;
+    const printerPrinted = Boolean(printer?.printed);
+    const printerErrorCode = String(printer?.errorCode || '');
+    const healthySync = Boolean(state.queueLastHealthySyncAt);
+
+    let status = 'warning';
+    let summary = 'Kiosco pendiente de validación.';
+    if (connectionState === 'offline') {
+        status = 'alert';
+        summary = 'Kiosco sin conexión; usa contingencia local y deriva si crece la fila.';
+    } else if (pendingCount > 0) {
+        status = 'warning';
+        summary = `Kiosco con ${pendingCount} pendiente(s) offline por sincronizar.`;
+    } else if (printer && !printerPrinted) {
+        status = 'alert';
+        summary = `La última impresión falló${printerErrorCode ? ` (${printerErrorCode})` : ''}.`;
+    } else if (printerPrinted && healthySync && connectionState === 'live') {
+        status = 'ready';
+        summary = 'Kiosco listo: cola en vivo, térmica validada y sin pendientes offline.';
+    } else if (!printerPrinted) {
+        status = 'warning';
+        summary = 'Falta probar ticket térmico antes de abrir autoservicio.';
+    }
+
+    return {
+        instance: 'main',
+        deviceLabel: 'Kiosco principal',
+        appMode: resolveKioskAppMode(),
+        status,
+        summary,
+        networkOnline: navigator.onLine !== false,
+        lastEvent: printerPrinted ? 'printer_ok' : 'heartbeat',
+        lastEventAt: printer?.at || new Date().toISOString(),
+        details: {
+            connection: connectionState,
+            pendingOffline: pendingCount,
+            printerPrinted,
+            printerErrorCode,
+            healthySync,
+            flow: String(state.selectedFlow || 'checkin'),
+        },
+    };
+}
+
+function ensureKioskHeartbeat() {
+    if (kioskHeartbeat) {
+        return kioskHeartbeat;
+    }
+
+    kioskHeartbeat = createSurfaceHeartbeatClient({
+        surface: 'kiosk',
+        intervalMs: KIOSK_HEARTBEAT_MS,
+        getPayload: buildKioskHeartbeatPayload,
+    });
+    return kioskHeartbeat;
+}
+
+function notifyKioskHeartbeat(reason = 'state_change') {
+    ensureKioskHeartbeat().notify(reason);
 }
 
 function ensureKioskStarStyles() {
@@ -1151,6 +1228,7 @@ function renderKioskSetupStatus() {
             `
         )
         .join('');
+    notifyKioskHeartbeat('setup_status');
 }
 
 function ensureQueueOutboxHintEl() {
@@ -2604,6 +2682,7 @@ function initKiosk() {
     if (navigator.onLine !== false) {
         void flushOfflineOutbox({ source: 'startup', force: true });
     }
+    ensureKioskHeartbeat().start({ immediate: false });
     startQueuePolling({ immediate: true });
 
     document.addEventListener('visibilitychange', () => {
@@ -2627,6 +2706,7 @@ function initKiosk() {
     window.addEventListener('beforeunload', () => {
         stopVoiceGuide({ source: 'beforeunload' });
         stopQueuePolling({ reason: 'paused' });
+        kioskHeartbeat?.stop();
     });
 
     window.addEventListener('keydown', (event) => {

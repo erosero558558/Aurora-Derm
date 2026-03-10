@@ -7,6 +7,7 @@ export const LOCAL_DATA_KEYS = {
     queueTickets: 'queue-tickets',
     queueMeta: 'queue-meta',
     leadOpsMeta: 'leadops-meta',
+    queueSurfaceStatus: 'queue-surface-status',
     appDownloads: 'app-downloads',
     health: 'health-status',
 };

@@ -13,6 +13,7 @@ import { hydrateCallbacksPreferences } from '../sections/callbacks.js';
 import { hydrateAvailabilityPreferences } from '../sections/availability.js';
 import {
     applyQueueRuntimeDefaults,
+    initQueueAutoRefresh,
     queueNumpadAction,
     toggleQueueHelpPanel,
 } from '../shared/modules/queue.js';
@@ -99,6 +100,7 @@ export async function bootAdminV3() {
         primeLoginSurface();
     }
 
+    initQueueAutoRefresh();
     initPushModule();
 
     window.setInterval(() => {

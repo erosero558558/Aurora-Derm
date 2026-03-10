@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/QueueService.php';
+require_once __DIR__ . '/../lib/QueueSurfaceStatusStore.php';
 require_once __DIR__ . '/../lib/AppDownloadsCatalog.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 
@@ -102,6 +103,7 @@ class AdminDataController
         }
 
         $store['appDownloads'] = self::buildAppDownloads();
+        $store['queueSurfaceStatus'] = QueueSurfaceStatusStore::readSummary();
 
         $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(
             TelemedicineOpsSnapshot::build($store)

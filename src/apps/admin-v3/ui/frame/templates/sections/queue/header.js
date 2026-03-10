@@ -32,7 +32,11 @@ export function renderQueueAppsHub() {
                     Plataforma detectada
                 </span>
             </div>
+            <div id="queueOpsPilot" class="queue-ops-pilot"></div>
             <div id="queueAppDownloadsCards" class="queue-apps-grid"></div>
+            <div id="queueSurfaceTelemetry" class="queue-surface-telemetry"></div>
+            <div id="queueOpeningChecklist" class="queue-opening-checklist"></div>
+            <div id="queueContingencyDeck" class="queue-contingency-deck"></div>
             <div id="queueInstallConfigurator" class="queue-install-configurator"></div>
         </div>
     `;

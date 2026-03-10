@@ -41,6 +41,13 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
             data.leadOpsMeta && typeof data.leadOpsMeta === 'object'
                 ? data.leadOpsMeta
                 : fallbackState?.leadOpsMeta || null,
+        queueSurfaceStatus:
+            data.queueSurfaceStatus && typeof data.queueSurfaceStatus === 'object'
+                ? data.queueSurfaceStatus
+                : data.queue_surface_status &&
+                    typeof data.queue_surface_status === 'object'
+                  ? data.queue_surface_status
+                : fallbackState?.queueSurfaceStatus || null,
         appDownloads:
             data.appDownloads && typeof data.appDownloads === 'object'
                 ? data.appDownloads
@@ -60,6 +67,7 @@ export function normalizeAdminStorePayload(payload, currentFunnelMetrics) {
         queueTickets: payload.queueTickets || [],
         queueMeta: payload.queueMeta || null,
         leadOpsMeta: payload.leadOpsMeta || null,
+        queueSurfaceStatus: payload.queueSurfaceStatus || null,
         appDownloads: payload.appDownloads || null,
         funnelMetrics: payload.funnelMetrics || currentFunnelMetrics,
         health: payload.health || null,

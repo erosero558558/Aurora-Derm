@@ -7,6 +7,7 @@ import { renderAdminChrome, setActiveSection } from '../../../ui/frame.js';
 import { hasPendingAvailabilityChanges } from '../../../sections/availability.js';
 import {
     refreshQueueState,
+    syncQueueAutoRefresh,
     shouldRefreshQueueOnSectionEnter,
 } from '../../../shared/modules/queue.js';
 import { persistUiPrefs } from '../ui-prefs.js';
@@ -48,6 +49,10 @@ export async function navigateToSection(section, options = {}) {
     }
 
     showSection(normalized);
+    syncQueueAutoRefresh({
+        immediate: normalized === 'queue',
+        reason: normalized === 'queue' ? 'section-enter' : 'section-exit',
+    });
     if (
         normalized === 'queue' &&
         previousSection !== 'queue' &&

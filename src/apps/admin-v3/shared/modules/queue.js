@@ -16,6 +16,12 @@ export {
 } from './queue/sync.js';
 
 export {
+    initQueueAutoRefresh,
+    runQueueAutoRefreshCycle,
+    syncQueueAutoRefresh,
+} from './queue/live-refresh.js';
+
+export {
     callNextForConsultorio,
     cancelQueueSensitiveAction,
     confirmQueueSensitiveAction,

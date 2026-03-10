@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/QueueService.php';
+require_once __DIR__ . '/../lib/QueueSurfaceStatusStore.php';
 require_once __DIR__ . '/../lib/TicketPrinter.php';
 
 class QueueController
@@ -160,6 +161,19 @@ class QueueController
         ], $statusCode);
     }
 
+    public static function surfaceHeartbeat(array $context): void
+    {
+        $payload = require_json_body();
+        $record = QueueSurfaceStatusStore::writeHeartbeat(
+            is_array($payload) ? $payload : []
+        );
+
+        json_response([
+            'ok' => true,
+            'data' => $record,
+        ]);
+    }
+
     /**
      * @return array
      */
@@ -217,4 +231,3 @@ class QueueController
         ], (int) ($result['status'] ?? 500));
     }
 }
-

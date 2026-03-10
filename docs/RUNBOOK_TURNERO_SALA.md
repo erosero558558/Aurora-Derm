@@ -183,7 +183,12 @@ Para separar operación por equipo:
 - `Turnero Kiosco` empaqueta `kiosco-turnos.html` como app Electron para Windows (`.exe`) y macOS (`.dmg`).
 - `Turnero Sala TV` vive como app Android TV nativa en `src/apps/turnero-sala-tv-android/` y carga `sala-turnos.html` dentro de un WebView controlado.
 - `admin.html#queue` queda como hub de descargas, configuración y fallback operativo.
+- Las superficies `Operador`, `Kiosco` y `Sala TV` ahora envían heartbeat al backend por `queue-surface-heartbeat`, y `admin.html#queue` muestra ese estado en `Equipos en vivo`.
+- Mientras la sección `Turnero Sala` esté abierta y visible, `Equipos en vivo` se auto-refresca solo; si la pestaña queda oculta, el panel muestra `Auto-refresh en pausa` para evitar falsa sensación de congelamiento.
+- El panel superior del hub ahora resume `qué falta`, `qué ya está validado` y `cuál es la siguiente acción`, para que recepción no tenga que recorrer manualmente todo el dashboard.
 - El hub `Apps operativas` ahora incluye un asistente para preparar `Operador`, `Kiosco` o `Sala TV` con la descarga y la ruta exacta de cada equipo.
+- `admin.html#queue` también incluye un checklist de apertura diaria asistido: lee heartbeat de `Operador`, `Kiosco` y `Sala TV`, sugiere pasos ya validados y permite confirmarlos en bloque.
+- `admin.html#queue` también incluye un deck de `contingencia rápida` para resolver `numpad`, `térmica`, `campanilla TV` y `fallback/realtime` sin salir del admin.
 - En `Turnero Operador`, el primer arranque abre una configuración guiada para dejar el equipo en `C1 fijo`, `C2 fijo` o `modo libre`; luego puede reabrirse con `F10` o `Ctrl/Cmd + ,`.
 - `/app-downloads/` expone el mismo catálogo de apps para instalar fuera del admin con presets por equipo.
 

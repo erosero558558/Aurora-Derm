@@ -15,6 +15,15 @@ const initialState = {
         themeMode: 'system',
         theme: 'light',
         lastRefreshAt: 0,
+        queueAutoRefresh: {
+            state: 'idle',
+            reason: 'Abre Turnero Sala para activar el monitoreo continuo.',
+            intervalMs: 45000,
+            lastAttemptAt: 0,
+            lastSuccessAt: 0,
+            lastError: '',
+            inFlight: false,
+        },
     },
     data: {
         appointments: [],
@@ -25,6 +34,7 @@ const initialState = {
         queueTickets: [],
         queueMeta: null,
         leadOpsMeta: null,
+        queueSurfaceStatus: null,
         appDownloads: null,
         funnelMetrics: null,
         health: null,
