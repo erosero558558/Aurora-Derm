@@ -3306,17 +3306,11 @@ function Ma() {
                                   )
                               )
                             : 0;
-                let p = 'idle',
-                    m = 'Siguiente paso',
-                    b = 'Centro de apertura listo',
-                    g =
-                        'Sigue la siguiente acción sugerida para terminar la apertura sin revisar cada tarjeta por separado.',
-                    f = null,
-                    h = null,
-                    y = '';
+                let p, m, b, g, f, h, y;
                 return (
                     'alert' === o.state
                         ? ((p = 'alert'),
+                          (m = 'Siguiente paso'),
                           (b = 'Resuelve la cola antes de abrir'),
                           (g =
                               'Hay fallback o sincronización degradada. Prioriza el refresh de cola antes de validar hardware o instalación.'),
@@ -3335,6 +3329,7 @@ function Ma() {
                               'Cuando el sync vuelva a vivo, el panel te devolverá el siguiente paso operativo.'))
                         : r > 0
                           ? ((p = 'suggested'),
+                            (m = 'Siguiente paso'),
                             (b = `Confirma ${r} paso(s) ya validados`),
                             (g =
                                 l.length > 0
@@ -3362,6 +3357,7 @@ function Ma() {
                           : l.length > 0
                             ? ((p =
                                   'warning' === o.state ? 'warning' : 'active'),
+                              (m = 'Siguiente paso'),
                               (b = `Siguiente paso: ${l[0].title}`),
                               (g =
                                   l.length > 1
