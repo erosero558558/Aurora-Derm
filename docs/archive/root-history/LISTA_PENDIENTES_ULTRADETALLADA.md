@@ -10,6 +10,7 @@
 ## 🔴 CRÍTICO - Bloqueantes para Producción
 
 ### 1. **REFERENCIAS ROTAS EN INDEX.HTML** ⚠️
+
 **Archivo**: `index.html`
 
 ```html
@@ -21,12 +22,14 @@
 **Impacto**: La aplicación no carga correctamente en producción.
 
 **Solución**: Actualizar paths:
+
 - `bootstrap-inline-engine.js` → `js/bootstrap-inline-engine.js`
 - `script.js` → `js/script.js` (si existe) o usar el bundle de Rollup
 
 ---
 
 ### 2. **CONSOLE.LOGS EN PRODUCCIÓN** ⚠️
+
 **Archivos afectados**:
 | Archivo | Líneas | Contenido |
 |---------|--------|-----------|
@@ -41,14 +44,15 @@
 ---
 
 ### 3. **BANDERAS DE DEBUG ACTIVAS** ⚠️
+
 **Variable**: `PIELARMONIA_DEBUG_EXCEPTIONS`
 
-| Archivo | Ubicación | Estado |
-|---------|-----------|--------|
-| `env.example.php` | Línea ~10 | Expuesta |
-| `lib/api_helpers.php` | Línea ~45 | Usada en `api_error_message_for_client()` |
-| `utils.js` | Línea 18 | `DEBUG = true` |
-| `src/apps/admin/index.js` | Desconocida | Posiblemente presente |
+| Archivo                   | Ubicación   | Estado                                    |
+| ------------------------- | ----------- | ----------------------------------------- |
+| `env.example.php`         | Línea ~10   | Expuesta                                  |
+| `lib/api_helpers.php`     | Línea ~45   | Usada en `api_error_message_for_client()` |
+| `utils.js`                | Línea 18    | `DEBUG = true`                            |
+| `src/apps/admin/index.js` | Desconocida | Posiblemente presente                     |
 
 **Impacto**: Mensajes de error técnicos expuestos a usuarios.
 
@@ -58,14 +62,15 @@
 
 ### 4. **TAMAÑO DE BUNDLES**
 
-| Bundle | Tamaño | Umbral Recomendado | Estado |
-|--------|--------|-------------------|--------|
-| `admin.js` | **80.2 KB** | < 50 KB | ❌ Excede 60% |
-| `script.js` | **104.8 KB** | < 80 KB | ❌ Excede 30% |
-| `js/engines/ui-bundle.js` | 27 KB | < 30 KB | ✅ OK |
-| `js/engines/booking-utils.js` | 17 KB | < 20 KB | ✅ OK |
+| Bundle                        | Tamaño       | Umbral Recomendado | Estado        |
+| ----------------------------- | ------------ | ------------------ | ------------- |
+| `admin.js`                    | **80.2 KB**  | < 50 KB            | ❌ Excede 60% |
+| `script.js`                   | **104.8 KB** | < 80 KB            | ❌ Excede 30% |
+| `js/engines/ui-bundle.js`     | 27 KB        | < 30 KB            | ✅ OK         |
+| `js/engines/booking-utils.js` | 17 KB        | < 20 KB            | ✅ OK         |
 
 **Solución propuesta**:
+
 - `admin.js`: Code splitting por funcionalidad (dashboard, appointments, callbacks, reviews)
 - `script.js`: Lazy loading de módulos no críticos (analytics, chat, engagement)
 
@@ -84,6 +89,7 @@ import { initChat } from './chat.js';
 ```
 
 **Módulos problemáticos**:
+
 - `main.js` → `router.js` → `state.js` → `main.js`
 - `booking.js` → `data.js` → `booking.js`
 
@@ -94,6 +100,7 @@ import { initChat } from './chat.js';
 ### 6. **DUPLICACIÓN DE CÓDIGO**
 
 **Funciones duplicadas** (6 definiciones cada una):
+
 - `getDefaultTimeSlots()` - En múltiples archivos de booking
 - `debugLog()` - En utils.js y src/apps/shared/
 - `escapeHtml()` - En admin.js y utils.js
@@ -104,10 +111,10 @@ import { initChat } from './chat.js';
 
 ### 7. **ARCHIVOS LEGACY SIN MIGRAR**
 
-| Archivo | Tamaño | Destino Propuesto | Prioridad |
-|---------|--------|-------------------|-----------|
-| `utils.js` | 2.2 KB | `src/apps/shared/utils.js` | Media |
-| `legal-i18n.js` | 19.5 KB | `src/apps/i18n/legal.js` | Baja |
+| Archivo         | Tamaño  | Destino Propuesto          | Prioridad |
+| --------------- | ------- | -------------------------- | --------- |
+| `utils.js`      | 2.2 KB  | `src/apps/shared/utils.js` | Media     |
+| `legal-i18n.js` | 19.5 KB | `src/apps/i18n/legal.js`   | Baja      |
 
 ---
 
@@ -117,9 +124,9 @@ import { initChat } from './chat.js';
 
 ```html
 <!-- Referencias problemáticas encontradas -->
-<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="../styles.css" />
 <script src="../script.js"></script>
-<img src="../images/...">
+<img src="../images/..." />
 ```
 
 **Total de paths relativos**: 5+ en acne.html
@@ -130,13 +137,14 @@ import { initChat } from './chat.js';
 
 ### 9. **TESTS PENDIENTES**
 
-| Tipo | Cantidad | Estado |
-|------|----------|--------|
+| Tipo           | Cantidad    | Estado              |
+| -------------- | ----------- | ------------------- |
 | E2E Playwright | 26 archivos | ⚠️ Verificar fallos |
-| PHP Unit | 58 archivos | ✅ 88 tests pasando |
-| Cobertura | Desconocida | ⚠️ Medir |
+| PHP Unit       | 58 archivos | ✅ 88 tests pasando |
+| Cobertura      | Desconocida | ⚠️ Medir            |
 
 **Tests con fallos reportados previamente**:
+
 - `funnel-tracking.spec.js` - `serviceSelect not defined`
 - `hero-preload-paths.spec.js` - 404 errors
 
@@ -145,6 +153,7 @@ import { initChat } from './chat.js';
 ### 10. **CSS SIN USAR**
 
 **Clases detectadas** (muestra):
+
 - `.service-price` - No aparece en index.html
 - Potencialmente más con PurgeCSS
 
@@ -154,11 +163,11 @@ import { initChat } from './chat.js';
 
 ### 11. **OPTIMIZACIÓN DE IMÁGENES**
 
-| Formato | Cantidad | Estado |
-|---------|----------|--------|
-| WebP | ~30 | ✅ Optimizadas |
-| AVIF | ~15 | ✅ Optimizadas |
-| JPEG/PNG originales | ~40 | ⚠️ Considerar eliminar |
+| Formato             | Cantidad | Estado                 |
+| ------------------- | -------- | ---------------------- |
+| WebP                | ~30      | ✅ Optimizadas         |
+| AVIF                | ~15      | ✅ Optimizadas         |
+| JPEG/PNG originales | ~40      | ⚠️ Considerar eliminar |
 
 **Espacio recuperable**: ~2-3 MB eliminando originales no usados.
 
@@ -169,6 +178,7 @@ import { initChat } from './chat.js';
 ### 12. **DOCUMENTACIÓN PENDIENTE**
 
 **Archivos existentes** (26 documentos MD):
+
 - `ANALISIS_ULTRADETALLADO_2026-02-20.md` - Este análisis
 - `LISTA_PENDIENTES_ULTRADETALLADA.md` - Lista de pendientes
 - `ROADMAP_PRIORIDADES.md` - Roadmap estratégico
@@ -183,6 +193,7 @@ import { initChat } from './chat.js';
 ### 13. **GITHUB ACTIONS**
 
 **Workflows activos** (5):
+
 1. `ci.yml` - Build, lint, test
 2. `close-resolved-issues.yml` - Auto-cierre de issues
 3. `deploy-hosting.yml` - Despliegue a hosting
@@ -197,56 +208,62 @@ import { initChat } from './chat.js';
 ## 📊 ESTADÍSTICAS DEL PROYECTO
 
 ### Código
-| Tipo | Cantidad |
-|------|----------|
-| Archivos JS | 1,432 |
-| Archivos PHP | 146 |
-| Archivos HTML | 27 |
-| Archivos CSS | 25 |
-| Imágenes | 118 |
+
+| Tipo          | Cantidad |
+| ------------- | -------- |
+| Archivos JS   | 1,432    |
+| Archivos PHP  | 146      |
+| Archivos HTML | 27       |
+| Archivos CSS  | 25       |
+| Imágenes      | 118      |
 
 ### Micro-frontends (src/apps/)
-| Módulo | Archivos JS |
-|--------|-------------|
-| admin | 12 |
-| analytics | 1 |
-| booking | 5 |
-| chat | 5 |
-| consent | 1 |
-| engagement | 1 |
-| modal-ux | 1 |
-| payment | 1 |
-| reschedule | 1 |
-| reviews | 1 |
-| shared | 2 |
-| success-modal | 1 |
-| theme | 1 |
-| ui-effects | 1 |
-| **Total** | **34** |
+
+| Módulo        | Archivos JS |
+| ------------- | ----------- |
+| admin         | 12          |
+| analytics     | 1           |
+| booking       | 5           |
+| chat          | 5           |
+| consent       | 1           |
+| engagement    | 1           |
+| modal-ux      | 1           |
+| payment       | 1           |
+| reschedule    | 1           |
+| reviews       | 1           |
+| shared        | 2           |
+| success-modal | 1           |
+| theme         | 1           |
+| ui-effects    | 1           |
+| **Total**     | **34**      |
 
 ---
 
 ## 🎯 PLAN DE ACCIÓN RECOMENDADO
 
 ### Fase 1: Hotfixes (Inmediato)
+
 1. [ ] Corregir referencias rotas en index.html
 2. [ ] Eliminar console.logs de producción
 3. [ ] Desactivar PIELARMONIA_DEBUG_EXCEPTIONS
 
 ### Fase 2: Optimización (Semana 1)
+
 4. [ ] Implementar code splitting para admin.js
 5. [ ] Migrar utils.js y legal-i18n.js a src/apps/
 6. [ ] Resolver dependencias circulares
 
 ### Fase 3: Testing (Semana 2)
+
 7. [ ] Verificar todos los tests de Playwright
 8. [ ] Medir cobertura de código
 9. [ ] Documentar funciones duplicadas
 
 ### Fase 4: Limpieza (Semana 3)
+
 10. [ ] Consolidar documentación
 11. [ ] Eliminar imágenes originales no usadas
-12. [ ] Verificar paths en servicios/*.html
+12. [ ] Verificar paths en servicios/\*.html
 
 ---
 
