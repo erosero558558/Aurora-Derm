@@ -221,10 +221,21 @@ const S = {
 function C(t) {
     return `<svg class="icon icon-${t}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${S[t] || S.menu}</svg>`;
 }
-function q(t, e, a, n = !1) {
+function q(t) {
+    return `\n        <div class="sony-theme-switcher ${t}" role="group" aria-label="Tema">\n            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="light">${C('sun')}</button>\n            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="dark">${C('moon')}</button>\n            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="system">${C('system')}</button>\n        </div>\n    `;
+}
+function A(t, e, a, n = !1) {
     return `\n        <a\n            href="#${t}"\n            class="nav-item${n ? ' active' : ''}"\n            data-section="${t}"\n            ${n ? 'aria-current="page"' : ''}\n        >\n            ${C(a)}\n            <span>${e}</span>\n            <span class="badge" id="${t}Badge">0</span>\n        </a>\n    `;
 }
-const A = {
+function M() {
+    const t = e('#loginScreen'),
+        a = e('#adminDashboard');
+    if (!(t instanceof HTMLElement && a instanceof HTMLElement))
+        throw new Error('Contenedores admin no encontrados');
+    ((t.innerHTML = `\n        <div class="admin-v3-login">\n            <section class="admin-v3-login__hero">\n                <div class="admin-v3-login__brand">\n                    <p class="sony-kicker">Piel en Armonia</p>\n                    <h1>Centro operativo claro y protegido</h1>\n                    <p>\n                        Acceso editorial para agenda, callbacks y disponibilidad con\n                        jerarquia simple y lectura rapida.\n                    </p>\n                </div>\n                <div class="admin-v3-login__facts">\n                    <article class="admin-v3-login__fact">\n                        <span>Sesion</span>\n                        <strong>Acceso administrativo aislado</strong>\n                        <small>Entrada dedicada para operacion diaria.</small>\n                    </article>\n                    <article class="admin-v3-login__fact">\n                        <span>Proteccion</span>\n                        <strong>Clave y 2FA en la misma tarjeta</strong>\n                        <small>El segundo paso aparece solo cuando el backend lo exige.</small>\n                    </article>\n                    <article class="admin-v3-login__fact">\n                        <span>Entorno</span>\n                        <strong>Activos self-hosted y CSP activa</strong>\n                        <small>Sin dependencias remotas para estilos ni fuentes.</small>\n                    </article>\n                </div>\n            </section>\n\n            <section class="admin-v3-login__panel">\n                <div class="admin-v3-login__panel-head">\n                    <p class="sony-kicker" id="adminLoginStepEyebrow">Ingreso protegido</p>\n                    <h2 id="adminLoginStepTitle">Acceso de administrador</h2>\n                    <p id="adminLoginStepSummary">\n                        Usa tu clave para abrir el workbench operativo.\n                    </p>\n                </div>\n\n                <div id="adminLoginStatusCard" class="admin-login-status-card" data-state="neutral">\n                    <strong id="adminLoginStatusTitle">Proteccion activa</strong>\n                    <p id="adminLoginStatusMessage">\n                        El panel usa autenticacion endurecida y activos self-hosted.\n                    </p>\n                </div>\n\n                <form id="loginForm" class="sony-login-form" novalidate>\n                    <label id="adminPasswordField" class="admin-login-field" for="adminPassword">\n                        <span>Contrasena</span>\n                        <input id="adminPassword" type="password" required placeholder="Ingresa tu clave" autocomplete="current-password" />\n                    </label>\n                    <div id="group2FA" class="is-hidden">\n                        <label id="admin2FAField" class="admin-login-field" for="admin2FACode">\n                            <span>Codigo 2FA</span>\n                            <input id="admin2FACode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456" />\n                        </label>\n                    </div>\n                    <div class="admin-login-actions">\n                        <button id="loginBtn" type="submit">Ingresar</button>\n                        <button\n                            id="loginReset2FABtn"\n                            type="button"\n                            class="sony-login-reset is-hidden"\n                            data-action="reset-login-2fa"\n                        >\n                            Volver\n                        </button>\n                    </div>\n                    <p id="adminLoginSupportCopy" class="admin-login-support-copy">\n                        Si el backend solicita un segundo paso, el flujo sigue en esta misma tarjeta.\n                    </p>\n                </form>\n\n                ${q('login-theme-bar')}\n            </section>\n        </div>\n    `),
+        (a.innerHTML = `\n        <div class="admin-v3-shell">\n            <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n                <header class="sidebar-header">\n                    <div class="admin-v3-sidebar__brand">\n                        <strong>Piel en Armonia</strong>\n                        <small>Admin sony_v3</small>\n                    </div>\n                    <div class="toolbar-group">\n                        <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${C('menu')}</button>\n                        <button type="button" id="adminMenuClose">Cerrar</button>\n                    </div>\n                </header>\n                <nav class="sidebar-nav" id="adminSidebarNav">\n                    \n        ${A('dashboard', 'Dashboard', 'dashboard', !0)}\n        ${A('appointments', 'Citas', 'appointments')}\n        ${A('callbacks', 'Callbacks', 'callbacks')}\n        ${A('reviews', 'Resenas', 'reviews')}\n        ${A('availability', 'Disponibilidad', 'availability')}\n        ${A('queue', 'Turnero Sala', 'queue')}\n    \n                </nav>\n                <footer class="sidebar-footer">\n                    <button type="button" class="logout-btn" data-action="logout">${C('logout')}<span>Cerrar sesion</span></button>\n                </footer>\n            </aside>\n            <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n\n            <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n                <header class="admin-v3-topbar">\n                    <div class="admin-v3-topbar__copy">\n                        <p class="sony-kicker">Sony V3</p>\n                        <h2 id="pageTitle">Dashboard</h2>\n                    </div>\n                    <div class="admin-v3-topbar__actions">\n                        <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${C('menu')}<span>Menu</span></button>\n                        <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Ctrl+K</button>\n                        <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                        ${q('admin-theme-switcher-header')}\n                    </div>\n                </header>\n\n                <section class="admin-v3-context-strip" id="adminProductivityStrip">\n                    <div class="admin-v3-context-copy" data-admin-section-hero>\n                        <p class="sony-kicker" id="adminSectionEyebrow">Resumen Diario</p>\n                        <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                        <p id="adminContextSummary">Lee agenda, callbacks y disponibilidad desde un frente claro y sin ruido.</p>\n                        <div id="adminContextActions" class="sony-context-actions"></div>\n                    </div>\n                    <div class="admin-v3-status-rail" data-admin-priority-rail>\n                        <article class="sony-status-tile">\n                            <span>Push</span>\n                            <strong id="pushStatusIndicator">Inicializando</strong>\n                            <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                        </article>\n                        <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                            <span>Sesion</span>\n                            <strong id="adminSessionState">No autenticada</strong>\n                            <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                        </article>\n                        <article class="sony-status-tile">\n                            <span>Sincronizacion</span>\n                            <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                            <small id="adminSyncState">Listo para primera sincronizacion</small>\n                        </article>\n                    </div>\n                </section>\n\n                \n        \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                <article class="sony-panel dashboard-hero-panel">\n                    <div class="dashboard-hero-copy">\n                        <p class="sony-kicker">Resumen diario</p>\n                        <h3>Prioridades de hoy</h3>\n                        <p id="dashboardHeroSummary">\n                            Agenda, callbacks y disponibilidad con una lectura mas clara y directa.\n                        </p>\n                    </div>\n                    <div class="dashboard-hero-actions">\n                        <button type="button" data-action="context-open-appointments-transfer">Ver transferencias</button>\n                        <button type="button" data-action="context-open-callbacks-pending">Ir a callbacks</button>\n                        <button type="button" data-action="refresh-admin-data">Actualizar tablero</button>\n                    </div>\n                    <div class="dashboard-hero-metrics">\n                        <div class="dashboard-hero-metric">\n                            <span>Rating</span>\n                            <strong id="dashboardHeroRating">0.0</strong>\n                        </div>\n                        <div class="dashboard-hero-metric">\n                            <span>Resenas 30d</span>\n                            <strong id="dashboardHeroRecentReviews">0</strong>\n                        </div>\n                        <div class="dashboard-hero-metric">\n                            <span>Urgentes SLA</span>\n                            <strong id="dashboardHeroUrgentCallbacks">0</strong>\n                        </div>\n                        <div class="dashboard-hero-metric">\n                            <span>Transferencias</span>\n                            <strong id="dashboardHeroPendingTransfers">0</strong>\n                        </div>\n                    </div>\n                </article>\n\n                <article class="sony-panel dashboard-signal-panel">\n                    <header>\n                        <div>\n                            <h3>Señal operativa</h3>\n                            <small id="operationRefreshSignal">Tiempo real</small>\n                        </div>\n                        <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n                    </header>\n                    <p id="dashboardLiveMeta">\n                        Sin alertas criticas en la operacion actual.\n                    </p>\n                    <div class="dashboard-signal-stack">\n                        <article class="dashboard-signal-card">\n                            <span>Push</span>\n                            <strong id="dashboardPushStatus">Sin validar</strong>\n                            <small id="dashboardPushMeta">Permisos del navegador</small>\n                        </article>\n                        <article class="dashboard-signal-card">\n                            <span>Atencion</span>\n                            <strong id="dashboardQueueHealth">Cola: estable</strong>\n                            <small id="dashboardFlowStatus">Sin cuellos de botella</small>\n                        </article>\n                    </div>\n                    <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n                </article>\n            </div>\n\n            <div class="sony-grid sony-grid-kpi">\n                <article class="sony-kpi"><h3>Citas hoy</h3><strong id="todayAppointments">0</strong></article>\n                <article class="sony-kpi"><h3>Total citas</h3><strong id="totalAppointments">0</strong></article>\n                <article class="sony-kpi"><h3>Callbacks pendientes</h3><strong id="pendingCallbacks">0</strong></article>\n                <article class="sony-kpi"><h3>Resenas</h3><strong id="totalReviewsCount">0</strong></article>\n                <article class="sony-kpi"><h3>No show</h3><strong id="totalNoShows">0</strong></article>\n                <article class="sony-kpi"><h3>Rating</h3><strong id="avgRating">0.0</strong></article>\n            </div>\n\n            <div class="sony-grid sony-grid-two">\n                <article class="sony-panel dashboard-card-operations">\n                    <header>\n                        <h3>Centro operativo</h3>\n                        <small id="operationDeckMeta">Prioridades y acciones</small>\n                    </header>\n                    <div class="sony-panel-stats">\n                        <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                        <div><span>Callbacks</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                        <div><span>Carga hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                    </div>\n                    <p id="operationQueueHealth">Cola: estable</p>\n                    <div id="operationActionList" class="operations-action-list"></div>\n                </article>\n\n                <article class="sony-panel" id="funnelSummary">\n                    <header><h3>Embudo</h3></header>\n                    <div class="sony-panel-stats">\n                        <div><span>View Booking</span><strong id="funnelViewBooking">0</strong></div>\n                        <div><span>Start Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                        <div><span>Booking Confirmed</span><strong id="funnelBookingConfirmed">0</strong></div>\n                        <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                    </div>\n                </article>\n            </div>\n\n            <div class="sony-grid sony-grid-three">\n                <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n            </div>\n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n    \n        \n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                <article class="sony-panel appointments-command-deck">\n                    <header class="section-header appointments-command-head">\n                        <div>\n                            <p class="sony-kicker">Agenda clinica</p>\n                            <h3>Citas</h3>\n                            <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                        </div>\n                        <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n                    </header>\n                    <div class="appointments-ops-grid">\n                        <article class="appointments-ops-card tone-warning">\n                            <span>Transferencias</span>\n                            <strong id="appointmentsOpsPendingTransfer">0</strong>\n                            <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                        </article>\n                        <article class="appointments-ops-card tone-neutral">\n                            <span>Proximas 48h</span>\n                            <strong id="appointmentsOpsUpcomingCount">0</strong>\n                            <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                        </article>\n                        <article class="appointments-ops-card tone-danger">\n                            <span>No show</span>\n                            <strong id="appointmentsOpsNoShowCount">0</strong>\n                            <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                        </article>\n                        <article class="appointments-ops-card tone-success">\n                            <span>Hoy</span>\n                            <strong id="appointmentsOpsTodayCount">0</strong>\n                            <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                        </article>\n                    </div>\n                    <div class="appointments-command-actions">\n                        <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                        <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                        <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n                    </div>\n                </article>\n\n                <article class="sony-panel appointments-focus-panel">\n                    <header class="section-header">\n                        <div>\n                            <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                            <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                            <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                        </div>\n                    </header>\n                    <div class="appointments-focus-grid">\n                        <div class="appointments-focus-stat">\n                            <span>Siguiente ventana</span>\n                            <strong id="appointmentsFocusWindow">-</strong>\n                        </div>\n                        <div class="appointments-focus-stat">\n                            <span>Pago</span>\n                            <strong id="appointmentsFocusPayment">-</strong>\n                        </div>\n                        <div class="appointments-focus-stat">\n                            <span>Estado</span>\n                            <strong id="appointmentsFocusStatus">-</strong>\n                        </div>\n                        <div class="appointments-focus-stat">\n                            <span>Contacto</span>\n                            <strong id="appointmentsFocusContact">-</strong>\n                        </div>\n                    </div>\n                    <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n                    <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n                </article>\n            </div>\n\n            <div class="sony-panel appointments-workbench">\n                <header class="section-header appointments-workbench-head">\n                    <div>\n                        <h3>Workbench</h3>\n                        <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                    </div>\n                    <div class="toolbar-group" id="appointmentsDensityToggle">\n                        <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                        <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                    </div>\n                </header>\n                <div class="toolbar-row">\n                    <div class="toolbar-group">\n                        <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                    </div>\n                </div>\n                <div class="toolbar-row appointments-toolbar">\n                    <label>\n                        <span class="sr-only">Filtro</span>\n                        <select id="appointmentFilter">\n                            <option value="all">Todas</option>\n                            <option value="pending_transfer">Transferencias por validar</option>\n                            <option value="upcoming_48h">Proximas 48h</option>\n                            <option value="no_show">No show</option>\n                            <option value="triage_attention">Triage accionable</option>\n                        </select>\n                    </label>\n                    <label>\n                        <span class="sr-only">Orden</span>\n                        <select id="appointmentSort">\n                            <option value="datetime_desc">Fecha reciente</option>\n                            <option value="datetime_asc">Fecha ascendente</option>\n                            <option value="patient_az">Paciente (A-Z)</option>\n                        </select>\n                    </label>\n                    <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                    <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n                </div>\n                <div class="toolbar-row slim">\n                    <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                    <p id="appointmentsToolbarState">Sin filtros activos</p>\n                </div>\n\n                <div class="table-scroll appointments-table-shell">\n                    <table id="appointmentsTable" class="sony-table">\n                        <thead>\n                            <tr>\n                                <th>Paciente</th>\n                                <th>Servicio</th>\n                                <th>Fecha</th>\n                                <th>Pago</th>\n                                <th>Estado</th>\n                                <th>Acciones</th>\n                            </tr>\n                        </thead>\n                        <tbody id="appointmentsTableBody"></tbody>\n                    </table>\n                </div>\n            </div>\n        </section>\n    \n        \n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                <article class="sony-panel callbacks-command-deck">\n                    <header class="section-header callbacks-command-head">\n                        <div>\n                            <p class="sony-kicker">SLA telefonico</p>\n                            <h3>Callbacks</h3>\n                            <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                        </div>\n                        <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n                    </header>\n                    <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                        <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                        <article class="callbacks-ops-card"><span>Urgentes</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                        <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                        <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n                    </div>\n                    <div class="callbacks-command-actions">\n                        <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                        <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                        <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                        <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n                    </div>\n                </article>\n\n                <article class="sony-panel callbacks-next-panel">\n                    <header class="section-header">\n                        <div>\n                            <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                            <h3 id="callbacksOpsNext">Sin telefono</h3>\n                            <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                        </div>\n                        <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n                    </header>\n                    <div class="callbacks-next-grid">\n                        <div class="callbacks-next-stat">\n                            <span>Espera</span>\n                            <strong id="callbacksNextWait">0 min</strong>\n                        </div>\n                        <div class="callbacks-next-stat">\n                            <span>Preferencia</span>\n                            <strong id="callbacksNextPreference">-</strong>\n                        </div>\n                        <div class="callbacks-next-stat">\n                            <span>Estado</span>\n                            <strong id="callbacksNextState">Pendiente</strong>\n                        </div>\n                        <div class="callbacks-next-stat">\n                            <span>Ultimo corte</span>\n                            <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                        </div>\n                    </div>\n                </article>\n            </div>\n            <div class="sony-panel callbacks-workbench">\n                <header class="section-header callbacks-workbench-head">\n                    <div>\n                        <h3>Workbench</h3>\n                        <p>Ordena por espera, filtra por SLA y drena la cola con acciones masivas.</p>\n                    </div>\n                </header>\n                <div class="toolbar-row">\n                    <div class="toolbar-group">\n                        <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                    </div>\n                </div>\n                <div class="toolbar-row callbacks-toolbar">\n                    <label>\n                        <span class="sr-only">Filtro callbacks</span>\n                        <select id="callbackFilter">\n                            <option value="all">Todos</option>\n                            <option value="pending">Pendientes</option>\n                            <option value="contacted">Contactados</option>\n                            <option value="today">Hoy</option>\n                            <option value="sla_urgent">Urgentes SLA</option>\n                        </select>\n                    </label>\n                    <label>\n                        <span class="sr-only">Orden callbacks</span>\n                        <select id="callbackSort">\n                            <option value="recent_desc">Mas recientes</option>\n                            <option value="waiting_desc">Mayor espera (SLA)</option>\n                        </select>\n                    </label>\n                    <input type="search" id="searchCallbacks" placeholder="Buscar telefono" />\n                    <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n                </div>\n                <div class="toolbar-row slim">\n                    <p id="callbacksToolbarMeta">Mostrando 0</p>\n                    <p id="callbacksToolbarState">Sin filtros activos</p>\n                </div>\n                <div id="callbacksGrid" class="callbacks-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                <header class="section-header availability-header">\n                    <div class="availability-calendar">\n                        <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                        <div class="availability-badges">\n                            <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                            <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                            <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                        </div>\n                    </div>\n                    <div class="toolbar-group calendar-header">\n                        <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                        <strong id="calendarMonth"></strong>\n                        <button type="button" data-action="change-month" data-delta="1">Next</button>\n                        <button type="button" data-action="availability-today">Hoy</button>\n                        <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                        <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n                    </div>\n                </header>\n\n                <div class="toolbar-row slim">\n                    <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n                    <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n                    <p id="availabilitySyncStatus">Sincronizado</p>\n                </div>\n\n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n\n                <div id="availabilityDetailGrid" class="availability-detail-grid">\n                    <article class="sony-panel soft">\n                        <h4 id="selectedDate">-</h4>\n                        <div id="timeSlotsList" class="time-slots-list"></div>\n                    </article>\n\n                    <article class="sony-panel soft">\n                        <div id="availabilityQuickSlotPresets" class="slot-presets">\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                        </div>\n                        <div id="addSlotForm" class="add-slot-form">\n                            <input type="time" id="newSlotTime" />\n                            <button type="button" data-action="add-time-slot">Agregar</button>\n                        </div>\n                        <div id="availabilityDayActions" class="toolbar-group wrap">\n                            <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                            <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                            <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                            <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                            <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                            <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                        </div>\n                        <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                        <div class="toolbar-group">\n                            <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                            <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                        </div>\n                    </article>\n                </div>\n            </div>\n        </section>\n    \n        \n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                <header class="section-header">\n                    <h3>Turnero Sala</h3>\n                    <div class="queue-admin-header-actions">\n                        <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                        <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                        <button type="button" data-action="queue-refresh-state">Refrescar</button>\n                    </div>\n                </header>\n\n                <div class="sony-grid sony-grid-kpi slim">\n                    <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n                    <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n                    <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n                    <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n                    <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n                </div>\n\n                <div id="queueStationControl" class="toolbar-row">\n                    <span id="queueStationBadge">Estacion: libre</span>\n                    <span id="queueStationModeBadge">Modo: free</span>\n                    <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n                    <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n                    <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n                    <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n                    <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n                    <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n                    <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n                    <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n                    <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n                    <button type="button" data-action="queue-stop-practice">Salir practica</button>\n                    <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n                    <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n                </div>\n\n                <div id="queueShortcutPanel" hidden>\n                    <p>Numpad Enter llama siguiente.</p>\n                    <p>Numpad Decimal prepara completar.</p>\n                    <p>Numpad Subtract prepara no_show.</p>\n                </div>\n\n                <div id="queueTriageToolbar" class="toolbar-row">\n                    <button type="button" data-queue-filter="all">Todo</button>\n                    <button type="button" data-queue-filter="called">Llamados</button>\n                    <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n                    <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n                    <button type="button" data-action="queue-clear-search">Limpiar</button>\n                    <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n                    <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n                    <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n                    <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n                    <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n                </div>\n\n                <div class="toolbar-row slim">\n                    <p id="queueTriageSummary">Sin riesgo</p>\n                    <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n                </div>\n\n                <ul id="queueNextAdminList" class="sony-list"></ul>\n\n                <div class="table-scroll">\n                    <table class="sony-table queue-admin-table">\n                        <thead>\n                            <tr>\n                                <th>Sel</th>\n                                <th>Ticket</th>\n                                <th>Tipo</th>\n                                <th>Estado</th>\n                                <th>Consultorio</th>\n                                <th>Espera</th>\n                                <th>Acciones</th>\n                            </tr>\n                        </thead>\n                        <tbody id="queueTableBody"></tbody>\n                    </table>\n                </div>\n\n                <div id="queueActivityPanel" class="sony-panel soft">\n                    <h4>Actividad</h4>\n                    <ul id="queueActivityList" class="sony-list"></ul>\n                </div>\n            </div>\n\n            <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n                <form method="dialog">\n                    <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                    <div class="toolbar-group">\n                        <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                        <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                    </div>\n                </form>\n            </dialog>\n        </section>\n    \n    \n            </main>\n\n            <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n                <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n                <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                    <div class="admin-command-dialog__head">\n                        <div>\n                            <p class="sony-kicker">Command Palette</p>\n                            <h3 id="adminCommandPaletteTitle">Accion rapida</h3>\n                        </div>\n                        <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                    </div>\n                    <div class="admin-command-box">\n                        <input id="adminQuickCommand" type="text" placeholder="Ej. callbacks urgentes, citas transferencias, queue riesgo SLA" />\n                        <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                    </div>\n                    <div class="admin-command-dialog__hints">\n                        <span>Ctrl+K abre esta paleta</span>\n                        <span>/ enfoca la busqueda de la seccion activa</span>\n                    </div>\n                </div>\n            </div>\n        </div>\n    `));
+}
+const T = {
         dashboard: 'Dashboard',
         appointments: 'Citas',
         callbacks: 'Callbacks',
@@ -232,7 +243,7 @@ const A = {
         availability: 'Disponibilidad',
         queue: 'Turnero Sala',
     },
-    M = {
+    $ = {
         dashboard: {
             eyebrow: 'Resumen Diario',
             title: 'Que requiere atencion ahora',
@@ -392,31 +403,31 @@ const A = {
             ],
         },
     };
-function T() {
+function _() {
     const t = e('#loginScreen'),
         a = e('#adminDashboard');
     (t && t.classList.remove('is-hidden'), a && a.classList.add('is-hidden'));
 }
-function $() {
+function L() {
     const t = e('#loginScreen'),
         a = e('#adminDashboard');
     (t && t.classList.add('is-hidden'), a && a.classList.remove('is-hidden'));
 }
-function _() {
+function E() {
     const t = e('#adminCommandPalette');
     t instanceof HTMLElement &&
         (t.classList.remove('is-hidden'),
         t.setAttribute('aria-hidden', 'false'),
         document.body.classList.add('admin-command-open'));
 }
-function L() {
+function N() {
     const t = e('#adminCommandPalette');
     t instanceof HTMLElement &&
         (t.classList.add('is-hidden'),
         t.setAttribute('aria-hidden', 'true'),
         document.body.classList.remove('admin-command-open'));
 }
-function E(t) {
+function D(t) {
     (a('.admin-section').forEach((e) => {
         e.classList.toggle('active', e.id === t);
     }),
@@ -432,11 +443,11 @@ function E(t) {
             (e.classList.toggle('active', a),
                 e.setAttribute('aria-pressed', String(a)));
         }));
-    const n = A[t] || 'Dashboard',
+    const n = T[t] || 'Dashboard',
         i = e('#pageTitle');
     i && (i.textContent = n);
 }
-function N(t) {
+function B(t) {
     const a = e('#group2FA'),
         n = e('#adminLoginStepSummary'),
         i = e('#adminLoginStepEyebrow'),
@@ -464,9 +475,9 @@ function N(t) {
             (s.textContent = t
                 ? 'El backend ya valido la clave. Falta la segunda verificacion.'
                 : 'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.'),
-        B(!1));
+        P(!1));
 }
-function D({
+function x({
     tone: t = 'neutral',
     title: a = 'Proteccion activa',
     message: n = 'El panel usa autenticacion endurecida y activos self-hosted.',
@@ -478,7 +489,7 @@ function D({
         o && (o.textContent = a),
         s && (s.textContent = n));
 }
-function B(t) {
+function P(t) {
     const a = e('#loginBtn'),
         n = e('#loginReset2FABtn'),
         i = e('#adminPassword'),
@@ -498,18 +509,18 @@ function B(t) {
                   : 'Ingresar')),
         n instanceof HTMLButtonElement && (n.disabled = Boolean(t)));
 }
-function x({ clearPassword: t = !1 } = {}) {
+function I({ clearPassword: t = !1 } = {}) {
     const a = e('#adminPassword'),
         n = e('#admin2FACode');
     (a instanceof HTMLInputElement && t && (a.value = ''),
         n instanceof HTMLInputElement && (n.value = ''));
 }
-function P(t = 'password') {
+function H(t = 'password') {
     const a = e('2fa' === t ? '#admin2FACode' : '#adminPassword');
     a instanceof HTMLInputElement && (a.focus(), a.select?.());
 }
-function I(a) {
-    const n = M[a?.ui?.activeSection || 'dashboard'] || M.dashboard,
+function F(a) {
+    const n = $[a?.ui?.activeSection || 'dashboard'] || $.dashboard,
         i = a?.auth && 'object' == typeof a.auth ? a.auth : {},
         o = Array.isArray(a?.data?.appointments) ? a.data.appointments : [],
         s = Array.isArray(a?.data?.callbacks) ? a.data.callbacks : [],
@@ -612,7 +623,7 @@ function I(a) {
             })(i)
         ));
 }
-const H = {
+const O = {
     dashboard: {
         hero: '.dashboard-hero-panel',
         priority: '.dashboard-signal-panel',
@@ -646,35 +657,35 @@ const H = {
         detail: '#queueActivityPanel',
     },
 };
-function F(t, a, n) {
+function R(t, a, n) {
     if (!a) return;
     const i = e(`#${t}`);
     if (!(i instanceof HTMLElement)) return;
     const o = i.querySelector(a);
     o instanceof HTMLElement && o.setAttribute(n, 'true');
 }
-const O = 'admin-appointments-sort',
-    R = 'admin-appointments-density',
-    j = 'datetime_desc',
-    z = 'comfortable';
-function V(t) {
+const j = 'admin-appointments-sort',
+    z = 'admin-appointments-density',
+    V = 'datetime_desc',
+    U = 'comfortable';
+function K(t) {
     return String(t || '')
         .toLowerCase()
         .trim();
 }
-function U(t) {
+function Q(t) {
     return (function (t) {
         const e = new Date(t || '');
         return Number.isNaN(e.getTime()) ? 0 : e.getTime();
     })(`${t?.date || ''}T${t?.time || '00:00'}:00`);
 }
-function K(t) {
-    return V(t.paymentStatus || t.payment_status || '');
+function G(t) {
+    return K(t.paymentStatus || t.payment_status || '');
 }
-function Q(t) {
-    return V(t);
+function W(t) {
+    return K(t);
 }
-function G(t, e = '-') {
+function J(t, e = '-') {
     const a = String(t || '')
         .replace(/[_-]+/g, ' ')
         .trim();
@@ -685,7 +696,7 @@ function G(t, e = '-') {
               .join(' ')
         : e;
 }
-function W(t) {
+function Y(t) {
     return (
         {
             pending_transfer_review: 'Validar pago',
@@ -694,10 +705,10 @@ function W(t) {
             pending_gateway: 'Pago en proceso',
             paid: 'Pagado',
             failed: 'Fallido',
-        }[V(t)] || G(t, 'Pendiente')
+        }[K(t)] || J(t, 'Pendiente')
     );
 }
-function J(t) {
+function Z(t) {
     return (
         {
             confirmed: 'Confirmada',
@@ -705,10 +716,10 @@ function J(t) {
             completed: 'Completada',
             cancelled: 'Cancelada',
             no_show: 'No show',
-        }[V(t)] || G(t, 'Pendiente')
+        }[K(t)] || J(t, 'Pendiente')
     );
 }
-function Y(t) {
+function X(t) {
     if (!t) return 'Sin fecha';
     const e = Math.round((t - Date.now()) / 6e4),
         a = Math.abs(e);
@@ -724,8 +735,8 @@ function Y(t) {
             ? `En ${Math.round(e / 60)} h`
             : `En ${Math.round(e / 1440)} d`;
 }
-function Z(t) {
-    const e = U(t);
+function tt(t) {
+    const e = Q(t);
     if (!e) return !1;
     const a = new Date(e),
         n = new Date();
@@ -735,15 +746,15 @@ function Z(t) {
         a.getDate() === n.getDate()
     );
 }
-function X(t) {
-    const e = U(t);
+function et(t) {
+    const e = Q(t);
     if (!e) return !1;
     const a = e - Date.now();
     return a >= 0 && a <= 1728e5;
 }
-function tt(t) {
-    const e = K(t),
-        a = Q(t.status);
+function at(t) {
+    const e = G(t),
+        a = W(t.status);
     return (
         'pending_transfer_review' === e ||
         'pending_transfer' === e ||
@@ -751,27 +762,27 @@ function tt(t) {
         'cancelled' === a
     );
 }
-function et(t, e) {
-    const a = V(e);
+function nt(t, e) {
+    const a = K(e);
     return 'pending_transfer' === a
         ? t.filter((t) => {
-              const e = K(t);
+              const e = G(t);
               return (
                   'pending_transfer_review' === e || 'pending_transfer' === e
               );
           })
         : 'upcoming_48h' === a
-          ? t.filter(X)
+          ? t.filter(et)
           : 'no_show' === a
-            ? t.filter((t) => 'no_show' === Q(t.status))
+            ? t.filter((t) => 'no_show' === W(t.status))
             : 'triage_attention' === a
-              ? t.filter(tt)
+              ? t.filter(at)
               : t;
 }
-function at(t) {
-    const e = K(t),
-        a = Q(t.status),
-        n = U(t);
+function it(t) {
+    const e = G(t),
+        a = W(t.status),
+        n = Q(t);
     return 'pending_transfer_review' === e || 'pending_transfer' === e
         ? {
               label: 'Transferencia',
@@ -790,13 +801,13 @@ function at(t) {
                   tone: 'danger',
                   note: 'Bloqueo operativo cerrado.',
               }
-            : Z(t)
+            : tt(t)
               ? {
                     label: 'Hoy',
                     tone: 'success',
-                    note: n ? Y(n) : 'Agenda del dia',
+                    note: n ? X(n) : 'Agenda del dia',
                 }
-              : X(t)
+              : et(t)
                 ? {
                       label: '48h',
                       tone: 'neutral',
@@ -808,12 +819,12 @@ function at(t) {
                       note: 'Sin incidencias abiertas.',
                   };
 }
-function nt(t) {
+function ot(t) {
     const e = t
-            .map((t) => ({ item: t, stamp: U(t) }))
+            .map((t) => ({ item: t, stamp: Q(t) }))
             .sort((t, e) => t.stamp - e.stamp),
         a = e.find(({ item: t }) => {
-            const e = K(t);
+            const e = G(t);
             return 'pending_transfer_review' === e || 'pending_transfer' === e;
         });
     if (a)
@@ -823,7 +834,7 @@ function nt(t) {
             hint: 'Valida pago y confirma al paciente antes del check-in.',
             tags: ['Pago por validar', 'Liberar agenda'],
         };
-    const n = e.find(({ item: t }) => 'no_show' === Q(t.status));
+    const n = e.find(({ item: t }) => 'no_show' === W(t.status));
     if (n)
         return {
             item: n.item,
@@ -846,13 +857,13 @@ function nt(t) {
               tags: [],
           };
 }
-function it(e) {
+function st(e) {
     return e.length
         ? e
               .map((e) => {
-                  const a = U(e),
-                      i = at(e);
-                  return `\n                <tr class="appointment-row" data-appointment-id="${Number(e.id || 0)}">\n                    <td data-label="Paciente">\n                        <div class="appointment-person">\n                            <strong>${t(e.name || 'Sin nombre')}</strong>\n                            <span>${t(e.email || 'Sin email')}</span>\n                            <small>${t(e.phone || 'Sin telefono')}</small>\n                        </div>\n                    </td>\n                    <td data-label="Servicio">\n                        <div class="appointment-service">\n                            <strong>${t(G(e.service, 'Servicio pendiente'))}</strong>\n                            <span>Especialista: ${t(G(e.doctor, 'Sin asignar'))}</span>\n                            <small>${t(i.label)} | ${t(i.note)}</small>\n                        </div>\n                    </td>\n                    <td data-label="Fecha">\n                        <div class="appointment-date-stack">\n                            <strong>${t(n(e.date))}</strong>\n                            <span>${t(e.time || '--:--')}</span>\n                            <small>${t(Y(a))}</small>\n                        </div>\n                    </td>\n                    <td data-label="Pago">${(function (
+                  const a = Q(e),
+                      i = it(e);
+                  return `\n                <tr class="appointment-row" data-appointment-id="${Number(e.id || 0)}">\n                    <td data-label="Paciente">\n                        <div class="appointment-person">\n                            <strong>${t(e.name || 'Sin nombre')}</strong>\n                            <span>${t(e.email || 'Sin email')}</span>\n                            <small>${t(e.phone || 'Sin telefono')}</small>\n                        </div>\n                    </td>\n                    <td data-label="Servicio">\n                        <div class="appointment-service">\n                            <strong>${t(J(e.service, 'Servicio pendiente'))}</strong>\n                            <span>Especialista: ${t(J(e.doctor, 'Sin asignar'))}</span>\n                            <small>${t(i.label)} | ${t(i.note)}</small>\n                        </div>\n                    </td>\n                    <td data-label="Fecha">\n                        <div class="appointment-date-stack">\n                            <strong>${t(n(e.date))}</strong>\n                            <span>${t(e.time || '--:--')}</span>\n                            <small>${t(X(a))}</small>\n                        </div>\n                    </td>\n                    <td data-label="Pago">${(function (
                       e
                   ) {
                       const a = e.paymentStatus || e.payment_status || '',
@@ -864,7 +875,7 @@ function it(e) {
                           ).trim();
                       return `\n        <div class="appointment-payment-stack">\n            <span class="appointment-pill" data-tone="${t(
                           (function (t) {
-                              const e = V(t);
+                              const e = K(t);
                               return 'paid' === e
                                   ? 'success'
                                   : 'failed' === e
@@ -873,16 +884,16 @@ function it(e) {
                                       ? 'neutral'
                                       : 'warning';
                           })(a)
-                      )}">${t(W(a))}</span>\n            <small>Metodo: ${t(((i = e.paymentMethod || e.payment_method || ''), { transfer: 'Transferencia', cash: 'Consultorio', card: 'Tarjeta', gateway: 'Pasarela' }[V(i)] || G(i, 'Metodo pendiente')))}</small>\n            ${n ? `<a href="${t(n)}" target="_blank" rel="noopener">Ver comprobante</a>` : '<small>Sin comprobante adjunto</small>'}\n        </div>\n    `;
+                      )}">${t(Y(a))}</span>\n            <small>Metodo: ${t(((i = e.paymentMethod || e.payment_method || ''), { transfer: 'Transferencia', cash: 'Consultorio', card: 'Tarjeta', gateway: 'Pasarela' }[K(i)] || J(i, 'Metodo pendiente')))}</small>\n            ${n ? `<a href="${t(n)}" target="_blank" rel="noopener">Ver comprobante</a>` : '<small>Sin comprobante adjunto</small>'}\n        </div>\n    `;
                       var i;
                   })(
                       e
                   )}</td>\n                    <td data-label="Estado">${(function (
                       e
                   ) {
-                      const a = Q(e.status),
-                          n = K(e),
-                          i = at(e),
+                      const a = W(e.status),
+                          n = G(e),
+                          i = it(e),
                           o = [];
                       return (
                           'pending_transfer_review' === n &&
@@ -891,7 +902,7 @@ function it(e) {
                           'cancelled' === a && o.push('Cita cerrada'),
                           `\n        <div class="appointment-status-stack">\n            <span class="appointment-pill" data-tone="${t(
                               (function (t) {
-                                  const e = V(t);
+                                  const e = K(t);
                                   return 'completed' === e
                                       ? 'success'
                                       : 'cancelled' === e || 'no_show' === e
@@ -900,7 +911,7 @@ function it(e) {
                                           ? 'warning'
                                           : 'neutral';
                               })(a)
-                          )}">${t(J(a))}</span>\n            <small>${t(o[0] || i.note)}</small>\n        </div>\n    `
+                          )}">${t(Z(a))}</span>\n            <small>${t(o[0] || i.note)}</small>\n        </div>\n    `
                       );
                   })(
                       e
@@ -908,7 +919,7 @@ function it(e) {
                       e
                   ) {
                       const a = Number(e.id || 0),
-                          n = K(e),
+                          n = G(e),
                           i = (function (t) {
                               const e = String(t || '').replace(/\D+/g, '');
                               return e ? `https://wa.me/${e}` : '';
@@ -940,7 +951,7 @@ function it(e) {
               .join('')
         : `<tr class="table-empty-row"><td colspan="6">${t('No hay citas para el filtro actual.')}</td></tr>`;
 }
-function ot() {
+function rt() {
     const e = b(),
         a = Array.isArray(e?.data?.appointments) ? e.data.appointments : [],
         i = e?.appointments || {
@@ -950,17 +961,17 @@ function ot() {
             density: 'comfortable',
         },
         o = (function (t, e) {
-            const a = V(e),
+            const a = K(e),
                 n = [...t];
             return 'patient_az' === a
-                ? (n.sort((t, e) => V(t.name).localeCompare(V(e.name), 'es')),
+                ? (n.sort((t, e) => K(t.name).localeCompare(K(e.name), 'es')),
                   n)
                 : 'datetime_asc' === a
-                  ? (n.sort((t, e) => U(t) - U(e)), n)
-                  : (n.sort((t, e) => U(e) - U(t)), n);
+                  ? (n.sort((t, e) => Q(t) - Q(e)), n)
+                  : (n.sort((t, e) => Q(e) - Q(t)), n);
         })(
             (function (t, e) {
-                const a = V(e);
+                const a = K(e);
                 return a
                     ? t.filter((t) =>
                           [
@@ -972,33 +983,33 @@ function ot() {
                               t.paymentStatus,
                               t.payment_status,
                               t.status,
-                          ].some((t) => V(t).includes(a))
+                          ].some((t) => K(t).includes(a))
                       )
                     : t;
-            })(et(a, i.filter), i.search),
+            })(nt(a, i.filter), i.search),
             i.sort
         );
-    (c('#appointmentsTableBody', it(o)),
+    (c('#appointmentsTableBody', st(o)),
         (function (t, e, a) {
             (r('#appointmentsToolbarMeta', `Mostrando ${e} de ${a}`),
                 r(
                     '#appointmentsToolbarState',
                     (function (t, e) {
                         const a = [];
-                        if ('all' !== V(t.filter)) {
+                        if ('all' !== K(t.filter)) {
                             const e = {
                                 pending_transfer: 'Transferencias por validar',
                                 triage_attention: 'Triage accionable',
                                 upcoming_48h: 'Proximas 48h',
                                 no_show: 'No show',
                             };
-                            a.push(e[V(t.filter)] || t.filter);
+                            a.push(e[K(t.filter)] || t.filter);
                         }
                         return (
-                            V(t.search) && a.push(`Busqueda: ${t.search}`),
-                            'patient_az' === V(t.sort)
+                            K(t.search) && a.push(`Busqueda: ${t.search}`),
+                            'patient_az' === K(t.sort)
                                 ? a.push('Paciente (A-Z)')
-                                : 'datetime_asc' === V(t.sort)
+                                : 'datetime_asc' === K(t.sort)
                                   ? a.push('Fecha ascendente')
                                   : a.push('Fecha reciente'),
                             0 === e && a.push('Resultados: 0'),
@@ -1008,7 +1019,7 @@ function ot() {
                 ));
             const n = document.getElementById('clearAppointmentsFiltersBtn');
             if (n) {
-                const e = 'all' !== V(t.filter) || '' !== V(t.search);
+                const e = 'all' !== K(t.filter) || '' !== K(t.search);
                 n.classList.toggle('is-hidden', !e);
             }
             const i = document.getElementById('appointmentFilter');
@@ -1023,31 +1034,31 @@ function ot() {
             (c &&
                 c.classList.toggle(
                     'appointments-density-compact',
-                    'compact' === V(t.density)
+                    'compact' === K(t.density)
                 ),
                 document
                     .querySelectorAll(
                         '[data-action="appointment-density"][data-density]'
                     )
                     .forEach((e) => {
-                        const a = V(e.dataset.density) === V(t.density);
+                        const a = K(e.dataset.density) === K(t.density);
                         e.classList.toggle('is-active', a);
                     }),
                 (function (t) {
-                    const e = V(t);
+                    const e = K(t);
                     document
                         .querySelectorAll(
                             '.appointment-quick-filter-btn[data-filter-value]'
                         )
                         .forEach((t) => {
-                            const a = V(t.dataset.filterValue) === e;
+                            const a = K(t.dataset.filterValue) === e;
                             t.classList.toggle('is-active', a);
                         });
                 })(t.filter),
                 (function (t) {
                     try {
-                        (localStorage.setItem(O, JSON.stringify(t.sort)),
-                            localStorage.setItem(R, JSON.stringify(t.density)));
+                        (localStorage.setItem(j, JSON.stringify(t.sort)),
+                            localStorage.setItem(z, JSON.stringify(t.density)));
                     } catch (t) {}
                 })(t));
         })(i, o.length, a.length),
@@ -1123,14 +1134,14 @@ function ot() {
             (r('#appointmentsFocusPatient', l.name || 'Sin nombre'),
                 r(
                     '#appointmentsFocusMeta',
-                    `${G(l.service, 'Servicio pendiente')} | ${n(l.date)} ${l.time || '--:--'}`
+                    `${J(l.service, 'Servicio pendiente')} | ${n(l.date)} ${l.time || '--:--'}`
                 ),
-                r('#appointmentsFocusWindow', Y(U(l))),
+                r('#appointmentsFocusWindow', X(Q(l))),
                 r(
                     '#appointmentsFocusPayment',
-                    W(l.paymentStatus || l.payment_status)
+                    Y(l.paymentStatus || l.payment_status)
                 ),
-                r('#appointmentsFocusStatus', J(l.status)),
+                r('#appointmentsFocusStatus', Z(l.status)),
                 r('#appointmentsFocusContact', l.phone || 'Sin telefono'),
                 c(
                     '#appointmentsFocusTags',
@@ -1144,34 +1155,34 @@ function ot() {
                 r('#appointmentsFocusHint', s.hint));
         })(
             (function (t) {
-                const e = et(t, 'pending_transfer'),
-                    a = et(t, 'upcoming_48h'),
-                    n = et(t, 'no_show'),
-                    i = et(t, 'triage_attention'),
-                    o = t.filter(Z);
+                const e = nt(t, 'pending_transfer'),
+                    a = nt(t, 'upcoming_48h'),
+                    n = nt(t, 'no_show'),
+                    i = nt(t, 'triage_attention'),
+                    o = t.filter(tt);
                 return {
                     pendingTransferCount: e.length,
                     upcomingCount: a.length,
                     noShowCount: n.length,
                     todayCount: o.length,
                     triageCount: i.length,
-                    focus: nt(t),
+                    focus: ot(t),
                 };
             })(a),
             o.length,
             a.length
         ));
 }
-function st(t) {
-    (g((e) => ({ ...e, appointments: { ...e.appointments, ...t } })), ot());
-}
-function rt(t) {
-    st({ filter: V(t) || 'all' });
-}
 function ct(t) {
-    st({ search: String(t || '') });
+    (g((e) => ({ ...e, appointments: { ...e.appointments, ...t } })), rt());
 }
-function lt(t, e) {
+function lt(t) {
+    ct({ filter: K(t) || 'all' });
+}
+function ut(t) {
+    ct({ search: String(t || '') });
+}
+function dt(t, e) {
     const a = Number(t || 0);
     (g((t) => ({
         ...t,
@@ -1182,33 +1193,33 @@ function lt(t, e) {
             ),
         },
     })),
-        ot());
+        rt());
 }
-async function ut(t, e) {
+async function pt(t, e) {
     await k('appointments', {
         method: 'PATCH',
         body: { id: Number(t || 0), ...e },
     });
 }
-const dt = 'admin-callbacks-sort',
-    pt = 'admin-callbacks-filter',
-    mt = new Set(['all', 'pending', 'contacted', 'today', 'sla_urgent']),
-    bt = new Set(['recent_desc', 'waiting_desc']);
-function gt(t) {
+const mt = 'admin-callbacks-sort',
+    bt = 'admin-callbacks-filter',
+    gt = new Set(['all', 'pending', 'contacted', 'today', 'sla_urgent']),
+    ft = new Set(['recent_desc', 'waiting_desc']);
+function ht(t) {
     return String(t || '')
         .toLowerCase()
         .trim();
 }
-function ft(t) {
-    const e = gt(t);
-    return mt.has(e) ? e : 'all';
-}
-function ht(t) {
-    const e = gt(t);
-    return bt.has(e) ? e : 'recent_desc';
-}
 function yt(t) {
-    const e = gt(t);
+    const e = ht(t);
+    return gt.has(e) ? e : 'all';
+}
+function vt(t) {
+    const e = ht(t);
+    return ft.has(e) ? e : 'recent_desc';
+}
+function kt(t) {
+    const e = ht(t);
     return 'contacted' === e ||
         'contactado' === e ||
         'completed' === e ||
@@ -1219,21 +1230,21 @@ function yt(t) {
         ? 'contacted'
         : 'pending';
 }
-function vt(t) {
+function wt(t) {
     const e = new Date(t?.fecha || t?.createdAt || '');
     return Number.isNaN(e.getTime()) ? 0 : e.getTime();
 }
-function kt(t) {
-    const e = vt(t);
+function St(t) {
+    const e = wt(t);
     return e ? Math.max(0, Math.round((Date.now() - e) / 6e4)) : 0;
 }
-function wt(t) {
+function Ct(t) {
     return (
         String(t?.telefono || t?.phone || 'Sin telefono').trim() ||
         'Sin telefono'
     );
 }
-function St(t) {
+function qt(t) {
     const e = new Date(t || '');
     if (Number.isNaN(e.getTime())) return !1;
     const a = new Date();
@@ -1243,7 +1254,7 @@ function St(t) {
         e.getDate() === a.getDate()
     );
 }
-function Ct(t) {
+function At(t) {
     return t >= 120
         ? { label: 'Critico SLA', tone: 'danger', note: 'Escala inmediata' }
         : t >= 45
@@ -1258,37 +1269,37 @@ function Ct(t) {
                 note: 'Todavia dentro de margen',
             };
 }
-function qt(t) {
+function Mt(t) {
     return t < 60 ? `${t} min` : `${Math.round(t / 60)} h`;
 }
-function At(t) {
+function Tt(t) {
     try {
-        (localStorage.setItem(pt, JSON.stringify(ft(t.filter))),
-            localStorage.setItem(dt, JSON.stringify(ht(t.sort))));
+        (localStorage.setItem(bt, JSON.stringify(yt(t.filter))),
+            localStorage.setItem(mt, JSON.stringify(vt(t.sort))));
     } catch (t) {}
 }
-function Mt() {
+function $t() {
     const e = b(),
         a = Array.isArray(e?.data?.callbacks) ? e.data.callbacks : [],
         n = (function (t, e) {
-            const a = gt(e);
+            const a = ht(e);
             return a
                 ? t.filter((t) =>
                       [t.telefono, t.phone, t.preferencia, t.status].some((t) =>
-                          gt(t).includes(a)
+                          ht(t).includes(a)
                       )
                   )
                 : t;
         })(
             (function (t, e) {
-                const a = ft(e);
+                const a = yt(e);
                 return 'pending' === a || 'contacted' === a
-                    ? t.filter((t) => yt(t.status) === a)
+                    ? t.filter((t) => kt(t.status) === a)
                     : 'today' === a
-                      ? t.filter((t) => St(t.fecha || t.createdAt))
+                      ? t.filter((t) => qt(t.fecha || t.createdAt))
                       : 'sla_urgent' === a
                         ? t.filter(
-                              (t) => 'pending' === yt(t.status) && kt(t) >= 120
+                              (t) => 'pending' === kt(t.status) && St(t) >= 120
                           )
                         : t;
             })(a, e.callbacks.filter),
@@ -1296,9 +1307,9 @@ function Mt() {
         ),
         o = (function (t, e) {
             const a = [...t];
-            return 'waiting_desc' === ht(e)
-                ? (a.sort((t, e) => vt(t) - vt(e)), a)
-                : (a.sort((t, e) => vt(e) - vt(t)), a);
+            return 'waiting_desc' === vt(e)
+                ? (a.sort((t, e) => wt(t) - wt(e)), a)
+                : (a.sort((t, e) => wt(e) - wt(t)), a);
         })(n, e.callbacks.sort),
         s = new Set((e.callbacks.selected || []).map((t) => Number(t || 0)));
     (c(
@@ -1310,16 +1321,16 @@ function Mt() {
                           e,
                           { selected: a = !1, position: n = null } = {}
                       ) {
-                          const o = yt(e.status),
+                          const o = kt(e.status),
                               s =
                                   'pending' === o
                                       ? 'callback-card pendiente'
                                       : 'callback-card contactado',
                               r = 'pending' === o ? 'pendiente' : 'contactado',
                               c = Number(e.id || 0),
-                              l = wt(e),
-                              u = kt(e),
-                              d = Ct(u),
+                              l = Ct(e),
+                              u = St(e),
+                              d = At(u),
                               p = e.preferencia || 'Sin preferencia',
                               m =
                                   'pending' === o
@@ -1327,7 +1338,7 @@ function Mt() {
                                           ? 'Siguiente contacto recomendado'
                                           : 'Caso pendiente en cola'
                                       : 'Caso ya resuelto';
-                          return `\n        <article class="${s}${a ? ' is-selected' : ''}" data-callback-id="${c}" data-callback-status="${r}">\n            <header>\n                <div class="callback-card-heading">\n                    <span class="callback-status-pill" data-tone="${t('pending' === o ? d.tone : 'success')}">${t('pending' === o ? 'Pendiente' : 'Contactado')}</span>\n                    <h4>${t(l)}</h4>\n                </div>\n                <span class="callback-card-wait" data-tone="${t('pending' === o ? d.tone : 'success')}">${t('pending' === o ? d.label : 'Cerrado')}</span>\n            </header>\n            <div class="callback-card-grid">\n                <p><span>Preferencia</span><strong>${t(p)}</strong></p>\n                <p><span>Fecha</span><strong>${t(i(e.fecha || e.createdAt || ''))}</strong></p>\n                <p><span>Espera</span><strong>${t(qt(u))}</strong></p>\n                <p><span>Lectura</span><strong>${t(m)}</strong></p>\n            </div>\n            <p class="callback-card-note">${t('pending' === o ? d.note : 'Registro ya marcado como contactado.')}</p>\n            <div class="callback-actions">\n                <button type="button" data-action="mark-contacted" data-callback-id="${c}" data-callback-date="${t(e.fecha || '')}" ${'pending' !== o ? 'disabled' : ''}>${'pending' === o ? 'Marcar contactado' : 'Contactado'}</button>\n            </div>\n        </article>\n    `;
+                          return `\n        <article class="${s}${a ? ' is-selected' : ''}" data-callback-id="${c}" data-callback-status="${r}">\n            <header>\n                <div class="callback-card-heading">\n                    <span class="callback-status-pill" data-tone="${t('pending' === o ? d.tone : 'success')}">${t('pending' === o ? 'Pendiente' : 'Contactado')}</span>\n                    <h4>${t(l)}</h4>\n                </div>\n                <span class="callback-card-wait" data-tone="${t('pending' === o ? d.tone : 'success')}">${t('pending' === o ? d.label : 'Cerrado')}</span>\n            </header>\n            <div class="callback-card-grid">\n                <p><span>Preferencia</span><strong>${t(p)}</strong></p>\n                <p><span>Fecha</span><strong>${t(i(e.fecha || e.createdAt || ''))}</strong></p>\n                <p><span>Espera</span><strong>${t(Mt(u))}</strong></p>\n                <p><span>Lectura</span><strong>${t(m)}</strong></p>\n            </div>\n            <p class="callback-card-note">${t('pending' === o ? d.note : 'Registro ya marcado como contactado.')}</p>\n            <div class="callback-actions">\n                <button type="button" data-action="mark-contacted" data-callback-id="${c}" data-callback-date="${t(e.fecha || '')}" ${'pending' !== o ? 'disabled' : ''}>${'pending' === o ? 'Marcar contactado' : 'Contactado'}</button>\n            </div>\n        </article>\n    `;
                       })(e, {
                           selected: s.has(Number(e.id || 0)),
                           position: a + 1,
@@ -1338,48 +1349,48 @@ function Mt() {
     ),
         r('#callbacksToolbarMeta', `Mostrando ${o.length} de ${a.length}`));
     const l = [];
-    ('all' !== ft(e.callbacks.filter) &&
+    ('all' !== yt(e.callbacks.filter) &&
         l.push(
-            'pending' === ft(e.callbacks.filter)
+            'pending' === yt(e.callbacks.filter)
                 ? 'Pendientes'
-                : 'contacted' === ft(e.callbacks.filter)
+                : 'contacted' === yt(e.callbacks.filter)
                   ? 'Contactados'
-                  : 'today' === ft(e.callbacks.filter)
+                  : 'today' === yt(e.callbacks.filter)
                     ? 'Hoy'
                     : 'Urgentes SLA'
         ),
-        gt(e.callbacks.search) && l.push(`Busqueda: ${e.callbacks.search}`),
-        'waiting_desc' === ht(e.callbacks.sort)
+        ht(e.callbacks.search) && l.push(`Busqueda: ${e.callbacks.search}`),
+        'waiting_desc' === vt(e.callbacks.sort)
             ? l.push('Orden: Mayor espera (SLA)')
             : l.push('Orden: Mas recientes'),
         r('#callbacksToolbarState', l.join(' | ')));
     const u = document.getElementById('callbackFilter');
-    u instanceof HTMLSelectElement && (u.value = ft(e.callbacks.filter));
+    u instanceof HTMLSelectElement && (u.value = yt(e.callbacks.filter));
     const d = document.getElementById('callbackSort');
-    d instanceof HTMLSelectElement && (d.value = ht(e.callbacks.sort));
+    d instanceof HTMLSelectElement && (d.value = vt(e.callbacks.sort));
     const p = document.getElementById('searchCallbacks');
     (p instanceof HTMLInputElement &&
         p.value !== e.callbacks.search &&
         (p.value = e.callbacks.search),
         (function (t) {
-            const e = gt(t);
+            const e = ht(t);
             document
                 .querySelectorAll(
                     '.callback-quick-filter-btn[data-filter-value]'
                 )
                 .forEach((t) => {
-                    const a = gt(t.dataset.filterValue) === e;
+                    const a = ht(t.dataset.filterValue) === e;
                     t.classList.toggle('is-active', a);
                 });
         })(e.callbacks.filter));
     const m = (function (t) {
-        const e = t.filter((t) => 'pending' === yt(t.status)),
-            a = e.filter((t) => kt(t) >= 120),
-            n = e.slice().sort((t, e) => vt(t) - vt(e))[0];
+        const e = t.filter((t) => 'pending' === kt(t.status)),
+            a = e.filter((t) => St(t) >= 120),
+            n = e.slice().sort((t, e) => wt(t) - wt(e))[0];
         return {
             pendingCount: e.length,
             urgentCount: a.length,
-            todayCount: t.filter((t) => St(t.fecha || t.createdAt)).length,
+            todayCount: t.filter((t) => qt(t.fecha || t.createdAt)).length,
             next: n,
             queueHealth:
                 a.length > 0
@@ -1428,31 +1439,31 @@ function Mt() {
             const o = document.getElementById('callbacksOpsQueueHealth');
             o && o.setAttribute('data-state', t.queueState);
             const s = t.next;
-            (r('#callbacksOpsNext', s ? wt(s) : 'Sin telefono'),
+            (r('#callbacksOpsNext', s ? Ct(s) : 'Sin telefono'),
                 r(
                     '#callbacksNextSummary',
                     s
-                        ? `Prioriza ${wt(s)} antes de seguir con la cola.`
+                        ? `Prioriza ${Ct(s)} antes de seguir con la cola.`
                         : 'La siguiente llamada prioritaria aparecera aqui.'
                 ),
-                r('#callbacksNextWait', s ? qt(kt(s)) : '0 min'),
+                r('#callbacksNextWait', s ? Mt(St(s)) : '0 min'),
                 r('#callbacksNextPreference', (s && s.preferencia) || '-'),
-                r('#callbacksNextState', s ? Ct(kt(s)).label : 'Pendiente'));
+                r('#callbacksNextState', s ? At(St(s)).label : 'Pendiente'));
             const c = document.getElementById('callbacksSelectionChip');
             (c && c.classList.toggle('is-hidden', 0 === n),
                 r('#callbacksSelectedCount', n));
         })(m, o.length, a.length, s.size),
-        At(b().callbacks));
+        Tt(b().callbacks));
 }
-function Tt(t, { persist: e = !0 } = {}) {
+function _t(t, { persist: e = !0 } = {}) {
     (g((e) => ({ ...e, callbacks: { ...e.callbacks, ...t } })),
-        e && At(b().callbacks),
-        Mt());
+        e && Tt(b().callbacks),
+        $t());
 }
-function $t(t) {
-    Tt({ filter: ft(t), selected: [] });
+function Lt(t) {
+    _t({ filter: yt(t), selected: [] });
 }
-async function _t(t, e = '') {
+async function Et(t, e = '') {
     const a = Number(t || 0);
     a <= 0 ||
         (await k('callbacks', {
@@ -1478,103 +1489,103 @@ async function _t(t, e = '') {
                     ),
                 },
             })),
-                Mt());
+                $t());
         })(a));
 }
-const Lt = 'admin-availability-selected-date',
-    Et = 'admin-availability-month-anchor';
-function Nt(t) {
+const Nt = 'admin-availability-selected-date',
+    Dt = 'admin-availability-month-anchor';
+function Bt(t) {
     const e = String(t || '')
         .trim()
         .match(/^(\d{2}):(\d{2})$/);
     return e ? `${e[1]}:${e[2]}` : '';
 }
-function Dt(t) {
-    return [...new Set(t.map(Nt).filter(Boolean))].sort();
+function xt(t) {
+    return [...new Set(t.map(Bt).filter(Boolean))].sort();
 }
-function Bt(t) {
+function Pt(t) {
     const e = String(t || '').trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(e)) return '';
     const a = new Date(`${e}T12:00:00`);
     return Number.isNaN(a.getTime()) ? '' : u(a) === e ? e : '';
 }
-function xt(t) {
-    const e = Bt(t);
+function It(t) {
+    const e = Pt(t);
     if (!e) return null;
     const a = new Date(`${e}T12:00:00`);
     return Number.isNaN(a.getTime()) ? null : a;
 }
-function Pt(t) {
+function Ht(t) {
     const e = {};
     return (
         Object.keys(t || {})
             .sort()
             .forEach((a) => {
-                const n = Bt(a);
+                const n = Pt(a);
                 if (!n) return;
-                const i = Dt(Array.isArray(t[a]) ? t[a] : []);
+                const i = xt(Array.isArray(t[a]) ? t[a] : []);
                 i.length && (e[n] = i);
             }),
         e
     );
 }
-function It(t) {
-    return Pt(t || {});
+function Ft(t) {
+    return Ht(t || {});
 }
-function Ht(t) {
-    return JSON.stringify(Pt(t || {}));
+function Ot(t) {
+    return JSON.stringify(Ht(t || {}));
 }
-function Ft(t, e = '') {
+function Rt(t, e = '') {
     let a = null;
     if (t instanceof Date && !Number.isNaN(t.getTime())) a = new Date(t);
     else {
-        const e = Bt(t);
+        const e = Pt(t);
         e && (a = new Date(`${e}T12:00:00`));
     }
     if (!a) {
-        const t = xt(e);
+        const t = It(e);
         a = t ? new Date(t) : new Date();
     }
     return (a.setDate(1), a.setHours(12, 0, 0, 0), a);
 }
-function Ot(t, e) {
-    const a = Bt(t);
+function jt(t, e) {
+    const a = Pt(t);
     if (a) return a;
     const n = Object.keys(e || {})[0];
     if (n) {
-        const t = Bt(n);
+        const t = Pt(n);
         if (t) return t;
     }
     return u(new Date());
 }
-function Rt() {
+function zt() {
     const t = b(),
-        e = Bt(t.availability.selectedDate),
-        a = Ft(t.availability.monthAnchor, e);
+        e = Pt(t.availability.selectedDate),
+        a = Rt(t.availability.monthAnchor, e);
     try {
-        (e ? localStorage.setItem(Lt, e) : localStorage.removeItem(Lt),
-            localStorage.setItem(Et, u(a)));
+        (e ? localStorage.setItem(Nt, e) : localStorage.removeItem(Nt),
+            localStorage.setItem(Dt, u(a)));
     } catch (t) {}
 }
-function jt(t) {
-    const e = It(b().data.availability || {});
-    return Ht(t) !== Ht(e);
+function Vt(t) {
+    const e = Ft(b().data.availability || {});
+    return Ot(t) !== Ot(e);
 }
-function zt() {
-    return It(b().availability.draft || {});
+function Ut() {
+    return Ft(b().availability.draft || {});
 }
-function Vt() {
+function Kt() {
     const t = b().data.availabilityMeta || {};
     return 'google' === String(t.source || '').toLowerCase();
 }
-function Ut() {
+function Qt() {
     const t = b(),
-        e = Bt(t.availability.selectedDate);
+        e = Pt(t.availability.selectedDate);
     if (e) return e;
-    const a = It(t.availability.draft || {});
+    const a = Ft(t.availability.draft || {});
     return Object.keys(a)[0] || u(new Date());
 }
-function Kt(t, e) {
+function Gt(t, e) {
     return t.length
         ? 1 === t.length
             ? '1 slot publicado. ' +
@@ -1586,24 +1597,24 @@ function Kt(t, e) {
           ? 'No hay slots publicados en este dia.'
           : 'Agrega slots o copia una jornada existente.';
 }
-function Qt(t = 1) {
-    const e = zt(),
+function Wt(t = 1) {
+    const e = Ut(),
         a = Object.keys(e).filter((t) => e[t]?.length > 0);
     if (!a.length) return '';
-    const n = Bt(b().availability.selectedDate) || u(new Date());
+    const n = Pt(b().availability.selectedDate) || u(new Date());
     return (
         (t >= 0 ? a.sort() : a.sort().reverse()).find((e) =>
             t >= 0 ? e >= n : e <= n
         ) || ''
     );
 }
-function Gt() {
+function Jt() {
     ((function () {
         const t = b(),
-            e = Ft(t.availability.monthAnchor, t.availability.selectedDate),
-            a = Ut(),
+            e = Rt(t.availability.monthAnchor, t.availability.selectedDate),
+            a = Qt(),
             n = e.getMonth(),
-            i = It(t.availability.draft),
+            i = Ft(t.availability.draft),
             o = u(new Date());
         var s;
         r(
@@ -1640,13 +1651,13 @@ function Gt() {
         (function () {
             const { selectedDate: e, slots: a } = (function () {
                     const t = b(),
-                        e = Ut();
+                        e = Qt();
                     return {
                         selectedDate: e,
-                        slots: Dt(It(t.availability.draft)[e] || []),
+                        slots: xt(Ft(t.availability.draft)[e] || []),
                     };
                 })(),
-                n = Vt();
+                n = Kt();
             (r('#selectedDate', e || '-'),
                 a.length
                     ? c(
@@ -1660,22 +1671,22 @@ function Gt() {
                       )
                     : c(
                           '#timeSlotsList',
-                          `<p class="empty-message" data-admin-empty-state="availability-slots">${t(Kt([], n))}</p>`
+                          `<p class="empty-message" data-admin-empty-state="availability-slots">${t(Gt([], n))}</p>`
                       ));
         })(),
         (function () {
             const t = b(),
-                a = Ut(),
-                n = It(t.availability.draft),
-                i = Array.isArray(n[a]) ? Dt(n[a]) : [],
-                o = Vt(),
+                a = Qt(),
+                n = Ft(t.availability.draft),
+                i = Array.isArray(n[a]) ? xt(n[a]) : [],
+                o = Kt(),
                 {
                     sourceText: s,
                     modeText: c,
                     timezone: l,
                 } = (function () {
                     const t = b().data.availabilityMeta || {},
-                        e = Vt();
+                        e = Kt();
                     return {
                         sourceText: e ? 'Google Calendar' : 'Local',
                         modeText: e ? 'Solo lectura' : 'Editable',
@@ -1699,7 +1710,7 @@ function Gt() {
                 r(
                     '#availabilitySelectionSummary',
                     `Fecha: ${a} | ${(function (t) {
-                        const e = xt(t);
+                        const e = It(t);
                         return e
                             ? new Intl.DateTimeFormat('es-EC', {
                                   weekday: 'short',
@@ -1730,7 +1741,7 @@ function Gt() {
             const g = Array.isArray(t.availability.clipboard)
                 ? t.availability.clipboard.length
                 : 0;
-            let f = Kt(i, o);
+            let f = Gt(i, o);
             (o
                 ? (f = 'Edicion bloqueada por proveedor Google')
                 : t.availability.lastAction
@@ -1753,68 +1764,68 @@ function Gt() {
                                       o || !t.availability.draftDirty));
                     }));
         })(),
-        Rt());
+        zt());
 }
-function Wt(t, { render: e = !1 } = {}) {
+function Yt(t, { render: e = !1 } = {}) {
     (g((e) => ({ ...e, availability: { ...e.availability, ...t } })),
-        e ? Gt() : Rt());
+        e ? Jt() : zt());
 }
-function Jt(t, e = {}) {
-    const a = It(t),
-        n = Ot(e.selectedDate || b().availability.selectedDate, a);
-    Wt(
+function Zt(t, e = {}) {
+    const a = Ft(t),
+        n = jt(e.selectedDate || b().availability.selectedDate, a);
+    Yt(
         {
             draft: a,
             selectedDate: n,
-            monthAnchor: Ft(e.monthAnchor || b().availability.monthAnchor, n),
-            draftDirty: jt(a),
+            monthAnchor: Rt(e.monthAnchor || b().availability.monthAnchor, n),
+            draftDirty: Vt(a),
             ...e,
         },
         { render: !0 }
     );
 }
-function Yt(t) {
-    Wt({ lastAction: String(t || '') }, { render: !0 });
+function Xt(t) {
+    Yt({ lastAction: String(t || '') }, { render: !0 });
 }
-function Zt(t, e, a = '') {
-    const n = Bt(t) || Ut();
+function te(t, e, a = '') {
+    const n = Pt(t) || Qt();
     if (!n) return;
-    const i = zt(),
-        o = Dt(Array.isArray(e) ? e : []);
+    const i = Ut(),
+        o = xt(Array.isArray(e) ? e : []);
     (o.length ? (i[n] = o) : delete i[n],
-        Jt(i, { selectedDate: n, monthAnchor: n, lastAction: a }));
+        Zt(i, { selectedDate: n, monthAnchor: n, lastAction: a }));
 }
-function Xt(t, e) {
-    const a = Bt(t);
+function ee(t, e) {
+    const a = Pt(t);
     a &&
-        Wt(
-            { selectedDate: a, monthAnchor: Ft(a, a), lastAction: e || '' },
+        Yt(
+            { selectedDate: a, monthAnchor: Rt(a, a), lastAction: e || '' },
             { render: !0 }
         );
 }
-function te() {
+function ae() {
     return Boolean(b().availability.draftDirty);
 }
-function ee(t) {
-    if (Vt()) return;
+function ne(t) {
+    if (Kt()) return;
     const e = b(),
-        a = Bt(e.availability.selectedDate) || Ut(),
+        a = Pt(e.availability.selectedDate) || Qt(),
         n = Array.isArray(e.availability.draft[a])
             ? e.availability.draft[a]
             : [],
-        i = xt(a);
+        i = It(a);
     if (!i) return;
     i.setDate(i.getDate() + Number(t || 0));
     const o = u(i);
-    Zt(o, n, `Duplicado ${n.length} slots en ${o}`);
+    te(o, n, `Duplicado ${n.length} slots en ${o}`);
 }
-function ae(t) {
+function ie(t) {
     return String(t || '')
         .toLowerCase()
         .trim();
 }
-function ne(t) {
-    const e = ae(t);
+function oe(t) {
+    const e = ie(t);
     return ['waiting', 'wait', 'en_espera', 'espera'].includes(e)
         ? 'waiting'
         : ['called', 'calling', 'llamado'].includes(e)
@@ -1833,8 +1844,8 @@ function ne(t) {
                 ? 'cancelled'
                 : e || 'waiting';
 }
-function ie(t) {
-    const e = ae(t);
+function se(t) {
+    const e = ie(t);
     return ['complete', 'completed', 'completar'].includes(e)
         ? 'completar'
         : ['no_show', 'noshow', 'no-show', 'no show'].includes(e)
@@ -1855,25 +1866,25 @@ function ie(t) {
                   ? 'liberar'
                   : e;
 }
-function oe(t) {
+function re(t) {
     return Array.isArray(t) ? t : [];
 }
-function se(t, e = 0) {
+function ce(t, e = 0) {
     const a = Number(t);
     return Number.isFinite(a) ? a : e;
 }
-function re(t) {
+function le(t) {
     const e = new Date(t || '');
     return Number.isNaN(e.getTime()) ? 0 : e.getTime();
 }
-function ce(...t) {
+function ue(...t) {
     for (const e of t) {
         const t = String(e ?? '').trim();
         if (t) return t;
     }
     return '';
 }
-function le(t, e = 0) {
+function de(t, e = 0) {
     const a = Number(t?.id || t?.ticket_id || e + 1);
     return {
         id: a,
@@ -1885,7 +1896,7 @@ function le(t, e = 0) {
         priorityClass: String(
             t?.priorityClass || t?.priority_class || 'walk_in'
         ),
-        status: ne(t?.status || 'waiting'),
+        status: oe(t?.status || 'waiting'),
         assignedConsultorio:
             2 === Number(t?.assignedConsultorio || t?.assigned_consultorio || 0)
                 ? 2
@@ -1902,18 +1913,18 @@ function le(t, e = 0) {
         completedAt: String(t?.completedAt || t?.completed_at || ''),
     };
 }
-function ue(t, e = 0, a = {}) {
+function pe(t, e = 0, a = {}) {
     const n = t && 'object' == typeof t ? t : {},
-        i = le({ ...n, ...a }, e);
+        i = de({ ...n, ...a }, e);
     return (
-        ce(n.createdAt, n.created_at) || (i.createdAt = ''),
-        ce(n.priorityClass, n.priority_class) || (i.priorityClass = ''),
-        ce(n.queueType, n.queue_type) || (i.queueType = ''),
-        ce(n.patientInitials, n.patient_initials) || (i.patientInitials = ''),
+        ue(n.createdAt, n.created_at) || (i.createdAt = ''),
+        ue(n.priorityClass, n.priority_class) || (i.priorityClass = ''),
+        ue(n.queueType, n.queue_type) || (i.queueType = ''),
+        ue(n.patientInitials, n.patient_initials) || (i.patientInitials = ''),
         i
     );
 }
-function de(t) {
+function me(t) {
     const e = t.filter((t) => 'waiting' === t.status),
         a = t.filter((t) => 'called' === t.status),
         n = {
@@ -1942,7 +1953,7 @@ function de(t) {
             })),
     };
 }
-function pe(t, e = []) {
+function be(t, e = []) {
     const a = t && 'object' == typeof t ? t : {},
         n = a.counts && 'object' == typeof a.counts ? a.counts : {},
         i =
@@ -1953,8 +1964,8 @@ function pe(t, e = []) {
                     'object' == typeof a.calling_now_by_consultorio
                   ? a.calling_now_by_consultorio
                   : {},
-        o = oe(a.callingNow).concat(oe(a.calling_now)),
-        s = oe(e).map((t, e) => le(t, e)),
+        o = re(a.callingNow).concat(re(a.calling_now)),
+        s = re(e).map((t, e) => de(t, e)),
         r =
             i[1] ||
             i[1] ||
@@ -1977,12 +1988,12 @@ function pe(t, e = []) {
                     )
             ) ||
             null,
-        l = r ? ue(r, 0, { status: 'called', assignedConsultorio: 1 }) : null,
-        u = c ? ue(c, 1, { status: 'called', assignedConsultorio: 2 }) : null,
-        d = oe(a.nextTickets)
-            .concat(oe(a.next_tickets))
+        l = r ? pe(r, 0, { status: 'called', assignedConsultorio: 1 }) : null,
+        u = c ? pe(c, 1, { status: 'called', assignedConsultorio: 2 }) : null,
+        d = re(a.nextTickets)
+            .concat(re(a.next_tickets))
             .map((t, e) =>
-                ue(
+                pe(
                     {
                         ...t,
                         status: t?.status || 'waiting',
@@ -1994,19 +2005,19 @@ function pe(t, e = []) {
         p = s.filter((t) => 'waiting' === t.status).length,
         m = s.filter((t) => 'called' === t.status).length,
         b = Math.max(Number(Boolean(l)) + Number(Boolean(u)), m),
-        g = se(
+        g = ce(
             a.waitingCount ?? a.waiting_count ?? n.waiting ?? d.length ?? p,
             0
         ),
-        f = se(a.calledCount ?? a.called_count ?? n.called ?? b, 0),
-        h = se(
+        f = ce(a.calledCount ?? a.called_count ?? n.called ?? b, 0),
+        h = ce(
             n.completed ??
                 a.completedCount ??
                 a.completed_count ??
                 s.filter((t) => 'completed' === t.status).length,
             0
         ),
-        y = se(
+        y = ce(
             n.no_show ??
                 n.noShow ??
                 a.noShowCount ??
@@ -2014,7 +2025,7 @@ function pe(t, e = []) {
                 s.filter((t) => 'no_show' === t.status).length,
             0
         ),
-        v = se(
+        v = ce(
             n.cancelled ??
                 n.canceled ??
                 a.cancelledCount ??
@@ -2039,21 +2050,21 @@ function pe(t, e = []) {
         nextTickets: d,
     };
 }
-function me(t) {
-    const e = le(t, 0);
-    return e.id > 0 ? `id:${e.id}` : `code:${ae(e.ticketCode || '')}`;
+function ge(t) {
+    const e = de(t, 0);
+    return e.id > 0 ? `id:${e.id}` : `code:${ie(e.ticketCode || '')}`;
 }
-function be(t) {
-    const e = pe(t),
+function fe(t) {
+    const e = be(t),
         a = new Map(),
         n = (t) => {
             if (!t) return;
-            const e = le(t, a.size);
-            (ce(t?.createdAt, t?.created_at) || (e.createdAt = ''),
-                ce(t?.priorityClass, t?.priority_class) ||
+            const e = de(t, a.size);
+            (ue(t?.createdAt, t?.created_at) || (e.createdAt = ''),
+                ue(t?.priorityClass, t?.priority_class) ||
                     (e.priorityClass = ''),
-                ce(t?.queueType, t?.queue_type) || (e.queueType = ''),
-                a.set(me(e), e));
+                ue(t?.queueType, t?.queue_type) || (e.queueType = ''),
+                a.set(ge(e), e));
         },
         i =
             e.callingNowByConsultorio?.[1] ||
@@ -2065,14 +2076,14 @@ function be(t) {
             null;
     (i && n({ ...i, status: 'called', assignedConsultorio: 1 }),
         o && n({ ...o, status: 'called', assignedConsultorio: 2 }));
-    for (const t of oe(e.nextTickets))
+    for (const t of re(e.nextTickets))
         n({ ...t, status: 'waiting', assignedConsultorio: null });
     return Array.from(a.values());
 }
-function ge(t, e) {
+function he(t, e) {
     return Object.prototype.hasOwnProperty.call(t || {}, e);
 }
-function fe(t, e = '') {
+function ye(t, e = '') {
     try {
         const a = localStorage.getItem(t);
         return null === a ? e : a;
@@ -2080,12 +2091,12 @@ function fe(t, e = '') {
         return e;
     }
 }
-function he(t, e) {
+function ve(t, e) {
     try {
         localStorage.setItem(t, String(e));
     } catch (t) {}
 }
-function ye(t, e) {
+function ke(t, e) {
     try {
         const a = localStorage.getItem(t);
         return a ? JSON.parse(a) : e;
@@ -2093,75 +2104,75 @@ function ye(t, e) {
         return e;
     }
 }
-function ve(t, e) {
+function we(t, e) {
     try {
         localStorage.setItem(t, JSON.stringify(e));
     } catch (t) {}
 }
-function ke(t) {
+function Se(t) {
     try {
         return new URL(window.location.href).searchParams.get(t) || '';
     } catch (t) {
         return '';
     }
 }
-const we = 'queueStationMode',
-    Se = 'queueStationConsultorio',
-    Ce = 'queueOneTapAdvance',
-    qe = 'queueCallKeyBindingV1',
-    Ae = 'queueNumpadHelpOpen',
-    Me = 'queueAdminLastSnapshot',
-    Te = new Map([
+const Ce = 'queueStationMode',
+    qe = 'queueStationConsultorio',
+    Ae = 'queueOneTapAdvance',
+    Me = 'queueCallKeyBindingV1',
+    Te = 'queueNumpadHelpOpen',
+    $e = 'queueAdminLastSnapshot',
+    _e = new Map([
         [1, !1],
         [2, !1],
     ]),
-    $e = new Set(['no_show', 'cancelar']);
-function _e(t) {
-    (he(we, t.queue.stationMode || 'free'),
-        he(Se, t.queue.stationConsultorio || 1),
-        he(Ce, t.queue.oneTap ? '1' : '0'),
-        he(Ae, t.queue.helpOpen ? '1' : '0'),
+    Le = new Set(['no_show', 'cancelar']);
+function Ee(t) {
+    (ve(Ce, t.queue.stationMode || 'free'),
+        ve(qe, t.queue.stationConsultorio || 1),
+        ve(Ae, t.queue.oneTap ? '1' : '0'),
+        ve(Te, t.queue.helpOpen ? '1' : '0'),
         t.queue.customCallKey
-            ? ve(qe, t.queue.customCallKey)
+            ? we(Me, t.queue.customCallKey)
             : (function (t) {
                   try {
                       localStorage.removeItem(t);
                   } catch (t) {}
-              })(qe),
-        ve(Me, {
+              })(Me),
+        we($e, {
             queueMeta: t.data.queueMeta,
             queueTickets: t.data.queueTickets,
             updatedAt: new Date().toISOString(),
         }));
 }
-function Le() {
+function Ne() {
     const t = b(),
         e = Array.isArray(t.data.queueTickets)
-            ? t.data.queueTickets.map((t, e) => le(t, e))
+            ? t.data.queueTickets.map((t, e) => de(t, e))
             : [];
     return {
         queueTickets: e,
         queueMeta:
             t.data.queueMeta && 'object' == typeof t.data.queueMeta
-                ? pe(t.data.queueMeta, e)
-                : de(e),
+                ? be(t.data.queueMeta, e)
+                : me(e),
     };
 }
-function Ee() {
+function De() {
     const t = b(),
-        { queueTickets: e } = Le();
+        { queueTickets: e } = Ne();
     return (function (t, e) {
-        const a = ae(e);
+        const a = ie(e);
         return a
             ? t.filter((t) =>
                   [t.ticketCode, t.patientInitials, t.status, t.queueType].some(
-                      (t) => ae(t).includes(a)
+                      (t) => ie(t).includes(a)
                   )
               )
             : t;
     })(
         (function (t, e) {
-            const a = ae(e);
+            const a = ie(e);
             return 'waiting' === a
                 ? t.filter((t) => 'waiting' === t.status)
                 : 'called' === a
@@ -2175,57 +2186,57 @@ function Ee() {
                                 (Math.max(
                                     0,
                                     Math.round(
-                                        (Date.now() - re(t.createdAt)) / 6e4
+                                        (Date.now() - le(t.createdAt)) / 6e4
                                     )
                                 ) >= 20 ||
-                                    'appt_overdue' === ae(t.priorityClass))
+                                    'appt_overdue' === ie(t.priorityClass))
                         )
                       : t;
         })(e, t.queue.filter),
         t.queue.search
     );
 }
-function Ne(t, e = null) {
-    const a = Array.isArray(e) ? e : Le().queueTickets,
+function Be(t, e = null) {
+    const a = Array.isArray(e) ? e : Ne().queueTickets,
         n = new Set(a.map((t) => Number(t.id || 0)).filter((t) => t > 0));
-    return [...new Set(oe(t).map((t) => Number(t || 0)))]
+    return [...new Set(re(t).map((t) => Number(t || 0)))]
         .filter((t) => t > 0 && n.has(t))
         .sort((t, e) => t - e);
 }
-function De() {
-    return Ne(b().queue.selected || []);
+function xe() {
+    return Be(b().queue.selected || []);
 }
-function Be() {
+function Pe() {
     const t = (function () {
-        const t = new Set(De());
+        const t = new Set(xe());
         return t.size
-            ? Le().queueTickets.filter((e) => t.has(Number(e.id || 0)))
+            ? Ne().queueTickets.filter((e) => t.has(Number(e.id || 0)))
             : [];
     })();
-    return t.length ? t : Ee();
+    return t.length ? t : De();
 }
-function xe(t) {
+function Ie(t) {
     const e = 2 === Number(t || 0) ? 2 : 1;
     return (
-        Le().queueTickets.find(
+        Ne().queueTickets.find(
             (t) =>
                 'called' === t.status &&
                 Number(t.assignedConsultorio || 0) === e
         ) || null
     );
 }
-function Pe() {
+function He() {
     const t = b(),
         e = Number(t.queue.stationConsultorio || 1);
     return (
-        Le().queueTickets.find(
+        Ne().queueTickets.find(
             (t) =>
                 'called' === t.status &&
                 Number(t.assignedConsultorio || 0) === e
         ) || null
     );
 }
-function Ie() {
+function Fe() {
     const e = b().queue.activity || [];
     c(
         '#queueActivityList',
@@ -2239,7 +2250,7 @@ function Ie() {
             : '<li><span>-</span><strong>Sin actividad</strong></li>'
     );
 }
-function He(t) {
+function Oe(t) {
     const e = document.getElementById('queueSensitiveConfirmDialog'),
         a = document.getElementById('queueSensitiveConfirmMessage');
     if (
@@ -2257,7 +2268,7 @@ function He(t) {
         e instanceof HTMLElement &&
             (e.setAttribute('open', ''), (e.hidden = !1));
 }
-function Fe() {
+function Re() {
     const t = document.getElementById('queueSensitiveConfirmDialog');
     (t instanceof HTMLDialogElement && t.open && t.close(),
         t instanceof HTMLElement &&
@@ -2267,18 +2278,18 @@ function Fe() {
             queue: { ...t.queue, pendingSensitiveAction: null },
         })));
 }
-let Oe = '';
-function Re(e) {
+let je = '';
+function ze(e) {
     const a = e.assignedConsultorio ? `C${e.assignedConsultorio}` : '-',
-        n = Math.max(0, Math.round((Date.now() - re(e.createdAt)) / 6e4)),
+        n = Math.max(0, Math.round((Date.now() - le(e.createdAt)) / 6e4)),
         i = Number(e.id || 0),
-        o = new Set(De()).has(i),
+        o = new Set(xe()).has(i),
         s = 'called' === e.status,
         r = s && e.assignedConsultorio,
         c = s;
     return `\n        <tr data-queue-id="${i}" class="${o ? 'is-selected' : ''}">\n            <td>\n                <label class="queue-select-cell">\n                    <input type="checkbox" data-action="queue-toggle-ticket-select" data-queue-id="${i}" ${o ? 'checked' : ''} />\n                </label>\n            </td>\n            <td>${t(e.ticketCode)}</td>\n            <td>${t(e.queueType)}</td>\n            <td>${t(
         (function (t) {
-            switch (ne(t)) {
+            switch (oe(t)) {
                 case 'waiting':
                     return 'En espera';
                 case 'called':
@@ -2295,13 +2306,13 @@ function Re(e) {
         })(e.status)
     )}</td>\n            <td>${a}</td>\n            <td>${n} min</td>\n            <td>\n                <div class="table-actions">\n                    <button type="button" data-action="queue-ticket-action" data-queue-id="${i}" data-queue-action="reasignar" data-queue-consultorio="1">Reasignar C1</button>\n                    <button type="button" data-action="queue-ticket-action" data-queue-id="${i}" data-queue-action="reasignar" data-queue-consultorio="2">Reasignar C2</button>\n                    ${c ? `<button type="button" data-action="queue-ticket-action" data-queue-id="${i}" data-queue-action="re-llamar" data-queue-consultorio="${2 === Number(e.assignedConsultorio || 1) ? 2 : 1}">Re-llamar</button>` : ''}\n                    ${r ? `<button type="button" data-action="queue-ticket-action" data-queue-id="${i}" data-queue-action="liberar">Liberar</button>` : ''}\n                    <button type="button" data-action="queue-ticket-action" data-queue-id="${i}" data-queue-action="completar">Completar</button>\n                    <button type="button" data-action="queue-ticket-action" data-queue-id="${i}" data-queue-action="no_show">No show</button>\n                    <button type="button" data-action="queue-ticket-action" data-queue-id="${i}" data-queue-action="cancelar">Cancelar</button>\n                    <button type="button" data-action="queue-reprint-ticket" data-queue-id="${i}">Reimprimir</button>\n                </div>\n            </td>\n        </tr>\n    `;
 }
-function je(e = () => {}) {
+function Ve(e = () => {}) {
     const a = b(),
-        { queueMeta: n } = Le(),
-        i = Ee(),
-        o = De().length,
-        s = Be(),
-        l = oe(n.nextTickets),
+        { queueMeta: n } = Ne(),
+        i = De(),
+        o = xe().length,
+        s = Pe(),
+        l = re(n.nextTickets),
         u = Number(n.waitingCount || n.counts?.waiting || 0);
     (!(function (t, e) {
         const a = b(),
@@ -2344,14 +2355,14 @@ function je(e = () => {}) {
                 ? l.setAttribute('data-queue-id', String(Number(i.id || 0)))
                 : l.removeAttribute('data-queue-id'));
         const u = document.getElementById('queueSyncStatus');
-        if ('fallback' === ae(a.queue.syncMode))
+        if ('fallback' === ie(a.queue.syncMode))
             return (
                 r('#queueSyncStatus', 'fallback'),
                 void (u && u.setAttribute('data-state', 'fallback'))
             );
         const d = String(t.updatedAt || '').trim();
         if (!d) return;
-        const p = Math.max(0, Math.round((Date.now() - re(d)) / 1e3)),
+        const p = Math.max(0, Math.round((Date.now() - le(d)) / 1e3)),
             m = p >= 60;
         if (
             (r('#queueSyncStatus', m ? `Watchdog (${p}s)` : 'vivo'),
@@ -2360,16 +2371,16 @@ function je(e = () => {}) {
         ) {
             const t = `stale-${Math.floor(p / 15)}`;
             return void (
-                t !== Oe &&
-                ((Oe = t), e('Watchdog de cola: realtime en reconnecting'))
+                t !== je &&
+                ((je = t), e('Watchdog de cola: realtime en reconnecting'))
             );
         }
-        Oe = 'live';
+        je = 'live';
     })(n, e),
         c(
             '#queueTableBody',
             i.length
-                ? i.map(Re).join('')
+                ? i.map(ze).join('')
                 : '<tr><td colspan="7">No hay tickets para filtro</td></tr>'
         ));
     const d =
@@ -2387,9 +2398,9 @@ function je(e = () => {}) {
                 'waiting' === t.status &&
                 (Math.max(
                     0,
-                    Math.round((Date.now() - re(t.createdAt)) / 6e4)
+                    Math.round((Date.now() - le(t.createdAt)) / 6e4)
                 ) >= 20 ||
-                    'appt_overdue' === ae(t.priorityClass))
+                    'appt_overdue' === ie(t.priorityClass))
         ).length,
         m = [p > 0 ? `riesgo: ${p}` : 'sin riesgo'];
     (o > 0 && m.push(`seleccion: ${o}`),
@@ -2435,7 +2446,7 @@ function je(e = () => {}) {
                     'locked' === a.queue.stationMode &&
                     e !== Number(a.queue.stationConsultorio || 1);
             }));
-    const S = xe(a.queue.stationConsultorio);
+    const S = Ie(a.queue.stationConsultorio);
     (document
         .querySelectorAll(
             '[data-action="queue-release-station"][data-queue-consultorio]'
@@ -2443,7 +2454,7 @@ function je(e = () => {}) {
         .forEach((t) => {
             if (!(t instanceof HTMLButtonElement)) return;
             const e = 2 === Number(t.dataset.queueConsultorio || 1) ? 2 : 1,
-                n = xe(e);
+                n = Ie(e);
             ((t.disabled = !n),
                 'locked' === a.queue.stationMode &&
                     e !== Number(a.queue.stationConsultorio || 1) &&
@@ -2454,9 +2465,9 @@ function je(e = () => {}) {
                 `activo: ${S.ticketCode} en C${a.queue.stationConsultorio}`
             ),
             r('#queueTriageSummary', m.join(' | '))),
-        Ie());
+        Fe());
 }
-function ze(t) {
+function Ue(t) {
     g((e) => {
         const a = [
             { at: new Date().toISOString(), message: String(t || '') },
@@ -2465,32 +2476,32 @@ function ze(t) {
         return { ...e, queue: { ...e.queue, activity: a } };
     });
     try {
-        Ie();
+        Fe();
     } catch (t) {}
 }
-function Ve(t, { render: e = !0 } = {}) {
+function Ke(t, { render: e = !0 } = {}) {
     (g((e) => ({
         ...e,
-        queue: { ...e.queue, selected: Ne(t, e.data.queueTickets || []) },
+        queue: { ...e.queue, selected: Be(t, e.data.queueTickets || []) },
     })),
-        e && je(ze));
+        e && Ve(Ue));
 }
-function Ue() {
-    Ve([]);
+function Qe() {
+    Ke([]);
 }
-function Ke(t, e = null, a = {}) {
-    const n = (Array.isArray(t) ? t : []).map((t, e) => le(t, e)),
-        i = pe(e && 'object' == typeof e ? e : de(n), n),
+function Ge(t, e = null, a = {}) {
+    const n = (Array.isArray(t) ? t : []).map((t, e) => de(t, e)),
+        i = be(e && 'object' == typeof e ? e : me(n), n),
         o = n.filter((t) => 'waiting' === t.status).length,
         s =
             'boolean' == typeof a.fallbackPartial
                 ? a.fallbackPartial
                 : Number(i.waitingCount || 0) > o,
         r =
-            'fallback' === ae(a.syncMode)
+            'fallback' === ie(a.syncMode)
                 ? 'fallback'
                 : s
-                  ? 'live' === ae(a.syncMode)
+                  ? 'live' === ie(a.syncMode)
                       ? 'live'
                       : 'fallback'
                   : 'live';
@@ -2499,31 +2510,31 @@ function Ke(t, e = null, a = {}) {
         data: { ...t.data, queueTickets: n, queueMeta: i },
         queue: {
             ...t.queue,
-            selected: Ne(t.queue.selected || [], n),
+            selected: Be(t.queue.selected || [], n),
             fallbackPartial: s,
             syncMode: r,
         },
     })),
-        _e(b()),
-        je(ze));
+        Ee(b()),
+        Ve(Ue));
 }
-function Qe(t, e) {
+function We(t, e) {
     const a = Number(t || 0),
         n = (b().data.queueTickets || []).map((t, n) => {
-            const i = le(t, n);
+            const i = de(t, n);
             return i.id !== a
                 ? i
-                : le('function' == typeof e ? e(i) : { ...i }, n);
+                : de('function' == typeof e ? e(i) : { ...i }, n);
         });
-    Ke(n, de(n), { fallbackPartial: !1, syncMode: 'live' });
+    Ge(n, me(n), { fallbackPartial: !1, syncMode: 'live' });
 }
-function Ge(t) {
-    (g((e) => ({ ...e, queue: { ...e.queue, ...t } })), _e(b()), je(ze));
+function Je(t) {
+    (g((e) => ({ ...e, queue: { ...e.queue, ...t } })), Ee(b()), Ve(Ue));
 }
-function We(t) {
-    Ge({ filter: ae(t) || 'all', selected: [] });
+function Ye(t) {
+    Je({ filter: ie(t) || 'all', selected: [] });
 }
-function Je(t, e = {}) {
+function Ze(t, e = {}) {
     const a =
         t?.data?.queueState ||
         t?.data?.queue_state ||
@@ -2547,39 +2558,39 @@ function Je(t, e = {}) {
         !(function (t, e, a) {
             if (e.length > 0) return !0;
             if (
-                ge(t, 'queue_tickets') ||
-                ge(t, 'queueTickets') ||
-                ge(t, 'tickets')
+                he(t, 'queue_tickets') ||
+                he(t, 'queueTickets') ||
+                he(t, 'tickets')
             )
                 return !0;
             if (a && 'object' == typeof a) return !0;
             if (
-                ge(t, 'waitingCount') ||
-                ge(t, 'waiting_count') ||
-                ge(t, 'calledCount') ||
-                ge(t, 'called_count') ||
-                ge(t, 'completedCount') ||
-                ge(t, 'completed_count') ||
-                ge(t, 'noShowCount') ||
-                ge(t, 'no_show_count') ||
-                ge(t, 'cancelledCount') ||
-                ge(t, 'cancelled_count')
+                he(t, 'waitingCount') ||
+                he(t, 'waiting_count') ||
+                he(t, 'calledCount') ||
+                he(t, 'called_count') ||
+                he(t, 'completedCount') ||
+                he(t, 'completed_count') ||
+                he(t, 'noShowCount') ||
+                he(t, 'no_show_count') ||
+                he(t, 'cancelledCount') ||
+                he(t, 'cancelled_count')
             )
                 return !0;
             const n =
                 t?.counts && 'object' == typeof t.counts ? t.counts : null;
             if (
                 n &&
-                (ge(n, 'waiting') ||
-                    ge(n, 'called') ||
-                    ge(n, 'completed') ||
-                    ge(n, 'no_show') ||
-                    ge(n, 'noShow') ||
-                    ge(n, 'cancelled') ||
-                    ge(n, 'canceled'))
+                (he(n, 'waiting') ||
+                    he(n, 'called') ||
+                    he(n, 'completed') ||
+                    he(n, 'no_show') ||
+                    he(n, 'noShow') ||
+                    he(n, 'cancelled') ||
+                    he(n, 'canceled'))
             )
                 return !0;
-            if (ge(t, 'nextTickets') || ge(t, 'next_tickets')) return !0;
+            if (he(t, 'nextTickets') || he(t, 'next_tickets')) return !0;
             const i =
                 t?.callingNowByConsultorio &&
                 'object' == typeof t.callingNowByConsultorio
@@ -2597,61 +2608,61 @@ function Je(t, e = {}) {
                         Boolean(i[1]) ||
                         Boolean(i[2])
                     )
-                ) || oe(t?.callingNow).concat(oe(t?.calling_now)).some(Boolean)
+                ) || re(t?.callingNow).concat(re(t?.calling_now)).some(Boolean)
             );
         })(a, n, i)
     )
         return;
-    const o = 'fallback' === ae(e.syncMode) ? 'fallback' : 'live',
-        s = (b().data.queueTickets || []).map((t, e) => le(t, e)),
-        r = pe(a, s),
+    const o = 'fallback' === ie(e.syncMode) ? 'fallback' : 'live',
+        s = (b().data.queueTickets || []).map((t, e) => de(t, e)),
+        r = be(a, s),
         c = (function (t) {
             const e =
                     t?.counts && 'object' == typeof t.counts ? t.counts : null,
                 a =
-                    ge(t, 'waitingCount') ||
-                    ge(t, 'waiting_count') ||
-                    Boolean(e && ge(e, 'waiting')),
+                    he(t, 'waitingCount') ||
+                    he(t, 'waiting_count') ||
+                    Boolean(e && he(e, 'waiting')),
                 n =
-                    ge(t, 'calledCount') ||
-                    ge(t, 'called_count') ||
-                    Boolean(e && ge(e, 'called')),
-                i = ge(t, 'nextTickets') || ge(t, 'next_tickets'),
+                    he(t, 'calledCount') ||
+                    he(t, 'called_count') ||
+                    Boolean(e && he(e, 'called')),
+                i = he(t, 'nextTickets') || he(t, 'next_tickets'),
                 o =
-                    ge(t, 'callingNowByConsultorio') ||
-                    ge(t, 'calling_now_by_consultorio') ||
-                    ge(t, 'callingNow') ||
-                    ge(t, 'calling_now');
+                    he(t, 'callingNowByConsultorio') ||
+                    he(t, 'calling_now_by_consultorio') ||
+                    he(t, 'callingNow') ||
+                    he(t, 'calling_now');
             return { waiting: a || i, called: n || o };
         })(a),
-        l = be(r),
+        l = fe(r),
         u = Boolean(i && 'object' == typeof i);
     if (!(n.length || l.length || u || c.waiting || c.called)) return;
     const d =
             Number(r.waitingCount || 0) >
             l.filter((t) => 'waiting' === t.status).length,
-        p = new Map(s.map((t) => [me(t), t]));
-    if (n.length) Ke(n, r, { fallbackPartial: !1, syncMode: o });
+        p = new Map(s.map((t) => [ge(t), t]));
+    if (n.length) Ge(n, r, { fallbackPartial: !1, syncMode: o });
     else {
         !(function (t, e, a) {
             const n = e.callingNowByConsultorio || {},
                 i = Number(e.calledCount || e.counts?.called || 0),
                 o = Number(e.waitingCount || e.counts?.waiting || 0),
-                s = oe(e.nextTickets),
+                s = re(e.nextTickets),
                 r = new Set(),
                 c = n[1] || n[1] || null,
                 l = n[2] || n[2] || null;
-            (c && r.add(me(c)), l && r.add(me(l)));
-            const u = new Set(s.map((t) => me(t))),
+            (c && r.add(ge(c)), l && r.add(ge(l)));
+            const u = new Set(s.map((t) => ge(t))),
                 d = r.size > 0 || 0 === i,
                 p = u.size > 0 || 0 === o,
                 m = u.size > 0 && o > u.size;
             for (const [e, n] of t.entries()) {
-                const i = le(n, 0);
+                const i = de(n, 0);
                 a.called && d && 'called' === i.status && !r.has(e)
                     ? t.set(
                           e,
-                          le(
+                          de(
                               {
                                   ...i,
                                   status: 'completed',
@@ -2669,24 +2680,24 @@ function Je(t, e = {}) {
             }
         })(p, r, c);
         for (const t of l) {
-            const e = me(t),
+            const e = ge(t),
                 a = p.get(e) || null,
-                n = ce(t.createdAt, t.created_at, a?.createdAt, a?.created_at),
-                i = ce(
+                n = ue(t.createdAt, t.created_at, a?.createdAt, a?.created_at),
+                i = ue(
                     t.priorityClass,
                     t.priority_class,
                     a?.priorityClass,
                     a?.priority_class,
                     'walk_in'
                 ),
-                o = ce(
+                o = ue(
                     t.queueType,
                     t.queue_type,
                     a?.queueType,
                     a?.queue_type,
                     'walk_in'
                 ),
-                s = ce(
+                s = ue(
                     t.patientInitials,
                     t.patient_initials,
                     a?.patientInitials,
@@ -2695,7 +2706,7 @@ function Je(t, e = {}) {
                 );
             p.set(
                 e,
-                le(
+                de(
                     {
                         ...(a || {}),
                         ...t,
@@ -2711,30 +2722,30 @@ function Je(t, e = {}) {
             );
         }
         if (u) {
-            const t = le(i, p.size),
-                e = me(t),
+            const t = de(i, p.size),
+                e = ge(t),
                 a = p.get(e) || null;
-            p.set(e, le({ ...(a || {}), ...t }, p.size));
+            p.set(e, de({ ...(a || {}), ...t }, p.size));
         }
-        Ke(Array.from(p.values()), r, { fallbackPartial: d, syncMode: o });
+        Ge(Array.from(p.values()), r, { fallbackPartial: d, syncMode: o });
     }
 }
-async function Ye() {
+async function Xe() {
     try {
-        (Je(await k('queue-state'), { syncMode: 'live' }),
-            ze('Queue refresh realizado'));
+        (Ze(await k('queue-state'), { syncMode: 'live' }),
+            Ue('Queue refresh realizado'));
     } catch (t) {
-        ze('Queue refresh con error');
-        const e = ye(Me, null);
+        Ue('Queue refresh con error');
+        const e = ke($e, null);
         e?.queueTickets &&
-            Ke(e.queueTickets, e.queueMeta || null, {
+            Ge(e.queueTickets, e.queueMeta || null, {
                 fallbackPartial: !0,
                 syncMode: 'fallback',
             });
     }
 }
-function Ze(t, e, a = void 0) {
-    Qe(t, (t) => ({
+function ta(t, e, a = void 0) {
+    We(t, (t) => ({
         ...t,
         status: e,
         assignedConsultorio: void 0 === a ? t.assignedConsultorio : a,
@@ -2750,45 +2761,45 @@ function Ze(t, e, a = void 0) {
                 : '',
     }));
 }
-async function Xe({ ticketId: t, action: e, consultorio: a }) {
+async function ea({ ticketId: t, action: e, consultorio: a }) {
     const n = Number(t || 0),
-        i = ie(e);
+        i = se(e);
     if (n && i)
         return b().queue.practiceMode
             ? ('reasignar' === i || 're-llamar' === i
-                  ? Ze(n, 'called', 2 === Number(a || 1) ? 2 : 1)
+                  ? ta(n, 'called', 2 === Number(a || 1) ? 2 : 1)
                   : 'liberar' === i
-                    ? Ze(n, 'waiting', null)
+                    ? ta(n, 'waiting', null)
                     : 'completar' === i
-                      ? Ze(n, 'completed')
+                      ? ta(n, 'completed')
                       : 'no_show' === i
-                        ? Ze(n, 'no_show')
-                        : 'cancelar' === i && Ze(n, 'cancelled'),
-              void ze(`Practica: accion ${i} en ticket ${n}`))
-            : (Je(
+                        ? ta(n, 'no_show')
+                        : 'cancelar' === i && ta(n, 'cancelled'),
+              void Ue(`Practica: accion ${i} en ticket ${n}`))
+            : (Ze(
                   await k('queue-ticket', {
                       method: 'PATCH',
                       body: { id: n, action: i, consultorio: Number(a || 0) },
                   }),
                   { syncMode: 'live' }
               ),
-              void ze(`Accion ${i} ticket ${n}`));
+              void Ue(`Accion ${i} ticket ${n}`));
 }
-async function ta(t) {
+async function aa(t) {
     const e = 2 === Number(t || 0) ? 2 : 1,
         a = b();
-    if (!Te.get(e)) {
+    if (!_e.get(e)) {
         if (
             'locked' === a.queue.stationMode &&
             a.queue.stationConsultorio !== e
         )
             return (
-                ze(`Llamado bloqueado para C${e} por lock de estacion`),
+                Ue(`Llamado bloqueado para C${e} por lock de estacion`),
                 void s('Modo bloqueado: consultorio no permitido', 'warning')
             );
         if (a.queue.practiceMode) {
             const t = (function (t) {
-                return Le().queueTickets.find(
+                return Ne().queueTickets.find(
                     (e) =>
                         'waiting' === e.status &&
                         (!e.assignedConsultorio || e.assignedConsultorio === t)
@@ -2796,73 +2807,73 @@ async function ta(t) {
             })(e);
             return t
                 ? ((function (t, e) {
-                      Qe(t, (t) => ({
+                      We(t, (t) => ({
                           ...t,
                           status: 'called',
                           assignedConsultorio: e,
                           calledAt: new Date().toISOString(),
                       }));
                   })(t.id, e),
-                  void ze(`Practica: llamado ${t.ticketCode} en C${e}`))
-                : void ze('Practica: sin tickets en espera');
+                  void Ue(`Practica: llamado ${t.ticketCode} en C${e}`))
+                : void Ue('Practica: sin tickets en espera');
         }
-        Te.set(e, !0);
+        _e.set(e, !0);
         try {
-            (Je(
+            (Ze(
                 await k('queue-call-next', {
                     method: 'POST',
                     body: { consultorio: e },
                 }),
                 { syncMode: 'live' }
             ),
-                ze(`Llamado C${e} ejecutado`));
+                Ue(`Llamado C${e} ejecutado`));
         } catch (t) {
-            (ze(`Error llamando siguiente en C${e}`),
+            (Ue(`Error llamando siguiente en C${e}`),
                 s(`Error llamando siguiente en C${e}`, 'error'));
         } finally {
-            Te.set(e, !1);
+            _e.set(e, !1);
         }
     }
 }
-async function ea(t, e, a = 0) {
+async function na(t, e, a = 0) {
     const n = {
             ticketId: Number(t || 0),
-            action: ie(e),
+            action: se(e),
             consultorio: Number(a || 0),
         },
         i = b(),
         o = (function (t) {
             const e = Number(t || 0);
             return (
-                (e && Le().queueTickets.find((t) => Number(t.id || 0) === e)) ||
+                (e && Ne().queueTickets.find((t) => Number(t.id || 0) === e)) ||
                 null
             );
         })(n.ticketId);
     if (
         !i.queue.practiceMode &&
-        $e.has(n.action) &&
+        Le.has(n.action) &&
         (function (t, e) {
-            const a = ie(t);
+            const a = se(t);
             return (
                 'cancelar' === a ||
                 ('no_show' === a &&
                     (!e ||
-                        'called' === ne(e.status) ||
+                        'called' === oe(e.status) ||
                         Number(e.assignedConsultorio || 0) > 0))
             );
         })(n.action, o)
     )
-        return (He(n), void ze(`Accion ${n.action} pendiente de confirmacion`));
-    await Xe(n);
+        return (Oe(n), void Ue(`Accion ${n.action} pendiente de confirmacion`));
+    await ea(n);
 }
-async function aa() {
+async function ia() {
     const t = b().queue.pendingSensitiveAction;
-    t ? (Fe(), await Xe(t)) : Fe();
+    t ? (Re(), await ea(t)) : Re();
 }
-function na() {
-    (Fe(), ze('Accion sensible cancelada'));
+function oa() {
+    (Re(), Ue('Accion sensible cancelada'));
 }
-function ia() {
+function sa() {
     const t = document.getElementById('queueSensitiveConfirmDialog'),
         e = b().queue.pendingSensitiveAction;
     return !(
@@ -2871,26 +2882,26 @@ function ia() {
                 ? t.open
                 : t instanceof HTMLElement &&
                   (!t.hidden || t.hasAttribute('open')))) ||
-        (na(), 0)
+        (oa(), 0)
     );
 }
-async function oa(t) {
+async function ra(t) {
     const e = Number(t || 0);
     e &&
         (b().queue.practiceMode
-            ? ze(`Practica: reprint ticket ${e}`)
+            ? Ue(`Practica: reprint ticket ${e}`)
             : (await k('queue-reprint', { method: 'POST', body: { id: e } }),
-              ze(`Reimpresion ticket ${e}`)));
+              Ue(`Reimpresion ticket ${e}`)));
 }
-function sa() {
-    Ge({ helpOpen: !b().queue.helpOpen });
+function ca() {
+    Je({ helpOpen: !b().queue.helpOpen });
 }
-function ra(t) {
+function la(t) {
     const e = Boolean(t);
-    (Ge({ practiceMode: e, pendingSensitiveAction: null }),
-        ze(e ? 'Modo practica activo' : 'Modo practica desactivado'));
+    (Je({ practiceMode: e, pendingSensitiveAction: null }),
+        Ue(e ? 'Modo practica activo' : 'Modo practica desactivado'));
 }
-async function ca(t) {
+async function ua(t) {
     const e = b();
     if (e.queue.captureCallKeyMode) {
         const e = {
@@ -2899,56 +2910,56 @@ async function ca(t) {
             location: Number(t.location || 0),
         };
         return (
-            Ge({ customCallKey: e, captureCallKeyMode: !1 }),
+            Je({ customCallKey: e, captureCallKeyMode: !1 }),
             s('Tecla externa guardada', 'success'),
-            void ze(`Tecla externa calibrada: ${e.code}`)
+            void Ue(`Tecla externa calibrada: ${e.code}`)
         );
     }
     if (
         (function (t, e) {
             return (
                 !(!e || 'object' != typeof e) &&
-                ae(e.code) === ae(t.code) &&
+                ie(e.code) === ie(t.code) &&
                 String(e.key || '') === String(t.key || '') &&
                 Number(e.location || 0) === Number(t.location || 0)
             );
         })(t, e.queue.customCallKey)
     )
-        return void (await ta(e.queue.stationConsultorio));
-    const a = ae(t.code),
-        n = ae(t.key),
+        return void (await aa(e.queue.stationConsultorio));
+    const a = ie(t.code),
+        n = ie(t.key),
         i =
             'numpadenter' === a ||
             'kpenter' === a ||
             ('enter' === n && 3 === Number(t.location || 0));
-    if (i && e.queue.pendingSensitiveAction) await aa();
+    if (i && e.queue.pendingSensitiveAction) await ia();
     else {
         if ('numpad2' === a || '2' === n)
             return 'locked' === e.queue.stationMode &&
                 2 !== e.queue.stationConsultorio
                 ? (s('Cambio bloqueado por modo estación', 'warning'),
-                  void ze('Cambio de estación bloqueado por lock'))
-                : (Ge({ stationConsultorio: 2 }),
-                  void ze('Numpad: estacion C2'));
+                  void Ue('Cambio de estación bloqueado por lock'))
+                : (Je({ stationConsultorio: 2 }),
+                  void Ue('Numpad: estacion C2'));
         if ('numpad1' === a || '1' === n)
             return 'locked' === e.queue.stationMode &&
                 1 !== e.queue.stationConsultorio
                 ? (s('Cambio bloqueado por modo estación', 'warning'),
-                  void ze('Cambio de estación bloqueado por lock'))
-                : (Ge({ stationConsultorio: 1 }),
-                  void ze('Numpad: estacion C1'));
+                  void Ue('Cambio de estación bloqueado por lock'))
+                : (Je({ stationConsultorio: 1 }),
+                  void Ue('Numpad: estacion C1'));
         if (i) {
             if (e.queue.oneTap) {
-                const t = Pe();
+                const t = He();
                 t &&
-                    (He({
+                    (Oe({
                         ticketId: t.id,
                         action: 'completar',
                         consultorio: e.queue.stationConsultorio,
                     }),
-                    await aa());
+                    await ia());
             }
-            await ta(e.queue.stationConsultorio);
+            await aa(e.queue.stationConsultorio);
         } else {
             if (
                 'numpaddecimal' === a ||
@@ -2957,10 +2968,10 @@ async function ca(t) {
                 ',' === n ||
                 '.' === n
             ) {
-                const t = Pe();
+                const t = He();
                 return void (
                     t &&
-                    He({
+                    Oe({
                         ticketId: t.id,
                         action: 'completar',
                         consultorio: e.queue.stationConsultorio,
@@ -2968,10 +2979,10 @@ async function ca(t) {
                 );
             }
             if ('numpadsubtract' === a || 'kpsubtract' === a || '-' === n) {
-                const t = Pe();
+                const t = He();
                 return void (
                     t &&
-                    He({
+                    Oe({
                         ticketId: t.id,
                         action: 'no_show',
                         consultorio: e.queue.stationConsultorio,
@@ -2979,31 +2990,31 @@ async function ca(t) {
                 );
             }
             if ('numpadadd' === a || 'kpadd' === a || '+' === n) {
-                const t = Pe();
+                const t = He();
                 t &&
-                    (await ea(t.id, 're-llamar', e.queue.stationConsultorio),
-                    ze(`Re-llamar ${t.ticketCode}`),
+                    (await na(t.id, 're-llamar', e.queue.stationConsultorio),
+                    Ue(`Re-llamar ${t.ticketCode}`),
                     s(`Re-llamar ${t.ticketCode}`, 'info'));
             }
         }
     }
 }
-const la = 'appointments',
-    ua = 'callbacks',
-    da = 'reviews',
-    pa = 'availability',
-    ma = 'availability-meta',
-    ba = 'queue-tickets',
-    ga = 'queue-meta',
-    fa = 'health-status';
-function ha(t) {
+const da = 'appointments',
+    pa = 'callbacks',
+    ma = 'reviews',
+    ba = 'availability',
+    ga = 'availability-meta',
+    fa = 'queue-tickets',
+    ha = 'queue-meta',
+    ya = 'health-status';
+function va(t) {
     return Array.isArray(t.queue_tickets)
         ? t.queue_tickets
         : Array.isArray(t.queueTickets)
           ? t.queueTickets
           : [];
 }
-function ya(t) {
+function ka(t) {
     g((e) => {
         return {
             ...e,
@@ -3033,19 +3044,19 @@ function ya(t) {
         var a;
     });
 }
-function va(t) {
+function wa(t) {
     return String(t || '')
         .toLowerCase()
         .trim();
 }
-function ka(t) {
+function Sa(t) {
     const e = new Date(t || '');
     return Number.isNaN(e.getTime()) ? 0 : e.getTime();
 }
-function wa(t) {
-    return ka(`${t?.date || ''}T${t?.time || '00:00'}:00`);
+function Ca(t) {
+    return Sa(`${t?.date || ''}T${t?.time || '00:00'}:00`);
 }
-function Sa(t) {
+function qa(t) {
     if (!t) return 'Sin fecha';
     const e = Math.round((t - Date.now()) / 6e4),
         a = Math.abs(e);
@@ -3061,7 +3072,7 @@ function Sa(t) {
             ? `En ${Math.round(e / 60)} h`
             : `En ${Math.round(e / 1440)} d`;
 }
-function Ca(e, a, n) {
+function Aa(e, a, n) {
     return Array.isArray(e) && 0 !== e.length
         ? e
               .slice(0, 5)
@@ -3073,13 +3084,13 @@ function Ca(e, a, n) {
               .join('')
         : '<li><span>Sin datos</span><strong>0</strong></li>';
 }
-function qa(e, a, n, i = 'neutral') {
+function Ma(e, a, n, i = 'neutral') {
     return `\n        <li class="dashboard-attention-item" data-tone="${t(i)}">\n            <div>\n                <span>${t(e)}</span>\n                <small>${t(n)}</small>\n            </div>\n            <strong>${t(String(a))}</strong>\n        </li>\n    `;
 }
-function Aa(e, a, n) {
+function Ta(e, a, n) {
     return `\n        <button type="button" class="operations-action-item" data-action="${t(e)}">\n            <span>${t(a)}</span>\n            <small>${t(n)}</small>\n        </button>\n    `;
 }
-function Ma(t) {
+function $a(t) {
     const e = Array.isArray(t?.data?.appointments) ? t.data.appointments : [],
         a = Array.isArray(t?.data?.callbacks) ? t.data.callbacks : [],
         i = Array.isArray(t?.data?.reviews) ? t.data.reviews : [],
@@ -3099,31 +3110,31 @@ function Ma(t) {
                         e.getMonth() === a.getMonth() &&
                         e.getDate() === a.getDate()
                     );
-                })(wa(t))
+                })(Ca(t))
             ).length;
         })(e),
         d = (function (t) {
             return t.filter((t) => {
-                const e = va(t.paymentStatus || t.payment_status);
+                const e = wa(t.paymentStatus || t.payment_status);
                 return (
                     'pending_transfer_review' === e || 'pending_transfer' === e
                 );
             }).length;
         })(e),
         p = (function (t) {
-            return t.filter((t) => 'pending' === va(t.status)).length;
+            return t.filter((t) => 'pending' === wa(t.status)).length;
         })(a),
         m = (function (t) {
             return t.filter((t) => {
-                if ('pending' !== va(t.status)) return !1;
+                if ('pending' !== wa(t.status)) return !1;
                 const e = (function (t) {
-                    return ka(t?.fecha || t?.createdAt || '');
+                    return Sa(t?.fecha || t?.createdAt || '');
                 })(t);
                 return !!e && Math.round((Date.now() - e) / 6e4) >= 120;
             }).length;
         })(a),
         b = (function (t) {
-            return t.filter((t) => 'no_show' === va(t.status)).length;
+            return t.filter((t) => 'no_show' === wa(t.status)).length;
         })(e),
         g = (function (t) {
             return t.length
@@ -3136,7 +3147,7 @@ function Ma(t) {
         f = (function (t, e = 30) {
             const a = Date.now();
             return t.filter((t) => {
-                const n = ka(t.date || t.createdAt || '');
+                const n = Sa(t.date || t.createdAt || '');
                 return !!n && a - n <= 24 * e * 60 * 60 * 1e3;
             }).length;
         })(i),
@@ -3147,7 +3158,7 @@ function Ma(t) {
         })(s),
         y = (function (t) {
             return t
-                .map((t) => ({ item: t, stamp: wa(t) }))
+                .map((t) => ({ item: t, stamp: Ca(t) }))
                 .filter((t) => t.stamp > 0 && t.stamp >= Date.now())
                 .sort((t, e) => t.stamp - e.stamp)[0];
         })(e);
@@ -3177,7 +3188,7 @@ function Ma(t) {
                       : a > 0
                         ? `Revisa ${a} no show del corte actual para cerrar seguimiento.`
                         : n?.item
-                          ? `La siguiente cita es ${n.item.name || 'sin nombre'} ${Sa(n.stamp).toLowerCase()}.`
+                          ? `La siguiente cita es ${n.item.name || 'sin nombre'} ${qa(n.stamp).toLowerCase()}.`
                           : 'Agenda, callbacks y disponibilidad con una lectura clara y una sola prioridad por pantalla.';
             })({
                 pendingTransfers: d,
@@ -3212,7 +3223,7 @@ function Ma(t) {
         r(
             '#dashboardFlowStatus',
             y?.item
-                ? `${Sa(y.stamp)} | ${y.item.name || 'Paciente'}`
+                ? `${qa(y.stamp)} | ${y.item.name || 'Paciente'}`
                 : h > 0
                   ? `${h} dia(s) con slots publicados`
                   : 'Sin citas inmediatas'
@@ -3231,31 +3242,31 @@ function Ma(t) {
         r(
             '#operationQueueHealth',
             y?.item
-                ? `Siguiente hito: ${y.item.name || 'Paciente'} ${Sa(y.stamp).toLowerCase()}`
+                ? `Siguiente hito: ${y.item.name || 'Paciente'} ${qa(y.stamp).toLowerCase()}`
                 : 'Sin citas inmediatas en cola'
         ),
         c(
             '#operationActionList',
             [
-                Aa(
+                Ta(
                     'context-open-appointments-transfer',
                     d > 0 ? 'Validar transferencias' : 'Abrir agenda clinica',
                     d > 0
                         ? `${d} comprobante(s) por revisar`
                         : `${e.length} cita(s) en el corte`
                 ),
-                Aa(
+                Ta(
                     'context-open-callbacks-pending',
                     m > 0 ? 'Resolver callbacks urgentes' : 'Abrir callbacks',
                     m > 0
                         ? `${m} caso(s) fuera de SLA`
                         : `${p} callback(s) pendientes`
                 ),
-                Aa(
+                Ta(
                     'refresh-admin-data',
                     'Actualizar tablero',
                     y?.item
-                        ? `Proxima cita ${Sa(y.stamp).toLowerCase()}`
+                        ? `Proxima cita ${qa(y.stamp).toLowerCase()}`
                         : 'Sincronizar agenda y funnel'
                 ),
             ].join('')
@@ -3263,7 +3274,7 @@ function Ma(t) {
         c(
             '#dashboardAttentionList',
             [
-                qa(
+                Ma(
                     'Transferencias',
                     d,
                     d > 0
@@ -3271,7 +3282,7 @@ function Ma(t) {
                         : 'Sin comprobantes pendientes.',
                     d > 0 ? 'warning' : 'success'
                 ),
-                qa(
+                Ma(
                     'Callbacks urgentes',
                     m,
                     m > 0
@@ -3279,7 +3290,7 @@ function Ma(t) {
                         : 'SLA dentro de rango.',
                     m > 0 ? 'danger' : 'success'
                 ),
-                qa(
+                Ma(
                     'Agenda de hoy',
                     u,
                     u > 0
@@ -3287,7 +3298,7 @@ function Ma(t) {
                         : 'No hay citas hoy.',
                     u > 6 ? 'warning' : 'neutral'
                 ),
-                qa(
+                Ma(
                     'Disponibilidad',
                     h,
                     h > 0
@@ -3302,33 +3313,33 @@ function Ma(t) {
         r('#funnelStartCheckout', o(S.startCheckout || 0)),
         r('#funnelBookingConfirmed', o(S.bookingConfirmed || 0)),
         r('#funnelAbandonRate', `${Number(S.abandonRatePct || 0).toFixed(1)}%`),
-        c('#funnelEntryList', Ca(l.checkoutEntryBreakdown, 'entry', 'count')),
-        c('#funnelSourceList', Ca(l.sourceBreakdown, 'source', 'count')),
+        c('#funnelEntryList', Aa(l.checkoutEntryBreakdown, 'entry', 'count')),
+        c('#funnelSourceList', Aa(l.sourceBreakdown, 'source', 'count')),
         c(
             '#funnelPaymentMethodList',
-            Ca(l.paymentMethodBreakdown, 'method', 'count')
+            Aa(l.paymentMethodBreakdown, 'method', 'count')
         ),
-        c('#funnelAbandonList', Ca(l.checkoutAbandonByStep, 'step', 'count')),
+        c('#funnelAbandonList', Aa(l.checkoutAbandonByStep, 'step', 'count')),
         c(
             '#funnelAbandonReasonList',
-            Ca(l.abandonReasonBreakdown, 'reason', 'count')
+            Aa(l.abandonReasonBreakdown, 'reason', 'count')
         ),
-        c('#funnelStepList', Ca(l.bookingStepBreakdown, 'step', 'count')),
-        c('#funnelErrorCodeList', Ca(l.errorCodeBreakdown, 'code', 'count')));
+        c('#funnelStepList', Aa(l.bookingStepBreakdown, 'step', 'count')),
+        c('#funnelErrorCodeList', Aa(l.errorCodeBreakdown, 'code', 'count')));
 }
-function Ta(t) {
+function _a(t) {
     return String(t || '')
         .toLowerCase()
         .trim();
 }
-function $a(t) {
+function La(t) {
     const e = new Date(t?.date || t?.createdAt || '');
     return Number.isNaN(e.getTime()) ? 0 : e.getTime();
 }
-function _a(t) {
+function Ea(t) {
     return `${Math.max(0, Math.min(5, Math.round(Number(t || 0))))}/5`;
 }
-function La(t) {
+function Na(t) {
     const e = String(t || 'Anonimo')
         .trim()
         .split(/\s+/)
@@ -3336,7 +3347,7 @@ function La(t) {
         .slice(0, 2);
     return e.length ? e.map((t) => t.charAt(0).toUpperCase()).join('') : 'AN';
 }
-function Ea(t, e = 220) {
+function Da(t, e = 220) {
     const a = String(t || '').trim();
     return a
         ? a.length <= e
@@ -3344,7 +3355,7 @@ function Ea(t, e = 220) {
             : `${a.slice(0, e - 1).trim()}...`
         : 'Sin comentario escrito.';
 }
-function Na() {
+function Ba() {
     const t = (function () {
         const t = b(),
             e = Number(t.ui.lastRefreshAt || 0);
@@ -3362,7 +3373,7 @@ function Na() {
                 : t.replace('Datos: ', 'Estado: ')
         ));
 }
-async function Da(e = !1) {
+async function xa(e = !1) {
     const a = await (async function () {
         try {
             const [t, e] = await Promise.all([
@@ -3389,7 +3400,7 @@ async function Da(e = !1) {
                     a.availabilityMeta && 'object' == typeof a.availabilityMeta
                         ? a.availabilityMeta
                         : {},
-                queueTickets: ha(a),
+                queueTickets: va(a),
                 queueMeta:
                     a.queueMeta && 'object' == typeof a.queueMeta
                         ? a.queueMeta
@@ -3400,30 +3411,30 @@ async function Da(e = !1) {
                 health: e && e.ok ? e : null,
             };
             return (
-                ya(i),
+                ka(i),
                 (function (t) {
-                    (ve(la, t.appointments || []),
-                        ve(ua, t.callbacks || []),
-                        ve(da, t.reviews || []),
-                        ve(pa, t.availability || {}),
-                        ve(ma, t.availabilityMeta || {}),
-                        ve(ba, t.queueTickets || []),
-                        ve(ga, t.queueMeta || null),
-                        ve(fa, t.health || null));
+                    (we(da, t.appointments || []),
+                        we(pa, t.callbacks || []),
+                        we(ma, t.reviews || []),
+                        we(ba, t.availability || {}),
+                        we(ga, t.availabilityMeta || {}),
+                        we(fa, t.queueTickets || []),
+                        we(ha, t.queueMeta || null),
+                        we(ya, t.health || null));
                 })(i),
                 !0
             );
         } catch (t) {
             return (
-                ya({
-                    appointments: ye(la, []),
-                    callbacks: ye(ua, []),
-                    reviews: ye(da, []),
-                    availability: ye(pa, {}),
-                    availabilityMeta: ye(ma, {}),
-                    queueTickets: ye(ba, []),
-                    queueMeta: ye(ga, null),
-                    health: ye(fa, null),
+                ka({
+                    appointments: ke(da, []),
+                    callbacks: ke(pa, []),
+                    reviews: ke(ma, []),
+                    availability: ke(ba, {}),
+                    availabilityMeta: ke(ga, {}),
+                    queueTickets: ke(fa, []),
+                    queueMeta: ke(ha, null),
+                    health: ke(ya, null),
                     funnelMetrics: {
                         summary: {
                             viewBooking: 0,
@@ -3450,58 +3461,58 @@ async function Da(e = !1) {
     return (
         (function () {
             const t = b(),
-                e = It(t.data.availability || {}),
-                a = Ot(t.availability.selectedDate, e);
-            (Wt({
+                e = Ft(t.data.availability || {}),
+                a = jt(t.availability.selectedDate, e);
+            (Yt({
                 draft: e,
                 selectedDate: a,
-                monthAnchor: Ft(t.availability.monthAnchor, a),
+                monthAnchor: Rt(t.availability.monthAnchor, a),
                 draftDirty: !1,
                 lastAction: '',
             }),
-                Gt());
+                Jt());
         })(),
         await (async function () {
             const t = b(),
                 e = Array.isArray(t.data.queueTickets)
-                    ? t.data.queueTickets.map((t, e) => le(t, e))
+                    ? t.data.queueTickets.map((t, e) => de(t, e))
                     : [],
                 a =
                     t.data.queueMeta && 'object' == typeof t.data.queueMeta
-                        ? pe(t.data.queueMeta, e)
+                        ? be(t.data.queueMeta, e)
                         : null;
             if (e.length)
-                return void Ke(e, a || null, {
+                return void Ge(e, a || null, {
                     fallbackPartial: !1,
                     syncMode: 'live',
                 });
-            const n = a ? be(a) : [];
+            const n = a ? fe(a) : [];
             if (n.length)
                 return (
-                    Ke(n, a, { fallbackPartial: !0, syncMode: 'fallback' }),
-                    void ze('Queue fallback parcial desde metadata')
+                    Ge(n, a, { fallbackPartial: !0, syncMode: 'fallback' }),
+                    void Ue('Queue fallback parcial desde metadata')
                 );
-            if ((await Ye(), (b().data.queueTickets || []).length)) return;
-            const i = ye(Me, null);
+            if ((await Xe(), (b().data.queueTickets || []).length)) return;
+            const i = ke($e, null);
             if (i?.queueTickets?.length)
                 return (
-                    Ke(i.queueTickets, i.queueMeta || null, {
+                    Ge(i.queueTickets, i.queueMeta || null, {
                         fallbackPartial: !0,
                         syncMode: 'fallback',
                     }),
-                    void ze('Queue fallback desde snapshot local')
+                    void Ue('Queue fallback desde snapshot local')
                 );
-            Ke([], null, { fallbackPartial: !1, syncMode: 'live' });
+            Ge([], null, { fallbackPartial: !1, syncMode: 'live' });
         })(),
-        I(b()),
-        Ma(b()),
-        ot(),
-        Mt(),
+        F(b()),
+        $a(b()),
+        rt(),
+        $t(),
         (function () {
             const e = b(),
                 a = Array.isArray(e?.data?.reviews) ? e.data.reviews : [],
                 n = (function (t) {
-                    return t.slice().sort((t, e) => $a(e) - $a(t));
+                    return t.slice().sort((t, e) => La(e) - La(t));
                 })(a),
                 o = (function (t) {
                     return t.length
@@ -3513,7 +3524,7 @@ async function Da(e = !1) {
                 l = (function (t, e = 30) {
                     const a = Date.now();
                     return t.filter((t) => {
-                        const n = $a(t);
+                        const n = La(t);
                         return !!n && a - n <= 24 * e * 60 * 60 * 1e3;
                     }).length;
                 })(a),
@@ -3596,7 +3607,7 @@ async function Da(e = !1) {
                 const e = d.item;
                 c(
                     '#reviewsSpotlight',
-                    `\n                <article class="reviews-spotlight-card">\n                    <div class="reviews-spotlight-top">\n                        <span class="review-avatar">${t(La(e.name || 'Anonimo'))}</span>\n                        <div>\n                            <small>${t(d.eyebrow)}</small>\n                            <strong>${t(e.name || 'Anonimo')}</strong>\n                            <small>${t(i(e.date || e.createdAt || ''))}</small>\n                        </div>\n                    </div>\n                    <p class="reviews-spotlight-stars">${t(_a(e.rating))}</p>\n                    <p>${t(Ea(e.comment || e.review || '', 320))}</p>\n                    <small>${t(d.summary)}</small>\n                </article>\n            `
+                    `\n                <article class="reviews-spotlight-card">\n                    <div class="reviews-spotlight-top">\n                        <span class="review-avatar">${t(Na(e.name || 'Anonimo'))}</span>\n                        <div>\n                            <small>${t(d.eyebrow)}</small>\n                            <strong>${t(e.name || 'Anonimo')}</strong>\n                            <small>${t(i(e.date || e.createdAt || ''))}</small>\n                        </div>\n                    </div>\n                    <p class="reviews-spotlight-stars">${t(Ea(e.rating))}</p>\n                    <p>${t(Da(e.comment || e.review || '', 320))}</p>\n                    <small>${t(d.summary)}</small>\n                </article>\n            `
                 );
             } else
                 c(
@@ -3621,20 +3632,20 @@ async function Da(e = !1) {
                                         : n <= 3
                                           ? 'Revisar posible friccion'
                                           : 'Resena util para contexto';
-                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${t(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${t(La(e.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${t(e.name || 'Anonimo')}</strong>\n                        <small>${t(i(e.date || e.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${t(o)}">${t(_a(n))}</span>\n            </header>\n            <p>${t(Ea(e.comment || e.review || ''))}</p>\n            <small>${t(s)}</small>\n        </article>\n    `;
+                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${t(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${t(Na(e.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${t(e.name || 'Anonimo')}</strong>\n                        <small>${t(i(e.date || e.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${t(o)}">${t(Ea(n))}</span>\n            </header>\n            <p>${t(Da(e.comment || e.review || ''))}</p>\n            <small>${t(s)}</small>\n        </article>\n    `;
                         })(e, {
                             featured:
                                 d.item &&
-                                Ta(e.name) === Ta(d.item.name) &&
-                                $a(e) === $a(d.item),
+                                _a(e.name) === _a(d.item.name) &&
+                                La(e) === La(d.item),
                         })
                     )
                     .join('')
             );
         })(),
-        Gt(),
-        je(),
-        Na(),
+        Jt(),
+        Ve(),
+        Ba(),
         e &&
             s(
                 a ? 'Datos actualizados' : 'Datos cargados desde cache local',
@@ -3643,28 +3654,28 @@ async function Da(e = !1) {
         a
     );
 }
-function Ba() {
-    (N(!1),
-        x(),
-        B(!1),
-        D({
+function Pa() {
+    (B(!1),
+        I(),
+        P(!1),
+        x({
             tone: 'neutral',
             title: 'Proteccion activa',
             message:
                 'Usa tu clave de administrador para acceder al centro operativo.',
         }));
 }
-async function xa(t) {
+async function Ia(t) {
     t.preventDefault();
     const e = document.getElementById('adminPassword'),
         a = document.getElementById('admin2FACode'),
         n = e instanceof HTMLInputElement ? e.value : '',
         i = a instanceof HTMLInputElement ? a.value : '';
     try {
-        B(!0);
+        P(!0);
         const t = b();
         if (
-            (D({
+            (x({
                 tone: t.auth.requires2FA ? 'warning' : 'neutral',
                 title: t.auth.requires2FA
                     ? 'Validando segundo factor'
@@ -3738,63 +3749,63 @@ async function xa(t) {
             })(n);
             if (t.requires2FA)
                 return (
-                    N(!0),
-                    D({
+                    B(!0),
+                    x({
                         tone: 'warning',
                         title: 'Codigo 2FA requerido',
                         message:
                             'El backend valido la clave. Ingresa ahora el codigo de seis digitos.',
                     }),
-                    void P('2fa')
+                    void H('2fa')
                 );
         }
-        (D({
+        (x({
             tone: 'success',
             title: 'Acceso concedido',
             message: 'Sesion autenticada. Cargando centro operativo.',
         }),
-            $(),
             L(),
-            N(!1),
-            x({ clearPassword: !0 }),
-            await Da(!1),
+            N(),
+            B(!1),
+            I({ clearPassword: !0 }),
+            await xa(!1),
             s('Sesion iniciada', 'success'));
     } catch (t) {
-        (D({
+        (x({
             tone: 'danger',
             title: 'No se pudo iniciar sesion',
             message:
                 t?.message ||
                 'Verifica la clave o el codigo e intenta nuevamente.',
         }),
-            P(b().auth.requires2FA ? '2fa' : 'password'),
+            H(b().auth.requires2FA ? '2fa' : 'password'),
             s(t?.message || 'No se pudo iniciar sesion', 'error'));
     } finally {
-        B(!1);
+        P(!1);
     }
 }
-async function Pa(t, e) {
+async function Ha(t, e) {
     switch (t) {
         case 'appointment-quick-filter':
-            return (rt(String(e.dataset.filterValue || 'all')), !0);
+            return (lt(String(e.dataset.filterValue || 'all')), !0);
         case 'clear-appointment-filters':
-            return (st({ filter: 'all', search: '' }), !0);
+            return (ct({ filter: 'all', search: '' }), !0);
         case 'appointment-density':
             return (
-                st({
+                ct({
                     density:
                         'compact' ===
-                        V(String(e.dataset.density || 'comfortable'))
+                        K(String(e.dataset.density || 'comfortable'))
                             ? 'compact'
-                            : z,
+                            : U,
                 }),
                 !0
             );
         case 'approve-transfer':
             return (
                 await (async function (t) {
-                    (await ut(t, { paymentStatus: 'paid' }),
-                        lt(t, { paymentStatus: 'paid' }));
+                    (await pt(t, { paymentStatus: 'paid' }),
+                        dt(t, { paymentStatus: 'paid' }));
                 })(Number(e.dataset.id || 0)),
                 s('Transferencia aprobada', 'success'),
                 !0
@@ -3802,8 +3813,8 @@ async function Pa(t, e) {
         case 'reject-transfer':
             return (
                 await (async function (t) {
-                    (await ut(t, { paymentStatus: 'failed' }),
-                        lt(t, { paymentStatus: 'failed' }));
+                    (await pt(t, { paymentStatus: 'failed' }),
+                        dt(t, { paymentStatus: 'failed' }));
                 })(Number(e.dataset.id || 0)),
                 s('Transferencia rechazada', 'warning'),
                 !0
@@ -3811,8 +3822,8 @@ async function Pa(t, e) {
         case 'mark-no-show':
             return (
                 await (async function (t) {
-                    (await ut(t, { status: 'no_show' }),
-                        lt(t, { status: 'no_show' }));
+                    (await pt(t, { status: 'no_show' }),
+                        dt(t, { status: 'no_show' }));
                 })(Number(e.dataset.id || 0)),
                 s('Marcado como no show', 'warning'),
                 !0
@@ -3820,8 +3831,8 @@ async function Pa(t, e) {
         case 'cancel-appointment':
             return (
                 await (async function (t) {
-                    (await ut(t, { status: 'cancelled' }),
-                        lt(t, { status: 'cancelled' }));
+                    (await pt(t, { status: 'cancelled' }),
+                        dt(t, { status: 'cancelled' }));
                 })(Number(e.dataset.id || 0)),
                 s('Cita cancelada', 'warning'),
                 !0
@@ -3874,32 +3885,32 @@ async function Pa(t, e) {
             return !1;
     }
 }
-async function Ia(t, a) {
+async function Fa(t, a) {
     switch (t) {
         case 'change-month':
             return (
                 (function (t) {
                     const e = Number(t || 0);
                     if (!Number.isFinite(e) || 0 === e) return;
-                    const a = Ft(
+                    const a = Rt(
                         b().availability.monthAnchor,
                         b().availability.selectedDate
                     );
                     (a.setMonth(a.getMonth() + e),
-                        Wt({ monthAnchor: a, lastAction: '' }, { render: !0 }));
+                        Yt({ monthAnchor: a, lastAction: '' }, { render: !0 }));
                 })(Number(a.dataset.delta || 0)),
                 !0
             );
         case 'availability-today':
         case 'context-availability-today':
-            return (Xt(u(new Date()), 'Hoy'), !0);
+            return (ee(u(new Date()), 'Hoy'), !0);
         case 'availability-prev-with-slots':
             return (
                 (function () {
-                    const t = Qt(-1);
+                    const t = Wt(-1);
                     t
-                        ? Xt(t, `Fecha previa con slots: ${t}`)
-                        : Yt('No hay fechas anteriores con slots');
+                        ? ee(t, `Fecha previa con slots: ${t}`)
+                        : Xt('No hay fechas anteriores con slots');
                 })(),
                 !0
             );
@@ -3907,22 +3918,22 @@ async function Ia(t, a) {
         case 'context-availability-next':
             return (
                 (function () {
-                    const t = Qt(1);
+                    const t = Wt(1);
                     t
-                        ? Xt(t, `Siguiente fecha con slots: ${t}`)
-                        : Yt('No hay fechas siguientes con slots');
+                        ? ee(t, `Siguiente fecha con slots: ${t}`)
+                        : Xt('No hay fechas siguientes con slots');
                 })(),
                 !0
             );
         case 'select-availability-day':
             return (
                 (function (t) {
-                    const e = Bt(t);
+                    const e = Pt(t);
                     e &&
-                        Wt(
+                        Yt(
                             {
                                 selectedDate: e,
-                                monthAnchor: Ft(e, e),
+                                monthAnchor: Rt(e, e),
                                 lastAction: '',
                             },
                             { render: !0 }
@@ -3933,25 +3944,25 @@ async function Ia(t, a) {
         case 'prefill-time-slot':
             return (
                 (function (t) {
-                    if (Vt()) return;
+                    if (Kt()) return;
                     const a = e('#newSlotTime');
                     a instanceof HTMLInputElement &&
-                        ((a.value = Nt(t)), a.focus());
+                        ((a.value = Bt(t)), a.focus());
                 })(String(a.dataset.time || '')),
                 !0
             );
         case 'add-time-slot':
             return (
                 (function () {
-                    if (Vt()) return;
+                    if (Kt()) return;
                     const t = e('#newSlotTime');
                     if (!(t instanceof HTMLInputElement)) return;
-                    const a = Nt(t.value);
+                    const a = Bt(t.value);
                     if (!a) return;
                     const n = b(),
-                        i = Bt(n.availability.selectedDate) || Ut();
+                        i = Pt(n.availability.selectedDate) || Qt();
                     i &&
-                        (Zt(
+                        (te(
                             i,
                             [
                                 ...(Array.isArray(n.availability.draft[i])
@@ -3968,17 +3979,17 @@ async function Ia(t, a) {
         case 'remove-time-slot':
             return (
                 (function (t, e) {
-                    if (Vt()) return;
-                    const a = Bt(t);
+                    if (Kt()) return;
+                    const a = Pt(t);
                     if (!a) return;
                     const n = b(),
                         i = Array.isArray(n.availability.draft[a])
                             ? n.availability.draft[a]
                             : [],
-                        o = Nt(e);
-                    Zt(
+                        o = Bt(e);
+                    te(
                         a,
-                        i.filter((t) => Nt(t) !== o),
+                        i.filter((t) => Bt(t) !== o),
                         `Slot ${o || '-'} removido en ${a}`
                     );
                 })(
@@ -3991,13 +4002,13 @@ async function Ia(t, a) {
         case 'context-copy-availability-day':
             return (
                 (function () {
-                    if (Vt()) return;
+                    if (Kt()) return;
                     const t = b(),
-                        e = Bt(t.availability.selectedDate) || Ut(),
+                        e = Pt(t.availability.selectedDate) || Qt(),
                         a = Array.isArray(t.availability.draft[e])
-                            ? Dt(t.availability.draft[e])
+                            ? xt(t.availability.draft[e])
                             : [];
-                    Wt(
+                    Yt(
                         {
                             clipboard: a,
                             clipboardDate: e,
@@ -4013,42 +4024,42 @@ async function Ia(t, a) {
         case 'paste-availability-day':
             return (
                 (function () {
-                    if (Vt()) return;
+                    if (Kt()) return;
                     const t = b(),
                         e = Array.isArray(t.availability.clipboard)
-                            ? Dt(t.availability.clipboard)
+                            ? xt(t.availability.clipboard)
                             : [];
-                    if (!e.length) return void Yt('Portapapeles vacio');
-                    const a = Bt(t.availability.selectedDate) || Ut();
-                    Zt(a, e, `Pegado ${e.length} slots en ${a}`);
+                    if (!e.length) return void Xt('Portapapeles vacio');
+                    const a = Pt(t.availability.selectedDate) || Qt();
+                    te(a, e, `Pegado ${e.length} slots en ${a}`);
                 })(),
                 !0
             );
         case 'duplicate-availability-day-next':
-            return (ee(1), !0);
+            return (ne(1), !0);
         case 'duplicate-availability-next-week':
-            return (ee(7), !0);
+            return (ne(7), !0);
         case 'clear-availability-day':
             return (
                 (function () {
-                    if (Vt()) return;
-                    const t = Bt(b().availability.selectedDate) || Ut();
+                    if (Kt()) return;
+                    const t = Pt(b().availability.selectedDate) || Qt();
                     t &&
                         window.confirm(
                             `Se eliminaran los slots del dia ${t}. Continuar?`
                         ) &&
-                        Zt(t, [], `Dia ${t} limpiado`);
+                        te(t, [], `Dia ${t} limpiado`);
                 })(),
                 !0
             );
         case 'clear-availability-week':
             return (
                 (function () {
-                    if (Vt()) return;
-                    const t = Bt(b().availability.selectedDate) || Ut();
+                    if (Kt()) return;
+                    const t = Pt(b().availability.selectedDate) || Qt();
                     if (!t) return;
                     const e = (function (t) {
-                        const e = xt(t);
+                        const e = It(t);
                         if (!e) return null;
                         const a = (e.getDay() + 6) % 7,
                             n = new Date(e);
@@ -4068,12 +4079,12 @@ async function Ia(t, a) {
                         )
                     )
                         return;
-                    const i = zt();
+                    const i = Ut();
                     for (let t = 0; t < 7; t += 1) {
                         const a = new Date(e.start);
                         (a.setDate(e.start.getDate() + t), delete i[u(a)]);
                     }
-                    Jt(i, {
+                    Zt(i, {
                         selectedDate: t,
                         lastAction: `Semana limpiada (${a} - ${n})`,
                     });
@@ -4083,15 +4094,15 @@ async function Ia(t, a) {
         case 'save-availability-draft':
             return (
                 await (async function () {
-                    if (Vt()) return;
-                    const t = zt(),
+                    if (Kt()) return;
+                    const t = Ut(),
                         e = await k('availability', {
                             method: 'POST',
                             body: { availability: t },
                         }),
                         a =
                             e?.data && 'object' == typeof e.data
-                                ? It(e.data)
+                                ? Ft(e.data)
                                 : t,
                         n =
                             e?.meta && 'object' == typeof e.meta
@@ -4113,7 +4124,7 @@ async function Ia(t, a) {
                             lastAction: `Cambios guardados ${new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: !1 })}`,
                         },
                     })),
-                        Gt());
+                        Jt());
                 })(),
                 s('Disponibilidad guardada', 'success'),
                 !0
@@ -4121,7 +4132,7 @@ async function Ia(t, a) {
         case 'discard-availability-draft':
             return (
                 (function () {
-                    if (Vt()) return;
+                    if (Kt()) return;
                     const t = b();
                     if (
                         t.availability.draftDirty &&
@@ -4130,13 +4141,13 @@ async function Ia(t, a) {
                         )
                     )
                         return;
-                    const e = It(t.data.availability || {}),
-                        a = Ot(t.availability.selectedDate, e);
-                    Wt(
+                    const e = Ft(t.data.availability || {}),
+                        a = jt(t.availability.selectedDate, e);
+                    Yt(
                         {
                             draft: e,
                             selectedDate: a,
-                            monthAnchor: Ft(t.availability.monthAnchor, a),
+                            monthAnchor: Rt(t.availability.monthAnchor, a),
                             draftDirty: !1,
                             lastAction: 'Borrador descartado',
                         },
@@ -4150,7 +4161,7 @@ async function Ia(t, a) {
             return !1;
     }
 }
-const Ha = new Set([
+const Oa = new Set([
     'dashboard',
     'appointments',
     'callbacks',
@@ -4158,13 +4169,13 @@ const Ha = new Set([
     'availability',
     'queue',
 ]);
-function Fa(t, e = 'dashboard') {
+function Ra(t, e = 'dashboard') {
     const a = String(t || '')
         .trim()
         .toLowerCase();
-    return Ha.has(a) ? a : e;
+    return Oa.has(a) ? a : e;
 }
-function Oa(t) {
+function ja(t) {
     !(function (t) {
         const e = String(t || '').replace(/^#/, ''),
             a = e ? `#${e}` : '';
@@ -4174,13 +4185,13 @@ function Oa(t) {
                 '',
                 `${window.location.pathname}${window.location.search}${a}`
             );
-    })(Fa(t));
+    })(Ra(t));
 }
-const Ra = 'themeMode',
-    ja = new Set(['light', 'dark', 'system']);
-const za = 'adminLastSection',
-    Va = 'adminSidebarCollapsed';
-function Ua(t, { persist: e = !1 } = {}) {
+const za = 'themeMode',
+    Va = new Set(['light', 'dark', 'system']);
+const Ua = 'adminLastSection',
+    Ka = 'adminSidebarCollapsed';
+function Qa(t, { persist: e = !1 } = {}) {
     const a = (function (t) {
         const e = (function (t) {
             return 'light' === t || 'dark' === t
@@ -4199,8 +4210,8 @@ function Ua(t, { persist: e = !1 } = {}) {
     (g((e) => ({ ...e, ui: { ...e.ui, themeMode: t, theme: a } })),
         e &&
             (function (t) {
-                const e = ja.has(t) ? t : 'system';
-                he(Ra, e);
+                const e = Va.has(t) ? t : 'system';
+                ve(za, e);
             })(t),
         Array.from(
             document.querySelectorAll('.admin-theme-btn[data-theme-mode]')
@@ -4210,14 +4221,14 @@ function Ua(t, { persist: e = !1 } = {}) {
                 e.setAttribute('aria-pressed', String(a)));
         }));
 }
-function Ka() {
+function Ga() {
     const t = b();
-    (he(za, t.ui.activeSection), he(Va, t.ui.sidebarCollapsed ? '1' : '0'));
+    (ve(Ua, t.ui.activeSection), ve(Ka, t.ui.sidebarCollapsed ? '1' : '0'));
 }
-function Qa() {
+function Wa() {
     return window.matchMedia('(max-width: 1024px)').matches;
 }
-function Ga(t) {
+function Ja(t) {
     return (
         t instanceof HTMLElement &&
         !t.hidden &&
@@ -4226,9 +4237,9 @@ function Ga(t) {
         t.getClientRects().length > 0
     );
 }
-function Wa() {
+function Ya() {
     const t = b(),
-        a = Qa(),
+        a = Wa(),
         n = e('#adminSidebar'),
         i = n instanceof HTMLElement && n.classList.contains('is-open');
     (!(function ({ open: t, collapsed: a }) {
@@ -4263,8 +4274,8 @@ function Wa() {
                     });
             })());
 }
-async function Ja(t, e = {}) {
-    const a = Fa(t, 'dashboard'),
+async function Za(t, e = {}) {
+    const a = Ra(t, 'dashboard'),
         { force: n = !1 } = e,
         i = b().ui.activeSection;
     return (
@@ -4272,33 +4283,33 @@ async function Ja(t, e = {}) {
             !n &&
             'availability' === b().ui.activeSection &&
             'availability' !== a &&
-            te() &&
+            ae() &&
             !window.confirm(
                 'Hay cambios pendientes en disponibilidad. ¿Deseas salir sin guardar?'
             )
         ) &&
         ((function (t) {
-            const e = Fa(t, 'dashboard');
+            const e = Ra(t, 'dashboard');
             (g((t) => ({ ...t, ui: { ...t.ui, activeSection: e } })),
-                E(e),
-                I(b()),
-                Oa(e),
-                Ka());
+                D(e),
+                F(b()),
+                ja(e),
+                Ga());
         })(a),
         'queue' === a &&
             'queue' !== i &&
             (function () {
                 const t = b();
                 return (
-                    'fallback' !== ae(t.queue.syncMode) &&
+                    'fallback' !== ie(t.queue.syncMode) &&
                     !Boolean(t.queue.fallbackPartial)
                 );
             })() &&
-            (await Ye()),
+            (await Xe()),
         !0)
     );
 }
-function Ya() {
+function Xa() {
     (g((t) => ({
         ...t,
         ui: {
@@ -4307,27 +4318,27 @@ function Ya() {
             sidebarOpen: t.ui.sidebarOpen,
         },
     })),
-        Wa(),
-        Ka());
+        Ya(),
+        Ga());
 }
-function Za() {
+function tn() {
     (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !t.ui.sidebarOpen } })),
-        Wa());
+        Ya());
 }
-function Xa({ restoreFocus: t = !1 } = {}) {
+function en({ restoreFocus: t = !1 } = {}) {
     if (
-        (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !1 } })), Wa(), L(), t)
+        (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !1 } })), Ya(), N(), t)
     ) {
         const t = e('#adminMenuToggle');
         t instanceof HTMLElement && t.focus();
     }
 }
-function tn() {
-    _();
+function an() {
+    E();
     const t = document.getElementById('adminQuickCommand');
     t instanceof HTMLInputElement && t.focus();
 }
-function en() {
+function nn() {
     const t = b().ui.activeSection;
     if ('appointments' === t) {
         const t = document.getElementById('searchAppointments');
@@ -4342,46 +4353,46 @@ function en() {
         t instanceof HTMLInputElement && t.focus();
     }
 }
-async function an(t) {
+async function on(t) {
     switch (t) {
         case 'appointments_pending_transfer':
-            (await Ja('appointments'), rt('pending_transfer'), ct(''));
+            (await Za('appointments'), lt('pending_transfer'), ut(''));
             break;
         case 'appointments_all':
-            (await Ja('appointments'), rt('all'), ct(''));
+            (await Za('appointments'), lt('all'), ut(''));
             break;
         case 'appointments_no_show':
-            (await Ja('appointments'), rt('no_show'), ct(''));
+            (await Za('appointments'), lt('no_show'), ut(''));
             break;
         case 'callbacks_pending':
-            (await Ja('callbacks'), $t('pending'));
+            (await Za('callbacks'), Lt('pending'));
             break;
         case 'callbacks_contacted':
-            (await Ja('callbacks'), $t('contacted'));
+            (await Za('callbacks'), Lt('contacted'));
             break;
         case 'callbacks_sla_urgent':
-            (await Ja('callbacks'), $t('sla_urgent'));
+            (await Za('callbacks'), Lt('sla_urgent'));
             break;
         case 'queue_sla_risk':
-            (await Ja('queue'), We('sla_risk'));
+            (await Za('queue'), Ye('sla_risk'));
             break;
         case 'queue_waiting':
-            (await Ja('queue'), We('waiting'));
+            (await Za('queue'), Ye('waiting'));
             break;
         case 'queue_called':
-            (await Ja('queue'), We('called'));
+            (await Za('queue'), Ye('called'));
             break;
         case 'queue_no_show':
-            (await Ja('queue'), We('no_show'));
+            (await Za('queue'), Ye('no_show'));
             break;
         case 'queue_all':
-            (await Ja('queue'), We('all'));
+            (await Za('queue'), Ye('all'));
             break;
         case 'queue_call_next':
-            (await Ja('queue'), await ta(b().queue.stationConsultorio));
+            (await Za('queue'), await aa(b().queue.stationConsultorio));
     }
 }
-function nn(t) {
+function sn(t) {
     const e = String(t || '')
         .trim()
         .toLowerCase();
@@ -4399,13 +4410,13 @@ function nn(t) {
                     : null
         : null;
 }
-async function on(t, e) {
+async function rn(t, e) {
     switch (t) {
         case 'callback-quick-filter':
-            return ($t(String(e.dataset.filterValue || 'all')), !0);
+            return (Lt(String(e.dataset.filterValue || 'all')), !0);
         case 'clear-callback-filters':
             return (
-                Tt({
+                _t({
                     filter: 'all',
                     sort: 'recent_desc',
                     search: '',
@@ -4416,8 +4427,8 @@ async function on(t, e) {
         case 'callbacks-triage-next':
         case 'context-open-callbacks-next':
             return (
-                await Ja('callbacks'),
-                $t('pending'),
+                await Za('callbacks'),
+                Lt('pending'),
                 (function () {
                     const t = document.querySelector(
                         '#callbacksGrid .callback-card.pendiente button[data-action="mark-contacted"]'
@@ -4428,7 +4439,7 @@ async function on(t, e) {
             );
         case 'mark-contacted':
             return (
-                await _t(
+                await Et(
                     Number(e.dataset.callbackId || 0),
                     String(e.dataset.callbackDate || '')
                 ),
@@ -4437,7 +4448,7 @@ async function on(t, e) {
             );
         case 'callbacks-bulk-select-visible':
             return (
-                Tt(
+                _t(
                     {
                         selected: Array.from(
                             document.querySelectorAll(
@@ -4454,7 +4465,7 @@ async function on(t, e) {
                 !0
             );
         case 'callbacks-bulk-clear':
-            return (Tt({ selected: [] }, { persist: !1 }), !0);
+            return (_t({ selected: [] }, { persist: !1 }), !0);
         case 'callbacks-bulk-mark':
             return (
                 await (async function () {
@@ -4463,41 +4474,41 @@ async function on(t, e) {
                         .filter((t) => t > 0);
                     for (const e of t)
                         try {
-                            await _t(e);
+                            await Et(e);
                         } catch (t) {}
                 })(),
                 !0
             );
         case 'context-open-callbacks-pending':
-            return (await Ja('callbacks'), $t('pending'), !0);
+            return (await Za('callbacks'), Lt('pending'), !0);
         default:
             return !1;
     }
 }
-async function sn(t) {
+async function cn(t) {
     switch (t) {
         case 'context-open-appointments-transfer':
-            return (await Ja('appointments'), rt('pending_transfer'), !0);
+            return (await Za('appointments'), lt('pending_transfer'), !0);
         case 'context-open-dashboard':
-            return (await Ja('dashboard'), !0);
+            return (await Za('dashboard'), !0);
         default:
             return !1;
     }
 }
-async function rn(t, e) {
+async function ln(t, e) {
     switch (t) {
         case 'queue-refresh-state':
-            return (await Ye(), !0);
+            return (await Xe(), !0);
         case 'queue-call-next':
-            return (await ta(Number(e.dataset.queueConsultorio || 0)), !0);
+            return (await aa(Number(e.dataset.queueConsultorio || 0)), !0);
         case 'queue-release-station':
             return (
                 await (async function (t) {
                     const e = 2 === Number(t || 0) ? 2 : 1,
-                        a = xe(e);
+                        a = Ie(e);
                     a
-                        ? await ea(a.id, 'liberar', e)
-                        : ze(`Sin ticket activo para liberar en C${e}`);
+                        ? await na(a.id, 'liberar', e)
+                        : Ue(`Sin ticket activo para liberar en C${e}`);
                 })(Number(e.dataset.queueConsultorio || 0)),
                 !0
             );
@@ -4506,18 +4517,18 @@ async function rn(t, e) {
                 (function (t) {
                     const e = Number(t || 0);
                     if (!e) return;
-                    const a = Ne(b().queue.selected || []);
-                    Ve(a.includes(e) ? a.filter((t) => t !== e) : [...a, e]);
+                    const a = Be(b().queue.selected || []);
+                    Ke(a.includes(e) ? a.filter((t) => t !== e) : [...a, e]);
                 })(Number(e.dataset.queueId || 0)),
                 !0
             );
         case 'queue-select-visible':
-            return (Ve(Ee().map((t) => Number(t.id || 0))), !0);
+            return (Ke(De().map((t) => Number(t.id || 0))), !0);
         case 'queue-clear-selection':
-            return (Ue(), !0);
+            return (Qe(), !0);
         case 'queue-ticket-action':
             return (
-                await ea(
+                await na(
                     Number(e.dataset.queueId || 0),
                     String(e.dataset.queueAction || ''),
                     Number(e.dataset.queueConsultorio || 0)
@@ -4525,14 +4536,14 @@ async function rn(t, e) {
                 !0
             );
         case 'queue-reprint-ticket':
-            return (await oa(Number(e.dataset.queueId || 0)), !0);
+            return (await ra(Number(e.dataset.queueId || 0)), !0);
         case 'queue-bulk-action':
             return (
                 await (async function (t) {
-                    const e = Be(),
-                        a = ie(t);
+                    const e = Pe(),
+                        a = se(t);
                     if (e.length) {
-                        if ($e.has(a)) {
+                        if (Le.has(a)) {
                             const t =
                                 'no_show' === a
                                     ? 'No show'
@@ -4546,7 +4557,7 @@ async function rn(t, e) {
                         }
                         for (const t of e)
                             try {
-                                await Xe({
+                                await ea({
                                     ticketId: t.id,
                                     action: a,
                                     consultorio:
@@ -4554,7 +4565,7 @@ async function rn(t, e) {
                                         b().queue.stationConsultorio,
                                 });
                             } catch (t) {}
-                        (Ue(), ze(`Bulk ${a} sobre ${e.length} tickets`));
+                        (Qe(), Ue(`Bulk ${a} sobre ${e.length} tickets`));
                     }
                 })(String(e.dataset.queueAction || 'no_show')),
                 !0
@@ -4562,67 +4573,67 @@ async function rn(t, e) {
         case 'queue-bulk-reprint':
             return (
                 await (async function () {
-                    const t = Be();
+                    const t = Pe();
                     for (const e of t)
                         try {
-                            await oa(e.id);
+                            await ra(e.id);
                         } catch (t) {}
-                    (Ue(), ze(`Bulk reimpresion ${t.length}`));
+                    (Qe(), Ue(`Bulk reimpresion ${t.length}`));
                 })(),
                 !0
             );
         case 'queue-clear-search':
             return (
                 (function () {
-                    Ge({ search: '', selected: [] });
+                    Je({ search: '', selected: [] });
                     const t = document.getElementById('queueSearchInput');
                     t instanceof HTMLInputElement && (t.value = '');
                 })(),
                 !0
             );
         case 'queue-toggle-shortcuts':
-            return (sa(), !0);
+            return (ca(), !0);
         case 'queue-toggle-one-tap':
-            return (Ge({ oneTap: !b().queue.oneTap }), !0);
+            return (Je({ oneTap: !b().queue.oneTap }), !0);
         case 'queue-start-practice':
-            return (ra(!0), !0);
+            return (la(!0), !0);
         case 'queue-stop-practice':
-            return (ra(!1), !0);
+            return (la(!1), !0);
         case 'queue-lock-station':
             return (
                 (function (t) {
                     const e = 2 === Number(t || 0) ? 2 : 1;
-                    (Ge({ stationMode: 'locked', stationConsultorio: e }),
-                        ze(`Estacion bloqueada en C${e}`));
+                    (Je({ stationMode: 'locked', stationConsultorio: e }),
+                        Ue(`Estacion bloqueada en C${e}`));
                 })(Number(e.dataset.queueConsultorio || 1)),
                 !0
             );
         case 'queue-set-station-mode':
             return (
                 (function (t) {
-                    if ('free' === ae(t))
+                    if ('free' === ie(t))
                         return (
-                            Ge({ stationMode: 'free' }),
-                            void ze('Estacion en modo libre')
+                            Je({ stationMode: 'free' }),
+                            void Ue('Estacion en modo libre')
                         );
-                    Ge({ stationMode: 'locked' });
+                    Je({ stationMode: 'locked' });
                 })(String(e.dataset.queueMode || 'free')),
                 !0
             );
         case 'queue-sensitive-confirm':
-            return (await aa(), !0);
+            return (await ia(), !0);
         case 'queue-sensitive-cancel':
-            return (na(), !0);
+            return (oa(), !0);
         case 'queue-capture-call-key':
             return (
-                Ge({ captureCallKeyMode: !0 }),
+                Je({ captureCallKeyMode: !0 }),
                 s('Calibración activa: presiona la tecla externa', 'info'),
                 !0
             );
         case 'queue-clear-call-key':
             return (
                 window.confirm('¿Quitar tecla externa calibrada?') &&
-                    (Ge({ customCallKey: null, captureCallKeyMode: !1 }),
+                    (Je({ customCallKey: null, captureCallKeyMode: !1 }),
                     s('Tecla externa eliminada', 'success')),
                 !0
             );
@@ -4630,31 +4641,31 @@ async function rn(t, e) {
             return !1;
     }
 }
-async function cn(t, e) {
+async function un(t, e) {
     switch (t) {
         case 'close-toast':
             return (e.closest('.toast')?.remove(), !0);
         case 'set-admin-theme':
             return (
-                Ua(String(e.dataset.themeMode || 'system'), { persist: !0 }),
+                Qa(String(e.dataset.themeMode || 'system'), { persist: !0 }),
                 !0
             );
         case 'toggle-sidebar-collapse':
-            return (Ya(), !0);
+            return (Xa(), !0);
         case 'refresh-admin-data':
-            return (await Da(!0), !0);
+            return (await xa(!0), !0);
         case 'run-admin-command': {
             const t = document.getElementById('adminQuickCommand');
             if (t instanceof HTMLInputElement) {
-                const e = nn(t.value);
-                e && (await an(e), (t.value = ''), L());
+                const e = sn(t.value);
+                e && (await on(e), (t.value = ''), N());
             }
             return !0;
         }
         case 'open-command-palette':
-            return (_(), tn(), !0);
+            return (E(), an(), !0);
         case 'close-command-palette':
-            return (L(), !0);
+            return (N(), !0);
         case 'logout':
             return (
                 await (async function () {
@@ -4674,48 +4685,41 @@ async function cn(t, e) {
                             },
                         })));
                 })(),
-                T(),
-                L(),
-                Ba(),
+                _(),
+                N(),
+                Pa(),
                 s('Sesion cerrada', 'info'),
                 !0
             );
         case 'reset-login-2fa':
             return (
                 g((t) => ({ ...t, auth: { ...t.auth, requires2FA: !1 } })),
-                N(!1),
-                x(),
-                D({
+                B(!1),
+                I(),
+                x({
                     tone: 'neutral',
                     title: 'Ingreso protegido',
                     message:
                         'Volviste al paso de clave. Puedes reintentar el acceso.',
                 }),
-                P('password'),
+                H('password'),
                 !0
             );
         default:
             return !1;
     }
 }
-async function ln() {
-    (!(function () {
-        const t = e('#loginScreen'),
-            a = e('#adminDashboard');
-        if (!(t instanceof HTMLElement && a instanceof HTMLElement))
-            throw new Error('Contenedores admin no encontrados');
-        ((t.innerHTML = `\n        <div class="admin-v3-login">\n            <section class="admin-v3-login__hero">\n                <div class="admin-v3-login__brand">\n                    <p class="sony-kicker">Piel en Armonia</p>\n                    <h1>Centro operativo claro y protegido</h1>\n                    <p>\n                        Acceso editorial para agenda, callbacks y disponibilidad con\n                        jerarquia simple y lectura rapida.\n                    </p>\n                </div>\n                <div class="admin-v3-login__facts">\n                    <article class="admin-v3-login__fact">\n                        <span>Sesion</span>\n                        <strong>Acceso administrativo aislado</strong>\n                        <small>Entrada dedicada para operacion diaria.</small>\n                    </article>\n                    <article class="admin-v3-login__fact">\n                        <span>Proteccion</span>\n                        <strong>Clave y 2FA en la misma tarjeta</strong>\n                        <small>El segundo paso aparece solo cuando el backend lo exige.</small>\n                    </article>\n                    <article class="admin-v3-login__fact">\n                        <span>Entorno</span>\n                        <strong>Activos self-hosted y CSP activa</strong>\n                        <small>Sin dependencias remotas para estilos ni fuentes.</small>\n                    </article>\n                </div>\n            </section>\n\n            <section class="admin-v3-login__panel">\n                <div class="admin-v3-login__panel-head">\n                    <p class="sony-kicker" id="adminLoginStepEyebrow">Ingreso protegido</p>\n                    <h2 id="adminLoginStepTitle">Acceso de administrador</h2>\n                    <p id="adminLoginStepSummary">\n                        Usa tu clave para abrir el workbench operativo.\n                    </p>\n                </div>\n\n                <div id="adminLoginStatusCard" class="admin-login-status-card" data-state="neutral">\n                    <strong id="adminLoginStatusTitle">Proteccion activa</strong>\n                    <p id="adminLoginStatusMessage">\n                        El panel usa autenticacion endurecida y activos self-hosted.\n                    </p>\n                </div>\n\n                <form id="loginForm" class="sony-login-form" novalidate>\n                    <label id="adminPasswordField" class="admin-login-field" for="adminPassword">\n                        <span>Contrasena</span>\n                        <input id="adminPassword" type="password" required placeholder="Ingresa tu clave" autocomplete="current-password" />\n                    </label>\n                    <div id="group2FA" class="is-hidden">\n                        <label id="admin2FAField" class="admin-login-field" for="admin2FACode">\n                            <span>Codigo 2FA</span>\n                            <input id="admin2FACode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456" />\n                        </label>\n                    </div>\n                    <div class="admin-login-actions">\n                        <button id="loginBtn" type="submit">Ingresar</button>\n                        <button\n                            id="loginReset2FABtn"\n                            type="button"\n                            class="sony-login-reset is-hidden"\n                            data-action="reset-login-2fa"\n                        >\n                            Volver\n                        </button>\n                    </div>\n                    <p id="adminLoginSupportCopy" class="admin-login-support-copy">\n                        Si el backend solicita un segundo paso, el flujo sigue en esta misma tarjeta.\n                    </p>\n                </form>\n\n                <div class="sony-theme-switcher login-theme-bar" role="group" aria-label="Tema">\n                    <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="light">${C('sun')}</button>\n                    <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="dark">${C('moon')}</button>\n                    <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="system">${C('system')}</button>\n                </div>\n            </section>\n        </div>\n    `),
-            (a.innerHTML = `\n        <div class="admin-v3-shell">\n            <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n                <header class="sidebar-header">\n                    <div class="admin-v3-sidebar__brand">\n                        <strong>Piel en Armonia</strong>\n                        <small>Admin sony_v3</small>\n                    </div>\n                    <div class="toolbar-group">\n                        <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${C('menu')}</button>\n                        <button type="button" id="adminMenuClose">Cerrar</button>\n                    </div>\n                </header>\n                <nav class="sidebar-nav" id="adminSidebarNav">\n                    ${q('dashboard', 'Dashboard', 'dashboard', !0)}\n                    ${q('appointments', 'Citas', 'appointments')}\n                    ${q('callbacks', 'Callbacks', 'callbacks')}\n                    ${q('reviews', 'Resenas', 'reviews')}\n                    ${q('availability', 'Disponibilidad', 'availability')}\n                    ${q('queue', 'Turnero Sala', 'queue')}\n                </nav>\n                <footer class="sidebar-footer">\n                    <button type="button" class="logout-btn" data-action="logout">${C('logout')}<span>Cerrar sesion</span></button>\n                </footer>\n            </aside>\n            <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n\n            <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n                <header class="admin-v3-topbar">\n                    <div class="admin-v3-topbar__copy">\n                        <p class="sony-kicker">Sony V3</p>\n                        <h2 id="pageTitle">Dashboard</h2>\n                    </div>\n                    <div class="admin-v3-topbar__actions">\n                        <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${C('menu')}<span>Menu</span></button>\n                        <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Ctrl+K</button>\n                        <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                        <div class="sony-theme-switcher admin-theme-switcher-header" role="group" aria-label="Tema">\n                            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="light">${C('sun')}</button>\n                            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="dark">${C('moon')}</button>\n                            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="system">${C('system')}</button>\n                        </div>\n                    </div>\n                </header>\n\n                <section class="admin-v3-context-strip" id="adminProductivityStrip">\n                    <div class="admin-v3-context-copy" data-admin-section-hero>\n                        <p class="sony-kicker" id="adminSectionEyebrow">Resumen Diario</p>\n                        <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                        <p id="adminContextSummary">Lee agenda, callbacks y disponibilidad desde un frente claro y sin ruido.</p>\n                        <div id="adminContextActions" class="sony-context-actions"></div>\n                    </div>\n                    <div class="admin-v3-status-rail" data-admin-priority-rail>\n                        <article class="sony-status-tile">\n                            <span>Push</span>\n                            <strong id="pushStatusIndicator">Inicializando</strong>\n                            <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                        </article>\n                        <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                            <span>Sesion</span>\n                            <strong id="adminSessionState">No autenticada</strong>\n                            <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                        </article>\n                        <article class="sony-status-tile">\n                            <span>Sincronizacion</span>\n                            <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                            <small id="adminSyncState">Listo para primera sincronizacion</small>\n                        </article>\n                    </div>\n                </section>\n\n                \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                <article class="sony-panel dashboard-hero-panel">\n                    <div class="dashboard-hero-copy">\n                        <p class="sony-kicker">Resumen diario</p>\n                        <h3>Prioridades de hoy</h3>\n                        <p id="dashboardHeroSummary">\n                            Agenda, callbacks y disponibilidad con una lectura mas clara y directa.\n                        </p>\n                    </div>\n                    <div class="dashboard-hero-actions">\n                        <button type="button" data-action="context-open-appointments-transfer">Ver transferencias</button>\n                        <button type="button" data-action="context-open-callbacks-pending">Ir a callbacks</button>\n                        <button type="button" data-action="refresh-admin-data">Actualizar tablero</button>\n                    </div>\n                    <div class="dashboard-hero-metrics">\n                        <div class="dashboard-hero-metric">\n                            <span>Rating</span>\n                            <strong id="dashboardHeroRating">0.0</strong>\n                        </div>\n                        <div class="dashboard-hero-metric">\n                            <span>Resenas 30d</span>\n                            <strong id="dashboardHeroRecentReviews">0</strong>\n                        </div>\n                        <div class="dashboard-hero-metric">\n                            <span>Urgentes SLA</span>\n                            <strong id="dashboardHeroUrgentCallbacks">0</strong>\n                        </div>\n                        <div class="dashboard-hero-metric">\n                            <span>Transferencias</span>\n                            <strong id="dashboardHeroPendingTransfers">0</strong>\n                        </div>\n                    </div>\n                </article>\n\n                <article class="sony-panel dashboard-signal-panel">\n                    <header>\n                        <div>\n                            <h3>Señal operativa</h3>\n                            <small id="operationRefreshSignal">Tiempo real</small>\n                        </div>\n                        <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n                    </header>\n                    <p id="dashboardLiveMeta">\n                        Sin alertas criticas en la operacion actual.\n                    </p>\n                    <div class="dashboard-signal-stack">\n                        <article class="dashboard-signal-card">\n                            <span>Push</span>\n                            <strong id="dashboardPushStatus">Sin validar</strong>\n                            <small id="dashboardPushMeta">Permisos del navegador</small>\n                        </article>\n                        <article class="dashboard-signal-card">\n                            <span>Atencion</span>\n                            <strong id="dashboardQueueHealth">Cola: estable</strong>\n                            <small id="dashboardFlowStatus">Sin cuellos de botella</small>\n                        </article>\n                    </div>\n                    <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n                </article>\n            </div>\n\n            <div class="sony-grid sony-grid-kpi">\n                <article class="sony-kpi"><h3>Citas hoy</h3><strong id="todayAppointments">0</strong></article>\n                <article class="sony-kpi"><h3>Total citas</h3><strong id="totalAppointments">0</strong></article>\n                <article class="sony-kpi"><h3>Callbacks pendientes</h3><strong id="pendingCallbacks">0</strong></article>\n                <article class="sony-kpi"><h3>Resenas</h3><strong id="totalReviewsCount">0</strong></article>\n                <article class="sony-kpi"><h3>No show</h3><strong id="totalNoShows">0</strong></article>\n                <article class="sony-kpi"><h3>Rating</h3><strong id="avgRating">0.0</strong></article>\n            </div>\n\n            <div class="sony-grid sony-grid-two">\n                <article class="sony-panel dashboard-card-operations">\n                    <header>\n                        <h3>Centro operativo</h3>\n                        <small id="operationDeckMeta">Prioridades y acciones</small>\n                    </header>\n                    <div class="sony-panel-stats">\n                        <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                        <div><span>Callbacks</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                        <div><span>Carga hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                    </div>\n                    <p id="operationQueueHealth">Cola: estable</p>\n                    <div id="operationActionList" class="operations-action-list"></div>\n                </article>\n\n                <article class="sony-panel" id="funnelSummary">\n                    <header><h3>Embudo</h3></header>\n                    <div class="sony-panel-stats">\n                        <div><span>View Booking</span><strong id="funnelViewBooking">0</strong></div>\n                        <div><span>Start Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                        <div><span>Booking Confirmed</span><strong id="funnelBookingConfirmed">0</strong></div>\n                        <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                    </div>\n                </article>\n            </div>\n\n            <div class="sony-grid sony-grid-three">\n                <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n            </div>\n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n\n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                <article class="sony-panel appointments-command-deck">\n                    <header class="section-header appointments-command-head">\n                        <div>\n                            <p class="sony-kicker">Agenda clinica</p>\n                            <h3>Citas</h3>\n                            <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                        </div>\n                        <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n                    </header>\n                    <div class="appointments-ops-grid">\n                        <article class="appointments-ops-card tone-warning">\n                            <span>Transferencias</span>\n                            <strong id="appointmentsOpsPendingTransfer">0</strong>\n                            <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                        </article>\n                        <article class="appointments-ops-card tone-neutral">\n                            <span>Proximas 48h</span>\n                            <strong id="appointmentsOpsUpcomingCount">0</strong>\n                            <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                        </article>\n                        <article class="appointments-ops-card tone-danger">\n                            <span>No show</span>\n                            <strong id="appointmentsOpsNoShowCount">0</strong>\n                            <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                        </article>\n                        <article class="appointments-ops-card tone-success">\n                            <span>Hoy</span>\n                            <strong id="appointmentsOpsTodayCount">0</strong>\n                            <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                        </article>\n                    </div>\n                    <div class="appointments-command-actions">\n                        <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                        <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                        <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n                    </div>\n                </article>\n\n                <article class="sony-panel appointments-focus-panel">\n                    <header class="section-header">\n                        <div>\n                            <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                            <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                            <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                        </div>\n                    </header>\n                    <div class="appointments-focus-grid">\n                        <div class="appointments-focus-stat">\n                            <span>Siguiente ventana</span>\n                            <strong id="appointmentsFocusWindow">-</strong>\n                        </div>\n                        <div class="appointments-focus-stat">\n                            <span>Pago</span>\n                            <strong id="appointmentsFocusPayment">-</strong>\n                        </div>\n                        <div class="appointments-focus-stat">\n                            <span>Estado</span>\n                            <strong id="appointmentsFocusStatus">-</strong>\n                        </div>\n                        <div class="appointments-focus-stat">\n                            <span>Contacto</span>\n                            <strong id="appointmentsFocusContact">-</strong>\n                        </div>\n                    </div>\n                    <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n                    <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n                </article>\n            </div>\n\n            <div class="sony-panel appointments-workbench">\n                <header class="section-header appointments-workbench-head">\n                    <div>\n                        <h3>Workbench</h3>\n                        <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                    </div>\n                    <div class="toolbar-group" id="appointmentsDensityToggle">\n                        <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                        <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                    </div>\n                </header>\n                <div class="toolbar-row">\n                    <div class="toolbar-group">\n                        <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                        <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                    </div>\n                </div>\n                <div class="toolbar-row appointments-toolbar">\n                    <label>\n                        <span class="sr-only">Filtro</span>\n                        <select id="appointmentFilter">\n                            <option value="all">Todas</option>\n                            <option value="pending_transfer">Transferencias por validar</option>\n                            <option value="upcoming_48h">Proximas 48h</option>\n                            <option value="no_show">No show</option>\n                            <option value="triage_attention">Triage accionable</option>\n                        </select>\n                    </label>\n                    <label>\n                        <span class="sr-only">Orden</span>\n                        <select id="appointmentSort">\n                            <option value="datetime_desc">Fecha reciente</option>\n                            <option value="datetime_asc">Fecha ascendente</option>\n                            <option value="patient_az">Paciente (A-Z)</option>\n                        </select>\n                    </label>\n                    <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                    <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n                </div>\n                <div class="toolbar-row slim">\n                    <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                    <p id="appointmentsToolbarState">Sin filtros activos</p>\n                </div>\n\n                <div class="table-scroll appointments-table-shell">\n                    <table id="appointmentsTable" class="sony-table">\n                        <thead>\n                            <tr>\n                                <th>Paciente</th>\n                                <th>Servicio</th>\n                                <th>Fecha</th>\n                                <th>Pago</th>\n                                <th>Estado</th>\n                                <th>Acciones</th>\n                            </tr>\n                        </thead>\n                        <tbody id="appointmentsTableBody"></tbody>\n                    </table>\n                </div>\n            </div>\n        </section>\n\n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                <article class="sony-panel callbacks-command-deck">\n                    <header class="section-header callbacks-command-head">\n                        <div>\n                            <p class="sony-kicker">SLA telefonico</p>\n                            <h3>Callbacks</h3>\n                            <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                        </div>\n                        <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n                    </header>\n                    <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                        <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                        <article class="callbacks-ops-card"><span>Urgentes</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                        <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                        <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n                    </div>\n                    <div class="callbacks-command-actions">\n                        <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                        <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                        <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                        <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n                    </div>\n                </article>\n\n                <article class="sony-panel callbacks-next-panel">\n                    <header class="section-header">\n                        <div>\n                            <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                            <h3 id="callbacksOpsNext">Sin telefono</h3>\n                            <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                        </div>\n                        <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n                    </header>\n                    <div class="callbacks-next-grid">\n                        <div class="callbacks-next-stat">\n                            <span>Espera</span>\n                            <strong id="callbacksNextWait">0 min</strong>\n                        </div>\n                        <div class="callbacks-next-stat">\n                            <span>Preferencia</span>\n                            <strong id="callbacksNextPreference">-</strong>\n                        </div>\n                        <div class="callbacks-next-stat">\n                            <span>Estado</span>\n                            <strong id="callbacksNextState">Pendiente</strong>\n                        </div>\n                        <div class="callbacks-next-stat">\n                            <span>Ultimo corte</span>\n                            <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                        </div>\n                    </div>\n                </article>\n            </div>\n            <div class="sony-panel callbacks-workbench">\n                <header class="section-header callbacks-workbench-head">\n                    <div>\n                        <h3>Workbench</h3>\n                        <p>Ordena por espera, filtra por SLA y drena la cola con acciones masivas.</p>\n                    </div>\n                </header>\n                <div class="toolbar-row">\n                    <div class="toolbar-group">\n                        <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                        <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                    </div>\n                </div>\n                <div class="toolbar-row callbacks-toolbar">\n                    <label>\n                        <span class="sr-only">Filtro callbacks</span>\n                        <select id="callbackFilter">\n                            <option value="all">Todos</option>\n                            <option value="pending">Pendientes</option>\n                            <option value="contacted">Contactados</option>\n                            <option value="today">Hoy</option>\n                            <option value="sla_urgent">Urgentes SLA</option>\n                        </select>\n                    </label>\n                    <label>\n                        <span class="sr-only">Orden callbacks</span>\n                        <select id="callbackSort">\n                            <option value="recent_desc">Mas recientes</option>\n                            <option value="waiting_desc">Mayor espera (SLA)</option>\n                        </select>\n                    </label>\n                    <input type="search" id="searchCallbacks" placeholder="Buscar telefono" />\n                    <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n                </div>\n                <div class="toolbar-row slim">\n                    <p id="callbacksToolbarMeta">Mostrando 0</p>\n                    <p id="callbacksToolbarState">Sin filtros activos</p>\n                </div>\n                <div id="callbacksGrid" class="callbacks-grid"></div>\n            </div>\n        </section>\n\n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n\n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                <header class="section-header availability-header">\n                    <div class="availability-calendar">\n                        <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                        <div class="availability-badges">\n                            <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                            <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                            <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                        </div>\n                    </div>\n                    <div class="toolbar-group calendar-header">\n                        <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                        <strong id="calendarMonth"></strong>\n                        <button type="button" data-action="change-month" data-delta="1">Next</button>\n                        <button type="button" data-action="availability-today">Hoy</button>\n                        <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                        <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n                    </div>\n                </header>\n\n                <div class="toolbar-row slim">\n                    <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n                    <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n                    <p id="availabilitySyncStatus">Sincronizado</p>\n                </div>\n\n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n\n                <div id="availabilityDetailGrid" class="availability-detail-grid">\n                    <article class="sony-panel soft">\n                        <h4 id="selectedDate">-</h4>\n                        <div id="timeSlotsList" class="time-slots-list"></div>\n                    </article>\n\n                    <article class="sony-panel soft">\n                        <div id="availabilityQuickSlotPresets" class="slot-presets">\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                            <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                        </div>\n                        <div id="addSlotForm" class="add-slot-form">\n                            <input type="time" id="newSlotTime" />\n                            <button type="button" data-action="add-time-slot">Agregar</button>\n                        </div>\n                        <div id="availabilityDayActions" class="toolbar-group wrap">\n                            <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                            <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                            <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                            <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                            <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                            <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                        </div>\n                        <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                        <div class="toolbar-group">\n                            <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                            <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                        </div>\n                    </article>\n                </div>\n            </div>\n        </section>\n\n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                <header class="section-header">\n                    <h3>Turnero Sala</h3>\n                    <div class="queue-admin-header-actions">\n                        <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                        <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                        <button type="button" data-action="queue-refresh-state">Refrescar</button>\n                    </div>\n                </header>\n\n                <div class="sony-grid sony-grid-kpi slim">\n                    <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n                    <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n                    <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n                    <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n                    <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n                </div>\n\n                <div id="queueStationControl" class="toolbar-row">\n                    <span id="queueStationBadge">Estacion: libre</span>\n                    <span id="queueStationModeBadge">Modo: free</span>\n                    <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n                    <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n                    <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n                    <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n                    <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n                    <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n                    <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n                    <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n                    <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n                    <button type="button" data-action="queue-stop-practice">Salir practica</button>\n                    <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n                    <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n                </div>\n\n                <div id="queueShortcutPanel" hidden>\n                    <p>Numpad Enter llama siguiente.</p>\n                    <p>Numpad Decimal prepara completar.</p>\n                    <p>Numpad Subtract prepara no_show.</p>\n                </div>\n\n                <div id="queueTriageToolbar" class="toolbar-row">\n                    <button type="button" data-queue-filter="all">Todo</button>\n                    <button type="button" data-queue-filter="called">Llamados</button>\n                    <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n                    <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n                    <button type="button" data-action="queue-clear-search">Limpiar</button>\n                    <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n                    <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n                    <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n                    <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n                    <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n                </div>\n\n                <div class="toolbar-row slim">\n                    <p id="queueTriageSummary">Sin riesgo</p>\n                    <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n                </div>\n\n                <ul id="queueNextAdminList" class="sony-list"></ul>\n\n                <div class="table-scroll">\n                    <table class="sony-table queue-admin-table">\n                        <thead>\n                            <tr>\n                                <th>Sel</th>\n                                <th>Ticket</th>\n                                <th>Tipo</th>\n                                <th>Estado</th>\n                                <th>Consultorio</th>\n                                <th>Espera</th>\n                                <th>Acciones</th>\n                            </tr>\n                        </thead>\n                        <tbody id="queueTableBody"></tbody>\n                    </table>\n                </div>\n\n                <div id="queueActivityPanel" class="sony-panel soft">\n                    <h4>Actividad</h4>\n                    <ul id="queueActivityList" class="sony-list"></ul>\n                </div>\n            </div>\n\n            <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n                <form method="dialog">\n                    <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                    <div class="toolbar-group">\n                        <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                        <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                    </div>\n                </form>\n            </dialog>\n        </section>\n    \n            </main>\n\n            <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n                <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n                <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                    <div class="admin-command-dialog__head">\n                        <div>\n                            <p class="sony-kicker">Command Palette</p>\n                            <h3 id="adminCommandPaletteTitle">Accion rapida</h3>\n                        </div>\n                        <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                    </div>\n                    <div class="admin-command-box">\n                        <input id="adminQuickCommand" type="text" placeholder="Ej. callbacks urgentes, citas transferencias, queue riesgo SLA" />\n                        <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                    </div>\n                    <div class="admin-command-dialog__hints">\n                        <span>Ctrl+K abre esta paleta</span>\n                        <span>/ enfoca la busqueda de la seccion activa</span>\n                    </div>\n                </div>\n            </div>\n        </div>\n    `));
-    })(),
+async function dn() {
+    (M(),
         (function () {
             const t = e('#adminMainContent');
             (t instanceof HTMLElement &&
                 t.setAttribute('data-admin-frame', 'sony_v3'),
-                Object.entries(H).forEach(([t, e]) => {
-                    (F(t, e.hero, 'data-admin-section-hero'),
-                        F(t, e.priority, 'data-admin-priority-rail'),
-                        F(t, e.workbench, 'data-admin-workbench'),
-                        F(t, e.detail, 'data-admin-detail-rail'));
+                Object.entries(O).forEach(([t, e]) => {
+                    (R(t, e.hero, 'data-admin-section-hero'),
+                        R(t, e.priority, 'data-admin-priority-rail'),
+                        R(t, e.workbench, 'data-admin-workbench'),
+                        R(t, e.detail, 'data-admin-detail-rail'));
                 }));
         })(),
         document.body.classList.add('admin-v3-mode'),
@@ -4731,7 +4735,7 @@ async function ln() {
                 t.preventDefault();
                 try {
                     await (async function (t, e) {
-                        const a = [cn, Pa, on, Ia, rn, sn];
+                        const a = [un, Ha, rn, Fa, ln, cn];
                         for (const n of a) if (await n(t, e)) return !0;
                         return !1;
                     })(a, e);
@@ -4750,10 +4754,10 @@ async function ln() {
                 n = e.classList.contains('nav-item');
             if (!a && !n) return;
             t.preventDefault();
-            const i = await Ja(
+            const i = await Za(
                 String(e.getAttribute('data-section') || 'dashboard')
             );
-            Qa() && !1 !== i && Xa();
+            Wa() && !1 !== i && en();
         }),
         document.addEventListener('click', (t) => {
             const e =
@@ -4762,7 +4766,7 @@ async function ln() {
                     : null;
             e &&
                 (t.preventDefault(),
-                We(String(e.getAttribute('data-queue-filter') || 'all')));
+                Ye(String(e.getAttribute('data-queue-filter') || 'all')));
         }),
         (function () {
             const t = document.getElementById('callbacksBulkSelectVisibleBtn');
@@ -4773,18 +4777,18 @@ async function ln() {
             a && a.setAttribute('data-action', 'callbacks-bulk-mark');
         })(),
         (function () {
-            let t = j,
-                e = z;
+            let t = V,
+                e = U;
             try {
-                ((t = JSON.parse(localStorage.getItem(O) || `"${j}"`)),
-                    (e = JSON.parse(localStorage.getItem(R) || `"${z}"`)));
+                ((t = JSON.parse(localStorage.getItem(j) || `"${V}"`)),
+                    (e = JSON.parse(localStorage.getItem(z) || `"${U}"`)));
             } catch (t) {}
             g((a) => ({
                 ...a,
                 appointments: {
                     ...a.appointments,
-                    sort: 'string' == typeof t ? t : j,
-                    density: 'string' == typeof e ? e : z,
+                    sort: 'string' == typeof t ? t : V,
+                    density: 'string' == typeof e ? e : U,
                 },
             }));
         })(),
@@ -4792,25 +4796,25 @@ async function ln() {
             let t = 'all',
                 e = 'recent_desc';
             try {
-                ((t = JSON.parse(localStorage.getItem(pt) || '"all"')),
+                ((t = JSON.parse(localStorage.getItem(bt) || '"all"')),
                     (e = JSON.parse(
-                        localStorage.getItem(dt) || '"recent_desc"'
+                        localStorage.getItem(mt) || '"recent_desc"'
                     )));
             } catch (t) {}
             g((a) => ({
                 ...a,
-                callbacks: { ...a.callbacks, filter: ft(t), sort: ht(e) },
+                callbacks: { ...a.callbacks, filter: yt(t), sort: vt(e) },
             }));
         })(),
         (function () {
             let t = '',
                 e = '';
             try {
-                ((t = String(localStorage.getItem(Lt) || '')),
-                    (e = String(localStorage.getItem(Et) || '')));
+                ((t = String(localStorage.getItem(Nt) || '')),
+                    (e = String(localStorage.getItem(Dt) || '')));
             } catch (t) {}
-            const a = Bt(t),
-                n = Ft(e, a);
+            const a = Pt(t),
+                n = Rt(e, a);
             g((t) => ({
                 ...t,
                 availability: {
@@ -4821,8 +4825,8 @@ async function ln() {
             }));
         })(),
         (function () {
-            const t = Fa(fe(za, 'dashboard')),
-                e = '1' === fe(Va, '0');
+            const t = Ra(ye(Ua, 'dashboard')),
+                e = '1' === ye(Ka, '0');
             (g((a) => ({
                 ...a,
                 ui: {
@@ -4832,22 +4836,22 @@ async function ln() {
                     sidebarOpen: !1,
                 },
             })),
-                E(t),
-                Oa(t),
-                Wa());
+                D(t),
+                ja(t),
+                Ya());
         })(),
         (function () {
             const t = {
                     stationMode:
-                        'locked' === ae(fe(we, 'free')) ? 'locked' : 'free',
-                    stationConsultorio: 2 === Number(fe(Se, '1')) ? 2 : 1,
-                    oneTap: '1' === fe(Ce, '0'),
-                    helpOpen: '1' === fe(Ae, '0'),
-                    customCallKey: ye(qe, null),
+                        'locked' === ie(ye(Ce, 'free')) ? 'locked' : 'free',
+                    stationConsultorio: 2 === Number(ye(qe, '1')) ? 2 : 1,
+                    oneTap: '1' === ye(Ae, '0'),
+                    helpOpen: '1' === ye(Te, '0'),
+                    customCallKey: ke(Me, null),
                 },
-                e = ae(ke('station')),
-                a = ae(ke('lock')),
-                n = ae(ke('one_tap')),
+                e = ie(Se('station')),
+                a = ie(Se('lock')),
+                n = ie(Se('one_tap')),
                 i =
                     'c2' === e || '2' === e
                         ? 2
@@ -4873,56 +4877,56 @@ async function ln() {
                             : null,
                 },
             })),
-                _e(b()));
+                Ee(b()));
         })(),
-        Ua(
+        Qa(
             (function () {
-                const t = String(fe(Ra, 'system') || 'system')
+                const t = String(ye(za, 'system') || 'system')
                     .trim()
                     .toLowerCase();
-                return ja.has(t) ? t : 'system';
+                return Va.has(t) ? t : 'system';
             })()
         ),
-        Ba(),
+        Pa(),
         (function () {
             const t = document.getElementById('appointmentFilter');
             t instanceof HTMLSelectElement &&
                 t.addEventListener('change', () => {
-                    rt(t.value);
+                    lt(t.value);
                 });
             const e = document.getElementById('appointmentSort');
             e instanceof HTMLSelectElement &&
                 e.addEventListener('change', () => {
-                    st({ sort: V(e.value) || j });
+                    ct({ sort: K(e.value) || V });
                 });
             const a = document.getElementById('searchAppointments');
             a instanceof HTMLInputElement &&
                 a.addEventListener('input', () => {
-                    ct(a.value);
+                    ut(a.value);
                 });
             const n = document.getElementById('callbackFilter');
             n instanceof HTMLSelectElement &&
                 n.addEventListener('change', () => {
-                    $t(n.value);
+                    Lt(n.value);
                 });
             const i = document.getElementById('callbackSort');
             i instanceof HTMLSelectElement &&
                 i.addEventListener('change', () => {
-                    Tt({ sort: ht(i.value), selected: [] });
+                    _t({ sort: vt(i.value), selected: [] });
                 });
             const o = document.getElementById('searchCallbacks');
             o instanceof HTMLInputElement &&
                 o.addEventListener('input', () => {
                     var t;
                     ((t = o.value),
-                        Tt({ search: String(t || ''), selected: [] }));
+                        _t({ search: String(t || ''), selected: [] }));
                 });
             const s = document.getElementById('queueSearchInput');
             s instanceof HTMLInputElement &&
                 s.addEventListener('input', () => {
                     var t;
                     ((t = s.value),
-                        Ge({ search: String(t || ''), selected: [] }));
+                        Je({ search: String(t || ''), selected: [] }));
                 });
             const r = document.getElementById('adminQuickCommand');
             var c;
@@ -4930,8 +4934,8 @@ async function ln() {
                 (c = r).addEventListener('keydown', async (t) => {
                     if ('Enter' !== t.key) return;
                     t.preventDefault();
-                    const e = nn(c.value);
-                    e && (await an(e));
+                    const e = sn(c.value);
+                    e && (await on(e));
                 });
         })(),
         (function () {
@@ -4939,19 +4943,19 @@ async function ln() {
                 a = e('#adminMenuClose'),
                 n = e('#adminSidebarBackdrop');
             (t?.addEventListener('click', () => {
-                Qa() ? Za() : Ya();
+                Wa() ? tn() : Xa();
             }),
-                a?.addEventListener('click', () => Xa({ restoreFocus: !0 })),
-                n?.addEventListener('click', () => Xa({ restoreFocus: !0 })),
+                a?.addEventListener('click', () => en({ restoreFocus: !0 })),
+                n?.addEventListener('click', () => en({ restoreFocus: !0 })),
                 window.addEventListener('resize', () => {
-                    Qa() ? Wa() : Xa();
+                    Wa() ? Ya() : en();
                 }),
                 document.addEventListener('keydown', (t) => {
-                    if (!Qa() || !b().ui.sidebarOpen) return;
+                    if (!Wa() || !b().ui.sidebarOpen) return;
                     if ('Escape' === t.key)
                         return (
                             t.preventDefault(),
-                            void Xa({ restoreFocus: !0 })
+                            void en({ restoreFocus: !0 })
                         );
                     if ('Tab' !== t.key) return;
                     const a = (function () {
@@ -4965,7 +4969,7 @@ async function ln() {
                                 t.querySelectorAll('.nav-item[data-section]')
                             ).filter((t) => t !== n),
                             o = t.querySelector('.logout-btn');
-                        return [a, n, ...i, o].filter(Ga);
+                        return [a, n, ...i, o].filter(Ja);
                     })();
                     if (!a.length) return;
                     const n = a.indexOf(document.activeElement);
@@ -4977,7 +4981,7 @@ async function ln() {
                 }),
                 window.addEventListener('hashchange', async () => {
                     const t = (function (t = 'dashboard') {
-                        return Fa(
+                        return Ra(
                             String(window.location.hash || '').replace(
                                 /^#/,
                                 ''
@@ -4985,17 +4989,17 @@ async function ln() {
                             t
                         );
                     })(b().ui.activeSection);
-                    await Ja(t, { force: !0 });
+                    await Za(t, { force: !0 });
                 }),
                 window.addEventListener('storage', (t) => {
-                    'themeMode' === t.key && Ua(String(t.newValue || 'system'));
+                    'themeMode' === t.key && Qa(String(t.newValue || 'system'));
                 }));
         })(),
         window.addEventListener('beforeunload', (t) => {
-            te() && (t.preventDefault(), (t.returnValue = ''));
+            ae() && (t.preventDefault(), (t.returnValue = ''));
         }));
     const t = document.getElementById('loginForm');
-    (t instanceof HTMLFormElement && t.addEventListener('submit', xa),
+    (t instanceof HTMLFormElement && t.addEventListener('submit', Ia),
         (function (t) {
             const {
                 navigateToSection: e,
@@ -5077,17 +5081,17 @@ async function ln() {
                 }
             });
         })({
-            navigateToSection: Ja,
-            focusQuickCommand: tn,
-            focusCurrentSearch: en,
-            runQuickAction: an,
-            closeSidebar: () => Xa({ restoreFocus: !0 }),
+            navigateToSection: Za,
+            focusQuickCommand: an,
+            focusCurrentSearch: nn,
+            runQuickAction: on,
+            closeSidebar: () => en({ restoreFocus: !0 }),
             toggleMenu: () => {
-                Qa() ? Za() : Ya();
+                Wa() ? tn() : Xa();
             },
-            dismissQueueSensitiveDialog: ia,
-            toggleQueueHelp: () => sa(),
-            queueNumpadAction: ca,
+            dismissQueueSensitiveDialog: sa,
+            toggleQueueHelp: () => ca(),
+            queueNumpadAction: ua,
         }));
     const a = await (async function () {
         try {
@@ -5115,10 +5119,10 @@ async function ln() {
     })();
     (a
         ? (await (async function () {
-              ($(), L(), await Da(!1));
+              (L(), N(), await xa(!1));
           })(),
-          E(b().ui.activeSection))
-        : (T(), L(), Ba()),
+          D(b().ui.activeSection))
+        : (_(), N(), Pa()),
         (async function () {
             const t = (function () {
                 const t = 'Notification' in window,
@@ -5162,22 +5166,22 @@ async function ln() {
                 }));
         })(),
         window.setInterval(() => {
-            Na();
+            Ba();
         }, 3e4));
 }
-const un = (
+const pn = (
     'loading' === document.readyState
         ? new Promise((t, e) => {
               document.addEventListener(
                   'DOMContentLoaded',
                   () => {
-                      ln().then(t).catch(e);
+                      dn().then(t).catch(e);
                   },
                   { once: !0 }
               );
           })
-        : ln()
+        : dn()
 ).catch((t) => {
     throw (console.error('admin-v3 boot failed', t), t);
 });
-export { un as default };
+export { pn as default };
