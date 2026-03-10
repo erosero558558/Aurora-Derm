@@ -10,7 +10,11 @@ const cards = (Array.isArray(section.cards) ? section.cards : [])
         title: hasText(card?.title) ? card.title.trim() : '',
         copy: hasText(card?.copy) ? card.copy.trim() : '',
     }))
-    .filter((card) => card.href && card.image && card.title && card.copy);
+    .filter((card) => card.href && card.image && card.title && card.copy)
+    .map((card) => ({
+        ...card,
+        alt: card.alt || card.title,
+    }));
 const eyebrow = hasText(section.eyebrow) ? section.eyebrow.trim() : '';
 const title = hasText(section.title) ? section.title.trim() : '';
 const deck = hasText(section.deck) ? section.deck.trim() : '';
@@ -30,7 +34,7 @@ const ctaLabel = hasText(section.ctaLabel) ? section.ctaLabel.trim() : '';
                     cards.map((card) => (
                         <a class="v6-corporate-matrix__card" href={card.href}>
                             <figure>
-                                <img src={card.image} alt={card.alt || card.title} loading="lazy" decoding="async" />
+                                <img src={card.image} alt={card.alt} loading="lazy" decoding="async" />
                             </figure>
                             <div class="v6-corporate-matrix__meta">
                                 {card.category ? <p><span>{card.category}</span></p> : null}

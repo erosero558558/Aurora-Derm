@@ -1,104 +1,143 @@
 ---
 const { hero = {} } = Astro.props;
-const slides = Array.isArray(hero.slides) ? hero.slides : [];
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+const normalizeText = (value) => (hasText(value) ? value.trim() : '');
+const slides = (Array.isArray(hero.slides) ? hero.slides : [])
+    .map((slide, index) => ({
+        id: normalizeText(slide?.id) || `v6-hero-slide-${index + 1}`,
+        category: normalizeText(slide?.category),
+        title: normalizeText(slide?.title),
+        description: normalizeText(slide?.description),
+        image: normalizeText(slide?.image),
+        srcset: normalizeText(slide?.srcset),
+        alt: normalizeText(slide?.alt),
+        href: normalizeText(slide?.href),
+    }))
+    .filter((slide) => slide.title && slide.description && slide.image && slide.href)
+    .map((slide) => ({
+        ...slide,
+        alt: slide.alt || slide.title,
+    }));
 const autoplayMs = Number(hero.autoplayMs || 7000);
 const safeAutoplay = Number.isFinite(autoplayMs) && autoplayMs > 1000 ? autoplayMs : 7000;
-const first = slides[0] || {};
+const first = slides[0] || null;
 const labels = hero.labels && typeof hero.labels === 'object' ? hero.labels : {};
-const indicatorPrefix = String(labels.indicatorItemPrefix || '').trim();
+const safeLabels = {
+    prev: normalizeText(labels.prev),
+    next: normalizeText(labels.next),
+    pause: normalizeText(labels.pause),
+    play: normalizeText(labels.play),
+    openRoute: normalizeText(labels.openRoute),
+    indicators: normalizeText(labels.indicators),
+    indicatorItemPrefix: normalizeText(labels.indicatorItemPrefix),
+};
+const indicatorPrefix = safeLabels.indicatorItemPrefix;
+const hasHero = Boolean(
+    first &&
+        safeLabels.prev &&
+        safeLabels.next &&
+        safeLabels.pause &&
+        safeLabels.play &&
+        safeLabels.openRoute &&
+        safeLabels.indicators
+);
 
 const buildIndicatorLabel = (slide, index) => {
     const base = [indicatorPrefix, String(index + 1)].filter(Boolean).join(' ');
-    const category = String(slide?.category || '').trim();
-    return category ? `${base}: ${category}` : base;
+    const descriptor = slide?.category || slide?.title || '';
+    return descriptor ? `${base}: ${descriptor}` : base;
 };
 ---
 
-<section
-    class="v6-hero"
-    data-v6-hero
-    data-v6-state="playing"
-    data-v6-autoplay-ms={safeAutoplay}
-    data-v6-progress-ms={safeAutoplay}
-    data-v6-label-play={labels.play}
-    data-v6-label-pause={labels.pause}
-    tabindex="0"
->
-    <div class="v6-hero__viewport">
-        <div class="v6-hero__stage">
-            {
-                slides.map((slide, index) => (
-                    <article
-                        class:list={['v6-hero__slide', index === 0 && 'is-active']}
-                        data-v6-slide
-                        data-v6-index={index}
-                        data-v6-category={slide.category || ''}
-                        data-v6-title={slide.title || ''}
-                        data-v6-description={slide.description || ''}
-                    >
-                        <img
-                            src={slide.image}
-                            srcset={slide.srcset || undefined}
-                            sizes="(max-width: 900px) 100vw, 32vw"
-                            alt={slide.alt || ''}
-                            loading={index === 0 ? 'eager' : 'lazy'}
-                            decoding="async"
-                            fetchpriority={index === 0 ? 'high' : 'low'}
-                        />
-                        <a class="v6-hero__play" href={slide.href} aria-label={labels.openRoute}>
-                            <span aria-hidden="true">{'>'}</span>
-                        </a>
-                        <div class="v6-hero__card-caption" aria-hidden="true">
-                            <p>{slide.category}</p>
-                            <h2>{slide.title}</h2>
-                        </div>
-                    </article>
-                ))
-            }
-        </div>
-    </div>
-
-    <div class="v6-hero__band" aria-live="polite">
-        <div class="v6-hero__band-shell">
-            <button type="button" class="v6-hero__nav v6-hero__nav--prev" data-v6-prev>
-                <span aria-hidden="true">{'<'}</span>
-                <span class="v6-hero__nav-label">{labels.prev}</span>
-            </button>
-            <div class="v6-hero__center">
-                <div class="v6-hero__text">
-                    <p data-v6-band-category>{first.category || ''}</p>
-                    <h1 data-v6-band-title>{first.title || ''}</h1>
-                    <p data-v6-band-description>{first.description || ''}</p>
-                </div>
-                <div class="v6-hero__meta">
-                    <div class="v6-hero__indicators" role="tablist" aria-label={labels.indicators}>
-                        {
-                            slides.map((slide, index) => (
-                                <button
-                                    type="button"
-                                    class:list={['v6-hero__indicator', index === 0 && 'is-active']}
-                                    data-v6-indicator
-                                    data-v6-target={index}
-                                    role="tab"
-                                    aria-selected={index === 0 ? 'true' : 'false'}
-                                    aria-label={buildIndicatorLabel(slide, index)}
-                                >
-                                    <span class="v6-hero__indicator-track" aria-hidden="true">
-                                        <span class="v6-hero__indicator-fill" data-v6-indicator-fill></span>
-                                    </span>
-                                </button>
-                            ))
-                        }
-                    </div>
-                    <div class="v6-hero__controls">
-                        <button type="button" data-v6-toggle aria-pressed="false">{labels.pause}</button>
-                    </div>
+{
+    hasHero ? (
+        <section
+            class="v6-hero"
+            data-v6-hero
+            data-v6-state="playing"
+            data-v6-autoplay-ms={safeAutoplay}
+            data-v6-progress-ms={safeAutoplay}
+            data-v6-label-play={safeLabels.play}
+            data-v6-label-pause={safeLabels.pause}
+            tabindex="0"
+        >
+            <div class="v6-hero__viewport">
+                <div class="v6-hero__stage">
+                    {
+                        slides.map((slide, index) => (
+                            <article
+                                class:list={['v6-hero__slide', index === 0 && 'is-active']}
+                                data-v6-slide
+                                data-v6-index={index}
+                                data-v6-category={slide.category}
+                                data-v6-title={slide.title}
+                                data-v6-description={slide.description}
+                            >
+                                <img
+                                    src={slide.image}
+                                    srcset={slide.srcset || undefined}
+                                    sizes="(max-width: 900px) 100vw, 32vw"
+                                    alt={slide.alt}
+                                    loading={index === 0 ? 'eager' : 'lazy'}
+                                    decoding="async"
+                                    fetchpriority={index === 0 ? 'high' : 'low'}
+                                />
+                                <a class="v6-hero__play" href={slide.href} aria-label={safeLabels.openRoute}>
+                                    <span aria-hidden="true">{'>'}</span>
+                                </a>
+                                <div class="v6-hero__card-caption" aria-hidden="true">
+                                    {slide.category ? <p>{slide.category}</p> : null}
+                                    <h2>{slide.title}</h2>
+                                </div>
+                            </article>
+                        ))
+                    }
                 </div>
             </div>
-            <button type="button" class="v6-hero__nav v6-hero__nav--next" data-v6-next>
-                <span aria-hidden="true">{'>'}</span>
-                <span class="v6-hero__nav-label">{labels.next}</span>
-            </button>
-        </div>
-    </div>
-</section>
+
+            <div class="v6-hero__band" aria-live="polite">
+                <div class="v6-hero__band-shell">
+                    <button type="button" class="v6-hero__nav v6-hero__nav--prev" data-v6-prev>
+                        <span aria-hidden="true">{'<'}</span>
+                        <span class="v6-hero__nav-label">{safeLabels.prev}</span>
+                    </button>
+                    <div class="v6-hero__center">
+                        <div class="v6-hero__text">
+                            <p data-v6-band-category>{first.category}</p>
+                            <h1 data-v6-band-title>{first.title}</h1>
+                            <p data-v6-band-description>{first.description}</p>
+                        </div>
+                        <div class="v6-hero__meta">
+                            <div class="v6-hero__indicators" role="tablist" aria-label={safeLabels.indicators}>
+                                {
+                                    slides.map((slide, index) => (
+                                        <button
+                                            type="button"
+                                            class:list={['v6-hero__indicator', index === 0 && 'is-active']}
+                                            data-v6-indicator
+                                            data-v6-target={index}
+                                            role="tab"
+                                            aria-selected={index === 0 ? 'true' : 'false'}
+                                            aria-label={buildIndicatorLabel(slide, index)}
+                                        >
+                                            <span class="v6-hero__indicator-track" aria-hidden="true">
+                                                <span class="v6-hero__indicator-fill" data-v6-indicator-fill></span>
+                                            </span>
+                                        </button>
+                                    ))
+                                }
+                            </div>
+                            <div class="v6-hero__controls">
+                                <button type="button" data-v6-toggle aria-pressed="false">{safeLabels.pause}</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="v6-hero__nav v6-hero__nav--next" data-v6-next>
+                        <span aria-hidden="true">{'>'}</span>
+                        <span class="v6-hero__nav-label">{safeLabels.next}</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    ) : null
+}

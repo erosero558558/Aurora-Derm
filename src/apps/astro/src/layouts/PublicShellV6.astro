@@ -18,44 +18,58 @@ const {
     preloadImageType = 'image/webp',
 } = Astro.props;
 
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+const normalizeText = (value) => (hasText(value) ? value.trim() : '');
+const normalizePath = (value, fallback) => {
+    const raw = normalizeText(value) || fallback;
+    if (!raw) return '/';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    const withLeading = raw.startsWith('/') ? raw : `/${raw}`;
+    return withLeading.endsWith('/') ? withLeading : `${withLeading}/`;
+};
+const safeLocale = locale === 'en' ? 'en' : 'es';
+const safeTitle = normalizeText(title) || 'Piel en Armonia';
+const safeDescription = normalizeText(description);
+const safeTemplateId = normalizeText(templateId) || 'public_v6';
 const origin = 'https://pielarmonia.com';
-const canonical = new URL(canonicalPath, origin).toString();
-const alternate = new URL(alternatePath, origin).toString();
-const xDefault = locale === 'en' ? alternate : canonical;
+const canonical = new URL(normalizePath(canonicalPath, safeLocale === 'en' ? '/en/' : '/es/'), origin).toString();
+const alternate = new URL(normalizePath(alternatePath, safeLocale === 'en' ? '/es/' : '/en/'), origin).toString();
+const safePathname = normalizePath(pathname, safeLocale === 'en' ? '/en/' : '/es/');
+const xDefault = safeLocale === 'en' ? alternate : canonical;
 
-const preloadHref = String(preloadImageSrc || '').trim();
-const preloadSrcSet = String(preloadImageSrcSet || '').trim();
-const preloadSizes = String(preloadImageSizes || '').trim();
-const preloadType = String(preloadImageType || '').trim();
+const preloadHref = normalizeText(preloadImageSrc);
+const preloadSrcSet = normalizeText(preloadImageSrcSet);
+const preloadSizes = normalizeText(preloadImageSizes);
+const preloadType = normalizeText(preloadImageType);
 const shellUi = navModel?.ui?.shell && typeof navModel.ui.shell === 'object' ? navModel.ui.shell : {};
-const skipToContent = typeof shellUi.skipToContent === 'string' ? shellUi.skipToContent.trim() : '';
-const backToTop = typeof shellUi.backToTop === 'string' ? shellUi.backToTop.trim() : '';
+const skipToContent = normalizeText(shellUi.skipToContent);
+const backToTop = normalizeText(shellUi.backToTop);
 
 const flags = {
     version: 'v6-r2',
-    locale,
-    templateId,
+    locale: safeLocale,
+    templateId: safeTemplateId,
     fromScratch: true,
 };
 const flagsJson = JSON.stringify(flags);
 ---
 
 <!doctype html>
-<html lang={locale}>
+<html lang={safeLocale}>
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{title}</title>
-        <meta name="description" content={description} />
+        <title>{safeTitle}</title>
+        <meta name="description" content={safeDescription} />
         <meta name="robots" content="index,follow,max-image-preview:large" />
         <link rel="canonical" href={canonical} />
-        <link rel="alternate" href={alternate} hreflang={locale === 'es' ? 'en' : 'es'} />
-        <link rel="alternate" href={canonical} hreflang={locale} />
+        <link rel="alternate" href={alternate} hreflang={safeLocale === 'es' ? 'en' : 'es'} />
+        <link rel="alternate" href={canonical} hreflang={safeLocale} />
         <link rel="alternate" href={xDefault} hreflang="x-default" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Piel en Armonia" />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={description} />
+        <meta property="og:title" content={safeTitle} />
+        <meta property="og:description" content={safeDescription} />
         <meta property="og:url" content={canonical} />
         <meta property="og:image" content="https://pielarmonia.com/images/optimized/showcase-hero.jpg" />
         <meta name="theme-color" content="#0b0b0d" />
@@ -76,13 +90,13 @@ const flagsJson = JSON.stringify(flags);
         <script src="/js/public-v6-shell.js?v=public-v6-shell-20260303-r2" defer></script>
         <script is:inline set:html={`window.__PUBLIC_V6_FLAGS = ${flagsJson};`}></script>
     </head>
-    <body data-public-shell data-public-shell-version="v6" data-public-surface={pathname} data-public-template-id={templateId}>
+    <body data-public-shell data-public-shell-version="v6" data-public-surface={safePathname} data-public-template-id={safeTemplateId}>
         {skipToContent ? <a class="v6-skip-link" href="#main-content">{skipToContent}</a> : null}
         <PublicHeaderV6 navModel={navModel} />
         <main id="main-content" class="v6-main">
             <slot />
         </main>
-        <PublicFooterV6 navModel={navModel} locale={locale} />
+        <PublicFooterV6 navModel={navModel} locale={safeLocale} />
         {backToTop ? <button class="v6-back-to-top" type="button" data-v6-back-top aria-label={backToTop}>^</button> : null}
     </body>
 </html>

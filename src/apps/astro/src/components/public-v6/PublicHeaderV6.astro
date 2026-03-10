@@ -17,14 +17,14 @@ const links = (Array.isArray(header.links) ? header.links : [])
     .filter((item) => item.label && item.href);
 
 const normalizePath = (value) => {
-    const raw = String(value || '').trim();
+    const raw = hasText(value) ? value.trim() : '';
     if (!raw) return '/';
     const withLeading = raw.startsWith('/') ? raw : `/${raw}`;
     return withLeading.endsWith('/') ? withLeading : `${withLeading}/`;
 };
 
-const currentPath = normalizePath(navModel?.pathname || '/');
 const homeHref = locale === 'en' ? '/en/' : '/es/';
+const currentPath = normalizePath(navModel?.pathname || homeHref);
 const brandLogo = hasText(brand.logo) ? brand.logo.trim() : '';
 const brandTag = hasText(brand.tag) ? brand.tag.trim() : '';
 
@@ -77,7 +77,7 @@ const megaPanelId = 'v6-mega-panel';
 const searchPanelId = 'v6-search-panel';
 const megaLabel = hasText(mega.title) ? mega.title.trim() : '';
 const megaCloseLabel = hasText(mega.closeLabel) ? mega.closeLabel.trim() : '';
-const megaRootHref = megaLink?.href || '';
+const megaRootHref = megaLink ? megaLink.href : '';
 const menuLabel = hasText(header.menuLabel) ? header.menuLabel.trim() : '';
 const closeMenuLabel = hasText(header.closeMenuLabel) ? header.closeMenuLabel.trim() : '';
 const searchLabel = hasText(header.searchLabel) ? header.searchLabel.trim() : '';
@@ -154,7 +154,7 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
             {brandTag ? <small class="v6-header__logo-tag">{brandTag}</small> : null}
         </a>
 
-        <nav class="v6-header__nav" aria-label={primaryNavAria}>
+        <nav class="v6-header__nav" aria-label={primaryNavAria || undefined}>
             {
                 standardLinks.slice(0, 1).map((link) => (
                     <a class:list={['v6-header__link', isActive(link.href) && 'is-active']} href={link.href}>{link.label}</a>
@@ -218,7 +218,7 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
                 <nav
                     class="v6-mega__categories"
                     data-v6-mega-categories
-                    aria-label={megaCategoryTabsAria}
+                    aria-label={megaCategoryTabsAria || undefined}
                 >
                     {
                         megaColumns.map((column, index) => {
@@ -310,7 +310,7 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
         hasDrawer ? (
     <div class="v6-drawer" data-v6-drawer hidden>
         <div class="v6-drawer__scrim" data-v6-drawer-close></div>
-        <aside class="v6-drawer__panel" aria-label={mobileNavAria}>
+        <aside class="v6-drawer__panel" aria-label={mobileNavAria || undefined}>
             <header>
                 {brandLogo ? <strong>{brandLogo}</strong> : null}
                 {closeMenuLabel ? <button type="button" data-v6-drawer-close>{closeMenuLabel}</button> : null}

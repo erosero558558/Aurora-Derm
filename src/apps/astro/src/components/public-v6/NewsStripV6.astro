@@ -9,66 +9,71 @@ const label = hasText(item.label) ? item.label.trim() : '';
 const headline = hasText(item.headline) ? item.headline.trim() : '';
 const href = hasText(item.href) ? item.href.trim() : '';
 const expandLabel = hasText(item.expandLabel) ? item.expandLabel.trim() : '';
-const collapseLabel = hasText(item.collapseLabel) ? item.collapseLabel.trim() : expandLabel;
+const collapseLabel = hasText(item.collapseLabel) ? item.collapseLabel.trim() : '';
 const localeAria = hasText(item.localeAria) ? item.localeAria.trim() : '';
-const detail = hasText(item.detail) ? item.detail.trim() : headline;
+const detail = hasText(item.detail) ? item.detail.trim() : '';
 const ctaLabel = hasText(item.ctaLabel) ? item.ctaLabel.trim() : '';
 const hasSwitch = Boolean(switchLabel && switchHref);
 const hasPanel = Boolean((detail || (ctaLabel && href)) && expandLabel && collapseLabel);
+const hasStrip = Boolean(label || headline || hasSwitch);
 ---
 
-<section
-    class="v6-news-strip"
-    data-v6-news-strip
-    data-v6-expand-label={expandLabel}
-    data-v6-collapse-label={collapseLabel}
-    data-v6-expanded="false"
->
-    <div class="v6-news-strip__left">
-        {label ? <span>{label}</span> : null}
-        {
-            hasPanel && expandLabel ? (
-                <button
-                    type="button"
-                    data-v6-news-toggle
-                    aria-label={expandLabel}
-                    aria-expanded="false"
-                    aria-controls={panelId}
-                >
-                    <span aria-hidden="true">v</span>
-                </button>
-            ) : null
-        }
-    </div>
-    <div class="v6-news-strip__right">
-        {
-            href ? (
-                <a class="v6-news-strip__headline" href={href}>{headline}</a>
-            ) : (
-                <span class="v6-news-strip__headline">{headline}</span>
-            )
-        }
-        <div class="v6-news-strip__locale" aria-label={localeAria}>
-            <strong>{activeLang}</strong>
-            {
-                hasSwitch ? (
-                    <>
-                        <span aria-hidden="true">/</span>
-                        <a class="v6-news-strip__lang" href={switchHref}>{switchLabel}</a>
-                    </>
-                ) : null
-            }
-        </div>
-    </div>
-    {
-        hasPanel ? (
-            <div id={panelId} class="v6-news-strip__panel" data-v6-news-panel hidden>
-                <div class="v6-news-strip__panel-spacer" aria-hidden="true"></div>
-                <div class="v6-news-strip__panel-copy">
-                    {detail ? <p>{detail}</p> : null}
-                    {href && ctaLabel ? <a href={href}>{ctaLabel}</a> : null}
+{
+    hasStrip ? (
+        <section
+            class="v6-news-strip"
+            data-v6-news-strip
+            data-v6-expand-label={expandLabel}
+            data-v6-collapse-label={collapseLabel}
+            data-v6-expanded="false"
+        >
+            <div class="v6-news-strip__left">
+                {label ? <span>{label}</span> : null}
+                {
+                    hasPanel && expandLabel ? (
+                        <button
+                            type="button"
+                            data-v6-news-toggle
+                            aria-label={expandLabel}
+                            aria-expanded="false"
+                            aria-controls={panelId}
+                        >
+                            <span aria-hidden="true">v</span>
+                        </button>
+                    ) : null
+                }
+            </div>
+            <div class="v6-news-strip__right">
+                {
+                    href ? (
+                        <a class="v6-news-strip__headline" href={href}>{headline}</a>
+                    ) : (
+                        <span class="v6-news-strip__headline">{headline}</span>
+                    )
+                }
+                <div class="v6-news-strip__locale" aria-label={localeAria || undefined}>
+                    <strong>{activeLang}</strong>
+                    {
+                        hasSwitch ? (
+                            <>
+                                <span aria-hidden="true">/</span>
+                                <a class="v6-news-strip__lang" href={switchHref}>{switchLabel}</a>
+                            </>
+                        ) : null
+                    }
                 </div>
             </div>
-        ) : null
-    }
-</section>
+            {
+                hasPanel ? (
+                    <div id={panelId} class="v6-news-strip__panel" data-v6-news-panel hidden>
+                        <div class="v6-news-strip__panel-spacer" aria-hidden="true"></div>
+                        <div class="v6-news-strip__panel-copy">
+                            {detail ? <p>{detail}</p> : null}
+                            {href && ctaLabel ? <a href={href}>{ctaLabel}</a> : null}
+                        </div>
+                    </div>
+                ) : null
+            }
+        </section>
+    ) : null
+}
