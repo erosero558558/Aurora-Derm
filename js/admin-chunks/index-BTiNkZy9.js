@@ -2676,112 +2676,129 @@ function tn(t, e = {}) {
         u = Boolean(i && 'object' == typeof i);
     if (!(a.length || l.length || u || c.waiting || c.called)) return;
     const d =
-            Number(r.waitingCount || 0) >
-            l.filter((t) => 'waiting' === t.status).length,
-        p = new Map(s.map((t) => [he(t), t]));
-    if (a.length) Je(a, r, { fallbackPartial: !1, syncMode: o });
-    else {
-        !(function (t, e, n) {
-            const a = e.callingNowByConsultorio || {},
-                i = Number(e.calledCount || e.counts?.called || 0),
-                o = Number(e.waitingCount || e.counts?.waiting || 0),
-                s = le(e.nextTickets),
-                r = new Set(),
-                c = a[1] || a[1] || null,
-                l = a[2] || a[2] || null;
-            (c && r.add(he(c)), l && r.add(he(l)));
-            const u = new Set(s.map((t) => he(t))),
-                d = r.size > 0 || 0 === i,
-                p = u.size > 0 || 0 === o,
-                m = u.size > 0 && o > u.size;
-            for (const [e, a] of t.entries()) {
-                const i = me(a, 0);
-                n.called && d && 'called' === i.status && !r.has(e)
-                    ? t.set(
-                          e,
-                          me(
-                              {
-                                  ...i,
-                                  status: 'completed',
-                                  assignedConsultorio: null,
-                                  completedAt:
-                                      i.completedAt || new Date().toISOString(),
-                              },
-                              0
-                          )
+        Number(r.waitingCount || 0) >
+        l.filter((t) => 'waiting' === t.status).length;
+    if (a.length) return void Je(a, r, { fallbackPartial: !1, syncMode: o });
+    const p = new Map(s.map((t) => [he(t), t]));
+    (!(function (t, e, n) {
+        const a = e.callingNowByConsultorio || {},
+            i = Number(e.calledCount || e.counts?.called || 0),
+            o = Number(e.waitingCount || e.counts?.waiting || 0),
+            s = le(e.nextTickets),
+            r = new Set(),
+            c = a[1] || a[1] || null,
+            l = a[2] || a[2] || null;
+        (c && r.add(he(c)), l && r.add(he(l)));
+        const u = new Set(s.map((t) => he(t))),
+            d = r.size > 0 || 0 === i,
+            p = u.size > 0 || 0 === o,
+            m = u.size > 0 && o > u.size;
+        for (const [e, a] of t.entries()) {
+            const i = me(a, 0);
+            n.called && d && 'called' === i.status && !r.has(e)
+                ? t.set(
+                      e,
+                      me(
+                          {
+                              ...i,
+                              status: 'completed',
+                              assignedConsultorio: null,
+                              completedAt:
+                                  i.completedAt || new Date().toISOString(),
+                          },
+                          0
                       )
-                    : n.waiting &&
-                      p &&
-                      'waiting' === i.status &&
-                      (o <= 0 ? t.delete(e) : m || u.has(e) || t.delete(e));
-            }
-        })(p, r, c);
-        for (const t of l) {
-            const e = he(t),
-                n = p.get(e) || null,
-                a = pe(t.createdAt, t.created_at, n?.createdAt, n?.created_at),
-                i = pe(
-                    t.priorityClass,
-                    t.priority_class,
-                    n?.priorityClass,
-                    n?.priority_class,
-                    'walk_in'
-                ),
-                o = pe(
-                    t.queueType,
-                    t.queue_type,
-                    n?.queueType,
-                    n?.queue_type,
-                    'walk_in'
-                ),
-                s = pe(
-                    t.patientInitials,
-                    t.patient_initials,
-                    n?.patientInitials,
-                    n?.patient_initials,
-                    '--'
-                );
-            p.set(
-                e,
-                me(
-                    {
-                        ...(n || {}),
-                        ...t,
-                        status: t.status,
-                        assignedConsultorio: t.assignedConsultorio,
-                        createdAt: a || new Date().toISOString(),
-                        priorityClass: i,
-                        queueType: o,
-                        patientInitials: s,
-                    },
-                    p.size
-                )
-            );
+                  )
+                : n.waiting &&
+                  p &&
+                  'waiting' === i.status &&
+                  (o <= 0 ? t.delete(e) : m || u.has(e) || t.delete(e));
         }
-        if (u) {
-            const t = me(i, p.size),
-                e = he(t),
-                n = p.get(e) || null;
-            p.set(e, me({ ...(n || {}), ...t }, p.size));
-        }
-        Je(Array.from(p.values()), r, { fallbackPartial: d, syncMode: o });
-    }
+    })(p, r, c),
+        Je(
+            (function (t, e, n) {
+                for (const n of e) {
+                    const e = he(n),
+                        a = t.get(e) || null,
+                        i = pe(
+                            n.createdAt,
+                            n.created_at,
+                            a?.createdAt,
+                            a?.created_at
+                        ),
+                        o = pe(
+                            n.priorityClass,
+                            n.priority_class,
+                            a?.priorityClass,
+                            a?.priority_class,
+                            'walk_in'
+                        ),
+                        s = pe(
+                            n.queueType,
+                            n.queue_type,
+                            a?.queueType,
+                            a?.queue_type,
+                            'walk_in'
+                        ),
+                        r = pe(
+                            n.patientInitials,
+                            n.patient_initials,
+                            a?.patientInitials,
+                            a?.patient_initials,
+                            '--'
+                        );
+                    t.set(
+                        e,
+                        me(
+                            {
+                                ...(a || {}),
+                                ...n,
+                                status: n.status,
+                                assignedConsultorio: n.assignedConsultorio,
+                                createdAt: i || new Date().toISOString(),
+                                priorityClass: o,
+                                queueType: s,
+                                patientInitials: r,
+                            },
+                            t.size
+                        )
+                    );
+                }
+                if (n && 'object' == typeof n) {
+                    const e = me(n, t.size),
+                        a = he(e),
+                        i = t.get(a) || null;
+                    t.set(a, me({ ...(i || {}), ...e }, t.size));
+                }
+                return Array.from(t.values());
+            })(p, l, i),
+            r,
+            { fallbackPartial: d, syncMode: o }
+        ));
 }
-async function en() {
+function en() {
+    return Se(Le, null);
+}
+function nn(t, e = '') {
+    return (
+        !!t?.queueTickets?.length &&
+        (Je(t.queueTickets, t.queueMeta || null, {
+            fallbackPartial: !0,
+            syncMode: 'fallback',
+        }),
+        e && Qe(e),
+        !0)
+    );
+}
+async function an() {
     try {
         (tn(await k('queue-state'), { syncMode: 'live' }),
             Qe('Queue refresh realizado'));
     } catch (t) {
-        Qe('Queue refresh con error');
-        const e = Se(Le, null);
-        e?.queueTickets &&
-            Je(e.queueTickets, e.queueMeta || null, {
-                fallbackPartial: !0,
-                syncMode: 'fallback',
-            });
+        (Qe('Queue refresh con error'), nn(en()));
     }
 }
-function nn(t, e, n = void 0) {
+function on(t, e, n = void 0) {
     Ye(t, (t) => ({
         ...t,
         status: e,
@@ -2798,7 +2815,7 @@ function nn(t, e, n = void 0) {
                 : '',
     }));
 }
-async function an({ ticketId: t, action: e, consultorio: n }) {
+async function sn({ ticketId: t, action: e, consultorio: n }) {
     const a = Number(t || 0),
         i = ce(e);
     if (a && i)
@@ -2808,11 +2825,11 @@ async function an({ ticketId: t, action: e, consultorio: n }) {
                       ? 'liberar' !== e
                           ? 'completar' !== e
                               ? 'no_show' !== e
-                                  ? 'cancelar' === e && nn(t, 'cancelled')
-                                  : nn(t, 'no_show')
-                              : nn(t, 'completed')
-                          : nn(t, 'waiting', null)
-                      : nn(t, 'called', 2 === Number(n || 1) ? 2 : 1);
+                                  ? 'cancelar' === e && on(t, 'cancelled')
+                                  : on(t, 'no_show')
+                              : on(t, 'completed')
+                          : on(t, 'waiting', null)
+                      : on(t, 'called', 2 === Number(n || 1) ? 2 : 1);
               })(a, i, n),
               void Qe(`Practica: accion ${i} en ticket ${a}`))
             : (tn(
@@ -2824,7 +2841,7 @@ async function an({ ticketId: t, action: e, consultorio: n }) {
               ),
               void Qe(`Accion ${i} ticket ${a}`));
 }
-async function on(t) {
+async function rn(t) {
     const e = 2 === Number(t || 0) ? 2 : 1,
         n = b();
     if (!Ee.get(e)) {
@@ -2874,7 +2891,7 @@ async function on(t) {
         }
     }
 }
-async function sn(t, e, n = 0) {
+async function cn(t, e, n = 0) {
     const a = {
             ticketId: Number(t || 0),
             action: ce(e),
@@ -2903,16 +2920,16 @@ async function sn(t, e, n = 0) {
         })(a.action, o)
     )
         return (je(a), void Qe(`Accion ${a.action} pendiente de confirmacion`));
-    await an(a);
+    await sn(a);
 }
-async function rn() {
+async function ln() {
     const t = b().queue.pendingSensitiveAction;
-    t ? (ze(), await an(t)) : ze();
+    t ? (ze(), await sn(t)) : ze();
 }
-function cn() {
+function un() {
     (ze(), Qe('Accion sensible cancelada'));
 }
-function ln() {
+function dn() {
     const t = document.getElementById('queueSensitiveConfirmDialog'),
         e = b().queue.pendingSensitiveAction;
     return !(
@@ -2921,10 +2938,10 @@ function ln() {
                 ? t.open
                 : t instanceof HTMLElement &&
                   (!t.hidden || t.hasAttribute('open')))) ||
-        (cn(), 0)
+        (un(), 0)
     );
 }
-async function un(t) {
+async function pn(t) {
     const e = Number(t || 0);
     e &&
         (b().queue.practiceMode
@@ -2932,15 +2949,15 @@ async function un(t) {
             : (await k('queue-reprint', { method: 'POST', body: { id: e } }),
               Qe(`Reimpresion ticket ${e}`)));
 }
-function dn() {
+function mn() {
     Ze({ helpOpen: !b().queue.helpOpen });
 }
-function pn(t) {
+function bn(t) {
     const e = Boolean(t);
     (Ze({ practiceMode: e, pendingSensitiveAction: null }),
         Qe(e ? 'Modo practica activo' : 'Modo practica desactivado'));
 }
-function mn(t) {
+function gn(t) {
     const e = Re();
     return (
         !!e &&
@@ -2952,7 +2969,7 @@ function mn(t) {
         !0)
     );
 }
-async function bn(t) {
+async function fn(t) {
     const e = b();
     if (e.queue.captureCallKeyMode)
         return void (function (t) {
@@ -2975,14 +2992,14 @@ async function bn(t) {
             );
         })(t, e.queue.customCallKey)
     )
-        return void (await on(e.queue.stationConsultorio));
+        return void (await rn(e.queue.stationConsultorio));
     const n = se(t.code),
         a = se(t.key),
         i =
             'numpadenter' === n ||
             'kpenter' === n ||
             ('enter' === a && 3 === Number(t.location || 0));
-    if (i && e.queue.pendingSensitiveAction) return void (await rn());
+    if (i && e.queue.pendingSensitiveAction) return void (await ln());
     const o = (function (t, e) {
         return 'numpad2' === t || '2' === e
             ? 2
@@ -2992,8 +3009,8 @@ async function bn(t) {
     })(n, a);
     if (!o)
         return i
-            ? (e.queue.oneTap && mn(e) && (await rn()),
-              void (await on(e.queue.stationConsultorio)))
+            ? (e.queue.oneTap && gn(e) && (await ln()),
+              void (await rn(e.queue.stationConsultorio)))
             : void ('numpaddecimal' !== n &&
               'kpdecimal' !== n &&
               'decimal' !== a &&
@@ -3004,7 +3021,7 @@ async function bn(t) {
                         (await (async function (t) {
                             const e = Re();
                             e &&
-                                (await sn(
+                                (await cn(
                                     e.id,
                                     're-llamar',
                                     t.queue.stationConsultorio
@@ -3021,7 +3038,7 @@ async function bn(t) {
                                     consultorio: t.queue.stationConsultorio,
                                 });
                         })(e)
-                  : mn(e));
+                  : gn(e));
     !(function (t, e) {
         (function (t, e) {
             return (
@@ -3034,31 +3051,31 @@ async function bn(t) {
             : (Ze({ stationConsultorio: t }), Qe(`Numpad: estacion C${t}`));
     })(o, e);
 }
-function gn(t, e) {
+function hn(t, e) {
     return 'c2' === t || '2' === t ? 2 : 'c1' === t || '1' === t ? 1 : e;
 }
-function fn(t, e) {
+function yn(t, e) {
     return '1' === t || 'true' === t ? 'locked' : e;
 }
-function hn(t, e) {
+function vn(t, e) {
     return '1' === t || 'true' === t || ('0' !== t && 'false' !== t && e);
 }
-const yn = 'appointments',
-    vn = 'callbacks',
-    kn = 'reviews',
-    wn = 'availability',
-    Sn = 'availability-meta',
-    Cn = 'queue-tickets',
-    qn = 'queue-meta',
-    An = 'health-status';
-function Mn(t) {
+const kn = 'appointments',
+    wn = 'callbacks',
+    Sn = 'reviews',
+    Cn = 'availability',
+    qn = 'availability-meta',
+    An = 'queue-tickets',
+    Mn = 'queue-meta',
+    Tn = 'health-status';
+function $n(t) {
     return Array.isArray(t.queue_tickets)
         ? t.queue_tickets
         : Array.isArray(t.queueTickets)
           ? t.queueTickets
           : [];
 }
-function Tn(t) {
+function _n(t) {
     g((e) => {
         return {
             ...e,
@@ -3088,19 +3105,19 @@ function Tn(t) {
         var n;
     });
 }
-function $n(t) {
+function Ln(t) {
     return String(t || '')
         .toLowerCase()
         .trim();
 }
-function _n(t) {
+function En(t) {
     const e = new Date(t || '');
     return Number.isNaN(e.getTime()) ? 0 : e.getTime();
 }
-function Ln(t) {
-    return _n(`${t?.date || ''}T${t?.time || '00:00'}:00`);
+function Nn(t) {
+    return En(`${t?.date || ''}T${t?.time || '00:00'}:00`);
 }
-function En(t) {
+function Dn(t) {
     if (!t) return 'Sin fecha';
     const e = Math.round((t - Date.now()) / 6e4),
         n = Math.abs(e);
@@ -3116,7 +3133,7 @@ function En(t) {
             ? `En ${Math.round(e / 60)} h`
             : `En ${Math.round(e / 1440)} d`;
 }
-function Nn(e, n, a) {
+function Bn(e, n, a) {
     return Array.isArray(e) && 0 !== e.length
         ? e
               .slice(0, 5)
@@ -3128,13 +3145,13 @@ function Nn(e, n, a) {
               .join('')
         : '<li><span>Sin datos</span><strong>0</strong></li>';
 }
-function Dn(e, n, a, i = 'neutral') {
+function xn(e, n, a, i = 'neutral') {
     return `\n        <li class="dashboard-attention-item" data-tone="${t(i)}">\n            <div>\n                <span>${t(e)}</span>\n                <small>${t(a)}</small>\n            </div>\n            <strong>${t(String(n))}</strong>\n        </li>\n    `;
 }
-function Bn(e, n, a) {
+function Pn(e, n, a) {
     return `\n        <button type="button" class="operations-action-item" data-action="${t(e)}">\n            <span>${t(n)}</span>\n            <small>${t(a)}</small>\n        </button>\n    `;
 }
-function xn(t) {
+function In(t) {
     const {
             appointments: e,
             availability: n,
@@ -3169,31 +3186,31 @@ function xn(t) {
                         e.getMonth() === n.getMonth() &&
                         e.getDate() === n.getDate()
                     );
-                })(Ln(t))
+                })(Nn(t))
             ).length;
         })(e),
         r = (function (t) {
             return t.filter((t) => {
-                const e = $n(t.paymentStatus || t.payment_status);
+                const e = Ln(t.paymentStatus || t.payment_status);
                 return (
                     'pending_transfer_review' === e || 'pending_transfer' === e
                 );
             }).length;
         })(e),
         c = (function (t) {
-            return t.filter((t) => 'pending' === $n(t.status)).length;
+            return t.filter((t) => 'pending' === Ln(t.status)).length;
         })(a),
         l = (function (t) {
             return t.filter((t) => {
-                if ('pending' !== $n(t.status)) return !1;
+                if ('pending' !== Ln(t.status)) return !1;
                 const e = (function (t) {
-                    return _n(t?.fecha || t?.createdAt || '');
+                    return En(t?.fecha || t?.createdAt || '');
                 })(t);
                 return !!e && Math.round((Date.now() - e) / 6e4) >= 120;
             }).length;
         })(a),
         u = (function (t) {
-            return t.filter((t) => 'no_show' === $n(t.status)).length;
+            return t.filter((t) => 'no_show' === Ln(t.status)).length;
         })(e),
         d = (function (t) {
             return t.length
@@ -3206,7 +3223,7 @@ function xn(t) {
         p = (function (t, e = 30) {
             const n = Date.now();
             return t.filter((t) => {
-                const a = _n(t.date || t.createdAt || '');
+                const a = En(t.date || t.createdAt || '');
                 return a && n - a <= 24 * e * 60 * 60 * 1e3;
             }).length;
         })(o),
@@ -3217,7 +3234,7 @@ function xn(t) {
         })(n),
         b = (function (t) {
             return t
-                .map((t) => ({ item: t, stamp: Ln(t) }))
+                .map((t) => ({ item: t, stamp: Nn(t) }))
                 .filter((t) => t.stamp > 0 && t.stamp >= Date.now())
                 .sort((t, e) => t.stamp - e.stamp)[0];
         })(e);
@@ -3237,8 +3254,8 @@ function xn(t) {
         urgentCallbacks: l,
     };
 }
-function Pn(t) {
-    const e = xn(t);
+function Hn(t) {
+    const e = In(t);
     ((function (t) {
         const {
             appointments: e,
@@ -3278,7 +3295,7 @@ function Pn(t) {
                           : n > 0
                             ? `Revisa ${n} no show del corte actual para cerrar seguimiento.`
                             : a?.item
-                              ? `La siguiente cita es ${a.item.name || 'sin nombre'} ${En(a.stamp).toLowerCase()}.`
+                              ? `La siguiente cita es ${a.item.name || 'sin nombre'} ${Dn(a.stamp).toLowerCase()}.`
                               : 'Agenda, callbacks y disponibilidad con una lectura clara y una sola prioridad por pantalla.';
                 })({
                     pendingTransfers: s,
@@ -3344,7 +3361,7 @@ function Pn(t) {
                 r(
                     '#dashboardFlowStatus',
                     n?.item
-                        ? `${En(n.stamp)} | ${n.item.name || 'Paciente'}`
+                        ? `${Dn(n.stamp)} | ${n.item.name || 'Paciente'}`
                         : e > 0
                           ? `${e} dia(s) con slots publicados`
                           : 'Sin citas inmediatas'
@@ -3363,7 +3380,7 @@ function Pn(t) {
                 r(
                     '#operationQueueHealth',
                     n?.item
-                        ? `Siguiente hito: ${n.item.name || 'Paciente'} ${En(n.stamp).toLowerCase()}`
+                        ? `Siguiente hito: ${n.item.name || 'Paciente'} ${Dn(n.stamp).toLowerCase()}`
                         : 'Sin citas inmediatas en cola'
                 ));
         })(e),
@@ -3377,7 +3394,7 @@ function Pn(t) {
                     } = t,
                     { appointments: i, nextAppointment: o } = t;
                 return [
-                    Bn(
+                    Pn(
                         'context-open-appointments-transfer',
                         e > 0
                             ? 'Validar transferencias'
@@ -3386,7 +3403,7 @@ function Pn(t) {
                             ? `${e} comprobante(s) por revisar`
                             : `${i.length} cita(s) en el corte`
                     ),
-                    Bn(
+                    Pn(
                         'context-open-callbacks-pending',
                         n > 0
                             ? 'Resolver callbacks urgentes'
@@ -3395,11 +3412,11 @@ function Pn(t) {
                             ? `${n} caso(s) fuera de SLA`
                             : `${a} callback(s) pendientes`
                     ),
-                    Bn(
+                    Pn(
                         'refresh-admin-data',
                         'Actualizar tablero',
                         o?.item
-                            ? `Proxima cita ${En(o.stamp).toLowerCase()}`
+                            ? `Proxima cita ${Dn(o.stamp).toLowerCase()}`
                             : 'Sincronizar agenda y funnel'
                     ),
                 ].join('');
@@ -3415,7 +3432,7 @@ function Pn(t) {
                     urgentCallbacks: i,
                 } = t;
                 return [
-                    Dn(
+                    xn(
                         'Transferencias',
                         n,
                         n > 0
@@ -3423,7 +3440,7 @@ function Pn(t) {
                             : 'Sin comprobantes pendientes.',
                         n > 0 ? 'warning' : 'success'
                     ),
-                    Dn(
+                    xn(
                         'Callbacks urgentes',
                         i,
                         i > 0
@@ -3431,7 +3448,7 @@ function Pn(t) {
                             : 'SLA dentro de rango.',
                         i > 0 ? 'danger' : 'success'
                     ),
-                    Dn(
+                    xn(
                         'Agenda de hoy',
                         a,
                         a > 0
@@ -3439,7 +3456,7 @@ function Pn(t) {
                             : 'No hay citas hoy.',
                         a > 6 ? 'warning' : 'neutral'
                     ),
-                    Dn(
+                    xn(
                         'Disponibilidad',
                         e,
                         e > 0
@@ -3461,47 +3478,47 @@ function Pn(t) {
                 ),
                 c(
                     '#funnelEntryList',
-                    Nn(t.checkoutEntryBreakdown, 'entry', 'count')
+                    Bn(t.checkoutEntryBreakdown, 'entry', 'count')
                 ),
                 c(
                     '#funnelSourceList',
-                    Nn(t.sourceBreakdown, 'source', 'count')
+                    Bn(t.sourceBreakdown, 'source', 'count')
                 ),
                 c(
                     '#funnelPaymentMethodList',
-                    Nn(t.paymentMethodBreakdown, 'method', 'count')
+                    Bn(t.paymentMethodBreakdown, 'method', 'count')
                 ),
                 c(
                     '#funnelAbandonList',
-                    Nn(t.checkoutAbandonByStep, 'step', 'count')
+                    Bn(t.checkoutAbandonByStep, 'step', 'count')
                 ),
                 c(
                     '#funnelAbandonReasonList',
-                    Nn(t.abandonReasonBreakdown, 'reason', 'count')
+                    Bn(t.abandonReasonBreakdown, 'reason', 'count')
                 ),
                 c(
                     '#funnelStepList',
-                    Nn(t.bookingStepBreakdown, 'step', 'count')
+                    Bn(t.bookingStepBreakdown, 'step', 'count')
                 ),
                 c(
                     '#funnelErrorCodeList',
-                    Nn(t.errorCodeBreakdown, 'code', 'count')
+                    Bn(t.errorCodeBreakdown, 'code', 'count')
                 ));
         })(e.funnel));
 }
-function In(t) {
+function Fn(t) {
     return String(t || '')
         .toLowerCase()
         .trim();
 }
-function Hn(t) {
+function Rn(t) {
     const e = new Date(t?.date || t?.createdAt || '');
     return Number.isNaN(e.getTime()) ? 0 : e.getTime();
 }
-function Fn(t) {
+function On(t) {
     return `${Math.max(0, Math.min(5, Math.round(Number(t || 0))))}/5`;
 }
-function Rn(t) {
+function jn(t) {
     const e = String(t || 'Anonimo')
         .trim()
         .split(/\s+/)
@@ -3509,7 +3526,7 @@ function Rn(t) {
         .slice(0, 2);
     return e.length ? e.map((t) => t.charAt(0).toUpperCase()).join('') : 'AN';
 }
-function On(t, e = 220) {
+function zn(t, e = 220) {
     const n = String(t || '').trim();
     return n
         ? n.length <= e
@@ -3517,11 +3534,11 @@ function On(t, e = 220) {
             : `${n.slice(0, e - 1).trim()}...`
         : 'Sin comentario escrito.';
 }
-function jn() {
+function Vn() {
     const e = b(),
         n = Array.isArray(e?.data?.reviews) ? e.data.reviews : [],
         a = (function (t) {
-            return t.slice().sort((t, e) => Hn(e) - Hn(t));
+            return t.slice().sort((t, e) => Rn(e) - Rn(t));
         })(n),
         o = (function (t) {
             return t.length
@@ -3531,7 +3548,7 @@ function jn() {
         s = (function (t, e = 30) {
             const n = Date.now();
             return t.filter((t) => {
-                const a = Hn(t);
+                const a = Rn(t);
                 return !!a && n - a <= 24 * e * 60 * 60 * 1e3;
             }).length;
         })(n),
@@ -3635,7 +3652,7 @@ function jn() {
               '#reviewsSpotlight',
               (function (e) {
                   const n = e.item;
-                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${t(Rn(n.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${t(e.eyebrow)}</small>\n                    <strong>${t(n.name || 'Anonimo')}</strong>\n                    <small>${t(i(n.date || n.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${t(Fn(n.rating))}</p>\n            <p>${t(On(n.comment || n.review || '', 320))}</p>\n            <small>${t(e.summary)}</small>\n        </article>\n    `;
+                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${t(jn(n.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${t(e.eyebrow)}</small>\n                    <strong>${t(n.name || 'Anonimo')}</strong>\n                    <small>${t(i(n.date || n.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${t(On(n.rating))}</p>\n            <p>${t(zn(n.comment || n.review || '', 320))}</p>\n            <small>${t(e.summary)}</small>\n        </article>\n    `;
               })(u)
           )
         : c(
@@ -3661,19 +3678,19 @@ function jn() {
                                         : a <= 3
                                           ? 'Revisar posible friccion'
                                           : 'Resena util para contexto';
-                            return `\n        <article class="review-card${n ? ' is-featured' : ''}" data-rating="${t(String(a))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${t(Rn(e.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${t(e.name || 'Anonimo')}</strong>\n                        <small>${t(i(e.date || e.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${t(o)}">${t(Fn(a))}</span>\n            </header>\n            <p>${t(On(e.comment || e.review || ''))}</p>\n            <small>${t(s)}</small>\n        </article>\n    `;
+                            return `\n        <article class="review-card${n ? ' is-featured' : ''}" data-rating="${t(String(a))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${t(jn(e.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${t(e.name || 'Anonimo')}</strong>\n                        <small>${t(i(e.date || e.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${t(o)}">${t(On(a))}</span>\n            </header>\n            <p>${t(zn(e.comment || e.review || ''))}</p>\n            <small>${t(s)}</small>\n        </article>\n    `;
                         })(e, {
                             featured:
                                 n.item &&
-                                In(e.name) === In(n.item.name) &&
-                                Hn(e) === Hn(n.item),
+                                Fn(e.name) === Fn(n.item.name) &&
+                                Rn(e) === Rn(n.item),
                         })
                     )
                     .join('');
             })(a, u)
         ));
 }
-function zn() {
+function Un() {
     const t = (function () {
         const t = b(),
             e = Number(t.ui.lastRefreshAt || 0);
@@ -3691,7 +3708,7 @@ function zn() {
                 : t.replace('Datos: ', 'Estado: ')
         ));
 }
-async function Vn(t = !1) {
+async function Kn(t = !1) {
     const e = await (async function () {
         try {
             const [t, e] = await Promise.all([
@@ -3718,7 +3735,7 @@ async function Vn(t = !1) {
                     n.availabilityMeta && 'object' == typeof n.availabilityMeta
                         ? n.availabilityMeta
                         : {},
-                queueTickets: Mn(n),
+                queueTickets: $n(n),
                 queueMeta:
                     n.queueMeta && 'object' == typeof n.queueMeta
                         ? n.queueMeta
@@ -3729,30 +3746,30 @@ async function Vn(t = !1) {
                 health: e && e.ok ? e : null,
             };
             return (
-                Tn(i),
+                _n(i),
                 (function (t) {
-                    (Ce(yn, t.appointments || []),
-                        Ce(vn, t.callbacks || []),
-                        Ce(kn, t.reviews || []),
-                        Ce(wn, t.availability || {}),
-                        Ce(Sn, t.availabilityMeta || {}),
-                        Ce(Cn, t.queueTickets || []),
-                        Ce(qn, t.queueMeta || null),
-                        Ce(An, t.health || null));
+                    (Ce(kn, t.appointments || []),
+                        Ce(wn, t.callbacks || []),
+                        Ce(Sn, t.reviews || []),
+                        Ce(Cn, t.availability || {}),
+                        Ce(qn, t.availabilityMeta || {}),
+                        Ce(An, t.queueTickets || []),
+                        Ce(Mn, t.queueMeta || null),
+                        Ce(Tn, t.health || null));
                 })(i),
                 !0
             );
         } catch (t) {
             return (
-                Tn({
-                    appointments: Se(yn, []),
-                    callbacks: Se(vn, []),
-                    reviews: Se(kn, []),
-                    availability: Se(wn, {}),
-                    availabilityMeta: Se(Sn, {}),
-                    queueTickets: Se(Cn, []),
-                    queueMeta: Se(qn, null),
-                    health: Se(An, null),
+                _n({
+                    appointments: Se(kn, []),
+                    callbacks: Se(wn, []),
+                    reviews: Se(Sn, []),
+                    availability: Se(Cn, {}),
+                    availabilityMeta: Se(qn, {}),
+                    queueTickets: Se(An, []),
+                    queueMeta: Se(Mn, null),
+                    health: Se(Tn, null),
                     funnelMetrics: {
                         summary: {
                             viewBooking: 0,
@@ -3791,45 +3808,42 @@ async function Vn(t = !1) {
                 Jt());
         })(),
         await (async function () {
-            const t = b(),
-                e = Array.isArray(t.data.queueTickets)
-                    ? t.data.queueTickets.map((t, e) => me(t, e))
+            const t = Array.isArray(b().data.queueTickets)
+                    ? b().data.queueTickets.map((t, e) => me(t, e))
                     : [],
-                n =
-                    t.data.queueMeta && 'object' == typeof t.data.queueMeta
-                        ? fe(t.data.queueMeta, e)
+                e = (function (t) {
+                    return b().data.queueMeta &&
+                        'object' == typeof b().data.queueMeta
+                        ? fe(b().data.queueMeta, t)
                         : null;
-            if (e.length)
-                return void Je(e, n || null, {
-                    fallbackPartial: !1,
-                    syncMode: 'live',
-                });
-            const a = n ? ye(n) : [];
-            if (a.length)
-                return (
-                    Je(a, n, { fallbackPartial: !0, syncMode: 'fallback' }),
-                    void Qe('Queue fallback parcial desde metadata')
-                );
-            if ((await en(), (b().data.queueTickets || []).length)) return;
-            const i = Se(Le, null);
-            if (i?.queueTickets?.length)
-                return (
-                    Je(i.queueTickets, i.queueMeta || null, {
-                        fallbackPartial: !0,
-                        syncMode: 'fallback',
-                    }),
-                    void Qe('Queue fallback desde snapshot local')
-                );
-            Je([], null, { fallbackPartial: !1, syncMode: 'live' });
+                })(t);
+            t.length
+                ? Je(t, e || null, { fallbackPartial: !1, syncMode: 'live' })
+                : (function (t) {
+                      const e = t ? ye(t) : [];
+                      return (
+                          !!e.length &&
+                          (Je(e, t, {
+                              fallbackPartial: !0,
+                              syncMode: 'fallback',
+                          }),
+                          Qe('Queue fallback parcial desde metadata'),
+                          !0)
+                      );
+                  })(e) ||
+                  (await an(),
+                  (b().data.queueTickets || []).length ||
+                      nn(en(), 'Queue fallback desde snapshot local') ||
+                      Je([], null, { fallbackPartial: !1, syncMode: 'live' }));
         })(),
         F(b()),
-        Pn(b()),
+        Hn(b()),
         rt(),
         $t(),
-        jn(),
+        Vn(),
         Jt(),
         Ke(),
-        zn(),
+        Un(),
         t &&
             s(
                 e ? 'Datos actualizados' : 'Datos cargados desde cache local',
@@ -3838,7 +3852,7 @@ async function Vn(t = !1) {
         e
     );
 }
-function Un() {
+function Qn() {
     (B(!1),
         I(),
         P(!1),
@@ -3849,7 +3863,7 @@ function Un() {
                 'Usa tu clave de administrador para acceder al centro operativo.',
         }));
 }
-async function Kn(t) {
+async function Gn(t) {
     t.preventDefault();
     const e = document.getElementById('adminPassword'),
         n = document.getElementById('admin2FACode'),
@@ -3952,7 +3966,7 @@ async function Kn(t) {
             N(),
             B(!1),
             I({ clearPassword: !0 }),
-            await Vn(!1),
+            await Kn(!1),
             s('Sesion iniciada', 'success'));
     } catch (t) {
         (x({
@@ -3968,7 +3982,7 @@ async function Kn(t) {
         P(!1);
     }
 }
-async function Qn(t, e) {
+async function Wn(t, e) {
     switch (t) {
         case 'appointment-quick-filter':
             return (lt(String(e.dataset.filterValue || 'all')), !0);
@@ -4069,7 +4083,7 @@ async function Qn(t, e) {
             return !1;
     }
 }
-async function Gn(t, n) {
+async function Jn(t, n) {
     switch (t) {
         case 'change-month':
             return (
@@ -4346,7 +4360,7 @@ async function Gn(t, n) {
             return !1;
     }
 }
-const Wn = new Set([
+const Yn = new Set([
     'dashboard',
     'appointments',
     'callbacks',
@@ -4354,13 +4368,13 @@ const Wn = new Set([
     'availability',
     'queue',
 ]);
-function Jn(t, e = 'dashboard') {
+function Zn(t, e = 'dashboard') {
     const n = String(t || '')
         .trim()
         .toLowerCase();
-    return Wn.has(n) ? n : e;
+    return Yn.has(n) ? n : e;
 }
-function Yn(t) {
+function Xn(t) {
     !(function (t) {
         const e = String(t || '').replace(/^#/, ''),
             n = e ? `#${e}` : '';
@@ -4370,13 +4384,13 @@ function Yn(t) {
                 '',
                 `${window.location.pathname}${window.location.search}${n}`
             );
-    })(Jn(t));
+    })(Zn(t));
 }
-const Zn = 'themeMode',
-    Xn = new Set(['light', 'dark', 'system']);
-const ta = 'adminLastSection',
-    ea = 'adminSidebarCollapsed';
-function na(t, { persist: e = !1 } = {}) {
+const ta = 'themeMode',
+    ea = new Set(['light', 'dark', 'system']);
+const na = 'adminLastSection',
+    aa = 'adminSidebarCollapsed';
+function ia(t, { persist: e = !1 } = {}) {
     const n = (function (t) {
         const e = (function (t) {
             return 'light' === t || 'dark' === t
@@ -4395,8 +4409,8 @@ function na(t, { persist: e = !1 } = {}) {
     (g((e) => ({ ...e, ui: { ...e.ui, themeMode: t, theme: n } })),
         e &&
             (function (t) {
-                const e = Xn.has(t) ? t : 'system';
-                we(Zn, e);
+                const e = ea.has(t) ? t : 'system';
+                we(ta, e);
             })(t),
         Array.from(
             document.querySelectorAll('.admin-theme-btn[data-theme-mode]')
@@ -4406,14 +4420,14 @@ function na(t, { persist: e = !1 } = {}) {
                 e.setAttribute('aria-pressed', String(n)));
         }));
 }
-function aa() {
+function oa() {
     const t = b();
-    (we(ta, t.ui.activeSection), we(ea, t.ui.sidebarCollapsed ? '1' : '0'));
+    (we(na, t.ui.activeSection), we(aa, t.ui.sidebarCollapsed ? '1' : '0'));
 }
-function ia() {
+function sa() {
     return window.matchMedia('(max-width: 1024px)').matches;
 }
-function oa(t) {
+function ra(t) {
     return (
         t instanceof HTMLElement &&
         !t.hidden &&
@@ -4422,9 +4436,9 @@ function oa(t) {
         t.getClientRects().length > 0
     );
 }
-function sa() {
+function ca() {
     const t = b(),
-        n = ia(),
+        n = sa(),
         a = e('#adminSidebar'),
         i = a instanceof HTMLElement && a.classList.contains('is-open');
     (!(function ({ open: t, collapsed: n }) {
@@ -4459,8 +4473,8 @@ function sa() {
                     });
             })());
 }
-async function ra(t, e = {}) {
-    const n = Jn(t, 'dashboard'),
+async function la(t, e = {}) {
+    const n = Zn(t, 'dashboard'),
         { force: a = !1 } = e,
         i = b().ui.activeSection;
     return (
@@ -4474,12 +4488,12 @@ async function ra(t, e = {}) {
             )
         ) &&
         ((function (t) {
-            const e = Jn(t, 'dashboard');
+            const e = Zn(t, 'dashboard');
             (g((t) => ({ ...t, ui: { ...t.ui, activeSection: e } })),
                 D(e),
                 F(b()),
-                Yn(e),
-                aa());
+                Xn(e),
+                oa());
         })(n),
         'queue' === n &&
             'queue' !== i &&
@@ -4490,11 +4504,11 @@ async function ra(t, e = {}) {
                     !Boolean(t.queue.fallbackPartial)
                 );
             })() &&
-            (await en()),
+            (await an()),
         !0)
     );
 }
-function ca() {
+function ua() {
     (g((t) => ({
         ...t,
         ui: {
@@ -4503,27 +4517,27 @@ function ca() {
             sidebarOpen: t.ui.sidebarOpen,
         },
     })),
-        sa(),
-        aa());
+        ca(),
+        oa());
 }
-function la() {
+function da() {
     (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !t.ui.sidebarOpen } })),
-        sa());
+        ca());
 }
-function ua({ restoreFocus: t = !1 } = {}) {
+function pa({ restoreFocus: t = !1 } = {}) {
     if (
-        (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !1 } })), sa(), N(), t)
+        (g((t) => ({ ...t, ui: { ...t.ui, sidebarOpen: !1 } })), ca(), N(), t)
     ) {
         const t = e('#adminMenuToggle');
         t instanceof HTMLElement && t.focus();
     }
 }
-function da() {
+function ma() {
     E();
     const t = document.getElementById('adminQuickCommand');
     t instanceof HTMLInputElement && t.focus();
 }
-function pa() {
+function ba() {
     const t = b().ui.activeSection;
     if ('appointments' === t) {
         const t = document.getElementById('searchAppointments');
@@ -4538,46 +4552,46 @@ function pa() {
         t instanceof HTMLInputElement && t.focus();
     }
 }
-async function ma(t) {
+async function ga(t) {
     switch (t) {
         case 'appointments_pending_transfer':
-            (await ra('appointments'), lt('pending_transfer'), ut(''));
+            (await la('appointments'), lt('pending_transfer'), ut(''));
             break;
         case 'appointments_all':
-            (await ra('appointments'), lt('all'), ut(''));
+            (await la('appointments'), lt('all'), ut(''));
             break;
         case 'appointments_no_show':
-            (await ra('appointments'), lt('no_show'), ut(''));
+            (await la('appointments'), lt('no_show'), ut(''));
             break;
         case 'callbacks_pending':
-            (await ra('callbacks'), Lt('pending'));
+            (await la('callbacks'), Lt('pending'));
             break;
         case 'callbacks_contacted':
-            (await ra('callbacks'), Lt('contacted'));
+            (await la('callbacks'), Lt('contacted'));
             break;
         case 'callbacks_sla_urgent':
-            (await ra('callbacks'), Lt('sla_urgent'));
+            (await la('callbacks'), Lt('sla_urgent'));
             break;
         case 'queue_sla_risk':
-            (await ra('queue'), Xe('sla_risk'));
+            (await la('queue'), Xe('sla_risk'));
             break;
         case 'queue_waiting':
-            (await ra('queue'), Xe('waiting'));
+            (await la('queue'), Xe('waiting'));
             break;
         case 'queue_called':
-            (await ra('queue'), Xe('called'));
+            (await la('queue'), Xe('called'));
             break;
         case 'queue_no_show':
-            (await ra('queue'), Xe('no_show'));
+            (await la('queue'), Xe('no_show'));
             break;
         case 'queue_all':
-            (await ra('queue'), Xe('all'));
+            (await la('queue'), Xe('all'));
             break;
         case 'queue_call_next':
-            (await ra('queue'), await on(b().queue.stationConsultorio));
+            (await la('queue'), await rn(b().queue.stationConsultorio));
     }
 }
-function ba(t) {
+function fa(t) {
     const e = String(t || '')
         .trim()
         .toLowerCase();
@@ -4595,7 +4609,7 @@ function ba(t) {
                     : null
         : null;
 }
-async function ga(t, e) {
+async function ha(t, e) {
     switch (t) {
         case 'callback-quick-filter':
             return (Lt(String(e.dataset.filterValue || 'all')), !0);
@@ -4612,7 +4626,7 @@ async function ga(t, e) {
         case 'callbacks-triage-next':
         case 'context-open-callbacks-next':
             return (
-                await ra('callbacks'),
+                await la('callbacks'),
                 Lt('pending'),
                 (function () {
                     const t = document.querySelector(
@@ -4665,34 +4679,34 @@ async function ga(t, e) {
                 !0
             );
         case 'context-open-callbacks-pending':
-            return (await ra('callbacks'), Lt('pending'), !0);
+            return (await la('callbacks'), Lt('pending'), !0);
         default:
             return !1;
     }
 }
-async function fa(t) {
+async function ya(t) {
     switch (t) {
         case 'context-open-appointments-transfer':
-            return (await ra('appointments'), lt('pending_transfer'), !0);
+            return (await la('appointments'), lt('pending_transfer'), !0);
         case 'context-open-dashboard':
-            return (await ra('dashboard'), !0);
+            return (await la('dashboard'), !0);
         default:
             return !1;
     }
 }
-async function ha(t, e) {
+async function va(t, e) {
     switch (t) {
         case 'queue-refresh-state':
-            return (await en(), !0);
+            return (await an(), !0);
         case 'queue-call-next':
-            return (await on(Number(e.dataset.queueConsultorio || 0)), !0);
+            return (await rn(Number(e.dataset.queueConsultorio || 0)), !0);
         case 'queue-release-station':
             return (
                 await (async function (t) {
                     const e = 2 === Number(t || 0) ? 2 : 1,
                         n = Fe(e);
                     n
-                        ? await sn(n.id, 'liberar', e)
+                        ? await cn(n.id, 'liberar', e)
                         : Qe(`Sin ticket activo para liberar en C${e}`);
                 })(Number(e.dataset.queueConsultorio || 0)),
                 !0
@@ -4713,7 +4727,7 @@ async function ha(t, e) {
             return (We(), !0);
         case 'queue-ticket-action':
             return (
-                await sn(
+                await cn(
                     Number(e.dataset.queueId || 0),
                     String(e.dataset.queueAction || ''),
                     Number(e.dataset.queueConsultorio || 0)
@@ -4721,7 +4735,7 @@ async function ha(t, e) {
                 !0
             );
         case 'queue-reprint-ticket':
-            return (await un(Number(e.dataset.queueId || 0)), !0);
+            return (await pn(Number(e.dataset.queueId || 0)), !0);
         case 'queue-bulk-action':
             return (
                 await (async function (t) {
@@ -4742,7 +4756,7 @@ async function ha(t, e) {
                         }
                         for (const t of e)
                             try {
-                                await an({
+                                await sn({
                                     ticketId: t.id,
                                     action: n,
                                     consultorio:
@@ -4761,7 +4775,7 @@ async function ha(t, e) {
                     const t = He();
                     for (const e of t)
                         try {
-                            await un(e.id);
+                            await pn(e.id);
                         } catch (t) {}
                     (We(), Qe(`Bulk reimpresion ${t.length}`));
                 })(),
@@ -4777,13 +4791,13 @@ async function ha(t, e) {
                 !0
             );
         case 'queue-toggle-shortcuts':
-            return (dn(), !0);
+            return (mn(), !0);
         case 'queue-toggle-one-tap':
             return (Ze({ oneTap: !b().queue.oneTap }), !0);
         case 'queue-start-practice':
-            return (pn(!0), !0);
+            return (bn(!0), !0);
         case 'queue-stop-practice':
-            return (pn(!1), !0);
+            return (bn(!1), !0);
         case 'queue-lock-station':
             return (
                 (function (t) {
@@ -4806,9 +4820,9 @@ async function ha(t, e) {
                 !0
             );
         case 'queue-sensitive-confirm':
-            return (await rn(), !0);
+            return (await ln(), !0);
         case 'queue-sensitive-cancel':
-            return (cn(), !0);
+            return (un(), !0);
         case 'queue-capture-call-key':
             return (
                 Ze({ captureCallKeyMode: !0 }),
@@ -4826,29 +4840,29 @@ async function ha(t, e) {
             return !1;
     }
 }
-async function ya(t, e) {
+async function ka(t, e) {
     switch (t) {
         case 'close-toast':
             return (e.closest('.toast')?.remove(), !0);
         case 'set-admin-theme':
             return (
-                na(String(e.dataset.themeMode || 'system'), { persist: !0 }),
+                ia(String(e.dataset.themeMode || 'system'), { persist: !0 }),
                 !0
             );
         case 'toggle-sidebar-collapse':
-            return (ca(), !0);
+            return (ua(), !0);
         case 'refresh-admin-data':
-            return (await Vn(!0), !0);
+            return (await Kn(!0), !0);
         case 'run-admin-command': {
             const t = document.getElementById('adminQuickCommand');
             if (t instanceof HTMLInputElement) {
-                const e = ba(t.value);
-                e && (await ma(e), (t.value = ''), N());
+                const e = fa(t.value);
+                e && (await ga(e), (t.value = ''), N());
             }
             return !0;
         }
         case 'open-command-palette':
-            return (E(), da(), !0);
+            return (E(), ma(), !0);
         case 'close-command-palette':
             return (N(), !0);
         case 'logout':
@@ -4872,7 +4886,7 @@ async function ya(t, e) {
                 })(),
                 _(),
                 N(),
-                Un(),
+                Qn(),
                 s('Sesion cerrada', 'info'),
                 !0
             );
@@ -4894,7 +4908,7 @@ async function ya(t, e) {
             return !1;
     }
 }
-async function va() {
+async function wa() {
     (M(),
         (function () {
             const t = e('#adminMainContent');
@@ -4920,7 +4934,7 @@ async function va() {
                 t.preventDefault();
                 try {
                     await (async function (t, e) {
-                        const n = [ya, Qn, ga, Gn, ha, fa];
+                        const n = [ka, Wn, ha, Jn, va, ya];
                         for (const a of n) if (await a(t, e)) return !0;
                         return !1;
                     })(n, e);
@@ -4939,10 +4953,10 @@ async function va() {
                 a = e.classList.contains('nav-item');
             if (!n && !a) return;
             t.preventDefault();
-            const i = await ra(
+            const i = await la(
                 String(e.getAttribute('data-section') || 'dashboard')
             );
-            ia() && !1 !== i && ua();
+            sa() && !1 !== i && pa();
         }),
         document.addEventListener('click', (t) => {
             const e =
@@ -5010,8 +5024,8 @@ async function va() {
             }));
         })(),
         (function () {
-            const t = Jn(ke(ta, 'dashboard')),
-                e = '1' === ke(ea, '0');
+            const t = Zn(ke(na, 'dashboard')),
+                e = '1' === ke(aa, '0');
             (g((n) => ({
                 ...n,
                 ui: {
@@ -5022,8 +5036,8 @@ async function va() {
                 },
             })),
                 D(t),
-                Yn(t),
-                sa());
+                Xn(t),
+                ca());
         })(),
         (function () {
             const t = {
@@ -5041,9 +5055,9 @@ async function va() {
                 ...i,
                 queue: {
                     ...i.queue,
-                    stationMode: fn(n, t.stationMode),
-                    stationConsultorio: gn(e, t.stationConsultorio),
-                    oneTap: hn(a, t.oneTap),
+                    stationMode: yn(n, t.stationMode),
+                    stationConsultorio: hn(e, t.stationConsultorio),
+                    oneTap: vn(a, t.oneTap),
                     helpOpen: t.helpOpen,
                     customCallKey:
                         t.customCallKey && 'object' == typeof t.customCallKey
@@ -5053,15 +5067,15 @@ async function va() {
             })),
                 De(b()));
         })(),
-        na(
+        ia(
             (function () {
-                const t = String(ke(Zn, 'system') || 'system')
+                const t = String(ke(ta, 'system') || 'system')
                     .trim()
                     .toLowerCase();
-                return Xn.has(t) ? t : 'system';
+                return ea.has(t) ? t : 'system';
             })()
         ),
-        Un(),
+        Qn(),
         (function () {
             const t = document.getElementById('appointmentFilter');
             t instanceof HTMLSelectElement &&
@@ -5108,8 +5122,8 @@ async function va() {
                 (c = r).addEventListener('keydown', async (t) => {
                     if ('Enter' !== t.key) return;
                     t.preventDefault();
-                    const e = ba(c.value);
-                    e && (await ma(e));
+                    const e = fa(c.value);
+                    e && (await ga(e));
                 });
         })(),
         (function () {
@@ -5117,19 +5131,19 @@ async function va() {
                 n = e('#adminMenuClose'),
                 a = e('#adminSidebarBackdrop');
             (t?.addEventListener('click', () => {
-                ia() ? la() : ca();
+                sa() ? da() : ua();
             }),
-                n?.addEventListener('click', () => ua({ restoreFocus: !0 })),
-                a?.addEventListener('click', () => ua({ restoreFocus: !0 })),
+                n?.addEventListener('click', () => pa({ restoreFocus: !0 })),
+                a?.addEventListener('click', () => pa({ restoreFocus: !0 })),
                 window.addEventListener('resize', () => {
-                    ia() ? sa() : ua();
+                    sa() ? ca() : pa();
                 }),
                 document.addEventListener('keydown', (t) => {
-                    if (!ia() || !b().ui.sidebarOpen) return;
+                    if (!sa() || !b().ui.sidebarOpen) return;
                     if ('Escape' === t.key)
                         return (
                             t.preventDefault(),
-                            void ua({ restoreFocus: !0 })
+                            void pa({ restoreFocus: !0 })
                         );
                     if ('Tab' !== t.key) return;
                     const n = (function () {
@@ -5143,7 +5157,7 @@ async function va() {
                                 t.querySelectorAll('.nav-item[data-section]')
                             ).filter((t) => t !== a),
                             o = t.querySelector('.logout-btn');
-                        return [n, a, ...i, o].filter(oa);
+                        return [n, a, ...i, o].filter(ra);
                     })();
                     if (!n.length) return;
                     const a = n.indexOf(document.activeElement);
@@ -5155,7 +5169,7 @@ async function va() {
                 }),
                 window.addEventListener('hashchange', async () => {
                     const t = (function (t = 'dashboard') {
-                        return Jn(
+                        return Zn(
                             String(window.location.hash || '').replace(
                                 /^#/,
                                 ''
@@ -5163,17 +5177,17 @@ async function va() {
                             t
                         );
                     })(b().ui.activeSection);
-                    await ra(t, { force: !0 });
+                    await la(t, { force: !0 });
                 }),
                 window.addEventListener('storage', (t) => {
-                    'themeMode' === t.key && na(String(t.newValue || 'system'));
+                    'themeMode' === t.key && ia(String(t.newValue || 'system'));
                 }));
         })(),
         window.addEventListener('beforeunload', (t) => {
             oe() && (t.preventDefault(), (t.returnValue = ''));
         }));
     const t = document.getElementById('loginForm');
-    (t instanceof HTMLFormElement && t.addEventListener('submit', Kn),
+    (t instanceof HTMLFormElement && t.addEventListener('submit', Gn),
         (function (t) {
             const {
                 navigateToSection: e,
@@ -5255,17 +5269,17 @@ async function va() {
                 }
             });
         })({
-            navigateToSection: ra,
-            focusQuickCommand: da,
-            focusCurrentSearch: pa,
-            runQuickAction: ma,
-            closeSidebar: () => ua({ restoreFocus: !0 }),
+            navigateToSection: la,
+            focusQuickCommand: ma,
+            focusCurrentSearch: ba,
+            runQuickAction: ga,
+            closeSidebar: () => pa({ restoreFocus: !0 }),
             toggleMenu: () => {
-                ia() ? la() : ca();
+                sa() ? da() : ua();
             },
-            dismissQueueSensitiveDialog: ln,
-            toggleQueueHelp: () => dn(),
-            queueNumpadAction: bn,
+            dismissQueueSensitiveDialog: dn,
+            toggleQueueHelp: () => mn(),
+            queueNumpadAction: fn,
         }));
     const n = await (async function () {
         try {
@@ -5293,10 +5307,10 @@ async function va() {
     })();
     (n
         ? (await (async function () {
-              (L(), N(), await Vn(!1));
+              (L(), N(), await Kn(!1));
           })(),
           D(b().ui.activeSection))
-        : (_(), N(), Un()),
+        : (_(), N(), Qn()),
         (async function () {
             const t = (function () {
                 const t = 'Notification' in window,
@@ -5340,22 +5354,22 @@ async function va() {
                 }));
         })(),
         window.setInterval(() => {
-            zn();
+            Un();
         }, 3e4));
 }
-const ka = (
+const Sa = (
     'loading' === document.readyState
         ? new Promise((t, e) => {
               document.addEventListener(
                   'DOMContentLoaded',
                   () => {
-                      va().then(t).catch(e);
+                      wa().then(t).catch(e);
                   },
                   { once: !0 }
               );
           })
-        : va()
+        : wa()
 ).catch((t) => {
     throw (console.error('admin-v3 boot failed', t), t);
 });
-export { ka as default };
+export { Sa as default };
