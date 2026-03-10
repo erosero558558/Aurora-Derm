@@ -24,6 +24,7 @@ test.describe('Public V6 page-level menu', () => {
         await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
         await expect(panel).toBeHidden();
         await expect(page).toHaveURL(/#v6-hub-featured$/);
+        await expect(links.first()).toHaveAttribute('aria-current', 'location');
     });
 
     test('service page menu closes with Escape', async ({ page }) => {
@@ -63,5 +64,23 @@ test.describe('Public V6 page-level menu', () => {
         await expect(panel).toBeHidden();
         await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
         await expect(menuButton).toBeFocused();
+    });
+
+    test('legal page menu keeps the current anchor in sync with reading position', async ({
+        page,
+    }) => {
+        await gotoPublicRoute(page, '/es/legal/terminos/');
+
+        const menuButton = page.locator('[data-v6-page-menu]').first();
+        const panel = page.locator('[data-v6-page-menu-panel]').first();
+        const links = panel.locator('[data-v6-page-menu-link]');
+
+        await menuButton.click();
+        await expect(panel).toBeVisible();
+        await expect(links.first()).toHaveAttribute('aria-current', 'location');
+
+        await links.nth(1).click();
+        await expect(page).toHaveURL(/#v6-legal-summary$/);
+        await expect(links.nth(1)).toHaveAttribute('aria-current', 'location');
     });
 });

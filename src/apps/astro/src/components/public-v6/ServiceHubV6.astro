@@ -95,10 +95,10 @@ const railAria = ui.railAria || '';
 
 {
     sectionLinks.length ? (
-        <nav class="v6-catalog-rail" data-v6-catalog-rail aria-label={railAria}>
+        <nav class="v6-catalog-rail" data-v6-catalog-rail data-v6-section-nav="catalog" aria-label={railAria}>
             {
                 sectionLinks.map((section) => (
-                    <a href={`#v6-${section.id}`}>{section.title}</a>
+                    <a data-v6-section-link href={`#v6-${section.id}`}>{section.title}</a>
                 ))
             }
         </nav>

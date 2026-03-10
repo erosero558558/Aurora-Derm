@@ -878,6 +878,13 @@
     border-bottom-color: #57637b;
 }
 
+.v6-corp-head__menu-panel a.is-active,
+.v6-corp-head__menu-panel a[aria-current='location'] {
+    color: #141921;
+    border-bottom-color: #141921;
+    font-weight: 700;
+}
+
 .v6-corp-head__menu-empty {
     font-size: 14px;
     color: #667188;

@@ -109,10 +109,10 @@ const statement = {
 <div class="v6-internal-shell" data-v6-internal-shell>
     <aside class="v6-internal-rail" data-v6-internal-rail>
         <p>{railUi.title || ''}</p>
-        <nav aria-label={railUi.aria || ''}>
+        <nav data-v6-section-nav="internal" aria-label={railUi.aria || ''}>
             {
                 pageMenuItems.map((item) => (
-                    <a href={item.href}>{item.label}</a>
+                    <a data-v6-section-link href={item.href}>{item.label}</a>
                 ))
             }
         </nav>

@@ -54,7 +54,23 @@ test.describe('Public V6 internal thesis and rail', () => {
             .first()
             .evaluate((node) => {
                 return window.getComputedStyle(node).position;
-            });
+        });
         expect(position).toBe('static');
+    });
+
+    test('internal rail tracks the active anchor after navigation', async ({
+        page,
+    }) => {
+        await gotoPublicRoute(page, '/es/telemedicina/');
+
+        const rail = page.locator('[data-v6-internal-rail]').first();
+        const firstLink = rail.locator('a').first();
+        const bookingLink = rail.locator('a[href="#v6-booking-status"]').first();
+
+        await expect(firstLink).toHaveAttribute('aria-current', 'location');
+        await bookingLink.click();
+        await expect(page).toHaveURL(/#v6-booking-status$/);
+        await expect(bookingLink).toHaveAttribute('aria-current', 'location');
+        await expect(firstLink).not.toHaveAttribute('aria-current', 'location');
     });
 });

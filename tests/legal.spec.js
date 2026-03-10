@@ -45,6 +45,9 @@ test.describe('Legal V6', () => {
                 1
             );
             await expect(
+                page.locator('.v6-legal-tabs a[aria-current="page"]')
+            ).toHaveCount(1);
+            await expect(
                 page.locator('[data-v6-statement-band]')
             ).toBeVisible();
             await expect(

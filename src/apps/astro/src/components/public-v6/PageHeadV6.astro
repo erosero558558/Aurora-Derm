@@ -61,6 +61,7 @@ const noSections = copy.noSections || '';
                     id={menuPanelId}
                     class="v6-corp-head__menu-panel"
                     data-v6-page-menu-panel
+                    data-v6-section-nav="page-menu"
                     aria-label={pageNavigationLabel}
                     hidden
                 >
@@ -71,7 +72,7 @@ const noSections = copy.noSections || '';
                                 {
                                     safeMenuItems.map((item) => (
                                         <li>
-                                            <a data-v6-page-menu-link href={item.href}>{item.label}</a>
+                                            <a data-v6-page-menu-link data-v6-section-link href={item.href}>{item.label}</a>
                                         </li>
                                     ))
                                 }

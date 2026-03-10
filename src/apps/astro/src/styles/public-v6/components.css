@@ -818,6 +818,13 @@
     color: #171e2c;
 }
 
+.v6-catalog-rail a.is-active,
+.v6-catalog-rail a[aria-current='location'] {
+    background: #141921;
+    border-color: #141921;
+    color: #eff3fd;
+}
+
 .v6-hub-featured {
     max-width: 1320px;
     margin: 30px auto 26px;
@@ -1289,6 +1296,9 @@
     min-height: 28px;
     display: inline-flex;
     align-items: center;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 2px;
     border-bottom: 1px solid transparent;
     color: #2f394b;
     font-size: 14px;
@@ -1298,6 +1308,14 @@
 .v6-internal-rail a:hover,
 .v6-internal-rail a:focus-visible {
     border-bottom-color: #2f394b;
+}
+
+.v6-internal-rail a.is-active,
+.v6-internal-rail a[aria-current='location'] {
+    background: #ffffff;
+    border-color: #2f394b;
+    color: #141921;
+    font-weight: 700;
 }
 
 .v6-service-detail {
@@ -1781,6 +1799,30 @@
     background: #141921;
     color: #eff3fd;
     border-color: #141921;
+}
+
+.v6-legal-tabs a[aria-current='page'] {
+    background: #141921;
+    color: #eff3fd;
+    border-color: #141921;
+}
+
+#v6-hub-featured,
+.v6-catalog-block,
+#v6-hub-initiatives,
+#v6-service-glance,
+#v6-service-checkpoints,
+#v6-service-process,
+#v6-service-faq,
+#v6-service-related,
+#v6-booking-status,
+#v6-tele-initiatives,
+[data-v6-tele-block],
+#v6-legal-tabs,
+#v6-legal-summary,
+[data-v6-legal-index],
+[data-v6-legal-block] {
+    scroll-margin-top: 148px;
 }
 
 .v6-legal-index-grid {

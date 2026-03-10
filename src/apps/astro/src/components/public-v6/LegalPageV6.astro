@@ -121,7 +121,7 @@ const statement = {
 <nav id="v6-legal-tabs" class="v6-legal-tabs" aria-label={menuUi.legalIndex || ''}>
     {
         indexItems.map((item) => (
-            <a class:list={[item.slug === currentSlug && 'is-active']} href={item.href}>{item.title}</a>
+            <a class:list={[item.slug === currentSlug && 'is-active']} href={item.href} aria-current={item.slug === currentSlug ? 'page' : undefined}>{item.title}</a>
         ))
     }
 </nav>

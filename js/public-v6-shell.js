@@ -714,6 +714,119 @@
             closeAll(null, false);
         });
     }
+
+    function bootSectionNavigation() {
+        if (document.documentElement.dataset.v6SectionNavReady === 'true') {
+            return;
+        }
+
+        var links = Array.from(
+            document.querySelectorAll('[data-v6-section-link]')
+        ).filter(function (link) {
+            var href = link.getAttribute('href') || '';
+            return href.indexOf('#') === 0 && href.length > 1;
+        });
+        if (!links.length) return;
+
+        var groups = new Map();
+        links.forEach(function (link) {
+            var targetId = (link.getAttribute('href') || '').slice(1);
+            if (!targetId) return;
+            var target = document.getElementById(targetId);
+            if (!target) return;
+            if (!groups.has(targetId)) {
+                groups.set(targetId, {
+                    id: targetId,
+                    target: target,
+                    links: [],
+                });
+            }
+            groups.get(targetId).links.push(link);
+        });
+
+        var sections = Array.from(groups.values());
+        if (!sections.length) return;
+        document.documentElement.dataset.v6SectionNavReady = 'true';
+
+        function setActive(activeId) {
+            sections.forEach(function (entry) {
+                var isActive = entry.id === activeId;
+                entry.links.forEach(function (link) {
+                    link.classList.toggle('is-active', isActive);
+                    if (isActive) {
+                        link.setAttribute('aria-current', 'location');
+                    } else {
+                        link.removeAttribute('aria-current');
+                    }
+                });
+            });
+        }
+
+        function getAnchorOffset() {
+            var header = document.querySelector('[data-v6-header]');
+            var headerHeight = header
+                ? header.getBoundingClientRect().height
+                : 0;
+            return Math.max(112, Math.min(220, headerHeight + 72));
+        }
+
+        function resolveActiveId() {
+            var offset = getAnchorOffset();
+            var hashId = window.location.hash
+                ? window.location.hash.replace(/^#/, '')
+                : '';
+            if (hashId && groups.has(hashId)) {
+                var hashTarget = groups.get(hashId).target;
+                var hashTop = hashTarget.getBoundingClientRect().top;
+                if (hashTop <= offset + 48) {
+                    return hashId;
+                }
+            }
+
+            var activeId = sections[0].id;
+            var viewportFloor = window.innerHeight + window.scrollY;
+            var documentHeight = Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight
+            );
+            if (viewportFloor >= documentHeight - 24) {
+                return sections[sections.length - 1].id;
+            }
+
+            sections.forEach(function (entry) {
+                var top = entry.target.getBoundingClientRect().top;
+                if (top <= offset) {
+                    activeId = entry.id;
+                }
+            });
+            return activeId;
+        }
+
+        var frameId = 0;
+        function scheduleSync() {
+            if (frameId) return;
+            frameId = window.requestAnimationFrame(function () {
+                frameId = 0;
+                setActive(resolveActiveId());
+            });
+        }
+
+        links.forEach(function (link) {
+            link.addEventListener('click', function () {
+                var targetId = (link.getAttribute('href') || '').slice(1);
+                if (groups.has(targetId)) {
+                    setActive(targetId);
+                }
+                window.setTimeout(scheduleSync, 80);
+            });
+        });
+
+        window.addEventListener('scroll', scheduleSync, { passive: true });
+        window.addEventListener('resize', scheduleSync);
+        window.addEventListener('hashchange', scheduleSync);
+        scheduleSync();
+    }
+
     function bootDrawer() {
         var header = document.querySelector('[data-v6-header]');
         if (!header || header.dataset.v6DrawerReady === 'true') return;
@@ -1027,6 +1140,7 @@
         bootHeaderSearch();
         bootNewsStrip();
         bootPageMenus();
+        bootSectionNavigation();
         bootDrawer();
         bootHero();
         bootBackTop();
