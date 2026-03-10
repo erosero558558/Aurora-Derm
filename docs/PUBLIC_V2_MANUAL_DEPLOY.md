@@ -19,3 +19,5 @@ bash ./bin/deploy-public-v2-live.sh
 ```
 
 `deploy-public-v2-live.sh` delega automáticamente a `deploy-public-v3-live.sh`.
+Si el verify interno del VPS necesita otro host Nginx local, usar
+`LOCAL_VERIFY_BASE_URL=...` igual que en el runbook V3.

@@ -192,3 +192,85 @@ test('clean-admin-chunks en strict falla cuando admin.js no referencia chunks', 
         removeSandbox(sandbox.base);
     }
 });
+
+test('clean-admin-chunks falla si el chunk activo contiene marcadores de merge', () => {
+    const sandbox = createSandboxRoot('admin-chunks-conflict-chunk-');
+    try {
+        writeFile(
+            resolve(sandbox.base, 'admin.js'),
+            "import('./js/admin-chunks/index-live.js');\n"
+        );
+        writeFile(
+            resolve(sandbox.chunksDir, 'index-live.js'),
+            [
+                'const live = true;',
+                '<<<<<<<< HEAD',
+                'const value = 1;',
+                '========',
+                'const value = 2;',
+                '>>>>>>>> branch',
+                'export { live, value };',
+                '',
+            ].join('\n')
+        );
+        writeFile(
+            resolve(sandbox.chunksDir, 'stale.js'),
+            'export const stale = true;\n'
+        );
+
+        const result = runCleaner(sandbox.base, ['--strict']);
+        assert.notEqual(
+            result.status,
+            0,
+            'el verificador debe fallar si el chunk activo contiene marcadores de merge'
+        );
+        assert.match(
+            result.stderr,
+            /Detectados marcadores de merge en assets admin activos/,
+            'debe reportar el hallazgo de merge conflict en el chunk activo'
+        );
+        assert.equal(
+            existsSync(resolve(sandbox.chunksDir, 'stale.js')),
+            true,
+            'si hay un chunk activo roto no debe borrar otros archivos'
+        );
+    } finally {
+        removeSandbox(sandbox.base);
+    }
+});
+
+test('clean-admin-chunks falla si admin.js contiene marcadores de merge', () => {
+    const sandbox = createSandboxRoot('admin-chunks-conflict-entry-');
+    try {
+        writeFile(
+            resolve(sandbox.base, 'admin.js'),
+            [
+                "import('./js/admin-chunks/index-live.js');",
+                '<<<<<<<< HEAD',
+                'const mode = "stable";',
+                '========',
+                'const mode = "broken";',
+                '>>>>>>>> branch',
+                '',
+            ].join('\n')
+        );
+        writeFile(
+            resolve(sandbox.chunksDir, 'index-live.js'),
+            'export const live = true;\n'
+        );
+
+        const result = runCleaner(sandbox.base, ['--dry-run', '--strict']);
+        assert.notEqual(
+            result.status,
+            0,
+            'el verificador debe fallar si admin.js contiene marcadores de merge'
+        );
+        assert.match(
+            result.stderr,
+            /admin\.js:\d+/,
+            'debe reportar la ubicacion de admin.js contaminado'
+        );
+    } finally {
+        removeSandbox(sandbox.base);
+    }
+});

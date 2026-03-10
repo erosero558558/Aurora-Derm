@@ -2,9 +2,11 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const http = require('node:http');
-const { spawn, spawnSync } = require('node:child_process');
 const { chromium } = require('playwright');
+const {
+    startLocalPublicServer,
+    stopLocalPublicServer,
+} = require('./lib/public-v6-local-server.js');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -14,10 +16,6 @@ function parseArg(flag, fallback) {
     const value = process.argv[index + 1];
     if (typeof value === 'undefined') return fallback;
     return value;
-}
-
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function parseRgb(value) {
@@ -34,96 +32,30 @@ function countGridColumns(templateValue) {
     return raw.split(/\s+/).filter(Boolean).length;
 }
 
-function hasPhpRuntime() {
-    const probe = spawnSync('php', ['-v'], { stdio: 'ignore' });
-    return !probe.error && probe.status === 0;
-}
-
-function isReachable(url) {
-    return new Promise((resolve) => {
-        const req = http.get(url, (res) => {
-            res.resume();
-            resolve(
-                Boolean(
-                    res.statusCode &&
-                    res.statusCode >= 200 &&
-                    res.statusCode < 500
-                )
-            );
-        });
-        req.setTimeout(1500, () => {
-            req.destroy();
-            resolve(false);
-        });
-        req.on('error', () => resolve(false));
-    });
-}
-
-async function waitForReachable(url, timeoutMs) {
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < timeoutMs) {
-        if (await isReachable(url)) {
-            return true;
-        }
-        await sleep(250);
-    }
-    return false;
-}
-
-async function ensureServer(baseURL) {
-    const probeUrl = `${baseURL.replace(/\/$/, '')}/es/`;
-    const reachable = await isReachable(probeUrl);
-    if (reachable) {
-        return { baseURL, processHandle: null };
+async function resolveRuntimeBaseUrl() {
+    const explicitBaseUrl = String(
+        parseArg('--base-url', process.env.TEST_BASE_URL || '')
+    )
+        .trim()
+        .replace(/\/$/, '');
+    if (explicitBaseUrl) {
+        return {
+            baseURL: explicitBaseUrl,
+            localServer: null,
+            runtimeSource: 'explicit',
+        };
     }
 
-    if (process.env.TEST_BASE_URL) {
-        throw new Error(`TEST_BASE_URL no responde: ${probeUrl}`);
-    }
-
-    const usePhp = hasPhpRuntime();
-    const command = usePhp ? 'php' : 'python';
-    const args = usePhp
-        ? ['-S', '127.0.0.1:8000', '-t', '.']
-        : ['-m', 'http.server', '8000', '--bind', '127.0.0.1'];
-
-    const processHandle = spawn(command, args, {
-        cwd: ROOT,
-        stdio: 'ignore',
-        windowsHide: true,
+    const { server, baseUrl } = await startLocalPublicServer(ROOT, {
+        host: '127.0.0.1',
+        port: 0,
     });
 
-    const ok = await waitForReachable(probeUrl, 15000);
-    if (!ok) {
-        try {
-            processHandle.kill();
-        } catch (_) {
-            // ignore
-        }
-        throw new Error(`No se pudo iniciar servidor local en ${probeUrl}`);
-    }
-
-    return { baseURL, processHandle };
-}
-
-function closeServer(processHandle) {
-    if (!processHandle) return;
-    try {
-        processHandle.kill('SIGTERM');
-    } catch (_) {
-        // ignore
-    }
-    if (processHandle.pid) {
-        try {
-            spawnSync(
-                'taskkill',
-                ['/PID', String(processHandle.pid), '/T', '/F'],
-                { stdio: 'ignore' }
-            );
-        } catch (_) {
-            // ignore
-        }
-    }
+    return {
+        baseURL: String(baseUrl).replace(/\/$/, ''),
+        localServer: server,
+        runtimeSource: 'local_helper',
+    };
 }
 
 async function gotoStable(page, url) {
@@ -143,7 +75,6 @@ function addCheck(checks, id, desc, pass, meta) {
 async function run() {
     const minCheckpoints = Number(parseArg('--min-checkpoints', 104));
     const strict = process.argv.includes('--strict');
-    const baseURL = process.env.TEST_BASE_URL || 'http://127.0.0.1:8000';
 
     const screenshotDir = path.join(
         ROOT,
@@ -154,7 +85,8 @@ async function run() {
     fs.mkdirSync(screenshotDir, { recursive: true });
     fs.mkdirSync(auditDir, { recursive: true });
 
-    const { processHandle } = await ensureServer(baseURL);
+    const { baseURL, localServer, runtimeSource } =
+        await resolveRuntimeBaseUrl();
     const checks = [];
     let browser;
 
@@ -2098,7 +2030,7 @@ async function run() {
         if (browser) {
             await browser.close().catch(() => null);
         }
-        closeServer(processHandle);
+        await stopLocalPublicServer(localServer).catch(() => null);
     }
 
     const passed = checks.filter((item) => item.pass).length;
@@ -2109,6 +2041,10 @@ async function run() {
         total: checks.length,
         minCheckpoints,
         strict,
+        runtime: {
+            base_url: baseURL,
+            source: runtimeSource,
+        },
         checks,
         failed,
         evidence: {
@@ -2138,6 +2074,8 @@ async function run() {
         `- Passed: **${passed}/${checks.length}**`,
         `- Minimum required: **${minCheckpoints}**`,
         `- Strict mode: **${strict ? 'on' : 'off'}**`,
+        `- Runtime base URL: **${baseURL}**`,
+        `- Runtime source: **${runtimeSource}**`,
         `- Status: **${result.ok ? 'PASS' : 'FAIL'}**`,
         '',
         '## Evidence',

@@ -8,8 +8,8 @@ const http = require('node:http');
 const https = require('node:https');
 const net = require('node:net');
 
-const DEFAULT_LOCAL_HOST = '127.0.0.1';
-const DEFAULT_LOCAL_PORT = 8096;
+const DEFAULT_LOCAL_HOST = process.env.TEST_LOCAL_SERVER_HOST || '127.0.0.1';
+const DEFAULT_LOCAL_PORT = Number(process.env.TEST_LOCAL_SERVER_PORT || '8011');
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_DEBUG_PORT = 9229;
 

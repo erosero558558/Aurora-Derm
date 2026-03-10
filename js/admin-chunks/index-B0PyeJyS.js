@@ -2854,7 +2854,62 @@ function Sa(e, t) {
               ));
     return n.slice(0, 4);
 }
+<<<<<<<< HEAD:js/admin-chunks/index-B0PyeJyS.js
 function qa(t, a) {
+========
+function qa() {
+    const e = b(),
+        { queueMeta: t } = zt(),
+        a = String(e.queue?.syncMode || 'live')
+            .trim()
+            .toLowerCase(),
+        n = Boolean(e.queue?.fallbackPartial),
+        i = String(t?.updatedAt || '').trim(),
+        o = i ? Date.parse(i) : NaN,
+        s = Number.isFinite(o)
+            ? Math.max(0, Math.round((Date.now() - o) / 1e3))
+            : null;
+    return 'fallback' === a || n
+        ? {
+              state: 'alert',
+              badge: 'Atender ahora',
+              title: 'Cola en fallback',
+              summary:
+                  'El admin ya está usando respaldo parcial. Refresca la cola y mantén Operador, Kiosco y Sala TV en sus rutas web preparadas hasta que vuelva el realtime.',
+              steps: [
+                  'Presiona Refrescar y confirma que el sync vuelva a vivo antes de cerrar la apertura.',
+                  'Mantén un solo operador activo por estación para evitar confusión mientras dura el respaldo.',
+                  'Si la TV sigue mostrando llamados, no la cierres; prioriza estabilidad sobre reinstalar.',
+              ],
+          }
+        : Number.isFinite(s) && s >= 60
+          ? {
+                state: 'warning',
+                badge: `Watchdog ${s}s`,
+                title: 'Realtime lento o en reconexión',
+                summary:
+                    'La cola no parece caída, pero el watchdog ya detecta retraso. Conviene refrescar desde admin antes de que el equipo operador se quede desfasado.',
+                steps: [
+                    'Refresca la cola y confirma que Sync vuelva a "vivo".',
+                    'Si Operador ya estaba abierto, valida un llamado de prueba antes de seguir atendiendo.',
+                    'Si el retraso persiste, opera desde las rutas web preparadas mientras revisas red local.',
+                ],
+            }
+          : {
+                state: 'ready',
+                badge: 'Sin incidentes',
+                title: 'Cola sincronizada',
+                summary:
+                    'No hay incidentes visibles de realtime. Usa esta sección como ruta rápida si falla numpad, térmica o audio durante el día.',
+                steps: [
+                    'Mantén este panel abierto como tablero de rescate para operador, kiosco y sala.',
+                    'Si notas un retraso mayor a un minuto, refresca antes de tocar instalación o hardware.',
+                    'En una caída puntual, prioriza abrir la ruta preparada del equipo antes de reiniciar dispositivos.',
+                ],
+            };
+}
+function Ca(t, a) {
+>>>>>>>> 4339e417 (chore(qa): canonicalize local hosts and portable runtime tooling):js/admin-chunks/index-BUGELiwR.js
     if (
         !(
             document.getElementById('queueSurfaceTelemetry') instanceof
@@ -3286,9 +3341,15 @@ function Ma() {
                 return;
             const i = (function (e, t) {
                 const a = ba(),
+<<<<<<<< HEAD:js/admin-chunks/index-B0PyeJyS.js
                     n = $a(e, t),
                     i = Aa(t),
                     o = Ca(),
+========
+                    n = _a(e, t),
+                    i = $a(t),
+                    o = qa(),
+>>>>>>>> 4339e417 (chore(qa): canonicalize local hosts and portable runtime tooling):js/admin-chunks/index-BUGELiwR.js
                     s = n.filter((e) => a.steps[e.id]).length,
                     r = i.suggestedCount,
                     l = n
@@ -3456,7 +3517,11 @@ function Ma() {
                             n = e.operator || Yt.operator,
                             i = e.kiosk || Yt.kiosk,
                             o = e.sala_tv || Yt.sala_tv,
+<<<<<<<< HEAD:js/admin-chunks/index-B0PyeJyS.js
                             s = Ca(),
+========
+                            s = qa(),
+>>>>>>>> 4339e417 (chore(qa): canonicalize local hosts and portable runtime tooling):js/admin-chunks/index-BUGELiwR.js
                             r = 'c2' === a.station ? 'C2' : 'C1',
                             l = a.lock ? `${r} fijo` : 'modo libre',
                             c = ia('operator', n, { ...a }),

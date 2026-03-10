@@ -99,10 +99,15 @@ test('deploy-public-v3-live corrige redirects canonicos y valida rutas publicas 
     const raw = loadScript(SCRIPT_PATH);
 
     for (const snippet of [
+        'LOCAL_VERIFY_BASE_URL="${LOCAL_VERIFY_BASE_URL:-http://127.0.0.1:8080}"',
+        'LOCAL_VERIFY_BASE_URL="${LOCAL_VERIFY_BASE_URL%/}"',
         'return 301 https://\\$host/es/\\$is_args\\$args;',
         's{return 301 /es/}{return 301 https://\\$host/es/}g; s{return 301 /en/}{return 301 https://\\$host/en/}g;',
-        'curl -I http://127.0.0.1:8080/es/',
-        'curl -I http://127.0.0.1:8080/en/',
+        'echo "Local verify target: $LOCAL_VERIFY_BASE_URL"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/es/"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/en/"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/telemedicina.html"',
         'curl -I https://pielarmonia.com/',
         'curl -I https://pielarmonia.com/es/',
         'curl -I https://pielarmonia.com/en/',

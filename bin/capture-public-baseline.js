@@ -3,11 +3,13 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawn } = require('node:child_process');
 const { chromium } = require('playwright');
+const {
+    startLocalPublicServer,
+    stopLocalPublicServer,
+} = require('./lib/public-v6-local-server.js');
 
 const LOCAL_HOST = '127.0.0.1';
-const LOCAL_PORT = 8092;
 const DEFAULT_TIMEOUT_MS = 30000;
 
 const ROUTES = [
@@ -103,51 +105,6 @@ function nowStamp() {
     return parts.join('');
 }
 
-async function sleep(ms) {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitForHttpReady(url, timeoutMs) {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                signal: AbortSignal.timeout(1500),
-            });
-            if (response.status >= 200 && response.status < 500) {
-                return true;
-            }
-        } catch (_error) {
-            // Retry until timeout.
-        }
-        await sleep(350);
-    }
-    return false;
-}
-
-function startLocalPhpServer(repoRoot) {
-    return spawn('php', ['-S', `${LOCAL_HOST}:${LOCAL_PORT}`, '-t', '.'], {
-        cwd: repoRoot,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        shell: false,
-    });
-}
-
-function stopProcess(proc) {
-    if (!proc || !proc.pid) {
-        return;
-    }
-    if (process.platform === 'win32') {
-        spawn('taskkill', ['/PID', String(proc.pid), '/T', '/F'], {
-            stdio: 'ignore',
-            shell: true,
-        });
-        return;
-    }
-    proc.kill('SIGTERM');
-}
-
 function joinRoute(baseUrl, routePath) {
     const basePath = String(baseUrl.pathname || '').replace(/^\/+|\/+$/g, '');
     const rawRoute = String(routePath || '/').trim() || '/';
@@ -211,28 +168,20 @@ async function run() {
     let baseUrl = normalizeBaseUrl(
         args.baseUrl || process.env.TEST_BASE_URL || ''
     );
-    let serverProcess = null;
+    let localServer = null;
+    let runtimeSource = 'explicit';
 
     if (!baseUrl) {
-        baseUrl = new URL(`http://${LOCAL_HOST}:${LOCAL_PORT}`);
+        const runtime = await startLocalPublicServer(repoRoot, {
+            host: LOCAL_HOST,
+            port: 0,
+        });
+        localServer = runtime.server;
+        baseUrl = runtime.baseUrl;
+        runtimeSource = 'local_helper';
         console.log(
-            `[baseline-capture] Starting local PHP server on ${baseUrl.toString()}`
+            `[baseline-capture] Starting canonical local server on ${baseUrl.toString()}`
         );
-        serverProcess = startLocalPhpServer(repoRoot);
-        serverProcess.stdout.on('data', (chunk) =>
-            process.stdout.write(chunk.toString())
-        );
-        serverProcess.stderr.on('data', (chunk) =>
-            process.stderr.write(chunk.toString())
-        );
-
-        const ready = await waitForHttpReady(
-            joinRoute(baseUrl, '/es/'),
-            DEFAULT_TIMEOUT_MS
-        );
-        if (!ready) {
-            throw new Error('Local PHP server did not become ready in time');
-        }
     }
 
     const stamp = args.label
@@ -244,6 +193,7 @@ async function run() {
     const manifest = {
         generatedAt: new Date().toISOString(),
         baseUrl: baseUrl.toString(),
+        runtimeSource,
         outputRoot: outputRoot,
         routes: [],
     };
@@ -322,7 +272,7 @@ async function run() {
         }
     } finally {
         await browser.close();
-        stopProcess(serverProcess);
+        await stopLocalPublicServer(localServer).catch(() => null);
     }
 
     const manifestPath = path.join(outputRoot, 'manifest.json');

@@ -7,7 +7,7 @@ const {
     readdirSync,
     unlinkSync,
 } = require('node:fs');
-const { resolve } = require('node:path');
+const { relative, resolve } = require('node:path');
 
 function parseCliArgs(argv) {
     const options = {
@@ -55,6 +55,7 @@ const ROOT = cli.root
     : resolve(__dirname, '..');
 const ADMIN_ENTRY = resolve(ROOT, 'admin.js');
 const ADMIN_CHUNKS_DIR = resolve(ROOT, 'js', 'admin-chunks');
+const MERGE_CONFLICT_MARKER_PATTERN = /^(<{7,}.*|={7,}|>{7,}.*)$/m;
 
 const dryRun = cli.dryRun;
 const strict = cli.strict;
@@ -143,6 +144,39 @@ function collectReachableChunks() {
     return reachable;
 }
 
+function toRepoRelativePath(filePath) {
+    return relative(ROOT, filePath).replace(/\\/g, '/');
+}
+
+function findFirstMergeConflictMarker(filePath) {
+    if (!existsSync(filePath)) {
+        return null;
+    }
+
+    const source = readFileSync(filePath, 'utf8');
+    const match = source.match(MERGE_CONFLICT_MARKER_PATTERN);
+    if (!match || typeof match.index !== 'number') {
+        return null;
+    }
+
+    const linesBeforeMatch = source.slice(0, match.index).split(/\r?\n/).length;
+    return {
+        filePath,
+        relativePath: toRepoRelativePath(filePath),
+        lineNumber: linesBeforeMatch,
+        marker: String(match[0] || '').trim(),
+    };
+}
+
+function collectActiveAdminAssets(reachableChunks) {
+    return [
+        ADMIN_ENTRY,
+        ...Array.from(reachableChunks, (chunkFilename) =>
+            resolve(ADMIN_CHUNKS_DIR, chunkFilename)
+        ),
+    ].filter((filePath) => existsSync(filePath));
+}
+
 function main() {
     if (!existsSync(ADMIN_ENTRY)) {
         warn('[admin-chunks] admin.js no existe, no se ejecuta limpieza.');
@@ -171,6 +205,20 @@ function main() {
             '[admin-chunks] No se detectaron referencias a chunks desde admin.js; se omite limpieza por seguridad.'
         );
         process.exit(strict ? 1 : 0);
+    }
+
+    const mergeConflictFindings = collectActiveAdminAssets(reachableChunks)
+        .map((filePath) => findFirstMergeConflictMarker(filePath))
+        .filter(Boolean);
+    if (mergeConflictFindings.length > 0) {
+        const locations = mergeConflictFindings.map(
+            (finding) =>
+                `${finding.relativePath}:${finding.lineNumber} (${finding.marker})`
+        );
+        warn(
+            `[admin-chunks] Detectados marcadores de merge en assets admin activos: ${locations.join(', ')}`
+        );
+        process.exit(1);
     }
 
     const staleChunks = filesInDirectory.filter(

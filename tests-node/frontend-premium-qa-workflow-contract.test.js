@@ -140,3 +140,35 @@ test('frontend premium QA observa cambios en contratos V4 de contenido, rollout 
         );
     }
 });
+
+test('frontend premium QA fija host y puertos canonicos para lighthouse y performance local', () => {
+    const { raw, parsed } = loadWorkflow();
+    const jobEnv = parsed?.jobs?.['premium-qa']?.env || {};
+
+    assert.equal(
+        jobEnv.TEST_LOCAL_SERVER_PORT,
+        '8011',
+        'frontend premium QA debe fijar TEST_LOCAL_SERVER_PORT=8011'
+    );
+    assert.equal(
+        jobEnv.LIGHTHOUSE_LOCAL_SERVER_HOST,
+        '127.0.0.1',
+        'frontend premium QA debe fijar LIGHTHOUSE_LOCAL_SERVER_HOST=127.0.0.1'
+    );
+    assert.equal(
+        jobEnv.LIGHTHOUSE_LOCAL_SERVER_PORT,
+        '8011',
+        'frontend premium QA debe fijar LIGHTHOUSE_LOCAL_SERVER_PORT=8011'
+    );
+
+    assert.equal(
+        raw.includes("TEST_LOCAL_SERVER_PORT: '8011'"),
+        true,
+        'falta TEST_LOCAL_SERVER_PORT explicito en workflow'
+    );
+    assert.equal(
+        raw.includes("LIGHTHOUSE_LOCAL_SERVER_PORT: '8011'"),
+        true,
+        'falta LIGHTHOUSE_LOCAL_SERVER_PORT explicito en workflow'
+    );
+});

@@ -509,3 +509,411 @@ test('preboot admin y residuos v2 salen del carril activo', () => {
         'scripts/archive/README.md debe documentar el runner v2 archivado'
     );
 });
+
+test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan TEST_BASE_URL', () => {
+    const readme = readRepoFile('README.md');
+    const serverLocal = readRepoFile('SERVIDOR-LOCAL.md');
+    const operationsIndex = readRepoFile('docs/OPERATIONS_INDEX.md');
+    const pentestP0 = readRepoFile('tests/pentest_p0.php');
+    const penetration = readRepoFile('tests/penetration_test.php');
+
+    assert.equal(
+        readme.includes('php -S 127.0.0.1:8011 -t .'),
+        true,
+        'README.md debe usar 127.0.0.1:8011 como setup local canonico'
+    );
+    assert.equal(
+        readme.includes('http://127.0.0.1:8011/admin.html'),
+        true,
+        'README.md debe apuntar el admin al host local canonico'
+    );
+    assert.equal(
+        readme.includes('TEST_LOCAL_SERVER_PORT'),
+        true,
+        'README.md debe documentar TEST_LOCAL_SERVER_PORT'
+    );
+    assert.equal(
+        serverLocal.includes('php -S 127.0.0.1:8011 -t .'),
+        true,
+        'SERVIDOR-LOCAL.md debe usar 127.0.0.1:8011 como arranque canonico'
+    );
+    assert.equal(
+        serverLocal.includes('TEST_BASE_URL'),
+        true,
+        'SERVIDOR-LOCAL.md debe documentar TEST_BASE_URL'
+    );
+    assert.equal(
+        operationsIndex.includes('http://127.0.0.1:8011'),
+        true,
+        'OPERATIONS_INDEX debe fijar el host local canonico'
+    );
+    assert.equal(
+        pentestP0.includes(
+            "getenv('TEST_BASE_URL') ?: 'http://127.0.0.1:8011'"
+        ),
+        true,
+        'tests/pentest_p0.php debe usar TEST_BASE_URL o el host local canonico'
+    );
+    assert.equal(
+        pentestP0.includes(
+            "getenv('PIELARMONIA_ADMIN_PASSWORD') ?: 'admin123'"
+        ),
+        true,
+        'tests/pentest_p0.php debe usar la password admin desde env o fallback controlado'
+    );
+    assert.equal(
+        penetration.includes(
+            "getenv('TEST_BASE_URL') ?: 'http://127.0.0.1:8011'"
+        ),
+        true,
+        'tests/penetration_test.php debe usar TEST_BASE_URL o el host local canonico'
+    );
+    assert.equal(
+        penetration.includes(
+            "getenv('PIELARMONIA_ADMIN_PASSWORD') ?: 'admin123'"
+        ),
+        true,
+        'tests/penetration_test.php debe usar la password admin desde env o fallback controlado'
+    );
+
+    assert.doesNotMatch(
+        readme,
+        /127\.0\.0\.1:8000|localhost:8000/,
+        'README.md no debe seguir apuntando a 8000'
+    );
+    assert.doesNotMatch(
+        serverLocal,
+        /127\.0\.0\.1:8000|localhost:8000/,
+        'SERVIDOR-LOCAL.md no debe seguir apuntando a 8000'
+    );
+});
+
+test('docs activas distinguen desarrollo local canonico del verify live del deploy', () => {
+    const contributing = readRepoFile('docs/CONTRIBUTING.md');
+    const disasterRecovery = readRepoFile('docs/DISASTER_RECOVERY.md');
+    const openapi = readRepoFile('docs/openapi.yaml');
+    const deployment = readRepoFile('docs/DEPLOYMENT.md');
+    const publicV3Deploy = readRepoFile('docs/PUBLIC_V3_MANUAL_DEPLOY.md');
+    const publicV2Deploy = readRepoFile('docs/PUBLIC_V2_MANUAL_DEPLOY.md');
+    const publicMainRunbook = readRepoFile(
+        'docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md'
+    );
+    const opsIndex = readRepoFile('scripts/ops/README.md');
+    const deployScript = readRepoFile('bin/deploy-public-v3-live.sh');
+
+    assert.equal(
+        contributing.includes('php -S 127.0.0.1:8011 -t .'),
+        true,
+        'CONTRIBUTING debe fijar 127.0.0.1:8011 como setup local'
+    );
+    assert.equal(
+        contributing.includes('TEST_BASE_URL'),
+        true,
+        'CONTRIBUTING debe documentar TEST_BASE_URL'
+    );
+    assert.equal(
+        disasterRecovery.includes('php -S 127.0.0.1:8011 -t .'),
+        true,
+        'DISASTER_RECOVERY debe usar 127.0.0.1:8011 en simulacros locales'
+    );
+    assert.equal(
+        disasterRecovery.includes('TEST_BASE_URL'),
+        true,
+        'DISASTER_RECOVERY debe documentar TEST_BASE_URL para restauraciones automatizadas'
+    );
+    assert.equal(
+        openapi.includes('- url: http://127.0.0.1:8011'),
+        true,
+        'openapi.yaml debe usar el host local canonico'
+    );
+    assert.equal(
+        deployment.includes('LOCAL_VERIFY_BASE_URL'),
+        true,
+        'DEPLOYMENT debe distinguir el verify live via LOCAL_VERIFY_BASE_URL'
+    );
+    assert.equal(
+        opsIndex.includes('LOCAL_VERIFY_BASE_URL'),
+        true,
+        'scripts/ops/README.md debe documentar LOCAL_VERIFY_BASE_URL'
+    );
+    assert.equal(
+        publicV3Deploy.includes('LOCAL_VERIFY_BASE_URL'),
+        true,
+        'PUBLIC_V3_MANUAL_DEPLOY debe documentar LOCAL_VERIFY_BASE_URL'
+    );
+    assert.equal(
+        publicV3Deploy.includes('TEST_BASE_URL'),
+        true,
+        'PUBLIC_V3_MANUAL_DEPLOY debe distinguir TEST_BASE_URL del verify live'
+    );
+    assert.equal(
+        publicV2Deploy.includes('LOCAL_VERIFY_BASE_URL'),
+        true,
+        'PUBLIC_V2_MANUAL_DEPLOY debe propagar LOCAL_VERIFY_BASE_URL al alias legacy'
+    );
+    assert.equal(
+        publicMainRunbook.includes('LOCAL_VERIFY_BASE_URL'),
+        true,
+        'PUBLIC_MAIN_UPDATE_RUNBOOK debe documentar LOCAL_VERIFY_BASE_URL para fallback VPS'
+    );
+    assert.equal(
+        deployScript.includes(
+            'LOCAL_VERIFY_BASE_URL="${LOCAL_VERIFY_BASE_URL:-http://127.0.0.1:8080}"'
+        ),
+        true,
+        'deploy-public-v3-live debe permitir override del verify live'
+    );
+    assert.equal(
+        deployScript.includes(
+            'LOCAL_VERIFY_BASE_URL="${LOCAL_VERIFY_BASE_URL%/}"'
+        ),
+        true,
+        'deploy-public-v3-live debe normalizar slash final del verify live'
+    );
+    assert.equal(
+        deployScript.includes('curl -I "$LOCAL_VERIFY_BASE_URL/es/"'),
+        true,
+        'deploy-public-v3-live debe verificar el host live via LOCAL_VERIFY_BASE_URL'
+    );
+
+    assert.doesNotMatch(
+        contributing,
+        /localhost:8080|127\.0\.0\.1:8080/,
+        'CONTRIBUTING no debe seguir usando 8080 para desarrollo local'
+    );
+    assert.doesNotMatch(
+        disasterRecovery,
+        /localhost:8080|127\.0\.0\.1:8080/,
+        'DISASTER_RECOVERY no debe seguir usando 8080 para simulacros locales'
+    );
+});
+
+test('tooling local de performance usa el host canonico y expone benchmark reutilizable', () => {
+    const readme = readRepoFile('README.md');
+    const serverLocal = readRepoFile('SERVIDOR-LOCAL.md');
+    const operationsIndex = readRepoFile('docs/OPERATIONS_INDEX.md');
+    const runbooks = readRepoFile('docs/RUNBOOKS.md');
+    const packageJson = readRepoFile('package.json');
+    const benchmarkScript = readRepoFile('bin/run-benchmark-local.sh');
+    const performanceGate = readRepoFile('bin/run-public-performance-gate.js');
+
+    assert.equal(
+        packageJson.includes(
+            '"benchmark:local": "bash ./bin/run-benchmark-local.sh"'
+        ),
+        true,
+        'package.json debe exponer benchmark:local'
+    );
+    assert.equal(
+        readme.includes('npm run benchmark:local'),
+        true,
+        'README.md debe exponer npm run benchmark:local'
+    );
+    assert.equal(
+        serverLocal.includes('npm run benchmark:local'),
+        true,
+        'SERVIDOR-LOCAL.md debe exponer npm run benchmark:local'
+    );
+    assert.equal(
+        operationsIndex.includes('npm run benchmark:local'),
+        true,
+        'OPERATIONS_INDEX debe exponer npm run benchmark:local'
+    );
+    assert.equal(
+        runbooks.includes('npm run benchmark:local'),
+        true,
+        'RUNBOOKS debe apuntar al benchmark dedicado'
+    );
+
+    for (const snippet of [
+        'BENCHMARK_LOCAL_PORT="${BENCHMARK_LOCAL_PORT:-${TEST_LOCAL_SERVER_PORT:-8011}}"',
+        'BASE_URL="${BENCHMARK_BASE_URL:-${TEST_BASE_URL:-$DEFAULT_BASE_URL}}"',
+        'BASE_URL="${BASE_URL%/}"',
+        'BENCHMARK_START_LOCAL_SERVER="${BENCHMARK_START_LOCAL_SERVER:-auto}"',
+        'mkdir -p "$(dirname "$OUTPUT_FILE")"',
+        'Using existing host: ${BASE_URL}',
+        'Starting local PHP server on ${BASE_URL} ...',
+    ]) {
+        assert.equal(
+            benchmarkScript.includes(snippet),
+            true,
+            `run-benchmark-local debe incluir ${snippet}`
+        );
+    }
+
+    assert.doesNotMatch(
+        benchmarkScript,
+        /PORT="8080"|http:\/\/\$\{HOST\}:\$\{PORT\}/,
+        'run-benchmark-local no debe seguir anclado al legado 8080'
+    );
+
+    assert.equal(
+        performanceGate.includes(
+            "const DEFAULT_LOCAL_PORT = Number(process.env.TEST_LOCAL_SERVER_PORT || '8011');"
+        ),
+        true,
+        'run-public-performance-gate debe respetar TEST_LOCAL_SERVER_PORT con fallback a 8011'
+    );
+    assert.equal(
+        performanceGate.includes(
+            "const DEFAULT_LOCAL_HOST = process.env.TEST_LOCAL_SERVER_HOST || '127.0.0.1';"
+        ),
+        true,
+        'run-public-performance-gate debe fijar 127.0.0.1 como host local por defecto'
+    );
+    assert.doesNotMatch(
+        performanceGate,
+        /const DEFAULT_LOCAL_PORT = 8096;/,
+        'run-public-performance-gate no debe seguir usando 8096 como default fijo'
+    );
+});
+
+test('lighthouse local y docs operativas distinguen QA canonico frente a puertos Docker', () => {
+    const defaultLhci = readRepoFile('.lighthouserc.json');
+    const premiumLhci = readRepoFile('lighthouserc.premium.json');
+    const premiumRunner = readRepoFile('bin/run-lighthouse-premium.js');
+    const monitoring = readRepoFile('docs/MONITORING_SETUP.md');
+    const deployGuide = readRepoFile('DESPLIEGUE-PIELARMONIA.md');
+    const operationsIndex = readRepoFile('docs/OPERATIONS_INDEX.md');
+
+    assert.equal(
+        defaultLhci.includes('"php -S 127.0.0.1:8011 -t ."'),
+        true,
+        '.lighthouserc.json debe usar 127.0.0.1:8011 como host local canonico'
+    );
+    assert.equal(
+        premiumLhci.includes('"php -S 127.0.0.1:8011 -t ."'),
+        true,
+        'lighthouserc.premium.json debe usar 127.0.0.1:8011 como host local canonico'
+    );
+    assert.doesNotMatch(
+        defaultLhci,
+        /127\.0\.0\.1:8080/,
+        '.lighthouserc.json no debe seguir anclado a 8080'
+    );
+    assert.doesNotMatch(
+        premiumLhci,
+        /127\.0\.0\.1:8088/,
+        'lighthouserc.premium.json no debe seguir anclado a 8088'
+    );
+
+    for (const snippet of [
+        'LIGHTHOUSE_LOCAL_SERVER_PORT',
+        'LIGHTHOUSE_LOCAL_SERVER_HOST',
+        'LIGHTHOUSE_BASE_URL',
+        'TEST_BASE_URL',
+        'lighthouserc.premium.runtime.json',
+        'LIGHTHOUSE_START_LOCAL_SERVER=0 requires LIGHTHOUSE_BASE_URL or TEST_BASE_URL',
+    ]) {
+        assert.equal(
+            premiumRunner.includes(snippet),
+            true,
+            `run-lighthouse-premium debe incluir ${snippet}`
+        );
+    }
+
+    assert.equal(
+        monitoring.includes(
+            'canonical bare PHP server for local QA remains `127.0.0.1:8011`'
+        ),
+        true,
+        'MONITORING_SETUP debe distinguir el host canonico de QA frente al puerto Docker'
+    );
+    assert.equal(
+        deployGuide.includes(
+            '`localhost:8080` aqui pertenece solo al stack Docker'
+        ),
+        true,
+        'DESPLIEGUE-PIELARMONIA debe aclarar que 8080 corresponde solo al stack Docker'
+    );
+    assert.equal(
+        operationsIndex.includes('LIGHTHOUSE_LOCAL_SERVER_PORT'),
+        true,
+        'OPERATIONS_INDEX debe documentar LIGHTHOUSE_LOCAL_SERVER_PORT'
+    );
+    assert.equal(
+        operationsIndex.includes('LIGHTHOUSE_BASE_URL'),
+        true,
+        'OPERATIONS_INDEX debe documentar LIGHTHOUSE_BASE_URL'
+    );
+});
+
+test('php self-hosted tests usan helper portable y salen del carril posix-only', () => {
+    const helper = readRepoFile('tests/test_server.php');
+    const runner = readRepoFile('tests/run-php-tests.php');
+    const contributing = readRepoFile('docs/CONTRIBUTING.md');
+    const migratedFiles = [
+        'tests/ApiSecurityTest.php',
+        'tests/BookingFlowTest.php',
+        'tests/CriticalFlowsE2ETest.php',
+        'tests/verify_backups_p0.php',
+        'tests/security_scan.php',
+    ];
+
+    assert.equal(
+        helper.includes("return '127.0.0.1';"),
+        true,
+        'test_server.php debe fijar 127.0.0.1 como host local por defecto'
+    );
+    assert.equal(
+        helper.includes('proc_open($command'),
+        true,
+        'test_server.php debe arrancar el servidor con proc_open'
+    );
+    assert.equal(
+        helper.includes('@proc_terminate($process)'),
+        true,
+        'test_server.php debe detener el servidor con proc_terminate'
+    );
+
+    for (const file of migratedFiles) {
+        const raw = readRepoFile(file);
+        assert.equal(
+            raw.includes('start_test_php_server('),
+            true,
+            `${file} debe usar start_test_php_server`
+        );
+        assert.equal(
+            raw.includes('stop_test_php_server('),
+            true,
+            `${file} debe usar stop_test_php_server`
+        );
+        assert.equal(
+            raw.includes('& echo $!'),
+            false,
+            `${file} no debe seguir arrancando servidores con shell POSIX`
+        );
+        assert.equal(
+            raw.includes('kill $pid'),
+            false,
+            `${file} no debe seguir matando procesos con kill`
+        );
+        assert.equal(
+            raw.includes('localhost:$port'),
+            false,
+            `${file} no debe seguir atado a localhost:$port`
+        );
+    }
+
+    assert.equal(
+        runner.includes("'test_server.php'"),
+        true,
+        'run-php-tests.php debe excluir el helper test_server.php del discovery'
+    );
+    assert.equal(
+        runner.includes('PIELARMONIA_TEST_INCLUDE_POSIX'),
+        false,
+        'run-php-tests.php no debe conservar el gate legacy PIELARMONIA_TEST_INCLUDE_POSIX'
+    );
+    assert.equal(
+        runner.includes('posixOnlyFiles'),
+        false,
+        'run-php-tests.php no debe conservar la lista legacy posixOnlyFiles'
+    );
+    assert.equal(
+        contributing.includes('helper') &&
+            contributing.includes('Windows o Unix'),
+        true,
+        'CONTRIBUTING debe documentar el helper portable del runner PHP'
+    );
+});

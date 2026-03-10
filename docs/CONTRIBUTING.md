@@ -33,9 +33,11 @@ Gracias por tu interés en contribuir a Piel en Armonía. Este documento describ
 
 4.  Iniciar servidor local:
     ```bash
-    php -S localhost:8080
+    php -S 127.0.0.1:8011 -t .
     ```
-    Ahora puedes acceder a `http://localhost:8080`.
+    Ahora puedes acceder a `http://127.0.0.1:8011`.
+    Si una suite debe reutilizar otro servidor ya levantado, apunta `TEST_BASE_URL`
+    a ese host en lugar de depender de puertos locales heredados.
 
 ## 2. Estándares de Código
 
@@ -65,6 +67,10 @@ Prueban la lógica de negocio en `lib/`.
 npm run test:php
 # O directamente: bash tests/run-php-tests.sh
 ```
+
+`php tests/run-php-tests.php` ya levanta sus servidores locales con un helper
+portable (`127.0.0.1`) y funciona igual en Windows o Unix. Para sumar los
+smokes/integration opt-in usa `PIELARMONIA_TEST_INCLUDE_INTEGRATION=1`.
 
 ### End-to-End (Playwright)
 

@@ -37,6 +37,7 @@ $report = [ordered]@{
     runtime_smoke = [ordered]@{
         executed = $false
         ok = $null
+        base_url = ''
         suites = @()
     }
     failures = 0
@@ -86,7 +87,8 @@ function Invoke-HttpCheck {
 function Invoke-PlaywrightSmokeSuite {
     param(
         [string]$Name,
-        [string[]]$Specs
+        [string[]]$Specs,
+        [string]$BaseUrl
     )
 
     $specList = @($Specs | Where-Object {
@@ -102,11 +104,32 @@ function Invoke-PlaywrightSmokeSuite {
         }
     }
 
-    Write-Host "[SMOKE] $Name -> $($specList -join ', ')"
+    Write-Host "[SMOKE] $Name -> $($specList -join ', ') @ $BaseUrl"
 
     $args = @('playwright', 'test') + $specList + @('--workers=1')
-    & npx @args
-    $exitCode = $LASTEXITCODE
+    $hadBaseUrl = Test-Path Env:TEST_BASE_URL
+    $previousBaseUrl = $env:TEST_BASE_URL
+    $hadReuseExistingServer = Test-Path Env:TEST_REUSE_EXISTING_SERVER
+    $previousReuseExistingServer = $env:TEST_REUSE_EXISTING_SERVER
+
+    try {
+        $env:TEST_BASE_URL = $BaseUrl
+        $env:TEST_REUSE_EXISTING_SERVER = '0'
+        & npx @args
+        $exitCode = $LASTEXITCODE
+    } finally {
+        if ($hadBaseUrl) {
+            $env:TEST_BASE_URL = $previousBaseUrl
+        } else {
+            Remove-Item Env:TEST_BASE_URL -ErrorAction SilentlyContinue
+        }
+
+        if ($hadReuseExistingServer) {
+            $env:TEST_REUSE_EXISTING_SERVER = $previousReuseExistingServer
+        } else {
+            Remove-Item Env:TEST_REUSE_EXISTING_SERVER -ErrorAction SilentlyContinue
+        }
+    }
     $ok = ($exitCode -eq 0)
 
     if ($ok) {
@@ -192,6 +215,7 @@ if ($report.csp.meta_present -and $report.csp.self_only_script -and $report.csp.
 
 if (-not $SkipRuntimeSmoke) {
     $report.runtime_smoke.executed = $true
+    $report.runtime_smoke.base_url = $base
 
     $runtimeSuites = @(
         @{
@@ -206,7 +230,7 @@ if (-not $SkipRuntimeSmoke) {
 
     $runtimeOk = $true
     foreach ($suite in $runtimeSuites) {
-        $suiteResult = Invoke-PlaywrightSmokeSuite -Name $suite.Name -Specs $suite.Specs
+        $suiteResult = Invoke-PlaywrightSmokeSuite -Name $suite.Name -Specs $suite.Specs -BaseUrl $base
         $report.runtime_smoke.suites += [ordered]@{
             name = $suiteResult.name
             ok = [bool]$suiteResult.ok

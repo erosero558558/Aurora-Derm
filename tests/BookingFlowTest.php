@@ -4,40 +4,37 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/test_framework.php';
 
-// Config
-$port = 8089; // Random port
-$host = "localhost:$port";
-$baseUrl = "http://$host/api.php";
 $dataDir = sys_get_temp_dir() . '/pielarmonia-test-data-' . uniqid();
+$server = [];
+$apptDate = date('Y-m-d', strtotime('+2 days'));
 
 // Setup
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0777, true);
-}
-putenv("PIELARMONIA_DATA_DIR=$dataDir");
-putenv('PIELARMONIA_AVAILABILITY_SOURCE=store');
-// We need to pass this env var to the server process too!
+ensure_clean_directory($dataDir);
+$initialStore = [
+    'appointments' => [],
+    'availability' => [
+        $apptDate => ['09:00', '10:00'],
+    ],
+    'reviews' => [],
+    'callbacks' => [],
+    'updatedAt' => date('c'),
+    'createdAt' => date('c'),
+];
+file_put_contents(
+    $dataDir . '/store.json',
+    json_encode($initialStore, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+);
 
-echo "Starting server on port $port with data dir $dataDir...\n";
-$cmd = "PIELARMONIA_DATA_DIR=$dataDir PIELARMONIA_AVAILABILITY_SOURCE=store php -S $host -t " . __DIR__ . "/../ > /dev/null 2>&1 & echo $!";
-$pid = exec($cmd);
+$server = start_test_php_server([
+    'docroot' => __DIR__ . '/..',
+    'env' => [
+        'PIELARMONIA_DATA_DIR' => $dataDir,
+        'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+    ],
+]);
+$baseUrl = $server['base_url'] . '/api.php';
 
-// Wait for server
-$attempts = 0;
-while ($attempts < 10) {
-    $conn = @fsockopen('localhost', $port);
-    if ($conn) {
-        fclose($conn);
-        break;
-    }
-    usleep(200000); // 200ms
-    $attempts++;
-}
-
-if ($attempts === 10) {
-    echo "Failed to start server.\n";
-    exit(1);
-}
+echo "Starting server on {$server['base_url']} with data dir $dataDir...\n";
 
 // Helper for requests
 function api_request($method, $resource, $data = null)
@@ -58,38 +55,23 @@ function api_request($method, $resource, $data = null)
 }
 
 try {
-    $apptDate = date('Y-m-d', strtotime('+2 days'));
-
     // 1. Check availability (GET)
     run_test('Integration: Check Availability', function () {
         $res = api_request('GET', 'availability');
         assert_equals(200, $res['code']);
         assert_array_has_key('data', $res['body']);
-        // Initially empty or whatever the default seed is
     });
 
-    // 2. Configure availability (Direct DB Injection to bypass Auth)
-    run_test('Integration: Configure Availability', function () use ($apptDate, $dataDir) {
-        $dbPath = $dataDir . '/store.sqlite';
-        if (!file_exists($dbPath)) {
-             // Try forcing creation by calling read_store via API first if needed,
-             // but previous step (Check Availability) should have triggered ensure_data_file()
-        }
+    // 2. Store-backed availability is seeded before boot.
+    run_test('Integration: Store-backed Availability Seed', function () use ($dataDir, $apptDate) {
+        $storePath = file_exists($dataDir . '/store.sqlite')
+            ? $dataDir . '/store.sqlite'
+            : $dataDir . '/store.json';
+        assert_true(file_exists($storePath), 'Store file should exist');
+        assert_true(filesize($storePath) > 0, 'Store file should not be empty');
 
-        try {
-            $pdo = new PDO("sqlite:$dbPath");
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            // Ensure table exists (it should if app ran)
-            $pdo->exec("CREATE TABLE IF NOT EXISTS availability (date TEXT, time TEXT, doctor TEXT, PRIMARY KEY (date, time, doctor))");
-
-            $stmt = $pdo->prepare("INSERT OR IGNORE INTO availability (date, time, doctor) VALUES (?, ?, ?)");
-            $stmt->execute([$apptDate, '09:00', 'global']);
-            $stmt->execute([$apptDate, '10:00', 'global']);
-        } catch (Throwable $e) {
-            echo "DB Injection failed: " . $e->getMessage() . "\n";
-            throw $e;
-        }
+        $res = api_request('GET', 'booked-slots&date=' . $apptDate);
+        assert_equals(200, $res['code']);
     });
 
     // 3. Create Appointment (POST)
@@ -135,19 +117,11 @@ try {
     // 5. Verify Persistence (GET appointments - admin protected)
     // To test admin, we need session. Or we can just inspect the file directly since we have access to $dataDir.
     run_test('Integration: Verify Persistence on Disk', function () use ($dataDir, $apptDate) {
-        $file = $dataDir . '/store.sqlite';
+        $sqliteFile = $dataDir . '/store.sqlite';
+        $jsonFile = $dataDir . '/store.json';
+        $file = file_exists($sqliteFile) ? $sqliteFile : $jsonFile;
         assert_true(file_exists($file), 'Store file should exist');
-
-        // The store might be encrypted or plain.
-        // lib/storage.php: ensure_data_file writes encrypted seed.
-        // write_store writes encrypted.
-        // We can't easily decrypt without the key logic if we don't include the lib.
-        // But we can check if file size > 0.
         assert_greater_than(0, filesize($file));
-
-        // Since we are in the same environment, we can include storage.php and read it?
-        // But storage.php relies on constants.
-        // Let's trust the API verification.
     });
 
 } catch (Throwable $e) {
@@ -155,13 +129,9 @@ try {
     $test_failed++; // Ensure we count it
 } finally {
     // Cleanup
-    echo "Stopping server (PID $pid)...\n";
-    exec("kill $pid");
-
-    // Recursive delete data dir
-    if (is_dir($dataDir)) {
-        delete_path_recursive($dataDir);
-    }
+    echo "Stopping server...\n";
+    stop_test_php_server($server);
+    delete_path_recursive($dataDir);
 }
 
 print_test_summary();

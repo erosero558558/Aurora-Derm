@@ -222,7 +222,7 @@ Propagacion automatizada desde deploy:
 1.  Re-ejecutar el gate strict inmediatamente para confirmar si es pico transitorio.
 2.  Si el segundo intento pasa, registrar el incidente como transitorio y continuar con corridas consecutivas.
 3.  Si falla de nuevo en el mismo endpoint:
-    - ejecutar benchmark dedicado para aislar el endpoint;
+    - ejecutar benchmark dedicado para aislar el endpoint (`npm run benchmark:local`; usar `TEST_BASE_URL` si necesitas otro host);
     - verificar estado de infraestructura/hosting y saturacion de red;
     - abrir incidente operativo y no cerrar fase.
 
@@ -303,6 +303,8 @@ Utilizar los scripts de PowerShell incluidos en el repositorio para mÃ©tricas.
 
 - **Latencia:** `.\BENCH-API-PRODUCCION.ps1` mide el tiempo de respuesta de la API.
 - **Disponibilidad:** `.\SMOKE-PRODUCCION.ps1` realiza un recorrido rÃ¡pido por las URLs principales.
+- **Benchmark local o dirigido:** `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011`.
+- **Gate web local:** `npm run test:frontend:performance:gate` usa `TEST_BASE_URL` o el host local canonico si no se le pasa uno.
 - Implementaciones canonicas: `scripts/ops/prod/BENCH-API-PRODUCCION.ps1` y
   `scripts/ops/prod/SMOKE-PRODUCCION.ps1`.
 

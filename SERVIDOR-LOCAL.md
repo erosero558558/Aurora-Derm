@@ -12,15 +12,15 @@ Para probar la web con backend (API + admin) no uses `file://`.
 Desde la carpeta del proyecto:
 
 ```powershell
-php -S localhost:8000
+php -S 127.0.0.1:8011 -t .
 ```
 
 Luego abre:
 
-- Sitio: `http://localhost:8000/index.html`
-- Admin: `http://localhost:8000/admin.html`
-- API health: `http://localhost:8000/api.php?resource=health`
-- Bot endpoint: `http://localhost:8000/figo-chat.php`
+- Sitio: `http://127.0.0.1:8011/index.html`
+- Admin: `http://127.0.0.1:8011/admin.html`
+- API health: `http://127.0.0.1:8011/api.php?resource=health`
+- Bot endpoint: `http://127.0.0.1:8011/figo-chat.php`
 
 ## Variables de entorno requeridas para login admin
 
@@ -38,10 +38,14 @@ Alternativa sin variables de entorno:
 Nota:
 
 - Ya no existe fallback `admin123`. Debes definir una de las dos variables de contraseña.
+- `TEST_BASE_URL` sirve para apuntar tests y pentests a otro host.
+- `TEST_LOCAL_SERVER_PORT` sirve para mover el puerto local del runner Playwright.
+- `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` automaticamente.
 
 ## Ejemplo en PowerShell (sesión actual)
 
 ```powershell
 $env:PIELARMONIA_ADMIN_PASSWORD = "tu-clave-segura"
-php -S localhost:8000
+$env:TEST_LOCAL_SERVER_PORT = "8011"
+php -S 127.0.0.1:8011 -t .
 ```

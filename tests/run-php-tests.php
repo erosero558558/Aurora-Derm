@@ -10,8 +10,6 @@ declare(strict_types=1);
  */
 
 $testDir = __DIR__;
-$isWindows = DIRECTORY_SEPARATOR === '\\';
-$includePosixOnWindows = filter_var((string) getenv('PIELARMONIA_TEST_INCLUDE_POSIX'), FILTER_VALIDATE_BOOLEAN);
 $includeIntegration = filter_var((string) getenv('PIELARMONIA_TEST_INCLUDE_INTEGRATION'), FILTER_VALIDATE_BOOLEAN);
 $hasPdoSqlite = extension_loaded('pdo_sqlite');
 
@@ -95,19 +93,10 @@ $patterns = [
 $excludedFiles = [
     'test_filesystem.php',
     'test_framework.php',
+    'test_server.php',
     'router.php',
     'penetration_test.php',
     'security_scan.php'
-];
-
-// These tests start subprocesses with Unix shell commands.
-$posixOnlyFiles = [
-    'ApiSecurityTest.php',
-    'BookingFlowTest.php',
-    'CriticalFlowsE2ETest.php',
-    'verify_backups_p0.php',
-    'verify_disaster_recovery_cli.php',
-    'verify_restore_procedure.php'
 ];
 
 $integrationOnlyFiles = [
@@ -120,7 +109,6 @@ $integrationOnlyFiles = [
 
 $sqliteRequiredFiles = [
     'test_storage_backup.php',
-    'verify_backups_p0.php',
     'verify_disaster_recovery_cli.php',
     'verify_restore_procedure.php'
 ];
@@ -138,9 +126,6 @@ foreach ($patterns as $pattern) {
         }
         $name = basename($real);
         if (in_array($name, $excludedFiles, true)) {
-            continue;
-        }
-        if ($isWindows && !$includePosixOnWindows && in_array($name, $posixOnlyFiles, true)) {
             continue;
         }
         if (!$includeIntegration && in_array($name, $integrationOnlyFiles, true)) {

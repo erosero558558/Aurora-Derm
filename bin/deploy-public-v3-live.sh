@@ -7,6 +7,8 @@ SITE_PATH="${SITE_PATH:-/etc/nginx/sites-enabled/pielarmonia}"
 NGINX_BIN="${NGINX_BIN:-/usr/sbin/nginx}"
 INSTALL_DEPS="${INSTALL_DEPS:-true}"
 DISABLE_DESTRUCTIVE_SYNC_CRON="${DISABLE_DESTRUCTIVE_SYNC_CRON:-true}"
+LOCAL_VERIFY_BASE_URL="${LOCAL_VERIFY_BASE_URL:-http://127.0.0.1:8080}"
+LOCAL_VERIFY_BASE_URL="${LOCAL_VERIFY_BASE_URL%/}"
 
 require_cmd() {
     local command_name="$1"
@@ -114,10 +116,11 @@ echo "== Reload Nginx =="
 systemctl reload nginx
 
 echo "== Local verify =="
-curl -I http://127.0.0.1:8080/
-curl -I http://127.0.0.1:8080/es/
-curl -I http://127.0.0.1:8080/en/
-curl -I http://127.0.0.1:8080/telemedicina.html
+echo "Local verify target: $LOCAL_VERIFY_BASE_URL"
+curl -I "$LOCAL_VERIFY_BASE_URL/"
+curl -I "$LOCAL_VERIFY_BASE_URL/es/"
+curl -I "$LOCAL_VERIFY_BASE_URL/en/"
+curl -I "$LOCAL_VERIFY_BASE_URL/telemedicina.html"
 
 echo "== Public verify =="
 curl -I https://pielarmonia.com/

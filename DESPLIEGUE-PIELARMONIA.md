@@ -261,6 +261,12 @@ Para desarrollo o pruebas locales con el stack completo (App, Redis, Prometheus,
     - Grafana: http://localhost:3000 (admin/admin)
     - Prometheus: http://localhost:9090
 
+Nota:
+
+- `localhost:8080` aqui pertenece solo al stack Docker (`docker-compose.yml`).
+- El servidor PHP local canonico para QA, Playwright y audits fuera de Docker
+  sigue siendo `http://127.0.0.1:8011`, reusable via `TEST_BASE_URL`.
+
 ### Kubernetes (Produccion)
 
 Archivos de manifiesto en carpeta `k8s/`:

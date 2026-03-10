@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/test_filesystem.php';
+require_once __DIR__ . '/test_server.php';
 
 $test_passed = 0;
 $test_failed = 0;
@@ -66,6 +67,12 @@ function assert_greater_than($expected, $actual, string $message = ''): void
     if ($actual <= $expected) {
         throw new Exception("Expected $actual to be greater than $expected. $message");
     }
+}
+
+function skip_test(string $message): void
+{
+    echo "[SKIP] {$message}\n";
+    exit(0);
 }
 
 function print_test_summary(): void

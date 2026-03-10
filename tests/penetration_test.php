@@ -1,7 +1,9 @@
 <?php
 
-$baseUrl = 'http://localhost:8081/api.php';
-$authUrl = 'http://localhost:8081/admin-auth.php';
+$serverBaseUrl = rtrim(getenv('TEST_BASE_URL') ?: 'http://127.0.0.1:8011', '/');
+$baseUrl = $serverBaseUrl . '/api.php';
+$authUrl = $serverBaseUrl . '/admin-auth.php';
+$adminPassword = getenv('PIELARMONIA_ADMIN_PASSWORD') ?: 'admin123';
 
 function request($url, $method = 'GET', $data = [], $headers = [], $cookies = [])
 {
@@ -58,6 +60,7 @@ function request($url, $method = 'GET', $data = [], $headers = [], $cookies = []
 }
 
 echo "Starting Penetration Test...\n";
+echo "[INFO] Base URL: {$serverBaseUrl}\n";
 
 // 1. Health Check
 echo "[INFO] Checking Health...\n";
@@ -138,7 +141,7 @@ if ($res['code'] === 401) {
 }
 
 // Login to get session
-$loginRes = request($authUrl . '?action=login', 'POST', ['password' => 'secret']);
+$loginRes = request($authUrl . '?action=login', 'POST', ['password' => $adminPassword]);
 $cookies = $loginRes['cookies'];
 $csrfToken = '';
 $body = json_decode($loginRes['body'], true);

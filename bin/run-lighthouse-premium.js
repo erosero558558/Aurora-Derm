@@ -8,6 +8,16 @@ const { spawn, spawnSync } = require('node:child_process');
 const path = require('node:path');
 const net = require('node:net');
 
+const DEFAULT_LOCAL_HOST =
+    process.env.LIGHTHOUSE_LOCAL_SERVER_HOST ||
+    process.env.TEST_LOCAL_SERVER_HOST ||
+    '127.0.0.1';
+const DEFAULT_LOCAL_PORT = Number(
+    process.env.LIGHTHOUSE_LOCAL_SERVER_PORT ||
+        process.env.TEST_LOCAL_SERVER_PORT ||
+        '8011'
+);
+
 function resolveChromiumPath() {
     if (process.env.CHROME_PATH) {
         return process.env.CHROME_PATH;
@@ -41,6 +51,17 @@ function runCommandCapture(command, args, options) {
         process.stderr.write(result.stderr);
     }
     return result;
+}
+
+function safeUrl(input) {
+    if (!input) {
+        return null;
+    }
+    try {
+        return new URL(input);
+    } catch (_error) {
+        return null;
+    }
 }
 
 function requestOnce(urlString) {
@@ -134,16 +155,136 @@ function sanitizePathForFile(urlString, index) {
     }
 }
 
+function joinRoute(baseUrl, routePath) {
+    const cleanRoute = `/${String(routePath || '/').replace(/^\/+/, '')}`;
+    const cleanBasePath = String(baseUrl.pathname || '').replace(
+        /^\/+|\/+$/g,
+        ''
+    );
+    const resolvedPath = cleanBasePath
+        ? `/${cleanBasePath}${cleanRoute}`
+        : cleanRoute;
+    const target = new URL(baseUrl.origin);
+    target.pathname = resolvedPath;
+    return target.toString();
+}
+
+function resolveLocalHost(env) {
+    const host = String(
+        env.LIGHTHOUSE_LOCAL_SERVER_HOST ||
+            env.TEST_LOCAL_SERVER_HOST ||
+            DEFAULT_LOCAL_HOST
+    ).trim();
+    return host || '127.0.0.1';
+}
+
+function resolveLocalPort(env) {
+    const value = Number(
+        env.LIGHTHOUSE_LOCAL_SERVER_PORT ||
+            env.TEST_LOCAL_SERVER_PORT ||
+            DEFAULT_LOCAL_PORT
+    );
+    if (Number.isFinite(value) && value > 0) {
+        return value;
+    }
+    return 8011;
+}
+
+function resolveLighthouseRuntimeConfig(repoRoot, env) {
+    const configPath = path.join(repoRoot, 'lighthouserc.premium.json');
+    const rawConfig = fs.readFileSync(configPath, 'utf8');
+    const config = JSON.parse(rawConfig);
+    const collect = (config.ci && config.ci.collect) || {};
+    const { startServerCommand: _ignoredStartServerCommand, ...restCollect } =
+        collect;
+    const configuredUrls = Array.isArray(collect.url) ? collect.url : [];
+    const localHost = resolveLocalHost(env);
+    const localPort = resolveLocalPort(env);
+    const localBaseUrl = new URL(`http://${localHost}:${localPort}`);
+    const requestedBaseUrl = safeUrl(
+        env.LIGHTHOUSE_BASE_URL || env.TEST_BASE_URL || ''
+    );
+    const forceLocalServer = env.LIGHTHOUSE_START_LOCAL_SERVER === '1';
+    const disableLocalServer = env.LIGHTHOUSE_START_LOCAL_SERVER === '0';
+    const useLocalServer =
+        forceLocalServer || (!disableLocalServer && !requestedBaseUrl);
+    if (!useLocalServer && !requestedBaseUrl) {
+        throw new Error(
+            'LIGHTHOUSE_START_LOCAL_SERVER=0 requires LIGHTHOUSE_BASE_URL or TEST_BASE_URL'
+        );
+    }
+    const effectiveBaseUrl = useLocalServer ? localBaseUrl : requestedBaseUrl;
+    const outputDirSetting =
+        (config.ci && config.ci.upload && config.ci.upload.outputDir) ||
+        '.lighthouseci';
+    const outputDir = path.resolve(repoRoot, outputDirSetting);
+    const resolvedUrls = configuredUrls.map((entry) => {
+        const configured = safeUrl(entry);
+        const routePath = configured
+            ? `${configured.pathname}${configured.search}`
+            : String(entry || '').trim() || '/';
+        return joinRoute(effectiveBaseUrl, routePath);
+    });
+    const runtimeConfig = {
+        ...config,
+        ci: {
+            ...(config.ci || {}),
+            collect: {
+                ...restCollect,
+                ...(useLocalServer
+                    ? {
+                          startServerCommand: `php -S ${localHost}:${localPort} -t .`,
+                      }
+                    : {}),
+                url: resolvedUrls,
+            },
+        },
+    };
+
+    fs.mkdirSync(outputDir, { recursive: true });
+    const runtimeConfigPath = path.join(
+        outputDir,
+        'lighthouserc.premium.runtime.json'
+    );
+    fs.writeFileSync(
+        runtimeConfigPath,
+        `${JSON.stringify(runtimeConfig, null, 2)}\n`,
+        'utf8'
+    );
+
+    return {
+        config: runtimeConfig,
+        collect: runtimeConfig.ci.collect || {},
+        outputDir,
+        runtimeConfigPath,
+        urls: resolvedUrls,
+        useLocalServer,
+        effectiveBaseUrl: effectiveBaseUrl.toString(),
+    };
+}
+
 function extractThresholds(config) {
-    const assertions = (config && config.ci && config.ci.assert && config.ci.assert.assertions) || {};
+    const assertions =
+        (config &&
+            config.ci &&
+            config.ci.assert &&
+            config.ci.assert.assertions) ||
+        {};
     const map = {};
     for (const [key, value] of Object.entries(assertions)) {
-        if (!key.startsWith('categories:') || !Array.isArray(value) || value.length < 2) {
+        if (
+            !key.startsWith('categories:') ||
+            !Array.isArray(value) ||
+            value.length < 2
+        ) {
             continue;
         }
         const category = key.split(':')[1];
         const severity = value[0] || 'error';
-        const minScore = value[1] && typeof value[1].minScore === 'number' ? value[1].minScore : null;
+        const minScore =
+            value[1] && typeof value[1].minScore === 'number'
+                ? value[1].minScore
+                : null;
         if (minScore === null) {
             continue;
         }
@@ -160,28 +301,33 @@ function formatScore(value) {
 }
 
 async function runManualFlow(repoRoot, env) {
-    const configPath = path.join(repoRoot, 'lighthouserc.premium.json');
-    const rawConfig = fs.readFileSync(configPath, 'utf8');
-    const config = JSON.parse(rawConfig);
-    const collect = (config.ci && config.ci.collect) || {};
-    const urls = Array.isArray(collect.url) ? collect.url : [];
+    const runtime = resolveLighthouseRuntimeConfig(repoRoot, env);
+    const config = runtime.config;
+    const collect = runtime.collect;
+    const urls = runtime.urls;
     const settings = collect.settings || {};
     const thresholds = extractThresholds(config);
-    const outputDir = path.join(repoRoot, '.lighthouseci');
+    const outputDir = runtime.outputDir;
     const serverCommand = collect.startServerCommand || '';
     const chromeDebugPort = Number(env.LIGHTHOUSE_DEBUG_PORT || '9222');
     const chromeUserDataDir = path.join(outputDir, 'chrome-profile');
 
     if (!urls.length) {
-        console.error('[lighthouse-premium] No URLs configured in lighthouserc.premium.json');
+        console.error(
+            '[lighthouse-premium] No URLs configured in lighthouserc.premium.json'
+        );
         return 1;
     }
     if (!serverCommand) {
-        console.error('[lighthouse-premium] Missing collect.startServerCommand');
+        console.error(
+            '[lighthouse-premium] Missing collect.startServerCommand'
+        );
         return 1;
     }
     if (!env.CHROME_PATH) {
-        console.error('[lighthouse-premium] CHROME_PATH unresolved on Windows force mode');
+        console.error(
+            '[lighthouse-premium] CHROME_PATH unresolved on Windows force mode'
+        );
         return 1;
     }
 
@@ -196,18 +342,30 @@ async function runManualFlow(repoRoot, env) {
     let serverExitedCode = null;
 
     try {
-        console.log(`[lighthouse-premium] Starting server: ${serverCommand}`);
-        serverProcess = spawn(serverCommand, {
-            cwd: repoRoot,
-            env,
-            shell: true,
-            stdio: ['ignore', 'pipe', 'pipe'],
-        });
-        serverProcess.on('exit', (code) => {
-            serverExitedCode = code;
-        });
-        serverProcess.stdout.on('data', (chunk) => process.stdout.write(chunk.toString()));
-        serverProcess.stderr.on('data', (chunk) => process.stderr.write(chunk.toString()));
+        if (runtime.useLocalServer) {
+            console.log(
+                `[lighthouse-premium] Starting server: ${serverCommand}`
+            );
+            serverProcess = spawn(serverCommand, {
+                cwd: repoRoot,
+                env,
+                shell: true,
+                stdio: ['ignore', 'pipe', 'pipe'],
+            });
+            serverProcess.on('exit', (code) => {
+                serverExitedCode = code;
+            });
+            serverProcess.stdout.on('data', (chunk) =>
+                process.stdout.write(chunk.toString())
+            );
+            serverProcess.stderr.on('data', (chunk) =>
+                process.stderr.write(chunk.toString())
+            );
+        } else {
+            console.log(
+                `[lighthouse-premium] Using existing base URL: ${runtime.effectiveBaseUrl}`
+            );
+        }
 
         const firstUrl = urls[0];
         const httpReady = await waitForHttpReady(firstUrl, 30000);
@@ -231,7 +389,9 @@ async function runManualFlow(repoRoot, env) {
             '--disable-dev-shm-usage',
             'about:blank',
         ];
-        console.log(`[lighthouse-premium] Launching Chrome: ${env.CHROME_PATH}`);
+        console.log(
+            `[lighthouse-premium] Launching Chrome: ${env.CHROME_PATH}`
+        );
         chromeProcess = spawn(env.CHROME_PATH, chromeArgs, {
             cwd: repoRoot,
             env,
@@ -239,9 +399,15 @@ async function runManualFlow(repoRoot, env) {
             shell: false,
         });
 
-        const chromeReady = await waitForPort('127.0.0.1', chromeDebugPort, 15000);
+        const chromeReady = await waitForPort(
+            '127.0.0.1',
+            chromeDebugPort,
+            15000
+        );
         if (!chromeReady) {
-            failures.push(`Chrome debugging port ${chromeDebugPort} did not open in time`);
+            failures.push(
+                `Chrome debugging port ${chromeDebugPort} did not open in time`
+            );
             throw new Error('chrome-not-ready');
         }
 
@@ -261,14 +427,21 @@ async function runManualFlow(repoRoot, env) {
                 `--output-path=${outputBase}`,
                 '--quiet',
             ];
-            if (Array.isArray(settings.onlyCategories) && settings.onlyCategories.length > 0) {
-                lighthouseArgs.push(`--only-categories=${settings.onlyCategories.join(',')}`);
+            if (
+                Array.isArray(settings.onlyCategories) &&
+                settings.onlyCategories.length > 0
+            ) {
+                lighthouseArgs.push(
+                    `--only-categories=${settings.onlyCategories.join(',')}`
+                );
             }
             if (settings.formFactor) {
                 lighthouseArgs.push(`--form-factor=${settings.formFactor}`);
             }
             if (settings.throttlingMethod) {
-                lighthouseArgs.push(`--throttling-method=${settings.throttlingMethod}`);
+                lighthouseArgs.push(
+                    `--throttling-method=${settings.throttlingMethod}`
+                );
             }
 
             console.log(`[lighthouse-premium] Auditing ${url}`);
@@ -286,11 +459,15 @@ async function runManualFlow(repoRoot, env) {
                 /EPERM[\s\S]*lighthouse\.\d+/i.test(combinedOutput);
 
             if (run.status !== 0 && !recoverableEperm) {
-                failures.push(`Lighthouse failed for ${url} with exit code ${run.status}`);
+                failures.push(
+                    `Lighthouse failed for ${url} with exit code ${run.status}`
+                );
                 continue;
             }
             if (!hasReport) {
-                failures.push(`Missing report output for ${url}: ${jsonReportPath}`);
+                failures.push(
+                    `Missing report output for ${url}: ${jsonReportPath}`
+                );
                 continue;
             }
             if (recoverableEperm) {
@@ -303,14 +480,19 @@ async function runManualFlow(repoRoot, env) {
             try {
                 report = JSON.parse(fs.readFileSync(jsonReportPath, 'utf8'));
             } catch (error) {
-                failures.push(`Invalid JSON report for ${url}: ${error.message}`);
+                failures.push(
+                    `Invalid JSON report for ${url}: ${error.message}`
+                );
                 continue;
             }
 
             const categories = report.categories || {};
             const perf = categories.performance && categories.performance.score;
-            const a11y = categories.accessibility && categories.accessibility.score;
-            const best = categories['best-practices'] && categories['best-practices'].score;
+            const a11y =
+                categories.accessibility && categories.accessibility.score;
+            const best =
+                categories['best-practices'] &&
+                categories['best-practices'].score;
             const seo = categories.seo && categories.seo.score;
             console.log(
                 `[lighthouse-premium] scores ${url} :: performance=${formatScore(perf)} accessibility=${formatScore(
@@ -319,7 +501,8 @@ async function runManualFlow(repoRoot, env) {
             );
 
             for (const [category, rule] of Object.entries(thresholds)) {
-                const categoryScore = categories[category] && categories[category].score;
+                const categoryScore =
+                    categories[category] && categories[category].score;
                 if (typeof categoryScore !== 'number') {
                     failures.push(`Missing score for ${category} on ${url}`);
                     continue;
@@ -390,18 +573,22 @@ if (manualFlow) {
     runManualFlow(repoRoot, env)
         .then((exitCode) => process.exit(exitCode))
         .catch((error) => {
-            console.error('[lighthouse-premium] Unexpected manual flow error:', error.message);
+            console.error(
+                '[lighthouse-premium] Unexpected manual flow error:',
+                error.message
+            );
             process.exit(1);
         });
     return;
 }
 
 const npxCmd = 'npx';
+const runtime = resolveLighthouseRuntimeConfig(repoRoot, env);
 const commandArgs = [
     '--yes',
     '@lhci/cli',
     'autorun',
-    '--config=./lighthouserc.premium.json',
+    `--config=${runtime.runtimeConfigPath}`,
 ];
 
 console.log(

@@ -7,6 +7,14 @@ El material historico y los one-offs desplazados desde la raiz viven en
 Los scripts operativos activos viven en `scripts/ops/**`; los `.ps1` de raiz
 se conservan como wrappers compatibles.
 
+Host local canonico para validaciones con backend: `http://127.0.0.1:8011`.
+Overrides:
+
+- `TEST_LOCAL_SERVER_PORT` para mover el puerto local de Playwright.
+- `TEST_BASE_URL` para apuntar tests, audits o pentests a otro host.
+- `LIGHTHOUSE_LOCAL_SERVER_PORT` para fijar el puerto del servidor local de Lighthouse.
+- `LIGHTHOUSE_BASE_URL` para auditar un host ya levantado sin arrancar un servidor local extra.
+
 ## Fuentes de verdad
 
 - Publico V6: `docs/public-v6-canonical-source.md`
@@ -30,10 +38,23 @@ Comandos:
 
 - `npm run build:public:v6`
 - `npm run check:public:v6:artifacts`
+- `npm run benchmark:local`
+- `npm run test:frontend:performance:gate`
 - `npm run test:frontend:qa:v6`
 - `npm run audit:public:v6:copy`
 - `npm run audit:public:v6:visual-contract`
+- `npm run audit:public:v6:sony-evidence`
+- `npm run baseline:public:screenshots`
+- `npm run baseline:public:compare`
 - `npm run gate:public:v6:canonical-publish`
+
+Notas:
+
+- Los audits y baselines V6 aceptan `TEST_BASE_URL` o `--base-url`.
+- `npm run test:frontend:lighthouse:premium` usa `LIGHTHOUSE_BASE_URL` o el host local canonico; `LIGHTHOUSE_LOCAL_SERVER_PORT` manda sobre `TEST_LOCAL_SERVER_PORT` si necesitas separarlo.
+- `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011`.
+- `npm run test:frontend:performance:gate` usa `TEST_BASE_URL` o el host local canonico si no se pasa uno.
+- Si no se pasa un host, los scripts canonicos levantan el helper local V6 automaticamente.
 
 ### 2. Cambiar el admin
 
@@ -56,6 +77,7 @@ Notas:
 - `js/admin-runtime.js` existe solo como alias de compatibilidad.
 - `legacy` y `sony_v2` no forman parte del runtime operativo.
 - Implementacion operativa canonica: `scripts/ops/admin/**`
+- Playwright local usa `127.0.0.1:8011` por defecto; para reutilizar otro servidor usar `TEST_BASE_URL=...` y `TEST_REUSE_EXISTING_SERVER=1` solo si es intencional.
 
 ### 3. Validar dominios criticos
 
@@ -126,6 +148,7 @@ Para mutaciones del board, seguir `AGENTS.md` y usar `--expect-rev`.
 ### Daily local
 
 - `npm run build:public:v6`
+- `npm run benchmark:local`
 - `npm run test:frontend:qa:v6`
 - `npm run gate:admin:rollout`
 - `npm run leadops:worker`
@@ -145,4 +168,8 @@ Para mutaciones del board, seguir `AGENTS.md` y usar `--expect-rev`.
 - `npm run chunks:admin:check`
 - `npm run chunks:admin:prune`
 
+`chunks:admin:check` valida residuos y tambien corta si `admin.js` o los
+chunks activos contienen marcadores de merge.
+
 Si `admin.html` y `admin.js` quedan desalineados, revisar `docs/ADMIN-UI-ROLLOUT.md`.
+Si Playwright apunta al host equivocado, revisar `TEST_BASE_URL`, `TEST_LOCAL_SERVER_PORT` y `TEST_REUSE_EXISTING_SERVER`.

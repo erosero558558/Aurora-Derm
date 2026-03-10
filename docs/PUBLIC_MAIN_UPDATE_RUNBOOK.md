@@ -78,3 +78,8 @@ Use this only to unblock transport. It does not change the canonical public sour
 The repo still contains `deploy-public-v3-live.sh` and `deploy-public-v3-cron-sync.sh` because the server wrapper naming is historical.
 
 Those scripts deploy the current V6 artifact set. Their names are legacy only.
+
+If the emergency VPS publish path needs a different Nginx-served local verify
+host, use `LOCAL_VERIFY_BASE_URL=...` with `deploy-public-v3-live.sh`.
+`TEST_BASE_URL` remains for local QA/audits and should not be mixed with the
+VPS live verify target.

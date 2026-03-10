@@ -13,7 +13,7 @@ info:
 servers:
     - url: https://pielarmonia.com
       description: Production Server
-    - url: http://localhost:8080
+    - url: http://127.0.0.1:8011
       description: Local Development Server
 
 components:

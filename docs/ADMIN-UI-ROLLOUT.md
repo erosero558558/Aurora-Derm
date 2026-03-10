@@ -39,6 +39,12 @@ npm run test:frontend:qa:admin
 npm run gate:admin:rollout
 ```
 
+Para local QA:
+
+- Playwright usa `127.0.0.1:8011` como servidor fresco por defecto.
+- Si ya existe un servidor levantado, usar `TEST_BASE_URL=http://127.0.0.1:8011`.
+- `TEST_REUSE_EXISTING_SERVER` queda como opt-in explicito.
+
 ## Gate operativo
 
 `GATE-ADMIN-ROLLOUT.ps1` valida (implementacion canonica:
@@ -49,6 +55,7 @@ npm run gate:admin:rollout
 - el shell no referencia `styles.min.css`, `admin.min.css`, `admin.css` ni `admin-v2.css`
 - la CSP sigue endurecida
 - las suites `admin-ui-runtime-smoke` y `admin-v3-runtime` pasan
+- las suites Playwright se ejecutan contra el `-Domain` solicitado via `TEST_BASE_URL`
 
 ## Rollback
 
@@ -78,6 +85,8 @@ npm run chunks:admin:prune
 El prune debe dejar `js/admin-chunks/**` solo con archivos alcanzables desde
 `admin.js`. Si reaparecen chunks huerfanos, se trata como drift del runtime
 canonico.
+`npm run chunks:admin:check` tambien falla si `admin.js` o cualquier chunk
+activo contiene marcadores de merge.
 
 O usar el build canonico del repo:
 

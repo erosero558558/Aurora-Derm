@@ -5,13 +5,15 @@ declare(strict_types=1);
 // Security Scan Script
 // Starts a local server and runs checks against it.
 
-$port = 8007; // Use 8007 to avoid conflict
-$host = "127.0.0.1:$port";
-$baseUrl = "http://$host";
+require_once __DIR__ . '/test_server.php';
 
-echo "[SCAN] Starting PHP server on port $port...\n";
-$pid = exec("php -S $host > /dev/null 2>&1 & echo $!");
-sleep(2); // Wait for server to start
+$server = start_test_php_server([
+    'docroot' => __DIR__ . '/..',
+    'startup_timeout_ms' => 12000,
+]);
+$baseUrl = $server['base_url'];
+
+echo "[SCAN] Starting PHP server on {$server['base_url']}...\n";
 
 function request($method, $path, $data = null, $headers = [])
 {
@@ -118,9 +120,7 @@ try {
     echo "[ERROR] " . $e->getMessage() . "\n";
     $failures++;
 } finally {
-    if (isset($pid) && $pid) {
-        exec("kill $pid");
-    }
+    stop_test_php_server($server);
 }
 
 if ($failures > 0) {

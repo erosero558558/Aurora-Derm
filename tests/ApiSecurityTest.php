@@ -4,38 +4,20 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/test_framework.php';
 
-// Config
-$port = 8090; // Different port to avoid conflict
-$host = "localhost:$port";
-$baseUrl = "http://$host/api.php";
 $dataDir = sys_get_temp_dir() . '/pielarmonia-test-security-' . uniqid();
+$server = [];
 
 // Setup
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0777, true);
-}
-putenv("PIELARMONIA_DATA_DIR=$dataDir");
+ensure_clean_directory($dataDir);
+$server = start_test_php_server([
+    'docroot' => __DIR__ . '/..',
+    'env' => [
+        'PIELARMONIA_DATA_DIR' => $dataDir,
+    ],
+]);
+$baseUrl = $server['base_url'] . '/api.php';
 
-echo "Starting server on port $port for security tests...\n";
-$cmd = "PIELARMONIA_DATA_DIR=$dataDir php -S $host -t " . __DIR__ . "/../ > /dev/null 2>&1 & echo $!";
-$pid = exec($cmd);
-
-// Wait for server
-$attempts = 0;
-while ($attempts < 10) {
-    $conn = @fsockopen('localhost', $port);
-    if ($conn) {
-        fclose($conn);
-        break;
-    }
-    usleep(200000); // 200ms
-    $attempts++;
-}
-
-if ($attempts === 10) {
-    echo "Failed to start server.\n";
-    exit(1);
-}
+echo "Starting server on {$server['base_url']} for security tests...\n";
 
 // Helper for requests (with header inspection)
 function api_request_headers($method, $resource, $data = null)
@@ -139,11 +121,9 @@ try {
     $test_failed++;
 } finally {
     // Cleanup
-    echo "Stopping server (PID $pid)...\n";
-    exec("kill $pid");
-    if (is_dir($dataDir)) {
-        delete_path_recursive($dataDir);
-    }
+    echo "Stopping server...\n";
+    stop_test_php_server($server);
+    delete_path_recursive($dataDir);
 }
 
 print_test_summary();

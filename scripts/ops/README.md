@@ -11,3 +11,10 @@ Subcarpetas:
 
 Los archivos de raiz se mantienen como wrappers compatibles para no romper
 `package.json`, workflows ni runbooks existentes.
+
+Contrato local:
+
+- `TEST_BASE_URL` gobierna las suites que reutilizan un servidor de
+  desarrollo/pruebas local.
+- `LOCAL_VERIFY_BASE_URL` queda reservado para verificaciones del host servido
+  por Nginx en scripts de deploy live.

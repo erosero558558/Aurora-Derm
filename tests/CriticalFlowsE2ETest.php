@@ -4,43 +4,45 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/test_framework.php';
 
-// Config
-$port = 8090; // Different port to avoid conflict
-$host = "localhost:$port";
-$baseUrl = "http://$host/api.php";
-$adminUrl = "http://$host/admin-auth.php";
 $dataDir = sys_get_temp_dir() . '/pielarmonia-test-critical-' . uniqid();
 $cookieFile = sys_get_temp_dir() . '/cookie-' . uniqid() . '.txt';
+$server = [];
+$conflictDate = date('Y-m-d', strtotime('+3 days'));
+$rescheduleDate = date('Y-m-d', strtotime('+4 days'));
+$cancelDate = date('Y-m-d', strtotime('+5 days'));
 
-// Setup
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0777, true);
-}
-// We need to pass env vars to the server process
-$envVars = "PIELARMONIA_DATA_DIR=$dataDir PIELARMONIA_ADMIN_PASSWORD=secret";
+ensure_clean_directory($dataDir);
+file_put_contents(
+    $dataDir . '/store.json',
+    json_encode(
+        [
+            'appointments' => [],
+            'availability' => [
+                $conflictDate => ['10:00'],
+                $rescheduleDate => ['10:00', '11:00'],
+                $cancelDate => ['10:00'],
+            ],
+            'reviews' => [],
+            'callbacks' => [],
+            'updatedAt' => date('c'),
+            'createdAt' => date('c'),
+        ],
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+    )
+);
+$server = start_test_php_server([
+    'docroot' => __DIR__ . '/..',
+    'env' => [
+        'PIELARMONIA_DATA_DIR' => $dataDir,
+        'PIELARMONIA_ADMIN_PASSWORD' => 'secret',
+        'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+    ],
+    'startup_timeout_ms' => 12000,
+]);
+$baseUrl = $server['base_url'] . '/api.php';
+$adminUrl = $server['base_url'] . '/admin-auth.php';
 
-echo "Starting server on port $port with data dir $dataDir...\n";
-// Start server relative to project root
-$rootDir = realpath(__DIR__ . '/../');
-$cmd = "$envVars php -S $host -t " . escapeshellarg($rootDir) . " > /dev/null 2>&1 & echo $!";
-$pid = exec($cmd);
-
-// Wait for server
-$attempts = 0;
-while ($attempts < 20) {
-    $conn = @fsockopen('localhost', $port);
-    if ($conn) {
-        fclose($conn);
-        break;
-    }
-    usleep(200000); // 200ms
-    $attempts++;
-}
-
-if ($attempts === 20) {
-    echo "Failed to start server.\n";
-    exit(1);
-}
+echo "Starting server on {$server['base_url']} with data dir $dataDir...\n";
 
 // Helper for requests with cookies
 function http_request($method, $url, $data = null, $cookies = null, $headers = [])
@@ -71,8 +73,8 @@ function http_request($method, $url, $data = null, $cookies = null, $headers = [
 
 try {
     // 1. Conflict Handling (Waitlist)
-    run_test('E2E: Conflict Handling', function () use ($baseUrl) {
-        $date = date('Y-m-d', strtotime('+3 days')); // Ensure future date
+    run_test('E2E: Conflict Handling', function () use ($baseUrl, $conflictDate) {
+        $date = $conflictDate;
         $time = '10:00';
 
         // Create first appointment
@@ -90,7 +92,7 @@ try {
         $res1 = http_request('POST', "$baseUrl?resource=appointments", $payload1);
 
         if ($res1['code'] !== 201) {
-             echo "Create 1 Failed: " . json_encode($res1['body']) . "\n";
+            echo "Create 1 Failed: " . json_encode($res1['body']) . "\n";
         }
         assert_equals(201, $res1['code'], 'First booking failed');
 
@@ -111,8 +113,8 @@ try {
     });
 
     // 2. Reschedule Flow
-    run_test('E2E: Reschedule Flow', function () use ($baseUrl) {
-        $date = date('Y-m-d', strtotime('+4 days'));
+    run_test('E2E: Reschedule Flow', function () use ($baseUrl, $rescheduleDate) {
+        $date = $rescheduleDate;
         $time1 = '10:00';
         $time2 = '11:00';
 
@@ -160,8 +162,8 @@ try {
     });
 
     // 3. Admin Cancellation
-    run_test('E2E: Admin Cancellation', function () use ($baseUrl, $adminUrl, $cookieFile) {
-        $date = date('Y-m-d', strtotime('+5 days'));
+    run_test('E2E: Admin Cancellation', function () use ($baseUrl, $adminUrl, $cookieFile, $cancelDate) {
+        $date = $cancelDate;
         $time = '10:00';
 
         // Create appointment
@@ -189,7 +191,7 @@ try {
         $resLogin = http_request('POST', "$adminUrl?action=login", $loginPayload, $cookieFile);
 
         if ($resLogin['code'] !== 200) {
-             echo "Login Failed: " . json_encode($resLogin['body']) . "\n";
+            echo "Login Failed: " . json_encode($resLogin['body']) . "\n";
         }
         assert_equals(200, $resLogin['code'], 'Admin login failed');
         assert_true($resLogin['body']['ok'], 'Admin login not ok');
@@ -203,7 +205,7 @@ try {
         $resCancel = http_request('PATCH', "$baseUrl?resource=appointments", $cancelPayload, $cookieFile, ['X-CSRF-Token: ' . $csrfToken]);
 
         if ($resCancel['code'] !== 200) {
-             echo "Cancel Failed: " . json_encode($resCancel['body']) . "\n";
+            echo "Cancel Failed: " . json_encode($resCancel['body']) . "\n";
         }
         assert_equals(200, $resCancel['code'], 'Admin cancel failed');
 
@@ -218,15 +220,14 @@ try {
     $test_failed++;
 } finally {
     // Cleanup
-    echo "Stopping server (PID $pid)...\n";
-    exec("kill $pid");
+    echo "Stopping server...\n";
+    stop_test_php_server($server);
 
-    if (file_exists($cookieFile)) unlink($cookieFile);
-
-    // Recursive delete data dir
-    if (is_dir($dataDir)) {
-        delete_path_recursive($dataDir);
+    if (file_exists($cookieFile)) {
+        unlink($cookieFile);
     }
+
+    delete_path_recursive($dataDir);
 }
 
 print_test_summary();

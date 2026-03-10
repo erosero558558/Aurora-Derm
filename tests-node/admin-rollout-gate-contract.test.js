@@ -41,7 +41,9 @@ const CLEAN_ADMIN_CHUNKS_PATH = resolve(
     'clean-admin-chunks.js'
 );
 const PACKAGE_JSON_PATH = resolve(__dirname, '..', 'package.json');
+const PLAYWRIGHT_CONFIG_PATH = resolve(__dirname, '..', 'playwright.config.js');
 const SW_PATH = resolve(__dirname, '..', 'sw.js');
+const MERGE_CONFLICT_MARKER_PATTERN = /^(<{7,}.*|={7,}|>{7,}.*)$/m;
 
 function loadScript() {
     return readFileSync(SCRIPT_PATH, 'utf8');
@@ -66,6 +68,13 @@ function extractAssetVersion(content, assetPath) {
     );
     const match = content.match(pattern);
     return match ? match[1] : '';
+}
+
+function parseAdminChunkImports(content) {
+    return Array.from(
+        content.matchAll(/\.\/js\/admin-chunks\/([^"'`?#]+\.js)/g),
+        (match) => String(match[1] || '').trim()
+    ).filter(Boolean);
 }
 
 test('admin rollout root wrapper delega a la implementacion canonica de admin ops', () => {
@@ -234,6 +243,68 @@ test('package.json expone check canonico para chunks admin', () => {
     );
 });
 
+test('playwright local usa puerto dedicado y reuse opt-in para evitar drift de servidores viejos', () => {
+    const raw = loadFile(PLAYWRIGHT_CONFIG_PATH);
+
+    assert.equal(
+        raw.includes('TEST_LOCAL_SERVER_PORT'),
+        true,
+        'playwright config debe permitir override de puerto local'
+    );
+    assert.equal(
+        raw.includes('parsePortEnv(process.env.TEST_LOCAL_SERVER_PORT, 8011)'),
+        true,
+        'playwright config debe usar 8011 como puerto local canonico por defecto'
+    );
+    assert.equal(
+        raw.includes('TEST_REUSE_EXISTING_SERVER'),
+        true,
+        'playwright config debe requerir opt-in explicito para reusar servidor existente'
+    );
+    assert.equal(
+        raw.includes('reuseExistingServer,'),
+        true,
+        'webServer debe depender de reuseExistingServer configurable'
+    );
+    assert.doesNotMatch(
+        raw,
+        /127\.0\.0\.1:8000|http\.server 8000|port:\s*8000/,
+        'playwright config no debe seguir anclado al puerto 8000'
+    );
+});
+
+test('admin rollout gate fuerza Playwright al Domain configurado', () => {
+    const raw = loadScript();
+
+    assert.equal(
+        raw.includes("base_url = ''"),
+        true,
+        'runtime_smoke debe registrar el base_url utilizado'
+    );
+    assert.equal(
+        raw.includes('$report.runtime_smoke.base_url = $base'),
+        true,
+        'gate debe persistir el Domain usado por runtime_smoke'
+    );
+    assert.equal(
+        raw.includes('$env:TEST_BASE_URL = $BaseUrl'),
+        true,
+        'gate debe inyectar TEST_BASE_URL para que Playwright use el Domain solicitado'
+    );
+    assert.equal(
+        raw.includes("$env:TEST_REUSE_EXISTING_SERVER = '0'"),
+        true,
+        'gate debe desactivar reuseExistingServer durante el smoke'
+    );
+    assert.equal(
+        raw.includes(
+            'Invoke-PlaywrightSmokeSuite -Name $suite.Name -Specs $suite.Specs -BaseUrl $base'
+        ),
+        true,
+        'gate debe pasar el Domain del gate a cada suite Playwright'
+    );
+});
+
 test('admin rollout gate registra suites runtime v3-only', () => {
     const raw = loadScript();
 
@@ -241,6 +312,11 @@ test('admin rollout gate registra suites runtime v3-only', () => {
         raw.includes('runtime_smoke = [ordered]@{'),
         true,
         'falta bloque runtime_smoke en el reporte'
+    );
+    assert.equal(
+        raw.includes("base_url = ''"),
+        true,
+        'falta base_url del smoke runtime en el reporte'
     );
     assert.equal(
         raw.includes('suites = @()'),
@@ -328,4 +404,29 @@ test('admin.js apunta al unico chunk index canonico del runtime', () => {
         new RegExp(`js/admin-chunks/${escapeRegExp(indexChunks[0])}`),
         'admin.js debe importar el unico chunk index activo'
     );
+});
+
+test('bundle admin canonico no contiene marcadores de merge en assets activos', () => {
+    const adminBundle = loadFile(ADMIN_BUNDLE_PATH);
+    const referencedChunks = parseAdminChunkImports(adminBundle);
+
+    assert.doesNotMatch(
+        adminBundle,
+        MERGE_CONFLICT_MARKER_PATTERN,
+        'admin.js no debe contener marcadores de merge'
+    );
+    assert.notEqual(
+        referencedChunks.length,
+        0,
+        'admin.js debe importar al menos un chunk activo'
+    );
+
+    for (const chunk of referencedChunks) {
+        const chunkContent = loadFile(resolve(ADMIN_CHUNKS_DIR, chunk));
+        assert.doesNotMatch(
+            chunkContent,
+            MERGE_CONFLICT_MARKER_PATTERN,
+            `chunk activo no debe contener marcadores de merge: ${chunk}`
+        );
+    }
 });

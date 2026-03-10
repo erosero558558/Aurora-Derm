@@ -86,6 +86,12 @@ A public V6 release is green only if these pass:
 - `npm run smoke:public:conversion`
 - `node bin/assert-public-v6-single-source.js`
 
+For local audits and evidence:
+
+- `audit-public-v6-visual-contract.js` accepts `--base-url` and otherwise starts the canonical local helper automatically.
+- `audit-public-v6-sony-evidence.js` propagates the same runtime base URL to the visual contract and records it in the output artifacts.
+- `capture-public-baseline.js` accepts `--base-url` and otherwise starts the same canonical local helper automatically.
+
 ## Explicit non-source files
 
 These are no longer public authoring inputs:

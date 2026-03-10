@@ -9,9 +9,15 @@ const { chromium } = require('playwright');
 const ROOT = path.resolve(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'verification', 'public-v6-audit');
 const SHOT_DIR = path.join(ROOT, 'verification', 'public-v6-screenshots');
-const BASE_URL = process.env.TEST_BASE_URL || 'http://127.0.0.1:8000';
 const SONY_HOME = 'https://www.sony.com/en/';
 const STRICT = process.argv.includes('--strict');
+
+function parseArg(flag, fallback = '') {
+    const index = process.argv.indexOf(flag);
+    if (index === -1) return fallback;
+    const value = process.argv[index + 1];
+    return typeof value === 'undefined' ? fallback : value;
+}
 
 function rgbLuma(color) {
     const m = String(color || '').match(
@@ -41,16 +47,22 @@ function fmt(value) {
 }
 
 function runLocalContractAudit() {
-    const run = spawnSync(
-        process.execPath,
-        [
-            path.join(ROOT, 'bin', 'audit-public-v6-visual-contract.js'),
-            '--min-checkpoints',
-            '104',
-            '--strict',
-        ],
-        { cwd: ROOT, stdio: 'inherit' }
-    );
+    const explicitBaseUrl = String(
+        parseArg('--base-url', process.env.TEST_BASE_URL || '')
+    ).trim();
+    const args = [
+        path.join(ROOT, 'bin', 'audit-public-v6-visual-contract.js'),
+        '--min-checkpoints',
+        '104',
+        '--strict',
+    ];
+    if (explicitBaseUrl) {
+        args.push('--base-url', explicitBaseUrl);
+    }
+    const run = spawnSync(process.execPath, args, {
+        cwd: ROOT,
+        stdio: 'inherit',
+    });
     if (run.status !== 0) {
         throw new Error('fallo audit-public-v6-visual-contract');
     }
@@ -255,6 +267,12 @@ function buildReport(contract, sonyDesktop, sonyMobile) {
     const payload = {
         generatedAt: new Date().toISOString(),
         ok: contract.ok && parityPassed === parity.length,
+        runtime: {
+            contract_base_url:
+                String(contract?.runtime?.base_url || '').trim() || 'unknown',
+            contract_source:
+                String(contract?.runtime?.source || '').trim() || 'unknown',
+        },
         summary: {
             v6_contract_passed: contract.passed,
             v6_contract_total: contract.total,
@@ -279,6 +297,8 @@ function writeArtifacts(payload) {
         `- Combined checkpoints: **${payload.summary.combined_passed}/${payload.summary.combined_total}**`,
         `- V6 contract: **${payload.summary.v6_contract_passed}/${payload.summary.v6_contract_total}**`,
         `- Sony live parity: **${payload.summary.live_parity_passed}/${payload.summary.live_parity_total}**`,
+        `- Runtime base URL: **${payload.runtime.contract_base_url}**`,
+        `- Runtime source: **${payload.runtime.contract_source}**`,
         `- Status: **${payload.ok ? 'PASS' : 'FAIL'}**`,
         '',
         '| ID | Result | Check | Sony | V6 |',
@@ -305,6 +325,7 @@ async function main() {
         [
             `Public V6 Sony live evidence: ${payload.ok ? 'PASS' : 'FAIL'}`,
             `Combined: ${payload.summary.combined_passed}/${payload.summary.combined_total}`,
+            `Runtime: ${payload.runtime.contract_base_url} (${payload.runtime.contract_source})`,
             `Artifacts:`,
             `- ${path.relative(ROOT, artifacts.jsonPath).replace(/\\/g, '/')}`,
             `- ${path.relative(ROOT, artifacts.mdPath).replace(/\\/g, '/')}`,

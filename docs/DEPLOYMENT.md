@@ -56,6 +56,13 @@ Si `git-sync` no replica `origin/main` o GitHub runners no alcanzan el hosting, 
 - Script reusable canónico: `bin/deploy-public-v3-live.sh`
 - Compatibilidad temporal: `bin/deploy-public-v2-live.sh` delega a V3
 
+Contrato operativo local:
+
+- El servidor de desarrollo/pruebas locales usa `http://127.0.0.1:8011` y
+  suites reutilizables deben entrar por `TEST_BASE_URL`.
+- `bin/deploy-public-v3-live.sh` verifica el host servido por Nginx del VPS y
+  permite override con `LOCAL_VERIFY_BASE_URL` (default `http://127.0.0.1:8080`).
+
 Runbook validado para el servidor actual:
 
 - el host ya tenia `/root/sync-pielarmonia.sh`

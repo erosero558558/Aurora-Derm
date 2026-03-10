@@ -22,6 +22,7 @@
         "test:public:v4:rollout:gate:contract": "node --test tests-node/public-v4-rollout-gate.test.js",
         "test:analytics:rollout:contract": "node --test tests-node/analytics-rollout-contract.test.js",
         "test:frontend:lighthouse:premium": "node bin/run-lighthouse-premium.js",
+        "benchmark:local": "bash ./bin/run-benchmark-local.sh",
         "test:frontend:performance:gate": "node bin/run-public-performance-gate.js",
         "score:public:v5:sony": "node bin/score-public-v5-sony.js --min-score 82 --min-checkpoints 29",
         "score:public:v5:sony:strict": "node bin/score-public-v5-sony.js --min-score 90 --min-checkpoints 44",

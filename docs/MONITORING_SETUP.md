@@ -88,12 +88,16 @@ This guide explains how to spin up a local or self-hosted Grafana + Prometheus s
 ### Prerequisites
 
 - Docker and Docker Compose installed.
-- The PHP application running on port `8080` (or update `prometheus.docker.yml`).
+- The monitoring stack below assumes a Docker-mapped app on `localhost:8080`.
+  The canonical bare PHP server for local QA remains `127.0.0.1:8011`, so if
+  you monitor that host directly you must update `prometheus.docker.yml`.
 
 ### Configuration Files
 
 - `docker-compose.monitoring.yml`: Orchestrates Prometheus and Grafana containers.
-- `prometheus.docker.yml`: Prometheus configuration file. Defaults to scraping `host.docker.internal:8080`.
+- `prometheus.docker.yml`: Prometheus configuration file. Defaults to scraping
+  `host.docker.internal:8080` because the Docker app stack publishes the app on
+  that port.
 - `grafana/dashboard.json`: The Grafana dashboard definition.
 - `grafana/provisioning/`: Configuration to automatically load datasources and dashboards.
 
@@ -102,10 +106,12 @@ This guide explains how to spin up a local or self-hosted Grafana + Prometheus s
 1. Start your PHP application (e.g., using built-in server):
 
     ```bash
-    php -S 0.0.0.0:8080
+    php -S 0.0.0.0:8080 -t .
     ```
 
-    _Note: Ensure it binds to `0.0.0.0` or uses `host.docker.internal` correctly._
+    _Note: `8080` in this section is for the Docker-monitoring path. If you
+    reuse the canonical bare server on `127.0.0.1:8011`, point Prometheus to
+    that host before starting the stack._
 
 2. Start the monitoring stack:
 

@@ -6,20 +6,34 @@ declare(strict_types=1);
 // Similar to BookingFlowTest.php but specifically checks backup creation.
 
 require_once __DIR__ . '/test_filesystem.php';
+require_once __DIR__ . '/test_server.php';
 
-// Pick a random port to avoid collisions
-$port = rand(8100, 8999);
-$host = "localhost:$port";
-$baseUrl = "http://$host/api.php";
 $tempDir = sys_get_temp_dir() . '/pielarmonia-test-backup-' . uniqid();
+$server = [];
 
 // Setup temp data dir
-if (!is_dir($tempDir)) {
-    mkdir($tempDir, 0777, true);
-}
+ensure_clean_directory($tempDir);
 $backupDir = $tempDir . '/backups';
 
-// Initialize empty store to prevent migration from other directories
+function count_store_backups(string $backupDir): int
+{
+    $patterns = [
+        $backupDir . '/store-*.sqlite',
+        $backupDir . '/store-*.json',
+    ];
+
+    $files = [];
+    foreach ($patterns as $pattern) {
+        $matches = glob($pattern);
+        if (is_array($matches)) {
+            $files = array_merge($files, $matches);
+        }
+    }
+
+    return count($files);
+}
+
+// Initialize a JSON store so the test stays backend-agnostic.
 $tomorrow = date('Y-m-d', strtotime('+1 day'));
 $initialStore = [
     'appointments' => [],
@@ -33,39 +47,22 @@ $initialStore = [
 ];
 file_put_contents($tempDir . '/store.json', json_encode($initialStore));
 
-echo "Starting Backup Verification Server on port $port with data dir $tempDir...\n";
+$server = start_test_php_server([
+    'docroot' => __DIR__ . '/..',
+    'env' => [
+        'PIELARMONIA_DATA_DIR' => $tempDir,
+    ],
+    'startup_timeout_ms' => 12000,
+]);
+$baseUrl = $server['base_url'] . '/api.php';
 
-// Start server
-$cmd = "PIELARMONIA_DATA_DIR=" . escapeshellarg($tempDir) . " php -S $host -t " . escapeshellarg(__DIR__ . "/../") . " > /dev/null 2>&1 & echo $!";
-$pid = trim(shell_exec($cmd));
-
-// Wait for server
-$attempts = 0;
-while ($attempts < 20) {
-    $conn = @fsockopen('localhost', $port);
-    if ($conn) {
-        fclose($conn);
-        break;
-    }
-    usleep(100000); // 100ms
-    $attempts++;
-}
-
-if ($attempts === 20) {
-    echo "FAILED: Server failed to start on port $port.\n";
-    if ($pid) {
-        exec("kill $pid");
-    }
-    delete_path_recursive($tempDir);
-    exit(1);
-}
+echo "Starting Backup Verification Server on {$server['base_url']} with data dir $tempDir...\n";
 
 // Initial state: 0 backups?
 // Actually, when the server starts and reads/initializes the store, it creates `store.json` (already created).
 // It might trigger a backup on first write.
 // Let's count backups before our explicit write.
-$filesBefore = glob($backupDir . '/store-*.sqlite');
-$countBefore = is_array($filesBefore) ? count($filesBefore) : 0;
+$countBefore = count_store_backups($backupDir);
 echo "Backups before write: $countBefore\n";
 
 // Prepare payload
@@ -99,7 +96,7 @@ echo "Response Code: $httpCode\n";
 if ($httpCode !== 201) {
     echo "FAILED: Booking creation failed. Response: $response\n";
     // Cleanup
-    exec("kill $pid");
+    stop_test_php_server($server);
     delete_path_recursive($tempDir);
     exit(1);
 }
@@ -108,13 +105,12 @@ if ($httpCode !== 201) {
 sleep(1);
 
 // Check backups again
-$filesAfter = glob($backupDir . '/store-*.sqlite');
-$countAfter = is_array($filesAfter) ? count($filesAfter) : 0;
+$countAfter = count_store_backups($backupDir);
 echo "Backups after write: $countAfter\n";
 
 // Cleanup
-echo "Stopping server (PID $pid)...\n";
-exec("kill $pid");
+echo "Stopping server...\n";
+stop_test_php_server($server);
 delete_path_recursive($tempDir);
 
 if ($countAfter > $countBefore) {

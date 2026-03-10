@@ -38,6 +38,13 @@ cd /var/www/figo
 TARGET_COMMIT=<commit-sha> bash ./bin/deploy-public-v3-live.sh
 ```
 
+If the Nginx-served local verify host is not the default:
+
+```bash
+cd /var/www/figo
+LOCAL_VERIFY_BASE_URL=http://127.0.0.1:8081 bash ./bin/deploy-public-v3-live.sh
+```
+
 ## Verify artifacts
 
 ```bash
@@ -71,4 +78,6 @@ Expected:
 
 - The wrapper name is legacy.
 - The public artifact set is V6.
+- `LOCAL_VERIFY_BASE_URL` only controls the local Nginx-served host checked on the VPS.
+- `TEST_BASE_URL` stays reserved for local test/audit suites outside this deploy wrapper.
 - Legacy public HTML files such as root `index.html`, `telemedicina.html`, `servicios/**/*.html` and `ninos/**/*.html` are redirect-only and should not exist as authoring source anymore.

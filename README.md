@@ -24,16 +24,30 @@ gobernanza operativa de Piel en Armonia.
 
 1. `npm install`
 2. `npx playwright install`
-3. `php -S 127.0.0.1:8000 -t .`
+3. `php -S 127.0.0.1:8011 -t .`
 4. Abrir:
-    - Publico: `http://127.0.0.1:8000`
-    - Admin: `http://127.0.0.1:8000/admin.html`
-    - Health: `http://127.0.0.1:8000/api.php?resource=health`
+    - Publico: `http://127.0.0.1:8011`
+    - Admin: `http://127.0.0.1:8011/admin.html`
+    - Health: `http://127.0.0.1:8011/api.php?resource=health`
+
+Notas de testing local:
+
+- `npx playwright test` levanta un servidor fresco en `127.0.0.1:8011` por defecto.
+- Para apuntar las suites a un servidor ya levantado usa `TEST_BASE_URL=http://127.0.0.1:8011`.
+- La reutilizacion de servidor queda en opt-in con `TEST_REUSE_EXISTING_SERVER=1`.
+- `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` si no le pasas host.
 
 Variable minima recomendada:
 
 ```powershell
 $env:PIELARMONIA_ADMIN_PASSWORD = "admin123"
+```
+
+Overrides utiles para tooling local:
+
+```powershell
+$env:TEST_LOCAL_SERVER_PORT = "8011"
+$env:TEST_BASE_URL = "http://127.0.0.1:8011"
 ```
 
 ## Flujos rapidos
@@ -42,6 +56,8 @@ $env:PIELARMONIA_ADMIN_PASSWORD = "admin123"
 
 - `npm run build:public:v6`
 - `npm run check:public:v6:artifacts`
+- `npm run benchmark:local`
+- `npm run test:frontend:performance:gate`
 - `npm run test:frontend:qa:v6`
 - `npm run gate:public:v6:canonical-publish`
 
@@ -51,6 +67,8 @@ $env:PIELARMONIA_ADMIN_PASSWORD = "admin123"
 - `npm run chunks:admin:check`
 - `npm run chunks:admin:prune`
 - Implementacion PowerShell canonica: `scripts/ops/admin/**` (wrappers compatibles en raiz)
+- `chunks:admin:check` tambien falla si `admin.js` o el chunk activo contienen marcadores de merge.
+- `GATE-ADMIN-ROLLOUT.ps1` propaga `-Domain` hacia Playwright con `TEST_BASE_URL` para evitar drift de servidores locales viejos.
 
 ### LeadOps IA interna
 
