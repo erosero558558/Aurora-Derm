@@ -38,7 +38,11 @@ class QueueService
     {
         $store = $this->normalizeStore($store);
         $store = $this->priorityPolicy->refreshWaitingAppointmentPriorities($store);
-        return $this->summaryBuilder->buildQueueState($store['queue_tickets'] ?? [], local_date('c'));
+        return $this->summaryBuilder->buildQueueState(
+            $store['queue_tickets'] ?? [],
+            $store['queue_help_requests'] ?? [],
+            local_date('c')
+        );
     }
 
     public function createWalkInTicket(array $store, array $payload, string $createdSource = 'kiosk'): array
@@ -151,6 +155,137 @@ class QueueService
             'store' => $store,
             'ticket' => $ticket,
             'replay' => false,
+        ];
+    }
+
+    public function createHelpRequest(array $store, array $payload): array
+    {
+        $store = $this->normalizeStore($store);
+        $reason = strtolower(trim((string) ($payload['reason'] ?? 'general')));
+        if ($reason === '') {
+            $reason = 'general';
+        }
+
+        $ticketId = isset($payload['ticketId']) ? (int) $payload['ticketId'] : (isset($payload['ticket_id']) ? (int) $payload['ticket_id'] : 0);
+        $ticket = $this->findTicketForHelpRequest($store, $payload, $ticketId);
+        $ticketId = is_array($ticket) ? (int) ($ticket['id'] ?? 0) : $ticketId;
+        $openRequest = $this->findOpenHelpRequest(
+            $store['queue_help_requests'] ?? [],
+            $ticketId,
+            $reason,
+            (string) ($payload['sessionId'] ?? ($payload['session_id'] ?? ''))
+        );
+        if (is_array($openRequest)) {
+            return [
+                'ok' => true,
+                'store' => $store,
+                'helpRequest' => $openRequest,
+                'replay' => true,
+            ];
+        }
+
+        $nowIso = local_date('c');
+        $request = normalize_queue_help_request([
+            'id' => $this->nextHelpRequestId($store['queue_help_requests'] ?? []),
+            'source' => $payload['source'] ?? 'kiosk',
+            'reason' => $reason,
+            'status' => 'pending',
+            'message' => $payload['message'] ?? '',
+            'intent' => $payload['intent'] ?? '',
+            'sessionId' => $payload['sessionId'] ?? ($payload['session_id'] ?? ''),
+            'ticketId' => $ticketId > 0 ? $ticketId : null,
+            'ticketCode' => $payload['ticketCode'] ?? ($ticket['ticketCode'] ?? ''),
+            'patientInitials' => $payload['patientInitials'] ?? ($ticket['patientInitials'] ?? ''),
+            'createdAt' => $nowIso,
+            'updatedAt' => $nowIso,
+            'context' => isset($payload['context']) && is_array($payload['context']) ? $payload['context'] : [],
+        ]);
+
+        $store['queue_help_requests'][] = $request;
+        $store['updatedAt'] = $nowIso;
+        $store = $this->syncTicketAssistanceFlags($store);
+
+        Metrics::increment('queue_help_requests_total', [
+            'reason' => $reason,
+            'source' => (string) ($request['source'] ?? 'kiosk'),
+            'status' => 'pending',
+        ]);
+
+        return [
+            'ok' => true,
+            'store' => $store,
+            'helpRequest' => $request,
+            'replay' => false,
+        ];
+    }
+
+    public function patchHelpRequest(array $store, array $payload): array
+    {
+        $store = $this->normalizeStore($store);
+        $requestId = isset($payload['id']) ? (int) $payload['id'] : 0;
+        $ticketId = isset($payload['ticketId']) ? (int) $payload['ticketId'] : (isset($payload['ticket_id']) ? (int) $payload['ticket_id'] : 0);
+        $status = strtolower(trim((string) ($payload['status'] ?? '')));
+        if (!in_array($status, ['pending', 'attending', 'resolved'], true)) {
+            return [
+                'ok' => false,
+                'error' => 'Estado de apoyo no soportado',
+                'status' => 400,
+                'errorCode' => 'queue_bad_request',
+            ];
+        }
+
+        $found = false;
+        $updatedRequest = null;
+        $nowIso = local_date('c');
+        foreach ($store['queue_help_requests'] as $idx => $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+            $matchesById = $requestId > 0 && (int) ($request['id'] ?? 0) === $requestId;
+            $matchesByTicket = $requestId <= 0 && $ticketId > 0 && (int) ($request['ticketId'] ?? 0) === $ticketId && in_array((string) ($request['status'] ?? ''), ['pending', 'attending'], true);
+            if (!$matchesById && !$matchesByTicket) {
+                continue;
+            }
+
+            $request['status'] = $status;
+            $request['updatedAt'] = $nowIso;
+            if ($status === 'attending') {
+                $request['attendedAt'] = $nowIso;
+            }
+            if ($status === 'resolved') {
+                $request['resolvedAt'] = $nowIso;
+            }
+
+            $store['queue_help_requests'][$idx] = normalize_queue_help_request($request);
+            $updatedRequest = $store['queue_help_requests'][$idx];
+            $found = true;
+            if ($requestId > 0) {
+                break;
+            }
+        }
+
+        if (!$found || !is_array($updatedRequest)) {
+            return [
+                'ok' => false,
+                'error' => 'Solicitud de apoyo no encontrada',
+                'status' => 404,
+                'errorCode' => 'queue_help_request_not_found',
+            ];
+        }
+
+        $store['updatedAt'] = $nowIso;
+        $store = $this->syncTicketAssistanceFlags($store);
+
+        Metrics::increment('queue_help_requests_total', [
+            'reason' => (string) ($updatedRequest['reason'] ?? 'general'),
+            'source' => (string) ($updatedRequest['source'] ?? 'kiosk'),
+            'status' => $status,
+        ]);
+
+        return [
+            'ok' => true,
+            'store' => $store,
+            'helpRequest' => $updatedRequest,
         ];
     }
 
@@ -439,6 +574,8 @@ class QueueService
     {
         $store = normalize_store_payload($store);
         $store['queue_tickets'] = $this->normalizeTickets($store['queue_tickets'] ?? []);
+        $store['queue_help_requests'] = $this->normalizeHelpRequests($store['queue_help_requests'] ?? []);
+        $store = $this->syncTicketAssistanceFlags($store);
         return $store;
     }
 
@@ -452,6 +589,159 @@ class QueueService
             $tickets[] = normalize_queue_ticket($ticket);
         }
         return $tickets;
+    }
+
+    private function normalizeHelpRequests(array $rawRequests): array
+    {
+        $requests = [];
+        foreach ($rawRequests as $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+            $requests[] = normalize_queue_help_request($request);
+        }
+
+        usort($requests, static function (array $left, array $right): int {
+            $leftTs = strtotime((string) ($left['updatedAt'] ?? $left['createdAt'] ?? '')) ?: 0;
+            $rightTs = strtotime((string) ($right['updatedAt'] ?? $right['createdAt'] ?? '')) ?: 0;
+            if ($leftTs !== $rightTs) {
+                return $rightTs <=> $leftTs;
+            }
+            return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
+        });
+
+        return $requests;
+    }
+
+    private function syncTicketAssistanceFlags(array $store): array
+    {
+        $activeByTicketId = [];
+        foreach ($store['queue_help_requests'] ?? [] as $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+            $ticketId = (int) ($request['ticketId'] ?? 0);
+            if ($ticketId <= 0) {
+                continue;
+            }
+            $status = (string) ($request['status'] ?? '');
+            if (!in_array($status, ['pending', 'attending'], true)) {
+                continue;
+            }
+            if (!isset($activeByTicketId[$ticketId])) {
+                $activeByTicketId[$ticketId] = $request;
+            }
+        }
+
+        foreach ($store['queue_tickets'] as $idx => $ticket) {
+            if (!is_array($ticket)) {
+                continue;
+            }
+            $ticketId = (int) ($ticket['id'] ?? 0);
+            $activeRequest = $activeByTicketId[$ticketId] ?? null;
+            if (is_array($activeRequest)) {
+                $ticket['needsAssistance'] = true;
+                $ticket['assistanceRequestStatus'] = (string) ($activeRequest['status'] ?? 'pending');
+                $ticket['activeHelpRequestId'] = (int) ($activeRequest['id'] ?? 0);
+                $ticket['assistanceReason'] = (string) ($activeRequest['reason'] ?? '');
+                if ((string) ($activeRequest['reason'] ?? '') === 'special_priority') {
+                    $ticket['specialPriority'] = true;
+                }
+                if ((string) ($activeRequest['reason'] ?? '') === 'late_arrival') {
+                    $ticket['lateArrival'] = true;
+                }
+                if (in_array((string) ($activeRequest['reason'] ?? ''), ['printer_issue', 'reprint_requested'], true)) {
+                    $ticket['reprintRequestedAt'] = (string) ($activeRequest['createdAt'] ?? local_date('c'));
+                }
+            } else {
+                $ticket['needsAssistance'] = false;
+                $ticket['assistanceRequestStatus'] = '';
+                $ticket['activeHelpRequestId'] = null;
+                $ticket['assistanceReason'] = (string) ($ticket['assistanceReason'] ?? '');
+            }
+
+            $store['queue_tickets'][$idx] = normalize_queue_ticket($ticket);
+        }
+
+        return $store;
+    }
+
+    private function nextHelpRequestId(array $requests): int
+    {
+        $maxId = 0;
+        foreach ($requests as $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+            $maxId = max($maxId, (int) ($request['id'] ?? 0));
+        }
+
+        return $maxId + 1;
+    }
+
+    private function findTicketForHelpRequest(array $store, array $payload, int $ticketId): ?array
+    {
+        if ($ticketId > 0) {
+            $ticket = $this->findTicketById($store, $ticketId);
+            if (is_array($ticket)) {
+                return $ticket;
+            }
+        }
+
+        $ticketCode = trim((string) ($payload['ticketCode'] ?? ($payload['ticket_code'] ?? '')));
+        if ($ticketCode !== '') {
+            foreach ($store['queue_tickets'] ?? [] as $ticket) {
+                if (!is_array($ticket)) {
+                    continue;
+                }
+                if ((string) ($ticket['ticketCode'] ?? '') === $ticketCode) {
+                    return normalize_queue_ticket($ticket);
+                }
+            }
+        }
+
+        $patientInitials = strtoupper(trim((string) ($payload['patientInitials'] ?? ($payload['patient_initials'] ?? ''))));
+        if ($patientInitials !== '') {
+            $tickets = array_reverse($store['queue_tickets'] ?? []);
+            foreach ($tickets as $ticket) {
+                if (!is_array($ticket)) {
+                    continue;
+                }
+                if (strtoupper((string) ($ticket['patientInitials'] ?? '')) === $patientInitials) {
+                    return normalize_queue_ticket($ticket);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function findOpenHelpRequest(
+        array $requests,
+        int $ticketId,
+        string $reason,
+        string $sessionId = ''
+    ): ?array {
+        foreach ($requests as $request) {
+            if (!is_array($request)) {
+                continue;
+            }
+            $status = (string) ($request['status'] ?? '');
+            if (!in_array($status, ['pending', 'attending'], true)) {
+                continue;
+            }
+            $sameTicket = $ticketId > 0 && (int) ($request['ticketId'] ?? 0) === $ticketId;
+            $sameSession = $sessionId !== '' && (string) ($request['sessionId'] ?? '') === $sessionId;
+            if (!$sameTicket && !$sameSession) {
+                continue;
+            }
+            if ((string) ($request['reason'] ?? '') !== $reason) {
+                continue;
+            }
+            return normalize_queue_help_request($request);
+        }
+
+        return null;
     }
 
     private function normalizeHour(string $hour): string

@@ -320,6 +320,10 @@ final class StorePersistence
             if (isset($data['createdAt'])) {
                 $stmt->execute(['createdAt', $data['createdAt']]);
             }
+            $stmt->execute([
+                'queue_help_requests_json',
+                json_encode($data['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
 
             $pdo->commit();
             @rename($jsonPath, $jsonPath . '.migrated');
@@ -414,6 +418,7 @@ final class StorePersistence
                 'callbacks' => self::fetchJsonDataRows($pdo, 'callbacks'),
                 'reviews' => self::fetchJsonDataRows($pdo, 'reviews'),
                 'queue_tickets' => self::fetchJsonDataRows($pdo, 'queue_tickets'),
+                'queue_help_requests' => [],
                 'telemedicine_intakes' => self::fetchJsonDataRows($pdo, 'telemedicine_intakes'),
                 'clinical_uploads' => self::fetchJsonDataRows($pdo, 'clinical_uploads'),
                 'availability' => self::fetchAvailability($pdo),
@@ -427,8 +432,17 @@ final class StorePersistence
                 $store['updatedAt'] = $row['value'];
             }
 
+            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'queue_help_requests_json'");
+            $row = $stmt->fetch();
+            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
+                $decoded = json_decode((string) $row['value'], true);
+                if (is_array($decoded)) {
+                    $store['queue_help_requests'] = $decoded;
+                }
+            }
+
             $store['idx_appointments_date'] = build_appointment_index($store['appointments']);
-            return $store;
+            return StorageConfig::normalizeStorePayload($store);
         } catch (PDOException $e) {
             error_log('Read Store Error: ' . $e->getMessage());
             return StorageConfig::jsonFallbackEnabled()
@@ -649,6 +663,10 @@ final class StorePersistence
 
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)");
             $stmt->execute(['updatedAt', local_date('c')]);
+            $stmt->execute([
+                'queue_help_requests_json',
+                json_encode($store['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
 
             $pdo->commit();
             return true;

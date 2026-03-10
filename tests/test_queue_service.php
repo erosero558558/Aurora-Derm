@@ -33,6 +33,7 @@ function qs_base_store(): array
         'callbacks' => [],
         'reviews' => [],
         'queue_tickets' => [],
+        'queue_help_requests' => [],
         'availability' => [],
         'updatedAt' => date('c'),
     ];
@@ -230,7 +231,54 @@ qs_assert_equals(
     'call-next should use refreshed overdue priority'
 );
 
-// 7) Printer fallback behavior when disabled
+// 7) Help requests update queue-state and ticket flags
+$helpStore = qs_base_store();
+$helpWalkIn = $service->createWalkInTicket($helpStore, ['patientInitials' => 'AS'], 'kiosk');
+qs_assert_true(($helpWalkIn['ok'] ?? false) === true, 'help test walk-in should be created');
+$helpTicketId = (int) ($helpWalkIn['ticket']['id'] ?? 0);
+
+$helpCreate = $service->createHelpRequest(($helpWalkIn['store'] ?? []), [
+    'source' => 'assistant',
+    'reason' => 'human_help',
+    'message' => 'Necesito ayuda humana',
+    'sessionId' => 'assistant_test_session',
+    'ticketId' => $helpTicketId,
+    'ticketCode' => (string) ($helpWalkIn['ticket']['ticketCode'] ?? ''),
+    'patientInitials' => 'AS',
+]);
+qs_assert_true(($helpCreate['ok'] ?? false) === true, 'help request should be created');
+qs_assert_true(($helpCreate['replay'] ?? true) === false, 'first help request should not replay');
+
+$helpState = $service->getQueueState($helpCreate['store'] ?? []);
+qs_assert_equals(
+    1,
+    (int) ($helpState['data']['assistancePendingCount'] ?? 0),
+    'queue-state should expose pending assistance count'
+);
+qs_assert_equals(
+    true,
+    (bool) ($helpState['data']['nextTickets'][0]['needsAssistance'] ?? false),
+    'next ticket should expose assistance flag'
+);
+qs_assert_equals(
+    (string) ($helpWalkIn['ticket']['ticketCode'] ?? ''),
+    (string) ($helpState['data']['activeHelpRequests'][0]['ticketCode'] ?? ''),
+    'active help request should retain ticket code'
+);
+
+$helpResolve = $service->patchHelpRequest(($helpCreate['store'] ?? []), [
+    'ticketId' => $helpTicketId,
+    'status' => 'resolved',
+]);
+qs_assert_true(($helpResolve['ok'] ?? false) === true, 'help request should resolve');
+$resolvedState = $service->getQueueState($helpResolve['store'] ?? []);
+qs_assert_equals(
+    0,
+    (int) ($resolvedState['data']['assistancePendingCount'] ?? 0),
+    'resolved help request should clear pending assistance count'
+);
+
+// 8) Printer fallback behavior when disabled
 putenv('PIELARMONIA_TICKET_PRINTER_ENABLED=false');
 $printer = TicketPrinter::fromEnv();
 $printed = $printer->printQueueTicket([

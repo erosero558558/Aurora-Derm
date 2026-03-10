@@ -75,6 +75,30 @@ class QueueController
         ], 201);
     }
 
+    public static function helpRequest(array $context): void
+    {
+        $payload = require_json_body();
+        $service = new QueueService();
+
+        $result = self::mutateStore(static function (array $store) use ($service, $payload): array {
+            return $service->createHelpRequest($store, $payload);
+        });
+
+        if (($result['ok'] ?? false) !== true) {
+            self::emitError($result);
+        }
+
+        $state = $service->getQueueState($result['store'] ?? []);
+        json_response([
+            'ok' => true,
+            'data' => [
+                'helpRequest' => $result['helpRequest'] ?? null,
+                'queueState' => $state['data'] ?? [],
+            ],
+            'replay' => (bool) ($result['replay'] ?? false),
+        ], (bool) ($result['replay'] ?? false) ? 200 : 201);
+    }
+
     public static function callNext(array $context): void
     {
         $payload = require_json_body();
@@ -117,6 +141,29 @@ class QueueController
             'ok' => true,
             'data' => [
                 'ticket' => $result['ticket'] ?? null,
+                'queueState' => $state['data'] ?? [],
+            ],
+        ]);
+    }
+
+    public static function patchHelpRequest(array $context): void
+    {
+        $payload = require_json_body();
+        $service = new QueueService();
+
+        $result = self::mutateStore(static function (array $store) use ($service, $payload): array {
+            return $service->patchHelpRequest($store, $payload);
+        });
+
+        if (($result['ok'] ?? false) !== true) {
+            self::emitError($result);
+        }
+
+        $state = $service->getQueueState($result['store'] ?? []);
+        json_response([
+            'ok' => true,
+            'data' => [
+                'helpRequest' => $result['helpRequest'] ?? null,
                 'queueState' => $state['data'] ?? [],
             ],
         ]);

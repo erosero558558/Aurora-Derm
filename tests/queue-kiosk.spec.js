@@ -142,6 +142,276 @@ test.describe('Kiosco turnos', () => {
         );
     });
 
+    test('enruta No tengo cita sin usar chat libre', async ({ page }) => {
+        let chatCalls = 0;
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 1,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                        estimatedWaitMin: 8,
+                        assistancePendingCount: 0,
+                        activeHelpRequests: [],
+                    },
+                });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.route(/\/figo-chat\.php(\?.*)?$/i, async (route) => {
+            chatCalls += 1;
+            return json(route, {
+                choices: [
+                    {
+                        message: {
+                            role: 'assistant',
+                            content: 'respuesta libre',
+                        },
+                    },
+                ],
+            });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await page.fill('#assistantInput', 'No tengo cita');
+        await page.click('#assistantSend');
+
+        await expect(page.locator('#assistantMessages')).toContainText(
+            'Te llevo a No tengo cita'
+        );
+        await expect(page.locator('#walkinInitials')).toBeFocused();
+        expect(chatCalls).toBe(0);
+    });
+
+    test('bloquea consulta clinica y deriva a recepcion sin usar chat libre', async ({
+        page,
+    }) => {
+        let chatCalls = 0;
+        let helpRequestBody = null;
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 0,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                        assistancePendingCount: 0,
+                        activeHelpRequests: [],
+                    },
+                });
+            }
+
+            if (resource === 'queue-help-request') {
+                helpRequestBody = request.postDataJSON();
+                return json(
+                    route,
+                    {
+                        ok: true,
+                        data: {
+                            helpRequest: {
+                                id: 801,
+                                source: 'assistant',
+                                reason: 'clinical_redirect',
+                                reasonLabel: 'Derivacion clinica',
+                                status: 'pending',
+                                patientInitials: '--',
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                            },
+                            queueState: {
+                                updatedAt: new Date().toISOString(),
+                                waitingCount: 0,
+                                calledCount: 0,
+                                callingNow: [],
+                                nextTickets: [],
+                                assistancePendingCount: 1,
+                                activeHelpRequests: [
+                                    {
+                                        id: 801,
+                                        source: 'assistant',
+                                        reason: 'clinical_redirect',
+                                        reasonLabel: 'Derivacion clinica',
+                                        status: 'pending',
+                                        patientInitials: '--',
+                                        createdAt: new Date().toISOString(),
+                                        updatedAt: new Date().toISOString(),
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                    201
+                );
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.route(/\/figo-chat\.php(\?.*)?$/i, async (route) => {
+            chatCalls += 1;
+            return json(route, {
+                choices: [
+                    {
+                        message: {
+                            role: 'assistant',
+                            content: 'respuesta libre',
+                        },
+                    },
+                ],
+            });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await page.fill(
+            '#assistantInput',
+            'Que crema me pongo para el sarpullido'
+        );
+        await page.click('#assistantSend');
+
+        await expect(page.locator('#assistantMessages')).toContainText(
+            'no doy orientacion medica'
+        );
+        expect(chatCalls).toBe(0);
+        expect(helpRequestBody?.reason).toBe('clinical_redirect');
+        await expect(page.locator('#queueOutboxHint')).toContainText(
+            'Pendientes offline: 0'
+        );
+    });
+
+    test('guarda apoyo offline y lo sincroniza al reconectar', async ({
+        page,
+    }) => {
+        let supportOffline = true;
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const request = route.request();
+            const url = new URL(request.url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 0,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                        assistancePendingCount: supportOffline ? 0 : 1,
+                        activeHelpRequests: supportOffline
+                            ? []
+                            : [
+                                  {
+                                      id: 901,
+                                      source: 'assistant',
+                                      reason: 'human_help',
+                                      reasonLabel: 'Ayuda humana',
+                                      status: 'pending',
+                                      patientInitials: '--',
+                                      createdAt: new Date().toISOString(),
+                                      updatedAt: new Date().toISOString(),
+                                  },
+                              ],
+                    },
+                });
+            }
+
+            if (resource === 'queue-help-request') {
+                if (supportOffline) {
+                    return route.abort('failed');
+                }
+                return json(
+                    route,
+                    {
+                        ok: true,
+                        data: {
+                            helpRequest: {
+                                id: 901,
+                                source: 'assistant',
+                                reason: 'human_help',
+                                reasonLabel: 'Ayuda humana',
+                                status: 'pending',
+                                patientInitials: '--',
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                            },
+                            queueState: {
+                                updatedAt: new Date().toISOString(),
+                                waitingCount: 0,
+                                calledCount: 0,
+                                callingNow: [],
+                                nextTickets: [],
+                                assistancePendingCount: 1,
+                                activeHelpRequests: [
+                                    {
+                                        id: 901,
+                                        source: 'assistant',
+                                        reason: 'human_help',
+                                        reasonLabel: 'Ayuda humana',
+                                        status: 'pending',
+                                        patientInitials: '--',
+                                        createdAt: new Date().toISOString(),
+                                        updatedAt: new Date().toISOString(),
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                    201
+                );
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await page.fill('#assistantInput', 'Necesito ayuda humana');
+        await page.click('#assistantSend');
+
+        await expect(page.locator('#assistantMessages')).toContainText(
+            'Apoyo guardado offline'
+        );
+        await expect(page.locator('#queueOutboxHint')).toContainText(
+            'Pendientes offline: 1'
+        );
+
+        supportOffline = false;
+        await page.locator('#queueOutboxRetryBtn').click();
+
+        await expect
+            .poll(
+                async () =>
+                    (await page.locator('#queueOutboxHint').textContent()) ||
+                    '',
+                { timeout: 12000 }
+            )
+            .toContain('Pendientes offline: 0');
+        await expect(page.locator('#kioskStatus')).toContainText(
+            'Apoyo sincronizado'
+        );
+    });
+
     test('muestra kiosco listo cuando hay impresion valida y backend sano', async ({
         page,
     }) => {

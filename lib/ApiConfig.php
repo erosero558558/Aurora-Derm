@@ -37,6 +37,7 @@ class ApiConfig
             'funnel-event:POST' => [120, 60],
             'queue-checkin:POST' => [20, 60],
             'queue-ticket:POST' => [20, 60],
+            'queue-help-request:POST' => [20, 60],
             'lead-ai-result:POST' => [60, 60],
             'queue-surface-heartbeat:POST' => [240, 60],
 
@@ -56,6 +57,7 @@ class ApiConfig
             'push-test:POST' => [6, 60],
             'queue-call-next:POST' => [60, 60],
             'queue-ticket:PATCH' => [60, 60],
+            'queue-help-request:PATCH' => [60, 60],
             'queue-reprint:POST' => [30, 60],
 
             // Predictions
@@ -87,6 +89,7 @@ class ApiConfig
             ['method' => 'POST', 'resource' => 'funnel-event'],
             ['method' => 'POST', 'resource' => 'queue-checkin'],
             ['method' => 'POST', 'resource' => 'queue-ticket'],
+            ['method' => 'POST', 'resource' => 'queue-help-request'],
             ['method' => 'GET', 'resource' => 'lead-ai-queue'],
             ['method' => 'POST', 'resource' => 'lead-ai-result'],
             ['method' => 'POST', 'resource' => 'queue-surface-heartbeat'],

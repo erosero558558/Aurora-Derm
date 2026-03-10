@@ -61,8 +61,15 @@ function sortWaitingTickets(a, b) {
     return Number(a?.id || 0) - Number(b?.id || 0);
 }
 
-function buildQueueState(queueTickets) {
+function buildQueueState(queueTickets, helpRequests = []) {
     const tickets = Array.isArray(queueTickets) ? queueTickets : [];
+    const activeHelpRequests = (
+        Array.isArray(helpRequests) ? helpRequests : []
+    ).filter(
+        (request) =>
+            request &&
+            ['pending', 'attending'].includes(String(request.status || ''))
+    );
     const waiting = tickets
         .filter((ticket) => String(ticket.status || '') === 'waiting')
         .sort(sortWaitingTickets);
@@ -88,6 +95,25 @@ function buildQueueState(queueTickets) {
         updatedAt: new Date().toISOString(),
         waitingCount: waiting.length,
         calledCount: called.length,
+        estimatedWaitMin: waiting.length * 8,
+        delayReason: activeHelpRequests.length
+            ? 'Recepcion atendiendo solicitudes de apoyo.'
+            : '',
+        assistancePendingCount: activeHelpRequests.filter(
+            (request) => String(request.status || '') === 'pending'
+        ).length,
+        activeHelpRequests: activeHelpRequests.map((request) => ({
+            id: request.id,
+            ticketId: request.ticketId || null,
+            ticketCode: request.ticketCode || '',
+            patientInitials: request.patientInitials || '--',
+            reason: request.reason || 'general',
+            reasonLabel: request.reasonLabel || 'Apoyo general',
+            status: request.status || 'pending',
+            source: request.source || 'assistant',
+            createdAt: request.createdAt,
+            updatedAt: request.updatedAt,
+        })),
         counts: {
             waiting: waiting.length,
             called: called.length,
@@ -106,6 +132,13 @@ function buildQueueState(queueTickets) {
             position: index + 1,
             queueType: ticket.queueType,
             priorityClass: ticket.priorityClass,
+            needsAssistance: Boolean(ticket.needsAssistance),
+            assistanceRequestStatus: ticket.assistanceRequestStatus || '',
+            activeHelpRequestId: ticket.activeHelpRequestId || null,
+            specialPriority: Boolean(ticket.specialPriority),
+            lateArrival: Boolean(ticket.lateArrival),
+            reprintRequestedAt: ticket.reprintRequestedAt || '',
+            estimatedWaitMin: (index + 1) * 8,
         })),
     };
 }
@@ -123,6 +156,10 @@ function buildQueueMetaFromState(queueState) {
         updatedAt: queueState.updatedAt,
         waitingCount: queueState.waitingCount,
         calledCount: queueState.calledCount,
+        estimatedWaitMin: queueState.estimatedWaitMin || 0,
+        delayReason: queueState.delayReason || '',
+        assistancePendingCount: queueState.assistancePendingCount || 0,
+        activeHelpRequests: queueState.activeHelpRequests || [],
         counts: queueState.counts || {},
         callingNowByConsultorio: byConsultorio,
         nextTickets: queueState.nextTickets || [],
@@ -181,12 +218,15 @@ async function clickQueueTicketActionByCode(
 async function installSharedQueueMocks(context, options = {}) {
     let nextId = 1000;
     let nextDailySeq = 1;
+    let nextHelpRequestId = 5000;
     let remainingCallNextFailures = Math.max(
         0,
         Number(options.callNextFailCount || 0)
     );
     /** @type {Array<Record<string, any>>} */
     let queueTickets = [];
+    /** @type {Array<Record<string, any>>} */
+    let queueHelpRequests = [];
 
     function nextTicketCode() {
         const code = `A-${String(nextDailySeq).padStart(3, '0')}`;
@@ -233,7 +273,48 @@ async function installSharedQueueMocks(context, options = {}) {
     }
 
     function currentQueueState() {
-        return buildQueueState(queueTickets);
+        return buildQueueState(queueTickets, queueHelpRequests);
+    }
+
+    function syncTicketAssistanceFlags() {
+        queueTickets = queueTickets.map((ticket) => {
+            const activeRequest =
+                queueHelpRequests.find(
+                    (request) =>
+                        Number(request.ticketId || 0) ===
+                            Number(ticket.id || 0) &&
+                        ['pending', 'attending'].includes(
+                            String(request.status || '')
+                        )
+                ) || null;
+
+            if (!activeRequest) {
+                return {
+                    ...ticket,
+                    needsAssistance: false,
+                    assistanceRequestStatus: '',
+                    activeHelpRequestId: null,
+                };
+            }
+
+            return {
+                ...ticket,
+                needsAssistance: true,
+                assistanceRequestStatus: activeRequest.status || 'pending',
+                activeHelpRequestId: activeRequest.id,
+                assistanceReason: activeRequest.reason || '',
+                specialPriority:
+                    Boolean(ticket.specialPriority) ||
+                    String(activeRequest.reason || '') === 'special_priority',
+                lateArrival:
+                    Boolean(ticket.lateArrival) ||
+                    String(activeRequest.reason || '') === 'late_arrival',
+                reprintRequestedAt:
+                    String(activeRequest.reason || '') === 'printer_issue'
+                        ? activeRequest.createdAt
+                        : ticket.reprintRequestedAt || '',
+            };
+        });
     }
 
     await context.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
@@ -326,6 +407,80 @@ async function installSharedQueueMocks(context, options = {}) {
                         ok: true,
                         errorCode: '',
                         message: 'ok',
+                    },
+                },
+                201
+            );
+        }
+
+        if (resource === 'queue-help-request' && method === 'POST') {
+            const body = parseBody(request);
+            const nowIso = new Date().toISOString();
+            const ticketId = Number(body.ticketId || body.ticket_id || 0);
+            const ticketCode = String(
+                body.ticketCode || body.ticket_code || ''
+            );
+            const patientInitials = String(
+                body.patientInitials || body.patient_initials || ''
+            );
+            const relatedTicket =
+                queueTickets.find(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                ) ||
+                queueTickets.find(
+                    (ticket) => String(ticket.ticketCode || '') === ticketCode
+                ) ||
+                queueTickets
+                    .slice()
+                    .reverse()
+                    .find(
+                        (ticket) =>
+                            String(ticket.patientInitials || '') ===
+                            patientInitials
+                    ) ||
+                null;
+            const resolvedTicketId = Number(relatedTicket?.id || 0) || null;
+            const helpRequest = {
+                id: nextHelpRequestId,
+                source: String(body.source || 'assistant'),
+                reason: String(body.reason || 'general'),
+                reasonLabel:
+                    {
+                        human_help: 'Ayuda humana',
+                        clinical_redirect: 'Derivacion clinica',
+                        printer_issue: 'Problema de impresion',
+                        special_priority: 'Prioridad especial',
+                    }[String(body.reason || '')] || 'Apoyo general',
+                status: 'pending',
+                message: String(body.message || ''),
+                intent: String(body.intent || ''),
+                sessionId: String(body.sessionId || body.session_id || ''),
+                ticketId: resolvedTicketId,
+                ticketCode: String(
+                    body.ticketCode ||
+                        body.ticket_code ||
+                        relatedTicket?.ticketCode ||
+                        ''
+                ),
+                patientInitials: String(
+                    body.patientInitials ||
+                        body.patient_initials ||
+                        relatedTicket?.patientInitials ||
+                        '--'
+                ),
+                createdAt: nowIso,
+                updatedAt: nowIso,
+            };
+            nextHelpRequestId += 1;
+            queueHelpRequests = [helpRequest, ...queueHelpRequests];
+            syncTicketAssistanceFlags();
+            return json(
+                route,
+                {
+                    ok: true,
+                    data: {
+                        helpRequest,
+                        queueState: currentQueueState(),
                     },
                 },
                 201
@@ -474,6 +629,47 @@ async function installSharedQueueMocks(context, options = {}) {
                     status: 'cancelled',
                     assignedConsultorio: null,
                     completedAt: nowIso,
+                };
+            } else if (action === 'atender_apoyo') {
+                queueHelpRequests = queueHelpRequests.map((request) =>
+                    Number(request.ticketId || 0) === ticketId &&
+                    ['pending', 'attending'].includes(
+                        String(request.status || '')
+                    )
+                        ? {
+                              ...request,
+                              status: 'attending',
+                              updatedAt: nowIso,
+                          }
+                        : request
+                );
+                syncTicketAssistanceFlags();
+                updatedTicket =
+                    queueTickets.find(
+                        (ticket) => Number(ticket.id || 0) === ticketId
+                    ) || currentTicket;
+            } else if (action === 'resolver_apoyo') {
+                queueHelpRequests = queueHelpRequests.map((request) =>
+                    Number(request.ticketId || 0) === ticketId &&
+                    ['pending', 'attending'].includes(
+                        String(request.status || '')
+                    )
+                        ? {
+                              ...request,
+                              status: 'resolved',
+                              updatedAt: nowIso,
+                              resolvedAt: nowIso,
+                          }
+                        : request
+                );
+                syncTicketAssistanceFlags();
+                updatedTicket = queueTickets.find(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                ) || {
+                    ...currentTicket,
+                    needsAssistance: false,
+                    assistanceRequestStatus: '',
+                    activeHelpRequestId: null,
                 };
             } else if (action === 'reasignar' || action === 'reassign') {
                 if (![1, 2].includes(consultorio)) {
@@ -647,6 +843,44 @@ test.describe('Turnero integrado kiosco-admin-tv', () => {
             '0999123456'
         );
         await expect(displayPage.locator('body')).not.toContainText('3456');
+    });
+
+    test('escala apoyo desde kiosco y lo vuelve visible en admin', async ({
+        page,
+    }) => {
+        const context = page.context();
+        await installSharedQueueMocks(context);
+
+        const adminPage = page;
+        const kioskPage = await context.newPage();
+
+        await Promise.all([
+            adminPage.goto(adminUrl()),
+            kioskPage.goto('/kiosco-turnos.html'),
+        ]);
+
+        await kioskPage.fill('#walkinInitials', 'EP');
+        await kioskPage.click('#walkinSubmit');
+        await expect(kioskPage.locator('#ticketResult')).toContainText('A-001');
+
+        await adminPage.locator('.nav-item[data-section="queue"]').click();
+        await expect(adminPage.locator('#queue')).toHaveClass(/active/);
+        await expect(adminPage.locator('#queueTableBody')).toContainText(
+            'A-001'
+        );
+
+        await kioskPage.fill('#assistantInput', 'Necesito ayuda humana');
+        await kioskPage.click('#assistantSend');
+        await expect(kioskPage.locator('#assistantMessages')).toContainText(
+            'Recepcion te ayudara enseguida'
+        );
+
+        await adminPage.reload();
+        await adminPage.locator('.nav-item[data-section="queue"]').click();
+        await expect(adminPage.locator('#queue')).toHaveClass(/active/);
+        await expect(adminPage.locator('#queueTableBody')).toContainText(
+            'Apoyo'
+        );
     });
 
     test('respeta prioridad cita sobre walk-in al llamar siguiente', async ({

@@ -31,6 +31,18 @@ const state = {
     queueState: null,
     chatHistory: [],
     assistantBusy: false,
+    assistantSessionId: '',
+    assistantMetrics: {
+        intents: {},
+        resolvedWithoutHuman: 0,
+        escalated: 0,
+        clinicalBlocked: 0,
+        fallback: 0,
+        errors: 0,
+        actioned: 0,
+        lastIntent: '',
+        lastLatencyMs: 0,
+    },
     queueTimerId: 0,
     queuePollingEnabled: false,
     queueFailureStreak: 0,
@@ -51,6 +63,8 @@ const state = {
     quickHelpOpen: false,
     selectedFlow: 'checkin',
     welcomeDismissed: false,
+    lastIssuedTicket: null,
+    lastHelpRequest: null,
     seniorMode: false,
     voiceGuideSupported: false,
     voiceGuideBusy: false,
@@ -58,6 +72,23 @@ const state = {
 };
 
 let kioskHeartbeat = null;
+
+function createRuntimeId(prefix = 'runtime') {
+    const safePrefix = String(prefix || 'runtime').trim() || 'runtime';
+    try {
+        if (
+            typeof window !== 'undefined' &&
+            window.crypto &&
+            typeof window.crypto.randomUUID === 'function'
+        ) {
+            return `${safePrefix}_${window.crypto.randomUUID()}`;
+        }
+    } catch (_error) {
+        // no-op
+    }
+
+    return `${safePrefix}_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+}
 
 function emitQueueOpsEvent(eventName, detail = {}) {
     try {
@@ -109,7 +140,8 @@ function buildKioskHeartbeatPayload() {
     let summary = 'Kiosco pendiente de validación.';
     if (connectionState === 'offline') {
         status = 'alert';
-        summary = 'Kiosco sin conexión; usa contingencia local y deriva si crece la fila.';
+        summary =
+            'Kiosco sin conexión; usa contingencia local y deriva si crece la fila.';
     } else if (pendingCount > 0) {
         status = 'warning';
         summary = `Kiosco con ${pendingCount} pendiente(s) offline por sincronizar.`;
@@ -118,7 +150,8 @@ function buildKioskHeartbeatPayload() {
         summary = `La última impresión falló${printerErrorCode ? ` (${printerErrorCode})` : ''}.`;
     } else if (printerPrinted && healthySync && connectionState === 'live') {
         status = 'ready';
-        summary = 'Kiosco listo: cola en vivo, térmica validada y sin pendientes offline.';
+        summary =
+            'Kiosco listo: cola en vivo, térmica validada y sin pendientes offline.';
     } else if (!printerPrinted) {
         status = 'warning';
         summary = 'Falta probar ticket térmico antes de abrir autoservicio.';
@@ -575,16 +608,121 @@ function runVoiceGuide({ source = 'button' } = {}) {
     }
 }
 
-function requestReceptionSupport({ source = 'button' } = {}) {
-    const supportMessage =
-        'Recepcion te ayudara enseguida. Mantente frente al kiosco o acude al mostrador.';
-    setKioskStatus(supportMessage, 'info');
-    setKioskProgressHint(
-        'Apoyo solicitado: recepcion te asistira para completar el turno.',
-        'warn'
-    );
-    appendAssistantMessage('bot', supportMessage);
-    emitQueueOpsEvent('reception_support_requested', { source });
+function supportReasonMessage(reason) {
+    const normalized = String(reason || 'general').toLowerCase();
+    if (normalized === 'clinical_redirect') {
+        return 'Recepcion fue alertada para derivarte con el personal adecuado.';
+    }
+    if (normalized === 'printer_issue' || normalized === 'reprint_requested') {
+        return 'Recepcion revisara la impresion o reimpresion de tu ticket enseguida.';
+    }
+    if (normalized === 'appointment_not_found') {
+        return 'Recepcion revisara tu cita y te ayudara a continuar.';
+    }
+    if (normalized === 'special_priority') {
+        return 'Recepcion fue alertada para darte apoyo prioritario.';
+    }
+    if (normalized === 'accessibility') {
+        return 'Recepcion te brindara apoyo para completar el proceso.';
+    }
+    return 'Recepcion te ayudara enseguida. Mantente frente al kiosco o acude al mostrador.';
+}
+
+async function requestReceptionSupport({
+    source = 'button',
+    reason = 'general',
+    message = '',
+    intent = '',
+    announceInAssistant = true,
+} = {}) {
+    const body = buildHelpRequestBody(reason, message, source, intent);
+    const supportMessage = supportReasonMessage(reason);
+
+    try {
+        const payload = await apiRequest('queue-help-request', {
+            method: 'POST',
+            body,
+        });
+        const helpRequest =
+            payload?.data?.helpRequest &&
+            typeof payload.data.helpRequest === 'object'
+                ? payload.data.helpRequest
+                : null;
+        state.lastHelpRequest = helpRequest;
+        applyQueueStatePayload(payload);
+
+        setKioskStatus(supportMessage, 'info');
+        setKioskProgressHint(
+            'Apoyo solicitado: recepcion te asistira para completar el turno.',
+            'warn'
+        );
+        if (announceInAssistant) {
+            appendAssistantMessage('bot', supportMessage);
+        }
+        emitQueueOpsEvent('reception_support_requested', {
+            source,
+            reason,
+            requestId: helpRequest?.id || 0,
+        });
+        return {
+            ok: true,
+            queued: false,
+            message: supportMessage,
+            helpRequest,
+        };
+    } catch (error) {
+        if (!isRecoverableTransportError(error)) {
+            const errorMessage = `No se pudo solicitar apoyo: ${error.message}`;
+            setKioskStatus(errorMessage, 'error');
+            emitQueueOpsEvent('reception_support_error', {
+                source,
+                reason,
+                error: String(error?.message || ''),
+            });
+            return {
+                ok: false,
+                queued: false,
+                message: errorMessage,
+                helpRequest: null,
+            };
+        }
+
+        const queuedRequest = queueOfflineRequest({
+            resource: 'queue-help-request',
+            body,
+            originLabel: 'Apoyo a recepcion',
+            patientInitials: body.patientInitials,
+            queueType: 'support',
+            renderMode: 'support',
+        });
+        state.lastHelpRequest = queuedRequest;
+        setKioskStatus(
+            'Apoyo guardado offline. Se notificara a recepcion al recuperar conexion.',
+            'info'
+        );
+        setKioskProgressHint(
+            'Apoyo pendiente de sincronizacion: si es urgente, acude al mostrador.',
+            'warn'
+        );
+        if (announceInAssistant) {
+            appendAssistantMessage(
+                'bot',
+                'Apoyo guardado offline. Se notificara a recepcion al recuperar conexion.'
+            );
+        }
+        emitQueueOpsEvent('reception_support_queued', {
+            source,
+            reason,
+            pendingAfter: state.offlineOutbox.length,
+        });
+        return {
+            ok: true,
+            queued: true,
+            message:
+                'Apoyo guardado offline. Se notificara a recepcion al recuperar conexion.',
+            helpRequest: queuedRequest,
+        };
+    }
 }
 
 function setKioskHelpPanelOpen(nextOpen, { source = 'ui' } = {}) {
@@ -746,6 +884,10 @@ function normalizeQueueStatePayload(rawState) {
         'waitingTickets',
         'waiting_tickets',
     ]);
+    const activeHelpRequests = getQueueStateArray(state, [
+        'activeHelpRequests',
+        'active_help_requests',
+    ]);
 
     const waitingCount = Number.isFinite(waitingCountRaw)
         ? waitingCountRaw
@@ -761,6 +903,22 @@ function normalizeQueueStatePayload(rawState) {
               ['called', 'called_count'],
               callingNow.length
           );
+    const estimatedWaitMin = Math.max(
+        0,
+        getQueueStateNumber(
+            state,
+            ['estimatedWaitMin', 'estimated_wait_min'],
+            waitingCount * 8
+        )
+    );
+    const assistancePendingCount = Math.max(
+        0,
+        getQueueStateNumber(
+            state,
+            ['assistancePendingCount', 'assistance_pending_count'],
+            activeHelpRequests.length
+        )
+    );
 
     return {
         updatedAt:
@@ -768,6 +926,11 @@ function normalizeQueueStatePayload(rawState) {
             new Date().toISOString(),
         waitingCount: Math.max(0, Number(waitingCount || 0)),
         calledCount: Math.max(0, Number(calledCount || 0)),
+        estimatedWaitMin,
+        delayReason: String(
+            state.delayReason || state.delay_reason || ''
+        ).trim(),
+        assistancePendingCount,
         callingNow: Array.isArray(callingNow)
             ? callingNow.map((ticket) => ({
                   ...ticket,
@@ -809,13 +972,84 @@ function normalizeQueueStatePayload(rawState) {
                           ticket?.priority_class ||
                           'walk_in'
                   ),
+                  needsAssistance: Boolean(
+                      ticket?.needsAssistance ?? ticket?.needs_assistance
+                  ),
+                  assistanceRequestStatus: String(
+                      ticket?.assistanceRequestStatus ||
+                          ticket?.assistance_request_status ||
+                          ''
+                  ),
+                  activeHelpRequestId:
+                      Number(
+                          ticket?.activeHelpRequestId ??
+                              ticket?.active_help_request_id ??
+                              0
+                      ) || null,
+                  specialPriority: Boolean(
+                      ticket?.specialPriority ?? ticket?.special_priority
+                  ),
+                  lateArrival: Boolean(
+                      ticket?.lateArrival ?? ticket?.late_arrival
+                  ),
+                  reprintRequestedAt: String(
+                      ticket?.reprintRequestedAt ||
+                          ticket?.reprint_requested_at ||
+                          ''
+                  ),
+                  estimatedWaitMin: Math.max(
+                      0,
+                      Number(
+                          ticket?.estimatedWaitMin ??
+                              ticket?.estimated_wait_min ??
+                              (index + 1) * 8
+                      ) || 0
+                  ),
                   position:
                       Number(ticket?.position || 0) > 0
                           ? Number(ticket.position)
                           : index + 1,
               }))
             : [],
+        activeHelpRequests: Array.isArray(activeHelpRequests)
+            ? activeHelpRequests.map((item) => ({
+                  ...item,
+                  id: Number(item?.id || 0) || 0,
+                  ticketId: Number(item?.ticketId || item?.ticket_id || 0) || 0,
+                  ticketCode: String(
+                      item?.ticketCode || item?.ticket_code || ''
+                  ),
+                  patientInitials: String(
+                      item?.patientInitials || item?.patient_initials || '--'
+                  ),
+                  reason: String(item?.reason || 'general'),
+                  reasonLabel: String(
+                      item?.reasonLabel || item?.reason_label || 'Apoyo general'
+                  ),
+                  status: String(item?.status || 'pending'),
+                  source: String(item?.source || 'kiosk'),
+                  createdAt: String(item?.createdAt || item?.created_at || ''),
+                  updatedAt: String(item?.updatedAt || item?.updated_at || ''),
+              }))
+            : [],
     };
+}
+
+function applyQueueStatePayload(payload) {
+    const queueStateCandidate =
+        payload?.data?.queueState ||
+        payload?.queueState ||
+        payload?.data ||
+        payload;
+    if (!queueStateCandidate || typeof queueStateCandidate !== 'object') {
+        return null;
+    }
+
+    const normalized = normalizeQueueStatePayload(queueStateCandidate);
+    state.queueState = normalized;
+    renderQueuePanel(normalized);
+    renderQueueUpdatedAt(normalized.updatedAt);
+    return normalized;
 }
 
 async function apiRequest(resource, { method = 'GET', body } = {}) {
@@ -867,6 +1101,116 @@ function deriveInitials(rawName) {
         if (initials.length >= 3) break;
     }
     return initials.slice(0, 4);
+}
+
+function ensureAssistantSessionId() {
+    if (!state.assistantSessionId) {
+        state.assistantSessionId = createRuntimeId('assistant');
+    }
+    return state.assistantSessionId;
+}
+
+function recordAssistantMetric(intent, outcome, startedAt, detail = {}) {
+    const safeIntent = String(intent || 'unknown').trim() || 'unknown';
+    const safeOutcome = String(outcome || 'unknown').trim() || 'unknown';
+    const latencyMs = Math.max(
+        0,
+        Math.round(performance.now() - Number(startedAt || performance.now()))
+    );
+    const metrics = state.assistantMetrics || {
+        intents: {},
+        resolvedWithoutHuman: 0,
+        escalated: 0,
+        clinicalBlocked: 0,
+        fallback: 0,
+        errors: 0,
+        actioned: 0,
+        lastIntent: '',
+        lastLatencyMs: 0,
+    };
+
+    metrics.intents = metrics.intents || {};
+    metrics.intents[safeIntent] = (metrics.intents[safeIntent] || 0) + 1;
+    metrics.lastIntent = safeIntent;
+    metrics.lastLatencyMs = latencyMs;
+    metrics.actioned += 1;
+    if (safeOutcome === 'resolved') {
+        metrics.resolvedWithoutHuman += 1;
+    } else if (safeOutcome === 'handoff') {
+        metrics.escalated += 1;
+    } else if (safeOutcome === 'clinical_blocked') {
+        metrics.clinicalBlocked += 1;
+    } else if (safeOutcome === 'fallback') {
+        metrics.fallback += 1;
+    } else if (safeOutcome === 'error') {
+        metrics.errors += 1;
+    }
+    state.assistantMetrics = metrics;
+
+    emitQueueOpsEvent('assistant_metric', {
+        intent: safeIntent,
+        outcome: safeOutcome,
+        latencyMs,
+        ...detail,
+    });
+}
+
+function resolveAssistantPatientInitials() {
+    if (state.lastIssuedTicket?.patientInitials) {
+        return String(state.lastIssuedTicket.patientInitials || '--');
+    }
+
+    const walkinInitials = getById('walkinInitials');
+    if (
+        walkinInitials instanceof HTMLInputElement &&
+        String(walkinInitials.value || '').trim()
+    ) {
+        return String(walkinInitials.value || '')
+            .trim()
+            .slice(0, 4)
+            .toUpperCase();
+    }
+
+    const checkinInitials = getById('checkinInitials');
+    if (
+        checkinInitials instanceof HTMLInputElement &&
+        String(checkinInitials.value || '').trim()
+    ) {
+        return String(checkinInitials.value || '')
+            .trim()
+            .slice(0, 4)
+            .toUpperCase();
+    }
+
+    const checkinPhone = getById('checkinPhone');
+    if (checkinPhone instanceof HTMLInputElement) {
+        const digits = String(checkinPhone.value || '').replace(/\D/g, '');
+        if (digits) {
+            return digits.slice(-2).padStart(2, '0');
+        }
+    }
+
+    return '--';
+}
+
+function buildHelpRequestBody(reason, message, source, intent = '') {
+    const ticket = state.lastIssuedTicket;
+    return {
+        source: String(source || 'kiosk'),
+        reason: String(reason || 'general'),
+        message: String(message || '').trim(),
+        intent: String(intent || '').trim(),
+        sessionId: ensureAssistantSessionId(),
+        ticketId: Number(ticket?.id || 0) || undefined,
+        ticketCode: String(ticket?.ticketCode || ''),
+        patientInitials: resolveAssistantPatientInitials(),
+        context: {
+            selectedFlow: String(state.selectedFlow || 'checkin'),
+            waitingCount: Number(state.queueState?.waitingCount || 0),
+            estimatedWaitMin: Number(state.queueState?.estimatedWaitMin || 0),
+            offlinePending: Number(state.offlineOutbox.length || 0),
+        },
+    };
 }
 
 function setKioskStatus(message, type = 'info') {
@@ -1003,6 +1347,7 @@ function clearIdleTimers() {
 function renderTicketEmptyState() {
     const container = getById('ticketResult');
     if (!container) return;
+    state.lastIssuedTicket = null;
     container.innerHTML =
         '<p class="ticket-empty">Todavia no se ha generado ningun ticket.</p>';
 }
@@ -1013,6 +1358,19 @@ function resetAssistantConversation() {
         assistantMessages.innerHTML = '';
     }
     state.chatHistory = [];
+    state.lastHelpRequest = null;
+    state.assistantSessionId = createRuntimeId('assistant');
+    state.assistantMetrics = {
+        intents: {},
+        resolvedWithoutHuman: 0,
+        escalated: 0,
+        clinicalBlocked: 0,
+        fallback: 0,
+        errors: 0,
+        actioned: 0,
+        lastIntent: '',
+        lastLatencyMs: 0,
+    };
     appendAssistantMessage('bot', ASSISTANT_WELCOME_TEXT);
 
     const assistantInput = getById('assistantInput');
@@ -1137,7 +1495,9 @@ function renderKioskSetupStatus() {
     const printerReady = Boolean(printer?.printed);
     const printerBlocked = Boolean(printer && !printer.printed);
     const hasHealthySync = Boolean(state.queueLastHealthySyncAt);
-    const oldestQueuedAt = Date.parse(String(state.offlineOutbox[0]?.queuedAt || ''));
+    const oldestQueuedAt = Date.parse(
+        String(state.offlineOutbox[0]?.queuedAt || '')
+    );
     const oldestPendingAge = Number.isFinite(oldestQueuedAt)
         ? formatElapsedAge(Date.now() - oldestQueuedAt)
         : '';
@@ -1478,6 +1838,11 @@ function loadOfflineOutbox() {
                 originLabel: String(item?.originLabel || 'Solicitud offline'),
                 patientInitials: String(item?.patientInitials || '--'),
                 queueType: String(item?.queueType || '--'),
+                renderMode:
+                    String(item?.renderMode || 'ticket').toLowerCase() ===
+                    'support'
+                        ? 'support'
+                        : 'ticket',
                 queuedAt: String(item?.queuedAt || new Date().toISOString()),
                 attempts: Number(item?.attempts || 0),
                 lastError: String(item?.lastError || ''),
@@ -1487,7 +1852,8 @@ function loadOfflineOutbox() {
                 (item) =>
                     item.id &&
                     (item.resource === 'queue-ticket' ||
-                        item.resource === 'queue-checkin')
+                        item.resource === 'queue-checkin' ||
+                        item.resource === 'queue-help-request')
             )
             .map((item) => ({
                 ...item,
@@ -1701,9 +2067,7 @@ async function refreshQueueState() {
     state.queueRefreshBusy = true;
     try {
         const payload = await apiRequest('queue-state');
-        state.queueState = normalizeQueueStatePayload(payload.data || {});
-        renderQueuePanel(state.queueState);
-        renderQueueUpdatedAt(state.queueState?.updatedAt);
+        applyQueueStatePayload(payload);
         const freshness = evaluateQueueFreshness(state.queueState);
         return {
             ok: true,
@@ -1746,6 +2110,7 @@ function renderTicketResult(payload, originLabel) {
                 new Date().toISOString()
         ),
     };
+    state.lastIssuedTicket = ticket;
     const print = payload?.print || {};
     updatePrinterStateFromPayload(payload, { origin: originLabel });
     const nextTickets = Array.isArray(state.queueState?.nextTickets)
@@ -1841,9 +2206,14 @@ function queueOfflineRequest({
     originLabel,
     patientInitials,
     queueType,
+    renderMode = 'ticket',
 }) {
     const safeResource = String(resource || '');
-    if (safeResource !== 'queue-ticket' && safeResource !== 'queue-checkin') {
+    if (
+        safeResource !== 'queue-ticket' &&
+        safeResource !== 'queue-checkin' &&
+        safeResource !== 'queue-help-request'
+    ) {
         return null;
     }
 
@@ -1871,6 +2241,10 @@ function queueOfflineRequest({
         originLabel: String(originLabel || 'Solicitud offline'),
         patientInitials: String(patientInitials || '--'),
         queueType: String(queueType || '--'),
+        renderMode:
+            String(renderMode || 'ticket').toLowerCase() === 'support'
+                ? 'support'
+                : 'ticket',
         queuedAt: new Date().toISOString(),
         attempts: 0,
         lastError: '',
@@ -1918,14 +2292,32 @@ async function flushOfflineOutbox({
                 saveOfflineOutbox();
                 renderOfflineOutboxHint();
 
-                renderTicketResult(
-                    payload,
-                    `${item.originLabel} (sincronizado)`
-                );
-                setKioskStatus(
-                    `Pendiente sincronizado (${item.originLabel})`,
-                    'success'
-                );
+                applyQueueStatePayload(payload);
+                if (String(item.renderMode || 'ticket') === 'support') {
+                    const syncedHelpRequest =
+                        payload?.data?.helpRequest &&
+                        typeof payload.data.helpRequest === 'object'
+                            ? payload.data.helpRequest
+                            : null;
+                    state.lastHelpRequest = syncedHelpRequest;
+                    setKioskStatus(
+                        `Apoyo sincronizado (${item.originLabel})`,
+                        'success'
+                    );
+                    setKioskProgressHint(
+                        'Apoyo enviado a recepcion correctamente.',
+                        'success'
+                    );
+                } else {
+                    renderTicketResult(
+                        payload,
+                        `${item.originLabel} (sincronizado)`
+                    );
+                    setKioskStatus(
+                        `Pendiente sincronizado (${item.originLabel})`,
+                        'success'
+                    );
+                }
                 emitQueueOpsEvent('offline_synced_item', {
                     resource: item.resource,
                     originLabel: item.originLabel,
@@ -2206,6 +2598,264 @@ async function submitWalkIn(event) {
     }
 }
 
+function normalizeAssistantText(text) {
+    return String(text || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+}
+
+function classifyAssistantIntent(text) {
+    const normalized = normalizeAssistantText(text);
+    if (!normalized) {
+        return { intent: 'empty', normalized };
+    }
+
+    if (
+        /(diagnost|medicacion|tratamiento|receta|dosis|enfermedad|medicamento|que tomo|que crema|que me pongo)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'clinical_blocked', normalized };
+    }
+    if (
+        /(perdi mi ticket|perdi el ticket|no encuentro mi ticket|extravie mi ticket)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'lost_ticket', normalized };
+    }
+    if (
+        /(impresora|no imprimio|no salio el ticket|ticket no salio|no imprime|problema de impresion|reimprimir)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'printer_issue', normalized };
+    }
+    if (
+        /(no encuentro mi cita|mi cita no aparece|no sale mi cita|no encuentro la cita)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'appointment_not_found', normalized };
+    }
+    if (
+        /(embarazada|adulto mayor|discapacidad|movilidad reducida|prioridad especial|necesito prioridad)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'special_priority', normalized };
+    }
+    if (/(acompanante|soy acompanante|vengo con alguien)/.test(normalized)) {
+        return { intent: 'companion', normalized };
+    }
+    if (
+        /(no veo bien|no puedo leer|letra grande|accesibilidad|dificultad visual)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'accessibility', normalized };
+    }
+    if (
+        /(necesito ayuda humana|necesito ayuda|quiero hablar con recepcion|llama a recepcion|apoyo humano)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'human_help', normalized };
+    }
+    if (
+        /(no tengo cita|sin cita|quiero turno|sacar turno|turno sin cita|walk in)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'walk_in', normalized };
+    }
+    if (/(tengo cita|check in|checkin|vengo con cita)/.test(normalized)) {
+        return { intent: 'have_appointment', normalized };
+    }
+    if (/(donde espero|donde me siento|donde aguardo)/.test(normalized)) {
+        return { intent: 'where_wait', normalized };
+    }
+    if (
+        /(que sigue|que hago ahora|siguiente paso|ahora que hago)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'next_step', normalized };
+    }
+    if (
+        /(cuanto falta|cuanto demora|cuanto tiempo|cuanto tarda|tiempo de espera)/.test(
+            normalized
+        )
+    ) {
+        return { intent: 'wait_time', normalized };
+    }
+
+    return null;
+}
+
+function buildAssistantWaitMessage() {
+    const queueState = state.queueState || {};
+    const waitingCount = Math.max(0, Number(queueState.waitingCount || 0));
+    const estimatedWaitMin = Math.max(
+        0,
+        Number(queueState.estimatedWaitMin || waitingCount * 8 || 0)
+    );
+    const delayReason = String(queueState.delayReason || '').trim();
+    return delayReason
+        ? `Ahora hay ${waitingCount} persona(s) en espera. El tiempo estimado es ${estimatedWaitMin} min. Motivo de demora: ${delayReason}.`
+        : `Ahora hay ${waitingCount} persona(s) en espera. El tiempo estimado es ${estimatedWaitMin} min.`;
+}
+
+function buildAssistantNextStepMessage() {
+    const ticket = state.lastIssuedTicket;
+    if (ticket?.ticketCode) {
+        return `Tu ticket ${ticket.ticketCode} ya esta generado. Espera mirando la pantalla de sala hasta que te llamen al consultorio indicado.`;
+    }
+    if (state.selectedFlow === 'walkin') {
+        return 'Completa tus iniciales y pulsa "Generar turno". Luego espera el llamado en la pantalla de sala.';
+    }
+    return 'Completa telefono, fecha y hora y pulsa "Confirmar check-in". Luego espera el llamado en la pantalla de sala.';
+}
+
+async function resolveAssistantIntent(route, rawText, startedAt) {
+    const intent = String(route?.intent || 'fallback');
+
+    switch (intent) {
+        case 'have_appointment':
+            focusFlowTarget('checkin');
+            recordAssistantMetric(intent, 'resolved', startedAt, {
+                action: 'focus_checkin',
+            });
+            return 'Te llevo a Tengo cita. Escribe telefono, fecha y hora y pulsa "Confirmar check-in".';
+        case 'walk_in':
+            focusFlowTarget('walkin');
+            recordAssistantMetric(intent, 'resolved', startedAt, {
+                action: 'focus_walkin',
+            });
+            return 'Te llevo a No tengo cita. Escribe tus iniciales y pulsa "Generar turno".';
+        case 'where_wait':
+            recordAssistantMetric(intent, 'resolved', startedAt, {
+                action: 'waiting_room_guidance',
+            });
+            return state.lastIssuedTicket?.ticketCode
+                ? `Espera en la sala mirando la pantalla. Cuando aparezca ${state.lastIssuedTicket.ticketCode}, acude al consultorio indicado.`
+                : 'Espera en la sala mirando la pantalla de turnos. Cuando llamen tu codigo, acude al consultorio indicado.';
+        case 'next_step':
+            recordAssistantMetric(intent, 'resolved', startedAt, {
+                action: 'next_step_guidance',
+            });
+            return buildAssistantNextStepMessage();
+        case 'wait_time':
+            recordAssistantMetric(intent, 'resolved', startedAt, {
+                action: 'wait_time_guidance',
+            });
+            return buildAssistantWaitMessage();
+        case 'companion':
+            recordAssistantMetric(intent, 'resolved', startedAt, {
+                action: 'companion_guidance',
+            });
+            return 'Tu acompanante puede esperar contigo en la sala. Si recepcion debe validar algo adicional, te ayudaran en el mostrador.';
+        case 'human_help': {
+            const support = await requestReceptionSupport({
+                source: 'assistant',
+                reason: 'human_help',
+                message: rawText,
+                intent,
+                announceInAssistant: false,
+            });
+            recordAssistantMetric(intent, 'handoff', startedAt, {
+                queued: support.queued,
+            });
+            return support.message;
+        }
+        case 'lost_ticket': {
+            const support = await requestReceptionSupport({
+                source: 'assistant',
+                reason: 'lost_ticket',
+                message: rawText,
+                intent,
+                announceInAssistant: false,
+            });
+            recordAssistantMetric(intent, 'handoff', startedAt, {
+                queued: support.queued,
+            });
+            return state.lastIssuedTicket?.ticketCode
+                ? `${support.message} Tu ultimo ticket registrado fue ${state.lastIssuedTicket.ticketCode}.`
+                : support.message;
+        }
+        case 'printer_issue': {
+            const support = await requestReceptionSupport({
+                source: 'assistant',
+                reason: 'printer_issue',
+                message: rawText,
+                intent,
+                announceInAssistant: false,
+            });
+            recordAssistantMetric(intent, 'handoff', startedAt, {
+                queued: support.queued,
+            });
+            return support.message;
+        }
+        case 'appointment_not_found': {
+            focusFlowTarget('checkin');
+            const support = await requestReceptionSupport({
+                source: 'assistant',
+                reason: 'appointment_not_found',
+                message: rawText,
+                intent,
+                announceInAssistant: false,
+            });
+            recordAssistantMetric(intent, 'handoff', startedAt, {
+                queued: support.queued,
+            });
+            return `${support.message} Mientras tanto, revisa telefono, fecha y hora en Tengo cita.`;
+        }
+        case 'special_priority': {
+            const support = await requestReceptionSupport({
+                source: 'assistant',
+                reason: 'special_priority',
+                message: rawText,
+                intent,
+                announceInAssistant: false,
+            });
+            recordAssistantMetric(intent, 'handoff', startedAt, {
+                queued: support.queued,
+            });
+            return support.message;
+        }
+        case 'accessibility': {
+            const support = await requestReceptionSupport({
+                source: 'assistant',
+                reason: 'accessibility',
+                message: rawText,
+                intent,
+                announceInAssistant: false,
+            });
+            recordAssistantMetric(intent, 'handoff', startedAt, {
+                queued: support.queued,
+            });
+            return support.message;
+        }
+        case 'clinical_blocked': {
+            const support = await requestReceptionSupport({
+                source: 'assistant',
+                reason: 'clinical_redirect',
+                message: rawText,
+                intent,
+                announceInAssistant: false,
+            });
+            recordAssistantMetric(intent, 'clinical_blocked', startedAt, {
+                queued: support.queued,
+            });
+            return 'En este kiosco no doy orientacion medica. Recepcion ya fue alertada para derivarte con el personal adecuado.';
+        }
+        default:
+            return '';
+    }
+}
+
 function assistantGuard(text) {
     const normalized = String(text || '')
         .toLowerCase()
@@ -2257,7 +2907,24 @@ async function submitAssistant(event) {
         sendBtn.disabled = true;
     }
 
+    const startedAt = performance.now();
     try {
+        const routedIntent = classifyAssistantIntent(text);
+        if (routedIntent && routedIntent.intent !== 'empty') {
+            const routedAnswer = await resolveAssistantIntent(
+                routedIntent,
+                text,
+                startedAt
+            );
+            appendAssistantMessage('bot', routedAnswer);
+            state.chatHistory = [
+                ...state.chatHistory,
+                { role: 'user', content: text },
+                { role: 'assistant', content: routedAnswer },
+            ].slice(-8);
+            return;
+        }
+
         const messages = [
             {
                 role: 'system',
@@ -2289,6 +2956,9 @@ async function submitAssistant(event) {
             payload?.choices?.[0]?.message?.content || ''
         ).trim();
         const answer = assistantGuard(aiText);
+        recordAssistantMetric('fallback_ai', 'fallback', startedAt, {
+            aiSource: 'figo',
+        });
         appendAssistantMessage('bot', answer);
 
         state.chatHistory = [
@@ -2296,7 +2966,10 @@ async function submitAssistant(event) {
             { role: 'user', content: text },
             { role: 'assistant', content: answer },
         ].slice(-8);
-    } catch (_error) {
+    } catch (error) {
+        recordAssistantMetric('fallback_ai', 'error', startedAt, {
+            error: String(error?.message || ''),
+        });
         appendAssistantMessage(
             'bot',
             'No pude conectar con el asistente. Te ayudo en recepcion para continuar con tu turno.'

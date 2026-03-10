@@ -55,6 +55,7 @@ final class StorageConfig
             'callbacks' => [],
             'reviews' => [],
             'queue_tickets' => [],
+            'queue_help_requests' => [],
             'telemedicine_intakes' => [],
             'clinical_uploads' => [],
             'availability' => [],
@@ -118,6 +119,9 @@ final class StorageConfig
         $callbacks = isset($store['callbacks']) && is_array($store['callbacks']) ? $store['callbacks'] : [];
         $reviews = isset($store['reviews']) && is_array($store['reviews']) ? $store['reviews'] : [];
         $queueTickets = isset($store['queue_tickets']) && is_array($store['queue_tickets']) ? $store['queue_tickets'] : [];
+        $queueHelpRequests = isset($store['queue_help_requests']) && is_array($store['queue_help_requests'])
+            ? $store['queue_help_requests']
+            : [];
         $telemedicineIntakes = isset($store['telemedicine_intakes']) && is_array($store['telemedicine_intakes'])
             ? $store['telemedicine_intakes']
             : [];
@@ -133,6 +137,7 @@ final class StorageConfig
         $callbacks = self::normalizeStoreRecordsWithNumericId($callbacks, 'callbacks');
         $reviews = self::normalizeStoreRecordsWithNumericId($reviews, 'reviews');
         $queueTickets = self::normalizeStoreRecordsWithNumericId($queueTickets, 'queue_tickets');
+        $queueHelpRequests = self::normalizeStoreRecordsWithNumericId($queueHelpRequests, 'queue_help_requests');
         $telemedicineIntakes = self::normalizeStoreRecordsWithNumericId($telemedicineIntakes, 'telemedicine_intakes');
         $clinicalUploads = self::normalizeStoreRecordsWithNumericId($clinicalUploads, 'clinical_uploads');
 
@@ -141,6 +146,7 @@ final class StorageConfig
             'callbacks' => array_values($callbacks),
             'reviews' => array_values($reviews),
             'queue_tickets' => array_values($queueTickets),
+            'queue_help_requests' => array_values($queueHelpRequests),
             'telemedicine_intakes' => array_values($telemedicineIntakes),
             'clinical_uploads' => array_values($clinicalUploads),
             'availability' => $availability,

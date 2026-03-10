@@ -32,8 +32,10 @@ function register_api_routes(Router $router): void
     $router->add('POST', 'queue-surface-heartbeat', [QueueController::class, 'surfaceHeartbeat']);
     $router->add('POST', 'queue-checkin', [QueueController::class, 'checkin']);
     $router->add('POST', 'queue-ticket', [QueueController::class, 'ticket']);
+    $router->add('POST', 'queue-help-request', [QueueController::class, 'helpRequest']);
     $router->add('POST', 'queue-call-next', [QueueController::class, 'callNext']);
     $router->add('PATCH', 'queue-ticket', [QueueController::class, 'patchTicket']);
+    $router->add('PATCH', 'queue-help-request', [QueueController::class, 'patchHelpRequest']);
     $router->add('POST', 'queue-reprint', [QueueController::class, 'reprint']);
 
     $router->add('GET', 'appointments', [AppointmentController::class, 'index']);

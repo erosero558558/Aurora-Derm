@@ -129,6 +129,9 @@ class AdminDataController
         $store['callbacks'] = isset($payload['callbacks']) && is_array($payload['callbacks']) ? $payload['callbacks'] : [];
         $store['reviews'] = isset($payload['reviews']) && is_array($payload['reviews']) ? $payload['reviews'] : [];
         $store['queue_tickets'] = isset($payload['queue_tickets']) && is_array($payload['queue_tickets']) ? $payload['queue_tickets'] : [];
+        $store['queue_help_requests'] = isset($payload['queue_help_requests']) && is_array($payload['queue_help_requests'])
+            ? $payload['queue_help_requests']
+            : [];
         if (isset($payload['telemedicine_intakes']) && is_array($payload['telemedicine_intakes'])) {
             $store['telemedicine_intakes'] = $payload['telemedicine_intakes'];
         }

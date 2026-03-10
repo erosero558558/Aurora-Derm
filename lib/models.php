@@ -269,6 +269,40 @@ function normalize_queue_ticket(array $ticket): array
         $createdAt = local_date('c');
     }
 
+    $needsAssistance = isset($ticket['needsAssistance'])
+        ? parse_bool($ticket['needsAssistance'])
+        : (isset($ticket['needs_assistance']) ? parse_bool($ticket['needs_assistance']) : false);
+    $specialPriority = isset($ticket['specialPriority'])
+        ? parse_bool($ticket['specialPriority'])
+        : (isset($ticket['special_priority']) ? parse_bool($ticket['special_priority']) : false);
+    $lateArrival = isset($ticket['lateArrival'])
+        ? parse_bool($ticket['lateArrival'])
+        : (isset($ticket['late_arrival']) ? parse_bool($ticket['late_arrival']) : false);
+
+    $assistanceRequestStatus = strtolower(trim((string) (
+        $ticket['assistanceRequestStatus']
+        ?? ($ticket['assistance_request_status'] ?? '')
+    )));
+    if (!in_array($assistanceRequestStatus, ['pending', 'attending', 'resolved'], true)) {
+        $assistanceRequestStatus = '';
+    }
+
+    $activeHelpRequestId = null;
+    $activeHelpRequestRaw = $ticket['activeHelpRequestId'] ?? ($ticket['active_help_request_id'] ?? null);
+    if ($activeHelpRequestRaw !== null && $activeHelpRequestRaw !== '') {
+        $candidate = (int) $activeHelpRequestRaw;
+        if ($candidate > 0) {
+            $activeHelpRequestId = $candidate;
+        }
+    }
+
+    $estimatedWaitMin = isset($ticket['estimatedWaitMin'])
+        ? (int) $ticket['estimatedWaitMin']
+        : (isset($ticket['estimated_wait_min']) ? (int) $ticket['estimated_wait_min'] : 0);
+    if ($estimatedWaitMin < 0) {
+        $estimatedWaitMin = 0;
+    }
+
     return [
         'id' => isset($ticket['id']) ? (int) $ticket['id'] : (int) round(microtime(true) * 1000),
         'ticketCode' => $ticketCode,
@@ -284,5 +318,108 @@ function normalize_queue_ticket(array $ticket): array
         'calledAt' => truncate_field(trim((string) ($ticket['calledAt'] ?? '')), 40),
         'completedAt' => truncate_field(trim((string) ($ticket['completedAt'] ?? '')), 40),
         'createdSource' => $createdSource,
+        'needsAssistance' => $needsAssistance,
+        'assistanceRequestStatus' => $assistanceRequestStatus,
+        'activeHelpRequestId' => $activeHelpRequestId,
+        'assistanceReason' => truncate_field(sanitize_xss(trim((string) (
+            $ticket['assistanceReason']
+            ?? ($ticket['assistance_reason'] ?? '')
+        ))), 80),
+        'specialPriority' => $specialPriority,
+        'lateArrival' => $lateArrival,
+        'reprintRequestedAt' => truncate_field(trim((string) (
+            $ticket['reprintRequestedAt']
+            ?? ($ticket['reprint_requested_at'] ?? '')
+        )), 40),
+        'estimatedWaitMin' => $estimatedWaitMin,
+    ];
+}
+
+function queue_help_request_reason_label(string $reason): string
+{
+    $normalized = strtolower(trim($reason));
+    $labels = [
+        'human_help' => 'Ayuda humana',
+        'lost_ticket' => 'Perdio su ticket',
+        'printer_issue' => 'Problema de impresion',
+        'appointment_not_found' => 'Cita no encontrada',
+        'special_priority' => 'Prioridad especial',
+        'accessibility' => 'Accesibilidad',
+        'clinical_redirect' => 'Derivacion clinica',
+        'late_arrival' => 'Llegada tarde',
+        'offline_pending' => 'Pendiente offline',
+        'reprint_requested' => 'Reimpresion solicitada',
+        'general' => 'Apoyo general',
+    ];
+
+    return $labels[$normalized] ?? 'Apoyo general';
+}
+
+function normalize_queue_help_request(array $request): array
+{
+    $status = strtolower(trim((string) ($request['status'] ?? 'pending')));
+    if (!in_array($status, ['pending', 'attending', 'resolved'], true)) {
+        $status = 'pending';
+    }
+
+    $ticketId = null;
+    $ticketIdRaw = $request['ticketId'] ?? ($request['ticket_id'] ?? null);
+    if ($ticketIdRaw !== null && $ticketIdRaw !== '') {
+        $candidate = (int) $ticketIdRaw;
+        if ($candidate > 0) {
+            $ticketId = $candidate;
+        }
+    }
+
+    $reason = strtolower(trim((string) ($request['reason'] ?? 'general')));
+    if ($reason === '') {
+        $reason = 'general';
+    }
+
+    $createdAt = trim((string) ($request['createdAt'] ?? ($request['created_at'] ?? '')));
+    if ($createdAt === '') {
+        $createdAt = local_date('c');
+    }
+
+    $updatedAt = trim((string) ($request['updatedAt'] ?? ($request['updated_at'] ?? $createdAt)));
+    if ($updatedAt === '') {
+        $updatedAt = $createdAt;
+    }
+
+    return [
+        'id' => isset($request['id']) ? (int) $request['id'] : (int) round(microtime(true) * 1000),
+        'source' => truncate_field(sanitize_xss(trim((string) ($request['source'] ?? 'kiosk'))), 40),
+        'reason' => truncate_field($reason, 60),
+        'reasonLabel' => queue_help_request_reason_label($reason),
+        'status' => $status,
+        'message' => truncate_field(sanitize_xss(trim((string) ($request['message'] ?? ''))), 500),
+        'intent' => truncate_field(sanitize_xss(trim((string) ($request['intent'] ?? ''))), 80),
+        'sessionId' => truncate_field(trim((string) (
+            $request['sessionId']
+            ?? ($request['session_id'] ?? '')
+        )), 120),
+        'ticketId' => $ticketId,
+        'ticketCode' => truncate_field(trim((string) (
+            $request['ticketCode']
+            ?? ($request['ticket_code'] ?? '')
+        )), 20),
+        'patientInitials' => truncate_field(strtoupper((string) (preg_replace(
+            '/[^A-Z]/',
+            '',
+            strtoupper(trim((string) ($request['patientInitials'] ?? ($request['patient_initials'] ?? ''))))
+        ) ?: '')), 4),
+        'createdAt' => $createdAt,
+        'updatedAt' => $updatedAt,
+        'attendedAt' => truncate_field(trim((string) (
+            $request['attendedAt']
+            ?? ($request['attended_at'] ?? '')
+        )), 40),
+        'resolvedAt' => truncate_field(trim((string) (
+            $request['resolvedAt']
+            ?? ($request['resolved_at'] ?? '')
+        )), 40),
+        'context' => isset($request['context']) && is_array($request['context'])
+            ? $request['context']
+            : [],
     ];
 }

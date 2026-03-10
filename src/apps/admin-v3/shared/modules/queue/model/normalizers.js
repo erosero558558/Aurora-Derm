@@ -30,6 +30,23 @@ export function normalizeTicket(raw, fallbackIndex = 0) {
         ),
         calledAt: String(raw?.calledAt || raw?.called_at || ''),
         completedAt: String(raw?.completedAt || raw?.completed_at || ''),
+        needsAssistance: Boolean(raw?.needsAssistance ?? raw?.needs_assistance),
+        assistanceRequestStatus: String(
+            raw?.assistanceRequestStatus || raw?.assistance_request_status || ''
+        ),
+        activeHelpRequestId:
+            Number(
+                raw?.activeHelpRequestId ?? raw?.active_help_request_id ?? 0
+            ) || null,
+        specialPriority: Boolean(raw?.specialPriority ?? raw?.special_priority),
+        lateArrival: Boolean(raw?.lateArrival ?? raw?.late_arrival),
+        reprintRequestedAt: String(
+            raw?.reprintRequestedAt || raw?.reprint_requested_at || ''
+        ),
+        estimatedWaitMin: Math.max(
+            0,
+            Number(raw?.estimatedWaitMin ?? raw?.estimated_wait_min ?? 0) || 0
+        ),
     };
 }
 
