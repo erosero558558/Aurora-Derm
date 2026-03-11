@@ -151,6 +151,7 @@ let opsAlertsState = null;
 let opsFocusMode = null;
 let opsPlaybookState = null;
 let queueTicketLookupTerm = null;
+let queueTicketSimulationContext = null;
 let queueOpsInteraction = {
     lastAt: 0,
     timerId: 0,
@@ -185,6 +186,7 @@ function loadStoredQueueTicketLookupTerm() {
 }
 
 function persistQueueTicketLookupTerm(value) {
+    clearQueueTicketSimulationContext();
     queueTicketLookupTerm = normalizeQueueTicketLookupTerm(value);
     try {
         if (queueTicketLookupTerm) {
@@ -208,6 +210,64 @@ function getQueueTicketLookupTerm() {
     const stateSearch = normalizeQueueTicketLookupTerm(getState().queue.search);
     queueTicketLookupTerm = loadStoredQueueTicketLookupTerm() || stateSearch;
     return queueTicketLookupTerm;
+}
+
+function clearQueueTicketSimulationContext() {
+    queueTicketSimulationContext = null;
+    return null;
+}
+
+function cloneQueueTicketSnapshot(ticket) {
+    return ticket && typeof ticket === 'object' ? { ...ticket } : null;
+}
+
+function persistQueueTicketSimulationContext(value) {
+    const lookupTerm = normalizeQueueTicketLookupTerm(value?.lookupTerm || '');
+    const targetTicketId = Number(value?.targetTicketId || 0);
+    const sourceTicketId = Number(value?.sourceTicketId || 0);
+    const tickets = Array.isArray(value?.tickets)
+        ? value.tickets.map(cloneQueueTicketSnapshot).filter(Boolean)
+        : [];
+    if (!lookupTerm || !targetTicketId || !sourceTicketId || !tickets.length) {
+        return clearQueueTicketSimulationContext();
+    }
+    queueTicketSimulationContext = {
+        lookupTerm,
+        targetTicketId,
+        sourceTicketId,
+        sourceStatus: String(value?.sourceStatus || '')
+            .trim()
+            .toLowerCase(),
+        sourceConsultorio: Number(value?.sourceConsultorio || 0),
+        sourceTicketCode: String(value?.sourceTicketCode || '').trim(),
+        actionLabel: String(value?.actionLabel || '').trim(),
+        tickets,
+    };
+    return queueTicketSimulationContext;
+}
+
+function getQueueTicketSimulationContext(currentLookupTerm = '') {
+    const context = queueTicketSimulationContext;
+    if (!context) {
+        return null;
+    }
+    const lookupTerm = normalizeQueueTicketLookupTerm(currentLookupTerm);
+    if (!lookupTerm || lookupTerm !== context.lookupTerm) {
+        return clearQueueTicketSimulationContext();
+    }
+    const sourceTicket = getQueueTicketById(context.sourceTicketId);
+    const sourceStatus = String(sourceTicket?.status || '')
+        .trim()
+        .toLowerCase();
+    const sourceConsultorio = Number(sourceTicket?.assignedConsultorio || 0);
+    if (
+        !sourceTicket ||
+        sourceStatus !== context.sourceStatus ||
+        sourceConsultorio !== context.sourceConsultorio
+    ) {
+        return clearQueueTicketSimulationContext();
+    }
+    return context;
 }
 
 function getQueueAppsHubRoot() {
@@ -2016,6 +2076,12 @@ function getOpsLogSourceLabel(source) {
     if (value === 'dispatch') {
         return 'Despacho';
     }
+    if (value === 'ticket_simulation') {
+        return 'Simulación';
+    }
+    if (value === 'next_turns') {
+        return 'Próximos turnos';
+    }
     return 'Manual';
 }
 
@@ -2031,7 +2097,14 @@ function filterOpsLogItems(items, filter) {
     }
     if (filter === 'changes') {
         return list.filter((item) =>
-            ['config', 'opening', 'handoff', 'dispatch'].includes(item.source)
+            [
+                'config',
+                'opening',
+                'handoff',
+                'dispatch',
+                'ticket_simulation',
+                'next_turns',
+            ].includes(item.source)
         );
     }
     if (filter === 'status') {
@@ -3872,6 +3945,30 @@ function getSortedWaitingTickets() {
         });
 }
 
+function getSortedWaitingTicketsFromList(tickets) {
+    return (Array.isArray(tickets) ? tickets : [])
+        .filter(
+            (ticket) =>
+                String(ticket?.status || '')
+                    .trim()
+                    .toLowerCase() === 'waiting'
+        )
+        .sort((left, right) => {
+            const leftMs = getQueueTicketTimestampMs(left, 'waiting');
+            const rightMs = getQueueTicketTimestampMs(right, 'waiting');
+            if (Number.isFinite(leftMs) && Number.isFinite(rightMs)) {
+                return leftMs - rightMs;
+            }
+            if (Number.isFinite(leftMs)) {
+                return -1;
+            }
+            if (Number.isFinite(rightMs)) {
+                return 1;
+            }
+            return Number(left?.id || 0) - Number(right?.id || 0);
+        });
+}
+
 function getUnassignedWaitingTickets() {
     return getSortedWaitingTickets().filter(
         (ticket) => !Number(ticket.assignedConsultorio || 0)
@@ -3882,6 +3979,44 @@ function getAssignedWaitingTickets(consultorio) {
     const target = Number(consultorio || 0) === 2 ? 2 : 1;
     return getSortedWaitingTickets().filter(
         (ticket) => Number(ticket.assignedConsultorio || 0) === target
+    );
+}
+
+function getUnassignedWaitingTicketsFromList(tickets) {
+    return getSortedWaitingTicketsFromList(tickets).filter(
+        (ticket) => !Number(ticket.assignedConsultorio || 0)
+    );
+}
+
+function getAssignedWaitingTicketsFromList(tickets, consultorio) {
+    const target = Number(consultorio || 0) === 2 ? 2 : 1;
+    return getSortedWaitingTicketsFromList(tickets).filter(
+        (ticket) => Number(ticket.assignedConsultorio || 0) === target
+    );
+}
+
+function getCalledTicketForConsultorioFromList(tickets, consultorio) {
+    const target = Number(consultorio || 0) === 2 ? 2 : 1;
+    return (
+        (Array.isArray(tickets) ? tickets : []).find(
+            (ticket) =>
+                String(ticket?.status || '')
+                    .trim()
+                    .toLowerCase() === 'called' &&
+                Number(ticket?.assignedConsultorio || 0) === target
+        ) || null
+    );
+}
+
+function getQueueTicketByIdFromList(tickets, ticketId) {
+    const target = Number(ticketId || 0);
+    if (!target) {
+        return null;
+    }
+    return (
+        (Array.isArray(tickets) ? tickets : []).find(
+            (ticket) => Number(ticket?.id || 0) === target
+        ) || null
     );
 }
 
@@ -6756,6 +6891,1065 @@ function renderQueueTicketRoute(manifest, detectedPlatform) {
             rerenderQueueOpsHub(manifest, detectedPlatform);
         };
     }
+}
+
+function sortQueueWaitingLikeLane(tickets) {
+    return [...(Array.isArray(tickets) ? tickets : [])].sort((left, right) => {
+        const leftMs = getQueueTicketTimestampMs(left, 'waiting');
+        const rightMs = getQueueTicketTimestampMs(right, 'waiting');
+        if (Number.isFinite(leftMs) && Number.isFinite(rightMs)) {
+            return leftMs - rightMs;
+        }
+        if (Number.isFinite(leftMs)) {
+            return -1;
+        }
+        if (Number.isFinite(rightMs)) {
+            return 1;
+        }
+        return Number(left?.id || 0) - Number(right?.id || 0);
+    });
+}
+
+function copyQueueTicketSimulation(simulation) {
+    if (!simulation || !simulation.result) {
+        return Promise.resolve();
+    }
+    const lines = [
+        `${simulation.title} - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${simulation.statusLabel}`,
+        `Antes: ${simulation.beforeLabel}`,
+        `Acción: ${simulation.actionLabel}`,
+        `Después: ${simulation.afterLabel}`,
+        `Riesgo: ${simulation.riskLabel}`,
+        `Siguiente foco: ${simulation.focusLabel}`,
+        simulation.focusDetail,
+    ];
+    return navigator.clipboard
+        .writeText(lines.join('\n'))
+        .then(() => createToast('Simulación copiada', 'success'))
+        .catch(() => createToast('No se pudo copiar la simulación', 'error'));
+}
+
+function buildQueueTicketSimulation(manifest, detectedPlatform) {
+    const lookup = buildQueueTicketLookup(manifest, detectedPlatform);
+    const result = lookup.result;
+    if (!result) {
+        return {
+            title: 'Simulación operativa en espera',
+            summary:
+                lookup.term && !lookup.result
+                    ? 'No hay una coincidencia activa para simular. Ajusta el ticket o limpia la búsqueda para volver a intentarlo.'
+                    : 'Busca un ticket para proyectar el efecto de su siguiente acción útil antes de tocar la cola real.',
+            statusLabel: lookup.term
+                ? 'Sin simulación disponible'
+                : 'Sin ticket cargado',
+            statusState: lookup.term ? 'warning' : 'idle',
+            result: null,
+            beforeLabel: 'Sin ticket seleccionado',
+            actionLabel: 'Sin acción',
+            afterLabel: 'Sin proyección',
+            riskLabel:
+                'La simulación se activa cuando el lookup encuentra un ticket real.',
+            focusLabel: 'Sin foco siguiente',
+            focusDetail: 'No hay pivote operativo calculado todavía.',
+            focusPivot: null,
+        };
+    }
+
+    const simulationContext = getQueueTicketSimulationContext(
+        getQueueTicketLookupTerm()
+    );
+    const simulationTickets = Array.isArray(simulationContext?.tickets)
+        ? simulationContext.tickets
+              .map(cloneQueueTicketSnapshot)
+              .filter(Boolean)
+        : getQueueSource()
+              .queueTickets.map(cloneQueueTicketSnapshot)
+              .filter(Boolean);
+    const baseQueueTickets = simulationTickets
+        .map(cloneQueueTicketSnapshot)
+        .filter(Boolean);
+    const ticket =
+        getQueueTicketByIdFromList(simulationTickets, result.ticketId) ||
+        getQueueTicketById(result.ticketId);
+    if (!ticket) {
+        return {
+            title: 'Simulación sin snapshot',
+            summary:
+                'El ticket ya no está en el estado local. Refresca la cola o vuelve a buscarlo antes de proyectar el siguiente paso.',
+            statusLabel: 'Snapshot vencido',
+            statusState: 'warning',
+            result: null,
+            beforeLabel: 'Sin snapshot',
+            actionLabel: result.primaryLabel,
+            afterLabel: 'Sin proyección',
+            riskLabel: 'Refresca la cola para reconstruir la simulación.',
+            focusLabel: 'Sin foco siguiente',
+            focusDetail: 'No se pudo reconstruir el contexto del ticket.',
+            focusPivot: null,
+        };
+    }
+
+    const status = String(ticket.status || '')
+        .trim()
+        .toLowerCase();
+    const statusCopy = getQueueTicketLookupStatusCopy(ticket);
+    const ageMode = status === 'called' ? 'called' : 'waiting';
+    const ageLabel =
+        status === 'waiting' || status === 'called'
+            ? formatQueueTicketAgeLabel(ticket, ageMode)
+            : `Último estado · ${statusCopy}`;
+    const consultorio = Number(ticket.assignedConsultorio || 0);
+    const slot = consultorio === 2 ? 2 : consultorio === 1 ? 1 : 0;
+    const ticketCode = String(ticket.ticketCode || 'ticket');
+    const pendingAction = getState().queue.pendingSensitiveAction;
+    const pendingForTicket =
+        !simulationContext &&
+        Number(pendingAction?.ticketId || 0) === Number(ticket.id || 0)
+            ? pendingAction
+            : null;
+    const generalWaiting =
+        getUnassignedWaitingTicketsFromList(simulationTickets);
+    const laneWaiting =
+        slot > 0
+            ? getAssignedWaitingTicketsFromList(simulationTickets, slot)
+            : generalWaiting;
+    const laneIndex = laneWaiting.findIndex(
+        (item) => Number(item.id || 0) === Number(ticket.id || 0)
+    );
+    const currentCalled =
+        slot > 0
+            ? getCalledTicketForConsultorioFromList(simulationTickets, slot)
+            : null;
+
+    let title = `Simulación de ${ticketCode}`;
+    let summary = simulationContext
+        ? `Secuencia encadenada desde ${simulationContext.sourceTicketCode || 'la simulación previa'} para ver el siguiente paso sin tocar la cola real todavía.`
+        : 'Este bloque proyecta el siguiente efecto útil sobre la cola antes de ejecutar la acción real.';
+    let statusLabel = simulationContext
+        ? 'Secuencia simulada'
+        : 'Simulación lista';
+    let statusState = simulationContext ? 'ready' : result.panelState;
+    let beforeLabel = `${statusCopy} · ${ageLabel}`;
+    let actionLabel = result.primaryLabel;
+    let afterLabel = 'Sin proyección calculada';
+    let riskLabel = 'Sin riesgo inmediato calculado.';
+    let focusLabel = 'Sin siguiente foco';
+    let focusDetail = 'No quedó un pivote útil después de esta acción.';
+    let focusPivot = null;
+    let projectedTickets = null;
+
+    const setFocusPivot = (pivot, fallbackLabel, fallbackDetail) => {
+        if (pivot) {
+            focusPivot = pivot;
+            focusLabel = pivot.label;
+            focusDetail = pivot.detail;
+            return;
+        }
+        focusPivot = null;
+        focusLabel = fallbackLabel;
+        focusDetail = fallbackDetail;
+    };
+
+    if (pendingForTicket) {
+        const pendingCopy = getQueuePendingActionCopy(pendingForTicket, ticket);
+        const pendingSlot =
+            Number(pendingForTicket.consultorio || 0) === 2 ? 2 : 1;
+        const pendingActionName = String(pendingForTicket.action || '')
+            .trim()
+            .toLowerCase();
+        projectedTickets = baseQueueTickets.map((item) =>
+            Number(item.id || 0) === Number(ticket.id || 0)
+                ? {
+                      ...item,
+                      status:
+                          pendingActionName === 'no_show'
+                              ? 'no_show'
+                              : pendingActionName === 'completar'
+                                ? 'completed'
+                                : String(item.status || 'waiting'),
+                      assignedConsultorio:
+                          pendingActionName === 'no_show' ||
+                          pendingActionName === 'completar'
+                              ? null
+                              : item.assignedConsultorio,
+                      completedAt:
+                          pendingActionName === 'no_show' ||
+                          pendingActionName === 'completar'
+                              ? new Date().toISOString()
+                              : item.completedAt,
+                  }
+                : item
+        );
+        const nextAssigned =
+            getAssignedWaitingTicketsFromList(
+                projectedTickets,
+                pendingSlot
+            )[0] || null;
+        title = `Simulación retenida para ${ticketCode}`;
+        summary =
+            'Ya existe una acción sensible pendiente para este ticket. El siguiente cambio real depende de confirmarla o cancelarla.';
+        statusLabel = 'Confirmación pendiente';
+        statusState = 'alert';
+        beforeLabel = `Pendiente · ${pendingCopy}`;
+        actionLabel = `Confirmar ${pendingCopy}`;
+        afterLabel =
+            String(pendingForTicket.action || '')
+                .trim()
+                .toLowerCase() === 'no_show' ||
+            String(pendingForTicket.action || '')
+                .trim()
+                .toLowerCase() === 'completar'
+                ? nextAssigned
+                    ? `${nextAssigned.ticketCode} queda primero en C${pendingSlot} tras confirmar.`
+                    : `C${pendingSlot} queda libre tras confirmar.`
+                : `${ticketCode} cambia de estado cuando confirmes la acción pendiente.`;
+        riskLabel =
+            'Mientras la confirmación siga pendiente, Enter y el flujo rápido del hub quedan tomados por esta acción sensible.';
+        setFocusPivot(
+            buildQueueTicketRoutePivot(
+                nextAssigned,
+                `Cargar ${String(nextAssigned?.ticketCode || '')}`,
+                'Es el turno que quedaría primero después de confirmar la acción pendiente.'
+            ),
+            'Sin siguiente foco',
+            'No hay otro ticket listo detrás de esta confirmación.'
+        );
+    } else if (status === 'called' && slot > 0) {
+        projectedTickets = baseQueueTickets.map((item) =>
+            Number(item.id || 0) === Number(ticket.id || 0)
+                ? {
+                      ...item,
+                      status: 'completed',
+                      assignedConsultorio: null,
+                      completedAt: new Date().toISOString(),
+                  }
+                : item
+        );
+        const nextAssigned =
+            getAssignedWaitingTicketsFromList(projectedTickets, slot)[0] ||
+            null;
+        const nextGeneral = generalWaiting[0] || null;
+        const behindCount = getAssignedWaitingTicketsFromList(
+            simulationTickets,
+            slot
+        ).length;
+        beforeLabel = `${ticketCode} ocupa C${slot} · ${behindCount} detrás`;
+        actionLabel = `Completar ${ticketCode}`;
+        afterLabel = nextAssigned
+            ? `${nextAssigned.ticketCode} queda listo en C${slot} cuando cierres ${ticketCode}.`
+            : `C${slot} queda libre en cuanto cierres ${ticketCode}.`;
+        riskLabel = nextAssigned
+            ? `La cola de C${slot} depende de cerrar ${ticketCode}; detrás ya espera ${nextAssigned.ticketCode}.`
+            : `No hay otro ticket asignado detrás, así que cerrar ${ticketCode} devuelve el foco a recepción.`;
+        setFocusPivot(
+            buildQueueTicketRoutePivot(
+                nextAssigned || nextGeneral,
+                `Cargar ${String(
+                    (nextAssigned || nextGeneral)?.ticketCode || ''
+                )}`,
+                nextAssigned
+                    ? 'Es el siguiente turno que quedará listo al cerrar la atención actual.'
+                    : 'Es el ticket general más antiguo si C no recibe otro turno enseguida.'
+            ),
+            'Sin siguiente foco',
+            'No hay otro ticket útil para cargar después de este cierre.'
+        );
+    } else if (status === 'waiting' && slot === 0) {
+        const targetSlot = Number(result.primaryConsultorio || 0);
+        projectedTickets =
+            targetSlot > 0
+                ? baseQueueTickets.map((item) =>
+                      Number(item.id || 0) === Number(ticket.id || 0)
+                          ? {
+                                ...item,
+                                assignedConsultorio: targetSlot,
+                            }
+                          : item
+                  )
+                : null;
+        const targetCalled =
+            targetSlot > 0
+                ? getCalledTicketForConsultorioFromList(
+                      projectedTickets || simulationTickets,
+                      targetSlot
+                  )
+                : null;
+        const targetWaiting =
+            targetSlot > 0
+                ? getAssignedWaitingTicketsFromList(
+                      projectedTickets || simulationTickets,
+                      targetSlot
+                  )
+                : [];
+        const laneAfterAssign = sortQueueWaitingLikeLane([
+            ...targetWaiting,
+            ...(projectedTickets
+                ? []
+                : [
+                      {
+                          ...ticket,
+                          assignedConsultorio: targetSlot,
+                      },
+                  ]),
+        ]);
+        const afterIndex = laneAfterAssign.findIndex(
+            (item) => Number(item.id || 0) === Number(ticket.id || 0)
+        );
+        const blocker =
+            targetCalled ||
+            (afterIndex > 0 ? laneAfterAssign[afterIndex - 1] : null);
+        const stepsAhead = afterIndex + (targetCalled ? 1 : 0);
+        beforeLabel =
+            laneIndex > 0
+                ? `Cola general · ${laneIndex} turno(s) delante`
+                : 'Cabecera de cola general';
+        actionLabel = result.primaryLabel;
+        afterLabel =
+            targetSlot > 0
+                ? stepsAhead <= 0
+                    ? `${ticketCode} quedaría listo para llamado en C${targetSlot}.`
+                    : `${ticketCode} entraría a C${targetSlot} con ${stepsAhead} paso(s) por delante.`
+                : `${ticketCode} seguiría en la cola general.`;
+        riskLabel =
+            targetSlot > 0
+                ? blocker
+                    ? `${String(
+                          blocker.ticketCode || 'otro turno'
+                      )} seguiría delante en C${targetSlot} después de reasignar.`
+                    : `No habría bloqueo inmediato en C${targetSlot} después de reasignar.`
+                : 'Sin consultorio sugerido disponible para este turno.';
+        setFocusPivot(
+            buildQueueTicketRoutePivot(
+                blocker,
+                `Cargar ${String(blocker?.ticketCode || '')}`,
+                'Es el bloqueo inmediato que seguiría antes de este ticket tras la reasignación.'
+            ),
+            stepsAhead <= 0 ? 'Sin bloqueo inmediato' : 'Sin pivote siguiente',
+            stepsAhead <= 0
+                ? 'Después de reasignarlo, este ticket quedaría listo sin otro bloqueo delante.'
+                : 'No se pudo calcular el ticket que quedaría delante.'
+        );
+    } else if (status === 'waiting' && slot > 0) {
+        const waitingSameLane = getAssignedWaitingTicketsFromList(
+            simulationTickets,
+            slot
+        );
+        const nextBehind =
+            waitingSameLane.find(
+                (item) => Number(item.id || 0) !== Number(ticket.id || 0)
+            ) || null;
+        const previousSameLane =
+            laneIndex > 0 ? laneWaiting[laneIndex - 1] : null;
+        const laneHead = waitingSameLane[0] || null;
+        const canCallNow =
+            Number(laneHead?.id || 0) === Number(ticket.id || 0) &&
+            !currentCalled;
+        if (canCallNow) {
+            projectedTickets = baseQueueTickets.map((item) =>
+                Number(item.id || 0) === Number(ticket.id || 0)
+                    ? {
+                          ...item,
+                          status: 'called',
+                          assignedConsultorio: slot,
+                          calledAt: new Date().toISOString(),
+                      }
+                    : item
+            );
+            beforeLabel = `Cabecera de C${slot} · listo para llamado`;
+            actionLabel = `Llamar ${ticketCode}`;
+            afterLabel = nextBehind
+                ? `${ticketCode} pasaría a atención y ${nextBehind.ticketCode} quedaría siguiente en C${slot}.`
+                : `${ticketCode} pasaría a atención y C${slot} quedaría sin otro ticket asignado detrás.`;
+            riskLabel = nextBehind
+                ? `El flujo de C${slot} seguiría vivo con ${nextBehind.ticketCode} detrás.`
+                : `Sin otro turno detrás, el siguiente cuello vuelve a recepción.`;
+            setFocusPivot(
+                buildQueueTicketRoutePivot(
+                    nextBehind || generalWaiting[0] || null,
+                    `Cargar ${String(
+                        (nextBehind || generalWaiting[0] || null)?.ticketCode ||
+                            ''
+                    )}`,
+                    nextBehind
+                        ? 'Es el turno que quedaría inmediatamente detrás después del llamado.'
+                        : 'Es el ticket general más antiguo si quieres ver el siguiente frente de presión.'
+                ),
+                'Sin siguiente foco',
+                'No hay otro turno útil calculado después de este llamado.'
+            );
+        } else {
+            beforeLabel = `C${slot} asignado · ${Math.max(
+                laneIndex + (currentCalled ? 1 : 0),
+                0
+            )} paso(s) delante`;
+            actionLabel = result.primaryLabel;
+            afterLabel = previousSameLane
+                ? `${ticketCode} seguiría esperando detrás de ${previousSameLane.ticketCode} en C${slot}.`
+                : currentCalled
+                  ? `${ticketCode} seguiría esperando a que ${currentCalled.ticketCode} libere C${slot}.`
+                  : `${ticketCode} ya quedó en C${slot}, pero todavía conviene usar el operador o la tabla para moverlo.`;
+            riskLabel =
+                'Esta acción no cambia de inmediato la cola; sirve para abrir contexto o revisar el bloqueo exacto antes de tocar el ticket.';
+            setFocusPivot(
+                buildQueueTicketRoutePivot(
+                    currentCalled || previousSameLane,
+                    `Cargar ${String(
+                        (currentCalled || previousSameLane)?.ticketCode || ''
+                    )}`,
+                    'Es el ticket que todavía bloquea o precede a este turno dentro del consultorio.'
+                ),
+                'Sin bloqueo directo',
+                'No hay otro ticket visible delante dentro del mismo carril.'
+            );
+        }
+    } else {
+        const sameLaneCurrent =
+            slot > 0
+                ? getCalledTicketForConsultorio(slot)
+                : generalWaiting[0] || null;
+        beforeLabel = `${result.statusCopy} · ruta cerrada`;
+        actionLabel =
+            result.primaryAction === 'reprint'
+                ? result.primaryLabel
+                : 'Sin acción operativa directa';
+        afterLabel =
+            'La cola real ya no depende de este ticket; cualquier decisión ahora pasa por el siguiente turno vivo.';
+        riskLabel =
+            'El riesgo ya no está en este ticket sino en el siguiente paciente que sostenga el carril.';
+        setFocusPivot(
+            buildQueueTicketRoutePivot(
+                sameLaneCurrent,
+                `Cargar ${String(sameLaneCurrent?.ticketCode || '')}`,
+                'Es el turno vivo más cercano después del cierre de este ticket.'
+            ),
+            'Sin siguiente foco',
+            'No hay otro turno cercano para tomar como siguiente foco.'
+        );
+    }
+
+    return {
+        title,
+        summary,
+        statusLabel,
+        statusState,
+        result,
+        beforeLabel,
+        actionLabel,
+        afterLabel,
+        riskLabel,
+        focusLabel,
+        focusDetail,
+        focusPivot,
+        projectedTickets,
+    };
+}
+
+function renderQueueTicketSimulation(manifest, detectedPlatform) {
+    const root = document.getElementById('queueTicketSimulation');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const simulation = buildQueueTicketSimulation(manifest, detectedPlatform);
+    setHtml(
+        '#queueTicketSimulation',
+        `
+            <section class="queue-ticket-simulation__shell" data-state="${escapeHtml(
+                simulation.statusState
+            )}">
+                <div class="queue-ticket-simulation__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Simulación operativa</p>
+                        <h5 id="queueTicketSimulationTitle" class="queue-app-card__title">${escapeHtml(
+                            simulation.title
+                        )}</h5>
+                        <p id="queueTicketSimulationSummary" class="queue-ticket-simulation__summary">${escapeHtml(
+                            simulation.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-ticket-simulation__meta">
+                        <span
+                            id="queueTicketSimulationStatus"
+                            class="queue-ticket-simulation__status"
+                            data-state="${escapeHtml(simulation.statusState)}"
+                        >
+                            ${escapeHtml(simulation.statusLabel)}
+                        </span>
+                        <button
+                            id="queueTicketSimulationCopyBtn"
+                            type="button"
+                            class="queue-ticket-simulation__action"
+                            ${simulation.result ? '' : 'disabled'}
+                        >
+                            Copiar simulación
+                        </button>
+                    </div>
+                </div>
+                ${
+                    simulation.result
+                        ? `
+                            <div class="queue-ticket-simulation__grid">
+                                <article class="queue-ticket-simulation__fact">
+                                    <span>Antes</span>
+                                    <strong id="queueTicketSimulationBefore">${escapeHtml(
+                                        simulation.beforeLabel
+                                    )}</strong>
+                                </article>
+                                <article class="queue-ticket-simulation__fact">
+                                    <span>Acción sugerida</span>
+                                    <strong id="queueTicketSimulationAction">${escapeHtml(
+                                        simulation.actionLabel
+                                    )}</strong>
+                                </article>
+                                <article class="queue-ticket-simulation__fact">
+                                    <span>Después</span>
+                                    <strong id="queueTicketSimulationAfter">${escapeHtml(
+                                        simulation.afterLabel
+                                    )}</strong>
+                                </article>
+                                <article class="queue-ticket-simulation__fact queue-ticket-simulation__fact--wide">
+                                    <span>Riesgo / presión</span>
+                                    <strong id="queueTicketSimulationRisk">${escapeHtml(
+                                        simulation.riskLabel
+                                    )}</strong>
+                                </article>
+                            </div>
+                            <div class="queue-ticket-simulation__actions">
+                                <button
+                                    id="queueTicketSimulationFocusBtn"
+                                    type="button"
+                                    class="queue-ticket-simulation__action queue-ticket-simulation__action--primary"
+                                    ${simulation.focusPivot ? '' : 'disabled'}
+                                >
+                                    ${escapeHtml(simulation.focusLabel)}
+                                </button>
+                            </div>
+                            <p id="queueTicketSimulationFocusDetail" class="queue-ticket-simulation__focus-detail">${escapeHtml(
+                                simulation.focusDetail
+                            )}</p>
+                        `
+                        : `
+                            <article
+                                id="queueTicketSimulationEmpty"
+                                class="queue-ticket-simulation__empty"
+                                data-state="${escapeHtml(simulation.statusState)}"
+                            >
+                                <strong>${escapeHtml(simulation.title)}</strong>
+                                <p>${escapeHtml(simulation.summary)}</p>
+                            </article>
+                        `
+                }
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueTicketSimulationCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueTicketSimulation(simulation);
+        };
+    }
+
+    const focusButton = document.getElementById(
+        'queueTicketSimulationFocusBtn'
+    );
+    if (focusButton instanceof HTMLButtonElement && simulation.focusPivot) {
+        focusButton.onclick = () => {
+            persistQueueTicketLookupTerm(simulation.focusPivot.ticketCode);
+            if (Array.isArray(simulation.projectedTickets)) {
+                persistQueueTicketSimulationContext({
+                    lookupTerm: simulation.focusPivot.ticketCode,
+                    targetTicketId: simulation.focusPivot.ticketId,
+                    sourceTicketId: simulation.result.ticketId,
+                    sourceStatus: getQueueTicketById(simulation.result.ticketId)
+                        ?.status,
+                    sourceConsultorio: simulation.result.consultorio,
+                    sourceTicketCode: simulation.result.ticketCode,
+                    actionLabel: simulation.actionLabel,
+                    tickets: simulation.projectedTickets,
+                });
+            }
+            appendOpsLogEntry({
+                source: 'ticket_simulation',
+                tone: 'info',
+                title: 'Simulación operativa: foco siguiente',
+                summary: `${simulation.focusPivot.ticketCode} quedó cargado desde la simulación de ${simulation.result.ticketCode}.`,
+            });
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    }
+}
+
+function buildQueueNextTurnsTargetSlot(
+    manifest,
+    detectedPlatform,
+    virtualLoads,
+    operatorContexts
+) {
+    return [1, 2]
+        .map((slot) => {
+            const context =
+                operatorContexts[slot] ||
+                buildConsultorioOperatorContext(
+                    manifest,
+                    detectedPlatform,
+                    slot
+                );
+            const operatorReady = Boolean(
+                context.operatorAssigned && context.operatorLive
+            );
+            const currentTicket = getCalledTicketForConsultorio(slot);
+            return {
+                slot,
+                slotKey: `c${slot}`,
+                operatorReady,
+                context,
+                score:
+                    Number(virtualLoads[slot] || 0) +
+                    (operatorReady ? 0 : 2) +
+                    (currentTicket ? 0.5 : 0),
+            };
+        })
+        .sort((left, right) => {
+            if (left.score !== right.score) {
+                return left.score - right.score;
+            }
+            if (left.operatorReady !== right.operatorReady) {
+                return left.operatorReady ? -1 : 1;
+            }
+            return left.slot - right.slot;
+        })[0];
+}
+
+function buildQueueNextTurnsConsultorioCard(
+    manifest,
+    detectedPlatform,
+    consultorio
+) {
+    const slot = Number(consultorio || 0) === 2 ? 2 : 1;
+    const slotKey = `c${slot}`;
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        slot
+    );
+    const currentTicket = getCalledTicketForConsultorio(slot);
+    const waitingTickets = getAssignedWaitingTickets(slot);
+    const generalWaiting = getUnassignedWaitingTickets();
+    const dispatchCard = buildQueueDispatchCard(
+        manifest,
+        detectedPlatform,
+        slot
+    );
+    const steps = [];
+
+    if (currentTicket) {
+        const nextAssigned = waitingTickets[0] || null;
+        const fallbackGeneral = generalWaiting[0] || null;
+        steps.push({
+            id: `${slotKey}_0`,
+            state: 'active',
+            actionLabel: `Completar ${currentTicket.ticketCode}`,
+            support: nextAssigned
+                ? `Deja ${nextAssigned.ticketCode} listo para ${slotKey.toUpperCase()}.`
+                : fallbackGeneral
+                  ? `Libera ${slotKey.toUpperCase()} para absorber ${fallbackGeneral.ticketCode} desde cola general.`
+                  : `Libera ${slotKey.toUpperCase()} sin otro ticket esperando detrás.`,
+            pivot: buildQueueTicketRoutePivot(
+                currentTicket,
+                `Cargar ${currentTicket.ticketCode}`,
+                `Es el ticket que hoy ocupa ${slotKey.toUpperCase()}.`
+            ),
+        });
+    }
+
+    const firstWaiting = waitingTickets[0] || null;
+    if (firstWaiting) {
+        const secondWaiting = waitingTickets[1] || null;
+        const operatorReady = Boolean(
+            operatorContext.operatorAssigned && operatorContext.operatorLive
+        );
+        steps.push({
+            id: `${slotKey}_1`,
+            state: operatorReady ? 'ready' : 'warning',
+            actionLabel: operatorReady
+                ? currentTicket
+                    ? `Llamar ${firstWaiting.ticketCode} después del cierre`
+                    : `Llamar ${firstWaiting.ticketCode}`
+                : `Abrir Operador ${slotKey.toUpperCase()} para ${firstWaiting.ticketCode}`,
+            support: secondWaiting
+                ? `${secondWaiting.ticketCode} quedaría inmediatamente detrás en ${slotKey.toUpperCase()}.`
+                : generalWaiting[0]
+                  ? `Luego ${slotKey.toUpperCase()} puede absorber ${generalWaiting[0].ticketCode} desde general.`
+                  : `Sin otro ticket asignado detrás por ahora.`,
+            pivot: buildQueueTicketRoutePivot(
+                firstWaiting,
+                `Cargar ${firstWaiting.ticketCode}`,
+                `Es el siguiente turno que ya espera en ${slotKey.toUpperCase()}.`
+            ),
+        });
+    }
+
+    const secondWaiting = waitingTickets[1] || null;
+    if (secondWaiting) {
+        steps.push({
+            id: `${slotKey}_2`,
+            state: 'idle',
+            actionLabel: `Preparar ${secondWaiting.ticketCode}`,
+            support: `${formatQueueTicketAgeLabel(
+                secondWaiting,
+                'waiting'
+            )}. Quedará detrás del primer llamado del carril.`,
+            pivot: buildQueueTicketRoutePivot(
+                secondWaiting,
+                `Cargar ${secondWaiting.ticketCode}`,
+                `Sigue detrás del primer ticket en ${slotKey.toUpperCase()}.`
+            ),
+        });
+    } else if (
+        generalWaiting[0] &&
+        dispatchCard.targetTicketId === Number(generalWaiting[0].id || 0)
+    ) {
+        steps.push({
+            id: `${slotKey}_2`,
+            state:
+                dispatchCard.primaryAction === 'assign'
+                    ? 'suggested'
+                    : dispatchCard.primaryAction === 'open'
+                      ? 'warning'
+                      : 'idle',
+            actionLabel:
+                dispatchCard.primaryAction === 'assign'
+                    ? `Traer ${generalWaiting[0].ticketCode} desde general`
+                    : dispatchCard.primaryLabel,
+            support: dispatchCard.detail,
+            pivot: buildQueueTicketRoutePivot(
+                generalWaiting[0],
+                `Cargar ${generalWaiting[0].ticketCode}`,
+                `Es el siguiente ticket general candidato para ${slotKey.toUpperCase()}.`
+            ),
+        });
+    }
+
+    const firstStep = steps[0] || null;
+    return {
+        laneKey: slotKey,
+        laneLabel: slotKey.toUpperCase(),
+        state: firstStep?.state || 'idle',
+        badge: firstStep
+            ? firstStep.state === 'active'
+                ? 'Atención en curso'
+                : firstStep.state === 'ready'
+                  ? 'Siguiente listo'
+                  : firstStep.state === 'warning'
+                    ? 'Preparar operador'
+                    : 'Secuencia lista'
+            : 'Sin presión',
+        headline: firstStep
+            ? `${slotKey.toUpperCase()} ya tiene la siguiente ronda trazada`
+            : `${slotKey.toUpperCase()} sin pasos inmediatos`,
+        summary: firstStep
+            ? firstStep.support
+            : `No hay ticket en curso ni espera asignada para ${slotKey.toUpperCase()} ahora mismo.`,
+        steps,
+    };
+}
+
+function buildQueueNextTurnsGeneralCard(manifest, detectedPlatform) {
+    const generalWaiting = getUnassignedWaitingTickets();
+    const operatorContexts = {
+        1: buildConsultorioOperatorContext(manifest, detectedPlatform, 1),
+        2: buildConsultorioOperatorContext(manifest, detectedPlatform, 2),
+    };
+    const virtualLoads = {
+        1:
+            getAssignedWaitingTickets(1).length +
+            (getCalledTicketForConsultorio(1) ? 1 : 0),
+        2:
+            getAssignedWaitingTickets(2).length +
+            (getCalledTicketForConsultorio(2) ? 1 : 0),
+    };
+    const steps = generalWaiting.slice(0, 3).map((ticket, index) => {
+        const target = buildQueueNextTurnsTargetSlot(
+            manifest,
+            detectedPlatform,
+            virtualLoads,
+            operatorContexts
+        );
+        const slot = target.slot;
+        const stepsAhead = Number(virtualLoads[slot] || 0);
+        virtualLoads[slot] = stepsAhead + 1;
+        return {
+            id: `general_${index}`,
+            state: target.operatorReady ? 'suggested' : 'warning',
+            actionLabel: target.operatorReady
+                ? `Asignar ${ticket.ticketCode} a C${slot}`
+                : `Preparar ${ticket.ticketCode} para C${slot}`,
+            support: target.operatorReady
+                ? stepsAhead <= 0
+                    ? `${ticket.ticketCode} quedaría listo para llamado en C${slot}.`
+                    : `${ticket.ticketCode} entraría con ${stepsAhead} paso(s) delante en C${slot}.`
+                : `Primero deja arriba Operador C${slot}; después ${ticket.ticketCode} entraría con ${stepsAhead} paso(s) delante.`,
+            pivot: buildQueueTicketRoutePivot(
+                ticket,
+                `Cargar ${ticket.ticketCode}`,
+                `Es el siguiente ticket general que recepción puede despachar a C${slot}.`
+            ),
+        };
+    });
+
+    const firstStep = steps[0] || null;
+    return {
+        laneKey: 'general',
+        laneLabel: 'General',
+        state: firstStep?.state || 'idle',
+        badge: firstStep ? 'Recepción en curso' : 'Sin cola general',
+        headline: firstStep
+            ? `${generalWaiting.length} ticket(s) esperan despacho`
+            : 'Cola general al día',
+        summary: firstStep
+            ? firstStep.support
+            : 'No hay tickets sin consultorio esperando en recepción.',
+        steps,
+    };
+}
+
+function copyQueueNextTurnsReport(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Próximos turnos - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...panel.cards.flatMap((card) => [
+            `${card.laneLabel} - ${card.badge}`,
+            ...(card.steps.length
+                ? card.steps.map(
+                      (step, index) =>
+                          `${index + 1}. ${step.actionLabel} - ${step.support}`
+                  )
+                : ['Sin pasos inmediatos.']),
+            '',
+        ]),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Secuencia copiada', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar la secuencia', 'error');
+        });
+}
+
+function buildQueueNextTurnsPanel(manifest, detectedPlatform) {
+    const cards = [
+        buildQueueNextTurnsConsultorioCard(manifest, detectedPlatform, 1),
+        buildQueueNextTurnsConsultorioCard(manifest, detectedPlatform, 2),
+        buildQueueNextTurnsGeneralCard(manifest, detectedPlatform),
+    ];
+    const mappedSteps = cards.reduce(
+        (total, card) => total + Number(card.steps.length || 0),
+        0
+    );
+    const activeCards = cards.filter((card) => card.steps.length > 0);
+    const hottestCard =
+        cards.find((card) => card.state === 'active') ||
+        cards.find((card) => card.state === 'warning') ||
+        cards.find((card) => card.state === 'ready') ||
+        activeCards[0] ||
+        null;
+
+    return {
+        title: 'Próximos turnos',
+        summary: hottestCard
+            ? `${hottestCard.laneLabel} marca el siguiente frente útil. ${hottestCard.summary}`
+            : 'No hay movimientos inmediatos pendientes entre consultorios y recepción.',
+        statusLabel:
+            mappedSteps > 0
+                ? `${mappedSteps} movimiento(s) trazados`
+                : 'Sin movimientos inmediatos',
+        statusState: hottestCard ? hottestCard.state : 'idle',
+        cards,
+    };
+}
+
+function renderQueueNextTurnsPanel(manifest, detectedPlatform) {
+    const root = document.getElementById('queueNextTurns');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueNextTurnsPanel(manifest, detectedPlatform);
+    setHtml(
+        '#queueNextTurns',
+        `
+            <section class="queue-next-turns__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-next-turns__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Ventana inmediata</p>
+                        <h5 id="queueNextTurnsTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueNextTurnsSummary" class="queue-next-turns__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-next-turns__meta">
+                        <span
+                            id="queueNextTurnsStatus"
+                            class="queue-next-turns__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueNextTurnsCopyBtn"
+                            type="button"
+                            class="queue-next-turns__action"
+                            ${panel.cards.some((card) => card.steps.length) ? '' : 'disabled'}
+                        >
+                            Copiar secuencia
+                        </button>
+                    </div>
+                </div>
+                <div id="queueNextTurnsCards" class="queue-next-turns__grid" role="list" aria-label="Próximos turnos por carril">
+                    ${panel.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueNextTurnsCard_${escapeHtml(card.laneKey)}"
+                                    class="queue-next-turns__card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-next-turns__card-head">
+                                        <div>
+                                            <p class="queue-next-turns__lane">${escapeHtml(
+                                                card.laneLabel
+                                            )}</p>
+                                            <strong id="queueNextTurnsHeadline_${escapeHtml(
+                                                card.laneKey
+                                            )}">${escapeHtml(card.headline)}</strong>
+                                        </div>
+                                        <span class="queue-next-turns__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueNextTurnsSummary_${escapeHtml(
+                                        card.laneKey
+                                    )}" class="queue-next-turns__card-summary">${escapeHtml(
+                                        card.summary
+                                    )}</p>
+                                    ${
+                                        card.steps.length
+                                            ? `
+                                                <div class="queue-next-turns__steps" role="list" aria-label="Secuencia de ${escapeHtml(
+                                                    card.laneLabel
+                                                )}">
+                                                    ${card.steps
+                                                        .map(
+                                                            (step, index) => `
+                                                                <article class="queue-next-turns__step" data-state="${escapeHtml(
+                                                                    step.state
+                                                                )}" role="listitem">
+                                                                    <div class="queue-next-turns__step-copy">
+                                                                        <span class="queue-next-turns__step-index">${index + 1}</span>
+                                                                        <div>
+                                                                            <strong id="queueNextTurnsStep_${escapeHtml(
+                                                                                card.laneKey
+                                                                            )}_${index}">${escapeHtml(
+                                                                                step.actionLabel
+                                                                            )}</strong>
+                                                                            <p>${escapeHtml(
+                                                                                step.support
+                                                                            )}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        id="queueNextTurnsLoad_${escapeHtml(
+                                                                            card.laneKey
+                                                                        )}_${index}"
+                                                                        type="button"
+                                                                        class="queue-next-turns__load"
+                                                                        data-queue-next-turns-ticket="${escapeHtml(
+                                                                            step
+                                                                                .pivot
+                                                                                ?.ticketCode ||
+                                                                                ''
+                                                                        )}"
+                                                                        data-queue-next-turns-action="${escapeHtml(
+                                                                            step.actionLabel
+                                                                        )}"
+                                                                        ${step.pivot ? '' : 'disabled'}
+                                                                    >
+                                                                        ${escapeHtml(
+                                                                            step
+                                                                                .pivot
+                                                                                ?.label ||
+                                                                                'Sin ticket'
+                                                                        )}
+                                                                    </button>
+                                                                </article>
+                                                            `
+                                                        )
+                                                        .join('')}
+                                                </div>
+                                            `
+                                            : `
+                                                <article class="queue-next-turns__empty">
+                                                    <strong>Sin pasos inmediatos</strong>
+                                                    <p>Este carril no necesita intervención ahora mismo.</p>
+                                                </article>
+                                            `
+                                    }
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueNextTurnsCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueNextTurnsReport(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-next-turns-ticket]').forEach(
+        (button) => {
+            if (!(button instanceof HTMLButtonElement)) {
+                return;
+            }
+            button.onclick = () => {
+                const ticketCode = String(
+                    button.dataset.queueNextTurnsTicket || ''
+                ).trim();
+                const actionLabel = String(
+                    button.dataset.queueNextTurnsAction || ''
+                ).trim();
+                if (!ticketCode) {
+                    return;
+                }
+                persistQueueTicketLookupTerm(ticketCode);
+                appendOpsLogEntry({
+                    source: 'next_turns',
+                    tone: 'info',
+                    title: 'Próximos turnos: ticket cargado',
+                    summary: `${ticketCode} quedó cargado desde la secuencia inmediata (${actionLabel || 'sin acción visible'}).`,
+                });
+                rerenderQueueOpsHub(manifest, detectedPlatform);
+            };
+        }
+    );
 }
 
 function buildQueueWaitRadarSeverity({ ageSec, backlog, operatorReady }) {
@@ -11165,6 +12359,8 @@ function rerenderQueueOpsHub(manifest, detectedPlatform) {
     renderQueueResolutionDeck(manifest, detectedPlatform);
     renderQueueTicketLookup(manifest, detectedPlatform);
     renderQueueTicketRoute(manifest, detectedPlatform);
+    renderQueueTicketSimulation(manifest, detectedPlatform);
+    renderQueueNextTurnsPanel(manifest, detectedPlatform);
     renderQueueWaitRadar(manifest, detectedPlatform);
     renderQueueLoadBalance(manifest, detectedPlatform);
     renderQueuePriorityLane(manifest, detectedPlatform);
@@ -11581,6 +12777,8 @@ export function renderQueueInstallHub(options = {}) {
     renderQueueResolutionDeck(manifest, platform);
     renderQueueTicketLookup(manifest, platform);
     renderQueueTicketRoute(manifest, platform);
+    renderQueueTicketSimulation(manifest, platform);
+    renderQueueNextTurnsPanel(manifest, platform);
     renderQueueWaitRadar(manifest, platform);
     renderQueueLoadBalance(manifest, platform);
     renderQueuePriorityLane(manifest, platform);
