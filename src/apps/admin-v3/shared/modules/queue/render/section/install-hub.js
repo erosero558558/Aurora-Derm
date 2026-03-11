@@ -11,6 +11,7 @@ import {
     getCalledTicketForConsultorio,
     getQueueTicketById,
     getQueueSource,
+    getVisibleTickets,
     getWaitingForConsultorio,
 } from '../../selectors.js';
 
@@ -123,8 +124,11 @@ const QUEUE_OPS_LOG_FILTER_STORAGE_KEY = 'queueOpsLogFilterV1';
 const QUEUE_OPS_ALERTS_STORAGE_KEY = 'queueOpsAlertsV1';
 const QUEUE_OPS_FOCUS_MODE_STORAGE_KEY = 'queueOpsFocusModeV1';
 const QUEUE_OPS_PLAYBOOK_STORAGE_KEY = 'queueOpsPlaybookV1';
+const QUEUE_TICKET_LOOKUP_STORAGE_KEY = 'queueTicketLookupV1';
 const QUEUE_OPS_LOG_MAX_ITEMS = 24;
 const QUEUE_OPS_INTERACTION_HOLD_MS = 900;
+const QUEUE_ATTENTION_RECALL_SEC = 2 * 60;
+const QUEUE_ATTENTION_ALERT_SEC = 6 * 60;
 const OPENING_CHECKLIST_STEP_IDS = Object.freeze([
     'operator_ready',
     'kiosk_ready',
@@ -146,6 +150,7 @@ let opsLogFilter = null;
 let opsAlertsState = null;
 let opsFocusMode = null;
 let opsPlaybookState = null;
+let queueTicketLookupTerm = null;
 let queueOpsInteraction = {
     lastAt: 0,
     timerId: 0,
@@ -160,6 +165,49 @@ function detectPlatform() {
     if (platform.includes('mac')) return 'mac';
     if (platform.includes('win')) return 'win';
     return 'other';
+}
+
+function normalizeQueueTicketLookupTerm(value) {
+    return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .slice(0, 48);
+}
+
+function loadStoredQueueTicketLookupTerm() {
+    try {
+        return normalizeQueueTicketLookupTerm(
+            window.localStorage.getItem(QUEUE_TICKET_LOOKUP_STORAGE_KEY) || ''
+        );
+    } catch (_error) {
+        return '';
+    }
+}
+
+function persistQueueTicketLookupTerm(value) {
+    queueTicketLookupTerm = normalizeQueueTicketLookupTerm(value);
+    try {
+        if (queueTicketLookupTerm) {
+            window.localStorage.setItem(
+                QUEUE_TICKET_LOOKUP_STORAGE_KEY,
+                queueTicketLookupTerm
+            );
+        } else {
+            window.localStorage.removeItem(QUEUE_TICKET_LOOKUP_STORAGE_KEY);
+        }
+    } catch (_error) {
+        // localStorage can be unavailable in some browser modes
+    }
+    return queueTicketLookupTerm;
+}
+
+function getQueueTicketLookupTerm() {
+    if (typeof queueTicketLookupTerm === 'string') {
+        return queueTicketLookupTerm;
+    }
+    const stateSearch = normalizeQueueTicketLookupTerm(getState().queue.search);
+    queueTicketLookupTerm = loadStoredQueueTicketLookupTerm() || stateSearch;
+    return queueTicketLookupTerm;
 }
 
 function getQueueAppsHubRoot() {
@@ -3474,6 +3522,17 @@ function getQueuePendingActionCopy(pendingAction, fallbackTicket) {
     return `${action || 'confirmar acción'} ${ticketCode} en ${consultorio}`;
 }
 
+function hideSensitiveDialogVisualOnly() {
+    const dialog = document.getElementById('queueSensitiveConfirmDialog');
+    if (dialog instanceof HTMLDialogElement && dialog.open) {
+        dialog.close();
+    }
+    if (dialog instanceof HTMLElement) {
+        dialog.removeAttribute('open');
+        dialog.hidden = true;
+    }
+}
+
 function buildQueueNumpadGuideKeyCards(state, activeTicket, nextTicket) {
     const station = Number(state.queue.stationConsultorio || 1) === 2 ? 2 : 1;
     const stationLabel = `C${station}`;
@@ -3824,6 +3883,64 @@ function getAssignedWaitingTickets(consultorio) {
     return getSortedWaitingTickets().filter(
         (ticket) => Number(ticket.assignedConsultorio || 0) === target
     );
+}
+
+function formatQueuePriorityTypeLabel(ticket) {
+    const priority = String(ticket?.priorityClass || '')
+        .trim()
+        .toLowerCase();
+    const queueType = String(ticket?.queueType || '')
+        .trim()
+        .toLowerCase();
+
+    if (priority === 'appt_overdue') {
+        return 'Cita vencida';
+    }
+    if (queueType === 'appointment') {
+        return 'Cita';
+    }
+    return 'Walk-in';
+}
+
+function getQueuePriorityScore(ticket) {
+    const ageSec = getQueueTicketAgeSec(ticket, 'waiting') || 0;
+    const priority = String(ticket?.priorityClass || '')
+        .trim()
+        .toLowerCase();
+    const queueType = String(ticket?.queueType || '')
+        .trim()
+        .toLowerCase();
+    let bonus = 0;
+
+    if (priority === 'appt_overdue') {
+        bonus += 4 * 60;
+    } else if (queueType === 'appointment') {
+        bonus += 2 * 60;
+    }
+
+    if (Number(ticket?.assignedConsultorio || 0)) {
+        bonus += 45;
+    }
+
+    return ageSec + bonus;
+}
+
+function getPrioritySequenceTickets(limit = 4) {
+    return [...getSortedWaitingTickets()]
+        .sort((left, right) => {
+            const scoreDelta =
+                getQueuePriorityScore(right) - getQueuePriorityScore(left);
+            if (scoreDelta !== 0) {
+                return scoreDelta;
+            }
+            const leftMs = getQueueTicketTimestampMs(left, 'waiting');
+            const rightMs = getQueueTicketTimestampMs(right, 'waiting');
+            if (Number.isFinite(leftMs) && Number.isFinite(rightMs)) {
+                return leftMs - rightMs;
+            }
+            return Number(left.id || 0) - Number(right.id || 0);
+        })
+        .slice(0, Math.max(1, Number(limit || 4)));
 }
 
 function buildConsultorioOperatorContext(
@@ -4216,6 +4333,2431 @@ function renderConsultorioBoard(manifest, detectedPlatform) {
     });
 }
 
+function buildQueueAttentionCard(manifest, detectedPlatform, consultorio) {
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        consultorio
+    );
+    const {
+        slot,
+        slotKey,
+        operatorAssigned,
+        operatorLive,
+        operatorLabel,
+        operatorUrl,
+        oneTapLabel,
+        numpadLabel,
+        heartbeatLabel,
+    } = operatorContext;
+    const currentTicket = getCalledTicketForConsultorio(slot);
+    const nextTicket = getWaitingForConsultorio(slot);
+    const queueBehindCount = getAssignedWaitingTickets(slot).length;
+    const generalWaitingCount = getUnassignedWaitingTickets().length;
+    const calledAgeSec = currentTicket
+        ? getQueueTicketAgeSec(currentTicket, 'called') || 0
+        : 0;
+    const calledAgeLabel = currentTicket
+        ? formatQueueTicketAgeLabel(currentTicket, 'called')
+        : 'sin llamado activo';
+
+    let state = 'idle';
+    let badge = 'Sin atención activa';
+    let headline = `${slotKey.toUpperCase()} sin llamado activo`;
+    let detail =
+        'Este consultorio no tiene un ticket llamado en este momento. Cuando vuelva a haber atención en curso, aquí verás su seguimiento y la presión detrás.';
+    let recommendationLabel = 'Sin seguimiento pendiente';
+    let primaryAction = 'none';
+    let primaryLabel = 'Sin acción';
+
+    if (currentTicket) {
+        const nextTicketCode = nextTicket?.ticketCode || '';
+        if (calledAgeSec >= QUEUE_ATTENTION_ALERT_SEC && queueBehindCount > 0) {
+            state = 'alert';
+            badge = 'Cola frenada';
+            headline = `${currentTicket.ticketCode} está reteniendo ${slotKey.toUpperCase()}`;
+            detail = `${currentTicket.ticketCode} va ${calledAgeLabel} y ${nextTicketCode} ya espera detrás. Re-llama o libera ${slotKey.toUpperCase()} si el paciente no entró para no congelar la cola.`;
+            recommendationLabel = `Re-llamar ${currentTicket.ticketCode} o liberar ${slotKey.toUpperCase()}`;
+            primaryAction = 'recall';
+            primaryLabel = `Re-llamar ${currentTicket.ticketCode}`;
+        } else if (calledAgeSec >= QUEUE_ATTENTION_RECALL_SEC) {
+            state = 'warning';
+            badge = 'Revisar llamado';
+            headline = `${currentTicket.ticketCode} pide confirmación`;
+            detail = nextTicket
+                ? `${currentTicket.ticketCode} va ${calledAgeLabel} y ${nextTicketCode} ya espera detrás. Conviene re-llamar o cerrar la atención para destrabar el siguiente paso.`
+                : `${currentTicket.ticketCode} va ${calledAgeLabel}. Revisa si el paciente ya pasó o vuelve a llamarlo antes de perder contexto.`;
+            recommendationLabel = `Re-llamar ${currentTicket.ticketCode}`;
+            primaryAction = 'recall';
+            primaryLabel = `Re-llamar ${currentTicket.ticketCode}`;
+        } else {
+            state = 'active';
+            badge = 'En atención';
+            headline = `${currentTicket.ticketCode} sigue en ${slotKey.toUpperCase()}`;
+            detail = nextTicket
+                ? `${currentTicket.ticketCode} va ${calledAgeLabel}. ${nextTicketCode} ya está en la cola de ${slotKey.toUpperCase()}, así que conviene mantener este consultorio visible para cerrar y seguir sin pausa.`
+                : `${currentTicket.ticketCode} va ${calledAgeLabel}. No hay otro ticket asignado detrás por ahora, pero conviene mantener el operador a la vista.`;
+            recommendationLabel = nextTicket
+                ? `Completa ${currentTicket.ticketCode} cuando salga para llamar ${nextTicketCode}`
+                : `Mantén visible ${currentTicket.ticketCode} en Operador ${slotKey.toUpperCase()}`;
+            primaryAction = 'open';
+            primaryLabel = `Abrir Operador ${slotKey.toUpperCase()}`;
+        }
+    } else if (nextTicket && operatorAssigned && operatorLive) {
+        state = 'ready';
+        badge = 'Siguiente listo';
+        headline = `${nextTicket.ticketCode} ya espera en ${slotKey.toUpperCase()}`;
+        detail = `${nextTicket.ticketCode} está alineado al consultorio y el operador reporta señal estable. Puedes llamarlo desde aquí sin volver a la tabla.`;
+        recommendationLabel = `Llamar ${nextTicket.ticketCode}`;
+        primaryAction = 'call';
+        primaryLabel = `Llamar ${nextTicket.ticketCode}`;
+    } else if (nextTicket) {
+        state = 'warning';
+        badge = 'Falta operador';
+        headline = `${nextTicket.ticketCode} espera, pero ${slotKey.toUpperCase()} no está listo`;
+        detail = `${nextTicket.ticketCode} ya es el siguiente ticket para ${slotKey.toUpperCase()}, pero todavía falta alinear el operador o recuperar su heartbeat antes del llamado.`;
+        recommendationLabel = `Abrir Operador ${slotKey.toUpperCase()}`;
+        primaryAction = 'open';
+        primaryLabel = `Abrir Operador ${slotKey.toUpperCase()}`;
+    } else if (operatorAssigned && operatorLive) {
+        state = 'ready';
+        badge = 'Operador atento';
+        headline = `${slotKey.toUpperCase()} listo para recibir`;
+        detail = `${slotKey.toUpperCase()} ya tiene operador en vivo, sin llamado activo y sin cola asignada detrás.`;
+        recommendationLabel = `Mantener ${slotKey.toUpperCase()} visible`;
+        primaryAction = 'open';
+        primaryLabel = `Abrir Operador ${slotKey.toUpperCase()}`;
+    }
+
+    return {
+        slot,
+        slotKey,
+        state,
+        badge,
+        headline,
+        detail,
+        recommendationLabel,
+        currentLabel: currentTicket
+            ? `${currentTicket.ticketCode} · ${calledAgeLabel}`
+            : 'Sin llamado activo',
+        nextLabel: nextTicket
+            ? `${nextTicket.ticketCode} · ${formatQueueTicketAgeLabel(
+                  nextTicket,
+                  'waiting'
+              )}`
+            : 'Sin ticket detrás',
+        pressureLabel: `Detrás ${queueBehindCount} · General ${generalWaitingCount}`,
+        operatorUrl,
+        operatorLabel,
+        oneTapLabel,
+        numpadLabel,
+        heartbeatLabel,
+        primaryAction,
+        primaryLabel,
+        currentTicketId: Number(currentTicket?.id || 0),
+        canComplete: Boolean(currentTicket),
+        canRelease: Boolean(currentTicket),
+        hasActiveTicket: Boolean(currentTicket),
+        queueBehindCount,
+    };
+}
+
+function buildQueueAttentionDeck(manifest, detectedPlatform) {
+    const cards = [1, 2].map((consultorio) =>
+        buildQueueAttentionCard(manifest, detectedPlatform, consultorio)
+    );
+    const activeCount = cards.filter((card) => card.hasActiveTicket).length;
+    const reviewCount = cards.filter((card) =>
+        ['warning', 'alert'].includes(card.state)
+    ).length;
+    const stalledCount = cards.filter((card) => card.state === 'alert').length;
+    const queueBehindCount = cards.reduce(
+        (total, card) => total + Number(card.queueBehindCount || 0),
+        0
+    );
+
+    return {
+        title:
+            stalledCount > 0
+                ? 'Seguimiento de atención crítico'
+                : reviewCount > 0
+                  ? 'Seguimiento de atención por revisar'
+                  : activeCount > 0
+                    ? 'Seguimiento de atención en curso'
+                    : 'Seguimiento de atención despejado',
+        summary:
+            stalledCount > 0
+                ? 'Estos llamados ya están frenando el consultorio y conviene intervenir antes de que la cola detrás siga envejeciendo.'
+                : reviewCount > 0
+                  ? 'Aquí se vigilan llamados activos, edad de atención y la cola que ya quedó detrás para reaccionar sin bajar a la tabla.'
+                  : activeCount > 0
+                    ? 'Los consultorios tienen llamados activos, pero aún no muestran señales de atasco; el panel sigue dejando a mano las acciones rápidas.'
+                    : 'No hay llamados activos ahora mismo. Cuando vuelva a haber atención en curso, aquí verás el tiempo y la acción sugerida.',
+        statusLabel:
+            stalledCount > 0
+                ? `${stalledCount} llamado(s) críticos`
+                : reviewCount > 0
+                  ? `${reviewCount} llamado(s) por revisar`
+                  : activeCount > 0
+                    ? `${activeCount} atención(es) en curso`
+                    : 'Sin llamados activos',
+        statusState:
+            stalledCount > 0
+                ? 'alert'
+                : reviewCount > 0
+                  ? 'warning'
+                  : activeCount > 0
+                    ? 'ready'
+                    : 'idle',
+        chips: [
+            `Activos ${activeCount}`,
+            `Revisar ${reviewCount}`,
+            `Detrás ${queueBehindCount}`,
+        ],
+        cards,
+    };
+}
+
+function describeQueueAttentionAction(card, actionKind) {
+    if (actionKind === 'recall') {
+        return {
+            title: `Seguimiento ${card.slotKey.toUpperCase()}: re-llamado`,
+            summary: `${card.currentLabel.split(' · ')[0]} se re-llamó desde seguimiento de atención.`,
+        };
+    }
+    if (actionKind === 'complete') {
+        return {
+            title: `Seguimiento ${card.slotKey.toUpperCase()}: ticket completado`,
+            summary: `${card.currentLabel.split(' · ')[0]} se cerró desde seguimiento de atención.`,
+        };
+    }
+    if (actionKind === 'release') {
+        return {
+            title: `Seguimiento ${card.slotKey.toUpperCase()}: consultorio liberado`,
+            summary: `${card.currentLabel.split(' · ')[0]} se liberó para devolverlo a la cola.`,
+        };
+    }
+    if (actionKind === 'call') {
+        return {
+            title: `Seguimiento ${card.slotKey.toUpperCase()}: siguiente llamado`,
+            summary: `${card.nextLabel.split(' · ')[0]} se llamó desde seguimiento de atención.`,
+        };
+    }
+    return {
+        title: `Seguimiento ${card.slotKey.toUpperCase()}: operador abierto`,
+        summary: `Se abrió Operador ${card.slotKey.toUpperCase()} desde seguimiento de atención.`,
+    };
+}
+
+async function runQueueAttentionAction(
+    card,
+    actionKind,
+    manifest,
+    detectedPlatform
+) {
+    if (!card || !actionKind || actionKind === 'none') {
+        return;
+    }
+
+    try {
+        const { callNextForConsultorio, runQueueTicketAction } =
+            await import('../../actions.js');
+        if (actionKind === 'recall' && card.currentTicketId > 0) {
+            await runQueueTicketAction(
+                card.currentTicketId,
+                're-llamar',
+                card.slot
+            );
+        } else if (actionKind === 'complete' && card.currentTicketId > 0) {
+            await runQueueTicketAction(card.currentTicketId, 'completar');
+        } else if (actionKind === 'release' && card.currentTicketId > 0) {
+            await runQueueTicketAction(card.currentTicketId, 'liberar');
+        } else if (actionKind === 'call') {
+            await callNextForConsultorio(card.slot);
+        } else if (actionKind === 'open') {
+            window.open(card.operatorUrl, '_blank', 'noopener');
+        } else {
+            return;
+        }
+
+        appendOpsLogEntry({
+            source: 'attention_deck',
+            tone:
+                actionKind === 'release'
+                    ? 'warning'
+                    : actionKind === 'complete'
+                      ? 'success'
+                      : 'info',
+            ...describeQueueAttentionAction(card, actionKind),
+        });
+    } catch (_error) {
+        createToast('No se pudo ejecutar la acción de seguimiento', 'error');
+    } finally {
+        rerenderQueueOpsHub(manifest, detectedPlatform);
+    }
+}
+
+function renderQueueAttentionDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueAttentionDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const deck = buildQueueAttentionDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueAttentionDeck',
+        `
+            <section class="queue-attention-deck__shell" data-state="${escapeHtml(
+                deck.statusState
+            )}">
+                <div class="queue-attention-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Seguimiento de atención</p>
+                        <h5 id="queueAttentionDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            deck.title
+                        )}</h5>
+                        <p id="queueAttentionDeckSummary" class="queue-attention-deck__summary">${escapeHtml(
+                            deck.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-attention-deck__meta">
+                        <span
+                            id="queueAttentionDeckStatus"
+                            class="queue-attention-deck__status"
+                            data-state="${escapeHtml(deck.statusState)}"
+                        >
+                            ${escapeHtml(deck.statusLabel)}
+                        </span>
+                        <div class="queue-attention-deck__chips">
+                            ${deck.chips
+                                .map(
+                                    (chip) =>
+                                        `<span class="queue-attention-deck__chip">${escapeHtml(
+                                            chip
+                                        )}</span>`
+                                )
+                                .join('')}
+                        </div>
+                    </div>
+                </div>
+                <div id="queueAttentionDeckCards" class="queue-attention-deck__grid" role="list" aria-label="Seguimiento de tickets llamados por consultorio">
+                    ${deck.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueAttentionCard_${escapeHtml(card.slotKey)}"
+                                    class="queue-attention-card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-attention-card__header">
+                                        <div>
+                                            <strong>${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</strong>
+                                            <p class="queue-attention-card__operator">${escapeHtml(
+                                                card.operatorLabel
+                                            )}</p>
+                                        </div>
+                                        <span class="queue-attention-card__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueAttentionHeadline_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-attention-card__headline">${escapeHtml(
+                                        card.headline
+                                    )}</p>
+                                    <p class="queue-attention-card__detail">${escapeHtml(
+                                        card.detail
+                                    )}</p>
+                                    <div class="queue-attention-card__facts">
+                                        <div class="queue-attention-card__fact">
+                                            <span>Ahora</span>
+                                            <strong id="queueAttentionCurrent_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.currentLabel)}</strong>
+                                        </div>
+                                        <div class="queue-attention-card__fact">
+                                            <span>Siguiente</span>
+                                            <strong id="queueAttentionNext_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.nextLabel)}</strong>
+                                        </div>
+                                        <div class="queue-attention-card__fact">
+                                            <span>Presión</span>
+                                            <strong id="queueAttentionPressure_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(
+                                                card.pressureLabel
+                                            )}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="queue-attention-card__chips">
+                                        <span class="queue-attention-card__chip">${escapeHtml(
+                                            card.oneTapLabel
+                                        )}</span>
+                                        <span class="queue-attention-card__chip">${escapeHtml(
+                                            card.numpadLabel
+                                        )}</span>
+                                        <span class="queue-attention-card__chip">${escapeHtml(
+                                            card.heartbeatLabel
+                                        )}</span>
+                                    </div>
+                                    <strong id="queueAttentionRecommendation_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-attention-card__recommendation">${escapeHtml(
+                                        card.recommendationLabel
+                                    )}</strong>
+                                    <div class="queue-attention-card__actions">
+                                        <button
+                                            id="queueAttentionPrimary_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-attention-card__action queue-attention-card__action--primary"
+                                            ${card.primaryAction === 'none' ? 'disabled' : ''}
+                                        >
+                                            ${escapeHtml(card.primaryLabel)}
+                                        </button>
+                                        <button
+                                            id="queueAttentionComplete_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-attention-card__action"
+                                            ${card.canComplete ? '' : 'disabled'}
+                                        >
+                                            Completar
+                                        </button>
+                                        <button
+                                            id="queueAttentionRelease_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-attention-card__action"
+                                            ${card.canRelease ? '' : 'disabled'}
+                                        >
+                                            Liberar
+                                        </button>
+                                        <a
+                                            id="queueAttentionOpenOperator_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            href="${escapeHtml(card.operatorUrl)}"
+                                            class="queue-attention-card__action"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            Operador ${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}
+                                        </a>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    deck.cards.forEach((card) => {
+        const primaryButton = document.getElementById(
+            `queueAttentionPrimary_${card.slotKey}`
+        );
+        if (primaryButton instanceof HTMLButtonElement) {
+            primaryButton.onclick = async () => {
+                primaryButton.disabled = true;
+                await runQueueAttentionAction(
+                    card,
+                    card.primaryAction,
+                    manifest,
+                    detectedPlatform
+                );
+            };
+        }
+
+        const completeButton = document.getElementById(
+            `queueAttentionComplete_${card.slotKey}`
+        );
+        if (completeButton instanceof HTMLButtonElement) {
+            completeButton.onclick = async () => {
+                completeButton.disabled = true;
+                await runQueueAttentionAction(
+                    card,
+                    'complete',
+                    manifest,
+                    detectedPlatform
+                );
+            };
+        }
+
+        const releaseButton = document.getElementById(
+            `queueAttentionRelease_${card.slotKey}`
+        );
+        if (releaseButton instanceof HTMLButtonElement) {
+            releaseButton.onclick = async () => {
+                releaseButton.disabled = true;
+                await runQueueAttentionAction(
+                    card,
+                    'release',
+                    manifest,
+                    detectedPlatform
+                );
+            };
+        }
+    });
+}
+
+function buildQueueResolutionCard(manifest, detectedPlatform, consultorio) {
+    const state = getState();
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        consultorio
+    );
+    const { slot, slotKey, operatorLabel, operatorUrl, heartbeatLabel } =
+        operatorContext;
+    const currentTicket = getCalledTicketForConsultorio(slot);
+    const nextTicket = getWaitingForConsultorio(slot);
+    const queueBehindCount = getAssignedWaitingTickets(slot).length;
+    const pendingAction = state.queue.pendingSensitiveAction;
+    const pendingForCard =
+        currentTicket &&
+        Number(pendingAction?.ticketId || 0) === Number(currentTicket.id || 0);
+    const pendingCopy = pendingForCard
+        ? getQueuePendingActionCopy(pendingAction, currentTicket)
+        : '';
+    const calledAgeLabel = currentTicket
+        ? formatQueueTicketAgeLabel(currentTicket, 'called')
+        : 'sin llamado activo';
+    const currentTicketCode = String(currentTicket?.ticketCode || '');
+    const nextTicketCode = String(nextTicket?.ticketCode || '');
+
+    let stateName = 'idle';
+    let badge = 'Sin cierre pendiente';
+    let headline = `${slotKey.toUpperCase()} sin ticket por cerrar`;
+    let summary =
+        'No hay un ticket llamado pendiente de resolución en este consultorio.';
+    let statusLabel = 'Sin ticket activo';
+    let primaryAction = 'none';
+    let primaryLabel = 'Sin acción';
+
+    if (pendingForCard) {
+        stateName = 'alert';
+        badge = 'Confirmación pendiente';
+        headline = `${currentTicketCode} espera decisión final`;
+        summary = `Quedó pendiente confirmar ${pendingCopy}. Usa confirmar o cancelar antes de seguir operando este consultorio.`;
+        statusLabel = `Pendiente: ${pendingCopy}`;
+        primaryAction = 'confirm';
+        primaryLabel = 'Confirmar pendiente';
+    } else if (currentTicket) {
+        stateName = queueBehindCount > 0 ? 'warning' : 'ready';
+        badge = queueBehindCount > 0 ? 'Cerrar y seguir' : 'Cerrar atención';
+        headline = `${currentTicketCode} ya puede resolverse`;
+        summary = nextTicket
+            ? `Si ${currentTicketCode} ya salió, completar deja listo ${nextTicketCode}. Si no apareció, no show requerirá confirmación; si fue un llamado equivocado, liberar lo devuelve a recepción.`
+            : `Completar cierra ${currentTicketCode}. No show requerirá confirmación y liberar lo devuelve a la cola general.`;
+        statusLabel = `${calledAgeLabel} · detrás ${queueBehindCount}`;
+        primaryAction = 'complete';
+        primaryLabel = `Completar ${currentTicketCode}`;
+    } else if (nextTicket) {
+        stateName = 'ready';
+        badge = 'Siguiente listo';
+        headline = `${nextTicketCode} espera la siguiente llamada`;
+        summary = `No hay cierre pendiente en ${slotKey.toUpperCase()}. El próximo movimiento útil aquí es llamar ${nextTicketCode}.`;
+        statusLabel = `Espera ${formatQueueTicketAgeLabel(nextTicket, 'waiting')}`;
+        primaryAction = 'call';
+        primaryLabel = `Llamar ${nextTicketCode}`;
+    }
+
+    return {
+        slot,
+        slotKey,
+        state: stateName,
+        badge,
+        headline,
+        summary,
+        statusLabel,
+        operatorLabel,
+        operatorUrl,
+        heartbeatLabel,
+        currentLabel: currentTicket
+            ? `${currentTicketCode} · ${calledAgeLabel}`
+            : 'Sin ticket en cierre',
+        completePreview: currentTicket
+            ? nextTicket
+                ? `Cierra ${currentTicketCode} y deja listo ${nextTicketCode}`
+                : `Cierra ${currentTicketCode} y deja ${slotKey.toUpperCase()} libre`
+            : 'Sin ticket activo que cerrar',
+        noShowPreview: currentTicket
+            ? nextTicket
+                ? `Marca ausencia y conserva ${nextTicketCode} listo después de confirmar`
+                : `Marca ausencia y limpia ${slotKey.toUpperCase()} después de confirmar`
+            : 'No show no aplica ahora',
+        releasePreview: currentTicket
+            ? `Devuelve ${currentTicketCode} a la cola general para revisarlo en recepción`
+            : 'Liberar no aplica ahora',
+        primaryAction,
+        primaryLabel,
+        currentTicketId: Number(currentTicket?.id || 0),
+        hasCurrentTicket: Boolean(currentTicket),
+        hasPendingSensitive: Boolean(pendingForCard),
+    };
+}
+
+function buildQueueResolutionDeck(manifest, detectedPlatform) {
+    const state = getState();
+    const cards = [1, 2].map((consultorio) =>
+        buildQueueResolutionCard(manifest, detectedPlatform, consultorio)
+    );
+    const pendingAction = state.queue.pendingSensitiveAction;
+    const pendingCopy = getQueuePendingActionCopy(pendingAction, null);
+    const pendingTicket = getQueueTicketById(pendingAction?.ticketId);
+    const pendingSlot =
+        Number(pendingAction?.consultorio || 0) === 2 ? 'C2' : 'C1';
+    const activeCount = cards.filter((card) => card.hasCurrentTicket).length;
+    const pendingCount = cards.filter(
+        (card) => card.hasPendingSensitive
+    ).length;
+    const readyToCloseCount = cards.filter(
+        (card) => card.primaryAction === 'complete'
+    ).length;
+
+    return {
+        title:
+            pendingCount > 0
+                ? 'Resolución rápida con confirmación pendiente'
+                : readyToCloseCount > 0
+                  ? 'Resolución rápida lista'
+                  : activeCount > 0
+                    ? 'Resolución rápida en seguimiento'
+                    : 'Resolución rápida despejada',
+        summary:
+            pendingCount > 0
+                ? 'El hub dejó visible una acción sensible pendiente para que no quede escondida en el diálogo y puedas confirmarla o cancelarla a tiempo.'
+                : readyToCloseCount > 0
+                  ? 'Este bloque traduce cada ticket llamado a tres salidas claras: completar, no show o liberar, con impacto visible sobre el siguiente turno.'
+                  : activeCount > 0
+                    ? 'Todavía hay tickets en atención, pero sin una resolución inmediata pendiente.'
+                    : 'No hay tickets llamados por resolver en este momento.',
+        statusLabel:
+            pendingCount > 0
+                ? `${pendingCount} confirmación(es) pendiente(s)`
+                : readyToCloseCount > 0
+                  ? `${readyToCloseCount} cierre(s) listos`
+                  : activeCount > 0
+                    ? `${activeCount} atención(es) en curso`
+                    : 'Sin resolución pendiente',
+        statusState:
+            pendingCount > 0
+                ? 'alert'
+                : readyToCloseCount > 0
+                  ? 'ready'
+                  : activeCount > 0
+                    ? 'warning'
+                    : 'idle',
+        chips: [
+            `Activos ${activeCount}`,
+            `Listos ${readyToCloseCount}`,
+            `Confirmar ${pendingCount}`,
+        ],
+        pendingAction:
+            pendingAction && pendingCopy
+                ? {
+                      copy: pendingCopy,
+                      ticketCode: String(pendingTicket?.ticketCode || 'ticket'),
+                      slotLabel: pendingSlot,
+                  }
+                : null,
+        cards,
+    };
+}
+
+function describeQueueResolutionAction(card, actionKind, pendingCopy = '') {
+    if (actionKind === 'complete') {
+        return {
+            title: `Resolución ${card.slotKey.toUpperCase()}: ticket completado`,
+            summary: `${card.currentLabel.split(' · ')[0]} se completó desde resolución rápida.`,
+        };
+    }
+    if (actionKind === 'no_show') {
+        return {
+            title: `Resolución ${card.slotKey.toUpperCase()}: no show pendiente`,
+            summary: pendingCopy
+                ? `Quedó pendiente confirmar ${pendingCopy}.`
+                : `${card.currentLabel.split(' · ')[0]} se envió a confirmación de no show.`,
+        };
+    }
+    if (actionKind === 'release') {
+        return {
+            title: `Resolución ${card.slotKey.toUpperCase()}: ticket liberado`,
+            summary: `${card.currentLabel.split(' · ')[0]} se liberó desde resolución rápida.`,
+        };
+    }
+    if (actionKind === 'confirm') {
+        return {
+            title: `Resolución ${card.slotKey.toUpperCase()}: confirmación aplicada`,
+            summary:
+                pendingCopy ||
+                'La acción sensible pendiente se confirmó desde el hub.',
+        };
+    }
+    if (actionKind === 'cancel') {
+        return {
+            title: `Resolución ${card.slotKey.toUpperCase()}: confirmación cancelada`,
+            summary:
+                pendingCopy ||
+                'La acción sensible pendiente se canceló desde el hub.',
+        };
+    }
+    if (actionKind === 'call') {
+        return {
+            title: `Resolución ${card.slotKey.toUpperCase()}: siguiente llamado`,
+            summary: `${card.primaryLabel.replace('Llamar ', '')} se llamó desde resolución rápida.`,
+        };
+    }
+    return {
+        title: `Resolución ${card.slotKey.toUpperCase()}: operador abierto`,
+        summary: `Se abrió Operador ${card.slotKey.toUpperCase()} desde resolución rápida.`,
+    };
+}
+
+async function runQueueResolutionAction(
+    card,
+    actionKind,
+    manifest,
+    detectedPlatform
+) {
+    if (!card || !actionKind || actionKind === 'none') {
+        return;
+    }
+
+    try {
+        const {
+            callNextForConsultorio,
+            cancelQueueSensitiveAction,
+            confirmQueueSensitiveAction,
+            runQueueTicketAction,
+        } = await import('../../actions.js');
+        if (actionKind === 'complete' && card.currentTicketId > 0) {
+            await runQueueTicketAction(card.currentTicketId, 'completar');
+        } else if (actionKind === 'no_show' && card.currentTicketId > 0) {
+            await runQueueTicketAction(
+                card.currentTicketId,
+                'no_show',
+                card.slot
+            );
+            if (getState().queue.pendingSensitiveAction) {
+                hideSensitiveDialogVisualOnly();
+            }
+        } else if (actionKind === 'release' && card.currentTicketId > 0) {
+            await runQueueTicketAction(card.currentTicketId, 'liberar');
+        } else if (actionKind === 'confirm') {
+            await confirmQueueSensitiveAction();
+        } else if (actionKind === 'cancel') {
+            cancelQueueSensitiveAction();
+        } else if (actionKind === 'call') {
+            await callNextForConsultorio(card.slot);
+        } else if (actionKind === 'open') {
+            window.open(card.operatorUrl, '_blank', 'noopener');
+        } else {
+            return;
+        }
+
+        const pendingCopy =
+            actionKind === 'no_show'
+                ? getQueuePendingActionCopy(
+                      getState().queue.pendingSensitiveAction,
+                      getQueueTicketById(card.currentTicketId)
+                  )
+                : getQueuePendingActionCopy(
+                      getState().queue.pendingSensitiveAction
+                  );
+
+        appendOpsLogEntry({
+            source: 'resolution_deck',
+            tone:
+                actionKind === 'complete'
+                    ? 'success'
+                    : actionKind === 'cancel' || actionKind === 'release'
+                      ? 'warning'
+                      : actionKind === 'no_show'
+                        ? 'warning'
+                        : 'info',
+            ...describeQueueResolutionAction(card, actionKind, pendingCopy),
+        });
+    } catch (_error) {
+        createToast('No se pudo ejecutar la resolución rápida', 'error');
+    } finally {
+        rerenderQueueOpsHub(manifest, detectedPlatform);
+    }
+}
+
+function renderQueueResolutionDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueResolutionDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const deck = buildQueueResolutionDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueResolutionDeck',
+        `
+            <section class="queue-resolution-deck__shell" data-state="${escapeHtml(
+                deck.statusState
+            )}">
+                <div class="queue-resolution-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Resolución rápida</p>
+                        <h5 id="queueResolutionDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            deck.title
+                        )}</h5>
+                        <p id="queueResolutionDeckSummary" class="queue-resolution-deck__summary">${escapeHtml(
+                            deck.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-resolution-deck__meta">
+                        <span
+                            id="queueResolutionDeckStatus"
+                            class="queue-resolution-deck__status"
+                            data-state="${escapeHtml(deck.statusState)}"
+                        >
+                            ${escapeHtml(deck.statusLabel)}
+                        </span>
+                        <div class="queue-resolution-deck__chips">
+                            ${deck.chips
+                                .map(
+                                    (chip) =>
+                                        `<span class="queue-resolution-deck__chip">${escapeHtml(
+                                            chip
+                                        )}</span>`
+                                )
+                                .join('')}
+                        </div>
+                    </div>
+                </div>
+                ${
+                    deck.pendingAction
+                        ? `
+                            <div id="queueResolutionPending" class="queue-resolution-deck__pending">
+                                <div>
+                                    <strong>Confirmación pendiente</strong>
+                                    <p>${escapeHtml(deck.pendingAction.copy)}</p>
+                                </div>
+                                <div class="queue-resolution-deck__pending-actions">
+                                    <button id="queueResolutionPendingConfirm" type="button" class="queue-resolution-deck__action queue-resolution-deck__action--primary">Confirmar</button>
+                                    <button id="queueResolutionPendingCancel" type="button" class="queue-resolution-deck__action">Cancelar</button>
+                                </div>
+                            </div>
+                        `
+                        : ''
+                }
+                <div id="queueResolutionDeckCards" class="queue-resolution-deck__grid" role="list" aria-label="Resolución rápida por consultorio">
+                    ${deck.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueResolutionCard_${escapeHtml(card.slotKey)}"
+                                    class="queue-resolution-card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-resolution-card__header">
+                                        <div>
+                                            <strong>${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</strong>
+                                            <p class="queue-resolution-card__operator">${escapeHtml(
+                                                card.operatorLabel
+                                            )}</p>
+                                        </div>
+                                        <span class="queue-resolution-card__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueResolutionHeadline_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-resolution-card__headline">${escapeHtml(
+                                        card.headline
+                                    )}</p>
+                                    <p class="queue-resolution-card__summary">${escapeHtml(
+                                        card.summary
+                                    )}</p>
+                                    <div class="queue-resolution-card__facts">
+                                        <div class="queue-resolution-card__fact">
+                                            <span>Actual</span>
+                                            <strong id="queueResolutionCurrent_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.currentLabel)}</strong>
+                                        </div>
+                                        <div class="queue-resolution-card__fact">
+                                            <span>Estado</span>
+                                            <strong id="queueResolutionStatusLine_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.statusLabel)}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="queue-resolution-card__previews">
+                                        <div class="queue-resolution-card__preview">
+                                            <span>Completar</span>
+                                            <strong id="queueResolutionCompletePreview_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.completePreview)}</strong>
+                                        </div>
+                                        <div class="queue-resolution-card__preview">
+                                            <span>No show</span>
+                                            <strong id="queueResolutionNoShowPreview_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.noShowPreview)}</strong>
+                                        </div>
+                                        <div class="queue-resolution-card__preview">
+                                            <span>Liberar</span>
+                                            <strong id="queueResolutionReleasePreview_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.releasePreview)}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="queue-resolution-card__chips">
+                                        <span class="queue-resolution-card__chip">${escapeHtml(
+                                            card.heartbeatLabel
+                                        )}</span>
+                                    </div>
+                                    <div class="queue-resolution-card__actions">
+                                        <button
+                                            id="queueResolutionPrimary_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-resolution-deck__action queue-resolution-deck__action--primary"
+                                            ${card.primaryAction === 'none' ? 'disabled' : ''}
+                                        >
+                                            ${escapeHtml(card.primaryLabel)}
+                                        </button>
+                                        <button
+                                            id="queueResolutionNoShow_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-resolution-deck__action"
+                                            ${card.hasCurrentTicket ? '' : 'disabled'}
+                                        >
+                                            No show
+                                        </button>
+                                        <button
+                                            id="queueResolutionRelease_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-resolution-deck__action"
+                                            ${card.hasCurrentTicket ? '' : 'disabled'}
+                                        >
+                                            Liberar
+                                        </button>
+                                        <a
+                                            id="queueResolutionOpenOperator_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            href="${escapeHtml(card.operatorUrl)}"
+                                            class="queue-resolution-deck__action"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            Operador ${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}
+                                        </a>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    deck.cards.forEach((card) => {
+        const primaryButton = document.getElementById(
+            `queueResolutionPrimary_${card.slotKey}`
+        );
+        if (primaryButton instanceof HTMLButtonElement) {
+            primaryButton.onclick = async () => {
+                primaryButton.disabled = true;
+                await runQueueResolutionAction(
+                    card,
+                    card.primaryAction,
+                    manifest,
+                    detectedPlatform
+                );
+            };
+        }
+
+        const noShowButton = document.getElementById(
+            `queueResolutionNoShow_${card.slotKey}`
+        );
+        if (noShowButton instanceof HTMLButtonElement) {
+            noShowButton.onclick = async () => {
+                noShowButton.disabled = true;
+                await runQueueResolutionAction(
+                    card,
+                    'no_show',
+                    manifest,
+                    detectedPlatform
+                );
+            };
+        }
+
+        const releaseButton = document.getElementById(
+            `queueResolutionRelease_${card.slotKey}`
+        );
+        if (releaseButton instanceof HTMLButtonElement) {
+            releaseButton.onclick = async () => {
+                releaseButton.disabled = true;
+                await runQueueResolutionAction(
+                    card,
+                    'release',
+                    manifest,
+                    detectedPlatform
+                );
+            };
+        }
+    });
+
+    const confirmButton = document.getElementById(
+        'queueResolutionPendingConfirm'
+    );
+    if (confirmButton instanceof HTMLButtonElement) {
+        confirmButton.onclick = async () => {
+            confirmButton.disabled = true;
+            const pending = getState().queue.pendingSensitiveAction;
+            const slot = Number(pending?.consultorio || 0) === 2 ? 'c2' : 'c1';
+            const card =
+                deck.cards.find((item) => item.slotKey === slot) ||
+                deck.cards[0];
+            await runQueueResolutionAction(
+                card,
+                'confirm',
+                manifest,
+                detectedPlatform
+            );
+        };
+    }
+
+    const cancelButton = document.getElementById(
+        'queueResolutionPendingCancel'
+    );
+    if (cancelButton instanceof HTMLButtonElement) {
+        cancelButton.onclick = async () => {
+            cancelButton.disabled = true;
+            const pending = getState().queue.pendingSensitiveAction;
+            const slot = Number(pending?.consultorio || 0) === 2 ? 'c2' : 'c1';
+            const card =
+                deck.cards.find((item) => item.slotKey === slot) ||
+                deck.cards[0];
+            await runQueueResolutionAction(
+                card,
+                'cancel',
+                manifest,
+                detectedPlatform
+            );
+        };
+    }
+}
+
+function normalizeQueueTicketLookupField(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .trim();
+}
+
+function getQueueTicketLookupStatusCopy(ticket) {
+    const status = String(ticket?.status || '')
+        .trim()
+        .toLowerCase();
+    const consultorio = Number(ticket?.assignedConsultorio || 0);
+    if (status === 'called') {
+        return consultorio > 0 ? `Llamado C${consultorio}` : 'Llamado';
+    }
+    if (status === 'waiting') {
+        return consultorio > 0
+            ? `En espera C${consultorio}`
+            : 'En espera general';
+    }
+    if (status === 'completed') {
+        return 'Completado';
+    }
+    if (status === 'no_show') {
+        return 'No asistió';
+    }
+    if (status === 'cancelled') {
+        return 'Cancelado';
+    }
+    return String(ticket?.status || 'Sin estado');
+}
+
+function getQueueTicketLookupScore(ticket, normalizedTerm) {
+    if (!normalizedTerm) {
+        return Number.POSITIVE_INFINITY;
+    }
+    const ticketCode = normalizeQueueTicketLookupField(ticket?.ticketCode);
+    const initials = normalizeQueueTicketLookupField(ticket?.patientInitials);
+    const queueType = normalizeQueueTicketLookupField(ticket?.queueType);
+    const status = normalizeQueueTicketLookupField(ticket?.status);
+    const phoneLast4 = String(ticket?.phoneLast4 || '')
+        .replace(/\s+/g, '')
+        .trim();
+
+    if (ticketCode === normalizedTerm) {
+        return 0;
+    }
+    if (ticketCode.startsWith(normalizedTerm)) {
+        return 1;
+    }
+    if (ticketCode.includes(normalizedTerm)) {
+        return 2;
+    }
+    if (initials === normalizedTerm) {
+        return 3;
+    }
+    if (initials.includes(normalizedTerm)) {
+        return 4;
+    }
+    if (phoneLast4 && phoneLast4.includes(normalizedTerm)) {
+        return 5;
+    }
+    if (status.includes(normalizedTerm)) {
+        return 6;
+    }
+    if (queueType.includes(normalizedTerm)) {
+        return 7;
+    }
+    return Number.POSITIVE_INFINITY;
+}
+
+function getQueueTicketLookupMatches(term, limit = 4) {
+    const normalizedTerm = normalizeQueueTicketLookupField(term);
+    if (!normalizedTerm) {
+        return [];
+    }
+    const statusRank = {
+        called: 0,
+        waiting: 1,
+        completed: 2,
+        no_show: 3,
+        cancelled: 4,
+    };
+    return [...getQueueSource().queueTickets]
+        .map((ticket) => ({
+            ticket,
+            score: getQueueTicketLookupScore(ticket, normalizedTerm),
+        }))
+        .filter((entry) => Number.isFinite(entry.score))
+        .sort((left, right) => {
+            if (left.score !== right.score) {
+                return left.score - right.score;
+            }
+            const leftRank =
+                statusRank[String(left.ticket?.status || '').toLowerCase()] ??
+                9;
+            const rightRank =
+                statusRank[String(right.ticket?.status || '').toLowerCase()] ??
+                9;
+            if (leftRank !== rightRank) {
+                return leftRank - rightRank;
+            }
+            const leftMode =
+                left.ticket?.status === 'called' ? 'called' : 'waiting';
+            const rightMode =
+                right.ticket?.status === 'called' ? 'called' : 'waiting';
+            const leftTs = getQueueTicketTimestampMs(left.ticket, leftMode);
+            const rightTs = getQueueTicketTimestampMs(right.ticket, rightMode);
+            if (Number.isFinite(leftTs) && Number.isFinite(rightTs)) {
+                return leftTs - rightTs;
+            }
+            return Number(left.ticket?.id || 0) - Number(right.ticket?.id || 0);
+        })
+        .slice(0, limit)
+        .map((entry) => entry.ticket);
+}
+
+function getQueueTicketLookupSuggestions(limit = 4) {
+    const suggestions = [
+        getCalledTicketForConsultorio(1),
+        getCalledTicketForConsultorio(2),
+        getUnassignedWaitingTickets()[0] || null,
+        getWaitingForConsultorio(1),
+        getWaitingForConsultorio(2),
+    ];
+    const seen = new Set();
+    return suggestions
+        .filter((ticket) => {
+            const id = Number(ticket?.id || 0);
+            if (!id || seen.has(id)) {
+                return false;
+            }
+            seen.add(id);
+            return true;
+        })
+        .slice(0, limit);
+}
+
+function pickQueueTicketLookupConsultorio(manifest, detectedPlatform) {
+    return [1, 2]
+        .map((consultorio) => {
+            const context = buildConsultorioOperatorContext(
+                manifest,
+                detectedPlatform,
+                consultorio
+            );
+            const load =
+                getAssignedWaitingTickets(consultorio).length +
+                (getCalledTicketForConsultorio(consultorio) ? 1 : 0);
+            const readinessScore =
+                context.operatorAssigned && context.operatorLive
+                    ? 0
+                    : context.operatorLive
+                      ? 1
+                      : 2;
+            return {
+                slot: consultorio,
+                context,
+                load,
+                readinessScore,
+            };
+        })
+        .sort((left, right) => {
+            if (left.readinessScore !== right.readinessScore) {
+                return left.readinessScore - right.readinessScore;
+            }
+            if (left.load !== right.load) {
+                return left.load - right.load;
+            }
+            return left.slot - right.slot;
+        })[0];
+}
+
+function buildQueueTicketLookupResult(ticket, manifest, detectedPlatform) {
+    if (!ticket) {
+        return null;
+    }
+
+    const consultorio = Number(ticket.assignedConsultorio || 0);
+    const slot = consultorio === 2 ? 2 : consultorio === 1 ? 1 : 0;
+    const ticketCode = String(ticket.ticketCode || 'ticket');
+    const status = String(ticket.status || 'waiting')
+        .trim()
+        .toLowerCase();
+    const statusCopy = getQueueTicketLookupStatusCopy(ticket);
+    const ageMode = status === 'called' ? 'called' : 'waiting';
+    const ageLabel =
+        status === 'waiting' || status === 'called'
+            ? formatQueueTicketAgeLabel(ticket, ageMode)
+            : `Último estado · ${statusCopy}`;
+    const priorityLabel = formatQueuePriorityTypeLabel(ticket);
+    const patientLabel = ticket.patientInitials
+        ? `Paciente ${String(ticket.patientInitials).trim()}`
+        : 'Paciente sin iniciales';
+    const pendingAction = getState().queue.pendingSensitiveAction;
+    const pendingCopy =
+        Number(pendingAction?.ticketId || 0) === Number(ticket.id || 0)
+            ? getQueuePendingActionCopy(pendingAction, ticket)
+            : '';
+
+    let headline = `${ticketCode} localizado`;
+    let detail =
+        'El ticket está disponible para seguimiento rápido desde el hub.';
+    let recommendation =
+        'Usa el botón principal para ejecutar la siguiente jugada útil sin bajar a la tabla.';
+    let panelState = 'idle';
+    let badge = statusCopy;
+    let primaryAction = 'table';
+    let primaryLabel = 'Ver en tabla';
+    let primaryConsultorio = 0;
+    const secondaryActions = [];
+    const secondaryKinds = new Set();
+
+    const pushSecondaryAction = (kind, label, extra = {}) => {
+        const key = `${kind}:${Number(extra.consultorio || 0)}`;
+        if (secondaryKinds.has(key)) {
+            return;
+        }
+        secondaryKinds.add(key);
+        secondaryActions.push({
+            kind,
+            label,
+            consultorio: Number(extra.consultorio || 0),
+        });
+    };
+
+    const operatorUrl =
+        slot > 0
+            ? buildPreparedSurfaceUrl(
+                  'operator',
+                  manifest.operator || DEFAULT_APP_DOWNLOADS.operator,
+                  {
+                      ...ensureInstallPreset(detectedPlatform),
+                      surface: 'operator',
+                      station: slot === 2 ? 'c2' : 'c1',
+                      lock: true,
+                  }
+              )
+            : '';
+
+    if (pendingCopy) {
+        panelState = 'alert';
+        badge = 'Confirmación pendiente';
+        headline = `${ticketCode} espera confirmación sensible`;
+        detail = `La acción ${pendingCopy} quedó preparada y visible dentro del hub.`;
+        recommendation =
+            'Confirma o cancela desde aquí antes de seguir llamando para no perder el contexto de este ticket.';
+        primaryAction = 'confirm';
+        primaryLabel = 'Confirmar pendiente';
+        pushSecondaryAction('cancel', 'Cancelar pendiente');
+    } else if (status === 'called') {
+        panelState = 'active';
+        badge = slot > 0 ? `En atención C${slot}` : 'En atención';
+        headline =
+            slot > 0
+                ? `${ticketCode} está llamado en C${slot}`
+                : `${ticketCode} está llamado`;
+        detail =
+            slot > 0
+                ? `${ageLabel}. Puedes completar, marcar no show o liberar ${ticketCode} desde esta misma tarjeta.`
+                : `${ageLabel}. Este ticket necesita cierre operativo antes de seguir con el resto de la cola.`;
+        recommendation =
+            'Completa si ya pasó a consulta; usa no show o liberar solo si necesitas destrabar la cola con una acción sensible.';
+        primaryAction = 'complete';
+        primaryLabel = `Completar ${ticketCode}`;
+        primaryConsultorio = slot;
+        if (slot > 0) {
+            pushSecondaryAction('recall', 'Re-llamar', {
+                consultorio: slot,
+            });
+            pushSecondaryAction('no_show', 'No show', {
+                consultorio: slot,
+            });
+        }
+        pushSecondaryAction('release', 'Liberar', {
+            consultorio: slot,
+        });
+    } else if (status === 'waiting' && slot === 0) {
+        const preferred = pickQueueTicketLookupConsultorio(
+            manifest,
+            detectedPlatform
+        );
+        panelState = preferred.readinessScore === 0 ? 'ready' : 'warning';
+        badge =
+            preferred.readinessScore === 0
+                ? `Listo para C${preferred.slot}`
+                : `Pendiente de C${preferred.slot}`;
+        headline = `${ticketCode} sigue en la cola general`;
+        detail = `${ageLabel}. Todavía no tiene consultorio; puedes mandarlo directo a C${preferred.slot} desde el hub.`;
+        recommendation =
+            preferred.readinessScore === 0
+                ? `El operador de C${preferred.slot} ya está listo, así que este es el destino más simple para destrabar recepción.`
+                : `Conviene reasignarlo a C${preferred.slot}, pero primero valida el operador si quieres llamarlo enseguida.`;
+        primaryAction = 'assign';
+        primaryLabel = `Asignar a C${preferred.slot}`;
+        primaryConsultorio = preferred.slot;
+        pushSecondaryAction(
+            'assign',
+            `Asignar a C${preferred.slot === 2 ? 1 : 2}`,
+            {
+                consultorio: preferred.slot === 2 ? 1 : 2,
+            }
+        );
+    } else if (status === 'waiting' && slot > 0) {
+        const currentTicket = getCalledTicketForConsultorio(slot);
+        const nextTicket = getWaitingForConsultorio(slot);
+        const isNextTicket =
+            Number(nextTicket?.id || 0) === Number(ticket.id || 0);
+        panelState = isNextTicket && !currentTicket ? 'ready' : 'warning';
+        badge = isNextTicket ? `Siguiente en C${slot}` : `En cola C${slot}`;
+        headline = `${ticketCode} ya está asignado a C${slot}`;
+        if (isNextTicket && !currentTicket) {
+            detail = `${ageLabel}. Es el siguiente ticket listo para llamarse en C${slot}.`;
+            recommendation =
+                'Puedes llamar desde aquí si el consultorio está libre; si no, abre Operador para mantener la atención alineada.';
+            primaryAction = 'call';
+            primaryLabel = `Llamar ${ticketCode}`;
+            primaryConsultorio = slot;
+        } else if (currentTicket) {
+            detail = `${ageLabel}. C${slot} todavía atiende ${String(
+                currentTicket.ticketCode || 'otro ticket'
+            )}, así que conviene abrir el operador o revisar la tabla antes de mover este turno.`;
+            recommendation =
+                'Este ticket ya está encaminado al consultorio; usa Operador si quieres seguir la secuencia del mismo C.';
+            primaryAction = 'open';
+            primaryLabel = `Abrir Operador C${slot}`;
+        } else {
+            detail = `${ageLabel}. Hay otros tickets antes que ${ticketCode} en C${slot}, así que la tabla sigue siendo la mejor vista para ordenar esta cola.`;
+            recommendation =
+                'Abre la tabla filtrada por este ticket para revisar su posición exacta antes de llamarlo o moverlo.';
+        }
+        pushSecondaryAction('assign', `Mover a C${slot === 2 ? 1 : 2}`, {
+            consultorio: slot === 2 ? 1 : 2,
+        });
+    } else if (status === 'completed') {
+        panelState = 'ready';
+        badge = 'Atención cerrada';
+        headline = `${ticketCode} ya se completó`;
+        detail =
+            'El ticket ya cerró su flujo, pero puedes reimprimirlo o abrir la tabla si necesitas verificar el cierre.';
+        recommendation =
+            'Usa reimpresión solo si el paciente necesita respaldo físico del turno.';
+        primaryAction = 'reprint';
+        primaryLabel = `Reimprimir ${ticketCode}`;
+    } else if (status === 'no_show') {
+        panelState = 'warning';
+        badge = 'No show registrado';
+        headline = `${ticketCode} quedó como no show`;
+        detail =
+            'La ausencia ya fue registrada. Reimprime o abre la tabla si necesitas revisar el historial inmediato.';
+        recommendation =
+            'Si fue un error operativo, revisa el flujo desde la tabla antes de volver a tocar este ticket.';
+        primaryAction = 'reprint';
+        primaryLabel = `Reimprimir ${ticketCode}`;
+    } else if (status === 'cancelled') {
+        panelState = 'idle';
+        badge = 'Cancelado';
+        headline = `${ticketCode} quedó cancelado`;
+        detail =
+            'Este ticket ya salió de la cola. Usa la tabla si necesitas validar el motivo o seguir con otro turno.';
+        recommendation =
+            'No hay una acción operativa inmediata sobre este ticket desde el hub.';
+    }
+
+    if (slot > 0 && primaryAction !== 'open') {
+        pushSecondaryAction('open', `Operador C${slot}`, {
+            consultorio: slot,
+        });
+    }
+    pushSecondaryAction('table', 'Ver en tabla');
+
+    return {
+        ticketId: Number(ticket.id || 0),
+        ticketCode,
+        panelState,
+        badge,
+        headline,
+        detail,
+        recommendation,
+        pendingCopy,
+        statusCopy,
+        ageLabel,
+        priorityLabel,
+        patientLabel,
+        consultorio: slot,
+        operatorUrl,
+        primaryAction,
+        primaryLabel,
+        primaryConsultorio,
+        secondaryActions,
+    };
+}
+
+function buildQueueTicketLookup(manifest, detectedPlatform) {
+    const term = getQueueTicketLookupTerm();
+    const matches = term ? getQueueTicketLookupMatches(term, 4) : [];
+    const result = matches[0]
+        ? buildQueueTicketLookupResult(matches[0], manifest, detectedPlatform)
+        : null;
+    const suggestions = (
+        term ? matches.slice(1) : getQueueTicketLookupSuggestions(4)
+    )
+        .map((ticket) => ({
+            id: Number(ticket?.id || 0),
+            ticketCode: String(ticket?.ticketCode || ''),
+            label: getQueueTicketLookupStatusCopy(ticket),
+        }))
+        .filter((ticket) => ticket.id > 0 && ticket.ticketCode);
+
+    if (!term) {
+        return {
+            title: 'Atajo por ticket listo',
+            summary:
+                'Escribe un ticket para encontrarlo aunque no esté en la vista actual y resolverlo desde el hub sin bajar a la tabla.',
+            statusLabel: suggestions.length
+                ? `${suggestions.length} ticket(s) sugerido(s)`
+                : 'Sin sugerencias ahora',
+            statusState: suggestions.length ? 'ready' : 'idle',
+            term,
+            result,
+            suggestions,
+        };
+    }
+
+    if (!result) {
+        return {
+            title: 'Atajo por ticket sin coincidencias',
+            summary:
+                'No encontramos ese ticket en la cola actual. Revisa el código o limpia la búsqueda para volver a las sugerencias vivas.',
+            statusLabel: 'Sin coincidencias',
+            statusState: 'warning',
+            term,
+            result: null,
+            suggestions,
+        };
+    }
+
+    return {
+        title: `${result.ticketCode} localizado`,
+        summary:
+            result.panelState === 'alert'
+                ? 'Este ticket ya tiene una acción sensible pendiente y el hub la deja visible para cerrar rápido.'
+                : 'El hub encontró el ticket y te deja su próxima acción útil sin abrir la tabla completa.',
+        statusLabel:
+            matches.length > 1
+                ? `${matches.length} coincidencias · 1 activa`
+                : 'Coincidencia directa',
+        statusState: result.panelState,
+        term,
+        result,
+        suggestions,
+    };
+}
+
+function describeQueueTicketLookupAction(result, actionKind, consultorio = 0) {
+    const slotLabel =
+        Number(consultorio || result?.consultorio || 0) === 2 ? 'C2' : 'C1';
+    const ticketCode = String(result?.ticketCode || 'ticket');
+    if (actionKind === 'assign') {
+        return {
+            title: `Atajo por ticket: reasignado a ${slotLabel}`,
+            summary: `${ticketCode} se reasignó a ${slotLabel} desde el hub.`,
+        };
+    }
+    if (actionKind === 'call') {
+        return {
+            title: `Atajo por ticket: llamado rápido`,
+            summary: `${ticketCode} se llamó desde el atajo del hub.`,
+        };
+    }
+    if (actionKind === 'complete') {
+        return {
+            title: `Atajo por ticket: ticket completado`,
+            summary: `${ticketCode} se completó desde el hub.`,
+        };
+    }
+    if (actionKind === 'recall') {
+        return {
+            title: `Atajo por ticket: re-llamado`,
+            summary: `${ticketCode} se re-llamó en ${slotLabel} desde el hub.`,
+        };
+    }
+    if (actionKind === 'no_show') {
+        return {
+            title: `Atajo por ticket: no show pendiente`,
+            summary: `${ticketCode} quedó listo para confirmar no show desde el hub.`,
+        };
+    }
+    if (actionKind === 'release') {
+        return {
+            title: `Atajo por ticket: ticket liberado`,
+            summary: `${ticketCode} volvió a la cola general desde el hub.`,
+        };
+    }
+    if (actionKind === 'open') {
+        return {
+            title: `Atajo por ticket: operador abierto`,
+            summary: `Se abrió Operador ${slotLabel} desde el hub.`,
+        };
+    }
+    if (actionKind === 'table') {
+        return {
+            title: `Atajo por ticket: tabla filtrada`,
+            summary: `La tabla quedó enfocada en ${ticketCode}.`,
+        };
+    }
+    if (actionKind === 'reprint') {
+        return {
+            title: `Atajo por ticket: reimpresión`,
+            summary: `${ticketCode} se reimprimió desde el hub.`,
+        };
+    }
+    if (actionKind === 'confirm') {
+        return {
+            title: `Atajo por ticket: confirmación aplicada`,
+            summary: `${ticketCode} confirmó su acción sensible desde el hub.`,
+        };
+    }
+    return {
+        title: `Atajo por ticket: confirmación cancelada`,
+        summary: `${ticketCode} canceló su acción sensible desde el hub.`,
+    };
+}
+
+async function runQueueTicketLookupAction(
+    result,
+    actionKind,
+    manifest,
+    detectedPlatform,
+    options = {}
+) {
+    if (!result || !actionKind || actionKind === 'none') {
+        return;
+    }
+
+    const targetConsultorio =
+        Number(
+            options.consultorio ||
+                result.primaryConsultorio ||
+                result.consultorio ||
+                0
+        ) || 0;
+
+    try {
+        const {
+            callNextForConsultorio,
+            cancelQueueSensitiveAction,
+            confirmQueueSensitiveAction,
+            reprintQueueTicket,
+            runQueueTicketAction,
+        } = await import('../../actions.js');
+        if (
+            actionKind === 'assign' &&
+            result.ticketId > 0 &&
+            targetConsultorio > 0
+        ) {
+            await runQueueTicketAction(
+                result.ticketId,
+                'reasignar',
+                targetConsultorio
+            );
+        } else if (actionKind === 'call' && targetConsultorio > 0) {
+            await callNextForConsultorio(targetConsultorio);
+        } else if (actionKind === 'complete' && result.ticketId > 0) {
+            await runQueueTicketAction(result.ticketId, 'completar');
+        } else if (
+            actionKind === 'recall' &&
+            result.ticketId > 0 &&
+            targetConsultorio > 0
+        ) {
+            await runQueueTicketAction(
+                result.ticketId,
+                're-llamar',
+                targetConsultorio
+            );
+        } else if (
+            actionKind === 'no_show' &&
+            result.ticketId > 0 &&
+            targetConsultorio > 0
+        ) {
+            await runQueueTicketAction(
+                result.ticketId,
+                'no_show',
+                targetConsultorio
+            );
+            if (getState().queue.pendingSensitiveAction) {
+                hideSensitiveDialogVisualOnly();
+            }
+        } else if (actionKind === 'release' && result.ticketId > 0) {
+            await runQueueTicketAction(result.ticketId, 'liberar');
+        } else if (actionKind === 'open' && result.operatorUrl) {
+            window.open(result.operatorUrl, '_blank', 'noopener');
+        } else if (actionKind === 'table' && result.ticketCode) {
+            const { setQueueFilter, setQueueSearch } =
+                await import('../../state.js');
+            appendOpsLogEntry({
+                source: 'ticket_lookup',
+                tone: 'info',
+                ...describeQueueTicketLookupAction(result, actionKind),
+            });
+            setQueueFilter('all');
+            setQueueSearch(result.ticketCode);
+            requestAnimationFrame(() => {
+                const input = document.getElementById('queueSearchInput');
+                if (input instanceof HTMLInputElement) {
+                    input.focus();
+                    input.select();
+                }
+            });
+            return;
+        } else if (actionKind === 'reprint' && result.ticketId > 0) {
+            await reprintQueueTicket(result.ticketId);
+        } else if (actionKind === 'confirm') {
+            await confirmQueueSensitiveAction();
+        } else if (actionKind === 'cancel') {
+            cancelQueueSensitiveAction();
+        } else {
+            return;
+        }
+
+        appendOpsLogEntry({
+            source: 'ticket_lookup',
+            tone:
+                actionKind === 'complete'
+                    ? 'success'
+                    : actionKind === 'cancel' || actionKind === 'release'
+                      ? 'warning'
+                      : 'info',
+            ...describeQueueTicketLookupAction(
+                result,
+                actionKind,
+                targetConsultorio
+            ),
+        });
+    } catch (_error) {
+        createToast('No se pudo ejecutar el atajo por ticket', 'error');
+    } finally {
+        rerenderQueueOpsHub(manifest, detectedPlatform);
+    }
+}
+
+function renderQueueTicketLookup(manifest, detectedPlatform) {
+    const root = document.getElementById('queueTicketLookup');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const deck = buildQueueTicketLookup(manifest, detectedPlatform);
+    setHtml(
+        '#queueTicketLookup',
+        `
+            <section class="queue-ticket-lookup__shell" data-state="${escapeHtml(
+                deck.statusState
+            )}">
+                <div class="queue-ticket-lookup__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Atajo por ticket</p>
+                        <h5 id="queueTicketLookupTitle" class="queue-app-card__title">${escapeHtml(
+                            deck.title
+                        )}</h5>
+                        <p id="queueTicketLookupSummary" class="queue-ticket-lookup__summary">${escapeHtml(
+                            deck.summary
+                        )}</p>
+                    </div>
+                    <span
+                        id="queueTicketLookupStatus"
+                        class="queue-ticket-lookup__status"
+                        data-state="${escapeHtml(deck.statusState)}"
+                    >
+                        ${escapeHtml(deck.statusLabel)}
+                    </span>
+                </div>
+                <div class="queue-ticket-lookup__controls">
+                    <label class="queue-ticket-lookup__field" for="queueTicketLookupInput">
+                        <span>Buscar ticket</span>
+                        <input
+                            id="queueTicketLookupInput"
+                            type="search"
+                            value="${escapeHtml(deck.term)}"
+                            placeholder="Ej. A-1520"
+                            autocomplete="off"
+                            spellcheck="false"
+                        />
+                    </label>
+                    <div class="queue-ticket-lookup__control-actions">
+                        <button
+                            id="queueTicketLookupSearchBtn"
+                            type="button"
+                            class="queue-ticket-lookup__action queue-ticket-lookup__action--primary"
+                        >
+                            Buscar
+                        </button>
+                        <button
+                            id="queueTicketLookupClearBtn"
+                            type="button"
+                            class="queue-ticket-lookup__action"
+                            ${deck.term ? '' : 'disabled'}
+                        >
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+                ${
+                    deck.suggestions.length
+                        ? `
+                            <div id="queueTicketLookupSuggestions" class="queue-ticket-lookup__suggestions" role="list" aria-label="Tickets sugeridos">
+                                ${deck.suggestions
+                                    .map(
+                                        (ticket, index) => `
+                                            <button
+                                                id="queueTicketLookupSuggestion_${escapeHtml(
+                                                    String(index)
+                                                )}"
+                                                type="button"
+                                                class="queue-ticket-lookup__suggestion"
+                                                data-queue-ticket-lookup-suggestion="${escapeHtml(
+                                                    ticket.ticketCode
+                                                )}"
+                                                role="listitem"
+                                            >
+                                                <strong>${escapeHtml(
+                                                    ticket.ticketCode
+                                                )}</strong>
+                                                <span>${escapeHtml(
+                                                    ticket.label
+                                                )}</span>
+                                            </button>
+                                        `
+                                    )
+                                    .join('')}
+                            </div>
+                        `
+                        : ''
+                }
+                ${
+                    deck.result
+                        ? `
+                            <article
+                                id="queueTicketLookupResult"
+                                class="queue-ticket-lookup__result"
+                                data-state="${escapeHtml(deck.result.panelState)}"
+                            >
+                                <div class="queue-ticket-lookup__result-header">
+                                    <div>
+                                        <p id="queueTicketLookupMatchCode" class="queue-ticket-lookup__match-code">${escapeHtml(
+                                            deck.result.ticketCode
+                                        )}</p>
+                                        <p id="queueTicketLookupHeadline" class="queue-ticket-lookup__headline">${escapeHtml(
+                                            deck.result.headline
+                                        )}</p>
+                                    </div>
+                                    <span id="queueTicketLookupBadge" class="queue-ticket-lookup__badge">${escapeHtml(
+                                        deck.result.badge
+                                    )}</span>
+                                </div>
+                                ${
+                                    deck.result.pendingCopy
+                                        ? `
+                                            <div id="queueTicketLookupPending" class="queue-ticket-lookup__pending">
+                                                <strong>Confirmación pendiente</strong>
+                                                <p>${escapeHtml(
+                                                    deck.result.pendingCopy
+                                                )}</p>
+                                            </div>
+                                        `
+                                        : ''
+                                }
+                                <p id="queueTicketLookupDetail" class="queue-ticket-lookup__detail">${escapeHtml(
+                                    deck.result.detail
+                                )}</p>
+                                <div class="queue-ticket-lookup__chips">
+                                    <span class="queue-ticket-lookup__chip">${escapeHtml(
+                                        deck.result.statusCopy
+                                    )}</span>
+                                    <span class="queue-ticket-lookup__chip">${escapeHtml(
+                                        deck.result.ageLabel
+                                    )}</span>
+                                    <span class="queue-ticket-lookup__chip">${escapeHtml(
+                                        deck.result.priorityLabel
+                                    )}</span>
+                                    <span class="queue-ticket-lookup__chip">${escapeHtml(
+                                        deck.result.patientLabel
+                                    )}</span>
+                                </div>
+                                <p id="queueTicketLookupRecommendation" class="queue-ticket-lookup__recommendation">${escapeHtml(
+                                    deck.result.recommendation
+                                )}</p>
+                                <div class="queue-ticket-lookup__actions">
+                                    <button
+                                        id="queueTicketLookupPrimary"
+                                        type="button"
+                                        class="queue-ticket-lookup__action queue-ticket-lookup__action--primary"
+                                        data-queue-ticket-lookup-action="${escapeHtml(
+                                            deck.result.primaryAction
+                                        )}"
+                                        data-queue-ticket-lookup-consultorio="${escapeHtml(
+                                            String(
+                                                deck.result
+                                                    .primaryConsultorio || 0
+                                            )
+                                        )}"
+                                    >
+                                        ${escapeHtml(deck.result.primaryLabel)}
+                                    </button>
+                                    ${deck.result.secondaryActions
+                                        .map(
+                                            (action, index) => `
+                                                <button
+                                                    id="queueTicketLookupSecondary_${escapeHtml(
+                                                        String(index)
+                                                    )}"
+                                                    type="button"
+                                                    class="queue-ticket-lookup__action"
+                                                    data-queue-ticket-lookup-action="${escapeHtml(
+                                                        action.kind
+                                                    )}"
+                                                    data-queue-ticket-lookup-consultorio="${escapeHtml(
+                                                        String(
+                                                            action.consultorio ||
+                                                                0
+                                                        )
+                                                    )}"
+                                                >
+                                                    ${escapeHtml(action.label)}
+                                                </button>
+                                            `
+                                        )
+                                        .join('')}
+                                </div>
+                            </article>
+                        `
+                        : `
+                            <article
+                                id="queueTicketLookupEmpty"
+                                class="queue-ticket-lookup__empty"
+                                data-state="${escapeHtml(deck.statusState)}"
+                            >
+                                <strong>${escapeHtml(deck.title)}</strong>
+                                <p>${escapeHtml(deck.summary)}</p>
+                            </article>
+                        `
+                }
+            </section>
+        `
+    );
+
+    const input = document.getElementById('queueTicketLookupInput');
+    const searchButton = document.getElementById('queueTicketLookupSearchBtn');
+    const clearButton = document.getElementById('queueTicketLookupClearBtn');
+    const submitLookup = () => {
+        const nextTerm =
+            input instanceof HTMLInputElement ? input.value : deck.term;
+        persistQueueTicketLookupTerm(nextTerm);
+        rerenderQueueOpsHub(manifest, detectedPlatform);
+    };
+
+    if (input instanceof HTMLInputElement) {
+        input.onkeydown = (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitLookup();
+            } else if (event.key === 'Escape' && input.value) {
+                event.preventDefault();
+                input.value = '';
+                persistQueueTicketLookupTerm('');
+                rerenderQueueOpsHub(manifest, detectedPlatform);
+            }
+        };
+    }
+
+    if (searchButton instanceof HTMLButtonElement) {
+        searchButton.onclick = submitLookup;
+    }
+
+    if (clearButton instanceof HTMLButtonElement) {
+        clearButton.onclick = () => {
+            persistQueueTicketLookupTerm('');
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-ticket-lookup-suggestion]').forEach(
+        (button) => {
+            if (!(button instanceof HTMLButtonElement)) {
+                return;
+            }
+            button.onclick = () => {
+                persistQueueTicketLookupTerm(
+                    button.dataset.queueTicketLookupSuggestion || ''
+                );
+                rerenderQueueOpsHub(manifest, detectedPlatform);
+            };
+        }
+    );
+
+    root.querySelectorAll('[data-queue-ticket-lookup-action]').forEach(
+        (button) => {
+            if (!(button instanceof HTMLButtonElement) || !deck.result) {
+                return;
+            }
+            button.onclick = async () => {
+                button.disabled = true;
+                await runQueueTicketLookupAction(
+                    deck.result,
+                    button.dataset.queueTicketLookupAction || '',
+                    manifest,
+                    detectedPlatform,
+                    {
+                        consultorio: Number(
+                            button.dataset.queueTicketLookupConsultorio || 0
+                        ),
+                    }
+                );
+            };
+        }
+    );
+}
+
+function buildQueueTicketRoutePivot(ticket, label, detail = '') {
+    const ticketCode = String(ticket?.ticketCode || '').trim();
+    const ticketId = Number(ticket?.id || 0);
+    if (!ticketId || !ticketCode) {
+        return null;
+    }
+    return {
+        ticketId,
+        ticketCode,
+        label,
+        detail,
+    };
+}
+
+function copyQueueTicketRoute(route) {
+    if (!route || !route.result) {
+        return Promise.resolve();
+    }
+    const pivotLines = route.pivots.length
+        ? route.pivots.map(
+              (pivot, index) => `${index + 1}. ${pivot.label} - ${pivot.detail}`
+          )
+        : ['Sin pivotes relacionados disponibles.'];
+    const report = [
+        `${route.title} - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${route.statusLabel}`,
+        `Carril: ${route.laneLabel}`,
+        `Posición: ${route.positionLabel}`,
+        `Presión: ${route.pressureLabel}`,
+        `Impacto: ${route.impactLabel}`,
+        'Pivotes:',
+        ...pivotLines,
+    ].join('\n');
+
+    return navigator.clipboard
+        .writeText(report)
+        .then(() => createToast('Ruta copiada', 'success'))
+        .catch(() => createToast('No se pudo copiar la ruta', 'error'));
+}
+
+function buildQueueTicketRoute(manifest, detectedPlatform) {
+    const lookup = buildQueueTicketLookup(manifest, detectedPlatform);
+    const result = lookup.result;
+    if (!result) {
+        return {
+            title: 'Ruta del ticket en espera',
+            summary:
+                lookup.term && !lookup.result
+                    ? 'No hay una coincidencia activa para construir una ruta. Ajusta el ticket o limpia la búsqueda.'
+                    : 'Busca un ticket para ver su carril real, la presión alrededor y a qué turno conviene saltar después.',
+            statusLabel: lookup.term
+                ? 'Sin ruta disponible'
+                : 'Sin ticket cargado',
+            statusState: lookup.term ? 'warning' : 'idle',
+            result: null,
+            pivots: [],
+            laneLabel: 'Sin ticket seleccionado',
+            positionLabel: 'Sin posición visible',
+            pressureLabel: 'Sin presión calculada',
+            impactLabel:
+                'El panel se activa cuando el lookup encuentra un ticket real en la cola.',
+        };
+    }
+
+    const ticket = getQueueTicketById(result.ticketId);
+    if (!ticket) {
+        return {
+            title: 'Ruta del ticket sin snapshot',
+            summary:
+                'El ticket ya no está en el estado local. Refresca la cola o vuelve a buscarlo para reconstruir la ruta.',
+            statusLabel: 'Snapshot vencido',
+            statusState: 'warning',
+            result: null,
+            pivots: [],
+            laneLabel: 'Sin snapshot',
+            positionLabel: 'Desconocida',
+            pressureLabel: 'Refresca la cola',
+            impactLabel: 'No se pudo reconstruir el contexto del ticket.',
+        };
+    }
+
+    const status = String(ticket.status || '')
+        .trim()
+        .toLowerCase();
+    const consultorio = Number(ticket.assignedConsultorio || 0);
+    const slot = consultorio === 2 ? 2 : consultorio === 1 ? 1 : 0;
+    const ticketCode = String(ticket.ticketCode || 'ticket');
+    const generalWaiting = getUnassignedWaitingTickets();
+    const totalWaiting = getSortedWaitingTickets();
+    const laneWaiting =
+        slot > 0 ? getAssignedWaitingTickets(slot) : generalWaiting;
+    const laneIndex = laneWaiting.findIndex(
+        (item) => Number(item.id || 0) === Number(ticket.id || 0)
+    );
+    const previousWaiting = laneIndex > 0 ? laneWaiting[laneIndex - 1] : null;
+    const nextWaiting =
+        laneIndex >= 0 && laneIndex < laneWaiting.length - 1
+            ? laneWaiting[laneIndex + 1]
+            : null;
+    const currentCalled = slot > 0 ? getCalledTicketForConsultorio(slot) : null;
+    const oldestGeneral = generalWaiting[0] || null;
+    const pivots = [];
+
+    let title = `Ruta de ${ticketCode}`;
+    let summary =
+        'Este panel resume el carril real del ticket y los pivotes más útiles alrededor.';
+    let statusLabel = 'Ruta preparada';
+    let statusState = result.panelState;
+    let laneLabel = slot > 0 ? `C${slot}` : 'Cola general';
+    let positionLabel = 'Sin posición visible';
+    let pressureLabel = `${totalWaiting.length} ticket(s) esperando`;
+    let impactLabel = 'Sin impacto inmediato calculado.';
+
+    const pushPivot = (pivot) => {
+        if (!pivot) {
+            return;
+        }
+        if (pivots.some((item) => item.ticketId === pivot.ticketId)) {
+            return;
+        }
+        pivots.push(pivot);
+    };
+
+    if (status === 'called' && slot > 0) {
+        const behindCount = laneWaiting.length;
+        laneLabel = `C${slot} · ticket activo`;
+        positionLabel = 'Paciente en atención ahora';
+        pressureLabel =
+            behindCount > 0
+                ? `${behindCount} ticket(s) detrás en C${slot}`
+                : `Sin espera detrás en C${slot}`;
+        impactLabel = nextWaiting
+            ? `Si ${ticketCode} cierra ahora, ${nextWaiting.ticketCode} queda listo para llamado en C${slot}.`
+            : `Si ${ticketCode} cierra ahora, C${slot} queda libre y la presión vuelve a recepción.`;
+        summary =
+            behindCount > 0
+                ? `${ticketCode} está reteniendo la cola de C${slot}; conviene tener a la vista el siguiente turno y el fallback general.`
+                : `${ticketCode} es el único ticket activo en C${slot} y no tiene cola inmediata detrás.`;
+        statusLabel =
+            behindCount > 0
+                ? `${behindCount} ticket(s) esperando detrás`
+                : 'Sin cola detrás';
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                nextWaiting,
+                `Ver siguiente ${String(nextWaiting?.ticketCode || '')}`,
+                `Es el próximo turno listo detrás de ${ticketCode}.`
+            )
+        );
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                oldestGeneral,
+                `Ver general ${String(oldestGeneral?.ticketCode || '')}`,
+                'Es el ticket más antiguo que todavía no tiene consultorio.'
+            )
+        );
+    } else if (status === 'waiting' && slot > 0) {
+        const blockingSteps = Math.max(0, laneIndex + (currentCalled ? 1 : 0));
+        laneLabel = `C${slot} · cola asignada`;
+        positionLabel =
+            blockingSteps <= 0
+                ? 'Listo para llamado'
+                : `${blockingSteps} paso(s) por delante`;
+        pressureLabel = `${laneWaiting.length} ticket(s) esperando en C${slot}`;
+        if (currentCalled && laneIndex <= 0) {
+            impactLabel = nextWaiting
+                ? `${currentCalled.ticketCode} atiende ahora; cuando cierre, ${ticketCode} queda primero y ${nextWaiting.ticketCode} sigue detrás.`
+                : `${currentCalled.ticketCode} atiende ahora; cuando cierre, ${ticketCode} queda primero en C${slot}.`;
+            pushPivot(
+                buildQueueTicketRoutePivot(
+                    currentCalled,
+                    `Ver ticket activo ${currentCalled.ticketCode}`,
+                    `Es el bloqueo inmediato antes de ${ticketCode}.`
+                )
+            );
+        } else if (currentCalled) {
+            impactLabel = `${currentCalled.ticketCode} atiende ahora y ${
+                previousWaiting?.ticketCode || 'otro ticket'
+            } sigue antes que ${ticketCode} en C${slot}.`;
+            pushPivot(
+                buildQueueTicketRoutePivot(
+                    previousWaiting,
+                    `Ver anterior ${String(previousWaiting?.ticketCode || '')}`,
+                    `Va antes que ${ticketCode} dentro del carril C${slot}.`
+                )
+            );
+        } else if (previousWaiting) {
+            impactLabel = `${previousWaiting.ticketCode} sigue antes en C${slot}; ${ticketCode} no debería llamarse hasta que ese turno avance.`;
+            pushPivot(
+                buildQueueTicketRoutePivot(
+                    previousWaiting,
+                    `Ver anterior ${previousWaiting.ticketCode}`,
+                    `Va antes que ${ticketCode} en la cola asignada.`
+                )
+            );
+        } else {
+            impactLabel = `${ticketCode} ya es el siguiente turno útil de C${slot} y puede llamarse desde el lookup o el operador.`;
+        }
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                nextWaiting,
+                `Ver siguiente ${String(nextWaiting?.ticketCode || '')}`,
+                `Quedará detrás de ${ticketCode} cuando esta misma cola avance.`
+            )
+        );
+        statusLabel =
+            blockingSteps <= 0
+                ? 'Siguiente listo'
+                : `${blockingSteps} paso(s) antes de llamarlo`;
+        summary =
+            blockingSteps <= 1
+                ? `${ticketCode} ya está muy cerca de la cabecera de C${slot}.`
+                : `${ticketCode} sigue dentro de una cola asignada y conviene revisar el bloqueo inmediato antes de moverlo.`;
+    } else if (status === 'waiting') {
+        const generalIndex = generalWaiting.findIndex(
+            (item) => Number(item.id || 0) === Number(ticket.id || 0)
+        );
+        const aheadCount = generalIndex > 0 ? generalIndex : 0;
+        const preferred = pickQueueTicketLookupConsultorio(
+            manifest,
+            detectedPlatform
+        );
+        laneLabel = 'Cola general · sin consultorio';
+        positionLabel =
+            aheadCount === 0
+                ? 'Primero sin consultorio'
+                : `${aheadCount} ticket(s) por delante`;
+        pressureLabel = `${generalWaiting.length} ticket(s) en cola general`;
+        impactLabel =
+            preferred.readinessScore === 0
+                ? `Si lo reasignas a C${preferred.slot}, ${ticketCode} sale de recepción y entra a un consultorio con operador vivo.`
+                : `El desvío natural es C${preferred.slot}, pero todavía conviene validar ese operador antes del llamado.`;
+        statusLabel =
+            aheadCount === 0 ? 'Cabecera general' : `${aheadCount} delante`;
+        summary =
+            aheadCount === 0
+                ? `${ticketCode} ya lidera la cola sin consultorio y es buen candidato a despacho inmediato.`
+                : `${ticketCode} sigue esperando en recepción y todavía tiene otros turnos generales delante.`;
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                previousWaiting,
+                `Ver anterior ${String(previousWaiting?.ticketCode || '')}`,
+                `Va antes que ${ticketCode} en la cola general.`
+            )
+        );
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                nextWaiting,
+                `Ver siguiente ${String(nextWaiting?.ticketCode || '')}`,
+                `Queda detrás de ${ticketCode} en la cola general.`
+            )
+        );
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                getCalledTicketForConsultorio(preferred.slot),
+                `Ver activo C${preferred.slot}`,
+                `Es el ticket que hoy bloquea el consultorio sugerido para ${ticketCode}.`
+            )
+        );
+    } else {
+        const laneCurrent =
+            slot > 0 ? getCalledTicketForConsultorio(slot) : null;
+        const laneNext =
+            slot > 0 ? getWaitingForConsultorio(slot) : oldestGeneral;
+        laneLabel =
+            status === 'completed'
+                ? 'Ruta cerrada · completado'
+                : status === 'no_show'
+                  ? 'Ruta cerrada · no show'
+                  : 'Ruta cerrada · cancelado';
+        positionLabel = result.statusCopy;
+        pressureLabel =
+            slot > 0
+                ? `C${slot} sigue operando en vivo`
+                : 'Recepción sigue operando en vivo';
+        impactLabel = laneCurrent
+            ? `${ticketCode} ya no afecta la cola; ahora el foco está en ${laneCurrent.ticketCode}.`
+            : laneNext
+              ? `${ticketCode} ya cerró. El siguiente pivote útil quedó en ${laneNext.ticketCode}.`
+              : `${ticketCode} ya cerró y no deja una presión inmediata visible en este carril.`;
+        summary =
+            'La ruta de este ticket ya terminó; el panel salta al turno vivo más cercano para no perder continuidad operativa.';
+        statusLabel = 'Ruta cerrada';
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                laneCurrent,
+                `Ver activo ${String(laneCurrent?.ticketCode || '')}`,
+                'Es el turno vivo más cercano dentro del mismo carril.'
+            )
+        );
+        pushPivot(
+            buildQueueTicketRoutePivot(
+                laneNext,
+                `Ver siguiente ${String(laneNext?.ticketCode || '')}`,
+                'Es el siguiente turno útil relacionado con este carril.'
+            )
+        );
+    }
+
+    return {
+        title,
+        summary,
+        statusLabel,
+        statusState,
+        result,
+        laneLabel,
+        positionLabel,
+        pressureLabel,
+        impactLabel,
+        pivots: pivots.slice(0, 2),
+    };
+}
+
+function renderQueueTicketRoute(manifest, detectedPlatform) {
+    const root = document.getElementById('queueTicketRoute');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const route = buildQueueTicketRoute(manifest, detectedPlatform);
+    setHtml(
+        '#queueTicketRoute',
+        `
+            <section class="queue-ticket-route__shell" data-state="${escapeHtml(
+                route.statusState
+            )}">
+                <div class="queue-ticket-route__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Ruta del ticket</p>
+                        <h5 id="queueTicketRouteTitle" class="queue-app-card__title">${escapeHtml(
+                            route.title
+                        )}</h5>
+                        <p id="queueTicketRouteSummary" class="queue-ticket-route__summary">${escapeHtml(
+                            route.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-ticket-route__meta">
+                        <span
+                            id="queueTicketRouteStatus"
+                            class="queue-ticket-route__status"
+                            data-state="${escapeHtml(route.statusState)}"
+                        >
+                            ${escapeHtml(route.statusLabel)}
+                        </span>
+                        <button
+                            id="queueTicketRouteCopyBtn"
+                            type="button"
+                            class="queue-ticket-route__action"
+                            ${route.result ? '' : 'disabled'}
+                        >
+                            Copiar ruta
+                        </button>
+                    </div>
+                </div>
+                ${
+                    route.result
+                        ? `
+                            <div class="queue-ticket-route__grid">
+                                <article class="queue-ticket-route__fact">
+                                    <span>Carril</span>
+                                    <strong id="queueTicketRouteLane">${escapeHtml(
+                                        route.laneLabel
+                                    )}</strong>
+                                </article>
+                                <article class="queue-ticket-route__fact">
+                                    <span>Posición</span>
+                                    <strong id="queueTicketRoutePosition">${escapeHtml(
+                                        route.positionLabel
+                                    )}</strong>
+                                </article>
+                                <article class="queue-ticket-route__fact">
+                                    <span>Presión</span>
+                                    <strong id="queueTicketRoutePressure">${escapeHtml(
+                                        route.pressureLabel
+                                    )}</strong>
+                                </article>
+                                <article class="queue-ticket-route__fact queue-ticket-route__fact--wide">
+                                    <span>Impacto</span>
+                                    <strong id="queueTicketRouteImpact">${escapeHtml(
+                                        route.impactLabel
+                                    )}</strong>
+                                </article>
+                            </div>
+                            <div class="queue-ticket-route__actions">
+                                <button
+                                    id="queueTicketRoutePivotPrimary"
+                                    type="button"
+                                    class="queue-ticket-route__action queue-ticket-route__action--primary"
+                                    ${route.pivots[0] ? '' : 'disabled'}
+                                >
+                                    ${escapeHtml(
+                                        route.pivots[0]?.label ||
+                                            'Sin pivote principal'
+                                    )}
+                                </button>
+                                <button
+                                    id="queueTicketRoutePivotSecondary"
+                                    type="button"
+                                    class="queue-ticket-route__action"
+                                    ${route.pivots[1] ? '' : 'disabled'}
+                                >
+                                    ${escapeHtml(
+                                        route.pivots[1]?.label ||
+                                            'Sin pivote secundario'
+                                    )}
+                                </button>
+                            </div>
+                            <div class="queue-ticket-route__pivot-notes">
+                                <p id="queueTicketRoutePivotDetailPrimary">${escapeHtml(
+                                    route.pivots[0]?.detail ||
+                                        'No hay otro ticket relacionado por cargar ahora.'
+                                )}</p>
+                                <p id="queueTicketRoutePivotDetailSecondary">${escapeHtml(
+                                    route.pivots[1]?.detail ||
+                                        'Cuando aparezca otro pivote útil, quedará disponible aquí.'
+                                )}</p>
+                            </div>
+                        `
+                        : `
+                            <article
+                                id="queueTicketRouteEmpty"
+                                class="queue-ticket-route__empty"
+                                data-state="${escapeHtml(route.statusState)}"
+                            >
+                                <strong>${escapeHtml(route.title)}</strong>
+                                <p>${escapeHtml(route.summary)}</p>
+                            </article>
+                        `
+                }
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueTicketRouteCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueTicketRoute(route);
+        };
+    }
+
+    const primaryButton = document.getElementById(
+        'queueTicketRoutePivotPrimary'
+    );
+    if (primaryButton instanceof HTMLButtonElement && route.pivots[0]) {
+        primaryButton.onclick = () => {
+            persistQueueTicketLookupTerm(route.pivots[0].ticketCode);
+            appendOpsLogEntry({
+                source: 'ticket_route',
+                tone: 'info',
+                title: `Ruta del ticket: pivote principal`,
+                summary: `${route.pivots[0].ticketCode} quedó cargado desde la ruta de ${route.result.ticketCode}.`,
+            });
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    }
+
+    const secondaryButton = document.getElementById(
+        'queueTicketRoutePivotSecondary'
+    );
+    if (secondaryButton instanceof HTMLButtonElement && route.pivots[1]) {
+        secondaryButton.onclick = () => {
+            persistQueueTicketLookupTerm(route.pivots[1].ticketCode);
+            appendOpsLogEntry({
+                source: 'ticket_route',
+                tone: 'info',
+                title: `Ruta del ticket: pivote secundario`,
+                summary: `${route.pivots[1].ticketCode} quedó cargado desde la ruta de ${route.result.ticketCode}.`,
+            });
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    }
+}
+
 function buildQueueWaitRadarSeverity({ ageSec, backlog, operatorReady }) {
     const safeBacklog = Math.max(0, Number(backlog || 0));
     const safeAgeSec = Number.isFinite(Number(ageSec)) ? Number(ageSec) : null;
@@ -4544,7 +7086,9 @@ async function runQueueWaitRadarAction(card, manifest, detectedPlatform) {
     if (!card?.actionCard) {
         return;
     }
-    await runQueueDispatchAction(card.actionCard, manifest, detectedPlatform);
+    await runQueueDispatchAction(card.actionCard, manifest, detectedPlatform, {
+        source: 'wait_radar',
+    });
 }
 
 function renderQueueWaitRadar(manifest, detectedPlatform) {
@@ -4683,6 +7227,1781 @@ function renderQueueWaitRadar(manifest, detectedPlatform) {
             await runQueueWaitRadarAction(card, manifest, detectedPlatform);
         };
     });
+}
+
+function formatQueueLoadBalanceDelta(loadDelta, otherSlotKey) {
+    if (!Number.isFinite(loadDelta) || loadDelta === 0) {
+        return `Parejo con ${otherSlotKey.toUpperCase()}`;
+    }
+
+    if (loadDelta > 0) {
+        return `+${loadDelta} vs ${otherSlotKey.toUpperCase()}`;
+    }
+
+    return `${Math.abs(loadDelta)} menos que ${otherSlotKey.toUpperCase()}`;
+}
+
+function buildQueueLoadBalanceCard(manifest, detectedPlatform, consultorio) {
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        consultorio
+    );
+    const dispatchCard = buildQueueDispatchCard(
+        manifest,
+        detectedPlatform,
+        consultorio
+    );
+    const otherSlot = consultorio === 2 ? 1 : 2;
+    const otherSlotKey = otherSlot === 2 ? 'c2' : 'c1';
+    const otherDispatchCard = buildQueueDispatchCard(
+        manifest,
+        detectedPlatform,
+        otherSlot
+    );
+    const ownWaiting = getAssignedWaitingTickets(consultorio);
+    const otherWaiting = getAssignedWaitingTickets(otherSlot);
+    const generalWaiting = getUnassignedWaitingTickets();
+    const currentTicket = getCalledTicketForConsultorio(consultorio);
+    const otherCurrentTicket = getCalledTicketForConsultorio(otherSlot);
+    const ownLoadUnits = ownWaiting.length + (currentTicket ? 1 : 0);
+    const otherLoadUnits = otherWaiting.length + (otherCurrentTicket ? 1 : 0);
+    const loadDelta = ownLoadUnits - otherLoadUnits;
+    const gap = Math.abs(loadDelta);
+    const operatorReady =
+        operatorContext.operatorAssigned && operatorContext.operatorLive;
+
+    let state =
+        operatorReady || ownLoadUnits > 0 || generalWaiting.length > 0
+            ? 'ready'
+            : 'idle';
+    let badge = operatorReady ? 'Parejo' : 'Sin operador';
+    let headline = `${operatorContext.slotKey.toUpperCase()} con carga estable`;
+    let detail =
+        gap === 0 && generalWaiting.length === 0
+            ? `La carga visible está pareja entre ${operatorContext.slotKey.toUpperCase()} y ${otherSlotKey.toUpperCase()} y no hay cola general esperando reparto.`
+            : `${operatorContext.slotKey.toUpperCase()} mantiene un margen manejable frente a ${otherSlotKey.toUpperCase()}, pero conviene vigilar el siguiente movimiento del turno.`;
+    let capacityLabel = operatorReady
+        ? 'Listo para absorber'
+        : 'Falta operador dedicado';
+    let actionCard =
+        dispatchCard.primaryAction === 'none' ? null : dispatchCard;
+    let primaryLabel = actionCard ? actionCard.primaryLabel : 'Sin acción';
+
+    if (otherDispatchCard.primaryAction === 'rebalance' && loadDelta >= 2) {
+        const suggestedMoveLabel = `Mover ${otherDispatchCard.targetTicketCode} a ${otherSlotKey.toUpperCase()}`;
+        state = gap >= 3 ? 'alert' : 'warning';
+        badge = 'Más cargado';
+        headline = `${operatorContext.slotKey.toUpperCase()} está absorbiendo de más`;
+        detail = `${operatorContext.slotKey.toUpperCase()} lleva ${ownWaiting.length} en espera frente a ${otherWaiting.length} de ${otherSlotKey.toUpperCase()}. ${otherSlotKey.toUpperCase()} ya puede tomar ${otherDispatchCard.targetTicketCode} para repartir mejor el turno.`;
+        capacityLabel = `Ceder ${otherDispatchCard.targetTicketCode} a ${otherSlotKey.toUpperCase()}`;
+        actionCard = {
+            ...otherDispatchCard,
+            primaryLabel: suggestedMoveLabel,
+        };
+        primaryLabel = suggestedMoveLabel;
+    } else if (dispatchCard.primaryAction === 'rebalance') {
+        state = 'ready';
+        badge = 'Puede absorber';
+        headline = `${operatorContext.slotKey.toUpperCase()} puede equilibrar ${otherSlotKey.toUpperCase()}`;
+        detail = `${operatorContext.slotKey.toUpperCase()} tiene margen operativo para absorber ${dispatchCard.targetTicketCode} y bajar la presión que ya acumula ${otherSlotKey.toUpperCase()}.`;
+        capacityLabel = `Absorber ${dispatchCard.targetTicketCode}`;
+        actionCard = dispatchCard;
+        primaryLabel = dispatchCard.primaryLabel;
+    } else if (dispatchCard.primaryAction === 'assign') {
+        state = 'ready';
+        badge = 'Capacidad libre';
+        headline = `${operatorContext.slotKey.toUpperCase()} puede absorber cola general`;
+        detail = `Hay ${generalWaiting.length} ticket(s) sin consultorio. ${operatorContext.slotKey.toUpperCase()} es la mejor salida inmediata para tomar ${dispatchCard.targetTicketCode} y mantener la recepción liviana.`;
+        capacityLabel = `Tomar ${dispatchCard.targetTicketCode} de general`;
+        actionCard = dispatchCard;
+        primaryLabel = dispatchCard.primaryLabel;
+    } else if (dispatchCard.primaryAction === 'call') {
+        state = 'ready';
+        badge = 'Siguiente listo';
+        headline = `${operatorContext.slotKey.toUpperCase()} ya tiene siguiente ticket`;
+        detail = `${dispatchCard.targetTicketCode} ya está alineado a ${operatorContext.slotKey.toUpperCase()}. Llamarlo ahora evita que el balance vuelva a abrirse al siguiente refresh.`;
+        capacityLabel = `Llamar ${dispatchCard.targetTicketCode}`;
+        actionCard = dispatchCard;
+        primaryLabel = dispatchCard.primaryLabel;
+    } else if (
+        dispatchCard.primaryAction === 'open' &&
+        (ownWaiting.length > 0 || generalWaiting.length > 0 || gap > 0)
+    ) {
+        state = 'warning';
+        badge = 'Falta operador';
+        headline = `Prepara ${operatorContext.slotKey.toUpperCase()} para balancear`;
+        detail = `${operatorContext.slotKey.toUpperCase()} tiene margen o cola pendiente, pero todavía falta un operador confiable para ejecutar el balance con seguridad.`;
+        capacityLabel = `Abrir Operador ${operatorContext.slotKey.toUpperCase()}`;
+        actionCard = dispatchCard;
+        primaryLabel = dispatchCard.primaryLabel;
+    } else if (gap <= 1 && generalWaiting.length === 0) {
+        state =
+            operatorReady || ownLoadUnits > 0 || otherLoadUnits > 0
+                ? 'ready'
+                : 'idle';
+        badge = operatorReady ? 'Parejo' : 'Sin señal';
+        headline = `${operatorContext.slotKey.toUpperCase()} está bajo control`;
+        detail = currentTicket
+            ? `${currentTicket.ticketCode} sigue en atención y la cola pendiente no abre un desvío material frente a ${otherSlotKey.toUpperCase()}.`
+            : `La diferencia con ${otherSlotKey.toUpperCase()} no supera un turno y no hay cola general acumulándose ahora mismo.`;
+        capacityLabel =
+            gap === 0
+                ? `Mismo nivel que ${otherSlotKey.toUpperCase()}`
+                : `Diferencia corta frente a ${otherSlotKey.toUpperCase()}`;
+    }
+
+    return {
+        slot: consultorio,
+        slotKey: operatorContext.slotKey,
+        state,
+        badge,
+        headline,
+        detail,
+        loadLabel: `En cola ${ownWaiting.length} · Atención ${
+            currentTicket ? currentTicket.ticketCode : 'Libre'
+        }`,
+        deltaLabel: formatQueueLoadBalanceDelta(loadDelta, otherSlotKey),
+        capacityLabel,
+        chips: [
+            operatorContext.operatorLabel,
+            operatorContext.oneTapLabel,
+            `General ${generalWaiting.length}`,
+        ],
+        operatorUrl: operatorContext.operatorUrl,
+        actionCard,
+        primaryLabel,
+    };
+}
+
+function buildQueueLoadBalance(manifest, detectedPlatform) {
+    const cards = [1, 2].map((consultorio) =>
+        buildQueueLoadBalanceCard(manifest, detectedPlatform, consultorio)
+    );
+    const c1Load =
+        getAssignedWaitingTickets(1).length +
+        (getCalledTicketForConsultorio(1) ? 1 : 0);
+    const c2Load =
+        getAssignedWaitingTickets(2).length +
+        (getCalledTicketForConsultorio(2) ? 1 : 0);
+    const loadGap = Math.abs(c1Load - c2Load);
+    const generalWaitingCount = getUnassignedWaitingTickets().length;
+    const alertCount = cards.filter((card) => card.state === 'alert').length;
+    const warningCount = cards.filter(
+        (card) => card.state === 'warning'
+    ).length;
+    const adjustmentCount = cards.filter(
+        (card) =>
+            card.actionCard &&
+            ['assign', 'rebalance', 'call'].includes(
+                card.actionCard.primaryAction
+            )
+    ).length;
+    const blockedCount = cards.filter(
+        (card) =>
+            card.actionCard &&
+            card.actionCard.primaryAction === 'open' &&
+            card.state === 'warning'
+    ).length;
+    const activeLoadCount = cards.filter(
+        (card) => card.state !== 'idle'
+    ).length;
+
+    return {
+        title:
+            alertCount > 0
+                ? 'Balance de carga desviado'
+                : warningCount > 0
+                  ? 'Balance de carga por vigilar'
+                  : adjustmentCount > 0
+                    ? 'Balance de carga con margen'
+                    : 'Balance de carga estable',
+        summary:
+            alertCount > 0
+                ? 'Uno de los consultorios ya está absorbiendo de más y conviene rebalancear antes de que el radar de espera siga escalando.'
+                : warningCount > 0
+                  ? 'Aquí ves qué consultorio está más liviano, cuál está absorbiendo de más y cuál es el siguiente ajuste para repartir la cola.'
+                  : adjustmentCount > 0
+                    ? 'La carga está controlada, pero todavía puedes absorber un ticket o dejar un llamado listo sin bajar a la tabla.'
+                    : 'C1, C2 y la cola general se ven parejos; no hace falta rebalancear el turno en este momento.',
+        statusLabel:
+            alertCount > 0
+                ? `Gap ${loadGap} con rebalanceo urgente`
+                : blockedCount > 0
+                  ? `${blockedCount} bloqueo(s) para balancear`
+                  : adjustmentCount > 0
+                    ? `${adjustmentCount} ajuste(s) sugerido(s)`
+                    : activeLoadCount > 0
+                      ? `Gap actual ${loadGap}`
+                      : 'Sin carga pendiente',
+        statusState:
+            alertCount > 0
+                ? 'alert'
+                : warningCount > 0
+                  ? 'warning'
+                  : activeLoadCount > 0 || adjustmentCount > 0
+                    ? 'ready'
+                    : 'idle',
+        chips: [
+            `Gap C1/C2 ${loadGap}`,
+            `General ${generalWaitingCount}`,
+            `Ajustes ${adjustmentCount}`,
+        ],
+        cards,
+    };
+}
+
+async function runQueueLoadBalanceAction(card, manifest, detectedPlatform) {
+    if (!card?.actionCard) {
+        return;
+    }
+
+    await runQueueDispatchAction(card.actionCard, manifest, detectedPlatform, {
+        source: 'load_balance',
+    });
+}
+
+function renderQueueLoadBalance(manifest, detectedPlatform) {
+    const root = document.getElementById('queueLoadBalance');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const balance = buildQueueLoadBalance(manifest, detectedPlatform);
+    setHtml(
+        '#queueLoadBalance',
+        `
+            <section class="queue-load-balance__shell" data-state="${escapeHtml(
+                balance.statusState
+            )}">
+                <div class="queue-load-balance__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Balance de carga</p>
+                        <h5 id="queueLoadBalanceTitle" class="queue-app-card__title">${escapeHtml(
+                            balance.title
+                        )}</h5>
+                        <p id="queueLoadBalanceSummary" class="queue-load-balance__summary">${escapeHtml(
+                            balance.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-load-balance__meta">
+                        <span
+                            id="queueLoadBalanceStatus"
+                            class="queue-load-balance__status"
+                            data-state="${escapeHtml(balance.statusState)}"
+                        >
+                            ${escapeHtml(balance.statusLabel)}
+                        </span>
+                        <div class="queue-load-balance__chips">
+                            ${balance.chips
+                                .map(
+                                    (chip) =>
+                                        `<span class="queue-load-balance__chip">${escapeHtml(
+                                            chip
+                                        )}</span>`
+                                )
+                                .join('')}
+                        </div>
+                    </div>
+                </div>
+                <div id="queueLoadBalanceCards" class="queue-load-balance__grid" role="list" aria-label="Balance de carga por consultorio">
+                    ${balance.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueLoadBalanceCard_${escapeHtml(card.slotKey)}"
+                                    class="queue-load-balance__card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-load-balance__card-header">
+                                        <div>
+                                            <strong>${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</strong>
+                                            <p id="queueLoadBalanceHeadline_${escapeHtml(
+                                                card.slotKey
+                                            )}" class="queue-load-balance__headline">${escapeHtml(
+                                                card.headline
+                                            )}</p>
+                                        </div>
+                                        <span class="queue-load-balance__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p class="queue-load-balance__detail">${escapeHtml(
+                                        card.detail
+                                    )}</p>
+                                    <div class="queue-load-balance__facts">
+                                        <div class="queue-load-balance__fact">
+                                            <span>Carga visible</span>
+                                            <strong id="queueLoadBalanceLoad_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.loadLabel)}</strong>
+                                        </div>
+                                        <div class="queue-load-balance__fact">
+                                            <span>Delta</span>
+                                            <strong id="queueLoadBalanceDelta_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.deltaLabel)}</strong>
+                                        </div>
+                                        <div class="queue-load-balance__fact">
+                                            <span>Capacidad</span>
+                                            <strong id="queueLoadBalanceCapacity_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.capacityLabel)}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="queue-load-balance__lane-chips">
+                                        ${card.chips
+                                            .map(
+                                                (chip) =>
+                                                    `<span class="queue-load-balance__lane-chip">${escapeHtml(
+                                                        chip
+                                                    )}</span>`
+                                            )
+                                            .join('')}
+                                    </div>
+                                    <div class="queue-load-balance__actions">
+                                        <button
+                                            id="queueLoadBalancePrimary_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-load-balance__action queue-load-balance__action--primary"
+                                            ${card.actionCard ? '' : 'disabled'}
+                                        >
+                                            ${escapeHtml(card.primaryLabel)}
+                                        </button>
+                                        <a
+                                            id="queueLoadBalanceOpenOperator_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            href="${escapeHtml(card.operatorUrl)}"
+                                            class="queue-load-balance__action"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            Operador ${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}
+                                        </a>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    balance.cards.forEach((card) => {
+        const button = document.getElementById(
+            `queueLoadBalancePrimary_${card.slotKey}`
+        );
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = async () => {
+            button.disabled = true;
+            await runQueueLoadBalanceAction(card, manifest, detectedPlatform);
+        };
+    });
+}
+
+function getQueuePriorityLaneLabel(ticket) {
+    const consultorio = Number(ticket?.assignedConsultorio || 0);
+    if (consultorio === 2) {
+        return 'C2';
+    }
+    if (consultorio === 1) {
+        return 'C1';
+    }
+    return 'General';
+}
+
+function buildQueuePriorityActionCard(
+    manifest,
+    detectedPlatform,
+    ticket,
+    dispatchCards
+) {
+    const ticketId = Number(ticket?.id || 0);
+    if (ticketId <= 0) {
+        return null;
+    }
+
+    const consultorio = Number(ticket?.assignedConsultorio || 0);
+    if (!consultorio) {
+        const assignCard = [dispatchCards[1], dispatchCards[2]]
+            .filter(Boolean)
+            .find(
+                (card) =>
+                    card.primaryAction === 'assign' &&
+                    card.targetTicketId === ticketId
+            );
+        if (assignCard) {
+            return assignCard;
+        }
+
+        const openCard = [dispatchCards[1], dispatchCards[2]]
+            .filter(Boolean)
+            .find((card) => card.primaryAction === 'open');
+        return openCard || null;
+    }
+
+    const slot = consultorio === 2 ? 2 : 1;
+    const ownWaitingTickets = getAssignedWaitingTickets(slot);
+    if (!ownWaitingTickets.length) {
+        return null;
+    }
+
+    const laneIndex = ownWaitingTickets.findIndex(
+        (candidate) => Number(candidate.id || 0) === ticketId
+    );
+    if (laneIndex !== 0) {
+        return null;
+    }
+
+    return dispatchCards[slot] || null;
+}
+
+function buildQueuePriorityLaneItem(
+    manifest,
+    detectedPlatform,
+    ticket,
+    index,
+    dispatchCards
+) {
+    const ageSec = getQueueTicketAgeSec(ticket, 'waiting') || 0;
+    const consultorio = Number(ticket?.assignedConsultorio || 0);
+    const laneLabel = getQueuePriorityLaneLabel(ticket);
+    const queueTypeLabel = formatQueuePriorityTypeLabel(ticket);
+    const ownWaitingTickets = consultorio
+        ? getAssignedWaitingTickets(consultorio)
+        : getUnassignedWaitingTickets();
+    const laneIndex = ownWaitingTickets.findIndex(
+        (candidate) => Number(candidate.id || 0) === Number(ticket?.id || 0)
+    );
+    const dispatchCard = buildQueuePriorityActionCard(
+        manifest,
+        detectedPlatform,
+        ticket,
+        dispatchCards
+    );
+    const currentTicket = consultorio
+        ? getCalledTicketForConsultorio(consultorio)
+        : null;
+    const operatorContext =
+        consultorio === 1 || consultorio === 2
+            ? buildConsultorioOperatorContext(
+                  manifest,
+                  detectedPlatform,
+                  consultorio
+              )
+            : null;
+    const urgencyState =
+        ageSec >= 14 * 60 ||
+        String(ticket?.priorityClass || '')
+            .trim()
+            .toLowerCase() === 'appt_overdue'
+            ? 'alert'
+            : ageSec >= 8 * 60
+              ? 'warning'
+              : 'ready';
+
+    let state = urgencyState;
+    let badge =
+        urgencyState === 'alert'
+            ? 'Urgente'
+            : dispatchCard?.primaryAction &&
+                dispatchCard.primaryAction !== 'open' &&
+                dispatchCard.primaryAction !== 'none'
+              ? 'Acción lista'
+              : 'En fila';
+    let summary = consultorio
+        ? `${ticket.ticketCode} ya está en ${laneLabel} y conviene seguir su próxima jugada sin bajar a la tabla.`
+        : `${ticket.ticketCode} sigue en cola general y necesita consultorio antes de seguir envejeciendo.`;
+    let recommendationLabel = dispatchCard
+        ? dispatchCard.primaryLabel
+        : 'Espera su turno en la secuencia';
+    let primaryLabel = dispatchCard ? dispatchCard.primaryLabel : 'Sin acción';
+    let chips = [
+        `#${index + 1} global`,
+        laneIndex >= 0
+            ? `Posición ${laneIndex + 1} en ${laneLabel}`
+            : laneLabel,
+        queueTypeLabel,
+    ];
+
+    if (!dispatchCard) {
+        if (consultorio && laneIndex > 0) {
+            const blocker = ownWaitingTickets[laneIndex - 1] || null;
+            state = urgencyState === 'alert' ? 'warning' : 'idle';
+            badge = blocker ? 'Bloqueado' : 'En cola';
+            summary = blocker
+                ? `${ticket.ticketCode} todavía va detrás de ${blocker.ticketCode} en ${laneLabel}. No hace falta tocarlo hasta que salga ese turno.`
+                : `${ticket.ticketCode} todavía no tiene una jugada inmediata en ${laneLabel}.`;
+            recommendationLabel = blocker
+                ? `Esperar a ${blocker.ticketCode}`
+                : 'Sin acción inmediata';
+            chips.push('Aún no es el siguiente');
+        } else {
+            chips.push('Sin operador listo');
+        }
+    } else if (dispatchCard.primaryAction === 'assign') {
+        const assignLabel = `Asignar ${ticket.ticketCode} a ${dispatchCard.slotKey.toUpperCase()}`;
+        summary = `${ticket.ticketCode} es el siguiente ticket que conviene sacar de cola general. ${dispatchCard.slotKey.toUpperCase()} tiene mejor ventana para absorberlo ahora.`;
+        recommendationLabel = assignLabel;
+        primaryLabel = assignLabel;
+    } else if (dispatchCard.primaryAction === 'call') {
+        summary = `${ticket.ticketCode} ya es el siguiente de ${laneLabel} y puede llamarse desde el hub sin revisar toda la tabla.`;
+    } else if (dispatchCard.primaryAction === 'rebalance') {
+        const rebalanceLabel = `Mover ${ticket.ticketCode} a ${dispatchCard.slotKey.toUpperCase()}`;
+        summary = `${ticket.ticketCode} conviene moverlo ahora para repartir la carga entre consultorios antes de que siga subiendo la espera.`;
+        recommendationLabel = rebalanceLabel;
+        primaryLabel = rebalanceLabel;
+        chips.push('Rebalanceo sugerido');
+    } else if (dispatchCard.primaryAction === 'open') {
+        state = 'warning';
+        badge = 'Falta operador';
+        summary = currentTicket
+            ? `${ticket.ticketCode} será el siguiente de ${laneLabel}, pero ${currentTicket.ticketCode} sigue en atención. Deja el operador listo para no perder el ritmo cuando liberes.`
+            : `${ticket.ticketCode} ya está listo, pero todavía falta operador confiable en ${laneLabel} para ejecutarlo desde el hub.`;
+        chips.push(operatorContext?.heartbeatLabel || 'Operador sin heartbeat');
+    }
+
+    return {
+        index,
+        state,
+        badge,
+        headline: `${ticket.ticketCode} · ${laneLabel}`,
+        summary,
+        metaLabel: `${laneLabel} · ${formatQueueTicketAgeLabel(
+            ticket,
+            'waiting'
+        )} · ${queueTypeLabel}`,
+        recommendationLabel,
+        chips,
+        primaryLabel,
+        actionCard: dispatchCard,
+    };
+}
+
+function buildQueuePriorityLane(manifest, detectedPlatform) {
+    const dispatchCards = {
+        1: buildQueueDispatchCard(manifest, detectedPlatform, 1),
+        2: buildQueueDispatchCard(manifest, detectedPlatform, 2),
+    };
+    const items = getPrioritySequenceTickets(4).map((ticket, index) =>
+        buildQueuePriorityLaneItem(
+            manifest,
+            detectedPlatform,
+            ticket,
+            index,
+            dispatchCards
+        )
+    );
+    const actionableCount = items.filter(
+        (item) =>
+            item.actionCard &&
+            item.actionCard.primaryAction &&
+            item.actionCard.primaryAction !== 'none'
+    ).length;
+    const urgentCount = items.filter((item) => item.state === 'alert').length;
+    const blockedCount = items.filter(
+        (item) => item.state === 'warning'
+    ).length;
+
+    return {
+        title:
+            urgentCount > 0
+                ? 'Fila priorizada con urgencias'
+                : actionableCount > 0
+                  ? 'Fila priorizada lista'
+                  : 'Fila priorizada estable',
+        summary:
+            urgentCount > 0
+                ? 'Esta secuencia resume los siguientes tickets que recepción debería tocar primero, con la jugada inmediata sugerida para cada uno.'
+                : actionableCount > 0
+                  ? 'Aquí aparece una secuencia corta de tickets críticos para operar uno detrás de otro sin abrir toda la cola.'
+                  : 'No hay tickets en espera que exijan una secuencia inmediata ahora mismo.',
+        statusLabel:
+            urgentCount > 0
+                ? `${urgentCount} urgencia(s) en secuencia`
+                : actionableCount > 0
+                  ? `${actionableCount} paso(s) listos`
+                  : 'Sin secuencia urgente',
+        statusState:
+            urgentCount > 0
+                ? 'alert'
+                : blockedCount > 0
+                  ? 'warning'
+                  : actionableCount > 0
+                    ? 'ready'
+                    : 'idle',
+        chips: [
+            `Tickets ${items.length}`,
+            `Urgencias ${urgentCount}`,
+            `Acciones ${actionableCount}`,
+        ],
+        items,
+    };
+}
+
+async function runQueuePriorityLaneAction(item, manifest, detectedPlatform) {
+    if (!item?.actionCard) {
+        return;
+    }
+
+    await runQueueDispatchAction(item.actionCard, manifest, detectedPlatform, {
+        source: 'priority_lane',
+    });
+}
+
+function renderQueuePriorityLane(manifest, detectedPlatform) {
+    const root = document.getElementById('queuePriorityLane');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const lane = buildQueuePriorityLane(manifest, detectedPlatform);
+    setHtml(
+        '#queuePriorityLane',
+        `
+            <section class="queue-priority-lane__shell" data-state="${escapeHtml(
+                lane.statusState
+            )}">
+                <div class="queue-priority-lane__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Fila priorizada</p>
+                        <h5 id="queuePriorityLaneTitle" class="queue-app-card__title">${escapeHtml(
+                            lane.title
+                        )}</h5>
+                        <p id="queuePriorityLaneSummary" class="queue-priority-lane__summary">${escapeHtml(
+                            lane.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-priority-lane__meta">
+                        <span
+                            id="queuePriorityLaneStatus"
+                            class="queue-priority-lane__status"
+                            data-state="${escapeHtml(lane.statusState)}"
+                        >
+                            ${escapeHtml(lane.statusLabel)}
+                        </span>
+                        <div class="queue-priority-lane__chips">
+                            ${lane.chips
+                                .map(
+                                    (chip) =>
+                                        `<span class="queue-priority-lane__chip">${escapeHtml(
+                                            chip
+                                        )}</span>`
+                                )
+                                .join('')}
+                        </div>
+                    </div>
+                </div>
+                <div id="queuePriorityLaneItems" class="queue-priority-lane__list" role="list" aria-label="Secuencia priorizada de tickets">
+                    ${
+                        lane.items.length
+                            ? lane.items
+                                  .map(
+                                      (item) => `
+                                <article
+                                    id="queuePriorityLaneItem_${escapeHtml(
+                                        String(item.index)
+                                    )}"
+                                    class="queue-priority-lane__item"
+                                    data-state="${escapeHtml(item.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-priority-lane__item-rank">
+                                        <span>${escapeHtml(
+                                            String(item.index + 1)
+                                        )}</span>
+                                    </div>
+                                    <div class="queue-priority-lane__item-main">
+                                        <div class="queue-priority-lane__item-header">
+                                            <div>
+                                                <p id="queuePriorityLaneHeadline_${escapeHtml(
+                                                    String(item.index)
+                                                )}" class="queue-priority-lane__headline">${escapeHtml(
+                                                    item.headline
+                                                )}</p>
+                                                <p id="queuePriorityLaneMeta_${escapeHtml(
+                                                    String(item.index)
+                                                )}" class="queue-priority-lane__meta-line">${escapeHtml(
+                                                    item.metaLabel
+                                                )}</p>
+                                            </div>
+                                            <span class="queue-priority-lane__badge">${escapeHtml(
+                                                item.badge
+                                            )}</span>
+                                        </div>
+                                        <p class="queue-priority-lane__detail">${escapeHtml(
+                                            item.summary
+                                        )}</p>
+                                        <div class="queue-priority-lane__chips-row">
+                                            ${item.chips
+                                                .map(
+                                                    (chip) =>
+                                                        `<span class="queue-priority-lane__lane-chip">${escapeHtml(
+                                                            chip
+                                                        )}</span>`
+                                                )
+                                                .join('')}
+                                        </div>
+                                    </div>
+                                    <div class="queue-priority-lane__item-side">
+                                        <strong id="queuePriorityLaneRecommendation_${escapeHtml(
+                                            String(item.index)
+                                        )}" class="queue-priority-lane__recommendation">${escapeHtml(
+                                            item.recommendationLabel
+                                        )}</strong>
+                                        <button
+                                            id="queuePriorityLanePrimary_${escapeHtml(
+                                                String(item.index)
+                                            )}"
+                                            type="button"
+                                            class="queue-priority-lane__action queue-priority-lane__action--primary"
+                                            ${item.actionCard ? '' : 'disabled'}
+                                        >
+                                            ${escapeHtml(item.primaryLabel)}
+                                        </button>
+                                    </div>
+                                </article>
+                            `
+                                  )
+                                  .join('')
+                            : `
+                                <article
+                                    id="queuePriorityLaneEmpty"
+                                    class="queue-priority-lane__empty"
+                                    data-state="idle"
+                                    role="listitem"
+                                >
+                                    <strong>Sin tickets por secuenciar</strong>
+                                    <p>Cuando vuelva a entrar cola, aquí aparecerán los siguientes tickets críticos en el orden recomendado.</p>
+                                </article>
+                            `
+                    }
+                </div>
+            </section>
+        `
+    );
+
+    lane.items.forEach((item) => {
+        const button = document.getElementById(
+            `queuePriorityLanePrimary_${item.index}`
+        );
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = async () => {
+            button.disabled = true;
+            await runQueuePriorityLaneAction(item, manifest, detectedPlatform);
+        };
+    });
+}
+
+function buildQueueQuickTrays() {
+    const state = getState();
+    const currentFilter = String(state.queue?.filter || 'all')
+        .trim()
+        .toLowerCase();
+    const queueTickets = getQueueSource().queueTickets;
+    const waitingUnassigned = getUnassignedWaitingTickets();
+    const waitingC1 = getAssignedWaitingTickets(1);
+    const waitingC2 = getAssignedWaitingTickets(2);
+    const calledTickets = queueTickets.filter(
+        (ticket) => ticket.status === 'called'
+    );
+    const riskTickets = queueTickets.filter((ticket) => {
+        if (ticket.status !== 'waiting') {
+            return false;
+        }
+        const ageMinutes = Math.max(
+            0,
+            Math.round(
+                (Date.now() - getQueueTicketTimestampMs(ticket, 'waiting')) /
+                    60000
+            )
+        );
+        return (
+            ageMinutes >= 20 ||
+            String(ticket.priorityClass || '')
+                .trim()
+                .toLowerCase() === 'appt_overdue'
+        );
+    });
+
+    const trays = [
+        {
+            filter: 'sla_risk',
+            label: 'Urgentes',
+            count: riskTickets.length,
+            summary:
+                riskTickets.length > 0
+                    ? `${riskTickets[0].ticketCode} abre la bandeja de riesgo y debería revisarse primero.`
+                    : 'No hay tickets vencidos o en riesgo SLA ahora mismo.',
+        },
+        {
+            filter: 'waiting_unassigned',
+            label: 'Sin consultorio',
+            count: waitingUnassigned.length,
+            summary:
+                waitingUnassigned.length > 0
+                    ? `${waitingUnassigned[0].ticketCode} sigue sin consultorio y conviene despacharlo desde el hub o la tabla.`
+                    : 'Toda la cola en espera ya tiene consultorio asignado.',
+        },
+        {
+            filter: 'waiting_c1',
+            label: 'C1 en espera',
+            count: waitingC1.length,
+            summary:
+                waitingC1.length > 0
+                    ? `${waitingC1[0].ticketCode} es el siguiente ticket visible en C1.`
+                    : 'C1 no tiene tickets esperando en la tabla.',
+        },
+        {
+            filter: 'waiting_c2',
+            label: 'C2 en espera',
+            count: waitingC2.length,
+            summary:
+                waitingC2.length > 0
+                    ? `${waitingC2[0].ticketCode} es el siguiente ticket visible en C2.`
+                    : 'C2 no tiene tickets esperando en la tabla.',
+        },
+        {
+            filter: 'called',
+            label: 'Llamados activos',
+            count: calledTickets.length,
+            summary:
+                calledTickets.length > 0
+                    ? `${calledTickets[0].ticketCode} ya fue llamado y queda en seguimiento activo.`
+                    : 'No hay tickets llamados activos en este momento.',
+        },
+    ].map((tray) => ({
+        ...tray,
+        active: currentFilter === tray.filter,
+        countLabel: tray.count === 1 ? '1 ticket' : `${tray.count} tickets`,
+        actionLabel:
+            tray.count > 0
+                ? tray.active
+                    ? 'Bandeja activa'
+                    : 'Abrir bandeja'
+                : 'Sin tickets',
+    }));
+
+    const activeTray = trays.find((tray) => tray.active) || null;
+    const nonEmptyCount = trays.filter((tray) => tray.count > 0).length;
+
+    return {
+        title:
+            nonEmptyCount > 0
+                ? 'Bandejas rápidas listas'
+                : 'Bandejas rápidas sin carga',
+        summary:
+            nonEmptyCount > 0
+                ? 'Abre la tabla ya filtrada por el frente correcto sin tocar primero el triage manual.'
+                : 'Cuando vuelva a entrar cola, aquí aparecerán accesos directos a las vistas más útiles para recepción.',
+        statusLabel: activeTray
+            ? `Filtro activo: ${activeTray.label}`
+            : nonEmptyCount > 0
+              ? `${nonEmptyCount} bandeja(s) con tickets`
+              : 'Sin bandejas activas',
+        statusState: activeTray
+            ? 'ready'
+            : nonEmptyCount > 0
+              ? 'warning'
+              : 'idle',
+        trays,
+    };
+}
+
+function openQueueQuickTray(filter, label, count) {
+    appendOpsLogEntry({
+        tone: count > 0 ? 'info' : 'warning',
+        source: 'quick_trays',
+        title: `Bandeja rápida: ${label}`,
+        summary:
+            count > 0
+                ? `Se abrió la vista filtrada de ${label.toLowerCase()} desde el hub.`
+                : `Se abrió ${label.toLowerCase()}, pero no había tickets visibles para ese filtro.`,
+    });
+
+    const triage = document.getElementById('queueTriageToolbar');
+    if (triage instanceof HTMLElement) {
+        triage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function renderQueueQuickTrays() {
+    const root = document.getElementById('queueQuickTrays');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const trays = buildQueueQuickTrays();
+    setHtml(
+        '#queueQuickTrays',
+        `
+            <section class="queue-quick-trays__shell" data-state="${escapeHtml(
+                trays.statusState
+            )}">
+                <div class="queue-quick-trays__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Bandejas rápidas</p>
+                        <h5 id="queueQuickTraysTitle" class="queue-app-card__title">${escapeHtml(
+                            trays.title
+                        )}</h5>
+                        <p id="queueQuickTraysSummary" class="queue-quick-trays__summary">${escapeHtml(
+                            trays.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-quick-trays__meta">
+                        <span
+                            id="queueQuickTraysStatus"
+                            class="queue-quick-trays__status"
+                            data-state="${escapeHtml(trays.statusState)}"
+                        >
+                            ${escapeHtml(trays.statusLabel)}
+                        </span>
+                    </div>
+                </div>
+                <div id="queueQuickTraysCards" class="queue-quick-trays__grid" role="list" aria-label="Bandejas rápidas de la cola">
+                    ${trays.trays
+                        .map(
+                            (tray) => `
+                                <article
+                                    id="queueQuickTray_${escapeHtml(tray.filter)}"
+                                    class="queue-quick-tray"
+                                    data-state="${tray.count > 0 ? 'ready' : 'idle'}"
+                                    data-active="${tray.active ? 'true' : 'false'}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-quick-tray__header">
+                                        <div>
+                                            <strong>${escapeHtml(
+                                                tray.label
+                                            )}</strong>
+                                            <p class="queue-quick-tray__summary">${escapeHtml(
+                                                tray.summary
+                                            )}</p>
+                                        </div>
+                                        <span
+                                            id="queueQuickTrayCount_${escapeHtml(
+                                                tray.filter
+                                            )}"
+                                            class="queue-quick-tray__count"
+                                        >
+                                            ${escapeHtml(tray.countLabel)}
+                                        </span>
+                                    </div>
+                                    <button
+                                        id="queueQuickTrayAction_${escapeHtml(
+                                            tray.filter
+                                        )}"
+                                        type="button"
+                                        class="queue-quick-tray__action"
+                                        data-action="queue-open-quick-tray"
+                                        data-queue-filter-value="${escapeHtml(
+                                            tray.filter
+                                        )}"
+                                        ${tray.active || tray.count === 0 ? 'disabled' : ''}
+                                    >
+                                        ${escapeHtml(tray.actionLabel)}
+                                    </button>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    trays.trays.forEach((tray) => {
+        const button = document.getElementById(
+            `queueQuickTrayAction_${tray.filter}`
+        );
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = () => {
+            openQueueQuickTray(tray.filter, tray.label, tray.count);
+        };
+    });
+}
+
+function getQueueTrayFilterLabel(filter) {
+    const normalized = String(filter || 'all')
+        .trim()
+        .toLowerCase();
+    if (normalized === 'sla_risk') {
+        return 'Urgentes';
+    }
+    if (normalized === 'waiting_unassigned') {
+        return 'Sin consultorio';
+    }
+    if (normalized === 'waiting_c1') {
+        return 'C1 en espera';
+    }
+    if (normalized === 'waiting_c2') {
+        return 'C2 en espera';
+    }
+    if (normalized === 'called') {
+        return 'Llamados activos';
+    }
+    if (normalized === 'waiting') {
+        return 'Todos en espera';
+    }
+    if (normalized === 'no_show') {
+        return 'No show';
+    }
+    return 'Tabla completa';
+}
+
+function buildActiveTrayItem(
+    manifest,
+    detectedPlatform,
+    ticket,
+    index,
+    dispatchCards
+) {
+    const filter = String(getState().queue?.filter || 'all')
+        .trim()
+        .toLowerCase();
+    const consultorio = Number(ticket?.assignedConsultorio || 0);
+    const laneLabel = getQueuePriorityLaneLabel(ticket);
+    const typeLabel = formatQueuePriorityTypeLabel(ticket);
+    const ageLabel =
+        ticket?.status === 'called'
+            ? formatQueueTicketAgeLabel(ticket, 'called')
+            : formatQueueTicketAgeLabel(ticket, 'waiting');
+
+    let state = ticket?.status === 'called' ? 'active' : 'ready';
+    let badge = ticket?.status === 'called' ? 'Llamado' : 'Pendiente';
+    let summary = `${ticket.ticketCode} sigue visible en la bandeja actual.`;
+    let recommendationLabel = 'Sin acción';
+    let primaryLabel = 'Sin acción';
+    let actionKind = 'none';
+    let actionCard = null;
+    let actionPayload = null;
+
+    if (ticket?.status === 'called' && consultorio) {
+        state = 'active';
+        badge = 'Llamado';
+        summary = `${ticket.ticketCode} ya fue llamado en ${laneLabel}. Puedes re-llamarlo desde esta bandeja sin salir del filtro.`;
+        recommendationLabel = `Re-llamar ${ticket.ticketCode}`;
+        primaryLabel = recommendationLabel;
+        actionKind = 'recall';
+        actionPayload = {
+            ticketId: Number(ticket.id || 0),
+            consultorio,
+            ticketCode: String(ticket.ticketCode || ''),
+        };
+    } else {
+        const recommendedDispatch = buildQueuePriorityActionCard(
+            manifest,
+            detectedPlatform,
+            ticket,
+            dispatchCards
+        );
+        if (recommendedDispatch) {
+            actionKind = 'dispatch';
+            actionCard = recommendedDispatch;
+            recommendationLabel =
+                filter === 'waiting_unassigned' &&
+                recommendedDispatch.primaryAction === 'assign'
+                    ? `Asignar ${ticket.ticketCode} a ${recommendedDispatch.slotKey.toUpperCase()}`
+                    : recommendedDispatch.primaryAction === 'rebalance'
+                      ? `Mover ${ticket.ticketCode} a ${recommendedDispatch.slotKey.toUpperCase()}`
+                      : recommendedDispatch.primaryLabel;
+            primaryLabel = recommendationLabel;
+            summary =
+                recommendedDispatch.primaryAction === 'assign'
+                    ? `${ticket.ticketCode} sigue sin consultorio. ${recommendedDispatch.slotKey.toUpperCase()} es la salida más directa desde esta bandeja.`
+                    : recommendedDispatch.primaryAction === 'call'
+                      ? `${ticket.ticketCode} ya es el siguiente ticket listo dentro de la bandeja actual.`
+                      : recommendedDispatch.primaryAction === 'open'
+                        ? `${ticket.ticketCode} necesita dejar listo el operador correcto antes de avanzar desde esta bandeja.`
+                        : `${ticket.ticketCode} tiene una siguiente jugada sugerida dentro de la bandeja actual.`;
+            badge =
+                recommendedDispatch.primaryAction === 'open'
+                    ? 'Falta operador'
+                    : recommendedDispatch.primaryAction === 'call'
+                      ? 'Llamar'
+                      : recommendedDispatch.primaryAction === 'assign'
+                        ? 'Asignar'
+                        : recommendedDispatch.primaryAction === 'rebalance'
+                          ? 'Mover'
+                          : badge;
+            state =
+                recommendedDispatch.primaryAction === 'open'
+                    ? 'warning'
+                    : state;
+        } else if (
+            (filter === 'waiting_c1' || filter === 'waiting_c2') &&
+            consultorio
+        ) {
+            const ownWaiting = getAssignedWaitingTickets(consultorio);
+            const laneIndex = ownWaiting.findIndex(
+                (candidate) =>
+                    Number(candidate.id || 0) === Number(ticket.id || 0)
+            );
+            const blocker = laneIndex > 0 ? ownWaiting[laneIndex - 1] : null;
+            badge = blocker ? 'En cola' : badge;
+            state = blocker ? 'idle' : state;
+            summary = blocker
+                ? `${ticket.ticketCode} todavía va detrás de ${blocker.ticketCode} en ${laneLabel}.`
+                : `${ticket.ticketCode} está visible, pero todavía no requiere una acción rápida adicional desde esta bandeja.`;
+            recommendationLabel = blocker
+                ? `Esperar a ${blocker.ticketCode}`
+                : 'Sin acción inmediata';
+            primaryLabel = recommendationLabel;
+        } else if (filter === 'sla_risk') {
+            badge = 'Vigilar';
+            state = 'warning';
+            summary = `${ticket.ticketCode} sigue visible por riesgo SLA y conviene mantenerlo a la vista aunque todavía no tenga una acción directa desde esta bandeja.`;
+            recommendationLabel = 'Revisar radar y despacho';
+            primaryLabel = recommendationLabel;
+        }
+    }
+
+    return {
+        index,
+        state,
+        badge,
+        headline: `${ticket.ticketCode} · ${laneLabel}`,
+        metaLabel: `${ageLabel} · ${typeLabel}`,
+        summary,
+        recommendationLabel,
+        primaryLabel,
+        actionKind,
+        actionCard,
+        actionPayload,
+    };
+}
+
+function buildActiveTrayPanel(manifest, detectedPlatform) {
+    const state = getState();
+    const filter = String(state.queue?.filter || 'all')
+        .trim()
+        .toLowerCase();
+    const search = String(state.queue?.search || '').trim();
+    const visibleTickets = getVisibleTickets();
+    const dispatchCards = {
+        1: buildQueueDispatchCard(manifest, detectedPlatform, 1),
+        2: buildQueueDispatchCard(manifest, detectedPlatform, 2),
+    };
+    const items = visibleTickets
+        .slice(0, 3)
+        .map((ticket, index) =>
+            buildActiveTrayItem(
+                manifest,
+                detectedPlatform,
+                ticket,
+                index,
+                dispatchCards
+            )
+        );
+    const activeFilterLabel = getQueueTrayFilterLabel(filter);
+    const contextParts = [];
+    if (filter !== 'all') {
+        contextParts.push(activeFilterLabel);
+    }
+    if (search) {
+        contextParts.push(`búsqueda "${search}"`);
+    }
+    const hasContext = contextParts.length > 0;
+
+    return {
+        title: hasContext
+            ? `Bandeja activa: ${contextParts.join(' · ')}`
+            : 'Bandeja activa: tabla completa',
+        summary: hasContext
+            ? 'Este panel resume la bandeja que tienes abierta y te deja ejecutar la siguiente jugada útil sin perder el contexto del filtro.'
+            : 'No hay un filtro activo sobre la tabla. Usa una bandeja rápida cuando quieras abrir un frente operativo concreto.',
+        statusLabel: hasContext
+            ? `${visibleTickets.length} visible(s)`
+            : 'Sin filtro activo',
+        statusState: items.some((item) => item.state === 'warning')
+            ? 'warning'
+            : hasContext
+              ? 'ready'
+              : 'idle',
+        hasContext,
+        items,
+        contextLabel: contextParts.join(' · '),
+    };
+}
+
+async function runActiveTrayItemAction(item, manifest, detectedPlatform) {
+    if (!item || item.actionKind === 'none') {
+        return;
+    }
+
+    try {
+        if (item.actionKind === 'dispatch' && item.actionCard) {
+            await runQueueDispatchAction(
+                item.actionCard,
+                manifest,
+                detectedPlatform,
+                {
+                    source: 'active_tray',
+                }
+            );
+            return;
+        }
+
+        if (
+            item.actionKind === 'recall' &&
+            item.actionPayload?.ticketId > 0 &&
+            item.actionPayload?.consultorio > 0
+        ) {
+            const { runQueueTicketAction } = await import('../../actions.js');
+            await runQueueTicketAction(
+                item.actionPayload.ticketId,
+                're-llamar',
+                item.actionPayload.consultorio
+            );
+            appendOpsLogEntry({
+                tone: 'info',
+                source: 'active_tray',
+                title: `Bandeja activa: re-llamado`,
+                summary: `${item.actionPayload.ticketCode} se re-llamó desde la bandeja activa.`,
+            });
+        }
+    } catch (_error) {
+        createToast(
+            'No se pudo ejecutar la acción de la bandeja activa',
+            'error'
+        );
+    } finally {
+        rerenderQueueOpsHub(manifest, detectedPlatform);
+    }
+}
+
+function renderActiveTrayPanel(manifest, detectedPlatform) {
+    const root = document.getElementById('queueActiveTray');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const tray = buildActiveTrayPanel(manifest, detectedPlatform);
+    setHtml(
+        '#queueActiveTray',
+        `
+            <section class="queue-active-tray__shell" data-state="${escapeHtml(
+                tray.statusState
+            )}">
+                <div class="queue-active-tray__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Bandeja activa</p>
+                        <h5 id="queueActiveTrayTitle" class="queue-app-card__title">${escapeHtml(
+                            tray.title
+                        )}</h5>
+                        <p id="queueActiveTraySummary" class="queue-active-tray__summary">${escapeHtml(
+                            tray.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-active-tray__meta">
+                        <span
+                            id="queueActiveTrayStatus"
+                            class="queue-active-tray__status"
+                            data-state="${escapeHtml(tray.statusState)}"
+                        >
+                            ${escapeHtml(tray.statusLabel)}
+                        </span>
+                        <div class="queue-active-tray__actions">
+                            <button
+                                id="queueActiveTrayResetBtn"
+                                type="button"
+                                class="queue-active-tray__action"
+                                data-action="queue-reset-tray-context"
+                                ${tray.hasContext ? '' : 'disabled'}
+                            >
+                                Limpiar bandeja
+                            </button>
+                            <a
+                                id="queueActiveTrayOpenTable"
+                                href="#queueTriageToolbar"
+                                class="queue-active-tray__action"
+                            >
+                                Ir a tabla
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div id="queueActiveTrayItems" class="queue-active-tray__list" role="list" aria-label="Resumen de la bandeja activa">
+                    ${
+                        tray.items.length
+                            ? tray.items
+                                  .map(
+                                      (item) => `
+                                        <article
+                                            id="queueActiveTrayItem_${escapeHtml(
+                                                String(item.index)
+                                            )}"
+                                            class="queue-active-tray__item"
+                                            data-state="${escapeHtml(item.state)}"
+                                            role="listitem"
+                                        >
+                                            <div class="queue-active-tray__item-main">
+                                                <div class="queue-active-tray__item-header">
+                                                    <div>
+                                                        <p id="queueActiveTrayHeadline_${escapeHtml(
+                                                            String(item.index)
+                                                        )}" class="queue-active-tray__headline">${escapeHtml(
+                                                            item.headline
+                                                        )}</p>
+                                                        <p id="queueActiveTrayMeta_${escapeHtml(
+                                                            String(item.index)
+                                                        )}" class="queue-active-tray__meta-line">${escapeHtml(
+                                                            item.metaLabel
+                                                        )}</p>
+                                                    </div>
+                                                    <span class="queue-active-tray__badge">${escapeHtml(
+                                                        item.badge
+                                                    )}</span>
+                                                </div>
+                                                <p class="queue-active-tray__detail">${escapeHtml(
+                                                    item.summary
+                                                )}</p>
+                                            </div>
+                                            <div class="queue-active-tray__item-side">
+                                                <strong id="queueActiveTrayRecommendation_${escapeHtml(
+                                                    String(item.index)
+                                                )}" class="queue-active-tray__recommendation">${escapeHtml(
+                                                    item.recommendationLabel
+                                                )}</strong>
+                                                <button
+                                                    id="queueActiveTrayPrimary_${escapeHtml(
+                                                        String(item.index)
+                                                    )}"
+                                                    type="button"
+                                                    class="queue-active-tray__primary"
+                                                    ${item.actionKind === 'none' ? 'disabled' : ''}
+                                                >
+                                                    ${escapeHtml(item.primaryLabel)}
+                                                </button>
+                                            </div>
+                                        </article>
+                                    `
+                                  )
+                                  .join('')
+                            : `
+                                <article
+                                    id="queueActiveTrayEmpty"
+                                    class="queue-active-tray__empty"
+                                    role="listitem"
+                                >
+                                    <strong>Sin tickets visibles en esta bandeja</strong>
+                                    <p>Prueba otra bandeja rápida o limpia el filtro actual para volver a la tabla completa.</p>
+                                </article>
+                            `
+                    }
+                </div>
+            </section>
+        `
+    );
+
+    tray.items.forEach((item) => {
+        const button = document.getElementById(
+            `queueActiveTrayPrimary_${item.index}`
+        );
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = async () => {
+            button.disabled = true;
+            await runActiveTrayItemAction(item, manifest, detectedPlatform);
+        };
+    });
+}
+
+function isQueueTrayBurstAutomatableItem(item) {
+    if (!item) {
+        return false;
+    }
+
+    if (item.actionKind === 'recall') {
+        return Number(item.actionPayload?.ticketId || 0) > 0;
+    }
+
+    return (
+        item.actionKind === 'dispatch' &&
+        ['assign', 'rebalance', 'call'].includes(
+            String(item.actionCard?.primaryAction || '')
+        )
+    );
+}
+
+function buildQueueTrayBurstStepsFromItem(item) {
+    if (!isQueueTrayBurstAutomatableItem(item)) {
+        return [];
+    }
+
+    if (item.actionKind === 'recall') {
+        return [
+            {
+                tone: 'ready',
+                kind: 'recall',
+                title: item.recommendationLabel,
+                detail: item.summary,
+                ticketCode: String(item.actionPayload?.ticketCode || ''),
+                ticketId: Number(item.actionPayload?.ticketId || 0),
+                consultorio: Number(item.actionPayload?.consultorio || 0),
+            },
+        ];
+    }
+
+    const actionCard = item.actionCard;
+    if (!actionCard) {
+        return [];
+    }
+
+    const steps = [
+        {
+            tone:
+                actionCard.primaryAction === 'rebalance' ? 'warning' : 'ready',
+            kind: 'dispatch',
+            title: item.recommendationLabel,
+            detail: item.summary,
+            actionCard,
+        },
+    ];
+
+    if (
+        ['assign', 'rebalance'].includes(actionCard.primaryAction) &&
+        actionCard.targetTicketId > 0 &&
+        actionCard.slot > 0
+    ) {
+        const slotLabel = actionCard.slotKey.toUpperCase();
+        steps.push({
+            tone: 'ready',
+            kind: 'call',
+            title: `Llamar ${actionCard.targetTicketCode} en ${slotLabel}`,
+            detail: `${actionCard.targetTicketCode} queda encaminado a ${slotLabel}; la ráfaga completa el llamado sin salir de la bandeja actual.`,
+            consultorio: actionCard.slot,
+            ticketCode: actionCard.targetTicketCode,
+        });
+    }
+
+    return steps;
+}
+
+function buildQueueTrayBurst(manifest, detectedPlatform) {
+    const state = getState();
+    const filter = String(state.queue?.filter || 'all')
+        .trim()
+        .toLowerCase();
+    const search = String(state.queue?.search || '').trim();
+    const visibleTickets = getVisibleTickets();
+    const dispatchCards = {
+        1: buildQueueDispatchCard(manifest, detectedPlatform, 1),
+        2: buildQueueDispatchCard(manifest, detectedPlatform, 2),
+    };
+    const items = visibleTickets
+        .slice(0, 3)
+        .map((ticket, index) =>
+            buildActiveTrayItem(
+                manifest,
+                detectedPlatform,
+                ticket,
+                index,
+                dispatchCards
+            )
+        );
+    const contextParts = [];
+    if (filter !== 'all') {
+        contextParts.push(getQueueTrayFilterLabel(filter));
+    }
+    if (search) {
+        contextParts.push(`búsqueda "${search}"`);
+    }
+    const hasContext = contextParts.length > 0;
+    const firstAutomatable = items.find((item) =>
+        isQueueTrayBurstAutomatableItem(item)
+    );
+    const steps = firstAutomatable
+        ? buildQueueTrayBurstStepsFromItem(firstAutomatable)
+        : [];
+    const manualCount = items.filter(
+        (item) => item !== firstAutomatable && item.actionKind !== 'none'
+    ).length;
+    const blockedCount = items.filter(
+        (item) =>
+            item.actionKind === 'dispatch' &&
+            String(item.actionCard?.primaryAction || '') === 'open'
+    ).length;
+    const title = hasContext
+        ? `Ráfaga operativa: ${contextParts.join(' · ')}`
+        : 'Ráfaga operativa: activa una bandeja';
+
+    let summary =
+        'Activa una bandeja rápida o una búsqueda para convertir la cola visible en una secuencia corta y accionable.';
+    let statusLabel = 'Sin contexto activo';
+    let statusState = 'idle';
+
+    if (hasContext && steps.length > 0) {
+        summary =
+            steps.length > 1
+                ? 'La ráfaga enlaza los pasos mínimos sobre la misma bandeja para reducir clics y dejar el siguiente ticket ya encaminado.'
+                : 'La ráfaga ejecuta la jugada más corta que sale de la bandeja actual sin obligarte a bajar a la tabla.';
+        if (manualCount > 0 || blockedCount > 0) {
+            summary += ` Después quedarán ${
+                manualCount + blockedCount
+            } frente(s) para revisión manual.`;
+        }
+        statusLabel = `${steps.length} paso(s) listos`;
+        statusState = blockedCount > 0 ? 'warning' : 'ready';
+    } else if (hasContext && items.length > 0) {
+        summary =
+            blockedCount > 0
+                ? 'La bandeja ya tiene tickets visibles, pero la secuencia automática se frena porque todavía falta abrir o alinear el operador correcto.'
+                : 'La bandeja sigue visible, pero por ahora no hay una secuencia automática segura; revisa las recomendaciones individuales o cambia de bandeja.';
+        statusLabel =
+            blockedCount > 0
+                ? `${blockedCount} bloqueo(s) manual(es)`
+                : 'Sin ráfaga automática';
+        statusState = blockedCount > 0 ? 'warning' : 'idle';
+    } else if (hasContext) {
+        summary =
+            'La bandeja actual quedó sin tickets visibles. Limpia el contexto o abre otra bandeja rápida para generar una nueva secuencia.';
+        statusLabel = 'Bandeja vacía';
+    }
+
+    return {
+        title,
+        summary,
+        statusLabel,
+        statusState,
+        hasContext,
+        steps,
+        canRun: steps.length > 0,
+        primaryLabel:
+            steps.length > 0
+                ? `Ejecutar ráfaga (${steps.length})`
+                : 'Sin ráfaga lista',
+        copyLabel: hasContext ? 'Copiar ráfaga' : 'Copiar guía',
+        contextLabel: hasContext ? contextParts.join(' · ') : 'tabla completa',
+        visibleCount: visibleTickets.length,
+        blockedCount,
+        manualCount,
+    };
+}
+
+function buildQueueTrayBurstReport(burst) {
+    return [
+        `${burst.title} - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${burst.statusLabel}`,
+        `Contexto: ${burst.contextLabel}`,
+        `Tickets visibles: ${burst.visibleCount}`,
+        ...burst.steps.map(
+            (step, index) => `${index + 1}. ${step.title} - ${step.detail}`
+        ),
+        burst.steps.length
+            ? `Pendientes manuales: ${burst.manualCount + burst.blockedCount}`
+            : 'Sin secuencia automática lista',
+    ].join('\n');
+}
+
+async function copyQueueTrayBurst(burst) {
+    try {
+        await navigator.clipboard.writeText(buildQueueTrayBurstReport(burst));
+        createToast('Ráfaga copiada', 'success');
+    } catch (_error) {
+        createToast('No se pudo copiar la ráfaga', 'error');
+    }
+}
+
+async function runQueueTrayBurstStep(step, manifest, detectedPlatform) {
+    if (!step) {
+        return;
+    }
+
+    if (step.kind === 'dispatch' && step.actionCard) {
+        await runQueueDispatchAction(
+            step.actionCard,
+            manifest,
+            detectedPlatform,
+            {
+                source: 'tray_burst',
+                deferRerender: true,
+            }
+        );
+        return;
+    }
+
+    const { callNextForConsultorio, runQueueTicketAction } =
+        await import('../../actions.js');
+    if (step.kind === 'call' && step.consultorio > 0) {
+        await callNextForConsultorio(step.consultorio);
+        appendOpsLogEntry({
+            tone: 'info',
+            source: 'tray_burst',
+            title: `Ráfaga: llamado en C${step.consultorio}`,
+            summary: `${step.ticketCode} se llamó como parte de la ráfaga operativa.`,
+        });
+        return;
+    }
+
+    if (step.kind === 'recall' && step.ticketId > 0 && step.consultorio > 0) {
+        await runQueueTicketAction(
+            step.ticketId,
+            're-llamar',
+            step.consultorio
+        );
+        appendOpsLogEntry({
+            tone: 'info',
+            source: 'tray_burst',
+            title: `Ráfaga: re-llamado en C${step.consultorio}`,
+            summary: `${step.ticketCode} se re-llamó como parte de la ráfaga operativa.`,
+        });
+    }
+}
+
+async function runQueueTrayBurst(manifest, detectedPlatform) {
+    const burst = buildQueueTrayBurst(manifest, detectedPlatform);
+    if (!burst.steps.length) {
+        return;
+    }
+
+    try {
+        for (const step of burst.steps) {
+            await runQueueTrayBurstStep(step, manifest, detectedPlatform);
+        }
+        appendOpsLogEntry({
+            tone: 'success',
+            source: 'tray_burst',
+            title: `Ráfaga operativa ejecutada`,
+            summary: `${burst.steps.length} paso(s) se ejecutaron desde ${burst.contextLabel}.`,
+        });
+    } catch (_error) {
+        createToast('No se pudo completar la ráfaga operativa', 'error');
+    } finally {
+        rerenderQueueOpsHub(manifest, detectedPlatform);
+    }
+}
+
+function renderQueueTrayBurst(manifest, detectedPlatform) {
+    const root = document.getElementById('queueTrayBurst');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const burst = buildQueueTrayBurst(manifest, detectedPlatform);
+    setHtml(
+        '#queueTrayBurst',
+        `
+            <section class="queue-tray-burst__shell" data-state="${escapeHtml(
+                burst.statusState
+            )}">
+                <div class="queue-tray-burst__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Ráfaga operativa</p>
+                        <h5 id="queueTrayBurstTitle" class="queue-app-card__title">${escapeHtml(
+                            burst.title
+                        )}</h5>
+                        <p id="queueTrayBurstSummary" class="queue-tray-burst__summary">${escapeHtml(
+                            burst.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-tray-burst__meta">
+                        <span
+                            id="queueTrayBurstStatus"
+                            class="queue-tray-burst__status"
+                            data-state="${escapeHtml(burst.statusState)}"
+                        >
+                            ${escapeHtml(burst.statusLabel)}
+                        </span>
+                        <div class="queue-tray-burst__actions">
+                            <button
+                                id="queueTrayBurstRunBtn"
+                                type="button"
+                                class="queue-tray-burst__action queue-tray-burst__action--primary"
+                                ${burst.canRun ? '' : 'disabled'}
+                            >
+                                ${escapeHtml(burst.primaryLabel)}
+                            </button>
+                            <button
+                                id="queueTrayBurstCopyBtn"
+                                type="button"
+                                class="queue-tray-burst__action"
+                                ${burst.hasContext ? '' : 'disabled'}
+                            >
+                                ${escapeHtml(burst.copyLabel)}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="queueTrayBurstSteps" class="queue-tray-burst__steps" role="list" aria-label="Secuencia de ráfaga operativa">
+                    ${
+                        burst.steps.length
+                            ? burst.steps
+                                  .map(
+                                      (step, index) => `
+                                        <article
+                                            id="queueTrayBurstStep_${escapeHtml(
+                                                String(index)
+                                            )}"
+                                            class="queue-tray-burst__step"
+                                            data-state="${escapeHtml(step.tone)}"
+                                            role="listitem"
+                                        >
+                                            <span class="queue-tray-burst__step-rank">${
+                                                index + 1
+                                            }</span>
+                                            <div class="queue-tray-burst__step-main">
+                                                <p id="queueTrayBurstStepTitle_${escapeHtml(
+                                                    String(index)
+                                                )}" class="queue-tray-burst__step-title">${escapeHtml(
+                                                    step.title
+                                                )}</p>
+                                                <p id="queueTrayBurstStepDetail_${escapeHtml(
+                                                    String(index)
+                                                )}" class="queue-tray-burst__step-detail">${escapeHtml(
+                                                    step.detail
+                                                )}</p>
+                                            </div>
+                                        </article>
+                                    `
+                                  )
+                                  .join('')
+                            : `
+                                <article
+                                    id="queueTrayBurstEmpty"
+                                    class="queue-tray-burst__empty"
+                                    role="listitem"
+                                >
+                                    <strong>Sin secuencia automática disponible</strong>
+                                    <p>Activa una bandeja con tickets visibles o deja listo el operador correcto para que la ráfaga pueda encadenar pasos seguros.</p>
+                                </article>
+                            `
+                    }
+                </div>
+            </section>
+        `
+    );
+
+    const runButton = document.getElementById('queueTrayBurstRunBtn');
+    if (runButton instanceof HTMLButtonElement) {
+        runButton.onclick = async () => {
+            runButton.disabled = true;
+            await runQueueTrayBurst(manifest, detectedPlatform);
+        };
+    }
+
+    const copyButton = document.getElementById('queueTrayBurstCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueTrayBurst(burst);
+        };
+    }
 }
 
 function buildQueueDispatchCard(manifest, detectedPlatform, consultorio) {
@@ -4896,7 +9215,12 @@ function describeDispatchAction(card) {
     };
 }
 
-async function runQueueDispatchAction(card, manifest, detectedPlatform) {
+async function runQueueDispatchAction(
+    card,
+    manifest,
+    detectedPlatform,
+    options = {}
+) {
     if (!card || card.primaryAction === 'none') {
         return;
     }
@@ -4921,14 +9245,19 @@ async function runQueueDispatchAction(card, manifest, detectedPlatform) {
         }
 
         appendOpsLogEntry({
+            source:
+                typeof options.source === 'string' && options.source
+                    ? options.source
+                    : 'dispatch',
             tone: card.primaryAction === 'rebalance' ? 'warning' : 'info',
-            source: 'dispatch',
             ...describeDispatchAction(card),
         });
     } catch (_error) {
         createToast('No se pudo ejecutar el despacho sugerido', 'error');
     } finally {
-        rerenderQueueOpsHub(manifest, detectedPlatform);
+        if (!options.deferRerender) {
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        }
     }
 }
 
@@ -6832,7 +11161,16 @@ function rerenderQueueOpsHub(manifest, detectedPlatform) {
     renderQueueFocusMode(manifest, detectedPlatform);
     renderQueueNumpadGuide(manifest, detectedPlatform);
     renderConsultorioBoard(manifest, detectedPlatform);
+    renderQueueAttentionDeck(manifest, detectedPlatform);
+    renderQueueResolutionDeck(manifest, detectedPlatform);
+    renderQueueTicketLookup(manifest, detectedPlatform);
+    renderQueueTicketRoute(manifest, detectedPlatform);
     renderQueueWaitRadar(manifest, detectedPlatform);
+    renderQueueLoadBalance(manifest, detectedPlatform);
+    renderQueuePriorityLane(manifest, detectedPlatform);
+    renderQueueQuickTrays();
+    renderActiveTrayPanel(manifest, detectedPlatform);
+    renderQueueTrayBurst(manifest, detectedPlatform);
     renderQueueDispatchDeck(manifest, detectedPlatform);
     renderQueueQuickConsole(manifest, detectedPlatform);
     renderQueuePlaybook(manifest, detectedPlatform);
@@ -7239,7 +11577,16 @@ export function renderQueueInstallHub(options = {}) {
     renderQueueFocusMode(manifest, platform);
     renderQueueNumpadGuide(manifest, platform);
     renderConsultorioBoard(manifest, platform);
+    renderQueueAttentionDeck(manifest, platform);
+    renderQueueResolutionDeck(manifest, platform);
+    renderQueueTicketLookup(manifest, platform);
+    renderQueueTicketRoute(manifest, platform);
     renderQueueWaitRadar(manifest, platform);
+    renderQueueLoadBalance(manifest, platform);
+    renderQueuePriorityLane(manifest, platform);
+    renderQueueQuickTrays();
+    renderActiveTrayPanel(manifest, platform);
+    renderQueueTrayBurst(manifest, platform);
     renderQueueDispatchDeck(manifest, platform);
     renderQueueQuickConsole(manifest, platform);
     renderQueuePlaybook(manifest, platform);

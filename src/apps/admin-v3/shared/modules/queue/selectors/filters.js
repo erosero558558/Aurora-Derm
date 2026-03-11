@@ -7,6 +7,27 @@ export function queueFilter(items, filter) {
     if (normalized === 'waiting') {
         return items.filter((item) => item.status === 'waiting');
     }
+    if (normalized === 'waiting_unassigned') {
+        return items.filter(
+            (item) =>
+                item.status === 'waiting' &&
+                !Number(item.assignedConsultorio || 0)
+        );
+    }
+    if (normalized === 'waiting_c1') {
+        return items.filter(
+            (item) =>
+                item.status === 'waiting' &&
+                Number(item.assignedConsultorio || 0) === 1
+        );
+    }
+    if (normalized === 'waiting_c2') {
+        return items.filter(
+            (item) =>
+                item.status === 'waiting' &&
+                Number(item.assignedConsultorio || 0) === 2
+        );
+    }
     if (normalized === 'called') {
         return items.filter((item) => item.status === 'called');
     }

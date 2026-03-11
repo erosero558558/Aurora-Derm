@@ -40,7 +40,16 @@ export function renderQueueAppsHub() {
             <div id="queueFocusMode" class="queue-focus-mode" data-focus-match="opening operations incidents closing"></div>
             <div id="queueNumpadGuide" class="queue-numpad-guide" data-focus-match="opening operations incidents"></div>
             <div id="queueConsultorioBoard" class="queue-consultorio-board" data-focus-match="opening operations incidents closing"></div>
+            <div id="queueAttentionDeck" class="queue-attention-deck" data-focus-match="operations incidents closing"></div>
+            <div id="queueResolutionDeck" class="queue-resolution-deck" data-focus-match="operations incidents closing"></div>
+            <div id="queueTicketLookup" class="queue-ticket-lookup" data-focus-match="operations incidents closing"></div>
+            <div id="queueTicketRoute" class="queue-ticket-route" data-focus-match="operations incidents closing"></div>
             <div id="queueWaitRadar" class="queue-wait-radar" data-focus-match="opening operations incidents closing"></div>
+            <div id="queueLoadBalance" class="queue-load-balance" data-focus-match="opening operations incidents closing"></div>
+            <div id="queuePriorityLane" class="queue-priority-lane" data-focus-match="opening operations incidents closing"></div>
+            <div id="queueQuickTrays" class="queue-quick-trays" data-focus-match="operations incidents closing"></div>
+            <div id="queueActiveTray" class="queue-active-tray" data-focus-match="operations incidents closing"></div>
+            <div id="queueTrayBurst" class="queue-tray-burst" data-focus-match="operations incidents closing"></div>
             <div id="queueDispatchDeck" class="queue-dispatch-deck" data-focus-match="opening operations incidents"></div>
             <div id="queueQuickConsole" class="queue-quick-console" data-focus-match="opening operations incidents closing"></div>
             <div id="queuePlaybook" class="queue-playbook" data-focus-match="opening operations incidents closing"></div>
