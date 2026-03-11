@@ -1,26 +1,23 @@
 export const APPOINTMENTS_CONTEXT = {
-    eyebrow: 'Agenda Clinica',
-    title: 'Triage de citas',
+    eyebrow: 'Agenda del dia',
+    title: 'Pacientes y citas',
     summary:
-        'Prioriza transferencias, no show y proximas 48 horas sin perder lectura.',
+        'Consulta la agenda, filtra pendientes y resuelve pagos sin perder el hilo del dia.',
     actions: [
         {
             action: 'clear-appointment-filters',
             label: 'Limpiar filtros',
-            meta: 'Regresar al corte total',
-            shortcut: 'Reset',
+            meta: 'Volver a la agenda completa',
         },
         {
             action: 'export-csv',
             label: 'Exportar CSV',
-            meta: 'Bajar corte operativo',
-            shortcut: 'CSV',
+            meta: 'Descargar agenda para soporte',
         },
         {
             action: 'context-open-callbacks-pending',
-            label: 'Ir a callbacks',
+            label: 'Ver pendientes',
             meta: 'Cruzar seguimiento telefonico',
-            shortcut: 'Alt+Shift+3',
         },
     ],
 };

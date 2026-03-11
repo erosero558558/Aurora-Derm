@@ -52,7 +52,7 @@ export function setActiveSection(section) {
         node.setAttribute('aria-pressed', String(active));
     });
 
-    const title = SECTION_TITLES[section] || 'Dashboard';
+    const title = SECTION_TITLES[section] || 'Inicio';
     const pageTitle = qs('#pageTitle');
     if (pageTitle) pageTitle.textContent = title;
 }
@@ -78,5 +78,5 @@ export function setSidebarState({ open, collapsed }) {
 }
 
 export function getSectionTitle(section) {
-    return SECTION_TITLES[section] || 'Dashboard';
+    return SECTION_TITLES[section] || 'Inicio';
 }

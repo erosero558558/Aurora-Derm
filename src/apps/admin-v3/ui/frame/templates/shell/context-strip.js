@@ -2,9 +2,9 @@ export function renderShellContextStrip() {
     return `
         <section class="admin-v3-context-strip" id="adminProductivityStrip">
             <div class="admin-v3-context-copy" data-admin-section-hero>
-                <p class="sony-kicker" id="adminSectionEyebrow">Resumen Diario</p>
+                <p class="sony-kicker" id="adminSectionEyebrow">Recepcion/Admin</p>
                 <h3 id="adminContextTitle">Que requiere atencion ahora</h3>
-                <p id="adminContextSummary">Lee agenda, callbacks y disponibilidad desde un frente claro y sin ruido.</p>
+                <p id="adminContextSummary">Trabaja con agenda, pendientes y turnero sin mezclar herramientas avanzadas en el primer paso.</p>
                 <div id="adminContextActions" class="sony-context-actions"></div>
             </div>
             <div class="admin-v3-status-rail" data-admin-priority-rail>

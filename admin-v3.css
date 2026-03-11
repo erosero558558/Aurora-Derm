@@ -238,6 +238,7 @@ body.admin-v3-mode .toolbar-row.slim {
 body.admin-v3-mode button,
 body.admin-v3-mode .table-actions a,
 body.admin-v3-mode .sony-context-action,
+body.admin-v3-mode .dashboard-secondary-link,
 body.admin-v3-mode .slot-preset-btn,
 body.admin-v3-mode .nav-item,
 body.admin-v3-mode .logout-btn {
@@ -254,6 +255,7 @@ body.admin-v3-mode .logout-btn {
 body.admin-v3-mode button:hover,
 body.admin-v3-mode .table-actions a:hover,
 body.admin-v3-mode .sony-context-action:hover,
+body.admin-v3-mode .dashboard-secondary-link:hover,
 body.admin-v3-mode .slot-preset-btn:hover,
 body.admin-v3-mode .nav-item:hover,
 body.admin-v3-mode .logout-btn:hover {
@@ -431,6 +433,7 @@ body.admin-v3-mode.admin-sidebar-collapsed .admin-v3-shell {
 }
 
 body.admin-v3-mode.admin-sidebar-collapsed .admin-v3-sidebar__brand small,
+body.admin-v3-mode.admin-sidebar-collapsed .admin-nav-group__label,
 body.admin-v3-mode.admin-sidebar-collapsed .nav-item span:first-of-type,
 body.admin-v3-mode.admin-sidebar-collapsed .logout-btn span {
     display: none;
@@ -456,8 +459,27 @@ body.admin-v3-mode .admin-v3-sidebar .badge {
 
 body.admin-v3-mode .sidebar-nav {
     display: grid;
-    gap: 8px;
+    gap: 16px;
     align-content: start;
+}
+
+body.admin-v3-mode .admin-nav-group {
+    display: grid;
+    gap: 8px;
+}
+
+body.admin-v3-mode .admin-nav-group-secondary {
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.admin-v3-mode .admin-nav-group__label {
+    margin: 0 0 4px;
+    padding: 0 8px;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.58);
 }
 
 body.admin-v3-mode .nav-item,
@@ -731,6 +753,7 @@ body.admin-v3-mode .callbacks-command-actions button:not(:first-child) {
 }
 
 body.admin-v3-mode .dashboard-hero-metrics,
+body.admin-v3-mode .dashboard-home-grid,
 body.admin-v3-mode .sony-panel-stats,
 body.admin-v3-mode .appointments-ops-grid,
 body.admin-v3-mode .callbacks-ops-grid,
@@ -742,6 +765,7 @@ body.admin-v3-mode .callbacks-next-grid {
 }
 
 body.admin-v3-mode .dashboard-hero-metrics,
+body.admin-v3-mode .dashboard-home-grid,
 body.admin-v3-mode .appointments-ops-grid,
 body.admin-v3-mode .callbacks-ops-grid,
 body.admin-v3-mode .reviews-summary-grid,
@@ -751,6 +775,7 @@ body.admin-v3-mode .callbacks-next-grid {
 }
 
 body.admin-v3-mode .dashboard-hero-metric,
+body.admin-v3-mode .dashboard-home-card,
 body.admin-v3-mode .dashboard-signal-card,
 body.admin-v3-mode .appointments-focus-stat,
 body.admin-v3-mode .callbacks-next-stat {
@@ -789,6 +814,7 @@ body.admin-v3-mode .reviews-summary-panel .reviews-score-pill {
 }
 
 body.admin-v3-mode .dashboard-hero-metric strong,
+body.admin-v3-mode .dashboard-home-card strong,
 body.admin-v3-mode .appointments-ops-card strong,
 body.admin-v3-mode .callbacks-ops-card strong,
 body.admin-v3-mode .reviews-summary-stat strong,
@@ -898,6 +924,90 @@ body.admin-v3-mode .operations-action-item {
     justify-content: space-between;
     background: var(--admin3-surface-alt);
     text-align: left;
+}
+
+body.admin-v3-mode .dashboard-home-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.admin-v3-mode .dashboard-home-card {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+}
+
+body.admin-v3-mode .dashboard-home-card span,
+body.admin-v3-mode .dashboard-home-card small {
+    color: rgba(255, 255, 255, 0.76);
+}
+
+body.admin-v3-mode .dashboard-home-card button {
+    width: fit-content;
+    margin-top: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.admin-v3-mode .dashboard-home-card button:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.admin-v3-mode .dashboard-launch-btn {
+    width: 100%;
+    justify-content: center;
+    background: var(--admin3-stage);
+    color: #fff;
+    border-color: var(--admin3-stage);
+}
+
+body.admin-v3-mode .dashboard-secondary-summary {
+    margin: 0;
+    color: var(--admin3-muted);
+}
+
+body.admin-v3-mode .dashboard-secondary-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body.admin-v3-mode .dashboard-secondary-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.admin-v3-mode .dashboard-secondary-metrics {
+    margin-top: 12px;
+}
+
+body.admin-v3-mode .dashboard-analytics-disclosure {
+    display: grid;
+    gap: 18px;
+}
+
+body.admin-v3-mode .dashboard-analytics-disclosure summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+body.admin-v3-mode .dashboard-analytics-disclosure summary::-webkit-details-marker {
+    display: none;
+}
+
+body.admin-v3-mode .dashboard-analytics-disclosure summary small {
+    color: var(--admin3-muted);
+    font-weight: 500;
+}
+
+body.admin-v3-mode .dashboard-analytics-grid {
+    padding-top: 6px;
 }
 
 body.admin-v3-mode .table-scroll {
@@ -1284,6 +1394,7 @@ body.admin-v3-mode .toast-close {
 @media (max-width: 1280px) {
     body.admin-v3-mode .sony-grid-kpi,
     body.admin-v3-mode .dashboard-hero-metrics,
+    body.admin-v3-mode .dashboard-home-grid,
     body.admin-v3-mode .appointments-ops-grid,
     body.admin-v3-mode .callbacks-ops-grid,
     body.admin-v3-mode .callbacks-next-grid,
@@ -1378,6 +1489,7 @@ body.admin-v3-mode .toast-close {
     body.admin-v3-mode .callbacks-ops-grid,
     body.admin-v3-mode .sony-grid-kpi,
     body.admin-v3-mode .dashboard-hero-metrics,
+    body.admin-v3-mode .dashboard-home-grid,
     body.admin-v3-mode .appointments-ops-grid,
     body.admin-v3-mode .sony-grid-three {
         grid-template-columns: 1fr;
@@ -1448,5 +1560,9 @@ body.admin-v3-mode .toast-close {
     body.admin-v3-mode #availabilityDayActions,
     body.admin-v3-mode .add-slot-form {
         grid-template-columns: 1fr;
+    }
+
+    body.admin-v3-mode .dashboard-secondary-links {
+        flex-direction: column;
     }
 }

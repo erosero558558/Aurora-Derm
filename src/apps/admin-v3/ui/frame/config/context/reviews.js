@@ -1,26 +1,23 @@
 export const REVIEWS_CONTEXT = {
-    eyebrow: 'Lectura De Calidad',
-    title: 'Resenas y senal reciente',
+    eyebrow: 'Calidad',
+    title: 'Resenas y calidad reciente',
     summary:
-        'Resume rating, volumen y comentarios utiles sin convertir feedback en ruido.',
+        'Consulta feedback y calidad reciente desde una vista secundaria.',
     actions: [
         {
             action: 'refresh-admin-data',
             label: 'Actualizar',
             meta: 'Sincronizar resenas',
-            shortcut: 'Sync',
         },
         {
             action: 'context-open-dashboard',
-            label: 'Volver al dashboard',
-            meta: 'Regresar al resumen diario',
-            shortcut: 'Alt+Shift+1',
+            label: 'Volver al inicio',
+            meta: 'Regresar al resumen operativo',
         },
         {
             action: 'context-open-callbacks-pending',
-            label: 'Ir a callbacks',
+            label: 'Ver pendientes',
             meta: 'Cerrar seguimiento operativo',
-            shortcut: 'Alt+Shift+3',
         },
     ],
 };

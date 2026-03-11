@@ -3,22 +3,25 @@ import { buildLiveMeta } from '../markup.js';
 
 export function setLiveStatus(state) {
     const {
+        calledTickets,
         nextAppointment,
         pendingTransfers,
+        pendingTasks,
         todayAppointments,
         urgentCallbacks,
+        waitingTickets,
     } = state;
 
     const liveStatus =
         pendingTransfers > 0 || urgentCallbacks > 0
             ? 'Atencion'
-            : todayAppointments > 0
+            : waitingTickets > 0 || calledTickets > 0 || todayAppointments > 0
               ? 'Activo'
               : 'Estable';
     const liveTone =
         pendingTransfers > 0 || urgentCallbacks > 0
             ? 'warning'
-            : todayAppointments > 0
+            : waitingTickets > 0 || calledTickets > 0 || todayAppointments > 0
               ? 'neutral'
               : 'success';
 
@@ -29,9 +32,17 @@ export function setLiveStatus(state) {
     setText(
         '#dashboardLiveMeta',
         buildLiveMeta({
+            calledTickets,
             pendingTransfers,
             urgentCallbacks,
             nextAppointment,
+            waitingTickets,
         })
+    );
+    setText(
+        '#operationRefreshSignal',
+        pendingTasks > 0
+            ? 'Tareas claras para recepcion/admin'
+            : 'Operacion simple y sin frentes urgentes'
     );
 }

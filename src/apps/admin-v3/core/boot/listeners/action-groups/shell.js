@@ -16,6 +16,20 @@ import {
 import { refreshDataAndRender } from '../../rendering.js';
 import { setThemeMode } from '../../ui-prefs.js';
 
+function buildOperatorAppUrl() {
+    const currentUrl = new URL(window.location.href);
+    const operatorUrl = new URL('/operador-turnos.html', currentUrl.origin);
+
+    ['station', 'lock', 'one_tap'].forEach((param) => {
+        const value = currentUrl.searchParams.get(param);
+        if (value) {
+            operatorUrl.searchParams.set(param, value);
+        }
+    });
+
+    return `${operatorUrl.pathname}${operatorUrl.search}`;
+}
+
 export async function handleShellAction(action, element) {
     switch (action) {
         case 'close-toast':
@@ -47,6 +61,9 @@ export async function handleShellAction(action, element) {
         case 'open-command-palette':
             showCommandPalette();
             focusQuickCommand();
+            return true;
+        case 'open-operator-app':
+            window.location.assign(buildOperatorAppUrl());
             return true;
         case 'close-command-palette':
             hideCommandPalette();

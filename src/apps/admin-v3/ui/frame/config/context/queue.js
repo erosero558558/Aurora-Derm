@@ -1,28 +1,24 @@
 export const QUEUE_CONTEXT = {
-    eyebrow: 'Apps Operativas',
-    title: 'Operacion simple de recepcion y sala',
+    eyebrow: 'Herramientas avanzadas',
+    title: 'Turnero y diagnostico de sala',
     summary:
-        'Centraliza instaladores, flujo de operador con numpad y cola en vivo sin mezclar cada equipo en una sola pantalla.',
+        'Mantiene el turnero completo, instaladores y diagnostico fuera del flujo principal diario.',
     actions: [
+        {
+            action: 'open-operator-app',
+            label: 'Abrir turnero',
+            meta: 'Ir a la app operativa separada',
+        },
         {
             action: 'queue-call-next',
             label: 'Llamar C1',
             meta: 'Despachar siguiente ticket',
-            shortcut: 'C1',
             queueConsultorio: '1',
-        },
-        {
-            action: 'queue-call-next',
-            label: 'Llamar C2',
-            meta: 'Despachar consultorio 2',
-            shortcut: 'C2',
-            queueConsultorio: '2',
         },
         {
             action: 'queue-refresh-state',
             label: 'Refrescar cola',
             meta: 'Sincronizar estado operativo',
-            shortcut: 'Sync',
         },
     ],
 };

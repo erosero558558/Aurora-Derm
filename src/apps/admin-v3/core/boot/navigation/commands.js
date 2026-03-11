@@ -11,6 +11,11 @@ import { getState } from '../../../shared/core/store.js';
 import { navigateToSection } from './sections.js';
 
 const QUICK_ACTIONS = {
+    appointments_overview: async () => {
+        await navigateToSection('appointments');
+        setAppointmentFilter('all');
+        setAppointmentSearch('');
+    },
     appointments_pending_transfer: async () => {
         await navigateToSection('appointments');
         setAppointmentFilter('pending_transfer');
@@ -37,6 +42,9 @@ const QUICK_ACTIONS = {
     callbacks_sla_urgent: async () => {
         await navigateToSection('callbacks');
         setCallbacksFilter('sla_urgent');
+    },
+    availability_section: async () => {
+        await navigateToSection('availability');
     },
     queue_sla_risk: async () => {
         await navigateToSection('queue');
@@ -80,15 +88,38 @@ export function parseQuickCommand(value) {
         return 'callbacks_pending';
     }
     if (
+        command.includes('pendient') ||
+        (command.includes('llamad') && !command.includes('turnero'))
+    ) {
+        return 'callbacks_pending';
+    }
+    if (
         command.includes('callback') &&
         (command.includes('urg') || command.includes('sla'))
     ) {
         return 'callbacks_sla_urgent';
     }
+    if (command.includes('agenda') || command.includes('citas')) {
+        if (command.includes('transfer')) {
+            return 'appointments_pending_transfer';
+        }
+        return 'appointments_overview';
+    }
     if (command.includes('citas') && command.includes('transfer')) {
         return 'appointments_pending_transfer';
     }
-    if (command.includes('queue') || command.includes('cola')) {
+    if (
+        command.includes('horario') ||
+        command.includes('disponibilidad') ||
+        command.includes('slots')
+    ) {
+        return 'availability_section';
+    }
+    if (
+        command.includes('queue') ||
+        command.includes('cola') ||
+        command.includes('turnero')
+    ) {
         return 'queue_sla_risk';
     }
     if (command.includes('no show')) {

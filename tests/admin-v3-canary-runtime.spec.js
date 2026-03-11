@@ -229,6 +229,12 @@ test.describe('Admin sony_v3 runtime', () => {
         await expect(
             page.locator('[data-admin-workbench]').first()
         ).toBeVisible();
+        await expect(page.locator('#pageTitle')).toHaveText('Inicio');
+        await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
+        await expect(page.locator('#dashboardAdvancedAnalytics')).not.toHaveJSProperty(
+            'open',
+            true
+        );
 
         await page.keyboard.press('Control+K');
         await expect(page.locator('#adminCommandPalette')).not.toHaveClass(
@@ -249,7 +255,7 @@ test.describe('Admin sony_v3 runtime', () => {
 
         await page.keyboard.press('Alt+Shift+Digit2');
         await expect(page.locator('#appointments')).toHaveClass(/active/);
-        await expect(page.locator('#pageTitle')).toHaveText('Citas');
+        await expect(page.locator('#pageTitle')).toHaveText('Agenda');
         await expect(
             page.locator('#appointmentsTableBody tr.appointment-row')
         ).toHaveCount(2);

@@ -82,10 +82,6 @@ export function attachActionListeners() {
                 : null;
         if (!nav) return;
 
-        const isQuickNav = nav.classList.contains('admin-quick-nav-item');
-        const isSidebarNav = nav.classList.contains('nav-item');
-        if (!isQuickNav && !isSidebarNav) return;
-
         event.preventDefault();
         const navigated = await navigateToSection(
             String(nav.getAttribute('data-section') || 'dashboard')

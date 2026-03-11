@@ -1,26 +1,23 @@
 export const CALLBACKS_CONTEXT = {
-    eyebrow: 'SLA Telefonico',
-    title: 'Siguiente callback',
+    eyebrow: 'Seguimiento',
+    title: 'Pendientes de contacto',
     summary:
-        'Ordena la cola por urgencia, contacto pendiente y siguiente accion real.',
+        'Prioriza llamadas pendientes y resuelve primero los casos mas atrasados.',
     actions: [
         {
             action: 'callbacks-triage-next',
             label: 'Siguiente llamada',
             meta: 'Mover foco al siguiente caso',
-            shortcut: 'Next',
         },
         {
             action: 'context-open-callbacks-next',
             label: 'Abrir siguiente',
             meta: 'Ir a la tarjeta prioritaria',
-            shortcut: 'Alt+Shift+3',
         },
         {
-            action: 'context-open-appointments-transfer',
-            label: 'Cruzar citas',
-            meta: 'Revisar pagos pendientes',
-            shortcut: 'Alt+Shift+2',
+            action: 'context-open-appointments-overview',
+            label: 'Ver agenda',
+            meta: 'Cruzar citas y seguimientos',
         },
     ],
 };

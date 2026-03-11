@@ -54,9 +54,12 @@ This document freezes the active admin frontend contract after the total cutover
 
 ## Required IDs (tests + ops)
 
-- `#loginForm`, `#adminDashboard`, `#adminSidebar`, `#adminMenuToggle`, `#adminMenuClose`, `#adminSidebarBackdrop`, `#adminSidebarCollapse`
+- `#loginForm`, `#adminDashboard`, `#adminSidebar`, `#adminPrimaryNav`, `#adminSecondaryNav`, `#adminMenuToggle`, `#adminMenuClose`, `#adminSidebarBackdrop`, `#adminSidebarCollapse`
 - `#pageTitle`, `#adminQuickCommand`, `#adminRunQuickCommandBtn`, `#adminRefreshStatus`, `#adminContextTitle`, `#adminCommandPalette`
-- `#dashboard`, `#funnelAbandonList`, `#funnelEntryList`, `#funnelSourceList`, `#funnelPaymentMethodList`, `#funnelAbandonReasonList`, `#funnelStepList`, `#funnelErrorCodeList`
+- `#dashboard`, `#opsTodaySummaryCard`, `#opsTodayCount`, `#opsTodayMeta`, `#opsPendingSummaryCard`, `#opsPendingCount`, `#opsPendingMeta`, `#opsAvailabilitySummaryCard`, `#opsAvailabilityCount`, `#opsAvailabilityMeta`
+- `#opsQueueLaunchCard`, `#opsQueueStatus`, `#opsQueueMeta`, `#openOperatorAppBtn`, `#dashboardLiveStatus`, `#dashboardLiveMeta`, `#dashboardQueueHealth`, `#dashboardFlowStatus`, `#dashboardAttentionList`
+- `#operationPendingReviewCount`, `#operationPendingCallbacksCount`, `#operationTodayLoadCount`, `#operationQueueHealth`, `#operationActionList`
+- `#funnelSummary`, `#dashboardAdvancedAnalytics`, `#funnelAbandonList`, `#funnelEntryList`, `#funnelSourceList`, `#funnelPaymentMethodList`, `#funnelAbandonReasonList`, `#funnelStepList`, `#funnelErrorCodeList`
 - `#appointments`, `#appointmentFilter`, `#appointmentSort`, `#searchAppointments`, `#clearAppointmentsFiltersBtn`, `#appointmentsToolbarMeta`, `#appointmentsToolbarState`, `#appointmentsTableBody`
 - `#callbacks`, `#callbackFilter`, `#callbackSort`, `#searchCallbacks`, `#clearCallbacksFiltersBtn`, `#callbacksBulkSelectVisibleBtn`, `#callbacksBulkClearBtn`, `#callbacksBulkMarkBtn`, `#callbacksToolbarMeta`, `#callbacksToolbarState`, `#callbacksGrid`, `#callbacksSelectionChip`, `#callbacksSelectedCount`
 - `#callbacksOpsPendingCount`, `#callbacksOpsUrgentCount`, `#callbacksOpsTodayCount`, `#callbacksOpsQueueHealth`, `#callbacksOpsNext`, `#callbacksOpsNextBtn`
@@ -83,7 +86,8 @@ This document freezes the active admin frontend contract after the total cutover
 
 ## Required `data-action`
 
-- Core: `set-admin-theme`, `toggle-sidebar-collapse`, `refresh-admin-data`, `run-admin-command`, `open-command-palette`, `close-command-palette`, `logout`, `close-toast`
+- Core: `set-admin-theme`, `toggle-sidebar-collapse`, `refresh-admin-data`, `run-admin-command`, `open-command-palette`, `close-command-palette`, `logout`, `close-toast`, `open-operator-app`
+- Dashboard context: `context-open-appointments-overview`, `context-open-callbacks-pending`, `context-open-callbacks-next`, `context-open-availability`
 - Appointments: `appointment-quick-filter`, `clear-appointment-filters`, `appointment-density`, `approve-transfer`, `reject-transfer`, `mark-no-show`, `cancel-appointment`, `export-csv`
 - Callbacks: `callback-quick-filter`, `clear-callback-filters`, `callbacks-triage-next`, `mark-contacted`, `callbacks-bulk-select-visible`, `callbacks-bulk-clear`, `callbacks-bulk-mark`
 - Availability: `change-month`, `availability-today`, `availability-prev-with-slots`, `availability-next-with-slots`, `select-availability-day`, `prefill-time-slot`, `add-time-slot`, `remove-time-slot`, `copy-availability-day`, `paste-availability-day`, `duplicate-availability-day-next`, `duplicate-availability-next-week`, `clear-availability-day`, `clear-availability-week`, `save-availability-draft`, `discard-availability-draft`
@@ -147,6 +151,11 @@ This document freezes the active admin frontend contract after the total cutover
 - `[data-admin-workbench]`
 - `[data-admin-detail-rail]`
 - `[data-admin-empty-state]`
+- `#openOperatorAppBtn`
+- `#opsTodaySummaryCard`
+- `#opsPendingSummaryCard`
+- `#opsAvailabilitySummaryCard`
+- `#adminSecondaryNav`
 
 ## Notes
 

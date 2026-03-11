@@ -11,34 +11,38 @@ export function actionItem(action, label, meta) {
 }
 
 export function buildOperations(state) {
-    const { pendingTransfers, urgentCallbacks, pendingCallbacks } = state;
-    const { appointments, nextAppointment } = state;
+    const {
+        appointments,
+        availabilityDays,
+        nextAppointment,
+        pendingCallbacks,
+        pendingTransfers,
+        waitingTickets,
+    } = state;
 
     return [
         actionItem(
-            'context-open-appointments-transfer',
-            pendingTransfers > 0
-                ? 'Validar transferencias'
-                : 'Abrir agenda clinica',
-            pendingTransfers > 0
-                ? `${pendingTransfers} comprobante(s) por revisar`
-                : `${appointments.length} cita(s) en el corte`
+            'context-open-appointments-overview',
+            'Abrir agenda',
+            nextAppointment?.item
+                ? `Siguiente cita ${relativeWindow(nextAppointment.stamp).toLowerCase()}`
+                : `${appointments.length} cita(s) cargadas`
         ),
         actionItem(
             'context-open-callbacks-pending',
-            urgentCallbacks > 0
-                ? 'Resolver callbacks urgentes'
-                : 'Abrir callbacks',
-            urgentCallbacks > 0
-                ? `${urgentCallbacks} caso(s) fuera de SLA`
-                : `${pendingCallbacks} callback(s) pendientes`
+            'Revisar pendientes',
+            pendingTransfers > 0
+                ? `${pendingTransfers} pago(s) y ${pendingCallbacks} llamada(s) por resolver`
+                : `${pendingCallbacks} llamada(s) pendientes`
         ),
         actionItem(
-            'refresh-admin-data',
-            'Actualizar tablero',
-            nextAppointment?.item
-                ? `Proxima cita ${relativeWindow(nextAppointment.stamp).toLowerCase()}`
-                : 'Sincronizar agenda y funnel'
+            'context-open-availability',
+            'Abrir horarios',
+            availabilityDays > 0
+                ? `${availabilityDays} dia(s) con horarios publicados`
+                : waitingTickets > 0
+                  ? 'Revisa horarios para sostener la cola de hoy'
+                  : 'Publica nuevos horarios cuando haga falta'
         ),
     ].join('');
 }

@@ -19,7 +19,11 @@ export function contextActionItem(action) {
                 <strong>${escapeHtml(action.label)}</strong>
                 <small>${escapeHtml(action.meta)}</small>
             </span>
-            <span class="sony-context-action-key">${escapeHtml(action.shortcut || '')}</span>
+            ${
+                action.shortcut
+                    ? `<span class="sony-context-action-key">${escapeHtml(action.shortcut)}</span>`
+                    : ''
+            }
         </button>
     `;
 }

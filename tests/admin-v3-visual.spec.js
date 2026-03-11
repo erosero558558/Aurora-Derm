@@ -166,6 +166,11 @@ test.describe('Admin sony_v3 visual structure', () => {
         await expect(
             page.locator('[data-admin-workbench]').first()
         ).toBeVisible();
+        await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
+        await expect(page.locator('#dashboardAdvancedAnalytics')).not.toHaveJSProperty(
+            'open',
+            true
+        );
         await expect(page.locator('.admin-quick-nav-item')).toHaveCount(0);
 
         const bgToken = await page.evaluate(() =>

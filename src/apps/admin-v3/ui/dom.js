@@ -5,7 +5,7 @@ const SECTION_HOOKS = {
         hero: '.dashboard-hero-panel',
         priority: '.dashboard-signal-panel',
         workbench: '.dashboard-card-operations',
-        detail: '#funnelSummary',
+        detail: '#dashboardAdvancedAnalytics',
     },
     appointments: {
         hero: '.appointments-command-deck',

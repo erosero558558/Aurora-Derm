@@ -16,8 +16,12 @@ const NIGHTLY_WORKFLOW_PATH = resolve(
     'workflows',
     'nightly-stability.yml'
 );
-const DEPLOY_DOC_PATH = resolve(REPO_ROOT, 'GITHUB-ACTIONS-DEPLOY.md');
-const STABILITY_PLAN_PATH = resolve(REPO_ROOT, 'PLAN_ESTABILIDAD_14DIAS.md');
+const DEPLOY_DOC_PATH = resolve(REPO_ROOT, 'docs', 'GITHUB_ACTIONS_DEPLOY.md');
+const STABILITY_PLAN_PATH = resolve(
+    REPO_ROOT,
+    'docs',
+    'STABILITY_14_DAYS_PLAN.md'
+);
 
 function loadPackage() {
     return JSON.parse(readFileSync(PACKAGE_PATH, 'utf8'));
@@ -126,11 +130,11 @@ test('docs operativas mencionan el carril critico de pagos', () => {
     assert.equal(
         deployDoc.includes('`test:critical:payments`'),
         true,
-        'GITHUB-ACTIONS-DEPLOY.md debe documentar test:critical:payments'
+        'docs/GITHUB_ACTIONS_DEPLOY.md debe documentar test:critical:payments'
     );
     assert.equal(
         stabilityPlan.includes('`npm run test:critical:payments`'),
         true,
-        'PLAN_ESTABILIDAD_14DIAS.md debe incluir npm run test:critical:payments'
+        'docs/STABILITY_14_DAYS_PLAN.md debe incluir npm run test:critical:payments'
     );
 });

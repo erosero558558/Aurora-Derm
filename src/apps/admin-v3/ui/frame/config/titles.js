@@ -1,8 +1,8 @@
 export const SECTION_TITLES = {
-    dashboard: 'Dashboard',
-    appointments: 'Citas',
-    callbacks: 'Callbacks',
+    dashboard: 'Inicio',
+    appointments: 'Agenda',
+    callbacks: 'Pendientes',
     reviews: 'Resenas',
-    availability: 'Disponibilidad',
-    queue: 'Turnero Sala',
+    availability: 'Horarios',
+    queue: 'Turnero avanzado',
 };

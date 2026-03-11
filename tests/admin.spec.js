@@ -433,7 +433,7 @@ test.describe('Panel de administracion', () => {
         await expect(page.locator('#funnelErrorCodeList')).toHaveCount(1);
     });
 
-    test('dashboard centro operativo muestra prioridades y navega a triage', async ({
+    test('inicio operativo simplifica accesos y resuelve tareas en un clic', async ({
         page,
     }) => {
         const today = new Date().toISOString().split('T')[0];
@@ -465,30 +465,112 @@ test.describe('Panel de administracion', () => {
 
         await page.goto('/admin.html');
         await expect(page.locator('#adminDashboard')).toBeVisible();
-        await expect(page.locator('.dashboard-card-operations')).toBeVisible();
+        await expect(page.locator('#pageTitle')).toHaveText('Inicio');
+        await expect(page.locator('#opsTodaySummaryCard')).toBeVisible();
+        await expect(page.locator('#opsPendingSummaryCard')).toBeVisible();
+        await expect(page.locator('#opsAvailabilitySummaryCard')).toBeVisible();
+        await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
+        await expect(page.locator('#dashboardAdvancedAnalytics')).not.toHaveJSProperty(
+            'open',
+            true
+        );
         await expect(page.locator('#operationPendingReviewCount')).toHaveText(
             '1'
         );
         await expect(
             page.locator('#operationPendingCallbacksCount')
         ).toHaveText('1');
+
+        await page
+            .locator(
+                '#opsTodaySummaryCard [data-action="context-open-appointments-overview"]'
+            )
+            .click();
+
+        await expect(page.locator('#appointments')).toHaveClass(/active/);
+        await expect(page.locator('#pageTitle')).toHaveText('Agenda');
+
+        await page
+            .locator('#adminSidebar .nav-item[data-section="dashboard"]')
+            .click();
+        await expect(page.locator('#dashboard')).toHaveClass(/active/);
+
+        await page
+            .locator(
+                '#opsPendingSummaryCard [data-action="context-open-callbacks-pending"]'
+            )
+            .click();
+
+        await expect(page.locator('#callbacks')).toHaveClass(/active/);
+
+        await page
+            .locator('#adminSidebar .nav-item[data-section="dashboard"]')
+            .click();
+        await expect(page.locator('#dashboard')).toHaveClass(/active/);
+
+        await page
+            .locator(
+                '#opsAvailabilitySummaryCard [data-action="context-open-availability"]'
+            )
+            .click();
+
+        await expect(page.locator('#availability')).toHaveClass(/active/);
+
+        await page
+            .locator('#adminSidebar .nav-item[data-section="dashboard"]')
+            .click();
+        await expect(page.locator('#dashboard')).toHaveClass(/active/);
+
+        await page.locator('#openOperatorAppBtn').click();
+
+        await expect(page).toHaveURL(/\/operador-turnos\.html$/);
+    });
+
+    test('acciones secundarias del dashboard siguen llevando a triage util', async ({
+        page,
+    }) => {
+        const today = new Date().toISOString().split('T')[0];
+        await setupAuthenticatedAdminMocks(page, {
+            appointments: [
+                {
+                    id: 1,
+                    name: 'Paciente Test',
+                    email: 'paciente@example.com',
+                    phone: '+593999111222',
+                    service: 'consulta',
+                    doctor: 'rosero',
+                    date: today,
+                    time: '10:00',
+                    status: 'confirmed',
+                    paymentStatus: 'pending_transfer_review',
+                },
+            ],
+            callbacks: [
+                {
+                    id: 9,
+                    telefono: '+593988776655',
+                    preferencia: 'ahora',
+                    fecha: new Date().toISOString(),
+                    status: 'pending',
+                },
+            ],
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('.dashboard-card-operations')).toBeVisible();
         await expect(
             page.locator('#operationActionList .operations-action-item')
         ).toHaveCount(3);
 
         await page
             .locator(
-                '.dashboard-card-operations [data-action="context-open-appointments-transfer"]'
+                '.dashboard-card-operations [data-action="context-open-appointments-overview"]'
             )
             .first()
             .click();
 
         await expect(page.locator('#appointments')).toHaveClass(/active/);
-        await expect(
-            page.locator(
-                '.appointment-quick-filter-btn[data-filter-value="pending_transfer"]'
-            )
-        ).toHaveClass(/is-active/);
+        await expect(page.locator('#pageTitle')).toHaveText('Agenda');
     });
 
     test('callbacks triage prioriza siguiente llamada y enfoca contacto', async ({
@@ -509,6 +591,9 @@ test.describe('Panel de administracion', () => {
                     preferencia: 'ahora',
                     fecha: oldPendingDate,
                     status: 'pending',
+                    leadOps: {
+                        priorityBand: 'hot',
+                    },
                 },
                 {
                     id: 102,
@@ -535,7 +620,7 @@ test.describe('Panel de administracion', () => {
         await expect(page.locator('#callbacksOpsPendingCount')).toHaveText('2');
         await expect(page.locator('#callbacksOpsUrgentCount')).toHaveText('1');
         await expect(page.locator('#callbacksOpsQueueHealth')).toHaveText(
-            'Cola: prioridad alta'
+            'Cola: prioridad comercial alta'
         );
         await expect(page.locator('#callbacksOpsNext')).toContainText(
             '+593988111222'
@@ -560,10 +645,10 @@ test.describe('Panel de administracion', () => {
         page,
     }) => {
         const mediumPendingDateA = new Date(
-            Date.now() - 65 * 60 * 1000
+            Date.now() - 150 * 60 * 1000
         ).toISOString();
         const mediumPendingDateB = new Date(
-            Date.now() - 50 * 60 * 1000
+            Date.now() - 130 * 60 * 1000
         ).toISOString();
 
         await setupAuthenticatedAdminMocks(page, {

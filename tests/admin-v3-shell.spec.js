@@ -220,6 +220,26 @@ test.describe('Admin sony_v3 shell', () => {
         await openAdminSonyV3(page);
 
         await expect(page.locator('#adminProductivityStrip')).toBeVisible();
+        await expect(page.locator('#pageTitle')).toHaveText('Inicio');
+        await expect(page.locator('#adminPrimaryNav')).toContainText('Inicio');
+        await expect(page.locator('#adminPrimaryNav')).toContainText('Agenda');
+        await expect(page.locator('#adminPrimaryNav')).toContainText(
+            'Pendientes'
+        );
+        await expect(page.locator('#adminPrimaryNav')).toContainText(
+            'Horarios'
+        );
+        await expect(page.locator('#adminSecondaryNav')).toContainText(
+            'Mas herramientas'
+        );
+        await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
+        await expect(page.locator('#opsTodaySummaryCard')).toBeVisible();
+        await expect(page.locator('#opsPendingSummaryCard')).toBeVisible();
+        await expect(page.locator('#opsAvailabilitySummaryCard')).toBeVisible();
+        await expect(page.locator('#dashboardAdvancedAnalytics')).not.toHaveJSProperty(
+            'open',
+            true
+        );
         await expect(page.locator('#adminCommandPalette')).toHaveClass(
             /is-hidden/
         );
@@ -251,7 +271,7 @@ test.describe('Admin sony_v3 shell', () => {
 
         await page.keyboard.press('Alt+Shift+Digit2');
         await expect(page.locator('#appointments')).toHaveClass(/active/);
-        await expect(page.locator('#pageTitle')).toHaveText('Citas');
+        await expect(page.locator('#pageTitle')).toHaveText('Agenda');
         await expect(
             page.locator('#appointmentsTableBody tr.appointment-row')
         ).toHaveCount(2);

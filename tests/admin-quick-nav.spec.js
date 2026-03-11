@@ -91,31 +91,29 @@ async function setupAdminApiMocks(page) {
     });
 }
 
-test.describe('Admin quick nav desktop', () => {
-    test('quick nav keeps section and hash in sync with sidebar', async ({
+test.describe('Admin navigation desktop', () => {
+    test('sidebar keeps section and hash in sync', async ({
         page,
     }) => {
         await setupAdminApiMocks(page);
         await page.goto('/admin.html');
 
-        const quickNav = page.locator('[data-qa="admin-quick-nav"]');
-        await expect(quickNav).toBeVisible();
+        const primaryNav = page.locator('#adminPrimaryNav');
+        await expect(primaryNav).toBeVisible();
 
-        const availabilityQuickItem = quickNav.locator(
-            '.admin-quick-nav-item[data-section="availability"]'
+        const availabilityNavItem = primaryNav.locator(
+            '.nav-item[data-section="availability"]'
         );
-        await availabilityQuickItem.click();
+        await availabilityNavItem.click();
 
         await expect(page.locator('#availability')).toHaveClass(/active/);
         await expect(page).toHaveURL(/#availability$/);
-        await expect(availabilityQuickItem).toHaveClass(/active/);
-        await expect(availabilityQuickItem).toHaveAttribute(
-            'aria-pressed',
-            'true'
+        await expect(availabilityNavItem).toHaveClass(/active/);
+        await expect(availabilityNavItem).toHaveAttribute(
+            'aria-current',
+            'page'
         );
-        await expect(
-            page.locator('.nav-item[data-section="availability"]')
-        ).toHaveAttribute('aria-current', 'page');
+        await expect(page.locator('#pageTitle')).toHaveText('Horarios');
     });
 
     test('keyboard shortcuts navigate sections but ignore focused inputs', async ({
@@ -138,16 +136,21 @@ test.describe('Admin quick nav desktop', () => {
         await expect(page).toHaveURL(/#availability$/);
     });
 
-    test('quick command enfoca con Ctrl+K y ejecuta acciones contextuales', async ({
+    test('quick command se abre con Ctrl+K y ejecuta acciones contextuales', async ({
         page,
     }) => {
         await setupAdminApiMocks(page);
         await page.goto('/admin.html');
 
+        await expect(page.locator('#adminCommandPalette')).toHaveClass(
+            /is-hidden/
+        );
         const commandInput = page.locator('#adminQuickCommand');
-        await expect(commandInput).toBeVisible();
 
         await page.keyboard.press('Control+K');
+        await expect(page.locator('#adminCommandPalette')).not.toHaveClass(
+            /is-hidden/
+        );
         await expect(commandInput).toBeFocused();
 
         await commandInput.fill('callbacks pendientes');
@@ -160,7 +163,7 @@ test.describe('Admin quick nav desktop', () => {
             )
         ).toHaveClass(/is-active/);
         await expect(page.locator('#adminContextTitle')).toContainText(
-            /callbacks/i
+            'Pendientes de contacto'
         );
         await expect(page.locator('#adminRefreshStatus')).toContainText(
             /Datos:/
