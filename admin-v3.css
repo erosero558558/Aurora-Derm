@@ -1434,6 +1434,12 @@ body.admin-v3-mode .admin-agent-panel__header {
     gap: 12px;
 }
 
+body.admin-v3-mode .admin-agent-panel__ghost,
+body.admin-v3-mode .admin-agent-panel__close {
+    min-height: auto;
+    padding: 8px 12px;
+}
+
 body.admin-v3-mode .admin-agent-panel__header-actions,
 body.admin-v3-mode .admin-agent-list__line,
 body.admin-v3-mode .admin-agent-panel__composer-actions,
@@ -1449,10 +1455,12 @@ body.admin-v3-mode .admin-agent-panel__meta {
 
 body.admin-v3-mode .admin-agent-panel__meta {
     align-items: stretch;
+    flex-wrap: wrap;
 }
 
 body.admin-v3-mode .admin-agent-panel__meta .admin-agent-surface {
     flex: 1;
+    min-width: 0;
 }
 
 body.admin-v3-mode .admin-agent-surface,
@@ -1514,9 +1522,17 @@ body.admin-v3-mode .admin-agent-badge[data-state='degraded'] {
     color: #8a5b12;
 }
 
+body.admin-v3-mode .admin-agent-badge[data-state='syncing'],
+body.admin-v3-mode .admin-agent-badge[data-state='queued'],
+body.admin-v3-mode .admin-agent-badge[data-state='live'] {
+    background: rgba(35, 89, 160, 0.14);
+    color: #2359a0;
+}
+
 body.admin-v3-mode .admin-agent-badge[data-state='blocked'],
 body.admin-v3-mode .admin-agent-badge[data-state='cancelled'],
-body.admin-v3-mode .admin-agent-badge[data-state='offline'] {
+body.admin-v3-mode .admin-agent-badge[data-state='offline'],
+body.admin-v3-mode .admin-agent-badge[data-state='error'] {
     background: rgba(163, 53, 43, 0.14);
     color: #9b342b;
 }

@@ -26,6 +26,11 @@ import {
     setText,
 } from '../ui/render.js';
 
+const LIVE_SYNC_INTERVAL_MS = 15000;
+
+let liveSyncTimer = 0;
+let liveSyncInFlight = false;
+
 function patchAgent(patch) {
     updateState((state) => ({
         ...state,
@@ -45,6 +50,9 @@ function clearAgentSnapshot({ keepOpen = false } = {}) {
             bootstrapped: false,
             starting: false,
             submitting: false,
+            syncing: false,
+            syncState: 'idle',
+            lastSyncAt: 0,
             session: null,
             context: null,
             messages: [],
@@ -52,6 +60,7 @@ function clearAgentSnapshot({ keepOpen = false } = {}) {
             toolCalls: [],
             approvals: [],
             events: [],
+            outbox: [],
             health: null,
             tools: [],
             lastError: '',
@@ -71,6 +80,14 @@ function resolveSnapshot(payload) {
 
 function syncSnapshot(snapshot, extra = {}) {
     if (!snapshot) return;
+    const syncAt = Date.parse(
+        String(
+            snapshot?.syncAt ||
+                snapshot?.session?.updatedAt ||
+                snapshot?.health?.relay?.updatedAt ||
+                ''
+        )
+    );
     updateState((state) => ({
         ...state,
         agent: {
@@ -78,6 +95,9 @@ function syncSnapshot(snapshot, extra = {}) {
             bootstrapped: true,
             starting: false,
             submitting: false,
+            syncing: false,
+            syncState: snapshot?.session ? 'live' : 'idle',
+            lastSyncAt: Number.isFinite(syncAt) ? syncAt : Date.now(),
             session: snapshot.session || null,
             context: snapshot.context || null,
             messages: Array.isArray(snapshot.messages) ? snapshot.messages : [],
@@ -89,6 +109,7 @@ function syncSnapshot(snapshot, extra = {}) {
                 ? snapshot.approvals
                 : [],
             events: Array.isArray(snapshot.events) ? snapshot.events : [],
+            outbox: Array.isArray(snapshot.outbox) ? snapshot.outbox : [],
             health: snapshot.health || null,
             tools: Array.isArray(snapshot.tools) ? snapshot.tools : [],
             lastError: '',
@@ -341,6 +362,11 @@ function renderApprovalList(approvals) {
                             formatDateTime(approval.expiresAt || '')
                         )}</span>
                     </div>
+                    <p>${escapeHtml(
+                        [approval.tool, approval.channel, approval.template]
+                            .filter(Boolean)
+                            .join(' · ')
+                    )}</p>
                     <button
                         type="button"
                         data-action="admin-agent-approve"
@@ -348,6 +374,38 @@ function renderApprovalList(approvals) {
                     >
                         Aprobar
                     </button>
+                </article>
+            `
+        )
+        .join('');
+}
+
+function renderOutboxList(outbox) {
+    if (!outbox.length) {
+        return '<p class="admin-agent-empty">Sin salidas externas registradas.</p>';
+    }
+
+    return outbox
+        .slice(0, 8)
+        .map(
+            (entry) => `
+                <article class="admin-agent-list__item">
+                    <div class="admin-agent-list__line">
+                        <strong>${escapeHtml(
+                            entry.channel || entry.tool || 'outbox'
+                        )}</strong>
+                        <span class="admin-agent-badge" data-state="${escapeHtml(
+                            entry.status || 'queued'
+                        )}">${escapeHtml(entry.status || 'queued')}</span>
+                    </div>
+                    <p>${escapeHtml(
+                        [entry.template, entry.message]
+                            .filter(Boolean)
+                            .join(' · ')
+                    )}</p>
+                    <small>${escapeHtml(
+                        formatDateTime(entry.createdAt || '')
+                    )}</small>
                 </article>
             `
         )
@@ -388,7 +446,13 @@ export function renderAgentPanel() {
     const toolCalls = Array.isArray(agent.toolCalls) ? agent.toolCalls : [];
     const approvals = Array.isArray(agent.approvals) ? agent.approvals : [];
     const events = Array.isArray(agent.events) ? agent.events : [];
+    const outbox = Array.isArray(agent.outbox) ? agent.outbox : [];
     const isAuthenticated = state.auth?.authenticated === true;
+    const syncState = String(agent.syncState || 'idle');
+    const lastSyncAt =
+        Number(agent.lastSyncAt || 0) > 0
+            ? formatDateTime(new Date(agent.lastSyncAt).toISOString())
+            : 'Sin sincronizacion activa.';
 
     setText(
         '#adminAgentPanelSummary',
@@ -396,7 +460,7 @@ export function renderAgentPanel() {
             ? `Error: ${agent.lastError}`
             : sessionStatus === 'idle'
               ? 'Sesion inactiva. Abre el copiloto para trabajar con contexto del admin.'
-              : 'Sesion operativa auditada con tools tipadas.'
+              : `Sesion operativa auditada con tools tipadas${relayMode !== 'online' ? ' en modo degradado' : ''}.`
     );
     setText(
         '#adminAgentContextSummary',
@@ -415,6 +479,13 @@ export function renderAgentPanel() {
             ? `Sesion ${agent.session.sessionId.slice(0, 12)} · ${agent.session.riskMode || 'autopilot_partial'}`
             : 'Sin hilo operativo abierto.'
     );
+    setText('#adminAgentSyncState', syncState);
+    setText(
+        '#adminAgentLiveMeta',
+        syncState === 'error'
+            ? 'La sincronizacion live fallo; usa Actualizar para reintentar.'
+            : `Ultima sincronizacion: ${lastSyncAt}`
+    );
     setText(
         '#adminAgentConversationMeta',
         `${messages.length} mensaje(s) auditados`
@@ -428,6 +499,10 @@ export function renderAgentPanel() {
         `${approvals.filter((item) => item.status === 'pending').length} pendientes`
     );
     setText('#adminAgentTimelineMeta', `${events.length} evento(s)`);
+    setText(
+        '#adminAgentOutboxMeta',
+        `${outbox.filter((item) => item.status === 'queued').length} queued · ${outbox.length} total`
+    );
     setText('#adminAgentRelayBadge', `relay ${relayMode}`);
 
     const relayBadge = qs('#adminAgentRelayBadge');
@@ -439,6 +514,7 @@ export function renderAgentPanel() {
     setHtml('#adminAgentToolPlan', renderToolCallList(toolCalls));
     setHtml('#adminAgentApprovalQueue', renderApprovalList(approvals));
     setHtml('#adminAgentEventTimeline', renderEventList(events));
+    setHtml('#adminAgentOutboxList', renderOutboxList(outbox));
 
     const prompt = qs('#adminAgentPrompt');
     if (prompt instanceof HTMLTextAreaElement) {
@@ -452,9 +528,88 @@ export function renderAgentPanel() {
     }
 }
 
+function stopAgentLiveSync() {
+    if (liveSyncTimer) {
+        window.clearInterval(liveSyncTimer);
+        liveSyncTimer = 0;
+    }
+    liveSyncInFlight = false;
+}
+
+function ensureAgentLiveSync() {
+    stopAgentLiveSync();
+    if (
+        getState().auth?.authenticated !== true ||
+        getState().agent?.open !== true ||
+        !getState().agent?.session?.sessionId
+    ) {
+        return;
+    }
+
+    liveSyncTimer = window.setInterval(() => {
+        refreshAgentLiveState({ silent: true }).catch(() => {});
+    }, LIVE_SYNC_INTERVAL_MS);
+}
+
+export async function refreshAgentLiveState({ silent = false } = {}) {
+    const state = getState();
+    const sessionId = String(state.agent?.session?.sessionId || '');
+    if (
+        !sessionId ||
+        state.auth?.authenticated !== true ||
+        state.agent?.open !== true ||
+        liveSyncInFlight
+    ) {
+        return null;
+    }
+
+    liveSyncInFlight = true;
+    if (!silent) {
+        patchAgent({ syncing: true, syncState: 'syncing', lastError: '' });
+        renderAgentPanel();
+    }
+
+    try {
+        const response = await apiRequest('admin-agent-events', {
+            query: { sessionId },
+        });
+        const snapshot =
+            resolveSnapshot(response?.data) || response?.data || null;
+        if (snapshot) {
+            syncSnapshot(snapshot, { syncState: 'live' });
+        } else {
+            patchAgent({
+                syncing: false,
+                syncState: 'idle',
+                lastSyncAt: Date.now(),
+            });
+        }
+        renderAgentPanel();
+        return snapshot;
+    } catch (error) {
+        patchAgent({
+            syncing: false,
+            syncState: 'error',
+            lastSyncAt: Date.now(),
+            ...(silent
+                ? {}
+                : {
+                      lastError:
+                          error?.message ||
+                          'No se pudo sincronizar la sesion del agente',
+                  }),
+        });
+        renderAgentPanel();
+        throw error;
+    } finally {
+        liveSyncInFlight = false;
+    }
+}
+
 export async function hydrateAgentSession() {
     const state = getState();
     if (state.auth?.authenticated !== true) {
+        stopAgentLiveSync();
         clearAgentSnapshot({ keepOpen: state.agent?.open === true });
         renderAgentPanel();
         return null;
@@ -466,14 +621,19 @@ export async function hydrateAgentSession() {
             resolveSnapshot(response?.data) || response?.data || null;
         if (snapshot?.session || snapshot?.health) {
             syncSnapshot(snapshot);
+            ensureAgentLiveSync();
         } else {
+            stopAgentLiveSync();
             clearAgentSnapshot({ keepOpen: state.agent?.open === true });
         }
         renderAgentPanel();
         return snapshot;
     } catch (error) {
+        stopAgentLiveSync();
         patchAgent({
             bootstrapped: true,
+            syncing: false,
+            syncState: 'error',
             lastError:
                 error?.message || 'No se pudo cargar la sesion del agente',
         });
@@ -502,6 +662,7 @@ export async function ensureAgentSession() {
         const snapshot =
             resolveSnapshot(response?.data) || response?.data || null;
         syncSnapshot(snapshot);
+        ensureAgentLiveSync();
         renderAgentPanel();
         return snapshot?.session?.sessionId || '';
     } catch (error) {
@@ -587,6 +748,7 @@ export async function submitAgentPrompt(message) {
             syncSnapshot(snapshot);
         }
         await applyClientActions(payload?.clientActions || []);
+        ensureAgentLiveSync();
         renderAgentPanel();
         return payload;
     } catch (error) {
@@ -623,6 +785,7 @@ export async function approveAgentAction(approvalId) {
         if (snapshot) {
             syncSnapshot(snapshot);
         }
+        ensureAgentLiveSync();
         renderAgentPanel();
         return payload;
     } catch (error) {
@@ -657,6 +820,7 @@ export async function cancelAgentSession() {
         const snapshot =
             resolveSnapshot(response?.data) || response?.data || null;
         syncSnapshot(snapshot);
+        stopAgentLiveSync();
         renderAgentPanel();
         return snapshot;
     } catch (error) {
@@ -684,6 +848,7 @@ export async function openAgentPanelExperience({ focus = false } = {}) {
 }
 
 export function closeAgentPanelExperience() {
+    stopAgentLiveSync();
     patchAgent({ open: false });
     hideAgentPanel();
     renderAgentPanel();
@@ -694,6 +859,7 @@ export async function focusAgentPrompt() {
 }
 
 export function clearAgentState() {
+    stopAgentLiveSync();
     clearAgentSnapshot();
     hideAgentPanel();
     renderAgentPanel();

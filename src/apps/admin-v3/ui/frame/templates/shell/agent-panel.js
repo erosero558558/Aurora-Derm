@@ -17,6 +17,7 @@ export function renderAdminAgentPanel() {
                     </div>
                     <div class="admin-agent-panel__header-actions">
                         <span id="adminAgentRelayBadge" class="admin-agent-badge" data-state="disabled">relay disabled</span>
+                        <button type="button" class="admin-agent-panel__ghost" data-action="admin-agent-refresh">Actualizar</button>
                         <button type="button" class="admin-agent-panel__close" data-action="close-agent-panel">Cerrar</button>
                     </div>
                 </header>
@@ -31,6 +32,11 @@ export function renderAdminAgentPanel() {
                         <span>Sesion</span>
                         <strong id="adminAgentSessionState">idle</strong>
                         <small id="adminAgentSessionMeta">Sin hilo operativo abierto.</small>
+                    </article>
+                    <article class="admin-agent-surface">
+                        <span>Sync</span>
+                        <strong id="adminAgentSyncState">idle</strong>
+                        <small id="adminAgentLiveMeta">Sin sincronizacion activa.</small>
                     </article>
                 </div>
 
@@ -64,6 +70,14 @@ export function renderAdminAgentPanel() {
                         <small id="adminAgentTimelineMeta">Sin eventos</small>
                     </div>
                     <div id="adminAgentEventTimeline" class="admin-agent-list"></div>
+                </section>
+
+                <section class="admin-agent-surface">
+                    <div class="admin-agent-surface__head">
+                        <h4>Outbox</h4>
+                        <small id="adminAgentOutboxMeta">Sin salidas externas</small>
+                    </div>
+                    <div id="adminAgentOutboxList" class="admin-agent-list"></div>
                 </section>
 
                 <div class="admin-agent-panel__composer">

@@ -71,12 +71,25 @@ final class AdminAgentService
             : self::findLatestSessionForOperator(self::resolveOperator());
 
         if ($session === null) {
+            $outbox = self::recentOutboxEntries();
             return [
                 'session' => null,
+                'outbox' => $outbox,
                 'health' => [
                     'relay' => self::relayStatus(),
                     'allowlists' => [
                         'externalChannels' => self::externalChannelAllowlist(),
+                        'externalTemplates' => self::externalTemplateAllowlist(),
+                    ],
+                    'counts' => [
+                        'messages' => 0,
+                        'turns' => 0,
+                        'toolCalls' => 0,
+                        'pendingApprovals' => 0,
+                        'outboxQueued' => count(array_filter($outbox, static function (array $entry): bool {
+                            return (string) ($entry['status'] ?? '') === 'queued';
+                        })),
+                        'outboxTotal' => count($outbox),
                     ],
                 ],
                 'tools' => self::publicToolRegistry(),
@@ -100,13 +113,11 @@ final class AdminAgentService
 
         $session = self::requireSession($sessionId);
 
-        return [
-            'sessionId' => $sessionId,
-            'status' => (string) ($session['status'] ?? 'active'),
-            'events' => array_values(array_reverse(array_slice(array_reverse(self::sessionEvents($session)), 0, 120))),
-            'approvals' => self::sessionApprovals($session),
-            'toolCalls' => self::sessionToolCalls($session),
-        ];
+        $snapshot = self::buildSessionPayload($session);
+        $snapshot['events'] = array_values(array_reverse(array_slice(array_reverse(self::sessionEvents($session)), 0, 120)));
+        $snapshot['syncAt'] = local_date('c');
+
+        return $snapshot;
     }
 
     /**
@@ -1232,6 +1243,15 @@ final class AdminAgentService
                 ];
             }
 
+            $template = self::normalizeText((string) ($args['template'] ?? ''));
+            if ($template === '' || !in_array($template, self::externalTemplateAllowlist(), true)) {
+                return [
+                    'decision' => 'blocked',
+                    'reason' => 'Template externo fuera de allowlist',
+                    'code' => 'external_template_not_allowlisted',
+                ];
+            }
+
             return [
                 'decision' => 'approval_required',
                 'reason' => 'Accion externa en cola de aprobacion',
@@ -1799,12 +1819,21 @@ final class AdminAgentService
             ];
         }
 
+        $template = self::normalizeText((string) ($args['template'] ?? 'operational_followup'));
+        if (!in_array($template, self::externalTemplateAllowlist(), true)) {
+            return [
+                'ok' => false,
+                'error' => 'Template externo fuera de allowlist',
+                'code' => 'external_template_not_allowlisted',
+            ];
+        }
+
         $outboxEntry = [
             'outboxId' => self::generateId('aox'),
             'tool' => $tool,
             'channel' => $channel,
             'targetEntityId' => (int) ($args['targetEntityId'] ?? 0),
-            'template' => trim((string) ($args['template'] ?? 'operational_followup')),
+            'template' => $template,
             'message' => truncate_field(sanitize_xss((string) ($args['message'] ?? '')), 600),
             'sessionId' => (string) ($session['sessionId'] ?? ''),
             'createdAt' => local_date('c'),
@@ -1829,6 +1858,14 @@ final class AdminAgentService
      */
     private static function buildSessionPayload(array $session): array
     {
+        $outbox = self::sessionOutboxEntries($session);
+        $pendingApprovals = count(array_filter(self::sessionApprovals($session), static function (array $approval): bool {
+            return (string) ($approval['status'] ?? '') === 'pending';
+        }));
+        $queuedOutbox = count(array_filter($outbox, static function (array $entry): bool {
+            return (string) ($entry['status'] ?? '') === 'queued';
+        }));
+
         return [
             'session' => [
                 'sessionId' => (string) ($session['sessionId'] ?? ''),
@@ -1846,18 +1883,20 @@ final class AdminAgentService
             'toolCalls' => self::sessionToolCalls($session),
             'approvals' => self::sessionApprovals($session),
             'events' => self::sessionEvents($session),
+            'outbox' => $outbox,
             'health' => [
                 'relay' => self::relayStatus(),
                 'allowlists' => [
                     'externalChannels' => self::externalChannelAllowlist(),
+                    'externalTemplates' => self::externalTemplateAllowlist(),
                 ],
                 'counts' => [
                     'messages' => count(self::sessionMessages($session)),
                     'turns' => count(self::sessionTurns($session)),
                     'toolCalls' => count(self::sessionToolCalls($session)),
-                    'pendingApprovals' => count(array_filter(self::sessionApprovals($session), static function (array $approval): bool {
-                        return (string) ($approval['status'] ?? '') === 'pending';
-                    })),
+                    'pendingApprovals' => $pendingApprovals,
+                    'outboxQueued' => $queuedOutbox,
+                    'outboxTotal' => count($outbox),
                 ],
             ],
             'tools' => self::publicToolRegistry(),
@@ -2015,11 +2054,16 @@ final class AdminAgentService
      */
     private static function buildApproval(string $sessionId, string $turnId, array $toolCall, string $reason): array
     {
+        $args = is_array($toolCall['args'] ?? null) ? $toolCall['args'] : [];
         return [
             'approvalId' => self::generateId('aap'),
             'sessionId' => $sessionId,
             'turnId' => $turnId,
             'toolCallId' => (string) ($toolCall['toolCallId'] ?? ''),
+            'tool' => (string) ($toolCall['tool'] ?? ''),
+            'channel' => trim((string) ($args['channel'] ?? '')),
+            'template' => trim((string) ($args['template'] ?? '')),
+            'risk' => (string) ($toolCall['risk'] ?? 'medium'),
             'reason' => $reason,
             'expiresAt' => gmdate('c', time() + self::APPROVAL_TTL_SECONDS),
             'approvedBy' => '',
@@ -2196,16 +2240,64 @@ final class AdminAgentService
     private static function appendOutboxEntry(array $payload): void
     {
         $path = self::outboxPath();
-        $entries = [];
-        if (is_file($path)) {
-            $raw = @file_get_contents($path);
-            $decoded = json_decode(is_string($raw) ? $raw : '', true);
-            if (is_array($decoded)) {
-                $entries = $decoded;
-            }
-        }
+        $entries = self::readOutboxEntries();
         $entries[] = $payload;
         self::writeJsonFile($path, $entries);
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private static function recentOutboxEntries(int $limit = 10): array
+    {
+        $entries = self::readOutboxEntries();
+        usort($entries, static function (array $left, array $right): int {
+            return strtotime((string) ($right['createdAt'] ?? '')) <=> strtotime((string) ($left['createdAt'] ?? ''));
+        });
+        return array_values(array_slice($entries, 0, max(1, $limit)));
+    }
+
+    /**
+     * @param array<string,mixed> $session
+     * @return array<int,array<string,mixed>>
+     */
+    private static function sessionOutboxEntries(array $session, int $limit = 12): array
+    {
+        $sessionId = trim((string) ($session['sessionId'] ?? ''));
+        if ($sessionId === '') {
+            return [];
+        }
+
+        $entries = array_values(array_filter(self::readOutboxEntries(), static function (array $entry) use ($sessionId): bool {
+            return (string) ($entry['sessionId'] ?? '') === $sessionId;
+        }));
+
+        usort($entries, static function (array $left, array $right): int {
+            return strtotime((string) ($right['createdAt'] ?? '')) <=> strtotime((string) ($left['createdAt'] ?? ''));
+        });
+
+        return array_values(array_slice($entries, 0, max(1, $limit)));
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private static function readOutboxEntries(): array
+    {
+        $path = self::outboxPath();
+        if (!is_file($path)) {
+            return [];
+        }
+
+        $raw = @file_get_contents($path);
+        $decoded = json_decode(is_string($raw) ? $raw : '', true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return array_values(array_filter($decoded, static function ($entry): bool {
+            return is_array($entry);
+        }));
     }
 
     /**
@@ -2419,6 +2511,28 @@ final class AdminAgentService
         }
 
         return array_values(array_unique($channels));
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private static function externalTemplateAllowlist(): array
+    {
+        $raw = getenv('PIELARMONIA_ADMIN_AGENT_EXTERNAL_TEMPLATE_ALLOWLIST');
+        if (!is_string($raw) || trim($raw) === '') {
+            return ['seguimiento_callback', 'seguimiento_operativo'];
+        }
+
+        $templates = [];
+        foreach (preg_split('/[\s,;]+/', $raw) ?: [] as $item) {
+            $template = self::normalizeText($item);
+            if ($template !== '') {
+                $templates[] = $template;
+            }
+        }
+
+        $templates = array_values(array_unique($templates));
+        return $templates !== [] ? $templates : ['seguimiento_callback', 'seguimiento_operativo'];
     }
 
     /**

@@ -5,6 +5,7 @@ import {
     clearAgentState,
     closeAgentPanelExperience,
     openAgentPanelExperience,
+    refreshAgentLiveState,
     submitAgentPrompt,
 } from '../../../../shared/modules/agent.js';
 import {
@@ -79,6 +80,10 @@ export async function handleShellAction(action, element) {
             return true;
         case 'close-agent-panel':
             closeAgentPanelExperience();
+            return true;
+        case 'admin-agent-refresh':
+            await refreshAgentLiveState();
+            createToast('Sesion del agente sincronizada', 'info');
             return true;
         case 'admin-agent-submit': {
             const input = document.getElementById('adminAgentPrompt');

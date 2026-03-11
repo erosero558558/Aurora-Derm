@@ -74,23 +74,24 @@ export function getApiCsrfToken() {
     return csrfToken;
 }
 
+function buildApiUrl(resource, query = {}) {
+    const value = String(resource || '');
+    const [baseResource, rawQuery = ''] = value.split('?');
+    const params = new URLSearchParams(rawQuery);
+
+    Object.entries(query || {}).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        params.set(key, String(value));
+    });
+
+    const queryString = params.toString();
+    return `/api.php?resource=${encodeURIComponent(baseResource)}${queryString ? `&${queryString}` : ''}`;
+}
+
 export async function apiRequest(resource, options = {}) {
-    const url = new URL('/api.php', window.location.origin);
-    url.searchParams.set('resource', String(resource || ''));
-
-    const query =
-        options.query && typeof options.query === 'object' ? options.query : null;
-    if (query) {
-        Object.entries(query).forEach(([key, value]) => {
-            if (value === undefined || value === null || value === '') {
-                return;
-            }
-            url.searchParams.set(String(key), String(value));
-        });
-    }
-
-    const { query: _query, ...requestOptions } = options;
-    return requestJson(`${url.pathname}${url.search}`, requestOptions);
+    const url = buildApiUrl(resource, options.query || {});
+    const { query, ...requestOptions } = options || {};
+    return requestJson(url, requestOptions);
 }
 
 export async function authRequestRaw(action, options = {}) {

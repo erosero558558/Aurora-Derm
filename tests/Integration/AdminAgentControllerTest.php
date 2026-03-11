@@ -28,6 +28,7 @@ final class AdminAgentControllerTest extends TestCase
 
         putenv('PIELARMONIA_DATA_DIR=' . $this->tempDir);
         putenv('PIELARMONIA_ADMIN_AGENT_EXTERNAL_ALLOWLIST=whatsapp,email');
+        putenv('PIELARMONIA_ADMIN_AGENT_EXTERNAL_TEMPLATE_ALLOWLIST=seguimiento_callback,seguimiento_operativo');
 
         if (!defined('TESTING_ENV')) {
             define('TESTING_ENV', true);
@@ -135,6 +136,7 @@ final class AdminAgentControllerTest extends TestCase
     {
         putenv('PIELARMONIA_DATA_DIR');
         putenv('PIELARMONIA_ADMIN_AGENT_EXTERNAL_ALLOWLIST');
+        putenv('PIELARMONIA_ADMIN_AGENT_EXTERNAL_TEMPLATE_ALLOWLIST');
         putenv('PIELARMONIA_ADMIN_AGENT_RELAY_MOCK_RESPONSE');
         unset($GLOBALS['__TEST_RESPONSE'], $GLOBALS['__TEST_JSON_BODY']);
         $_GET = [];
@@ -302,6 +304,50 @@ final class AdminAgentControllerTest extends TestCase
                 static fn (array $event): string => (string) ($event['event'] ?? ''),
                 $approve['payload']['data']['session']['events'] ?? []
             )
+        );
+
+        $_GET = ['sessionId' => $sessionId];
+        $status = $this->captureResponse(static function (): void {
+            \AdminAgentController::status([
+                'store' => \read_store(),
+                'isAdmin' => true,
+            ]);
+        }, 'GET');
+
+        self::assertSame(200, $status['status']);
+        self::assertSame(
+            'whatsapp',
+            (string) ($status['payload']['data']['outbox'][0]['channel'] ?? '')
+        );
+        self::assertSame(
+            'seguimiento_callback',
+            (string) ($status['payload']['data']['outbox'][0]['template'] ?? '')
+        );
+        self::assertSame(
+            1,
+            (int) ($status['payload']['data']['health']['counts']['outboxQueued'] ?? 0)
+        );
+
+        $_GET = ['sessionId' => $sessionId];
+        $events = $this->captureResponse(static function (): void {
+            \AdminAgentController::events([
+                'store' => \read_store(),
+                'isAdmin' => true,
+            ]);
+        }, 'GET');
+
+        self::assertSame(200, $events['status']);
+        self::assertSame(
+            $sessionId,
+            (string) ($events['payload']['data']['session']['sessionId'] ?? '')
+        );
+        self::assertSame(
+            'queued',
+            (string) ($events['payload']['data']['outbox'][0]['status'] ?? '')
+        );
+        self::assertNotSame(
+            '',
+            (string) ($events['payload']['data']['syncAt'] ?? '')
         );
     }
 

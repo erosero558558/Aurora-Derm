@@ -331,6 +331,7 @@ async function setupSonyV3Mocks(page) {
         lastClinicalPatch: null,
     };
     const agentSessionId = 'ags_test_shell';
+    const liveSyncTimestamp = new Date().toISOString();
 
     await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
         jsonResponse(route, {
@@ -633,6 +634,114 @@ async function setupSonyV3Mocks(page) {
             });
         }
 
+        if (resource === 'admin-agent-events') {
+            return jsonResponse(route, {
+                ok: true,
+                data: {
+                    session: {
+                        sessionId: agentSessionId,
+                        status: 'waiting_approval',
+                        riskMode: 'autopilot_partial',
+                        updatedAt: liveSyncTimestamp,
+                    },
+                    context: {
+                        section: 'callbacks',
+                    },
+                    messages: [
+                        {
+                            role: 'user',
+                            content: 'Resume los callbacks pendientes',
+                            createdAt: new Date().toISOString(),
+                        },
+                        {
+                            role: 'assistant',
+                            content:
+                                'Hay una salida externa pendiente y otra ya encolada.',
+                            createdAt: new Date().toISOString(),
+                        },
+                    ],
+                    turns: [
+                        {
+                            turnId: 'agt_test_shell_live',
+                            status: 'waiting_approval',
+                            finalAnswer:
+                                'Hay una salida externa pendiente y otra ya encolada.',
+                        },
+                    ],
+                    toolCalls: [
+                        {
+                            toolCallId: 'atc_test_shell_live_1',
+                            tool: 'external.whatsapp.send_template',
+                            status: 'waiting_approval',
+                            reason: 'La solicitud pide una salida externa',
+                        },
+                        {
+                            toolCallId: 'atc_test_shell_live_2',
+                            tool: 'external.email.send',
+                            status: 'completed',
+                            reason: 'Seguimiento multicanal ya encolado',
+                        },
+                    ],
+                    approvals: [
+                        {
+                            approvalId: 'aap_test_shell_live',
+                            toolCallId: 'atc_test_shell_live_1',
+                            tool: 'external.whatsapp.send_template',
+                            channel: 'whatsapp',
+                            template: 'seguimiento_callback',
+                            status: 'pending',
+                            reason: 'Accion externa en cola de aprobacion',
+                            expiresAt: new Date(
+                                Date.now() + 15 * 60 * 1000
+                            ).toISOString(),
+                        },
+                    ],
+                    events: [
+                        {
+                            event: 'agent.approval_requested',
+                            status: 'waiting_approval',
+                            createdAt: liveSyncTimestamp,
+                        },
+                        {
+                            event: 'agent.external_dispatched',
+                            status: 'completed',
+                            createdAt: liveSyncTimestamp,
+                        },
+                    ],
+                    outbox: [
+                        {
+                            outboxId: 'aox_test_shell_live',
+                            tool: 'external.email.send',
+                            channel: 'email',
+                            template: 'seguimiento_operativo',
+                            message: 'Confirmacion operativa enviada',
+                            status: 'queued',
+                            createdAt: liveSyncTimestamp,
+                        },
+                    ],
+                    health: {
+                        relay: {
+                            mode: 'degraded',
+                        },
+                        counts: {
+                            pendingApprovals: 1,
+                            outboxQueued: 1,
+                            outboxTotal: 1,
+                        },
+                        allowlists: {
+                            externalChannels: ['whatsapp', 'email'],
+                            externalTemplates: [
+                                'seguimiento_callback',
+                                'seguimiento_operativo',
+                            ],
+                        },
+                    },
+                    tools: [],
+                    syncAt: liveSyncTimestamp,
+                },
+            });
+        }
+
         return jsonResponse(route, { ok: true, data: {} });
     });
 
@@ -790,6 +899,39 @@ test.describe('Admin sony_v3 shell', () => {
         );
         await expect(page.locator('#adminAgentToolPlan')).toContainText(
             'availability.day_summary'
+        );
+    });
+
+    test('sincroniza approvals y outbox desde el event feed live', async ({
+        page,
+    }) => {
+        await openAdminSonyV3(page);
+
+        await page.keyboard.press('Control+K');
+        await page
+            .locator('#adminAgentPrompt')
+            .fill('Resume los callbacks pendientes');
+        await page.locator('#adminAgentSubmitBtn').click();
+
+        await page.locator('button[data-action="admin-agent-refresh"]').click();
+
+        await expect(page.locator('#adminAgentApprovalQueue')).toContainText(
+            'whatsapp'
+        );
+        await expect(page.locator('#adminAgentApprovalQueue')).toContainText(
+            'seguimiento_callback'
+        );
+        await expect(page.locator('#adminAgentOutboxList')).toContainText(
+            'email'
+        );
+        await expect(page.locator('#adminAgentOutboxList')).toContainText(
+            'seguimiento_operativo'
+        );
+        await expect(page.locator('#adminAgentRelayBadge')).toContainText(
+            'relay degraded'
+        );
+        await expect(page.locator('#adminAgentLiveMeta')).toContainText(
+            'Ultima sincronizacion'
         );
     });
 });
