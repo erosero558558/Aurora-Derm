@@ -89,6 +89,26 @@ const normalizePath = (value) => {
     if (!raw) return '';
     return raw.endsWith('/') ? raw : `${raw}/`;
 };
+const normalizedMockupRows = Array.isArray(mockup?.rows)
+    ? mockup.rows
+          .map((row) => {
+              const label = normalizeText(row?.label);
+              const value = normalizeText(row?.value);
+              if (!label || !value) {
+                  return null;
+              }
+              return {
+                  label,
+                  value,
+                  meta: normalizeText(row?.meta),
+              };
+          })
+          .filter(Boolean)
+    : [];
+const normalizedMockupChips = Array.isArray(mockup?.chips)
+    ? mockup.chips.map(normalizeText).filter(Boolean)
+    : [];
+const normalizedStepItems = stepItems.map(normalizeText).filter(Boolean);
 const suiteMapItems = Array.isArray(page?.suiteMap)
     ? page.suiteMap
           .map((item) => {
@@ -113,6 +133,27 @@ const showcaseKind =
     ['phone', 'status', 'dashboard'].includes(normalizeText(mockup?.kind))
         ? normalizeText(mockup?.kind)
         : 'status';
+const surfacePageKeyRaw = normalizeText(page?.pageKey);
+const surfacePageKey =
+    ['demo', 'status', 'dashboard'].includes(surfacePageKeyRaw)
+        ? surfacePageKeyRaw
+        : showcaseKind === 'phone'
+            ? 'demo'
+            : showcaseKind === 'dashboard'
+                ? 'dashboard'
+                : 'status';
+const surfaceSupportLabel =
+    surfacePageKey === 'dashboard'
+        ? normalizeText(advantages?.eyebrow) || normalizeText(hero?.eyebrow) || normalizeText(mockup?.eyebrow)
+        : surfacePageKey === 'status'
+            ? normalizeText(connections?.eyebrow) || normalizeText(hero?.eyebrow) || normalizeText(mockup?.eyebrow)
+            : normalizeText(hero?.eyebrow) || normalizeText(mockup?.eyebrow) || normalizeText(steps?.eyebrow);
+const copyClusterItems =
+    surfacePageKey === 'demo'
+        ? normalizedStepItems.slice(0, 3)
+        : surfacePageKey === 'status'
+            ? heroMetrics.slice(0, 3)
+            : normalizedMockupRows.slice(0, 3);
 
 const actionClass = (variant = 'secondary') => [
     'v6-suite-action',
@@ -275,17 +316,134 @@ const actionClass = (variant = 'secondary') => [
             hasShowcase ? (
                 <section
                     id="v6-suite-surface-demo"
-                    class:list={['v6-suite-showcase', `is-${showcaseKind}`]}
+                    class:list={[
+                        'v6-suite-showcase',
+                        `is-${showcaseKind}`,
+                        `is-page-${surfacePageKey}`,
+                    ]}
                     data-v6-suite-showcase
                     data-v6-suite-surface-kind={showcaseKind}
                 >
-                    <div class="v6-suite-showcase__stage">
-                        <SoftwareMockupV6 mockup={mockup} />
+                    <div
+                        class:list={[
+                            'v6-suite-showcase__stage',
+                            `is-page-${surfacePageKey}`,
+                        ]}
+                    >
+                        <div class="v6-suite-showcase__media">
+                            <SoftwareMockupV6 mockup={mockup} />
+                        </div>
+                        {
+                            surfacePageKey === 'demo' ? (
+                                <aside class="v6-suite-showcase__support is-demo">
+                                    {surfaceSupportLabel ? (
+                                        <p class="v6-suite-showcase__support-label">
+                                            {surfaceSupportLabel}
+                                        </p>
+                                    ) : null}
+                                    {
+                                        normalizedMockupChips.length ? (
+                                            <ul class="v6-suite-showcase__chipline">
+                                                {normalizedMockupChips.map((chip) => <li>{chip}</li>)}
+                                            </ul>
+                                        ) : null
+                                    }
+                                    <div class="v6-suite-showcase__metric-stack is-demo">
+                                        {heroMetrics.map((metric) => (
+                                            <article class="v6-suite-showcase__metric-card">
+                                                <strong>{metric.value}</strong>
+                                                <h3>{metric.label}</h3>
+                                                {metric.detail ? <span>{metric.detail}</span> : null}
+                                            </article>
+                                        ))}
+                                    </div>
+                                </aside>
+                            ) : surfacePageKey === 'status' ? (
+                                <aside class="v6-suite-showcase__support is-status">
+                                    {surfaceSupportLabel ? (
+                                        <p class="v6-suite-showcase__support-label">
+                                            {surfaceSupportLabel}
+                                        </p>
+                                    ) : null}
+                                    <div class="v6-suite-showcase__feed">
+                                        {normalizedMockupRows.map((row, index) => (
+                                            <article
+                                                class:list={[
+                                                    'v6-suite-showcase__feed-item',
+                                                    index === 0 && 'is-active',
+                                                ]}
+                                            >
+                                                <p>{row.label}</p>
+                                                <strong>{row.value}</strong>
+                                                {row.meta ? <span>{row.meta}</span> : null}
+                                            </article>
+                                        ))}
+                                    </div>
+                                </aside>
+                            ) : (
+                                <aside class="v6-suite-showcase__support is-dashboard">
+                                    {surfaceSupportLabel ? (
+                                        <p class="v6-suite-showcase__support-label">
+                                            {surfaceSupportLabel}
+                                        </p>
+                                    ) : null}
+                                    <div class="v6-suite-showcase__insight-grid">
+                                        {normalizedMockupRows.map((row) => (
+                                            <article class="v6-suite-showcase__insight">
+                                                <p>{row.label}</p>
+                                                <strong>{row.value}</strong>
+                                                {row.meta ? <span>{row.meta}</span> : null}
+                                            </article>
+                                        ))}
+                                    </div>
+                                </aside>
+                            )
+                        }
                     </div>
-                    <article class:list={['v6-suite-card', 'v6-suite-card--copy', `is-${showcaseKind}`]}>
+                    <article
+                        class:list={[
+                            'v6-suite-card',
+                            'v6-suite-card--copy',
+                            `is-${showcaseKind}`,
+                            `is-page-${surfacePageKey}`,
+                        ]}
+                    >
                         {mockup.eyebrow ? <p>{mockup.eyebrow}</p> : null}
                         <h3>{mockup.title || page.heading}</h3>
                         {mockup.footer ? <span>{mockup.footer}</span> : null}
+                        {
+                            copyClusterItems.length ? (
+                                surfacePageKey === 'demo' ? (
+                                    <ol class="v6-suite-copy-cluster is-demo">
+                                        {copyClusterItems.map((item, index) => (
+                                            <li class="v6-suite-copy-step">
+                                                <strong>{String(index + 1).padStart(2, '0')}</strong>
+                                                <span>{item}</span>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                ) : surfacePageKey === 'status' ? (
+                                    <div class="v6-suite-copy-cluster is-status">
+                                        {copyClusterItems.map((item) => (
+                                            <article class="v6-suite-copy-stat">
+                                                <strong>{item.value}</strong>
+                                                <span>{item.label}</span>
+                                            </article>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div class="v6-suite-copy-cluster is-dashboard">
+                                        {copyClusterItems.map((item) => (
+                                            <article class="v6-suite-copy-stat is-dashboard">
+                                                <p>{item.label}</p>
+                                                <strong>{item.value}</strong>
+                                                {item.meta ? <span>{item.meta}</span> : null}
+                                            </article>
+                                        ))}
+                                    </div>
+                                )
+                            ) : null
+                        }
                     </article>
                 </section>
             ) : null

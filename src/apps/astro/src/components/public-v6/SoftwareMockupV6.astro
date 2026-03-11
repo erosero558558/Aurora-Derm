@@ -29,6 +29,10 @@ const rows = Array.isArray(mockup?.rows)
     : [];
 const footer = normalizeText(mockup?.footer);
 const hasHeader = Boolean(eyebrow || title);
+const summaryRows = kind === 'dashboard' ? rows.slice(0, 3) : [];
+const bodyRows = kind === 'dashboard' ? rows.slice(3) : rows;
+const statusLabel = chips[0] || eyebrow || title;
+const statusMeta = chips.slice(1).join(' · ');
 ---
 
 <article
@@ -42,6 +46,35 @@ const hasHeader = Boolean(eyebrow || title);
         <span></span>
     </div>
     <div class="v6-suite-mockup__screen">
+        {
+            kind === 'phone' ? (
+                <div class="v6-suite-mockup__device-top" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                </div>
+            ) : null
+        }
+        {
+            kind === 'status' && statusLabel ? (
+                <div class="v6-suite-mockup__statebar">
+                    <strong>{statusLabel}</strong>
+                    {statusMeta ? <p>{statusMeta}</p> : null}
+                </div>
+            ) : null
+        }
+        {
+            kind === 'dashboard' && summaryRows.length ? (
+                <div class="v6-suite-mockup__summary">
+                    {summaryRows.map((row) => (
+                        <article>
+                            <p>{row.label}</p>
+                            <strong>{row.value}</strong>
+                            {row.meta ? <span>{row.meta}</span> : null}
+                        </article>
+                    ))}
+                </div>
+            ) : null
+        }
         {
             hasHeader || chips.length ? (
                 <header class="v6-suite-mockup__head">
@@ -60,8 +93,8 @@ const hasHeader = Boolean(eyebrow || title);
             ) : null
         }
 
-        <div class="v6-suite-mockup__body">
-            {rows.map((row, index) => (
+        <div class:list={['v6-suite-mockup__body', kind === 'dashboard' && 'is-dashboard-body']}>
+            {bodyRows.map((row, index) => (
                 <article class:list={['v6-suite-mockup__row', index === 0 && 'is-primary']}>
                     <div class="v6-suite-mockup__row-head">
                         <p>{row.label}</p>
@@ -73,5 +106,10 @@ const hasHeader = Boolean(eyebrow || title);
         </div>
 
         {footer ? <footer class="v6-suite-mockup__footer">{footer}</footer> : null}
+        {
+            kind === 'phone' ? (
+                <div class="v6-suite-mockup__device-bottom" aria-hidden="true"></div>
+            ) : null
+        }
     </div>
 </article>
