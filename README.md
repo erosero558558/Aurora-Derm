@@ -17,7 +17,15 @@ gobernanza operativa de Piel en Armonia.
 - `docs/LEADOPS_OPENCLAW.md`
 - `docs/public-v6-canonical-source.md`
 - `docs/ADMIN-UI-ROLLOUT.md`
+- `docs/LOCAL_SERVER.md`
+- `docs/CONTRIBUTING.md`
 - `docs/DEPLOYMENT.md`
+- `docs/DEPLOY_HOSTING_PLAYBOOK.md`
+- `docs/GITHUB_ACTIONS_DEPLOY.md`
+- `docs/PRODUCTION_TEST_CHECKLIST.md`
+- `docs/CALENDAR_CUTOVER.md`
+- `docs/STABILITY_14_DAYS_PLAN.md`
+- `docs/ROOT_SURFACES.md`
 - `AGENTS.md`
 
 ## Setup local rapido
@@ -26,7 +34,9 @@ gobernanza operativa de Piel en Armonia.
 2. `npx playwright install`
 3. `php -S 127.0.0.1:8011 -t .`
 4. Abrir:
-    - Publico: `http://127.0.0.1:8011`
+    - Publico gateway: `http://127.0.0.1:8011`
+    - Publico ES: `http://127.0.0.1:8011/es/`
+    - Publico EN: `http://127.0.0.1:8011/en/`
     - Admin: `http://127.0.0.1:8011/admin.html`
     - Health: `http://127.0.0.1:8011/api.php?resource=health`
 
@@ -130,3 +140,9 @@ Higiene local:
 - Si dudas que comando usar, revisa `docs/OPERATIONS_INDEX.md`.
 - Si operas el piloto comercial interno, revisa `docs/LEADOPS_OPENCLAW.md`.
 - Material historico y one-offs archivados viven en `docs/archive/root-history/` y `scripts/archive/`.
+- La frontera de markdowns permitidos en raiz vive en `docs/ROOT_SURFACES.md`.
+- `SERVIDOR-LOCAL.md`, `DESPLIEGUE-PIELARMONIA.md`, `CONTRIBUTING.md`,
+  `GITHUB-ACTIONS-DEPLOY.md`, `CHECKLIST-PRUEBAS-PRODUCCION.md`,
+  `CALENDAR-CUTOVER.md`, `ESTADO_PRODUCTO_OPERATIVO.md`,
+  `PLAN_ESTABILIDAD_14DIAS.md` y `SECURITY_AUDIT.md` quedan como shims
+  compatibles; la fuente canonica vive en `docs/**`.

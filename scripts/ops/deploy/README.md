@@ -11,5 +11,9 @@ Los CSS legacy archivados no forman parte del paquete.
 `npm run bundle:deploy` preserva los wrappers raiz junto con
 `scripts/ops/prod`, `scripts/ops/setup` y `bin/powershell` para que el
 tooling incluido siga siendo ejecutable fuera del repo.
+El bundle canonico de produccion tambien incluye la shell publica V6
+(`es/**`, `en/**`, `_astro/**`, `js/public-v6-shell.js`), el runtime admin V3
+(`admin.js`, `js/admin-chunks/**`, `js/admin-preboot-shortcuts.js`) y las
+superficies de turnero publicadas.
 
 El archivo de raiz se mantiene como wrapper compatible.

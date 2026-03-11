@@ -77,7 +77,7 @@ Las credenciales y claves de API (Stripe, SMTP, Admin Pass) deben estar document
 
 1.  **Provisionar Nuevo Servidor:** Contratar nuevo hosting compatible con PHP 7.4+.
 2.  **Configurar Entorno:**
-    - Subir archivos del proyecto (ver `DESPLIEGUE-PIELARMONIA.md`).
+    - Subir archivos del proyecto (ver `docs/DEPLOY_HOSTING_PLAYBOOK.md`).
     - Configurar variables de entorno (desde gestor de contraseñas).
     - Asegurar permisos de escritura en `data/`.
 3.  **Restaurar Datos:**
@@ -122,6 +122,8 @@ Se recomienda realizar un simulacro de restauración semestralmente:
 2.  Levantar un servidor local (`php -S 127.0.0.1:8011 -t .`).
 3.  Cargar el backup en el entorno local.
 4.  Verificar que las citas y reseñas se cargan correctamente.
+    Validar tambien `http://127.0.0.1:8011/`,
+    `http://127.0.0.1:8011/es/` y `http://127.0.0.1:8011/admin.html`.
     Si se automatiza la validación, reutilizar `TEST_BASE_URL` para apuntar
     las suites al host restaurado.
 5.  Si hay offsite configurado, probar restauración desde snapshot offsite al menos una vez por trimestre.

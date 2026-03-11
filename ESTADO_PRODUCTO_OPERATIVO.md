@@ -1,27 +1,14 @@
 # Estado Producto Operativo
 
-Actualizado: 2026-02-25
+Este archivo se conserva como shim compatible para referencias historicas.
 
-## Semaforo Producto
+Fuente canonica:
 
-- Estado actual: `GREEN`
-- Fuente: `gate:prod:fast` + health/smoke en produccion.
-- Agenda real: `calendarSource=google`, `calendarMode=live`.
+- `docs/PRODUCT_OPERATIONAL_STATUS.md`
+- `docs/STABILITY_14_DAYS_PLAN.md`
 
-## Semaforo Agentes (referencial, no bloquea ciclo diurno)
+Semaforos relacionados:
 
-- Fuente: `AGENT_BOARD.yaml` + workflows de orquestacion.
-- Uso: coordinacion y trazabilidad.
-- No define bloqueo diario de deploy.
-
-## Regla de bloqueo diaria
-
-Solo bloquea deploy diurno:
-
-1. `verify` / `smoke` / contratos criticos en rojo.
-2. health de backend en rojo.
-
-No bloquea deploy diurno:
-
-1. benchmark pesado nightly.
-2. drift no critico fuera de backend.
+- `npm run gate:prod:fast`
+- `npm run gate:prod`
+- `.github/workflows/nightly-stability.yml`

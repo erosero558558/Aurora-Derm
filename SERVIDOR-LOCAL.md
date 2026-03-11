@@ -1,51 +1,17 @@
 # Servidor Local
 
-Para probar la web con backend (API + admin) no uses `file://`.
+Este archivo se conserva como shim compatible para referencias historicas.
 
-## Requisitos
+Fuentes canonicas:
 
-- PHP 7.4 o superior
-- endpoint local de chatbot en `figo-chat.php` (si quieres IA real en local)
+- `docs/LOCAL_SERVER.md`
+- `docs/CONTRIBUTING.md`
 
-## Iniciar en local
+Atajos:
 
-Desde la carpeta del proyecto:
+- `php -S 127.0.0.1:8011 -t .`
+- `TEST_BASE_URL`
+- `TEST_LOCAL_SERVER_PORT`
+- `npm run benchmark:local`
 
-```powershell
-php -S 127.0.0.1:8011 -t .
-```
-
-Luego abre:
-
-- Sitio: `http://127.0.0.1:8011/index.html`
-- Admin: `http://127.0.0.1:8011/admin.html`
-- API health: `http://127.0.0.1:8011/api.php?resource=health`
-- Bot endpoint: `http://127.0.0.1:8011/figo-chat.php`
-
-## Variables de entorno requeridas para login admin
-
-- `PIELARMONIA_ADMIN_PASSWORD`: contraseña del panel admin.
-- `PIELARMONIA_ADMIN_PASSWORD_HASH`: hash de contraseña (opcional, prioridad sobre la contraseña en texto).
-- `PIELARMONIA_EMAIL_FROM`: remitente para correos de confirmacion.
-- `PIELARMONIA_DATA_DIR`: ruta local de datos (opcional).
-- `FIGO_CHAT_ENDPOINT`: URL del backend real de Figo (si quieres IA real).
-- `FIGO_CHAT_TOKEN`: token Bearer opcional para autenticar contra Figo.
-
-Alternativa sin variables de entorno:
-
-- Crea `data/figo-config.json` con `endpoint` y credenciales opcionales.
-
-Nota:
-
-- Ya no existe fallback `admin123`. Debes definir una de las dos variables de contraseña.
-- `TEST_BASE_URL` sirve para apuntar tests y pentests a otro host.
-- `TEST_LOCAL_SERVER_PORT` sirve para mover el puerto local del runner Playwright.
-- `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` automaticamente.
-
-## Ejemplo en PowerShell (sesión actual)
-
-```powershell
-$env:PIELARMONIA_ADMIN_PASSWORD = "tu-clave-segura"
-$env:TEST_LOCAL_SERVER_PORT = "8011"
-php -S 127.0.0.1:8011 -t .
-```
+No usar `file://` para probar backend, admin o API local.

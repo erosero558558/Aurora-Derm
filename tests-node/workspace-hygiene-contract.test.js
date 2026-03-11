@@ -3,7 +3,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { existsSync, readFileSync } = require('fs');
+const { existsSync, readFileSync, readdirSync } = require('fs');
 const { resolve } = require('path');
 
 const REPO_ROOT = resolve(__dirname, '..');
@@ -65,7 +65,15 @@ test('readme enlaza entradas canonicas y evita mojibake comun', () => {
         'docs/LEADOPS_OPENCLAW.md',
         'docs/public-v6-canonical-source.md',
         'docs/ADMIN-UI-ROLLOUT.md',
+        'docs/LOCAL_SERVER.md',
+        'docs/CONTRIBUTING.md',
         'docs/DEPLOYMENT.md',
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md',
+        'docs/GITHUB_ACTIONS_DEPLOY.md',
+        'docs/PRODUCTION_TEST_CHECKLIST.md',
+        'docs/CALENDAR_CUTOVER.md',
+        'docs/STABILITY_14_DAYS_PLAN.md',
+        'docs/ROOT_SURFACES.md',
         'AGENTS.md',
     ];
 
@@ -85,6 +93,288 @@ test('readme enlaza entradas canonicas y evita mojibake comun', () => {
             `README.md contiene mojibake: ${marker}`
         );
     }
+});
+
+test('runbooks y deploy docs activos evitan mojibake comun', () => {
+    const files = [
+        'docs/RUNBOOKS.md',
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md',
+        'DESPLIEGUE-PIELARMONIA.md',
+        'SERVIDOR-LOCAL.md',
+    ];
+    const mojibakeMarkers = ['Ã', 'ðŸ', 'âš', 'ï¸'];
+
+    for (const file of files) {
+        const raw = readRepoFile(file);
+
+        for (const marker of mojibakeMarkers) {
+            assert.equal(
+                raw.includes(marker),
+                false,
+                `${file} contiene mojibake: ${marker}`
+            );
+        }
+    }
+
+    const runbooks = readRepoFile('docs/RUNBOOKS.md');
+    const deployGuide = readRepoFile('docs/DEPLOY_HOSTING_PLAYBOOK.md');
+
+    assert.equal(
+        runbooks.includes('npm run clean:local:artifacts'),
+        true,
+        'RUNBOOKS debe conservar la limpieza local canonica'
+    );
+    assert.equal(
+        runbooks.includes('npm run benchmark:local'),
+        true,
+        'RUNBOOKS debe conservar benchmark:local'
+    );
+    assert.equal(
+        deployGuide.includes('PIELARMONIA_EMAIL_FROM'),
+        true,
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe conservar PIELARMONIA_EMAIL_FROM'
+    );
+    assert.equal(
+        deployGuide.includes('FIGO_TELEGRAM_BOT_TOKEN'),
+        true,
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe conservar FIGO_TELEGRAM_BOT_TOKEN'
+    );
+    assert.equal(
+        deployGuide.includes('js/public-v6-shell.js'),
+        true,
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe documentar la shell publica V6'
+    );
+    assert.equal(
+        deployGuide.includes('js/admin-chunks/'),
+        true,
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe documentar los chunks activos del admin'
+    );
+    assert.equal(
+        deployGuide.includes('operador-turnos.html'),
+        true,
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe documentar las superficies de turnero'
+    );
+    assert.equal(
+        deployGuide.includes('- `index.html`'),
+        false,
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md no debe exigir index.html raiz como artefacto V6'
+    );
+});
+
+test('docs operativas de raiz quedan como shims compatibles hacia docs canonicos', () => {
+    const rootDeploy = readRepoFile('DESPLIEGUE-PIELARMONIA.md');
+    const rootLocal = readRepoFile('SERVIDOR-LOCAL.md');
+    const rootContributing = readRepoFile('CONTRIBUTING.md');
+    const rootGitHubDeploy = readRepoFile('GITHUB-ACTIONS-DEPLOY.md');
+    const rootProdChecklist = readRepoFile('CHECKLIST-PRUEBAS-PRODUCCION.md');
+    const rootCalendarCutover = readRepoFile('CALENDAR-CUTOVER.md');
+    const rootProductStatus = readRepoFile('ESTADO_PRODUCTO_OPERATIVO.md');
+    const rootStabilityPlan = readRepoFile('PLAN_ESTABILIDAD_14DIAS.md');
+    const rootSecurityAudit = readRepoFile('SECURITY_AUDIT.md');
+
+    assert.equal(
+        rootDeploy.includes('docs/DEPLOYMENT.md'),
+        true,
+        'DESPLIEGUE-PIELARMONIA.md debe apuntar a docs/DEPLOYMENT.md'
+    );
+    assert.equal(
+        rootDeploy.includes('docs/DEPLOY_HOSTING_PLAYBOOK.md'),
+        true,
+        'DESPLIEGUE-PIELARMONIA.md debe apuntar a docs/DEPLOY_HOSTING_PLAYBOOK.md'
+    );
+    assert.equal(
+        rootLocal.includes('docs/LOCAL_SERVER.md'),
+        true,
+        'SERVIDOR-LOCAL.md debe apuntar a docs/LOCAL_SERVER.md'
+    );
+    assert.equal(
+        rootLocal.includes('docs/CONTRIBUTING.md'),
+        true,
+        'SERVIDOR-LOCAL.md debe apuntar a docs/CONTRIBUTING.md'
+    );
+    assert.equal(
+        rootContributing.includes('docs/CONTRIBUTING.md'),
+        true,
+        'CONTRIBUTING.md debe apuntar a docs/CONTRIBUTING.md'
+    );
+    assert.equal(
+        rootGitHubDeploy.includes('docs/GITHUB_ACTIONS_DEPLOY.md'),
+        true,
+        'GITHUB-ACTIONS-DEPLOY.md debe apuntar a docs/GITHUB_ACTIONS_DEPLOY.md'
+    );
+    assert.equal(
+        rootProdChecklist.includes('docs/PRODUCTION_TEST_CHECKLIST.md'),
+        true,
+        'CHECKLIST-PRUEBAS-PRODUCCION.md debe apuntar a docs/PRODUCTION_TEST_CHECKLIST.md'
+    );
+    assert.equal(
+        rootCalendarCutover.includes('docs/CALENDAR_CUTOVER.md'),
+        true,
+        'CALENDAR-CUTOVER.md debe apuntar a docs/CALENDAR_CUTOVER.md'
+    );
+    assert.equal(
+        rootProductStatus.includes('docs/PRODUCT_OPERATIONAL_STATUS.md'),
+        true,
+        'ESTADO_PRODUCTO_OPERATIVO.md debe apuntar a docs/PRODUCT_OPERATIONAL_STATUS.md'
+    );
+    assert.equal(
+        rootStabilityPlan.includes('docs/STABILITY_14_DAYS_PLAN.md'),
+        true,
+        'PLAN_ESTABILIDAD_14DIAS.md debe apuntar a docs/STABILITY_14_DAYS_PLAN.md'
+    );
+    assert.equal(
+        rootSecurityAudit.includes('docs/SECURITY_AUDIT.md'),
+        true,
+        'SECURITY_AUDIT.md debe apuntar a docs/SECURITY_AUDIT.md'
+    );
+});
+
+test('frontera de markdowns en raiz queda explicita y limitada', () => {
+    const rootSurfaces = readRepoFile('docs/ROOT_SURFACES.md');
+    const currentRootMarkdown = readdirSync(REPO_ROOT)
+        .filter((entry) => entry.endsWith('.md'))
+        .sort();
+    const expectedRootMarkdown = [
+        'AGENTS.md',
+        'CALENDAR-CUTOVER.md',
+        'CHECKLIST-PRUEBAS-PRODUCCION.md',
+        'CLAUDE.md',
+        'CONTRIBUTING.md',
+        'DESPLIEGUE-PIELARMONIA.md',
+        'DUAL_CODEX_RUNBOOK.md',
+        'ESTADO_PRODUCTO_OPERATIVO.md',
+        'GITHUB-ACTIONS-DEPLOY.md',
+        'JULES_TASKS.md',
+        'KIMI_TASKS.md',
+        'PLAN_ESTABILIDAD_14DIAS.md',
+        'PLAN_MAESTRO_2026_STATUS.md',
+        'PLAN_MAESTRO_CODEX_2026.md',
+        'PLAN_MAESTRO_OPERATIVO_2026.md',
+        'README.md',
+        'SECURITY_AUDIT.md',
+        'SERVIDOR-LOCAL.md',
+    ].sort();
+    const requiredEntries = [
+        'README.md',
+        'AGENTS.md',
+        'DUAL_CODEX_RUNBOOK.md',
+        'PLAN_MAESTRO_CODEX_2026.md',
+        'PLAN_MAESTRO_OPERATIVO_2026.md',
+        'PLAN_MAESTRO_2026_STATUS.md',
+        'CLAUDE.md',
+        'JULES_TASKS.md',
+        'KIMI_TASKS.md',
+        'SERVIDOR-LOCAL.md',
+        'docs/LOCAL_SERVER.md',
+        'docs/archive/root-history/**',
+        'tests-node/workspace-hygiene-contract.test.js',
+    ];
+
+    assert.deepEqual(
+        currentRootMarkdown,
+        expectedRootMarkdown,
+        'la raiz debe quedar limitada a markdowns canonicos, shims y tombstones aprobados'
+    );
+
+    for (const entry of requiredEntries) {
+        assert.equal(
+            rootSurfaces.includes(entry),
+            true,
+            `docs/ROOT_SURFACES.md debe documentar ${entry}`
+        );
+    }
+});
+
+test('docs canonicos de ops preservan contratos clave del runtime actual', () => {
+    const githubActionsDeploy = readRepoFile('docs/GITHUB_ACTIONS_DEPLOY.md');
+    const productionChecklist = readRepoFile(
+        'docs/PRODUCTION_TEST_CHECKLIST.md'
+    );
+    const calendarCutover = readRepoFile('docs/CALENDAR_CUTOVER.md');
+    const productStatus = readRepoFile('docs/PRODUCT_OPERATIONAL_STATUS.md');
+    const securityAudit = readRepoFile('docs/SECURITY_AUDIT.md');
+    const stabilityPlan = readRepoFile('docs/STABILITY_14_DAYS_PLAN.md');
+
+    assert.equal(
+        githubActionsDeploy.includes('Deploy Hosting (Canary Pipeline)'),
+        true,
+        'docs/GITHUB_ACTIONS_DEPLOY.md debe documentar el workflow principal'
+    );
+    assert.equal(
+        githubActionsDeploy.includes('js/public-v6-shell.js'),
+        true,
+        'docs/GITHUB_ACTIONS_DEPLOY.md debe documentar la shell publica V6'
+    );
+
+    assert.equal(
+        productionChecklist.includes('js/public-v6-shell.js'),
+        true,
+        'docs/PRODUCTION_TEST_CHECKLIST.md debe validar la shell publica V6'
+    );
+    assert.equal(
+        productionChecklist.includes('js/admin-chunks/'),
+        true,
+        'docs/PRODUCTION_TEST_CHECKLIST.md debe validar los chunks activos del admin'
+    );
+    assert.equal(
+        productionChecklist.includes('https://TU_DOMINIO/es/'),
+        true,
+        'docs/PRODUCTION_TEST_CHECKLIST.md debe validar la shell publica ES'
+    );
+    assert.equal(
+        productionChecklist.includes('https://TU_DOMINIO/en/'),
+        true,
+        'docs/PRODUCTION_TEST_CHECKLIST.md debe validar la shell publica EN'
+    );
+    assert.equal(
+        productionChecklist.includes('- `index.html`'),
+        false,
+        'docs/PRODUCTION_TEST_CHECKLIST.md no debe exigir index.html raiz como artefacto V6'
+    );
+
+    assert.equal(
+        calendarCutover.includes('PIELARMONIA_AVAILABILITY_SOURCE=google'),
+        true,
+        'docs/CALENDAR_CUTOVER.md debe fijar source=google para el corte'
+    );
+    assert.equal(
+        calendarCutover.includes('REQUIRE_GOOGLE_CALENDAR=true'),
+        true,
+        'docs/CALENDAR_CUTOVER.md debe documentar REQUIRE_GOOGLE_CALENDAR=true'
+    );
+
+    assert.equal(
+        productStatus.includes('gate:prod:fast'),
+        true,
+        'docs/PRODUCT_OPERATIONAL_STATUS.md debe usar gate:prod:fast como fuente'
+    );
+    assert.equal(
+        productStatus.includes('calendarSource=google'),
+        true,
+        'docs/PRODUCT_OPERATIONAL_STATUS.md debe reflejar agenda real en Google'
+    );
+
+    assert.equal(
+        securityAudit.includes('Cross-Site Scripting (XSS)'),
+        true,
+        'docs/SECURITY_AUDIT.md debe conservar el baseline XSS'
+    );
+    assert.equal(
+        securityAudit.includes('Cross-Site Request Forgery (CSRF)'),
+        true,
+        'docs/SECURITY_AUDIT.md debe conservar el baseline CSRF'
+    );
+
+    assert.equal(
+        stabilityPlan.includes('nightly-stability.yml'),
+        true,
+        'docs/STABILITY_14_DAYS_PLAN.md debe documentar la nightly'
+    );
+    assert.equal(
+        stabilityPlan.includes('gate:prod:fast'),
+        true,
+        'docs/STABILITY_14_DAYS_PLAN.md debe conservar el fast lane'
+    );
 });
 
 test('operations index agrupa comandos canonicos de web, admin, prod y gobernanza', () => {
@@ -148,6 +438,12 @@ test('historicos de raiz y one-offs archivados salen del front door del repo', (
         'TODOS_LOS_PENDIENTES.md',
         'LISTA_PENDIENTES_ULTRADETALLADA.md',
         'CERRAR_ISSUES_122_130.md',
+        'PLAN_MAESTRO_ESTRATEGICO.md',
+        'PLAN_OPTIMIZACION.md',
+        'CONSOLIDADO_ESTADO_ACTUAL.md',
+        'TEST_COVERAGE_REPORT.md',
+        'CHANGELOG.md',
+        'ISSUES.md',
     ];
     const archivedScripts = [
         'analysis_report.ps1',
@@ -365,7 +661,7 @@ test('legacy admin css sale de la raiz activa y el bundle de deploy usa estilos 
     const deployBundle = readRepoFile(
         'scripts/ops/deploy/PREPARAR-PAQUETE-DESPLIEGUE.ps1'
     );
-    const deployDoc = readRepoFile('DESPLIEGUE-PIELARMONIA.md');
+    const deployDoc = readRepoFile('docs/DEPLOY_HOSTING_PLAYBOOK.md');
 
     assert.equal(
         deployBundle.includes("'admin-v3.css'"),
@@ -385,12 +681,12 @@ test('legacy admin css sale de la raiz activa y el bundle de deploy usa estilos 
     assert.equal(
         deployDoc.includes('- `admin-v3.css`'),
         true,
-        'DESPLIEGUE-PIELARMONIA.md debe listar admin-v3.css'
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe listar admin-v3.css'
     );
     assert.equal(
         deployDoc.includes('- `queue-ops.css`'),
         true,
-        'DESPLIEGUE-PIELARMONIA.md debe listar queue-ops.css'
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe listar queue-ops.css'
     );
 });
 
@@ -577,7 +873,7 @@ test('preboot admin y residuos v2 salen del carril activo', () => {
 
 test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan TEST_BASE_URL', () => {
     const readme = readRepoFile('README.md');
-    const serverLocal = readRepoFile('SERVIDOR-LOCAL.md');
+    const serverLocal = readRepoFile('docs/LOCAL_SERVER.md');
     const operationsIndex = readRepoFile('docs/OPERATIONS_INDEX.md');
     const pentestP0 = readRepoFile('tests/pentest_p0.php');
     const penetration = readRepoFile('tests/penetration_test.php');
@@ -593,6 +889,16 @@ test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan 
         'README.md debe apuntar el admin al host local canonico'
     );
     assert.equal(
+        readme.includes('http://127.0.0.1:8011/es/'),
+        true,
+        'README.md debe documentar la shell publica ES'
+    );
+    assert.equal(
+        readme.includes('http://127.0.0.1:8011/en/'),
+        true,
+        'README.md debe documentar la shell publica EN'
+    );
+    assert.equal(
         readme.includes('TEST_LOCAL_SERVER_PORT'),
         true,
         'README.md debe documentar TEST_LOCAL_SERVER_PORT'
@@ -600,17 +906,42 @@ test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan 
     assert.equal(
         serverLocal.includes('php -S 127.0.0.1:8011 -t .'),
         true,
-        'SERVIDOR-LOCAL.md debe usar 127.0.0.1:8011 como arranque canonico'
+        'docs/LOCAL_SERVER.md debe usar 127.0.0.1:8011 como arranque canonico'
     );
     assert.equal(
         serverLocal.includes('TEST_BASE_URL'),
         true,
-        'SERVIDOR-LOCAL.md debe documentar TEST_BASE_URL'
+        'docs/LOCAL_SERVER.md debe documentar TEST_BASE_URL'
+    );
+    assert.equal(
+        serverLocal.includes('http://127.0.0.1:8011/es/'),
+        true,
+        'docs/LOCAL_SERVER.md debe apuntar a la shell publica ES'
+    );
+    assert.equal(
+        serverLocal.includes('http://127.0.0.1:8011/en/'),
+        true,
+        'docs/LOCAL_SERVER.md debe apuntar a la shell publica EN'
+    );
+    assert.doesNotMatch(
+        serverLocal,
+        /-\s+Sitio:\s*`http:\/\/127\.0\.0\.1:8011\/index\.html`/,
+        'docs/LOCAL_SERVER.md no debe presentar /index.html como entrypoint local'
+    );
+    assert.equal(
+        serverLocal.includes('no es la entrada canonica'),
+        true,
+        'docs/LOCAL_SERVER.md debe aclarar que /index.html no es la entrada local canonica'
     );
     assert.equal(
         operationsIndex.includes('http://127.0.0.1:8011'),
         true,
         'OPERATIONS_INDEX debe fijar el host local canonico'
+    );
+    assert.equal(
+        operationsIndex.includes('/es/'),
+        true,
+        'OPERATIONS_INDEX debe aclarar la shell publica ES'
     );
     assert.equal(
         pentestP0.includes(
@@ -649,7 +980,7 @@ test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan 
     assert.doesNotMatch(
         serverLocal,
         /127\.0\.0\.1:8000|localhost:8000/,
-        'SERVIDOR-LOCAL.md no debe seguir apuntando a 8000'
+        'docs/LOCAL_SERVER.md no debe seguir apuntando a 8000'
     );
 });
 
@@ -755,7 +1086,7 @@ test('docs activas distinguen desarrollo local canonico del verify live del depl
 
 test('tooling local de performance usa el host canonico y expone benchmark reutilizable', () => {
     const readme = readRepoFile('README.md');
-    const serverLocal = readRepoFile('SERVIDOR-LOCAL.md');
+    const serverLocal = readRepoFile('docs/LOCAL_SERVER.md');
     const operationsIndex = readRepoFile('docs/OPERATIONS_INDEX.md');
     const runbooks = readRepoFile('docs/RUNBOOKS.md');
     const packageJson = readRepoFile('package.json');
@@ -777,7 +1108,7 @@ test('tooling local de performance usa el host canonico y expone benchmark reuti
     assert.equal(
         serverLocal.includes('npm run benchmark:local'),
         true,
-        'SERVIDOR-LOCAL.md debe exponer npm run benchmark:local'
+        'docs/LOCAL_SERVER.md debe exponer npm run benchmark:local'
     );
     assert.equal(
         operationsIndex.includes('npm run benchmark:local'),
@@ -838,7 +1169,7 @@ test('lighthouse local y docs operativas distinguen QA canonico frente a puertos
     const premiumLhci = readRepoFile('lighthouserc.premium.json');
     const premiumRunner = readRepoFile('bin/run-lighthouse-premium.js');
     const monitoring = readRepoFile('docs/MONITORING_SETUP.md');
-    const deployGuide = readRepoFile('DESPLIEGUE-PIELARMONIA.md');
+    const deployGuide = readRepoFile('docs/DEPLOY_HOSTING_PLAYBOOK.md');
     const operationsIndex = readRepoFile('docs/OPERATIONS_INDEX.md');
 
     assert.equal(
@@ -889,7 +1220,7 @@ test('lighthouse local y docs operativas distinguen QA canonico frente a puertos
             '`localhost:8080` aqui pertenece solo al stack Docker'
         ),
         true,
-        'DESPLIEGUE-PIELARMONIA debe aclarar que 8080 corresponde solo al stack Docker'
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe aclarar que 8080 corresponde solo al stack Docker'
     );
     assert.equal(
         operationsIndex.includes('LIGHTHOUSE_LOCAL_SERVER_PORT'),

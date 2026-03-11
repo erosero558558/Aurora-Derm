@@ -100,6 +100,23 @@ test('bundle deploy conserva wrappers root y tooling canonico ejecutable', (t) =
     const zipPath = path.join(outputRoot, `${stageName}.zip`);
 
     const requiredPaths = [
+        path.join('es', 'index.html'),
+        path.join('en', 'index.html'),
+        '_astro',
+        path.join('fonts', 'plus-jakarta-sans.woff2'),
+        path.join('fonts', 'fraunces.woff2'),
+        path.join('images', 'optimized'),
+        path.join('images', 'icon-192.png'),
+        path.join('images', 'icon-512.png'),
+        path.join('content', 'index.json'),
+        path.join('content', 'es.json'),
+        path.join('content', 'en.json'),
+        path.join('js', 'public-v6-shell.js'),
+        path.join('js', 'admin-preboot-shortcuts.js'),
+        path.join('js', 'admin-runtime.js'),
+        path.join('js', 'monitoring-loader.js'),
+        'sw.js',
+        'manifest.json',
         'SMOKE-PRODUCCION.ps1',
         'VERIFICAR-DESPLIEGUE.ps1',
         'BENCH-API-PRODUCCION.ps1',
@@ -107,6 +124,14 @@ test('bundle deploy conserva wrappers root y tooling canonico ejecutable', (t) =
         'CONFIGURAR-TELEGRAM-WEBHOOK.ps1',
         'admin-v3.css',
         'queue-ops.css',
+        'operador-turnos.html',
+        'kiosco-turnos.html',
+        'sala-turnos.html',
+        'queue-kiosk.css',
+        'queue-display.css',
+        path.join('js', 'queue-operator.js'),
+        path.join('js', 'queue-kiosk.js'),
+        path.join('js', 'queue-display.js'),
         path.join('scripts', 'ops', 'prod', 'SMOKE-PRODUCCION.ps1'),
         path.join('scripts', 'ops', 'prod', 'VERIFICAR-DESPLIEGUE.ps1'),
         path.join('scripts', 'ops', 'prod', 'BENCH-API-PRODUCCION.ps1'),
@@ -126,10 +151,25 @@ test('bundle deploy conserva wrappers root y tooling canonico ejecutable', (t) =
         );
     }
 
+    const adminChunksDir = path.join(stageRoot, 'js', 'admin-chunks');
+    const adminChunkEntries = fs.existsSync(adminChunksDir)
+        ? fs.readdirSync(adminChunksDir)
+        : [];
+    assert.equal(
+        adminChunkEntries.some((entry) => /^index-.*\.js$/.test(entry)),
+        true,
+        'el bundle debe incluir el chunk activo del admin en js/admin-chunks/'
+    );
+
     assert.equal(
         fs.existsSync(path.join(stageRoot, 'admin.css')),
         false,
         'el bundle no debe reintroducir admin.css legacy'
+    );
+    assert.equal(
+        fs.existsSync(path.join(stageRoot, 'index.html')),
+        false,
+        'el bundle no debe exigir index.html raiz para la shell publica V6'
     );
     assert.equal(fs.existsSync(zipPath), true, 'falta zip final del bundle');
 
@@ -146,5 +186,20 @@ test('bundle deploy conserva wrappers root y tooling canonico ejecutable', (t) =
         manifestRaw.includes('bin/powershell/Common.Http.ps1'),
         true,
         'manifest debe incluir dependencias compartidas de PowerShell'
+    );
+    assert.equal(
+        manifestRaw.includes('es/index.html'),
+        true,
+        'manifest debe incluir la shell publica ES'
+    );
+    assert.equal(
+        manifestRaw.includes('js/public-v6-shell.js'),
+        true,
+        'manifest debe incluir el runtime publico V6'
+    );
+    assert.equal(
+        manifestRaw.includes('js/admin-chunks/'),
+        true,
+        'manifest debe incluir los chunks activos del admin'
     );
 });

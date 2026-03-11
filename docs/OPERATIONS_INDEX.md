@@ -6,8 +6,12 @@ El material historico y los one-offs desplazados desde la raiz viven en
 `docs/archive/root-history/` y `scripts/archive/`.
 Los scripts operativos activos viven en `scripts/ops/**`; los `.ps1` de raiz
 se conservan como wrappers compatibles.
+La frontera de markdowns que todavia permanecen en raiz se documenta en
+`docs/ROOT_SURFACES.md`.
 
 Host local canonico para validaciones con backend: `http://127.0.0.1:8011`.
+La shell publica vive bajo `/`, `/es/` y `/en/`; no usar `/index.html` como
+entrypoint local con `php -S`.
 Overrides:
 
 - `TEST_LOCAL_SERVER_PORT` para mover el puerto local de Playwright.
@@ -19,9 +23,19 @@ Overrides:
 
 - Publico V6: `docs/public-v6-canonical-source.md`
 - Admin sony_v3: `docs/ADMIN-UI-ROLLOUT.md`
+- Desarrollo local con backend: `docs/LOCAL_SERVER.md`
+- Contribucion y PR flow: `docs/CONTRIBUTING.md`
 - LeadOps/OpenClaw: `docs/LEADOPS_OPENCLAW.md`
 - Deploy y post-deploy: `docs/DEPLOYMENT.md`
+- Deploy hosting detallado: `docs/DEPLOY_HOSTING_PLAYBOOK.md`
+- Deploy por GitHub Actions: `docs/GITHUB_ACTIONS_DEPLOY.md`
+- Checklist operativa de produccion: `docs/PRODUCTION_TEST_CHECKLIST.md`
+- Cutover de agenda Google: `docs/CALENDAR_CUTOVER.md`
+- Estado operativo: `docs/PRODUCT_OPERATIONAL_STATUS.md`
+- Plan de estabilidad: `docs/STABILITY_14_DAYS_PLAN.md`
+- Auditoria de seguridad: `docs/SECURITY_AUDIT.md`
 - Runbooks operativos: `docs/RUNBOOKS.md`
+- Frontera de markdowns en raiz: `docs/ROOT_SURFACES.md`
 - Gobernanza de agentes: `AGENTS.md`
 
 ## Higiene local
