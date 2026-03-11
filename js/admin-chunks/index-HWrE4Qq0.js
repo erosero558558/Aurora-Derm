@@ -229,10 +229,10 @@ async function k(e, t = {}) {
         throw new Error(s.error || s.message || `HTTP ${i.status}`);
     return s;
 }
-function _(e) {
+function $(e) {
     q = String(e || '');
 }
-async function $(e, t = {}) {
+async function _(e, t = {}) {
     return k(`/api.php?resource=${encodeURIComponent(e)}`, t);
 }
 async function C(e, t = {}) {
@@ -268,7 +268,7 @@ function T(e) {
     return `<p class="admin-nav-group__label">${e}</p>`;
 }
 function M() {
-    return `\n        <div class="admin-v3-shell">\n            \n        <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n            <header class="sidebar-header">\n                <div class="admin-v3-sidebar__brand">\n                    <strong>Piel en Armonia</strong>\n                    <small>Admin sony_v3</small>\n                </div>\n                <div class="toolbar-group">\n                    <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${w('menu')}</button>\n                    <button type="button" id="adminMenuClose">Cerrar</button>\n                </div>\n            </header>\n            <nav class="sidebar-nav" id="adminSidebarNav">\n                \n        <div class="admin-nav-group" id="adminPrimaryNav">\n            ${T('Flujo diario')}\n            ${A('dashboard', 'Inicio', 'dashboard', !0)}\n            ${A('appointments', 'Agenda', 'appointments')}\n            ${A('callbacks', 'Pendientes', 'callbacks')}\n            ${A('availability', 'Horarios', 'availability')}\n        </div>\n        <div class="admin-nav-group admin-nav-group-secondary" id="adminSecondaryNav">\n            ${T('Mas herramientas')}\n            ${A('reviews', 'Resenas', 'reviews')}\n            ${A('queue', 'Turnero avanzado', 'queue')}\n        </div>\n    \n            </nav>\n            <footer class="sidebar-footer">\n                <button type="button" class="logout-btn" data-action="logout">${w('logout')}<span>Cerrar sesion</span></button>\n            </footer>\n        </aside>\n        <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n    \n            \n        <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n            \n        <header class="admin-v3-topbar">\n            <div class="admin-v3-topbar__copy">\n                <p class="sony-kicker">Panel operativo</p>\n                <h2 id="pageTitle">Inicio</h2>\n            </div>\n            <div class="admin-v3-topbar__actions">\n                <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${w('menu')}<span>Menu</span></button>\n                <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Acciones</button>\n                <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                ${L('admin-theme-switcher-header')}\n            </div>\n        </header>\n    \n            \n        <section class="admin-v3-context-strip" id="adminProductivityStrip">\n            <div class="admin-v3-context-copy" data-admin-section-hero>\n                <p class="sony-kicker" id="adminSectionEyebrow">Recepcion/Admin</p>\n                <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                <p id="adminContextSummary">Trabaja con agenda, pendientes y turnero sin mezclar herramientas avanzadas en el primer paso.</p>\n                <div id="adminContextActions" class="sony-context-actions"></div>\n            </div>\n            <div class="admin-v3-status-rail" data-admin-priority-rail>\n                <article class="sony-status-tile">\n                    <span>Push</span>\n                    <strong id="pushStatusIndicator">Inicializando</strong>\n                    <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                </article>\n                <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                    <span>Sesion</span>\n                    <strong id="adminSessionState">No autenticada</strong>\n                    <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                </article>\n                <article class="sony-status-tile">\n                    <span>Sincronizacion</span>\n                    <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                    <small id="adminSyncState">Listo para primera sincronizacion</small>\n                </article>\n            </div>\n        </section>\n    \n            \n        \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                \n        <article class="sony-panel dashboard-hero-panel">\n            <div class="dashboard-hero-copy">\n                <p class="sony-kicker">Recepcion/Admin</p>\n                <h3>Inicio operativo</h3>\n                <p id="dashboardHeroSummary">\n                    Agenda, pendientes y horarios en un solo frente simple para el equipo.\n                </p>\n            </div>\n            <div class="dashboard-hero-actions">\n                <button type="button" data-action="context-open-appointments-overview">Ver agenda</button>\n                <button type="button" data-action="context-open-callbacks-pending">Revisar pendientes</button>\n            </div>\n            <div class="dashboard-home-grid">\n                <article class="dashboard-home-card" id="opsTodaySummaryCard">\n                    <span>Pacientes hoy</span>\n                    <strong id="opsTodayCount">0</strong>\n                    <small id="opsTodayMeta">Sin agenda inmediata</small>\n                    <button type="button" data-action="context-open-appointments-overview">Abrir agenda</button>\n                </article>\n                <article class="dashboard-home-card" id="opsPendingSummaryCard">\n                    <span>Pendientes</span>\n                    <strong id="opsPendingCount">0</strong>\n                    <small id="opsPendingMeta">Sin seguimiento pendiente</small>\n                    <button type="button" data-action="context-open-callbacks-pending">Ver pendientes</button>\n                </article>\n                <article class="dashboard-home-card" id="opsAvailabilitySummaryCard">\n                    <span>Horarios</span>\n                    <strong id="opsAvailabilityCount">0</strong>\n                    <small id="opsAvailabilityMeta">Sin horarios publicados</small>\n                    <button type="button" data-action="context-open-availability">Abrir horarios</button>\n                </article>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel dashboard-signal-panel" id="opsQueueLaunchCard">\n            <header>\n                <div>\n                    <h3>Turnero de sala</h3>\n                    <small id="operationRefreshSignal">App separada para recepcion y consultorio</small>\n                </div>\n                <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n            </header>\n            <p id="dashboardLiveMeta">\n                Abre el turnero solo cuando vayas a llamar pacientes.\n            </p>\n            <div class="dashboard-signal-stack">\n                <article class="dashboard-signal-card">\n                    <span>Estado</span>\n                    <strong id="opsQueueStatus">Listo para abrir</strong>\n                    <small id="opsQueueMeta">Sin cola activa</small>\n                </article>\n                <article class="dashboard-signal-card">\n                    <span>Mas herramientas</span>\n                    <strong id="dashboardQueueHealth">Turnero avanzado disponible</strong>\n                    <small id="dashboardFlowStatus">Resenas, diagnostico y cola completa siguen fuera del primer paso.</small>\n                </article>\n            </div>\n            <button\n                type="button"\n                id="openOperatorAppBtn"\n                class="dashboard-launch-btn"\n                data-action="open-operator-app"\n            >\n                Abrir turnero\n            </button>\n            <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-grid sony-grid-two">\n            <article class="sony-panel dashboard-card-operations">\n                <header>\n                    <h3>Siguientes pasos</h3>\n                    <small id="operationDeckMeta">Atajos utiles para el dia</small>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                    <div><span>Llamadas</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                    <div><span>Hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                </div>\n                <p id="operationQueueHealth">Sin pendientes urgentes.</p>\n                <div id="operationActionList" class="operations-action-list"></div>\n            </article>\n\n            <article class="sony-panel" id="funnelSummary">\n                <header>\n                    <h3>Mas herramientas</h3>\n                    <small>Analitica y diagnostico fuera del flujo principal</small>\n                </header>\n                <p class="dashboard-secondary-summary">\n                    Resenas, embudo y turnero avanzado siguen disponibles, pero ya no compiten con la operacion diaria.\n                </p>\n                <div class="dashboard-secondary-links">\n                    <a href="#reviews" class="dashboard-secondary-link" data-section="reviews">Abrir resenas</a>\n                    <a href="#queue" class="dashboard-secondary-link" data-section="queue">Turnero avanzado</a>\n                </div>\n                <div class="sony-panel-stats dashboard-secondary-metrics">\n                    <div><span>Reservas</span><strong id="funnelViewBooking">0</strong></div>\n                    <div><span>Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                    <div><span>Confirmadas</span><strong id="funnelBookingConfirmed">0</strong></div>\n                    <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                </div>\n            </article>\n        </div>\n    \n            \n        <details class="sony-panel dashboard-analytics-disclosure" id="dashboardAdvancedAnalytics">\n            <summary>\n                <span>Analitica avanzada</span>\n                <small>Embudo y detalle operativo secundario</small>\n            </summary>\n            <div class="sony-grid sony-grid-three dashboard-analytics-grid">\n                <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n            </div>\n        </details>\n    \n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n    \n        \n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                \n        <article class="sony-panel appointments-command-deck">\n            <header class="section-header appointments-command-head">\n                <div>\n                    <p class="sony-kicker">Agenda clinica</p>\n                    <h3>Citas</h3>\n                    <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                </div>\n                <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n            </header>\n            <div class="appointments-ops-grid">\n                <article class="appointments-ops-card tone-warning">\n                    <span>Transferencias</span>\n                    <strong id="appointmentsOpsPendingTransfer">0</strong>\n                    <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                </article>\n                <article class="appointments-ops-card tone-neutral">\n                    <span>Proximas 48h</span>\n                    <strong id="appointmentsOpsUpcomingCount">0</strong>\n                    <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                </article>\n                <article class="appointments-ops-card tone-danger">\n                    <span>No show</span>\n                    <strong id="appointmentsOpsNoShowCount">0</strong>\n                    <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                </article>\n                <article class="appointments-ops-card tone-success">\n                    <span>Hoy</span>\n                    <strong id="appointmentsOpsTodayCount">0</strong>\n                    <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                </article>\n            </div>\n            <div class="appointments-command-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel appointments-focus-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                    <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                    <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                </div>\n            </header>\n            <div class="appointments-focus-grid">\n                <div class="appointments-focus-stat">\n                    <span>Siguiente ventana</span>\n                    <strong id="appointmentsFocusWindow">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Pago</span>\n                    <strong id="appointmentsFocusPayment">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Estado</span>\n                    <strong id="appointmentsFocusStatus">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Contacto</span>\n                    <strong id="appointmentsFocusContact">-</strong>\n                </div>\n            </div>\n            <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n            <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel appointments-workbench">\n            <header class="section-header appointments-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                </div>\n                <div class="toolbar-group" id="appointmentsDensityToggle">\n                    <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                    <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                </div>\n            </div>\n            <div class="toolbar-row appointments-toolbar">\n                <label>\n                    <span class="sr-only">Filtro</span>\n                    <select id="appointmentFilter">\n                        <option value="all">Todas</option>\n                        <option value="pending_transfer">Transferencias por validar</option>\n                        <option value="upcoming_48h">Proximas 48h</option>\n                        <option value="no_show">No show</option>\n                        <option value="triage_attention">Triage accionable</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden</span>\n                    <select id="appointmentSort">\n                        <option value="datetime_desc">Fecha reciente</option>\n                        <option value="datetime_asc">Fecha ascendente</option>\n                        <option value="patient_az">Paciente (A-Z)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                <p id="appointmentsToolbarState">Sin filtros activos</p>\n            </div>\n\n            <div class="table-scroll appointments-table-shell">\n                <table id="appointmentsTable" class="sony-table">\n                    <thead>\n                        <tr>\n                            <th>Paciente</th>\n                            <th>Servicio</th>\n                            <th>Fecha</th>\n                            <th>Pago</th>\n                            <th>Estado</th>\n                            <th>Acciones</th>\n                        </tr>\n                    </thead>\n                    <tbody id="appointmentsTableBody"></tbody>\n                </table>\n            </div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                \n        <article class="sony-panel callbacks-command-deck">\n            <header class="section-header callbacks-command-head">\n                <div>\n                    <p class="sony-kicker">SLA telefonico</p>\n                    <h3>Callbacks</h3>\n                    <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                </div>\n                <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n            </header>\n            <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hot</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n            </div>\n            <div class="callbacks-command-actions">\n                <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel callbacks-next-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                    <h3 id="callbacksOpsNext">Sin telefono</h3>\n                    <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                </div>\n                <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n            </header>\n            <div class="callbacks-next-grid">\n                <div class="callbacks-next-stat">\n                    <span>Espera</span>\n                    <strong id="callbacksNextWait">0 min</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Servicio</span>\n                    <strong id="callbacksNextPreference">-</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Accion</span>\n                    <strong id="callbacksNextState">Pendiente</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Estado IA</span>\n                    <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                </div>\n            </div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel callbacks-workbench">\n            <header class="section-header callbacks-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p>Ordena por prioridad comercial, genera borradores IA y registra el outcome sin salir del panel.</p>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                </div>\n            </div>\n            <div class="toolbar-row callbacks-toolbar">\n                <label>\n                    <span class="sr-only">Filtro callbacks</span>\n                    <select id="callbackFilter">\n                        <option value="all">Todos</option>\n                        <option value="pending">Pendientes</option>\n                        <option value="contacted">Contactados</option>\n                        <option value="today">Hoy</option>\n                        <option value="sla_urgent">Urgentes SLA</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden callbacks</span>\n                    <select id="callbackSort">\n                        <option value="priority_desc">Prioridad comercial</option>\n                        <option value="recent_desc">Mas recientes</option>\n                        <option value="waiting_desc">Mayor espera (SLA)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchCallbacks" placeholder="Buscar telefono o servicio" />\n                <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="callbacksToolbarMeta">Mostrando 0</p>\n                <p id="callbacksToolbarState">Sin filtros activos</p>\n            </div>\n            <div id="callbacksGrid" class="callbacks-grid"></div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                \n        <header class="section-header availability-header">\n            <div class="availability-calendar">\n                <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                <div class="availability-badges">\n                    <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                    <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                    <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                </div>\n            </div>\n            <div class="toolbar-group calendar-header">\n                <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                <strong id="calendarMonth"></strong>\n                <button type="button" data-action="change-month" data-delta="1">Next</button>\n                <button type="button" data-action="availability-today">Hoy</button>\n                <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n            </div>\n        </header>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n            <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n            <p id="availabilitySyncStatus">Sincronizado</p>\n        </div>\n    \n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n                \n        <div id="availabilityDetailGrid" class="availability-detail-grid">\n            <article class="sony-panel soft">\n                <h4 id="selectedDate">-</h4>\n                <div id="timeSlotsList" class="time-slots-list"></div>\n            </article>\n\n            <article class="sony-panel soft">\n                <div id="availabilityQuickSlotPresets" class="slot-presets">\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                </div>\n                <div id="addSlotForm" class="add-slot-form">\n                    <input type="time" id="newSlotTime" />\n                    <button type="button" data-action="add-time-slot">Agregar</button>\n                </div>\n                <div id="availabilityDayActions" class="toolbar-group wrap">\n                    <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                    <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                    <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                    <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                    <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                    <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                </div>\n                <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                <div class="toolbar-group">\n                    <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                    <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                </div>\n            </article>\n        </div>\n    \n            </div>\n        </section>\n    \n        \n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                \n        <header class="section-header">\n            <div>\n                <h3>Turnero Sala</h3>\n                <p>\n                    Apps operativas, cola en vivo y flujo simple para recepción,\n                    kiosco y TV.\n                </p>\n            </div>\n            <div class="queue-admin-header-actions">\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                <button type="button" data-action="queue-refresh-state">Refrescar</button>\n            </div>\n        </header>\n    \n                \n        <div id="queueAppsHub" class="queue-apps-hub sony-panel soft">\n            <div class="queue-apps-hub__header">\n                <div>\n                    <h4>Apps operativas</h4>\n                    <p>\n                        Instala Operador, Kiosco y Sala TV desde el mismo centro de\n                        control para separar cada equipo por uso.\n                    </p>\n                </div>\n                <div class="queue-apps-hub__header-meta">\n                    <span id="queueAppsPlatformChip" class="queue-apps-platform-chip">\n                        Plataforma detectada\n                    </span>\n                    <span id="queueAppsRefreshShieldChip" class="queue-apps-refresh-shield-chip" data-state="idle">\n                        Refresh sin bloqueo\n                    </span>\n                </div>\n            </div>\n            <div id="queueFocusMode" class="queue-focus-mode" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueNumpadGuide" class="queue-numpad-guide" data-focus-match="opening operations incidents"></div>\n            <div id="queueConsultorioBoard" class="queue-consultorio-board" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueAttentionDeck" class="queue-attention-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueResolutionDeck" class="queue-resolution-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketLookup" class="queue-ticket-lookup" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketRoute" class="queue-ticket-route" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketSimulation" class="queue-ticket-simulation" data-focus-match="operations incidents closing"></div>\n            <div id="queueNextTurns" class="queue-next-turns" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueMasterSequence" class="queue-master-sequence" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueBlockers" class="queue-blockers" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueWaitRadar" class="queue-wait-radar" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueLoadBalance" class="queue-load-balance" data-focus-match="opening operations incidents closing"></div>\n            <div id="queuePriorityLane" class="queue-priority-lane" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueQuickTrays" class="queue-quick-trays" data-focus-match="operations incidents closing"></div>\n            <div id="queueActiveTray" class="queue-active-tray" data-focus-match="operations incidents closing"></div>\n            <div id="queueTrayBurst" class="queue-tray-burst" data-focus-match="operations incidents closing"></div>\n            <div id="queueDispatchDeck" class="queue-dispatch-deck" data-focus-match="opening operations incidents"></div>\n            <div id="queueQuickConsole" class="queue-quick-console" data-focus-match="opening operations incidents closing"></div>\n            <div id="queuePlaybook" class="queue-playbook" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueOpsPilot" class="queue-ops-pilot" data-focus-match="opening operations incidents"></div>\n            <div id="queueAppDownloadsCards" class="queue-apps-grid" data-focus-match="opening operations"></div>\n            <div id="queueSurfaceTelemetry" class="queue-surface-telemetry" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueOpsAlerts" class="queue-ops-alerts" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueOpeningChecklist" class="queue-opening-checklist" data-focus-match="opening"></div>\n            <div id="queueShiftHandoff" class="queue-shift-handoff" data-focus-match="closing"></div>\n            <div id="queueOpsLog" class="queue-ops-log" data-focus-match="operations incidents closing"></div>\n            <div id="queueContingencyDeck" class="queue-contingency-deck" data-focus-match="incidents operations"></div>\n            <div id="queueInstallConfigurator" class="queue-install-configurator" data-focus-match="opening operations"></div>\n        </div>\n    \n                \n        <div class="sony-grid sony-grid-kpi slim">\n            <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n        </div>\n    \n                \n        <div id="queueStationControl" class="toolbar-row">\n            <span id="queueStationBadge">Estacion: libre</span>\n            <span id="queueStationModeBadge">Modo: free</span>\n            <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n            <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n            <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n            <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n            <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n            <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n            <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n            <button type="button" data-action="queue-stop-practice">Salir practica</button>\n            <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n            <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n        </div>\n    \n                \n        <div id="queueShortcutPanel" hidden>\n            <p>Numpad Enter llama siguiente.</p>\n            <p>Numpad Decimal prepara completar.</p>\n            <p>Numpad Subtract prepara no_show.</p>\n            <p>Numpad Add re-llama el ticket activo.</p>\n        </div>\n    \n                \n        <div id="queueTriageToolbar" class="toolbar-row">\n            <button type="button" data-queue-filter="all">Todo</button>\n            <button type="button" data-queue-filter="called">Llamados</button>\n            <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n            <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n            <button type="button" data-action="queue-clear-search">Limpiar</button>\n            <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n            <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n            <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n        </div>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="queueTriageSummary">Sin riesgo</p>\n            <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n        </div>\n    \n                \n        <ul id="queueNextAdminList" class="sony-list"></ul>\n\n        <div class="table-scroll">\n            <table class="sony-table queue-admin-table">\n                <thead>\n                    <tr>\n                        <th>Sel</th>\n                        <th>Ticket</th>\n                        <th>Tipo</th>\n                        <th>Estado</th>\n                        <th>Consultorio</th>\n                        <th>Espera</th>\n                        <th>Acciones</th>\n                    </tr>\n                </thead>\n                <tbody id="queueTableBody"></tbody>\n            </table>\n        </div>\n\n        <div id="queueActivityPanel" class="sony-panel soft">\n            <h4>Actividad</h4>\n            <ul id="queueActivityList" class="sony-list"></ul>\n        </div>\n    \n            </div>\n\n            \n        <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n            <form method="dialog">\n                <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                <div class="toolbar-group">\n                    <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                    <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                </div>\n            </form>\n        </dialog>\n    \n        </section>\n    \n    \n        </main>\n    \n            \n        <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n            <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n            <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                <div class="admin-command-dialog__head">\n                    <div>\n                        <p class="sony-kicker">Acciones rapidas</p>\n                        <h3 id="adminCommandPaletteTitle">Ir a una tarea</h3>\n                    </div>\n                    <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                </div>\n                <div class="admin-command-box">\n                    <input id="adminQuickCommand" type="text" placeholder="Ej. agenda, pendientes, horarios, turnero" />\n                    <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                </div>\n                <div class="admin-command-dialog__hints">\n                    <span>Ctrl+K abre esta paleta</span>\n                    <span>/ enfoca la busqueda de la seccion activa</span>\n                </div>\n            </div>\n        </div>\n    \n        </div>\n    `;
+    return `\n        <div class="admin-v3-shell">\n            \n        <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n            <header class="sidebar-header">\n                <div class="admin-v3-sidebar__brand">\n                    <strong>Piel en Armonia</strong>\n                    <small>Admin sony_v3</small>\n                </div>\n                <div class="toolbar-group">\n                    <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${w('menu')}</button>\n                    <button type="button" id="adminMenuClose">Cerrar</button>\n                </div>\n            </header>\n            <nav class="sidebar-nav" id="adminSidebarNav">\n                \n        <div class="admin-nav-group" id="adminPrimaryNav">\n            ${T('Flujo diario')}\n            ${A('dashboard', 'Inicio', 'dashboard', !0)}\n            ${A('appointments', 'Agenda', 'appointments')}\n            ${A('callbacks', 'Pendientes', 'callbacks')}\n            ${A('availability', 'Horarios', 'availability')}\n        </div>\n        <div class="admin-nav-group admin-nav-group-secondary" id="adminSecondaryNav">\n            ${T('Mas herramientas')}\n            ${A('reviews', 'Resenas', 'reviews')}\n            ${A('queue', 'Turnero avanzado', 'queue')}\n        </div>\n    \n            </nav>\n            <footer class="sidebar-footer">\n                <button type="button" class="logout-btn" data-action="logout">${w('logout')}<span>Cerrar sesion</span></button>\n            </footer>\n        </aside>\n        <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n    \n            \n        <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n            \n        <header class="admin-v3-topbar">\n            <div class="admin-v3-topbar__copy">\n                <p class="sony-kicker">Panel operativo</p>\n                <h2 id="pageTitle">Inicio</h2>\n            </div>\n            <div class="admin-v3-topbar__actions">\n                <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${w('menu')}<span>Menu</span></button>\n                <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Acciones</button>\n                <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                ${L('admin-theme-switcher-header')}\n            </div>\n        </header>\n    \n            \n        <section class="admin-v3-context-strip" id="adminProductivityStrip">\n            <div class="admin-v3-context-copy" data-admin-section-hero>\n                <p class="sony-kicker" id="adminSectionEyebrow">Recepcion/Admin</p>\n                <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                <p id="adminContextSummary">Trabaja con agenda, pendientes y turnero sin mezclar herramientas avanzadas en el primer paso.</p>\n                <div id="adminContextActions" class="sony-context-actions"></div>\n            </div>\n            <div class="admin-v3-status-rail" data-admin-priority-rail>\n                <article class="sony-status-tile">\n                    <span>Push</span>\n                    <strong id="pushStatusIndicator">Inicializando</strong>\n                    <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                </article>\n                <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                    <span>Sesion</span>\n                    <strong id="adminSessionState">No autenticada</strong>\n                    <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                </article>\n                <article class="sony-status-tile">\n                    <span>Sincronizacion</span>\n                    <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                    <small id="adminSyncState">Listo para primera sincronizacion</small>\n                </article>\n            </div>\n        </section>\n    \n            \n        \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                \n        <article class="sony-panel dashboard-hero-panel">\n            <div class="dashboard-hero-copy">\n                <p class="sony-kicker">Recepcion/Admin</p>\n                <h3>Inicio operativo</h3>\n                <p id="dashboardHeroSummary">\n                    Agenda, pendientes y horarios en un solo frente simple para el equipo.\n                </p>\n            </div>\n            <div class="dashboard-hero-actions">\n                <button type="button" data-action="context-open-appointments-overview">Ver agenda</button>\n                <button type="button" data-action="context-open-callbacks-pending">Revisar pendientes</button>\n            </div>\n            <div class="dashboard-home-grid">\n                <article class="dashboard-home-card" id="opsTodaySummaryCard">\n                    <span>Pacientes hoy</span>\n                    <strong id="opsTodayCount">0</strong>\n                    <small id="opsTodayMeta">Sin agenda inmediata</small>\n                    <button type="button" data-action="context-open-appointments-overview">Abrir agenda</button>\n                </article>\n                <article class="dashboard-home-card" id="opsPendingSummaryCard">\n                    <span>Pendientes</span>\n                    <strong id="opsPendingCount">0</strong>\n                    <small id="opsPendingMeta">Sin seguimiento pendiente</small>\n                    <button type="button" data-action="context-open-callbacks-pending">Ver pendientes</button>\n                </article>\n                <article class="dashboard-home-card" id="opsAvailabilitySummaryCard">\n                    <span>Horarios</span>\n                    <strong id="opsAvailabilityCount">0</strong>\n                    <small id="opsAvailabilityMeta">Sin horarios publicados</small>\n                    <button type="button" data-action="context-open-availability">Abrir horarios</button>\n                </article>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel dashboard-signal-panel" id="opsQueueLaunchCard">\n            <header>\n                <div>\n                    <h3>Turnero de sala</h3>\n                    <small id="operationRefreshSignal">App separada para recepcion y consultorio</small>\n                </div>\n                <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n            </header>\n            <p id="dashboardLiveMeta">\n                Abre el turnero solo cuando vayas a llamar pacientes.\n            </p>\n            <div class="dashboard-signal-stack">\n                <article class="dashboard-signal-card">\n                    <span>Estado</span>\n                    <strong id="opsQueueStatus">Listo para abrir</strong>\n                    <small id="opsQueueMeta">Sin cola activa</small>\n                </article>\n                <article class="dashboard-signal-card">\n                    <span>Mas herramientas</span>\n                    <strong id="dashboardQueueHealth">Turnero avanzado disponible</strong>\n                    <small id="dashboardFlowStatus">Resenas, diagnostico y cola completa siguen fuera del primer paso.</small>\n                </article>\n            </div>\n            <button\n                type="button"\n                id="openOperatorAppBtn"\n                class="dashboard-launch-btn"\n                data-action="open-operator-app"\n            >\n                Abrir turnero\n            </button>\n            <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-grid sony-grid-two">\n            <article class="sony-panel dashboard-card-operations">\n                <header>\n                    <h3>Siguientes pasos</h3>\n                    <small id="operationDeckMeta">Atajos utiles para el dia</small>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                    <div><span>Llamadas</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                    <div><span>Hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                </div>\n                <p id="operationQueueHealth">Sin pendientes urgentes.</p>\n                <div id="operationActionList" class="operations-action-list"></div>\n            </article>\n\n            <article class="sony-panel" id="funnelSummary">\n                <header>\n                    <h3>Mas herramientas</h3>\n                    <small>Analitica y diagnostico fuera del flujo principal</small>\n                </header>\n                <p class="dashboard-secondary-summary">\n                    Resenas, embudo y turnero avanzado siguen disponibles, pero ya no compiten con la operacion diaria.\n                </p>\n                <div class="dashboard-secondary-links">\n                    <a href="#reviews" class="dashboard-secondary-link" data-section="reviews">Abrir resenas</a>\n                    <a href="#queue" class="dashboard-secondary-link" data-section="queue">Turnero avanzado</a>\n                </div>\n                <div class="sony-panel-stats dashboard-secondary-metrics">\n                    <div><span>Reservas</span><strong id="funnelViewBooking">0</strong></div>\n                    <div><span>Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                    <div><span>Confirmadas</span><strong id="funnelBookingConfirmed">0</strong></div>\n                    <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                </div>\n            </article>\n        </div>\n    \n            \n        <details class="sony-panel dashboard-analytics-disclosure" id="dashboardAdvancedAnalytics">\n            <summary>\n                <span>Analitica avanzada</span>\n                <small>Embudo y detalle operativo secundario</small>\n            </summary>\n            <div class="sony-grid sony-grid-three dashboard-analytics-grid">\n                <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n            </div>\n        </details>\n    \n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n    \n        \n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                \n        <article class="sony-panel appointments-command-deck">\n            <header class="section-header appointments-command-head">\n                <div>\n                    <p class="sony-kicker">Agenda clinica</p>\n                    <h3>Citas</h3>\n                    <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                </div>\n                <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n            </header>\n            <div class="appointments-ops-grid">\n                <article class="appointments-ops-card tone-warning">\n                    <span>Transferencias</span>\n                    <strong id="appointmentsOpsPendingTransfer">0</strong>\n                    <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                </article>\n                <article class="appointments-ops-card tone-neutral">\n                    <span>Proximas 48h</span>\n                    <strong id="appointmentsOpsUpcomingCount">0</strong>\n                    <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                </article>\n                <article class="appointments-ops-card tone-danger">\n                    <span>No show</span>\n                    <strong id="appointmentsOpsNoShowCount">0</strong>\n                    <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                </article>\n                <article class="appointments-ops-card tone-success">\n                    <span>Hoy</span>\n                    <strong id="appointmentsOpsTodayCount">0</strong>\n                    <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                </article>\n            </div>\n            <div class="appointments-command-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel appointments-focus-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                    <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                    <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                </div>\n            </header>\n            <div class="appointments-focus-grid">\n                <div class="appointments-focus-stat">\n                    <span>Siguiente ventana</span>\n                    <strong id="appointmentsFocusWindow">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Pago</span>\n                    <strong id="appointmentsFocusPayment">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Estado</span>\n                    <strong id="appointmentsFocusStatus">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Contacto</span>\n                    <strong id="appointmentsFocusContact">-</strong>\n                </div>\n            </div>\n            <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n            <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel appointments-workbench">\n            <header class="section-header appointments-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                </div>\n                <div class="toolbar-group" id="appointmentsDensityToggle">\n                    <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                    <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                </div>\n            </div>\n            <div class="toolbar-row appointments-toolbar">\n                <label>\n                    <span class="sr-only">Filtro</span>\n                    <select id="appointmentFilter">\n                        <option value="all">Todas</option>\n                        <option value="pending_transfer">Transferencias por validar</option>\n                        <option value="upcoming_48h">Proximas 48h</option>\n                        <option value="no_show">No show</option>\n                        <option value="triage_attention">Triage accionable</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden</span>\n                    <select id="appointmentSort">\n                        <option value="datetime_desc">Fecha reciente</option>\n                        <option value="datetime_asc">Fecha ascendente</option>\n                        <option value="patient_az">Paciente (A-Z)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                <p id="appointmentsToolbarState">Sin filtros activos</p>\n            </div>\n\n            <div class="table-scroll appointments-table-shell">\n                <table id="appointmentsTable" class="sony-table">\n                    <thead>\n                        <tr>\n                            <th>Paciente</th>\n                            <th>Servicio</th>\n                            <th>Fecha</th>\n                            <th>Pago</th>\n                            <th>Estado</th>\n                            <th>Acciones</th>\n                        </tr>\n                    </thead>\n                    <tbody id="appointmentsTableBody"></tbody>\n                </table>\n            </div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                \n        <article class="sony-panel callbacks-command-deck">\n            <header class="section-header callbacks-command-head">\n                <div>\n                    <p class="sony-kicker">SLA telefonico</p>\n                    <h3>Callbacks</h3>\n                    <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                </div>\n                <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n            </header>\n            <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hot</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n            </div>\n            <div class="callbacks-command-actions">\n                <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel callbacks-next-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                    <h3 id="callbacksOpsNext">Sin telefono</h3>\n                    <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                </div>\n                <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n            </header>\n            <div class="callbacks-next-grid">\n                <div class="callbacks-next-stat">\n                    <span>Espera</span>\n                    <strong id="callbacksNextWait">0 min</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Servicio</span>\n                    <strong id="callbacksNextPreference">-</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Accion</span>\n                    <strong id="callbacksNextState">Pendiente</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Estado IA</span>\n                    <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                </div>\n            </div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel callbacks-workbench">\n            <header class="section-header callbacks-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p>Ordena por prioridad comercial, genera borradores IA y registra el outcome sin salir del panel.</p>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                </div>\n            </div>\n            <div class="toolbar-row callbacks-toolbar">\n                <label>\n                    <span class="sr-only">Filtro callbacks</span>\n                    <select id="callbackFilter">\n                        <option value="all">Todos</option>\n                        <option value="pending">Pendientes</option>\n                        <option value="contacted">Contactados</option>\n                        <option value="today">Hoy</option>\n                        <option value="sla_urgent">Urgentes SLA</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden callbacks</span>\n                    <select id="callbackSort">\n                        <option value="priority_desc">Prioridad comercial</option>\n                        <option value="recent_desc">Mas recientes</option>\n                        <option value="waiting_desc">Mayor espera (SLA)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchCallbacks" placeholder="Buscar telefono o servicio" />\n                <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="callbacksToolbarMeta">Mostrando 0</p>\n                <p id="callbacksToolbarState">Sin filtros activos</p>\n            </div>\n            <div id="callbacksGrid" class="callbacks-grid"></div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                \n        <header class="section-header availability-header">\n            <div class="availability-calendar">\n                <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                <div class="availability-badges">\n                    <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                    <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                    <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                </div>\n            </div>\n            <div class="toolbar-group calendar-header">\n                <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                <strong id="calendarMonth"></strong>\n                <button type="button" data-action="change-month" data-delta="1">Next</button>\n                <button type="button" data-action="availability-today">Hoy</button>\n                <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n            </div>\n        </header>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n            <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n            <p id="availabilitySyncStatus">Sincronizado</p>\n        </div>\n    \n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n                \n        <div id="availabilityDetailGrid" class="availability-detail-grid">\n            <article class="sony-panel soft">\n                <h4 id="selectedDate">-</h4>\n                <div id="timeSlotsList" class="time-slots-list"></div>\n            </article>\n\n            <article class="sony-panel soft">\n                <div id="availabilityQuickSlotPresets" class="slot-presets">\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                </div>\n                <div id="addSlotForm" class="add-slot-form">\n                    <input type="time" id="newSlotTime" />\n                    <button type="button" data-action="add-time-slot">Agregar</button>\n                </div>\n                <div id="availabilityDayActions" class="toolbar-group wrap">\n                    <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                    <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                    <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                    <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                    <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                    <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                </div>\n                <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                <div class="toolbar-group">\n                    <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                    <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                </div>\n            </article>\n        </div>\n    \n            </div>\n        </section>\n    \n        \n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                \n        <header class="section-header">\n            <div>\n                <h3>Turnero Sala</h3>\n                <p>\n                    Apps operativas, cola en vivo y flujo simple para recepción,\n                    kiosco y TV.\n                </p>\n            </div>\n            <div class="queue-admin-header-actions">\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                <button type="button" data-action="queue-refresh-state">Refrescar</button>\n            </div>\n        </header>\n    \n                \n        <div id="queueAppsHub" class="queue-apps-hub sony-panel soft">\n            <div class="queue-apps-hub__header">\n                <div>\n                    <h4>Apps operativas</h4>\n                    <p>\n                        Instala Operador, Kiosco y Sala TV desde el mismo centro de\n                        control para separar cada equipo por uso.\n                    </p>\n                </div>\n                <div class="queue-apps-hub__header-meta">\n                    <span id="queueAppsPlatformChip" class="queue-apps-platform-chip">\n                        Plataforma detectada\n                    </span>\n                    <span id="queueAppsRefreshShieldChip" class="queue-apps-refresh-shield-chip" data-state="idle">\n                        Refresh sin bloqueo\n                    </span>\n                </div>\n            </div>\n            <div id="queueFocusMode" class="queue-focus-mode" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueNumpadGuide" class="queue-numpad-guide" data-focus-match="opening operations incidents"></div>\n            <div id="queueConsultorioBoard" class="queue-consultorio-board" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueAttentionDeck" class="queue-attention-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueResolutionDeck" class="queue-resolution-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketLookup" class="queue-ticket-lookup" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketRoute" class="queue-ticket-route" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketSimulation" class="queue-ticket-simulation" data-focus-match="operations incidents closing"></div>\n            <div id="queueNextTurns" class="queue-next-turns" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueMasterSequence" class="queue-master-sequence" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueCoverageDeck" class="queue-coverage-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReserveDeck" class="queue-reserve-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueBlockers" class="queue-blockers" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueSlaDeck" class="queue-sla-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueWaitRadar" class="queue-wait-radar" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueLoadBalance" class="queue-load-balance" data-focus-match="opening operations incidents closing"></div>\n            <div id="queuePriorityLane" class="queue-priority-lane" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueQuickTrays" class="queue-quick-trays" data-focus-match="operations incidents closing"></div>\n            <div id="queueActiveTray" class="queue-active-tray" data-focus-match="operations incidents closing"></div>\n            <div id="queueTrayBurst" class="queue-tray-burst" data-focus-match="operations incidents closing"></div>\n            <div id="queueDispatchDeck" class="queue-dispatch-deck" data-focus-match="opening operations incidents"></div>\n            <div id="queueQuickConsole" class="queue-quick-console" data-focus-match="opening operations incidents closing"></div>\n            <div id="queuePlaybook" class="queue-playbook" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueOpsPilot" class="queue-ops-pilot" data-focus-match="opening operations incidents"></div>\n            <div id="queueAppDownloadsCards" class="queue-apps-grid" data-focus-match="opening operations"></div>\n            <div id="queueSurfaceTelemetry" class="queue-surface-telemetry" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueOpsAlerts" class="queue-ops-alerts" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueOpeningChecklist" class="queue-opening-checklist" data-focus-match="opening"></div>\n            <div id="queueShiftHandoff" class="queue-shift-handoff" data-focus-match="closing"></div>\n            <div id="queueOpsLog" class="queue-ops-log" data-focus-match="operations incidents closing"></div>\n            <div id="queueContingencyDeck" class="queue-contingency-deck" data-focus-match="incidents operations"></div>\n            <div id="queueInstallConfigurator" class="queue-install-configurator" data-focus-match="opening operations"></div>\n        </div>\n    \n                \n        <div class="sony-grid sony-grid-kpi slim">\n            <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n        </div>\n    \n                \n        <div id="queueStationControl" class="toolbar-row">\n            <span id="queueStationBadge">Estacion: libre</span>\n            <span id="queueStationModeBadge">Modo: free</span>\n            <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n            <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n            <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n            <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n            <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n            <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n            <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n            <button type="button" data-action="queue-stop-practice">Salir practica</button>\n            <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n            <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n        </div>\n    \n                \n        <div id="queueShortcutPanel" hidden>\n            <p>Numpad Enter llama siguiente.</p>\n            <p>Numpad Decimal prepara completar.</p>\n            <p>Numpad Subtract prepara no_show.</p>\n            <p>Numpad Add re-llama el ticket activo.</p>\n        </div>\n    \n                \n        <div id="queueTriageToolbar" class="toolbar-row">\n            <button type="button" data-queue-filter="all">Todo</button>\n            <button type="button" data-queue-filter="called">Llamados</button>\n            <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n            <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n            <button type="button" data-action="queue-clear-search">Limpiar</button>\n            <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n            <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n            <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n        </div>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="queueTriageSummary">Sin riesgo</p>\n            <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n        </div>\n    \n                \n        <ul id="queueNextAdminList" class="sony-list"></ul>\n\n        <div class="table-scroll">\n            <table class="sony-table queue-admin-table">\n                <thead>\n                    <tr>\n                        <th>Sel</th>\n                        <th>Ticket</th>\n                        <th>Tipo</th>\n                        <th>Estado</th>\n                        <th>Consultorio</th>\n                        <th>Espera</th>\n                        <th>Acciones</th>\n                    </tr>\n                </thead>\n                <tbody id="queueTableBody"></tbody>\n            </table>\n        </div>\n\n        <div id="queueActivityPanel" class="sony-panel soft">\n            <h4>Actividad</h4>\n            <ul id="queueActivityList" class="sony-list"></ul>\n        </div>\n    \n            </div>\n\n            \n        <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n            <form method="dialog">\n                <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                <div class="toolbar-group">\n                    <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                    <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                </div>\n            </form>\n        </dialog>\n    \n        </section>\n    \n    \n        </main>\n    \n            \n        <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n            <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n            <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                <div class="admin-command-dialog__head">\n                    <div>\n                        <p class="sony-kicker">Acciones rapidas</p>\n                        <h3 id="adminCommandPaletteTitle">Ir a una tarea</h3>\n                    </div>\n                    <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                </div>\n                <div class="admin-command-box">\n                    <input id="adminQuickCommand" type="text" placeholder="Ej. agenda, pendientes, horarios, turnero" />\n                    <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                </div>\n                <div class="admin-command-dialog__hints">\n                    <span>Ctrl+K abre esta paleta</span>\n                    <span>/ enfoca la busqueda de la seccion activa</span>\n                </div>\n            </div>\n        </div>\n    \n        </div>\n    `;
 }
 const E = {
         dashboard: {
@@ -443,7 +443,7 @@ function j() {
         e.setAttribute('aria-hidden', 'true'),
         document.body.classList.remove('admin-command-open'));
 }
-function x(e) {
+function R(e) {
     (a('.admin-section').forEach((t) => {
         t.classList.toggle('active', t.id === e);
     }),
@@ -463,7 +463,7 @@ function x(e) {
         i = t('#pageTitle');
     i && (i.textContent = n);
 }
-function R(e) {
+function D(e) {
     const a = t('#group2FA'),
         n = t('#adminLoginStepSummary'),
         i = t('#adminLoginStepEyebrow'),
@@ -493,7 +493,7 @@ function R(e) {
                 : 'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.'),
         O(!1));
 }
-function D({
+function x({
     tone: e = 'neutral',
     title: a = 'Proteccion activa',
     message: n = 'El panel usa autenticacion endurecida y activos self-hosted.',
@@ -531,11 +531,11 @@ function H({ clearPassword: e = !1 } = {}) {
     (a instanceof HTMLInputElement && e && (a.value = ''),
         n instanceof HTMLInputElement && (n.value = ''));
 }
-function F(e = 'password') {
+function U(e = 'password') {
     const a = t('2fa' === e ? '#admin2FACode' : '#adminPassword');
     a instanceof HTMLInputElement && (a.focus(), a.select?.());
 }
-function U(a) {
+function F(a) {
     const n = (function (e) {
         const t = E[e?.ui?.activeSection || 'dashboard'] || E.dashboard,
             a = e?.auth && 'object' == typeof e.auth ? e.auth : {},
@@ -1244,7 +1244,7 @@ function be(e, t) {
         de());
 }
 async function ye(e, t) {
-    await $('appointments', {
+    await _('appointments', {
         method: 'PATCH',
         body: { id: Number(e || 0), ...t },
     });
@@ -1258,11 +1258,11 @@ function ke(e) {
         .toLowerCase()
         .trim();
 }
-function _e(e) {
+function $e(e) {
     const t = ke(e);
     return he.has(t) ? t : 'all';
 }
-function $e(e) {
+function _e(e) {
     const t = ke(e);
     return qe.has(t) ? t : 'priority_desc';
 }
@@ -1340,19 +1340,19 @@ function je(e) {
     const t = Number(Te(e).heuristicScore || 0);
     return Number.isFinite(t) ? t : 0;
 }
-function xe(e) {
+function Re(e) {
     return (
         String(e?.telefono || e?.phone || 'Sin telefono').trim() ||
         'Sin telefono'
     );
 }
-function Re(e) {
+function De(e) {
     try {
-        (localStorage.setItem(ve, JSON.stringify(_e(e.filter))),
-            localStorage.setItem(fe, JSON.stringify($e(e.sort))));
+        (localStorage.setItem(ve, JSON.stringify($e(e.filter))),
+            localStorage.setItem(fe, JSON.stringify(_e(e.sort))));
     } catch (e) {}
 }
-function De() {
+function xe() {
     const t = g(),
         a = Array.isArray(t?.data?.callbacks) ? t.data.callbacks : [],
         n =
@@ -1361,7 +1361,7 @@ function De() {
                 : null,
         o = t.callbacks,
         s = (function (e, t) {
-            const a = $e(t),
+            const a = _e(t),
                 n = [...e];
             return 'waiting_desc' === a
                 ? (n.sort((e, t) => Se(e) - Se(t)), n)
@@ -1399,7 +1399,7 @@ function De() {
                     : e;
             })(
                 (function (e, t) {
-                    const a = _e(t);
+                    const a = $e(t);
                     return 'pending' === a || 'contacted' === a
                         ? e.filter((e) => Ce(e.status) === a)
                         : 'today' === a
@@ -1470,7 +1470,7 @@ function De() {
                                   ? 'contacted'
                                   : 'pending',
                               r = Number(t.id || 0),
-                              l = xe(t),
+                              l = Re(t),
                               c = we(t),
                               u = Me(t),
                               d = Pe(t);
@@ -1520,20 +1520,20 @@ function De() {
                     (function (e) {
                         const t = [];
                         return (
-                            'all' !== _e(e.filter) &&
+                            'all' !== $e(e.filter) &&
                                 t.push(
-                                    'pending' === _e(e.filter)
+                                    'pending' === $e(e.filter)
                                         ? 'Pendientes'
-                                        : 'contacted' === _e(e.filter)
+                                        : 'contacted' === $e(e.filter)
                                           ? 'Contactados'
-                                          : 'today' === _e(e.filter)
+                                          : 'today' === $e(e.filter)
                                             ? 'Hoy'
                                             : 'Urgentes SLA'
                                 ),
                             ke(e.search) && t.push(`Busqueda: ${e.search}`),
-                            'priority_desc' === $e(e.sort)
+                            'priority_desc' === _e(e.sort)
                                 ? t.push('Orden: Prioridad comercial')
-                                : 'waiting_desc' === $e(e.sort)
+                                : 'waiting_desc' === _e(e.sort)
                                   ? t.push('Orden: Mayor espera (SLA)')
                                   : t.push('Orden: Mas recientes'),
                             t
@@ -1541,9 +1541,9 @@ function De() {
                     })(e).join(' | ')
                 ));
             const n = document.getElementById('callbackFilter');
-            n instanceof HTMLSelectElement && (n.value = _e(e.filter));
+            n instanceof HTMLSelectElement && (n.value = $e(e.filter));
             const i = document.getElementById('callbackSort');
-            i instanceof HTMLSelectElement && (i.value = $e(e.sort));
+            i instanceof HTMLSelectElement && (i.value = _e(e.sort));
             const o = document.getElementById('searchCallbacks');
             (o instanceof HTMLInputElement &&
                 o.value !== e.search &&
@@ -1559,7 +1559,7 @@ function De() {
                             e.classList.toggle('is-active', a);
                         });
                 })(e.filter),
-                Re(e));
+                De(e));
         })(o, s.length, a.length),
         r('#callbacksOpsPendingCount', u.pendingCount),
         r('#callbacksOpsUrgentCount', u.hotCount),
@@ -1592,11 +1592,11 @@ function De() {
             const o = document.getElementById('callbacksOpsQueueHealth');
             o && o.setAttribute('data-state', e.queueState);
             const s = e.next;
-            (r('#callbacksOpsNext', s ? xe(s) : 'Sin telefono'),
+            (r('#callbacksOpsNext', s ? Re(s) : 'Sin telefono'),
                 r(
                     '#callbacksNextSummary',
                     s
-                        ? `Prioriza ${xe(s)} antes de seguir con la cola.`
+                        ? `Prioriza ${Re(s)} antes de seguir con la cola.`
                         : 'La siguiente llamada prioritaria aparecera aqui.'
                 ),
                 r('#callbacksNextWait', s ? Le(we(s)) : '0 min'),
@@ -1613,13 +1613,13 @@ function De() {
 }
 function Oe(e, { persist: t = !0 } = {}) {
     (b((t) => ({ ...t, callbacks: { ...t.callbacks, ...e } })),
-        t && Re(g().callbacks),
-        De());
+        t && De(g().callbacks),
+        xe());
 }
 function He(e) {
-    Oe({ filter: _e(e), selected: [] });
+    Oe({ filter: $e(e), selected: [] });
 }
-function Fe(e) {
+function Ue(e) {
     const t = Number(e?.id || 0);
     (b((a) => ({
         ...a,
@@ -1636,24 +1636,24 @@ function Fe(e) {
             ),
         },
     })),
-        De());
+        xe());
 }
-async function Ue(e, t) {
+async function Fe(e, t) {
     const a = Number(e || 0);
     if (a <= 0) return null;
-    const n = await $('callbacks', { method: 'PATCH', body: { id: a, ...t } });
+    const n = await _('callbacks', { method: 'PATCH', body: { id: a, ...t } });
     return n?.data || null;
 }
 async function Ke(e, t = '') {
-    const a = await Ue(e, {
+    const a = await Fe(e, {
         status: 'contacted',
         fecha: t,
         leadOps: { outcome: 'contactado' },
     });
     return a
-        ? (Fe(a), a)
+        ? (Ue(a), a)
         : ((function (e) {
-              Fe({ id: e, status: 'contacted' });
+              Ue({ id: e, status: 'contacted' });
           })(e),
           null);
 }
@@ -2037,14 +2037,14 @@ function kt() {
             queue: { ...e.queue, pendingSensitiveAction: null },
         })));
 }
-function _t(e, t) {
+function $t(e, t) {
     return (
         e.callingNowByConsultorio?.[String(t)] ||
         e.callingNowByConsultorio?.[t] ||
         null
     );
 }
-function $t(e) {
+function _t(e) {
     return e ? String(e.ticketCode || e.ticket_code || 'A-000') : 'Sin llamado';
 }
 function Ct(e, t, a, n) {
@@ -2220,10 +2220,10 @@ function jt(e, t, a) {
         null
     );
 }
-function xt(e, t, a) {
+function Rt(e, t, a) {
     return e ? Pt(e, t, { status: 'called', assignedConsultorio: a }) : null;
 }
-function Rt(e, t = []) {
+function Dt(e, t = []) {
     const a = e && 'object' == typeof e ? e : {},
         n = (function (e) {
             return e.counts && 'object' == typeof e.counts ? e.counts : {};
@@ -2257,7 +2257,7 @@ function Rt(e, t = []) {
             };
         })(t),
         { c1: r, c2: l } = (function (e, t) {
-            return { c1: xt(jt(e, t, 1), 0, 1), c2: xt(jt(e, t, 2), 1, 2) };
+            return { c1: Rt(jt(e, t, 1), 0, 1), c2: Rt(jt(e, t, 2), 1, 2) };
         })(i, o),
         c = (function (e) {
             return At(e.nextTickets)
@@ -2354,7 +2354,7 @@ function Rt(e, t = []) {
         nextTickets: c,
     };
 }
-function Dt(e, t) {
+function xt(e, t) {
     return Object.prototype.hasOwnProperty.call(e || {}, t);
 }
 function Ot(e) {
@@ -2364,7 +2364,7 @@ function Ht(e) {
     const t = It(e, 0);
     return t.id > 0 ? `id:${t.id}` : `code:${St(t.ticketCode || '')}`;
 }
-function Ft(e, t) {
+function Ut(e, t) {
     if (!t) return;
     const a = It(t, e.size);
     (Et(t?.createdAt, t?.created_at) || (a.createdAt = ''),
@@ -2372,8 +2372,8 @@ function Ft(e, t) {
         Et(t?.queueType, t?.queue_type) || (a.queueType = ''),
         e.set(Ht(a), a));
 }
-function Ut(e) {
-    const t = Rt(e),
+function Ft(e) {
+    const t = Dt(e),
         a = new Map(),
         n =
             t.callingNowByConsultorio?.[1] ||
@@ -2383,10 +2383,10 @@ function Ut(e) {
             t.callingNowByConsultorio?.[2] ||
             t.callingNowByConsultorio?.[2] ||
             null;
-    (n && Ft(a, { ...n, status: 'called', assignedConsultorio: 1 }),
-        i && Ft(a, { ...i, status: 'called', assignedConsultorio: 2 }));
+    (n && Ut(a, { ...n, status: 'called', assignedConsultorio: 1 }),
+        i && Ut(a, { ...i, status: 'called', assignedConsultorio: 2 }));
     for (const e of At(t.nextTickets))
-        Ft(a, { ...e, status: 'waiting', assignedConsultorio: null });
+        Ut(a, { ...e, status: 'waiting', assignedConsultorio: null });
     return Array.from(a.values());
 }
 function Kt() {
@@ -2398,7 +2398,7 @@ function Kt() {
         queueTickets: t,
         queueMeta:
             e.data.queueMeta && 'object' == typeof e.data.queueMeta
-                ? Rt(e.data.queueMeta, t)
+                ? Dt(e.data.queueMeta, t)
                 : Nt(t),
     };
 }
@@ -2705,8 +2705,8 @@ let ga = null,
     ha = null,
     qa = null,
     ka = null,
-    _a = null,
     $a = null,
+    _a = null,
     Ca = {
         lastAt: 0,
         timerId: 0,
@@ -2725,19 +2725,19 @@ function wa(e) {
         .slice(0, 48);
 }
 function La(e) {
-    (Ta(), (_a = wa(e)));
+    (Ta(), ($a = wa(e)));
     try {
-        _a
-            ? window.localStorage.setItem(da, _a)
+        $a
+            ? window.localStorage.setItem(da, $a)
             : window.localStorage.removeItem(da);
     } catch (e) {}
-    return _a;
+    return $a;
 }
 function Aa() {
-    if ('string' == typeof _a) return _a;
+    if ('string' == typeof $a) return $a;
     const e = wa(g().queue.search);
     return (
-        (_a =
+        ($a =
             (function () {
                 try {
                     return wa(window.localStorage.getItem(da) || '');
@@ -2745,11 +2745,11 @@ function Aa() {
                     return '';
                 }
             })() || e),
-        _a
+        $a
     );
 }
 function Ta() {
-    return (($a = null), null);
+    return ((_a = null), null);
 }
 function Ma(e) {
     return e && 'object' == typeof e ? { ...e } : null;
@@ -2809,14 +2809,14 @@ function Pa() {
 function ja() {
     return Pa() < 900;
 }
-function xa() {
+function Ra() {
     (Ca.timerId && (window.clearTimeout(Ca.timerId), (Ca.timerId = 0)),
         (Ca.pendingManifest = null),
         (Ca.pendingPlatform = ''),
         Ba(),
         Ia());
 }
-function Ra(e, t) {
+function Da(e, t) {
     ((Ca.pendingManifest = e),
         (Ca.pendingPlatform = t),
         Ca.timerId && window.clearTimeout(Ca.timerId),
@@ -2830,17 +2830,17 @@ function Ra(e, t) {
             ((Ca.timerId = 0),
                 e
                     ? ja()
-                        ? Ra(e, t)
-                        : go({
+                        ? Da(e, t)
+                        : qo({
                               allowDuringInteraction: !0,
                               manifestOverride: e,
                               platformOverride: t,
                           })
-                    : xa());
+                    : Ra());
         })();
     }, a);
 }
-function Da(e) {
+function xa(e) {
     try {
         return new URL(String(e || ''), window.location.origin).toString();
     } catch (t) {
@@ -2848,7 +2848,7 @@ function Da(e) {
     }
 }
 function Oa(e) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(Da(e))}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(xa(e))}`;
 }
 function Ha(e, t, a) {
     const n = new URL(
@@ -2873,7 +2873,7 @@ function Ha(e, t, a) {
         `${n.pathname}${n.search}`
     );
 }
-function Fa(e, t) {
+function Ua(e, t) {
     const a = e && 'object' == typeof e ? e : {},
         n = 'mac' === a.platform || 'mac' === t ? 'mac' : 'win';
     return {
@@ -2887,8 +2887,8 @@ function Fa(e, t) {
         platform: n,
     };
 }
-function Ua(e, t) {
-    ga = Fa(e, t);
+function Fa(e, t) {
+    ga = Ua(e, t);
     try {
         window.localStorage.setItem(na, JSON.stringify(ga));
     } catch (e) {}
@@ -2899,7 +2899,7 @@ function Ka(e) {
     const t = (function (e) {
         try {
             const t = window.localStorage.getItem(na);
-            return t ? Fa(JSON.parse(t), e) : null;
+            return t ? Ua(JSON.parse(t), e) : null;
         } catch (e) {
             return null;
         }
@@ -2914,7 +2914,7 @@ function Ka(e) {
                       .trim()
                       .toLowerCase(),
                   o = a.details.oneTap;
-              return Fa(
+              return Ua(
                   {
                       surface: 'operator',
                       station:
@@ -3292,14 +3292,14 @@ function kn(e, t, a) {
         modes: { ...n.modes, [i]: { ...(n.modes[i] || {}), [t]: Boolean(a) } },
     });
 }
-function _n(e, t) {
+function $n(e, t) {
     return 'mac' === t && e.targets.mac
         ? e.targets.mac
         : 'win' === t && e.targets.win
           ? e.targets.win
           : e.targets.win || e.targets.mac || null;
 }
-function $n(e, t, a) {
+function _n(e, t, a) {
     const n = new URL(
         String(t.webFallbackUrl || '/'),
         `${window.location.origin}/`
@@ -3315,7 +3315,7 @@ function $n(e, t, a) {
 function Cn(t, a, n) {
     const o = ta[t],
         s = Ka(n),
-        r = _n(a, n),
+        r = $n(a, n),
         l =
             'mac' === n
                 ? 'macOS'
@@ -3329,7 +3329,7 @@ function Cn(t, a, n) {
                     `\n                <a\n                    href="${e(a.url)}"\n                    class="${t === n ? 'queue-app-card__recommended' : ''}"\n                    download\n                >\n                    ${e(a.label || t)}\n                </a>\n            `
             )
             .join('');
-    return `\n        <article class="queue-app-card">\n            <div>\n                <p class="queue-app-card__eyebrow">${e(o.eyebrow)}</p>\n                <h5 class="queue-app-card__title">${e(o.title)}</h5>\n                <p class="queue-app-card__description">${e(o.description)}</p>\n            </div>\n            <p class="queue-app-card__meta">\n                v${e(a.version || '0.1.0')} · ${e(i(a.updatedAt || ''))}\n            </p>\n            <span class="queue-app-card__tag">Ideal para ${e(o.recommendedFor)}</span>\n            <div class="queue-app-card__actions">\n                ${r && r.url ? `<a href="${e(r.url)}" class="queue-app-card__cta-primary" download>Descargar para ${e(l)}</a>` : ''}\n            </div>\n            <div class="queue-app-card__targets">${c}</div>\n            <div class="queue-app-card__links">\n                <a href="${e(a.webFallbackUrl || '/')}">Abrir versión web</a>\n                <a href="${e(Ha(t, s, a))}">Centro de instalación</a>\n                <button\n                    type="button"\n                    data-action="queue-copy-install-link"\n                    data-queue-install-url="${e(Da((r && r.url) || ''))}"\n                >\n                    Copiar enlace\n                </button>\n            </div>\n            <ul class="queue-app-card__notes">\n                ${o.notes.map((t) => `<li>${e(t)}</li>`).join('')}\n            </ul>\n        </article>\n    `;
+    return `\n        <article class="queue-app-card">\n            <div>\n                <p class="queue-app-card__eyebrow">${e(o.eyebrow)}</p>\n                <h5 class="queue-app-card__title">${e(o.title)}</h5>\n                <p class="queue-app-card__description">${e(o.description)}</p>\n            </div>\n            <p class="queue-app-card__meta">\n                v${e(a.version || '0.1.0')} · ${e(i(a.updatedAt || ''))}\n            </p>\n            <span class="queue-app-card__tag">Ideal para ${e(o.recommendedFor)}</span>\n            <div class="queue-app-card__actions">\n                ${r && r.url ? `<a href="${e(r.url)}" class="queue-app-card__cta-primary" download>Descargar para ${e(l)}</a>` : ''}\n            </div>\n            <div class="queue-app-card__targets">${c}</div>\n            <div class="queue-app-card__links">\n                <a href="${e(a.webFallbackUrl || '/')}">Abrir versión web</a>\n                <a href="${e(Ha(t, s, a))}">Centro de instalación</a>\n                <button\n                    type="button"\n                    data-action="queue-copy-install-link"\n                    data-queue-install-url="${e(xa((r && r.url) || ''))}"\n                >\n                    Copiar enlace\n                </button>\n            </div>\n            <ul class="queue-app-card__notes">\n                ${o.notes.map((t) => `<li>${e(t)}</li>`).join('')}\n            </ul>\n        </article>\n    `;
 }
 function Sn(t) {
     const a = ta.sala_tv,
@@ -3337,16 +3337,16 @@ function Sn(t) {
         o = t.targets.android_tv || {},
         s = String(o.url || ''),
         r = Oa(s);
-    return `\n        <article class="queue-app-card">\n            <div>\n                <p class="queue-app-card__eyebrow">${e(a.eyebrow)}</p>\n                <h5 class="queue-app-card__title">${e(a.title)}</h5>\n                <p class="queue-app-card__description">${e(a.description)}</p>\n            </div>\n            <p class="queue-app-card__meta">\n                v${e(t.version || '0.1.0')} · ${e(i(t.updatedAt || ''))}\n            </p>\n            <span class="queue-app-card__tag">Ideal para ${e(a.recommendedFor)}</span>\n            <div class="queue-app-card__actions">\n                <a\n                    href="${e(r)}"\n                    class="queue-app-card__cta-primary"\n                    target="_blank"\n                    rel="noopener"\n                >\n                    Mostrar QR de instalación\n                </a>\n                <a href="${e(s)}" download>Descargar APK</a>\n            </div>\n            <div class="queue-app-card__links">\n                <a href="${e(t.webFallbackUrl || '/sala-turnos.html')}">\n                    Abrir fallback web\n                </a>\n                <a href="${e(Ha('sala_tv', n, t))}">\n                    Centro de instalación\n                </a>\n                <button\n                    type="button"\n                    data-action="queue-copy-install-link"\n                    data-queue-install-url="${e(Da(s))}"\n                >\n                    Copiar enlace\n                </button>\n            </div>\n            <ul class="queue-app-card__notes">\n                ${a.notes.map((t) => `<li>${e(t)}</li>`).join('')}\n            </ul>\n        </article>\n    `;
+    return `\n        <article class="queue-app-card">\n            <div>\n                <p class="queue-app-card__eyebrow">${e(a.eyebrow)}</p>\n                <h5 class="queue-app-card__title">${e(a.title)}</h5>\n                <p class="queue-app-card__description">${e(a.description)}</p>\n            </div>\n            <p class="queue-app-card__meta">\n                v${e(t.version || '0.1.0')} · ${e(i(t.updatedAt || ''))}\n            </p>\n            <span class="queue-app-card__tag">Ideal para ${e(a.recommendedFor)}</span>\n            <div class="queue-app-card__actions">\n                <a\n                    href="${e(r)}"\n                    class="queue-app-card__cta-primary"\n                    target="_blank"\n                    rel="noopener"\n                >\n                    Mostrar QR de instalación\n                </a>\n                <a href="${e(s)}" download>Descargar APK</a>\n            </div>\n            <div class="queue-app-card__links">\n                <a href="${e(t.webFallbackUrl || '/sala-turnos.html')}">\n                    Abrir fallback web\n                </a>\n                <a href="${e(Ha('sala_tv', n, t))}">\n                    Centro de instalación\n                </a>\n                <button\n                    type="button"\n                    data-action="queue-copy-install-link"\n                    data-queue-install-url="${e(xa(s))}"\n                >\n                    Copiar enlace\n                </button>\n            </div>\n            <ul class="queue-app-card__notes">\n                ${a.notes.map((t) => `<li>${e(t)}</li>`).join('')}\n            </ul>\n        </article>\n    `;
 }
 function wn(e, t) {
     const a = Ka(t),
         n = e.operator || ea.operator,
         i = e.kiosk || ea.kiosk,
         o = e.sala_tv || ea.sala_tv,
-        s = $n('operator', n, { ...a }),
-        r = $n('kiosk', i, { ...a }),
-        l = $n('sala_tv', o, { ...a }),
+        s = _n('operator', n, { ...a }),
+        r = _n('kiosk', i, { ...a }),
+        l = _n('sala_tv', o, { ...a }),
         c = 'c2' === a.station ? 'C2' : 'C1';
     return [
         {
@@ -3384,7 +3384,7 @@ function wn(e, t) {
     ];
 }
 function Ln(e) {
-    const t = Dn(e),
+    const t = xn(e),
         a = t.latest && 'object' == typeof t.latest ? t.latest : null;
     return {
         group: t,
@@ -3557,7 +3557,7 @@ function Mn(e) {
         l = Ln('operator'),
         c = Ln('kiosk'),
         u = Ln('display'),
-        d = Un(),
+        d = Fn(),
         p = `Cola: espera ${Number(a?.waitingCount || 0)}, llamados ${Number(a?.calledCount || 0)}, sync ${String(t.queue?.syncMode || 'live')}.`,
         m = `Operador: ${String(l.latest?.deviceLabel || 'sin equipo')} · ${String(l.group.summary || 'sin resumen')} `,
         b = `Kiosco: ${String(c.latest?.deviceLabel || 'sin equipo')} · ${String(c.group.summary || 'sin resumen')} `,
@@ -3575,7 +3575,7 @@ function Mn(e) {
     ].join('\n');
 }
 function En(e, t) {
-    const a = Un(),
+    const a = Fn(),
         n = Hn(e, t),
         i = n.find((e) => 'alert' === e.state),
         o = n.find((e) => 'warning' === e.state || 'unknown' === e.state),
@@ -3623,8 +3623,8 @@ function In(e, t) {
     const a = Ya(),
         n = wn(e, t),
         i = An(t),
-        o = Un(),
-        s = [Dn('operator'), Dn('kiosk'), Dn('display')],
+        o = Fn(),
+        s = [xn('operator'), xn('kiosk'), xn('display')],
         r = n.filter((e) => a.steps[e.id]).length,
         l = i.suggestedCount,
         c = n
@@ -3730,7 +3730,7 @@ function In(e, t) {
                   }),
                   (v = {
                       kind: 'anchor',
-                      href: $n('operator', e.operator || ea.operator, {
+                      href: _n('operator', e.operator || ea.operator, {
                           ...Ka(t),
                       }),
                       label: 'Abrir operador',
@@ -3785,14 +3785,14 @@ function jn(t, a) {
                     summary: `Se confirmaron pasos de apertura ya validados por telemetría. Perfil activo: ${Va(a)}.`,
                 }),
                 Jn(t, a),
-                no(t, a),
-                so(t, a),
+                co(t, a),
+                mo(t, a),
                 jn(t, a),
-                lo(t, a),
-                uo(t, a));
+                bo(t, a),
+                fo(t, a));
         });
 }
-function xn(e) {
+function Rn(e) {
     const t = Number(e);
     if (!Number.isFinite(t) || t < 0) return 'sin señal';
     if (t < 60) return `${t}s`;
@@ -3805,11 +3805,11 @@ function xn(e) {
     }
     return n > 0 ? `${a}m ${n}s` : `${a}m`;
 }
-function Rn(e, t = 'Sin heartbeat reciente') {
+function Dn(e, t = 'Sin heartbeat reciente') {
     const a = Number(e?.ageSec);
-    return Number.isFinite(a) ? `Heartbeat hace ${xn(a)}` : t;
+    return Number.isFinite(a) ? `Heartbeat hace ${Rn(a)}` : t;
 }
-function Dn(e) {
+function xn(e) {
     const t = (function () {
         const e = g().data.queueSurfaceStatus;
         return e && 'object' == typeof e ? e : {};
@@ -3886,14 +3886,14 @@ function Hn(e, t) {
             actionLabel: 'Abrir sala TV',
         },
     ].map((e) => {
-        const t = Dn(e.key),
+        const t = xn(e.key),
             n = t.latest && 'object' == typeof t.latest ? t.latest : null,
             i = String(t.status || 'unknown'),
             o =
                 String(t.summary || '').trim() ||
                 aa[e.key]?.emptySummary ||
                 'Sin señal todavía.',
-            s = $n(e.fallbackSurface, e.appConfig, {
+            s = _n(e.fallbackSurface, e.appConfig, {
                 ...a,
                 surface: e.fallbackSurface,
             });
@@ -3916,7 +3916,7 @@ function Hn(e, t) {
             summary: o,
             ageLabel:
                 n && void 0 !== n.ageSec && null !== n.ageSec
-                    ? `Heartbeat hace ${xn(n.ageSec)}`
+                    ? `Heartbeat hace ${Rn(n.ageSec)}`
                     : 'Sin heartbeat todavía',
             chips: On(e.key, n),
             route: s,
@@ -3924,7 +3924,7 @@ function Hn(e, t) {
         };
     });
 }
-function Fn(t, a) {
+function Un(t, a) {
     if (
         !(
             document.getElementById('queueSurfaceTelemetry') instanceof
@@ -3960,7 +3960,7 @@ function Fn(t, a) {
                         : `cada ${Math.round(a / 60)}m`;
                 })(e.intervalMs),
                 n = e.lastSuccessAt
-                    ? `ultimo ciclo hace ${xn(Math.max(0, Math.round((Date.now() - Number(e.lastSuccessAt || 0)) / 1e3)))}`
+                    ? `ultimo ciclo hace ${Rn(Math.max(0, Math.round((Date.now() - Number(e.lastSuccessAt || 0)) / 1e3)))}`
                     : 'sin ciclo exitoso todavía';
             return 'refreshing' === t || Boolean(e.inFlight)
                 ? {
@@ -4011,7 +4011,7 @@ function Fn(t, a) {
         `\n            <section class="queue-surface-telemetry__shell">\n                <div class="queue-surface-telemetry__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Equipos en vivo</p>\n                        <h5 id="queueSurfaceTelemetryTitle" class="queue-app-card__title">${e(o ? 'Equipos con atención urgente' : s ? 'Equipos con señal parcial' : 'Equipos en vivo')}</h5>\n                        <p id="queueSurfaceTelemetrySummary" class="queue-surface-telemetry__summary">${e(r)}</p>\n                        <div id="queueSurfaceTelemetryAutoMeta" class="queue-surface-telemetry__auto-meta">\n                            <span\n                                id="queueSurfaceTelemetryAutoState"\n                                class="queue-surface-telemetry__auto-state"\n                                data-state="${e(i.state)}"\n                            >\n                                ${e(i.label)}\n                            </span>\n                            <span class="queue-surface-telemetry__auto-copy">${e(i.meta)}</span>\n                        </div>\n                    </div>\n                    <span\n                        id="queueSurfaceTelemetryStatus"\n                        class="queue-surface-telemetry__status"\n                        data-state="${e(u)}"\n                    >\n                        ${e(c)}\n                    </span>\n                </div>\n                <div id="queueSurfaceTelemetryCards" class="queue-surface-telemetry__grid" role="list" aria-label="Estado vivo por equipo">\n                    ${n.map((t) => `\n                                <article\n                                    class="queue-surface-card"\n                                    data-state="${e(t.state)}"\n                                    role="listitem"\n                                >\n                                    <div class="queue-surface-card__header">\n                                        <div>\n                                            <strong>${e(t.title)}</strong>\n                                            <p class="queue-surface-card__meta">${e(t.deviceLabel)}</p>\n                                        </div>\n                                        <span class="queue-surface-card__badge">${e(t.badge)}</span>\n                                    </div>\n                                    <p class="queue-surface-card__summary">${e(t.summary)}</p>\n                                    <p class="queue-surface-card__age">${e(t.ageLabel)}</p>\n                                    <div class="queue-surface-card__chips">\n                                        ${t.chips.map((t) => `<span class="queue-surface-card__chip">${e(t)}</span>`).join('')}\n                                    </div>\n                                    <div class="queue-surface-card__actions">\n                                        <a\n                                            href="${e(t.route)}"\n                                            target="_blank"\n                                            rel="noopener"\n                                            class="queue-surface-card__action queue-surface-card__action--primary"\n                                        >\n                                            ${e(t.actionLabel)}\n                                        </a>\n                                        <button\n                                            type="button"\n                                            class="queue-surface-card__action"\n                                            data-action="queue-copy-install-link"\n                                            data-queue-install-url="${e(t.route)}"\n                                        >\n                                            Copiar ruta\n                                        </button>\n                                        <button\n                                            type="button"\n                                            class="queue-surface-card__action"\n                                            data-action="refresh-admin-data"\n                                        >\n                                            Actualizar estado\n                                        </button>\n                                    </div>\n                                </article>\n                            `).join('')}\n                </div>\n            </section>\n        `
     );
 }
-function Un() {
+function Fn() {
     const e = g(),
         { queueMeta: t } = Kt(),
         a = String(e.queue?.syncMode || 'live')
@@ -4063,12 +4063,12 @@ function Un() {
             };
 }
 function Kn() {
-    const e = Un();
+    const e = Fn();
     if ('ready' === e.state) return null;
     const { queueMeta: t } = Kt(),
         a = Date.parse(String(t?.updatedAt || '')),
         n = Number.isFinite(a)
-            ? `Ultima cola actualizada hace ${xn(Math.max(0, Math.round((Date.now() - a) / 1e3)))}`
+            ? `Ultima cola actualizada hace ${Rn(Math.max(0, Math.round((Date.now() - a) / 1e3)))}`
             : 'Sin marca reciente de cola';
     return {
         id: `queue_sync_${e.state}`,
@@ -4087,7 +4087,7 @@ function Kn() {
 function Vn(e, t) {
     const a = Ka(t),
         n = 'c2' === a.station ? 'c2' : 'c1',
-        i = $n('operator', e.operator || ea.operator, { ...a }),
+        i = _n('operator', e.operator || ea.operator, { ...a }),
         { group: o, latest: s, details: r } = Ln('operator'),
         l = String(r.station || '')
             .trim()
@@ -4095,7 +4095,7 @@ function Vn(e, t) {
         c = String(r.connection || 'live')
             .trim()
             .toLowerCase(),
-        u = Rn(s);
+        u = Dn(s);
     return !s || o.stale || 'unknown' === String(o.status || '')
         ? {
               id: 'operator_signal',
@@ -4149,13 +4149,13 @@ function Vn(e, t) {
 }
 function zn(e, t) {
     const a = Ka(t),
-        n = $n('kiosk', e.kiosk || ea.kiosk, { ...a }),
+        n = _n('kiosk', e.kiosk || ea.kiosk, { ...a }),
         { group: i, latest: o, details: s } = Ln('kiosk'),
         r = String(s.connection || 'live')
             .trim()
             .toLowerCase(),
         l = Math.max(0, Number(s.pendingOffline || 0)),
-        c = Rn(o);
+        c = Dn(o);
     return !o || i.stale || 'unknown' === String(i.status || '')
         ? {
               id: 'kiosk_signal',
@@ -4208,12 +4208,12 @@ function zn(e, t) {
 }
 function Qn(e, t) {
     const a = Ka(t),
-        n = $n('sala_tv', e.sala_tv || ea.sala_tv, { ...a }),
+        n = _n('sala_tv', e.sala_tv || ea.sala_tv, { ...a }),
         { group: i, latest: o, details: s } = Ln('display'),
         r = String(s.connection || 'live')
             .trim()
             .toLowerCase(),
-        l = Rn(o);
+        l = Dn(o);
     return !o || i.stale || 'unknown' === String(i.status || '')
         ? {
               id: 'display_signal',
@@ -4332,7 +4332,7 @@ function Gn(t, a) {
                     summary: `Se marcaron como revisadas las alertas visibles del turno. Perfil activo: ${Va(a)}.`,
                 }),
                 Gn(t, a),
-                uo(t, a));
+                fo(t, a));
         }),
         n.querySelectorAll('[data-queue-alert-review]').forEach((e) => {
             e instanceof HTMLButtonElement &&
@@ -4360,7 +4360,7 @@ function Gn(t, a) {
                                 : `${i.title}. La alerta vuelve al tablero pendiente del turno.`,
                         }),
                         Gn(t, a),
-                        uo(t, a));
+                        fo(t, a));
                 });
         }));
 }
@@ -4376,12 +4376,12 @@ function Wn(e, t) {
                 })()),
             qa),
         n = Boolean(e && 'object' == typeof e),
-        i = Un(),
+        i = Fn(),
         o = pa.length - pa.filter((e) => Ya().steps[e]).length,
         s = ma.length - ma.filter((e) => an().steps[e]).length,
-        r = Dn('operator'),
-        l = Dn('kiosk'),
-        c = Dn('display'),
+        r = xn('operator'),
+        l = xn('kiosk'),
+        c = xn('display'),
         u =
             'alert' === i.state ||
             [r, l, c].some(
@@ -4470,8 +4470,8 @@ function Jn(t, a) {
                         } catch (e) {}
                     })(e.dataset.queueFocusMode || 'auto'),
                         Jn(t, a),
-                        no(t, a),
-                        so(t, a));
+                        co(t, a),
+                        mo(t, a));
                 });
         }));
 }
@@ -4590,7 +4590,7 @@ function ei(t, a) {
                             .toLowerCase()) !=
                         ('locked' === a.queue.stationMode)),
             y = Ka(t),
-            f = $n('operator', e.operator || ea.operator, {
+            f = _n('operator', e.operator || ea.operator, {
                 ...y,
                 station: 2 === n ? 'c2' : 'c1',
                 lock: 'locked' === a.queue.stationMode,
@@ -4685,7 +4685,7 @@ function ti(e, t) {
     if (!Number.isFinite(a))
         return 'called' === t ? 'sin marca de llamado' : 'sin marca de espera';
     const n = Math.max(0, Math.round((Date.now() - a) / 1e3));
-    return 'called' === t ? `llamado hace ${xn(n)}` : `espera hace ${xn(n)}`;
+    return 'called' === t ? `llamado hace ${Rn(n)}` : `espera hace ${Rn(n)}`;
 }
 function ai(e, t = 'waiting') {
     const a = ni(e, t);
@@ -4819,7 +4819,7 @@ function pi(e, t, a) {
         operatorAssigned: l,
         operatorLive: c,
         operatorLabel: u,
-        operatorUrl: $n('operator', e.operator || ea.operator, {
+        operatorUrl: _n('operator', e.operator || ea.operator, {
             ...Ka(t),
             station: i,
             lock: !0,
@@ -4832,7 +4832,7 @@ function pi(e, t, a) {
                 ? 'Numpad listo'
                 : 'Numpad pendiente'
             : 'Numpad sin señal',
-        heartbeatLabel: Rn(o.latest, 'Sin heartbeat'),
+        heartbeatLabel: Dn(o.latest, 'Sin heartbeat'),
     };
 }
 function mi(t, a) {
@@ -5025,7 +5025,7 @@ async function bi(e, t, a, n) {
         try {
             const { callNextForConsultorio: a, runQueueTicketAction: n } =
                 await Promise.resolve().then(function () {
-                    return Is;
+                    return Os;
                 });
             if ('recall' === t && e.currentTicketId > 0)
                 await n(e.currentTicketId, 're-llamar', e.slot);
@@ -5051,7 +5051,7 @@ async function bi(e, t, a, n) {
         } catch (e) {
             s('No se pudo ejecutar la acción de seguimiento', 'error');
         } finally {
-            po(a, n);
+            vo(a, n);
         }
 }
 function yi(t, a) {
@@ -5081,9 +5081,9 @@ function yi(t, a) {
                     let h = 'idle',
                         q = 'Sin atención activa',
                         k = `${o.toUpperCase()} sin llamado activo`,
-                        _ =
+                        $ =
                             'Este consultorio no tiene un ticket llamado en este momento. Cuando vuelva a haber atención en curso, aquí verás su seguimiento y la presión detrás.',
-                        $ = 'Sin seguimiento pendiente',
+                        _ = 'Sin seguimiento pendiente',
                         C = 'none',
                         S = 'Sin acción';
                     if (m) {
@@ -5092,27 +5092,27 @@ function yi(t, a) {
                             ? ((h = 'alert'),
                               (q = 'Cola frenada'),
                               (k = `${m.ticketCode} está reteniendo ${o.toUpperCase()}`),
-                              (_ = `${m.ticketCode} va ${v} y ${e} ya espera detrás. Re-llama o libera ${o.toUpperCase()} si el paciente no entró para no congelar la cola.`),
-                              ($ = `Re-llamar ${m.ticketCode} o liberar ${o.toUpperCase()}`),
+                              ($ = `${m.ticketCode} va ${v} y ${e} ya espera detrás. Re-llama o libera ${o.toUpperCase()} si el paciente no entró para no congelar la cola.`),
+                              (_ = `Re-llamar ${m.ticketCode} o liberar ${o.toUpperCase()}`),
                               (C = 'recall'),
                               (S = `Re-llamar ${m.ticketCode}`))
                             : f >= 120
                               ? ((h = 'warning'),
                                 (q = 'Revisar llamado'),
                                 (k = `${m.ticketCode} pide confirmación`),
-                                (_ = g
+                                ($ = g
                                     ? `${m.ticketCode} va ${v} y ${e} ya espera detrás. Conviene re-llamar o cerrar la atención para destrabar el siguiente paso.`
                                     : `${m.ticketCode} va ${v}. Revisa si el paciente ya pasó o vuelve a llamarlo antes de perder contexto.`),
-                                ($ = `Re-llamar ${m.ticketCode}`),
+                                (_ = `Re-llamar ${m.ticketCode}`),
                                 (C = 'recall'),
                                 (S = `Re-llamar ${m.ticketCode}`))
                               : ((h = 'active'),
                                 (q = 'En atención'),
                                 (k = `${m.ticketCode} sigue en ${o.toUpperCase()}`),
-                                (_ = g
+                                ($ = g
                                     ? `${m.ticketCode} va ${v}. ${e} ya está en la cola de ${o.toUpperCase()}, así que conviene mantener este consultorio visible para cerrar y seguir sin pausa.`
                                     : `${m.ticketCode} va ${v}. No hay otro ticket asignado detrás por ahora, pero conviene mantener el operador a la vista.`),
-                                ($ = g
+                                (_ = g
                                     ? `Completa ${m.ticketCode} cuando salga para llamar ${e}`
                                     : `Mantén visible ${m.ticketCode} en Operador ${o.toUpperCase()}`),
                                 (C = 'open'),
@@ -5122,16 +5122,16 @@ function yi(t, a) {
                             ? ((h = 'ready'),
                               (q = 'Siguiente listo'),
                               (k = `${g.ticketCode} ya espera en ${o.toUpperCase()}`),
-                              (_ = `${g.ticketCode} está alineado al consultorio y el operador reporta señal estable. Puedes llamarlo desde aquí sin volver a la tabla.`),
-                              ($ = `Llamar ${g.ticketCode}`),
+                              ($ = `${g.ticketCode} está alineado al consultorio y el operador reporta señal estable. Puedes llamarlo desde aquí sin volver a la tabla.`),
+                              (_ = `Llamar ${g.ticketCode}`),
                               (C = 'call'),
                               (S = `Llamar ${g.ticketCode}`))
                             : g
                               ? ((h = 'warning'),
                                 (q = 'Falta operador'),
                                 (k = `${g.ticketCode} espera, pero ${o.toUpperCase()} no está listo`),
-                                (_ = `${g.ticketCode} ya es el siguiente ticket para ${o.toUpperCase()}, pero todavía falta alinear el operador o recuperar su heartbeat antes del llamado.`),
-                                ($ = `Abrir Operador ${o.toUpperCase()}`),
+                                ($ = `${g.ticketCode} ya es el siguiente ticket para ${o.toUpperCase()}, pero todavía falta alinear el operador o recuperar su heartbeat antes del llamado.`),
+                                (_ = `Abrir Operador ${o.toUpperCase()}`),
                                 (C = 'open'),
                                 (S = `Abrir Operador ${o.toUpperCase()}`))
                               : s &&
@@ -5139,8 +5139,8 @@ function yi(t, a) {
                                 ((h = 'ready'),
                                 (q = 'Operador atento'),
                                 (k = `${o.toUpperCase()} listo para recibir`),
-                                (_ = `${o.toUpperCase()} ya tiene operador en vivo, sin llamado activo y sin cola asignada detrás.`),
-                                ($ = `Mantener ${o.toUpperCase()} visible`),
+                                ($ = `${o.toUpperCase()} ya tiene operador en vivo, sin llamado activo y sin cola asignada detrás.`),
+                                (_ = `Mantener ${o.toUpperCase()} visible`),
                                 (C = 'open'),
                                 (S = `Abrir Operador ${o.toUpperCase()}`));
                     return {
@@ -5149,8 +5149,8 @@ function yi(t, a) {
                         state: h,
                         badge: q,
                         headline: k,
-                        detail: _,
-                        recommendationLabel: $,
+                        detail: $,
+                        recommendationLabel: _,
                         currentLabel: m
                             ? `${m.ticketCode} · ${v}`
                             : 'Sin llamado activo',
@@ -5290,7 +5290,7 @@ async function vi(e, t, a, n) {
                 confirmQueueSensitiveAction: i,
                 runQueueTicketAction: o,
             } = await Promise.resolve().then(function () {
-                return Is;
+                return Os;
             });
             if ('complete' === t && e.currentTicketId > 0)
                 await o(e.currentTicketId, 'completar');
@@ -5328,7 +5328,7 @@ async function vi(e, t, a, n) {
         } catch (e) {
             s('No se pudo ejecutar la resolución rápida', 'error');
         } finally {
-            po(a, n);
+            vo(a, n);
         }
 }
 function hi(t, a) {
@@ -5360,8 +5360,8 @@ function hi(t, a) {
                         h = String(d?.ticketCode || '');
                     let q = 'idle',
                         k = 'Sin cierre pendiente',
-                        _ = `${s.toUpperCase()} sin ticket por cerrar`,
-                        $ =
+                        $ = `${s.toUpperCase()} sin ticket por cerrar`,
+                        _ =
                             'No hay un ticket llamado pendiente de resolución en este consultorio.',
                         C = 'Sin ticket activo',
                         S = 'none',
@@ -5370,8 +5370,8 @@ function hi(t, a) {
                         b
                             ? ((q = 'alert'),
                               (k = 'Confirmación pendiente'),
-                              (_ = `${v} espera decisión final`),
-                              ($ = `Quedó pendiente confirmar ${y}. Usa confirmar o cancelar antes de seguir operando este consultorio.`),
+                              ($ = `${v} espera decisión final`),
+                              (_ = `Quedó pendiente confirmar ${y}. Usa confirmar o cancelar antes de seguir operando este consultorio.`),
                               (C = `Pendiente: ${y}`),
                               (S = 'confirm'),
                               (w = 'Confirmar pendiente'))
@@ -5381,8 +5381,8 @@ function hi(t, a) {
                                     p > 0
                                         ? 'Cerrar y seguir'
                                         : 'Cerrar atención'),
-                                (_ = `${v} ya puede resolverse`),
-                                ($ = d
+                                ($ = `${v} ya puede resolverse`),
+                                (_ = d
                                     ? `Si ${v} ya salió, completar deja listo ${h}. Si no apareció, no show requerirá confirmación; si fue un llamado equivocado, liberar lo devuelve a recepción.`
                                     : `Completar cierra ${v}. No show requerirá confirmación y liberar lo devuelve a la cola general.`),
                                 (C = `${f} · detrás ${p}`),
@@ -5391,8 +5391,8 @@ function hi(t, a) {
                               : d &&
                                 ((q = 'ready'),
                                 (k = 'Siguiente listo'),
-                                (_ = `${h} espera la siguiente llamada`),
-                                ($ = `No hay cierre pendiente en ${s.toUpperCase()}. El próximo movimiento útil aquí es llamar ${h}.`),
+                                ($ = `${h} espera la siguiente llamada`),
+                                (_ = `No hay cierre pendiente en ${s.toUpperCase()}. El próximo movimiento útil aquí es llamar ${h}.`),
                                 (C = `Espera ${ti(d, 'waiting')}`),
                                 (S = 'call'),
                                 (w = `Llamar ${h}`)),
@@ -5401,8 +5401,8 @@ function hi(t, a) {
                             slotKey: s,
                             state: q,
                             badge: k,
-                            headline: _,
-                            summary: $,
+                            headline: $,
+                            summary: _,
                             statusLabel: C,
                             operatorLabel: r,
                             operatorUrl: l,
@@ -5551,7 +5551,7 @@ function ki(e) {
                 ? 'Cancelado'
                 : String(e?.status || 'Sin estado');
 }
-function _i(e, t) {
+function $i(e, t) {
     if (!t) return Number.POSITIVE_INFINITY;
     const a = qi(e?.ticketCode),
         n = qi(e?.patientInitials),
@@ -5578,7 +5578,7 @@ function _i(e, t) {
                       ? 7
                       : Number.POSITIVE_INFINITY;
 }
-function $i(e, t) {
+function _i(e, t) {
     return [1, 2]
         .map((a) => {
             const n = pi(e, t, a);
@@ -5602,7 +5602,183 @@ function $i(e, t) {
                   : e.slot - t.slot
         )[0];
 }
-function Ci(e, t) {
+function Ci(e, t, a) {
+    if (!e) return null;
+    const n = Number(e.assignedConsultorio || 0),
+        i = 2 === n ? 2 : 1 === n ? 1 : 0,
+        o = String(e.ticketCode || 'ticket'),
+        s = String(e.status || 'waiting')
+            .trim()
+            .toLowerCase(),
+        r = ki(e),
+        l =
+            'waiting' === s || 'called' === s
+                ? ti(e, 'called' === s ? 'called' : 'waiting')
+                : `Último estado · ${r}`,
+        c = ui(e),
+        u = e.patientInitials
+            ? `Paciente ${String(e.patientInitials).trim()}`
+            : 'Paciente sin iniciales',
+        d = g().queue.pendingSensitiveAction,
+        p = Number(d?.ticketId || 0) === Number(e.id || 0) ? Yn(d, e) : '';
+    let m = `${o} localizado`,
+        b = 'El ticket está disponible para seguimiento rápido desde el hub.',
+        y =
+            'Usa el botón principal para ejecutar la siguiente jugada útil sin bajar a la tabla.',
+        f = 'idle',
+        v = r,
+        h = 'table',
+        q = 'Ver en tabla',
+        k = 0;
+    const $ = [],
+        _ = new Set(),
+        C = (e, t, a = {}) => {
+            const n = `${e}:${Number(a.consultorio || 0)}`;
+            _.has(n) ||
+                (_.add(n),
+                $.push({
+                    kind: e,
+                    label: t,
+                    consultorio: Number(a.consultorio || 0),
+                }));
+        },
+        S =
+            i > 0
+                ? _n('operator', t.operator || ea.operator, {
+                      ...Ka(a),
+                      station: 2 === i ? 'c2' : 'c1',
+                      lock: !0,
+                  })
+                : '';
+    if (p)
+        ((f = 'alert'),
+            (v = 'Confirmación pendiente'),
+            (m = `${o} espera confirmación sensible`),
+            (b = `La acción ${p} quedó preparada y visible dentro del hub.`),
+            (y =
+                'Confirma o cancela desde aquí antes de seguir llamando para no perder el contexto de este ticket.'),
+            (h = 'confirm'),
+            (q = 'Confirmar pendiente'),
+            C('cancel', 'Cancelar pendiente'));
+    else if ('called' === s)
+        ((f = 'active'),
+            (v = i > 0 ? `En atención C${i}` : 'En atención'),
+            (m = i > 0 ? `${o} está llamado en C${i}` : `${o} está llamado`),
+            (b =
+                i > 0
+                    ? `${l}. Puedes completar, marcar no show o liberar ${o} desde esta misma tarjeta.`
+                    : `${l}. Este ticket necesita cierre operativo antes de seguir con el resto de la cola.`),
+            (y =
+                'Completa si ya pasó a consulta; usa no show o liberar solo si necesitas destrabar la cola con una acción sensible.'),
+            (h = 'complete'),
+            (q = `Completar ${o}`),
+            (k = i),
+            i > 0 &&
+                (C('recall', 'Re-llamar', { consultorio: i }),
+                C('no_show', 'No show', { consultorio: i })),
+            C('release', 'Liberar', { consultorio: i }));
+    else if ('waiting' === s && 0 === i) {
+        const e = _i(t, a);
+        ((f = 0 === e.readinessScore ? 'ready' : 'warning'),
+            (v =
+                0 === e.readinessScore
+                    ? `Listo para C${e.slot}`
+                    : `Pendiente de C${e.slot}`),
+            (m = `${o} sigue en la cola general`),
+            (b = `${l}. Todavía no tiene consultorio; puedes mandarlo directo a C${e.slot} desde el hub.`),
+            (y =
+                0 === e.readinessScore
+                    ? `El operador de C${e.slot} ya está listo, así que este es el destino más simple para destrabar recepción.`
+                    : `Conviene reasignarlo a C${e.slot}, pero primero valida el operador si quieres llamarlo enseguida.`),
+            (h = 'assign'),
+            (q = `Asignar a C${e.slot}`),
+            (k = e.slot),
+            C('assign', 'Asignar a C' + (2 === e.slot ? 1 : 2), {
+                consultorio: 2 === e.slot ? 1 : 2,
+            }));
+    } else if ('waiting' === s && i > 0) {
+        const t = Jt(i),
+            a = Yt(i),
+            n = Number(a?.id || 0) === Number(e.id || 0);
+        ((f = n && !t ? 'ready' : 'warning'),
+            (v = n ? `Siguiente en C${i}` : `En cola C${i}`),
+            (m = `${o} ya está asignado a C${i}`),
+            n && !t
+                ? ((b = `${l}. Es el siguiente ticket listo para llamarse en C${i}.`),
+                  (y =
+                      'Puedes llamar desde aquí si el consultorio está libre; si no, abre Operador para mantener la atención alineada.'),
+                  (h = 'call'),
+                  (q = `Llamar ${o}`),
+                  (k = i))
+                : t
+                  ? ((b = `${l}. C${i} todavía atiende ${String(t.ticketCode || 'otro ticket')}, así que conviene abrir el operador o revisar la tabla antes de mover este turno.`),
+                    (y =
+                        'Este ticket ya está encaminado al consultorio; usa Operador si quieres seguir la secuencia del mismo C.'),
+                    (h = 'open'),
+                    (q = `Abrir Operador C${i}`))
+                  : ((b = `${l}. Hay otros tickets antes que ${o} en C${i}, así que la tabla sigue siendo la mejor vista para ordenar esta cola.`),
+                    (y =
+                        'Abre la tabla filtrada por este ticket para revisar su posición exacta antes de llamarlo o moverlo.')),
+            C('assign', 'Mover a C' + (2 === i ? 1 : 2), {
+                consultorio: 2 === i ? 1 : 2,
+            }));
+    } else
+        'completed' === s
+            ? ((f = 'ready'),
+              (v = 'Atención cerrada'),
+              (m = `${o} ya se completó`),
+              (b =
+                  'El ticket ya cerró su flujo, pero puedes reimprimirlo o abrir la tabla si necesitas verificar el cierre.'),
+              (y =
+                  'Usa reimpresión solo si el paciente necesita respaldo físico del turno.'),
+              (h = 'reprint'),
+              (q = `Reimprimir ${o}`))
+            : 'no_show' === s
+              ? ((f = 'warning'),
+                (v = 'No show registrado'),
+                (m = `${o} quedó como no show`),
+                (b =
+                    'La ausencia ya fue registrada. Reimprime o abre la tabla si necesitas revisar el historial inmediato.'),
+                (y =
+                    'Si fue un error operativo, revisa el flujo desde la tabla antes de volver a tocar este ticket.'),
+                (h = 'reprint'),
+                (q = `Reimprimir ${o}`))
+              : 'cancelled' === s &&
+                ((f = 'idle'),
+                (v = 'Cancelado'),
+                (m = `${o} quedó cancelado`),
+                (b =
+                    'Este ticket ya salió de la cola. Usa la tabla si necesitas validar el motivo o seguir con otro turno.'),
+                (y =
+                    'No hay una acción operativa inmediata sobre este ticket desde el hub.'));
+    return (
+        i > 0 &&
+            'open' !== h &&
+            C('open', `Operador C${i}`, { consultorio: i }),
+        C('table', 'Ver en tabla'),
+        {
+            ticketId: Number(e.id || 0),
+            ticketCode: o,
+            panelState: f,
+            badge: v,
+            headline: m,
+            detail: b,
+            recommendation: y,
+            pendingCopy: p,
+            statusCopy: r,
+            ageLabel: l,
+            priorityLabel: c,
+            patientLabel: u,
+            consultorio: i,
+            operatorUrl: S,
+            primaryAction: h,
+            primaryLabel: q,
+            primaryConsultorio: k,
+            secondaryActions: $,
+        }
+    );
+}
+function Si(e, t) {
     const a = Aa(),
         n = a
             ? (function (e, t = 4) {
@@ -5616,7 +5792,7 @@ function Ci(e, t) {
                       cancelled: 4,
                   };
                   return [...Kt().queueTickets]
-                      .map((e) => ({ ticket: e, score: _i(e, a) }))
+                      .map((e) => ({ ticket: e, score: $i(e, a) }))
                       .filter((e) => Number.isFinite(e.score))
                       .sort((e, t) => {
                           if (e.score !== t.score) return e.score - t.score;
@@ -5652,191 +5828,7 @@ function Ci(e, t) {
                       .map((e) => e.ticket);
               })(a, 4)
             : [],
-        i = n[0]
-            ? (function (e, t, a) {
-                  if (!e) return null;
-                  const n = Number(e.assignedConsultorio || 0),
-                      i = 2 === n ? 2 : 1 === n ? 1 : 0,
-                      o = String(e.ticketCode || 'ticket'),
-                      s = String(e.status || 'waiting')
-                          .trim()
-                          .toLowerCase(),
-                      r = ki(e),
-                      l =
-                          'waiting' === s || 'called' === s
-                              ? ti(e, 'called' === s ? 'called' : 'waiting')
-                              : `Último estado · ${r}`,
-                      c = ui(e),
-                      u = e.patientInitials
-                          ? `Paciente ${String(e.patientInitials).trim()}`
-                          : 'Paciente sin iniciales',
-                      d = g().queue.pendingSensitiveAction,
-                      p =
-                          Number(d?.ticketId || 0) === Number(e.id || 0)
-                              ? Yn(d, e)
-                              : '';
-                  let m = `${o} localizado`,
-                      b =
-                          'El ticket está disponible para seguimiento rápido desde el hub.',
-                      y =
-                          'Usa el botón principal para ejecutar la siguiente jugada útil sin bajar a la tabla.',
-                      f = 'idle',
-                      v = r,
-                      h = 'table',
-                      q = 'Ver en tabla',
-                      k = 0;
-                  const _ = [],
-                      $ = new Set(),
-                      C = (e, t, a = {}) => {
-                          const n = `${e}:${Number(a.consultorio || 0)}`;
-                          $.has(n) ||
-                              ($.add(n),
-                              _.push({
-                                  kind: e,
-                                  label: t,
-                                  consultorio: Number(a.consultorio || 0),
-                              }));
-                      },
-                      S =
-                          i > 0
-                              ? $n('operator', t.operator || ea.operator, {
-                                    ...Ka(a),
-                                    station: 2 === i ? 'c2' : 'c1',
-                                    lock: !0,
-                                })
-                              : '';
-                  if (p)
-                      ((f = 'alert'),
-                          (v = 'Confirmación pendiente'),
-                          (m = `${o} espera confirmación sensible`),
-                          (b = `La acción ${p} quedó preparada y visible dentro del hub.`),
-                          (y =
-                              'Confirma o cancela desde aquí antes de seguir llamando para no perder el contexto de este ticket.'),
-                          (h = 'confirm'),
-                          (q = 'Confirmar pendiente'),
-                          C('cancel', 'Cancelar pendiente'));
-                  else if ('called' === s)
-                      ((f = 'active'),
-                          (v = i > 0 ? `En atención C${i}` : 'En atención'),
-                          (m =
-                              i > 0
-                                  ? `${o} está llamado en C${i}`
-                                  : `${o} está llamado`),
-                          (b =
-                              i > 0
-                                  ? `${l}. Puedes completar, marcar no show o liberar ${o} desde esta misma tarjeta.`
-                                  : `${l}. Este ticket necesita cierre operativo antes de seguir con el resto de la cola.`),
-                          (y =
-                              'Completa si ya pasó a consulta; usa no show o liberar solo si necesitas destrabar la cola con una acción sensible.'),
-                          (h = 'complete'),
-                          (q = `Completar ${o}`),
-                          (k = i),
-                          i > 0 &&
-                              (C('recall', 'Re-llamar', { consultorio: i }),
-                              C('no_show', 'No show', { consultorio: i })),
-                          C('release', 'Liberar', { consultorio: i }));
-                  else if ('waiting' === s && 0 === i) {
-                      const e = $i(t, a);
-                      ((f = 0 === e.readinessScore ? 'ready' : 'warning'),
-                          (v =
-                              0 === e.readinessScore
-                                  ? `Listo para C${e.slot}`
-                                  : `Pendiente de C${e.slot}`),
-                          (m = `${o} sigue en la cola general`),
-                          (b = `${l}. Todavía no tiene consultorio; puedes mandarlo directo a C${e.slot} desde el hub.`),
-                          (y =
-                              0 === e.readinessScore
-                                  ? `El operador de C${e.slot} ya está listo, así que este es el destino más simple para destrabar recepción.`
-                                  : `Conviene reasignarlo a C${e.slot}, pero primero valida el operador si quieres llamarlo enseguida.`),
-                          (h = 'assign'),
-                          (q = `Asignar a C${e.slot}`),
-                          (k = e.slot),
-                          C('assign', 'Asignar a C' + (2 === e.slot ? 1 : 2), {
-                              consultorio: 2 === e.slot ? 1 : 2,
-                          }));
-                  } else if ('waiting' === s && i > 0) {
-                      const t = Jt(i),
-                          a = Yt(i),
-                          n = Number(a?.id || 0) === Number(e.id || 0);
-                      ((f = n && !t ? 'ready' : 'warning'),
-                          (v = n ? `Siguiente en C${i}` : `En cola C${i}`),
-                          (m = `${o} ya está asignado a C${i}`),
-                          n && !t
-                              ? ((b = `${l}. Es el siguiente ticket listo para llamarse en C${i}.`),
-                                (y =
-                                    'Puedes llamar desde aquí si el consultorio está libre; si no, abre Operador para mantener la atención alineada.'),
-                                (h = 'call'),
-                                (q = `Llamar ${o}`),
-                                (k = i))
-                              : t
-                                ? ((b = `${l}. C${i} todavía atiende ${String(t.ticketCode || 'otro ticket')}, así que conviene abrir el operador o revisar la tabla antes de mover este turno.`),
-                                  (y =
-                                      'Este ticket ya está encaminado al consultorio; usa Operador si quieres seguir la secuencia del mismo C.'),
-                                  (h = 'open'),
-                                  (q = `Abrir Operador C${i}`))
-                                : ((b = `${l}. Hay otros tickets antes que ${o} en C${i}, así que la tabla sigue siendo la mejor vista para ordenar esta cola.`),
-                                  (y =
-                                      'Abre la tabla filtrada por este ticket para revisar su posición exacta antes de llamarlo o moverlo.')),
-                          C('assign', 'Mover a C' + (2 === i ? 1 : 2), {
-                              consultorio: 2 === i ? 1 : 2,
-                          }));
-                  } else
-                      'completed' === s
-                          ? ((f = 'ready'),
-                            (v = 'Atención cerrada'),
-                            (m = `${o} ya se completó`),
-                            (b =
-                                'El ticket ya cerró su flujo, pero puedes reimprimirlo o abrir la tabla si necesitas verificar el cierre.'),
-                            (y =
-                                'Usa reimpresión solo si el paciente necesita respaldo físico del turno.'),
-                            (h = 'reprint'),
-                            (q = `Reimprimir ${o}`))
-                          : 'no_show' === s
-                            ? ((f = 'warning'),
-                              (v = 'No show registrado'),
-                              (m = `${o} quedó como no show`),
-                              (b =
-                                  'La ausencia ya fue registrada. Reimprime o abre la tabla si necesitas revisar el historial inmediato.'),
-                              (y =
-                                  'Si fue un error operativo, revisa el flujo desde la tabla antes de volver a tocar este ticket.'),
-                              (h = 'reprint'),
-                              (q = `Reimprimir ${o}`))
-                            : 'cancelled' === s &&
-                              ((f = 'idle'),
-                              (v = 'Cancelado'),
-                              (m = `${o} quedó cancelado`),
-                              (b =
-                                  'Este ticket ya salió de la cola. Usa la tabla si necesitas validar el motivo o seguir con otro turno.'),
-                              (y =
-                                  'No hay una acción operativa inmediata sobre este ticket desde el hub.'));
-                  return (
-                      i > 0 &&
-                          'open' !== h &&
-                          C('open', `Operador C${i}`, { consultorio: i }),
-                      C('table', 'Ver en tabla'),
-                      {
-                          ticketId: Number(e.id || 0),
-                          ticketCode: o,
-                          panelState: f,
-                          badge: v,
-                          headline: m,
-                          detail: b,
-                          recommendation: y,
-                          pendingCopy: p,
-                          statusCopy: r,
-                          ageLabel: l,
-                          priorityLabel: c,
-                          patientLabel: u,
-                          consultorio: i,
-                          operatorUrl: S,
-                          primaryAction: h,
-                          primaryLabel: q,
-                          primaryConsultorio: k,
-                          secondaryActions: _,
-                      }
-                  );
-              })(n[0], e, t)
-            : null,
+        i = n[0] ? Ci(n[0], e, t) : null,
         o = (
             a
                 ? n.slice(1)
@@ -5897,7 +5889,7 @@ function Ci(e, t) {
               suggestions: o,
           };
 }
-function Si(e, t, a = 0) {
+function wi(e, t, a = 0) {
     const n = 2 === Number(a || e?.consultorio || 0) ? 'C2' : 'C1',
         i = String(e?.ticketCode || 'ticket');
     return 'assign' === t
@@ -5955,10 +5947,10 @@ function Si(e, t, a = 0) {
                                 summary: `${i} canceló su acción sensible desde el hub.`,
                             };
 }
-function wi(t, a) {
+function Li(t, a) {
     const n = document.getElementById('queueTicketLookup');
     if (!(n instanceof HTMLElement)) return;
-    const i = Ci(t, a);
+    const i = Si(t, a);
     l(
         '#queueTicketLookup',
         `\n            <section class="queue-ticket-lookup__shell" data-state="${e(i.statusState)}">\n                <div class="queue-ticket-lookup__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Atajo por ticket</p>\n                        <h5 id="queueTicketLookupTitle" class="queue-app-card__title">${e(i.title)}</h5>\n                        <p id="queueTicketLookupSummary" class="queue-ticket-lookup__summary">${e(i.summary)}</p>\n                    </div>\n                    <span\n                        id="queueTicketLookupStatus"\n                        class="queue-ticket-lookup__status"\n                        data-state="${e(i.statusState)}"\n                    >\n                        ${e(i.statusLabel)}\n                    </span>\n                </div>\n                <div class="queue-ticket-lookup__controls">\n                    <label class="queue-ticket-lookup__field" for="queueTicketLookupInput">\n                        <span>Buscar ticket</span>\n                        <input\n                            id="queueTicketLookupInput"\n                            type="search"\n                            value="${e(i.term)}"\n                            placeholder="Ej. A-1520"\n                            autocomplete="off"\n                            spellcheck="false"\n                        />\n                    </label>\n                    <div class="queue-ticket-lookup__control-actions">\n                        <button\n                            id="queueTicketLookupSearchBtn"\n                            type="button"\n                            class="queue-ticket-lookup__action queue-ticket-lookup__action--primary"\n                        >\n                            Buscar\n                        </button>\n                        <button\n                            id="queueTicketLookupClearBtn"\n                            type="button"\n                            class="queue-ticket-lookup__action"\n                            ${i.term ? '' : 'disabled'}\n                        >\n                            Limpiar\n                        </button>\n                    </div>\n                </div>\n                ${i.suggestions.length ? `\n                            <div id="queueTicketLookupSuggestions" class="queue-ticket-lookup__suggestions" role="list" aria-label="Tickets sugeridos">\n                                ${i.suggestions.map((t, a) => `\n                                            <button\n                                                id="queueTicketLookupSuggestion_${e(String(a))}"\n                                                type="button"\n                                                class="queue-ticket-lookup__suggestion"\n                                                data-queue-ticket-lookup-suggestion="${e(t.ticketCode)}"\n                                                role="listitem"\n                                            >\n                                                <strong>${e(t.ticketCode)}</strong>\n                                                <span>${e(t.label)}</span>\n                                            </button>\n                                        `).join('')}\n                            </div>\n                        ` : ''}\n                ${i.result ? `\n                            <article\n                                id="queueTicketLookupResult"\n                                class="queue-ticket-lookup__result"\n                                data-state="${e(i.result.panelState)}"\n                            >\n                                <div class="queue-ticket-lookup__result-header">\n                                    <div>\n                                        <p id="queueTicketLookupMatchCode" class="queue-ticket-lookup__match-code">${e(i.result.ticketCode)}</p>\n                                        <p id="queueTicketLookupHeadline" class="queue-ticket-lookup__headline">${e(i.result.headline)}</p>\n                                    </div>\n                                    <span id="queueTicketLookupBadge" class="queue-ticket-lookup__badge">${e(i.result.badge)}</span>\n                                </div>\n                                ${i.result.pendingCopy ? `\n                                            <div id="queueTicketLookupPending" class="queue-ticket-lookup__pending">\n                                                <strong>Confirmación pendiente</strong>\n                                                <p>${e(i.result.pendingCopy)}</p>\n                                            </div>\n                                        ` : ''}\n                                <p id="queueTicketLookupDetail" class="queue-ticket-lookup__detail">${e(i.result.detail)}</p>\n                                <div class="queue-ticket-lookup__chips">\n                                    <span class="queue-ticket-lookup__chip">${e(i.result.statusCopy)}</span>\n                                    <span class="queue-ticket-lookup__chip">${e(i.result.ageLabel)}</span>\n                                    <span class="queue-ticket-lookup__chip">${e(i.result.priorityLabel)}</span>\n                                    <span class="queue-ticket-lookup__chip">${e(i.result.patientLabel)}</span>\n                                </div>\n                                <p id="queueTicketLookupRecommendation" class="queue-ticket-lookup__recommendation">${e(i.result.recommendation)}</p>\n                                <div class="queue-ticket-lookup__actions">\n                                    <button\n                                        id="queueTicketLookupPrimary"\n                                        type="button"\n                                        class="queue-ticket-lookup__action queue-ticket-lookup__action--primary"\n                                        data-queue-ticket-lookup-action="${e(i.result.primaryAction)}"\n                                        data-queue-ticket-lookup-consultorio="${e(String(i.result.primaryConsultorio || 0))}"\n                                    >\n                                        ${e(i.result.primaryLabel)}\n                                    </button>\n                                    ${i.result.secondaryActions.map((t, a) => `\n                                                <button\n                                                    id="queueTicketLookupSecondary_${e(String(a))}"\n                                                    type="button"\n                                                    class="queue-ticket-lookup__action"\n                                                    data-queue-ticket-lookup-action="${e(t.kind)}"\n                                                    data-queue-ticket-lookup-consultorio="${e(String(t.consultorio || 0))}"\n                                                >\n                                                    ${e(t.label)}\n                                                </button>\n                                            `).join('')}\n                                </div>\n                            </article>\n                        ` : `\n                            <article\n                                id="queueTicketLookupEmpty"\n                                class="queue-ticket-lookup__empty"\n                                data-state="${e(i.statusState)}"\n                            >\n                                <strong>${e(i.title)}</strong>\n                                <p>${e(i.summary)}</p>\n                            </article>\n                        `}\n            </section>\n        `
@@ -5967,7 +5959,7 @@ function wi(t, a) {
         r = document.getElementById('queueTicketLookupSearchBtn'),
         c = document.getElementById('queueTicketLookupClearBtn'),
         u = () => {
-            (La(o instanceof HTMLInputElement ? o.value : i.term), po(t, a));
+            (La(o instanceof HTMLInputElement ? o.value : i.term), vo(t, a));
         };
     (o instanceof HTMLInputElement &&
         (o.onkeydown = (e) => {
@@ -5975,12 +5967,12 @@ function wi(t, a) {
                 ? (e.preventDefault(), u())
                 : 'Escape' === e.key &&
                   o.value &&
-                  (e.preventDefault(), (o.value = ''), La(''), po(t, a));
+                  (e.preventDefault(), (o.value = ''), La(''), vo(t, a));
         }),
         r instanceof HTMLButtonElement && (r.onclick = u),
         c instanceof HTMLButtonElement &&
             (c.onclick = () => {
-                (La(''), po(t, a));
+                (La(''), vo(t, a));
             }),
         n
             .querySelectorAll('[data-queue-ticket-lookup-suggestion]')
@@ -5988,7 +5980,7 @@ function wi(t, a) {
                 e instanceof HTMLButtonElement &&
                     (e.onclick = () => {
                         (La(e.dataset.queueTicketLookupSuggestion || ''),
-                            po(t, a));
+                            vo(t, a));
                     });
             }),
         n.querySelectorAll('[data-queue-ticket-lookup-action]').forEach((e) => {
@@ -6013,7 +6005,7 @@ function wi(t, a) {
                                     reprintQueueTicket: s,
                                     runQueueTicketAction: r,
                                 } = await Promise.resolve().then(function () {
-                                    return Is;
+                                    return Os;
                                 });
                                 if ('assign' === t && e.ticketId > 0 && o > 0)
                                     await r(e.ticketId, 'reasignar', o);
@@ -6049,14 +6041,14 @@ function wi(t, a) {
                                             setQueueSearch: n,
                                         } = await Promise.resolve().then(
                                             function () {
-                                                return Ho;
+                                                return Qo;
                                             }
                                         );
                                         return (
                                             un({
                                                 source: 'ticket_lookup',
                                                 tone: 'info',
-                                                ...Si(e, t),
+                                                ...wi(e, t),
                                             }),
                                             a('all'),
                                             n(e.ticketCode),
@@ -6086,7 +6078,7 @@ function wi(t, a) {
                                             : 'cancel' === t || 'release' === t
                                               ? 'warning'
                                               : 'info',
-                                    ...Si(e, t, o),
+                                    ...wi(e, t, o),
                                 });
                             } catch (e) {
                                 s(
@@ -6094,7 +6086,7 @@ function wi(t, a) {
                                     'error'
                                 );
                             } finally {
-                                po(a, n);
+                                vo(a, n);
                             }
                         })(
                             i.result,
@@ -6110,16 +6102,16 @@ function wi(t, a) {
                 });
         }));
 }
-function Li(e, t, a = '') {
+function Ai(e, t, a = '') {
     const n = String(e?.ticketCode || '').trim(),
         i = Number(e?.id || 0);
     return i && n ? { ticketId: i, ticketCode: n, label: t, detail: a } : null;
 }
-function Ai(t, a) {
+function Ti(t, a) {
     if (!(document.getElementById('queueTicketRoute') instanceof HTMLElement))
         return;
     const n = (function (e, t) {
-        const a = Ci(e, t),
+        const a = Si(e, t),
             n = a.result;
         if (!n)
             return {
@@ -6175,8 +6167,8 @@ function Ai(t, a) {
                 'Este panel resume el carril real del ticket y los pivotes más útiles alrededor.',
             q = 'Ruta preparada',
             k = n.panelState,
-            _ = r > 0 ? `C${r}` : 'Cola general',
-            $ = 'Sin posición visible',
+            $ = r > 0 ? `C${r}` : 'Cola general',
+            _ = 'Sin posición visible',
             C = `${u.length} ticket(s) esperando`,
             S = 'Sin impacto inmediato calculado.';
         const w = (e) => {
@@ -6184,8 +6176,8 @@ function Ai(t, a) {
         };
         if ('called' === o && r > 0) {
             const e = d.length;
-            ((_ = `C${r} · ticket activo`),
-                ($ = 'Paciente en atención ahora'),
+            (($ = `C${r} · ticket activo`),
+                (_ = 'Paciente en atención ahora'),
                 (C =
                     e > 0
                         ? `${e} ticket(s) detrás en C${r}`
@@ -6202,14 +6194,14 @@ function Ai(t, a) {
                         ? `${e} ticket(s) esperando detrás`
                         : 'Sin cola detrás'),
                 w(
-                    Li(
+                    Ai(
                         g,
                         `Ver siguiente ${String(g?.ticketCode || '')}`,
                         `Es el próximo turno listo detrás de ${l}.`
                     )
                 ),
                 w(
-                    Li(
+                    Ai(
                         y,
                         `Ver general ${String(y?.ticketCode || '')}`,
                         'Es el ticket más antiguo que todavía no tiene consultorio.'
@@ -6217,8 +6209,8 @@ function Ai(t, a) {
                 ));
         } else if ('waiting' === o && r > 0) {
             const e = Math.max(0, p + (b ? 1 : 0));
-            ((_ = `C${r} · cola asignada`),
-                ($ =
+            (($ = `C${r} · cola asignada`),
+                (_ =
                     e <= 0 ? 'Listo para llamado' : `${e} paso(s) por delante`),
                 (C = `${d.length} ticket(s) esperando en C${r}`),
                 b && p <= 0
@@ -6226,7 +6218,7 @@ function Ai(t, a) {
                           ? `${b.ticketCode} atiende ahora; cuando cierre, ${l} queda primero y ${g.ticketCode} sigue detrás.`
                           : `${b.ticketCode} atiende ahora; cuando cierre, ${l} queda primero en C${r}.`),
                       w(
-                          Li(
+                          Ai(
                               b,
                               `Ver ticket activo ${b.ticketCode}`,
                               `Es el bloqueo inmediato antes de ${l}.`
@@ -6235,7 +6227,7 @@ function Ai(t, a) {
                     : b
                       ? ((S = `${b.ticketCode} atiende ahora y ${m?.ticketCode || 'otro ticket'} sigue antes que ${l} en C${r}.`),
                         w(
-                            Li(
+                            Ai(
                                 m,
                                 `Ver anterior ${String(m?.ticketCode || '')}`,
                                 `Va antes que ${l} dentro del carril C${r}.`
@@ -6244,7 +6236,7 @@ function Ai(t, a) {
                       : m
                         ? ((S = `${m.ticketCode} sigue antes en C${r}; ${l} no debería llamarse hasta que ese turno avance.`),
                           w(
-                              Li(
+                              Ai(
                                   m,
                                   `Ver anterior ${m.ticketCode}`,
                                   `Va antes que ${l} en la cola asignada.`
@@ -6252,7 +6244,7 @@ function Ai(t, a) {
                           ))
                         : (S = `${l} ya es el siguiente turno útil de C${r} y puede llamarse desde el lookup o el operador.`),
                 w(
-                    Li(
+                    Ai(
                         g,
                         `Ver siguiente ${String(g?.ticketCode || '')}`,
                         `Quedará detrás de ${l} cuando esta misma cola avance.`
@@ -6271,9 +6263,9 @@ function Ai(t, a) {
                     (e) => Number(e.id || 0) === Number(i.id || 0)
                 ),
                 n = a > 0 ? a : 0,
-                o = $i(e, t);
-            ((_ = 'Cola general · sin consultorio'),
-                ($ =
+                o = _i(e, t);
+            (($ = 'Cola general · sin consultorio'),
+                (_ =
                     0 === n
                         ? 'Primero sin consultorio'
                         : `${n} ticket(s) por delante`),
@@ -6288,21 +6280,21 @@ function Ai(t, a) {
                         ? `${l} ya lidera la cola sin consultorio y es buen candidato a despacho inmediato.`
                         : `${l} sigue esperando en recepción y todavía tiene otros turnos generales delante.`),
                 w(
-                    Li(
+                    Ai(
                         m,
                         `Ver anterior ${String(m?.ticketCode || '')}`,
                         `Va antes que ${l} en la cola general.`
                     )
                 ),
                 w(
-                    Li(
+                    Ai(
                         g,
                         `Ver siguiente ${String(g?.ticketCode || '')}`,
                         `Queda detrás de ${l} en la cola general.`
                     )
                 ),
                 w(
-                    Li(
+                    Ai(
                         Jt(o.slot),
                         `Ver activo C${o.slot}`,
                         `Es el ticket que hoy bloquea el consultorio sugerido para ${l}.`
@@ -6311,13 +6303,13 @@ function Ai(t, a) {
         } else {
             const e = r > 0 ? Jt(r) : null,
                 t = r > 0 ? Yt(r) : y;
-            ((_ =
+            (($ =
                 'completed' === o
                     ? 'Ruta cerrada · completado'
                     : 'no_show' === o
                       ? 'Ruta cerrada · no show'
                       : 'Ruta cerrada · cancelado'),
-                ($ = n.statusCopy),
+                (_ = n.statusCopy),
                 (C =
                     r > 0
                         ? `C${r} sigue operando en vivo`
@@ -6331,14 +6323,14 @@ function Ai(t, a) {
                     'La ruta de este ticket ya terminó; el panel salta al turno vivo más cercano para no perder continuidad operativa.'),
                 (q = 'Ruta cerrada'),
                 w(
-                    Li(
+                    Ai(
                         e,
                         `Ver activo ${String(e?.ticketCode || '')}`,
                         'Es el turno vivo más cercano dentro del mismo carril.'
                     )
                 ),
                 w(
-                    Li(
+                    Ai(
                         t,
                         `Ver siguiente ${String(t?.ticketCode || '')}`,
                         'Es el siguiente turno útil relacionado con este carril.'
@@ -6351,8 +6343,8 @@ function Ai(t, a) {
             statusLabel: q,
             statusState: k,
             result: n,
-            laneLabel: _,
-            positionLabel: $,
+            laneLabel: $,
+            positionLabel: _,
             pressureLabel: C,
             impactLabel: S,
             pivots: f.slice(0, 2),
@@ -6399,7 +6391,7 @@ function Ai(t, a) {
                     title: 'Ruta del ticket: pivote principal',
                     summary: `${n.pivots[0].ticketCode} quedó cargado desde la ruta de ${n.result.ticketCode}.`,
                 }),
-                po(t, a));
+                vo(t, a));
         });
     const c = document.getElementById('queueTicketRoutePivotSecondary');
     c instanceof HTMLButtonElement &&
@@ -6412,10 +6404,10 @@ function Ai(t, a) {
                     title: 'Ruta del ticket: pivote secundario',
                     summary: `${n.pivots[1].ticketCode} quedó cargado desde la ruta de ${n.result.ticketCode}.`,
                 }),
-                po(t, a));
+                vo(t, a));
         });
 }
-function Ti(t, a) {
+function Mi(t, a) {
     if (
         !(
             document.getElementById('queueTicketSimulation') instanceof
@@ -6424,7 +6416,7 @@ function Ti(t, a) {
     )
         return;
     const n = (function (e, t) {
-        const a = Ci(e, t),
+        const a = Si(e, t),
             n = a.result;
         if (!n)
             return {
@@ -6448,7 +6440,7 @@ function Ti(t, a) {
                 focusPivot: null,
             };
         const i = (function (e = '') {
-                const t = $a;
+                const t = _a;
                 if (!t) return null;
                 const a = wa(e);
                 if (!a || a !== t.lookupTerm) return Ta();
@@ -6510,10 +6502,10 @@ function Ti(t, a) {
             h = v.findIndex((e) => Number(e.id || 0) === Number(r.id || 0)),
             q = p > 0 ? ci(o, p) : null;
         let k = `Simulación de ${m}`,
-            _ = i
+            $ = i
                 ? `Secuencia encadenada desde ${i.sourceTicketCode || 'la simulación previa'} para ver el siguiente paso sin tocar la cola real todavía.`
                 : 'Este bloque proyecta el siguiente efecto útil sobre la cola antes de ejecutar la acción real.',
-            $ = i ? 'Secuencia simulada' : 'Simulación lista',
+            _ = i ? 'Secuencia simulada' : 'Simulación lista',
             C = i ? 'ready' : n.panelState,
             S = `${c} · ${u}`,
             w = n.primaryLabel,
@@ -6556,9 +6548,9 @@ function Ti(t, a) {
             );
             const n = li(B, t)[0] || null;
             ((k = `Simulación retenida para ${m}`),
-                (_ =
+                ($ =
                     'Ya existe una acción sensible pendiente para este ticket. El siguiente cambio real depende de confirmarla o cancelarla.'),
-                ($ = 'Confirmación pendiente'),
+                (_ = 'Confirmación pendiente'),
                 (C = 'alert'),
                 (S = `Pendiente · ${e}`),
                 (w = `Confirmar ${e}`),
@@ -6578,7 +6570,7 @@ function Ti(t, a) {
                 (A =
                     'Mientras la confirmación siga pendiente, Enter y el flujo rápido del hub quedan tomados por esta acción sensible.'),
                 N(
-                    Li(
+                    Ai(
                         n,
                         `Cargar ${String(n?.ticketCode || '')}`,
                         'Es el turno que quedaría primero después de confirmar la acción pendiente.'
@@ -6609,7 +6601,7 @@ function Ti(t, a) {
                     ? `La cola de C${p} depende de cerrar ${m}; detrás ya espera ${e.ticketCode}.`
                     : `No hay otro ticket asignado detrás, así que cerrar ${m} devuelve el foco a recepción.`),
                 N(
-                    Li(
+                    Ai(
                         e || t,
                         `Cargar ${String((e || t)?.ticketCode || '')}`,
                         e
@@ -6667,7 +6659,7 @@ function Ti(t, a) {
                             : `No habría bloqueo inmediato en C${e} después de reasignar.`
                         : 'Sin consultorio sugerido disponible para este turno.'),
                 N(
-                    Li(
+                    Ai(
                         l,
                         `Cargar ${String(l?.ticketCode || '')}`,
                         'Es el bloqueo inmediato que seguiría antes de este ticket tras la reasignación.'
@@ -6695,7 +6687,7 @@ function Ti(t, a) {
                   (A =
                       'Esta acción no cambia de inmediato la cola; sirve para abrir contexto o revisar el bloqueo exacto antes de tocar el ticket.'),
                   N(
-                      Li(
+                      Ai(
                           q || a,
                           `Cargar ${String((q || a)?.ticketCode || '')}`,
                           'Es el ticket que todavía bloquea o precede a este turno dentro del consultorio.'
@@ -6722,7 +6714,7 @@ function Ti(t, a) {
                       ? `El flujo de C${p} seguiría vivo con ${t.ticketCode} detrás.`
                       : 'Sin otro turno detrás, el siguiente cuello vuelve a recepción.'),
                   N(
-                      Li(
+                      Ai(
                           t || f[0] || null,
                           `Cargar ${String((t || f[0] || null)?.ticketCode || '')}`,
                           t
@@ -6744,7 +6736,7 @@ function Ti(t, a) {
                 (A =
                     'El riesgo ya no está en este ticket sino en el siguiente paciente que sostenga el carril.'),
                 N(
-                    Li(
+                    Ai(
                         e,
                         `Cargar ${String(e?.ticketCode || '')}`,
                         'Es el turno vivo más cercano después del cierre de este ticket.'
@@ -6756,8 +6748,8 @@ function Ti(t, a) {
         var I;
         return {
             title: k,
-            summary: _,
-            statusLabel: $,
+            summary: $,
+            statusLabel: _,
             statusState: C,
             result: n,
             beforeLabel: S,
@@ -6809,7 +6801,7 @@ function Ti(t, a) {
                                 ? e.tickets.map(Ma).filter(Boolean)
                                 : [];
                         t && a && n && i.length
-                            ? ($a = {
+                            ? (_a = {
                                   lookupTerm: t,
                                   targetTicketId: a,
                                   sourceTicketId: n,
@@ -6844,17 +6836,17 @@ function Ti(t, a) {
                     title: 'Simulación operativa: foco siguiente',
                     summary: `${n.focusPivot.ticketCode} quedó cargado desde la simulación de ${n.result.ticketCode}.`,
                 }),
-                po(t, a));
+                vo(t, a));
         });
 }
-function Mi(e, t, a) {
+function Ei(e, t, a) {
     const n = 2 === Number(a || 0) ? 2 : 1,
         i = `c${n}`,
         o = pi(e, t, n),
         s = Jt(n),
         r = ri(n),
         l = si(),
-        c = Xi(e, t, n),
+        c = oo(e, t, n),
         u = [];
     if (s) {
         const e = r[0] || null,
@@ -6868,7 +6860,7 @@ function Mi(e, t, a) {
                 : t
                   ? `Libera ${i.toUpperCase()} para absorber ${t.ticketCode} desde cola general.`
                   : `Libera ${i.toUpperCase()} sin otro ticket esperando detrás.`,
-            pivot: Li(
+            pivot: Ai(
                 s,
                 `Cargar ${s.ticketCode}`,
                 `Es el ticket que hoy ocupa ${i.toUpperCase()}.`
@@ -6892,7 +6884,7 @@ function Mi(e, t, a) {
                 : l[0]
                   ? `Luego ${i.toUpperCase()} puede absorber ${l[0].ticketCode} desde general.`
                   : 'Sin otro ticket asignado detrás por ahora.',
-            pivot: Li(
+            pivot: Ai(
                 d,
                 `Cargar ${d.ticketCode}`,
                 `Es el siguiente turno que ya espera en ${i.toUpperCase()}.`
@@ -6906,7 +6898,7 @@ function Mi(e, t, a) {
               state: 'idle',
               actionLabel: `Preparar ${p.ticketCode}`,
               support: `${ti(p, 'waiting')}. Quedará detrás del primer llamado del carril.`,
-              pivot: Li(
+              pivot: Ai(
                   p,
                   `Cargar ${p.ticketCode}`,
                   `Sigue detrás del primer ticket en ${i.toUpperCase()}.`
@@ -6927,7 +6919,7 @@ function Mi(e, t, a) {
                       ? `Traer ${l[0].ticketCode} desde general`
                       : c.primaryLabel,
               support: c.detail,
-              pivot: Li(
+              pivot: Ai(
                   l[0],
                   `Cargar ${l[0].ticketCode}`,
                   `Es el siguiente ticket general candidato para ${i.toUpperCase()}.`
@@ -6956,7 +6948,7 @@ function Mi(e, t, a) {
         steps: u,
     };
 }
-function Ei(e, t) {
+function Bi(e, t) {
     const a = si(),
         n = { 1: pi(e, t, 1), 2: pi(e, t, 2) },
         i = {
@@ -7008,7 +7000,7 @@ function Ei(e, t) {
                             ? `${a.ticketCode} quedaría listo para llamado en C${r}.`
                             : `${a.ticketCode} entraría con ${l} paso(s) delante en C${r}.`
                         : `Primero deja arriba Operador C${r}; después ${a.ticketCode} entraría con ${l} paso(s) delante.`,
-                    pivot: Li(
+                    pivot: Ai(
                         a,
                         `Cargar ${a.ticketCode}`,
                         `Es el siguiente ticket general que recepción puede despachar a C${r}.`
@@ -7031,8 +7023,8 @@ function Ei(e, t) {
         steps: o,
     };
 }
-function Bi(e, t) {
-    const a = [Mi(e, t, 1), Mi(e, t, 2), Ei(e, t)],
+function Ni(e, t) {
+    const a = [Ei(e, t, 1), Ei(e, t, 2), Bi(e, t)],
         n = a.reduce((e, t) => e + Number(t.steps.length || 0), 0),
         i = a.filter((e) => e.steps.length > 0),
         o =
@@ -7054,10 +7046,10 @@ function Bi(e, t) {
         cards: a,
     };
 }
-function Ni(t, a) {
+function Ii(t, a) {
     const n = document.getElementById('queueNextTurns');
     if (!(n instanceof HTMLElement)) return;
-    const o = Bi(t, a);
+    const o = Ni(t, a);
     l(
         '#queueNextTurns',
         `\n            <section class="queue-next-turns__shell" data-state="${e(o.statusState)}">\n                <div class="queue-next-turns__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Ventana inmediata</p>\n                        <h5 id="queueNextTurnsTitle" class="queue-app-card__title">${e(o.title)}</h5>\n                        <p id="queueNextTurnsSummary" class="queue-next-turns__summary">${e(o.summary)}</p>\n                    </div>\n                    <div class="queue-next-turns__meta">\n                        <span\n                            id="queueNextTurnsStatus"\n                            class="queue-next-turns__status"\n                            data-state="${e(o.statusState)}"\n                        >\n                            ${e(o.statusLabel)}\n                        </span>\n                        <button\n                            id="queueNextTurnsCopyBtn"\n                            type="button"\n                            class="queue-next-turns__action"\n                            ${o.cards.some((e) => e.steps.length) ? '' : 'disabled'}\n                        >\n                            Copiar secuencia\n                        </button>\n                    </div>\n                </div>\n                <div id="queueNextTurnsCards" class="queue-next-turns__grid" role="list" aria-label="Próximos turnos por carril">\n                    ${o.cards.map((t) => `\n                                <article\n                                    id="queueNextTurnsCard_${e(t.laneKey)}"\n                                    class="queue-next-turns__card"\n                                    data-state="${e(t.state)}"\n                                    role="listitem"\n                                >\n                                    <div class="queue-next-turns__card-head">\n                                        <div>\n                                            <p class="queue-next-turns__lane">${e(t.laneLabel)}</p>\n                                            <strong id="queueNextTurnsHeadline_${e(t.laneKey)}">${e(t.headline)}</strong>\n                                        </div>\n                                        <span class="queue-next-turns__badge">${e(t.badge)}</span>\n                                    </div>\n                                    <p id="queueNextTurnsSummary_${e(t.laneKey)}" class="queue-next-turns__card-summary">${e(t.summary)}</p>\n                                    ${t.steps.length ? `\n                                                <div class="queue-next-turns__steps" role="list" aria-label="Secuencia de ${e(t.laneLabel)}">\n                                                    ${t.steps.map((a, n) => `\n                                                                <article class="queue-next-turns__step" data-state="${e(a.state)}" role="listitem">\n                                                                    <div class="queue-next-turns__step-copy">\n                                                                        <span class="queue-next-turns__step-index">${n + 1}</span>\n                                                                        <div>\n                                                                            <strong id="queueNextTurnsStep_${e(t.laneKey)}_${n}">${e(a.actionLabel)}</strong>\n                                                                            <p>${e(a.support)}</p>\n                                                                        </div>\n                                                                    </div>\n                                                                    <button\n                                                                        id="queueNextTurnsLoad_${e(t.laneKey)}_${n}"\n                                                                        type="button"\n                                                                        class="queue-next-turns__load"\n                                                                        data-queue-next-turns-ticket="${e(a.pivot?.ticketCode || '')}"\n                                                                        data-queue-next-turns-action="${e(a.actionLabel)}"\n                                                                        ${a.pivot ? '' : 'disabled'}\n                                                                    >\n                                                                        ${e(a.pivot?.label || 'Sin ticket')}\n                                                                    </button>\n                                                                </article>\n                                                            `).join('')}\n                                                </div>\n                                            ` : '\n                                                <article class="queue-next-turns__empty">\n                                                    <strong>Sin pasos inmediatos</strong>\n                                                    <p>Este carril no necesita intervención ahora mismo.</p>\n                                                </article>\n                                            '}\n                                </article>\n                            `).join('')}\n                </div>\n            </section>\n        `
@@ -7108,11 +7100,11 @@ function Ni(t, a) {
                             title: 'Próximos turnos: ticket cargado',
                             summary: `${n} quedó cargado desde la secuencia inmediata (${i || 'sin acción visible'}).`,
                         }),
-                        po(t, a));
+                        vo(t, a));
                 });
         }));
 }
-function Ii(e) {
+function Pi(e) {
     const t = String(e || '')
         .trim()
         .toLowerCase();
@@ -7128,11 +7120,11 @@ function Ii(e) {
                 ? 4
                 : 5;
 }
-function Pi(t, a) {
+function ji(t, a) {
     const n = document.getElementById('queueMasterSequence');
     if (!(n instanceof HTMLElement)) return;
     const o = (function (e, t) {
-        const a = Bi(e, t),
+        const a = Ni(e, t),
             n = Aa(),
             i = { c1: 0, c2: 1, general: 2 },
             o = { active: 0, ready: 1, suggested: 2, warning: 3, idle: 4 },
@@ -7150,7 +7142,7 @@ function Pi(t, a) {
                         selected: n === String(t.pivot?.ticketCode || ''),
                         score:
                             100 * (o[t.state] ?? 5) +
-                            10 * Ii(t.actionLabel) +
+                            10 * Pi(t.actionLabel) +
                             (i[e.laneKey] ?? 9) +
                             a,
                     }))
@@ -7214,11 +7206,397 @@ function Pi(t, a) {
                             title: 'Ronda maestra: ticket cargado',
                             summary: `${n} quedó cargado desde la secuencia global (${i || 'sin acción visible'}).`,
                         }),
-                        po(t, a));
+                        vo(t, a));
                 });
         }));
 }
-function ji(e) {
+function Ri(t, a) {
+    const n = document.getElementById('queueCoverageDeck');
+    if (!(n instanceof HTMLElement)) return;
+    const o = (function (e, t) {
+        const a = [1, 2].map((a) =>
+                (function (e, t, a) {
+                    const n = 2 === Number(a || 0) ? 2 : 1,
+                        i = `c${n}`,
+                        o = 2 === n ? 1 : 2,
+                        s = pi(e, t, n),
+                        r = Jt(n),
+                        l = ri(n)[0] || null,
+                        c = si()[0] || null,
+                        u = !c && ri(o)[1] ? ri(o)[1] : null,
+                        d = Boolean(s.operatorAssigned && s.operatorLive);
+                    let p = 'idle',
+                        m = 'Sin hueco próximo',
+                        g = `${i.toUpperCase()} sin hueco operativo inmediato`,
+                        b = r
+                            ? `${r.ticketCode} · ${ti(r, 'called')}`
+                            : 'Sin paciente en atención',
+                        y = l
+                            ? `${l.ticketCode} · ${ti(l, 'waiting')}`
+                            : 'Sin paciente cubriendo la siguiente entrada',
+                        f = 'Cobertura estable',
+                        v = 'Sin acción inmediata',
+                        h = null;
+                    return (
+                        r && l
+                            ? ((p = 'ready'),
+                              (m = 'Cubierto'),
+                              (g = `${i.toUpperCase()} ya tiene cubierto el siguiente paso`),
+                              (f = `${l.ticketCode} entra cuando cierres ${r.ticketCode}.`),
+                              (v = `Cargar ${l.ticketCode}`),
+                              (h = Ai(
+                                  l,
+                                  `Cargar ${l.ticketCode}`,
+                                  `Es el paciente que ya cubre la siguiente entrada de ${i.toUpperCase()}.`
+                              )))
+                            : r && c
+                              ? ((p = d ? 'warning' : 'alert'),
+                                (m = d
+                                    ? 'Preasigna ahora'
+                                    : 'Prepara operador'),
+                                (g = `${i.toUpperCase()} quedará sin cobertura tras ${r.ticketCode}`),
+                                (f = d
+                                    ? `${c.ticketCode} debería quedar preasignado antes del cierre para evitar hueco.`
+                                    : `${c.ticketCode} podría cubrir el hueco, pero primero conviene dejar Operador ${i.toUpperCase()} listo.`),
+                                (v = d
+                                    ? `Preparar ${c.ticketCode} para ${i.toUpperCase()}`
+                                    : `Preparar Operador ${i.toUpperCase()} y luego ${c.ticketCode}`),
+                                (h = Ai(
+                                    c,
+                                    `Cargar ${c.ticketCode}`,
+                                    `Es el mejor candidato general para cubrir el siguiente ingreso de ${i.toUpperCase()}.`
+                                )))
+                              : r && u
+                                ? ((p = 'warning'),
+                                  (m = 'Rebalancea cobertura'),
+                                  (g = `${i.toUpperCase()} va a quedar libre y el otro carril tiene excedente`),
+                                  (f = `${u.ticketCode} puede moverse desde C${o} para que ${i.toUpperCase()} no quede vacío.`),
+                                  (v = `Cargar ${u.ticketCode}`),
+                                  (h = Ai(
+                                      u,
+                                      `Cargar ${u.ticketCode}`,
+                                      `Es el candidato más claro para cubrir el hueco desde C${o}.`
+                                  )))
+                                : !r && l
+                                  ? ((p = 'ready'),
+                                    (m = 'Listo para llamar'),
+                                    (g = `${i.toUpperCase()} ya tiene siguiente paciente listo`),
+                                    (f = `${l.ticketCode} ya espera en ${i.toUpperCase()} sin hueco entre turnos.`),
+                                    (v = `Cargar ${l.ticketCode}`),
+                                    (h = Ai(
+                                        l,
+                                        `Cargar ${l.ticketCode}`,
+                                        `Es el siguiente turno que ya sostiene la cobertura de ${i.toUpperCase()}.`
+                                    )))
+                                  : !r &&
+                                    c &&
+                                    ((p = d ? 'suggested' : 'warning'),
+                                    (m = d
+                                        ? 'Puede absorber'
+                                        : 'Falta operador'),
+                                    (g = `${i.toUpperCase()} puede tomar cobertura nueva`),
+                                    (f = d
+                                        ? `${c.ticketCode} puede entrar ahora mismo para evitar hueco futuro.`
+                                        : `${c.ticketCode} podría ir a ${i.toUpperCase()}, pero el operador todavía no acompaña.`),
+                                    (v = d
+                                        ? `Cargar ${c.ticketCode}`
+                                        : `Preparar ${c.ticketCode}`),
+                                    (h = Ai(
+                                        c,
+                                        `Cargar ${c.ticketCode}`,
+                                        `Es el siguiente candidato para cubrir ${i.toUpperCase()}.`
+                                    ))),
+                        {
+                            slot: n,
+                            slotKey: i,
+                            state: p,
+                            badge: m,
+                            headline: g,
+                            currentLabel: b,
+                            nextLabel: y,
+                            gapLabel: f,
+                            recommendationLabel: v,
+                            operatorLabel: s.operatorLabel,
+                            pivot: h,
+                        }
+                    );
+                })(e, t, a)
+            ),
+            n = a.filter((e) =>
+                ['warning', 'alert', 'suggested'].includes(e.state)
+            ),
+            i = a.filter((e) => 'ready' === e.state).length,
+            o =
+                a.find((e) => 'alert' === e.state) ||
+                a.find((e) => 'warning' === e.state) ||
+                a.find((e) => 'suggested' === e.state) ||
+                a.find((e) => 'ready' === e.state) ||
+                null;
+        return {
+            title: 'Cobertura siguiente',
+            summary: o
+                ? `${o.headline}. ${o.gapLabel}`
+                : 'No hay huecos próximos detectados entre el cierre actual y el siguiente ingreso.',
+            statusLabel:
+                n.length > 0
+                    ? `${n.length} hueco(s) por cubrir`
+                    : `${i}/2 consultorio(s) cubiertos`,
+            statusState: o ? o.state : 'idle',
+            cards: a,
+        };
+    })(t, a);
+    l(
+        '#queueCoverageDeck',
+        `\n            <section class="queue-coverage-deck__shell" data-state="${e(o.statusState)}">\n                <div class="queue-coverage-deck__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Cobertura de turno</p>\n                        <h5 id="queueCoverageDeckTitle" class="queue-app-card__title">${e(o.title)}</h5>\n                        <p id="queueCoverageDeckSummary" class="queue-coverage-deck__summary">${e(o.summary)}</p>\n                    </div>\n                    <div class="queue-coverage-deck__meta">\n                        <span\n                            id="queueCoverageDeckStatus"\n                            class="queue-coverage-deck__status"\n                            data-state="${e(o.statusState)}"\n                        >\n                            ${e(o.statusLabel)}\n                        </span>\n                        <button\n                            id="queueCoverageDeckCopyBtn"\n                            type="button"\n                            class="queue-coverage-deck__action"\n                            ${o.cards.length ? '' : 'disabled'}\n                        >\n                            Copiar cobertura\n                        </button>\n                    </div>\n                </div>\n                <div id="queueCoverageDeckCards" class="queue-coverage-deck__grid" role="list" aria-label="Cobertura siguiente por consultorio">\n                    ${o.cards.map((t) => `\n                                <article\n                                    id="queueCoverageCard_${e(t.slotKey)}"\n                                    class="queue-coverage-card"\n                                    data-state="${e(t.state)}"\n                                    role="listitem"\n                                >\n                                    <div class="queue-coverage-card__head">\n                                        <div>\n                                            <p class="queue-coverage-card__lane">${e(t.slotKey.toUpperCase())}</p>\n                                            <strong id="queueCoverageHeadline_${e(t.slotKey)}">${e(t.headline)}</strong>\n                                        </div>\n                                        <span class="queue-coverage-card__badge">${e(t.badge)}</span>\n                                    </div>\n                                    <p id="queueCoverageCurrent_${e(t.slotKey)}" class="queue-coverage-card__fact">${e(`Actual: ${t.currentLabel}`)}</p>\n                                    <p id="queueCoverageNext_${e(t.slotKey)}" class="queue-coverage-card__fact">${e(`Siguiente: ${t.nextLabel}`)}</p>\n                                    <p id="queueCoverageGap_${e(t.slotKey)}" class="queue-coverage-card__fact queue-coverage-card__fact--support">${e(t.gapLabel)}</p>\n                                    <div class="queue-coverage-card__actions">\n                                        <span class="queue-coverage-card__tag">${e(t.operatorLabel)}</span>\n                                        <button\n                                            id="queueCoveragePrimary_${e(t.slotKey)}"\n                                            type="button"\n                                            class="queue-coverage-card__action"\n                                            data-queue-coverage-ticket="${e(t.pivot?.ticketCode || '')}"\n                                            data-queue-coverage-label="${e(t.recommendationLabel)}"\n                                            ${t.pivot ? '' : 'disabled'}\n                                        >\n                                            ${e(t.pivot?.label || t.recommendationLabel)}\n                                        </button>\n                                    </div>\n                                </article>\n                            `).join('')}\n                </div>\n            </section>\n        `
+    );
+    const r = document.getElementById('queueCoverageDeckCopyBtn');
+    (r instanceof HTMLButtonElement &&
+        (r.onclick = () => {
+            !(function (e) {
+                if (!e) return Promise.resolve();
+                const t = [
+                    `Cobertura siguiente - ${i(new Date().toISOString())}`,
+                    `Estado: ${e.statusLabel}`,
+                    e.summary,
+                    '',
+                    ...e.cards.flatMap((e) => [
+                        `${e.slotKey.toUpperCase()} - ${e.badge}`,
+                        `Actual: ${e.currentLabel}`,
+                        `Siguiente: ${e.nextLabel}`,
+                        `Cobertura: ${e.gapLabel}`,
+                        '',
+                    ]),
+                ];
+                navigator.clipboard
+                    .writeText(t.join('\n').trim())
+                    .then(() => {
+                        s('Cobertura copiada', 'success');
+                    })
+                    .catch(() => {
+                        s('No se pudo copiar la cobertura', 'error');
+                    });
+            })(o);
+        }),
+        n.querySelectorAll('[data-queue-coverage-ticket]').forEach((e) => {
+            e instanceof HTMLButtonElement &&
+                (e.onclick = () => {
+                    const n = String(
+                            e.dataset.queueCoverageTicket || ''
+                        ).trim(),
+                        i = String(e.dataset.queueCoverageLabel || '').trim();
+                    n &&
+                        (La(n),
+                        un({
+                            source: 'coverage',
+                            tone: 'info',
+                            title: 'Cobertura siguiente: ticket cargado',
+                            summary: `${n} quedó cargado desde cobertura siguiente (${i || 'sin recomendación visible'}).`,
+                        }),
+                        vo(t, a));
+                });
+        }));
+}
+function Di(t, a) {
+    const n = document.getElementById('queueReserveDeck');
+    if (!(n instanceof HTMLElement)) return;
+    const o = (function (e, t) {
+        const a = [1, 2].map((a) =>
+                (function (e, t, a) {
+                    const n = 2 === Number(a || 0) ? 2 : 1,
+                        i = `c${n}`,
+                        o = 2 === n ? 1 : 2,
+                        s = pi(e, t, n),
+                        r = Jt(n),
+                        l = ri(n),
+                        c = l[0] || null,
+                        u = l[1] || null,
+                        d = si()[0] || null,
+                        p = !d && ri(o)[1] ? ri(o)[1] : null,
+                        m = Boolean(s.operatorAssigned && s.operatorLive);
+                    let g = 'idle',
+                        b = 'Sin reserva crítica',
+                        y = `${i.toUpperCase()} no muestra riesgo de agotarse tras el siguiente turno`,
+                        f = r
+                            ? `${r.ticketCode} · ${ti(r, 'called')}`
+                            : 'Sin paciente en atención',
+                        v = c
+                            ? `${c.ticketCode} · ${ti(c, 'waiting')}`
+                            : 'Sin siguiente asignado',
+                        h = u
+                            ? `${u.ticketCode} · ${ti(u, 'waiting')}`
+                            : d
+                              ? `${d.ticketCode} en cola general`
+                              : p
+                                ? `${p.ticketCode} desde C${o}`
+                                : 'Sin segundo paso preparado',
+                        q =
+                            'La cola del consultorio mantiene un colchón suficiente.',
+                        k = 'Sin acción inmediata',
+                        $ = null;
+                    return (
+                        u
+                            ? ((g = 'ready'),
+                              (b = '2 pasos cubiertos'),
+                              (y = `${i.toUpperCase()} ya tiene reserva después del siguiente turno`),
+                              (q = `${u.ticketCode} sostiene la cola de ${i.toUpperCase()} después de ${c?.ticketCode || 'la siguiente llamada'}.`),
+                              (k = `Cargar ${u.ticketCode}`),
+                              ($ = Ai(
+                                  u,
+                                  `Cargar ${u.ticketCode}`,
+                                  `Es la reserva inmediata que mantiene con vida la cola de ${i.toUpperCase()} tras el siguiente turno.`
+                              )))
+                            : c && d
+                              ? ((g = m ? 'suggested' : 'warning'),
+                                (b = m
+                                    ? 'Reserva desde general'
+                                    : 'Reserva frágil'),
+                                (y = `${i.toUpperCase()} depende de cola general después de ${c.ticketCode}`),
+                                (q = m
+                                    ? `${d.ticketCode} es el mejor respaldo para que ${i.toUpperCase()} no se vacíe tras ${c.ticketCode}.`
+                                    : `${d.ticketCode} puede ser la reserva, pero conviene validar el operador antes de confiar en ese respaldo.`),
+                                (k = `Cargar ${d.ticketCode}`),
+                                ($ = Ai(
+                                    d,
+                                    `Cargar ${d.ticketCode}`,
+                                    `Es el mejor candidato general para dejar una reserva real en ${i.toUpperCase()}.`
+                                )))
+                              : c && p
+                                ? ((g = 'warning'),
+                                  (b = 'Rebalancea reserva'),
+                                  (y = `${i.toUpperCase()} solo tiene un paso cubierto`),
+                                  (q = `${p.ticketCode} es el excedente más claro desde C${o} para dejar reserva después de ${c.ticketCode}.`),
+                                  (k = `Cargar ${p.ticketCode}`),
+                                  ($ = Ai(
+                                      p,
+                                      `Cargar ${p.ticketCode}`,
+                                      `Es el mejor rebalanceo visible para reconstruir la reserva de ${i.toUpperCase()}.`
+                                  )))
+                                : c
+                                  ? ((g = 'alert'),
+                                    (b = 'Sin reserva'),
+                                    (y = `${i.toUpperCase()} se vacía después de ${c.ticketCode}`),
+                                    (q = `No hay un segundo turno ya preparado para sostener ${i.toUpperCase()} después del siguiente paciente.`),
+                                    (k = `Cargar ${c.ticketCode}`),
+                                    ($ = Ai(
+                                        c,
+                                        `Cargar ${c.ticketCode}`,
+                                        `Es el último turno visible antes de que ${i.toUpperCase()} se quede sin reserva.`
+                                    )))
+                                  : d
+                                    ? ((g = m ? 'warning' : 'alert'),
+                                      (b = m ? 'Arma reserva' : 'Sin armado'),
+                                      (y = `${i.toUpperCase()} no tiene cola propia preparada`),
+                                      (q = m
+                                          ? `${d.ticketCode} es el único respaldo inmediato para volver a poblar ${i.toUpperCase()}.`
+                                          : `${d.ticketCode} podría poblar ${i.toUpperCase()}, pero el operador todavía no acompaña ese armado.`),
+                                      (k = `Cargar ${d.ticketCode}`),
+                                      ($ = Ai(
+                                          d,
+                                          `Cargar ${d.ticketCode}`,
+                                          `Es el primer ticket disponible para reconstruir la reserva de ${i.toUpperCase()}.`
+                                      )))
+                                    : p &&
+                                      ((g = 'warning'),
+                                      (b = 'Pide rebalanceo'),
+                                      (y = `${i.toUpperCase()} no tiene cola propia`),
+                                      (q = `${p.ticketCode} puede convertirse en la reserva mínima desde C${o}.`),
+                                      (k = `Cargar ${p.ticketCode}`),
+                                      ($ = Ai(
+                                          p,
+                                          `Cargar ${p.ticketCode}`,
+                                          `Es el rebalanceo más claro para poblar otra vez ${i.toUpperCase()}.`
+                                      ))),
+                        {
+                            slot: n,
+                            slotKey: i,
+                            state: g,
+                            badge: b,
+                            headline: y,
+                            currentLabel: f,
+                            nextLabel: v,
+                            reserveLabel: h,
+                            bufferLabel: q,
+                            recommendationLabel: k,
+                            operatorLabel: s.operatorLabel,
+                            pivot: $,
+                        }
+                    );
+                })(e, t, a)
+            ),
+            n = a.filter((e) =>
+                ['warning', 'alert', 'suggested'].includes(e.state)
+            ),
+            i = a.filter((e) => 'ready' === e.state).length,
+            o =
+                a.find((e) => 'alert' === e.state) ||
+                a.find((e) => 'warning' === e.state) ||
+                a.find((e) => 'suggested' === e.state) ||
+                a.find((e) => 'ready' === e.state) ||
+                null;
+        return {
+            title: 'Reserva inmediata',
+            summary: o
+                ? `${o.headline}. ${o.bufferLabel}`
+                : 'No hay consultorios con reserva frágil después del siguiente turno.',
+            statusLabel:
+                n.length > 0
+                    ? `${n.length} reserva(s) por reforzar`
+                    : `${i}/2 consultorio(s) con reserva`,
+            statusState: o ? o.state : 'idle',
+            cards: a,
+        };
+    })(t, a);
+    l(
+        '#queueReserveDeck',
+        `\n            <section class="queue-reserve-deck__shell" data-state="${e(o.statusState)}">\n                <div class="queue-reserve-deck__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Respaldo después del siguiente</p>\n                        <h5 id="queueReserveDeckTitle" class="queue-app-card__title">${e(o.title)}</h5>\n                        <p id="queueReserveDeckSummary" class="queue-reserve-deck__summary">${e(o.summary)}</p>\n                    </div>\n                    <div class="queue-reserve-deck__meta">\n                        <span\n                            id="queueReserveDeckStatus"\n                            class="queue-reserve-deck__status"\n                            data-state="${e(o.statusState)}"\n                        >\n                            ${e(o.statusLabel)}\n                        </span>\n                        <button\n                            id="queueReserveDeckCopyBtn"\n                            type="button"\n                            class="queue-reserve-deck__action"\n                            ${o.cards.length ? '' : 'disabled'}\n                        >\n                            Copiar reserva\n                        </button>\n                    </div>\n                </div>\n                <div id="queueReserveDeckCards" class="queue-reserve-deck__grid" role="list" aria-label="Reserva inmediata por consultorio">\n                    ${o.cards.map((t) => `\n                                <article\n                                    id="queueReserveCard_${e(t.slotKey)}"\n                                    class="queue-reserve-card"\n                                    data-state="${e(t.state)}"\n                                    role="listitem"\n                                >\n                                    <div class="queue-reserve-card__head">\n                                        <div>\n                                            <p class="queue-reserve-card__lane">${e(t.slotKey.toUpperCase())}</p>\n                                            <strong id="queueReserveHeadline_${e(t.slotKey)}">${e(t.headline)}</strong>\n                                        </div>\n                                        <span class="queue-reserve-card__badge">${e(t.badge)}</span>\n                                    </div>\n                                    <p id="queueReserveCurrent_${e(t.slotKey)}" class="queue-reserve-card__fact">${e(`Actual: ${t.currentLabel}`)}</p>\n                                    <p id="queueReserveNext_${e(t.slotKey)}" class="queue-reserve-card__fact">${e(`Siguiente: ${t.nextLabel}`)}</p>\n                                    <p id="queueReserveBuffer_${e(t.slotKey)}" class="queue-reserve-card__fact">${e(`Reserva: ${t.reserveLabel}`)}</p>\n                                    <p id="queueReserveSupport_${e(t.slotKey)}" class="queue-reserve-card__fact queue-reserve-card__fact--support">${e(t.bufferLabel)}</p>\n                                    <div class="queue-reserve-card__actions">\n                                        <span class="queue-reserve-card__tag">${e(t.operatorLabel)}</span>\n                                        <button\n                                            id="queueReservePrimary_${e(t.slotKey)}"\n                                            type="button"\n                                            class="queue-reserve-card__action"\n                                            data-queue-reserve-ticket="${e(t.pivot?.ticketCode || '')}"\n                                            data-queue-reserve-label="${e(t.recommendationLabel)}"\n                                            ${t.pivot ? '' : 'disabled'}\n                                        >\n                                            ${e(t.pivot?.label || t.recommendationLabel)}\n                                        </button>\n                                    </div>\n                                </article>\n                            `).join('')}\n                </div>\n            </section>\n        `
+    );
+    const r = document.getElementById('queueReserveDeckCopyBtn');
+    (r instanceof HTMLButtonElement &&
+        (r.onclick = () => {
+            !(function (e) {
+                if (!e) return Promise.resolve();
+                const t = [
+                    `Reserva inmediata - ${i(new Date().toISOString())}`,
+                    `Estado: ${e.statusLabel}`,
+                    e.summary,
+                    '',
+                    ...e.cards.flatMap((e) => [
+                        `${e.slotKey.toUpperCase()} - ${e.badge}`,
+                        `Actual: ${e.currentLabel}`,
+                        `Siguiente: ${e.nextLabel}`,
+                        `Reserva: ${e.reserveLabel}`,
+                        `Soporte: ${e.bufferLabel}`,
+                        '',
+                    ]),
+                ];
+                navigator.clipboard
+                    .writeText(t.join('\n').trim())
+                    .then(() => {
+                        s('Reserva copiada', 'success');
+                    })
+                    .catch(() => {
+                        s('No se pudo copiar la reserva', 'error');
+                    });
+            })(o);
+        }),
+        n.querySelectorAll('[data-queue-reserve-ticket]').forEach((e) => {
+            e instanceof HTMLButtonElement &&
+                (e.onclick = () => {
+                    const n = String(e.dataset.queueReserveTicket || '').trim(),
+                        i = String(e.dataset.queueReserveLabel || '').trim();
+                    n &&
+                        (La(n),
+                        un({
+                            source: 'reserve',
+                            tone: 'info',
+                            title: 'Reserva inmediata: ticket cargado',
+                            summary: `${n} quedó cargado desde reserva inmediata (${i || 'sin recomendación visible'}).`,
+                        }),
+                        vo(t, a));
+                });
+        }));
+}
+function xi(e) {
     const t = String(e?.actionLabel || '')
             .trim()
             .toLowerCase(),
@@ -7242,11 +7620,11 @@ function ji(e) {
         n
     );
 }
-function xi(t, a) {
+function Oi(t, a) {
     const n = document.getElementById('queueBlockers');
     if (!(n instanceof HTMLElement)) return;
     const o = (function (e, t) {
-        const a = Bi(e, t),
+        const a = Ni(e, t),
             n = g().queue.pendingSensitiveAction,
             i = [];
         if (n) {
@@ -7262,7 +7640,7 @@ function xi(t, a) {
                     actionLabel: `Confirmar ${t}`,
                     support:
                         'Mientras esta confirmación siga viva, el flujo rápido del hub y el numpad quedan condicionados por esta acción.',
-                    pivot: Li(
+                    pivot: Ai(
                         e,
                         `Cargar ${e.ticketCode}`,
                         'Es el ticket que hoy retiene una acción sensible pendiente.'
@@ -7303,7 +7681,7 @@ function xi(t, a) {
         });
         const o = i
                 .sort((e, t) => {
-                    const a = ji(e) - ji(t);
+                    const a = xi(e) - xi(t);
                     return 0 !== a
                         ? a
                         : String(e.laneLabel).localeCompare(
@@ -7368,11 +7746,152 @@ function xi(t, a) {
                             title: 'Bloqueos vivos: ticket cargado',
                             summary: `${n} quedó cargado desde la cadena de desbloqueo (${i || 'sin acción visible'}).`,
                         }),
-                        po(t, a));
+                        vo(t, a));
                 });
         }));
 }
-function Ri({ ageSec: e, backlog: t, operatorReady: a }) {
+function Hi(e) {
+    const t = ai(e, 'waiting') || 0;
+    return (
+        (function (e) {
+            const t = String(e?.priorityClass || '')
+                    .trim()
+                    .toLowerCase(),
+                a = String(e?.queueType || '')
+                    .trim()
+                    .toLowerCase();
+            return 'appt_overdue' === t
+                ? 0
+                : 'appt_current' === t || 'appointment' === a
+                  ? 900
+                  : 1200;
+        })(e) - t
+    );
+}
+function Ui(e) {
+    const t = String(e?.priorityClass || '')
+            .trim()
+            .toLowerCase(),
+        a = Hi(e);
+    return 'appt_overdue' === t
+        ? 'cita ya vencida'
+        : a <= 0
+          ? `vencido hace ${Rn(Math.abs(a))}`
+          : `vence en ${Rn(a)}`;
+}
+function Fi(t, a) {
+    const n = document.getElementById('queueSlaDeck');
+    if (!(n instanceof HTMLElement)) return;
+    const o = (function (e, t) {
+        const a = ii()
+                .map((a) => {
+                    const n = Ci(a, e, t),
+                        i = Hi(a),
+                        o = Number(a.assignedConsultorio || 0),
+                        s = 1 === o ? 'C1' : 2 === o ? 'C2' : 'General',
+                        r = String(a.priorityClass || '')
+                            .trim()
+                            .toLowerCase(),
+                        l =
+                            'appt_overdue' === r || i <= 0
+                                ? 'alert'
+                                : i <= 300
+                                  ? 'warning'
+                                  : 'ready',
+                        c =
+                            'appt_overdue' === r
+                                ? `${a.ticketCode} ya llegó vencido`
+                                : i <= 0
+                                  ? `${a.ticketCode} ya cayó en riesgo SLA`
+                                  : `${a.ticketCode} se acerca al límite SLA`;
+                    return {
+                        ticketId: Number(a.id || 0),
+                        ticketCode: String(a.ticketCode || ''),
+                        laneLabel: s,
+                        state: l,
+                        dueSec: i,
+                        ageLabel: ti(a, 'waiting'),
+                        dueLabel: Ui(a),
+                        headline: c,
+                        recommendation: n?.primaryLabel || 'Ver en tabla',
+                        support:
+                            n?.detail ||
+                            'Revisa el ticket desde el hub antes de que siga envejeciendo.',
+                        pivot: Ai(
+                            a,
+                            `Cargar ${String(a.ticketCode || '')}`,
+                            'Es uno de los tickets con presión SLA más alta ahora mismo.'
+                        ),
+                    };
+                })
+                .sort((e, t) =>
+                    e.dueSec !== t.dueSec
+                        ? e.dueSec - t.dueSec
+                        : Number(e.ticketId || 0) - Number(t.ticketId || 0)
+                )
+                .slice(0, 4),
+            n = a[0] || null;
+        return {
+            title: 'SLA vivo',
+            summary: n
+                ? `${n.headline}. ${n.recommendation} es la siguiente jugada útil para que no se siga degradando.`
+                : 'No hay tickets en ventana crítica de SLA ahora mismo.',
+            statusLabel: n
+                ? `${a.length} ticket(s) vigilados`
+                : 'Sin presión SLA',
+            statusState: n ? n.state : 'idle',
+            items: a,
+        };
+    })(t, a);
+    l(
+        '#queueSlaDeck',
+        `\n            <section class="queue-sla-deck__shell" data-state="${e(o.statusState)}">\n                <div class="queue-sla-deck__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Presión preventiva</p>\n                        <h5 id="queueSlaDeckTitle" class="queue-app-card__title">${e(o.title)}</h5>\n                        <p id="queueSlaDeckSummary" class="queue-sla-deck__summary">${e(o.summary)}</p>\n                    </div>\n                    <div class="queue-sla-deck__meta">\n                        <span\n                            id="queueSlaDeckStatus"\n                            class="queue-sla-deck__status"\n                            data-state="${e(o.statusState)}"\n                        >\n                            ${e(o.statusLabel)}\n                        </span>\n                        <button\n                            id="queueSlaDeckCopyBtn"\n                            type="button"\n                            class="queue-sla-deck__action"\n                            ${o.items.length ? '' : 'disabled'}\n                        >\n                            Copiar SLA\n                        </button>\n                    </div>\n                </div>\n                ${o.items.length ? `\n                            <div id="queueSlaDeckItems" class="queue-sla-deck__list" role="list" aria-label="Tickets en presión SLA">\n                                ${o.items.map((t, a) => `\n                                            <article\n                                                id="queueSlaDeckItem_${a}"\n                                                class="queue-sla-deck__item"\n                                                data-state="${e(t.state)}"\n                                                role="listitem"\n                                            >\n                                                <div class="queue-sla-deck__copy">\n                                                    <div class="queue-sla-deck__headline">\n                                                        <span class="queue-sla-deck__lane">${e(t.laneLabel)}</span>\n                                                        <strong id="queueSlaDeckHeadline_${a}">${e(t.headline)}</strong>\n                                                    </div>\n                                                    <p id="queueSlaDeckDue_${a}" class="queue-sla-deck__due">${e(`${t.ticketCode} · ${t.dueLabel}`)}</p>\n                                                    <p id="queueSlaDeckSupport_${a}" class="queue-sla-deck__support">${e(`${t.ageLabel}. ${t.support}`)}</p>\n                                                </div>\n                                                <div class="queue-sla-deck__actions">\n                                                    <span class="queue-sla-deck__badge">${e(t.recommendation)}</span>\n                                                    <button\n                                                        id="queueSlaDeckLoad_${a}"\n                                                        type="button"\n                                                        class="queue-sla-deck__load"\n                                                        data-queue-sla-ticket="${e(t.ticketCode)}"\n                                                        data-queue-sla-action="${e(t.recommendation)}"\n                                                    >\n                                                        ${e(t.pivot?.label || 'Cargar ticket')}\n                                                    </button>\n                                                </div>\n                                            </article>\n                                        `).join('')}\n                            </div>\n                        ` : '\n                            <article id="queueSlaDeckEmpty" class="queue-sla-deck__empty">\n                                <strong>Sin presión SLA crítica</strong>\n                                <p>Los tickets en espera siguen dentro de una ventana operativa aceptable.</p>\n                            </article>\n                        '}\n            </section>\n        `
+    );
+    const r = document.getElementById('queueSlaDeckCopyBtn');
+    (r instanceof HTMLButtonElement &&
+        (r.onclick = () => {
+            !(function (e) {
+                if (!e) return Promise.resolve();
+                const t = [
+                    `SLA vivo - ${i(new Date().toISOString())}`,
+                    `Estado: ${e.statusLabel}`,
+                    e.summary,
+                    '',
+                    ...(e.items.length
+                        ? e.items.map(
+                              (e, t) =>
+                                  `${t + 1}. [${e.laneLabel}] ${e.ticketCode} - ${e.dueLabel} - ${e.recommendation}`
+                          )
+                        : ['Sin tickets en presión SLA.']),
+                ];
+                navigator.clipboard
+                    .writeText(t.join('\n').trim())
+                    .then(() => {
+                        s('SLA copiado', 'success');
+                    })
+                    .catch(() => {
+                        s('No se pudo copiar SLA vivo', 'error');
+                    });
+            })(o);
+        }),
+        n.querySelectorAll('[data-queue-sla-ticket]').forEach((e) => {
+            e instanceof HTMLButtonElement &&
+                (e.onclick = () => {
+                    const n = String(e.dataset.queueSlaTicket || '').trim(),
+                        i = String(e.dataset.queueSlaAction || '').trim();
+                    n &&
+                        (La(n),
+                        un({
+                            source: 'sla_live',
+                            tone: 'warning',
+                            title: 'SLA vivo: ticket cargado',
+                            summary: `${n} quedó cargado desde la presión SLA (${i || 'sin acción visible'}).`,
+                        }),
+                        vo(t, a));
+                });
+        }));
+}
+function Ki({ ageSec: e, backlog: t, operatorReady: a }) {
     const n = Math.max(0, Number(t || 0)),
         i = Number.isFinite(Number(e)) ? Number(e) : null;
     return n <= 0
@@ -7387,7 +7906,7 @@ function Ri({ ageSec: e, backlog: t, operatorReady: a }) {
                 badge: 'Atender ya',
                 support:
                     null !== i
-                        ? `Espera máxima ${xn(i)}.`
+                        ? `Espera máxima ${Rn(i)}.`
                         : 'Hay demasiada presión acumulada.',
             }
           : (null !== i && i >= 480) || n >= 2 || !a
@@ -7396,7 +7915,7 @@ function Ri({ ageSec: e, backlog: t, operatorReady: a }) {
                   badge: 'Vigilar',
                   support:
                       null !== i
-                          ? `Espera máxima ${xn(i)}.`
+                          ? `Espera máxima ${Rn(i)}.`
                           : 'Hace falta vigilar esta línea.',
               }
             : {
@@ -7404,11 +7923,11 @@ function Ri({ ageSec: e, backlog: t, operatorReady: a }) {
                   badge: 'Bajo control',
                   support:
                       null !== i
-                          ? `Espera máxima ${xn(i)}.`
+                          ? `Espera máxima ${Rn(i)}.`
                           : 'Cola controlada.',
               };
 }
-function Di(t, a) {
+function Vi(t, a) {
     if (!(document.getElementById('queueWaitRadar') instanceof HTMLElement))
         return;
     const n = (function (e, t) {
@@ -7417,8 +7936,8 @@ function Di(t, a) {
                     if ('general' === a) {
                         const a = si(),
                             n = a[0] || null,
-                            i = Xi(e, t, 1),
-                            o = Xi(e, t, 2),
+                            i = oo(e, t, 1),
+                            o = oo(e, t, 2),
                             s =
                                 [i, o]
                                     .filter(
@@ -7429,7 +7948,7 @@ function Di(t, a) {
                                     )
                                     .sort((e, t) => e.slot - t.slot)[0] || null,
                             r = [i, o].find((e) => 'open' === e.primaryAction),
-                            l = Ri({
+                            l = Ki({
                                 ageSec: ai(n, 'waiting'),
                                 backlog: a.length,
                                 operatorReady: Boolean(s),
@@ -7491,7 +8010,7 @@ function Di(t, a) {
                     }
                     const n = 'c2' === a ? 2 : 1,
                         i = pi(e, t, n),
-                        o = Xi(e, t, n),
+                        o = oo(e, t, n),
                         s = ri(n),
                         r = si(),
                         l = Jt(n),
@@ -7562,7 +8081,7 @@ function Di(t, a) {
                                     : o.primaryLabel,
                             actionCard: 'none' === o.primaryAction ? null : o,
                         };
-                    const d = Ri({
+                    const d = Ki({
                             ageSec: ai(c, 'waiting'),
                             backlog: u,
                             operatorReady:
@@ -7622,7 +8141,7 @@ function Di(t, a) {
             chips: [
                 `Acciones ${o}`,
                 `Alertas ${n}`,
-                s > 0 ? `Espera máxima ${xn(s)}` : 'Espera máxima 0s',
+                s > 0 ? `Espera máxima ${Rn(s)}` : 'Espera máxima 0s',
             ],
             cards: a,
         };
@@ -7640,31 +8159,31 @@ function Di(t, a) {
                     ((n.disabled = !0),
                         await (async function (e, t, a) {
                             e?.actionCard &&
-                                (await to(e.actionCard, t, a, {
+                                (await ro(e.actionCard, t, a, {
                                     source: 'wait_radar',
                                 }));
                         })(e, t, a));
                 });
         }));
 }
-function Oi(e, t) {
+function zi(e, t) {
     return Number.isFinite(e) && 0 !== e
         ? e > 0
             ? `+${e} vs ${t.toUpperCase()}`
             : `${Math.abs(e)} menos que ${t.toUpperCase()}`
         : `Parejo con ${t.toUpperCase()}`;
 }
-function Hi(t, a) {
+function Qi(t, a) {
     if (!(document.getElementById('queueLoadBalance') instanceof HTMLElement))
         return;
     const n = (function (e, t) {
         const a = [1, 2].map((a) =>
                 (function (e, t, a) {
                     const n = pi(e, t, a),
-                        i = Xi(e, t, a),
+                        i = oo(e, t, a),
                         o = 2 === a ? 1 : 2,
                         s = 2 === o ? 'c2' : 'c1',
-                        r = Xi(e, t, o),
+                        r = oo(e, t, o),
                         l = ri(a),
                         c = ri(o),
                         u = si(),
@@ -7682,19 +8201,19 @@ function Hi(t, a) {
                             0 === y && 0 === u.length
                                 ? `La carga visible está pareja entre ${n.slotKey.toUpperCase()} y ${s.toUpperCase()} y no hay cola general esperando reparto.`
                                 : `${n.slotKey.toUpperCase()} mantiene un margen manejable frente a ${s.toUpperCase()}, pero conviene vigilar el siguiente movimiento del turno.`,
-                        _ = f
+                        $ = f
                             ? 'Listo para absorber'
                             : 'Falta operador dedicado',
-                        $ = 'none' === i.primaryAction ? null : i,
-                        C = $ ? $.primaryLabel : 'Sin acción';
+                        _ = 'none' === i.primaryAction ? null : i,
+                        C = _ ? _.primaryLabel : 'Sin acción';
                     if ('rebalance' === r.primaryAction && b >= 2) {
                         const e = `Mover ${r.targetTicketCode} a ${s.toUpperCase()}`;
                         ((v = y >= 3 ? 'alert' : 'warning'),
                             (h = 'Más cargado'),
                             (q = `${n.slotKey.toUpperCase()} está absorbiendo de más`),
                             (k = `${n.slotKey.toUpperCase()} lleva ${l.length} en espera frente a ${c.length} de ${s.toUpperCase()}. ${s.toUpperCase()} ya puede tomar ${r.targetTicketCode} para repartir mejor el turno.`),
-                            (_ = `Ceder ${r.targetTicketCode} a ${s.toUpperCase()}`),
-                            ($ = { ...r, primaryLabel: e }),
+                            ($ = `Ceder ${r.targetTicketCode} a ${s.toUpperCase()}`),
+                            (_ = { ...r, primaryLabel: e }),
                             (C = e));
                     } else
                         'rebalance' === i.primaryAction
@@ -7702,24 +8221,24 @@ function Hi(t, a) {
                               (h = 'Puede absorber'),
                               (q = `${n.slotKey.toUpperCase()} puede equilibrar ${s.toUpperCase()}`),
                               (k = `${n.slotKey.toUpperCase()} tiene margen operativo para absorber ${i.targetTicketCode} y bajar la presión que ya acumula ${s.toUpperCase()}.`),
-                              (_ = `Absorber ${i.targetTicketCode}`),
-                              ($ = i),
+                              ($ = `Absorber ${i.targetTicketCode}`),
+                              (_ = i),
                               (C = i.primaryLabel))
                             : 'assign' === i.primaryAction
                               ? ((v = 'ready'),
                                 (h = 'Capacidad libre'),
                                 (q = `${n.slotKey.toUpperCase()} puede absorber cola general`),
                                 (k = `Hay ${u.length} ticket(s) sin consultorio. ${n.slotKey.toUpperCase()} es la mejor salida inmediata para tomar ${i.targetTicketCode} y mantener la recepción liviana.`),
-                                (_ = `Tomar ${i.targetTicketCode} de general`),
-                                ($ = i),
+                                ($ = `Tomar ${i.targetTicketCode} de general`),
+                                (_ = i),
                                 (C = i.primaryLabel))
                               : 'call' === i.primaryAction
                                 ? ((v = 'ready'),
                                   (h = 'Siguiente listo'),
                                   (q = `${n.slotKey.toUpperCase()} ya tiene siguiente ticket`),
                                   (k = `${i.targetTicketCode} ya está alineado a ${n.slotKey.toUpperCase()}. Llamarlo ahora evita que el balance vuelva a abrirse al siguiente refresh.`),
-                                  (_ = `Llamar ${i.targetTicketCode}`),
-                                  ($ = i),
+                                  ($ = `Llamar ${i.targetTicketCode}`),
+                                  (_ = i),
                                   (C = i.primaryLabel))
                                 : 'open' === i.primaryAction &&
                                     (l.length > 0 || u.length > 0 || y > 0)
@@ -7727,8 +8246,8 @@ function Hi(t, a) {
                                     (h = 'Falta operador'),
                                     (q = `Prepara ${n.slotKey.toUpperCase()} para balancear`),
                                     (k = `${n.slotKey.toUpperCase()} tiene margen o cola pendiente, pero todavía falta un operador confiable para ejecutar el balance con seguridad.`),
-                                    (_ = `Abrir Operador ${n.slotKey.toUpperCase()}`),
-                                    ($ = i),
+                                    ($ = `Abrir Operador ${n.slotKey.toUpperCase()}`),
+                                    (_ = i),
                                     (C = i.primaryLabel))
                                   : y <= 1 &&
                                     0 === u.length &&
@@ -7739,7 +8258,7 @@ function Hi(t, a) {
                                     (k = d
                                         ? `${d.ticketCode} sigue en atención y la cola pendiente no abre un desvío material frente a ${s.toUpperCase()}.`
                                         : `La diferencia con ${s.toUpperCase()} no supera un turno y no hay cola general acumulándose ahora mismo.`),
-                                    (_ =
+                                    ($ =
                                         0 === y
                                             ? `Mismo nivel que ${s.toUpperCase()}`
                                             : `Diferencia corta frente a ${s.toUpperCase()}`));
@@ -7751,15 +8270,15 @@ function Hi(t, a) {
                         headline: q,
                         detail: k,
                         loadLabel: `En cola ${l.length} · Atención ${d ? d.ticketCode : 'Libre'}`,
-                        deltaLabel: Oi(b, s),
-                        capacityLabel: _,
+                        deltaLabel: zi(b, s),
+                        capacityLabel: $,
                         chips: [
                             n.operatorLabel,
                             n.oneTapLabel,
                             `General ${u.length}`,
                         ],
                         operatorUrl: n.operatorUrl,
-                        actionCard: $,
+                        actionCard: _,
                         primaryLabel: C,
                     };
                 })(e, t, a)
@@ -7836,18 +8355,18 @@ function Hi(t, a) {
                     ((n.disabled = !0),
                         await (async function (e, t, a) {
                             e?.actionCard &&
-                                (await to(e.actionCard, t, a, {
+                                (await ro(e.actionCard, t, a, {
                                     source: 'load_balance',
                                 }));
                         })(e, t, a));
                 });
         }));
 }
-function Fi(e) {
+function Gi(e) {
     const t = Number(e?.assignedConsultorio || 0);
     return 2 === t ? 'C2' : 1 === t ? 'C1' : 'General';
 }
-function Ui(e, t, a, n) {
+function Wi(e, t, a, n) {
     const i = Number(a?.id || 0);
     if (i <= 0) return null;
     const o = Number(a?.assignedConsultorio || 0);
@@ -7873,11 +8392,11 @@ function Ui(e, t, a, n) {
             : n[s] || null
         : null;
 }
-function Ki(t, a) {
+function Ji(t, a) {
     if (!(document.getElementById('queuePriorityLane') instanceof HTMLElement))
         return;
     const n = (function (e, t) {
-        const a = { 1: Xi(e, t, 1), 2: Xi(e, t, 2) },
+        const a = { 1: oo(e, t, 1), 2: oo(e, t, 2) },
             n = (function (e = 4) {
                 return [...ii()]
                     .sort((e, t) => {
@@ -7894,13 +8413,13 @@ function Ki(t, a) {
                 (function (e, t, a, n, i) {
                     const o = ai(a, 'waiting') || 0,
                         s = Number(a?.assignedConsultorio || 0),
-                        r = Fi(a),
+                        r = Gi(a),
                         l = ui(a),
                         c = s ? ri(s) : si(),
                         u = c.findIndex(
                             (e) => Number(e.id || 0) === Number(a?.id || 0)
                         ),
-                        d = Ui(0, 0, a, i),
+                        d = Wi(0, 0, a, i),
                         p = s ? Jt(s) : null,
                         m = 1 === s || 2 === s ? pi(e, t, s) : null,
                         g =
@@ -8031,14 +8550,14 @@ function Ki(t, a) {
                     ((n.disabled = !0),
                         await (async function (e, t, a) {
                             e?.actionCard &&
-                                (await to(e.actionCard, t, a, {
+                                (await ro(e.actionCard, t, a, {
                                     source: 'priority_lane',
                                 }));
                         })(e, t, a));
                 });
         }));
 }
-function Vi() {
+function Yi() {
     if (!(document.getElementById('queueQuickTrays') instanceof HTMLElement))
         return;
     const t = (function () {
@@ -8170,7 +8689,7 @@ function Vi() {
                 });
         }));
 }
-function zi(e) {
+function Zi(e) {
     const t = String(e || 'all')
         .trim()
         .toLowerCase();
@@ -8190,12 +8709,12 @@ function zi(e) {
                     ? 'No show'
                     : 'Tabla completa';
 }
-function Qi(e, t, a, n, i) {
+function Xi(e, t, a, n, i) {
     const o = String(g().queue?.filter || 'all')
             .trim()
             .toLowerCase(),
         s = Number(a?.assignedConsultorio || 0),
-        r = Fi(a),
+        r = Gi(a),
         l = ui(a),
         c = ti(a, 'called' === a?.status ? 'called' : 'waiting');
     let u = 'called' === a?.status ? 'active' : 'ready',
@@ -8219,7 +8738,7 @@ function Qi(e, t, a, n, i) {
                 ticketCode: String(a.ticketCode || ''),
             }));
     else {
-        const e = Ui(0, 0, a, i);
+        const e = Wi(0, 0, a, i);
         if (e)
             ((y = 'dispatch'),
                 (f = e),
@@ -8283,7 +8802,7 @@ function Qi(e, t, a, n, i) {
         actionPayload: v,
     };
 }
-function Gi(t, a) {
+function eo(t, a) {
     if (!(document.getElementById('queueActiveTray') instanceof HTMLElement))
         return;
     const n = (function (e, t) {
@@ -8293,9 +8812,9 @@ function Gi(t, a) {
                 .toLowerCase(),
             i = String(a.queue?.search || '').trim(),
             o = Vt(),
-            s = { 1: Xi(e, t, 1), 2: Xi(e, t, 2) },
-            r = o.slice(0, 3).map((e, t) => Qi(0, 0, e, t, s)),
-            l = zi(n),
+            s = { 1: oo(e, t, 1), 2: oo(e, t, 2) },
+            r = o.slice(0, 3).map((e, t) => Xi(0, 0, e, t, s)),
+            l = Zi(n),
             c = [];
         ('all' !== n && c.push(l), i && c.push(`búsqueda "${i}"`));
         const u = c.length > 0;
@@ -8335,7 +8854,7 @@ function Gi(t, a) {
                                         'dispatch' === e.actionKind &&
                                         e.actionCard
                                     )
-                                        return void (await to(
+                                        return void (await ro(
                                             e.actionCard,
                                             t,
                                             a,
@@ -8349,7 +8868,7 @@ function Gi(t, a) {
                                         const { runQueueTicketAction: t } =
                                             await Promise.resolve().then(
                                                 function () {
-                                                    return Is;
+                                                    return Os;
                                                 }
                                             );
                                         (await t(
@@ -8370,13 +8889,13 @@ function Gi(t, a) {
                                         'error'
                                     );
                                 } finally {
-                                    po(t, a);
+                                    vo(t, a);
                                 }
                         })(e, t, a));
                 });
         }));
 }
-function Wi(e) {
+function to(e) {
     return (
         !!e &&
         ('recall' === e.actionKind
@@ -8387,22 +8906,22 @@ function Wi(e) {
               ))
     );
 }
-function Ji(e, t) {
+function ao(e, t) {
     const a = g(),
         n = String(a.queue?.filter || 'all')
             .trim()
             .toLowerCase(),
         i = String(a.queue?.search || '').trim(),
         o = Vt(),
-        s = { 1: Xi(e, t, 1), 2: Xi(e, t, 2) },
-        r = o.slice(0, 3).map((e, t) => Qi(0, 0, e, t, s)),
+        s = { 1: oo(e, t, 1), 2: oo(e, t, 2) },
+        r = o.slice(0, 3).map((e, t) => Xi(0, 0, e, t, s)),
         l = [];
-    ('all' !== n && l.push(zi(n)), i && l.push(`búsqueda "${i}"`));
+    ('all' !== n && l.push(Zi(n)), i && l.push(`búsqueda "${i}"`));
     const c = l.length > 0,
-        u = r.find((e) => Wi(e)),
+        u = r.find((e) => to(e)),
         d = u
             ? (function (e) {
-                  if (!Wi(e)) return [];
+                  if (!to(e)) return [];
                   if ('recall' === e.actionKind)
                       return [
                           {
@@ -8508,16 +9027,16 @@ function Ji(e, t) {
         }
     );
 }
-async function Yi(e, t, a) {
+async function no(e, t, a) {
     if (!e) return;
     if ('dispatch' === e.kind && e.actionCard)
-        return void (await to(e.actionCard, t, a, {
+        return void (await ro(e.actionCard, t, a, {
             source: 'tray_burst',
             deferRerender: !0,
         }));
     const { callNextForConsultorio: n, runQueueTicketAction: i } =
         await Promise.resolve().then(function () {
-            return Is;
+            return Os;
         });
     if ('call' === e.kind && e.consultorio > 0)
         return (
@@ -8540,10 +9059,10 @@ async function Yi(e, t, a) {
             summary: `${e.ticketCode} se re-llamó como parte de la ráfaga operativa.`,
         }));
 }
-function Zi(t, a) {
+function io(t, a) {
     if (!(document.getElementById('queueTrayBurst') instanceof HTMLElement))
         return;
-    const n = Ji(t, a);
+    const n = ao(t, a);
     l(
         '#queueTrayBurst',
         `\n            <section class="queue-tray-burst__shell" data-state="${e(n.statusState)}">\n                <div class="queue-tray-burst__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Ráfaga operativa</p>\n                        <h5 id="queueTrayBurstTitle" class="queue-app-card__title">${e(n.title)}</h5>\n                        <p id="queueTrayBurstSummary" class="queue-tray-burst__summary">${e(n.summary)}</p>\n                    </div>\n                    <div class="queue-tray-burst__meta">\n                        <span\n                            id="queueTrayBurstStatus"\n                            class="queue-tray-burst__status"\n                            data-state="${e(n.statusState)}"\n                        >\n                            ${e(n.statusLabel)}\n                        </span>\n                        <div class="queue-tray-burst__actions">\n                            <button\n                                id="queueTrayBurstRunBtn"\n                                type="button"\n                                class="queue-tray-burst__action queue-tray-burst__action--primary"\n                                ${n.canRun ? '' : 'disabled'}\n                            >\n                                ${e(n.primaryLabel)}\n                            </button>\n                            <button\n                                id="queueTrayBurstCopyBtn"\n                                type="button"\n                                class="queue-tray-burst__action"\n                                ${n.hasContext ? '' : 'disabled'}\n                            >\n                                ${e(n.copyLabel)}\n                            </button>\n                        </div>\n                    </div>\n                </div>\n                <div id="queueTrayBurstSteps" class="queue-tray-burst__steps" role="list" aria-label="Secuencia de ráfaga operativa">\n                    ${n.steps.length ? n.steps.map((t, a) => `\n                                        <article\n                                            id="queueTrayBurstStep_${e(String(a))}"\n                                            class="queue-tray-burst__step"\n                                            data-state="${e(t.tone)}"\n                                            role="listitem"\n                                        >\n                                            <span class="queue-tray-burst__step-rank">${a + 1}</span>\n                                            <div class="queue-tray-burst__step-main">\n                                                <p id="queueTrayBurstStepTitle_${e(String(a))}" class="queue-tray-burst__step-title">${e(t.title)}</p>\n                                                <p id="queueTrayBurstStepDetail_${e(String(a))}" class="queue-tray-burst__step-detail">${e(t.detail)}</p>\n                                            </div>\n                                        </article>\n                                    `).join('') : '\n                                <article\n                                    id="queueTrayBurstEmpty"\n                                    class="queue-tray-burst__empty"\n                                    role="listitem"\n                                >\n                                    <strong>Sin secuencia automática disponible</strong>\n                                    <p>Activa una bandeja con tickets visibles o deja listo el operador correcto para que la ráfaga pueda encadenar pasos seguros.</p>\n                                </article>\n                            '}\n                </div>\n            </section>\n        `
@@ -8553,10 +9072,10 @@ function Zi(t, a) {
         (o.onclick = async () => {
             ((o.disabled = !0),
                 await (async function (e, t) {
-                    const a = Ji(e, t);
+                    const a = ao(e, t);
                     if (a.steps.length)
                         try {
-                            for (const n of a.steps) await Yi(n, e, t);
+                            for (const n of a.steps) await no(n, e, t);
                             un({
                                 tone: 'success',
                                 source: 'tray_burst',
@@ -8569,7 +9088,7 @@ function Zi(t, a) {
                                 'error'
                             );
                         } finally {
-                            po(e, t);
+                            vo(e, t);
                         }
                 })(t, a));
         });
@@ -8602,7 +9121,7 @@ function Zi(t, a) {
             })(n);
         });
 }
-function Xi(e, t, a) {
+function oo(e, t, a) {
     const n = pi(e, t, a),
         {
             slot: i,
@@ -8624,8 +9143,8 @@ function Xi(e, t, a) {
         h = f[0] || null,
         q = 0 === b.length && y.length >= 2 ? y[1] : null,
         k = b.length,
-        _ = y.length,
-        $ = f.length;
+        $ = y.length,
+        _ = f.length;
     let C = 'idle',
         S = 'Sin acción inmediata',
         w = `${o.toUpperCase()} sin movimiento urgente`,
@@ -8658,7 +9177,7 @@ function Xi(e, t, a) {
                 ? ((C = 'suggested'),
                   (S = 'Tomar de cola general'),
                   (w = `${o.toUpperCase()} puede absorber ${h.ticketCode}`),
-                  (L = `Hay ${$} ticket(s) sin consultorio. Reasigna el más antiguo a ${o.toUpperCase()} para destrabar recepción antes del siguiente pico.`),
+                  (L = `Hay ${_} ticket(s) sin consultorio. Reasigna el más antiguo a ${o.toUpperCase()} para destrabar recepción antes del siguiente pico.`),
                   (A = 'assign'),
                   (T = `Asignar ${h.ticketCode}`),
                   (M = h),
@@ -8667,7 +9186,7 @@ function Xi(e, t, a) {
                   ? ((C = 'warning'),
                     (S = 'Rebalancear cola'),
                     (w = `${o.toUpperCase()} puede ayudar a C${m}`),
-                    (L = `C${m} ya acumula ${_} en espera. Mueve ${q.ticketCode} a ${o.toUpperCase()} para repartir mejor la carga.`),
+                    (L = `C${m} ya acumula ${$} en espera. Mueve ${q.ticketCode} a ${o.toUpperCase()} para repartir mejor la carga.`),
                     (A = 'rebalance'),
                     (T = `Mover ${q.ticketCode}`),
                     (M = q),
@@ -8711,13 +9230,13 @@ function Xi(e, t, a) {
             primaryAction: A,
             primaryLabel: T,
             operatorUrl: c,
-            queueMixLabel: `${o.toUpperCase()} ${k} · General ${$}`,
-            backlogLabel: `C${m} ${_} · Heartbeat ${p}`,
+            queueMixLabel: `${o.toUpperCase()} ${k} · General ${_}`,
+            backlogLabel: `C${m} ${$} · Heartbeat ${p}`,
             chips: [l, u, d],
         }
     );
 }
-function eo(e) {
+function so(e) {
     return 'call' === e.primaryAction
         ? {
               title: `Despacho ${e.slotKey.toUpperCase()}: llamado rápido`,
@@ -8738,12 +9257,12 @@ function eo(e) {
                   summary: `Se abrió la ruta preparada de Operador ${e.slotKey.toUpperCase()} desde el hub.`,
               };
 }
-async function to(e, t, a, n = {}) {
+async function ro(e, t, a, n = {}) {
     if (e && 'none' !== e.primaryAction)
         try {
             const { callNextForConsultorio: t, runQueueTicketAction: a } =
                 await Promise.resolve().then(function () {
-                    return Is;
+                    return Os;
                 });
             ('call' === e.primaryAction
                 ? await t(e.slot)
@@ -8759,19 +9278,19 @@ async function to(e, t, a, n = {}) {
                             ? n.source
                             : 'dispatch',
                     tone: 'rebalance' === e.primaryAction ? 'warning' : 'info',
-                    ...eo(e),
+                    ...so(e),
                 }));
         } catch (e) {
             s('No se pudo ejecutar el despacho sugerido', 'error');
         } finally {
-            n.deferRerender || po(t, a);
+            n.deferRerender || vo(t, a);
         }
 }
-function ao(t, a) {
+function lo(t, a) {
     if (!(document.getElementById('queueDispatchDeck') instanceof HTMLElement))
         return;
     const n = (function (e, t) {
-        const a = [1, 2].map((a) => Xi(e, t, a)),
+        const a = [1, 2].map((a) => oo(e, t, a)),
             n = a.filter((e) =>
                 ['call', 'assign', 'rebalance'].includes(e.primaryAction)
             ).length,
@@ -8816,11 +9335,11 @@ function ao(t, a) {
             );
             n instanceof HTMLButtonElement &&
                 (n.onclick = async () => {
-                    ((n.disabled = !0), await to(e, t, a));
+                    ((n.disabled = !0), await ro(e, t, a));
                 });
         }));
 }
-function no(t, a) {
+function co(t, a) {
     if (!(document.getElementById('queueQuickConsole') instanceof HTMLElement))
         return;
     const n = (function (e, t) {
@@ -8829,12 +9348,12 @@ function no(t, a) {
             i = e.operator || ea.operator,
             o = e.kiosk || ea.kiosk,
             s = e.sala_tv || ea.sala_tv,
-            r = $n('operator', i, { ...n }),
-            l = $n('kiosk', o, { ...n }),
-            c = $n('sala_tv', s, { ...n }),
+            r = _n('operator', i, { ...n }),
+            l = _n('kiosk', o, { ...n }),
+            c = _n('sala_tv', s, { ...n }),
             u = An(t),
             d = Tn(),
-            p = Un(),
+            p = Fn(),
             m = [
                 Va(t),
                 p.badge,
@@ -9029,17 +9548,17 @@ function no(t, a) {
                     summary: `La consola rápida confirmó sugeridos de apertura. Perfil activo: ${Va(a)}.`,
                 }),
                 Jn(t, a),
-                no(t, a),
-                so(t, a),
-                jn(t, a),
-                lo(t, a),
                 co(t, a),
-                uo(t, a));
+                mo(t, a),
+                jn(t, a),
+                bo(t, a),
+                yo(t, a),
+                fo(t, a));
         }));
     const o = document.getElementById('queueQuickConsoleAction_incident_log');
     o instanceof HTMLButtonElement &&
         (o.onclick = () => {
-            (un(En(t, a)), no(t, a), so(t, a), uo(t, a));
+            (un(En(t, a)), co(t, a), mo(t, a), fo(t, a));
         });
     const s = document.getElementById('queueQuickConsoleAction_closing_apply');
     s instanceof HTMLButtonElement &&
@@ -9056,10 +9575,10 @@ function no(t, a) {
                         'La consola rápida confirmó el relevo sugerido del turno.',
                 }),
                 Jn(t, a),
-                no(t, a),
-                so(t, a),
                 co(t, a),
-                uo(t, a));
+                mo(t, a),
+                yo(t, a),
+                fo(t, a));
         }));
     const r = document.getElementById('queueQuickConsoleAction_copy_handoff');
     r instanceof HTMLButtonElement &&
@@ -9067,7 +9586,7 @@ function no(t, a) {
             Nn(a);
         });
 }
-function io(e, t) {
+function uo(e, t) {
     const a = Wn(e),
         n = (function (e, t) {
             const a = Ka(t),
@@ -9080,21 +9599,21 @@ function io(e, t) {
                         id: 'opening_operator',
                         title: 'Abrir Operador',
                         detail: 'Verifica estación, lock y flujo base del equipo principal.',
-                        href: $n('operator', n, { ...a }),
+                        href: _n('operator', n, { ...a }),
                         actionLabel: 'Abrir Operador',
                     },
                     {
                         id: 'opening_kiosk',
                         title: 'Validar Kiosco + térmica',
                         detail: 'Confirma ticket térmico, cola viva y contingencia offline limpia.',
-                        href: $n('kiosk', i, { ...a }),
+                        href: _n('kiosk', i, { ...a }),
                         actionLabel: 'Abrir Kiosco',
                     },
                     {
                         id: 'opening_sala',
                         title: 'Validar Sala TV',
                         detail: 'Deja audio, campanilla y visualización listos en la TCL C655.',
-                        href: $n('sala_tv', o, { ...a }),
+                        href: _n('sala_tv', o, { ...a }),
                         actionLabel: 'Abrir Sala TV',
                     },
                 ],
@@ -9189,16 +9708,16 @@ function io(e, t) {
         modeState: r,
     };
 }
-function oo(e, t) {
-    const a = io(e, t),
+function po(e, t) {
+    const a = uo(e, t),
         n = Ya(),
         i = an(),
         o = An(t),
         s = Tn(),
-        r = Un(),
-        l = Dn('operator'),
-        c = Dn('kiosk'),
-        u = Dn('display'),
+        r = Fn(),
+        l = xn('operator'),
+        c = xn('kiosk'),
+        u = xn('display'),
         d = cn(),
         p = d.items.some((e) => 'incident' === e.source),
         m = d.items.some((e) => 'status' === e.source),
@@ -9324,11 +9843,11 @@ function oo(e, t) {
         incidentOpen: y,
     };
 }
-function so(t, a) {
+function mo(t, a) {
     const n = document.getElementById('queuePlaybook');
     if (!(n instanceof HTMLElement)) return;
-    const o = io(t, a),
-        r = oo(t, a);
+    const o = uo(t, a),
+        r = po(t, a);
     l(
         '#queuePlaybook',
         `\n            <section class="queue-playbook__shell" data-state="${e(o.mode)}">\n                <div class="queue-playbook__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Playbook activo</p>\n                        <h5 id="queuePlaybookTitle" class="queue-app-card__title">${e(o.title)}</h5>\n                        <p id="queuePlaybookSummary" class="queue-playbook__summary">${e(o.summary)}</p>\n                    </div>\n                    <div class="queue-playbook__meta">\n                        <span\n                            id="queuePlaybookChip"\n                            class="queue-playbook__chip"\n                            data-state="${o.completedCount >= o.totalSteps ? 'ready' : 'active'}"\n                        >\n                            ${e(o.completedCount >= o.totalSteps ? 'Secuencia completa' : `Paso ${Math.min(o.completedCount + 1, o.totalSteps)}/${o.totalSteps}`)}\n                        </span>\n                        <span\n                            id="queuePlaybookAssistChip"\n                            class="queue-playbook__assist"\n                            data-state="${r.suggestedCount > 0 ? 'suggested' : o.completedCount >= o.totalSteps ? 'ready' : 'idle'}"\n                        >\n                            ${e(r.suggestedCount > 0 ? `Sugeridos ${r.suggestedCount}` : o.completedCount >= o.totalSteps ? 'Rutina completa' : 'Sin sugeridos')}\n                        </span>\n                        <button\n                            id="queuePlaybookApplyBtn"\n                            type="button"\n                            class="queue-playbook__action queue-playbook__action--primary"\n                            ${o.nextStep ? '' : 'disabled'}\n                        >\n                            ${o.nextStep ? `Marcar: ${o.nextStep.title}` : 'Sin pasos pendientes'}\n                        </button>\n                        <button\n                            id="queuePlaybookAssistBtn"\n                            type="button"\n                            class="queue-playbook__action"\n                            ${r.suggestedCount > 0 ? '' : 'disabled'}\n                        >\n                            ${r.suggestedCount > 0 ? `Confirmar sugeridos (${r.suggestedCount})` : 'Sin sugeridos ahora'}\n                        </button>\n                        <button\n                            id="queuePlaybookCopyBtn"\n                            type="button"\n                            class="queue-playbook__action"\n                        >\n                            Copiar secuencia\n                        </button>\n                        <button\n                            id="queuePlaybookResetBtn"\n                            type="button"\n                            class="queue-playbook__action"\n                        >\n                            Reiniciar playbook\n                        </button>\n                    </div>\n                </div>\n                <div id="queuePlaybookSteps" class="queue-playbook__steps" role="list" aria-label="Secuencia operativa por foco">\n                    ${o.steps
@@ -9360,8 +9879,8 @@ function so(t, a) {
                     title: `Playbook ${o.mode}: paso confirmado`,
                     summary: `${o.nextStep.title} quedó marcado como hecho desde el playbook activo.`,
                 }),
-                so(t, a),
-                uo(t, a));
+                mo(t, a),
+                fo(t, a));
         });
     const u = document.getElementById('queuePlaybookAssistBtn');
     u instanceof HTMLButtonElement &&
@@ -9376,8 +9895,8 @@ function so(t, a) {
                     title: `Playbook ${o.mode}: sugeridos confirmados`,
                     summary: `Se confirmaron ${r.suggestedIds.length} paso(s) sugeridos por señales del sistema.`,
                 }),
-                so(t, a),
-                uo(t, a));
+                mo(t, a),
+                fo(t, a));
         });
     const d = document.getElementById('queuePlaybookCopyBtn');
     d instanceof HTMLButtonElement &&
@@ -9386,8 +9905,8 @@ function so(t, a) {
                 try {
                     (await navigator.clipboard.writeText(
                         (function (e, t) {
-                            const a = io(e, t),
-                                n = oo(e, t);
+                            const a = uo(e, t),
+                                n = po(e, t);
                             return [
                                 `${a.title} - ${i(new Date().toISOString())}`,
                                 `Progreso: ${a.completedCount}/${a.totalSteps}`,
@@ -9426,19 +9945,19 @@ function so(t, a) {
                     summary:
                         'La secuencia del modo activo se reinició para volver a guiar el flujo desde el primer paso.',
                 }),
-                so(t, a),
-                uo(t, a));
+                mo(t, a),
+                fo(t, a));
         }),
         n.querySelectorAll('[data-queue-playbook-step]').forEach((e) => {
             e instanceof HTMLButtonElement &&
                 (e.onclick = () => {
                     const n = String(e.dataset.queuePlaybookStep || ''),
                         i = !o.modeState[n];
-                    (kn(o.mode, n, i), so(t, a));
+                    (kn(o.mode, n, i), mo(t, a));
                 });
         }));
 }
-function ro(t, a) {
+function go(t, a) {
     if (
         !(
             document.getElementById('queueContingencyDeck') instanceof
@@ -9451,12 +9970,12 @@ function ro(t, a) {
                 n = e.operator || ea.operator,
                 i = e.kiosk || ea.kiosk,
                 o = e.sala_tv || ea.sala_tv,
-                s = Un(),
+                s = Fn(),
                 r = 'c2' === a.station ? 'C2' : 'C1',
                 l = a.lock ? `${r} fijo` : 'modo libre',
-                c = $n('operator', n, { ...a }),
-                u = $n('kiosk', i, { ...a }),
-                d = $n('sala_tv', o, { ...a });
+                c = _n('operator', n, { ...a }),
+                u = _n('kiosk', i, { ...a }),
+                d = _n('sala_tv', o, { ...a });
             return {
                 syncHealth: s,
                 cards: [
@@ -9616,7 +10135,7 @@ function ro(t, a) {
             )}\n                </div>\n            </section>\n        `
     );
 }
-function lo(t, a) {
+function bo(t, a) {
     const n = document.getElementById('queueOpeningChecklist');
     if (!(n instanceof HTMLElement)) return;
     const i = Ya(),
@@ -9667,11 +10186,11 @@ function lo(t, a) {
                             });
                     })(n, !Ya().steps[n]),
                         Jn(t, a),
-                        no(t, a),
-                        so(t, a),
+                        co(t, a),
+                        mo(t, a),
                         jn(t, a),
-                        lo(t, a),
-                        co(t, a));
+                        bo(t, a),
+                        yo(t, a));
                 });
         }));
     const p = document.getElementById('queueOpeningChecklistApplyBtn');
@@ -9686,12 +10205,12 @@ function lo(t, a) {
                     summary: `El checklist de apertura quedó actualizado usando telemetría reciente. Perfil activo: ${Va(a)}.`,
                 }),
                 Jn(t, a),
-                no(t, a),
-                so(t, a),
-                jn(t, a),
-                lo(t, a),
                 co(t, a),
-                uo(t, a));
+                mo(t, a),
+                jn(t, a),
+                bo(t, a),
+                yo(t, a),
+                fo(t, a));
         });
     const m = document.getElementById('queueOpeningChecklistResetBtn');
     m instanceof HTMLButtonElement &&
@@ -9705,15 +10224,15 @@ function lo(t, a) {
                         'Se limpiaron las confirmaciones de apertura del día para volver a validar operador, kiosco, sala y smoke final.',
                 }),
                 Jn(t, a),
-                no(t, a),
-                so(t, a),
-                jn(t, a),
-                lo(t, a),
                 co(t, a),
-                uo(t, a));
+                mo(t, a),
+                jn(t, a),
+                bo(t, a),
+                yo(t, a),
+                fo(t, a));
         });
 }
-function co(t, a) {
+function yo(t, a) {
     const n = document.getElementById('queueShiftHandoff');
     if (!(n instanceof HTMLElement)) return;
     const i = an(),
@@ -9736,7 +10255,7 @@ function co(t, a) {
                     title: 'Operador listo para relevo',
                     detail: 'Deja visible el perfil activo, valida el numpad y entrega el equipo sin dejar dudas de estación o modo.',
                     hint: 'El PC operador debe quedar identificable para el siguiente turno.',
-                    href: $n('operator', n, { ...a }),
+                    href: _n('operator', n, { ...a }),
                     actionLabel: 'Abrir operador',
                 },
                 {
@@ -9744,7 +10263,7 @@ function co(t, a) {
                     title: 'Kiosco sin pendientes offline',
                     detail: 'Verifica que el kiosco no tenga tickets pendientes por sincronizar y que el autoservicio pueda reabrirse limpio.',
                     hint: 'Si hay pendientes offline, no cierres sin sincronizar o anotar la contingencia.',
-                    href: $n('kiosk', i, { ...a }),
+                    href: _n('kiosk', i, { ...a }),
                     actionLabel: 'Abrir kiosco',
                 },
                 {
@@ -9752,7 +10271,7 @@ function co(t, a) {
                     title: 'Sala TV lista para mañana',
                     detail: 'Deja la TCL C655 identificable, con audio visible y sin mute para la siguiente apertura.',
                     hint: 'Una TV sin mute o fuera de foreground complica el arranque del siguiente turno.',
-                    href: $n('sala_tv', o, { ...a }),
+                    href: _n('sala_tv', o, { ...a }),
                     actionLabel: 'Abrir sala TV',
                 },
             ];
@@ -9815,10 +10334,10 @@ function co(t, a) {
                         'El cierre del día quedó marcado con pasos validados por telemetría para operador, kiosco y sala.',
                 }),
                 Jn(t, a),
-                no(t, a),
-                so(t, a),
                 co(t, a),
-                uo(t, a));
+                mo(t, a),
+                yo(t, a),
+                fo(t, a));
         });
     const b = document.getElementById('queueShiftHandoffResetBtn');
     (b instanceof HTMLButtonElement &&
@@ -9832,10 +10351,10 @@ function co(t, a) {
                         'Se limpiaron las marcas de cierre del día para rehacer el relevo con estado fresco.',
                 }),
                 Jn(t, a),
-                no(t, a),
-                so(t, a),
                 co(t, a),
-                uo(t, a));
+                mo(t, a),
+                yo(t, a),
+                fo(t, a));
         }),
         n.querySelectorAll('[data-queue-shift-step]').forEach((e) => {
             e instanceof HTMLButtonElement &&
@@ -9850,13 +10369,13 @@ function co(t, a) {
                             });
                     })(n, !an().steps[n]),
                         Jn(t, a),
-                        no(t, a),
-                        so(t, a),
-                        co(t, a));
+                        co(t, a),
+                        mo(t, a),
+                        yo(t, a));
                 });
         }));
 }
-function uo(t, a) {
+function fo(t, a) {
     const n = document.getElementById('queueOpsLog');
     if (!(n instanceof HTMLElement)) return;
     const o = cn(),
@@ -9889,7 +10408,10 @@ function uo(t, a) {
                             'ticket_simulation',
                             'next_turns',
                             'master_sequence',
+                            'coverage',
+                            'reserve',
                             'blockers',
+                            'sla_live',
                         ].includes(e.source)
                     )
                   : 'status' === t
@@ -9942,9 +10464,16 @@ function uo(t, a) {
                                                         : 'master_sequence' ===
                                                             t
                                                           ? 'Ronda maestra'
-                                                          : 'blockers' === t
-                                                            ? 'Bloqueos'
-                                                            : 'Manual';
+                                                          : 'coverage' === t
+                                                            ? 'Cobertura'
+                                                            : 'reserve' === t
+                                                              ? 'Reserva'
+                                                              : 'blockers' === t
+                                                                ? 'Bloqueos'
+                                                                : 'sla_live' ===
+                                                                    t
+                                                                  ? 'SLA vivo'
+                                                                  : 'Manual';
                                   })(t.source)
                               )}</span>\n                                                </div>\n                                                <span>${e(i(t.createdAt))}</span>\n                                            </div>\n                                            <p>${e(t.summary)}</p>\n                                        </article>\n                                    `
                       )
@@ -9958,7 +10487,7 @@ function uo(t, a) {
             (un(
                 (function (e, t) {
                     const a = In(e, t),
-                        n = Un(),
+                        n = Fn(),
                         i = Ya(),
                         o = an(),
                         s = pa.filter((e) => i.steps[e]).length,
@@ -9976,12 +10505,12 @@ function uo(t, a) {
                     };
                 })(t, a)
             ),
-                uo(t, a));
+                fo(t, a));
         });
     const b = document.getElementById('queueOpsLogIncidentBtn');
     b instanceof HTMLButtonElement &&
         (b.onclick = () => {
-            (un(En(t, a)), uo(t, a));
+            (un(En(t, a)), fo(t, a));
         });
     const y = document.getElementById('queueOpsLogCopyBtn');
     y instanceof HTMLButtonElement &&
@@ -10014,7 +10543,7 @@ function uo(t, a) {
     const f = document.getElementById('queueOpsLogClearBtn');
     (f instanceof HTMLButtonElement &&
         (f.onclick = () => {
-            (ln(on(Qa())), uo(t, a));
+            (ln(on(Qa())), fo(t, a));
         }),
         n.querySelectorAll('[data-filter]').forEach((e) => {
             e instanceof HTMLButtonElement &&
@@ -10025,43 +10554,46 @@ function uo(t, a) {
                             localStorage.setItem(ra, va);
                         } catch (e) {}
                     })(e.dataset.filter || 'all'),
-                        uo(t, a));
+                        fo(t, a));
                 });
         }));
 }
-function po(e, t) {
+function vo(e, t) {
     (Jn(e, t),
         ei(e, t),
         mi(e, t),
         yi(e, t),
         hi(e, t),
-        wi(e, t),
-        Ai(e, t),
+        Li(e, t),
         Ti(e, t),
-        Ni(e, t),
-        Pi(e, t),
-        xi(e, t),
+        Mi(e, t),
+        Ii(e, t),
+        ji(e, t),
+        Ri(e, t),
         Di(e, t),
-        Hi(e, t),
-        Ki(e, t),
-        Vi(),
-        Gi(e, t),
-        Zi(e, t),
-        ao(e, t),
-        no(e, t),
-        so(e, t),
-        jn(e, t),
-        Fn(e, t),
-        Gn(e, t),
-        ro(e, t),
+        Oi(e, t),
+        Fi(e, t),
+        Vi(e, t),
+        Qi(e, t),
+        Ji(e, t),
+        Yi(),
+        eo(e, t),
+        io(e, t),
         lo(e, t),
         co(e, t),
-        uo(e, t),
         mo(e, t),
+        jn(e, t),
+        Un(e, t),
+        Gn(e, t),
+        go(e, t),
+        bo(e, t),
+        yo(e, t),
+        fo(e, t),
+        ho(e, t),
         Ba(),
         Ia());
 }
-function mo(t, a) {
+function ho(t, a) {
     const n = document.getElementById('queueInstallConfigurator');
     if (!(n instanceof HTMLElement)) return;
     const i = Ka(a),
@@ -10077,8 +10609,8 @@ function mo(t, a) {
                 : 'mac' === i.platform
                   ? 'mac'
                   : 'win',
-        c = (s.targets && s.targets[r]) || _n(s, a) || null,
-        u = $n(o, s, i),
+        c = (s.targets && s.targets[r]) || $n(s, a) || null,
+        u = _n(o, s, i),
         d = Oa(('sala_tv' === o && c && c.url) || u),
         p = Ha(o, i, s),
         m = (function (e) {
@@ -10124,7 +10656,7 @@ function mo(t, a) {
                         ? `Operador ${'c2' === e.station ? 'C2' : 'C1'} fijo`
                         : 'Operador en modo libre';
             })(i)
-        )}</h5>\n                        <p class="queue-app-card__description">\n                            ${'sala_tv' === o ? 'Usa el APK para la TV y mantén el fallback web como respaldo.' : 'Descarga la app correcta y usa la ruta preparada como validación o respaldo.'}\n                        </p>\n                    </div>\n                    <div class="queue-install-result__chips">\n                        <span class="queue-app-card__tag">\n                            ${e(c && c.label ? c.label : 'Perfil listo')}\n                        </span>\n                        ${'operator' === o ? `<span class="queue-app-card__tag">${i.lock ? ('c2' === i.station ? 'C2 bloqueado' : 'C1 bloqueado') : 'Modo libre'}</span>` : ''}\n                    </div>\n                    <div class="queue-install-result__meta">\n                        <span>Descarga recomendada</span>\n                        <strong>${e((c && c.url) || 'Sin artefacto')}</strong>\n                    </div>\n                    <div class="queue-install-result__meta">\n                        <span>Ruta web preparada</span>\n                        <strong>${e(u)}</strong>\n                    </div>\n                    <div class="queue-install-configurator__actions">\n                        ${c && c.url ? `<a href="${e(c.url)}" class="queue-app-card__cta-primary" download>Descargar artefacto</a>` : ''}\n                        <button\n                            type="button"\n                            data-action="queue-copy-install-link"\n                            data-queue-install-url="${e(Da((c && c.url) || ''))}"\n                        >\n                            Copiar descarga\n                        </button>\n                        <a href="${e(u)}" target="_blank" rel="noopener">\n                            Abrir ruta preparada\n                        </a>\n                        <button\n                            type="button"\n                            data-action="queue-copy-install-link"\n                            data-queue-install-url="${e(u)}"\n                        >\n                            Copiar ruta preparada\n                        </button>\n                        <a href="${e(d)}" target="_blank" rel="noopener">\n                            Mostrar QR\n                        </a>\n                        <a href="${e(p)}" target="_blank" rel="noopener">\n                            Abrir centro público\n                        </a>\n                    </div>\n                    <ul class="queue-app-card__notes">${m}</ul>\n                </section>\n            </div>\n        `
+        )}</h5>\n                        <p class="queue-app-card__description">\n                            ${'sala_tv' === o ? 'Usa el APK para la TV y mantén el fallback web como respaldo.' : 'Descarga la app correcta y usa la ruta preparada como validación o respaldo.'}\n                        </p>\n                    </div>\n                    <div class="queue-install-result__chips">\n                        <span class="queue-app-card__tag">\n                            ${e(c && c.label ? c.label : 'Perfil listo')}\n                        </span>\n                        ${'operator' === o ? `<span class="queue-app-card__tag">${i.lock ? ('c2' === i.station ? 'C2 bloqueado' : 'C1 bloqueado') : 'Modo libre'}</span>` : ''}\n                    </div>\n                    <div class="queue-install-result__meta">\n                        <span>Descarga recomendada</span>\n                        <strong>${e((c && c.url) || 'Sin artefacto')}</strong>\n                    </div>\n                    <div class="queue-install-result__meta">\n                        <span>Ruta web preparada</span>\n                        <strong>${e(u)}</strong>\n                    </div>\n                    <div class="queue-install-configurator__actions">\n                        ${c && c.url ? `<a href="${e(c.url)}" class="queue-app-card__cta-primary" download>Descargar artefacto</a>` : ''}\n                        <button\n                            type="button"\n                            data-action="queue-copy-install-link"\n                            data-queue-install-url="${e(xa((c && c.url) || ''))}"\n                        >\n                            Copiar descarga\n                        </button>\n                        <a href="${e(u)}" target="_blank" rel="noopener">\n                            Abrir ruta preparada\n                        </a>\n                        <button\n                            type="button"\n                            data-action="queue-copy-install-link"\n                            data-queue-install-url="${e(u)}"\n                        >\n                            Copiar ruta preparada\n                        </button>\n                        <a href="${e(d)}" target="_blank" rel="noopener">\n                            Mostrar QR\n                        </a>\n                        <a href="${e(p)}" target="_blank" rel="noopener">\n                            Abrir centro público\n                        </a>\n                    </div>\n                    <ul class="queue-app-card__notes">${m}</ul>\n                </section>\n            </div>\n        `
     ),
         n.querySelectorAll('[data-queue-install-preset]').forEach((e) => {
             e instanceof HTMLButtonElement &&
@@ -10133,25 +10665,25 @@ function mo(t, a) {
                         (t) => t.id === e.dataset.queueInstallPreset
                     );
                     n &&
-                        (Ua(n.nextPreset, a),
+                        (Fa(n.nextPreset, a),
                         un({
                             tone: 'info',
                             source: 'config',
                             title: `Preset rápido: ${n.label}`,
                             summary: `${Va(a)}. El asistente ya quedó listo con este perfil.`,
                         }),
-                        po(t, a));
+                        vo(t, a));
                 });
         }));
     const g = document.getElementById('queueInstallSurfaceSelect');
     g instanceof HTMLSelectElement &&
         (g.onchange = () => {
-            (Ua({ ...i, surface: g.value }, a), po(t, a));
+            (Fa({ ...i, surface: g.value }, a), vo(t, a));
         });
     const b = document.getElementById('queueInstallProfileSelect');
     b instanceof HTMLSelectElement &&
         (b.onchange = () => {
-            (Ua(
+            (Fa(
                 {
                     ...i,
                     station: 'c2_locked' === b.value ? 'c2' : 'c1',
@@ -10165,18 +10697,18 @@ function mo(t, a) {
                     title: 'Perfil operativo ajustado',
                     summary: `${Va(a)}. La ruta preparada ya quedó alineada para descarga y fallback.`,
                 }),
-                po(t, a));
+                vo(t, a));
         });
     const y = document.getElementById('queueInstallPlatformSelect');
     y instanceof HTMLSelectElement &&
         (y.onchange = () => {
-            (Ua({ ...i, platform: 'mac' === y.value ? 'mac' : 'win' }, a),
-                po(t, a));
+            (Fa({ ...i, platform: 'mac' === y.value ? 'mac' : 'win' }, a),
+                vo(t, a));
         });
     const f = document.getElementById('queueInstallOneTapInput');
     f instanceof HTMLInputElement &&
         (f.onchange = () => {
-            (Ua({ ...i, oneTap: f.checked }, a),
+            (Fa({ ...i, oneTap: f.checked }, a),
                 un({
                     tone: f.checked ? 'info' : 'warning',
                     source: 'config',
@@ -10185,10 +10717,10 @@ function mo(t, a) {
                         : 'Modo 1 tecla desactivado',
                     summary: `${Va(a)}. Ajuste guardado en el preparador de rutas operativas.`,
                 }),
-                po(t, a));
+                vo(t, a));
         });
 }
-function go(e = {}) {
+function qo(e = {}) {
     const {
         allowDuringInteraction: t = !1,
         manifestOverride: a = null,
@@ -10266,8 +10798,8 @@ function go(e = {}) {
                       : ea;
               })();
     !t && i && 'true' === i.dataset.queueHubReady && ja()
-        ? Ra(c, o)
-        : (xa(),
+        ? Da(c, o)
+        : (Ra(),
           l(
               '#queueAppDownloadsCards',
               [
@@ -10281,41 +10813,44 @@ function go(e = {}) {
           mi(c, o),
           yi(c, o),
           hi(c, o),
-          wi(c, o),
-          Ai(c, o),
+          Li(c, o),
           Ti(c, o),
-          Ni(c, o),
-          Pi(c, o),
-          xi(c, o),
+          Mi(c, o),
+          Ii(c, o),
+          ji(c, o),
+          Ri(c, o),
           Di(c, o),
-          Hi(c, o),
-          Ki(c, o),
-          Vi(),
-          Gi(c, o),
-          Zi(c, o),
-          ao(c, o),
-          no(c, o),
-          so(c, o),
-          jn(c, o),
-          Fn(c, o),
-          Gn(c, o),
-          ro(c, o),
+          Oi(c, o),
+          Fi(c, o),
+          Vi(c, o),
+          Qi(c, o),
+          Ji(c, o),
+          Yi(),
+          eo(c, o),
+          io(c, o),
           lo(c, o),
           co(c, o),
-          uo(c, o),
           mo(c, o),
+          jn(c, o),
+          Un(c, o),
+          Gn(c, o),
+          go(c, o),
+          bo(c, o),
+          yo(c, o),
+          fo(c, o),
+          ho(c, o),
           i && (i.dataset.queueHubReady = 'true'),
           Ba(),
           Ia());
 }
-function bo(t = () => {}) {
+function ko(t = () => {}) {
     const a = g(),
         { queueMeta: n } = Kt(),
         i = Vt(),
         o = Qt(),
         s = Gt(),
         c = Jt(a.queue.stationConsultorio);
-    (go(),
+    (qo(),
         (function (e, t) {
             const a = g();
             (!(function (e) {
@@ -10329,10 +10864,10 @@ function bo(t = () => {}) {
                     ));
             })(e),
                 (function (e) {
-                    const t = _t(e, 1),
-                        a = _t(e, 2),
-                        n = $t(t),
-                        i = $t(a);
+                    const t = $t(e, 1),
+                        a = $t(e, 2),
+                        n = _t(t),
+                        i = _t(a);
                     (r('#queueC1Now', n),
                         r('#queueC2Now', i),
                         Ct('queueReleaseC1', 1, t, n),
@@ -10511,7 +11046,7 @@ function bo(t = () => {}) {
         })(a),
         ht());
 }
-function yo(e) {
+function $o(e) {
     b((t) => {
         const a = [
             { at: new Date().toISOString(), message: String(e || '') },
@@ -10523,26 +11058,26 @@ function yo(e) {
         ht();
     } catch (e) {}
 }
-function fo(e, { render: t = !0 } = {}) {
+function _o(e, { render: t = !0 } = {}) {
     (b((t) => ({
         ...t,
         queue: { ...t.queue, selected: zt(e, t.data.queueTickets || []) },
     })),
-        t && bo(yo));
+        t && ko($o));
 }
-function vo(e) {
+function Co(e) {
     const t = Number(e || 0);
     if (!t) return;
     const a = zt(g().queue.selected || []);
-    fo(a.includes(t) ? a.filter((e) => e !== t) : [...a, t]);
+    _o(a.includes(t) ? a.filter((e) => e !== t) : [...a, t]);
 }
-function ho() {
-    fo(Vt().map((e) => Number(e.id || 0)));
+function So() {
+    _o(Vt().map((e) => Number(e.id || 0)));
 }
-function qo() {
-    fo([]);
+function wo() {
+    _o([]);
 }
-function ko(e, t = '') {
+function Lo(e, t = '') {
     try {
         const a = localStorage.getItem(e);
         return null === a ? t : a;
@@ -10550,12 +11085,12 @@ function ko(e, t = '') {
         return t;
     }
 }
-function _o(e, t) {
+function Ao(e, t) {
     try {
         localStorage.setItem(e, String(t));
     } catch (e) {}
 }
-function $o(e, t) {
+function To(e, t) {
     try {
         const a = localStorage.getItem(e);
         return a ? JSON.parse(a) : t;
@@ -10563,50 +11098,50 @@ function $o(e, t) {
         return t;
     }
 }
-function Co(e, t) {
+function Mo(e, t) {
     try {
         localStorage.setItem(e, JSON.stringify(t));
     } catch (e) {}
 }
-function So(e) {
+function Eo(e) {
     try {
         return new URL(window.location.href).searchParams.get(e) || '';
     } catch (e) {
         return '';
     }
 }
-const wo = 'queueStationMode',
-    Lo = 'queueStationConsultorio',
-    Ao = 'queueOneTapAdvance',
-    To = 'queueCallKeyBindingV1',
-    Mo = 'queueNumpadHelpOpen',
-    Eo = 'queueAdminLastSnapshot',
-    Bo = new Map([
+const Bo = 'queueStationMode',
+    No = 'queueStationConsultorio',
+    Io = 'queueOneTapAdvance',
+    Po = 'queueCallKeyBindingV1',
+    jo = 'queueNumpadHelpOpen',
+    Ro = 'queueAdminLastSnapshot',
+    Do = new Map([
         [1, !1],
         [2, !1],
     ]),
-    No = new Set(['no_show', 'cancelar']);
-function Io(e) {
-    (_o(wo, e.queue.stationMode || 'free'),
-        _o(Lo, e.queue.stationConsultorio || 1),
-        _o(Ao, e.queue.oneTap ? '1' : '0'),
-        _o(Mo, e.queue.helpOpen ? '1' : '0'),
+    xo = new Set(['no_show', 'cancelar']);
+function Oo(e) {
+    (Ao(Bo, e.queue.stationMode || 'free'),
+        Ao(No, e.queue.stationConsultorio || 1),
+        Ao(Io, e.queue.oneTap ? '1' : '0'),
+        Ao(jo, e.queue.helpOpen ? '1' : '0'),
         e.queue.customCallKey
-            ? Co(To, e.queue.customCallKey)
+            ? Mo(Po, e.queue.customCallKey)
             : (function (e) {
                   try {
                       localStorage.removeItem(e);
                   } catch (e) {}
-              })(To),
-        Co(Eo, {
+              })(Po),
+        Mo(Ro, {
             queueMeta: e.data.queueMeta,
             queueTickets: e.data.queueTickets,
             updatedAt: new Date().toISOString(),
         }));
 }
-function Po(e, t = null, a = {}) {
+function Ho(e, t = null, a = {}) {
     const n = (Array.isArray(e) ? e : []).map((e, t) => It(e, t)),
-        i = Rt(t && 'object' == typeof t ? t : Nt(n), n),
+        i = Dt(t && 'object' == typeof t ? t : Nt(n), n),
         o = n.filter((e) => 'waiting' === e.status).length,
         s =
             'boolean' == typeof a.fallbackPartial
@@ -10638,10 +11173,10 @@ function Po(e, t = null, a = {}) {
             syncMode: r,
         },
     })),
-        Io(g()),
-        bo(yo));
+        Oo(g()),
+        ko($o));
 }
-function jo(e, t) {
+function Uo(e, t) {
     const a = Number(e || 0),
         n = (g().data.queueTickets || []).map((e, n) => {
             const i = It(e, n);
@@ -10649,41 +11184,41 @@ function jo(e, t) {
                 ? i
                 : It('function' == typeof t ? t(i) : { ...i }, n);
         });
-    Po(n, Nt(n), {
+    Ho(n, Nt(n), {
         fallbackPartial: !1,
         syncMode: 'live',
         bumpRuntimeRevision: !0,
     });
 }
-function xo(e) {
-    (b((t) => ({ ...t, queue: { ...t.queue, ...e } })), Io(g()), bo(yo));
+function Fo(e) {
+    (b((t) => ({ ...t, queue: { ...t.queue, ...e } })), Oo(g()), ko($o));
 }
-function Ro(e) {
-    xo({ filter: St(e) || 'all', selected: [] });
+function Ko(e) {
+    Fo({ filter: St(e) || 'all', selected: [] });
 }
-function Do(e) {
-    xo({ search: String(e || ''), selected: [] });
+function Vo(e) {
+    Fo({ search: String(e || ''), selected: [] });
 }
-function Oo() {
-    xo({ search: '', selected: [] });
+function zo() {
+    Fo({ search: '', selected: [] });
     const e = document.getElementById('queueSearchInput');
     e instanceof HTMLInputElement && (e.value = '');
 }
-var Ho = Object.freeze({
+var Qo = Object.freeze({
     __proto__: null,
-    appendActivity: yo,
-    clearQueueSearch: Oo,
-    clearQueueSelection: qo,
-    mutateTicketLocal: jo,
-    selectVisibleQueueTickets: ho,
-    setQueueFilter: Ro,
-    setQueueSearch: Do,
-    setQueueSelection: fo,
-    setQueueStateWithTickets: Po,
-    toggleQueueTicketSelection: vo,
-    updateQueueUi: xo,
+    appendActivity: $o,
+    clearQueueSearch: zo,
+    clearQueueSelection: wo,
+    mutateTicketLocal: Uo,
+    selectVisibleQueueTickets: So,
+    setQueueFilter: Ko,
+    setQueueSearch: Vo,
+    setQueueSelection: _o,
+    setQueueStateWithTickets: Ho,
+    toggleQueueTicketSelection: Co,
+    updateQueueUi: Fo,
 });
-function Fo(e, t) {
+function Go(e, t) {
     const a = Et(t.createdAt, t.created_at, e?.createdAt, e?.created_at),
         n = Et(
             t.priorityClass,
@@ -10717,7 +11252,7 @@ function Fo(e, t) {
         patientInitials: o,
     };
 }
-function Uo(e, t = {}) {
+function Wo(e, t = {}) {
     const { queueState: a, payloadTicket: n } = (function (e) {
         const t =
                 e?.data?.queueState ||
@@ -10753,39 +11288,39 @@ function Uo(e, t = {}) {
             return (
                 t.length > 0 ||
                 !!(
-                    Dt(e, 'queue_tickets') ||
-                    Dt(e, 'queueTickets') ||
-                    Dt(e, 'tickets')
+                    xt(e, 'queue_tickets') ||
+                    xt(e, 'queueTickets') ||
+                    xt(e, 'tickets')
                 ) ||
                 !(!a || 'object' != typeof a) ||
                 !!(function (e) {
                     return (
-                        Dt(e, 'waitingCount') ||
-                        Dt(e, 'waiting_count') ||
-                        Dt(e, 'calledCount') ||
-                        Dt(e, 'called_count') ||
-                        Dt(e, 'completedCount') ||
-                        Dt(e, 'completed_count') ||
-                        Dt(e, 'noShowCount') ||
-                        Dt(e, 'no_show_count') ||
-                        Dt(e, 'cancelledCount') ||
-                        Dt(e, 'cancelled_count')
+                        xt(e, 'waitingCount') ||
+                        xt(e, 'waiting_count') ||
+                        xt(e, 'calledCount') ||
+                        xt(e, 'called_count') ||
+                        xt(e, 'completedCount') ||
+                        xt(e, 'completed_count') ||
+                        xt(e, 'noShowCount') ||
+                        xt(e, 'no_show_count') ||
+                        xt(e, 'cancelledCount') ||
+                        xt(e, 'cancelled_count')
                     );
                 })(e) ||
                 !!(function (e) {
                     const t = Ot(e);
                     return Boolean(
                         t &&
-                        (Dt(t, 'waiting') ||
-                            Dt(t, 'called') ||
-                            Dt(t, 'completed') ||
-                            Dt(t, 'no_show') ||
-                            Dt(t, 'noShow') ||
-                            Dt(t, 'cancelled') ||
-                            Dt(t, 'canceled'))
+                        (xt(t, 'waiting') ||
+                            xt(t, 'called') ||
+                            xt(t, 'completed') ||
+                            xt(t, 'no_show') ||
+                            xt(t, 'noShow') ||
+                            xt(t, 'cancelled') ||
+                            xt(t, 'canceled'))
                     );
                 })(e) ||
-                !(!Dt(e, 'nextTickets') && !Dt(e, 'next_tickets')) ||
+                !(!xt(e, 'nextTickets') && !xt(e, 'next_tickets')) ||
                 (function (e) {
                     const t = (function (e) {
                         return e?.callingNowByConsultorio &&
@@ -10816,33 +11351,33 @@ function Uo(e, t = {}) {
     )
         return;
     const s = 'fallback' === St(t.syncMode) ? 'fallback' : 'live',
-        r = Rt(a, i),
+        r = Dt(a, i),
         l = (function (e) {
             const t = Ot(e),
                 a =
-                    Dt(e, 'waitingCount') ||
-                    Dt(e, 'waiting_count') ||
-                    Boolean(t && Dt(t, 'waiting')),
+                    xt(e, 'waitingCount') ||
+                    xt(e, 'waiting_count') ||
+                    Boolean(t && xt(t, 'waiting')),
                 n =
-                    Dt(e, 'calledCount') ||
-                    Dt(e, 'called_count') ||
-                    Boolean(t && Dt(t, 'called')),
-                i = Dt(e, 'nextTickets') || Dt(e, 'next_tickets'),
+                    xt(e, 'calledCount') ||
+                    xt(e, 'called_count') ||
+                    Boolean(t && xt(t, 'called')),
+                i = xt(e, 'nextTickets') || xt(e, 'next_tickets'),
                 o =
-                    Dt(e, 'callingNowByConsultorio') ||
-                    Dt(e, 'calling_now_by_consultorio') ||
-                    Dt(e, 'callingNow') ||
-                    Dt(e, 'calling_now');
+                    xt(e, 'callingNowByConsultorio') ||
+                    xt(e, 'calling_now_by_consultorio') ||
+                    xt(e, 'callingNow') ||
+                    xt(e, 'calling_now');
             return { waiting: a || i, called: n || o };
         })(a),
-        c = Ut(r),
+        c = Ft(r),
         u = Boolean(n && 'object' == typeof n);
     if (!(o.length || c.length || u || l.waiting || l.called)) return;
     const d =
         Number(r.waitingCount || 0) >
         c.filter((e) => 'waiting' === e.status).length;
     if (o.length)
-        return void Po(o, r, {
+        return void Ho(o, r, {
             fallbackPartial: !1,
             syncMode: s,
             bumpRuntimeRevision: Boolean(t.bumpRuntimeRevision),
@@ -10885,12 +11420,12 @@ function Uo(e, t = {}) {
                   (o <= 0 ? e.delete(t) : d || l.has(t) || e.delete(t));
         }
     })(p, r, l),
-        Po(
+        Ho(
             (function (e, t, a) {
                 for (const a of t) {
                     const t = Ht(a),
                         n = e.get(t) || null;
-                    e.set(t, It(Fo(n, a), e.size));
+                    e.set(t, It(Go(n, a), e.size));
                 }
                 if (a && 'object' == typeof a) {
                     const t = Ht(It(a, e.size)),
@@ -10915,65 +11450,65 @@ function Uo(e, t = {}) {
             }
         ));
 }
-function Ko() {
-    return $o(Eo, null);
+function Jo() {
+    return To(Ro, null);
 }
-function Vo(e, t = '') {
+function Yo(e, t = '') {
     return (
         !!e?.queueTickets?.length &&
-        (Po(e.queueTickets, e.queueMeta || null, {
+        (Ho(e.queueTickets, e.queueMeta || null, {
             fallbackPartial: !0,
             syncMode: 'fallback',
         }),
-        t && yo(t),
+        t && $o(t),
         !0)
     );
 }
-async function zo() {
+async function Zo() {
     try {
-        (Uo(await $('queue-state'), { syncMode: 'live' }),
-            yo('Queue refresh realizado'));
+        (Wo(await _('queue-state'), { syncMode: 'live' }),
+            $o('Queue refresh realizado'));
     } catch (e) {
-        (yo('Queue refresh con error'), Vo(Ko()));
+        ($o('Queue refresh con error'), Yo(Jo()));
     }
 }
-async function Qo() {
+async function Xo() {
     const e = Array.isArray(g().data.queueTickets)
             ? g().data.queueTickets.map((e, t) => It(e, t))
             : [],
         t = (function (e) {
             return g().data.queueMeta && 'object' == typeof g().data.queueMeta
-                ? Rt(g().data.queueMeta, e)
+                ? Dt(g().data.queueMeta, e)
                 : null;
         })(e);
     e.length
-        ? Po(e, t || null, { fallbackPartial: !1, syncMode: 'live' })
+        ? Ho(e, t || null, { fallbackPartial: !1, syncMode: 'live' })
         : (function (e) {
-              const t = e ? Ut(e) : [];
+              const t = e ? Ft(e) : [];
               return (
                   !!t.length &&
-                  (Po(t, e, { fallbackPartial: !0, syncMode: 'fallback' }),
-                  yo('Queue fallback parcial desde metadata'),
+                  (Ho(t, e, { fallbackPartial: !0, syncMode: 'fallback' }),
+                  $o('Queue fallback parcial desde metadata'),
                   !0)
               );
           })(t) ||
-          (await zo(),
+          (await Zo(),
           (g().data.queueTickets || []).length ||
-              Vo(Ko(), 'Queue fallback desde snapshot local') ||
-              Po([], null, { fallbackPartial: !1, syncMode: 'live' }));
+              Yo(Jo(), 'Queue fallback desde snapshot local') ||
+              Ho([], null, { fallbackPartial: !1, syncMode: 'live' }));
 }
-const Go = 'appointments',
-    Wo = 'callbacks',
-    Jo = 'reviews',
-    Yo = 'availability',
-    Zo = 'availability-meta',
-    Xo = 'queue-tickets',
-    es = 'queue-meta',
-    ts = 'leadops-meta',
-    as = 'queue-surface-status',
-    ns = 'app-downloads',
-    is = 'health-status',
-    os = {
+const es = 'appointments',
+    ts = 'callbacks',
+    as = 'reviews',
+    ns = 'availability',
+    is = 'availability-meta',
+    os = 'queue-tickets',
+    ss = 'queue-meta',
+    rs = 'leadops-meta',
+    ls = 'queue-surface-status',
+    cs = 'app-downloads',
+    us = 'health-status',
+    ds = {
         summary: {
             viewBooking: 0,
             startCheckout: 0,
@@ -10991,34 +11526,34 @@ const Go = 'appointments',
         abandonReasonBreakdown: [],
         errorCodeBreakdown: [],
     };
-function ss() {
+function ps() {
     return {
-        appointments: $o(Go, []),
-        callbacks: $o(Wo, []),
-        reviews: $o(Jo, []),
-        availability: $o(Yo, {}),
-        availabilityMeta: $o(Zo, {}),
-        queueTickets: $o(Xo, []),
-        queueMeta: $o(es, null),
-        leadOpsMeta: $o(ts, null),
-        queueSurfaceStatus: $o(as, null),
-        appDownloads: $o(ns, null),
-        health: $o(is, null),
-        funnelMetrics: os,
+        appointments: To(es, []),
+        callbacks: To(ts, []),
+        reviews: To(as, []),
+        availability: To(ns, {}),
+        availabilityMeta: To(is, {}),
+        queueTickets: To(os, []),
+        queueMeta: To(ss, null),
+        leadOpsMeta: To(rs, null),
+        queueSurfaceStatus: To(ls, null),
+        appDownloads: To(cs, null),
+        health: To(us, null),
+        funnelMetrics: ds,
     };
 }
-function rs(e) {
+function ms(e) {
     return Array.isArray(e.queue_tickets)
         ? e.queue_tickets
         : Array.isArray(e.queueTickets)
           ? e.queueTickets
           : [];
 }
-function ls(e) {
+function gs(e) {
     const t = new Date(e || '').getTime();
     return Number.isFinite(t) ? t : 0;
 }
-function cs(e, t = {}) {
+function bs(e, t = {}) {
     let a = !1;
     return (
         b((n) => {
@@ -11057,11 +11592,11 @@ function cs(e, t = {}) {
                     const n = Number(a.queueRuntimeRevision ?? -1),
                         i = Number(e.queue?.runtimeRevision || 0);
                     if (n >= 0 && i !== n) return !0;
-                    const o = ls(
+                    const o = gs(
                             e.data?.queueMeta?.updatedAt ||
                                 e.data?.queueMeta?.updated_at
                         ),
-                        s = ls(
+                        s = gs(
                             t.queueMeta?.updatedAt || t.queueMeta?.updated_at
                         );
                     return o > 0 && s > 0 && o > s;
@@ -11081,27 +11616,27 @@ function cs(e, t = {}) {
         { preservedQueueData: a }
     );
 }
-function us() {
+function ys() {
     const e = g(),
         t = Number(e.ui.lastRefreshAt || 0);
     if (!t) return 'Datos: sin sincronizar';
     const a = Math.max(0, Math.round((Date.now() - t) / 1e3));
     return a < 60 ? `Datos: hace ${a}s` : `Datos: hace ${Math.round(a / 60)}m`;
 }
-async function ds(e) {
+async function fs(e) {
     if (e.funnelMetrics) return e.funnelMetrics;
-    const t = await $('funnel-metrics').catch(() => null);
+    const t = await _('funnel-metrics').catch(() => null);
     return t?.data || null;
 }
-async function ps() {
+async function vs() {
     const e = Number(g().queue?.runtimeRevision || 0);
     try {
         const [t, a] = await Promise.all([
-                $('data'),
-                $('health').catch(() => null),
+                _('data'),
+                _('health').catch(() => null),
             ]),
             n = t.data || {},
-            i = ss(),
+            i = ps(),
             o = (function (e, t, a) {
                 return {
                     appointments: Array.isArray(e.appointments)
@@ -11118,7 +11653,7 @@ async function ps() {
                         'object' == typeof e.availabilityMeta
                             ? e.availabilityMeta
                             : {},
-                    queueTickets: rs(e),
+                    queueTickets: ms(e),
                     queueMeta:
                         e.queueMeta && 'object' == typeof e.queueMeta
                             ? e.queueMeta
@@ -11144,38 +11679,38 @@ async function ps() {
                     funnelMetrics: e.funnelMetrics || a?.funnelMetrics || null,
                     health: t && t.ok ? t : null,
                 };
-            })({ ...n, funnelMetrics: await ds(n) }, a, i),
-            { preservedQueueData: s } = cs(o, { queueRuntimeRevision: e });
+            })({ ...n, funnelMetrics: await fs(n) }, a, i),
+            { preservedQueueData: s } = bs(o, { queueRuntimeRevision: e });
         return (
             (function (e) {
-                (Co(Go, e.appointments || []),
-                    Co(Wo, e.callbacks || []),
-                    Co(Jo, e.reviews || []),
-                    Co(Yo, e.availability || {}),
-                    Co(Zo, e.availabilityMeta || {}),
-                    Co(Xo, e.queueTickets || []),
-                    Co(es, e.queueMeta || null),
-                    Co(ts, e.leadOpsMeta || null),
-                    Co(as, e.queueSurfaceStatus || null),
-                    Co(ns, e.appDownloads || null),
-                    Co(is, e.health || null));
+                (Mo(es, e.appointments || []),
+                    Mo(ts, e.callbacks || []),
+                    Mo(as, e.reviews || []),
+                    Mo(ns, e.availability || {}),
+                    Mo(is, e.availabilityMeta || {}),
+                    Mo(os, e.queueTickets || []),
+                    Mo(ss, e.queueMeta || null),
+                    Mo(rs, e.leadOpsMeta || null),
+                    Mo(ls, e.queueSurfaceStatus || null),
+                    Mo(cs, e.appDownloads || null),
+                    Mo(us, e.health || null));
             })(o),
             { ok: !0, preservedQueueData: s }
         );
     } catch (e) {
-        return (cs(ss()), { ok: !1, preservedQueueData: !1 });
+        return (bs(ps()), { ok: !1, preservedQueueData: !1 });
     }
 }
-let ms = !1,
-    gs = !1;
-function bs() {
+let hs = !1,
+    qs = !1;
+function ks() {
     if ('undefined' != typeof window) {
         const e = Number(window.__QUEUE_AUTO_REFRESH_INTERVAL_MS__);
         if (Number.isFinite(e) && e > 0) return Math.max(50, Math.round(e));
     }
     return 45e3;
 }
-function ys(e) {
+function $s(e) {
     b((t) => ({
         ...t,
         ui: {
@@ -11183,7 +11718,7 @@ function ys(e) {
             queueAutoRefresh: {
                 state: 'idle',
                 reason: 'Abre Turnero Sala para activar el monitoreo continuo.',
-                intervalMs: bs(),
+                intervalMs: ks(),
                 lastAttemptAt: 0,
                 lastSuccessAt: 0,
                 lastError: '',
@@ -11194,7 +11729,7 @@ function ys(e) {
         },
     }));
 }
-function fs() {
+function _s() {
     const e = g();
     return e.auth?.authenticated
         ? 'queue' !== e.ui?.activeSection
@@ -11221,12 +11756,12 @@ function fs() {
               reason: 'Inicia sesión para monitorear los equipos.',
           };
 }
-async function vs(e = 'timer') {
-    const t = fs(),
-        a = bs();
+async function Cs(e = 'timer') {
+    const t = _s(),
+        a = ks();
     if (!t.active)
         return (
-            ys({
+            $s({
                 state: t.state,
                 reason: t.reason,
                 intervalMs: a,
@@ -11234,9 +11769,9 @@ async function vs(e = 'timer') {
             }),
             !1
         );
-    if (gs) return !1;
-    ((gs = !0),
-        ys({
+    if (qs) return !1;
+    ((qs = !0),
+        $s({
             state: 'refreshing',
             reason:
                 'visibility' === e || 'focus' === e || 'online' === e
@@ -11248,12 +11783,12 @@ async function vs(e = 'timer') {
             lastError: '',
         }));
     try {
-        const e = await ps(),
+        const e = await vs(),
             t = Boolean(e?.ok),
             n = Boolean(e?.preservedQueueData);
         return (
-            n || (await Qo()),
-            ys({
+            n || (await Xo()),
+            $s({
                 state: t ? 'active' : 'warning',
                 reason: t
                     ? n
@@ -11267,12 +11802,12 @@ async function vs(e = 'timer') {
             }),
             t &&
                 n &&
-                yo(
+                $o(
                     'Auto-refresh preservó la cola local después de una operación reciente'
                 ),
-            bo(),
+            ko(),
             (function () {
-                const e = us();
+                const e = ys();
                 (r('#adminRefreshStatus', e),
                     r(
                         '#adminSyncState',
@@ -11285,42 +11820,42 @@ async function vs(e = 'timer') {
         );
     } catch (e) {
         return (
-            ys({
+            $s({
                 state: 'warning',
                 reason: 'No se pudo refrescar Equipos en vivo. Revisa red local o fuerza una actualización manual.',
                 intervalMs: a,
                 inFlight: !1,
                 lastError: e?.message || 'refresh_failed',
             }),
-            'queue' === g().ui?.activeSection && bo(),
+            'queue' === g().ui?.activeSection && ko(),
             !1
         );
     } finally {
-        gs = !1;
+        qs = !1;
     }
 }
-function hs(e = {}) {
+function Ss(e = {}) {
     const { immediate: t = !1, reason: a = 'sync' } = e,
-        n = fs(),
-        i = bs();
+        n = _s(),
+        i = ks();
     return (
-        ys({ state: n.state, reason: n.reason, intervalMs: i, inFlight: gs }),
-        'queue' === g().ui?.activeSection && bo(),
-        t && n.active ? (vs(a), !0) : n.active
+        $s({ state: n.state, reason: n.reason, intervalMs: i, inFlight: qs }),
+        'queue' === g().ui?.activeSection && ko(),
+        t && n.active ? (Cs(a), !0) : n.active
     );
 }
-function qs() {
-    'visible' !== document.visibilityState ? hs() : vs('visibility');
+function ws() {
+    'visible' !== document.visibilityState ? Ss() : Cs('visibility');
 }
-function ks() {
+function Ls() {
     ('undefined' != typeof document && 'hidden' === document.visibilityState) ||
-        ('queue' === g().ui?.activeSection && vs('focus'));
+        ('queue' === g().ui?.activeSection && Cs('focus'));
 }
-function _s() {
-    'queue' === g().ui?.activeSection && vs('online');
+function As() {
+    'queue' === g().ui?.activeSection && Cs('online');
 }
-function $s(e, t, a = void 0) {
-    jo(e, (e) => ({
+function Ts(e, t, a = void 0) {
+    Uo(e, (e) => ({
         ...e,
         status: t,
         assignedConsultorio: void 0 === a ? e.assignedConsultorio : a,
@@ -11336,7 +11871,7 @@ function $s(e, t, a = void 0) {
                 : '',
     }));
 }
-async function Cs({ ticketId: e, action: t, consultorio: a }) {
+async function Ms({ ticketId: e, action: t, consultorio: a }) {
     const n = Number(e || 0),
         i = Lt(t);
     if (n && i)
@@ -11346,67 +11881,67 @@ async function Cs({ ticketId: e, action: t, consultorio: a }) {
                       ? 'liberar' !== t
                           ? 'completar' !== t
                               ? 'no_show' !== t
-                                  ? 'cancelar' === t && $s(e, 'cancelled')
-                                  : $s(e, 'no_show')
-                              : $s(e, 'completed')
-                          : $s(e, 'waiting', null)
-                      : $s(e, 'called', 2 === Number(a || 1) ? 2 : 1);
+                                  ? 'cancelar' === t && Ts(e, 'cancelled')
+                                  : Ts(e, 'no_show')
+                              : Ts(e, 'completed')
+                          : Ts(e, 'waiting', null)
+                      : Ts(e, 'called', 2 === Number(a || 1) ? 2 : 1);
               })(n, i, a),
-              void yo(`Practica: accion ${i} en ticket ${n}`))
-            : (Uo(
-                  await $('queue-ticket', {
+              void $o(`Practica: accion ${i} en ticket ${n}`))
+            : (Wo(
+                  await _('queue-ticket', {
                       method: 'PATCH',
                       body: { id: n, action: i, consultorio: Number(a || 0) },
                   }),
                   { syncMode: 'live', bumpRuntimeRevision: !0 }
               ),
-              void yo(`Accion ${i} ticket ${n}`));
+              void $o(`Accion ${i} ticket ${n}`));
 }
-async function Ss(e) {
+async function Es(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = g();
-    if (!Bo.get(t)) {
+    if (!Do.get(t)) {
         if (
             'locked' === a.queue.stationMode &&
             a.queue.stationConsultorio !== t
         )
             return (
-                yo(`Llamado bloqueado para C${t} por lock de estacion`),
+                $o(`Llamado bloqueado para C${t} por lock de estacion`),
                 void s('Modo bloqueado: consultorio no permitido', 'warning')
             );
         if (a.queue.practiceMode) {
             const e = Yt(t);
             return e
                 ? ((function (e, t) {
-                      jo(e, (e) => ({
+                      Uo(e, (e) => ({
                           ...e,
                           status: 'called',
                           assignedConsultorio: t,
                           calledAt: new Date().toISOString(),
                       }));
                   })(e.id, t),
-                  void yo(`Practica: llamado ${e.ticketCode} en C${t}`))
-                : void yo('Practica: sin tickets en espera');
+                  void $o(`Practica: llamado ${e.ticketCode} en C${t}`))
+                : void $o('Practica: sin tickets en espera');
         }
-        Bo.set(t, !0);
+        Do.set(t, !0);
         try {
-            (Uo(
-                await $('queue-call-next', {
+            (Wo(
+                await _('queue-call-next', {
                     method: 'POST',
                     body: { consultorio: t },
                 }),
                 { syncMode: 'live', bumpRuntimeRevision: !0 }
             ),
-                yo(`Llamado C${t} ejecutado`));
+                $o(`Llamado C${t} ejecutado`));
         } catch (e) {
-            (yo(`Error llamando siguiente en C${t}`),
+            ($o(`Error llamando siguiente en C${t}`),
                 s(`Error llamando siguiente en C${t}`, 'error'));
         } finally {
-            Bo.set(t, !1);
+            Do.set(t, !1);
         }
     }
 }
-async function ws(e, t, a = 0) {
+async function Bs(e, t, a = 0) {
     const n = {
             ticketId: Number(e || 0),
             action: Lt(t),
@@ -11416,7 +11951,7 @@ async function ws(e, t, a = 0) {
         o = Wt(n.ticketId);
     if (
         !i.queue.practiceMode &&
-        No.has(n.action) &&
+        xo.has(n.action) &&
         (function (e, t) {
             const a = Lt(e);
             return (
@@ -11428,24 +11963,24 @@ async function ws(e, t, a = 0) {
             );
         })(n.action, o)
     )
-        return (qt(n), void yo(`Accion ${n.action} pendiente de confirmacion`));
-    await Cs(n);
+        return (qt(n), void $o(`Accion ${n.action} pendiente de confirmacion`));
+    await Ms(n);
 }
-async function Ls(e) {
+async function Ns(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = Jt(t);
     a
-        ? await ws(a.id, 'liberar', t)
-        : yo(`Sin ticket activo para liberar en C${t}`);
+        ? await Bs(a.id, 'liberar', t)
+        : $o(`Sin ticket activo para liberar en C${t}`);
 }
-async function As() {
+async function Is() {
     const e = g().queue.pendingSensitiveAction;
-    e ? (kt(), await Cs(e)) : kt();
+    e ? (kt(), await Ms(e)) : kt();
 }
-function Ts() {
-    (kt(), yo('Accion sensible cancelada'));
+function Ps() {
+    (kt(), $o('Accion sensible cancelada'));
 }
-function Ms() {
+function js() {
     const e = document.getElementById('queueSensitiveConfirmDialog'),
         t = g().queue.pendingSensitiveAction;
     return !(
@@ -11454,14 +11989,14 @@ function Ms() {
                 ? e.open
                 : e instanceof HTMLElement &&
                   (!e.hidden || e.hasAttribute('open')))) ||
-        (Ts(), 0)
+        (Ps(), 0)
     );
 }
-async function Es(e) {
+async function Rs(e) {
     const t = Gt(),
         a = Lt(e);
     if (t.length) {
-        if (No.has(a)) {
+        if (xo.has(a)) {
             const e = window.confirm(
                 `${(function (e) {
                     return 'no_show' === e
@@ -11475,53 +12010,53 @@ async function Es(e) {
         }
         for (const e of t)
             try {
-                await Cs({
+                await Ms({
                     ticketId: e.id,
                     action: a,
                     consultorio:
                         e.assignedConsultorio || g().queue.stationConsultorio,
                 });
             } catch (e) {}
-        (qo(), yo(`Bulk ${a} sobre ${t.length} tickets`));
+        (wo(), $o(`Bulk ${a} sobre ${t.length} tickets`));
     }
 }
-async function Bs(e) {
+async function Ds(e) {
     const t = Number(e || 0);
     t &&
         (g().queue.practiceMode
-            ? yo(`Practica: reprint ticket ${t}`)
-            : (await $('queue-reprint', { method: 'POST', body: { id: t } }),
-              yo(`Reimpresion ticket ${t}`)));
+            ? $o(`Practica: reprint ticket ${t}`)
+            : (await _('queue-reprint', { method: 'POST', body: { id: t } }),
+              $o(`Reimpresion ticket ${t}`)));
 }
-async function Ns() {
+async function xs() {
     const e = Gt();
     for (const t of e)
         try {
-            await Bs(t.id);
+            await Ds(t.id);
         } catch (e) {}
-    (qo(), yo(`Bulk reimpresion ${e.length}`));
+    (wo(), $o(`Bulk reimpresion ${e.length}`));
 }
-var Is = Object.freeze({
+var Os = Object.freeze({
     __proto__: null,
-    callNextForConsultorio: Ss,
-    cancelQueueSensitiveAction: Ts,
-    confirmQueueSensitiveAction: As,
-    dismissQueueSensitiveDialog: Ms,
-    reprintQueueTicket: Bs,
-    runQueueBulkAction: Es,
-    runQueueBulkReprint: Ns,
-    runQueueReleaseStation: Ls,
-    runQueueTicketAction: ws,
+    callNextForConsultorio: Es,
+    cancelQueueSensitiveAction: Ps,
+    confirmQueueSensitiveAction: Is,
+    dismissQueueSensitiveDialog: js,
+    reprintQueueTicket: Ds,
+    runQueueBulkAction: Rs,
+    runQueueBulkReprint: xs,
+    runQueueReleaseStation: Ns,
+    runQueueTicketAction: Bs,
 });
-function Ps() {
-    xo({ helpOpen: !g().queue.helpOpen });
+function Hs() {
+    Fo({ helpOpen: !g().queue.helpOpen });
 }
-function js(e) {
+function Us(e) {
     const t = Boolean(e);
-    (xo({ practiceMode: t, pendingSensitiveAction: null }),
-        yo(t ? 'Modo practica activo' : 'Modo practica desactivado'));
+    (Fo({ practiceMode: t, pendingSensitiveAction: null }),
+        $o(t ? 'Modo practica activo' : 'Modo practica desactivado'));
 }
-function xs(e) {
+function Fs(e) {
     const t = Zt();
     return (
         !!t &&
@@ -11533,7 +12068,7 @@ function xs(e) {
         !0)
     );
 }
-async function Rs(e) {
+async function Ks(e) {
     const t = g();
     if (t.queue.captureCallKeyMode)
         return void (function (e) {
@@ -11542,9 +12077,9 @@ async function Rs(e) {
                 code: String(e.code || ''),
                 location: Number(e.location || 0),
             };
-            (xo({ customCallKey: t, captureCallKeyMode: !1 }),
+            (Fo({ customCallKey: t, captureCallKeyMode: !1 }),
                 s('Tecla externa guardada', 'success'),
-                yo(`Tecla externa calibrada: ${t.code}`));
+                $o(`Tecla externa calibrada: ${t.code}`));
         })(e);
     if (
         (function (e, t) {
@@ -11556,7 +12091,7 @@ async function Rs(e) {
             );
         })(e, t.queue.customCallKey)
     )
-        return void (await Ss(t.queue.stationConsultorio));
+        return void (await Es(t.queue.stationConsultorio));
     const a = St(e.code),
         n = St(e.key),
         i = (function (e, t, a) {
@@ -11566,7 +12101,7 @@ async function Rs(e) {
                 ('enter' === a && 3 === Number(e.location || 0))
             );
         })(e, a, n);
-    if (i && t.queue.pendingSensitiveAction) return void (await As());
+    if (i && t.queue.pendingSensitiveAction) return void (await Is());
     const o = (function (e, t) {
         return 'numpad2' === e || '2' === t
             ? 2
@@ -11576,8 +12111,8 @@ async function Rs(e) {
     })(a, n);
     if (!o)
         return i
-            ? (t.queue.oneTap && xs(t) && (await As()),
-              void (await Ss(t.queue.stationConsultorio)))
+            ? (t.queue.oneTap && Fs(t) && (await Is()),
+              void (await Es(t.queue.stationConsultorio)))
             : void ((function (e, t) {
                   return (
                       'numpaddecimal' === e ||
@@ -11587,7 +12122,7 @@ async function Rs(e) {
                       '.' === t
                   );
               })(a, n)
-                  ? xs(t)
+                  ? Fs(t)
                   : (function (e, t) {
                           return (
                               'numpadsubtract' === e ||
@@ -11612,12 +12147,12 @@ async function Rs(e) {
                       (await (async function (e) {
                           const t = Zt();
                           t &&
-                              (await ws(
+                              (await Bs(
                                   t.id,
                                   're-llamar',
                                   e.queue.stationConsultorio
                               ),
-                              yo(`Re-llamar ${t.ticketCode}`),
+                              $o(`Re-llamar ${t.ticketCode}`),
                               s(`Re-llamar ${t.ticketCode}`, 'info'));
                       })(t)));
     !(function (e, t) {
@@ -11628,20 +12163,20 @@ async function Rs(e) {
             );
         })(e, t)
             ? (s('Cambio bloqueado por modo estación', 'warning'),
-              yo('Cambio de estación bloqueado por lock'))
-            : (xo({ stationConsultorio: e }), yo(`Numpad: estacion C${e}`));
+              $o('Cambio de estación bloqueado por lock'))
+            : (Fo({ stationConsultorio: e }), $o(`Numpad: estacion C${e}`));
     })(o, t);
 }
-function Ds(e, t) {
+function Vs(e, t) {
     return 'c2' === e || '2' === e ? 2 : 'c1' === e || '1' === e ? 1 : t;
 }
-function Os(e, t) {
+function zs(e, t) {
     return '1' === e || 'true' === e ? 'locked' : t;
 }
-function Hs(e, t) {
+function Qs(e, t) {
     return '1' === e || 'true' === e || ('0' !== e && 'false' !== e && t);
 }
-function Fs(t, a, n) {
+function Gs(t, a, n) {
     return Array.isArray(t) && 0 !== t.length
         ? t
               .slice(0, 5)
@@ -11653,22 +12188,22 @@ function Fs(t, a, n) {
               .join('')
         : '<li><span>Sin datos</span><strong>0</strong></li>';
 }
-function Us(t, a, n, i = 'neutral') {
+function Ws(t, a, n, i = 'neutral') {
     return `\n        <li class="dashboard-attention-item" data-tone="${e(i)}">\n            <div>\n                <span>${e(t)}</span>\n                <small>${e(n)}</small>\n            </div>\n            <strong>${e(String(a))}</strong>\n        </li>\n    `;
 }
-function Ks(e) {
+function Js(e) {
     return String(e || '')
         .toLowerCase()
         .trim();
 }
-function Vs(e) {
+function Ys(e) {
     const t = new Date(e || '');
     return Number.isNaN(t.getTime()) ? 0 : t.getTime();
 }
-function zs(e) {
-    return Vs(`${e?.date || ''}T${e?.time || '00:00'}:00`);
+function Zs(e) {
+    return Ys(`${e?.date || ''}T${e?.time || '00:00'}:00`);
 }
-function Qs(e) {
+function Xs(e) {
     if (!e) return 'Sin fecha';
     const t = Math.round((e - Date.now()) / 6e4),
         a = Math.abs(t);
@@ -11684,10 +12219,10 @@ function Qs(e) {
             ? `En ${Math.round(t / 60)} h`
             : `En ${Math.round(t / 1440)} d`;
 }
-function Gs(t, a, n) {
+function er(t, a, n) {
     return `\n        <button type="button" class="operations-action-item" data-action="${e(t)}">\n            <span>${e(a)}</span>\n            <small>${e(n)}</small>\n        </button>\n    `;
 }
-function Ws(e) {
+function tr(e) {
     const {
             appointments: t,
             availability: a,
@@ -11731,31 +12266,31 @@ function Ws(e) {
                         t.getMonth() === a.getMonth() &&
                         t.getDate() === a.getDate()
                     );
-                })(zs(e))
+                })(Zs(e))
             ).length;
         })(t),
         c = (function (e) {
             return e.filter((e) => {
-                const t = Ks(e.paymentStatus || e.payment_status);
+                const t = Js(e.paymentStatus || e.payment_status);
                 return (
                     'pending_transfer_review' === t || 'pending_transfer' === t
                 );
             }).length;
         })(t),
         u = (function (e) {
-            return e.filter((e) => 'pending' === Ks(e.status)).length;
+            return e.filter((e) => 'pending' === Js(e.status)).length;
         })(n),
         d = (function (e) {
             return e.filter((e) => {
-                if ('pending' !== Ks(e.status)) return !1;
+                if ('pending' !== Js(e.status)) return !1;
                 const t = (function (e) {
-                    return Vs(e?.fecha || e?.createdAt || '');
+                    return Ys(e?.fecha || e?.createdAt || '');
                 })(e);
                 return !!t && Math.round((Date.now() - t) / 6e4) >= 120;
             }).length;
         })(n),
         p = (function (e) {
-            return e.filter((e) => 'no_show' === Ks(e.status)).length;
+            return e.filter((e) => 'no_show' === Js(e.status)).length;
         })(t),
         m = (function (e) {
             return e.length
@@ -11768,7 +12303,7 @@ function Ws(e) {
         g = (function (e, t = 30) {
             const a = Date.now();
             return e.filter((e) => {
-                const n = Vs(e.date || e.createdAt || '');
+                const n = Ys(e.date || e.createdAt || '');
                 return n && a - n <= 24 * t * 60 * 60 * 1e3;
             }).length;
         })(r),
@@ -11779,7 +12314,7 @@ function Ws(e) {
         })(a),
         y = (function (e) {
             return e
-                .map((e) => ({ item: e, stamp: zs(e) }))
+                .map((e) => ({ item: e, stamp: Zs(e) }))
                 .filter((e) => e.stamp > 0 && e.stamp >= Date.now())
                 .sort((e, t) => e.stamp - t.stamp)[0];
         })(t),
@@ -11811,8 +12346,8 @@ function Ws(e) {
         waitingTickets: f,
     };
 }
-function Js(e) {
-    const t = Ws(e);
+function ar(e) {
+    const t = tr(e);
     ((function (e) {
         const {
             appointments: t,
@@ -11843,7 +12378,7 @@ function Js(e) {
                         : n > 0
                           ? `Revisa ${n} no show para cerrar seguimiento del dia.`
                           : i?.item
-                            ? `La siguiente atencion es ${i.item.name || 'sin nombre'} ${Qs(i.stamp).toLowerCase()}.`
+                            ? `La siguiente atencion es ${i.item.name || 'sin nombre'} ${Xs(i.stamp).toLowerCase()}.`
                             : 'Empieza por agenda, pendientes y turnero sin mezclar herramientas avanzadas en el primer paso.';
             })({
                 pendingCallbacks: c,
@@ -11971,7 +12506,7 @@ function Js(e) {
                 r(
                     '#dashboardFlowStatus',
                     n?.item
-                        ? `${Qs(n.stamp)} | ${n.item.name || 'Paciente'}`
+                        ? `${Xs(n.stamp)} | ${n.item.name || 'Paciente'}`
                         : t > 0
                           ? `${t} dia(s) con horarios publicados`
                           : 'Sin citas inmediatas ni cola activa'
@@ -11992,7 +12527,7 @@ function Js(e) {
                     o > 0
                         ? `${o} pago(s) requieren revision antes de cerrar el dia`
                         : n?.item
-                          ? `Siguiente paciente: ${n.item.name || 'Paciente'} ${Qs(n.stamp).toLowerCase()}`
+                          ? `Siguiente paciente: ${n.item.name || 'Paciente'} ${Xs(n.stamp).toLowerCase()}`
                           : 'Sin citas inmediatas en cola'
                 ));
         })(t),
@@ -12008,21 +12543,21 @@ function Js(e) {
                     waitingTickets: s,
                 } = e;
                 return [
-                    Gs(
+                    er(
                         'context-open-appointments-overview',
                         'Abrir agenda',
                         n?.item
-                            ? `Siguiente cita ${Qs(n.stamp).toLowerCase()}`
+                            ? `Siguiente cita ${Xs(n.stamp).toLowerCase()}`
                             : `${t.length} cita(s) cargadas`
                     ),
-                    Gs(
+                    er(
                         'context-open-callbacks-pending',
                         'Revisar pendientes',
                         o > 0
                             ? `${o} pago(s) y ${i} llamada(s) por resolver`
                             : `${i} llamada(s) pendientes`
                     ),
-                    Gs(
+                    er(
                         'context-open-availability',
                         'Abrir horarios',
                         a > 0
@@ -12044,7 +12579,7 @@ function Js(e) {
                     urgentCallbacks: i,
                 } = e;
                 return [
-                    Us(
+                    Ws(
                         'Transferencias',
                         a,
                         a > 0
@@ -12052,7 +12587,7 @@ function Js(e) {
                             : 'Sin comprobantes pendientes.',
                         a > 0 ? 'warning' : 'success'
                     ),
-                    Us(
+                    Ws(
                         'Callbacks urgentes',
                         i,
                         i > 0
@@ -12060,7 +12595,7 @@ function Js(e) {
                             : 'SLA dentro de rango.',
                         i > 0 ? 'danger' : 'success'
                     ),
-                    Us(
+                    Ws(
                         'Agenda de hoy',
                         n,
                         n > 0
@@ -12068,7 +12603,7 @@ function Js(e) {
                             : 'No hay citas hoy.',
                         n > 6 ? 'warning' : 'neutral'
                     ),
-                    Us(
+                    Ws(
                         'Disponibilidad',
                         t,
                         t > 0
@@ -12090,47 +12625,47 @@ function Js(e) {
                 ),
                 l(
                     '#funnelEntryList',
-                    Fs(e.checkoutEntryBreakdown, 'entry', 'count')
+                    Gs(e.checkoutEntryBreakdown, 'entry', 'count')
                 ),
                 l(
                     '#funnelSourceList',
-                    Fs(e.sourceBreakdown, 'source', 'count')
+                    Gs(e.sourceBreakdown, 'source', 'count')
                 ),
                 l(
                     '#funnelPaymentMethodList',
-                    Fs(e.paymentMethodBreakdown, 'method', 'count')
+                    Gs(e.paymentMethodBreakdown, 'method', 'count')
                 ),
                 l(
                     '#funnelAbandonList',
-                    Fs(e.checkoutAbandonByStep, 'step', 'count')
+                    Gs(e.checkoutAbandonByStep, 'step', 'count')
                 ),
                 l(
                     '#funnelAbandonReasonList',
-                    Fs(e.abandonReasonBreakdown, 'reason', 'count')
+                    Gs(e.abandonReasonBreakdown, 'reason', 'count')
                 ),
                 l(
                     '#funnelStepList',
-                    Fs(e.bookingStepBreakdown, 'step', 'count')
+                    Gs(e.bookingStepBreakdown, 'step', 'count')
                 ),
                 l(
                     '#funnelErrorCodeList',
-                    Fs(e.errorCodeBreakdown, 'code', 'count')
+                    Gs(e.errorCodeBreakdown, 'code', 'count')
                 ));
         })(t.funnel));
 }
-function Ys(e) {
+function nr(e) {
     return String(e || '')
         .toLowerCase()
         .trim();
 }
-function Zs(e) {
+function ir(e) {
     const t = new Date(e?.date || e?.createdAt || '');
     return Number.isNaN(t.getTime()) ? 0 : t.getTime();
 }
-function Xs(e) {
+function or(e) {
     return `${Math.max(0, Math.min(5, Math.round(Number(e || 0))))}/5`;
 }
-function er(e) {
+function sr(e) {
     const t = String(e || 'Anonimo')
         .trim()
         .split(/\s+/)
@@ -12138,7 +12673,7 @@ function er(e) {
         .slice(0, 2);
     return t.length ? t.map((e) => e.charAt(0).toUpperCase()).join('') : 'AN';
 }
-function tr(e, t = 220) {
+function rr(e, t = 220) {
     const a = String(e || '').trim();
     return a
         ? a.length <= t
@@ -12146,11 +12681,11 @@ function tr(e, t = 220) {
             : `${a.slice(0, t - 1).trim()}...`
         : 'Sin comentario escrito.';
 }
-function ar() {
+function lr() {
     const t = g(),
         a = Array.isArray(t?.data?.reviews) ? t.data.reviews : [],
         n = (function (e) {
-            return e.slice().sort((e, t) => Zs(t) - Zs(e));
+            return e.slice().sort((e, t) => ir(t) - ir(e));
         })(a),
         o = (function (e) {
             return e.length
@@ -12160,7 +12695,7 @@ function ar() {
         s = (function (e, t = 30) {
             const a = Date.now();
             return e.filter((e) => {
-                const n = Zs(e);
+                const n = ir(e);
                 return !!n && a - n <= 24 * t * 60 * 60 * 1e3;
             }).length;
         })(a),
@@ -12264,7 +12799,7 @@ function ar() {
               '#reviewsSpotlight',
               (function (t) {
                   const a = t.item;
-                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(er(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e(Xs(a.rating))}</p>\n            <p>${e(tr(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
+                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(sr(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e(or(a.rating))}</p>\n            <p>${e(rr(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
               })(u)
           )
         : l(
@@ -12290,20 +12825,20 @@ function ar() {
                                         : n <= 3
                                           ? 'Revisar posible friccion'
                                           : 'Resena util para contexto';
-                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(er(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e(Xs(n))}</span>\n            </header>\n            <p>${e(tr(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
+                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(sr(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e(or(n))}</span>\n            </header>\n            <p>${e(rr(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
                         })(t, {
                             featured:
                                 a.item &&
-                                Ys(t.name) === Ys(a.item.name) &&
-                                Zs(t) === Zs(a.item),
+                                nr(t.name) === nr(a.item.name) &&
+                                ir(t) === ir(a.item),
                         })
                     )
                     .join('');
             })(n, u)
         ));
 }
-function nr() {
-    const e = us();
+function cr() {
+    const e = ys();
     (r('#adminRefreshStatus', e),
         r(
             '#adminSyncState',
@@ -12312,8 +12847,8 @@ function nr() {
                 : e.replace('Datos: ', 'Estado: ')
         ));
 }
-async function ir(e = !1) {
-    const t = await ps(),
+async function ur(e = !1) {
+    const t = await vs(),
         a = Boolean(t?.ok);
     return (
         (function () {
@@ -12329,15 +12864,15 @@ async function ir(e = !1) {
             }),
                 ct());
         })(),
-        t?.preservedQueueData || (await Qo()),
-        U(g()),
-        Js(g()),
+        t?.preservedQueueData || (await Xo()),
+        F(g()),
+        ar(g()),
         de(),
-        De(),
-        ar(),
+        xe(),
+        lr(),
         ct(),
-        bo(),
-        nr(),
+        ko(),
+        cr(),
         e &&
             s(
                 a ? 'Datos actualizados' : 'Datos cargados desde cache local',
@@ -12346,18 +12881,18 @@ async function ir(e = !1) {
         a
     );
 }
-function or() {
-    (R(!1),
+function dr() {
+    (D(!1),
         H(),
         O(!1),
-        D({
+        x({
             tone: 'neutral',
             title: 'Proteccion activa',
             message:
                 'Usa tu clave de administrador para acceder al centro operativo.',
         }));
 }
-async function sr(e) {
+async function pr(e) {
     e.preventDefault();
     const t = document.getElementById('adminPassword'),
         a = document.getElementById('admin2FACode'),
@@ -12367,7 +12902,7 @@ async function sr(e) {
         O(!0);
         const e = g();
         if (
-            (D({
+            (x({
                 tone: e.auth.requires2FA ? 'warning' : 'neutral',
                 title: e.auth.requires2FA
                     ? 'Validando segundo factor'
@@ -12387,7 +12922,7 @@ async function sr(e) {
                     }),
                     n = String(a.csrfToken || '');
                 return (
-                    _(n),
+                    $(n),
                     b((e) => ({
                         ...e,
                         auth: {
@@ -12424,7 +12959,7 @@ async function sr(e) {
                     );
                 const n = String(a.csrfToken || '');
                 return (
-                    _(n),
+                    $(n),
                     b((e) => ({
                         ...e,
                         auth: {
@@ -12441,46 +12976,46 @@ async function sr(e) {
             })(n);
             if (e.requires2FA)
                 return (
-                    R(!0),
-                    D({
+                    D(!0),
+                    x({
                         tone: 'warning',
                         title: 'Codigo 2FA requerido',
                         message:
                             'El backend valido la clave. Ingresa ahora el codigo de seis digitos.',
                     }),
-                    void F('2fa')
+                    void U('2fa')
                 );
         }
-        (D({
+        (x({
             tone: 'success',
             title: 'Acceso concedido',
             message: 'Sesion autenticada. Cargando centro operativo.',
         }),
             I(),
             j(),
-            R(!1),
+            D(!1),
             H({ clearPassword: !0 }),
-            await ir(!1),
-            hs({
+            await ur(!1),
+            Ss({
                 immediate: 'queue' === g().ui.activeSection,
                 reason: 'login',
             }),
             s('Sesion iniciada', 'success'));
     } catch (e) {
-        (D({
+        (x({
             tone: 'danger',
             title: 'No se pudo iniciar sesion',
             message:
                 e?.message ||
                 'Verifica la clave o el codigo e intenta nuevamente.',
         }),
-            F(g().auth.requires2FA ? '2fa' : 'password'),
+            U(g().auth.requires2FA ? '2fa' : 'password'),
             s(e?.message || 'No se pudo iniciar sesion', 'error'));
     } finally {
         O(!1);
     }
 }
-async function rr(e, t) {
+async function mr(e, t) {
     switch (e) {
         case 'appointment-quick-filter':
             return (me(String(t.dataset.filterValue || 'all')), !0);
@@ -12581,7 +13116,7 @@ async function rr(e, t) {
             return !1;
     }
 }
-async function lr(e, a) {
+async function gr(e, a) {
     switch (e) {
         case 'change-month':
             return (
@@ -12793,7 +13328,7 @@ async function lr(e, a) {
                 await (async function () {
                     if (it()) return;
                     const e = st(),
-                        t = await $('availability', {
+                        t = await _('availability', {
                             method: 'POST',
                             body: { availability: e },
                         }),
@@ -12858,7 +13393,7 @@ async function lr(e, a) {
             return !1;
     }
 }
-const cr = new Set([
+const br = new Set([
     'dashboard',
     'appointments',
     'callbacks',
@@ -12866,13 +13401,13 @@ const cr = new Set([
     'availability',
     'queue',
 ]);
-function ur(e, t = 'dashboard') {
+function yr(e, t = 'dashboard') {
     const a = String(e || '')
         .trim()
         .toLowerCase();
-    return cr.has(a) ? a : t;
+    return br.has(a) ? a : t;
 }
-function dr(e) {
+function fr(e) {
     !(function (e) {
         const t = String(e || '').replace(/^#/, ''),
             a = t ? `#${t}` : '';
@@ -12882,11 +13417,11 @@ function dr(e) {
                 '',
                 `${window.location.pathname}${window.location.search}${a}`
             );
-    })(ur(e));
+    })(yr(e));
 }
-const pr = 'themeMode',
-    mr = new Set(['light', 'dark', 'system']);
-function gr(e, { persist: t = !1 } = {}) {
+const vr = 'themeMode',
+    hr = new Set(['light', 'dark', 'system']);
+function qr(e, { persist: t = !1 } = {}) {
     const a = (function (e) {
         const t = (function (e) {
             return 'light' === e || 'dark' === e
@@ -12905,8 +13440,8 @@ function gr(e, { persist: t = !1 } = {}) {
     (b((t) => ({ ...t, ui: { ...t.ui, themeMode: e, theme: a } })),
         t &&
             (function (e) {
-                const t = mr.has(e) ? e : 'system';
-                _o(pr, t);
+                const t = hr.has(e) ? e : 'system';
+                Ao(vr, t);
             })(e),
         Array.from(
             document.querySelectorAll('.admin-theme-btn[data-theme-mode]')
@@ -12916,12 +13451,12 @@ function gr(e, { persist: t = !1 } = {}) {
                 t.setAttribute('aria-pressed', String(a)));
         }));
 }
-const br = 'adminLastSection',
-    yr = 'adminSidebarCollapsed';
-function fr() {
+const kr = 'adminLastSection',
+    $r = 'adminSidebarCollapsed';
+function _r() {
     return window.matchMedia('(max-width: 1024px)').matches;
 }
-function vr(e) {
+function Cr(e) {
     return (
         e instanceof HTMLElement &&
         !e.hidden &&
@@ -12930,9 +13465,9 @@ function vr(e) {
         e.getClientRects().length > 0
     );
 }
-function hr() {
+function Sr() {
     const e = g(),
-        a = fr(),
+        a = _r(),
         n = t('#adminSidebar'),
         i = n instanceof HTMLElement && n.classList.contains('is-open');
     (!(function ({ open: e, collapsed: a }) {
@@ -12967,12 +13502,12 @@ function hr() {
                     });
             })());
 }
-function qr() {
+function wr() {
     const e = g();
-    (_o(br, e.ui.activeSection), _o(yr, e.ui.sidebarCollapsed ? '1' : '0'));
+    (Ao(kr, e.ui.activeSection), Ao($r, e.ui.sidebarCollapsed ? '1' : '0'));
 }
-async function kr(e, t = {}) {
-    const a = ur(e, 'dashboard'),
+async function Lr(e, t = {}) {
+    const a = yr(e, 'dashboard'),
         { force: n = !1 } = t,
         i = g().ui.activeSection;
     return (
@@ -12990,14 +13525,14 @@ async function kr(e, t = {}) {
             )
         ) &&
         ((function (e) {
-            const t = ur(e, 'dashboard');
+            const t = yr(e, 'dashboard');
             (b((e) => ({ ...e, ui: { ...e.ui, activeSection: t } })),
-                x(t),
-                U(g()),
-                dr(t),
-                qr());
+                R(t),
+                F(g()),
+                fr(t),
+                wr());
         })(a),
-        hs({
+        Ss({
             immediate: 'queue' === a,
             reason: 'queue' === a ? 'section-enter' : 'section-exit',
         }),
@@ -13010,36 +13545,36 @@ async function kr(e, t = {}) {
                     !Boolean(e.queue.fallbackPartial)
                 );
             })() &&
-            (await zo()),
+            (await Zo()),
         !0)
     );
 }
-function _r(e) {
+function Ar(e) {
     b((t) => ({ ...t, ui: { ...t.ui, ...e(t.ui) } }));
 }
-function $r() {
-    (_r((e) => ({
+function Tr() {
+    (Ar((e) => ({
         sidebarCollapsed: !e.sidebarCollapsed,
         sidebarOpen: e.sidebarOpen,
     })),
-        hr(),
-        qr());
+        Sr(),
+        wr());
 }
-function Cr() {
-    (_r((e) => ({ sidebarOpen: !e.sidebarOpen })), hr());
+function Mr() {
+    (Ar((e) => ({ sidebarOpen: !e.sidebarOpen })), Sr());
 }
-function Sr({ restoreFocus: e = !1 } = {}) {
-    if ((_r(() => ({ sidebarOpen: !1 })), hr(), j(), e)) {
+function Er({ restoreFocus: e = !1 } = {}) {
+    if ((Ar(() => ({ sidebarOpen: !1 })), Sr(), j(), e)) {
         const e = t('#adminMenuToggle');
         e instanceof HTMLElement && e.focus();
     }
 }
-function wr() {
+function Br() {
     P();
     const e = document.getElementById('adminQuickCommand');
     e instanceof HTMLInputElement && e.focus();
 }
-function Lr() {
+function Nr() {
     const e = g().ui.activeSection;
     if ('appointments' === e) {
         const e = document.getElementById('searchAppointments');
@@ -13054,55 +13589,55 @@ function Lr() {
         e instanceof HTMLInputElement && e.focus();
     }
 }
-const Ar = {
+const Ir = {
     appointments_overview: async () => {
-        (await kr('appointments'), me('all'), ge(''));
+        (await Lr('appointments'), me('all'), ge(''));
     },
     appointments_pending_transfer: async () => {
-        (await kr('appointments'), me('pending_transfer'), ge(''));
+        (await Lr('appointments'), me('pending_transfer'), ge(''));
     },
     appointments_all: async () => {
-        (await kr('appointments'), me('all'), ge(''));
+        (await Lr('appointments'), me('all'), ge(''));
     },
     appointments_no_show: async () => {
-        (await kr('appointments'), me('no_show'), ge(''));
+        (await Lr('appointments'), me('no_show'), ge(''));
     },
     callbacks_pending: async () => {
-        (await kr('callbacks'), He('pending'));
+        (await Lr('callbacks'), He('pending'));
     },
     callbacks_contacted: async () => {
-        (await kr('callbacks'), He('contacted'));
+        (await Lr('callbacks'), He('contacted'));
     },
     callbacks_sla_urgent: async () => {
-        (await kr('callbacks'), He('sla_urgent'));
+        (await Lr('callbacks'), He('sla_urgent'));
     },
     availability_section: async () => {
-        await kr('availability');
+        await Lr('availability');
     },
     queue_sla_risk: async () => {
-        (await kr('queue'), Ro('sla_risk'));
+        (await Lr('queue'), Ko('sla_risk'));
     },
     queue_waiting: async () => {
-        (await kr('queue'), Ro('waiting'));
+        (await Lr('queue'), Ko('waiting'));
     },
     queue_called: async () => {
-        (await kr('queue'), Ro('called'));
+        (await Lr('queue'), Ko('called'));
     },
     queue_no_show: async () => {
-        (await kr('queue'), Ro('no_show'));
+        (await Lr('queue'), Ko('no_show'));
     },
     queue_all: async () => {
-        (await kr('queue'), Ro('all'));
+        (await Lr('queue'), Ko('all'));
     },
     queue_call_next: async () => {
-        (await kr('queue'), await Ss(g().queue.stationConsultorio));
+        (await Lr('queue'), await Es(g().queue.stationConsultorio));
     },
 };
-async function Tr(e) {
-    const t = Ar[e];
+async function Pr(e) {
+    const t = Ir[e];
     'function' == typeof t && (await t());
 }
-function Mr(e) {
+function jr(e) {
     const t = String(e || '')
         .trim()
         .toLowerCase();
@@ -13132,7 +13667,7 @@ function Mr(e) {
                         : null
         : null;
 }
-async function Er(e, t) {
+async function Rr(e, t) {
     switch (e) {
         case 'callback-quick-filter':
             return (He(String(t.dataset.filterValue || 'all')), !0);
@@ -13149,7 +13684,7 @@ async function Er(e, t) {
         case 'callbacks-triage-next':
         case 'context-open-callbacks-next':
             return (
-                await kr('callbacks'),
+                await Lr('callbacks'),
                 He('pending'),
                 (function () {
                     const e = document.querySelector(
@@ -13173,11 +13708,11 @@ async function Er(e, t) {
                 await (async function (e, t = 'whatsapp_draft') {
                     const a = Number(e || 0);
                     if (a <= 0) return null;
-                    const n = await $('lead-ai-request', {
+                    const n = await _('lead-ai-request', {
                         method: 'POST',
                         body: { callbackId: a, objective: t },
                     });
-                    return n?.data ? (Fe(n.data), n.data) : null;
+                    return n?.data ? (Ue(n.data), n.data) : null;
                 })(
                     Number(t.dataset.callbackId || 0),
                     String(t.dataset.objective || 'whatsapp_draft')
@@ -13188,11 +13723,11 @@ async function Er(e, t) {
         case 'callback-outcome':
             return (
                 await (async function (e, t) {
-                    const a = await Ue(e, {
+                    const a = await Fe(e, {
                         status: 'contacted',
                         leadOps: { outcome: t },
                     });
-                    return (a && Fe(a), a);
+                    return (a && Ue(a), a);
                 })(
                     Number(t.dataset.callbackId || 0),
                     String(t.dataset.outcome || '')
@@ -13210,10 +13745,10 @@ async function Er(e, t) {
                 ? navigator?.clipboard?.writeText
                     ? (await navigator.clipboard.writeText(n),
                       await (async function (e) {
-                          const t = await Ue(e, {
+                          const t = await Fe(e, {
                               leadOps: { aiStatus: 'accepted' },
                           });
-                          return (t && Fe(t), t);
+                          return (t && Ue(t), t);
                       })(e),
                       s('Borrador copiado', 'success'),
                       !0)
@@ -13254,36 +13789,36 @@ async function Er(e, t) {
                 !0
             );
         case 'context-open-callbacks-pending':
-            return (await kr('callbacks'), He('pending'), !0);
+            return (await Lr('callbacks'), He('pending'), !0);
         default:
             return !1;
     }
 }
-async function Br(e) {
+async function Dr(e) {
     switch (e) {
         case 'context-open-appointments-overview':
-            return (await kr('appointments'), me('all'), ge(''), !0);
+            return (await Lr('appointments'), me('all'), ge(''), !0);
         case 'context-open-appointments-transfer':
-            return (await kr('appointments'), me('pending_transfer'), !0);
+            return (await Lr('appointments'), me('pending_transfer'), !0);
         case 'context-open-availability':
-            return (await kr('availability'), !0);
+            return (await Lr('availability'), !0);
         case 'context-open-dashboard':
-            return (await kr('dashboard'), !0);
+            return (await Lr('dashboard'), !0);
         default:
             return !1;
     }
 }
-async function Nr(e, t) {
+async function xr(e, t) {
     switch (e) {
         case 'queue-bulk-action':
-            return (await Es(String(t.dataset.queueAction || 'no_show')), !0);
+            return (await Rs(String(t.dataset.queueAction || 'no_show')), !0);
         case 'queue-bulk-reprint':
-            return (await Ns(), !0);
+            return (await xs(), !0);
         default:
             return !1;
     }
 }
-async function Ir(e, t) {
+async function Or(e, t) {
     return (
         'queue-copy-install-link' === e &&
         (await (async function (e) {
@@ -13300,45 +13835,45 @@ async function Ir(e, t) {
         !0)
     );
 }
-async function Pr(e) {
+async function Hr(e) {
     switch (e) {
         case 'queue-sensitive-confirm':
-            return (await As(), !0);
+            return (await Is(), !0);
         case 'queue-sensitive-cancel':
-            return (Ts(), !0);
+            return (Ps(), !0);
         default:
             return !1;
     }
 }
-function jr(e, t = 0) {
+function Ur(e, t = 0) {
     return Number(e?.dataset?.queueConsultorio || t);
 }
-function xr(e, t = 0) {
+function Fr(e, t = 0) {
     return Number(e?.dataset?.queueId || t);
 }
-async function Rr(e, t) {
+async function Kr(e, t) {
     switch (e) {
         case 'queue-refresh-state':
-            return (await zo(), !0);
+            return (await Zo(), !0);
         case 'queue-call-next':
-            return (await Ss(jr(t)), !0);
+            return (await Es(Ur(t)), !0);
         case 'queue-release-station':
-            return (await Ls(jr(t)), !0);
+            return (await Ns(Ur(t)), !0);
         case 'queue-toggle-shortcuts':
-            return (Ps(), !0);
+            return (Hs(), !0);
         case 'queue-toggle-one-tap':
-            return (xo({ oneTap: !g().queue.oneTap }), !0);
+            return (Fo({ oneTap: !g().queue.oneTap }), !0);
         case 'queue-start-practice':
-            return (js(!0), !0);
+            return (Us(!0), !0);
         case 'queue-stop-practice':
-            return (js(!1), !0);
+            return (Us(!1), !0);
         case 'queue-lock-station':
             return (
                 (function (e) {
                     const t = 2 === Number(e || 0) ? 2 : 1;
-                    (xo({ stationMode: 'locked', stationConsultorio: t }),
-                        yo(`Estacion bloqueada en C${t}`));
-                })(jr(t, 1)),
+                    (Fo({ stationMode: 'locked', stationConsultorio: t }),
+                        $o(`Estacion bloqueada en C${t}`));
+                })(Ur(t, 1)),
                 !0
             );
         case 'queue-set-station-mode':
@@ -13346,23 +13881,23 @@ async function Rr(e, t) {
                 (function (e) {
                     if ('free' === St(e))
                         return (
-                            xo({ stationMode: 'free' }),
-                            void yo('Estacion en modo libre')
+                            Fo({ stationMode: 'free' }),
+                            void $o('Estacion en modo libre')
                         );
-                    xo({ stationMode: 'locked' });
+                    Fo({ stationMode: 'locked' });
                 })(String(t.dataset.queueMode || 'free')),
                 !0
             );
         case 'queue-capture-call-key':
             return (
-                xo({ captureCallKeyMode: !0 }),
+                Fo({ captureCallKeyMode: !0 }),
                 s('Calibración activa: presiona la tecla externa', 'info'),
                 !0
             );
         case 'queue-clear-call-key':
             return (
                 window.confirm('¿Quitar tecla externa calibrada?') &&
-                    (xo({ customCallKey: null, captureCallKeyMode: !1 }),
+                    (Fo({ customCallKey: null, captureCallKeyMode: !1 }),
                     s('Tecla externa eliminada', 'success')),
                 !0
             );
@@ -13370,69 +13905,69 @@ async function Rr(e, t) {
             return !1;
     }
 }
-async function Dr(e, t) {
+async function Vr(e, t) {
     switch (e) {
         case 'queue-toggle-ticket-select':
-            return (vo(xr(t)), !0);
+            return (Co(Fr(t)), !0);
         case 'queue-select-visible':
-            return (ho(), !0);
+            return (So(), !0);
         case 'queue-clear-selection':
-            return (qo(), !0);
+            return (wo(), !0);
         case 'queue-ticket-action':
             return (
-                await ws(
-                    xr(t),
+                await Bs(
+                    Fr(t),
                     (function (e, t = '') {
                         return String(e?.dataset?.queueAction || t);
                     })(t),
-                    jr(t)
+                    Ur(t)
                 ),
                 !0
             );
         case 'queue-reprint-ticket':
-            return (await Bs(xr(t)), !0);
+            return (await Ds(Fr(t)), !0);
         case 'queue-clear-search':
-            return (Oo(), !0);
+            return (zo(), !0);
         case 'queue-open-quick-tray':
             return (
-                Oo(),
-                Ro(String(t?.dataset?.queueFilterValue || 'all')),
+                zo(),
+                Ko(String(t?.dataset?.queueFilterValue || 'all')),
                 !0
             );
         case 'queue-reset-tray-context':
-            return (Oo(), Ro('all'), !0);
+            return (zo(), Ko('all'), !0);
         default:
             return !1;
     }
 }
-async function Or(e, t) {
-    const a = [Rr, Dr, Nr, Pr, Ir];
+async function zr(e, t) {
+    const a = [Kr, Vr, xr, Hr, Or];
     for (const n of a) if (await n(e, t)) return !0;
     return !1;
 }
-async function Hr(e, t) {
+async function Qr(e, t) {
     switch (e) {
         case 'close-toast':
             return (t.closest('.toast')?.remove(), !0);
         case 'set-admin-theme':
             return (
-                gr(String(t.dataset.themeMode || 'system'), { persist: !0 }),
+                qr(String(t.dataset.themeMode || 'system'), { persist: !0 }),
                 !0
             );
         case 'toggle-sidebar-collapse':
-            return ($r(), !0);
+            return (Tr(), !0);
         case 'refresh-admin-data':
-            return (await ir(!0), !0);
+            return (await ur(!0), !0);
         case 'run-admin-command': {
             const e = document.getElementById('adminQuickCommand');
             if (e instanceof HTMLInputElement) {
-                const t = Mr(e.value);
-                t && (await Tr(t), (e.value = ''), j());
+                const t = jr(e.value);
+                t && (await Pr(t), (e.value = ''), j());
             }
             return !0;
         }
         case 'open-command-palette':
-            return (P(), wr(), !0);
+            return (P(), Br(), !0);
         case 'open-operator-app':
             return (
                 window.location.assign(
@@ -13458,7 +13993,7 @@ async function Hr(e, t) {
                     try {
                         await C('logout', { method: 'POST' });
                     } catch (e) {}
-                    (_(''),
+                    ($(''),
                         b((e) => ({
                             ...e,
                             auth: {
@@ -13471,32 +14006,32 @@ async function Hr(e, t) {
                             },
                         })));
                 })(),
-                hs({ immediate: !1, reason: 'logout' }),
+                Ss({ immediate: !1, reason: 'logout' }),
                 N(),
                 j(),
-                or(),
+                dr(),
                 s('Sesion cerrada', 'info'),
                 !0
             );
         case 'reset-login-2fa':
             return (
                 b((e) => ({ ...e, auth: { ...e.auth, requires2FA: !1 } })),
-                R(!1),
+                D(!1),
                 H(),
-                D({
+                x({
                     tone: 'neutral',
                     title: 'Ingreso protegido',
                     message:
                         'Volviste al paso de clave. Puedes reintentar el acceso.',
                 }),
-                F('password'),
+                U('password'),
                 !0
             );
         default:
             return !1;
     }
 }
-async function Fr() {
+async function Gr() {
     (!(function () {
         const e = t('#loginScreen'),
             a = t('#adminDashboard');
@@ -13529,7 +14064,7 @@ async function Fr() {
                 e.preventDefault();
                 try {
                     await (async function (e, t) {
-                        const a = [Hr, rr, Er, lr, Or, Br];
+                        const a = [Qr, mr, Rr, gr, zr, Dr];
                         for (const n of a) if (await n(e, t)) return !0;
                         return !1;
                     })(a, t);
@@ -13545,10 +14080,10 @@ async function Fr() {
                     : null;
             if (!t) return;
             e.preventDefault();
-            const a = await kr(
+            const a = await Lr(
                 String(t.getAttribute('data-section') || 'dashboard')
             );
-            fr() && !1 !== a && Sr();
+            _r() && !1 !== a && Er();
         }),
         document.addEventListener('click', (e) => {
             const t =
@@ -13557,7 +14092,7 @@ async function Fr() {
                     : null;
             t &&
                 (e.preventDefault(),
-                Ro(String(t.getAttribute('data-queue-filter') || 'all')));
+                Ko(String(t.getAttribute('data-queue-filter') || 'all')));
         }),
         (function () {
             const e = document.getElementById('callbacksBulkSelectVisibleBtn');
@@ -13594,7 +14129,7 @@ async function Fr() {
             } catch (e) {}
             b((a) => ({
                 ...a,
-                callbacks: { ...a.callbacks, filter: _e(e), sort: $e(t) },
+                callbacks: { ...a.callbacks, filter: $e(e), sort: _e(t) },
             }));
         })(),
         (function () {
@@ -13616,8 +14151,8 @@ async function Fr() {
             }));
         })(),
         (function () {
-            const e = ur(ko(br, 'dashboard')),
-                t = '1' === ko(yr, '0');
+            const e = yr(Lo(kr, 'dashboard')),
+                t = '1' === Lo($r, '0');
             (b((a) => ({
                 ...a,
                 ui: {
@@ -13627,29 +14162,29 @@ async function Fr() {
                     sidebarOpen: !1,
                 },
             })),
-                x(e),
-                dr(e),
-                hr());
+                R(e),
+                fr(e),
+                Sr());
         })(),
         (function () {
             const e = {
                     stationMode:
-                        'locked' === St(ko(wo, 'free')) ? 'locked' : 'free',
-                    stationConsultorio: 2 === Number(ko(Lo, '1')) ? 2 : 1,
-                    oneTap: '1' === ko(Ao, '0'),
-                    helpOpen: '1' === ko(Mo, '0'),
-                    customCallKey: $o(To, null),
+                        'locked' === St(Lo(Bo, 'free')) ? 'locked' : 'free',
+                    stationConsultorio: 2 === Number(Lo(No, '1')) ? 2 : 1,
+                    oneTap: '1' === Lo(Io, '0'),
+                    helpOpen: '1' === Lo(jo, '0'),
+                    customCallKey: To(Po, null),
                 },
-                t = St(So('station')),
-                a = St(So('lock')),
-                n = St(So('one_tap'));
+                t = St(Eo('station')),
+                a = St(Eo('lock')),
+                n = St(Eo('one_tap'));
             (b((i) => ({
                 ...i,
                 queue: {
                     ...i.queue,
-                    stationMode: Os(a, e.stationMode),
-                    stationConsultorio: Ds(t, e.stationConsultorio),
-                    oneTap: Hs(n, e.oneTap),
+                    stationMode: zs(a, e.stationMode),
+                    stationConsultorio: Vs(t, e.stationConsultorio),
+                    oneTap: Qs(n, e.oneTap),
                     helpOpen: e.helpOpen,
                     customCallKey:
                         e.customCallKey && 'object' == typeof e.customCallKey
@@ -13657,17 +14192,17 @@ async function Fr() {
                             : null,
                 },
             })),
-                Io(g()));
+                Oo(g()));
         })(),
-        gr(
+        qr(
             (function () {
-                const e = String(ko(pr, 'system') || 'system')
+                const e = String(Lo(vr, 'system') || 'system')
                     .trim()
                     .toLowerCase();
-                return mr.has(e) ? e : 'system';
+                return hr.has(e) ? e : 'system';
             })()
         ),
-        or(),
+        dr(),
         (function () {
             const e = document.getElementById('appointmentFilter');
             e instanceof HTMLSelectElement &&
@@ -13692,7 +14227,7 @@ async function Fr() {
             const i = document.getElementById('callbackSort');
             i instanceof HTMLSelectElement &&
                 i.addEventListener('change', () => {
-                    Oe({ sort: $e(i.value), selected: [] });
+                    Oe({ sort: _e(i.value), selected: [] });
                 });
             const o = document.getElementById('searchCallbacks');
             o instanceof HTMLInputElement &&
@@ -13704,7 +14239,7 @@ async function Fr() {
             const s = document.getElementById('queueSearchInput');
             s instanceof HTMLInputElement &&
                 s.addEventListener('input', () => {
-                    Do(s.value);
+                    Vo(s.value);
                 });
             const r = document.getElementById('adminQuickCommand');
             var l;
@@ -13712,8 +14247,8 @@ async function Fr() {
                 (l = r).addEventListener('keydown', async (e) => {
                     if ('Enter' !== e.key) return;
                     e.preventDefault();
-                    const t = Mr(l.value);
-                    t && (await Tr(t));
+                    const t = jr(l.value);
+                    t && (await Pr(t));
                 });
         })(),
         (function () {
@@ -13721,19 +14256,19 @@ async function Fr() {
                 a = t('#adminMenuClose'),
                 n = t('#adminSidebarBackdrop');
             (e?.addEventListener('click', () => {
-                fr() ? Cr() : $r();
+                _r() ? Mr() : Tr();
             }),
-                a?.addEventListener('click', () => Sr({ restoreFocus: !0 })),
-                n?.addEventListener('click', () => Sr({ restoreFocus: !0 })),
+                a?.addEventListener('click', () => Er({ restoreFocus: !0 })),
+                n?.addEventListener('click', () => Er({ restoreFocus: !0 })),
                 window.addEventListener('resize', () => {
-                    fr() ? hr() : Sr();
+                    _r() ? Sr() : Er();
                 }),
                 document.addEventListener('keydown', (e) => {
-                    if (!fr() || !g().ui.sidebarOpen) return;
+                    if (!_r() || !g().ui.sidebarOpen) return;
                     if ('Escape' === e.key)
                         return (
                             e.preventDefault(),
-                            void Sr({ restoreFocus: !0 })
+                            void Er({ restoreFocus: !0 })
                         );
                     if ('Tab' !== e.key) return;
                     const a = (function () {
@@ -13747,7 +14282,7 @@ async function Fr() {
                                 e.querySelectorAll('.nav-item[data-section]')
                             ).filter((e) => e !== n),
                             o = e.querySelector('.logout-btn');
-                        return [a, n, ...i, o].filter(vr);
+                        return [a, n, ...i, o].filter(Cr);
                     })();
                     if (!a.length) return;
                     const n = a.indexOf(document.activeElement);
@@ -13759,7 +14294,7 @@ async function Fr() {
                 }),
                 window.addEventListener('hashchange', async () => {
                     const e = (function (e = 'dashboard') {
-                        return ur(
+                        return yr(
                             String(window.location.hash || '').replace(
                                 /^#/,
                                 ''
@@ -13767,10 +14302,10 @@ async function Fr() {
                             e
                         );
                     })(g().ui.activeSection);
-                    await kr(e, { force: !0 });
+                    await Lr(e, { force: !0 });
                 }),
                 window.addEventListener('storage', (e) => {
-                    'themeMode' === e.key && gr(String(e.newValue || 'system'));
+                    'themeMode' === e.key && qr(String(e.newValue || 'system'));
                 }));
         })(),
         window.addEventListener('beforeunload', (e) => {
@@ -13778,19 +14313,19 @@ async function Fr() {
         }));
     const e = document.getElementById('loginForm');
     var a;
-    (e instanceof HTMLFormElement && e.addEventListener('submit', sr),
+    (e instanceof HTMLFormElement && e.addEventListener('submit', pr),
         (a = {
-            navigateToSection: kr,
-            focusQuickCommand: wr,
-            focusCurrentSearch: Lr,
-            runQuickAction: Tr,
-            closeSidebar: () => Sr({ restoreFocus: !0 }),
+            navigateToSection: Lr,
+            focusQuickCommand: Br,
+            focusCurrentSearch: Nr,
+            runQuickAction: Pr,
+            closeSidebar: () => Er({ restoreFocus: !0 }),
             toggleMenu: () => {
-                fr() ? Cr() : $r();
+                _r() ? Mr() : Tr();
             },
-            dismissQueueSensitiveDialog: Ms,
-            toggleQueueHelp: () => Ps(),
-            queueNumpadAction: Rs,
+            dismissQueueSensitiveDialog: js,
+            toggleQueueHelp: () => Hs(),
+            queueNumpadAction: Ks,
         }),
         window.addEventListener('keydown', (e) => {
             (function (e, t) {
@@ -13879,7 +14414,7 @@ async function Fr() {
                 t = !0 === e.authenticated,
                 a = t ? String(e.csrfToken || '') : '';
             return (
-                _(a),
+                $(a),
                 b((e) => ({
                     ...e,
                     auth: {
@@ -13899,20 +14434,20 @@ async function Fr() {
     })();
     (n
         ? (await (async function () {
-              (I(), j(), await ir(!1));
+              (I(), j(), await ur(!1));
           })(),
-          x(g().ui.activeSection))
-        : (N(), j(), or()),
-        ms ||
+          R(g().ui.activeSection))
+        : (N(), j(), dr()),
+        hs ||
             'undefined' == typeof window ||
-            ((ms = !0),
+            ((hs = !0),
             window.setInterval(() => {
-                vs('timer');
-            }, bs()),
-            document.addEventListener('visibilitychange', qs),
-            window.addEventListener('focus', ks),
-            window.addEventListener('online', _s),
-            hs({
+                Cs('timer');
+            }, ks()),
+            document.addEventListener('visibilitychange', ws),
+            window.addEventListener('focus', Ls),
+            window.addEventListener('online', As),
+            Ss({
                 immediate:
                     g().auth?.authenticated &&
                     'queue' === g().ui?.activeSection,
@@ -13961,22 +14496,22 @@ async function Fr() {
                 }));
         })(),
         window.setInterval(() => {
-            nr();
+            cr();
         }, 3e4));
 }
-const Ur = (
+const Wr = (
     'loading' === document.readyState
         ? new Promise((e, t) => {
               document.addEventListener(
                   'DOMContentLoaded',
                   () => {
-                      Fr().then(e).catch(t);
+                      Gr().then(e).catch(t);
                   },
                   { once: !0 }
               );
           })
-        : Fr()
+        : Gr()
 ).catch((e) => {
     throw (console.error('admin-v3 boot failed', e), e);
 });
-export { Ur as default };
+export { Wr as default };

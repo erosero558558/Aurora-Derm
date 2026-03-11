@@ -2085,8 +2085,17 @@ function getOpsLogSourceLabel(source) {
     if (value === 'master_sequence') {
         return 'Ronda maestra';
     }
+    if (value === 'coverage') {
+        return 'Cobertura';
+    }
+    if (value === 'reserve') {
+        return 'Reserva';
+    }
     if (value === 'blockers') {
         return 'Bloqueos';
+    }
+    if (value === 'sla_live') {
+        return 'SLA vivo';
     }
     return 'Manual';
 }
@@ -2111,7 +2120,10 @@ function filterOpsLogItems(items, filter) {
                 'ticket_simulation',
                 'next_turns',
                 'master_sequence',
+                'coverage',
+                'reserve',
                 'blockers',
+                'sla_live',
             ].includes(item.source)
         );
     }
@@ -8205,6 +8217,670 @@ function renderQueueMasterSequencePanel(manifest, detectedPlatform) {
     });
 }
 
+function buildQueueCoverageCard(manifest, detectedPlatform, consultorio) {
+    const slot = Number(consultorio || 0) === 2 ? 2 : 1;
+    const slotKey = `c${slot}`;
+    const otherSlot = slot === 2 ? 1 : 2;
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        slot
+    );
+    const currentTicket = getCalledTicketForConsultorio(slot);
+    const nextAssigned = getAssignedWaitingTickets(slot)[0] || null;
+    const generalCandidate = getUnassignedWaitingTickets()[0] || null;
+    const rebalanceCandidate =
+        !generalCandidate && getAssignedWaitingTickets(otherSlot)[1]
+            ? getAssignedWaitingTickets(otherSlot)[1]
+            : null;
+    const operatorReady = Boolean(
+        operatorContext.operatorAssigned && operatorContext.operatorLive
+    );
+
+    let state = 'idle';
+    let badge = 'Sin hueco próximo';
+    let headline = `${slotKey.toUpperCase()} sin hueco operativo inmediato`;
+    let currentLabel = currentTicket
+        ? `${currentTicket.ticketCode} · ${formatQueueTicketAgeLabel(
+              currentTicket,
+              'called'
+          )}`
+        : 'Sin paciente en atención';
+    let nextLabel = nextAssigned
+        ? `${nextAssigned.ticketCode} · ${formatQueueTicketAgeLabel(
+              nextAssigned,
+              'waiting'
+          )}`
+        : 'Sin paciente cubriendo la siguiente entrada';
+    let gapLabel = 'Cobertura estable';
+    let recommendationLabel = 'Sin acción inmediata';
+    let pivot = null;
+
+    if (currentTicket && nextAssigned) {
+        state = 'ready';
+        badge = 'Cubierto';
+        headline = `${slotKey.toUpperCase()} ya tiene cubierto el siguiente paso`;
+        gapLabel = `${nextAssigned.ticketCode} entra cuando cierres ${currentTicket.ticketCode}.`;
+        recommendationLabel = `Cargar ${nextAssigned.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            nextAssigned,
+            `Cargar ${nextAssigned.ticketCode}`,
+            `Es el paciente que ya cubre la siguiente entrada de ${slotKey.toUpperCase()}.`
+        );
+    } else if (currentTicket && generalCandidate) {
+        state = operatorReady ? 'warning' : 'alert';
+        badge = operatorReady ? 'Preasigna ahora' : 'Prepara operador';
+        headline = `${slotKey.toUpperCase()} quedará sin cobertura tras ${currentTicket.ticketCode}`;
+        gapLabel = operatorReady
+            ? `${generalCandidate.ticketCode} debería quedar preasignado antes del cierre para evitar hueco.`
+            : `${generalCandidate.ticketCode} podría cubrir el hueco, pero primero conviene dejar Operador ${slotKey.toUpperCase()} listo.`;
+        recommendationLabel = operatorReady
+            ? `Preparar ${generalCandidate.ticketCode} para ${slotKey.toUpperCase()}`
+            : `Preparar Operador ${slotKey.toUpperCase()} y luego ${generalCandidate.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            generalCandidate,
+            `Cargar ${generalCandidate.ticketCode}`,
+            `Es el mejor candidato general para cubrir el siguiente ingreso de ${slotKey.toUpperCase()}.`
+        );
+    } else if (currentTicket && rebalanceCandidate) {
+        state = 'warning';
+        badge = 'Rebalancea cobertura';
+        headline = `${slotKey.toUpperCase()} va a quedar libre y el otro carril tiene excedente`;
+        gapLabel = `${rebalanceCandidate.ticketCode} puede moverse desde C${otherSlot} para que ${slotKey.toUpperCase()} no quede vacío.`;
+        recommendationLabel = `Cargar ${rebalanceCandidate.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            rebalanceCandidate,
+            `Cargar ${rebalanceCandidate.ticketCode}`,
+            `Es el candidato más claro para cubrir el hueco desde C${otherSlot}.`
+        );
+    } else if (!currentTicket && nextAssigned) {
+        state = 'ready';
+        badge = 'Listo para llamar';
+        headline = `${slotKey.toUpperCase()} ya tiene siguiente paciente listo`;
+        gapLabel = `${nextAssigned.ticketCode} ya espera en ${slotKey.toUpperCase()} sin hueco entre turnos.`;
+        recommendationLabel = `Cargar ${nextAssigned.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            nextAssigned,
+            `Cargar ${nextAssigned.ticketCode}`,
+            `Es el siguiente turno que ya sostiene la cobertura de ${slotKey.toUpperCase()}.`
+        );
+    } else if (!currentTicket && generalCandidate) {
+        state = operatorReady ? 'suggested' : 'warning';
+        badge = operatorReady ? 'Puede absorber' : 'Falta operador';
+        headline = `${slotKey.toUpperCase()} puede tomar cobertura nueva`;
+        gapLabel = operatorReady
+            ? `${generalCandidate.ticketCode} puede entrar ahora mismo para evitar hueco futuro.`
+            : `${generalCandidate.ticketCode} podría ir a ${slotKey.toUpperCase()}, pero el operador todavía no acompaña.`;
+        recommendationLabel = operatorReady
+            ? `Cargar ${generalCandidate.ticketCode}`
+            : `Preparar ${generalCandidate.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            generalCandidate,
+            `Cargar ${generalCandidate.ticketCode}`,
+            `Es el siguiente candidato para cubrir ${slotKey.toUpperCase()}.`
+        );
+    }
+
+    return {
+        slot,
+        slotKey,
+        state,
+        badge,
+        headline,
+        currentLabel,
+        nextLabel,
+        gapLabel,
+        recommendationLabel,
+        operatorLabel: operatorContext.operatorLabel,
+        pivot,
+    };
+}
+
+function buildQueueCoverageDeck(manifest, detectedPlatform) {
+    const cards = [1, 2].map((slot) =>
+        buildQueueCoverageCard(manifest, detectedPlatform, slot)
+    );
+    const exposed = cards.filter((card) =>
+        ['warning', 'alert', 'suggested'].includes(card.state)
+    );
+    const ready = cards.filter((card) => card.state === 'ready').length;
+    const top =
+        cards.find((card) => card.state === 'alert') ||
+        cards.find((card) => card.state === 'warning') ||
+        cards.find((card) => card.state === 'suggested') ||
+        cards.find((card) => card.state === 'ready') ||
+        null;
+
+    return {
+        title: 'Cobertura siguiente',
+        summary: top
+            ? `${top.headline}. ${top.gapLabel}`
+            : 'No hay huecos próximos detectados entre el cierre actual y el siguiente ingreso.',
+        statusLabel:
+            exposed.length > 0
+                ? `${exposed.length} hueco(s) por cubrir`
+                : `${ready}/2 consultorio(s) cubiertos`,
+        statusState: top ? top.state : 'idle',
+        cards,
+    };
+}
+
+function copyQueueCoverageDeck(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Cobertura siguiente - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...panel.cards.flatMap((card) => [
+            `${card.slotKey.toUpperCase()} - ${card.badge}`,
+            `Actual: ${card.currentLabel}`,
+            `Siguiente: ${card.nextLabel}`,
+            `Cobertura: ${card.gapLabel}`,
+            '',
+        ]),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Cobertura copiada', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar la cobertura', 'error');
+        });
+}
+
+function renderQueueCoverageDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueCoverageDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const deck = buildQueueCoverageDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueCoverageDeck',
+        `
+            <section class="queue-coverage-deck__shell" data-state="${escapeHtml(
+                deck.statusState
+            )}">
+                <div class="queue-coverage-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Cobertura de turno</p>
+                        <h5 id="queueCoverageDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            deck.title
+                        )}</h5>
+                        <p id="queueCoverageDeckSummary" class="queue-coverage-deck__summary">${escapeHtml(
+                            deck.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-coverage-deck__meta">
+                        <span
+                            id="queueCoverageDeckStatus"
+                            class="queue-coverage-deck__status"
+                            data-state="${escapeHtml(deck.statusState)}"
+                        >
+                            ${escapeHtml(deck.statusLabel)}
+                        </span>
+                        <button
+                            id="queueCoverageDeckCopyBtn"
+                            type="button"
+                            class="queue-coverage-deck__action"
+                            ${deck.cards.length ? '' : 'disabled'}
+                        >
+                            Copiar cobertura
+                        </button>
+                    </div>
+                </div>
+                <div id="queueCoverageDeckCards" class="queue-coverage-deck__grid" role="list" aria-label="Cobertura siguiente por consultorio">
+                    ${deck.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueCoverageCard_${escapeHtml(card.slotKey)}"
+                                    class="queue-coverage-card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-coverage-card__head">
+                                        <div>
+                                            <p class="queue-coverage-card__lane">${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</p>
+                                            <strong id="queueCoverageHeadline_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.headline)}</strong>
+                                        </div>
+                                        <span class="queue-coverage-card__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueCoverageCurrent_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-coverage-card__fact">${escapeHtml(
+                                        `Actual: ${card.currentLabel}`
+                                    )}</p>
+                                    <p id="queueCoverageNext_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-coverage-card__fact">${escapeHtml(
+                                        `Siguiente: ${card.nextLabel}`
+                                    )}</p>
+                                    <p id="queueCoverageGap_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-coverage-card__fact queue-coverage-card__fact--support">${escapeHtml(
+                                        card.gapLabel
+                                    )}</p>
+                                    <div class="queue-coverage-card__actions">
+                                        <span class="queue-coverage-card__tag">${escapeHtml(
+                                            card.operatorLabel
+                                        )}</span>
+                                        <button
+                                            id="queueCoveragePrimary_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-coverage-card__action"
+                                            data-queue-coverage-ticket="${escapeHtml(
+                                                card.pivot?.ticketCode || ''
+                                            )}"
+                                            data-queue-coverage-label="${escapeHtml(
+                                                card.recommendationLabel
+                                            )}"
+                                            ${card.pivot ? '' : 'disabled'}
+                                        >
+                                            ${escapeHtml(
+                                                card.pivot?.label ||
+                                                    card.recommendationLabel
+                                            )}
+                                        </button>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueCoverageDeckCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueCoverageDeck(deck);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-coverage-ticket]').forEach((button) => {
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = () => {
+            const ticketCode = String(
+                button.dataset.queueCoverageTicket || ''
+            ).trim();
+            const label = String(
+                button.dataset.queueCoverageLabel || ''
+            ).trim();
+            if (!ticketCode) {
+                return;
+            }
+            persistQueueTicketLookupTerm(ticketCode);
+            appendOpsLogEntry({
+                source: 'coverage',
+                tone: 'info',
+                title: 'Cobertura siguiente: ticket cargado',
+                summary: `${ticketCode} quedó cargado desde cobertura siguiente (${label || 'sin recomendación visible'}).`,
+            });
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    });
+}
+
+function buildQueueReserveCard(manifest, detectedPlatform, consultorio) {
+    const slot = Number(consultorio || 0) === 2 ? 2 : 1;
+    const slotKey = `c${slot}`;
+    const otherSlot = slot === 2 ? 1 : 2;
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        slot
+    );
+    const currentTicket = getCalledTicketForConsultorio(slot);
+    const assignedTickets = getAssignedWaitingTickets(slot);
+    const nextAssigned = assignedTickets[0] || null;
+    const reserveAssigned = assignedTickets[1] || null;
+    const generalCandidate = getUnassignedWaitingTickets()[0] || null;
+    const rebalanceCandidate =
+        !generalCandidate && getAssignedWaitingTickets(otherSlot)[1]
+            ? getAssignedWaitingTickets(otherSlot)[1]
+            : null;
+    const operatorReady = Boolean(
+        operatorContext.operatorAssigned && operatorContext.operatorLive
+    );
+
+    let state = 'idle';
+    let badge = 'Sin reserva crítica';
+    let headline = `${slotKey.toUpperCase()} no muestra riesgo de agotarse tras el siguiente turno`;
+    let currentLabel = currentTicket
+        ? `${currentTicket.ticketCode} · ${formatQueueTicketAgeLabel(
+              currentTicket,
+              'called'
+          )}`
+        : 'Sin paciente en atención';
+    let nextLabel = nextAssigned
+        ? `${nextAssigned.ticketCode} · ${formatQueueTicketAgeLabel(
+              nextAssigned,
+              'waiting'
+          )}`
+        : 'Sin siguiente asignado';
+    let reserveLabel = reserveAssigned
+        ? `${reserveAssigned.ticketCode} · ${formatQueueTicketAgeLabel(
+              reserveAssigned,
+              'waiting'
+          )}`
+        : generalCandidate
+          ? `${generalCandidate.ticketCode} en cola general`
+          : rebalanceCandidate
+            ? `${rebalanceCandidate.ticketCode} desde C${otherSlot}`
+            : 'Sin segundo paso preparado';
+    let bufferLabel = 'La cola del consultorio mantiene un colchón suficiente.';
+    let recommendationLabel = 'Sin acción inmediata';
+    let pivot = null;
+
+    if (reserveAssigned) {
+        state = 'ready';
+        badge = '2 pasos cubiertos';
+        headline = `${slotKey.toUpperCase()} ya tiene reserva después del siguiente turno`;
+        bufferLabel = `${reserveAssigned.ticketCode} sostiene la cola de ${slotKey.toUpperCase()} después de ${nextAssigned?.ticketCode || 'la siguiente llamada'}.`;
+        recommendationLabel = `Cargar ${reserveAssigned.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            reserveAssigned,
+            `Cargar ${reserveAssigned.ticketCode}`,
+            `Es la reserva inmediata que mantiene con vida la cola de ${slotKey.toUpperCase()} tras el siguiente turno.`
+        );
+    } else if (nextAssigned && generalCandidate) {
+        state = operatorReady ? 'suggested' : 'warning';
+        badge = operatorReady ? 'Reserva desde general' : 'Reserva frágil';
+        headline = `${slotKey.toUpperCase()} depende de cola general después de ${nextAssigned.ticketCode}`;
+        bufferLabel = operatorReady
+            ? `${generalCandidate.ticketCode} es el mejor respaldo para que ${slotKey.toUpperCase()} no se vacíe tras ${nextAssigned.ticketCode}.`
+            : `${generalCandidate.ticketCode} puede ser la reserva, pero conviene validar el operador antes de confiar en ese respaldo.`;
+        recommendationLabel = `Cargar ${generalCandidate.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            generalCandidate,
+            `Cargar ${generalCandidate.ticketCode}`,
+            `Es el mejor candidato general para dejar una reserva real en ${slotKey.toUpperCase()}.`
+        );
+    } else if (nextAssigned && rebalanceCandidate) {
+        state = 'warning';
+        badge = 'Rebalancea reserva';
+        headline = `${slotKey.toUpperCase()} solo tiene un paso cubierto`;
+        bufferLabel = `${rebalanceCandidate.ticketCode} es el excedente más claro desde C${otherSlot} para dejar reserva después de ${nextAssigned.ticketCode}.`;
+        recommendationLabel = `Cargar ${rebalanceCandidate.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            rebalanceCandidate,
+            `Cargar ${rebalanceCandidate.ticketCode}`,
+            `Es el mejor rebalanceo visible para reconstruir la reserva de ${slotKey.toUpperCase()}.`
+        );
+    } else if (nextAssigned) {
+        state = 'alert';
+        badge = 'Sin reserva';
+        headline = `${slotKey.toUpperCase()} se vacía después de ${nextAssigned.ticketCode}`;
+        bufferLabel = `No hay un segundo turno ya preparado para sostener ${slotKey.toUpperCase()} después del siguiente paciente.`;
+        recommendationLabel = `Cargar ${nextAssigned.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            nextAssigned,
+            `Cargar ${nextAssigned.ticketCode}`,
+            `Es el último turno visible antes de que ${slotKey.toUpperCase()} se quede sin reserva.`
+        );
+    } else if (generalCandidate) {
+        state = operatorReady ? 'warning' : 'alert';
+        badge = operatorReady ? 'Arma reserva' : 'Sin armado';
+        headline = `${slotKey.toUpperCase()} no tiene cola propia preparada`;
+        bufferLabel = operatorReady
+            ? `${generalCandidate.ticketCode} es el único respaldo inmediato para volver a poblar ${slotKey.toUpperCase()}.`
+            : `${generalCandidate.ticketCode} podría poblar ${slotKey.toUpperCase()}, pero el operador todavía no acompaña ese armado.`;
+        recommendationLabel = `Cargar ${generalCandidate.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            generalCandidate,
+            `Cargar ${generalCandidate.ticketCode}`,
+            `Es el primer ticket disponible para reconstruir la reserva de ${slotKey.toUpperCase()}.`
+        );
+    } else if (rebalanceCandidate) {
+        state = 'warning';
+        badge = 'Pide rebalanceo';
+        headline = `${slotKey.toUpperCase()} no tiene cola propia`;
+        bufferLabel = `${rebalanceCandidate.ticketCode} puede convertirse en la reserva mínima desde C${otherSlot}.`;
+        recommendationLabel = `Cargar ${rebalanceCandidate.ticketCode}`;
+        pivot = buildQueueTicketRoutePivot(
+            rebalanceCandidate,
+            `Cargar ${rebalanceCandidate.ticketCode}`,
+            `Es el rebalanceo más claro para poblar otra vez ${slotKey.toUpperCase()}.`
+        );
+    }
+
+    return {
+        slot,
+        slotKey,
+        state,
+        badge,
+        headline,
+        currentLabel,
+        nextLabel,
+        reserveLabel,
+        bufferLabel,
+        recommendationLabel,
+        operatorLabel: operatorContext.operatorLabel,
+        pivot,
+    };
+}
+
+function buildQueueReserveDeck(manifest, detectedPlatform) {
+    const cards = [1, 2].map((slot) =>
+        buildQueueReserveCard(manifest, detectedPlatform, slot)
+    );
+    const exposed = cards.filter((card) =>
+        ['warning', 'alert', 'suggested'].includes(card.state)
+    );
+    const ready = cards.filter((card) => card.state === 'ready').length;
+    const top =
+        cards.find((card) => card.state === 'alert') ||
+        cards.find((card) => card.state === 'warning') ||
+        cards.find((card) => card.state === 'suggested') ||
+        cards.find((card) => card.state === 'ready') ||
+        null;
+
+    return {
+        title: 'Reserva inmediata',
+        summary: top
+            ? `${top.headline}. ${top.bufferLabel}`
+            : 'No hay consultorios con reserva frágil después del siguiente turno.',
+        statusLabel:
+            exposed.length > 0
+                ? `${exposed.length} reserva(s) por reforzar`
+                : `${ready}/2 consultorio(s) con reserva`,
+        statusState: top ? top.state : 'idle',
+        cards,
+    };
+}
+
+function copyQueueReserveDeck(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Reserva inmediata - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...panel.cards.flatMap((card) => [
+            `${card.slotKey.toUpperCase()} - ${card.badge}`,
+            `Actual: ${card.currentLabel}`,
+            `Siguiente: ${card.nextLabel}`,
+            `Reserva: ${card.reserveLabel}`,
+            `Soporte: ${card.bufferLabel}`,
+            '',
+        ]),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Reserva copiada', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar la reserva', 'error');
+        });
+}
+
+function renderQueueReserveDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReserveDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const deck = buildQueueReserveDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueReserveDeck',
+        `
+            <section class="queue-reserve-deck__shell" data-state="${escapeHtml(
+                deck.statusState
+            )}">
+                <div class="queue-reserve-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Respaldo después del siguiente</p>
+                        <h5 id="queueReserveDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            deck.title
+                        )}</h5>
+                        <p id="queueReserveDeckSummary" class="queue-reserve-deck__summary">${escapeHtml(
+                            deck.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-reserve-deck__meta">
+                        <span
+                            id="queueReserveDeckStatus"
+                            class="queue-reserve-deck__status"
+                            data-state="${escapeHtml(deck.statusState)}"
+                        >
+                            ${escapeHtml(deck.statusLabel)}
+                        </span>
+                        <button
+                            id="queueReserveDeckCopyBtn"
+                            type="button"
+                            class="queue-reserve-deck__action"
+                            ${deck.cards.length ? '' : 'disabled'}
+                        >
+                            Copiar reserva
+                        </button>
+                    </div>
+                </div>
+                <div id="queueReserveDeckCards" class="queue-reserve-deck__grid" role="list" aria-label="Reserva inmediata por consultorio">
+                    ${deck.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueReserveCard_${escapeHtml(card.slotKey)}"
+                                    class="queue-reserve-card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-reserve-card__head">
+                                        <div>
+                                            <p class="queue-reserve-card__lane">${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</p>
+                                            <strong id="queueReserveHeadline_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.headline)}</strong>
+                                        </div>
+                                        <span class="queue-reserve-card__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueReserveCurrent_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-reserve-card__fact">${escapeHtml(
+                                        `Actual: ${card.currentLabel}`
+                                    )}</p>
+                                    <p id="queueReserveNext_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-reserve-card__fact">${escapeHtml(
+                                        `Siguiente: ${card.nextLabel}`
+                                    )}</p>
+                                    <p id="queueReserveBuffer_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-reserve-card__fact">${escapeHtml(
+                                        `Reserva: ${card.reserveLabel}`
+                                    )}</p>
+                                    <p id="queueReserveSupport_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-reserve-card__fact queue-reserve-card__fact--support">${escapeHtml(
+                                        card.bufferLabel
+                                    )}</p>
+                                    <div class="queue-reserve-card__actions">
+                                        <span class="queue-reserve-card__tag">${escapeHtml(
+                                            card.operatorLabel
+                                        )}</span>
+                                        <button
+                                            id="queueReservePrimary_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-reserve-card__action"
+                                            data-queue-reserve-ticket="${escapeHtml(
+                                                card.pivot?.ticketCode || ''
+                                            )}"
+                                            data-queue-reserve-label="${escapeHtml(
+                                                card.recommendationLabel
+                                            )}"
+                                            ${card.pivot ? '' : 'disabled'}
+                                        >
+                                            ${escapeHtml(
+                                                card.pivot?.label ||
+                                                    card.recommendationLabel
+                                            )}
+                                        </button>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueReserveDeckCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueReserveDeck(deck);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-reserve-ticket]').forEach((button) => {
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = () => {
+            const ticketCode = String(
+                button.dataset.queueReserveTicket || ''
+            ).trim();
+            const label = String(button.dataset.queueReserveLabel || '').trim();
+            if (!ticketCode) {
+                return;
+            }
+            persistQueueTicketLookupTerm(ticketCode);
+            appendOpsLogEntry({
+                source: 'reserve',
+                tone: 'info',
+                title: 'Reserva inmediata: ticket cargado',
+                summary: `${ticketCode} quedó cargado desde reserva inmediata (${label || 'sin recomendación visible'}).`,
+            });
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    });
+}
+
 function getQueueBlockerWeight(item) {
     const action = String(item?.actionLabel || '')
         .trim()
@@ -8495,6 +9171,277 @@ function renderQueueBlockersPanel(manifest, detectedPlatform) {
                 tone: 'warning',
                 title: 'Bloqueos vivos: ticket cargado',
                 summary: `${ticketCode} quedó cargado desde la cadena de desbloqueo (${actionLabel || 'sin acción visible'}).`,
+            });
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    });
+}
+
+function getQueueSlaThresholdSec(ticket) {
+    const priority = String(ticket?.priorityClass || '')
+        .trim()
+        .toLowerCase();
+    const queueType = String(ticket?.queueType || '')
+        .trim()
+        .toLowerCase();
+    if (priority === 'appt_overdue') {
+        return 0;
+    }
+    if (priority === 'appt_current' || queueType === 'appointment') {
+        return 15 * 60;
+    }
+    return 20 * 60;
+}
+
+function getQueueSlaDueSec(ticket) {
+    const ageSec = getQueueTicketAgeSec(ticket, 'waiting') || 0;
+    return getQueueSlaThresholdSec(ticket) - ageSec;
+}
+
+function formatQueueSlaDueLabel(ticket) {
+    const priority = String(ticket?.priorityClass || '')
+        .trim()
+        .toLowerCase();
+    const dueSec = getQueueSlaDueSec(ticket);
+    if (priority === 'appt_overdue') {
+        return 'cita ya vencida';
+    }
+    if (dueSec <= 0) {
+        return `vencido hace ${formatHeartbeatAge(Math.abs(dueSec))}`;
+    }
+    return `vence en ${formatHeartbeatAge(dueSec)}`;
+}
+
+function buildQueueSlaDeck(manifest, detectedPlatform) {
+    const items = getSortedWaitingTickets()
+        .map((ticket) => {
+            const lookup = buildQueueTicketLookupResult(
+                ticket,
+                manifest,
+                detectedPlatform
+            );
+            const dueSec = getQueueSlaDueSec(ticket);
+            const consultorio = Number(ticket.assignedConsultorio || 0);
+            const laneLabel =
+                consultorio === 1 ? 'C1' : consultorio === 2 ? 'C2' : 'General';
+            const priority = String(ticket.priorityClass || '')
+                .trim()
+                .toLowerCase();
+            const state =
+                priority === 'appt_overdue' || dueSec <= 0
+                    ? 'alert'
+                    : dueSec <= 5 * 60
+                      ? 'warning'
+                      : 'ready';
+            const headline =
+                priority === 'appt_overdue'
+                    ? `${ticket.ticketCode} ya llegó vencido`
+                    : dueSec <= 0
+                      ? `${ticket.ticketCode} ya cayó en riesgo SLA`
+                      : `${ticket.ticketCode} se acerca al límite SLA`;
+            return {
+                ticketId: Number(ticket.id || 0),
+                ticketCode: String(ticket.ticketCode || ''),
+                laneLabel,
+                state,
+                dueSec,
+                ageLabel: formatQueueTicketAgeLabel(ticket, 'waiting'),
+                dueLabel: formatQueueSlaDueLabel(ticket),
+                headline,
+                recommendation: lookup?.primaryLabel || 'Ver en tabla',
+                support:
+                    lookup?.detail ||
+                    'Revisa el ticket desde el hub antes de que siga envejeciendo.',
+                pivot: buildQueueTicketRoutePivot(
+                    ticket,
+                    `Cargar ${String(ticket.ticketCode || '')}`,
+                    `Es uno de los tickets con presión SLA más alta ahora mismo.`
+                ),
+            };
+        })
+        .sort((left, right) => {
+            if (left.dueSec !== right.dueSec) {
+                return left.dueSec - right.dueSec;
+            }
+            return Number(left.ticketId || 0) - Number(right.ticketId || 0);
+        })
+        .slice(0, 4);
+
+    const top = items[0] || null;
+    return {
+        title: 'SLA vivo',
+        summary: top
+            ? `${top.headline}. ${top.recommendation} es la siguiente jugada útil para que no se siga degradando.`
+            : 'No hay tickets en ventana crítica de SLA ahora mismo.',
+        statusLabel: top
+            ? `${items.length} ticket(s) vigilados`
+            : 'Sin presión SLA',
+        statusState: top ? top.state : 'idle',
+        items,
+    };
+}
+
+function copyQueueSlaDeck(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `SLA vivo - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...(panel.items.length
+            ? panel.items.map(
+                  (item, index) =>
+                      `${index + 1}. [${item.laneLabel}] ${item.ticketCode} - ${item.dueLabel} - ${item.recommendation}`
+              )
+            : ['Sin tickets en presión SLA.']),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('SLA copiado', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar SLA vivo', 'error');
+        });
+}
+
+function renderQueueSlaDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueSlaDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueSlaDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueSlaDeck',
+        `
+            <section class="queue-sla-deck__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-sla-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Presión preventiva</p>
+                        <h5 id="queueSlaDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueSlaDeckSummary" class="queue-sla-deck__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-sla-deck__meta">
+                        <span
+                            id="queueSlaDeckStatus"
+                            class="queue-sla-deck__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueSlaDeckCopyBtn"
+                            type="button"
+                            class="queue-sla-deck__action"
+                            ${panel.items.length ? '' : 'disabled'}
+                        >
+                            Copiar SLA
+                        </button>
+                    </div>
+                </div>
+                ${
+                    panel.items.length
+                        ? `
+                            <div id="queueSlaDeckItems" class="queue-sla-deck__list" role="list" aria-label="Tickets en presión SLA">
+                                ${panel.items
+                                    .map(
+                                        (item, index) => `
+                                            <article
+                                                id="queueSlaDeckItem_${index}"
+                                                class="queue-sla-deck__item"
+                                                data-state="${escapeHtml(item.state)}"
+                                                role="listitem"
+                                            >
+                                                <div class="queue-sla-deck__copy">
+                                                    <div class="queue-sla-deck__headline">
+                                                        <span class="queue-sla-deck__lane">${escapeHtml(
+                                                            item.laneLabel
+                                                        )}</span>
+                                                        <strong id="queueSlaDeckHeadline_${index}">${escapeHtml(
+                                                            item.headline
+                                                        )}</strong>
+                                                    </div>
+                                                    <p id="queueSlaDeckDue_${index}" class="queue-sla-deck__due">${escapeHtml(
+                                                        `${item.ticketCode} · ${item.dueLabel}`
+                                                    )}</p>
+                                                    <p id="queueSlaDeckSupport_${index}" class="queue-sla-deck__support">${escapeHtml(
+                                                        `${item.ageLabel}. ${item.support}`
+                                                    )}</p>
+                                                </div>
+                                                <div class="queue-sla-deck__actions">
+                                                    <span class="queue-sla-deck__badge">${escapeHtml(
+                                                        item.recommendation
+                                                    )}</span>
+                                                    <button
+                                                        id="queueSlaDeckLoad_${index}"
+                                                        type="button"
+                                                        class="queue-sla-deck__load"
+                                                        data-queue-sla-ticket="${escapeHtml(
+                                                            item.ticketCode
+                                                        )}"
+                                                        data-queue-sla-action="${escapeHtml(
+                                                            item.recommendation
+                                                        )}"
+                                                    >
+                                                        ${escapeHtml(
+                                                            item.pivot?.label ||
+                                                                'Cargar ticket'
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </article>
+                                        `
+                                    )
+                                    .join('')}
+                            </div>
+                        `
+                        : `
+                            <article id="queueSlaDeckEmpty" class="queue-sla-deck__empty">
+                                <strong>Sin presión SLA crítica</strong>
+                                <p>Los tickets en espera siguen dentro de una ventana operativa aceptable.</p>
+                            </article>
+                        `
+                }
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueSlaDeckCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueSlaDeck(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-sla-ticket]').forEach((button) => {
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = () => {
+            const ticketCode = String(
+                button.dataset.queueSlaTicket || ''
+            ).trim();
+            const actionLabel = String(
+                button.dataset.queueSlaAction || ''
+            ).trim();
+            if (!ticketCode) {
+                return;
+            }
+            persistQueueTicketLookupTerm(ticketCode);
+            appendOpsLogEntry({
+                source: 'sla_live',
+                tone: 'warning',
+                title: 'SLA vivo: ticket cargado',
+                summary: `${ticketCode} quedó cargado desde la presión SLA (${actionLabel || 'sin acción visible'}).`,
             });
             rerenderQueueOpsHub(manifest, detectedPlatform);
         };
@@ -12911,7 +13858,10 @@ function rerenderQueueOpsHub(manifest, detectedPlatform) {
     renderQueueTicketSimulation(manifest, detectedPlatform);
     renderQueueNextTurnsPanel(manifest, detectedPlatform);
     renderQueueMasterSequencePanel(manifest, detectedPlatform);
+    renderQueueCoverageDeck(manifest, detectedPlatform);
+    renderQueueReserveDeck(manifest, detectedPlatform);
     renderQueueBlockersPanel(manifest, detectedPlatform);
+    renderQueueSlaDeck(manifest, detectedPlatform);
     renderQueueWaitRadar(manifest, detectedPlatform);
     renderQueueLoadBalance(manifest, detectedPlatform);
     renderQueuePriorityLane(manifest, detectedPlatform);
@@ -13331,7 +14281,10 @@ export function renderQueueInstallHub(options = {}) {
     renderQueueTicketSimulation(manifest, platform);
     renderQueueNextTurnsPanel(manifest, platform);
     renderQueueMasterSequencePanel(manifest, platform);
+    renderQueueCoverageDeck(manifest, platform);
+    renderQueueReserveDeck(manifest, platform);
     renderQueueBlockersPanel(manifest, platform);
+    renderQueueSlaDeck(manifest, platform);
     renderQueueWaitRadar(manifest, platform);
     renderQueueLoadBalance(manifest, platform);
     renderQueuePriorityLane(manifest, platform);
