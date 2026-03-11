@@ -24,6 +24,7 @@ const normalizeHref = (value) => {
     const raw = normalizeText(value);
     return raw && raw !== '#' ? raw : '';
 };
+const formatCount = (value) => String(Math.max(0, Number(value) || 0)).padStart(2, '0');
 const sectionLabel = normalizeText(ui.sectionLabel);
 const blockLabel = normalizeText(ui.blockLabel);
 const clausesLabel = normalizeText(ui.clausesLabel);
@@ -55,9 +56,10 @@ const sectionModels = sections
             : null;
     })
     .filter(Boolean);
-const sectionHighlights = sectionModels.slice(0, 3).map((section) => ({
+const sectionHighlights = sectionModels.slice(0, 3).map((section, index) => ({
     title: section.title,
     count: section.items.length,
+    indexLabel: formatCount(index + 1),
 }));
 const indexCards = safeIndexItems.map((item, index) => {
     const source = safeLegalPages[item.slug] && typeof safeLegalPages[item.slug] === 'object'
@@ -75,7 +77,7 @@ const indexCards = safeIndexItems.map((item, index) => {
         href: item.href,
         summary: normalizeText(source.summary),
         image: normalizeText(source.heroImage),
-        sectionLabel: `${sectionLabel} ${String(index + 1).padStart(2, '0')}`.trim(),
+        sectionLabel: `${sectionLabel} ${formatCount(index + 1)}`.trim(),
         clauses,
     };
 }).filter((item) => item.title && item.href && item.image);
@@ -148,8 +150,11 @@ const internalDescription = normalizeText(internalMessageUi.description);
     safeIndexItems.length ? (
         <nav id="v6-legal-tabs" class="v6-legal-tabs" aria-label={normalizeText(menuUi.legalIndex) || undefined}>
             {
-                safeIndexItems.map((item) => (
-                    <a class:list={[item.slug === currentSlug && 'is-active']} href={item.href} aria-current={item.slug === currentSlug ? 'page' : undefined}>{item.title}</a>
+                safeIndexItems.map((item, index) => (
+                    <a class:list={[item.slug === currentSlug && 'is-active']} href={item.href} aria-current={item.slug === currentSlug ? 'page' : undefined}>
+                        <span class="v6-legal-tabs__index">{formatCount(index + 1)}</span>
+                        <span class="v6-legal-tabs__label">{item.title}</span>
+                    </a>
                 ))
             }
         </nav>
@@ -182,14 +187,19 @@ const internalDescription = normalizeText(internalMessageUi.description);
         <section id="v6-legal-index-grid" class="v6-legal-index-grid" data-v6-legal-index>
             {
                 indexCards.map((item) => (
-                    <a class:list={[item.slug === currentSlug && 'is-active']} href={item.href}>
+                    <a class:list={[item.slug === currentSlug && 'is-active', item.slug === currentSlug && 'is-lead']} href={item.href}>
                         <figure>
                             <img src={item.image} alt={item.title} loading="lazy" decoding="async" />
                         </figure>
-                        <div>
-                            {item.sectionLabel ? <p>{item.sectionLabel}</p> : null}
+                        <div class="v6-legal-index-grid__meta">
+                            {item.sectionLabel || item.clauses ? (
+                                <p class="v6-legal-index-grid__eyebrow">
+                                    {item.sectionLabel ? <span class="v6-legal-index-grid__index">{item.sectionLabel}</span> : null}
+                                    {item.clauses ? <span class="v6-legal-index-grid__count">{formatCount(item.clauses)}</span> : null}
+                                </p>
+                            ) : null}
                             <h3>{item.title}</h3>
-                            {item.summary ? <p>{item.summary}</p> : null}
+                            {item.summary ? <p class="v6-legal-index-grid__summary">{item.summary}</p> : null}
                             {clausesLabel ? <strong>{`${item.clauses} ${clausesLabel}`.trim()}</strong> : null}
                         </div>
                     </a>
@@ -204,8 +214,13 @@ const internalDescription = normalizeText(internalMessageUi.description);
         <section id="v6-legal-summary" class="v6-legal-summary">
             {
                 sectionHighlights.map((item, index) => (
-                    <article>
-                        {sectionLabel ? <p>{sectionLabel}</p> : null}
+                    <article class:list={[index === 0 && 'is-lead']}>
+                        {sectionLabel || clausesLabel ? (
+                            <p class="v6-legal-summary__meta">
+                                {sectionLabel ? <span class="v6-legal-summary__index">{`${sectionLabel} ${item.indexLabel}`.trim()}</span> : null}
+                                {clausesLabel ? <span class="v6-legal-summary__count">{formatCount(item.count)}</span> : null}
+                            </p>
+                        ) : null}
                         <h3>{item.title}</h3>
                         {blockLabel ? <small>{`${blockLabel} ${String(index + 1).padStart(2, '0')}`.trim()}</small> : null}
                         {clausesLabel ? <strong>{`${item.count} ${clausesLabel}`.trim()}</strong> : null}
@@ -219,11 +234,16 @@ const internalDescription = normalizeText(internalMessageUi.description);
 <section class="v6-legal-sections">
     {
         sectionModels.map((section, sectionIndex) => (
-            <article id={section.anchorId} data-v6-legal-block>
-                <header>
-                    {sectionLabel ? <p>{`${sectionLabel} ${String(sectionIndex + 1).padStart(2, '0')}`.trim()}</p> : null}
+            <article id={section.anchorId} class:list={[sectionIndex === 0 && 'is-lead']} data-v6-legal-block>
+                <header class="v6-legal-sections__head">
+                    {sectionLabel || clausesLabel ? (
+                        <p class="v6-legal-sections__meta">
+                            {sectionLabel ? <span class="v6-legal-sections__index">{`${sectionLabel} ${formatCount(sectionIndex + 1)}`.trim()}</span> : null}
+                            {clausesLabel ? <span class="v6-legal-sections__count">{formatCount(section.items.length)}</span> : null}
+                        </p>
+                    ) : null}
                     <h3>{section.title}</h3>
-                    {clausesLabel ? <strong>{`${section.items.length} ${clausesLabel}`.trim()}</strong> : null}
+                    {clausesLabel ? <strong class="v6-legal-sections__clauses">{`${section.items.length} ${clausesLabel}`.trim()}</strong> : null}
                 </header>
                 <ol>
                     {section.items.map((item, itemIndex) => (

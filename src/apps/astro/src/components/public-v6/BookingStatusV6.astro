@@ -12,10 +12,31 @@ const hasSection = Boolean(eyebrow || title || description || (ctaLabel && ctaHr
 {
     hasSection ? (
         <section id={sectionId || undefined} class="v6-booking-status" data-v6-booking-status>
-            {eyebrow ? <p>{eyebrow}</p> : null}
-            {title ? <h2>{title}</h2> : null}
-            {description ? <p>{description}</p> : null}
-            {ctaLabel && ctaHref ? <a href={ctaHref}>{ctaLabel}</a> : null}
+            <div class="v6-booking-status__shell">
+                <div class="v6-booking-status__copy">
+                    {(eyebrow || title) ? (
+                        <div class="v6-booking-status__head">
+                            <span class="v6-booking-status__signal" aria-hidden="true"></span>
+                            <div class="v6-booking-status__title-group">
+                                {eyebrow ? <p class="v6-booking-status__eyebrow">{eyebrow}</p> : null}
+                                {title ? <h2>{title}</h2> : null}
+                            </div>
+                        </div>
+                    ) : null}
+                    {description ? <p class="v6-booking-status__description">{description}</p> : null}
+                </div>
+
+                {
+                    ctaLabel && ctaHref ? (
+                        <div class="v6-booking-status__actions">
+                            <a href={ctaHref}>
+                                <span>{ctaLabel}</span>
+                                <span aria-hidden="true">></span>
+                            </a>
+                        </div>
+                    ) : null
+                }
+            </div>
         </section>
     ) : null
 }

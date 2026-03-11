@@ -180,16 +180,17 @@ const initiativesAria = normalizeText(initiativesUi.aria);
             initiatives.length ? (
                 <section id="v6-tele-initiatives" class="v6-tele-initiatives v6-tele-initiatives--shell" aria-label={initiativesAria || undefined}>
                     {
-                        initiatives.map((item) => (
+                        initiatives.map((item, index) => (
                             <a href={item.href} data-v6-tele-initiative>
                                 <figure>
                                     <img src={item.image} alt={item.title} loading="lazy" decoding="async" />
                                 </figure>
-                                <div>
+                                <div class="v6-tele-initiative-card__body">
+                                    <p class="v6-tele-initiative-card__index">{String(index + 1).padStart(2, '0')}</p>
                                     <h3>{item.title}</h3>
-                                    <p>{item.copy}</p>
+                                    <p class="v6-tele-initiative-card__copy">{item.copy}</p>
                                     {initiativesCtaLabel ? (
-                                        <strong>
+                                        <strong class="v6-tele-initiative-card__cta">
                                             {initiativesCtaLabel}
                                             <span aria-hidden="true">></span>
                                         </strong>

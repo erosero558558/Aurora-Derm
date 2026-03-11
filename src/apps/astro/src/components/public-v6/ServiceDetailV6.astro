@@ -205,9 +205,10 @@ const glanceCards = [
             glanceCards.length ? (
                 <section id="v6-service-glance" class="v6-service-glance v6-service-glance--shell">
                     {
-                        glanceCards.map((item) => (
-                            <article>
-                                <p>{item.label}</p>
+                        glanceCards.map((item, index) => (
+                            <article class:list={[index === 0 && 'is-lead']}>
+                                <p class="v6-service-glance__index">{String(index + 1).padStart(2, '0')}</p>
+                                <p class="v6-service-glance__label">{item.label}</p>
                                 <h3>{item.value}</h3>
                             </article>
                         ))
@@ -219,8 +220,11 @@ const glanceCards = [
         <section class="v6-service-detail v6-service-detail--shell">
             {
                 checkpoints.length ? (
-                    <article id="v6-service-checkpoints" class="v6-service-detail__column">
-                        {sectionsUi.checkpointsTitle ? <h3>{sectionsUi.checkpointsTitle}</h3> : null}
+                    <article id="v6-service-checkpoints" class="v6-service-detail__column v6-service-detail__column--checkpoints">
+                        <header class="v6-service-detail__head">
+                            <p class="v6-service-detail__index">01</p>
+                            {sectionsUi.checkpointsTitle ? <h3>{sectionsUi.checkpointsTitle}</h3> : null}
+                        </header>
                         <ul class="v6-service-checklist">
                             {
                                 checkpoints.map((item) => (
@@ -237,8 +241,11 @@ const glanceCards = [
 
             {
                 processSteps.length ? (
-                    <article id="v6-service-process" class="v6-service-detail__column">
-                        {sectionsUi.processTitle ? <h3>{sectionsUi.processTitle}</h3> : null}
+                    <article id="v6-service-process" class="v6-service-detail__column v6-service-detail__column--process">
+                        <header class="v6-service-detail__head">
+                            <p class="v6-service-detail__index">02</p>
+                            {sectionsUi.processTitle ? <h3>{sectionsUi.processTitle}</h3> : null}
+                        </header>
                         <ol class="v6-service-process">
                             {
                                 processSteps.map((item, index) => (
@@ -255,13 +262,16 @@ const glanceCards = [
 
             {
                 faqModels.length ? (
-                    <article id="v6-service-faq" class="v6-service-detail__column v6-service-detail__full">
-                        {sectionsUi.faqTitle ? <h3>{sectionsUi.faqTitle}</h3> : null}
+                    <article id="v6-service-faq" class="v6-service-detail__column v6-service-detail__column--faq v6-service-detail__full">
+                        <header class="v6-service-detail__head">
+                            <p class="v6-service-detail__index">03</p>
+                            {sectionsUi.faqTitle ? <h3>{sectionsUi.faqTitle}</h3> : null}
+                        </header>
                         <div class="v6-service-faq-grid">
                             {
                                 faqModels.map((item, index) => (
-                                    <article>
-                                        {faqPrefix ? <p>{`${faqPrefix}${index + 1}`}</p> : null}
+                                    <article class="v6-service-faq-card">
+                                        {faqPrefix ? <p class="v6-service-faq-card__index">{`${faqPrefix}${index + 1}`}</p> : null}
                                         <h4>{item.question}</h4>
                                         <small>{item.answer}</small>
                                     </article>
@@ -277,15 +287,20 @@ const glanceCards = [
             safeRelated.length ? (
                 <section id="v6-service-related" class="v6-related-grid v6-related-grid--shell">
                     {sectionsUi.relatedTitle ? <h2>{sectionsUi.relatedTitle}</h2> : null}
-                    <div>
+                    <div class="v6-related-grid__cards">
                         {
-                            safeRelated.map((item) => (
-                                <a href={item.href}>
-                                    <img src={item.heroImage} alt={item.title} loading="lazy" decoding="async" />
-                                    {item.category ? <p>{item.category}</p> : null}
-                                    <h3>{item.title}</h3>
-                                    {item.summary ? <p>{item.summary}</p> : null}
-                                    {relatedCta ? <strong>{relatedCta}</strong> : null}
+                            safeRelated.map((item, index) => (
+                                <a href={item.href} class:list={[index === 0 && 'is-lead']}>
+                                    <figure class="v6-related-grid__media">
+                                        <img src={item.heroImage} alt={item.title} loading="lazy" decoding="async" />
+                                    </figure>
+                                    <div class="v6-related-grid__meta">
+                                        <p class="v6-related-grid__index">{String(index + 1).padStart(2, '0')}</p>
+                                        {item.category ? <p class="v6-related-grid__category">{item.category}</p> : null}
+                                        <h3>{item.title}</h3>
+                                        {item.summary ? <p class="v6-related-grid__summary">{item.summary}</p> : null}
+                                        {relatedCta ? <strong>{relatedCta}</strong> : null}
+                                    </div>
                                 </a>
                             ))
                         }
