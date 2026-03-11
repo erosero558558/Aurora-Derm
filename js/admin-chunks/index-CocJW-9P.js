@@ -457,7 +457,7 @@ function P() {
         e.setAttribute('aria-hidden', 'true'),
         document.body.classList.remove('admin-command-open'));
 }
-function x(e) {
+function I(e) {
     (a('.admin-section').forEach((t) => {
         t.classList.toggle('active', t.id === e);
     }),
@@ -477,7 +477,7 @@ function x(e) {
         i = t('#pageTitle');
     i && (i.textContent = n);
 }
-function I(e) {
+function x(e) {
     const a = t('#group2FA'),
         n = t('#adminLoginStepSummary'),
         i = t('#adminLoginStepEyebrow'),
@@ -1350,7 +1350,7 @@ function Pe(e) {
     const t = Number(Ce(e).heuristicScore || 0);
     return Number.isFinite(t) ? t : 0;
 }
-function xe(e) {
+function Ie(e) {
     const t = new Date(e || '');
     if (Number.isNaN(t.getTime())) return !1;
     const a = new Date();
@@ -1360,7 +1360,7 @@ function xe(e) {
         t.getDate() === a.getDate()
     );
 }
-function Ie(e) {
+function xe(e) {
     try {
         (localStorage.setItem(he, JSON.stringify(we(e.filter))),
             localStorage.setItem(fe, JSON.stringify(qe(e.sort))));
@@ -1417,7 +1417,7 @@ function Oe() {
                     return 'pending' === a || 'contacted' === a
                         ? e.filter((e) => Se(e.status) === a)
                         : 'today' === a
-                          ? e.filter((e) => xe(e.fecha || e.createdAt))
+                          ? e.filter((e) => Ie(e.fecha || e.createdAt))
                           : 'sla_urgent' === a
                             ? e.filter(
                                   (e) =>
@@ -1444,7 +1444,7 @@ function Oe() {
                 pendingCount: a.length,
                 urgentCount: n.length,
                 hotCount: i.length,
-                todayCount: e.filter((e) => xe(e.fecha || e.createdAt)).length,
+                todayCount: e.filter((e) => Ie(e.fecha || e.createdAt)).length,
                 next: o,
                 workerMode: s,
                 queueHealth:
@@ -1573,7 +1573,7 @@ function Oe() {
                             e.classList.toggle('is-active', a);
                         });
                 })(e.filter),
-                Ie(e));
+                xe(e));
         })(o, s.length, a.length),
         r('#callbacksOpsPendingCount', u.pendingCount),
         r('#callbacksOpsUrgentCount', u.hotCount),
@@ -1627,7 +1627,7 @@ function Oe() {
 }
 function He(e, { persist: t = !0 } = {}) {
     (g((t) => ({ ...t, callbacks: { ...t.callbacks, ...e } })),
-        t && Ie(b().callbacks),
+        t && xe(b().callbacks),
         Oe());
 }
 function Fe(e) {
@@ -2234,10 +2234,10 @@ function Pt(e, t, a) {
         null
     );
 }
-function xt(e, t, a) {
+function It(e, t, a) {
     return e ? Dt(e, t, { status: 'called', assignedConsultorio: a }) : null;
 }
-function It(e, t = []) {
+function xt(e, t = []) {
     const a = e && 'object' == typeof e ? e : {},
         n = (function (e) {
             return e.counts && 'object' == typeof e.counts ? e.counts : {};
@@ -2271,7 +2271,7 @@ function It(e, t = []) {
             };
         })(t),
         { c1: r, c2: l } = (function (e, t) {
-            return { c1: xt(Pt(e, t, 1), 0, 1), c2: xt(Pt(e, t, 2), 1, 2) };
+            return { c1: It(Pt(e, t, 1), 0, 1), c2: It(Pt(e, t, 2), 1, 2) };
         })(i, o),
         c = (function (e) {
             return $t(e.nextTickets)
@@ -2387,7 +2387,7 @@ function jt(e, t) {
         e.set(Ft(a), a));
 }
 function Rt(e) {
-    const t = It(e),
+    const t = xt(e),
         a = new Map(),
         n =
             t.callingNowByConsultorio?.[1] ||
@@ -2412,7 +2412,7 @@ function zt() {
         queueTickets: t,
         queueMeta:
             e.data.queueMeta && 'object' == typeof e.data.queueMeta
-                ? It(e.data.queueMeta, t)
+                ? xt(e.data.queueMeta, t)
                 : Nt(t),
     };
 }
@@ -2882,356 +2882,83 @@ function Sa(e) {
           };
 }
 function Ca(e) {
-    const t = String(e || '').trim();
-    if (!t) return [];
-    const a = t
-            .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-            .replace(/[\s-]+/g, '_')
-            .toLowerCase(),
-        n = a.replaceAll('_', '-'),
-        i = a.replace(/[_-]+/g, '');
-    return Array.from(new Set([t, t.toLowerCase(), a, n, i]));
+    const t = String(e.appMode || '').trim();
+    return 'desktop' === t
+        ? 'Desktop'
+        : 'android_tv' === t
+          ? 'Android TV'
+          : 'Web';
 }
-function _a(e, t, a = void 0) {
-    const n = e && 'object' == typeof e ? e : {},
-        i = Array.isArray(t) ? t : [t];
-    for (const e of i)
-        for (const t of Ca(e))
-            if (Object.prototype.hasOwnProperty.call(n, t)) return n[t];
-    return a;
-}
-function Aa(e, t, a = '') {
-    const n = _a(e, t, a);
-    return null == n ? a : String(n);
-}
-function $a(e, t, a = 0) {
-    const n = _a(e, t, a),
-        i = Number(n);
-    return Number.isFinite(i) ? i : a;
-}
-function Ta(e, t, a = !1) {
-    const n = _a(e, t, a);
-    if ('boolean' == typeof n) return n;
-    if ('number' == typeof n) return n > 0;
-    const i = String(n || '')
-        .trim()
-        .toLowerCase();
-    return (
-        !!['1', 'true', 'yes', 'on', 'ready'].includes(i) ||
-        (!['0', 'false', 'no', 'off', ''].includes(i) && a)
-    );
-}
-function Ma(e, t) {
+function _a(e, t) {
     if (!t || 'object' != typeof t) return ['Sin señal'];
     const a = t.details && 'object' == typeof t.details ? t.details : {},
-        n = [],
-        i = String(t.appMode || '').trim();
-    if (
-        (n.push(
-            'desktop' === i
-                ? 'Desktop'
-                : 'android_tv' === i
-                  ? 'Android TV'
-                  : 'Web'
-        ),
-        'operator' === e)
-    ) {
-        const e = Aa(a, ['station'], '').toUpperCase(),
-            t = Aa(a, ['stationMode', 'station_mode'], '');
-        (e && n.push('locked' === t ? `${e} fijo` : `${e} libre`),
-            n.push(
-                Ta(a, ['oneTap', 'one_tap'], !1) ? '1 tecla ON' : '1 tecla OFF'
-            ),
-            n.push(
-                Ta(a, ['numpadSeen', 'numpad_seen'], !1)
-                    ? 'Numpad listo'
-                    : 'Numpad pendiente'
-            ));
-    } else if ('kiosk' === e) {
-        const e = Ta(a, ['printerPrinted', 'printer_printed'], !1),
-            t = Math.max(0, $a(a, ['pendingOffline', 'pending_offline'], 0)),
-            i = Math.max(
-                0,
-                $a(a, ['assistant_actioned', 'assistantActioned'], 0)
-            ),
-            o = Math.max(
-                0,
-                $a(a, ['assistance_pending_count', 'assistancePendingCount'], 0)
-            ),
-            s = Math.max(
-                0,
-                $a(
-                    a,
-                    ['assistant_clinical_blocked', 'assistantClinicalBlocked'],
-                    0
+        n = [Ca(t)];
+    return (
+        'operator' === e
+            ? n.push(
+                  ...(function (e) {
+                      const t = [],
+                          a = String(e.station || '').toUpperCase(),
+                          n = String(e.stationMode || '');
+                      return (
+                          a &&
+                              t.push(
+                                  'locked' === n ? `${a} fijo` : `${a} libre`
+                              ),
+                          t.push(e.oneTap ? '1 tecla ON' : '1 tecla OFF'),
+                          t.push(
+                              e.numpadSeen ? 'Numpad listo' : 'Numpad pendiente'
+                          ),
+                          t
+                      );
+                  })(a)
+              )
+            : 'kiosk' === e
+              ? n.push(
+                    ...(function (e) {
+                        return [
+                            e.printerPrinted
+                                ? 'Térmica OK'
+                                : 'Térmica pendiente',
+                            `Offline ${Number(e.pendingOffline || 0)}`,
+                            'live' === String(e.connection || '').toLowerCase()
+                                ? 'Cola en vivo'
+                                : 'Cola degradada',
+                        ];
+                    })(a)
                 )
-            ),
-            r = Math.max(
-                0,
-                $a(
-                    a,
-                    [
-                        'assistant_resolved_without_human',
-                        'assistantResolvedWithoutHuman',
-                    ],
-                    0
-                )
-            );
-        (n.push(e ? 'Térmica OK' : 'Térmica pendiente'),
-            t > 0 && n.push(`Offline ${t}`),
-            n.push(
-                'live' === Aa(a, ['connection'], '').toLowerCase()
-                    ? 'Cola en vivo'
-                    : 'Cola degradada'
-            ),
-            i > 0 && n.push(`Asist. ${i}`),
-            o > 0
-                ? n.push(`Apoyos ${o}`)
-                : s > 0
-                  ? n.push(`Clinico ${s}`)
-                  : r > 0 && n.push(`Sin humano ${r}`));
-    } else
-        'display' === e &&
-            (n.push(
-                Ta(a, ['bellPrimed', 'bell_primed'], !1)
-                    ? 'Audio listo'
-                    : 'Audio pendiente'
-            ),
-            n.push(
-                Ta(a, ['bellMuted', 'bell_muted'], !1)
-                    ? 'Campanilla Off'
-                    : 'Campanilla On'
-            ),
-            n.push(
-                'live' === Aa(a, ['connection'], '').toLowerCase()
-                    ? 'Sala en vivo'
-                    : 'Sala degradada'
-            ));
-    return n.slice(0, 4);
-}
-function La(t, a) {
-    if (
-        !(
-            document.getElementById('queueSurfaceTelemetry') instanceof
-            HTMLElement
-        )
-    )
-        return;
-    const n = (function (e, t) {
-            const a = fa(t);
-            return [
-                {
-                    key: 'operator',
-                    appConfig: e.operator || Yt.operator,
-                    fallbackSurface: 'operator',
-                    actionLabel: 'Abrir operador',
-                },
-                {
-                    key: 'kiosk',
-                    appConfig: e.kiosk || Yt.kiosk,
-                    fallbackSurface: 'kiosk',
-                    actionLabel: 'Abrir kiosco',
-                },
-                {
-                    key: 'display',
-                    appConfig: e.sala_tv || Yt.sala_tv,
-                    fallbackSurface: 'sala_tv',
-                    actionLabel: 'Abrir sala TV',
-                },
-            ].map((e) => {
-                const t = Sa(e.key),
-                    n =
-                        t.latest && 'object' == typeof t.latest
-                            ? t.latest
-                            : null,
-                    i = String(t.status || 'unknown'),
-                    o = (function (e, t, a) {
-                        const n =
-                            String(t.summary || '').trim() ||
-                            Xt[e]?.emptySummary ||
-                            'Sin señal todavía.';
-                        if (!a || 'object' != typeof a || 'kiosk' !== e)
-                            return n;
-                        const i = (function (e) {
-                            const t = Math.max(
-                                0,
-                                $a(
-                                    e,
-                                    ['assistant_actioned', 'assistantActioned'],
-                                    0
-                                )
-                            );
-                            if (t <= 0) return '';
-                            const a = Math.max(
-                                    0,
-                                    $a(
-                                        e,
-                                        [
-                                            'assistant_resolved_without_human',
-                                            'assistantResolvedWithoutHuman',
-                                        ],
-                                        0
-                                    )
-                                ),
-                                n = Math.max(
-                                    0,
-                                    $a(
-                                        e,
-                                        [
-                                            'assistant_escalated',
-                                            'assistantEscalated',
-                                        ],
-                                        0
-                                    )
-                                ),
-                                i = Math.max(
-                                    0,
-                                    $a(
-                                        e,
-                                        [
-                                            'assistant_clinical_blocked',
-                                            'assistantClinicalBlocked',
-                                        ],
-                                        0
-                                    )
-                                ),
-                                o = Math.max(
-                                    0,
-                                    $a(
-                                        e,
-                                        [
-                                            'assistance_pending_count',
-                                            'assistancePendingCount',
-                                        ],
-                                        0
-                                    )
-                                ),
-                                s = [`Asistente sala: ${t} accion(es)`];
-                            return (
-                                a > 0 && s.push(`${a} resuelta(s)`),
-                                n > 0 && s.push(`${n} escalada(s)`),
-                                i > 0 && s.push(`${i} bloqueo(s) clinico(s)`),
-                                o > 0 && s.push(`${o} apoyo(s) pendiente(s)`),
-                                s.join(' · ')
-                            );
-                        })(
-                            a.details && 'object' == typeof a.details
-                                ? a.details
-                                : {}
-                        );
-                        return i ? `${n} ${i}` : n;
-                    })(e.key, t, n),
-                    s = ia(e.fallbackSurface, e.appConfig, {
-                        ...a,
-                        surface: e.fallbackSurface,
-                    });
-                return {
-                    key: e.key,
-                    title: Xt[e.key]?.title || e.key,
-                    state: ['ready', 'warning', 'alert'].includes(i)
-                        ? i
-                        : 'unknown',
-                    badge:
-                        'ready' === i
-                            ? 'En vivo'
-                            : 'alert' === i
-                              ? 'Atender'
-                              : 'warning' === i
-                                ? 'Revisar'
-                                : 'Sin señal',
-                    deviceLabel: String(
-                        n?.deviceLabel || 'Sin equipo reportando'
-                    ),
-                    summary: o,
-                    ageLabel:
-                        n && void 0 !== n.ageSec && null !== n.ageSec
-                            ? `Heartbeat hace ${qa(n.ageSec)}`
-                            : 'Sin heartbeat todavía',
-                    chips: Ma(e.key, n),
-                    route: s,
-                    actionLabel: e.actionLabel,
-                };
-            });
-        })(t, a),
-        i = (function () {
-            const e = (function () {
-                    const e = b().ui?.queueAutoRefresh;
-                    return e && 'object' == typeof e
-                        ? e
-                        : {
-                              state: 'idle',
-                              reason: 'Abre Turnero Sala para activar el monitoreo continuo.',
-                              intervalMs: 45e3,
-                              lastAttemptAt: 0,
-                              lastSuccessAt: 0,
-                              lastError: '',
-                              inFlight: !1,
-                          };
-                })(),
-                t = String(e.state || 'idle')
-                    .trim()
-                    .toLowerCase(),
-                a = (function (e) {
-                    const t = Number(e);
-                    if (!Number.isFinite(t) || t <= 0) return 'cada --';
-                    const a = Math.max(1, Math.round(t / 1e3));
-                    return a < 60
-                        ? `cada ${a}s`
-                        : `cada ${Math.round(a / 60)}m`;
-                })(e.intervalMs),
-                n = e.lastSuccessAt
-                    ? `ultimo ciclo hace ${qa(Math.max(0, Math.round((Date.now() - Number(e.lastSuccessAt || 0)) / 1e3)))}`
-                    : 'sin ciclo exitoso todavía';
-            return 'refreshing' === t || Boolean(e.inFlight)
-                ? {
-                      state: 'active',
-                      label: 'Actualizando ahora',
-                      meta: `${a} · sincronizando equipos en vivo`,
-                  }
-                : 'paused' === t
-                  ? {
-                        state: 'paused',
-                        label: 'Auto-refresh en pausa',
-                        meta: String(
-                            e.reason || 'Reanuda esta sección para continuar.'
-                        ),
-                    }
-                  : 'warning' === t
-                    ? {
-                          state: 'warning',
-                          label: 'Auto-refresh degradado',
-                          meta: String(e.reason || `Modo degradado · ${n}`),
-                      }
-                    : 'active' === t
-                      ? {
-                            state: 'active',
-                            label: 'Auto-refresh activo',
-                            meta: `${a} · ${n}`,
-                        }
-                      : {
-                            state: 'idle',
-                            label: 'Auto-refresh listo',
-                            meta: String(
-                                e.reason ||
-                                    'Abre Turnero Sala para empezar el monitoreo.'
-                            ),
-                        };
-        })(),
-        o = n.some((e) => 'alert' === e.state),
-        s = n.some((e) => 'warning' === e.state || 'unknown' === e.state),
-        r = o
-            ? 'Al menos un equipo reporta una condición crítica. Atiende primero esa tarjeta antes de tocar instalación o configuración.'
-            : s
-              ? 'Hay equipos sin heartbeat reciente o con validación pendiente. Usa estas tarjetas para abrir el equipo correcto sin buscar rutas manualmente.'
-              : 'Operador, kiosco y sala están enviando heartbeat al admin. Esta vista ya sirve como tablero operativo por equipo.',
-        c = o ? 'Atender ahora' : s ? 'Revisar hoy' : 'Todo al día',
-        u = o ? 'alert' : s ? 'warning' : 'ready';
-    l(
-        '#queueSurfaceTelemetry',
-        `\n        <section class="queue-surface-telemetry__shell">\n            <div class="queue-surface-telemetry__header">\n                <div>\n                    <p class="queue-app-card__eyebrow">Equipos en vivo</p>\n                    <h5 id="queueSurfaceTelemetryTitle" class="queue-app-card__title">${e(o ? 'Equipos con atención urgente' : s ? 'Equipos con señal parcial' : 'Equipos en vivo')}</h5>\n                    <p id="queueSurfaceTelemetrySummary" class="queue-surface-telemetry__summary">${e(r)}</p>\n                    <div id="queueSurfaceTelemetryAutoMeta" class="queue-surface-telemetry__auto-meta">\n                        <span id="queueSurfaceTelemetryAutoState" class="queue-surface-telemetry__auto-state" data-state="${e(i.state)}">${e(i.label)}</span>\n                        <span class="queue-surface-telemetry__auto-copy">${e(i.meta)}</span>\n                    </div>\n                </div>\n                <span id="queueSurfaceTelemetryStatus" class="queue-surface-telemetry__status" data-state="${e(u)}">${e(c)}</span>\n            </div>\n            <div id="queueSurfaceTelemetryCards" class="queue-surface-telemetry__grid" role="list" aria-label="Estado vivo por equipo">\n                ${n.map((t) => `\n                    <article class="queue-surface-card" data-state="${e(t.state)}" role="listitem">\n                        <div class="queue-surface-card__header">\n                            <div>\n                                <strong>${e(t.title)}</strong>\n                                <p class="queue-surface-card__meta">${e(t.deviceLabel)}</p>\n                            </div>\n                            <span class="queue-surface-card__badge">${e(t.badge)}</span>\n                        </div>\n                        <p class="queue-surface-card__summary">${e(t.summary)}</p>\n                        <p class="queue-surface-card__age">${e(t.ageLabel)}</p>\n                        <div class="queue-surface-card__chips">${t.chips.map((t) => `<span class="queue-surface-card__chip">${e(t)}</span>`).join('')}</div>\n                        <div class="queue-surface-card__actions">\n                            <a href="${e(t.route)}" target="_blank" rel="noopener" class="queue-surface-card__action queue-surface-card__action--primary">${e(t.actionLabel)}</a>\n                            <button type="button" class="queue-surface-card__action" data-action="queue-copy-install-link" data-queue-install-url="${e(t.route)}">Copiar ruta</button>\n                            <button type="button" class="queue-surface-card__action" data-action="refresh-admin-data">Actualizar estado</button>\n                        </div>\n                    </article>\n                `).join('')}\n            </div>\n        </section>\n    `
+              : 'display' === e &&
+                n.push(
+                    ...(function (e) {
+                        return [
+                            e.bellPrimed ? 'Audio listo' : 'Audio pendiente',
+                            e.bellMuted ? 'Campanilla Off' : 'Campanilla On',
+                            'live' === String(e.connection || '').toLowerCase()
+                                ? 'Sala en vivo'
+                                : 'Sala degradada',
+                        ];
+                    })(a)
+                ),
+        n.slice(0, 4)
     );
 }
-function Ea() {
+function Aa(e, t) {
+    return (
+        String(t.summary || '').trim() ||
+        Xt[e]?.emptySummary ||
+        'Sin señal todavía.'
+    );
+}
+function $a(e) {
+    return 'ready' === e
+        ? 'En vivo'
+        : 'alert' === e
+          ? 'Atender'
+          : 'warning' === e
+            ? 'Revisar'
+            : 'Sin señal';
+}
+function Ta() {
     const e = b(),
         { queueMeta: t } = zt(),
         a = String(e.queue?.syncMode || 'live')
@@ -3282,7 +3009,7 @@ function Ea() {
                 ],
             };
 }
-function Na(e) {
+function Ma(e) {
     const t = Sa(e),
         a = t.latest && 'object' == typeof t.latest ? t.latest : null;
     return {
@@ -3290,12 +3017,12 @@ function Na(e) {
         details: a?.details && 'object' == typeof a.details ? a.details : {},
     };
 }
-function Ba(e) {
+function La(e) {
     const t = fa(e),
         a = 'c2' === t.station ? 'c2' : 'c1',
-        n = Na('operator'),
-        i = Na('kiosk'),
-        o = Na('display'),
+        n = Ma('operator'),
+        i = Ma('kiosk'),
+        o = Ma('display'),
         s = String(n.details.station || '').toLowerCase(),
         r = String(n.details.connection || 'live').toLowerCase(),
         l = !t.lock || !s || s === a,
@@ -3390,7 +3117,7 @@ function Ba(e) {
             .map(([e]) => e);
     return { suggestedIds: h, suggestions: f, suggestedCount: h.length };
 }
-function Da(e, t) {
+function Ea(e, t) {
     const a = fa(t),
         n = e.operator || Yt.operator,
         i = e.kiosk || Yt.kiosk,
@@ -3434,7 +3161,7 @@ function Da(e, t) {
         },
     ];
 }
-function Pa(t, a = 'secondary') {
+function Na(t, a = 'secondary') {
     if (!t) return '';
     const n =
         'primary' === a
@@ -3444,7 +3171,7 @@ function Pa(t, a = 'secondary') {
         ? `\n            <button ${t.id ? `id="${e(t.id)}"` : ''} type="button" class="${n}" ${t.action ? `data-action="${e(t.action)}"` : ''}>\n                ${e(t.label || 'Continuar')}\n            </button>\n        `
         : `\n        <a ${t.id ? `id="${e(t.id)}"` : ''} href="${e(t.href || '/')}" class="${n}" target="_blank" rel="noopener">\n            ${e(t.label || 'Continuar')}\n        </a>\n    `;
 }
-function xa(t, a, n) {
+function Ba(t, a, n) {
     const i = document.getElementById('queueInstallConfigurator');
     if (!(i instanceof HTMLElement)) return;
     const o = (function (e, t) {
@@ -3595,7 +3322,7 @@ function xa(t, a, n) {
           })(a, n))
         : (i.innerHTML = '');
 }
-function Ia() {
+function Da() {
     if (
         !(
             document.getElementById('queueAppDownloadsCards') instanceof
@@ -3664,9 +3391,9 @@ function Ia() {
                 return;
             const i = (function (e, t) {
                 const a = ba(),
-                    n = Da(e, t),
-                    i = Ba(t),
-                    o = Ea(),
+                    n = Ea(e, t),
+                    i = La(t),
+                    o = Ta(),
                     s = n.filter((e) => a.steps[e.id]).length,
                     r = i.suggestedCount,
                     l = n
@@ -3806,16 +3533,174 @@ function Ia() {
             })(t, a);
             l(
                 '#queueOpsPilot',
-                `\n        <section class="queue-ops-pilot__shell" data-state="${e(i.tone)}">\n            <div class="queue-ops-pilot__layout">\n                <div class="queue-ops-pilot__copy">\n                    <p class="queue-app-card__eyebrow">${e(i.eyebrow)}</p>\n                    <h5 id="queueOpsPilotTitle" class="queue-app-card__title">${e(i.title)}</h5>\n                    <p id="queueOpsPilotSummary" class="queue-ops-pilot__summary">${e(i.summary)}</p>\n                    <p class="queue-ops-pilot__support">${e(i.supportCopy)}</p>\n                    <div class="queue-ops-pilot__actions">\n                        ${Pa(i.primaryAction, 'primary')}\n                        ${Pa(i.secondaryAction, 'secondary')}\n                    </div>\n                </div>\n                <div class="queue-ops-pilot__status">\n                    <div class="queue-ops-pilot__progress">\n                        <div class="queue-ops-pilot__progress-head">\n                            <span>Apertura confirmada</span>\n                            <strong id="queueOpsPilotProgressValue">${e(`${i.confirmedCount}/${i.totalSteps}`)}</strong>\n                        </div>\n                        <div class="queue-ops-pilot__bar" aria-hidden="true">\n                            <span style="width:${e(String(i.progressPct))}%"></span>\n                        </div>\n                    </div>\n                    <div class="queue-ops-pilot__chips">\n                        <span id="queueOpsPilotChipConfirmed" class="queue-ops-pilot__chip">Confirmados ${e(String(i.confirmedCount))}</span>\n                        <span id="queueOpsPilotChipSuggested" class="queue-ops-pilot__chip">Sugeridos ${e(String(i.suggestedCount))}</span>\n                        <span id="queueOpsPilotChipEquipment" class="queue-ops-pilot__chip">Equipos listos ${e(String(i.readyEquipmentCount))}/3</span>\n                        <span id="queueOpsPilotChipIssues" class="queue-ops-pilot__chip">Incidencias ${e(String(i.issueCount))}</span>\n                    </div>\n                </div>\n            </div>\n        </section>\n    `
+                `\n        <section class="queue-ops-pilot__shell" data-state="${e(i.tone)}">\n            <div class="queue-ops-pilot__layout">\n                <div class="queue-ops-pilot__copy">\n                    <p class="queue-app-card__eyebrow">${e(i.eyebrow)}</p>\n                    <h5 id="queueOpsPilotTitle" class="queue-app-card__title">${e(i.title)}</h5>\n                    <p id="queueOpsPilotSummary" class="queue-ops-pilot__summary">${e(i.summary)}</p>\n                    <p class="queue-ops-pilot__support">${e(i.supportCopy)}</p>\n                    <div class="queue-ops-pilot__actions">\n                        ${Na(i.primaryAction, 'primary')}\n                        ${Na(i.secondaryAction, 'secondary')}\n                    </div>\n                </div>\n                <div class="queue-ops-pilot__status">\n                    <div class="queue-ops-pilot__progress">\n                        <div class="queue-ops-pilot__progress-head">\n                            <span>Apertura confirmada</span>\n                            <strong id="queueOpsPilotProgressValue">${e(`${i.confirmedCount}/${i.totalSteps}`)}</strong>\n                        </div>\n                        <div class="queue-ops-pilot__bar" aria-hidden="true">\n                            <span style="width:${e(String(i.progressPct))}%"></span>\n                        </div>\n                    </div>\n                    <div class="queue-ops-pilot__chips">\n                        <span id="queueOpsPilotChipConfirmed" class="queue-ops-pilot__chip">Confirmados ${e(String(i.confirmedCount))}</span>\n                        <span id="queueOpsPilotChipSuggested" class="queue-ops-pilot__chip">Sugeridos ${e(String(i.suggestedCount))}</span>\n                        <span id="queueOpsPilotChipEquipment" class="queue-ops-pilot__chip">Equipos listos ${e(String(i.readyEquipmentCount))}/3</span>\n                        <span id="queueOpsPilotChipIssues" class="queue-ops-pilot__chip">Incidencias ${e(String(i.issueCount))}</span>\n                    </div>\n                </div>\n            </div>\n        </section>\n    `
             );
             const o = document.getElementById('queueOpsPilotApplyBtn');
             o instanceof HTMLButtonElement &&
                 (o.onclick = () => {
-                    const e = Ba(a);
+                    const e = La(a);
                     e.suggestedIds.length && (ga(e.suggestedIds), n());
                 });
         })(n, t, i),
-            La(n, t),
+            (function (t, a) {
+                if (
+                    !(
+                        document.getElementById(
+                            'queueSurfaceTelemetry'
+                        ) instanceof HTMLElement
+                    )
+                )
+                    return;
+                const n = (function (e, t) {
+                        const a = fa(t);
+                        return (function (e) {
+                            return [
+                                {
+                                    key: 'operator',
+                                    title: Xt.operator?.title || 'operator',
+                                    appConfig: e.operator || Yt.operator,
+                                    fallbackSurface: 'operator',
+                                    actionLabel: 'Abrir operador',
+                                },
+                                {
+                                    key: 'kiosk',
+                                    title: Xt.kiosk?.title || 'kiosk',
+                                    appConfig: e.kiosk || Yt.kiosk,
+                                    fallbackSurface: 'kiosk',
+                                    actionLabel: 'Abrir kiosco',
+                                },
+                                {
+                                    key: 'display',
+                                    title: Xt.display?.title || 'display',
+                                    appConfig: e.sala_tv || Yt.sala_tv,
+                                    fallbackSurface: 'sala_tv',
+                                    actionLabel: 'Abrir sala TV',
+                                },
+                            ];
+                        })(e).map((e) =>
+                            (function (e, t) {
+                                const a = Sa(e.key),
+                                    n =
+                                        a.latest && 'object' == typeof a.latest
+                                            ? a.latest
+                                            : null,
+                                    i = String(a.status || 'unknown');
+                                return {
+                                    key: e.key,
+                                    title: e.title,
+                                    state: [
+                                        'ready',
+                                        'warning',
+                                        'alert',
+                                    ].includes(i)
+                                        ? i
+                                        : 'unknown',
+                                    badge: $a(i),
+                                    deviceLabel: String(
+                                        n?.deviceLabel ||
+                                            'Sin equipo reportando'
+                                    ),
+                                    summary: Aa(e.key, a),
+                                    ageLabel:
+                                        n &&
+                                        void 0 !== n.ageSec &&
+                                        null !== n.ageSec
+                                            ? `Heartbeat hace ${qa(n.ageSec)}`
+                                            : 'Sin heartbeat todavía',
+                                    chips: _a(e.key, n),
+                                    route: ia(e.fallbackSurface, e.appConfig, {
+                                        ...t,
+                                        surface: e.fallbackSurface,
+                                    }),
+                                    actionLabel: e.actionLabel,
+                                };
+                            })(e, a)
+                        );
+                    })(t, a),
+                    i = (function () {
+                        const e = (function () {
+                                const e = b().ui?.queueAutoRefresh;
+                                return e && 'object' == typeof e
+                                    ? e
+                                    : {
+                                          state: 'idle',
+                                          reason: 'Abre Turnero Sala para activar el monitoreo continuo.',
+                                          intervalMs: 45e3,
+                                          lastAttemptAt: 0,
+                                          lastSuccessAt: 0,
+                                          lastError: '',
+                                          inFlight: !1,
+                                      };
+                            })(),
+                            t = String(e.state || 'idle')
+                                .trim()
+                                .toLowerCase(),
+                            a = (function (e) {
+                                const t = Number(e);
+                                if (!Number.isFinite(t) || t <= 0)
+                                    return 'cada --';
+                                const a = Math.max(1, Math.round(t / 1e3));
+                                return a < 60
+                                    ? `cada ${a}s`
+                                    : `cada ${Math.round(a / 60)}m`;
+                            })(e.intervalMs),
+                            n = e.lastSuccessAt
+                                ? `ultimo ciclo hace ${qa(Math.max(0, Math.round((Date.now() - Number(e.lastSuccessAt || 0)) / 1e3)))}`
+                                : 'sin ciclo exitoso todavía';
+                        return 'refreshing' === t || Boolean(e.inFlight)
+                            ? {
+                                  state: 'active',
+                                  label: 'Actualizando ahora',
+                                  meta: `${a} · sincronizando equipos en vivo`,
+                              }
+                            : 'paused' === t
+                              ? {
+                                    state: 'paused',
+                                    label: 'Auto-refresh en pausa',
+                                    meta: String(
+                                        e.reason ||
+                                            'Reanuda esta sección para continuar.'
+                                    ),
+                                }
+                              : 'warning' === t
+                                ? {
+                                      state: 'warning',
+                                      label: 'Auto-refresh degradado',
+                                      meta: String(
+                                          e.reason || `Modo degradado · ${n}`
+                                      ),
+                                  }
+                                : 'active' === t
+                                  ? {
+                                        state: 'active',
+                                        label: 'Auto-refresh activo',
+                                        meta: `${a} · ${n}`,
+                                    }
+                                  : {
+                                        state: 'idle',
+                                        label: 'Auto-refresh listo',
+                                        meta: String(
+                                            e.reason ||
+                                                'Abre Turnero Sala para empezar el monitoreo.'
+                                        ),
+                                    };
+                    })(),
+                    o = n.some((e) => 'alert' === e.state),
+                    s = n.some(
+                        (e) => 'warning' === e.state || 'unknown' === e.state
+                    ),
+                    r = o
+                        ? 'Al menos un equipo reporta una condición crítica. Atiende primero esa tarjeta antes de tocar instalación o configuración.'
+                        : s
+                          ? 'Hay equipos sin heartbeat reciente o con validación pendiente. Usa estas tarjetas para abrir el equipo correcto sin buscar rutas manualmente.'
+                          : 'Operador, kiosco y sala están enviando heartbeat al admin. Esta vista ya sirve como tablero operativo por equipo.',
+                    c = o ? 'Atender ahora' : s ? 'Revisar hoy' : 'Todo al día',
+                    u = o ? 'alert' : s ? 'warning' : 'ready';
+                l(
+                    '#queueSurfaceTelemetry',
+                    `\n        <section class="queue-surface-telemetry__shell">\n            <div class="queue-surface-telemetry__header">\n                <div>\n                    <p class="queue-app-card__eyebrow">Equipos en vivo</p>\n                    <h5 id="queueSurfaceTelemetryTitle" class="queue-app-card__title">${e(o ? 'Equipos con atención urgente' : s ? 'Equipos con señal parcial' : 'Equipos en vivo')}</h5>\n                    <p id="queueSurfaceTelemetrySummary" class="queue-surface-telemetry__summary">${e(r)}</p>\n                    <div id="queueSurfaceTelemetryAutoMeta" class="queue-surface-telemetry__auto-meta">\n                        <span id="queueSurfaceTelemetryAutoState" class="queue-surface-telemetry__auto-state" data-state="${e(i.state)}">${e(i.label)}</span>\n                        <span class="queue-surface-telemetry__auto-copy">${e(i.meta)}</span>\n                    </div>\n                </div>\n                <span id="queueSurfaceTelemetryStatus" class="queue-surface-telemetry__status" data-state="${e(u)}">${e(c)}</span>\n            </div>\n            <div id="queueSurfaceTelemetryCards" class="queue-surface-telemetry__grid" role="list" aria-label="Estado vivo por equipo">\n                ${n.map((t) => `\n                    <article class="queue-surface-card" data-state="${e(t.state)}" role="listitem">\n                        <div class="queue-surface-card__header">\n                            <div>\n                                <strong>${e(t.title)}</strong>\n                                <p class="queue-surface-card__meta">${e(t.deviceLabel)}</p>\n                            </div>\n                            <span class="queue-surface-card__badge">${e(t.badge)}</span>\n                        </div>\n                        <p class="queue-surface-card__summary">${e(t.summary)}</p>\n                        <p class="queue-surface-card__age">${e(t.ageLabel)}</p>\n                        <div class="queue-surface-card__chips">${t.chips.map((t) => `<span class="queue-surface-card__chip">${e(t)}</span>`).join('')}</div>\n                        <div class="queue-surface-card__actions">\n                            <a href="${e(t.route)}" target="_blank" rel="noopener" class="queue-surface-card__action queue-surface-card__action--primary">${e(t.actionLabel)}</a>\n                            <button type="button" class="queue-surface-card__action" data-action="queue-copy-install-link" data-queue-install-url="${e(t.route)}">Copiar ruta</button>\n                            <button type="button" class="queue-surface-card__action" data-action="refresh-admin-data">Actualizar estado</button>\n                        </div>\n                    </article>\n                `).join('')}\n            </div>\n        </section>\n    `
+                );
+            })(n, t),
             (function (t, a) {
                 if (
                     !(
@@ -3830,7 +3715,7 @@ function Ia() {
                             n = e.operator || Yt.operator,
                             i = e.kiosk || Yt.kiosk,
                             o = e.sala_tv || Yt.sala_tv,
-                            s = Ea(),
+                            s = Ta(),
                             r = 'c2' === a.station ? 'C2' : 'C1',
                             l = a.lock ? `${r} fijo` : 'modo libre',
                             c = ia('operator', n, { ...a }),
@@ -4007,8 +3892,8 @@ function Ia() {
                 const i = document.getElementById('queueOpeningChecklist');
                 if (!(i instanceof HTMLElement)) return;
                 const o = ba(),
-                    s = Da(t, a),
-                    r = Ba(a);
+                    s = Ea(t, a),
+                    r = La(a);
                 (l(
                     '#queueOpeningChecklist',
                     (function (t, a, n) {
@@ -4101,18 +3986,18 @@ function Ia() {
                             });
                     })(r, n));
             })(n, t, i),
-            xa(n, t, i));
+            Ba(n, t, i));
     };
     i();
 }
-function Oa(t = () => {}) {
+function Pa(t = () => {}) {
     const a = b(),
         { queueMeta: n } = zt(),
         i = Vt(),
         o = Kt(),
         s = Qt(),
         c = Wt(a.queue.stationConsultorio);
-    (Ia(),
+    (Da(),
         (function (e, t) {
             const a = b();
             (!(function (e) {
@@ -4308,7 +4193,7 @@ function Oa(t = () => {}) {
         })(a),
         yt());
 }
-function Ha(e) {
+function Ia(e) {
     g((t) => {
         const a = [
             { at: new Date().toISOString(), message: String(e || '') },
@@ -4320,17 +4205,17 @@ function Ha(e) {
         yt();
     } catch (e) {}
 }
-function Fa(e, { render: t = !0 } = {}) {
+function xa(e, { render: t = !0 } = {}) {
     (g((t) => ({
         ...t,
         queue: { ...t.queue, selected: Ut(e, t.data.queueTickets || []) },
     })),
-        t && Oa(Ha));
+        t && Pa(Ia));
 }
-function ja() {
-    Fa([]);
+function Oa() {
+    xa([]);
 }
-function Ra(e, t = '') {
+function Ha(e, t = '') {
     try {
         const a = localStorage.getItem(e);
         return null === a ? t : a;
@@ -4338,12 +4223,12 @@ function Ra(e, t = '') {
         return t;
     }
 }
-function za(e, t) {
+function Fa(e, t) {
     try {
         localStorage.setItem(e, String(t));
     } catch (e) {}
 }
-function Va(e, t) {
+function ja(e, t) {
     try {
         const a = localStorage.getItem(e);
         return a ? JSON.parse(a) : t;
@@ -4351,50 +4236,50 @@ function Va(e, t) {
         return t;
     }
 }
-function Ua(e, t) {
+function Ra(e, t) {
     try {
         localStorage.setItem(e, JSON.stringify(t));
     } catch (e) {}
 }
-function Ka(e) {
+function za(e) {
     try {
         return new URL(window.location.href).searchParams.get(e) || '';
     } catch (e) {
         return '';
     }
 }
-const Qa = 'queueStationMode',
-    Wa = 'queueStationConsultorio',
-    Ga = 'queueOneTapAdvance',
-    Ja = 'queueCallKeyBindingV1',
-    Ya = 'queueNumpadHelpOpen',
-    Za = 'queueAdminLastSnapshot',
-    Xa = new Map([
+const Va = 'queueStationMode',
+    Ua = 'queueStationConsultorio',
+    Ka = 'queueOneTapAdvance',
+    Qa = 'queueCallKeyBindingV1',
+    Wa = 'queueNumpadHelpOpen',
+    Ga = 'queueAdminLastSnapshot',
+    Ja = new Map([
         [1, !1],
         [2, !1],
     ]),
-    en = new Set(['no_show', 'cancelar']);
-function tn(e) {
-    (za(Qa, e.queue.stationMode || 'free'),
-        za(Wa, e.queue.stationConsultorio || 1),
-        za(Ga, e.queue.oneTap ? '1' : '0'),
-        za(Ya, e.queue.helpOpen ? '1' : '0'),
+    Ya = new Set(['no_show', 'cancelar']);
+function Za(e) {
+    (Fa(Va, e.queue.stationMode || 'free'),
+        Fa(Ua, e.queue.stationConsultorio || 1),
+        Fa(Ka, e.queue.oneTap ? '1' : '0'),
+        Fa(Wa, e.queue.helpOpen ? '1' : '0'),
         e.queue.customCallKey
-            ? Ua(Ja, e.queue.customCallKey)
+            ? Ra(Qa, e.queue.customCallKey)
             : (function (e) {
                   try {
                       localStorage.removeItem(e);
                   } catch (e) {}
-              })(Ja),
-        Ua(Za, {
+              })(Qa),
+        Ra(Ga, {
             queueMeta: e.data.queueMeta,
             queueTickets: e.data.queueTickets,
             updatedAt: new Date().toISOString(),
         }));
 }
-function an(e, t = null, a = {}) {
+function Xa(e, t = null, a = {}) {
     const n = (Array.isArray(e) ? e : []).map((e, t) => Bt(e, t)),
-        i = It(t && 'object' == typeof t ? t : Nt(n), n),
+        i = xt(t && 'object' == typeof t ? t : Nt(n), n),
         o = n.filter((e) => 'waiting' === e.status).length,
         s =
             'boolean' == typeof a.fallbackPartial
@@ -4418,10 +4303,10 @@ function an(e, t = null, a = {}) {
             syncMode: r,
         },
     })),
-        tn(b()),
-        Oa(Ha));
+        Za(b()),
+        Pa(Ia));
 }
-function nn(e, t) {
+function en(e, t) {
     const a = Number(e || 0),
         n = (b().data.queueTickets || []).map((e, n) => {
             const i = Bt(e, n);
@@ -4429,15 +4314,15 @@ function nn(e, t) {
                 ? i
                 : Bt('function' == typeof t ? t(i) : { ...i }, n);
         });
-    an(n, Nt(n), { fallbackPartial: !1, syncMode: 'live' });
+    Xa(n, Nt(n), { fallbackPartial: !1, syncMode: 'live' });
 }
-function on(e) {
-    (g((t) => ({ ...t, queue: { ...t.queue, ...e } })), tn(b()), Oa(Ha));
+function tn(e) {
+    (g((t) => ({ ...t, queue: { ...t.queue, ...e } })), Za(b()), Pa(Ia));
 }
-function sn(e) {
-    on({ filter: Ct(e) || 'all', selected: [] });
+function an(e) {
+    tn({ filter: Ct(e) || 'all', selected: [] });
 }
-function rn(e, t) {
+function nn(e, t) {
     const a = Lt(t.createdAt, t.created_at, e?.createdAt, e?.created_at),
         n = Lt(
             t.priorityClass,
@@ -4471,7 +4356,7 @@ function rn(e, t) {
         patientInitials: o,
     };
 }
-function ln(e, t = {}) {
+function on(e, t = {}) {
     const { queueState: a, payloadTicket: n } = (function (e) {
         const t =
                 e?.data?.queueState ||
@@ -4570,7 +4455,7 @@ function ln(e, t = {}) {
     )
         return;
     const s = 'fallback' === Ct(t.syncMode) ? 'fallback' : 'live',
-        r = It(a, i),
+        r = xt(a, i),
         l = (function (e) {
             const t = Ht(e),
                 a =
@@ -4595,7 +4480,7 @@ function ln(e, t = {}) {
     const d =
         Number(r.waitingCount || 0) >
         c.filter((e) => 'waiting' === e.status).length;
-    if (o.length) return void an(o, r, { fallbackPartial: !1, syncMode: s });
+    if (o.length) return void Xa(o, r, { fallbackPartial: !1, syncMode: s });
     const p = new Map(i.map((e) => [Ft(e), e]));
     ((function (e, t, a) {
         const n = t.callingNowByConsultorio || {},
@@ -4634,12 +4519,12 @@ function ln(e, t = {}) {
                   (o <= 0 ? e.delete(t) : d || l.has(t) || e.delete(t));
         }
     })(p, r, l),
-        an(
+        Xa(
             (function (e, t, a) {
                 for (const a of t) {
                     const t = Ft(a),
                         n = e.get(t) || null;
-                    e.set(t, Bt(rn(n, a), e.size));
+                    e.set(t, Bt(nn(n, a), e.size));
                 }
                 if (a && 'object' == typeof a) {
                     const t = Ft(Bt(a, e.size)),
@@ -4660,65 +4545,65 @@ function ln(e, t = {}) {
             { fallbackPartial: d, syncMode: s }
         ));
 }
-function cn() {
-    return Va(Za, null);
+function sn() {
+    return ja(Ga, null);
 }
-function un(e, t = '') {
+function rn(e, t = '') {
     return (
         !!e?.queueTickets?.length &&
-        (an(e.queueTickets, e.queueMeta || null, {
+        (Xa(e.queueTickets, e.queueMeta || null, {
             fallbackPartial: !0,
             syncMode: 'fallback',
         }),
-        t && Ha(t),
+        t && Ia(t),
         !0)
     );
 }
-async function dn() {
+async function ln() {
     try {
-        (ln(await S('queue-state'), { syncMode: 'live' }),
-            Ha('Queue refresh realizado'));
+        (on(await S('queue-state'), { syncMode: 'live' }),
+            Ia('Queue refresh realizado'));
     } catch (e) {
-        (Ha('Queue refresh con error'), un(cn()));
+        (Ia('Queue refresh con error'), rn(sn()));
     }
 }
-async function pn() {
+async function cn() {
     const e = Array.isArray(b().data.queueTickets)
             ? b().data.queueTickets.map((e, t) => Bt(e, t))
             : [],
         t = (function (e) {
             return b().data.queueMeta && 'object' == typeof b().data.queueMeta
-                ? It(b().data.queueMeta, e)
+                ? xt(b().data.queueMeta, e)
                 : null;
         })(e);
     e.length
-        ? an(e, t || null, { fallbackPartial: !1, syncMode: 'live' })
+        ? Xa(e, t || null, { fallbackPartial: !1, syncMode: 'live' })
         : (function (e) {
               const t = e ? Rt(e) : [];
               return (
                   !!t.length &&
-                  (an(t, e, { fallbackPartial: !0, syncMode: 'fallback' }),
-                  Ha('Queue fallback parcial desde metadata'),
+                  (Xa(t, e, { fallbackPartial: !0, syncMode: 'fallback' }),
+                  Ia('Queue fallback parcial desde metadata'),
                   !0)
               );
           })(t) ||
-          (await dn(),
+          (await ln(),
           (b().data.queueTickets || []).length ||
-              un(cn(), 'Queue fallback desde snapshot local') ||
-              an([], null, { fallbackPartial: !1, syncMode: 'live' }));
+              rn(sn(), 'Queue fallback desde snapshot local') ||
+              Xa([], null, { fallbackPartial: !1, syncMode: 'live' }));
 }
-const mn = 'appointments',
-    bn = 'callbacks',
-    gn = 'reviews',
-    fn = 'availability',
-    hn = 'availability-meta',
-    yn = 'queue-tickets',
-    vn = 'queue-meta',
-    kn = 'leadops-meta',
-    wn = 'queue-surface-status',
-    qn = 'app-downloads',
-    Sn = 'health-status',
-    Cn = {
+const un = 'appointments',
+    dn = 'callbacks',
+    pn = 'reviews',
+    mn = 'availability',
+    bn = 'availability-meta',
+    gn = 'queue-tickets',
+    fn = 'queue-meta',
+    hn = 'leadops-meta',
+    yn = 'queue-surface-status',
+    vn = 'app-downloads',
+    kn = 'health-status',
+    wn = {
         summary: {
             viewBooking: 0,
             startCheckout: 0,
@@ -4736,30 +4621,30 @@ const mn = 'appointments',
         abandonReasonBreakdown: [],
         errorCodeBreakdown: [],
     };
-function _n() {
+function qn() {
     return {
-        appointments: Va(mn, []),
-        callbacks: Va(bn, []),
-        reviews: Va(gn, []),
-        availability: Va(fn, {}),
-        availabilityMeta: Va(hn, {}),
-        queueTickets: Va(yn, []),
-        queueMeta: Va(vn, null),
-        leadOpsMeta: Va(kn, null),
-        queueSurfaceStatus: Va(wn, null),
-        appDownloads: Va(qn, null),
-        health: Va(Sn, null),
-        funnelMetrics: Cn,
+        appointments: ja(un, []),
+        callbacks: ja(dn, []),
+        reviews: ja(pn, []),
+        availability: ja(mn, {}),
+        availabilityMeta: ja(bn, {}),
+        queueTickets: ja(gn, []),
+        queueMeta: ja(fn, null),
+        leadOpsMeta: ja(hn, null),
+        queueSurfaceStatus: ja(yn, null),
+        appDownloads: ja(vn, null),
+        health: ja(kn, null),
+        funnelMetrics: wn,
     };
 }
-function An(e) {
+function Sn(e) {
     return Array.isArray(e.queue_tickets)
         ? e.queue_tickets
         : Array.isArray(e.queueTickets)
           ? e.queueTickets
           : [];
 }
-function $n(e) {
+function Cn(e) {
     g((t) => {
         const a = (function (e, t) {
             return {
@@ -4798,26 +4683,26 @@ function $n(e) {
         };
     });
 }
-function Tn() {
+function _n() {
     const e = b(),
         t = Number(e.ui.lastRefreshAt || 0);
     if (!t) return 'Datos: sin sincronizar';
     const a = Math.max(0, Math.round((Date.now() - t) / 1e3));
     return a < 60 ? `Datos: hace ${a}s` : `Datos: hace ${Math.round(a / 60)}m`;
 }
-async function Mn(e) {
+async function An(e) {
     if (e.funnelMetrics) return e.funnelMetrics;
     const t = await S('funnel-metrics').catch(() => null);
     return t?.data || null;
 }
-async function Ln() {
+async function $n() {
     try {
         const [e, t] = await Promise.all([
                 S('data'),
                 S('health').catch(() => null),
             ]),
             a = e.data || {},
-            n = _n(),
+            n = qn(),
             i = (function (e, t, a) {
                 return {
                     appointments: Array.isArray(e.appointments)
@@ -4834,7 +4719,7 @@ async function Ln() {
                         'object' == typeof e.availabilityMeta
                             ? e.availabilityMeta
                             : {},
-                    queueTickets: An(e),
+                    queueTickets: Sn(e),
                     queueMeta:
                         e.queueMeta && 'object' == typeof e.queueMeta
                             ? e.queueMeta
@@ -4860,36 +4745,36 @@ async function Ln() {
                     funnelMetrics: e.funnelMetrics || a?.funnelMetrics || null,
                     health: t && t.ok ? t : null,
                 };
-            })({ ...a, funnelMetrics: await Mn(a) }, t, n);
+            })({ ...a, funnelMetrics: await An(a) }, t, n);
         return (
-            $n(i),
+            Cn(i),
             (function (e) {
-                (Ua(mn, e.appointments || []),
-                    Ua(bn, e.callbacks || []),
-                    Ua(gn, e.reviews || []),
-                    Ua(fn, e.availability || {}),
-                    Ua(hn, e.availabilityMeta || {}),
-                    Ua(yn, e.queueTickets || []),
-                    Ua(vn, e.queueMeta || null),
-                    Ua(kn, e.leadOpsMeta || null),
-                    Ua(wn, e.queueSurfaceStatus || null),
-                    Ua(qn, e.appDownloads || null),
-                    Ua(Sn, e.health || null));
+                (Ra(un, e.appointments || []),
+                    Ra(dn, e.callbacks || []),
+                    Ra(pn, e.reviews || []),
+                    Ra(mn, e.availability || {}),
+                    Ra(bn, e.availabilityMeta || {}),
+                    Ra(gn, e.queueTickets || []),
+                    Ra(fn, e.queueMeta || null),
+                    Ra(hn, e.leadOpsMeta || null),
+                    Ra(yn, e.queueSurfaceStatus || null),
+                    Ra(vn, e.appDownloads || null),
+                    Ra(kn, e.health || null));
             })(i),
             !0
         );
     } catch (e) {
-        return ($n(_n()), !1);
+        return (Cn(qn()), !1);
     }
 }
-function En() {
+function Tn() {
     if ('undefined' != typeof window) {
         const e = Number(window.__QUEUE_AUTO_REFRESH_INTERVAL_MS__);
         if (Number.isFinite(e) && e > 0) return Math.max(50, Math.round(e));
     }
     return 45e3;
 }
-function Nn() {
+function Mn() {
     const e = b();
     return e.auth?.authenticated
         ? 'queue' !== e.ui?.activeSection
@@ -4916,15 +4801,15 @@ function Nn() {
               reason: 'Inicia sesión para monitorear los equipos.',
           };
 }
-let Bn = !1,
-    Dn = !1;
-function Pn() {
-    return Dn;
+let Ln = !1,
+    En = !1;
+function Nn() {
+    return En;
 }
-function xn(e) {
-    Dn = Boolean(e);
+function Bn(e) {
+    En = Boolean(e);
 }
-function In(e) {
+function Dn(e) {
     g((t) => ({
         ...t,
         ui: {
@@ -4932,7 +4817,7 @@ function In(e) {
             queueAutoRefresh: {
                 state: 'idle',
                 reason: 'Abre Turnero Sala para activar el monitoreo continuo.',
-                intervalMs: En(),
+                intervalMs: Tn(),
                 lastAttemptAt: 0,
                 lastSuccessAt: 0,
                 lastError: '',
@@ -4943,17 +4828,17 @@ function In(e) {
         },
     }));
 }
-function On(e) {
+function Pn(e) {
     return 'visibility' === e || 'focus' === e || 'online' === e
         ? 'Actualizando al volver a primer plano.'
         : 'Actualizando Equipos en vivo.';
 }
-async function Hn(e = 'timer') {
-    const t = Nn(),
-        a = En();
+async function In(e = 'timer') {
+    const t = Mn(),
+        a = Tn();
     if (!t.active)
         return (
-            In({
+            Dn({
                 state: t.state,
                 reason: t.reason,
                 intervalMs: a,
@@ -4961,21 +4846,21 @@ async function Hn(e = 'timer') {
             }),
             !1
         );
-    if (Pn()) return !1;
-    (xn(!0),
-        In({
+    if (Nn()) return !1;
+    (Bn(!0),
+        Dn({
             state: 'refreshing',
-            reason: On(e),
+            reason: Pn(e),
             intervalMs: a,
             lastAttemptAt: Date.now(),
             inFlight: !0,
             lastError: '',
         }));
     try {
-        const e = await Ln();
+        const e = await $n();
         return (
-            await pn(),
-            In({
+            await cn(),
+            Dn({
                 state: e ? 'active' : 'warning',
                 reason: e
                     ? 'Auto-refresh activo en esta sección.'
@@ -4985,9 +4870,9 @@ async function Hn(e = 'timer') {
                 inFlight: !1,
                 lastError: e ? '' : 'cache_local',
             }),
-            Oa(),
+            Pa(),
             (function () {
-                const e = Tn();
+                const e = _n();
                 (r('#adminRefreshStatus', e),
                     r(
                         '#adminSyncState',
@@ -5000,42 +4885,42 @@ async function Hn(e = 'timer') {
         );
     } catch (e) {
         return (
-            In({
+            Dn({
                 state: 'warning',
                 reason: 'No se pudo refrescar Equipos en vivo. Revisa red local o fuerza una actualización manual.',
                 intervalMs: a,
                 inFlight: !1,
                 lastError: e?.message || 'refresh_failed',
             }),
-            'queue' === b().ui?.activeSection && Oa(),
+            'queue' === b().ui?.activeSection && Pa(),
             !1
         );
     } finally {
-        xn(!1);
+        Bn(!1);
     }
 }
-function Fn(e = {}) {
+function xn(e = {}) {
     const { immediate: t = !1, reason: a = 'sync' } = e,
-        n = Nn(),
-        i = En();
+        n = Mn(),
+        i = Tn();
     return (
-        In({ state: n.state, reason: n.reason, intervalMs: i, inFlight: Pn() }),
-        'queue' === b().ui?.activeSection && Oa(),
-        t && n.active ? (Hn(a), !0) : n.active
+        Dn({ state: n.state, reason: n.reason, intervalMs: i, inFlight: Nn() }),
+        'queue' === b().ui?.activeSection && Pa(),
+        t && n.active ? (In(a), !0) : n.active
     );
 }
-function jn() {
-    'visible' !== document.visibilityState ? Fn() : Hn('visibility');
+function On() {
+    'visible' !== document.visibilityState ? xn() : In('visibility');
 }
-function Rn() {
+function Hn() {
     ('undefined' != typeof document && 'hidden' === document.visibilityState) ||
-        ('queue' === b().ui?.activeSection && Hn('focus'));
+        ('queue' === b().ui?.activeSection && In('focus'));
 }
-function zn() {
-    'queue' === b().ui?.activeSection && Hn('online');
+function Fn() {
+    'queue' === b().ui?.activeSection && In('online');
 }
-function Vn(e, t, a = void 0) {
-    nn(e, (e) => ({
+function jn(e, t, a = void 0) {
+    en(e, (e) => ({
         ...e,
         status: t,
         assignedConsultorio: void 0 === a ? e.assignedConsultorio : a,
@@ -5051,7 +4936,7 @@ function Vn(e, t, a = void 0) {
                 : '',
     }));
 }
-async function Un({ ticketId: e, action: t, consultorio: a }) {
+async function Rn({ ticketId: e, action: t, consultorio: a }) {
     const n = Number(e || 0),
         i = At(t);
     if (n && i)
@@ -5061,32 +4946,32 @@ async function Un({ ticketId: e, action: t, consultorio: a }) {
                       ? 'liberar' !== t
                           ? 'completar' !== t
                               ? 'no_show' !== t
-                                  ? 'cancelar' === t && Vn(e, 'cancelled')
-                                  : Vn(e, 'no_show')
-                              : Vn(e, 'completed')
-                          : Vn(e, 'waiting', null)
-                      : Vn(e, 'called', 2 === Number(a || 1) ? 2 : 1);
+                                  ? 'cancelar' === t && jn(e, 'cancelled')
+                                  : jn(e, 'no_show')
+                              : jn(e, 'completed')
+                          : jn(e, 'waiting', null)
+                      : jn(e, 'called', 2 === Number(a || 1) ? 2 : 1);
               })(n, i, a),
-              void Ha(`Practica: accion ${i} en ticket ${n}`))
-            : (ln(
+              void Ia(`Practica: accion ${i} en ticket ${n}`))
+            : (on(
                   await S('queue-ticket', {
                       method: 'PATCH',
                       body: { id: n, action: i, consultorio: Number(a || 0) },
                   }),
                   { syncMode: 'live' }
               ),
-              void Ha(`Accion ${i} ticket ${n}`));
+              void Ia(`Accion ${i} ticket ${n}`));
 }
-async function Kn(e) {
+async function zn(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = b();
-    if (!Xa.get(t)) {
+    if (!Ja.get(t)) {
         if (
             'locked' === a.queue.stationMode &&
             a.queue.stationConsultorio !== t
         )
             return (
-                Ha(`Llamado bloqueado para C${t} por lock de estacion`),
+                Ia(`Llamado bloqueado para C${t} por lock de estacion`),
                 void s('Modo bloqueado: consultorio no permitido', 'warning')
             );
         if (a.queue.practiceMode) {
@@ -5102,35 +4987,35 @@ async function Kn(e) {
             })(t);
             return e
                 ? ((function (e, t) {
-                      nn(e, (e) => ({
+                      en(e, (e) => ({
                           ...e,
                           status: 'called',
                           assignedConsultorio: t,
                           calledAt: new Date().toISOString(),
                       }));
                   })(e.id, t),
-                  void Ha(`Practica: llamado ${e.ticketCode} en C${t}`))
-                : void Ha('Practica: sin tickets en espera');
+                  void Ia(`Practica: llamado ${e.ticketCode} en C${t}`))
+                : void Ia('Practica: sin tickets en espera');
         }
-        Xa.set(t, !0);
+        Ja.set(t, !0);
         try {
-            (ln(
+            (on(
                 await S('queue-call-next', {
                     method: 'POST',
                     body: { consultorio: t },
                 }),
                 { syncMode: 'live' }
             ),
-                Ha(`Llamado C${t} ejecutado`));
+                Ia(`Llamado C${t} ejecutado`));
         } catch (e) {
-            (Ha(`Error llamando siguiente en C${t}`),
+            (Ia(`Error llamando siguiente en C${t}`),
                 s(`Error llamando siguiente en C${t}`, 'error'));
         } finally {
-            Xa.set(t, !1);
+            Ja.set(t, !1);
         }
     }
 }
-async function Qn(e, t, a = 0) {
+async function Vn(e, t, a = 0) {
     const n = {
             ticketId: Number(e || 0),
             action: At(t),
@@ -5146,7 +5031,7 @@ async function Qn(e, t, a = 0) {
         })(n.ticketId);
     if (
         !i.queue.practiceMode &&
-        en.has(n.action) &&
+        Ya.has(n.action) &&
         (function (e, t) {
             const a = At(e);
             return (
@@ -5158,17 +5043,17 @@ async function Qn(e, t, a = 0) {
             );
         })(n.action, o)
     )
-        return (vt(n), void Ha(`Accion ${n.action} pendiente de confirmacion`));
-    await Un(n);
+        return (vt(n), void Ia(`Accion ${n.action} pendiente de confirmacion`));
+    await Rn(n);
 }
-async function Wn() {
+async function Un() {
     const e = b().queue.pendingSensitiveAction;
-    e ? (kt(), await Un(e)) : kt();
+    e ? (kt(), await Rn(e)) : kt();
 }
-function Gn() {
-    (kt(), Ha('Accion sensible cancelada'));
+function Kn() {
+    (kt(), Ia('Accion sensible cancelada'));
 }
-function Jn() {
+function Qn() {
     const e = document.getElementById('queueSensitiveConfirmDialog'),
         t = b().queue.pendingSensitiveAction;
     return !(
@@ -5177,26 +5062,26 @@ function Jn() {
                 ? e.open
                 : e instanceof HTMLElement &&
                   (!e.hidden || e.hasAttribute('open')))) ||
-        (Gn(), 0)
+        (Kn(), 0)
     );
 }
-async function Yn(e) {
+async function Wn(e) {
     const t = Number(e || 0);
     t &&
         (b().queue.practiceMode
-            ? Ha(`Practica: reprint ticket ${t}`)
+            ? Ia(`Practica: reprint ticket ${t}`)
             : (await S('queue-reprint', { method: 'POST', body: { id: t } }),
-              Ha(`Reimpresion ticket ${t}`)));
+              Ia(`Reimpresion ticket ${t}`)));
 }
-function Zn() {
-    on({ helpOpen: !b().queue.helpOpen });
+function Gn() {
+    tn({ helpOpen: !b().queue.helpOpen });
 }
-function Xn(e) {
+function Jn(e) {
     const t = Boolean(e);
-    (on({ practiceMode: t, pendingSensitiveAction: null }),
-        Ha(t ? 'Modo practica activo' : 'Modo practica desactivado'));
+    (tn({ practiceMode: t, pendingSensitiveAction: null }),
+        Ia(t ? 'Modo practica activo' : 'Modo practica desactivado'));
 }
-function ei(e) {
+function Yn(e) {
     const t = Gt();
     return (
         !!t &&
@@ -5208,7 +5093,7 @@ function ei(e) {
         !0)
     );
 }
-async function ti(e) {
+async function Zn(e) {
     const t = b();
     if (t.queue.captureCallKeyMode)
         return void (function (e) {
@@ -5217,9 +5102,9 @@ async function ti(e) {
                 code: String(e.code || ''),
                 location: Number(e.location || 0),
             };
-            (on({ customCallKey: t, captureCallKeyMode: !1 }),
+            (tn({ customCallKey: t, captureCallKeyMode: !1 }),
                 s('Tecla externa guardada', 'success'),
-                Ha(`Tecla externa calibrada: ${t.code}`));
+                Ia(`Tecla externa calibrada: ${t.code}`));
         })(e);
     if (
         (function (e, t) {
@@ -5231,7 +5116,7 @@ async function ti(e) {
             );
         })(e, t.queue.customCallKey)
     )
-        return void (await Kn(t.queue.stationConsultorio));
+        return void (await zn(t.queue.stationConsultorio));
     const a = Ct(e.code),
         n = Ct(e.key),
         i = (function (e, t, a) {
@@ -5241,7 +5126,7 @@ async function ti(e) {
                 ('enter' === a && 3 === Number(e.location || 0))
             );
         })(e, a, n);
-    if (i && t.queue.pendingSensitiveAction) return void (await Wn());
+    if (i && t.queue.pendingSensitiveAction) return void (await Un());
     const o = (function (e, t) {
         return 'numpad2' === e || '2' === t
             ? 2
@@ -5251,8 +5136,8 @@ async function ti(e) {
     })(a, n);
     if (!o)
         return i
-            ? (t.queue.oneTap && ei(t) && (await Wn()),
-              void (await Kn(t.queue.stationConsultorio)))
+            ? (t.queue.oneTap && Yn(t) && (await Un()),
+              void (await zn(t.queue.stationConsultorio)))
             : void ((function (e, t) {
                   return (
                       'numpaddecimal' === e ||
@@ -5262,7 +5147,7 @@ async function ti(e) {
                       '.' === t
                   );
               })(a, n)
-                  ? ei(t)
+                  ? Yn(t)
                   : (function (e, t) {
                           return (
                               'numpadsubtract' === e ||
@@ -5287,12 +5172,12 @@ async function ti(e) {
                       (await (async function (e) {
                           const t = Gt();
                           t &&
-                              (await Qn(
+                              (await Vn(
                                   t.id,
                                   're-llamar',
                                   e.queue.stationConsultorio
                               ),
-                              Ha(`Re-llamar ${t.ticketCode}`),
+                              Ia(`Re-llamar ${t.ticketCode}`),
                               s(`Re-llamar ${t.ticketCode}`, 'info'));
                       })(t)));
     !(function (e, t) {
@@ -5303,20 +5188,20 @@ async function ti(e) {
             );
         })(e, t)
             ? (s('Cambio bloqueado por modo estación', 'warning'),
-              Ha('Cambio de estación bloqueado por lock'))
-            : (on({ stationConsultorio: e }), Ha(`Numpad: estacion C${e}`));
+              Ia('Cambio de estación bloqueado por lock'))
+            : (tn({ stationConsultorio: e }), Ia(`Numpad: estacion C${e}`));
     })(o, t);
 }
-function ai(e, t) {
+function Xn(e, t) {
     return 'c2' === e || '2' === e ? 2 : 'c1' === e || '1' === e ? 1 : t;
 }
-function ni(e, t) {
+function ei(e, t) {
     return '1' === e || 'true' === e ? 'locked' : t;
 }
-function ii(e, t) {
+function ti(e, t) {
     return '1' === e || 'true' === e || ('0' !== e && 'false' !== e && t);
 }
-function oi(t, a, n) {
+function ai(t, a, n) {
     return Array.isArray(t) && 0 !== t.length
         ? t
               .slice(0, 5)
@@ -5328,22 +5213,22 @@ function oi(t, a, n) {
               .join('')
         : '<li><span>Sin datos</span><strong>0</strong></li>';
 }
-function si(t, a, n, i = 'neutral') {
+function ni(t, a, n, i = 'neutral') {
     return `\n        <li class="dashboard-attention-item" data-tone="${e(i)}">\n            <div>\n                <span>${e(t)}</span>\n                <small>${e(n)}</small>\n            </div>\n            <strong>${e(String(a))}</strong>\n        </li>\n    `;
 }
-function ri(e) {
+function ii(e) {
     return String(e || '')
         .toLowerCase()
         .trim();
 }
-function li(e) {
+function oi(e) {
     const t = new Date(e || '');
     return Number.isNaN(t.getTime()) ? 0 : t.getTime();
 }
-function ci(e) {
-    return li(`${e?.date || ''}T${e?.time || '00:00'}:00`);
+function si(e) {
+    return oi(`${e?.date || ''}T${e?.time || '00:00'}:00`);
 }
-function ui(e) {
+function ri(e) {
     if (!e) return 'Sin fecha';
     const t = Math.round((e - Date.now()) / 6e4),
         a = Math.abs(t);
@@ -5359,10 +5244,10 @@ function ui(e) {
             ? `En ${Math.round(t / 60)} h`
             : `En ${Math.round(t / 1440)} d`;
 }
-function di(t, a, n) {
+function li(t, a, n) {
     return `\n        <button type="button" class="operations-action-item" data-action="${e(t)}">\n            <span>${e(a)}</span>\n            <small>${e(n)}</small>\n        </button>\n    `;
 }
-function pi(e) {
+function ci(e) {
     const {
             appointments: t,
             availability: a,
@@ -5397,31 +5282,31 @@ function pi(e) {
                         t.getMonth() === a.getMonth() &&
                         t.getDate() === a.getDate()
                     );
-                })(ci(e))
+                })(si(e))
             ).length;
         })(t),
         r = (function (e) {
             return e.filter((e) => {
-                const t = ri(e.paymentStatus || e.payment_status);
+                const t = ii(e.paymentStatus || e.payment_status);
                 return (
                     'pending_transfer_review' === t || 'pending_transfer' === t
                 );
             }).length;
         })(t),
         l = (function (e) {
-            return e.filter((e) => 'pending' === ri(e.status)).length;
+            return e.filter((e) => 'pending' === ii(e.status)).length;
         })(n),
         c = (function (e) {
             return e.filter((e) => {
-                if ('pending' !== ri(e.status)) return !1;
+                if ('pending' !== ii(e.status)) return !1;
                 const t = (function (e) {
-                    return li(e?.fecha || e?.createdAt || '');
+                    return oi(e?.fecha || e?.createdAt || '');
                 })(e);
                 return !!t && Math.round((Date.now() - t) / 6e4) >= 120;
             }).length;
         })(n),
         u = (function (e) {
-            return e.filter((e) => 'no_show' === ri(e.status)).length;
+            return e.filter((e) => 'no_show' === ii(e.status)).length;
         })(t),
         d = (function (e) {
             return e.length
@@ -5434,7 +5319,7 @@ function pi(e) {
         p = (function (e, t = 30) {
             const a = Date.now();
             return e.filter((e) => {
-                const n = li(e.date || e.createdAt || '');
+                const n = oi(e.date || e.createdAt || '');
                 return n && a - n <= 24 * t * 60 * 60 * 1e3;
             }).length;
         })(o),
@@ -5445,7 +5330,7 @@ function pi(e) {
         })(a),
         b = (function (e) {
             return e
-                .map((e) => ({ item: e, stamp: ci(e) }))
+                .map((e) => ({ item: e, stamp: si(e) }))
                 .filter((e) => e.stamp > 0 && e.stamp >= Date.now())
                 .sort((e, t) => e.stamp - t.stamp)[0];
         })(t);
@@ -5465,8 +5350,8 @@ function pi(e) {
         urgentCallbacks: c,
     };
 }
-function mi(e) {
-    const t = pi(e);
+function ui(e) {
+    const t = ci(e);
     ((function (e) {
         const {
             appointments: t,
@@ -5506,7 +5391,7 @@ function mi(e) {
                           : a > 0
                             ? `Revisa ${a} no show del corte actual para cerrar seguimiento.`
                             : n?.item
-                              ? `La siguiente cita es ${n.item.name || 'sin nombre'} ${ui(n.stamp).toLowerCase()}.`
+                              ? `La siguiente cita es ${n.item.name || 'sin nombre'} ${ri(n.stamp).toLowerCase()}.`
                               : 'Agenda, callbacks y disponibilidad con una lectura clara y una sola prioridad por pantalla.';
                 })({
                     pendingTransfers: s,
@@ -5572,7 +5457,7 @@ function mi(e) {
                 r(
                     '#dashboardFlowStatus',
                     a?.item
-                        ? `${ui(a.stamp)} | ${a.item.name || 'Paciente'}`
+                        ? `${ri(a.stamp)} | ${a.item.name || 'Paciente'}`
                         : t > 0
                           ? `${t} dia(s) con slots publicados`
                           : 'Sin citas inmediatas'
@@ -5591,7 +5476,7 @@ function mi(e) {
                 r(
                     '#operationQueueHealth',
                     a?.item
-                        ? `Siguiente hito: ${a.item.name || 'Paciente'} ${ui(a.stamp).toLowerCase()}`
+                        ? `Siguiente hito: ${a.item.name || 'Paciente'} ${ri(a.stamp).toLowerCase()}`
                         : 'Sin citas inmediatas en cola'
                 ));
         })(t),
@@ -5605,7 +5490,7 @@ function mi(e) {
                     } = e,
                     { appointments: i, nextAppointment: o } = e;
                 return [
-                    di(
+                    li(
                         'context-open-appointments-transfer',
                         t > 0
                             ? 'Validar transferencias'
@@ -5614,7 +5499,7 @@ function mi(e) {
                             ? `${t} comprobante(s) por revisar`
                             : `${i.length} cita(s) en el corte`
                     ),
-                    di(
+                    li(
                         'context-open-callbacks-pending',
                         a > 0
                             ? 'Resolver callbacks urgentes'
@@ -5623,11 +5508,11 @@ function mi(e) {
                             ? `${a} caso(s) fuera de SLA`
                             : `${n} callback(s) pendientes`
                     ),
-                    di(
+                    li(
                         'refresh-admin-data',
                         'Actualizar tablero',
                         o?.item
-                            ? `Proxima cita ${ui(o.stamp).toLowerCase()}`
+                            ? `Proxima cita ${ri(o.stamp).toLowerCase()}`
                             : 'Sincronizar agenda y funnel'
                     ),
                 ].join('');
@@ -5643,7 +5528,7 @@ function mi(e) {
                     urgentCallbacks: i,
                 } = e;
                 return [
-                    si(
+                    ni(
                         'Transferencias',
                         a,
                         a > 0
@@ -5651,7 +5536,7 @@ function mi(e) {
                             : 'Sin comprobantes pendientes.',
                         a > 0 ? 'warning' : 'success'
                     ),
-                    si(
+                    ni(
                         'Callbacks urgentes',
                         i,
                         i > 0
@@ -5659,7 +5544,7 @@ function mi(e) {
                             : 'SLA dentro de rango.',
                         i > 0 ? 'danger' : 'success'
                     ),
-                    si(
+                    ni(
                         'Agenda de hoy',
                         n,
                         n > 0
@@ -5667,7 +5552,7 @@ function mi(e) {
                             : 'No hay citas hoy.',
                         n > 6 ? 'warning' : 'neutral'
                     ),
-                    si(
+                    ni(
                         'Disponibilidad',
                         t,
                         t > 0
@@ -5689,47 +5574,47 @@ function mi(e) {
                 ),
                 l(
                     '#funnelEntryList',
-                    oi(e.checkoutEntryBreakdown, 'entry', 'count')
+                    ai(e.checkoutEntryBreakdown, 'entry', 'count')
                 ),
                 l(
                     '#funnelSourceList',
-                    oi(e.sourceBreakdown, 'source', 'count')
+                    ai(e.sourceBreakdown, 'source', 'count')
                 ),
                 l(
                     '#funnelPaymentMethodList',
-                    oi(e.paymentMethodBreakdown, 'method', 'count')
+                    ai(e.paymentMethodBreakdown, 'method', 'count')
                 ),
                 l(
                     '#funnelAbandonList',
-                    oi(e.checkoutAbandonByStep, 'step', 'count')
+                    ai(e.checkoutAbandonByStep, 'step', 'count')
                 ),
                 l(
                     '#funnelAbandonReasonList',
-                    oi(e.abandonReasonBreakdown, 'reason', 'count')
+                    ai(e.abandonReasonBreakdown, 'reason', 'count')
                 ),
                 l(
                     '#funnelStepList',
-                    oi(e.bookingStepBreakdown, 'step', 'count')
+                    ai(e.bookingStepBreakdown, 'step', 'count')
                 ),
                 l(
                     '#funnelErrorCodeList',
-                    oi(e.errorCodeBreakdown, 'code', 'count')
+                    ai(e.errorCodeBreakdown, 'code', 'count')
                 ));
         })(t.funnel));
 }
-function bi(e) {
+function di(e) {
     return String(e || '')
         .toLowerCase()
         .trim();
 }
-function gi(e) {
+function pi(e) {
     const t = new Date(e?.date || e?.createdAt || '');
     return Number.isNaN(t.getTime()) ? 0 : t.getTime();
 }
-function fi(e) {
+function mi(e) {
     return `${Math.max(0, Math.min(5, Math.round(Number(e || 0))))}/5`;
 }
-function hi(e) {
+function bi(e) {
     const t = String(e || 'Anonimo')
         .trim()
         .split(/\s+/)
@@ -5737,7 +5622,7 @@ function hi(e) {
         .slice(0, 2);
     return t.length ? t.map((e) => e.charAt(0).toUpperCase()).join('') : 'AN';
 }
-function yi(e, t = 220) {
+function gi(e, t = 220) {
     const a = String(e || '').trim();
     return a
         ? a.length <= t
@@ -5745,11 +5630,11 @@ function yi(e, t = 220) {
             : `${a.slice(0, t - 1).trim()}...`
         : 'Sin comentario escrito.';
 }
-function vi() {
+function fi() {
     const t = b(),
         a = Array.isArray(t?.data?.reviews) ? t.data.reviews : [],
         n = (function (e) {
-            return e.slice().sort((e, t) => gi(t) - gi(e));
+            return e.slice().sort((e, t) => pi(t) - pi(e));
         })(a),
         o = (function (e) {
             return e.length
@@ -5759,7 +5644,7 @@ function vi() {
         s = (function (e, t = 30) {
             const a = Date.now();
             return e.filter((e) => {
-                const n = gi(e);
+                const n = pi(e);
                 return !!n && a - n <= 24 * t * 60 * 60 * 1e3;
             }).length;
         })(a),
@@ -5863,7 +5748,7 @@ function vi() {
               '#reviewsSpotlight',
               (function (t) {
                   const a = t.item;
-                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(hi(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e(fi(a.rating))}</p>\n            <p>${e(yi(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
+                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(bi(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e(mi(a.rating))}</p>\n            <p>${e(gi(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
               })(u)
           )
         : l(
@@ -5889,20 +5774,20 @@ function vi() {
                                         : n <= 3
                                           ? 'Revisar posible friccion'
                                           : 'Resena util para contexto';
-                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(hi(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e(fi(n))}</span>\n            </header>\n            <p>${e(yi(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
+                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(bi(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e(mi(n))}</span>\n            </header>\n            <p>${e(gi(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
                         })(t, {
                             featured:
                                 a.item &&
-                                bi(t.name) === bi(a.item.name) &&
-                                gi(t) === gi(a.item),
+                                di(t.name) === di(a.item.name) &&
+                                pi(t) === pi(a.item),
                         })
                     )
                     .join('');
             })(n, u)
         ));
 }
-function ki() {
-    const e = Tn();
+function hi() {
+    const e = _n();
     (r('#adminRefreshStatus', e),
         r(
             '#adminSyncState',
@@ -5911,8 +5796,8 @@ function ki() {
                 : e.replace('Datos: ', 'Estado: ')
         ));
 }
-async function wi(e = !1) {
-    const t = await Ln();
+async function yi(e = !1) {
+    const t = await $n();
     return (
         (function () {
             const e = b(),
@@ -5927,15 +5812,15 @@ async function wi(e = !1) {
             }),
                 lt());
         })(),
-        await pn(),
+        await cn(),
         R(b()),
-        mi(b()),
+        ui(b()),
         ue(),
         Oe(),
-        vi(),
+        fi(),
         lt(),
-        Oa(),
-        ki(),
+        Pa(),
+        hi(),
         e &&
             s(
                 t ? 'Datos actualizados' : 'Datos cargados desde cache local',
@@ -5944,8 +5829,8 @@ async function wi(e = !1) {
         t
     );
 }
-function qi() {
-    (I(!1),
+function vi() {
+    (x(!1),
         F(),
         H(!1),
         O({
@@ -5955,7 +5840,7 @@ function qi() {
                 'Usa tu clave de administrador para acceder al centro operativo.',
         }));
 }
-async function Si(e) {
+async function ki(e) {
     e.preventDefault();
     const t = document.getElementById('adminPassword'),
         a = document.getElementById('admin2FACode'),
@@ -6039,7 +5924,7 @@ async function Si(e) {
             })(n);
             if (e.requires2FA)
                 return (
-                    I(!0),
+                    x(!0),
                     O({
                         tone: 'warning',
                         title: 'Codigo 2FA requerido',
@@ -6056,10 +5941,10 @@ async function Si(e) {
         }),
             B(),
             P(),
-            I(!1),
+            x(!1),
             F({ clearPassword: !0 }),
-            await wi(!1),
-            Fn({
+            await yi(!1),
+            xn({
                 immediate: 'queue' === b().ui.activeSection,
                 reason: 'login',
             }),
@@ -6078,7 +5963,7 @@ async function Si(e) {
         H(!1);
     }
 }
-async function Ci(e, t) {
+async function wi(e, t) {
     switch (e) {
         case 'appointment-quick-filter':
             return (pe(String(t.dataset.filterValue || 'all')), !0);
@@ -6179,7 +6064,7 @@ async function Ci(e, t) {
             return !1;
     }
 }
-async function _i(e, a) {
+async function qi(e, a) {
     switch (e) {
         case 'change-month':
             return (
@@ -6456,7 +6341,7 @@ async function _i(e, a) {
             return !1;
     }
 }
-const Ai = new Set([
+const Si = new Set([
     'dashboard',
     'appointments',
     'callbacks',
@@ -6464,13 +6349,13 @@ const Ai = new Set([
     'availability',
     'queue',
 ]);
-function $i(e, t = 'dashboard') {
+function Ci(e, t = 'dashboard') {
     const a = String(e || '')
         .trim()
         .toLowerCase();
-    return Ai.has(a) ? a : t;
+    return Si.has(a) ? a : t;
 }
-function Ti(e) {
+function _i(e) {
     !(function (e) {
         const t = String(e || '').replace(/^#/, ''),
             a = t ? `#${t}` : '';
@@ -6480,11 +6365,11 @@ function Ti(e) {
                 '',
                 `${window.location.pathname}${window.location.search}${a}`
             );
-    })($i(e));
+    })(Ci(e));
 }
-const Mi = 'themeMode',
-    Li = new Set(['light', 'dark', 'system']);
-function Ei(e, { persist: t = !1 } = {}) {
+const Ai = 'themeMode',
+    $i = new Set(['light', 'dark', 'system']);
+function Ti(e, { persist: t = !1 } = {}) {
     const a = (function (e) {
         const t = (function (e) {
             return 'light' === e || 'dark' === e
@@ -6503,8 +6388,8 @@ function Ei(e, { persist: t = !1 } = {}) {
     (g((t) => ({ ...t, ui: { ...t.ui, themeMode: e, theme: a } })),
         t &&
             (function (e) {
-                const t = Li.has(e) ? e : 'system';
-                za(Mi, t);
+                const t = $i.has(e) ? e : 'system';
+                Fa(Ai, t);
             })(e),
         Array.from(
             document.querySelectorAll('.admin-theme-btn[data-theme-mode]')
@@ -6514,12 +6399,12 @@ function Ei(e, { persist: t = !1 } = {}) {
                 t.setAttribute('aria-pressed', String(a)));
         }));
 }
-const Ni = 'adminLastSection',
-    Bi = 'adminSidebarCollapsed';
-function Di() {
+const Mi = 'adminLastSection',
+    Li = 'adminSidebarCollapsed';
+function Ei() {
     return window.matchMedia('(max-width: 1024px)').matches;
 }
-function Pi(e) {
+function Ni(e) {
     return (
         e instanceof HTMLElement &&
         !e.hidden &&
@@ -6528,9 +6413,9 @@ function Pi(e) {
         e.getClientRects().length > 0
     );
 }
-function xi() {
+function Bi() {
     const e = b(),
-        a = Di(),
+        a = Ei(),
         n = t('#adminSidebar'),
         i = n instanceof HTMLElement && n.classList.contains('is-open');
     (!(function ({ open: e, collapsed: a }) {
@@ -6565,12 +6450,12 @@ function xi() {
                     });
             })());
 }
-function Ii() {
+function Di() {
     const e = b();
-    (za(Ni, e.ui.activeSection), za(Bi, e.ui.sidebarCollapsed ? '1' : '0'));
+    (Fa(Mi, e.ui.activeSection), Fa(Li, e.ui.sidebarCollapsed ? '1' : '0'));
 }
-async function Oi(e, t = {}) {
-    const a = $i(e, 'dashboard'),
+async function Pi(e, t = {}) {
+    const a = Ci(e, 'dashboard'),
         { force: n = !1 } = t,
         i = b().ui.activeSection;
     return (
@@ -6588,14 +6473,14 @@ async function Oi(e, t = {}) {
             )
         ) &&
         ((function (e) {
-            const t = $i(e, 'dashboard');
+            const t = Ci(e, 'dashboard');
             (g((e) => ({ ...e, ui: { ...e.ui, activeSection: t } })),
-                x(t),
+                I(t),
                 R(b()),
-                Ti(t),
-                Ii());
+                _i(t),
+                Di());
         })(a),
-        Fn({
+        xn({
             immediate: 'queue' === a,
             reason: 'queue' === a ? 'section-enter' : 'section-exit',
         }),
@@ -6608,36 +6493,36 @@ async function Oi(e, t = {}) {
                     !Boolean(e.queue.fallbackPartial)
                 );
             })() &&
-            (await dn()),
+            (await ln()),
         !0)
     );
 }
-function Hi(e) {
+function Ii(e) {
     g((t) => ({ ...t, ui: { ...t.ui, ...e(t.ui) } }));
 }
-function Fi() {
-    (Hi((e) => ({
+function xi() {
+    (Ii((e) => ({
         sidebarCollapsed: !e.sidebarCollapsed,
         sidebarOpen: e.sidebarOpen,
     })),
-        xi(),
-        Ii());
+        Bi(),
+        Di());
 }
-function ji() {
-    (Hi((e) => ({ sidebarOpen: !e.sidebarOpen })), xi());
+function Oi() {
+    (Ii((e) => ({ sidebarOpen: !e.sidebarOpen })), Bi());
 }
-function Ri({ restoreFocus: e = !1 } = {}) {
-    if ((Hi(() => ({ sidebarOpen: !1 })), xi(), P(), e)) {
+function Hi({ restoreFocus: e = !1 } = {}) {
+    if ((Ii(() => ({ sidebarOpen: !1 })), Bi(), P(), e)) {
         const e = t('#adminMenuToggle');
         e instanceof HTMLElement && e.focus();
     }
 }
-function zi() {
+function Fi() {
     D();
     const e = document.getElementById('adminQuickCommand');
     e instanceof HTMLInputElement && e.focus();
 }
-function Vi() {
+function ji() {
     const e = b().ui.activeSection;
     if ('appointments' === e) {
         const e = document.getElementById('searchAppointments');
@@ -6652,49 +6537,49 @@ function Vi() {
         e instanceof HTMLInputElement && e.focus();
     }
 }
-const Ui = {
+const Ri = {
     appointments_pending_transfer: async () => {
-        (await Oi('appointments'), pe('pending_transfer'), me(''));
+        (await Pi('appointments'), pe('pending_transfer'), me(''));
     },
     appointments_all: async () => {
-        (await Oi('appointments'), pe('all'), me(''));
+        (await Pi('appointments'), pe('all'), me(''));
     },
     appointments_no_show: async () => {
-        (await Oi('appointments'), pe('no_show'), me(''));
+        (await Pi('appointments'), pe('no_show'), me(''));
     },
     callbacks_pending: async () => {
-        (await Oi('callbacks'), Fe('pending'));
+        (await Pi('callbacks'), Fe('pending'));
     },
     callbacks_contacted: async () => {
-        (await Oi('callbacks'), Fe('contacted'));
+        (await Pi('callbacks'), Fe('contacted'));
     },
     callbacks_sla_urgent: async () => {
-        (await Oi('callbacks'), Fe('sla_urgent'));
+        (await Pi('callbacks'), Fe('sla_urgent'));
     },
     queue_sla_risk: async () => {
-        (await Oi('queue'), sn('sla_risk'));
+        (await Pi('queue'), an('sla_risk'));
     },
     queue_waiting: async () => {
-        (await Oi('queue'), sn('waiting'));
+        (await Pi('queue'), an('waiting'));
     },
     queue_called: async () => {
-        (await Oi('queue'), sn('called'));
+        (await Pi('queue'), an('called'));
     },
     queue_no_show: async () => {
-        (await Oi('queue'), sn('no_show'));
+        (await Pi('queue'), an('no_show'));
     },
     queue_all: async () => {
-        (await Oi('queue'), sn('all'));
+        (await Pi('queue'), an('all'));
     },
     queue_call_next: async () => {
-        (await Oi('queue'), await Kn(b().queue.stationConsultorio));
+        (await Pi('queue'), await zn(b().queue.stationConsultorio));
     },
 };
-async function Ki(e) {
-    const t = Ui[e];
+async function zi(e) {
+    const t = Ri[e];
     'function' == typeof t && (await t());
 }
-function Qi(e) {
+function Vi(e) {
     const t = String(e || '')
         .trim()
         .toLowerCase();
@@ -6712,7 +6597,7 @@ function Qi(e) {
                     : null
         : null;
 }
-async function Wi(e, t) {
+async function Ui(e, t) {
     switch (e) {
         case 'callback-quick-filter':
             return (Fe(String(t.dataset.filterValue || 'all')), !0);
@@ -6729,7 +6614,7 @@ async function Wi(e, t) {
         case 'callbacks-triage-next':
         case 'context-open-callbacks-next':
             return (
-                await Oi('callbacks'),
+                await Pi('callbacks'),
                 Fe('pending'),
                 (function () {
                     const e = document.querySelector(
@@ -6834,22 +6719,22 @@ async function Wi(e, t) {
                 !0
             );
         case 'context-open-callbacks-pending':
-            return (await Oi('callbacks'), Fe('pending'), !0);
+            return (await Pi('callbacks'), Fe('pending'), !0);
         default:
             return !1;
     }
 }
-async function Gi(e) {
+async function Ki(e) {
     switch (e) {
         case 'context-open-appointments-transfer':
-            return (await Oi('appointments'), pe('pending_transfer'), !0);
+            return (await Pi('appointments'), pe('pending_transfer'), !0);
         case 'context-open-dashboard':
-            return (await Oi('dashboard'), !0);
+            return (await Pi('dashboard'), !0);
         default:
             return !1;
     }
 }
-async function Ji(e, t) {
+async function Qi(e, t) {
     switch (e) {
         case 'queue-bulk-action':
             return (
@@ -6857,7 +6742,7 @@ async function Ji(e, t) {
                     const t = Qt(),
                         a = At(e);
                     if (t.length) {
-                        if (en.has(a)) {
+                        if (Ya.has(a)) {
                             const e = window.confirm(
                                 `${(function (e) {
                                     return 'no_show' === e
@@ -6871,7 +6756,7 @@ async function Ji(e, t) {
                         }
                         for (const e of t)
                             try {
-                                await Un({
+                                await Rn({
                                     ticketId: e.id,
                                     action: a,
                                     consultorio:
@@ -6879,7 +6764,7 @@ async function Ji(e, t) {
                                         b().queue.stationConsultorio,
                                 });
                             } catch (e) {}
-                        (ja(), Ha(`Bulk ${a} sobre ${t.length} tickets`));
+                        (Oa(), Ia(`Bulk ${a} sobre ${t.length} tickets`));
                     }
                 })(String(t.dataset.queueAction || 'no_show')),
                 !0
@@ -6890,9 +6775,9 @@ async function Ji(e, t) {
                     const e = Qt();
                     for (const t of e)
                         try {
-                            await Yn(t.id);
+                            await Wn(t.id);
                         } catch (e) {}
-                    (ja(), Ha(`Bulk reimpresion ${e.length}`));
+                    (Oa(), Ia(`Bulk reimpresion ${e.length}`));
                 })(),
                 !0
             );
@@ -6900,7 +6785,7 @@ async function Ji(e, t) {
             return !1;
     }
 }
-async function Yi(e, t) {
+async function Wi(e, t) {
     return (
         'queue-copy-install-link' === e &&
         (await (async function (e) {
@@ -6917,54 +6802,54 @@ async function Yi(e, t) {
         !0)
     );
 }
-async function Zi(e) {
+async function Gi(e) {
     switch (e) {
         case 'queue-sensitive-confirm':
-            return (await Wn(), !0);
+            return (await Un(), !0);
         case 'queue-sensitive-cancel':
-            return (Gn(), !0);
+            return (Kn(), !0);
         default:
             return !1;
     }
 }
-function Xi(e, t = 0) {
+function Ji(e, t = 0) {
     return Number(e?.dataset?.queueConsultorio || t);
 }
-function eo(e, t = 0) {
+function Yi(e, t = 0) {
     return Number(e?.dataset?.queueId || t);
 }
-async function to(e, t) {
+async function Zi(e, t) {
     switch (e) {
         case 'queue-refresh-state':
-            return (await dn(), !0);
+            return (await ln(), !0);
         case 'queue-call-next':
-            return (await Kn(Xi(t)), !0);
+            return (await zn(Ji(t)), !0);
         case 'queue-release-station':
             return (
                 await (async function (e) {
                     const t = 2 === Number(e || 0) ? 2 : 1,
                         a = Wt(t);
                     a
-                        ? await Qn(a.id, 'liberar', t)
-                        : Ha(`Sin ticket activo para liberar en C${t}`);
-                })(Xi(t)),
+                        ? await Vn(a.id, 'liberar', t)
+                        : Ia(`Sin ticket activo para liberar en C${t}`);
+                })(Ji(t)),
                 !0
             );
         case 'queue-toggle-shortcuts':
-            return (Zn(), !0);
+            return (Gn(), !0);
         case 'queue-toggle-one-tap':
-            return (on({ oneTap: !b().queue.oneTap }), !0);
+            return (tn({ oneTap: !b().queue.oneTap }), !0);
         case 'queue-start-practice':
-            return (Xn(!0), !0);
+            return (Jn(!0), !0);
         case 'queue-stop-practice':
-            return (Xn(!1), !0);
+            return (Jn(!1), !0);
         case 'queue-lock-station':
             return (
                 (function (e) {
                     const t = 2 === Number(e || 0) ? 2 : 1;
-                    (on({ stationMode: 'locked', stationConsultorio: t }),
-                        Ha(`Estacion bloqueada en C${t}`));
-                })(Xi(t, 1)),
+                    (tn({ stationMode: 'locked', stationConsultorio: t }),
+                        Ia(`Estacion bloqueada en C${t}`));
+                })(Ji(t, 1)),
                 !0
             );
         case 'queue-set-station-mode':
@@ -6972,23 +6857,23 @@ async function to(e, t) {
                 (function (e) {
                     if ('free' === Ct(e))
                         return (
-                            on({ stationMode: 'free' }),
-                            void Ha('Estacion en modo libre')
+                            tn({ stationMode: 'free' }),
+                            void Ia('Estacion en modo libre')
                         );
-                    on({ stationMode: 'locked' });
+                    tn({ stationMode: 'locked' });
                 })(String(t.dataset.queueMode || 'free')),
                 !0
             );
         case 'queue-capture-call-key':
             return (
-                on({ captureCallKeyMode: !0 }),
+                tn({ captureCallKeyMode: !0 }),
                 s('Calibración activa: presiona la tecla externa', 'info'),
                 !0
             );
         case 'queue-clear-call-key':
             return (
                 window.confirm('¿Quitar tecla externa calibrada?') &&
-                    (on({ customCallKey: null, captureCallKeyMode: !1 }),
+                    (tn({ customCallKey: null, captureCallKeyMode: !1 }),
                     s('Tecla externa eliminada', 'success')),
                 !0
             );
@@ -6996,7 +6881,7 @@ async function to(e, t) {
             return !1;
     }
 }
-async function ao(e, t) {
+async function Xi(e, t) {
     switch (e) {
         case 'queue-toggle-ticket-select':
             return (
@@ -7004,31 +6889,31 @@ async function ao(e, t) {
                     const t = Number(e || 0);
                     if (!t) return;
                     const a = Ut(b().queue.selected || []);
-                    Fa(a.includes(t) ? a.filter((e) => e !== t) : [...a, t]);
-                })(eo(t)),
+                    xa(a.includes(t) ? a.filter((e) => e !== t) : [...a, t]);
+                })(Yi(t)),
                 !0
             );
         case 'queue-select-visible':
-            return (Fa(Vt().map((e) => Number(e.id || 0))), !0);
+            return (xa(Vt().map((e) => Number(e.id || 0))), !0);
         case 'queue-clear-selection':
-            return (ja(), !0);
+            return (Oa(), !0);
         case 'queue-ticket-action':
             return (
-                await Qn(
-                    eo(t),
+                await Vn(
+                    Yi(t),
                     (function (e, t = '') {
                         return String(e?.dataset?.queueAction || t);
                     })(t),
-                    Xi(t)
+                    Ji(t)
                 ),
                 !0
             );
         case 'queue-reprint-ticket':
-            return (await Yn(eo(t)), !0);
+            return (await Wn(Yi(t)), !0);
         case 'queue-clear-search':
             return (
                 (function () {
-                    on({ search: '', selected: [] });
+                    tn({ search: '', selected: [] });
                     const e = document.getElementById('queueSearchInput');
                     e instanceof HTMLInputElement && (e.value = '');
                 })(),
@@ -7038,34 +6923,34 @@ async function ao(e, t) {
             return !1;
     }
 }
-async function no(e, t) {
-    const a = [to, ao, Ji, Zi, Yi];
+async function eo(e, t) {
+    const a = [Zi, Xi, Qi, Gi, Wi];
     for (const n of a) if (await n(e, t)) return !0;
     return !1;
 }
-async function io(e, t) {
+async function to(e, t) {
     switch (e) {
         case 'close-toast':
             return (t.closest('.toast')?.remove(), !0);
         case 'set-admin-theme':
             return (
-                Ei(String(t.dataset.themeMode || 'system'), { persist: !0 }),
+                Ti(String(t.dataset.themeMode || 'system'), { persist: !0 }),
                 !0
             );
         case 'toggle-sidebar-collapse':
-            return (Fi(), !0);
+            return (xi(), !0);
         case 'refresh-admin-data':
-            return (await wi(!0), !0);
+            return (await yi(!0), !0);
         case 'run-admin-command': {
             const e = document.getElementById('adminQuickCommand');
             if (e instanceof HTMLInputElement) {
-                const t = Qi(e.value);
-                t && (await Ki(t), (e.value = ''), P());
+                const t = Vi(e.value);
+                t && (await zi(t), (e.value = ''), P());
             }
             return !0;
         }
         case 'open-command-palette':
-            return (D(), zi(), !0);
+            return (D(), Fi(), !0);
         case 'close-command-palette':
             return (P(), !0);
         case 'logout':
@@ -7087,17 +6972,17 @@ async function io(e, t) {
                             },
                         })));
                 })(),
-                Fn({ immediate: !1, reason: 'logout' }),
+                xn({ immediate: !1, reason: 'logout' }),
                 N(),
                 P(),
-                qi(),
+                vi(),
                 s('Sesion cerrada', 'info'),
                 !0
             );
         case 'reset-login-2fa':
             return (
                 g((e) => ({ ...e, auth: { ...e.auth, requires2FA: !1 } })),
-                I(!1),
+                x(!1),
                 F(),
                 O({
                     tone: 'neutral',
@@ -7112,7 +6997,7 @@ async function io(e, t) {
             return !1;
     }
 }
-async function oo() {
+async function ao() {
     ((function () {
         const e = t('#loginScreen'),
             a = t('#adminDashboard');
@@ -7145,7 +7030,7 @@ async function oo() {
                 e.preventDefault();
                 try {
                     await (async function (e, t) {
-                        const a = [io, Ci, Wi, _i, no, Gi];
+                        const a = [to, wi, Ui, qi, eo, Ki];
                         for (const n of a) if (await n(e, t)) return !0;
                         return !1;
                     })(a, t);
@@ -7164,10 +7049,10 @@ async function oo() {
                 n = t.classList.contains('nav-item');
             if (!a && !n) return;
             e.preventDefault();
-            const i = await Oi(
+            const i = await Pi(
                 String(t.getAttribute('data-section') || 'dashboard')
             );
-            Di() && !1 !== i && Ri();
+            Ei() && !1 !== i && Hi();
         }),
         document.addEventListener('click', (e) => {
             const t =
@@ -7176,7 +7061,7 @@ async function oo() {
                     : null;
             t &&
                 (e.preventDefault(),
-                sn(String(t.getAttribute('data-queue-filter') || 'all')));
+                an(String(t.getAttribute('data-queue-filter') || 'all')));
         }),
         (function () {
             const e = document.getElementById('callbacksBulkSelectVisibleBtn');
@@ -7235,8 +7120,8 @@ async function oo() {
             }));
         })(),
         (function () {
-            const e = $i(Ra(Ni, 'dashboard')),
-                t = '1' === Ra(Bi, '0');
+            const e = Ci(Ha(Mi, 'dashboard')),
+                t = '1' === Ha(Li, '0');
             (g((a) => ({
                 ...a,
                 ui: {
@@ -7246,29 +7131,29 @@ async function oo() {
                     sidebarOpen: !1,
                 },
             })),
-                x(e),
-                Ti(e),
-                xi());
+                I(e),
+                _i(e),
+                Bi());
         })(),
         (function () {
             const e = {
                     stationMode:
-                        'locked' === Ct(Ra(Qa, 'free')) ? 'locked' : 'free',
-                    stationConsultorio: 2 === Number(Ra(Wa, '1')) ? 2 : 1,
-                    oneTap: '1' === Ra(Ga, '0'),
-                    helpOpen: '1' === Ra(Ya, '0'),
-                    customCallKey: Va(Ja, null),
+                        'locked' === Ct(Ha(Va, 'free')) ? 'locked' : 'free',
+                    stationConsultorio: 2 === Number(Ha(Ua, '1')) ? 2 : 1,
+                    oneTap: '1' === Ha(Ka, '0'),
+                    helpOpen: '1' === Ha(Wa, '0'),
+                    customCallKey: ja(Qa, null),
                 },
-                t = Ct(Ka('station')),
-                a = Ct(Ka('lock')),
-                n = Ct(Ka('one_tap'));
+                t = Ct(za('station')),
+                a = Ct(za('lock')),
+                n = Ct(za('one_tap'));
             (g((i) => ({
                 ...i,
                 queue: {
                     ...i.queue,
-                    stationMode: ni(a, e.stationMode),
-                    stationConsultorio: ai(t, e.stationConsultorio),
-                    oneTap: ii(n, e.oneTap),
+                    stationMode: ei(a, e.stationMode),
+                    stationConsultorio: Xn(t, e.stationConsultorio),
+                    oneTap: ti(n, e.oneTap),
                     helpOpen: e.helpOpen,
                     customCallKey:
                         e.customCallKey && 'object' == typeof e.customCallKey
@@ -7276,17 +7161,17 @@ async function oo() {
                             : null,
                 },
             })),
-                tn(b()));
+                Za(b()));
         })(),
-        Ei(
+        Ti(
             (function () {
-                const e = String(Ra(Mi, 'system') || 'system')
+                const e = String(Ha(Ai, 'system') || 'system')
                     .trim()
                     .toLowerCase();
-                return Li.has(e) ? e : 'system';
+                return $i.has(e) ? e : 'system';
             })()
         ),
-        qi(),
+        vi(),
         (function () {
             const e = document.getElementById('appointmentFilter');
             e instanceof HTMLSelectElement &&
@@ -7325,7 +7210,7 @@ async function oo() {
                 s.addEventListener('input', () => {
                     var e;
                     ((e = s.value),
-                        on({ search: String(e || ''), selected: [] }));
+                        tn({ search: String(e || ''), selected: [] }));
                 });
             const r = document.getElementById('adminQuickCommand');
             var l;
@@ -7333,8 +7218,8 @@ async function oo() {
                 (l = r).addEventListener('keydown', async (e) => {
                     if ('Enter' !== e.key) return;
                     e.preventDefault();
-                    const t = Qi(l.value);
-                    t && (await Ki(t));
+                    const t = Vi(l.value);
+                    t && (await zi(t));
                 });
         })(),
         (function () {
@@ -7342,19 +7227,19 @@ async function oo() {
                 a = t('#adminMenuClose'),
                 n = t('#adminSidebarBackdrop');
             (e?.addEventListener('click', () => {
-                Di() ? ji() : Fi();
+                Ei() ? Oi() : xi();
             }),
-                a?.addEventListener('click', () => Ri({ restoreFocus: !0 })),
-                n?.addEventListener('click', () => Ri({ restoreFocus: !0 })),
+                a?.addEventListener('click', () => Hi({ restoreFocus: !0 })),
+                n?.addEventListener('click', () => Hi({ restoreFocus: !0 })),
                 window.addEventListener('resize', () => {
-                    Di() ? xi() : Ri();
+                    Ei() ? Bi() : Hi();
                 }),
                 document.addEventListener('keydown', (e) => {
-                    if (!Di() || !b().ui.sidebarOpen) return;
+                    if (!Ei() || !b().ui.sidebarOpen) return;
                     if ('Escape' === e.key)
                         return (
                             e.preventDefault(),
-                            void Ri({ restoreFocus: !0 })
+                            void Hi({ restoreFocus: !0 })
                         );
                     if ('Tab' !== e.key) return;
                     const a = (function () {
@@ -7368,7 +7253,7 @@ async function oo() {
                                 e.querySelectorAll('.nav-item[data-section]')
                             ).filter((e) => e !== n),
                             o = e.querySelector('.logout-btn');
-                        return [a, n, ...i, o].filter(Pi);
+                        return [a, n, ...i, o].filter(Ni);
                     })();
                     if (!a.length) return;
                     const n = a.indexOf(document.activeElement);
@@ -7380,7 +7265,7 @@ async function oo() {
                 }),
                 window.addEventListener('hashchange', async () => {
                     const e = (function (e = 'dashboard') {
-                        return $i(
+                        return Ci(
                             String(window.location.hash || '').replace(
                                 /^#/,
                                 ''
@@ -7388,10 +7273,10 @@ async function oo() {
                             e
                         );
                     })(b().ui.activeSection);
-                    await Oi(e, { force: !0 });
+                    await Pi(e, { force: !0 });
                 }),
                 window.addEventListener('storage', (e) => {
-                    'themeMode' === e.key && Ei(String(e.newValue || 'system'));
+                    'themeMode' === e.key && Ti(String(e.newValue || 'system'));
                 }));
         })(),
         window.addEventListener('beforeunload', (e) => {
@@ -7399,19 +7284,19 @@ async function oo() {
         }));
     const e = document.getElementById('loginForm');
     var a;
-    (e instanceof HTMLFormElement && e.addEventListener('submit', Si),
+    (e instanceof HTMLFormElement && e.addEventListener('submit', ki),
         (a = {
-            navigateToSection: Oi,
-            focusQuickCommand: zi,
-            focusCurrentSearch: Vi,
-            runQuickAction: Ki,
-            closeSidebar: () => Ri({ restoreFocus: !0 }),
+            navigateToSection: Pi,
+            focusQuickCommand: Fi,
+            focusCurrentSearch: ji,
+            runQuickAction: zi,
+            closeSidebar: () => Hi({ restoreFocus: !0 }),
             toggleMenu: () => {
-                Di() ? ji() : Fi();
+                Ei() ? Oi() : xi();
             },
-            dismissQueueSensitiveDialog: Jn,
-            toggleQueueHelp: () => Zn(),
-            queueNumpadAction: ti,
+            dismissQueueSensitiveDialog: Qn,
+            toggleQueueHelp: () => Gn(),
+            queueNumpadAction: Zn,
         }),
         window.addEventListener('keydown', (e) => {
             (function (e, t) {
@@ -7520,20 +7405,20 @@ async function oo() {
     })();
     (n
         ? (await (async function () {
-              (B(), P(), await wi(!1));
+              (B(), P(), await yi(!1));
           })(),
-          x(b().ui.activeSection))
-        : (N(), P(), qi()),
-        Bn ||
+          I(b().ui.activeSection))
+        : (N(), P(), vi()),
+        Ln ||
             'undefined' == typeof window ||
-            ((Bn = Boolean(!0)),
+            ((Ln = Boolean(!0)),
             window.setInterval(() => {
-                Hn('timer');
-            }, En()),
-            document.addEventListener('visibilitychange', jn),
-            window.addEventListener('focus', Rn),
-            window.addEventListener('online', zn),
-            Fn({
+                In('timer');
+            }, Tn()),
+            document.addEventListener('visibilitychange', On),
+            window.addEventListener('focus', Hn),
+            window.addEventListener('online', Fn),
+            xn({
                 immediate:
                     b().auth?.authenticated &&
                     'queue' === b().ui?.activeSection,
@@ -7582,22 +7467,22 @@ async function oo() {
                 }));
         })(),
         window.setInterval(() => {
-            ki();
+            hi();
         }, 3e4));
 }
-const so = (
+const no = (
     'loading' === document.readyState
         ? new Promise((e, t) => {
               document.addEventListener(
                   'DOMContentLoaded',
                   () => {
-                      oo().then(e).catch(t);
+                      ao().then(e).catch(t);
                   },
                   { once: !0 }
               );
           })
-        : oo()
+        : ao()
 ).catch((e) => {
     throw (console.error('admin-v3 boot failed', e), e);
 });
-export { so as default };
+export { no as default };
