@@ -1273,31 +1273,35 @@ function we(e) {
         : 'pending';
 }
 function $e(e) {
-    return e?.leadOps && 'object' == typeof e.leadOps ? e.leadOps : {};
-}
-function Ce(e) {
     const t = new Date(e?.fecha || e?.createdAt || '');
     return Number.isNaN(t.getTime()) ? 0 : t.getTime();
 }
-function Ae(e) {
-    const t = Ce(e);
+function Ce(e) {
+    const t = $e(e);
     return t ? Math.max(0, Math.round((Date.now() - t) / 6e4)) : 0;
 }
-function Te(e) {
+function Ae(e) {
     return e < 60
         ? `${e} min`
         : e < 1440
           ? `${Math.round(e / 60)} h`
           : `${Math.round(e / 1440)} d`;
 }
-function Le(e) {
+function Te(e) {
+    const t = new Date(e || '');
+    if (Number.isNaN(t.getTime())) return !1;
+    const a = new Date();
     return (
-        String(e?.telefono || e?.phone || 'Sin telefono').trim() ||
-        'Sin telefono'
+        t.getFullYear() === a.getFullYear() &&
+        t.getMonth() === a.getMonth() &&
+        t.getDate() === a.getDate()
     );
 }
+function Le(e) {
+    return e?.leadOps && 'object' == typeof e.leadOps ? e.leadOps : {};
+}
 function Me(e) {
-    const t = ke($e(e).priorityBand);
+    const t = ke(Le(e).priorityBand);
     return 'hot' === t || 'warm' === t ? t : 'cold';
 }
 function Ee(e) {
@@ -1305,16 +1309,16 @@ function Ee(e) {
     return 'hot' === t ? 3 : 'warm' === t ? 2 : 1;
 }
 function Be(e) {
-    const t = Array.isArray($e(e).serviceHints) ? $e(e).serviceHints : [];
+    const t = Array.isArray(Le(e).serviceHints) ? Le(e).serviceHints : [];
     return String(t[0] || '').trim() || 'Sin sugerencia';
 }
 function Ne(e) {
     return (
-        String($e(e).nextAction || '').trim() || 'Mantener visible en la cola'
+        String(Le(e).nextAction || '').trim() || 'Mantener visible en la cola'
     );
 }
 function Ie(e, t = '') {
-    const a = ke($e(e).aiStatus);
+    const a = ke(Le(e).aiStatus);
     return 'requested' === a
         ? 'online' === t
             ? 'IA pendiente'
@@ -1330,20 +1334,16 @@ function Ie(e, t = '') {
                 : 'Sin IA';
 }
 function Oe(e) {
-    return String($e(e).aiDraft || '').trim();
+    return String(Le(e).aiDraft || '').trim();
 }
 function Pe(e) {
-    const t = Number($e(e).heuristicScore || 0);
+    const t = Number(Le(e).heuristicScore || 0);
     return Number.isFinite(t) ? t : 0;
 }
 function De(e) {
-    const t = new Date(e || '');
-    if (Number.isNaN(t.getTime())) return !1;
-    const a = new Date();
     return (
-        t.getFullYear() === a.getFullYear() &&
-        t.getMonth() === a.getMonth() &&
-        t.getDate() === a.getDate()
+        String(e?.telefono || e?.phone || 'Sin telefono').trim() ||
+        'Sin telefono'
     );
 }
 function xe(e) {
@@ -1364,14 +1364,14 @@ function He() {
             const a = Se(t),
                 n = [...e];
             return 'waiting_desc' === a
-                ? (n.sort((e, t) => Ce(e) - Ce(t)), n)
+                ? (n.sort((e, t) => $e(e) - $e(t)), n)
                 : 'recent_desc' === a
-                  ? (n.sort((e, t) => Ce(t) - Ce(e)), n)
+                  ? (n.sort((e, t) => $e(t) - $e(e)), n)
                   : (n.sort((e, t) => {
                         const a = Ee(t) - Ee(e);
                         if (0 !== a) return a;
                         const n = Pe(t) - Pe(e);
-                        return 0 !== n ? n : Ce(e) - Ce(t);
+                        return 0 !== n ? n : $e(e) - $e(t);
                     }),
                     n);
         })(
@@ -1379,7 +1379,7 @@ function He() {
                 const n = ke(t);
                 return n
                     ? e.filter((e) => {
-                          const t = $e(e);
+                          const t = Le(e);
                           return [
                               e.telefono,
                               e.phone,
@@ -1403,11 +1403,11 @@ function He() {
                     return 'pending' === a || 'contacted' === a
                         ? e.filter((e) => we(e.status) === a)
                         : 'today' === a
-                          ? e.filter((e) => De(e.fecha || e.createdAt))
+                          ? e.filter((e) => Te(e.fecha || e.createdAt))
                           : 'sla_urgent' === a
                             ? e.filter(
                                   (e) =>
-                                      'pending' === we(e.status) && Ae(e) >= 120
+                                      'pending' === we(e.status) && Ce(e) >= 120
                               )
                             : e;
                 })(a, o.filter),
@@ -1419,18 +1419,18 @@ function He() {
         c = new Set((o.selected || []).map((e) => Number(e || 0))),
         u = (function (e, t = null) {
             const a = e.filter((e) => 'pending' === we(e.status)),
-                n = a.filter((e) => Ae(e) >= 120),
+                n = a.filter((e) => Ce(e) >= 120),
                 i = a.filter((e) => 3 === Ee(e)),
                 o = a.slice().sort((e, t) => {
                     const a = Ee(t) - Ee(e);
-                    return 0 !== a ? a : Ce(e) - Ce(t);
+                    return 0 !== a ? a : $e(e) - $e(t);
                 })[0],
                 s = ke(t?.worker?.mode || '');
             return {
                 pendingCount: a.length,
                 urgentCount: n.length,
                 hotCount: i.length,
-                todayCount: e.filter((e) => De(e.fecha || e.createdAt)).length,
+                todayCount: e.filter((e) => Te(e.fecha || e.createdAt)).length,
                 next: o,
                 workerMode: s,
                 queueHealth:
@@ -1470,8 +1470,8 @@ function He() {
                                   ? 'contacted'
                                   : 'pending',
                               r = Number(t.id || 0),
-                              l = Le(t),
-                              c = Ae(t),
+                              l = De(t),
+                              c = Ce(t),
                               u = Me(t),
                               d = Oe(t);
                           return `\n        <article class="callback-card ${e(u)} ${'pending' === s ? 'pendiente' : 'contactado'}${a ? ' is-selected' : ''}" data-callback-id="${r}" data-callback-status="${'pending' === s ? 'pendiente' : 'contactado'}">\n            <header>\n                <div class="callback-card-heading">\n                    <div class="callback-card-badges">\n                        <span class="callback-status-pill" data-tone="${e(u)}">${e(
@@ -1483,9 +1483,9 @@ function He() {
                                         ? 'Warm'
                                         : 'Cold';
                               })(t)
-                          )}</span>\n                        <span class="callback-status-pill subtle">${e(Ie(t, o))}</span>\n                    </div>\n                    <h4>${e(l)}</h4>\n                    <p class="callback-card-subtitle">${e(1 === n ? 'Siguiente lead sugerido' : 'Lead interno')}${Pe(t) ? ` · Score ${e(String(Pe(t)))}` : ''}</p>\n                </div>\n                <span class="callback-card-wait" data-tone="${e('pending' === s ? u : 'success')}">${e(Te(c))}</span>\n            </header>\n            <div class="callback-card-grid">\n                <p><span>Servicio</span><strong>${e(Be(t))}</strong></p>\n                <p><span>Fecha</span><strong>${e(i(t.fecha || t.createdAt || ''))}</strong></p>\n                <p><span>Siguiente accion</span><strong>${e(Ne(t))}</strong></p>\n                <p><span>Outcome</span><strong>${e(
+                          )}</span>\n                        <span class="callback-status-pill subtle">${e(Ie(t, o))}</span>\n                    </div>\n                    <h4>${e(l)}</h4>\n                    <p class="callback-card-subtitle">${e(1 === n ? 'Siguiente lead sugerido' : 'Lead interno')}${Pe(t) ? ` · Score ${e(String(Pe(t)))}` : ''}</p>\n                </div>\n                <span class="callback-card-wait" data-tone="${e('pending' === s ? u : 'success')}">${e(Ae(c))}</span>\n            </header>\n            <div class="callback-card-grid">\n                <p><span>Servicio</span><strong>${e(Be(t))}</strong></p>\n                <p><span>Fecha</span><strong>${e(i(t.fecha || t.createdAt || ''))}</strong></p>\n                <p><span>Siguiente accion</span><strong>${e(Ne(t))}</strong></p>\n                <p><span>Outcome</span><strong>${e(
                               (function (e) {
-                                  const t = ke($e(e).outcome);
+                                  const t = ke(Le(e).outcome);
                                   return 'cita_cerrada' === t
                                       ? 'Cita cerrada'
                                       : 'sin_respuesta' === t
@@ -1592,14 +1592,14 @@ function He() {
             const o = document.getElementById('callbacksOpsQueueHealth');
             o && o.setAttribute('data-state', e.queueState);
             const s = e.next;
-            (r('#callbacksOpsNext', s ? Le(s) : 'Sin telefono'),
+            (r('#callbacksOpsNext', s ? De(s) : 'Sin telefono'),
                 r(
                     '#callbacksNextSummary',
                     s
-                        ? `Prioriza ${Le(s)} antes de seguir con la cola.`
+                        ? `Prioriza ${De(s)} antes de seguir con la cola.`
                         : 'La siguiente llamada prioritaria aparecera aqui.'
                 ),
-                r('#callbacksNextWait', s ? Te(Ae(s)) : '0 min'),
+                r('#callbacksNextWait', s ? Ae(Ce(s)) : '0 min'),
                 r('#callbacksNextPreference', s ? Be(s) : '-'),
                 r('#callbacksNextState', s ? Ne(s) : 'Pendiente'),
                 r(
