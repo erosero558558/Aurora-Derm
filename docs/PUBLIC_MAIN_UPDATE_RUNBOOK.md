@@ -163,6 +163,21 @@ the selected transport port from the runner. Try both `ftps:21` and `sftp:22`;
 if both report `runner_tcp_unreachable`, treat it as a runner-to-host network
 block, not as a repo/build regression.
 
+Early-failure transport runs should now still upload useful evidence:
+
+- `.public-cutover/transport-preflight.json` with the effective protocol/port classification
+- `verification/last-admin-ui-rollout-gate-deploy-hosting.json` as a placeholder report when the admin rollout gate never ran because transport failed first
+
+If either artifact is missing after a fresh run from `main`, treat that as a
+workflow regression rather than a host-network symptom.
+
+`deploy-hosting.yml` now raises a dedicated issue,
+`[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner`, when a
+non-dry-run transport preflight ends in `runner_tcp_unreachable`. The incident
+is keyed by `transport_preflight_target` and closes automatically after a later
+transport preflight returns `transport_preflight_reason=ok`, even if the rest
+of the workflow still needs separate follow-up.
+
 If `deploy-frontend-selfhosted.yml` stays `queued`, the repo is ready but no
 self-hosted Windows runner is online. Restoring that runner is a separate
 infrastructure action from fixing the host network path.

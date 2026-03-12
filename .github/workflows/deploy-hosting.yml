@@ -522,35 +522,17 @@ jobs:
                   echo "Testeando conectividad TCP a ${HOST}:${PORT} ..."
                   if timeout 8 bash -c "cat < /dev/null > /dev/tcp/${HOST}/${PORT}" 2>/dev/null; then
                     echo "TRANSPORT_PREFLIGHT_REASON=ok" >> "$GITHUB_ENV"
-                    node <<'NODE'
-                    const fs = require('node:fs');
-                    const payload = {
-                      attempted: true,
-                      reachable: true,
-                      reason: 'ok',
-                      protocol: process.env.DEPLOY_PROTOCOL || '',
-                      port: process.env.FTP_SERVER_PORT || '',
-                      target: `${process.env.DEPLOY_PROTOCOL || ''}:${process.env.FTP_SERVER_PORT || ''}`,
-                      generated_at: new Date().toISOString(),
-                    };
-                    fs.writeFileSync('.public-cutover/transport-preflight.json', JSON.stringify(payload, null, 2));
-                    NODE
+                    node bin/write-transport-preflight.js \
+                      --out ".public-cutover/transport-preflight.json" \
+                      --reason "ok" \
+                      --reachable "true"
                     echo "TCP OK en ${HOST}:${PORT}"
                   else
                     echo "TRANSPORT_PREFLIGHT_REASON=runner_tcp_unreachable" >> "$GITHUB_ENV"
-                    node <<'NODE'
-                    const fs = require('node:fs');
-                    const payload = {
-                      attempted: true,
-                      reachable: false,
-                      reason: 'runner_tcp_unreachable',
-                      protocol: process.env.DEPLOY_PROTOCOL || '',
-                      port: process.env.FTP_SERVER_PORT || '',
-                      target: `${process.env.DEPLOY_PROTOCOL || ''}:${process.env.FTP_SERVER_PORT || ''}`,
-                      generated_at: new Date().toISOString(),
-                    };
-                    fs.writeFileSync('.public-cutover/transport-preflight.json', JSON.stringify(payload, null, 2));
-                    NODE
+                    node bin/write-transport-preflight.js \
+                      --out ".public-cutover/transport-preflight.json" \
+                      --reason "runner_tcp_unreachable" \
+                      --reachable "false"
                     echo "::error::No se puede abrir ${HOST}:${PORT} desde GitHub Runner."
                     exit 1
                   fi
@@ -615,6 +597,158 @@ jobs:
                     );
                   }
                   NODE
+
+            - name: Crear/actualizar incidente de transporte deploy-hosting
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = `reason:${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}|target:${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`;
+                      const signalMarker = `<!-- deploy-hosting-transport-signal:${signal} -->`;
+                      const baseLabels = ['production-alert', 'deploy-hosting', 'transport-preflight', 'severity:warning'];
+
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const mergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+
+                      const incidentBody = [
+                        'El workflow `Deploy Hosting (Canary Pipeline)` detecto que GitHub Runner no puede abrir el transporte hacia el host.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`,
+                        `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`,
+                        `- prod_url: ${process.env.PROD_URL || 'https://pielarmonia.com'}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const labels = mergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), labels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels
+                            });
+                            core.info(`Issue deploy-hosting transporte actualizo labels: #${existing.number}`);
+                          }
+                          core.info(`Issue deploy-hosting transporte ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: incidentBody,
+                          labels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente deploy-hosting transporte actualizado por cambio de senal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`,
+                            `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue deploy-hosting transporte actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body: incidentBody,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue deploy-hosting transporte creado: #${created.data.number}`);
+                      }
+              env:
+                  TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}
+                  TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}
+
+            - name: Cerrar incidente de transporte deploy-hosting al recuperar
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'ok' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente deploy-hosting transporte abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por preflight de transporte en deploy-hosting.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`,
+                          `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'ok'}`,
+                          `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue deploy-hosting transporte cerrado: #${existing.number}`);
+              env:
+                  TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}
+                  TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}
 
             - name: Preparar bundle de deploy (Prod)
               id: prepare_bundle_prod
@@ -1046,6 +1180,19 @@ jobs:
                     -AllowFeatureApiFailure:$allowFeatureApiFailure `
                     -AllowMissingAdminFlag:$allowMissingFlag `
                     -ReportPath 'verification/last-admin-ui-rollout-gate-deploy-hosting.json'
+
+            - name: Hydrate admin rollout report placeholder (deploy-hosting)
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && hashFiles('verification/last-admin-ui-rollout-gate-deploy-hosting.json') == '' }}
+              shell: bash
+              env:
+                  PREFLIGHT_OUTCOME: ${{ steps.preflight_prod.outcome }}
+                  RESOLVE_POSTDEPLOY_OUTCOME: ${{ steps.resolve_postdeploy.outcome }}
+                  ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
+              run: |
+                  set -euo pipefail
+                  node bin/write-admin-rollout-placeholder-report.js \
+                    --out "verification/last-admin-ui-rollout-gate-deploy-hosting.json" \
+                    --reason "deploy_hosting_precheck_not_executed"
 
             - name: Publicar reporte gate admin rollout (deploy-hosting)
               if: ${{ always() && env.FTP_DRY_RUN != 'true' }}

@@ -143,15 +143,18 @@ test('deploy-hosting clasifica bloqueos de conectividad del runner en el preflig
         'mkdir -p .public-cutover',
         'echo "TRANSPORT_PREFLIGHT_REASON=ok" >> "$GITHUB_ENV"',
         'echo "TRANSPORT_PREFLIGHT_REASON=runner_tcp_unreachable" >> "$GITHUB_ENV"',
-        "reason: 'runner_tcp_unreachable'",
-        "reason: 'ok'",
-        'reachable: false',
-        'reachable: true',
+        'node bin/write-transport-preflight.js',
+        '--reason "runner_tcp_unreachable"',
+        '--reason "ok"',
+        '--reachable "false"',
+        '--reachable "true"',
         '.public-cutover/transport-preflight.json',
         'Hydrate transport preflight status',
         'PREFLIGHT_OUTCOME: ${{ steps.preflight_prod.outcome }}',
         'TRANSPORT_PREFLIGHT_TARGET=${target}',
-        "fs.writeFileSync('.public-cutover/transport-preflight.json', JSON.stringify(payload, null, 2));",
+        'bin/write-admin-rollout-placeholder-report.js',
+        'Hydrate admin rollout report placeholder (deploy-hosting)',
+        "hashFiles('verification/last-admin-ui-rollout-gate-deploy-hosting.json') == ''",
         'transport_preflight_reason: \\`${TRANSPORT_PREFLIGHT_REASON}\\`',
         'transport_preflight_target: \\`${TRANSPORT_PREFLIGHT_TARGET}\\`',
         'transport_preflight_artifact: \\`.public-cutover/transport-preflight.json\\`',
@@ -161,6 +164,47 @@ test('deploy-hosting clasifica bloqueos de conectividad del runner en el preflig
             raw.includes(snippet),
             true,
             `falta clasificacion de bloqueo de red en deploy-hosting: ${snippet}`
+        );
+    }
+});
+
+test('deploy-hosting gestiona incidente dedicado de transporte runner-host', () => {
+    const { raw, parsed } = loadWorkflow();
+    const steps = parsed?.jobs?.['deploy-prod']?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    const requiredStepNames = [
+        'Crear/actualizar incidente de transporte deploy-hosting',
+        'Cerrar incidente de transporte deploy-hosting al recuperar',
+    ];
+    for (const expectedStepName of requiredStepNames) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de incidente de transporte en deploy-hosting: ${expectedStepName}`
+        );
+    }
+
+    const requiredSnippets = [
+        "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}",
+        "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'ok' }}",
+        "const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';",
+        'deploy-hosting-transport-signal:',
+        "const signal = `reason:${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}|target:${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`;",
+        "`- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`",
+        "`- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`",
+        'Issue deploy-hosting transporte ya refleja la misma senal',
+        'Issue deploy-hosting transporte creado',
+        'Issue deploy-hosting transporte cerrado',
+        'TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}',
+        'TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}',
+    ];
+
+    for (const snippet of requiredSnippets) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de incidente de transporte en deploy-hosting: ${snippet}`
         );
     }
 });
