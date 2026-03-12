@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 594
+  revision: 596
   updated_at: 2026-03-12
 
 tasks:
@@ -8443,5 +8443,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-217.md"
     depends_on: []
     prompt: "Propagate GitHub deploy alerts into deploy verify and smoke gates"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-218
+    title: "Auto-close stale deploy alerts when public sync recovers"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-12T19:02:07.567Z"
+    risk: medium
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/prod-monitor.yml", "tests-node/prod-monitor-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "verification/agent-runs/AG-220.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-218_20260312190207567_3eef1f"
+    lease_owner: "ernesto"
+    lease_created_at: "2026-03-12T19:02:07.567Z"
+    heartbeat_at: "2026-03-12T19:02:07.567Z"
+    lease_expires_at: "2026-03-12T23:02:07.567Z"
+    lease_reason: "board_write"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Auto-close stale deploy alerts when public sync recovers"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Auto-close stale deploy alerts when public sync recovers"
     created_at: 2026-03-12
     updated_at: 2026-03-12

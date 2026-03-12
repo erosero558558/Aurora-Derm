@@ -191,6 +191,47 @@ test('prod-monitor workflow maneja incidente dedicado de telemedicina', () => {
     }
 });
 
+test('prod-monitor workflow cierra alertas stale de deploy cuando public sync se recupera', () => {
+    const { raw, parsed } = loadWorkflow();
+    const steps = parsed?.jobs?.monitor?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    for (const expectedStepName of [
+        'Evaluar recuperacion public sync para alertas stale de deploy',
+        'Cerrar alertas stale de deploy al recuperar public sync',
+    ]) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de recuperacion public sync en prod-monitor: ${expectedStepName}`
+        );
+    }
+
+    const requiredSnippets = [
+        'PUBLIC_SYNC_RECOVERY_STATUS: not_evaluated',
+        'PUBLIC_SYNC_RECOVERY_REASON: not_evaluated',
+        "PUBLIC_SYNC_CURRENT_HEAD: ''",
+        "PUBLIC_SYNC_REMOTE_HEAD: ''",
+        "PUBLIC_SYNC_DIRTY_PATHS_COUNT: '0'",
+        'PielArmoniaPublicSyncRecovery/1.0',
+        "if: ${{ always() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && env.TARGET_DOMAIN == 'https://pielarmonia.com')) && steps.public_sync_recovery.outputs.status == 'healthy' }}",
+        "'[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner'",
+        "'[ALERTA PROD] Diagnose host connectivity sin ruta de deploy'",
+        "'[ALERTA PROD] Repair git sync self-hosted fallback sin runner'",
+        'Cerrado automaticamente por monitor programado al confirmar `public_main_sync` saludable.',
+        'Issue stale de deploy cerrado',
+        'public sync recovery => status=$status reason=$reason current_head=$currentHead remote_head=$remoteHead dirty_paths_count=$dirtyPathsCount',
+    ];
+
+    for (const snippet of requiredSnippets) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de recuperacion public sync en prod-monitor: ${snippet}`
+        );
+    }
+});
+
 test('prod-monitor workflow expone inputs de monitoreo post-cutover publico', () => {
     const { parsed } = loadWorkflow();
     const inputs = parsed?.on?.workflow_dispatch?.inputs || {};
@@ -398,6 +439,26 @@ test('prod-monitor workflow publica parametros y outcome de rollout V4 en summar
             raw.includes(snippet),
             true,
             `falta linea de summary rollout V4: ${snippet}`
+        );
+    }
+});
+
+test('prod-monitor workflow publica recuperacion public sync en summary', () => {
+    const { raw } = loadWorkflow();
+    const requiredSummaryLines = [
+        '- public_sync_recovery_status: ``$env:PUBLIC_SYNC_RECOVERY_STATUS``',
+        '- public_sync_recovery_reason: ``$env:PUBLIC_SYNC_RECOVERY_REASON``',
+        '- public_sync_current_head: ``$env:PUBLIC_SYNC_CURRENT_HEAD``',
+        '- public_sync_remote_head: ``$env:PUBLIC_SYNC_REMOTE_HEAD``',
+        '- public_sync_dirty_paths_count: ``$env:PUBLIC_SYNC_DIRTY_PATHS_COUNT``',
+        '- public_sync_recovery_step_outcome: ``${{ steps.public_sync_recovery.outcome }}``',
+    ];
+
+    for (const snippet of requiredSummaryLines) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta linea de summary de recuperacion public sync: ${snippet}`
         );
     }
 });

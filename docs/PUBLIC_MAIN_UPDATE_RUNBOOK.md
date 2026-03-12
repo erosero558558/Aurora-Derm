@@ -71,6 +71,13 @@ The same monitor now also resolves open GitHub `production-alert` issues for
 `deploy-hosting`, `diagnose-host-connectivity`, `repair-git-sync`, and
 `self-hosted-runner`. Expect a `github.deployAlerts` line with live issue
 numbers whenever the deploy path is blocked outside the host itself.
+When `public_main_sync` is healthy again with matching heads and
+`dirtyPathsCount=0`, `prod-monitor.yml` now closes stale deploy-route alerts
+for `deploy-hosting`, `diagnose-host-connectivity`, and the
+`repair-git-sync` self-hosted fallback. You can wait for the scheduled monitor
+or dispatch `prod-monitor.yml` manually against the default production domain.
+The first recovery pass may still fail while those issues are open, but it
+should close them so the next pass sees `github.deployAlerts relevantCount=0`.
 
 `VERIFICAR-DESPLIEGUE.ps1 -RequireCronReady` and
 `SMOKE-PRODUCCION.ps1 -RequireCronReady` now resolve the same GitHub deploy
