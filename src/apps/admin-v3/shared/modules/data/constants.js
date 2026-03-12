@@ -9,6 +9,7 @@ export const LOCAL_DATA_KEYS = {
     leadOpsMeta: 'leadops-meta',
     queueSurfaceStatus: 'queue-surface-status',
     appDownloads: 'app-downloads',
+    clinicalHistoryMeta: 'clinical-history-meta',
     health: 'health-status',
 };
 

@@ -50,6 +50,31 @@ export function getQueryParam(name) {
     }
 }
 
+export function setQueryParam(name, value) {
+    try {
+        const url = new URL(window.location.href);
+        const key = String(name || '').trim();
+        if (!key) {
+            return;
+        }
+
+        const normalized = String(value || '').trim();
+        if (normalized) {
+            url.searchParams.set(key, normalized);
+        } else {
+            url.searchParams.delete(key);
+        }
+
+        window.history.replaceState(
+            null,
+            '',
+            `${url.pathname}${url.search}${url.hash}`
+        );
+    } catch (_error) {
+        // no-op
+    }
+}
+
 export function setHash(hashValue) {
     const safeHash = String(hashValue || '').replace(/^#/, '');
     const next = safeHash ? `#${safeHash}` : '';

@@ -10,6 +10,7 @@ declare(strict_types=1);
  *   GET /cron.php?action=backup-health&token=YOUR_CRON_SECRET
  *   GET /cron.php?action=backup-offsite&token=YOUR_CRON_SECRET
  *   GET /cron.php?action=ai-queue-worker&token=YOUR_CRON_SECRET
+ *   GET /cron.php?action=clinical-history-reconcile&token=YOUR_CRON_SECRET
  *   GET /cron.php?action=process-retries&token=YOUR_CRON_SECRET
  *
  * Suggested cron jobs (America/Guayaquil):
@@ -17,10 +18,12 @@ declare(strict_types=1);
  *   10 3 * * * curl -s "https://pielarmonia.com/cron.php?action=backup-health&token=YOUR_CRON_SECRET"
  *   20 3 * * * curl -s "https://pielarmonia.com/cron.php?action=backup-offsite&token=YOUR_CRON_SECRET"
  *   * * * * * curl -s "https://pielarmonia.com/cron.php?action=ai-queue-worker&token=YOUR_CRON_SECRET"
+ *   * * * * * curl -s "https://pielarmonia.com/cron.php?action=clinical-history-reconcile&token=YOUR_CRON_SECRET"
  *   *\/5 * * * * curl -s "https://pielarmonia.com/cron.php?action=process-retries&token=YOUR_CRON_SECRET"
  */
 
 require_once __DIR__ . '/api-lib.php';
+require_once __DIR__ . '/lib/clinical_history/bootstrap.php';
 
 apply_security_headers(false);
 
@@ -331,6 +334,21 @@ function cron_task_ai_queue_worker(array $payload): array
     $maxJobs = isset($payload['maxJobs']) ? (int) $payload['maxJobs'] : null;
     $timeBudgetMs = isset($payload['timeBudgetMs']) ? (int) $payload['timeBudgetMs'] : null;
     $result = figo_queue_process_worker($maxJobs, $timeBudgetMs, true);
+    $runClinicalReconcile = !array_key_exists('reconcileClinicalHistory', $payload)
+        || parse_bool($payload['reconcileClinicalHistory']);
+    $clinicalHistory = [
+        'ok' => true,
+        'skipped' => true,
+        'mutated' => 0,
+        'completed' => 0,
+        'failed' => 0,
+        'superseded' => 0,
+        'remaining' => 0,
+    ];
+    if ($runClinicalReconcile) {
+        $clinicalHistory = cron_run_clinical_history_reconcile($payload);
+        $clinicalHistory['skipped'] = false;
+    }
 
     return [
         'ok' => (bool) ($result['ok'] ?? false),
@@ -343,8 +361,74 @@ function cron_task_ai_queue_worker(array $payload): array
         'deleted' => (int) ($result['deleted'] ?? 0),
         'durationMs' => (int) ($result['durationMs'] ?? 0),
         'reason' => isset($result['reason']) ? (string) $result['reason'] : '',
+        'clinicalHistory' => $clinicalHistory,
         'timestamp' => gmdate('c')
     ];
+}
+
+function cron_run_clinical_history_reconcile(array $payload): array
+{
+    $service = new ClinicalHistoryService();
+    $maxSessions = isset($payload['maxClinicalSessions']) ? (int) $payload['maxClinicalSessions'] : null;
+    $lock = with_store_lock(static function () use ($service, $maxSessions): array {
+        $store = read_store();
+        $result = $service->reconcilePendingSessions($store, [
+            'maxSessions' => $maxSessions,
+        ]);
+        if (($result['ok'] ?? false) !== true) {
+            return $result;
+        }
+
+        $nextStore = isset($result['store']) && is_array($result['store']) ? $result['store'] : $store;
+        if ((int) ($result['mutated'] ?? 0) > 0 && !write_store($nextStore, false)) {
+            return [
+                'ok' => false,
+                'error' => 'No se pudo guardar la reconciliacion de historia clinica',
+            ];
+        }
+
+        $result['store'] = $nextStore;
+        return $result;
+    });
+    if (($lock['ok'] ?? false) !== true) {
+        throw new Exception('No se pudo bloquear la reconciliacion de historia clinica');
+    }
+
+    $result = isset($lock['result']) && is_array($lock['result']) ? $lock['result'] : [];
+    if (($result['ok'] ?? false) !== true) {
+        throw new Exception((string) ($result['error'] ?? 'No se pudo reconciliar historias clinicas pendientes'));
+    }
+
+    audit_log_event('cron.clinical_history_reconcile', [
+        'scanned' => (int) ($result['scanned'] ?? 0),
+        'mutated' => (int) ($result['mutated'] ?? 0),
+        'completed' => (int) ($result['completed'] ?? 0),
+        'failed' => (int) ($result['failed'] ?? 0),
+        'superseded' => (int) ($result['superseded'] ?? 0),
+        'remaining' => (int) ($result['remaining'] ?? 0),
+    ]);
+
+    return [
+        'ok' => true,
+        'scanned' => (int) ($result['scanned'] ?? 0),
+        'mutated' => (int) ($result['mutated'] ?? 0),
+        'completed' => (int) ($result['completed'] ?? 0),
+        'failed' => (int) ($result['failed'] ?? 0),
+        'superseded' => (int) ($result['superseded'] ?? 0),
+        'closed' => (int) ($result['closed'] ?? 0),
+        'remaining' => (int) ($result['remaining'] ?? 0),
+        'processedSessionIds' => isset($result['processedSessionIds']) && is_array($result['processedSessionIds'])
+            ? array_values($result['processedSessionIds'])
+            : [],
+    ];
+}
+
+function cron_task_clinical_history_reconcile(array $payload): array
+{
+    $result = cron_run_clinical_history_reconcile($payload);
+    $result['action'] = 'clinical-history-reconcile';
+    $result['timestamp'] = gmdate('c');
+    return $result;
 }
 
 function cron_process_retries(): array

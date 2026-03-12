@@ -7,6 +7,10 @@ require_once __DIR__ . '/../lib/metrics.php';
 require_once __DIR__ . '/../lib/features.php';
 require_once __DIR__ . '/../lib/prediction.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
+$whatsappOpenclawBootstrap = __DIR__ . '/../lib/whatsapp_openclaw/bootstrap.php';
+if (is_file($whatsappOpenclawBootstrap)) {
+    require_once $whatsappOpenclawBootstrap;
+}
 
 class SystemController
 {
@@ -221,6 +225,9 @@ class SystemController
             TelemedicineOpsSnapshot::build($store)
         );
         echo LeadOpsService::renderPrometheusMetrics($store);
+        if (function_exists('whatsapp_openclaw_render_prometheus_metrics')) {
+            echo whatsapp_openclaw_render_prometheus_metrics($store);
+        }
 
         // Lead Time (Last 30 days)
         $leadTimes = [];

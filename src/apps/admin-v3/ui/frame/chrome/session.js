@@ -8,6 +8,7 @@ function formatAuthMeta(auth) {
             session: 'sesion restaurada',
             password: 'clave validada',
             '2fa': '2FA validado',
+            operator_auth: 'OpenClaw / ChatGPT',
         };
         const authMethod =
             methodMap[String(authState.authMethod || '')] || 'acceso validado';
@@ -29,19 +30,31 @@ function formatAuthMeta(auth) {
         return 'Esperando codigo de seis digitos para completar el acceso.';
     }
 
+    if (
+        String(authState.mode || '') === 'openclaw_chatgpt' &&
+        String(authState.status || '') === 'pending'
+    ) {
+        return 'Esperando la confirmacion de OpenClaw para completar el acceso.';
+    }
+
     return 'Autenticate para operar el panel.';
 }
 
 export function renderChromeSession(auth) {
     const sessionTile = qs('#adminSessionTile');
+    const operatorPending =
+        String(auth.mode || '') === 'openclaw_chatgpt' &&
+        String(auth.status || '') === 'pending';
     const sessionLabel = auth.authenticated
         ? 'Sesion activa'
         : auth.requires2FA
           ? 'Verificacion 2FA'
-          : 'No autenticada';
+          : operatorPending
+            ? 'Esperando OpenClaw'
+            : 'No autenticada';
     const sessionTone = auth.authenticated
         ? 'success'
-        : auth.requires2FA
+        : auth.requires2FA || operatorPending
           ? 'warning'
           : 'neutral';
 

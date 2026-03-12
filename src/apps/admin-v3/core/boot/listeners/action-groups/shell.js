@@ -6,7 +6,11 @@ import {
 } from '../../../../ui/frame.js';
 import { logoutSession } from '../../../../shared/modules/auth.js';
 import { syncQueueAutoRefresh } from '../../../../shared/modules/queue.js';
-import { primeLoginSurface, resetTwoFactorStage } from '../../auth.js';
+import {
+    primeLoginSurface,
+    resetTwoFactorStage,
+    startOperatorAuthFlow,
+} from '../../auth.js';
 import {
     focusQuickCommand,
     parseQuickCommand,
@@ -75,6 +79,12 @@ export async function handleShellAction(action, element) {
             hideCommandPalette();
             primeLoginSurface();
             createToast('Sesion cerrada', 'info');
+            return true;
+        case 'start-operator-auth':
+            await startOperatorAuthFlow(false);
+            return true;
+        case 'retry-operator-auth':
+            await startOperatorAuthFlow(true);
             return true;
         case 'reset-login-2fa':
             resetTwoFactorStage();

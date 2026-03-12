@@ -30,6 +30,7 @@ export function renderSidebarNav() {
         </div>
         <div class="admin-nav-group admin-nav-group-secondary" id="adminSecondaryNav">
             ${navGroupLabel('Mas herramientas')}
+            ${navItem('clinical-history', 'Historia clinica', 'dashboard')}
             ${navItem('reviews', 'Resenas', 'reviews')}
             ${navItem('queue', 'Turnero avanzado', 'queue')}
         </div>

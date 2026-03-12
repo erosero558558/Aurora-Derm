@@ -18,6 +18,10 @@ export function persistLocalAdminData(data) {
         data.queueSurfaceStatus || null
     );
     setStorageJson(LOCAL_DATA_KEYS.appDownloads, data.appDownloads || null);
+    setStorageJson(
+        LOCAL_DATA_KEYS.clinicalHistoryMeta,
+        data.clinicalHistoryMeta || null
+    );
     setStorageJson(LOCAL_DATA_KEYS.health, data.health || null);
 }
 
@@ -36,6 +40,10 @@ export function loadLocalAdminFallback() {
             null
         ),
         appDownloads: getStorageJson(LOCAL_DATA_KEYS.appDownloads, null),
+        clinicalHistoryMeta: getStorageJson(
+            LOCAL_DATA_KEYS.clinicalHistoryMeta,
+            null
+        ),
         health: getStorageJson(LOCAL_DATA_KEYS.health, null),
         funnelMetrics: EMPTY_FUNNEL_METRICS,
     };

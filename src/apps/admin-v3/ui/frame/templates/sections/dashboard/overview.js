@@ -15,25 +15,66 @@ export function renderDashboardOperationsGrid() {
                 <div id="operationActionList" class="operations-action-list"></div>
             </article>
 
-            <article class="sony-panel" id="funnelSummary">
+            <article class="sony-panel" id="dashboardOpenclawOpsPanel">
                 <header>
-                    <h3>Mas herramientas</h3>
-                    <small>Analitica y diagnostico fuera del flujo principal</small>
+                    <div>
+                        <h3>OpenClaw / WhatsApp Ops</h3>
+                        <small id="openclawBridgeMeta">Leyendo bridge operativo...</small>
+                    </div>
+                    <span class="dashboard-signal-chip" id="openclawBridgeChip">Pendiente</span>
                 </header>
-                <p class="dashboard-secondary-summary">
-                    Resenas, embudo y turnero avanzado siguen disponibles, pero ya no compiten con la operacion diaria.
+                <p class="dashboard-secondary-summary" id="dashboardOpenclawOpsSummary">
+                    La consola operativa mostrara estado del bridge, outbox y slots retenidos.
                 </p>
-                <div class="dashboard-secondary-links">
-                    <a href="#reviews" class="dashboard-secondary-link" data-section="reviews">Abrir resenas</a>
-                    <a href="#queue" class="dashboard-secondary-link" data-section="queue">Turnero avanzado</a>
-                </div>
                 <div class="sony-panel-stats dashboard-secondary-metrics">
-                    <div><span>Reservas</span><strong id="funnelViewBooking">0</strong></div>
-                    <div><span>Checkout</span><strong id="funnelStartCheckout">0</strong></div>
-                    <div><span>Confirmadas</span><strong id="funnelBookingConfirmed">0</strong></div>
-                    <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>
+                    <div><span>Outbox</span><strong id="openclawOpsOutboxCount">0</strong></div>
+                    <div><span>Fallos</span><strong id="openclawOpsFailCount">0</strong></div>
+                    <div><span>Holds</span><strong id="openclawOpsHoldCount">0</strong></div>
+                    <div><span>Checkouts</span><strong id="openclawOpsCheckoutCount">0</strong></div>
                 </div>
+                <div id="dashboardOpenclawOpsActions" class="operations-action-list"></div>
+                <ul id="dashboardOpenclawOpsItems" class="sony-list dashboard-attention-list"></ul>
             </article>
         </div>
+
+        <article class="sony-panel" id="dashboardClinicalHistoryPanel">
+            <header>
+                <div>
+                    <h3>Historia clinica conversacional</h3>
+                    <small id="dashboardClinicalHistoryMeta">
+                        Esperando snapshot clinico desde el backend canonico.
+                    </small>
+                </div>
+                <span class="dashboard-signal-chip" id="dashboardClinicalHistoryChip">Pendiente</span>
+            </header>
+            <p class="dashboard-secondary-summary" id="dashboardClinicalHistorySummary">
+                La cola clinica mostrara borradores listos para revision, reconciliaciones y eventos del staff.
+            </p>
+            <div class="sony-panel-stats dashboard-secondary-metrics">
+                <div><span>Sesiones</span><strong id="clinicalHistorySessionCount">0</strong></div>
+                <div><span>Revision</span><strong id="clinicalHistoryReviewCount">0</strong></div>
+                <div><span>IA pendiente</span><strong id="clinicalHistoryPendingAiCount">0</strong></div>
+                <div><span>Eventos abiertos</span><strong id="clinicalHistoryEventCount">0</strong></div>
+            </div>
+            <div class="sony-grid sony-grid-two">
+                <article class="dashboard-signal-card">
+                    <span>Cola de revision</span>
+                    <strong id="clinicalHistoryQueueHeadline">Sin casos pendientes</strong>
+                    <small id="clinicalHistoryQueueMeta">
+                        Cuando OpenClaw deje historias en review_required apareceran aqui.
+                    </small>
+                    <div id="dashboardClinicalHistoryActions" class="operations-action-list"></div>
+                    <ul id="dashboardClinicalReviewQueue" class="sony-list dashboard-attention-list"></ul>
+                </article>
+                <article class="dashboard-signal-card">
+                    <span>Eventos recientes</span>
+                    <strong id="clinicalHistoryEventHeadline">Sin actividad reciente</strong>
+                    <small id="clinicalHistoryEventMeta">
+                        El feed operativo resumira conciliaciones, alertas y lecturas pendientes.
+                    </small>
+                    <ul id="dashboardClinicalEventFeed" class="sony-list dashboard-attention-list"></ul>
+                </article>
+            </div>
+        </article>
     `;
 }

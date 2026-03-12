@@ -58,6 +58,9 @@ final class StorageConfig
             'queue_help_requests' => [],
             'telemedicine_intakes' => [],
             'clinical_uploads' => [],
+            'clinical_history_sessions' => [],
+            'clinical_history_drafts' => [],
+            'clinical_history_events' => [],
             'availability' => [],
             'updatedAt' => local_date('c'),
         ];
@@ -128,6 +131,15 @@ final class StorageConfig
         $clinicalUploads = isset($store['clinical_uploads']) && is_array($store['clinical_uploads'])
             ? $store['clinical_uploads']
             : [];
+        $clinicalHistorySessions = isset($store['clinical_history_sessions']) && is_array($store['clinical_history_sessions'])
+            ? $store['clinical_history_sessions']
+            : [];
+        $clinicalHistoryDrafts = isset($store['clinical_history_drafts']) && is_array($store['clinical_history_drafts'])
+            ? $store['clinical_history_drafts']
+            : [];
+        $clinicalHistoryEvents = isset($store['clinical_history_events']) && is_array($store['clinical_history_events'])
+            ? $store['clinical_history_events']
+            : [];
         $availability = isset($store['availability']) && is_array($store['availability']) ? $store['availability'] : [];
         $updatedAt = isset($store['updatedAt']) && is_string($store['updatedAt']) && trim($store['updatedAt']) !== ''
             ? trim($store['updatedAt'])
@@ -140,6 +152,9 @@ final class StorageConfig
         $queueHelpRequests = self::normalizeStoreRecordsWithNumericId($queueHelpRequests, 'queue_help_requests');
         $telemedicineIntakes = self::normalizeStoreRecordsWithNumericId($telemedicineIntakes, 'telemedicine_intakes');
         $clinicalUploads = self::normalizeStoreRecordsWithNumericId($clinicalUploads, 'clinical_uploads');
+        $clinicalHistorySessions = self::normalizeStoreRecordsWithNumericId($clinicalHistorySessions, 'clinical_history_sessions');
+        $clinicalHistoryDrafts = self::normalizeStoreRecordsWithNumericId($clinicalHistoryDrafts, 'clinical_history_drafts');
+        $clinicalHistoryEvents = self::normalizeStoreRecordsWithNumericId($clinicalHistoryEvents, 'clinical_history_events');
 
         return [
             'appointments' => array_values($appointments),
@@ -149,6 +164,9 @@ final class StorageConfig
             'queue_help_requests' => array_values($queueHelpRequests),
             'telemedicine_intakes' => array_values($telemedicineIntakes),
             'clinical_uploads' => array_values($clinicalUploads),
+            'clinical_history_sessions' => array_values($clinicalHistorySessions),
+            'clinical_history_drafts' => array_values($clinicalHistoryDrafts),
+            'clinical_history_events' => array_values($clinicalHistoryEvents),
             'availability' => $availability,
             'updatedAt' => $updatedAt,
             'idx_appointments_date' => build_appointment_index($appointments),

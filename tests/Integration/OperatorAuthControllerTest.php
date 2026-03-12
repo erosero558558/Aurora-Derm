@@ -31,10 +31,12 @@ class OperatorAuthControllerTest extends TestCase
         }
 
         putenv('PIELARMONIA_DATA_DIR=' . $this->tempDir);
+        putenv('PIELARMONIA_SKIP_ENV_FILE=true');
         putenv('PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt');
         putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=operator@example.com');
         putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN=operator-auth-bridge-test-token');
         putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET=operator-auth-bridge-test-secret');
+        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER=Authorization');
         putenv('PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL=http://127.0.0.1:8011');
         putenv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL=http://127.0.0.1:4173');
         putenv('PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS=300');
@@ -51,10 +53,12 @@ class OperatorAuthControllerTest extends TestCase
     protected function tearDown(): void
     {
         putenv('PIELARMONIA_DATA_DIR');
+        putenv('PIELARMONIA_SKIP_ENV_FILE');
         putenv('PIELARMONIA_OPERATOR_AUTH_MODE');
         putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST');
         putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
         putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET');
+        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER');
         putenv('PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL');
         putenv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL');
         putenv('PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS');

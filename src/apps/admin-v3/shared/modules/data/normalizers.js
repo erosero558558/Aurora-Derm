@@ -47,11 +47,16 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
                 : data.queue_surface_status &&
                     typeof data.queue_surface_status === 'object'
                   ? data.queue_surface_status
-                : fallbackState?.queueSurfaceStatus || null,
+                  : fallbackState?.queueSurfaceStatus || null,
         appDownloads:
             data.appDownloads && typeof data.appDownloads === 'object'
                 ? data.appDownloads
                 : fallbackState?.appDownloads || null,
+        clinicalHistoryMeta:
+            data.clinicalHistoryMeta &&
+            typeof data.clinicalHistoryMeta === 'object'
+                ? data.clinicalHistoryMeta
+                : fallbackState?.clinicalHistoryMeta || null,
         funnelMetrics: data.funnelMetrics || fallbackState?.funnelMetrics || null,
         health: healthPayload && healthPayload.ok ? healthPayload : null,
     };
@@ -69,6 +74,7 @@ export function normalizeAdminStorePayload(payload, currentFunnelMetrics) {
         leadOpsMeta: payload.leadOpsMeta || null,
         queueSurfaceStatus: payload.queueSurfaceStatus || null,
         appDownloads: payload.appDownloads || null,
+        clinicalHistoryMeta: payload.clinicalHistoryMeta || null,
         funnelMetrics: payload.funnelMetrics || currentFunnelMetrics,
         health: payload.health || null,
     };

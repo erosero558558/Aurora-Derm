@@ -7,6 +7,12 @@ const SECTION_HOOKS = {
         workbench: '.dashboard-card-operations',
         detail: '#dashboardAdvancedAnalytics',
     },
+    'clinical-history': {
+        hero: '.clinical-history-summary-panel',
+        priority: '.clinical-history-side-panel',
+        workbench: '.clinical-history-transcript-panel',
+        detail: '.clinical-history-draft-panel',
+    },
     appointments: {
         hero: '.appointments-command-deck',
         priority: '.appointments-focus-panel',

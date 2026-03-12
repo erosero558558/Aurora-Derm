@@ -24,25 +24,74 @@ Luego abre:
 - Publico ES: `http://127.0.0.1:8011/es/`
 - Publico EN: `http://127.0.0.1:8011/en/`
 - Admin: `http://127.0.0.1:8011/admin.html`
+- Operador: `http://127.0.0.1:8011/operador-turnos.html`
 - API health: `http://127.0.0.1:8011/api.php?resource=health`
 - Bot endpoint: `http://127.0.0.1:8011/figo-chat.php`
 
-## Variables de entorno requeridas para login admin
+## Login OpenClaw local
 
-- `PIELARMONIA_ADMIN_PASSWORD`: contraseña del panel admin.
-- `PIELARMONIA_ADMIN_PASSWORD_HASH`: hash de contraseña (opcional, prioridad sobre la contraseña en texto).
-- `PIELARMONIA_EMAIL_FROM`: remitente para correos de confirmacion.
-- `PIELARMONIA_DATA_DIR`: ruta local de datos (opcional).
-- `FIGO_CHAT_ENDPOINT`: URL del backend real de Figo (si quieres IA real).
-- `FIGO_CHAT_TOKEN`: token Bearer opcional para autenticar contra Figo.
+El login canonico de `admin.html` y `operador-turnos.html` requiere dos
+procesos vivos en local:
+
+1. Backend PHP en `http://127.0.0.1:8011`
+2. Helper local en `http://127.0.0.1:4173`
+
+Arranque recomendado:
+
+```powershell
+php -S 127.0.0.1:8011 -t .
+npm run auth:operator:bridge
+```
+
+Validaciones previas:
+
+- `openclaw models status --json` debe mostrar un perfil OAuth `openai-codex`
+  en estado `ok`.
+- `GET http://127.0.0.1:4173/health` debe devolver
+  `service=operator-auth-bridge`.
+- `POST http://127.0.0.1:8011/admin-auth.php?action=start` debe devolver
+  `helperUrl` apuntando a `127.0.0.1:4173`.
+
+Variables usadas por este flujo:
+
+- `PIELARMONIA_OPERATOR_AUTH_MODE`
+- `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST`
+- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN`
+- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET`
+- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER`
+- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX`
+- `PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL`
+- `PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL`
+- `PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS`
+- `PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS`
+- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_MAX_SKEW_SECONDS`
+
+Notas:
+
+- `npm run auth:operator:bridge` lee `env.php` si esas variables no vienen ya
+  exportadas en la shell.
+- `admin.html` y `operador-turnos.html` reutilizan la misma sesion del
+  operador.
+- Si OpenClaw no muestra un OAuth valido, ejecuta
+  `openclaw models auth login --provider openai-codex` y reintenta.
+
+## Login legacy por clave
+
+Solo aplica si desactivas operator auth y vuelves a un modo legacy.
+
+- `PIELARMONIA_ADMIN_PASSWORD`
+- `PIELARMONIA_ADMIN_PASSWORD_HASH`
+- `PIELARMONIA_EMAIL_FROM`
+- `PIELARMONIA_DATA_DIR`
+- `FIGO_CHAT_ENDPOINT`
+- `FIGO_CHAT_TOKEN`
 
 Alternativa sin variables de entorno:
 
 - Crea `data/figo-config.json` con `endpoint` y credenciales opcionales.
 
-Nota:
+Notas generales:
 
-- Ya no existe fallback `admin123`. Debes definir una de las dos variables de contraseña.
 - `TEST_BASE_URL` sirve para apuntar tests y pentests a otro host.
 - `TEST_LOCAL_SERVER_PORT` sirve para mover el puerto local del runner Playwright.
 - `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` automaticamente.
@@ -50,11 +99,3 @@ Nota:
   y puede responder `404`.
 - Las rutas legacy como `/index.html` o `/telemedicina.html` forman parte del
   contrato de redirects en Apache/Nginx (`.htaccess`), no del entrypoint local.
-
-## Ejemplo en PowerShell (sesión actual)
-
-```powershell
-$env:PIELARMONIA_ADMIN_PASSWORD = "tu-clave-segura"
-$env:TEST_LOCAL_SERVER_PORT = "8011"
-php -S 127.0.0.1:8011 -t .
-```

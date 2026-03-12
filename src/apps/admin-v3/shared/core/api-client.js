@@ -5,7 +5,7 @@ function normalizeJson(payload) {
     return {};
 }
 
-async function requestJson(url, options = {}) {
+async function requestJsonRaw(url, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();
     const headers = {
         Accept: 'application/json',
@@ -36,14 +36,34 @@ async function requestJson(url, options = {}) {
         throw new Error(`Respuesta no valida (${response.status})`);
     }
 
-    payload = normalizeJson(payload);
-    if (!response.ok || payload.ok === false) {
-        throw new Error(
-            payload.error || payload.message || `HTTP ${response.status}`
-        );
-    }
+    return {
+        ok: response.ok && payload.ok !== false,
+        status: Number(response.status || 0),
+        payload: normalizeJson(payload),
+    };
+}
 
-    return payload;
+function toRequestError(result) {
+    const payload =
+        result && result.payload && typeof result.payload === 'object'
+            ? result.payload
+            : {};
+    const error = new Error(
+        payload.error ||
+            payload.message ||
+            `HTTP ${Number(result && result.status) || 0}`
+    );
+    error.status = Number(result && result.status) || 0;
+    error.payload = payload;
+    return error;
+}
+
+async function requestJson(url, options = {}) {
+    const result = await requestJsonRaw(url, options);
+    if (!result.ok) {
+        throw toRequestError(result);
+    }
+    return result.payload;
 }
 
 export function setApiCsrfToken(token) {
@@ -55,8 +75,27 @@ export function getApiCsrfToken() {
 }
 
 export async function apiRequest(resource, options = {}) {
-    const url = `/api.php?resource=${encodeURIComponent(resource)}`;
-    return requestJson(url, options);
+    const url = new URL('/api.php', window.location.origin);
+    url.searchParams.set('resource', String(resource || ''));
+
+    const query =
+        options.query && typeof options.query === 'object' ? options.query : null;
+    if (query) {
+        Object.entries(query).forEach(([key, value]) => {
+            if (value === undefined || value === null || value === '') {
+                return;
+            }
+            url.searchParams.set(String(key), String(value));
+        });
+    }
+
+    const { query: _query, ...requestOptions } = options;
+    return requestJson(`${url.pathname}${url.search}`, requestOptions);
+}
+
+export async function authRequestRaw(action, options = {}) {
+    const url = `/admin-auth.php?action=${encodeURIComponent(action)}`;
+    return requestJsonRaw(url, options);
 }
 
 export async function authRequest(action, options = {}) {

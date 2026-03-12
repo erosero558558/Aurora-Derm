@@ -6,6 +6,7 @@ import {
 } from '../../shared/modules/data.js';
 import { renderAppointmentsSection } from '../../sections/appointments.js';
 import { renderCallbacksSection } from '../../sections/callbacks.js';
+import { renderClinicalHistorySection } from '../../sections/clinical-history.js';
 import {
     renderAvailabilitySection,
     syncAvailabilityFromData,
@@ -32,6 +33,7 @@ export function refreshHeaderStatus() {
 export function renderAllSections() {
     renderAdminChrome(getState());
     renderDashboard(getState());
+    renderClinicalHistorySection();
     renderAppointmentsSection();
     renderCallbacksSection();
     renderReviewsSection();

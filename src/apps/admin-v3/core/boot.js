@@ -90,14 +90,14 @@ export async function bootAdminV3() {
         queueNumpadAction,
     });
 
-    const authenticated = await checkAuthStatus();
-    if (authenticated) {
+    const auth = await checkAuthStatus();
+    if (auth.authenticated) {
         await bootAuthenticatedUi();
         setActiveSection(getState().ui.activeSection);
     } else {
         showLoginView();
         hideCommandPalette();
-        primeLoginSurface();
+        primeLoginSurface(auth);
     }
 
     initQueueAutoRefresh();

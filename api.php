@@ -12,6 +12,8 @@ require_once __DIR__ . '/lib/figo_utils.php';
 require_once __DIR__ . '/lib/ApiConfig.php';
 require_once __DIR__ . '/lib/api_helpers.php';
 require_once __DIR__ . '/lib/ApiKernel.php';
+require_once __DIR__ . '/lib/clinical_history/bootstrap.php';
+require_once __DIR__ . '/lib/whatsapp_openclaw/bootstrap.php';
 
 // Router
 require_once __DIR__ . '/lib/Router.php';
@@ -35,7 +37,9 @@ require_once __DIR__ . '/controllers/OperatorAuthController.php';
 require_once __DIR__ . '/controllers/PushController.php';
 require_once __DIR__ . '/controllers/AnalyticsController.php';
 require_once __DIR__ . '/controllers/QueueController.php';
+require_once __DIR__ . '/controllers/ClinicalHistoryController.php';
 require_once __DIR__ . '/controllers/LeadAiController.php';
+require_once __DIR__ . '/controllers/WhatsappOpenclawController.php';
 
 // Instantiate and Handle
 $kernel = new ApiKernel();

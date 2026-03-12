@@ -3,9 +3,12 @@ import { hasFocusedInput, setText, createToast } from '../admin-v3/shared/ui/ren
 import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
 import {
     checkAuthStatus,
+    isOperatorAuthMode,
     loginWith2FA,
     loginWithPassword,
     logoutSession,
+    pollOperatorAuthStatus,
+    startOperatorAuth,
 } from '../admin-v3/shared/modules/auth.js';
 import { refreshAdminData, refreshStatusLabel } from '../admin-v3/shared/modules/data.js';
 import {
@@ -31,6 +34,7 @@ const OPERATOR_HEARTBEAT_MS = 15000;
 
 let refreshIntervalId = 0;
 let operatorHeartbeat = null;
+let operatorAuthPollPromise = null;
 const operatorRuntime = {
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
     numpadSeen: false,
@@ -129,20 +133,242 @@ function setLoginStatus(state, title, message) {
     if (messageNode) messageNode.textContent = message;
 }
 
+function setOperatorLoginMode(operatorMode) {
+    const operatorFlow = getById('operatorOpenClawFlow');
+    const legacyFields = getById('operatorLegacyLoginFields');
+
+    if (operatorFlow instanceof HTMLElement) {
+        operatorFlow.classList.toggle('is-hidden', !operatorMode);
+    }
+    if (legacyFields instanceof HTMLElement) {
+        legacyFields.classList.toggle('is-hidden', operatorMode);
+    }
+}
+
+function formatOperatorChallengeExpiry(challenge) {
+    const expiresAt = String(challenge?.expiresAt || '').trim();
+    if (expiresAt === '') {
+        return '';
+    }
+
+    const date = new Date(expiresAt);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return date.toLocaleTimeString('es-EC', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function resolveOperatorAuthCopy(auth) {
+    const status = String(auth?.status || 'anonymous').trim();
+    const helperOpened = auth?.helperUrlOpened === true;
+    const expiresAt = formatOperatorChallengeExpiry(auth?.challenge);
+
+    switch (status) {
+        case 'pending':
+            return {
+                tone: 'warning',
+                title: 'Esperando confirmación en OpenClaw',
+                message:
+                    'Completa el login de ChatGPT/OpenAI en la ventana abierta y el turnero se autenticará automáticamente.',
+                summary:
+                    'La misma sesión quedará disponible para operar el turnero sin usar clave local.',
+                primaryLabel: 'Volver a abrir OpenClaw',
+                helperMeta: expiresAt
+                    ? `El challenge actual expira a las ${expiresAt}.`
+                    : 'El challenge actual seguirá activo por unos minutos.',
+                showRetry: true,
+                showLinkHint: !helperOpened,
+            };
+        case 'openclaw_no_logueado':
+            return {
+                tone: 'warning',
+                title: 'OpenClaw necesita tu sesión',
+                message:
+                    auth?.error ||
+                    'OpenClaw no encontró un perfil OAuth válido en este equipo.',
+                summary:
+                    'Inicia sesión en OpenClaw con tu perfil autorizado y luego genera un nuevo enlace.',
+                primaryLabel: 'Abrir OpenClaw',
+                helperMeta:
+                    'Cuando OpenClaw tenga sesión activa, el siguiente challenge debería autenticarse sin pedir clave.',
+                showRetry: true,
+                showLinkHint: true,
+            };
+        case 'helper_no_disponible':
+            return {
+                tone: 'danger',
+                title: 'No se pudo completar el bridge',
+                message:
+                    auth?.error ||
+                    'El helper local de OpenClaw no respondió desde este equipo.',
+                summary:
+                    'Verifica que el bridge local siga vivo antes de volver a generar el challenge.',
+                primaryLabel: 'Abrir OpenClaw',
+                helperMeta:
+                    'Si el helper fue reiniciado, genera un challenge nuevo.',
+                showRetry: true,
+                showLinkHint: true,
+            };
+        case 'challenge_expirado':
+            return {
+                tone: 'warning',
+                title: 'El enlace expiró',
+                message:
+                    auth?.error ||
+                    'El challenge de OpenClaw expiró antes de completar la autenticación.',
+                summary:
+                    'Genera un nuevo enlace y termina el login sin cerrar esta pantalla.',
+                primaryLabel: 'Abrir OpenClaw',
+                helperMeta:
+                    'El nuevo challenge se abrirá en una ventana aparte para completar el acceso.',
+                showRetry: true,
+                showLinkHint: true,
+            };
+        case 'email_no_permitido':
+            return {
+                tone: 'danger',
+                title: 'Email no autorizado',
+                message:
+                    auth?.error ||
+                    'La cuenta autenticada en OpenClaw no está autorizada para operar este turnero.',
+                summary:
+                    'Cierra esa sesión en OpenClaw y vuelve a intentar con un correo permitido.',
+                primaryLabel: 'Abrir OpenClaw',
+                helperMeta:
+                    'El próximo intento usará un challenge nuevo para otro perfil.',
+                showRetry: true,
+                showLinkHint: true,
+            };
+        case 'operator_auth_not_configured':
+            return {
+                tone: 'danger',
+                title: 'OpenClaw no está configurado',
+                message:
+                    auth?.error ||
+                    'Falta configuración del bridge local para completar el acceso.',
+                summary:
+                    'Corrige la configuración antes de volver a generar un enlace.',
+                primaryLabel: 'Reintentar',
+                helperMeta:
+                    'Cuando la configuración vuelva a estar disponible, podrás crear un challenge nuevo.',
+                showRetry: true,
+                showLinkHint: false,
+            };
+        default:
+            return {
+                tone: 'neutral',
+                title: 'Acceso protegido',
+                message:
+                    'Abre OpenClaw para validar la sesión del turnero sin usar una clave local.',
+                summary:
+                    'La sesión quedará compartida con el panel administrativo.',
+                primaryLabel: 'Abrir OpenClaw',
+                helperMeta:
+                    'Si el navegador bloquea la ventana, podrás usar el enlace manual.',
+                showRetry: false,
+                showLinkHint: true,
+            };
+    }
+}
+
+function syncOperatorLoginSurface(auth = getState().auth) {
+    const operatorMode = isOperatorAuthMode(auth);
+    const openButton = getById('operatorOpenClawBtn');
+    const retryButton = getById('operatorOpenClawRetryBtn');
+    const summaryNode = getById('operatorOpenClawSummary');
+    const helperMeta = getById('operatorOpenClawHelperMeta');
+    const helperLink = getById('operatorOpenClawHelperLink');
+    const helperLinkRow = getById('operatorOpenClawLinkRow');
+    const manualRow = getById('operatorOpenClawManualRow');
+    const manualCode = getById('operatorOpenClawManualCode');
+
+    setOperatorLoginMode(operatorMode);
+
+    if (!operatorMode) {
+        setLoginStatus(
+            auth.requires2FA ? 'warning' : 'neutral',
+            auth.requires2FA ? 'Código 2FA requerido' : 'Acceso protegido',
+            auth.requires2FA
+                ? 'La contraseña fue validada. Ingresa ahora el código de seis dígitos.'
+                : 'Inicia sesión para abrir la consola operativa del turnero.'
+        );
+        return;
+    }
+
+    show2FA(false);
+    resetLoginForm();
+
+    const copy = resolveOperatorAuthCopy(auth);
+    const challenge = auth?.challenge || null;
+    const helperUrl = String(challenge?.helperUrl || '').trim();
+    const manualValue = String(challenge?.manualCode || '').trim();
+
+    setLoginStatus(copy.tone, copy.title, copy.message);
+
+    if (summaryNode) {
+        summaryNode.textContent = copy.summary;
+    }
+    if (helperMeta) {
+        helperMeta.textContent = copy.helperMeta;
+    }
+    if (openButton instanceof HTMLButtonElement) {
+        openButton.dataset.idleLabel = copy.primaryLabel;
+        openButton.textContent = copy.primaryLabel;
+    }
+    if (retryButton instanceof HTMLButtonElement) {
+        retryButton.classList.toggle('is-hidden', !copy.showRetry);
+    }
+    if (helperLink instanceof HTMLAnchorElement) {
+        helperLink.href = helperUrl || '#';
+    }
+    if (helperLinkRow instanceof HTMLElement) {
+        helperLinkRow.classList.toggle(
+            'is-hidden',
+            helperUrl === '' && !copy.showLinkHint
+        );
+        if (helperUrl === '' && copy.showLinkHint) {
+            helperLinkRow.classList.remove('is-hidden');
+        }
+    }
+    if (manualCode) {
+        manualCode.textContent = manualValue;
+    }
+    if (manualRow instanceof HTMLElement) {
+        manualRow.classList.toggle('is-hidden', manualValue === '');
+    }
+}
+
 function setSubmitting(submitting) {
     const loginButton = getById('operatorLoginBtn');
     const passwordInput = getById('operatorPassword');
     const codeInput = getById('operator2FACode');
+    const openClawButton = getById('operatorOpenClawBtn');
+    const retryClawButton = getById('operatorOpenClawRetryBtn');
+    const operatorMode = isOperatorAuthMode(getState().auth);
 
     if (loginButton instanceof HTMLButtonElement) {
         loginButton.disabled = submitting;
         loginButton.textContent = submitting ? 'Validando...' : 'Ingresar';
     }
     if (passwordInput instanceof HTMLInputElement) {
-        passwordInput.disabled = submitting;
+        passwordInput.disabled = submitting || operatorMode;
     }
     if (codeInput instanceof HTMLInputElement) {
-        codeInput.disabled = submitting;
+        codeInput.disabled = submitting || operatorMode;
+    }
+    if (openClawButton instanceof HTMLButtonElement) {
+        const idleLabel = String(
+            openClawButton.dataset.idleLabel || 'Abrir OpenClaw'
+        );
+        openClawButton.disabled = submitting;
+        openClawButton.textContent = submitting ? 'Preparando...' : idleLabel;
+    }
+    if (retryClawButton instanceof HTMLButtonElement) {
+        retryClawButton.disabled = submitting;
     }
 }
 
@@ -169,9 +395,17 @@ function resetLoginForm({ clearPassword = false } = {}) {
 }
 
 function focusLoginField(target = 'password') {
-    const id = target === '2fa' ? 'operator2FACode' : 'operatorPassword';
+    const id =
+        target === '2fa'
+            ? 'operator2FACode'
+            : target === 'operator_auth'
+              ? 'operatorOpenClawBtn'
+              : 'operatorPassword';
     const input = getById(id);
-    if (input instanceof HTMLInputElement) {
+    if (
+        input instanceof HTMLInputElement ||
+        input instanceof HTMLButtonElement
+    ) {
         window.setTimeout(() => input.focus(), 20);
     }
 }
@@ -386,8 +620,109 @@ async function bootAuthenticatedSurface(showToast = false) {
     }
 }
 
+function ensureOperatorAuthPolling() {
+    const auth = getState().auth;
+    if (
+        operatorAuthPollPromise ||
+        !isOperatorAuthMode(auth) ||
+        auth.authenticated ||
+        String(auth.status || '') !== 'pending'
+    ) {
+        return operatorAuthPollPromise;
+    }
+
+    operatorAuthPollPromise = pollOperatorAuthStatus({
+        onUpdate: (snapshot) => {
+            syncOperatorLoginSurface(snapshot);
+        },
+    })
+        .then(async (snapshot) => {
+            operatorAuthPollPromise = null;
+            syncOperatorLoginSurface(snapshot);
+            if (snapshot.authenticated) {
+                await bootAuthenticatedSurface(true);
+            }
+            return snapshot;
+        })
+        .catch((error) => {
+            operatorAuthPollPromise = null;
+            setLoginStatus(
+                'danger',
+                'No se pudo iniciar sesión',
+                error?.message ||
+                    'No se pudo consultar el estado del login OpenClaw.'
+            );
+            createToast(
+                error?.message ||
+                    'No se pudo consultar el estado de OpenClaw',
+                'error'
+            );
+            return getState().auth;
+        });
+
+    return operatorAuthPollPromise;
+}
+
+async function startOperatorAuthFlow(forceNew = false) {
+    try {
+        setSubmitting(true);
+        setLoginStatus(
+            'neutral',
+            forceNew ? 'Generando nuevo enlace' : 'Abriendo OpenClaw',
+            'Preparando el challenge local para validar la sesión del turnero.'
+        );
+
+        const snapshot = await startOperatorAuth({
+            forceNew,
+            openHelper: true,
+        });
+        syncOperatorLoginSurface(snapshot);
+
+        if (snapshot.authenticated) {
+            await bootAuthenticatedSurface(true);
+            return snapshot;
+        }
+
+        if (String(snapshot.status || '') === 'pending') {
+            createToast(
+                snapshot.helperUrlOpened
+                    ? 'OpenClaw listo para confirmar'
+                    : 'Usa el enlace manual de OpenClaw si la ventana no se abrió',
+                snapshot.helperUrlOpened ? 'info' : 'warning'
+            );
+            void ensureOperatorAuthPolling();
+            return snapshot;
+        }
+
+        createToast(
+            snapshot.error || 'No se pudo iniciar el flujo OpenClaw',
+            'warning'
+        );
+        return snapshot;
+    } catch (error) {
+        setLoginStatus(
+            'danger',
+            'No se pudo iniciar sesión',
+            error?.message ||
+                'No se pudo abrir el flujo OpenClaw para este turnero.'
+        );
+        createToast(
+            error?.message || 'No se pudo abrir el flujo OpenClaw',
+            'error'
+        );
+        return getState().auth;
+    } finally {
+        setSubmitting(false);
+    }
+}
+
 async function handleLoginSubmit(event) {
     event.preventDefault();
+
+    if (isOperatorAuthMode(getState().auth)) {
+        await startOperatorAuthFlow(false);
+        return;
+    }
 
     const passwordInput = getById('operatorPassword');
     const codeInput = getById('operator2FACode');
@@ -465,7 +800,7 @@ async function handleDocumentClick(event) {
     const actionNode =
         event.target instanceof Element
             ? event.target.closest(
-                  '[data-action], #operatorLogoutBtn, #operatorReset2FABtn, #operatorAppSettingsBtn'
+                  '[data-action], #operatorLogoutBtn, #operatorReset2FABtn, #operatorAppSettingsBtn, #operatorOpenClawBtn, #operatorOpenClawRetryBtn'
               )
             : null;
 
@@ -481,13 +816,11 @@ async function handleDocumentClick(event) {
         mountLoggedOutView();
         resetLoginForm({ clearPassword: true });
         show2FA(false);
-        setLoginStatus(
-            'neutral',
-            'Sesión cerrada',
-            'Ingresa de nuevo para operar el turnero.'
-        );
+        syncOperatorLoginSurface(getState().auth);
         createToast('Sesión cerrada', 'info');
-        focusLoginField('password');
+        focusLoginField(
+            isOperatorAuthMode(getState().auth) ? 'operator_auth' : 'password'
+        );
         return;
     }
 
@@ -506,6 +839,18 @@ async function handleDocumentClick(event) {
     if (actionNode.id === 'operatorReset2FABtn') {
         event.preventDefault();
         resetTwoFactorStage();
+        return;
+    }
+
+    if (actionNode.id === 'operatorOpenClawBtn') {
+        event.preventDefault();
+        await startOperatorAuthFlow(false);
+        return;
+    }
+
+    if (actionNode.id === 'operatorOpenClawRetryBtn') {
+        event.preventDefault();
+        await startOperatorAuthFlow(true);
         return;
     }
 
@@ -624,20 +969,18 @@ async function boot() {
         });
     }
 
-    const authenticated = await checkAuthStatus();
-    if (authenticated) {
+    const auth = await checkAuthStatus();
+    if (auth.authenticated) {
         await bootAuthenticatedSurface();
         return;
     }
 
     mountLoggedOutView();
-    show2FA(false);
-    setLoginStatus(
-        'neutral',
-        'Acceso protegido',
-        'Inicia sesión para abrir la consola operativa del turnero.'
-    );
-    focusLoginField('password');
+    syncOperatorLoginSurface(auth);
+    focusLoginField(isOperatorAuthMode(auth) ? 'operator_auth' : 'password');
+    if (isOperatorAuthMode(auth) && String(auth.status || '') === 'pending') {
+        void ensureOperatorAuthPolling();
+    }
 }
 
 if (document.readyState === 'loading') {

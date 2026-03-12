@@ -114,6 +114,33 @@
 // En produccion, recomendado desactivar fallback local silencioso
 // putenv('FIGO_ALLOW_LOCAL_FALLBACK=false');
 
+// -- WhatsApp OpenClaw backend -----------------------------------------------
+// Habilita la orquestacion backend para inbound/outbox/ack del bridge WhatsApp.
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_ENABLED=true');
+// Modos: dry_run | live_allowlist | live
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_MODE=dry_run');
+// Lista blanca opcional para mutaciones reales cuando el modo es live_allowlist.
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_ALLOWLIST=593999000111,593999000222');
+// Token compartido entre el bridge local y el servidor.
+// putenv('PIELARMONIA_WHATSAPP_BRIDGE_TOKEN=token_whatsapp_bridge_largo_rotado');
+// Header/prefijo usados por el bridge hacia inbound/outbox/ack.
+// putenv('PIELARMONIA_WHATSAPP_BRIDGE_TOKEN_HEADER=Authorization');
+// putenv('PIELARMONIA_WHATSAPP_BRIDGE_TOKEN_PREFIX=Bearer');
+// Segundos antes de marcar el bridge como offline en health.
+// putenv('PIELARMONIA_WHATSAPP_BRIDGE_STALE_AFTER_SECONDS=600');
+// TTL de holds por metodo de pago.
+// putenv('PIELARMONIA_WHATSAPP_SLOT_HOLD_TTL_CARD_SEC=600');
+// putenv('PIELARMONIA_WHATSAPP_SLOT_HOLD_TTL_TRANSFER_SEC=300');
+// Overrides opcionales de gateway/modelo para el planner conversacional.
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_GATEWAY_ENDPOINT=http://127.0.0.1:4141/v1/responses');
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_GATEWAY_API_KEY=REEMPLAZAR_TOKEN_OPENCLAW');
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_MODEL=openclaw:main');
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_GATEWAY_KEY_HEADER=Authorization');
+// putenv('PIELARMONIA_WHATSAPP_OPENCLAW_GATEWAY_KEY_PREFIX=Bearer');
+// URLs usadas al sugerir checkout/pago desde el flujo WhatsApp.
+// putenv('PIELARMONIA_WHATSAPP_PAYMENT_SUCCESS_URL=https://pielarmonia.com/gracias');
+// putenv('PIELARMONIA_WHATSAPP_PAYMENT_CANCEL_URL=https://pielarmonia.com/reservar');
+
 // -- Operator auth (OpenClaw + ChatGPT/OpenAI OAuth) --------------------------
 // Habilita el flujo canonico de autenticacion del operador.
 // putenv('PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt');

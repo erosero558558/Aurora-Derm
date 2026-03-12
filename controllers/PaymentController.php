@@ -5,6 +5,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/storage.php';
 require_once __DIR__ . '/../lib/telemedicine/LegacyTelemedicineBridge.php';
 require_once __DIR__ . '/../lib/telemedicine/ClinicalMediaService.php';
+$whatsappOpenclawBootstrap = __DIR__ . '/../lib/whatsapp_openclaw/bootstrap.php';
+if (is_file($whatsappOpenclawBootstrap)) {
+    require_once $whatsappOpenclawBootstrap;
+}
 
 class PaymentController
 {
@@ -343,8 +347,8 @@ class PaymentController
             json_response(['ok' => false, 'error' => 'Webhook no configurado'], 503);
         }
 
-        $rawBody = file_get_contents('php://input');
-        if (!is_string($rawBody) || $rawBody === '') {
+        $rawBody = self::readWebhookRawBody();
+        if ($rawBody === '') {
             json_response(['ok' => false, 'error' => 'Cuerpo vacio'], 400);
         }
 
@@ -362,6 +366,16 @@ class PaymentController
 
         $eventType = (string) ($event['type'] ?? '');
         audit_log_event('stripe.webhook_received', ['type' => $eventType]);
+
+        if ($eventType === 'checkout.session.completed') {
+            $sessionData = isset($event['data']['object']) && is_array($event['data']['object']) ? $event['data']['object'] : [];
+            self::handleWhatsappCheckoutCompleted($sessionData);
+        }
+
+        if ($eventType === 'checkout.session.expired') {
+            $sessionData = isset($event['data']['object']) && is_array($event['data']['object']) ? $event['data']['object'] : [];
+            self::handleWhatsappCheckoutExpired($sessionData);
+        }
 
         if ($eventType === 'payment_intent.succeeded') {
             $intentData = isset($event['data']['object']) && is_array($event['data']['object']) ? $event['data']['object'] : [];
@@ -415,6 +429,81 @@ class PaymentController
         }
 
         json_response(['ok' => true, 'received' => true]);
+    }
+
+    private static function readWebhookRawBody(): string
+    {
+        if (defined('TESTING_ENV') && isset($GLOBALS['__TEST_RAW_BODY']) && is_string($GLOBALS['__TEST_RAW_BODY'])) {
+            return $GLOBALS['__TEST_RAW_BODY'];
+        }
+
+        $rawBody = file_get_contents('php://input');
+        return is_string($rawBody) ? $rawBody : '';
+    }
+
+    private static function handleWhatsappCheckoutCompleted(array $session): void
+    {
+        if (!self::isWhatsappOpenclawSession($session) || !function_exists('whatsapp_openclaw_orchestrator')) {
+            return;
+        }
+
+        $result = with_store_lock(static function () use ($session): array {
+            $store = read_store();
+            $outcome = whatsapp_openclaw_orchestrator()->finalizeCardCheckout($store, $session);
+            if (($outcome['storeDirty'] ?? false) === true && isset($outcome['store']) && is_array($outcome['store'])) {
+                write_store($outcome['store'], false);
+            }
+            return $outcome;
+        });
+
+        if (($result['ok'] ?? false) !== true) {
+            audit_log_event('whatsapp_openclaw.checkout_completed_lock_failed', [
+                'error' => (string) ($result['error'] ?? 'unknown'),
+            ]);
+            return;
+        }
+
+        $outcome = is_array($result['result'] ?? null) ? $result['result'] : [];
+        if (($outcome['ignored'] ?? false) === true) {
+            return;
+        }
+
+        audit_log_event('whatsapp_openclaw.checkout_completed', [
+            'sessionId' => (string) ($session['id'] ?? ''),
+            'paymentIntentId' => (string) ($session['payment_intent'] ?? ''),
+            'status' => (string) ($outcome['status'] ?? ''),
+            'appointmentId' => (int) ($outcome['appointmentId'] ?? 0),
+            'error' => (string) ($outcome['error'] ?? ''),
+        ]);
+    }
+
+    private static function handleWhatsappCheckoutExpired(array $session): void
+    {
+        if (!self::isWhatsappOpenclawSession($session) || !function_exists('whatsapp_openclaw_orchestrator')) {
+            return;
+        }
+
+        $result = with_store_lock(static function () use ($session): array {
+            $store = read_store();
+            return whatsapp_openclaw_orchestrator()->expireCardCheckout($store, $session);
+        });
+
+        if (($result['ok'] ?? false) !== true) {
+            audit_log_event('whatsapp_openclaw.checkout_expired_lock_failed', [
+                'error' => (string) ($result['error'] ?? 'unknown'),
+            ]);
+            return;
+        }
+
+        audit_log_event('whatsapp_openclaw.checkout_expired', [
+            'sessionId' => (string) ($session['id'] ?? ''),
+        ]);
+    }
+
+    private static function isWhatsappOpenclawSession(array $session): bool
+    {
+        $metadata = isset($session['metadata']) && is_array($session['metadata']) ? $session['metadata'] : [];
+        return strtolower(trim((string) ($metadata['source'] ?? ''))) === 'whatsapp_openclaw';
     }
 
     private static function getConfiguredSlotsForDate(array $store, string $date): array

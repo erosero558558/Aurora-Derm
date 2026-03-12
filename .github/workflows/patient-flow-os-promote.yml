@@ -1,0 +1,485 @@
+name: Patient Flow OS Promote
+
+on:
+    workflow_dispatch:
+        inputs:
+            source_run_id:
+                description: 'GitHub Actions run id del cutover staging ya aprobado'
+                required: true
+                type: string
+            promotion_packet_path:
+                description: 'Ruta dentro del artifact post-cutover hacia promotion-packet.json'
+                required: true
+                default: 'promotion-packet.json'
+                type: string
+            source_cutover_artifact_name:
+                description: 'Nombre del artifact staging con before/after/report/input bundle'
+                required: true
+                default: 'patient-flow-os-cutover-artifacts'
+                type: string
+            source_post_cutover_artifact_name:
+                description: 'Nombre del artifact staging con post-cutover smoke y promotion packet'
+                required: true
+                default: 'patient-flow-os-post-cutover-artifacts'
+                type: string
+            confirm_production_cutover:
+                description: 'Confirmar explícitamente que se ejecutará el cutover en producción'
+                required: false
+                default: false
+                type: boolean
+
+permissions:
+    contents: read
+    actions: read
+
+concurrency:
+    group: patient-flow-os-production-promotion-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    prepare-promotion:
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id }}
+            PROMOTION_PACKET_PATH_INPUT: ${{ github.event.inputs.promotion_packet_path }}
+            SOURCE_CUTOVER_ARTIFACT_NAME: ${{ github.event.inputs.source_cutover_artifact_name || 'patient-flow-os-cutover-artifacts' }}
+            SOURCE_POST_CUTOVER_ARTIFACT_NAME: ${{ github.event.inputs.source_post_cutover_artifact_name || 'patient-flow-os-post-cutover-artifacts' }}
+            SOURCE_CUTOVER_DOWNLOAD_ROOT: ${{ github.workspace }}/verification/patient-flow-os-source-cutover
+            SOURCE_POST_CUTOVER_DOWNLOAD_ROOT: ${{ github.workspace }}/verification/patient-flow-os-source-post-cutover
+            PREPARED_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-promotion-source
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validar inputs de promoción
+              run: |
+                  set -euo pipefail
+                  if [ -z "${SOURCE_RUN_ID}" ]; then
+                    echo "::error::source_run_id es obligatorio."
+                    exit 1
+                  fi
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Build Patient Flow OS
+              run: npm run build
+
+            - name: Descargar artifacts de cutover staging
+              uses: actions/download-artifact@v4
+              with:
+                  name: ${{ env.SOURCE_CUTOVER_ARTIFACT_NAME }}
+                  path: verification/patient-flow-os-source-cutover
+                  repository: ${{ github.repository }}
+                  run-id: ${{ github.event.inputs.source_run_id }}
+                  github-token: ${{ github.token }}
+
+            - name: Descargar artifacts post-cutover staging
+              uses: actions/download-artifact@v4
+              with:
+                  name: ${{ env.SOURCE_POST_CUTOVER_ARTIFACT_NAME }}
+                  path: verification/patient-flow-os-source-post-cutover
+                  repository: ${{ github.repository }}
+                  run-id: ${{ github.event.inputs.source_run_id }}
+                  github-token: ${{ github.token }}
+
+            - name: Localizar packet y evidencia staging
+              id: locate
+              run: |
+                  set -euo pipefail
+
+                  PACKET_NAME="$(basename "${PROMOTION_PACKET_PATH_INPUT}")"
+                  PROMOTION_PACKET_PATH="$(find "${SOURCE_POST_CUTOVER_DOWNLOAD_ROOT}" -path "*${PROMOTION_PACKET_PATH_INPUT}" -o -name "${PACKET_NAME}" | head -n 1)"
+                  if [ -z "${PROMOTION_PACKET_PATH}" ]; then
+                    echo "::error::No se encontró ${PROMOTION_PACKET_PATH_INPUT} dentro del artifact post-cutover."
+                    exit 1
+                  fi
+
+                  INPUT_BUNDLE_PATH="$(find "${SOURCE_CUTOVER_DOWNLOAD_ROOT}" -name input-openclaw-bundle.json | head -n 1)"
+                  WORKFLOW_MANIFEST_PATH="$(find "${SOURCE_CUTOVER_DOWNLOAD_ROOT}" -name workflow-manifest.json | head -n 1)"
+                  REPORT_PATH="$(find "${SOURCE_CUTOVER_DOWNLOAD_ROOT}" -name report.json | head -n 1)"
+                  APPROVAL_PATH="$(find "${SOURCE_CUTOVER_DOWNLOAD_ROOT}" -name approval-contract.json | head -n 1)"
+                  POST_SMOKE_PATH="$(find "${SOURCE_POST_CUTOVER_DOWNLOAD_ROOT}" -name post-cutover-smoke.json | head -n 1)"
+                  POST_INSPECT_PATH="$(find "${SOURCE_POST_CUTOVER_DOWNLOAD_ROOT}" -name post-cutover-inspect.json | head -n 1)"
+                  PROMOTION_CHECKLIST_PATH="$(find "${SOURCE_POST_CUTOVER_DOWNLOAD_ROOT}" -name promotion-checklist.json | head -n 1)"
+
+                  for required_path in \
+                    "${INPUT_BUNDLE_PATH}" \
+                    "${WORKFLOW_MANIFEST_PATH}" \
+                    "${REPORT_PATH}" \
+                    "${APPROVAL_PATH}" \
+                    "${POST_SMOKE_PATH}" \
+                    "${POST_INSPECT_PATH}" \
+                    "${PROMOTION_CHECKLIST_PATH}"; do
+                    if [ -z "${required_path}" ]; then
+                      echo "::error::Falta evidencia staging requerida para la promoción."
+                      exit 1
+                    fi
+                  done
+
+                  mkdir -p "${PREPARED_ARTIFACT_ROOT}"
+
+                  echo "promotion_packet_path=${PROMOTION_PACKET_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "input_bundle_path=${INPUT_BUNDLE_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "workflow_manifest_path=${WORKFLOW_MANIFEST_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "report_path=${REPORT_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "approval_path=${APPROVAL_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "post_smoke_path=${POST_SMOKE_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "post_inspect_path=${POST_INSPECT_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "promotion_checklist_path=${PROMOTION_CHECKLIST_PATH}" >> "${GITHUB_OUTPUT}"
+
+            - name: Verificar promotion packet staging
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-promotion-packet \
+                    --input "${{ steps.locate.outputs.promotion_packet_path }}" \
+                    --source-environment staging \
+                    --target-environment production \
+                    --json \
+                    > "${PREPARED_ARTIFACT_ROOT}/source-promotion-verification.json"
+
+            - name: Construir manifest de source promotion
+              run: |
+                  set -euo pipefail
+                  cp "${{ steps.locate.outputs.promotion_packet_path }}" "${PREPARED_ARTIFACT_ROOT}/source-promotion-packet.json"
+                  cp "${{ steps.locate.outputs.input_bundle_path }}" "${PREPARED_ARTIFACT_ROOT}/input-openclaw-bundle.json"
+                  cp "${{ steps.locate.outputs.workflow_manifest_path }}" "${PREPARED_ARTIFACT_ROOT}/source-workflow-manifest.json"
+                  cp "${{ steps.locate.outputs.report_path }}" "${PREPARED_ARTIFACT_ROOT}/source-report.json"
+                  cp "${{ steps.locate.outputs.approval_path }}" "${PREPARED_ARTIFACT_ROOT}/source-approval-contract.json"
+                  cp "${{ steps.locate.outputs.post_smoke_path }}" "${PREPARED_ARTIFACT_ROOT}/source-post-cutover-smoke.json"
+                  cp "${{ steps.locate.outputs.post_inspect_path }}" "${PREPARED_ARTIFACT_ROOT}/source-post-cutover-inspect.json"
+                  cp "${{ steps.locate.outputs.promotion_checklist_path }}" "${PREPARED_ARTIFACT_ROOT}/source-promotion-checklist.json"
+
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  const outDir = process.env.PREPARED_ARTIFACT_ROOT;
+                  const packet = JSON.parse(fs.readFileSync(path.join(outDir, 'source-promotion-packet.json'), 'utf8'));
+                  const manifest = {
+                    generatedAt: new Date().toISOString(),
+                    sourceRunId: process.env.SOURCE_RUN_ID,
+                    sourceEnvironment: 'staging',
+                    targetEnvironment: 'production',
+                    cutoverMode: packet.cutoverMode || 'merge',
+                    sourceCutoverArtifactName: process.env.SOURCE_CUTOVER_ARTIFACT_NAME,
+                    sourcePostCutoverArtifactName: process.env.SOURCE_POST_CUTOVER_ARTIFACT_NAME,
+                    files: {
+                      promotionPacket: 'source-promotion-packet.json',
+                      promotionChecklist: 'source-promotion-checklist.json',
+                      promotionVerification: 'source-promotion-verification.json',
+                      inputBundle: 'input-openclaw-bundle.json',
+                      workflowManifest: 'source-workflow-manifest.json',
+                      report: 'source-report.json',
+                      approvalContract: 'source-approval-contract.json',
+                      postCutoverSmoke: 'source-post-cutover-smoke.json',
+                      postCutoverInspect: 'source-post-cutover-inspect.json'
+                    }
+                  };
+                  fs.writeFileSync(
+                    path.join(outDir, 'promotion-source-manifest.json'),
+                    `${JSON.stringify(manifest, null, 2)}\n`
+                  );
+                  NODE
+
+            - name: Publicar artifact promotion source
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-promotion-source
+                  path: verification/patient-flow-os-promotion-source/
+                  if-no-files-found: error
+                  retention-days: 14
+
+            - name: Resumen de preparación
+              if: ${{ always() }}
+              env:
+                  PROMOTION_PACKET_JSON: ${{ env.PREPARED_ARTIFACT_ROOT }}/source-promotion-packet.json
+                  PROMOTION_VERIFICATION_JSON: ${{ env.PREPARED_ARTIFACT_ROOT }}/source-promotion-verification.json
+                  PROMOTION_SOURCE_MANIFEST_JSON: ${{ env.PREPARED_ARTIFACT_ROOT }}/promotion-source-manifest.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS Promotion Prepare', ''];
+                  lines.push(`- Source run id: \`${process.env.SOURCE_RUN_ID || 'n/a'}\``);
+
+                  if (process.env.PROMOTION_PACKET_JSON && fs.existsSync(process.env.PROMOTION_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.PROMOTION_PACKET_JSON, 'utf8'));
+                    lines.push(`- Source environment: \`${packet.sourceEnvironment || 'n/a'}\``);
+                    lines.push(`- Recommended next environment: \`${packet.recommendedNextEnvironment || 'n/a'}\``);
+                    lines.push(`- Packet ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                  }
+
+                  if (process.env.PROMOTION_VERIFICATION_JSON && fs.existsSync(process.env.PROMOTION_VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.PROMOTION_VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Promotion verification: \`${verification?.promotionVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  if (process.env.PROMOTION_SOURCE_MANIFEST_JSON && fs.existsSync(process.env.PROMOTION_SOURCE_MANIFEST_JSON)) {
+                    const manifest = JSON.parse(fs.readFileSync(process.env.PROMOTION_SOURCE_MANIFEST_JSON, 'utf8'));
+                    lines.push(`- Cutover mode to replay in production: \`${manifest.cutoverMode || 'merge'}\``);
+                    lines.push(`- Promotion source artifact: \`patient-flow-os-promotion-source\``);
+                    lines.push('- Source evidence files: `source-promotion-packet.json`, `source-promotion-checklist.json`, `source-promotion-verification.json`');
+                  }
+
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE
+
+    promote-production:
+        needs: prepare-promotion
+        runs-on: ubuntu-latest
+        timeout-minutes: 35
+        environment:
+            name: patient-flow-os-production
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            DATABASE_URL: ${{ secrets.PATIENT_FLOW_OS_DATABASE_URL }}
+            CONFIRM_PRODUCTION_CUTOVER: ${{ github.event.inputs.confirm_production_cutover || 'false' }}
+            PRODUCTION_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-production-promotion
+            PROMOTION_SOURCE_ROOT: ${{ github.workspace }}/verification/patient-flow-os-promotion-source
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validar confirmación y secreto de producción
+              run: |
+                  set -euo pipefail
+                  if [ "${CONFIRM_PRODUCTION_CUTOVER}" != "true" ]; then
+                    echo "::error::confirm_production_cutover=true es obligatorio para mutar producción."
+                    exit 1
+                  fi
+                  if [ -z "${DATABASE_URL}" ]; then
+                    echo "::error::Falta el secret PATIENT_FLOW_OS_DATABASE_URL en patient-flow-os-production."
+                    exit 1
+                  fi
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Build Patient Flow OS
+              run: npm run build
+
+            - name: Descargar artifact promotion source
+              uses: actions/download-artifact@v4
+              with:
+                  name: patient-flow-os-promotion-source
+                  path: verification/patient-flow-os-promotion-source
+
+            - name: Localizar manifest y bundle fuente
+              id: locate_source
+              run: |
+                  set -euo pipefail
+
+                  SOURCE_MANIFEST_PATH="$(find "${PROMOTION_SOURCE_ROOT}" -name promotion-source-manifest.json | head -n 1)"
+                  INPUT_BUNDLE_PATH="$(find "${PROMOTION_SOURCE_ROOT}" -name input-openclaw-bundle.json | head -n 1)"
+                  SOURCE_PACKET_PATH="$(find "${PROMOTION_SOURCE_ROOT}" -name source-promotion-packet.json | head -n 1)"
+                  SOURCE_VERIFICATION_PATH="$(find "${PROMOTION_SOURCE_ROOT}" -name source-promotion-verification.json | head -n 1)"
+                  if [ -z "${SOURCE_MANIFEST_PATH}" ] || [ -z "${INPUT_BUNDLE_PATH}" ] || [ -z "${SOURCE_PACKET_PATH}" ] || [ -z "${SOURCE_VERIFICATION_PATH}" ]; then
+                    echo "::error::Falta promotion-source-manifest.json o evidencia fuente."
+                    exit 1
+                  fi
+
+                  mkdir -p "${PRODUCTION_ARTIFACT_ROOT}"
+
+                  echo "source_manifest_path=${SOURCE_MANIFEST_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "input_bundle_path=${INPUT_BUNDLE_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "source_packet_path=${SOURCE_PACKET_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "source_verification_path=${SOURCE_VERIFICATION_PATH}" >> "${GITHUB_OUTPUT}"
+
+            - name: Smoke preflight producción
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- smoke --json > "${PRODUCTION_ARTIFACT_ROOT}/preflight-smoke.json"
+
+            - name: Ejecutar cutover en producción
+              run: |
+                  set -euo pipefail
+                  CUTOVER_MODE="$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(data.cutoverMode || 'merge'));" "${{ steps.locate_source.outputs.source_manifest_path }}")"
+                  EXTRA_ARGS=()
+                  if [ "${CUTOVER_MODE}" = "replace" ]; then
+                    EXTRA_ARGS+=(--allow-destructive)
+                  fi
+
+                  npm run cutover -- cutover-openclaw \
+                    --input "${{ steps.locate_source.outputs.input_bundle_path }}" \
+                    --artifacts-dir "${PRODUCTION_ARTIFACT_ROOT}" \
+                    --mode "${CUTOVER_MODE}" \
+                    "${EXTRA_ARGS[@]}" \
+                    --json \
+                    > "${PRODUCTION_ARTIFACT_ROOT}/cutover-result.json" \
+                    2> "${PRODUCTION_ARTIFACT_ROOT}/cutover-stderr.log"
+
+            - name: Verificar report de producción
+              run: |
+                  set -euo pipefail
+                  REPORT_PATH="$(node -e "const fs = require('fs'); const file = process.argv[1]; const fallback = process.argv[2]; const data = JSON.parse(fs.readFileSync(file, 'utf8')); process.stdout.write(String(data.artifacts?.reportPath || fallback));" "${PRODUCTION_ARTIFACT_ROOT}/cutover-result.json" "${PRODUCTION_ARTIFACT_ROOT}/report.json")"
+                  npm run cutover -- verify-report --input "${REPORT_PATH}" --json > "${PRODUCTION_ARTIFACT_ROOT}/approval-contract.json"
+                  echo "REPORT_PATH=${REPORT_PATH}" >> "${GITHUB_ENV}"
+
+            - name: Smoke post-cutover producción
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- smoke --json > "${PRODUCTION_ARTIFACT_ROOT}/post-cutover-smoke.json"
+                  npm run cutover -- inspect --json > "${PRODUCTION_ARTIFACT_ROOT}/post-cutover-inspect.json"
+
+            - name: Escribir workflow manifest de producción
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  const artifactRoot = process.env.PRODUCTION_ARTIFACT_ROOT;
+                  const cutoverResult = JSON.parse(fs.readFileSync(path.join(artifactRoot, 'cutover-result.json'), 'utf8'));
+                  const manifest = {
+                    generatedAt: new Date().toISOString(),
+                    targetEnvironment: 'production',
+                    cutoverMode: cutoverResult.mode || 'merge',
+                    runPostCutoverSmoke: 'true',
+                    preflightSmokePath: path.join(artifactRoot, 'preflight-smoke.json'),
+                    cutoverResultPath: path.join(artifactRoot, 'cutover-result.json'),
+                    cutoverStderrPath: path.join(artifactRoot, 'cutover-stderr.log'),
+                    approvalContractPath: path.join(artifactRoot, 'approval-contract.json'),
+                    reportPath: process.env.REPORT_PATH || path.join(artifactRoot, 'report.json')
+                  };
+                  fs.writeFileSync(
+                    path.join(artifactRoot, 'workflow-manifest.json'),
+                    `${JSON.stringify(manifest, null, 2)}\n`
+                  );
+                  NODE
+
+            - name: Construir promotion packet final de producción
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- promotion-packet \
+                    --input "${PRODUCTION_ARTIFACT_ROOT}/workflow-manifest.json" \
+                    --artifacts-dir "${PRODUCTION_ARTIFACT_ROOT}" \
+                    --post-smoke "${PRODUCTION_ARTIFACT_ROOT}/post-cutover-smoke.json" \
+                    --post-inspect "${PRODUCTION_ARTIFACT_ROOT}/post-cutover-inspect.json" \
+                    --target-environment production \
+                    --label "patient-flow-os-production-cutover" \
+                    --json \
+                    > "${PRODUCTION_ARTIFACT_ROOT}/promotion-packet-command.json"
+
+            - name: Verificar packet final de producción
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-promotion-packet \
+                    --input "${PRODUCTION_ARTIFACT_ROOT}/promotion-packet.json" \
+                    --source-environment production \
+                    --target-environment completed \
+                    --json \
+                    > "${PRODUCTION_ARTIFACT_ROOT}/promotion-verification.json"
+
+            - name: Construir rollback packet de producción
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- rollback-packet \
+                    --input "${PRODUCTION_ARTIFACT_ROOT}/workflow-manifest.json" \
+                    --artifacts-dir "${PRODUCTION_ARTIFACT_ROOT}" \
+                    --source-environment production \
+                    --label "patient-flow-os-production-rollback" \
+                    --json \
+                    > "${PRODUCTION_ARTIFACT_ROOT}/rollback-packet-command.json"
+
+            - name: Verificar rollback packet de producción
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-rollback-packet \
+                    --input "${PRODUCTION_ARTIFACT_ROOT}/rollback-packet.json" \
+                    --source-environment production \
+                    --json \
+                    > "${PRODUCTION_ARTIFACT_ROOT}/rollback-verification.json"
+
+            - name: Publicar artifacts de promoción producción
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-production-promotion-artifacts
+                  path: verification/patient-flow-os-production-promotion/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Resumen de promoción producción
+              if: ${{ always() }}
+              env:
+                  SOURCE_MANIFEST_JSON: ${{ steps.locate_source.outputs.source_manifest_path }}
+                  SOURCE_PACKET_JSON: ${{ steps.locate_source.outputs.source_packet_path }}
+                  PREPARE_VERIFICATION_JSON: ${{ steps.locate_source.outputs.source_verification_path }}
+                  PRODUCTION_PROMOTION_PACKET_JSON: ${{ env.PRODUCTION_ARTIFACT_ROOT }}/promotion-packet.json
+                  PRODUCTION_PROMOTION_VERIFICATION_JSON: ${{ env.PRODUCTION_ARTIFACT_ROOT }}/promotion-verification.json
+                  PRODUCTION_ROLLBACK_PACKET_JSON: ${{ env.PRODUCTION_ARTIFACT_ROOT }}/rollback-packet.json
+                  PRODUCTION_ROLLBACK_VERIFICATION_JSON: ${{ env.PRODUCTION_ARTIFACT_ROOT }}/rollback-verification.json
+                  PRODUCTION_CUTOVER_RESULT_JSON: ${{ env.PRODUCTION_ARTIFACT_ROOT }}/cutover-result.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS Promote', ''];
+                  lines.push(`- Source run id: \`${process.env.SOURCE_RUN_ID || 'n/a'}\``);
+
+                  if (process.env.SOURCE_PACKET_JSON && fs.existsSync(process.env.SOURCE_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.SOURCE_PACKET_JSON, 'utf8'));
+                    lines.push(`- Source packet ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Source recommended next environment: \`${packet.recommendedNextEnvironment || 'n/a'}\``);
+                  }
+
+                  if (process.env.PREPARE_VERIFICATION_JSON && fs.existsSync(process.env.PREPARE_VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.PREPARE_VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Source promotion verification: \`${verification?.promotionVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  if (process.env.PRODUCTION_CUTOVER_RESULT_JSON && fs.existsSync(process.env.PRODUCTION_CUTOVER_RESULT_JSON)) {
+                    const result = JSON.parse(fs.readFileSync(process.env.PRODUCTION_CUTOVER_RESULT_JSON, 'utf8'));
+                    lines.push(`- Production cutover mode: \`${result.mode || 'n/a'}\``);
+                    lines.push(`- Production smoke gate: \`${result?.smokeGate?.passed === true ? 'passed' : 'failed'}\``);
+                    lines.push(`- Production tenants/cases: \`${result?.summary?.totals?.tenants ?? 'n/a'} / ${result?.summary?.totals?.cases ?? 'n/a'}\``);
+                  }
+
+                  if (process.env.PRODUCTION_PROMOTION_PACKET_JSON && fs.existsSync(process.env.PRODUCTION_PROMOTION_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.PRODUCTION_PROMOTION_PACKET_JSON, 'utf8'));
+                    lines.push(`- Final production packet ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Final production packet next environment: \`${packet.recommendedNextEnvironment || 'n/a'}\``);
+                  }
+
+                  if (process.env.PRODUCTION_PROMOTION_VERIFICATION_JSON && fs.existsSync(process.env.PRODUCTION_PROMOTION_VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.PRODUCTION_PROMOTION_VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Final promotion verification: \`${verification?.promotionVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  if (process.env.PRODUCTION_ROLLBACK_PACKET_JSON && fs.existsSync(process.env.PRODUCTION_ROLLBACK_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.PRODUCTION_ROLLBACK_PACKET_JSON, 'utf8'));
+                    lines.push(`- Rollback packet ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                  }
+
+                  if (process.env.PRODUCTION_ROLLBACK_VERIFICATION_JSON && fs.existsSync(process.env.PRODUCTION_ROLLBACK_VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.PRODUCTION_ROLLBACK_VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Rollback verification: \`${verification?.rollbackVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  lines.push('- Final production evidence files: `promotion-packet.json`, `promotion-checklist.json`, `promotion-verification.json`');
+                  lines.push('- Rollback evidence files: `rollback-packet.json`, `rollback-checklist.json`, `rollback-verification.json`');
+                  lines.push(`- Production artifact: \`patient-flow-os-production-promotion-artifacts\``);
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE

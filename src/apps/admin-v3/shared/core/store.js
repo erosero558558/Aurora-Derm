@@ -7,6 +7,11 @@ const initialState = {
         requires2FA: false,
         lastAuthAt: 0,
         authMethod: '',
+        mode: 'legacy_password',
+        status: 'anonymous',
+        challenge: null,
+        error: '',
+        helperUrlOpened: false,
     },
     ui: {
         activeSection: 'dashboard',
@@ -36,6 +41,7 @@ const initialState = {
         leadOpsMeta: null,
         queueSurfaceStatus: null,
         appDownloads: null,
+        clinicalHistoryMeta: null,
         funnelMetrics: null,
         health: null,
     },
@@ -77,6 +83,17 @@ const initialState = {
         syncMode: 'live',
         pendingSensitiveAction: null,
         activity: [],
+    },
+    clinicalHistory: {
+        selectedSessionId: '',
+        loading: false,
+        saving: false,
+        error: '',
+        dirty: false,
+        lastLoadedAt: 0,
+        current: null,
+        draftForm: null,
+        followUpQuestion: '',
     },
 };
 

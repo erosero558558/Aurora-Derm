@@ -48,6 +48,58 @@
                 </div>
 
                 <form id="operatorLoginForm" class="sony-login-form" novalidate>
+                    <div id="operatorOpenClawFlow" class="is-hidden">
+                        <div class="admin-login-field">
+                            <span>OpenClaw / ChatGPT</span>
+                            <p id="operatorOpenClawSummary">
+                                Abre OpenClaw para validar la sesion del turnero
+                                sin usar una clave local.
+                            </p>
+                        </div>
+
+                        <div class="admin-login-actions">
+                            <button id="operatorOpenClawBtn" type="button">
+                                Abrir OpenClaw
+                            </button>
+                            <button
+                                id="operatorOpenClawRetryBtn"
+                                type="button"
+                                class="sony-login-reset is-hidden"
+                            >
+                                Generar nuevo enlace
+                            </button>
+                        </div>
+
+                        <p
+                            id="operatorOpenClawHelperMeta"
+                            class="admin-login-support-copy"
+                        >
+                            Si la ventana no aparece, usa el enlace manual o
+                            genera un challenge nuevo.
+                        </p>
+                        <p
+                            id="operatorOpenClawManualRow"
+                            class="admin-login-support-copy is-hidden"
+                        >
+                            Código manual:
+                            <code id="operatorOpenClawManualCode"></code>
+                        </p>
+                        <p
+                            id="operatorOpenClawLinkRow"
+                            class="admin-login-support-copy is-hidden"
+                        >
+                            <a
+                                id="operatorOpenClawHelperLink"
+                                href="#"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Abrir helper manualmente
+                            </a>
+                        </p>
+                    </div>
+
+                    <div id="operatorLegacyLoginFields">
                     <label class="admin-login-field" for="operatorPassword">
                         <span>Contraseña</span>
                         <input
@@ -84,6 +136,7 @@
                         >
                             Volver
                         </button>
+                    </div>
                     </div>
                 </form>
             </section>

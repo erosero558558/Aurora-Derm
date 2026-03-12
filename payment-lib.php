@@ -136,6 +136,101 @@ function stripe_create_payment_intent(array $appointment, string $idempotencyKey
     }
 }
 
+function stripe_create_checkout_session(
+    array $appointment,
+    string $successUrl,
+    string $cancelUrl,
+    array $metadata = [],
+    string $idempotencyKey = ''
+): array {
+    if (!class_exists('\Stripe\StripeClient')) {
+        throw new RuntimeException('Stripe SDK no disponible en el servidor.');
+    }
+
+    $secret = payment_stripe_secret_key();
+    if ($secret === '') {
+        throw new RuntimeException('La pasarela de pagos no esta configurada.');
+    }
+
+    $service = (string) ($appointment['service'] ?? '');
+    $date = (string) ($appointment['date'] ?? '');
+    $time = (string) ($appointment['time'] ?? '');
+    $amountCents = payment_expected_amount_cents($service, $date, $time);
+    if ($amountCents <= 0) {
+        throw new RuntimeException('No se pudo calcular el monto del pago.');
+    }
+
+    $successUrl = trim($successUrl);
+    $cancelUrl = trim($cancelUrl);
+    if ($successUrl === '' || $cancelUrl === '') {
+        throw new RuntimeException('Faltan URLs de retorno para el checkout.');
+    }
+
+    $email = trim((string) ($appointment['email'] ?? ''));
+    $descriptionParts = [];
+    if ($date !== '') {
+        $descriptionParts[] = $date;
+    }
+    if ($time !== '') {
+        $descriptionParts[] = $time;
+    }
+    if (trim((string) ($appointment['doctor'] ?? '')) !== '') {
+        $descriptionParts[] = trim((string) $appointment['doctor']);
+    }
+
+    $stripeMetadata = payment_normalize_stripe_metadata(array_merge([
+        'site' => 'pielarmonia.com',
+        'service' => $service,
+        'doctor' => (string) ($appointment['doctor'] ?? ''),
+        'date' => $date,
+        'time' => $time,
+        'name' => (string) ($appointment['name'] ?? ''),
+        'phone' => (string) ($appointment['phone'] ?? ''),
+    ], $metadata));
+
+    $params = [
+        'mode' => 'payment',
+        'success_url' => $successUrl,
+        'cancel_url' => $cancelUrl,
+        'line_items' => [[
+            'quantity' => 1,
+            'price_data' => [
+                'currency' => strtolower(payment_currency()),
+                'unit_amount' => $amountCents,
+                'product_data' => [
+                    'name' => get_service_label($service) . ' - ' . AppConfig::BRAND_NAME,
+                    'description' => implode(' | ', array_filter($descriptionParts)),
+                ],
+            ],
+        ]],
+        'metadata' => $stripeMetadata,
+        'payment_intent_data' => [
+            'metadata' => $stripeMetadata,
+        ],
+    ];
+    if ($email !== '') {
+        $params['customer_email'] = $email;
+    }
+
+    $clientReferenceId = trim((string) ($metadata['wa_draft_id'] ?? ($metadata['client_reference_id'] ?? '')));
+    if ($clientReferenceId !== '') {
+        $params['client_reference_id'] = substr($clientReferenceId, 0, 200);
+    }
+
+    $options = [];
+    if ($idempotencyKey !== '') {
+        $options['idempotency_key'] = $idempotencyKey;
+    }
+
+    try {
+        $stripe = new \Stripe\StripeClient($secret);
+        $session = $stripe->checkout->sessions->create($params, $options);
+        return $session->toArray();
+    } catch (\Stripe\Exception\ApiErrorException $e) {
+        throw new RuntimeException($e->getMessage());
+    }
+}
+
 function stripe_get_payment_intent(string $paymentIntentId): array
 {
     if (!class_exists('\Stripe\StripeClient')) {
@@ -159,6 +254,35 @@ function stripe_get_payment_intent(string $paymentIntentId): array
     } catch (\Stripe\Exception\ApiErrorException $e) {
         throw new RuntimeException($e->getMessage());
     }
+}
+
+function payment_normalize_stripe_metadata(array $metadata): array
+{
+    $normalized = [];
+    foreach ($metadata as $key => $value) {
+        if (!is_scalar($value) && $value !== null) {
+            continue;
+        }
+
+        $safeKey = preg_replace('/[^A-Za-z0-9_]/', '_', (string) $key);
+        if (!is_string($safeKey)) {
+            continue;
+        }
+
+        $safeKey = trim($safeKey, '_');
+        if ($safeKey === '') {
+            continue;
+        }
+
+        $safeValue = trim((string) ($value ?? ''));
+        if ($safeValue === '') {
+            continue;
+        }
+
+        $normalized[substr($safeKey, 0, 40)] = substr($safeValue, 0, 500);
+    }
+
+    return $normalized;
 }
 
 function transfer_proof_upload_dir(): string

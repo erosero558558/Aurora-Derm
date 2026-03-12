@@ -33,6 +33,7 @@ function operator_auth_test_env(array $overrides = []): array
     $defaults = operator_auth_test_defaults($overrides);
 
     return [
+        'PIELARMONIA_SKIP_ENV_FILE' => 'true',
         'PIELARMONIA_OPERATOR_AUTH_MODE' => (string) $defaults['mode'],
         'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST' => (string) $defaults['allowlist'],
         'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN' => (string) $defaults['bridge_token'],

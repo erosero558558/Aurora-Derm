@@ -31,6 +31,11 @@ function register_api_routes(Router $router): void
     $router->add('GET', 'telemedicine-ops-diagnostics', [TelemedicinePolicyController::class, 'diagnostics']);
     $router->add('GET', 'telemedicine-rollout-readiness', [TelemedicinePolicyController::class, 'readiness']);
     $router->add('POST', 'telemedicine-policy-simulate', [TelemedicinePolicyController::class, 'simulate']);
+    $router->add('GET', 'clinical-history-session', [ClinicalHistoryController::class, 'sessionGet']);
+    $router->add('POST', 'clinical-history-session', [ClinicalHistoryController::class, 'sessionPost']);
+    $router->add('POST', 'clinical-history-message', [ClinicalHistoryController::class, 'messagePost']);
+    $router->add('GET', 'clinical-history-review', [ClinicalHistoryController::class, 'reviewGet']);
+    $router->add('PATCH', 'clinical-history-review', [ClinicalHistoryController::class, 'reviewPatch']);
 
     $router->add('GET', 'queue-state', [QueueController::class, 'state']);
     $router->add('POST', 'queue-surface-heartbeat', [QueueController::class, 'surfaceHeartbeat']);
@@ -54,6 +59,11 @@ function register_api_routes(Router $router): void
     $router->add('POST', 'lead-ai-request', [LeadAiController::class, 'request']);
     $router->add('GET', 'lead-ai-queue', [LeadAiController::class, 'queue']);
     $router->add('POST', 'lead-ai-result', [LeadAiController::class, 'result']);
+    $router->add('POST', 'whatsapp-openclaw-inbound', [WhatsappOpenclawController::class, 'inbound']);
+    $router->add('GET', 'whatsapp-openclaw-outbox', [WhatsappOpenclawController::class, 'outbox']);
+    $router->add('POST', 'whatsapp-openclaw-ack', [WhatsappOpenclawController::class, 'ack']);
+    $router->add('GET', 'whatsapp-openclaw-ops', [WhatsappOpenclawController::class, 'ops']);
+    $router->add('POST', 'whatsapp-openclaw-ops', [WhatsappOpenclawController::class, 'ops']);
 
     $router->add('GET', 'reviews', [ReviewController::class, 'index']);
     $router->add('POST', 'reviews', [ReviewController::class, 'store']);

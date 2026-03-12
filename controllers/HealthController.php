@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
+$whatsappOpenclawBootstrap = __DIR__ . '/../lib/whatsapp_openclaw/bootstrap.php';
+if (is_file($whatsappOpenclawBootstrap)) {
+    require_once $whatsappOpenclawBootstrap;
+}
 
 class HealthController
 {
@@ -68,6 +72,9 @@ class HealthController
             ? TelemedicineOpsSnapshot::build($store)
             : ['configured' => false];
         $leadOpsSnapshot = LeadOpsService::buildHealthSnapshot($store);
+        $whatsappOpenclawSnapshot = function_exists('whatsapp_openclaw_health_snapshot')
+            ? whatsapp_openclaw_health_snapshot($store)
+            : ['configured' => false, 'configuredMode' => 'disabled', 'bridgeMode' => 'disabled'];
         $appointments = isset($store['appointments']) && is_array($store['appointments']) ? $store['appointments'] : [];
         $confirmedAppointments = 0;
         foreach ($appointments as $appointment) {
@@ -169,6 +176,9 @@ class HealthController
             'leadOpsMode' => (string) ($leadOpsSnapshot['mode'] ?? 'disabled'),
             'leadOpsPendingCallbacks' => (int) ($leadOpsSnapshot['pendingCallbacks'] ?? 0),
             'leadOpsWorkerDegraded' => (bool) ($leadOpsSnapshot['degraded'] ?? true),
+            'whatsappOpenclawMode' => (string) ($whatsappOpenclawSnapshot['configuredMode'] ?? 'disabled'),
+            'whatsappOpenclawBridgeMode' => (string) ($whatsappOpenclawSnapshot['bridgeMode'] ?? 'disabled'),
+            'whatsappOpenclawPendingOutbox' => (int) ($whatsappOpenclawSnapshot['pendingOutbox'] ?? 0),
             'publicSyncConfigured' => (bool) ($publicSyncCheck['configured'] ?? false),
             'publicSyncHealthy' => (bool) ($publicSyncCheck['healthy'] ?? false),
             'publicSyncState' => (string) ($publicSyncCheck['state'] ?? 'unknown'),
@@ -247,6 +257,7 @@ class HealthController
                     ? TelemedicineOpsSnapshot::forHealth($telemedicineSnapshot)
                     : ['configured' => false],
                 'leadOps' => $leadOpsSnapshot,
+                'whatsappOpenclaw' => $whatsappOpenclawSnapshot,
                 'backup' => $backupCheck,
                 'publicSync' => $publicSyncCheck,
                 'storeCounts' => $storeCounts

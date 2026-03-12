@@ -324,6 +324,18 @@ final class StorePersistence
                 'queue_help_requests_json',
                 json_encode($data['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
+            $stmt->execute([
+                'clinical_history_sessions_json',
+                json_encode($data['clinical_history_sessions'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+            $stmt->execute([
+                'clinical_history_drafts_json',
+                json_encode($data['clinical_history_drafts'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+            $stmt->execute([
+                'clinical_history_events_json',
+                json_encode($data['clinical_history_events'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
 
             $pdo->commit();
             @rename($jsonPath, $jsonPath . '.migrated');
@@ -421,6 +433,9 @@ final class StorePersistence
                 'queue_help_requests' => [],
                 'telemedicine_intakes' => self::fetchJsonDataRows($pdo, 'telemedicine_intakes'),
                 'clinical_uploads' => self::fetchJsonDataRows($pdo, 'clinical_uploads'),
+                'clinical_history_sessions' => [],
+                'clinical_history_drafts' => [],
+                'clinical_history_events' => [],
                 'availability' => self::fetchAvailability($pdo),
                 'updatedAt' => local_date('c'),
                 'idx_appointments_date' => [],
@@ -438,6 +453,33 @@ final class StorePersistence
                 $decoded = json_decode((string) $row['value'], true);
                 if (is_array($decoded)) {
                     $store['queue_help_requests'] = $decoded;
+                }
+            }
+
+            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'clinical_history_sessions_json'");
+            $row = $stmt->fetch();
+            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
+                $decoded = json_decode((string) $row['value'], true);
+                if (is_array($decoded)) {
+                    $store['clinical_history_sessions'] = $decoded;
+                }
+            }
+
+            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'clinical_history_drafts_json'");
+            $row = $stmt->fetch();
+            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
+                $decoded = json_decode((string) $row['value'], true);
+                if (is_array($decoded)) {
+                    $store['clinical_history_drafts'] = $decoded;
+                }
+            }
+
+            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'clinical_history_events_json'");
+            $row = $stmt->fetch();
+            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
+                $decoded = json_decode((string) $row['value'], true);
+                if (is_array($decoded)) {
+                    $store['clinical_history_events'] = $decoded;
                 }
             }
 
@@ -666,6 +708,18 @@ final class StorePersistence
             $stmt->execute([
                 'queue_help_requests_json',
                 json_encode($store['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+            $stmt->execute([
+                'clinical_history_sessions_json',
+                json_encode($store['clinical_history_sessions'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+            $stmt->execute([
+                'clinical_history_drafts_json',
+                json_encode($store['clinical_history_drafts'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+            $stmt->execute([
+                'clinical_history_events_json',
+                json_encode($store['clinical_history_events'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
 
             $pdo->commit();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/api-lib.php';
 require_once __DIR__ . '/figo-brain.php';
+require_once __DIR__ . '/lib/clinical_history/bootstrap.php';
 
 apply_security_headers(false);
 
@@ -628,6 +629,59 @@ require_rate_limit('figo-chat', 60, 60);
 $postRequestStartedAt = microtime(true);
 
 $payload = require_json_body();
+$requestedMode = isset($payload['mode']) && is_string($payload['mode'])
+    ? strtolower(trim((string) $payload['mode']))
+    : '';
+
+if ($requestedMode === 'clinical_intake') {
+    $service = new ClinicalHistoryService();
+    $lock = with_store_lock(static function () use ($service, $payload): array {
+        $store = read_store();
+        $result = $service->handlePatientMessage($store, $payload);
+        if (($result['ok'] ?? false) !== true) {
+            return $result;
+        }
+
+        $nextStore = isset($result['store']) && is_array($result['store']) ? $result['store'] : $store;
+        if (!write_store($nextStore, false)) {
+            return [
+                'ok' => false,
+                'statusCode' => 503,
+                'error' => 'No se pudo guardar la historia clinica conversacional',
+                'errorCode' => 'clinical_history_store_failed',
+            ];
+        }
+
+        $result['store'] = $nextStore;
+        return $result;
+    });
+
+    if (($lock['ok'] ?? false) !== true) {
+        figo_json_post_response([
+            'ok' => false,
+            'mode' => 'failed',
+            'source' => 'clinical_intake',
+            'reason' => 'clinical_history_lock_failed',
+            'error' => (string) ($lock['error'] ?? 'No se pudo bloquear la historia clinica'),
+        ], (int) ($lock['code'] ?? 503), $postRequestStartedAt, $providerMode);
+    }
+
+    $result = isset($lock['result']) && is_array($lock['result']) ? $lock['result'] : [];
+    if (($result['ok'] ?? false) !== true) {
+        figo_json_post_response([
+            'ok' => false,
+            'mode' => 'failed',
+            'source' => 'clinical_intake',
+            'reason' => (string) ($result['errorCode'] ?? 'clinical_history_error'),
+            'error' => (string) ($result['error'] ?? 'No se pudo procesar la historia clinica'),
+        ], (int) ($result['statusCode'] ?? 500), $postRequestStartedAt, $providerMode);
+    }
+
+    $chatPayload = $service->buildChatCompletionPayload($result);
+    $chatPayload['providerMode'] = $providerMode;
+    figo_json_post_response($chatPayload, (int) ($result['statusCode'] ?? 200), $postRequestStartedAt, $providerMode);
+}
+
 $messages = isset($payload['messages']) && is_array($payload['messages'])
     ? $payload['messages']
     : [];

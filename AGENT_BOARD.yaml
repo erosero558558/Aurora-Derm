@@ -6,8 +6,8 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 484
-  updated_at: 2026-03-11
+  revision: 494
+  updated_at: 2026-03-12
 
 tasks:
   - id: AG-001
@@ -7121,7 +7121,7 @@ tasks:
     owner: ernes
     executor: codex
     status: done
-    status_since_at: "2026-03-11T06:23:54.034Z"
+    status_since_at: "2026-03-11T18:19:46.284Z"
     risk: high
     scope: auth
     codex_instance: codex_backend_ops
@@ -7142,7 +7142,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-03-11T06:23:54.034Z"
+    lease_cleared_at: "2026-03-11T18:19:46.284Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -7153,3 +7153,193 @@ tasks:
     prompt: "Operator auth backend with OpenClaw ChatGPT"
     created_at: 2026-03-11
     updated_at: 2026-03-11
+
+  - id: AG-184
+    title: "WhatsApp OpenClaw full-auto backend"
+    owner: ernes
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-11T18:19:54.741Z"
+    risk: high
+    scope: calendar
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["api.php", "controllers/HealthController.php", "controllers/PaymentController.php", "controllers/AppointmentController.php", "lib/routes.php", "lib/ApiConfig.php", "lib/BookingService.php", "lib/LeadOpsService.php", "env.example.php", "tests/Integration/LeadOpsEndpointsTest.php"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-184_20260311181954741_09b1f2"
+    lease_owner: "ernes"
+    lease_created_at: "2026-03-11T18:19:54.741Z"
+    heartbeat_at: "2026-03-11T18:19:54.741Z"
+    lease_expires_at: "2026-03-11T22:19:54.741Z"
+    lease_reason: "board_write"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "WhatsApp OpenClaw full-auto backend"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "WhatsApp OpenClaw full-auto backend"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-185
+    title: "WhatsApp OpenClaw admin ops surface"
+    owner: ernes
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-12T04:18:05.344Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/sections/dashboard/render/index.js", "src/apps/admin-v3/sections/dashboard/render/overview.js", "src/apps/admin-v3/sections/dashboard/markup/actions.js", "src/apps/admin-v3/ui/frame/templates/sections/dashboard/overview.js", "src/apps/admin-v3/ui/frame/templates/sections/dashboard/signal.js", "src/apps/admin-v3/shared/modules/auth.js", "src/apps/admin-v3/shared/modules/data/remote.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-185_20260312041805344_c05b5d"
+    lease_owner: "ernes"
+    lease_created_at: "2026-03-12T04:18:05.344Z"
+    heartbeat_at: "2026-03-12T04:18:05.344Z"
+    lease_expires_at: "2026-03-12T08:18:05.344Z"
+    lease_reason: "board_write"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "WhatsApp OpenClaw admin ops surface"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: ["AG-184"]
+    prompt: "WhatsApp OpenClaw admin ops surface"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-186
+    title: "WhatsApp OpenClaw admin ops QA coverage"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T05:01:03.991Z"
+    risk: medium
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/admin.spec.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:01:03.991Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "WhatsApp OpenClaw admin ops QA coverage"
+    acceptance_ref: "verification/agent-runs/AG-186.md"
+    evidence_ref: "verification/agent-runs/AG-186.md"
+    depends_on: ["AG-185"]
+    prompt: "WhatsApp OpenClaw admin ops QA coverage"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-187
+    title: "Queue operator OpenClaw QA hardening"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T05:10:13.482Z"
+    risk: medium
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/queue-operator.spec.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:10:13.482Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Queue operator OpenClaw QA hardening"
+    acceptance_ref: "verification/agent-runs/AG-187.md"
+    evidence_ref: "verification/agent-runs/AG-187.md"
+    depends_on: ["AG-184"]
+    prompt: "Queue operator OpenClaw QA hardening"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-188
+    title: "OpenClaw shared-session cross-surface spec"
+    owner: ernes
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T05:17:03.543Z"
+    risk: medium
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/operator-auth-shared-session.spec.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:17:03.543Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "OpenClaw shared-session cross-surface spec"
+    acceptance_ref: "verification/agent-runs/AG-188.md"
+    evidence_ref: "verification/agent-runs/AG-188.md"
+    depends_on: ["AG-184"]
+    prompt: "OpenClaw shared-session cross-surface spec"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12

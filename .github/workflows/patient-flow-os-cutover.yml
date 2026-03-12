@@ -1,0 +1,399 @@
+name: Patient Flow OS Cutover
+
+on:
+    workflow_dispatch:
+        inputs:
+            openclaw_bundle_path:
+                description: 'Ruta repo-relative al bundle JSON de OpenClaw'
+                required: true
+                type: string
+            cutover_mode:
+                description: 'Modo de importacion canónica'
+                required: true
+                default: 'merge'
+                type: choice
+                options:
+                    - merge
+                    - replace
+            target_environment:
+                description: 'Entorno GitHub que aprueba el cutover'
+                required: true
+                default: 'staging'
+                type: choice
+                options:
+                    - staging
+                    - production
+            run_post_cutover_smoke:
+                description: 'Ejecutar smoke canónico separado después del cutover'
+                required: false
+                default: true
+                type: boolean
+            confirm_replace:
+                description: 'Confirmar replace destructivo cuando cutover_mode=replace'
+                required: false
+                default: false
+                type: boolean
+
+permissions:
+    contents: read
+
+concurrency:
+    group: patient-flow-os-cutover-${{ github.ref }}-${{ github.event.inputs.target_environment || 'staging' }}
+    cancel-in-progress: false
+
+jobs:
+    patient-flow-os-cutover:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        environment:
+            name: ${{ format('patient-flow-os-{0}', github.event.inputs.target_environment || 'staging') }}
+        outputs:
+            report_path: ${{ steps.cutover.outputs.report_path }}
+            artifact_root: ${{ steps.preflight.outputs.artifact_root }}
+            target_environment: ${{ steps.preflight.outputs.target_environment }}
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            DATABASE_URL: ${{ secrets.PATIENT_FLOW_OS_DATABASE_URL }}
+            OPENCLAW_BUNDLE_PATH_INPUT: ${{ github.event.inputs.openclaw_bundle_path }}
+            CUTOVER_MODE: ${{ github.event.inputs.cutover_mode || 'merge' }}
+            TARGET_ENVIRONMENT_INPUT: ${{ github.event.inputs.target_environment || 'staging' }}
+            RUN_POST_CUTOVER_SMOKE: ${{ github.event.inputs.run_post_cutover_smoke || 'true' }}
+            CONFIRM_REPLACE: ${{ github.event.inputs.confirm_replace || 'false' }}
+            CUTOVER_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-cutover
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validar inputs y secretos
+              id: preflight
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "${DATABASE_URL}" ]; then
+                    echo "::error::Falta el secret PATIENT_FLOW_OS_DATABASE_URL."
+                    exit 1
+                  fi
+
+                  BUNDLE_PATH="${GITHUB_WORKSPACE}/${OPENCLAW_BUNDLE_PATH_INPUT}"
+                  if [ ! -f "${BUNDLE_PATH}" ]; then
+                    echo "::error::No existe el bundle OpenClaw en ${BUNDLE_PATH}."
+                    exit 1
+                  fi
+
+                  if [ "${CUTOVER_MODE}" = "replace" ] && [ "${CONFIRM_REPLACE}" != "true" ]; then
+                    echo "::error::cutover_mode=replace exige confirm_replace=true."
+                    exit 1
+                  fi
+
+                  mkdir -p "${CUTOVER_ARTIFACT_ROOT}"
+                  echo "bundle_path=${BUNDLE_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "artifact_root=${CUTOVER_ARTIFACT_ROOT}" >> "${GITHUB_OUTPUT}"
+                  echo "target_environment=${TARGET_ENVIRONMENT_INPUT}" >> "${GITHUB_OUTPUT}"
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Build Patient Flow OS
+              run: npm run build
+
+            - name: Smoke preflight canónico
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- smoke --json > "${CUTOVER_ARTIFACT_ROOT}/preflight-smoke.json"
+
+            - name: Ejecutar cutover OpenClaw
+              id: cutover
+              run: |
+                  set +e
+
+                  EXTRA_ARGS=""
+                  if [ "${CUTOVER_MODE}" = "replace" ]; then
+                    EXTRA_ARGS="--allow-destructive"
+                  fi
+
+                  npm run cutover -- cutover-openclaw \
+                    --input "${{ steps.preflight.outputs.bundle_path }}" \
+                    --artifacts-dir "${CUTOVER_ARTIFACT_ROOT}" \
+                    --mode "${CUTOVER_MODE}" \
+                    ${EXTRA_ARGS} \
+                    --json \
+                    > "${CUTOVER_ARTIFACT_ROOT}/cutover-result.json" \
+                    2> "${CUTOVER_ARTIFACT_ROOT}/cutover-stderr.log"
+                  EXIT_CODE=$?
+
+                  echo "exit_code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
+
+                  if [ -f "${CUTOVER_ARTIFACT_ROOT}/cutover-result.json" ]; then
+                    REPORT_PATH=$(node -e "const fs = require('fs'); const file = process.argv[1]; const fallback = process.argv[2]; const data = JSON.parse(fs.readFileSync(file, 'utf8')); process.stdout.write(String(data.artifacts?.reportPath || fallback));" "${CUTOVER_ARTIFACT_ROOT}/cutover-result.json" "${CUTOVER_ARTIFACT_ROOT}/report.json")
+                    echo "report_path=${REPORT_PATH}" >> "${GITHUB_OUTPUT}"
+                  fi
+
+                  exit ${EXIT_CODE}
+
+            - name: Verificar approval contract del report
+              if: ${{ always() && steps.cutover.outputs.report_path != '' }}
+              id: approval_contract
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-report --input "${{ steps.cutover.outputs.report_path }}" --json > "${CUTOVER_ARTIFACT_ROOT}/approval-contract.json"
+                  echo "approval_contract_path=${CUTOVER_ARTIFACT_ROOT}/approval-contract.json" >> "${GITHUB_OUTPUT}"
+
+            - name: Escribir manifest del workflow
+              if: ${{ always() }}
+              env:
+                  REPORT_PATH: ${{ steps.cutover.outputs.report_path }}
+                  APPROVAL_CONTRACT_PATH: ${{ steps.approval_contract.outputs.approval_contract_path }}
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  const artifactRoot = process.env.CUTOVER_ARTIFACT_ROOT;
+                  const manifestPath = path.join(artifactRoot, 'workflow-manifest.json');
+                  const payload = {
+                    generatedAt: new Date().toISOString(),
+                    targetEnvironment: process.env.TARGET_ENVIRONMENT_INPUT || 'staging',
+                    cutoverMode: process.env.CUTOVER_MODE || 'merge',
+                    runPostCutoverSmoke: process.env.RUN_POST_CUTOVER_SMOKE || 'true',
+                    preflightSmokePath: path.join(artifactRoot, 'preflight-smoke.json'),
+                    cutoverResultPath: path.join(artifactRoot, 'cutover-result.json'),
+                    cutoverStderrPath: path.join(artifactRoot, 'cutover-stderr.log'),
+                    approvalContractPath: process.env.APPROVAL_CONTRACT_PATH || '',
+                    reportPath: process.env.REPORT_PATH || ''
+                  };
+                  fs.writeFileSync(manifestPath, `${JSON.stringify(payload, null, 2)}\n`);
+                  NODE
+
+            - name: Publicar artifacts de cutover
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-cutover-artifacts
+                  path: verification/patient-flow-os-cutover/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Resumen de cutover
+              if: ${{ always() }}
+              env:
+                  PREFLIGHT_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/preflight-smoke.json
+                  CUTOVER_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/cutover-result.json
+                  APPROVAL_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/approval-contract.json
+                  MANIFEST_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/workflow-manifest.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS Cutover', ''];
+                  const preflightPath = process.env.PREFLIGHT_JSON;
+                  const cutoverPath = process.env.CUTOVER_JSON;
+                  const approvalPath = process.env.APPROVAL_JSON;
+                  const manifestPath = process.env.MANIFEST_JSON;
+
+                  if (manifestPath && fs.existsSync(manifestPath)) {
+                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                    lines.push(`- GitHub environment: \`patient-flow-os-${manifest.targetEnvironment || 'staging'}\``);
+                    lines.push(`- Cutover mode: \`${manifest.cutoverMode || 'merge'}\``);
+                    lines.push(`- Run post-cutover smoke: \`${manifest.runPostCutoverSmoke || 'true'}\``);
+                  }
+
+                  if (preflightPath && fs.existsSync(preflightPath)) {
+                    const preflight = JSON.parse(fs.readFileSync(preflightPath, 'utf8'));
+                    lines.push(`- Preflight smoke: \`${preflight?.smoke?.ok === true ? 'ok' : 'failed'}\``);
+                    lines.push(`- Preflight errors: \`${preflight?.smoke?.errors?.length ?? 0}\``);
+                    lines.push(`- Preflight warnings: \`${preflight?.smoke?.warnings?.length ?? 0}\``);
+                  } else {
+                    lines.push('- Preflight smoke: `missing`');
+                  }
+
+                  if (cutoverPath && fs.existsSync(cutoverPath)) {
+                    const result = JSON.parse(fs.readFileSync(cutoverPath, 'utf8'));
+                    const expectedArtifacts = [
+                      'preflight-smoke.json',
+                      'cutover-result.json',
+                      'cutover-stderr.log',
+                      'approval-contract.json',
+                      'workflow-manifest.json',
+                      'before-state.json',
+                      'after-state.json',
+                      'input-openclaw-bundle.json',
+                      'report.json',
+                    ];
+                    lines.push(`- Command: \`${result.command || 'unknown'}\``);
+                    lines.push(`- Cutover smoke gate: \`${result.smokeGate?.passed === true ? 'passed' : 'failed'}\``);
+                    lines.push(`- New smoke errors: \`${result.smokeGate?.newErrors?.length ?? 0}\``);
+                    lines.push(`- Before tenants/cases: \`${result.beforeSummary?.totals?.tenants ?? 'n/a'} / ${result.beforeSummary?.totals?.cases ?? 'n/a'}\``);
+                    lines.push(`- After tenants/cases: \`${result.summary?.totals?.tenants ?? 'n/a'} / ${result.summary?.totals?.cases ?? 'n/a'}\``);
+                    lines.push(`- Report path: \`${result.artifacts?.reportPath || 'n/a'}\``);
+                    lines.push(`- Artifact set: \`${expectedArtifacts.join(', ')}\``);
+                  } else {
+                    lines.push('- Cutover result: `missing`');
+                  }
+
+                  if (approvalPath && fs.existsSync(approvalPath)) {
+                    const approval = JSON.parse(fs.readFileSync(approvalPath, 'utf8'));
+                    const failedChecks = (approval?.approvalContract?.checks || []).filter((check) => check.ok !== true).length;
+                    lines.push(`- Approval contract: \`${approval?.approvalContract?.ok === true ? 'passed' : 'failed'}\``);
+                    lines.push(`- Approval failed checks: \`${failedChecks}\``);
+                  } else {
+                    lines.push('- Approval contract: `missing`');
+                  }
+
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE
+
+    patient-flow-os-post-cutover-smoke:
+        needs: patient-flow-os-cutover
+        if: ${{ needs.patient-flow-os-cutover.result == 'success' && github.event.inputs.run_post_cutover_smoke != 'false' }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            DATABASE_URL: ${{ secrets.PATIENT_FLOW_OS_DATABASE_URL }}
+            CUTOVER_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-post-cutover
+            DOWNLOADED_CUTOVER_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-cutover
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Descargar artifacts del cutover
+              uses: actions/download-artifact@v4
+              with:
+                  name: patient-flow-os-cutover-artifacts
+                  path: verification/patient-flow-os-cutover
+
+            - name: Localizar manifest y approval contract
+              id: locate_artifacts
+              run: |
+                  set -euo pipefail
+                  MANIFEST_PATH="$(find "${DOWNLOADED_CUTOVER_ARTIFACT_ROOT}" -name workflow-manifest.json | head -n 1)"
+                  if [ -z "${MANIFEST_PATH}" ]; then
+                    echo "::error::No se encontro workflow-manifest.json dentro de los artifacts descargados."
+                    exit 1
+                  fi
+
+                  APPROVAL_PATH="$(find "${DOWNLOADED_CUTOVER_ARTIFACT_ROOT}" -name approval-contract.json | head -n 1)"
+                  if [ -z "${APPROVAL_PATH}" ]; then
+                    echo "::error::No se encontro approval-contract.json dentro de los artifacts descargados."
+                    exit 1
+                  fi
+
+                  mkdir -p "${CUTOVER_ARTIFACT_ROOT}"
+                  echo "manifest_path=${MANIFEST_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "approval_path=${APPROVAL_PATH}" >> "${GITHUB_OUTPUT}"
+
+            - name: Ejecutar smoke post-cutover
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- smoke --json > "${CUTOVER_ARTIFACT_ROOT}/post-cutover-smoke.json"
+                  npm run cutover -- inspect --json > "${CUTOVER_ARTIFACT_ROOT}/post-cutover-inspect.json"
+
+            - name: Construir promotion packet
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- promotion-packet \
+                    --input "${{ steps.locate_artifacts.outputs.manifest_path }}" \
+                    --artifacts-dir "${CUTOVER_ARTIFACT_ROOT}" \
+                    --post-smoke "${CUTOVER_ARTIFACT_ROOT}/post-cutover-smoke.json" \
+                    --post-inspect "${CUTOVER_ARTIFACT_ROOT}/post-cutover-inspect.json" \
+                    --target-environment "${{ needs.patient-flow-os-cutover.outputs.target_environment }}" \
+                    --label "patient-flow-os-${{ needs.patient-flow-os-cutover.outputs.target_environment }}-cutover" \
+                    --json \
+                    > "${CUTOVER_ARTIFACT_ROOT}/promotion-packet-command.json"
+
+            - name: Publicar artifacts de post-cutover smoke
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-post-cutover-artifacts
+                  path: verification/patient-flow-os-post-cutover/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Resumen de post-cutover smoke
+              if: ${{ always() }}
+              env:
+                  MANIFEST_PATH: ${{ steps.locate_artifacts.outputs.manifest_path }}
+                  APPROVAL_PATH: ${{ steps.locate_artifacts.outputs.approval_path }}
+                  POST_SMOKE_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/post-cutover-smoke.json
+                  POST_INSPECT_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/post-cutover-inspect.json
+                  PROMOTION_PACKET_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/promotion-packet.json
+                  PROMOTION_PACKET_COMMAND_JSON: ${{ env.CUTOVER_ARTIFACT_ROOT }}/promotion-packet-command.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS Post-Cutover Smoke', ''];
+                  if (process.env.MANIFEST_PATH && fs.existsSync(process.env.MANIFEST_PATH)) {
+                    const manifest = JSON.parse(fs.readFileSync(process.env.MANIFEST_PATH, 'utf8'));
+                    lines.push(`- Source environment: \`patient-flow-os-${manifest.targetEnvironment || 'staging'}\``);
+                    lines.push(`- Source cutover mode: \`${manifest.cutoverMode || 'merge'}\``);
+                  }
+
+                  if (process.env.APPROVAL_PATH && fs.existsSync(process.env.APPROVAL_PATH)) {
+                    const approval = JSON.parse(fs.readFileSync(process.env.APPROVAL_PATH, 'utf8'));
+                    lines.push(`- Approval contract carried forward: \`${approval?.approvalContract?.ok === true ? 'passed' : 'failed'}\``);
+                  } else {
+                    lines.push('- Approval contract carried forward: `missing`');
+                  }
+
+                  if (process.env.POST_SMOKE_JSON && fs.existsSync(process.env.POST_SMOKE_JSON)) {
+                    const smoke = JSON.parse(fs.readFileSync(process.env.POST_SMOKE_JSON, 'utf8'));
+                    lines.push(`- Post-cutover smoke: \`${smoke?.smoke?.ok === true ? 'ok' : 'failed'}\``);
+                    lines.push(`- Post-cutover errors: \`${smoke?.smoke?.errors?.length ?? 0}\``);
+                    lines.push(`- Post-cutover warnings: \`${smoke?.smoke?.warnings?.length ?? 0}\``);
+                  } else {
+                    lines.push('- Post-cutover smoke: `missing`');
+                  }
+
+                  if (process.env.POST_INSPECT_JSON && fs.existsSync(process.env.POST_INSPECT_JSON)) {
+                    const inspect = JSON.parse(fs.readFileSync(process.env.POST_INSPECT_JSON, 'utf8'));
+                    lines.push(`- Post-cutover tenants/cases: \`${inspect?.summary?.totals?.tenants ?? 'n/a'} / ${inspect?.summary?.totals?.cases ?? 'n/a'}\``);
+                  }
+
+                  if (process.env.PROMOTION_PACKET_JSON && fs.existsSync(process.env.PROMOTION_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.PROMOTION_PACKET_JSON, 'utf8'));
+                    const expectedPromotionArtifacts = [
+                      'promotion-packet-command.json',
+                      'promotion-packet.json',
+                      'promotion-packet.md',
+                      'promotion-checklist.json',
+                      'promotion-checklist.md',
+                    ];
+                    lines.push(`- Promotion ready: \`${packet?.ok === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Recommended next environment: \`${packet?.recommendedNextEnvironment || 'n/a'}\``);
+                    lines.push(`- Promotion packet: \`${process.env.PROMOTION_PACKET_JSON}\``);
+                    lines.push(`- Promotion artifact set: \`${expectedPromotionArtifacts.join(', ')}\``);
+                  } else if (process.env.PROMOTION_PACKET_COMMAND_JSON && fs.existsSync(process.env.PROMOTION_PACKET_COMMAND_JSON)) {
+                    const packetCommand = JSON.parse(fs.readFileSync(process.env.PROMOTION_PACKET_COMMAND_JSON, 'utf8'));
+                    lines.push(`- Promotion ready: \`${packetCommand?.promotionPacket?.ok === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Recommended next environment: \`${packetCommand?.promotionPacket?.recommendedNextEnvironment || 'n/a'}\``);
+                  } else {
+                    lines.push('- Promotion packet: `missing`');
+                  }
+
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE

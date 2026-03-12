@@ -6,6 +6,7 @@ require_once __DIR__ . '/../lib/QueueService.php';
 require_once __DIR__ . '/../lib/QueueSurfaceStatusStore.php';
 require_once __DIR__ . '/../lib/AppDownloadsCatalog.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
+require_once __DIR__ . '/../lib/clinical_history/bootstrap.php';
 
 class AdminDataController
 {
@@ -108,6 +109,9 @@ class AdminDataController
         $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(
             TelemedicineOpsSnapshot::build($store)
         );
+        $store['clinicalHistoryMeta'] = ClinicalHistoryOpsSnapshot::forAdmin(
+            ClinicalHistoryOpsSnapshot::build($store)
+        );
 
         json_response([
             'ok' => true,
@@ -137,6 +141,15 @@ class AdminDataController
         }
         if (isset($payload['clinical_uploads']) && is_array($payload['clinical_uploads'])) {
             $store['clinical_uploads'] = $payload['clinical_uploads'];
+        }
+        if (isset($payload['clinical_history_sessions']) && is_array($payload['clinical_history_sessions'])) {
+            $store['clinical_history_sessions'] = $payload['clinical_history_sessions'];
+        }
+        if (isset($payload['clinical_history_drafts']) && is_array($payload['clinical_history_drafts'])) {
+            $store['clinical_history_drafts'] = $payload['clinical_history_drafts'];
+        }
+        if (isset($payload['clinical_history_events']) && is_array($payload['clinical_history_events'])) {
+            $store['clinical_history_events'] = $payload['clinical_history_events'];
         }
         $store['availability'] = isset($payload['availability']) && is_array($payload['availability']) ? $payload['availability'] : [];
         write_store($store);

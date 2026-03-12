@@ -1,0 +1,394 @@
+name: Patient Flow OS Rollback
+
+on:
+    workflow_dispatch:
+        inputs:
+            source_run_id:
+                description: 'GitHub Actions run id con artifacts de rollback ya preparados'
+                required: true
+                type: string
+            rollback_packet_path:
+                description: 'Ruta dentro del artifact fuente hacia rollback-packet.json'
+                required: true
+                default: 'rollback-packet.json'
+                type: string
+            source_artifact_name:
+                description: 'Nombre del artifact fuente con packet y before-state'
+                required: true
+                default: 'patient-flow-os-production-promotion-artifacts'
+                type: string
+            target_environment:
+                description: 'Entorno GitHub donde se ejecuta el rehearsal o restore'
+                required: true
+                default: 'production'
+                type: choice
+                options:
+                    - staging
+                    - production
+            operation_mode:
+                description: 'Modo de ejecución del rollback'
+                required: true
+                default: 'rehearsal'
+                type: choice
+                options:
+                    - rehearsal
+                    - restore
+            confirm_restore:
+                description: 'Confirmar explícitamente la restauración destructiva'
+                required: false
+                default: false
+                type: boolean
+
+permissions:
+    contents: read
+    actions: read
+
+concurrency:
+    group: patient-flow-os-rollback-${{ github.ref }}-${{ github.event.inputs.target_environment || 'production' }}
+    cancel-in-progress: false
+
+jobs:
+    prepare-rollback:
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id }}
+            ROLLBACK_PACKET_PATH_INPUT: ${{ github.event.inputs.rollback_packet_path }}
+            SOURCE_ARTIFACT_NAME: ${{ github.event.inputs.source_artifact_name || 'patient-flow-os-production-promotion-artifacts' }}
+            SOURCE_DOWNLOAD_ROOT: ${{ github.workspace }}/verification/patient-flow-os-rollback-source-download
+            PREPARED_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-rollback-source
+            TARGET_ENVIRONMENT_INPUT: ${{ github.event.inputs.target_environment || 'production' }}
+            OPERATION_MODE_INPUT: ${{ github.event.inputs.operation_mode || 'rehearsal' }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validar inputs de rollback
+              run: |
+                  set -euo pipefail
+                  if [ -z "${SOURCE_RUN_ID}" ]; then
+                    echo "::error::source_run_id es obligatorio."
+                    exit 1
+                  fi
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Build Patient Flow OS
+              run: npm run build
+
+            - name: Descargar artifacts fuente de rollback
+              uses: actions/download-artifact@v4
+              with:
+                  name: ${{ env.SOURCE_ARTIFACT_NAME }}
+                  path: verification/patient-flow-os-rollback-source-download
+                  repository: ${{ github.repository }}
+                  run-id: ${{ github.event.inputs.source_run_id }}
+                  github-token: ${{ github.token }}
+
+            - name: Localizar packet y evidencia fuente
+              id: locate
+              run: |
+                  set -euo pipefail
+
+                  PACKET_NAME="$(basename "${ROLLBACK_PACKET_PATH_INPUT}")"
+                  ROLLBACK_PACKET_PATH="$(find "${SOURCE_DOWNLOAD_ROOT}" -path "*${ROLLBACK_PACKET_PATH_INPUT}" -o -name "${PACKET_NAME}" | head -n 1)"
+                  BEFORE_STATE_PATH="$(find "${SOURCE_DOWNLOAD_ROOT}" -name before-state.json | head -n 1)"
+                  WORKFLOW_MANIFEST_PATH="$(find "${SOURCE_DOWNLOAD_ROOT}" -name workflow-manifest.json | head -n 1)"
+                  REPORT_PATH="$(find "${SOURCE_DOWNLOAD_ROOT}" -name report.json | head -n 1)"
+                  APPROVAL_PATH="$(find "${SOURCE_DOWNLOAD_ROOT}" -name approval-contract.json | head -n 1)"
+                  ROLLBACK_CHECKLIST_PATH="$(find "${SOURCE_DOWNLOAD_ROOT}" -name rollback-checklist.json | head -n 1)"
+
+                  for required_path in \
+                    "${ROLLBACK_PACKET_PATH}" \
+                    "${BEFORE_STATE_PATH}" \
+                    "${WORKFLOW_MANIFEST_PATH}" \
+                    "${REPORT_PATH}" \
+                    "${APPROVAL_PATH}" \
+                    "${ROLLBACK_CHECKLIST_PATH}"; do
+                    if [ -z "${required_path}" ]; then
+                      echo "::error::Falta evidencia fuente requerida para rollback."
+                      exit 1
+                    fi
+                  done
+
+                  mkdir -p "${PREPARED_ARTIFACT_ROOT}"
+
+                  echo "rollback_packet_path=${ROLLBACK_PACKET_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "before_state_path=${BEFORE_STATE_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "workflow_manifest_path=${WORKFLOW_MANIFEST_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "report_path=${REPORT_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "approval_path=${APPROVAL_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "rollback_checklist_path=${ROLLBACK_CHECKLIST_PATH}" >> "${GITHUB_OUTPUT}"
+
+            - name: Verificar rollback packet fuente
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-rollback-packet \
+                    --input "${{ steps.locate.outputs.rollback_packet_path }}" \
+                    --source-environment production \
+                    --json \
+                    > "${PREPARED_ARTIFACT_ROOT}/source-rollback-verification.json"
+
+            - name: Construir manifest de rollback source
+              run: |
+                  set -euo pipefail
+                  cp "${{ steps.locate.outputs.rollback_packet_path }}" "${PREPARED_ARTIFACT_ROOT}/source-rollback-packet.json"
+                  cp "${{ steps.locate.outputs.before_state_path }}" "${PREPARED_ARTIFACT_ROOT}/source-before-state.json"
+                  cp "${{ steps.locate.outputs.workflow_manifest_path }}" "${PREPARED_ARTIFACT_ROOT}/source-workflow-manifest.json"
+                  cp "${{ steps.locate.outputs.report_path }}" "${PREPARED_ARTIFACT_ROOT}/source-report.json"
+                  cp "${{ steps.locate.outputs.approval_path }}" "${PREPARED_ARTIFACT_ROOT}/source-approval-contract.json"
+                  cp "${{ steps.locate.outputs.rollback_checklist_path }}" "${PREPARED_ARTIFACT_ROOT}/source-rollback-checklist.json"
+
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  const outDir = process.env.PREPARED_ARTIFACT_ROOT;
+                  const manifest = {
+                    generatedAt: new Date().toISOString(),
+                    sourceRunId: process.env.SOURCE_RUN_ID,
+                    sourceEnvironment: 'production',
+                    targetEnvironment: process.env.TARGET_ENVIRONMENT_INPUT || 'production',
+                    operationMode: process.env.OPERATION_MODE_INPUT || 'rehearsal',
+                    sourceArtifactName: process.env.SOURCE_ARTIFACT_NAME,
+                    files: {
+                      rollbackPacket: 'source-rollback-packet.json',
+                      rollbackChecklist: 'source-rollback-checklist.json',
+                      rollbackVerification: 'source-rollback-verification.json',
+                      beforeState: 'source-before-state.json',
+                      workflowManifest: 'source-workflow-manifest.json',
+                      report: 'source-report.json',
+                      approvalContract: 'source-approval-contract.json'
+                    }
+                  };
+                  fs.writeFileSync(
+                    path.join(outDir, 'rollback-source-manifest.json'),
+                    `${JSON.stringify(manifest, null, 2)}\n`
+                  );
+                  NODE
+
+            - name: Publicar artifact rollback source
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-rollback-source
+                  path: verification/patient-flow-os-rollback-source/
+                  if-no-files-found: error
+                  retention-days: 14
+
+            - name: Resumen de preparación de rollback
+              if: ${{ always() }}
+              env:
+                  ROLLBACK_PACKET_JSON: ${{ env.PREPARED_ARTIFACT_ROOT }}/source-rollback-packet.json
+                  ROLLBACK_VERIFICATION_JSON: ${{ env.PREPARED_ARTIFACT_ROOT }}/source-rollback-verification.json
+                  ROLLBACK_SOURCE_MANIFEST_JSON: ${{ env.PREPARED_ARTIFACT_ROOT }}/rollback-source-manifest.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS Rollback Prepare', ''];
+                  lines.push(`- Source run id: \`${process.env.SOURCE_RUN_ID || 'n/a'}\``);
+
+                  if (process.env.ROLLBACK_PACKET_JSON && fs.existsSync(process.env.ROLLBACK_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.ROLLBACK_PACKET_JSON, 'utf8'));
+                    lines.push(`- Source environment: \`${packet.sourceEnvironment || 'n/a'}\``);
+                    lines.push(`- Rollback ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                  }
+
+                  if (process.env.ROLLBACK_VERIFICATION_JSON && fs.existsSync(process.env.ROLLBACK_VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.ROLLBACK_VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Rollback verification: \`${verification?.rollbackVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  if (process.env.ROLLBACK_SOURCE_MANIFEST_JSON && fs.existsSync(process.env.ROLLBACK_SOURCE_MANIFEST_JSON)) {
+                    const manifest = JSON.parse(fs.readFileSync(process.env.ROLLBACK_SOURCE_MANIFEST_JSON, 'utf8'));
+                    lines.push(`- Target environment: \`${manifest.targetEnvironment || 'production'}\``);
+                    lines.push(`- Operation mode: \`${manifest.operationMode || 'rehearsal'}\``);
+                    lines.push(`- Rollback source artifact: \`patient-flow-os-rollback-source\``);
+                    lines.push('- Source evidence files: `source-rollback-packet.json`, `source-rollback-checklist.json`, `source-rollback-verification.json`, `source-before-state.json`');
+                  }
+
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE
+
+    execute-rollback:
+        needs: prepare-rollback
+        runs-on: ubuntu-latest
+        timeout-minutes: 35
+        environment:
+            name: ${{ format('patient-flow-os-{0}', github.event.inputs.target_environment || 'production') }}
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            DATABASE_URL: ${{ secrets.PATIENT_FLOW_OS_DATABASE_URL }}
+            OPERATION_MODE_INPUT: ${{ github.event.inputs.operation_mode || 'rehearsal' }}
+            CONFIRM_RESTORE: ${{ github.event.inputs.confirm_restore || 'false' }}
+            TARGET_ENVIRONMENT_INPUT: ${{ github.event.inputs.target_environment || 'production' }}
+            ROLLBACK_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-rollback
+            ROLLBACK_SOURCE_ROOT: ${{ github.workspace }}/verification/patient-flow-os-rollback-source
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validar confirmación y secreto de rollback
+              run: |
+                  set -euo pipefail
+                  if [ -z "${DATABASE_URL}" ]; then
+                    echo "::error::Falta el secret PATIENT_FLOW_OS_DATABASE_URL en el environment objetivo."
+                    exit 1
+                  fi
+                  if [ "${OPERATION_MODE_INPUT}" = "restore" ] && [ "${CONFIRM_RESTORE}" != "true" ]; then
+                    echo "::error::confirm_restore=true es obligatorio para ejecutar restore."
+                    exit 1
+                  fi
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Build Patient Flow OS
+              run: npm run build
+
+            - name: Descargar artifact rollback source
+              uses: actions/download-artifact@v4
+              with:
+                  name: patient-flow-os-rollback-source
+                  path: verification/patient-flow-os-rollback-source
+
+            - name: Localizar manifest y before-state fuente
+              id: locate_source
+              run: |
+                  set -euo pipefail
+
+                  SOURCE_MANIFEST_PATH="$(find "${ROLLBACK_SOURCE_ROOT}" -name rollback-source-manifest.json | head -n 1)"
+                  SOURCE_PACKET_PATH="$(find "${ROLLBACK_SOURCE_ROOT}" -name source-rollback-packet.json | head -n 1)"
+                  SOURCE_VERIFICATION_PATH="$(find "${ROLLBACK_SOURCE_ROOT}" -name source-rollback-verification.json | head -n 1)"
+                  BEFORE_STATE_PATH="$(find "${ROLLBACK_SOURCE_ROOT}" -name source-before-state.json | head -n 1)"
+                  if [ -z "${SOURCE_MANIFEST_PATH}" ] || [ -z "${SOURCE_PACKET_PATH}" ] || [ -z "${SOURCE_VERIFICATION_PATH}" ] || [ -z "${BEFORE_STATE_PATH}" ]; then
+                    echo "::error::Falta rollback-source-manifest.json o evidencia fuente."
+                    exit 1
+                  fi
+
+                  mkdir -p "${ROLLBACK_ARTIFACT_ROOT}"
+
+                  echo "source_manifest_path=${SOURCE_MANIFEST_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "source_packet_path=${SOURCE_PACKET_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "source_verification_path=${SOURCE_VERIFICATION_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "before_state_path=${BEFORE_STATE_PATH}" >> "${GITHUB_OUTPUT}"
+
+            - name: Smoke preflight rollback
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- smoke --json > "${ROLLBACK_ARTIFACT_ROOT}/preflight-smoke.json"
+
+            - name: Ejecutar restore desde before-state
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- replace-state \
+                    --input "${{ steps.locate_source.outputs.before_state_path }}" \
+                    --allow-destructive \
+                    --json \
+                    > "${ROLLBACK_ARTIFACT_ROOT}/rollback-result.json"
+
+            - name: Smoke post-rollback
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- smoke --json > "${ROLLBACK_ARTIFACT_ROOT}/post-rollback-smoke.json"
+                  npm run cutover -- inspect --json > "${ROLLBACK_ARTIFACT_ROOT}/post-rollback-inspect.json"
+
+            - name: Escribir manifest de rollback
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  const artifactRoot = process.env.ROLLBACK_ARTIFACT_ROOT;
+                  const payload = {
+                    generatedAt: new Date().toISOString(),
+                    targetEnvironment: process.env.TARGET_ENVIRONMENT_INPUT || 'production',
+                    operationMode: process.env.OPERATION_MODE_INPUT || 'rehearsal',
+                    preflightSmokePath: path.join(artifactRoot, 'preflight-smoke.json'),
+                    rollbackResultPath: path.join(artifactRoot, 'rollback-result.json'),
+                    postRollbackSmokePath: path.join(artifactRoot, 'post-rollback-smoke.json'),
+                    postRollbackInspectPath: path.join(artifactRoot, 'post-rollback-inspect.json')
+                  };
+                  fs.writeFileSync(
+                    path.join(artifactRoot, 'rollback-manifest.json'),
+                    `${JSON.stringify(payload, null, 2)}\n`
+                  );
+                  NODE
+
+            - name: Publicar artifacts de rollback
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-rollback-artifacts
+                  path: verification/patient-flow-os-rollback/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Resumen de rollback
+              if: ${{ always() }}
+              env:
+                  SOURCE_PACKET_JSON: ${{ steps.locate_source.outputs.source_packet_path }}
+                  SOURCE_VERIFICATION_JSON: ${{ steps.locate_source.outputs.source_verification_path }}
+                  ROLLBACK_RESULT_JSON: ${{ env.ROLLBACK_ARTIFACT_ROOT }}/rollback-result.json
+                  POST_ROLLBACK_SMOKE_JSON: ${{ env.ROLLBACK_ARTIFACT_ROOT }}/post-rollback-smoke.json
+                  POST_ROLLBACK_INSPECT_JSON: ${{ env.ROLLBACK_ARTIFACT_ROOT }}/post-rollback-inspect.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS Rollback', ''];
+                  lines.push(`- Target environment: \`patient-flow-os-${process.env.TARGET_ENVIRONMENT_INPUT || 'production'}\``);
+                  lines.push(`- Operation mode: \`${process.env.OPERATION_MODE_INPUT || 'rehearsal'}\``);
+
+                  if (process.env.SOURCE_PACKET_JSON && fs.existsSync(process.env.SOURCE_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.SOURCE_PACKET_JSON, 'utf8'));
+                    lines.push(`- Source rollback ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                  }
+
+                  if (process.env.SOURCE_VERIFICATION_JSON && fs.existsSync(process.env.SOURCE_VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.SOURCE_VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Source rollback verification: \`${verification?.rollbackVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  if (process.env.ROLLBACK_RESULT_JSON && fs.existsSync(process.env.ROLLBACK_RESULT_JSON)) {
+                    const result = JSON.parse(fs.readFileSync(process.env.ROLLBACK_RESULT_JSON, 'utf8'));
+                    lines.push(`- Rollback command: \`${result.command || 'replace-state'}\``);
+                    lines.push(`- Restored tenants/cases: \`${result?.summary?.totals?.tenants ?? 'n/a'} / ${result?.summary?.totals?.cases ?? 'n/a'}\``);
+                  }
+
+                  if (process.env.POST_ROLLBACK_SMOKE_JSON && fs.existsSync(process.env.POST_ROLLBACK_SMOKE_JSON)) {
+                    const smoke = JSON.parse(fs.readFileSync(process.env.POST_ROLLBACK_SMOKE_JSON, 'utf8'));
+                    lines.push(`- Post-rollback smoke: \`${smoke?.smoke?.ok === true ? 'ok' : 'failed'}\``);
+                  }
+
+                  if (process.env.POST_ROLLBACK_INSPECT_JSON && fs.existsSync(process.env.POST_ROLLBACK_INSPECT_JSON)) {
+                    const inspect = JSON.parse(fs.readFileSync(process.env.POST_ROLLBACK_INSPECT_JSON, 'utf8'));
+                    lines.push(`- Post-rollback tenants/cases: \`${inspect?.summary?.totals?.tenants ?? 'n/a'} / ${inspect?.summary?.totals?.cases ?? 'n/a'}\``);
+                  }
+
+                  lines.push('- Rollback artifact set: `preflight-smoke.json`, `rollback-result.json`, `post-rollback-smoke.json`, `post-rollback-inspect.json`, `rollback-manifest.json`');
+                  lines.push(`- Rollback artifact: \`patient-flow-os-rollback-artifacts\``);
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE

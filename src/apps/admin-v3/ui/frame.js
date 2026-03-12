@@ -11,6 +11,8 @@ export {
 export {
     setLogin2FAVisibility,
     setLoginFeedback,
+    setLoginMode,
+    setOperatorAuthLoginState,
     setLoginSubmittingState,
     resetLoginForm,
     focusLoginField,

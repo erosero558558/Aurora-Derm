@@ -16,9 +16,14 @@ if (is_file($autoloadFile)) {
     }
 }
 
+// Permite aislar tests/CLI que necesitan evitar la config local del repo.
+$skipEnvFileRaw = getenv('PIELARMONIA_SKIP_ENV_FILE');
+$skipEnvFile = is_string($skipEnvFileRaw)
+    && in_array(strtolower(trim($skipEnvFileRaw)), ['1', 'true', 'yes', 'on'], true);
+
 // Cargar variables de entorno si existe env.php
 $envFile = __DIR__ . DIRECTORY_SEPARATOR . 'env.php';
-if (is_file($envFile)) {
+if (!$skipEnvFile && is_file($envFile)) {
     try {
         require_once $envFile;
     } catch (Throwable $envError) {

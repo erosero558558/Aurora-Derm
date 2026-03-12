@@ -7,9 +7,11 @@ namespace Stripe {
         class StripeClient
         {
             public $paymentIntents;
+            public $checkout;
             public function __construct($secret)
             {
                 $this->paymentIntents = new PaymentIntents();
+                $this->checkout = new Checkout();
             }
         }
     }
@@ -31,11 +33,48 @@ namespace Stripe {
             }
             public function retrieve($id)
             {
-                $data = [
+                $overrides = isset($GLOBALS['__STRIPE_MOCK_PAYMENT_INTENTS'][$id]) && is_array($GLOBALS['__STRIPE_MOCK_PAYMENT_INTENTS'][$id])
+                    ? $GLOBALS['__STRIPE_MOCK_PAYMENT_INTENTS'][$id]
+                    : [];
+                $data = array_merge([
                     'id' => $id,
                     'status' => 'succeeded',
                     'amount' => 4600,
-                    'currency' => 'usd'
+                    'amount_received' => 4600,
+                    'currency' => 'usd',
+                    'metadata' => [],
+                ], $overrides);
+                return new StripeObject($data);
+            }
+        }
+    }
+    if (!class_exists('Stripe\Checkout')) {
+        class Checkout
+        {
+            public $sessions;
+            public function __construct()
+            {
+                $this->sessions = new CheckoutSessions();
+            }
+        }
+    }
+    if (!class_exists('Stripe\CheckoutSessions')) {
+        class CheckoutSessions
+        {
+            public function create($params, $options = [])
+            {
+                $sessionId = 'cs_mock_' . bin2hex(random_bytes(8));
+                $metadata = isset($params['metadata']) && is_array($params['metadata']) ? $params['metadata'] : [];
+                $data = [
+                    'id' => $sessionId,
+                    'url' => 'https://checkout.stripe.test/session/' . $sessionId,
+                    'status' => 'open',
+                    'payment_status' => 'unpaid',
+                    'metadata' => $metadata,
+                    'client_reference_id' => isset($params['client_reference_id']) ? $params['client_reference_id'] : '',
+                    'success_url' => isset($params['success_url']) ? $params['success_url'] : '',
+                    'cancel_url' => isset($params['cancel_url']) ? $params['cancel_url'] : '',
+                    'payment_intent' => null,
                 ];
                 return new StripeObject($data);
             }
@@ -67,6 +106,10 @@ namespace Stripe {
                 if ($sigHeader !== 'valid_signature') {
                     throw new Exception\SignatureVerificationException("Invalid signature");
                 }
+                $decoded = json_decode((string) $payload, true);
+                if (is_array($decoded)) {
+                    return new Event($decoded);
+                }
                 return new Event();
             }
         }
@@ -74,15 +117,25 @@ namespace Stripe {
     if (!class_exists('Stripe\Event')) {
         class Event
         {
-            public $type = 'payment_intent.succeeded';
+            public $type;
             public $data;
-            public function __construct()
+            private $payload;
+            public function __construct($payload = null)
             {
-                $this->data = ['object' => ['id' => 'pi_mock_webhook']];
+                $this->payload = is_array($payload) ? $payload : [
+                    'type' => 'payment_intent.succeeded',
+                    'data' => ['object' => ['id' => 'pi_mock_webhook']],
+                ];
+                $this->type = isset($this->payload['type']) ? $this->payload['type'] : 'payment_intent.succeeded';
+                $this->data = isset($this->payload['data']) ? $this->payload['data'] : ['object' => ['id' => 'pi_mock_webhook']];
             }
             public function toArray()
             {
-                return ['type' => $this->type, 'data' => $this->data];
+                return [
+                    'id' => isset($this->payload['id']) ? $this->payload['id'] : 'evt_mock',
+                    'type' => $this->type,
+                    'data' => $this->data,
+                ];
             }
         }
     }

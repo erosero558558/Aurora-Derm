@@ -32,12 +32,14 @@ gobernanza operativa de Piel en Armonia.
 
 1. `npm install`
 2. `npx playwright install`
-3. `php -S 127.0.0.1:8011 -t .`
-4. Abrir:
+3. Terminal 1: `php -S 127.0.0.1:8011 -t .`
+4. Terminal 2: `npm run auth:operator:bridge`
+5. Abrir:
     - Publico gateway: `http://127.0.0.1:8011`
     - Publico ES: `http://127.0.0.1:8011/es/`
     - Publico EN: `http://127.0.0.1:8011/en/`
     - Admin: `http://127.0.0.1:8011/admin.html`
+    - Operador: `http://127.0.0.1:8011/operador-turnos.html`
     - Health: `http://127.0.0.1:8011/api.php?resource=health`
 
 Notas de testing local:
@@ -46,6 +48,8 @@ Notas de testing local:
 - Para apuntar las suites a un servidor ya levantado usa `TEST_BASE_URL=http://127.0.0.1:8011`.
 - La reutilizacion de servidor queda en opt-in con `TEST_REUSE_EXISTING_SERVER=1`.
 - `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` si no le pasas host.
+- El login OpenClaw/ChatGPT local necesita dos procesos vivos: backend PHP en `8011` y helper local en `4173`.
+- Antes de abrir `admin.html`, valida el OAuth local con `openclaw models status --json`.
 
 Variable minima recomendada:
 
