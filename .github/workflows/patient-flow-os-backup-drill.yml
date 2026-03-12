@@ -70,6 +70,10 @@ jobs:
             BACKUP_ESCROW_BUCKET: ${{ secrets.PATIENT_FLOW_OS_BACKUP_ESCROW_BUCKET }}
             BACKUP_ESCROW_PREFIX: ${{ vars.PATIENT_FLOW_OS_BACKUP_ESCROW_PREFIX || 'patient-flow-os/backup-escrow' }}
             BACKUP_ESCROW_LIFECYCLE_POLICY_REF: ${{ vars.PATIENT_FLOW_OS_BACKUP_ESCROW_LIFECYCLE_POLICY_REF || 'patient-flow-os-backup-retention' }}
+            BACKUP_ESCROW_REPLICA_BUCKET: ${{ secrets.PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_BUCKET }}
+            BACKUP_ESCROW_REPLICA_REGION: ${{ vars.PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_REGION || secrets.PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_REGION }}
+            BACKUP_ESCROW_REPLICA_PREFIX: ${{ vars.PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_PREFIX || 'patient-flow-os/backup-escrow-replica' }}
+            BACKUP_ESCROW_REPLICA_LIFECYCLE_POLICY_REF: ${{ vars.PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_LIFECYCLE_POLICY_REF || 'patient-flow-os-backup-retention-replica' }}
             ARCHIVE_DESTINATION: github_artifact_encrypted
             ENCRYPTION_MODE: gpg_symmetric
             ENCRYPTION_KEY_REF: github_secret:PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE
@@ -103,6 +107,14 @@ jobs:
                   fi
                   if [ -z "${BACKUP_ESCROW_BUCKET}" ]; then
                     echo "::error::Falta el secret PATIENT_FLOW_OS_BACKUP_ESCROW_BUCKET."
+                    exit 1
+                  fi
+                  if [ -z "${BACKUP_ESCROW_REPLICA_BUCKET}" ]; then
+                    echo "::error::Falta el secret PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_BUCKET."
+                    exit 1
+                  fi
+                  if [ -z "${BACKUP_ESCROW_REPLICA_REGION}" ]; then
+                    echo "::error::Falta la region BACKUP_ESCROW_REPLICA_REGION para el escrow replica."
                     exit 1
                   fi
                   if [ "${CONFIRM_DRILL_RESET}" != "true" ]; then
@@ -432,6 +444,131 @@ jobs:
                     --json \
                     > "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-escrow-verification.json"
 
+            - name: Publicar dump cifrado al escrow replica
+              run: |
+                  set -euo pipefail
+
+                  REPLICA_OBJECT_KEY="$(
+                    node - <<'NODE'
+                    const parts = [
+                      process.env.BACKUP_ESCROW_REPLICA_PREFIX || 'patient-flow-os/backup-escrow-replica',
+                      process.env.TARGET_ENVIRONMENT_INPUT || 'production',
+                      'backup-drill',
+                      String(process.env.GITHUB_RUN_ID || 'local-run'),
+                      `patient-flow-os-${process.env.TARGET_ENVIRONMENT_INPUT || 'production'}-${(process.env.BACKUP_FINISHED_AT || '').replace(/[:.]/g, '-')}.dump.gpg`
+                    ];
+                    process.stdout.write(parts.filter(Boolean).join('/'));
+                    NODE
+                  )"
+                  REPLICA_TAGGING="$(
+                    node - <<'NODE'
+                    const params = new URLSearchParams({
+                      source_environment: process.env.TARGET_ENVIRONMENT_INPUT || 'production',
+                      retention_days: process.env.RETENTION_DAYS_INPUT || '30',
+                      expires_at: process.env.EXPIRES_AT || '',
+                      backup_mode: 'logical_pg_dump',
+                      replication_mode: 'escrow_replica_copy',
+                      lifecycle_policy_ref: process.env.BACKUP_ESCROW_REPLICA_LIFECYCLE_POLICY_REF || 'patient-flow-os-backup-retention-replica'
+                    });
+                    process.stdout.write(params.toString());
+                    NODE
+                  )"
+                  REPLICA_PUT_OBJECT_RESPONSE_PATH="${BACKUP_DRILL_ARTIFACT_ROOT}/replica-escrow-put-object-response.json"
+                  REPLICA_HEAD_OBJECT_PATH="${BACKUP_DRILL_ARTIFACT_ROOT}/replica-escrow-head-object.json"
+                  REPLICA_OBJECT_TAGGING_PATH="${BACKUP_DRILL_ARTIFACT_ROOT}/replica-escrow-object-tagging.json"
+                  REPLICA_UPLOAD_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+
+                  aws s3api put-object \
+                    --region "${BACKUP_ESCROW_REPLICA_REGION}" \
+                    --bucket "${BACKUP_ESCROW_REPLICA_BUCKET}" \
+                    --key "${REPLICA_OBJECT_KEY}" \
+                    --body "${ENCRYPTED_DUMP_PATH}" \
+                    --metadata "source_environment=${TARGET_ENVIRONMENT_INPUT},retention_days=${RETENTION_DAYS_INPUT},expires_at=${EXPIRES_AT},backup_mode=logical_pg_dump,encryption_mode=${ENCRYPTION_MODE},replication_mode=escrow_replica_copy,lifecycle_policy_ref=${BACKUP_ESCROW_REPLICA_LIFECYCLE_POLICY_REF}" \
+                    --tagging "${REPLICA_TAGGING}" \
+                    --server-side-encryption AES256 \
+                    > "${REPLICA_PUT_OBJECT_RESPONSE_PATH}"
+
+                  REPLICA_UPLOAD_FINISHED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+
+                  aws s3api head-object \
+                    --region "${BACKUP_ESCROW_REPLICA_REGION}" \
+                    --bucket "${BACKUP_ESCROW_REPLICA_BUCKET}" \
+                    --key "${REPLICA_OBJECT_KEY}" \
+                    > "${REPLICA_HEAD_OBJECT_PATH}"
+
+                  aws s3api get-object-tagging \
+                    --region "${BACKUP_ESCROW_REPLICA_REGION}" \
+                    --bucket "${BACKUP_ESCROW_REPLICA_BUCKET}" \
+                    --key "${REPLICA_OBJECT_KEY}" \
+                    > "${REPLICA_OBJECT_TAGGING_PATH}"
+
+                  {
+                    echo "REPLICA_ESCROW_OBJECT_KEY=${REPLICA_OBJECT_KEY}"
+                    echo "REPLICA_ESCROW_PUT_OBJECT_RESPONSE_PATH=${REPLICA_PUT_OBJECT_RESPONSE_PATH}"
+                    echo "REPLICA_ESCROW_HEAD_OBJECT_PATH=${REPLICA_HEAD_OBJECT_PATH}"
+                    echo "REPLICA_ESCROW_OBJECT_TAGGING_PATH=${REPLICA_OBJECT_TAGGING_PATH}"
+                    echo "REPLICA_UPLOAD_STARTED_AT=${REPLICA_UPLOAD_STARTED_AT}"
+                    echo "REPLICA_UPLOAD_FINISHED_AT=${REPLICA_UPLOAD_FINISHED_AT}"
+                  } >> "${GITHUB_ENV}"
+
+            - name: Escribir backup escrow replica manifest
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  const artifactRoot = process.env.BACKUP_DRILL_ARTIFACT_ROOT;
+                  const manifest = {
+                    generatedAt: new Date().toISOString(),
+                    sourceEnvironment: process.env.TARGET_ENVIRONMENT_INPUT || 'production',
+                    replicaProvider: process.env.ESCROW_PROVIDER || 'aws_s3',
+                    archiveDestination: process.env.ESCROW_ARCHIVE_DESTINATION || 'aws_s3_encrypted',
+                    replicationMode: 'escrow_replica_copy',
+                    sourceBackupEscrowPacketPath: path.join(artifactRoot, 'backup-escrow-packet.json'),
+                    bucket: process.env.BACKUP_ESCROW_REPLICA_BUCKET,
+                    key: process.env.REPLICA_ESCROW_OBJECT_KEY,
+                    region: process.env.BACKUP_ESCROW_REPLICA_REGION,
+                    lifecyclePolicyRef: process.env.BACKUP_ESCROW_REPLICA_LIFECYCLE_POLICY_REF || 'patient-flow-os-backup-retention-replica',
+                    encryptionMode: process.env.ENCRYPTION_MODE || 'gpg_symmetric',
+                    encryptionKeyRef: process.env.ENCRYPTION_KEY_REF || 'github_secret:PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE',
+                    encryptedDumpPath: process.env.ENCRYPTED_DUMP_PATH,
+                    encryptedDumpSha256Path: process.env.ENCRYPTED_DUMP_SHA_PATH,
+                    putObjectResponsePath: process.env.REPLICA_ESCROW_PUT_OBJECT_RESPONSE_PATH,
+                    headObjectPath: process.env.REPLICA_ESCROW_HEAD_OBJECT_PATH,
+                    objectTaggingPath: process.env.REPLICA_ESCROW_OBJECT_TAGGING_PATH,
+                    retentionDays: Number(process.env.RETENTION_DAYS_INPUT || '30'),
+                    expiresAt: process.env.EXPIRES_AT,
+                    uploadStartedAt: process.env.REPLICA_UPLOAD_STARTED_AT,
+                    uploadFinishedAt: process.env.REPLICA_UPLOAD_FINISHED_AT
+                  };
+                  fs.writeFileSync(
+                    path.join(artifactRoot, 'backup-escrow-replica-manifest.json'),
+                    `${JSON.stringify(manifest, null, 2)}\n`
+                  );
+                  NODE
+
+            - name: Construir backup escrow replica packet
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- backup-escrow-replica-packet \
+                    --input "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-escrow-replica-manifest.json" \
+                    --artifacts-dir "${BACKUP_DRILL_ARTIFACT_ROOT}" \
+                    --source-environment "${TARGET_ENVIRONMENT_INPUT}" \
+                    --max-object-age-hours "${MAX_ESCROW_AGE_HOURS_INPUT}" \
+                    --label "patient-flow-os-${TARGET_ENVIRONMENT_INPUT}-backup-escrow-replica" \
+                    --json \
+                    > "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-escrow-replica-packet-command.json"
+
+            - name: Verificar backup escrow replica packet
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-backup-escrow-replica \
+                    --input "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-escrow-replica-packet.json" \
+                    --source-environment "${TARGET_ENVIRONMENT_INPUT}" \
+                    --max-object-age-hours "${MAX_ESCROW_AGE_HOURS_INPUT}" \
+                    --json \
+                    > "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-escrow-replica-verification.json"
+
             - name: Publicar artifacts de backup drill
               if: ${{ always() }}
               uses: actions/upload-artifact@v4
@@ -448,6 +585,8 @@ jobs:
                   VERIFICATION_JSON: ${{ env.BACKUP_DRILL_ARTIFACT_ROOT }}/backup-drill-verification.json
                   ESCROW_PACKET_JSON: ${{ env.BACKUP_DRILL_ARTIFACT_ROOT }}/backup-escrow-packet.json
                   ESCROW_VERIFICATION_JSON: ${{ env.BACKUP_DRILL_ARTIFACT_ROOT }}/backup-escrow-verification.json
+                  REPLICA_PACKET_JSON: ${{ env.BACKUP_DRILL_ARTIFACT_ROOT }}/backup-escrow-replica-packet.json
+                  REPLICA_VERIFICATION_JSON: ${{ env.BACKUP_DRILL_ARTIFACT_ROOT }}/backup-escrow-replica-verification.json
               run: |
                   node - <<'NODE'
                   const fs = require('fs');
@@ -495,7 +634,21 @@ jobs:
                     lines.push(`- External escrow verification: \`${verification?.backupEscrowVerification?.ok === true ? 'passed' : 'failed'}\``);
                   }
 
-                  lines.push('- Backup drill artifact set: `backup-drill-manifest.json`, `patient-flow-os.dump.sha256`, `patient-flow-os.dump.gpg`, `patient-flow-os.dump.gpg.sha256`, `source-smoke.json`, `source-inspect.json`, `restore-smoke.json`, `restore-inspect.json`, `backup-drill-packet.json`, `backup-drill-checklist.json`, `backup-drill-verification.json`, `backup-escrow-manifest.json`, `escrow-put-object-response.json`, `escrow-head-object.json`, `escrow-object-tagging.json`, `backup-escrow-packet.json`, `backup-escrow-checklist.json`, `backup-escrow-verification.json`');
+                  if (process.env.REPLICA_PACKET_JSON && fs.existsSync(process.env.REPLICA_PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.REPLICA_PACKET_JSON, 'utf8'));
+                    lines.push(`- Replica escrow ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Replica escrow bucket: \`${packet?.replicaEscrowObject?.bucket || 'n/a'}\``);
+                    lines.push(`- Replica escrow key: \`${packet?.replicaEscrowObject?.key || 'n/a'}\``);
+                    lines.push(`- Replica target distinct: \`${packet?.summary?.replicaTargetDistinctFromPrimary === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Replica checksum matches primary: \`${packet?.summary?.encryptedDumpChecksumMatchesSource === true ? 'yes' : 'no'}\``);
+                  }
+
+                  if (process.env.REPLICA_VERIFICATION_JSON && fs.existsSync(process.env.REPLICA_VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.REPLICA_VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Replica escrow verification: \`${verification?.backupEscrowReplicaVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  lines.push('- Backup drill artifact set: `backup-drill-manifest.json`, `patient-flow-os.dump.sha256`, `patient-flow-os.dump.gpg`, `patient-flow-os.dump.gpg.sha256`, `source-smoke.json`, `source-inspect.json`, `restore-smoke.json`, `restore-inspect.json`, `backup-drill-packet.json`, `backup-drill-checklist.json`, `backup-drill-verification.json`, `backup-escrow-manifest.json`, `escrow-put-object-response.json`, `escrow-head-object.json`, `escrow-object-tagging.json`, `backup-escrow-packet.json`, `backup-escrow-checklist.json`, `backup-escrow-verification.json`, `backup-escrow-replica-manifest.json`, `replica-escrow-put-object-response.json`, `replica-escrow-head-object.json`, `replica-escrow-object-tagging.json`, `backup-escrow-replica-packet.json`, `backup-escrow-replica-checklist.json`, `backup-escrow-replica-verification.json`');
                   lines.push(`- Artifact: \`patient-flow-os-backup-drill-artifacts\``);
                   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
                   NODE

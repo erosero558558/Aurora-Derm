@@ -2561,3 +2561,901 @@ test("verify-backup-escrow fails when the external object age exceeds the config
     );
   });
 });
+
+test("backup-escrow-replica-packet writes replica escrow evidence without requiring DATABASE_URL", async () => {
+  await withTempDir(async (dir) => {
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const manifestPath = join(dir, "backup-escrow-replica-manifest.json");
+    const sourceBackupEscrowPacketPath = join(dir, "backup-escrow-packet.json");
+    const backupDrillPacketPath = join(dir, "backup-drill-packet.json");
+    const headObjectPath = join(dir, "replica-head-object.json");
+    const objectTaggingPath = join(dir, "replica-object-tagging.json");
+    const putObjectResponsePath = join(dir, "replica-put-object-response.json");
+    const encryptedDumpPath = join(dir, "patient-flow-os.dump.gpg");
+    const encryptedDumpSha256Path = join(dir, "patient-flow-os.dump.gpg.sha256");
+    const outputDir = join(dir, "backup-escrow-replica-artifacts");
+
+    await writeFile(backupDrillPacketPath, `${JSON.stringify({ ok: true }, null, 2)}\n`, "utf8");
+    await writeFile(encryptedDumpPath, "encrypted dump bytes", "utf8");
+    await writeFile(encryptedDumpSha256Path, `${"f".repeat(64)}  patient-flow-os.dump.gpg\n`, "utf8");
+    await writeFile(
+      sourceBackupEscrowPacketPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: now.toISOString(),
+          label: "patient-flow-os-production-backup-escrow",
+          sourceEnvironment: "production",
+          escrowProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          summary: {
+            sourceBackupDrillReady: true,
+            objectUploaded: true,
+            metadataAligned: true,
+            tagsAligned: true,
+            retentionDays: 30,
+            expiresAt,
+            uploadDurationSeconds: 60,
+            objectAgeHours: 0.1,
+            maxObjectAgeHours: 24
+          },
+          escrowObject: {
+            bucket: "patient-flow-os-backups-primary",
+            key: "production/backup-drill/patient-flow-os.dump.gpg",
+            region: "us-east-1",
+            versionId: "version-1",
+            eTag: "etag-primary",
+            lastModified: now.toISOString(),
+            serverSideEncryption: "AES256",
+            lifecyclePolicyRef: "patient-flow-os-backup-retention-primary"
+          },
+          evidence: {
+            backupEscrowManifestPath: "backup-escrow-manifest.json",
+            backupDrillPacketPath,
+            encryptedDumpPath,
+            encryptedDumpSha256Path,
+            encryptedDumpSha256: "f".repeat(64),
+            putObjectResponsePath: "escrow-put-object-response.json",
+            headObjectPath: "escrow-head-object.json",
+            objectTaggingPath: "escrow-object-tagging.json"
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+    await writeFile(
+      putObjectResponsePath,
+      `${JSON.stringify({ ETag: "\"etag-replica\"", VersionId: "replica-version", ServerSideEncryption: "AES256" }, null, 2)}\n`,
+      "utf8"
+    );
+    await writeFile(
+      headObjectPath,
+      `${JSON.stringify(
+        {
+          ETag: "\"etag-replica\"",
+          VersionId: "replica-version",
+          LastModified: now.toISOString(),
+          ServerSideEncryption: "AES256",
+          Metadata: {
+            source_environment: "production",
+            retention_days: "30",
+            expires_at: expiresAt,
+            backup_mode: "logical_pg_dump",
+            encryption_mode: "gpg_symmetric",
+            replication_mode: "escrow_replica_copy",
+            lifecycle_policy_ref: "patient-flow-os-backup-retention-replica"
+          }
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+    await writeFile(
+      objectTaggingPath,
+      `${JSON.stringify(
+        {
+          TagSet: [
+            { Key: "source_environment", Value: "production" },
+            { Key: "retention_days", Value: "30" },
+            { Key: "expires_at", Value: expiresAt },
+            { Key: "backup_mode", Value: "logical_pg_dump" },
+            { Key: "replication_mode", Value: "escrow_replica_copy" },
+            { Key: "lifecycle_policy_ref", Value: "patient-flow-os-backup-retention-replica" }
+          ]
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+    await writeFile(
+      manifestPath,
+      `${JSON.stringify(
+        {
+          generatedAt: now.toISOString(),
+          sourceEnvironment: "production",
+          replicaProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          replicationMode: "escrow_replica_copy",
+          sourceBackupEscrowPacketPath,
+          bucket: "patient-flow-os-backups-replica",
+          key: "production/backup-drill/patient-flow-os.dump.gpg",
+          region: "us-west-2",
+          lifecyclePolicyRef: "patient-flow-os-backup-retention-replica",
+          encryptionMode: "gpg_symmetric",
+          encryptionKeyRef: "github_secret:PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE",
+          encryptedDumpPath,
+          encryptedDumpSha256Path,
+          putObjectResponsePath,
+          headObjectPath,
+          objectTaggingPath,
+          retentionDays: 30,
+          expiresAt,
+          uploadStartedAt: new Date(now.getTime() - 60 * 1000).toISOString(),
+          uploadFinishedAt: now.toISOString()
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "backup-escrow-replica-packet",
+        "--input",
+        manifestPath,
+        "--artifacts-dir",
+        outputDir,
+        "--source-environment",
+        "production",
+        "--max-object-age-hours",
+        "24",
+        "--label",
+        "patient-flow-os-production-backup-escrow-replica",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 0);
+    const payload = JSON.parse(capture.stdout()) as {
+      command: string;
+      outputPath: string;
+      backupEscrowReplicaPacket: {
+        ok: boolean;
+        summary: {
+          sourceBackupEscrowReady: boolean;
+          sourceBackupDrillReady: boolean;
+          replicaUploaded: boolean;
+          metadataAligned: boolean;
+          tagsAligned: boolean;
+          encryptedDumpChecksumMatchesSource: boolean;
+          replicaTargetDistinctFromPrimary: boolean;
+        };
+        sourceEscrowObject: { bucket: string };
+        replicaEscrowObject: { bucket: string; region: string; eTag: string | null };
+      };
+    };
+    assert.equal(payload.command, "backup-escrow-replica-packet");
+    assert.equal(payload.backupEscrowReplicaPacket.ok, true);
+    assert.equal(payload.backupEscrowReplicaPacket.summary.sourceBackupEscrowReady, true);
+    assert.equal(payload.backupEscrowReplicaPacket.summary.sourceBackupDrillReady, true);
+    assert.equal(payload.backupEscrowReplicaPacket.summary.replicaUploaded, true);
+    assert.equal(payload.backupEscrowReplicaPacket.summary.metadataAligned, true);
+    assert.equal(payload.backupEscrowReplicaPacket.summary.tagsAligned, true);
+    assert.equal(payload.backupEscrowReplicaPacket.summary.encryptedDumpChecksumMatchesSource, true);
+    assert.equal(payload.backupEscrowReplicaPacket.summary.replicaTargetDistinctFromPrimary, true);
+    assert.equal(payload.backupEscrowReplicaPacket.sourceEscrowObject.bucket, "patient-flow-os-backups-primary");
+    assert.equal(payload.backupEscrowReplicaPacket.replicaEscrowObject.bucket, "patient-flow-os-backups-replica");
+    assert.equal(payload.backupEscrowReplicaPacket.replicaEscrowObject.region, "us-west-2");
+    assert.equal(payload.backupEscrowReplicaPacket.replicaEscrowObject.eTag, "etag-replica");
+    assert.equal(payload.outputPath, join(outputDir, "backup-escrow-replica-packet.json"));
+    assert.ok(
+      (await readFile(join(outputDir, "backup-escrow-replica-checklist.json"), "utf8")).includes(
+        "review_replica_region_isolation"
+      )
+    );
+  });
+});
+
+test("verify-backup-escrow-replica passes for a valid replica packet", async () => {
+  await withTempDir(async (dir) => {
+    const now = new Date();
+    const generatedAt = now.toISOString();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const manifestPath = join(dir, "backup-escrow-replica-manifest.json");
+    const sourcePacketPath = join(dir, "backup-escrow-packet.json");
+    const backupDrillPacketPath = join(dir, "backup-drill-packet.json");
+    const headObjectPath = join(dir, "replica-head-object.json");
+    const objectTaggingPath = join(dir, "replica-object-tagging.json");
+    const packetPath = join(dir, "backup-escrow-replica-packet.json");
+
+    await writeFile(manifestPath, "{}\n", "utf8");
+    await writeFile(sourcePacketPath, "{}\n", "utf8");
+    await writeFile(backupDrillPacketPath, "{}\n", "utf8");
+    await writeFile(headObjectPath, "{}\n", "utf8");
+    await writeFile(objectTaggingPath, "{}\n", "utf8");
+
+    await writeFile(
+      packetPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt,
+          label: "patient-flow-os-production-backup-escrow-replica",
+          sourceEnvironment: "production",
+          replicaProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          replicationMode: "escrow_replica_copy",
+          summary: {
+            sourceBackupEscrowReady: true,
+            sourceBackupDrillReady: true,
+            replicaUploaded: true,
+            metadataAligned: true,
+            tagsAligned: true,
+            encryptedDumpChecksumMatchesSource: true,
+            replicaTargetDistinctFromPrimary: true,
+            retentionDays: 30,
+            expiresAt,
+            uploadDurationSeconds: 45,
+            objectAgeHours: 0.2,
+            maxObjectAgeHours: 24
+          },
+          sourceEscrowObject: {
+            bucket: "patient-flow-os-backups-primary",
+            key: "production/backup-drill/patient-flow-os.dump.gpg",
+            region: "us-east-1",
+            versionId: "primary-version",
+            eTag: "etag-primary",
+            lastModified: generatedAt,
+            serverSideEncryption: "AES256",
+            lifecyclePolicyRef: "patient-flow-os-backup-retention-primary"
+          },
+          replicaEscrowObject: {
+            bucket: "patient-flow-os-backups-replica",
+            key: "production/backup-drill/patient-flow-os.dump.gpg",
+            region: "us-west-2",
+            versionId: "replica-version",
+            eTag: "etag-replica",
+            lastModified: generatedAt,
+            serverSideEncryption: "AES256",
+            lifecyclePolicyRef: "patient-flow-os-backup-retention-replica"
+          },
+          evidence: {
+            backupEscrowReplicaManifestPath: manifestPath,
+            sourceBackupEscrowPacketPath: sourcePacketPath,
+            backupDrillPacketPath,
+            encryptedDumpPath: "patient-flow-os.dump.gpg",
+            encryptedDumpSha256Path: "patient-flow-os.dump.gpg.sha256",
+            encryptedDumpSha256: "f".repeat(64),
+            putObjectResponsePath: "replica-put-object-response.json",
+            headObjectPath,
+            objectTaggingPath
+          },
+          automatedChecks: [
+            {
+              id: "replica_target_distinct",
+              title: "Replica escrow target differs from the primary escrow target",
+              status: "passed",
+              message: "Replica escrow target is distinct from the primary bucket/key/region."
+            }
+          ],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "verify-backup-escrow-replica",
+        "--input",
+        packetPath,
+        "--source-environment",
+        "production",
+        "--max-object-age-hours",
+        "24",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 0);
+    const payload = JSON.parse(capture.stdout()) as {
+      command: string;
+      backupEscrowReplicaVerification: { ok: boolean; checks: Array<{ id: string; ok: boolean }> };
+    };
+    assert.equal(payload.command, "verify-backup-escrow-replica");
+    assert.equal(payload.backupEscrowReplicaVerification.ok, true);
+    assert.ok(payload.backupEscrowReplicaVerification.checks.every((check) => check.ok));
+  });
+});
+
+test("verify-backup-escrow-replica fails when the replica target is not distinct from the primary escrow", async () => {
+  await withTempDir(async (dir) => {
+    const now = new Date();
+    const generatedAt = now.toISOString();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const manifestPath = join(dir, "backup-escrow-replica-manifest.json");
+    const sourcePacketPath = join(dir, "backup-escrow-packet.json");
+    const backupDrillPacketPath = join(dir, "backup-drill-packet.json");
+    const headObjectPath = join(dir, "replica-head-object.json");
+    const objectTaggingPath = join(dir, "replica-object-tagging.json");
+    const packetPath = join(dir, "backup-escrow-replica-packet.json");
+
+    await writeFile(manifestPath, "{}\n", "utf8");
+    await writeFile(sourcePacketPath, "{}\n", "utf8");
+    await writeFile(backupDrillPacketPath, "{}\n", "utf8");
+    await writeFile(headObjectPath, "{}\n", "utf8");
+    await writeFile(objectTaggingPath, "{}\n", "utf8");
+
+    await writeFile(
+      packetPath,
+      `${JSON.stringify(
+        {
+          ok: false,
+          generatedAt,
+          label: "patient-flow-os-production-backup-escrow-replica",
+          sourceEnvironment: "production",
+          replicaProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          replicationMode: "escrow_replica_copy",
+          summary: {
+            sourceBackupEscrowReady: true,
+            sourceBackupDrillReady: true,
+            replicaUploaded: true,
+            metadataAligned: true,
+            tagsAligned: true,
+            encryptedDumpChecksumMatchesSource: true,
+            replicaTargetDistinctFromPrimary: false,
+            retentionDays: 30,
+            expiresAt,
+            uploadDurationSeconds: 45,
+            objectAgeHours: 0.2,
+            maxObjectAgeHours: 24
+          },
+          sourceEscrowObject: {
+            bucket: "patient-flow-os-backups-primary",
+            key: "production/backup-drill/patient-flow-os.dump.gpg",
+            region: "us-east-1",
+            versionId: "primary-version",
+            eTag: "etag-primary",
+            lastModified: generatedAt,
+            serverSideEncryption: "AES256",
+            lifecyclePolicyRef: "patient-flow-os-backup-retention-primary"
+          },
+          replicaEscrowObject: {
+            bucket: "patient-flow-os-backups-primary",
+            key: "production/backup-drill/patient-flow-os.dump.gpg",
+            region: "us-east-1",
+            versionId: "replica-version",
+            eTag: "etag-replica",
+            lastModified: generatedAt,
+            serverSideEncryption: "AES256",
+            lifecyclePolicyRef: "patient-flow-os-backup-retention-primary"
+          },
+          evidence: {
+            backupEscrowReplicaManifestPath: manifestPath,
+            sourceBackupEscrowPacketPath: sourcePacketPath,
+            backupDrillPacketPath,
+            encryptedDumpPath: "patient-flow-os.dump.gpg",
+            encryptedDumpSha256Path: "patient-flow-os.dump.gpg.sha256",
+            encryptedDumpSha256: "f".repeat(64),
+            putObjectResponsePath: "replica-put-object-response.json",
+            headObjectPath,
+            objectTaggingPath
+          },
+          automatedChecks: [
+            {
+              id: "replica_target_distinct",
+              title: "Replica escrow target differs from the primary escrow target",
+              status: "failed",
+              message: "Replica escrow target matches the primary target and does not provide isolation."
+            }
+          ],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "verify-backup-escrow-replica",
+        "--input",
+        packetPath,
+        "--source-environment",
+        "production",
+        "--max-object-age-hours",
+        "24",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 1);
+    const payload = JSON.parse(capture.stdout()) as {
+      error: string;
+      backupEscrowReplicaVerification: {
+        ok: boolean;
+        checks: Array<{ id: string; ok: boolean }>;
+      };
+    };
+    assert.match(payload.error, /backup escrow replica packet failed verification/);
+    assert.equal(payload.backupEscrowReplicaVerification.ok, false);
+    assert.ok(
+      payload.backupEscrowReplicaVerification.checks.some(
+        (check) => check.id === "packet.summary.replica_target_distinct" && check.ok === false
+      )
+    );
+  });
+});
+
+test("backup-escrow-restore-packet writes restore evidence from an escrow artifact without requiring DATABASE_URL", async () => {
+  const pool = createPgPool();
+  await replaceBootstrapStateInPostgres(pool, createBootstrapState());
+
+  try {
+    await withTempDir(async (dir) => {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const sourceSmokePath = join(dir, "source-smoke.json");
+      const sourceInspectPath = join(dir, "source-inspect.json");
+      const restoreSmokePath = join(dir, "restore-smoke.json");
+      const restoreInspectPath = join(dir, "restore-inspect.json");
+      const manifestPath = join(dir, "backup-escrow-restore-manifest.json");
+      const backupEscrowPacketPath = join(dir, "backup-escrow-packet.json");
+      const backupDrillPacketPath = join(dir, "backup-drill-packet.json");
+      const downloadedEncryptedDumpPath = join(dir, "downloaded-patient-flow-os.dump.gpg");
+      const downloadedEncryptedDumpShaPath = join(dir, "downloaded-patient-flow-os.dump.gpg.sha256");
+      const decryptedDumpPath = join(dir, "restored-patient-flow-os.dump");
+      const decryptedDumpShaPath = join(dir, "restored-patient-flow-os.dump.sha256");
+      const outputDir = join(dir, "backup-escrow-restore-artifacts");
+
+      await writeFile(downloadedEncryptedDumpPath, "encrypted dump bytes", "utf8");
+      await writeFile(downloadedEncryptedDumpShaPath, `${"f".repeat(64)}  downloaded-patient-flow-os.dump.gpg\n`, "utf8");
+      await writeFile(decryptedDumpPath, "plain dump bytes", "utf8");
+      await writeFile(decryptedDumpShaPath, `${"a".repeat(64)}  restored-patient-flow-os.dump\n`, "utf8");
+
+      const sourceSmokeCapture = createIoCapture();
+      assert.equal(
+        await runCutoverCli(["smoke", "--json"], {
+          pool,
+          io: sourceSmokeCapture.io,
+          cwd: dir
+        }),
+        0
+      );
+      await writeFile(sourceSmokePath, sourceSmokeCapture.stdout(), "utf8");
+      await writeFile(restoreSmokePath, sourceSmokeCapture.stdout(), "utf8");
+
+      const sourceInspectCapture = createIoCapture();
+      assert.equal(
+        await runCutoverCli(["inspect", "--json"], {
+          pool,
+          io: sourceInspectCapture.io,
+          cwd: dir
+        }),
+        0
+      );
+      await writeFile(sourceInspectPath, sourceInspectCapture.stdout(), "utf8");
+      await writeFile(restoreInspectPath, sourceInspectCapture.stdout(), "utf8");
+
+      await writeFile(
+        backupDrillPacketPath,
+        `${JSON.stringify(
+          {
+            ok: true,
+            generatedAt: now.toISOString(),
+            label: "patient-flow-os-production-backup-drill",
+            sourceEnvironment: "production",
+            backupMode: "logical_pg_dump",
+            restoreTarget: "drill",
+            archiveDestination: "github_artifact_encrypted",
+            summary: {
+              sourceSmokeOk: true,
+              restoreSmokeOk: true,
+              totalsMatch: true,
+              measuredRtoSeconds: 120,
+              estimatedRpoSeconds: 60,
+              maxRtoSeconds: 900,
+              maxRpoSeconds: 600,
+              dumpBytes: 1024,
+              encryptedDumpReady: true,
+              encryptedDumpBytes: 512,
+              retentionDays: 30,
+              expiresAt,
+              sourceTotals: JSON.parse(sourceInspectCapture.stdout()).summary.totals,
+              restoredTotals: JSON.parse(sourceInspectCapture.stdout()).summary.totals
+            },
+            evidence: {
+              backupManifestPath: "backup-drill-manifest.json",
+              dumpPath: "patient-flow-os.dump",
+              dumpSha256Path: "patient-flow-os.dump.sha256",
+              dumpSha256: "a".repeat(64),
+              encryptedDumpPath: downloadedEncryptedDumpPath,
+              encryptedDumpSha256Path: downloadedEncryptedDumpShaPath,
+              encryptedDumpSha256: "f".repeat(64),
+              encryptionMode: "gpg_symmetric",
+              encryptionKeyRef: "github_secret:PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE",
+              sourceSmokePath,
+              sourceInspectPath,
+              restoreSmokePath,
+              restoreInspectPath
+            },
+            automatedChecks: [],
+            manualChecks: []
+          },
+          null,
+          2
+        )}\n`,
+        "utf8"
+      );
+
+      await writeFile(
+        backupEscrowPacketPath,
+        `${JSON.stringify(
+          {
+            ok: true,
+            generatedAt: now.toISOString(),
+            label: "patient-flow-os-production-backup-escrow",
+            sourceEnvironment: "production",
+            escrowProvider: "aws_s3",
+            archiveDestination: "aws_s3_encrypted",
+            summary: {
+              sourceBackupDrillReady: true,
+              objectUploaded: true,
+              metadataAligned: true,
+              tagsAligned: true,
+              retentionDays: 30,
+              expiresAt,
+              uploadDurationSeconds: 60,
+              objectAgeHours: 0.1,
+              maxObjectAgeHours: 24
+            },
+            escrowObject: {
+              bucket: "patient-flow-os-backups",
+              key: "production/backup-drill/patient-flow-os.dump.gpg",
+              region: "us-east-1",
+              versionId: "version-1",
+              eTag: "etag-123",
+              lastModified: now.toISOString(),
+              serverSideEncryption: "AES256",
+              lifecyclePolicyRef: "patient-flow-os-backup-retention"
+            },
+            evidence: {
+              backupEscrowManifestPath: "backup-escrow-manifest.json",
+              backupDrillPacketPath,
+              encryptedDumpPath: downloadedEncryptedDumpPath,
+              encryptedDumpSha256Path: downloadedEncryptedDumpShaPath,
+              encryptedDumpSha256: "f".repeat(64),
+              putObjectResponsePath: "escrow-put-object-response.json",
+              headObjectPath: "escrow-head-object.json",
+              objectTaggingPath: "escrow-object-tagging.json"
+            },
+            automatedChecks: [],
+            manualChecks: []
+          },
+          null,
+          2
+        )}\n`,
+        "utf8"
+      );
+
+      await writeFile(
+        manifestPath,
+        `${JSON.stringify(
+          {
+            generatedAt: now.toISOString(),
+            sourceEnvironment: "production",
+            restoreTarget: "drill",
+            escrowProvider: "aws_s3",
+            archiveDestination: "aws_s3_encrypted",
+            backupEscrowPacketPath,
+            sourceSmokePath,
+            sourceInspectPath,
+            downloadedEncryptedDumpPath,
+            downloadedEncryptedDumpSha256Path: downloadedEncryptedDumpShaPath,
+            decryptedDumpPath,
+            decryptedDumpSha256Path: decryptedDumpShaPath,
+            restoreSmokePath,
+            restoreInspectPath,
+            downloadStartedAt: new Date(now.getTime() - 4 * 60 * 1000).toISOString(),
+            downloadFinishedAt: new Date(now.getTime() - 3 * 60 * 1000).toISOString(),
+            decryptStartedAt: new Date(now.getTime() - 2 * 60 * 1000).toISOString(),
+            decryptFinishedAt: new Date(now.getTime() - 90 * 1000).toISOString(),
+            restoreStartedAt: new Date(now.getTime() - 60 * 1000).toISOString(),
+            restoreFinishedAt: now.toISOString()
+          },
+          null,
+          2
+        )}\n`,
+        "utf8"
+      );
+
+      const capture = createIoCapture();
+      const exitCode = await runCutoverCli(
+        [
+          "backup-escrow-restore-packet",
+          "--input",
+          manifestPath,
+          "--artifacts-dir",
+          outputDir,
+          "--source-environment",
+          "production",
+          "--max-rto-seconds",
+          "900",
+          "--label",
+          "patient-flow-os-production-backup-escrow-restore",
+          "--json"
+        ],
+        {
+          io: capture.io,
+          cwd: dir
+        }
+      );
+
+      assert.equal(exitCode, 0);
+      const payload = JSON.parse(capture.stdout()) as {
+        command: string;
+        outputPath: string;
+        backupEscrowRestorePacket: {
+          ok: boolean;
+          restoreTarget: string;
+          summary: {
+            sourceEscrowReady: boolean;
+            restoreSmokeOk: boolean;
+            downloadedDumpMatchesEscrowChecksum: boolean;
+            decryptedDumpMatchesSourceDumpChecksum: boolean;
+            totalsMatch: boolean;
+          };
+          escrowObject: { bucket: string; key: string };
+        };
+      };
+      assert.equal(payload.command, "backup-escrow-restore-packet");
+      assert.equal(payload.backupEscrowRestorePacket.ok, true);
+      assert.equal(payload.backupEscrowRestorePacket.restoreTarget, "drill");
+      assert.equal(payload.backupEscrowRestorePacket.summary.sourceEscrowReady, true);
+      assert.equal(payload.backupEscrowRestorePacket.summary.restoreSmokeOk, true);
+      assert.equal(payload.backupEscrowRestorePacket.summary.downloadedDumpMatchesEscrowChecksum, true);
+      assert.equal(payload.backupEscrowRestorePacket.summary.decryptedDumpMatchesSourceDumpChecksum, true);
+      assert.equal(payload.backupEscrowRestorePacket.summary.totalsMatch, true);
+      assert.equal(payload.backupEscrowRestorePacket.escrowObject.bucket, "patient-flow-os-backups");
+      assert.equal(
+        payload.backupEscrowRestorePacket.escrowObject.key,
+        "production/backup-drill/patient-flow-os.dump.gpg"
+      );
+      assert.equal(payload.outputPath, join(outputDir, "backup-escrow-restore-packet.json"));
+    });
+  } finally {
+    await pool.end();
+  }
+});
+
+test("verify-backup-escrow-restore passes for a valid escrow restore packet", async () => {
+  await withTempDir(async (dir) => {
+    const now = new Date();
+    const manifestPath = join(dir, "backup-escrow-restore-manifest.json");
+    const sourcePacketPath = join(dir, "backup-escrow-packet.json");
+    const restoreSmokePath = join(dir, "restore-smoke.json");
+    const restoreInspectPath = join(dir, "restore-inspect.json");
+    const packetPath = join(dir, "backup-escrow-restore-packet.json");
+
+    await writeFile(manifestPath, "{}\n", "utf8");
+    await writeFile(sourcePacketPath, "{}\n", "utf8");
+    await writeFile(restoreSmokePath, "{}\n", "utf8");
+    await writeFile(restoreInspectPath, "{}\n", "utf8");
+
+    await writeFile(
+      packetPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: now.toISOString(),
+          label: "patient-flow-os-production-backup-escrow-restore",
+          sourceEnvironment: "production",
+          restoreTarget: "drill",
+          escrowProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          summary: {
+            sourceEscrowReady: true,
+            sourceSmokeOk: true,
+            restoreSmokeOk: true,
+            downloadedDumpMatchesEscrowChecksum: true,
+            decryptedDumpMatchesSourceDumpChecksum: true,
+            totalsMatch: true,
+            downloadDurationSeconds: 30,
+            decryptDurationSeconds: 30,
+            restoreDurationSeconds: 120,
+            measuredRtoSeconds: 120,
+            maxRtoSeconds: 900,
+            sourceTotals: null,
+            restoredTotals: null
+          },
+          escrowObject: {
+            bucket: "patient-flow-os-backups",
+            key: "production/backup-drill/patient-flow-os.dump.gpg",
+            region: "us-east-1",
+            versionId: "version-1",
+            eTag: "etag-123"
+          },
+          evidence: {
+            backupEscrowRestoreManifestPath: manifestPath,
+            backupEscrowPacketPath: sourcePacketPath,
+            sourceSmokePath: "source-smoke.json",
+            sourceInspectPath: "source-inspect.json",
+            downloadedEncryptedDumpPath: "downloaded-patient-flow-os.dump.gpg",
+            downloadedEncryptedDumpSha256Path: "downloaded-patient-flow-os.dump.gpg.sha256",
+            downloadedEncryptedDumpSha256: "f".repeat(64),
+            decryptedDumpPath: "restored-patient-flow-os.dump",
+            decryptedDumpSha256Path: "restored-patient-flow-os.dump.sha256",
+            decryptedDumpSha256: "a".repeat(64),
+            restoreSmokePath,
+            restoreInspectPath
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "verify-backup-escrow-restore",
+        "--input",
+        packetPath,
+        "--source-environment",
+        "production",
+        "--max-rto-seconds",
+        "900",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 0);
+    const payload = JSON.parse(capture.stdout()) as {
+      command: string;
+      backupEscrowRestoreVerification: { ok: boolean; checks: Array<{ id: string; ok: boolean }> };
+    };
+    assert.equal(payload.command, "verify-backup-escrow-restore");
+    assert.equal(payload.backupEscrowRestoreVerification.ok, true);
+    assert.ok(payload.backupEscrowRestoreVerification.checks.every((check) => check.ok));
+  });
+});
+
+test("verify-backup-escrow-restore fails when the decrypted dump checksum diverges from source", async () => {
+  await withTempDir(async (dir) => {
+    const now = new Date();
+    const manifestPath = join(dir, "backup-escrow-restore-manifest.json");
+    const sourcePacketPath = join(dir, "backup-escrow-packet.json");
+    const restoreSmokePath = join(dir, "restore-smoke.json");
+    const restoreInspectPath = join(dir, "restore-inspect.json");
+    const packetPath = join(dir, "backup-escrow-restore-packet.json");
+
+    await writeFile(manifestPath, "{}\n", "utf8");
+    await writeFile(sourcePacketPath, "{}\n", "utf8");
+    await writeFile(restoreSmokePath, "{}\n", "utf8");
+    await writeFile(restoreInspectPath, "{}\n", "utf8");
+
+    await writeFile(
+      packetPath,
+      `${JSON.stringify(
+        {
+          ok: false,
+          generatedAt: now.toISOString(),
+          label: "patient-flow-os-production-backup-escrow-restore",
+          sourceEnvironment: "production",
+          restoreTarget: "drill",
+          escrowProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          summary: {
+            sourceEscrowReady: true,
+            sourceSmokeOk: true,
+            restoreSmokeOk: true,
+            downloadedDumpMatchesEscrowChecksum: true,
+            decryptedDumpMatchesSourceDumpChecksum: false,
+            totalsMatch: true,
+            downloadDurationSeconds: 30,
+            decryptDurationSeconds: 30,
+            restoreDurationSeconds: 120,
+            measuredRtoSeconds: 120,
+            maxRtoSeconds: 900,
+            sourceTotals: null,
+            restoredTotals: null
+          },
+          escrowObject: {
+            bucket: "patient-flow-os-backups",
+            key: "production/backup-drill/patient-flow-os.dump.gpg",
+            region: "us-east-1",
+            versionId: "version-1",
+            eTag: "etag-123"
+          },
+          evidence: {
+            backupEscrowRestoreManifestPath: manifestPath,
+            backupEscrowPacketPath: sourcePacketPath,
+            sourceSmokePath: "source-smoke.json",
+            sourceInspectPath: "source-inspect.json",
+            downloadedEncryptedDumpPath: "downloaded-patient-flow-os.dump.gpg",
+            downloadedEncryptedDumpSha256Path: "downloaded-patient-flow-os.dump.gpg.sha256",
+            downloadedEncryptedDumpSha256: "f".repeat(64),
+            decryptedDumpPath: "restored-patient-flow-os.dump",
+            decryptedDumpSha256Path: "restored-patient-flow-os.dump.sha256",
+            decryptedDumpSha256: "deadbeef".repeat(8),
+            restoreSmokePath,
+            restoreInspectPath
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "verify-backup-escrow-restore",
+        "--input",
+        packetPath,
+        "--source-environment",
+        "production",
+        "--max-rto-seconds",
+        "900",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 1);
+    const payload = JSON.parse(capture.stdout()) as {
+      error: string;
+      backupEscrowRestoreVerification: {
+        ok: boolean;
+        checks: Array<{ id: string; ok: boolean }>;
+      };
+    };
+    assert.match(payload.error, /backup escrow restore packet failed verification/);
+    assert.equal(payload.backupEscrowRestoreVerification.ok, false);
+    assert.ok(
+      payload.backupEscrowRestoreVerification.checks.some(
+        (check) => check.id === "packet.summary.decrypted_dump_matches_source_dump_checksum" && check.ok === false
+      )
+    );
+  });
+});
