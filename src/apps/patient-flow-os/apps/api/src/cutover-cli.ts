@@ -183,6 +183,14 @@ interface BackupEscrowRestoreManifest {
   restoreFinishedAt: string;
 }
 
+interface DisasterRecoveryHistoryManifest {
+  generatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  windowDays: number;
+  backupDrillPacketPaths: string[];
+  replicaRestorePacketPaths: string[];
+}
+
 export interface SmokeFinding {
   severity: "error" | "warning";
   code: string;
@@ -587,6 +595,72 @@ export interface CutoverBackupEscrowRestoreVerification {
   checks: BackupEscrowRestoreVerificationCheck[];
 }
 
+export interface DisasterRecoveryHistoryVerificationCheck {
+  id: string;
+  ok: boolean;
+  message: string;
+}
+
+export interface CutoverDisasterRecoveryHistoryPacket {
+  ok: boolean;
+  generatedAt: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  windowDays: number;
+  summary: {
+    backupDrillRuns: number;
+    backupDrillSuccessfulRuns: number;
+    replicaRestoreRuns: number;
+    replicaRestoreSuccessfulRuns: number;
+    latestBackupDrillAt: string | null;
+    latestReplicaRestoreAt: string | null;
+    latestBackupDrillRtoSeconds: number | null;
+    latestBackupDrillRpoSeconds: number | null;
+    latestReplicaRestoreRtoSeconds: number | null;
+    backupDrillSuccessRate: number;
+    replicaRestoreSuccessRate: number;
+    backupDrillMedianRtoSeconds: number | null;
+    backupDrillMedianRpoSeconds: number | null;
+    replicaRestoreMedianRtoSeconds: number | null;
+    backupDrillWorstRtoSeconds: number | null;
+    backupDrillWorstRpoSeconds: number | null;
+    replicaRestoreWorstRtoSeconds: number | null;
+    maxBackupDrillGapHours: number | null;
+    maxReplicaRestoreGapHours: number | null;
+    backupDrillRtoRegressionPercent: number | null;
+    backupDrillRpoRegressionPercent: number | null;
+    replicaRestoreRtoRegressionPercent: number | null;
+    minBackupDrillRuns: number;
+    minReplicaRestoreRuns: number;
+    maxBackupDrillRtoSeconds: number;
+    maxBackupDrillRpoSeconds: number;
+    maxReplicaRestoreRtoSeconds: number;
+    maxGapHours: number;
+    maxRtoRegressionPercent: number;
+  };
+  evidence: {
+    manifestPath: string;
+    backupDrillPacketPaths: string[];
+    replicaRestorePacketPaths: string[];
+  };
+  automatedChecks: PromotionChecklistItem[];
+  manualChecks: PromotionChecklistItem[];
+}
+
+export interface CutoverDisasterRecoveryHistoryVerification {
+  ok: boolean;
+  validatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  minBackupDrillRuns: number;
+  minReplicaRestoreRuns: number;
+  maxBackupDrillRtoSeconds: number;
+  maxBackupDrillRpoSeconds: number;
+  maxReplicaRestoreRtoSeconds: number;
+  maxGapHours: number;
+  maxRtoRegressionPercent: number;
+  checks: DisasterRecoveryHistoryVerificationCheck[];
+}
+
 export interface CutoverCommandResult {
   command: string;
   inputPath?: string;
@@ -627,6 +701,8 @@ export interface CutoverCommandResult {
   backupEscrowReplicaVerification?: CutoverBackupEscrowReplicaVerification;
   backupEscrowRestorePacket?: CutoverBackupEscrowRestorePacket;
   backupEscrowRestoreVerification?: CutoverBackupEscrowRestoreVerification;
+  disasterRecoveryHistoryPacket?: CutoverDisasterRecoveryHistoryPacket;
+  disasterRecoveryHistoryVerification?: CutoverDisasterRecoveryHistoryVerification;
   state?: BootstrapState;
 }
 
@@ -1657,6 +1733,12 @@ function tagSetToMap(tagSet: unknown): Map<string, string> {
 }
 
 type BackupEscrowSourcePacket = CutoverBackupEscrowPacket | CutoverBackupEscrowReplicaPacket;
+type PacketEntry<T> = {
+  path: string;
+  packet: T;
+  generatedAt: string;
+  generatedAtMs: number;
+};
 
 function isBackupEscrowReplicaPacket(packet: unknown): packet is CutoverBackupEscrowReplicaPacket {
   return !!packet && typeof packet === "object" && (packet as { replicationMode?: unknown }).replicationMode === "escrow_replica_copy";
@@ -1709,6 +1791,96 @@ function getBackupEscrowSourceObject(
     versionId: null,
     eTag: null
   };
+}
+
+function roundToTwoDecimals(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) {
+    return null;
+  }
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) {
+    return sorted[middle] ?? null;
+  }
+  return roundToTwoDecimals(((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2);
+}
+
+function maxValue(values: number[]): number | null {
+  return values.length > 0 ? Math.max(...values) : null;
+}
+
+function successRate(successfulRuns: number, totalRuns: number): number {
+  if (totalRuns <= 0) {
+    return 0;
+  }
+  return roundToTwoDecimals((successfulRuns / totalRuns) * 100);
+}
+
+function regressionPercent(latestValue: number | null, baselineValue: number | null): number | null {
+  if (latestValue === null || baselineValue === null || baselineValue <= 0) {
+    return null;
+  }
+  if (latestValue <= baselineValue) {
+    return 0;
+  }
+  return roundToTwoDecimals(((latestValue - baselineValue) / baselineValue) * 100);
+}
+
+function maxGapHours(entries: Array<{ generatedAt: string }>): number | null {
+  if (entries.length < 2) {
+    return null;
+  }
+  const ascending = [...entries].sort(
+    (left, right) => new Date(left.generatedAt).getTime() - new Date(right.generatedAt).getTime()
+  );
+  let currentMax: number | null = null;
+  for (let index = 1; index < ascending.length; index += 1) {
+    const previous = ascending[index - 1];
+    const current = ascending[index];
+    if (!previous || !current) {
+      continue;
+    }
+    const gap = hoursBetween(previous.generatedAt, current.generatedAt);
+    currentMax = currentMax === null ? gap : Math.max(currentMax, gap);
+  }
+  return currentMax;
+}
+
+async function loadPacketEntries<T extends { sourceEnvironment: "staging" | "production"; generatedAt: string }>(
+  packetPaths: string[],
+  sourceEnvironment: "staging" | "production",
+  predicate?: (packet: T) => boolean
+): Promise<Array<PacketEntry<T>>> {
+  const uniquePaths = [...new Set(packetPaths)];
+  const entries = await Promise.all(
+    uniquePaths.map(async (packetPath) => {
+      const packet = await readJsonIfExists<T>(packetPath);
+      if (!packet || packet.sourceEnvironment !== sourceEnvironment) {
+        return null;
+      }
+      if (predicate && !predicate(packet)) {
+        return null;
+      }
+      const generatedAtMs = new Date(packet.generatedAt).getTime();
+      if (!Number.isFinite(generatedAtMs)) {
+        return null;
+      }
+      return {
+        path: packetPath,
+        packet,
+        generatedAt: packet.generatedAt,
+        generatedAtMs
+      } satisfies PacketEntry<T>;
+    })
+  );
+
+  return entries
+    .filter((entry): entry is PacketEntry<T> => entry !== null)
+    .sort((left, right) => right.generatedAtMs - left.generatedAtMs);
 }
 
 function renderPromotionChecklist(items: PromotionChecklistItem[]): string[] {
@@ -4040,6 +4212,483 @@ async function buildBackupEscrowRestoreVerification(
   };
 }
 
+async function buildDisasterRecoveryHistoryPacket(params: {
+  manifestPath: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  minBackupDrillRuns: number;
+  minReplicaRestoreRuns: number;
+  maxBackupDrillRtoSeconds: number;
+  maxBackupDrillRpoSeconds: number;
+  maxReplicaRestoreRtoSeconds: number;
+  maxGapHours: number;
+  maxRtoRegressionPercent: number;
+}): Promise<CutoverDisasterRecoveryHistoryPacket> {
+  const manifest = JSON.parse(await readFile(params.manifestPath, "utf8")) as DisasterRecoveryHistoryManifest;
+  const backupDrillEntries = await loadPacketEntries<CutoverBackupDrillPacket>(
+    manifest.backupDrillPacketPaths,
+    params.sourceEnvironment
+  );
+  const replicaRestoreEntries = await loadPacketEntries<CutoverBackupEscrowRestorePacket>(
+    manifest.replicaRestorePacketPaths,
+    params.sourceEnvironment,
+    (packet) => packet.restoreSource === "replica"
+  );
+
+  const successfulBackupDrillEntries = backupDrillEntries.filter((entry) => entry.packet.ok === true);
+  const successfulReplicaRestoreEntries = replicaRestoreEntries.filter((entry) => entry.packet.ok === true);
+  const latestBackupDrill = backupDrillEntries[0] ?? null;
+  const latestReplicaRestore = replicaRestoreEntries[0] ?? null;
+
+  const backupDrillMedianRtoSeconds = median(
+    successfulBackupDrillEntries.map((entry) => entry.packet.summary.measuredRtoSeconds)
+  );
+  const backupDrillMedianRpoSeconds = median(
+    successfulBackupDrillEntries.map((entry) => entry.packet.summary.estimatedRpoSeconds)
+  );
+  const replicaRestoreMedianRtoSeconds = median(
+    successfulReplicaRestoreEntries.map((entry) => entry.packet.summary.measuredRtoSeconds)
+  );
+
+  const backupDrillWorstRtoSeconds = maxValue(
+    successfulBackupDrillEntries.map((entry) => entry.packet.summary.measuredRtoSeconds)
+  );
+  const backupDrillWorstRpoSeconds = maxValue(
+    successfulBackupDrillEntries.map((entry) => entry.packet.summary.estimatedRpoSeconds)
+  );
+  const replicaRestoreWorstRtoSeconds = maxValue(
+    successfulReplicaRestoreEntries.map((entry) => entry.packet.summary.measuredRtoSeconds)
+  );
+
+  const maxBackupDrillGapHours = maxGapHours(successfulBackupDrillEntries);
+  const maxReplicaRestoreGapHours = maxGapHours(successfulReplicaRestoreEntries);
+
+  const latestBackupDrillRtoSeconds = latestBackupDrill?.packet.summary.measuredRtoSeconds ?? null;
+  const latestBackupDrillRpoSeconds = latestBackupDrill?.packet.summary.estimatedRpoSeconds ?? null;
+  const latestReplicaRestoreRtoSeconds = latestReplicaRestore?.packet.summary.measuredRtoSeconds ?? null;
+
+  const backupDrillRtoRegressionPercent = regressionPercent(
+    latestBackupDrillRtoSeconds,
+    backupDrillMedianRtoSeconds
+  );
+  const backupDrillRpoRegressionPercent = regressionPercent(
+    latestBackupDrillRpoSeconds,
+    backupDrillMedianRpoSeconds
+  );
+  const replicaRestoreRtoRegressionPercent = regressionPercent(
+    latestReplicaRestoreRtoSeconds,
+    replicaRestoreMedianRtoSeconds
+  );
+
+  const latestBackupDrillWithinRtoBudget =
+    typeof latestBackupDrillRtoSeconds === "number" &&
+    latestBackupDrillRtoSeconds <= params.maxBackupDrillRtoSeconds;
+  const latestBackupDrillWithinRpoBudget =
+    typeof latestBackupDrillRpoSeconds === "number" &&
+    latestBackupDrillRpoSeconds <= params.maxBackupDrillRpoSeconds;
+  const latestReplicaRestoreWithinRtoBudget =
+    typeof latestReplicaRestoreRtoSeconds === "number" &&
+    latestReplicaRestoreRtoSeconds <= params.maxReplicaRestoreRtoSeconds;
+
+  const automatedChecks: PromotionChecklistItem[] = [
+    {
+      id: "backup_drill_min_runs",
+      title: "Backup drill history meets the minimum run count",
+      status: backupDrillEntries.length >= params.minBackupDrillRuns ? "passed" : "failed",
+      message:
+        backupDrillEntries.length >= params.minBackupDrillRuns
+          ? `Found ${backupDrillEntries.length} backup drill runs within the ${manifest.windowDays}-day window.`
+          : `Expected at least ${params.minBackupDrillRuns} backup drill runs within the ${manifest.windowDays}-day window, found ${backupDrillEntries.length}.`,
+      evidencePath: params.manifestPath
+    },
+    {
+      id: "replica_restore_min_runs",
+      title: "Replica restore history meets the minimum run count",
+      status: replicaRestoreEntries.length >= params.minReplicaRestoreRuns ? "passed" : "failed",
+      message:
+        replicaRestoreEntries.length >= params.minReplicaRestoreRuns
+          ? `Found ${replicaRestoreEntries.length} replica restore runs within the ${manifest.windowDays}-day window.`
+          : `Expected at least ${params.minReplicaRestoreRuns} replica restore runs within the ${manifest.windowDays}-day window, found ${replicaRestoreEntries.length}.`,
+      evidencePath: params.manifestPath
+    },
+    {
+      id: "latest_backup_drill_green",
+      title: "Latest backup drill packet is green",
+      status: latestBackupDrill?.packet.ok === true ? "passed" : "failed",
+      message:
+        latestBackupDrill?.packet.ok === true
+          ? "The latest backup drill packet is ready."
+          : "The latest backup drill packet is missing or failed.",
+      evidencePath: latestBackupDrill?.path
+    },
+    {
+      id: "latest_replica_restore_green",
+      title: "Latest replica restore packet is green",
+      status: latestReplicaRestore?.packet.ok === true ? "passed" : "failed",
+      message:
+        latestReplicaRestore?.packet.ok === true
+          ? "The latest replica restore packet is ready."
+          : "The latest replica restore packet is missing or failed.",
+      evidencePath: latestReplicaRestore?.path
+    },
+    {
+      id: "latest_backup_drill_rto_within_budget",
+      title: "Latest backup drill RTO stays within budget",
+      status: latestBackupDrillWithinRtoBudget ? "passed" : "failed",
+      message:
+        latestBackupDrillWithinRtoBudget
+          ? `Latest backup drill RTO ${latestBackupDrillRtoSeconds}s is within ${params.maxBackupDrillRtoSeconds}s.`
+          : `Latest backup drill RTO ${latestBackupDrillRtoSeconds ?? "n/a"}s exceeded ${params.maxBackupDrillRtoSeconds}s.`,
+      evidencePath: latestBackupDrill?.path
+    },
+    {
+      id: "latest_backup_drill_rpo_within_budget",
+      title: "Latest backup drill RPO stays within budget",
+      status: latestBackupDrillWithinRpoBudget ? "passed" : "failed",
+      message:
+        latestBackupDrillWithinRpoBudget
+          ? `Latest backup drill RPO ${latestBackupDrillRpoSeconds}s is within ${params.maxBackupDrillRpoSeconds}s.`
+          : `Latest backup drill RPO ${latestBackupDrillRpoSeconds ?? "n/a"}s exceeded ${params.maxBackupDrillRpoSeconds}s.`,
+      evidencePath: latestBackupDrill?.path
+    },
+    {
+      id: "latest_replica_restore_rto_within_budget",
+      title: "Latest replica restore RTO stays within budget",
+      status: latestReplicaRestoreWithinRtoBudget ? "passed" : "failed",
+      message:
+        latestReplicaRestoreWithinRtoBudget
+          ? `Latest replica restore RTO ${latestReplicaRestoreRtoSeconds}s is within ${params.maxReplicaRestoreRtoSeconds}s.`
+          : `Latest replica restore RTO ${latestReplicaRestoreRtoSeconds ?? "n/a"}s exceeded ${params.maxReplicaRestoreRtoSeconds}s.`,
+      evidencePath: latestReplicaRestore?.path
+    },
+    {
+      id: "backup_drill_gap_within_limit",
+      title: "Backup drill cadence stays within the maximum gap",
+      status: maxBackupDrillGapHours === null || maxBackupDrillGapHours <= params.maxGapHours ? "passed" : "failed",
+      message:
+        maxBackupDrillGapHours === null || maxBackupDrillGapHours <= params.maxGapHours
+          ? `Backup drill cadence stayed within the ${params.maxGapHours}h gap budget.`
+          : `Backup drill cadence reached a ${maxBackupDrillGapHours}h gap, exceeding ${params.maxGapHours}h.`,
+      evidencePath: params.manifestPath
+    },
+    {
+      id: "replica_restore_gap_within_limit",
+      title: "Replica restore cadence stays within the maximum gap",
+      status:
+        maxReplicaRestoreGapHours === null || maxReplicaRestoreGapHours <= params.maxGapHours
+          ? "passed"
+          : "failed",
+      message:
+        maxReplicaRestoreGapHours === null || maxReplicaRestoreGapHours <= params.maxGapHours
+          ? `Replica restore cadence stayed within the ${params.maxGapHours}h gap budget.`
+          : `Replica restore cadence reached a ${maxReplicaRestoreGapHours}h gap, exceeding ${params.maxGapHours}h.`,
+      evidencePath: params.manifestPath
+    },
+    {
+      id: "backup_drill_rto_regression_within_limit",
+      title: "Backup drill RTO regression stays within the trend budget",
+      status:
+        backupDrillRtoRegressionPercent === null ||
+        backupDrillRtoRegressionPercent <= params.maxRtoRegressionPercent
+          ? "passed"
+          : "failed",
+      message:
+        backupDrillRtoRegressionPercent === null ||
+        backupDrillRtoRegressionPercent <= params.maxRtoRegressionPercent
+          ? "Backup drill RTO regression stayed within the configured trend budget."
+          : `Backup drill RTO regression ${backupDrillRtoRegressionPercent}% exceeded ${params.maxRtoRegressionPercent}%.`,
+      evidencePath: latestBackupDrill?.path
+    },
+    {
+      id: "backup_drill_rpo_regression_within_limit",
+      title: "Backup drill RPO regression stays within the trend budget",
+      status:
+        backupDrillRpoRegressionPercent === null ||
+        backupDrillRpoRegressionPercent <= params.maxRtoRegressionPercent
+          ? "passed"
+          : "failed",
+      message:
+        backupDrillRpoRegressionPercent === null ||
+        backupDrillRpoRegressionPercent <= params.maxRtoRegressionPercent
+          ? "Backup drill RPO regression stayed within the configured trend budget."
+          : `Backup drill RPO regression ${backupDrillRpoRegressionPercent}% exceeded ${params.maxRtoRegressionPercent}%.`,
+      evidencePath: latestBackupDrill?.path
+    },
+    {
+      id: "replica_restore_rto_regression_within_limit",
+      title: "Replica restore RTO regression stays within the trend budget",
+      status:
+        replicaRestoreRtoRegressionPercent === null ||
+        replicaRestoreRtoRegressionPercent <= params.maxRtoRegressionPercent
+          ? "passed"
+          : "failed",
+      message:
+        replicaRestoreRtoRegressionPercent === null ||
+        replicaRestoreRtoRegressionPercent <= params.maxRtoRegressionPercent
+          ? "Replica restore RTO regression stayed within the configured trend budget."
+          : `Replica restore RTO regression ${replicaRestoreRtoRegressionPercent}% exceeded ${params.maxRtoRegressionPercent}%.`,
+      evidencePath: latestReplicaRestore?.path
+    }
+  ];
+
+  const manualChecks: PromotionChecklistItem[] = [
+    {
+      id: "review_dr_history_outliers",
+      title: "Review historical outliers for drill and replica restore",
+      status: "pending",
+      message: "Confirm large deviations are explained by environment load or controlled maintenance windows."
+    },
+    {
+      id: "review_dr_history_window",
+      title: "Review whether the rehearsal window matches the operational policy",
+      status: "pending",
+      message: "Confirm the configured rolling window still matches the production DR policy and compliance cadence."
+    }
+  ];
+
+  return {
+    ok: automatedChecks.every((check) => check.status === "passed"),
+    generatedAt: nowIso(),
+    label: params.label,
+    sourceEnvironment: params.sourceEnvironment,
+    windowDays: manifest.windowDays,
+    summary: {
+      backupDrillRuns: backupDrillEntries.length,
+      backupDrillSuccessfulRuns: successfulBackupDrillEntries.length,
+      replicaRestoreRuns: replicaRestoreEntries.length,
+      replicaRestoreSuccessfulRuns: successfulReplicaRestoreEntries.length,
+      latestBackupDrillAt: latestBackupDrill?.generatedAt ?? null,
+      latestReplicaRestoreAt: latestReplicaRestore?.generatedAt ?? null,
+      latestBackupDrillRtoSeconds,
+      latestBackupDrillRpoSeconds,
+      latestReplicaRestoreRtoSeconds,
+      backupDrillSuccessRate: successRate(successfulBackupDrillEntries.length, backupDrillEntries.length),
+      replicaRestoreSuccessRate: successRate(successfulReplicaRestoreEntries.length, replicaRestoreEntries.length),
+      backupDrillMedianRtoSeconds,
+      backupDrillMedianRpoSeconds,
+      replicaRestoreMedianRtoSeconds,
+      backupDrillWorstRtoSeconds,
+      backupDrillWorstRpoSeconds,
+      replicaRestoreWorstRtoSeconds,
+      maxBackupDrillGapHours,
+      maxReplicaRestoreGapHours,
+      backupDrillRtoRegressionPercent,
+      backupDrillRpoRegressionPercent,
+      replicaRestoreRtoRegressionPercent,
+      minBackupDrillRuns: params.minBackupDrillRuns,
+      minReplicaRestoreRuns: params.minReplicaRestoreRuns,
+      maxBackupDrillRtoSeconds: params.maxBackupDrillRtoSeconds,
+      maxBackupDrillRpoSeconds: params.maxBackupDrillRpoSeconds,
+      maxReplicaRestoreRtoSeconds: params.maxReplicaRestoreRtoSeconds,
+      maxGapHours: params.maxGapHours,
+      maxRtoRegressionPercent: params.maxRtoRegressionPercent
+    },
+    evidence: {
+      manifestPath: params.manifestPath,
+      backupDrillPacketPaths: backupDrillEntries.map((entry) => entry.path),
+      replicaRestorePacketPaths: replicaRestoreEntries.map((entry) => entry.path)
+    },
+    automatedChecks,
+    manualChecks
+  };
+}
+
+async function writeDisasterRecoveryHistoryPacketArtifacts(
+  outputDir: string,
+  packet: CutoverDisasterRecoveryHistoryPacket
+): Promise<{
+  packetJsonPath: string;
+  packetMdPath: string;
+  checklistJsonPath: string;
+  checklistMdPath: string;
+}> {
+  const packetJsonPath = join(outputDir, "dr-rehearsal-history-packet.json");
+  const packetMdPath = join(outputDir, "dr-rehearsal-history-packet.md");
+  const checklistJsonPath = join(outputDir, "dr-rehearsal-history-checklist.json");
+  const checklistMdPath = join(outputDir, "dr-rehearsal-history-checklist.md");
+
+  await writeJsonFile(packetJsonPath, packet);
+  await writeJsonFile(checklistJsonPath, {
+    generatedAt: packet.generatedAt,
+    sourceEnvironment: packet.sourceEnvironment,
+    windowDays: packet.windowDays,
+    summary: packet.summary,
+    automatedChecks: packet.automatedChecks,
+    manualChecks: packet.manualChecks
+  });
+
+  const packetMd = [
+    "# Patient Flow OS DR Rehearsal History Packet",
+    "",
+    `- Label: ${packet.label}`,
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Window days: ${packet.windowDays}`,
+    `- Packet ready: ${packet.ok ? "yes" : "no"}`,
+    `- Backup drill runs: ${packet.summary.backupDrillRuns} (${packet.summary.backupDrillSuccessfulRuns} green)`,
+    `- Replica restore runs: ${packet.summary.replicaRestoreRuns} (${packet.summary.replicaRestoreSuccessfulRuns} green)`,
+    `- Latest backup drill RTO/RPO: ${packet.summary.latestBackupDrillRtoSeconds ?? "n/a"}s / ${packet.summary.latestBackupDrillRpoSeconds ?? "n/a"}s`,
+    `- Latest replica restore RTO: ${packet.summary.latestReplicaRestoreRtoSeconds ?? "n/a"}s`,
+    `- Backup drill median RTO/RPO: ${packet.summary.backupDrillMedianRtoSeconds ?? "n/a"}s / ${packet.summary.backupDrillMedianRpoSeconds ?? "n/a"}s`,
+    `- Replica restore median RTO: ${packet.summary.replicaRestoreMedianRtoSeconds ?? "n/a"}s`,
+    `- Backup drill max gap: ${packet.summary.maxBackupDrillGapHours ?? "n/a"}h`,
+    `- Replica restore max gap: ${packet.summary.maxReplicaRestoreGapHours ?? "n/a"}h`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Evidence",
+    "",
+    `- manifest: \`${packet.evidence.manifestPath}\``,
+    `- backup drill packet count: ${packet.evidence.backupDrillPacketPaths.length}`,
+    `- replica restore packet count: ${packet.evidence.replicaRestorePacketPaths.length}`
+  ].join("\n");
+  await writeMarkdownFile(packetMdPath, packetMd);
+
+  const checklistMd = [
+    "# Patient Flow OS DR Rehearsal History Checklist",
+    "",
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Window days: ${packet.windowDays}`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Manual Review",
+    "",
+    ...renderPromotionChecklist(packet.manualChecks)
+  ].join("\n");
+  await writeMarkdownFile(checklistMdPath, checklistMd);
+
+  return {
+    packetJsonPath,
+    packetMdPath,
+    checklistJsonPath,
+    checklistMdPath
+  };
+}
+
+async function buildDisasterRecoveryHistoryVerification(
+  packet: Partial<CutoverDisasterRecoveryHistoryPacket>,
+  sourceEnvironment: "staging" | "production",
+  minBackupDrillRuns: number,
+  minReplicaRestoreRuns: number,
+  maxBackupDrillRtoSeconds: number,
+  maxBackupDrillRpoSeconds: number,
+  maxReplicaRestoreRtoSeconds: number,
+  maxGapHours: number,
+  maxRtoRegressionPercent: number
+): Promise<CutoverDisasterRecoveryHistoryVerification> {
+  const checks: DisasterRecoveryHistoryVerificationCheck[] = [];
+  const pushCheck = (id: string, ok: boolean, message: string): void => {
+    checks.push({ id, ok, message });
+  };
+
+  pushCheck("packet.ok", packet.ok === true, "DR rehearsal history packet must already be marked as ready.");
+  pushCheck(
+    "packet.source_environment",
+    packet.sourceEnvironment === sourceEnvironment,
+    "DR rehearsal history packet must match the expected source environment."
+  );
+  pushCheck(
+    "packet.summary.backup_drill_runs",
+    (packet.summary?.backupDrillRuns ?? 0) >= minBackupDrillRuns,
+    "Backup drill history must meet the minimum run count."
+  );
+  pushCheck(
+    "packet.summary.replica_restore_runs",
+    (packet.summary?.replicaRestoreRuns ?? 0) >= minReplicaRestoreRuns,
+    "Replica restore history must meet the minimum run count."
+  );
+  pushCheck(
+    "packet.summary.latest_backup_drill_rto_budget",
+    typeof packet.summary?.latestBackupDrillRtoSeconds === "number" &&
+      packet.summary.latestBackupDrillRtoSeconds <= maxBackupDrillRtoSeconds,
+    "Latest backup drill RTO must stay within the configured budget."
+  );
+  pushCheck(
+    "packet.summary.latest_backup_drill_rpo_budget",
+    typeof packet.summary?.latestBackupDrillRpoSeconds === "number" &&
+      packet.summary.latestBackupDrillRpoSeconds <= maxBackupDrillRpoSeconds,
+    "Latest backup drill RPO must stay within the configured budget."
+  );
+  pushCheck(
+    "packet.summary.latest_replica_restore_rto_budget",
+    typeof packet.summary?.latestReplicaRestoreRtoSeconds === "number" &&
+      packet.summary.latestReplicaRestoreRtoSeconds <= maxReplicaRestoreRtoSeconds,
+    "Latest replica restore RTO must stay within the configured budget."
+  );
+  pushCheck(
+    "packet.summary.backup_drill_gap",
+    packet.summary?.maxBackupDrillGapHours === null ||
+      packet.summary?.maxBackupDrillGapHours === undefined ||
+      packet.summary.maxBackupDrillGapHours <= maxGapHours,
+    "Backup drill cadence must stay within the configured maximum gap."
+  );
+  pushCheck(
+    "packet.summary.replica_restore_gap",
+    packet.summary?.maxReplicaRestoreGapHours === null ||
+      packet.summary?.maxReplicaRestoreGapHours === undefined ||
+      packet.summary.maxReplicaRestoreGapHours <= maxGapHours,
+    "Replica restore cadence must stay within the configured maximum gap."
+  );
+  pushCheck(
+    "packet.summary.backup_drill_rto_regression",
+    packet.summary?.backupDrillRtoRegressionPercent === null ||
+      packet.summary?.backupDrillRtoRegressionPercent === undefined ||
+      packet.summary.backupDrillRtoRegressionPercent <= maxRtoRegressionPercent,
+    "Backup drill RTO regression must stay within the configured threshold."
+  );
+  pushCheck(
+    "packet.summary.backup_drill_rpo_regression",
+    packet.summary?.backupDrillRpoRegressionPercent === null ||
+      packet.summary?.backupDrillRpoRegressionPercent === undefined ||
+      packet.summary.backupDrillRpoRegressionPercent <= maxRtoRegressionPercent,
+    "Backup drill RPO regression must stay within the configured threshold."
+  );
+  pushCheck(
+    "packet.summary.replica_restore_rto_regression",
+    packet.summary?.replicaRestoreRtoRegressionPercent === null ||
+      packet.summary?.replicaRestoreRtoRegressionPercent === undefined ||
+      packet.summary.replicaRestoreRtoRegressionPercent <= maxRtoRegressionPercent,
+    "Replica restore RTO regression must stay within the configured threshold."
+  );
+  pushCheck(
+    "packet.evidence.manifest_exists",
+    await pathExists(packet.evidence?.manifestPath),
+    "DR rehearsal history manifest must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.backup_drill_packets_exist",
+    Array.isArray(packet.evidence?.backupDrillPacketPaths) &&
+      packet.evidence.backupDrillPacketPaths.length > 0 &&
+      (await Promise.all(packet.evidence.backupDrillPacketPaths.map((path) => pathExists(path)))).every(Boolean),
+    "Referenced backup drill packet artifacts must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.replica_restore_packets_exist",
+    Array.isArray(packet.evidence?.replicaRestorePacketPaths) &&
+      packet.evidence.replicaRestorePacketPaths.length > 0 &&
+      (await Promise.all(packet.evidence.replicaRestorePacketPaths.map((path) => pathExists(path)))).every(Boolean),
+    "Referenced replica restore packet artifacts must exist on disk."
+  );
+
+  return {
+    ok: checks.every((check) => check.ok),
+    validatedAt: nowIso(),
+    sourceEnvironment,
+    minBackupDrillRuns,
+    minReplicaRestoreRuns,
+    maxBackupDrillRtoSeconds,
+    maxBackupDrillRpoSeconds,
+    maxReplicaRestoreRtoSeconds,
+    maxGapHours,
+    maxRtoRegressionPercent,
+    checks
+  };
+}
+
 function renderHumanResult(result: CutoverCommandResult): string {
   const lines = [
     `command: ${result.command}`,
@@ -4179,6 +4828,23 @@ function renderHumanResult(result: CutoverCommandResult): string {
     const failedChecks = result.backupEscrowRestoreVerification.checks.filter((check) => !check.ok).length;
     lines.push(`backupEscrowRestoreVerification: ${result.backupEscrowRestoreVerification.ok ? "passed" : `failed (${failedChecks} checks)`}`);
   }
+  if (result.disasterRecoveryHistoryPacket) {
+    const failedAutomatedChecks = result.disasterRecoveryHistoryPacket.automatedChecks.filter(
+      (check) => check.status !== "passed"
+    ).length;
+    lines.push(
+      `drRehearsalHistoryPacket: ${result.disasterRecoveryHistoryPacket.ok ? "ready" : `blocked (${failedAutomatedChecks} automated checks)`}`
+    );
+    lines.push(
+      `drRehearsalHistory: backupDrillRuns=${result.disasterRecoveryHistoryPacket.summary.backupDrillRuns}, replicaRestoreRuns=${result.disasterRecoveryHistoryPacket.summary.replicaRestoreRuns}, latestBackupDrillRto=${result.disasterRecoveryHistoryPacket.summary.latestBackupDrillRtoSeconds ?? "n/a"}s, latestReplicaRestoreRto=${result.disasterRecoveryHistoryPacket.summary.latestReplicaRestoreRtoSeconds ?? "n/a"}s`
+    );
+  }
+  if (result.disasterRecoveryHistoryVerification) {
+    const failedChecks = result.disasterRecoveryHistoryVerification.checks.filter((check) => !check.ok).length;
+    lines.push(
+      `drRehearsalHistoryVerification: ${result.disasterRecoveryHistoryVerification.ok ? "passed" : `failed (${failedChecks} checks)`}`
+    );
+  }
 
   for (const tenant of result.summary.tenants) {
     lines.push(
@@ -4217,6 +4883,8 @@ function helpText(): string {
     "  backup-escrow-replica-packet --input <backup-escrow-replica-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--max-object-age-hours <n>] [--label <value>]",
     "  verify-backup-escrow-restore --input <backup-escrow-restore-packet.json> [--source-environment staging|production] [--max-rto-seconds <n>]",
     "  backup-escrow-restore-packet --input <backup-escrow-restore-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--max-rto-seconds <n>] [--label <value>]  # source packet may be primary or replica",
+    "  verify-dr-rehearsal-history --input <dr-rehearsal-history-packet.json> [--source-environment staging|production] [--min-backup-drill-runs <n>] [--min-replica-restore-runs <n>] [--max-backup-drill-rto-seconds <n>] [--max-backup-drill-rpo-seconds <n>] [--max-replica-restore-rto-seconds <n>] [--max-gap-hours <n>] [--max-rto-regression-percent <n>]",
+    "  dr-rehearsal-history-packet --input <dr-rehearsal-history-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--min-backup-drill-runs <n>] [--min-replica-restore-runs <n>] [--max-backup-drill-rto-seconds <n>] [--max-backup-drill-rpo-seconds <n>] [--max-replica-restore-rto-seconds <n>] [--max-gap-hours <n>] [--max-rto-regression-percent <n>] [--label <value>]",
     "",
     "Options:",
     "  --json                 Print machine-readable JSON",
@@ -4231,6 +4899,13 @@ function helpText(): string {
     "  --max-rto-seconds <n>  Maximum allowed restore time objective in seconds",
     "  --max-rpo-seconds <n>  Maximum allowed recovery point objective in seconds",
     "  --max-object-age-hours <n>  Maximum allowed age in hours for the external escrow object",
+    "  --min-backup-drill-runs <n>  Minimum backup drill packets required in the DR history window",
+    "  --min-replica-restore-runs <n>  Minimum replica restore packets required in the DR history window",
+    "  --max-backup-drill-rto-seconds <n>  Maximum allowed latest backup drill RTO in seconds",
+    "  --max-backup-drill-rpo-seconds <n>  Maximum allowed latest backup drill RPO in seconds",
+    "  --max-replica-restore-rto-seconds <n>  Maximum allowed latest replica restore RTO in seconds",
+    "  --max-gap-hours <n>  Maximum allowed gap in hours between successful DR rehearsals",
+    "  --max-rto-regression-percent <n>  Maximum allowed regression percentage versus rolling medians",
     "  --allow-destructive    Required for replace-state, seed-demo and replace cutovers",
     "  --help                 Show help"
   ].join("\n");
@@ -4293,6 +4968,13 @@ export async function executeCutoverCommand(
       "max-rto-seconds": { type: "string" },
       "max-rpo-seconds": { type: "string" },
       "max-object-age-hours": { type: "string" },
+      "min-backup-drill-runs": { type: "string" },
+      "min-replica-restore-runs": { type: "string" },
+      "max-backup-drill-rto-seconds": { type: "string" },
+      "max-backup-drill-rpo-seconds": { type: "string" },
+      "max-replica-restore-rto-seconds": { type: "string" },
+      "max-gap-hours": { type: "string" },
+      "max-rto-regression-percent": { type: "string" },
       label: { type: "string" }
     }
   });
@@ -4330,6 +5012,41 @@ export async function executeCutoverCommand(
     parsed.values["max-object-age-hours"],
     "--max-object-age-hours",
     24
+  );
+  const minBackupDrillRuns = parsePositiveIntegerFlag(
+    parsed.values["min-backup-drill-runs"],
+    "--min-backup-drill-runs",
+    2
+  );
+  const minReplicaRestoreRuns = parsePositiveIntegerFlag(
+    parsed.values["min-replica-restore-runs"],
+    "--min-replica-restore-runs",
+    1
+  );
+  const maxBackupDrillRtoSeconds = parsePositiveIntegerFlag(
+    parsed.values["max-backup-drill-rto-seconds"],
+    "--max-backup-drill-rto-seconds",
+    900
+  );
+  const maxBackupDrillRpoSeconds = parsePositiveIntegerFlag(
+    parsed.values["max-backup-drill-rpo-seconds"],
+    "--max-backup-drill-rpo-seconds",
+    3600
+  );
+  const maxReplicaRestoreRtoSeconds = parsePositiveIntegerFlag(
+    parsed.values["max-replica-restore-rto-seconds"],
+    "--max-replica-restore-rto-seconds",
+    900
+  );
+  const maxGapHours = parsePositiveIntegerFlag(
+    parsed.values["max-gap-hours"],
+    "--max-gap-hours",
+    168
+  );
+  const maxRtoRegressionPercent = parsePositiveIntegerFlag(
+    parsed.values["max-rto-regression-percent"],
+    "--max-rto-regression-percent",
+    25
   );
   const allowDestructive = parsed.values["allow-destructive"] ?? false;
   const mode = parsed.values.mode ?? "merge";
@@ -4892,6 +5609,77 @@ export async function executeCutoverCommand(
 
     if (!packet.ok) {
       throw new CutoverCommandError("backup escrow restore packet is not ready", result);
+    }
+
+    return result;
+  }
+
+  if (command === "verify-dr-rehearsal-history") {
+    if (!inputPath) {
+      throw new Error("verify-dr-rehearsal-history requires --input");
+    }
+
+    const packet = JSON.parse(await readFile(inputPath, "utf8")) as Partial<CutoverDisasterRecoveryHistoryPacket>;
+    const disasterRecoveryHistoryVerification = await buildDisasterRecoveryHistoryVerification(
+      packet,
+      sourceEnvironment,
+      minBackupDrillRuns,
+      minReplicaRestoreRuns,
+      maxBackupDrillRtoSeconds,
+      maxBackupDrillRpoSeconds,
+      maxReplicaRestoreRtoSeconds,
+      maxGapHours,
+      maxRtoRegressionPercent
+    );
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary: summarizeState(createEmptyBootstrapState()),
+      disasterRecoveryHistoryPacket:
+        typeof packet === "object" && packet !== null
+          ? (packet as CutoverDisasterRecoveryHistoryPacket)
+          : undefined,
+      disasterRecoveryHistoryVerification
+    };
+
+    if (!disasterRecoveryHistoryVerification.ok) {
+      throw new CutoverCommandError("dr rehearsal history packet failed verification", result);
+    }
+
+    return result;
+  }
+
+  if (command === "dr-rehearsal-history-packet") {
+    if (!inputPath) {
+      throw new Error("dr-rehearsal-history-packet requires --input <dr-rehearsal-history-manifest.json>");
+    }
+    if (!artifactsDir) {
+      throw new Error("dr-rehearsal-history-packet requires --artifacts-dir");
+    }
+
+    const packet = await buildDisasterRecoveryHistoryPacket({
+      manifestPath: inputPath,
+      label,
+      sourceEnvironment,
+      minBackupDrillRuns,
+      minReplicaRestoreRuns,
+      maxBackupDrillRtoSeconds,
+      maxBackupDrillRpoSeconds,
+      maxReplicaRestoreRtoSeconds,
+      maxGapHours,
+      maxRtoRegressionPercent
+    });
+    const outputFiles = await writeDisasterRecoveryHistoryPacketArtifacts(artifactsDir, packet);
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary: summarizeState(createEmptyBootstrapState()),
+      outputPath: outputFiles.packetJsonPath,
+      disasterRecoveryHistoryPacket: packet
+    };
+
+    if (!packet.ok) {
+      throw new CutoverCommandError("dr rehearsal history packet is not ready", result);
     }
 
     return result;

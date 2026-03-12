@@ -118,6 +118,18 @@ npm run cutover -- verify-backup-escrow-restore --input .\artifacts\backup-escro
 
 `backup-escrow-restore-packet` acepta como `backupEscrowPacketPath` tanto un `backup-escrow-packet.json` primario como un `backup-escrow-replica-packet.json`; el manifest debe declarar `restoreSource=primary|replica` cuando se quiera fijar explícitamente el origen.
 
+Construir un packet histórico de DR rehearsal desde runs recientes de backup drill y replica restore:
+
+```powershell
+npm run cutover -- dr-rehearsal-history-packet --input .\artifacts\dr-history\dr-rehearsal-history-manifest.json --artifacts-dir .\artifacts\dr-history --source-environment production --min-backup-drill-runs 2 --min-replica-restore-runs 1 --max-backup-drill-rto-seconds 900 --max-backup-drill-rpo-seconds 3600 --max-replica-restore-rto-seconds 900 --max-gap-hours 168 --max-rto-regression-percent 25 --json
+```
+
+Verificar que un `dr-rehearsal-history-packet.json` no evidencia gaps ni degradación de tendencia:
+
+```powershell
+npm run cutover -- verify-dr-rehearsal-history --input .\artifacts\dr-history\dr-rehearsal-history-packet.json --source-environment production --min-backup-drill-runs 2 --min-replica-restore-runs 1 --max-backup-drill-rto-seconds 900 --max-backup-drill-rpo-seconds 3600 --max-replica-restore-rto-seconds 900 --max-gap-hours 168 --max-rto-regression-percent 25 --json
+```
+
 Construir un promotion packet desde `workflow-manifest.json` y los artifacts post-cutover:
 
 ```powershell
@@ -165,6 +177,8 @@ npm run cutover -- backup-escrow-packet --input .\artifacts\backup-drill\backup-
 - `verify-backup-escrow-replica` falla si la réplica no es trazable, si no deriva de un escrow primario verde o si no aporta un target distinto.
 - `backup-escrow-restore-packet` falla si el restore desde el escrow primario o desde la réplica no conserva checksums, smoke o totales canónicos.
 - `verify-backup-escrow-restore` falla si el restore desde escrow excede el budget de `RTO`, si no preserva integridad o si la evidencia local está incompleta.
+- `dr-rehearsal-history-packet` falla si la ventana histórica no reúne suficientes backup drills o replica restores, si el último `RTO/RPO` excede budget o si la regresión contra la mediana rolling supera el umbral permitido.
+- `verify-dr-rehearsal-history` falla si el packet histórico no demuestra cadencia suficiente, budgets dentro de rango o ausencia de degradación de tendencia.
 
 ## Workflow manual en GitHub Actions
 
@@ -481,6 +495,49 @@ Notas operativas:
 - El restore exige coincidencia entre checksum del dump cifrado descargado y el checksum declarado en el replica packet, y entre checksum del dump descifrado y el checksum del dump fuente del backup drill.
 - `verify-backup-escrow-restore` bloquea igual que en el restore primario: si cambian los totales canónicos entre source/restore, si el smoke restaurado falla o si el `RTO` medido excede el budget configurado.
 
+## Workflow de DR rehearsal history
+
+Existe un séptimo workflow en `.github/workflows/patient-flow-os-dr-rehearsal-history.yml`.
+
+Objetivo:
+
+- correr en forma manual o agendada,
+- consultar runs exitosos recientes de `Patient Flow OS Backup Drill` y `Patient Flow OS Escrow Replica Restore`,
+- descargar sus artifacts vía GitHub API,
+- construir un packet histórico consolidado de `RTO/RPO`,
+- fallar si faltan rehearsals, si el último run sale de budget o si hay regresión de tendencia contra la mediana rolling.
+
+Inputs principales:
+
+- `target_environment`: `staging` o `production`.
+- `window_days`: ventana histórica en días.
+- `min_backup_drill_runs`: mínimo de backup drills esperados en la ventana.
+- `min_replica_restore_runs`: mínimo de replica restores esperados en la ventana.
+- `max_backup_drill_rto_seconds`: budget máximo del último backup drill `RTO`.
+- `max_backup_drill_rpo_seconds`: budget máximo del último backup drill `RPO`.
+- `max_replica_restore_rto_seconds`: budget máximo del último replica restore `RTO`.
+- `max_gap_hours`: gap máximo permitido entre rehearsals exitosos.
+- `max_rto_regression_percent`: regresión máxima permitida contra la mediana rolling.
+
+Artifacts de DR rehearsal history:
+
+- `patient-flow-os-dr-rehearsal-history-artifacts`
+- `packet-download-manifest.json`
+- `dr-rehearsal-history-manifest.json`
+- `dr-rehearsal-history-packet-command.json`
+- `dr-rehearsal-history-packet.json`
+- `dr-rehearsal-history-packet.md`
+- `dr-rehearsal-history-checklist.json`
+- `dr-rehearsal-history-checklist.md`
+- `dr-rehearsal-history-verification.json`
+
+Notas operativas:
+
+- El workflow tiene `schedule` semanal además de `workflow_dispatch`.
+- No toca bases de datos ni reejecuta restore; consume evidencia ya producida por los workflows operativos y la convierte en una alerta auditable.
+- El packet histórico filtra por `sourceEnvironment`, exige `restoreSource=replica` para los restore packets y calcula gaps/regresión solo sobre runs verdes.
+- `verify-dr-rehearsal-history` bloquea si la cadencia se enfría o si el último `RTO/RPO` se degrada frente a la mediana rolling por encima del umbral configurado.
+
 ## Flujo recomendado
 
 1. `inspect` para validar que el schema y los conteos esperados existen.
@@ -502,4 +559,6 @@ Notas operativas:
 17. `verify-backup-escrow-replica` para bloquear una réplica cuando no aporta aislamiento real respecto del bucket primario o cuando no conserva el checksum cifrado.
 18. `backup-escrow-restore-packet` para convertir la restauración desde el objeto cifrado externo, primario o réplica, en un packet verificable de disaster recovery.
 19. `verify-backup-escrow-restore` para bloquear restores desde escrow cuando no preservan checksums, smoke, totales o budget de `RTO`.
-20. En CI, usar el workflow `Patient Flow OS Cutover` para generar el packet de staging, `Patient Flow OS Promote` para consumir ese packet y ejecutar el replay en `patient-flow-os-production`, `Patient Flow OS Rollback` para rehearsal/restore simétricos, `Patient Flow OS Backup Drill` para validar backup físico real, escrow externo primario y réplica multi-sitio sobre un drill DB aislado, `Patient Flow OS Escrow Restore` para probar la recuperación real desde el objeto cifrado externo primario y `Patient Flow OS Escrow Replica Restore` para probar la recuperación desde el bucket secundario.
+20. `dr-rehearsal-history-packet` para consolidar backup drills y replica restores recientes en un packet auditable de tendencia `RTO/RPO`.
+21. `verify-dr-rehearsal-history` para bloquear cuando la ventana histórica muestra falta de rehearsal, gaps o degradación por encima del threshold aceptado.
+22. En CI, usar el workflow `Patient Flow OS Cutover` para generar el packet de staging, `Patient Flow OS Promote` para consumir ese packet y ejecutar el replay en `patient-flow-os-production`, `Patient Flow OS Rollback` para rehearsal/restore simétricos, `Patient Flow OS Backup Drill` para validar backup físico real, escrow externo primario y réplica multi-sitio sobre un drill DB aislado, `Patient Flow OS Escrow Restore` para probar la recuperación real desde el objeto cifrado externo primario, `Patient Flow OS Escrow Replica Restore` para probar la recuperación desde el bucket secundario y `Patient Flow OS DR Rehearsal History` para vigilar cadencia y degradación histórica de esos rehearsals.

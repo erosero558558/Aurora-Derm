@@ -3724,3 +3724,530 @@ test("verify-backup-escrow-restore fails when the decrypted dump checksum diverg
     );
   });
 });
+
+test("dr-rehearsal-history-packet writes combined backup drill and replica restore trend evidence without requiring DATABASE_URL", async () => {
+  await withTempDir(async (dir) => {
+    const now = new Date("2026-03-12T12:00:00.000Z");
+    const manifestPath = join(dir, "dr-rehearsal-history-manifest.json");
+    const outputDir = join(dir, "dr-rehearsal-history-artifacts");
+    const backupDrillPacketAPath = join(dir, "backup-drill-packet-a.json");
+    const backupDrillPacketBPath = join(dir, "backup-drill-packet-b.json");
+    const replicaRestorePacketAPath = join(dir, "backup-escrow-restore-packet-a.json");
+    const replicaRestorePacketBPath = join(dir, "backup-escrow-restore-packet-b.json");
+
+    await writeFile(
+      backupDrillPacketAPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          label: "backup-drill-a",
+          sourceEnvironment: "production",
+          backupMode: "logical_pg_dump",
+          restoreTarget: "drill",
+          archiveDestination: "github_artifact_encrypted",
+          summary: {
+            sourceSmokeOk: true,
+            restoreSmokeOk: true,
+            totalsMatch: true,
+            measuredRtoSeconds: 600,
+            estimatedRpoSeconds: 2400,
+            maxRtoSeconds: 900,
+            maxRpoSeconds: 3600,
+            dumpBytes: 1024,
+            encryptedDumpReady: true,
+            encryptedDumpBytes: 512,
+            retentionDays: 30,
+            expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            sourceTotals: null,
+            restoredTotals: null
+          },
+          evidence: {
+            backupManifestPath: "backup-drill-manifest.json",
+            dumpPath: "patient-flow-os.dump",
+            dumpSha256Path: "patient-flow-os.dump.sha256",
+            dumpSha256: "a".repeat(64),
+            encryptedDumpPath: "patient-flow-os.dump.gpg",
+            encryptedDumpSha256Path: "patient-flow-os.dump.gpg.sha256",
+            encryptedDumpSha256: "f".repeat(64),
+            encryptionMode: "gpg_symmetric",
+            encryptionKeyRef: "github_secret:TEST",
+            sourceSmokePath: "source-smoke.json",
+            sourceInspectPath: "source-inspect.json",
+            restoreSmokePath: "restore-smoke.json",
+            restoreInspectPath: "restore-inspect.json"
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    await writeFile(
+      backupDrillPacketBPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+          label: "backup-drill-b",
+          sourceEnvironment: "production",
+          backupMode: "logical_pg_dump",
+          restoreTarget: "drill",
+          archiveDestination: "github_artifact_encrypted",
+          summary: {
+            sourceSmokeOk: true,
+            restoreSmokeOk: true,
+            totalsMatch: true,
+            measuredRtoSeconds: 540,
+            estimatedRpoSeconds: 1800,
+            maxRtoSeconds: 900,
+            maxRpoSeconds: 3600,
+            dumpBytes: 1024,
+            encryptedDumpReady: true,
+            encryptedDumpBytes: 512,
+            retentionDays: 30,
+            expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            sourceTotals: null,
+            restoredTotals: null
+          },
+          evidence: {
+            backupManifestPath: "backup-drill-manifest.json",
+            dumpPath: "patient-flow-os.dump",
+            dumpSha256Path: "patient-flow-os.dump.sha256",
+            dumpSha256: "a".repeat(64),
+            encryptedDumpPath: "patient-flow-os.dump.gpg",
+            encryptedDumpSha256Path: "patient-flow-os.dump.gpg.sha256",
+            encryptedDumpSha256: "f".repeat(64),
+            encryptionMode: "gpg_symmetric",
+            encryptionKeyRef: "github_secret:TEST",
+            sourceSmokePath: "source-smoke.json",
+            sourceInspectPath: "source-inspect.json",
+            restoreSmokePath: "restore-smoke.json",
+            restoreInspectPath: "restore-inspect.json"
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    await writeFile(
+      replicaRestorePacketAPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+          label: "replica-restore-a",
+          sourceEnvironment: "production",
+          restoreTarget: "drill",
+          restoreSource: "replica",
+          escrowProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          summary: {
+            sourceEscrowReady: true,
+            sourceBackupDrillReady: true,
+            sourceSmokeOk: true,
+            restoreSmokeOk: true,
+            downloadedDumpMatchesEscrowChecksum: true,
+            decryptedDumpMatchesSourceDumpChecksum: true,
+            totalsMatch: true,
+            downloadDurationSeconds: 30,
+            decryptDurationSeconds: 30,
+            restoreDurationSeconds: 480,
+            measuredRtoSeconds: 480,
+            maxRtoSeconds: 900,
+            sourceTotals: null,
+            restoredTotals: null
+          },
+          escrowObject: {
+            bucket: "patient-flow-os-backups-replica",
+            key: "production/a.dump.gpg",
+            region: "us-west-2",
+            versionId: "v1",
+            eTag: "etag-a"
+          },
+          evidence: {
+            backupEscrowRestoreManifestPath: "backup-escrow-restore-manifest.json",
+            backupEscrowPacketPath: "source-backup-escrow-replica-packet.json",
+            sourceBackupDrillPacketPath: backupDrillPacketAPath,
+            sourceSmokePath: "source-smoke.json",
+            sourceInspectPath: "source-inspect.json",
+            downloadedEncryptedDumpPath: "downloaded-patient-flow-os.dump.gpg",
+            downloadedEncryptedDumpSha256Path: "downloaded-patient-flow-os.dump.gpg.sha256",
+            downloadedEncryptedDumpSha256: "f".repeat(64),
+            decryptedDumpPath: "restored-patient-flow-os.dump",
+            decryptedDumpSha256Path: "restored-patient-flow-os.dump.sha256",
+            decryptedDumpSha256: "a".repeat(64),
+            restoreSmokePath: "restore-smoke.json",
+            restoreInspectPath: "restore-inspect.json"
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    await writeFile(
+      replicaRestorePacketBPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+          label: "replica-restore-b",
+          sourceEnvironment: "production",
+          restoreTarget: "drill",
+          restoreSource: "replica",
+          escrowProvider: "aws_s3",
+          archiveDestination: "aws_s3_encrypted",
+          summary: {
+            sourceEscrowReady: true,
+            sourceBackupDrillReady: true,
+            sourceSmokeOk: true,
+            restoreSmokeOk: true,
+            downloadedDumpMatchesEscrowChecksum: true,
+            decryptedDumpMatchesSourceDumpChecksum: true,
+            totalsMatch: true,
+            downloadDurationSeconds: 30,
+            decryptDurationSeconds: 30,
+            restoreDurationSeconds: 420,
+            measuredRtoSeconds: 420,
+            maxRtoSeconds: 900,
+            sourceTotals: null,
+            restoredTotals: null
+          },
+          escrowObject: {
+            bucket: "patient-flow-os-backups-replica",
+            key: "production/b.dump.gpg",
+            region: "us-west-2",
+            versionId: "v2",
+            eTag: "etag-b"
+          },
+          evidence: {
+            backupEscrowRestoreManifestPath: "backup-escrow-restore-manifest.json",
+            backupEscrowPacketPath: "source-backup-escrow-replica-packet.json",
+            sourceBackupDrillPacketPath: backupDrillPacketBPath,
+            sourceSmokePath: "source-smoke.json",
+            sourceInspectPath: "source-inspect.json",
+            downloadedEncryptedDumpPath: "downloaded-patient-flow-os.dump.gpg",
+            downloadedEncryptedDumpSha256Path: "downloaded-patient-flow-os.dump.gpg.sha256",
+            downloadedEncryptedDumpSha256: "f".repeat(64),
+            decryptedDumpPath: "restored-patient-flow-os.dump",
+            decryptedDumpSha256Path: "restored-patient-flow-os.dump.sha256",
+            decryptedDumpSha256: "a".repeat(64),
+            restoreSmokePath: "restore-smoke.json",
+            restoreInspectPath: "restore-inspect.json"
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    await writeFile(
+      manifestPath,
+      `${JSON.stringify(
+        {
+          generatedAt: now.toISOString(),
+          sourceEnvironment: "production",
+          windowDays: 14,
+          backupDrillPacketPaths: [backupDrillPacketAPath, backupDrillPacketBPath],
+          replicaRestorePacketPaths: [replicaRestorePacketAPath, replicaRestorePacketBPath]
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "dr-rehearsal-history-packet",
+        "--input",
+        manifestPath,
+        "--artifacts-dir",
+        outputDir,
+        "--source-environment",
+        "production",
+        "--min-backup-drill-runs",
+        "2",
+        "--min-replica-restore-runs",
+        "2",
+        "--max-backup-drill-rto-seconds",
+        "900",
+        "--max-backup-drill-rpo-seconds",
+        "3600",
+        "--max-replica-restore-rto-seconds",
+        "900",
+        "--max-gap-hours",
+        "168",
+        "--max-rto-regression-percent",
+        "25",
+        "--label",
+        "patient-flow-os-production-dr-history",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 0);
+    const payload = JSON.parse(capture.stdout()) as {
+      command: string;
+      outputPath: string;
+      disasterRecoveryHistoryPacket: {
+        ok: boolean;
+        windowDays: number;
+        summary: {
+          backupDrillRuns: number;
+          replicaRestoreRuns: number;
+          latestBackupDrillRtoSeconds: number;
+          latestBackupDrillRpoSeconds: number;
+          latestReplicaRestoreRtoSeconds: number;
+        };
+      };
+    };
+    assert.equal(payload.command, "dr-rehearsal-history-packet");
+    assert.equal(payload.disasterRecoveryHistoryPacket.ok, true);
+    assert.equal(payload.disasterRecoveryHistoryPacket.windowDays, 14);
+    assert.equal(payload.disasterRecoveryHistoryPacket.summary.backupDrillRuns, 2);
+    assert.equal(payload.disasterRecoveryHistoryPacket.summary.replicaRestoreRuns, 2);
+    assert.equal(payload.disasterRecoveryHistoryPacket.summary.latestBackupDrillRtoSeconds, 540);
+    assert.equal(payload.disasterRecoveryHistoryPacket.summary.latestBackupDrillRpoSeconds, 1800);
+    assert.equal(payload.disasterRecoveryHistoryPacket.summary.latestReplicaRestoreRtoSeconds, 420);
+    assert.equal(payload.outputPath, join(outputDir, "dr-rehearsal-history-packet.json"));
+  });
+});
+
+test("verify-dr-rehearsal-history passes for a healthy rolling DR history packet", async () => {
+  await withTempDir(async (dir) => {
+    const manifestPath = join(dir, "dr-rehearsal-history-manifest.json");
+    const backupDrillPacketPath = join(dir, "backup-drill-packet.json");
+    const replicaRestorePacketPath = join(dir, "backup-escrow-restore-packet.json");
+    const packetPath = join(dir, "dr-rehearsal-history-packet.json");
+
+    await writeFile(manifestPath, "{}\n", "utf8");
+    await writeFile(backupDrillPacketPath, "{}\n", "utf8");
+    await writeFile(replicaRestorePacketPath, "{}\n", "utf8");
+
+    await writeFile(
+      packetPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: new Date("2026-03-12T12:00:00.000Z").toISOString(),
+          label: "patient-flow-os-production-dr-history",
+          sourceEnvironment: "production",
+          windowDays: 14,
+          summary: {
+            backupDrillRuns: 2,
+            backupDrillSuccessfulRuns: 2,
+            replicaRestoreRuns: 2,
+            replicaRestoreSuccessfulRuns: 2,
+            latestBackupDrillAt: "2026-03-11T12:00:00.000Z",
+            latestReplicaRestoreAt: "2026-03-11T12:00:00.000Z",
+            latestBackupDrillRtoSeconds: 540,
+            latestBackupDrillRpoSeconds: 1800,
+            latestReplicaRestoreRtoSeconds: 420,
+            backupDrillSuccessRate: 100,
+            replicaRestoreSuccessRate: 100,
+            backupDrillMedianRtoSeconds: 570,
+            backupDrillMedianRpoSeconds: 2100,
+            replicaRestoreMedianRtoSeconds: 450,
+            backupDrillWorstRtoSeconds: 600,
+            backupDrillWorstRpoSeconds: 2400,
+            replicaRestoreWorstRtoSeconds: 480,
+            maxBackupDrillGapHours: 144,
+            maxReplicaRestoreGapHours: 120,
+            backupDrillRtoRegressionPercent: 0,
+            backupDrillRpoRegressionPercent: 0,
+            replicaRestoreRtoRegressionPercent: 0,
+            minBackupDrillRuns: 2,
+            minReplicaRestoreRuns: 2,
+            maxBackupDrillRtoSeconds: 900,
+            maxBackupDrillRpoSeconds: 3600,
+            maxReplicaRestoreRtoSeconds: 900,
+            maxGapHours: 168,
+            maxRtoRegressionPercent: 25
+          },
+          evidence: {
+            manifestPath,
+            backupDrillPacketPaths: [backupDrillPacketPath],
+            replicaRestorePacketPaths: [replicaRestorePacketPath]
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "verify-dr-rehearsal-history",
+        "--input",
+        packetPath,
+        "--source-environment",
+        "production",
+        "--min-backup-drill-runs",
+        "2",
+        "--min-replica-restore-runs",
+        "2",
+        "--max-backup-drill-rto-seconds",
+        "900",
+        "--max-backup-drill-rpo-seconds",
+        "3600",
+        "--max-replica-restore-rto-seconds",
+        "900",
+        "--max-gap-hours",
+        "168",
+        "--max-rto-regression-percent",
+        "25",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 0);
+    const payload = JSON.parse(capture.stdout()) as {
+      command: string;
+      disasterRecoveryHistoryVerification: { ok: boolean; checks: Array<{ id: string; ok: boolean }> };
+    };
+    assert.equal(payload.command, "verify-dr-rehearsal-history");
+    assert.equal(payload.disasterRecoveryHistoryVerification.ok, true);
+    assert.ok(payload.disasterRecoveryHistoryVerification.checks.every((check) => check.ok));
+  });
+});
+
+test("verify-dr-rehearsal-history fails when replica restore RTO regression exceeds the configured threshold", async () => {
+  await withTempDir(async (dir) => {
+    const manifestPath = join(dir, "dr-rehearsal-history-manifest.json");
+    const backupDrillPacketPath = join(dir, "backup-drill-packet.json");
+    const replicaRestorePacketPath = join(dir, "backup-escrow-restore-packet.json");
+    const packetPath = join(dir, "dr-rehearsal-history-packet.json");
+
+    await writeFile(manifestPath, "{}\n", "utf8");
+    await writeFile(backupDrillPacketPath, "{}\n", "utf8");
+    await writeFile(replicaRestorePacketPath, "{}\n", "utf8");
+
+    await writeFile(
+      packetPath,
+      `${JSON.stringify(
+        {
+          ok: true,
+          generatedAt: new Date("2026-03-12T12:00:00.000Z").toISOString(),
+          label: "patient-flow-os-production-dr-history",
+          sourceEnvironment: "production",
+          windowDays: 14,
+          summary: {
+            backupDrillRuns: 2,
+            backupDrillSuccessfulRuns: 2,
+            replicaRestoreRuns: 2,
+            replicaRestoreSuccessfulRuns: 2,
+            latestBackupDrillAt: "2026-03-11T12:00:00.000Z",
+            latestReplicaRestoreAt: "2026-03-11T12:00:00.000Z",
+            latestBackupDrillRtoSeconds: 540,
+            latestBackupDrillRpoSeconds: 1800,
+            latestReplicaRestoreRtoSeconds: 620,
+            backupDrillSuccessRate: 100,
+            replicaRestoreSuccessRate: 100,
+            backupDrillMedianRtoSeconds: 570,
+            backupDrillMedianRpoSeconds: 2100,
+            replicaRestoreMedianRtoSeconds: 420,
+            backupDrillWorstRtoSeconds: 600,
+            backupDrillWorstRpoSeconds: 2400,
+            replicaRestoreWorstRtoSeconds: 620,
+            maxBackupDrillGapHours: 144,
+            maxReplicaRestoreGapHours: 120,
+            backupDrillRtoRegressionPercent: 0,
+            backupDrillRpoRegressionPercent: 0,
+            replicaRestoreRtoRegressionPercent: 47.62,
+            minBackupDrillRuns: 2,
+            minReplicaRestoreRuns: 2,
+            maxBackupDrillRtoSeconds: 900,
+            maxBackupDrillRpoSeconds: 3600,
+            maxReplicaRestoreRtoSeconds: 900,
+            maxGapHours: 168,
+            maxRtoRegressionPercent: 25
+          },
+          evidence: {
+            manifestPath,
+            backupDrillPacketPaths: [backupDrillPacketPath],
+            replicaRestorePacketPaths: [replicaRestorePacketPath]
+          },
+          automatedChecks: [],
+          manualChecks: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const capture = createIoCapture();
+    const exitCode = await runCutoverCli(
+      [
+        "verify-dr-rehearsal-history",
+        "--input",
+        packetPath,
+        "--source-environment",
+        "production",
+        "--min-backup-drill-runs",
+        "2",
+        "--min-replica-restore-runs",
+        "2",
+        "--max-backup-drill-rto-seconds",
+        "900",
+        "--max-backup-drill-rpo-seconds",
+        "3600",
+        "--max-replica-restore-rto-seconds",
+        "900",
+        "--max-gap-hours",
+        "168",
+        "--max-rto-regression-percent",
+        "25",
+        "--json"
+      ],
+      {
+        io: capture.io,
+        cwd: dir
+      }
+    );
+
+    assert.equal(exitCode, 1);
+    const payload = JSON.parse(capture.stdout()) as {
+      error: string;
+      disasterRecoveryHistoryVerification: {
+        ok: boolean;
+        checks: Array<{ id: string; ok: boolean }>;
+      };
+    };
+    assert.match(payload.error, /dr rehearsal history packet failed verification/);
+    assert.equal(payload.disasterRecoveryHistoryVerification.ok, false);
+    assert.ok(
+      payload.disasterRecoveryHistoryVerification.checks.some(
+        (check) => check.id === "packet.summary.replica_restore_rto_regression" && check.ok === false
+      )
+    );
+  });
+});

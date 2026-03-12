@@ -1,0 +1,361 @@
+name: Patient Flow OS DR Rehearsal History
+
+on:
+    workflow_dispatch:
+        inputs:
+            target_environment:
+                description: 'Environment GitHub a auditar en la historia de rehearsals'
+                required: true
+                default: 'production'
+                type: choice
+                options:
+                    - staging
+                    - production
+            window_days:
+                description: 'Ventana histórica en días para buscar backup drills y replica restores'
+                required: true
+                default: '14'
+                type: string
+            min_backup_drill_runs:
+                description: 'Cantidad mínima de backup drills esperados en la ventana'
+                required: true
+                default: '2'
+                type: string
+            min_replica_restore_runs:
+                description: 'Cantidad mínima de replica restores esperados en la ventana'
+                required: true
+                default: '1'
+                type: string
+            max_backup_drill_rto_seconds:
+                description: 'Budget máximo permitido para el último backup drill RTO'
+                required: true
+                default: '900'
+                type: string
+            max_backup_drill_rpo_seconds:
+                description: 'Budget máximo permitido para el último backup drill RPO'
+                required: true
+                default: '3600'
+                type: string
+            max_replica_restore_rto_seconds:
+                description: 'Budget máximo permitido para el último replica restore RTO'
+                required: true
+                default: '900'
+                type: string
+            max_gap_hours:
+                description: 'Gap máximo permitido entre rehearsals exitosos'
+                required: true
+                default: '168'
+                type: string
+            max_rto_regression_percent:
+                description: 'Regresión máxima permitida contra la mediana rolling'
+                required: true
+                default: '25'
+                type: string
+    schedule:
+        - cron: '0 10 * * 1'
+
+permissions:
+    contents: read
+    actions: read
+
+concurrency:
+    group: patient-flow-os-dr-rehearsal-history-${{ github.ref }}-${{ github.event.inputs.target_environment || 'production' }}
+    cancel-in-progress: false
+
+jobs:
+    patient-flow-os-dr-rehearsal-history:
+        runs-on: ubuntu-latest
+        timeout-minutes: 35
+        environment:
+            name: ${{ format('patient-flow-os-{0}', github.event.inputs.target_environment || 'production') }}
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            GITHUB_TOKEN: ${{ github.token }}
+            TARGET_ENVIRONMENT_INPUT: ${{ github.event.inputs.target_environment || 'production' }}
+            WINDOW_DAYS_INPUT: ${{ github.event.inputs.window_days || '14' }}
+            MIN_BACKUP_DRILL_RUNS_INPUT: ${{ github.event.inputs.min_backup_drill_runs || '2' }}
+            MIN_REPLICA_RESTORE_RUNS_INPUT: ${{ github.event.inputs.min_replica_restore_runs || '1' }}
+            MAX_BACKUP_DRILL_RTO_SECONDS_INPUT: ${{ github.event.inputs.max_backup_drill_rto_seconds || '900' }}
+            MAX_BACKUP_DRILL_RPO_SECONDS_INPUT: ${{ github.event.inputs.max_backup_drill_rpo_seconds || '3600' }}
+            MAX_REPLICA_RESTORE_RTO_SECONDS_INPUT: ${{ github.event.inputs.max_replica_restore_rto_seconds || '900' }}
+            MAX_GAP_HOURS_INPUT: ${{ github.event.inputs.max_gap_hours || '168' }}
+            MAX_RTO_REGRESSION_PERCENT_INPUT: ${{ github.event.inputs.max_rto_regression_percent || '25' }}
+            DR_HISTORY_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-dr-rehearsal-history
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validar inputs
+              run: |
+                  set -euo pipefail
+
+                  for input_name in \
+                    WINDOW_DAYS_INPUT \
+                    MIN_BACKUP_DRILL_RUNS_INPUT \
+                    MIN_REPLICA_RESTORE_RUNS_INPUT \
+                    MAX_BACKUP_DRILL_RTO_SECONDS_INPUT \
+                    MAX_BACKUP_DRILL_RPO_SECONDS_INPUT \
+                    MAX_REPLICA_RESTORE_RTO_SECONDS_INPUT \
+                    MAX_GAP_HOURS_INPUT \
+                    MAX_RTO_REGRESSION_PERCENT_INPUT; do
+                    input_value="${!input_name}"
+                    case "${input_value}" in
+                      ''|*[!0-9]*)
+                        echo "::error::${input_name} debe ser entero positivo."
+                        exit 1
+                        ;;
+                    esac
+                  done
+
+                  mkdir -p "${DR_HISTORY_ARTIFACT_ROOT}"
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Build Patient Flow OS
+              run: npm run build
+
+            - name: Recolectar packets recientes de backup drill y replica restore
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+                  const { execFileSync } = require('child_process');
+
+                  const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
+                  const token = process.env.GITHUB_TOKEN;
+                  const artifactRoot = process.env.DR_HISTORY_ARTIFACT_ROOT;
+                  const rawRoot = path.join(artifactRoot, 'downloaded-runs');
+                  const windowDays = Number(process.env.WINDOW_DAYS_INPUT || '14');
+                  const sourceEnvironment = process.env.TARGET_ENVIRONMENT_INPUT || 'production';
+
+                  if (!owner || !repo || !token) {
+                    throw new Error('Missing GITHUB_REPOSITORY or GITHUB_TOKEN for DR history collection.');
+                  }
+
+                  fs.mkdirSync(rawRoot, { recursive: true });
+
+                  const api = async (apiPath) => {
+                    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}${apiPath}`, {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/vnd.github+json',
+                        'User-Agent': 'patient-flow-os-dr-history'
+                      }
+                    });
+                    if (!response.ok) {
+                      throw new Error(`GitHub API ${apiPath} failed with ${response.status}`);
+                    }
+                    return response.json();
+                  };
+
+                  const download = async (url, destinationPath) => {
+                    const response = await fetch(url, {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/vnd.github+json',
+                        'User-Agent': 'patient-flow-os-dr-history'
+                      }
+                    });
+                    if (!response.ok) {
+                      throw new Error(`Artifact download failed with ${response.status} for ${url}`);
+                    }
+                    const buffer = Buffer.from(await response.arrayBuffer());
+                    fs.writeFileSync(destinationPath, buffer);
+                  };
+
+                  const findFile = (directoryPath, fileName) => {
+                    const entries = fs.readdirSync(directoryPath, { withFileTypes: true });
+                    for (const entry of entries) {
+                      const candidatePath = path.join(directoryPath, entry.name);
+                      if (entry.isDirectory()) {
+                        const nested = findFile(candidatePath, fileName);
+                        if (nested) {
+                          return nested;
+                        }
+                        continue;
+                      }
+                      if (entry.isFile() && entry.name === fileName) {
+                        return candidatePath;
+                      }
+                    }
+                    return null;
+                  };
+
+                  const sinceMs = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+                  const collectors = [
+                    {
+                      key: 'backup-drill',
+                      workflow: 'patient-flow-os-backup-drill.yml',
+                      artifactName: 'patient-flow-os-backup-drill-artifacts',
+                      packetName: 'backup-drill-packet.json',
+                      targetField: 'backupDrillPacketPaths'
+                    },
+                    {
+                      key: 'replica-restore',
+                      workflow: 'patient-flow-os-escrow-replica-restore.yml',
+                      artifactName: 'patient-flow-os-escrow-replica-restore-artifacts',
+                      packetName: 'backup-escrow-restore-packet.json',
+                      targetField: 'replicaRestorePacketPaths'
+                    }
+                  ];
+
+                  const manifest = {
+                    generatedAt: new Date().toISOString(),
+                    sourceEnvironment,
+                    windowDays,
+                    backupDrillPacketPaths: [],
+                    replicaRestorePacketPaths: []
+                  };
+                  const downloadManifest = {
+                    generatedAt: manifest.generatedAt,
+                    sourceEnvironment,
+                    windowDays,
+                    backupDrillRuns: [],
+                    replicaRestoreRuns: []
+                  };
+
+                  for (const collector of collectors) {
+                    const runsPayload = await api(`/actions/workflows/${collector.workflow}/runs?status=completed&per_page=50`);
+                    const workflowRuns = Array.isArray(runsPayload.workflow_runs) ? runsPayload.workflow_runs : [];
+
+                    for (const run of workflowRuns) {
+                      const createdAtMs = Date.parse(run.created_at || run.run_started_at || '');
+                      if (!Number.isFinite(createdAtMs) || createdAtMs < sinceMs || run.conclusion !== 'success') {
+                        continue;
+                      }
+
+                      const artifactsPayload = await api(`/actions/runs/${run.id}/artifacts?per_page=100`);
+                      const artifacts = Array.isArray(artifactsPayload.artifacts) ? artifactsPayload.artifacts : [];
+                      const artifact = artifacts.find(
+                        (candidate) => candidate.name === collector.artifactName && candidate.expired !== true
+                      );
+                      if (!artifact) {
+                        continue;
+                      }
+
+                      const collectorRoot = path.join(rawRoot, collector.key, String(run.id));
+                      const zipPath = path.join(collectorRoot, 'artifact.zip');
+                      const extractRoot = path.join(collectorRoot, 'extracted');
+                      fs.mkdirSync(collectorRoot, { recursive: true });
+                      fs.mkdirSync(extractRoot, { recursive: true });
+
+                      await download(artifact.archive_download_url, zipPath);
+                      execFileSync('unzip', ['-oq', zipPath, '-d', extractRoot], { stdio: 'pipe' });
+
+                      const packetPath = findFile(extractRoot, collector.packetName);
+                      if (!packetPath) {
+                        continue;
+                      }
+
+                      manifest[collector.targetField].push(packetPath);
+                      downloadManifest[
+                        collector.key === 'backup-drill' ? 'backupDrillRuns' : 'replicaRestoreRuns'
+                      ].push({
+                        runId: run.id,
+                        createdAt: run.created_at,
+                        artifactId: artifact.id,
+                        artifactName: artifact.name,
+                        packetPath
+                      });
+                    }
+                  }
+
+                  fs.writeFileSync(
+                    path.join(artifactRoot, 'dr-rehearsal-history-manifest.json'),
+                    `${JSON.stringify(manifest, null, 2)}\n`
+                  );
+                  fs.writeFileSync(
+                    path.join(artifactRoot, 'packet-download-manifest.json'),
+                    `${JSON.stringify(downloadManifest, null, 2)}\n`
+                  );
+                  NODE
+
+            - name: Construir packet histórico de DR rehearsal
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- dr-rehearsal-history-packet \
+                    --input "${DR_HISTORY_ARTIFACT_ROOT}/dr-rehearsal-history-manifest.json" \
+                    --artifacts-dir "${DR_HISTORY_ARTIFACT_ROOT}" \
+                    --source-environment "${TARGET_ENVIRONMENT_INPUT}" \
+                    --min-backup-drill-runs "${MIN_BACKUP_DRILL_RUNS_INPUT}" \
+                    --min-replica-restore-runs "${MIN_REPLICA_RESTORE_RUNS_INPUT}" \
+                    --max-backup-drill-rto-seconds "${MAX_BACKUP_DRILL_RTO_SECONDS_INPUT}" \
+                    --max-backup-drill-rpo-seconds "${MAX_BACKUP_DRILL_RPO_SECONDS_INPUT}" \
+                    --max-replica-restore-rto-seconds "${MAX_REPLICA_RESTORE_RTO_SECONDS_INPUT}" \
+                    --max-gap-hours "${MAX_GAP_HOURS_INPUT}" \
+                    --max-rto-regression-percent "${MAX_RTO_REGRESSION_PERCENT_INPUT}" \
+                    --label "patient-flow-os-${TARGET_ENVIRONMENT_INPUT}-dr-rehearsal-history" \
+                    --json \
+                    > "${DR_HISTORY_ARTIFACT_ROOT}/dr-rehearsal-history-packet-command.json"
+
+            - name: Verificar packet histórico de DR rehearsal
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-dr-rehearsal-history \
+                    --input "${DR_HISTORY_ARTIFACT_ROOT}/dr-rehearsal-history-packet.json" \
+                    --source-environment "${TARGET_ENVIRONMENT_INPUT}" \
+                    --min-backup-drill-runs "${MIN_BACKUP_DRILL_RUNS_INPUT}" \
+                    --min-replica-restore-runs "${MIN_REPLICA_RESTORE_RUNS_INPUT}" \
+                    --max-backup-drill-rto-seconds "${MAX_BACKUP_DRILL_RTO_SECONDS_INPUT}" \
+                    --max-backup-drill-rpo-seconds "${MAX_BACKUP_DRILL_RPO_SECONDS_INPUT}" \
+                    --max-replica-restore-rto-seconds "${MAX_REPLICA_RESTORE_RTO_SECONDS_INPUT}" \
+                    --max-gap-hours "${MAX_GAP_HOURS_INPUT}" \
+                    --max-rto-regression-percent "${MAX_RTO_REGRESSION_PERCENT_INPUT}" \
+                    --json \
+                    > "${DR_HISTORY_ARTIFACT_ROOT}/dr-rehearsal-history-verification.json"
+
+            - name: Publicar artifacts de DR rehearsal history
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-dr-rehearsal-history-artifacts
+                  path: verification/patient-flow-os-dr-rehearsal-history/
+                  if-no-files-found: warn
+                  retention-days: 14
+
+            - name: Resumen de DR rehearsal history
+              if: ${{ always() }}
+              env:
+                  PACKET_JSON: ${{ env.DR_HISTORY_ARTIFACT_ROOT }}/dr-rehearsal-history-packet.json
+                  VERIFICATION_JSON: ${{ env.DR_HISTORY_ARTIFACT_ROOT }}/dr-rehearsal-history-verification.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS DR Rehearsal History', ''];
+                  lines.push(`- Target environment: \`patient-flow-os-${process.env.TARGET_ENVIRONMENT_INPUT || 'production'}\``);
+                  lines.push(`- Window days: \`${process.env.WINDOW_DAYS_INPUT || '14'}\``);
+                  lines.push(`- Min backup drills: \`${process.env.MIN_BACKUP_DRILL_RUNS_INPUT || '2'}\``);
+                  lines.push(`- Min replica restores: \`${process.env.MIN_REPLICA_RESTORE_RUNS_INPUT || '1'}\``);
+
+                  if (process.env.PACKET_JSON && fs.existsSync(process.env.PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.PACKET_JSON, 'utf8'));
+                    lines.push(`- History packet ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Backup drill runs: \`${packet?.summary?.backupDrillRuns ?? 'n/a'}\``);
+                    lines.push(`- Replica restore runs: \`${packet?.summary?.replicaRestoreRuns ?? 'n/a'}\``);
+                    lines.push(`- Latest backup drill RTO/RPO: \`${packet?.summary?.latestBackupDrillRtoSeconds ?? 'n/a'}s / ${packet?.summary?.latestBackupDrillRpoSeconds ?? 'n/a'}s\``);
+                    lines.push(`- Latest replica restore RTO: \`${packet?.summary?.latestReplicaRestoreRtoSeconds ?? 'n/a'}s\``);
+                    lines.push(`- Backup drill max gap: \`${packet?.summary?.maxBackupDrillGapHours ?? 'n/a'}h\``);
+                    lines.push(`- Replica restore max gap: \`${packet?.summary?.maxReplicaRestoreGapHours ?? 'n/a'}h\``);
+                  }
+
+                  if (process.env.VERIFICATION_JSON && fs.existsSync(process.env.VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- DR history verification: \`${verification?.disasterRecoveryHistoryVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  lines.push('- Artifact set: `packet-download-manifest.json`, `dr-rehearsal-history-manifest.json`, `dr-rehearsal-history-packet-command.json`, `dr-rehearsal-history-packet.json`, `dr-rehearsal-history-packet.md`, `dr-rehearsal-history-checklist.json`, `dr-rehearsal-history-checklist.md`, `dr-rehearsal-history-verification.json`');
+                  lines.push('- Artifact: `patient-flow-os-dr-rehearsal-history-artifacts`');
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE
