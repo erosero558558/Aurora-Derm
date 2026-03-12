@@ -50,6 +50,7 @@ function Get-WarningSeverity {
         'error_rate_alta_',
         'calendar_source_',
         'calendar_mode_',
+        'public_sync_',
         'telemedicine_diagnostics_critical_',
         'telemedicine_dangling_links_',
         'telemedicine_case_photos_missing_private_path_'
@@ -130,6 +131,9 @@ function Get-WarningImpact {
     if ($WarningCode.StartsWith('leadops_')) {
         return 'leadops'
     }
+    if ($WarningCode.StartsWith('public_sync_')) {
+        return 'observability'
+    }
     if ($WarningCode.StartsWith('sentry_')) {
         return 'observability'
     }
@@ -154,6 +158,9 @@ function Get-WarningRunbookRef {
     }
     if ($WarningCode.StartsWith('sentry_')) {
         return 'docs/MONITORING_SETUP.md'
+    }
+    if ($WarningCode.StartsWith('public_sync_')) {
+        return 'docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md'
     }
     if ($WarningCode.StartsWith('telemedicine_')) {
         return 'docs/API.md#observabilidad-operativa-de-telemedicina'
@@ -634,6 +641,32 @@ $serviceFunnelTopRowsBlock
 - sentry_backend_configured: $sentryBackendConfigured
 - sentry_frontend_configured: $sentryFrontendConfigured
 
+## Public Sync Ops
+
+- public_sync_configured: $publicSyncConfigured
+- public_sync_healthy: $publicSyncHealthy
+- public_sync_job_id: $publicSyncJobId
+- public_sync_state: $publicSyncState
+- public_sync_age_seconds: $publicSyncAgeSeconds
+- public_sync_expected_max_lag_seconds: $publicSyncExpectedMaxLagSeconds
+- public_sync_last_checked_at: $publicSyncLastCheckedAt
+- public_sync_last_success_at: $publicSyncLastSuccessAt
+- public_sync_last_error_at: $publicSyncLastErrorAt
+- public_sync_last_error_message: $publicSyncLastErrorMessage
+- public_sync_deployed_commit: $publicSyncDeployedCommit
+- public_sync_duration_ms: $publicSyncDurationMs
+- public_sync_current_head: $publicSyncCurrentHead
+- public_sync_remote_head: $publicSyncRemoteHead
+- public_sync_head_drift: $publicSyncHeadDrift
+- public_sync_branch: $publicSyncBranch
+- public_sync_repo_path: $publicSyncRepoPath
+- public_sync_dirty_paths_count: $publicSyncDirtyPathsCount
+- public_sync_dirty_paths_sample: $publicSyncDirtyPathsSampleLabel
+- public_sync_telemetry_gap: $publicSyncTelemetryGap
+- public_sync_status_path: $publicSyncStatusPath
+- public_sync_log_path: $publicSyncLogPath
+- public_sync_lock_file: $publicSyncLockFile
+
 ## Services Catalog
 
 - services_catalog_source: $servicesCatalogSource
@@ -908,6 +941,31 @@ function New-WeeklyReportPayload {
         observability = [ordered]@{
             sentryBackendConfigured = $sentryBackendConfigured
             sentryFrontendConfigured = $sentryFrontendConfigured
+        }
+        publicSync = [ordered]@{
+            configured = [bool]$publicSyncConfigured
+            healthy = [bool]$publicSyncHealthy
+            jobId = $publicSyncJobId
+            state = $publicSyncState
+            ageSeconds = $publicSyncAgeSeconds
+            expectedMaxLagSeconds = $publicSyncExpectedMaxLagSeconds
+            lastCheckedAt = $publicSyncLastCheckedAt
+            lastSuccessAt = $publicSyncLastSuccessAt
+            lastErrorAt = $publicSyncLastErrorAt
+            lastErrorMessage = $publicSyncLastErrorMessage
+            deployedCommit = $publicSyncDeployedCommit
+            durationMs = $publicSyncDurationMs
+            currentHead = $publicSyncCurrentHead
+            remoteHead = $publicSyncRemoteHead
+            headDrift = [bool]$publicSyncHeadDrift
+            branch = $publicSyncBranch
+            repoPath = $publicSyncRepoPath
+            dirtyPathsCount = $publicSyncDirtyPathsCount
+            dirtyPathsSample = @($publicSyncDirtyPathsSample)
+            telemetryGap = [bool]$publicSyncTelemetryGap
+            statusPath = $publicSyncStatusPath
+            logPath = $publicSyncLogPath
+            lockFile = $publicSyncLockFile
         }
         servicesCatalog = [ordered]@{
             source = $servicesCatalogSource

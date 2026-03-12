@@ -12,7 +12,7 @@ import {
     renderQueueNextAdminList,
     renderQueueTableBody,
 } from './section/content.js';
-import { renderQueueInstallHub } from './section/install-hub.js';
+import { renderQueueInstallHub } from './section/install-hub/index.js';
 import {
     syncQueueSelectionControls,
     syncQueueStationControls,

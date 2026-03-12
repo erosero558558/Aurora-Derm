@@ -1,17 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-    app,
-    BrowserWindow,
-    Menu,
-    ipcMain,
-    powerSaveBlocker,
-} from 'electron';
-import {
-    ensureRuntimeConfig,
-    persistRuntimeConfig,
-} from './config/store.mjs';
-import { mergeRuntimeConfig } from './config/contracts.mjs';
+import { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker } from 'electron';
+import { ensureRuntimeConfig, persistRuntimeConfig } from './config/store.mjs';
+import { buildUpdateFeedUrl, mergeRuntimeConfig } from './config/contracts.mjs';
 import { createNavigationPolicy } from './runtime/navigation.mjs';
 import { runPreflightChecks } from './runtime/preflight.mjs';
 import {
@@ -19,6 +10,12 @@ import {
     shouldPreventDisplaySleep,
     shouldUseKioskMode,
 } from './runtime/window-options.mjs';
+import {
+    buildDesktopHeartbeatEndpoint,
+    buildDesktopHeartbeatPayload,
+    DESKTOP_HEARTBEAT_INTERVAL_MS,
+    shouldRunDesktopHeartbeat,
+} from './runtime/desktop-heartbeat.mjs';
 import { createUpdater } from './updater.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,11 +33,60 @@ let displaySleepBlockerId = null;
 let updater = null;
 let settingsMode = false;
 let firstRunPending = false;
+let desktopHeartbeatTimer = null;
+let desktopHeartbeatInFlight = false;
+let desktopHeartbeatActive = false;
 let lastBootStatus = {
     level: 'info',
     phase: 'boot',
     message: 'Inicializando shell desktop...',
 };
+
+function getSurfaceRuntimeLabels(config = currentConfig) {
+    const surface = String(config?.surface || 'operator')
+        .trim()
+        .toLowerCase();
+    if (surface === 'kiosk') {
+        return {
+            surfaceId: 'kiosk',
+            surfaceLabel: 'Kiosco',
+            surfaceDesktopLabel: 'Turnero Kiosco',
+        };
+    }
+
+    return {
+        surfaceId: 'operator',
+        surfaceLabel: 'Operador',
+        surfaceDesktopLabel: 'Turnero Operador',
+    };
+}
+
+function getRuntimeSnapshot() {
+    const packaged = app.isPackaged;
+    const supportsNativeUpdate =
+        process.platform === 'win32' || process.platform === 'darwin';
+    const surfaceLabels = getSurfaceRuntimeLabels(currentConfig);
+
+    return {
+        config: currentConfig,
+        status: lastBootStatus,
+        surfaceUrl: navigationPolicy ? navigationPolicy.surfaceUrl : '',
+        packaged,
+        platform: process.platform,
+        arch: process.arch,
+        version: app.getVersion(),
+        name: app.getName(),
+        configPath: currentRuntime ? currentRuntime.configPath : '',
+        ...surfaceLabels,
+        updateFeedUrl:
+            supportsNativeUpdate && currentConfig
+                ? buildUpdateFeedUrl(currentConfig, process.platform)
+                : '',
+        firstRun: firstRunPending,
+        settingsMode,
+        appMode: packaged ? 'packaged' : 'development',
+    };
+}
 
 function log(level, message) {
     const prefix = `[turnero-desktop:${level}]`;
@@ -59,6 +105,74 @@ function setBootStatus(payload) {
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('turnero:boot-status', lastBootStatus);
     }
+    if (desktopHeartbeatActive) {
+        void sendDesktopHeartbeat('status_change');
+    }
+}
+
+function clearDesktopHeartbeatTimer() {
+    if (desktopHeartbeatTimer) {
+        clearInterval(desktopHeartbeatTimer);
+        desktopHeartbeatTimer = null;
+    }
+}
+
+async function sendDesktopHeartbeat(reason = 'interval') {
+    if (desktopHeartbeatInFlight || !currentConfig) {
+        return false;
+    }
+
+    const snapshot = getRuntimeSnapshot();
+    if (!shouldRunDesktopHeartbeat(snapshot)) {
+        return false;
+    }
+
+    const endpoint = buildDesktopHeartbeatEndpoint(snapshot);
+    const payload = buildDesktopHeartbeatPayload(snapshot, {
+        reason,
+    });
+    if (!endpoint || !payload) {
+        return false;
+    }
+
+    desktopHeartbeatInFlight = true;
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        return response.ok;
+    } catch (error) {
+        log('warn', `desktop heartbeat failed: ${error.message}`);
+        return false;
+    } finally {
+        desktopHeartbeatInFlight = false;
+    }
+}
+
+function startDesktopHeartbeat(reason = 'boot_page') {
+    clearDesktopHeartbeatTimer();
+    desktopHeartbeatActive = false;
+
+    const snapshot = getRuntimeSnapshot();
+    if (!shouldRunDesktopHeartbeat(snapshot)) {
+        return;
+    }
+
+    desktopHeartbeatActive = true;
+    void sendDesktopHeartbeat(reason);
+    desktopHeartbeatTimer = setInterval(() => {
+        void sendDesktopHeartbeat('interval');
+    }, DESKTOP_HEARTBEAT_INTERVAL_MS);
+}
+
+function stopDesktopHeartbeat() {
+    desktopHeartbeatActive = false;
+    clearDesktopHeartbeatTimer();
 }
 
 async function loadBootPage() {
@@ -67,6 +181,7 @@ async function loadBootPage() {
     }
     settingsMode = true;
     await mainWindow.loadFile(bootHtmlPath);
+    startDesktopHeartbeat(firstRunPending ? 'first_run' : 'boot_page');
     setBootStatus(lastBootStatus);
 }
 
@@ -80,7 +195,8 @@ function clearRetryTimer() {
 function scheduleReload(reason) {
     clearRetryTimer();
     settingsMode = false;
-    const delay = RETRY_DELAYS_MS[Math.min(retryCount, RETRY_DELAYS_MS.length - 1)];
+    const delay =
+        RETRY_DELAYS_MS[Math.min(retryCount, RETRY_DELAYS_MS.length - 1)];
     retryCount += 1;
     setBootStatus({
         level: 'warn',
@@ -98,6 +214,7 @@ async function loadSurface(source = 'launch') {
     }
 
     clearRetryTimer();
+    stopDesktopHeartbeat();
     settingsMode = false;
     setBootStatus({
         level: 'info',
@@ -110,7 +227,9 @@ async function loadSurface(source = 'launch') {
     } catch (error) {
         log('error', `loadURL failed: ${error.message}`);
         await loadBootPage();
-        scheduleReload(`No se pudo abrir la superficie ${currentConfig.surface}`);
+        scheduleReload(
+            `No se pudo abrir la superficie ${currentConfig.surface}`
+        );
     }
 }
 
@@ -167,7 +286,13 @@ function attachNavigationGuards(windowRef) {
 
     contents.on(
         'did-fail-load',
-        async (_event, errorCode, errorDescription, validatedUrl, isMainFrame) => {
+        async (
+            _event,
+            errorCode,
+            errorDescription,
+            validatedUrl,
+            isMainFrame
+        ) => {
             if (!isMainFrame) {
                 return;
             }
@@ -295,14 +420,7 @@ function setupUpdater() {
 }
 
 ipcMain.handle('turnero:get-runtime-snapshot', () => ({
-    config: currentConfig,
-    status: lastBootStatus,
-    surfaceUrl: navigationPolicy ? navigationPolicy.surfaceUrl : '',
-    packaged: app.isPackaged,
-    version: app.getVersion(),
-    name: app.getName(),
-    firstRun: firstRunPending,
-    settingsMode,
+    ...getRuntimeSnapshot(),
 }));
 
 ipcMain.handle('turnero:run-preflight', async (_event, payload = {}) => {
@@ -361,10 +479,7 @@ ipcMain.handle('turnero:save-runtime-config', async (_event, payload = {}) => {
     });
 
     return {
-        config: currentConfig,
-        surfaceUrl: navigationPolicy.surfaceUrl,
-        firstRun: firstRunPending,
-        settingsMode,
+        ...getRuntimeSnapshot(),
     };
 });
 
@@ -414,6 +529,7 @@ if (!singleInstance) {
 
     app.on('before-quit', () => {
         clearRetryTimer();
+        stopDesktopHeartbeat();
         if (displaySleepBlockerId !== null) {
             powerSaveBlocker.stop(displaySleepBlockerId);
             displaySleepBlockerId = null;

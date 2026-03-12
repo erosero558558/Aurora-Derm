@@ -18,33 +18,56 @@ function loadScript(filePath) {
     return readFileSync(filePath, 'utf8');
 }
 
-test('deploy-public-v3-live recompone artefactos Astro ES/EN y verifica output', () => {
+test('deploy-public-v3-live usa artefactos publicos versionados y verifica el checkout canonico', () => {
     const raw = loadScript(SCRIPT_PATH);
 
     for (const snippet of [
-        'npm run astro:build',
-        'npm run astro:sync',
-        'test -f "$REPO/es/index.html"',
-        'test -f "$REPO/en/index.html"',
-        'test -d "$REPO/_astro"',
-        'ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro"',
+        'verify_canonical_public_artifacts() {',
+        '"es/index.html"',
+        '"en/index.html"',
+        '"_astro"',
+        '"script.js"',
+        '"styles.css"',
+        '"styles-deferred.css"',
+        '"js/chunks"',
+        '"js/engines"',
+        'Missing canonical public artifact:',
+        'verify_canonical_public_artifacts',
+        'ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro" "$REPO/js/chunks" "$REPO/js/engines"',
     ]) {
         assert.equal(
             raw.includes(snippet),
             true,
-            `falta verificacion/build Astro en script live V3: ${snippet}`
+            `falta verificacion canonica de artefactos versionados en script live V3: ${snippet}`
         );
     }
+
+    assert.doesNotMatch(
+        raw,
+        /require_cmd npm|npm ci|npm run astro:build|npm run astro:sync/u,
+        'deploy-public-v3-live no debe reconstruir artefactos V6 en el host'
+    );
 });
 
 test('deploy-public-v3-live resetea metadata tracked de Composer para no dejar dirty tree persistente', () => {
     const raw = loadScript(SCRIPT_PATH);
 
     for (const snippet of [
+        'collect_generated_vendor_metadata_files() {',
+        '"vendor/autoload.php"',
+        '"vendor/composer/autoload_classmap.php"',
+        '"vendor/composer/autoload_files.php"',
+        '"vendor/composer/autoload_namespaces.php"',
+        '"vendor/composer/autoload_psr4.php"',
         'reset_generated_vendor_metadata() {',
         '"vendor/composer/autoload_real.php"',
         '"vendor/composer/autoload_static.php"',
         '"vendor/composer/installed.php"',
+        '"vendor/composer/installed.json"',
+        '"vendor/composer/InstalledVersions.php"',
+        '"vendor/composer/platform_check.php"',
+        "git ls-files -- 'vendor/bin/*'",
+        'done < <(collect_generated_vendor_metadata_files)',
         'git checkout -- "${tracked_files[@]}"',
         'Reset tracked Composer-generated metadata.',
         'composer install --no-dev --optimize-autoloader --prefer-dist --no-progress',

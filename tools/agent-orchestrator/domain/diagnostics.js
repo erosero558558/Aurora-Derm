@@ -186,6 +186,72 @@ function attachDiagnostics(report, diagnostics = []) {
     };
 }
 
+function getPublicSyncWarnState(
+    warnPolicyMap = {},
+    key = '',
+    fallbackKey = ''
+) {
+    if (warnPolicyEnabled(warnPolicyMap, key)) {
+        return {
+            enabled: true,
+            severity: warnPolicySeverity(warnPolicyMap, key),
+        };
+    }
+    if (fallbackKey && warnPolicyEnabled(warnPolicyMap, fallbackKey)) {
+        return {
+            enabled: true,
+            severity: warnPolicySeverity(warnPolicyMap, fallbackKey),
+        };
+    }
+    return { enabled: false, severity: 'warning' };
+}
+
+function buildPublicSyncDiagnosticMeta(job = {}) {
+    return {
+        failure_reason: String(job.failure_reason || ''),
+        last_error_message: String(job.last_error_message || ''),
+        verification_source: String(job.verification_source || ''),
+        state: String(job.state || ''),
+        head_drift: Boolean(job.head_drift),
+        telemetry_gap: Boolean(job.telemetry_gap),
+        current_head: String(job.current_head || ''),
+        remote_head: String(job.remote_head || ''),
+        dirty_paths_count: Number.isFinite(Number(job.dirty_paths_count))
+            ? Number(job.dirty_paths_count)
+            : 0,
+        dirty_paths_sample: Array.isArray(job.dirty_paths_sample)
+            ? job.dirty_paths_sample
+            : [],
+    };
+}
+
+function buildPublicSyncFailureMessage(job = {}) {
+    const parts = [
+        `public_main_sync unhealthy: state=${job.state || 'unknown'}`,
+        `source=${job.verification_source || 'unknown'}`,
+    ];
+    const failureReason = String(job.failure_reason || '').trim();
+    if (failureReason) {
+        parts.push(`reason=${failureReason}`);
+    }
+    if (job.head_drift) {
+        parts.push('head_drift=true');
+        if (job.current_head || job.remote_head) {
+            parts.push(
+                `current=${job.current_head || 'n/a'}`,
+                `remote=${job.remote_head || 'n/a'}`
+            );
+        }
+    }
+    if (job.telemetry_gap) {
+        parts.push('telemetry_gap=true');
+    }
+    if (Number(job.dirty_paths_count || 0) > 0) {
+        parts.push(`dirty_paths=${Number(job.dirty_paths_count || 0)}`);
+    }
+    return parts.join(' ');
+}
+
 function buildWarnFirstDiagnostics(input = {}) {
     const {
         source = 'status',
@@ -369,13 +435,17 @@ function buildWarnFirstDiagnostics(input = {}) {
         }
     }
 
-    const publicSyncJob = Array.isArray(jobsSnapshot)
+    const hasJobsSnapshot = Array.isArray(jobsSnapshot);
+    const publicSyncJob = hasJobsSnapshot
         ? jobsSnapshot.find(
               (job) => String(job?.key || '') === 'public_main_sync'
           )
         : null;
     if (warnPolicyEnabled(warnPolicyMap, 'public_main_sync_unconfigured')) {
-        if (!publicSyncJob || publicSyncJob.configured === false) {
+        if (
+            hasJobsSnapshot &&
+            (!publicSyncJob || publicSyncJob.configured === false)
+        ) {
             diagnostics.push(
                 makeDiagnostic({
                     code: 'warn.jobs.public_main_sync_unconfigured',
@@ -391,6 +461,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         }
     }
     if (
+        hasJobsSnapshot &&
         publicSyncJob &&
         warnPolicyEnabled(warnPolicyMap, 'public_main_sync_stale') &&
         publicSyncJob.verified !== false &&
@@ -411,6 +482,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         );
     }
     if (
+        hasJobsSnapshot &&
         publicSyncJob &&
         warnPolicyEnabled(warnPolicyMap, 'public_main_sync_failed') &&
         publicSyncJob.verified !== false &&
@@ -425,7 +497,56 @@ function buildWarnFirstDiagnostics(input = {}) {
                     'public_main_sync_failed'
                 ),
                 source,
-                message: `public_main_sync unhealthy: state=${publicSyncJob.state || 'unknown'} source=${publicSyncJob.verification_source || 'unknown'}`,
+                message: buildPublicSyncFailureMessage(publicSyncJob),
+                meta: buildPublicSyncDiagnosticMeta(publicSyncJob),
+            })
+        );
+    }
+    const headDriftWarning = getPublicSyncWarnState(
+        warnPolicyMap,
+        'public_main_sync_head_drift',
+        'public_main_sync_failed'
+    );
+    if (
+        hasJobsSnapshot &&
+        publicSyncJob &&
+        headDriftWarning.enabled &&
+        publicSyncJob.verified !== false &&
+        (!publicSyncJob.healthy ||
+            String(publicSyncJob.state || '') === 'failed') &&
+        publicSyncJob.head_drift
+    ) {
+        diagnostics.push(
+            makeDiagnostic({
+                code: 'warn.jobs.public_main_sync_head_drift',
+                severity: headDriftWarning.severity,
+                source,
+                message: `public_main_sync head drift: current=${publicSyncJob.current_head || 'missing'} remote=${publicSyncJob.remote_head || 'missing'}`,
+                meta: buildPublicSyncDiagnosticMeta(publicSyncJob),
+            })
+        );
+    }
+    const telemetryGapWarning = getPublicSyncWarnState(
+        warnPolicyMap,
+        'public_main_sync_telemetry_gap',
+        'public_main_sync_failed'
+    );
+    if (
+        hasJobsSnapshot &&
+        publicSyncJob &&
+        telemetryGapWarning.enabled &&
+        publicSyncJob.verified !== false &&
+        (!publicSyncJob.healthy ||
+            String(publicSyncJob.state || '') === 'failed') &&
+        publicSyncJob.telemetry_gap
+    ) {
+        diagnostics.push(
+            makeDiagnostic({
+                code: 'warn.jobs.public_main_sync_telemetry_gap',
+                severity: telemetryGapWarning.severity,
+                source,
+                message: `public_main_sync telemetry gap: reason=${publicSyncJob.failure_reason || publicSyncJob.last_error_message || 'unknown'} source=${publicSyncJob.verification_source || 'unknown'}`,
+                meta: buildPublicSyncDiagnosticMeta(publicSyncJob),
             })
         );
     }
@@ -487,6 +608,8 @@ module.exports = {
     buildTaskCreateWarnDiagnostics,
     summarizeDiagnostics,
     attachDiagnostics,
+    buildPublicSyncDiagnosticMeta,
+    buildPublicSyncFailureMessage,
     makeDiagnostic,
     getWarnPolicyMap,
     warnPolicyEnabled,

@@ -461,6 +461,8 @@ jobs:
             TELEMEDICINE_DEPLOY_REASON: not_evaluated
             TELEMEDICINE_DEPLOY_FAILURES: -1
             TELEMEDICINE_DEPLOY_NON_TELE_FAILURES: -1
+            TRANSPORT_PREFLIGHT_REASON: not_evaluated
+            TRANSPORT_PREFLIGHT_TARGET: not_evaluated
 
         steps:
             - name: Checkout
@@ -516,13 +518,237 @@ jobs:
                   set -euo pipefail
                   HOST="${{ secrets.FTP_SERVER }}"
                   PORT="${FTP_SERVER_PORT}"
+                  mkdir -p .public-cutover
                   echo "Testeando conectividad TCP a ${HOST}:${PORT} ..."
                   if timeout 8 bash -c "cat < /dev/null > /dev/tcp/${HOST}/${PORT}" 2>/dev/null; then
+                    echo "TRANSPORT_PREFLIGHT_REASON=ok" >> "$GITHUB_ENV"
+                    node bin/write-transport-preflight.js \
+                      --out ".public-cutover/transport-preflight.json" \
+                      --reason "ok" \
+                      --reachable "true"
                     echo "TCP OK en ${HOST}:${PORT}"
                   else
+                    echo "TRANSPORT_PREFLIGHT_REASON=runner_tcp_unreachable" >> "$GITHUB_ENV"
+                    node bin/write-transport-preflight.js \
+                      --out ".public-cutover/transport-preflight.json" \
+                      --reason "runner_tcp_unreachable" \
+                      --reachable "false"
                     echo "::error::No se puede abrir ${HOST}:${PORT} desde GitHub Runner."
                     exit 1
                   fi
+
+            - name: Hydrate transport preflight status
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
+              id: transport_preflight_status
+              shell: bash
+              env:
+                  PREFLIGHT_OUTCOME: ${{ steps.preflight_prod.outcome }}
+              run: |
+                  set -euo pipefail
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const outputPath = process.env.GITHUB_OUTPUT;
+                  const envPath = process.env.GITHUB_ENV;
+                  const preflightOutcome = String(
+                    process.env.PREFLIGHT_OUTCOME || ''
+                  ).trim().toLowerCase();
+                  const fallback = {
+                    reason:
+                      preflightOutcome === 'success'
+                        ? 'ok'
+                        : preflightOutcome === 'failure'
+                          ? 'runner_tcp_unreachable'
+                          : 'not_evaluated',
+                    target: `${process.env.DEPLOY_PROTOCOL || ''}:${process.env.FTP_SERVER_PORT || ''}`,
+                  };
+
+                  let payload = fallback;
+                  if (fs.existsSync('.public-cutover/transport-preflight.json')) {
+                    try {
+                      const parsed = JSON.parse(
+                        fs.readFileSync('.public-cutover/transport-preflight.json', 'utf8')
+                      );
+                      payload = {
+                        ...fallback,
+                        ...parsed,
+                      };
+                    } catch (error) {
+                      payload = {
+                        ...fallback,
+                        reason: `parse_error:${error && error.name ? error.name : 'unknown'}`,
+                      };
+                    }
+                  }
+
+                  const reason = String(payload.reason || fallback.reason);
+                  const target = String(payload.target || fallback.target);
+
+                  if (outputPath) {
+                    fs.appendFileSync(
+                      outputPath,
+                      `transport_preflight_reason=${reason}\ntransport_preflight_target=${target}\n`
+                    );
+                  }
+                  if (envPath) {
+                    fs.appendFileSync(
+                      envPath,
+                      `TRANSPORT_PREFLIGHT_REASON=${reason}\nTRANSPORT_PREFLIGHT_TARGET=${target}\n`
+                    );
+                  }
+                  NODE
+
+            - name: Crear/actualizar incidente de transporte deploy-hosting
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = `reason:${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}|target:${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`;
+                      const signalMarker = `<!-- deploy-hosting-transport-signal:${signal} -->`;
+                      const baseLabels = ['production-alert', 'deploy-hosting', 'transport-preflight', 'severity:warning'];
+
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const mergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+
+                      const incidentBody = [
+                        'El workflow `Deploy Hosting (Canary Pipeline)` detecto que GitHub Runner no puede abrir el transporte hacia el host.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`,
+                        `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`,
+                        `- prod_url: ${process.env.PROD_URL || 'https://pielarmonia.com'}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const labels = mergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), labels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels
+                            });
+                            core.info(`Issue deploy-hosting transporte actualizo labels: #${existing.number}`);
+                          }
+                          core.info(`Issue deploy-hosting transporte ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: incidentBody,
+                          labels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente deploy-hosting transporte actualizado por cambio de senal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`,
+                            `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue deploy-hosting transporte actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body: incidentBody,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue deploy-hosting transporte creado: #${created.data.number}`);
+                      }
+              env:
+                  TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}
+                  TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}
+
+            - name: Cerrar incidente de transporte deploy-hosting al recuperar
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'ok' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente deploy-hosting transporte abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por preflight de transporte en deploy-hosting.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`,
+                          `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'ok'}`,
+                          `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue deploy-hosting transporte cerrado: #${existing.number}`);
+              env:
+                  TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}
+                  TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}
 
             - name: Preparar bundle de deploy (Prod)
               id: prepare_bundle_prod
@@ -955,6 +1181,19 @@ jobs:
                     -AllowMissingAdminFlag:$allowMissingFlag `
                     -ReportPath 'verification/last-admin-ui-rollout-gate-deploy-hosting.json'
 
+            - name: Hydrate admin rollout report placeholder (deploy-hosting)
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && hashFiles('verification/last-admin-ui-rollout-gate-deploy-hosting.json') == '' }}
+              shell: bash
+              env:
+                  PREFLIGHT_OUTCOME: ${{ steps.preflight_prod.outcome }}
+                  RESOLVE_POSTDEPLOY_OUTCOME: ${{ steps.resolve_postdeploy.outcome }}
+                  ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
+              run: |
+                  set -euo pipefail
+                  node bin/write-admin-rollout-placeholder-report.js \
+                    --out "verification/last-admin-ui-rollout-gate-deploy-hosting.json" \
+                    --reason "deploy_hosting_precheck_not_executed"
+
             - name: Publicar reporte gate admin rollout (deploy-hosting)
               if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
               uses: actions/upload-artifact@v4
@@ -1236,6 +1475,7 @@ jobs:
               with:
                   name: public-cutover-evidence
                   path: .public-cutover/
+                  include-hidden-files: true
                   if-no-files-found: warn
                   retention-days: 14
 
@@ -1613,6 +1853,9 @@ jobs:
                     echo "- postdeploy_rollout_dispatch_manifest: \`.public-cutover/postdeploy-rollout-dispatch.json\`";
                     echo "- public_cutover_artifact: \`public-cutover-evidence\`";
                     echo "- public_cutover_repo_vars: \`PROD_MONITOR_ENABLE_PUBLIC_CUTOVER,PUBLIC_CUTOVER_STARTED_AT,PUBLIC_CUTOVER_WINDOW_HOURS,PROD_MONITOR_ENABLE_PUBLIC_V4_ROLLOUT,PUBLIC_V4_ROLLOUT_STAGE,PUBLIC_V4_ROLLOUT_SURFACE_TEST,PUBLIC_V4_ROLLOUT_SURFACE_CONTROL,PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING,PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT,PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP,PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT,PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL\`";
+                    echo "- transport_preflight_reason: \`${TRANSPORT_PREFLIGHT_REASON}\`";
+                    echo "- transport_preflight_target: \`${TRANSPORT_PREFLIGHT_TARGET}\`";
+                    echo "- transport_preflight_artifact: \`.public-cutover/transport-preflight.json\`";
                     echo "- telemedicine_deploy_status: \`${TELEMEDICINE_DEPLOY_STATUS}\`";
                     echo "- telemedicine_deploy_reason: \`${TELEMEDICINE_DEPLOY_REASON}\`";
                     echo "- telemedicine_deploy_failures: \`${TELEMEDICINE_DEPLOY_FAILURES}\`";

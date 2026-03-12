@@ -21,6 +21,13 @@ const REPAIR_WORKFLOW_PATH = resolve(
     'workflows',
     'repair-git-sync.yml'
 );
+const DIAGNOSE_WORKFLOW_PATH = resolve(
+    __dirname,
+    '..',
+    '.github',
+    'workflows',
+    'diagnose-host-connectivity.yml'
+);
 
 function loadWorkflow(filePath = WORKFLOW_PATH) {
     const raw = readFileSync(filePath, 'utf8');
@@ -132,6 +139,82 @@ test('deploy-hosting contiene pasos de dispatch hacia post-deploy', () => {
         true,
         'falta publicacion de artefacto admin rollout en deploy-hosting'
     );
+});
+
+test('deploy-hosting clasifica bloqueos de conectividad del runner en el preflight de transporte', () => {
+    const { raw } = loadWorkflow();
+
+    for (const snippet of [
+        'TRANSPORT_PREFLIGHT_REASON: not_evaluated',
+        'TRANSPORT_PREFLIGHT_TARGET: not_evaluated',
+        'mkdir -p .public-cutover',
+        'echo "TRANSPORT_PREFLIGHT_REASON=ok" >> "$GITHUB_ENV"',
+        'echo "TRANSPORT_PREFLIGHT_REASON=runner_tcp_unreachable" >> "$GITHUB_ENV"',
+        'node bin/write-transport-preflight.js',
+        '--reason "runner_tcp_unreachable"',
+        '--reason "ok"',
+        '--reachable "false"',
+        '--reachable "true"',
+        '.public-cutover/transport-preflight.json',
+        'Hydrate transport preflight status',
+        'PREFLIGHT_OUTCOME: ${{ steps.preflight_prod.outcome }}',
+        'TRANSPORT_PREFLIGHT_TARGET=${target}',
+        'bin/write-admin-rollout-placeholder-report.js',
+        'Hydrate admin rollout report placeholder (deploy-hosting)',
+        "hashFiles('verification/last-admin-ui-rollout-gate-deploy-hosting.json') == ''",
+        'include-hidden-files: true',
+        'transport_preflight_reason: \\`${TRANSPORT_PREFLIGHT_REASON}\\`',
+        'transport_preflight_target: \\`${TRANSPORT_PREFLIGHT_TARGET}\\`',
+        'transport_preflight_artifact: \\`.public-cutover/transport-preflight.json\\`',
+        '::error::No se puede abrir ${HOST}:${PORT} desde GitHub Runner.',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta clasificacion de bloqueo de red en deploy-hosting: ${snippet}`
+        );
+    }
+});
+
+test('deploy-hosting gestiona incidente dedicado de transporte runner-host', () => {
+    const { raw, parsed } = loadWorkflow();
+    const steps = parsed?.jobs?.['deploy-prod']?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    const requiredStepNames = [
+        'Crear/actualizar incidente de transporte deploy-hosting',
+        'Cerrar incidente de transporte deploy-hosting al recuperar',
+    ];
+    for (const expectedStepName of requiredStepNames) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de incidente de transporte en deploy-hosting: ${expectedStepName}`
+        );
+    }
+
+    const requiredSnippets = [
+        "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}",
+        "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'ok' }}",
+        "const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';",
+        'deploy-hosting-transport-signal:',
+        "const signal = `reason:${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}|target:${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`;",
+        "`- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`",
+        "`- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`",
+        'Issue deploy-hosting transporte ya refleja la misma senal',
+        'Issue deploy-hosting transporte creado',
+        'Issue deploy-hosting transporte cerrado',
+        'TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}',
+        'TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}',
+    ];
+
+    for (const snippet of requiredSnippets) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de incidente de transporte en deploy-hosting: ${snippet}`
+        );
+    }
 });
 
 test('deploy-hosting evalua y gestiona incidente dedicado de telemedicina post-cutover', () => {
@@ -401,15 +484,35 @@ test('repair-git-sync evalua y gestiona incidente dedicado de telemedicina post-
     const steps = parsed?.jobs?.repair?.steps || [];
     const stepNames = steps.map((step) => String(step?.name || ''));
     const permissions = parsed?.permissions || {};
+    const inputs = parsed?.on?.workflow_dispatch?.inputs || {};
 
     assert.equal(
         permissions.issues,
         'write',
         'repair-git-sync debe mantener issues: write para incidentes automaticos'
     );
+    assert.equal(
+        permissions.actions,
+        'write',
+        'repair-git-sync debe tener actions: write para disparar deploy-hosting'
+    );
+    assert.equal(
+        typeof inputs.dispatch_transport_fallback === 'object',
+        true,
+        'repair-git-sync debe exponer input dispatch_transport_fallback'
+    );
+    assert.equal(
+        typeof inputs.dispatch_self_hosted_fallback === 'object',
+        true,
+        'repair-git-sync debe exponer input dispatch_self_hosted_fallback'
+    );
 
     for (const expectedStepName of [
         'Evaluar estado telemedicina post-repair',
+        'Evaluar fallback de transporte post-repair',
+        'Disparar diagnostico de conectividad desde repair',
+        'Disparar transport fallback desde repair',
+        'Disparar self-hosted fallback desde repair',
         'Crear/actualizar incidente telemedicina de repair',
         'Cerrar incidente telemedicina de repair al recuperar',
         'Repair summary',
@@ -436,6 +539,41 @@ test('repair-git-sync evalua y gestiona incidente dedicado de telemedicina post-
         'telemedicine_repair_non_tele_failures: \\`${TELEMEDICINE_REPAIR_NON_TELE_FAILURES}\\`',
         "telemedicine_repair_non_tele_failures: ${process.env.TELEMEDICINE_REPAIR_NON_TELE_FAILURES || '-1'}",
         'telemedicine_repair_step_outcome: \\`${{ steps.telemedicine_repair.outcome }}\\`',
+        'AUTO_TRANSPORT_FALLBACK_AUTOMATION',
+        'AUTO_SELF_HOSTED_FALLBACK_AUTOMATION',
+        'DISPATCH_TRANSPORT_FALLBACK_INPUT',
+        'DISPATCH_SELF_HOSTED_FALLBACK_INPUT',
+        "const workflowId = 'diagnose-host-connectivity.yml';",
+        "workflow_id: 'deploy-hosting.yml'",
+        "const workflowId = 'deploy-frontend-selfhosted.yml';",
+        "force_transport_deploy: 'true'",
+        "allow_prod_without_staging: 'true'",
+        "run_postdeploy_fast: 'false'",
+        "run_postdeploy_gate: 'false'",
+        "skip_public_conversion_smoke: 'true'",
+        "protocol: 'auto'",
+        "remote_dir: '/public_html/'",
+        "run_build: 'true'",
+        'connectivity_diagnose_dispatch_ready',
+        'connectivity_diagnose_run_status',
+        'connectivity_diagnose_run_url',
+        'self_hosted_fallback_dispatch_requested',
+        'self_hosted_fallback_dispatch_ready',
+        'self_hosted_fallback_state',
+        'self_hosted_fallback_run_url',
+        'transport_fallback_dispatch_ready',
+        'transport_fallback_recommended',
+        'transport_fallback_reason',
+        'transport_fallback_failure_assets',
+        'deploy-freshness',
+        'health-public-sync-working-tree-dirty',
+        'health-public-sync-telemetry-gap',
+        'index-ref:script-entry',
+        'index-asset-refs:style-entry',
+        'connectivity_diagnose_dispatched: \\`${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_ready }}\\`',
+        'transport_fallback_dispatched: \\`${{ steps.transport_fallback.outputs.transport_fallback_dispatch_ready }}\\`',
+        'self_hosted_fallback_dispatched: \\`${{ steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready }}\\`',
+        'self_hosted_fallback_state: \\`${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state }}\\`',
         "reason.includes('diagnostics_critical')",
         "reason.includes('hard_failures:')",
         "reason.includes('hard_failures_invalid')",
@@ -449,6 +587,107 @@ test('repair-git-sync evalua y gestiona incidente dedicado de telemedicina post-
             raw.includes(snippet),
             true,
             `falta wiring de telemedicina en repair-git-sync: ${snippet}`
+        );
+    }
+});
+
+test('repair-git-sync gestiona incidente dedicado cuando el fallback self-hosted queda sin runner', () => {
+    const { raw, parsed } = loadWorkflow(REPAIR_WORKFLOW_PATH);
+    const steps = parsed?.jobs?.repair?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    for (const expectedStepName of [
+        'Crear/actualizar incidente self-hosted fallback de repair',
+        'Cerrar incidente self-hosted fallback de repair al recuperar',
+    ]) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de self-hosted fallback en repair-git-sync: ${expectedStepName}`
+        );
+    }
+
+    for (const snippet of [
+        "if: ${{ always() && steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready == 'true' && (steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state == 'queued' || steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state == 'dispatched_not_observed') }}",
+        "if: ${{ always() && (steps.transport_fallback.outputs.transport_fallback_recommended != 'true' || (steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready == 'true' && steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state != 'queued' && steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state != 'dispatched_not_observed')) }}",
+        "const title = '[ALERTA PROD] Repair git sync self-hosted fallback sin runner';",
+        'repair-git-sync-self-hosted-runner-signal:',
+        "const signal = `state:${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}|run_status:${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}|reason:${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`;",
+        "`- self_hosted_fallback_state: ${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}`",
+        "`- self_hosted_fallback_run_status: ${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}`",
+        "`- self_hosted_fallback_run_url: ${process.env.SELF_HOSTED_FALLBACK_RUN_URL || ''}`",
+        "`- transport_fallback_reason: ${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`",
+        "const baseLabels = ['production-alert', 'repair-git-sync', 'self-hosted-runner', 'severity:warning'];",
+        'Issue repair-git-sync self-hosted fallback ya refleja la misma senal',
+        'Issue repair-git-sync self-hosted fallback creado',
+        'Issue repair-git-sync self-hosted fallback cerrado',
+        'TRANSPORT_FALLBACK_RECOMMENDED: ${{ steps.transport_fallback.outputs.transport_fallback_recommended }}',
+        'SELF_HOSTED_FALLBACK_STATE: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state }}',
+        'SELF_HOSTED_FALLBACK_RUN_STATUS: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_status }}',
+        'SELF_HOSTED_FALLBACK_RUN_URL: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_url }}',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de incidente self-hosted fallback en repair-git-sync: ${snippet}`
+        );
+    }
+});
+
+test('diagnose-host-connectivity publica reporte estructurado y gestiona incidente dedicado', () => {
+    const { raw, parsed } = loadWorkflow(DIAGNOSE_WORKFLOW_PATH);
+    const permissions = parsed?.permissions || {};
+    const steps = parsed?.jobs?.diagnose?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    assert.equal(
+        permissions.issues,
+        'write',
+        'diagnose-host-connectivity debe tener issues: write para incidentes automaticos'
+    );
+
+    for (const expectedStepName of [
+        'Diagnosticar puertos por origen de host',
+        'Consolidar reporte de conectividad',
+        'Connectivity summary',
+        'Crear/actualizar incidente de conectividad deploy host',
+        'Cerrar incidente de conectividad deploy host al recuperar',
+        'Publicar reporte',
+    ]) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step en diagnose-host-connectivity: ${expectedStepName}`
+        );
+    }
+
+    for (const snippet of [
+        'connectivity-report.json',
+        'connectivity-report.txt',
+        'connectivity-report.tsv',
+        "append(outputPath, 'connectivity_status', status);",
+        "append(outputPath, 'reachable_any', payload.reachable_any ? 'true' : 'false');",
+        "append(outputPath, 'issue_ready', payload.issue_ready ? 'true' : 'false');",
+        "append(outputPath, 'open_targets', openTargets.join(','));",
+        "if: ${{ always() && steps.connectivity_summary.outputs.issue_ready == 'true' }}",
+        "if: ${{ always() && steps.connectivity_summary.outputs.reachable_any == 'true' }}",
+        "const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';",
+        'diagnose-host-connectivity-signal:',
+        "const baseLabels = ['production-alert', 'diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning'];",
+        'Issue diagnose-host-connectivity ya refleja la misma senal',
+        'Issue diagnose-host-connectivity creado',
+        'Issue diagnose-host-connectivity cerrado',
+        'connectivity_status: \\`${{ steps.connectivity_summary.outputs.connectivity_status }}\\`',
+        'configured_host_count: \\`${{ steps.connectivity_summary.outputs.configured_host_count }}\\`',
+        'reachable_any: \\`${{ steps.connectivity_summary.outputs.reachable_any }}\\`',
+        'open_targets: \\`${{ steps.connectivity_summary.outputs.open_targets }}\\`',
+        'artifact_json: connectivity-report.json',
+        'artifact_text: connectivity-report.txt',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring en diagnose-host-connectivity: ${snippet}`
         );
     }
 });

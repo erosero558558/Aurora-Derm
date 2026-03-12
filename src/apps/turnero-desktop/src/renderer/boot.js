@@ -9,9 +9,13 @@
     const configHintEl = document.getElementById('bootConfigHint');
     const launchUrlPreviewEl = document.getElementById('bootConfigLaunchUrl');
     const openSurfaceBtn = document.getElementById('bootOpenSurfaceBtn');
+    const saveBtn = document.getElementById('bootSaveBtn');
     const runPreflightBtn = document.getElementById('bootRunPreflightBtn');
     const preflightSummaryEl = document.getElementById('bootPreflightSummary');
     const preflightChecksEl = document.getElementById('bootPreflightChecks');
+    const preflightGateHintEl = document.getElementById(
+        'bootPreflightGateHint'
+    );
     const configForm = document.getElementById('bootConfigForm');
     const baseUrlInput = document.getElementById('bootConfigBaseUrl');
     const profileSelect = document.getElementById('bootConfigProfile');
@@ -22,15 +26,95 @@
 
     let latestSnapshot = null;
     let lastPreflightRunToken = 0;
+    let latestPreflightReport = null;
+    let lastPreflightFingerprint = '';
+    let preflightRunning = false;
+
+    function formatPlatformLabel(platform) {
+        const normalized = String(platform || '')
+            .trim()
+            .toLowerCase();
+        if (normalized === 'win32') {
+            return 'Windows';
+        }
+        if (normalized === 'darwin') {
+            return 'macOS';
+        }
+        if (normalized === 'linux') {
+            return 'Linux';
+        }
+        return normalized || 'Equipo local';
+    }
+
+    function getSurfaceLabel(snapshot) {
+        const surfaceLabel = String(
+            snapshot?.surfaceLabel || snapshot?.config?.surface || 'Superficie'
+        ).trim();
+        return surfaceLabel || 'Superficie';
+    }
+
+    function getSurfaceDesktopLabel(snapshot) {
+        const surfaceDesktopLabel = String(
+            snapshot?.surfaceDesktopLabel || ''
+        ).trim();
+        if (surfaceDesktopLabel) {
+            return surfaceDesktopLabel;
+        }
+        return `Turnero ${getSurfaceLabel(snapshot)}`;
+    }
+
+    function formatShellSummary(snapshot) {
+        const surfaceDesktopLabel = getSurfaceDesktopLabel(snapshot);
+        if (!snapshot || !snapshot.packaged) {
+            return `${surfaceDesktopLabel} en validacion local`;
+        }
+
+        const name = String(snapshot.name || surfaceDesktopLabel).trim();
+        const version = String(snapshot.version || '').trim();
+        return version ? `${name} v${version}` : name;
+    }
+
+    function formatOpenSurfaceLabel(snapshot) {
+        if (!snapshot || !snapshot.packaged) {
+            return 'Abrir superficie';
+        }
+
+        const surfaceLabel = getSurfaceLabel(snapshot).toLowerCase();
+        return `Abrir ${surfaceLabel} ${formatPlatformLabel(snapshot.platform)}`;
+    }
+
+    function formatShellMeta(snapshot) {
+        if (!snapshot) {
+            return 'Sin metadata del shell.';
+        }
+
+        const platformLabel = formatPlatformLabel(snapshot.platform);
+        const appMode = snapshot.packaged
+            ? 'Desktop instalada'
+            : 'Desktop en desarrollo';
+        const updateChannel = String(
+            snapshot.config?.updateChannel || 'stable'
+        );
+        const configPath = String(snapshot.configPath || '').trim();
+        const configSuffix = configPath ? ` · Config: ${configPath}` : '';
+
+        return `${platformLabel} · ${appMode} · Canal ${updateChannel}${configSuffix}`;
+    }
 
     function isOperatorSurface(surface) {
-        return String(surface || '').trim().toLowerCase() === 'operator';
+        return (
+            String(surface || '')
+                .trim()
+                .toLowerCase() === 'operator'
+        );
     }
 
     function buildLaunchUrl(config) {
         try {
             const surface = String(config.surface || 'operator');
-            const baseUrl = String(config.baseUrl || 'https://pielarmonia.com').trim();
+            const baseUrl = String(
+                config.baseUrl || 'https://pielarmonia.com'
+            ).trim();
             const route =
                 surface === 'kiosk'
                     ? '/kiosco-turnos.html'
@@ -43,10 +127,7 @@
                     'station',
                     profile === 'c2_locked' ? 'c2' : 'c1'
                 );
-                url.searchParams.set(
-                    'lock',
-                    profile === 'free' ? '0' : '1'
-                );
+                url.searchParams.set('lock', profile === 'free' ? '0' : '1');
                 url.searchParams.set('one_tap', config.oneTap ? '1' : '0');
             }
 
@@ -94,6 +175,97 @@
         };
     }
 
+    function getRuntimePatchFromForm() {
+        return createRuntimePatch(getFormPayload());
+    }
+
+    function getPreflightFingerprint() {
+        return JSON.stringify({
+            packaged: Boolean(latestSnapshot?.packaged),
+            surface: String(latestSnapshot?.config?.surface || 'operator'),
+            config: getRuntimePatchFromForm(),
+        });
+    }
+
+    function getPreflightGateState() {
+        if (!latestSnapshot) {
+            return {
+                blocked: true,
+                state: 'warning',
+                detail: 'Cargando la configuración local del shell.',
+            };
+        }
+
+        if (!latestSnapshot.packaged) {
+            return {
+                blocked: false,
+                state: 'warning',
+                detail: 'El checklist remoto completo se valida solo en desktop instalada; en desarrollo puedes continuar.',
+            };
+        }
+
+        if (preflightRunning) {
+            return {
+                blocked: true,
+                state: 'warning',
+                detail: 'Espera a que termine la comprobación antes de abrir la superficie.',
+            };
+        }
+
+        const currentFingerprint = getPreflightFingerprint();
+        if (
+            !latestPreflightReport ||
+            lastPreflightFingerprint !== currentFingerprint
+        ) {
+            return {
+                blocked: true,
+                state: 'warning',
+                detail: 'Vuelve a comprobar el equipo después de cambiar la configuración.',
+            };
+        }
+
+        if (String(latestPreflightReport.state || '') === 'danger') {
+            return {
+                blocked: true,
+                state: 'danger',
+                detail: 'Corrige los checks en rojo antes de guardar y abrir esta desktop.',
+            };
+        }
+
+        if (String(latestPreflightReport.state || '') === 'warning') {
+            return {
+                blocked: false,
+                state: 'warning',
+                detail: 'El equipo puede abrir, pero todavía quedan validaciones pendientes.',
+            };
+        }
+
+        return {
+            blocked: false,
+            state: 'ready',
+            detail: 'Checklist vigente para esta configuración local.',
+        };
+    }
+
+    function syncLaunchGuard() {
+        const gate = getPreflightGateState();
+
+        if (saveBtn instanceof HTMLButtonElement) {
+            saveBtn.disabled = gate.blocked;
+            saveBtn.title = gate.detail;
+        }
+
+        if (openSurfaceBtn instanceof HTMLButtonElement) {
+            openSurfaceBtn.disabled = gate.blocked;
+            openSurfaceBtn.title = gate.detail;
+        }
+
+        if (preflightGateHintEl instanceof HTMLElement) {
+            preflightGateHintEl.setAttribute('data-state', gate.state);
+            preflightGateHintEl.textContent = gate.detail;
+        }
+    }
+
     function renderLaunchPreview() {
         if (!launchUrlPreviewEl) {
             return;
@@ -108,7 +280,10 @@
                 preflightSummaryEl.textContent =
                     'Ejecuta la comprobación para validar servidor, superficie y perfil del equipo.';
             } else {
-                preflightSummaryEl.setAttribute('data-state', report.state || 'warning');
+                preflightSummaryEl.setAttribute(
+                    'data-state',
+                    report.state || 'warning'
+                );
                 preflightSummaryEl.textContent = `${report.title || 'Equipo en revisión'}: ${
                     report.summary || ''
                 }`;
@@ -130,45 +305,66 @@
                 )
                 .join('');
         }
+
+        syncLaunchGuard();
     }
 
     async function runPreflight() {
-        if (!window.turneroDesktop || typeof window.turneroDesktop.runPreflight !== 'function') {
+        if (
+            !window.turneroDesktop ||
+            typeof window.turneroDesktop.runPreflight !== 'function'
+        ) {
+            latestPreflightReport = null;
+            lastPreflightFingerprint = '';
             renderPreflight(null);
             return;
         }
 
         const token = Date.now();
+        const fingerprint = getPreflightFingerprint();
         lastPreflightRunToken = token;
+        preflightRunning = true;
+        syncLaunchGuard();
 
         if (runPreflightBtn instanceof HTMLButtonElement) {
             runPreflightBtn.disabled = true;
         }
         if (preflightSummaryEl instanceof HTMLElement) {
             preflightSummaryEl.setAttribute('data-state', 'warning');
-            preflightSummaryEl.textContent = 'Comprobando servidor, superficie y salud del equipo...';
+            preflightSummaryEl.textContent =
+                'Comprobando servidor, superficie y salud del equipo...';
         }
 
         try {
             const report = await window.turneroDesktop.runPreflight(
-                createRuntimePatch(getFormPayload())
+                getRuntimePatchFromForm()
             );
             if (lastPreflightRunToken === token) {
+                latestPreflightReport =
+                    report && typeof report === 'object' ? report : null;
+                lastPreflightFingerprint = fingerprint;
                 renderPreflight(report);
             }
         } catch (_error) {
             if (lastPreflightRunToken === token) {
-                renderPreflight({
+                latestPreflightReport = {
                     state: 'danger',
                     title: 'No se pudo comprobar el equipo',
-                    summary: 'La verificación remota falló antes de completar el checklist.',
+                    summary:
+                        'La verificación remota falló antes de completar el checklist.',
                     checks: [],
-                });
+                };
+                lastPreflightFingerprint = fingerprint;
+                renderPreflight(latestPreflightReport);
             }
         } finally {
+            if (lastPreflightRunToken === token) {
+                preflightRunning = false;
+            }
             if (runPreflightBtn instanceof HTMLButtonElement) {
                 runPreflightBtn.disabled = false;
             }
+            syncLaunchGuard();
         }
     }
 
@@ -218,10 +414,6 @@
                       ? 'Configura este equipo'
                       : 'Inicializando shell operativo';
         }
-        if (messageEl) {
-            messageEl.textContent =
-                snapshot.message || 'Cargando la superficie y comprobando conectividad.';
-        }
         if (surfaceEl) {
             surfaceEl.textContent = snapshot.config?.surface || '-';
         }
@@ -232,22 +424,38 @@
             phaseEl.textContent = snapshot.phase || 'boot';
         }
         if (configModeEl) {
-            configModeEl.textContent = snapshot.firstRun
+            const runtimeMode = snapshot.firstRun
                 ? 'Primer arranque'
                 : snapshot.settingsMode
                   ? 'Reconfiguracion'
                   : 'Perfil persistido';
+            configModeEl.textContent = `${runtimeMode} · ${formatPlatformLabel(
+                snapshot.platform
+            )}`;
         }
         if (configHintEl) {
             configHintEl.innerHTML = snapshot.firstRun
-                ? 'Confirma este equipo antes de abrir el turnero.'
-                : 'Presiona <code>F10</code> o <code>Ctrl/Cmd + ,</code> para volver a esta configuracion.';
+                ? `Confirma este equipo antes de abrir el turnero. Mismo instalador para <code>C1</code> y <code>C2</code>; cambia solo el perfil local.`
+                : `Presiona <code>F10</code> o <code>Ctrl/Cmd + ,</code> para volver a esta configuracion. ${formatShellMeta(
+                      snapshot
+                  )}`;
         }
         if (openSurfaceBtn instanceof HTMLButtonElement) {
             openSurfaceBtn.hidden = Boolean(snapshot.firstRun);
+            openSurfaceBtn.textContent = formatOpenSurfaceLabel(snapshot);
+        }
+        if (messageEl) {
+            const shellSummary = formatShellSummary(snapshot);
+            const runtimeMessage = String(snapshot.message || '')
+                .trim()
+                .replace(/[.!?]\s*$/u, '');
+            messageEl.textContent = runtimeMessage
+                ? `${runtimeMessage}. ${shellSummary}.`
+                : `${shellSummary}.`;
         }
 
         hydrateForm(snapshot);
+        syncLaunchGuard();
     }
 
     async function refreshSnapshot() {
@@ -257,11 +465,8 @@
 
         const snapshot = await window.turneroDesktop.getRuntimeSnapshot();
         render({
+            ...snapshot,
             ...snapshot.status,
-            config: snapshot.config,
-            surfaceUrl: snapshot.surfaceUrl,
-            firstRun: snapshot.firstRun,
-            settingsMode: snapshot.settingsMode,
         });
     }
 
@@ -287,29 +492,40 @@
     if (configForm instanceof HTMLFormElement && window.turneroDesktop) {
         configForm.addEventListener('submit', (event) => {
             event.preventDefault();
+            const gate = getPreflightGateState();
+            if (gate.blocked) {
+                syncLaunchGuard();
+                return;
+            }
 
-            const saveButton = document.getElementById('bootSaveBtn');
-            if (saveButton instanceof HTMLButtonElement) {
-                saveButton.disabled = true;
+            if (saveBtn instanceof HTMLButtonElement) {
+                saveBtn.disabled = true;
             }
 
             window.turneroDesktop
-                .saveRuntimeConfig(createRuntimePatch(getFormPayload()))
+                .saveRuntimeConfig(getRuntimePatchFromForm())
                 .then(() => window.turneroDesktop.openSurface())
                 .catch(() => {})
                 .finally(() => {
-                    if (saveButton instanceof HTMLButtonElement) {
-                        saveButton.disabled = false;
+                    if (saveBtn instanceof HTMLButtonElement) {
+                        saveBtn.disabled = false;
                     }
+                    syncLaunchGuard();
                 });
         });
     }
 
     if (openSurfaceBtn && window.turneroDesktop) {
         openSurfaceBtn.addEventListener('click', () => {
+            const gate = getPreflightGateState();
+            if (gate.blocked) {
+                syncLaunchGuard();
+                return;
+            }
+
             openSurfaceBtn.disabled = true;
             window.turneroDesktop.openSurface().finally(() => {
-                openSurfaceBtn.disabled = false;
+                syncLaunchGuard();
             });
         });
     }
@@ -323,9 +539,13 @@
     [baseUrlInput, profileSelect, oneTapInput, launchModeSelect, autoStartInput]
         .filter(Boolean)
         .forEach((element) => {
-            element.addEventListener('input', renderLaunchPreview);
+            element.addEventListener('input', () => {
+                renderLaunchPreview();
+                syncLaunchGuard();
+            });
             element.addEventListener('change', renderLaunchPreview);
             element.addEventListener('change', () => {
+                syncLaunchGuard();
                 void runPreflight();
             });
         });

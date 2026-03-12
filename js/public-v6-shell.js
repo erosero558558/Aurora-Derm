@@ -308,7 +308,9 @@
 
         var openButton = header.querySelector('[data-v6-search-open]');
         var panel = header.querySelector('[data-v6-search]');
-        var input = panel ? panel.querySelector('[data-v6-search-input]') : null;
+        var input = panel
+            ? panel.querySelector('[data-v6-search-input]')
+            : null;
         var results = panel
             ? panel.querySelector('[data-v6-search-results]')
             : null;
@@ -326,8 +328,7 @@
             searchIndex = [];
         }
 
-        var emptyTitle =
-            panel.getAttribute('data-v6-search-empty-title') || '';
+        var emptyTitle = panel.getAttribute('data-v6-search-empty-title') || '';
         var emptyBody = panel.getAttribute('data-v6-search-empty-body') || '';
         var limit = Number(
             panel.getAttribute('data-v6-search-results-limit') || 8
@@ -834,21 +835,81 @@
 
         var drawer = header.querySelector('[data-v6-drawer]');
         var openButton = header.querySelector('[data-v6-drawer-open]');
+        var panel = drawer
+            ? drawer.querySelector('[data-v6-drawer-panel]')
+            : null;
+        var searchTrigger = drawer
+            ? drawer.querySelector('[data-v6-drawer-search-open]')
+            : null;
+        var desktopSearchButton = header.querySelector(
+            '.v6-header__actions [data-v6-search-open]'
+        );
         var groupToggles = drawer
             ? Array.from(
                   drawer.querySelectorAll('[data-v6-drawer-group-toggle]')
               )
             : [];
         if (!drawer || !openButton) return;
+        var lastFocused = null;
 
-        function openDrawer() {
-            drawer.hidden = false;
-            document.body.style.overflow = 'hidden';
+        function setOpenState(isOpen) {
+            openButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            header.classList.toggle('is-drawer-open', Boolean(isOpen));
         }
 
-        function closeDrawer() {
+        function syncIndicator(toggle, expanded) {
+            if (!toggle) return;
+            var indicator = toggle.querySelector('[data-v6-drawer-indicator]');
+            if (indicator) {
+                indicator.textContent = expanded ? '-' : '+';
+            }
+        }
+
+        function getFocusableNodes() {
+            var root = panel || drawer;
+            return Array.from(
+                root.querySelectorAll(
+                    '[data-v6-drawer-focusable], [data-v6-drawer-group-toggle], [data-v6-drawer-close], [data-v6-drawer-search-open]'
+                )
+            ).filter(function (node) {
+                return (
+                    !node.hasAttribute('disabled') &&
+                    !node.closest('[hidden]') &&
+                    node.getAttribute('tabindex') !== '-1'
+                );
+            });
+        }
+
+        function focusFirstNode() {
+            var focusables = getFocusableNodes();
+            if (!focusables.length) return;
+            focusables[0].focus();
+        }
+
+        function openDrawer() {
+            if (!drawer.hidden) return;
+            lastFocused = document.activeElement;
+            drawer.hidden = false;
+            setOpenState(true);
+            document.body.style.overflow = 'hidden';
+            window.requestAnimationFrame(focusFirstNode);
+        }
+
+        function closeDrawer(returnFocus) {
+            if (drawer.hidden) {
+                setOpenState(false);
+                return;
+            }
             drawer.hidden = true;
+            setOpenState(false);
             document.body.style.overflow = '';
+            if (returnFocus) {
+                if (lastFocused && typeof lastFocused.focus === 'function') {
+                    lastFocused.focus();
+                } else {
+                    openButton.focus();
+                }
+            }
         }
 
         function setGroup(targetId, expand) {
@@ -861,6 +922,7 @@
                     isExpanded ? 'true' : 'false'
                 );
                 toggle.classList.toggle('is-active', isExpanded);
+                syncIndicator(toggle, isExpanded);
                 if (!panelId) return;
                 var content = drawer.querySelector('#' + panelId);
                 if (content) {
@@ -869,12 +931,42 @@
             });
         }
 
-        openButton.addEventListener('click', openDrawer);
+        if (groupToggles.length) {
+            var initiallyExpanded = groupToggles.find(function (toggle) {
+                return toggle.getAttribute('aria-expanded') === 'true';
+            });
+            if (initiallyExpanded) {
+                setGroup(
+                    initiallyExpanded.getAttribute('data-v6-target'),
+                    true
+                );
+            } else {
+                setGroup(groupToggles[0].getAttribute('data-v6-target'), true);
+            }
+        }
+
+        setOpenState(false);
+
+        openButton.addEventListener('click', function () {
+            if (drawer.hidden) {
+                openDrawer();
+            } else {
+                closeDrawer(true);
+            }
+        });
+
+        openButton.addEventListener('keydown', function (event) {
+            if (event.key !== 'ArrowDown') return;
+            event.preventDefault();
+            openDrawer();
+        });
 
         drawer
             .querySelectorAll('[data-v6-drawer-close]')
             .forEach(function (node) {
-                node.addEventListener('click', closeDrawer);
+                node.addEventListener('click', function () {
+                    closeDrawer(true);
+                });
             });
 
         groupToggles.forEach(function (toggle) {
@@ -887,13 +979,46 @@
             });
         });
 
+        if (searchTrigger && desktopSearchButton) {
+            searchTrigger.addEventListener('click', function () {
+                closeDrawer(false);
+                desktopSearchButton.focus();
+                desktopSearchButton.click();
+            });
+        }
+
         drawer.querySelectorAll('a').forEach(function (anchor) {
-            anchor.addEventListener('click', closeDrawer);
+            anchor.addEventListener('click', function () {
+                closeDrawer(false);
+            });
         });
+
+        function handleTabKey(event) {
+            if (event.key !== 'Tab') return;
+            var focusables = getFocusableNodes();
+            if (!focusables.length) return;
+            var first = focusables[0];
+            var last = focusables[focusables.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
 
         drawer.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
-                closeDrawer();
+                event.preventDefault();
+                closeDrawer(true);
+            }
+            handleTabKey(event);
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 900 && !drawer.hidden) {
+                closeDrawer(false);
             }
         });
     }

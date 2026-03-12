@@ -1,37 +1,39 @@
-const SURFACE_META = Object.freeze({
-    operator: {
-        appId: 'com.pielarmonia.turnero.operator',
-        productName: 'Turnero Operador',
-        executableName: 'TurneroOperador',
-        artifactBase: 'TurneroOperador',
-        route: '/operador-turnos.html',
-    },
-    kiosk: {
-        appId: 'com.pielarmonia.turnero.kiosk',
-        productName: 'Turnero Kiosco',
-        executableName: 'TurneroKiosco',
-        artifactBase: 'TurneroKiosco',
-        route: '/kiosco-turnos.html',
-    },
-});
+import registryModule from '../../../../../lib/turnero-surface-registry.js';
 
-const DEFAULT_BASE_URL = 'https://pielarmonia.com';
-const DEFAULT_UPDATE_BASE_URL = 'https://pielarmonia.com/desktop-updates/';
+const {
+    getTurneroDefaultTargetKey,
+    getTurneroRegistryDefaults,
+    getTurneroSurfaceDefinition,
+    normalizeTurneroSurfaceId,
+    resolveTurneroUpdateRelativeDirectory,
+} = registryModule;
+
+const REGISTRY_DEFAULTS = getTurneroRegistryDefaults();
+const DEFAULT_BASE_URL = REGISTRY_DEFAULTS.baseUrl;
+const DEFAULT_UPDATE_BASE_URL = new URL(
+    REGISTRY_DEFAULTS.updateBasePath,
+    `${DEFAULT_BASE_URL}/`
+).toString();
 
 export function normalizeSurface(value) {
-    return String(value || '').trim().toLowerCase() === 'kiosk'
-        ? 'kiosk'
-        : 'operator';
+    return normalizeTurneroSurfaceId(value, {
+        family: 'desktop',
+        fallback: 'operator',
+    });
 }
 
 export function normalizeLaunchMode(value) {
-    return String(value || '').trim().toLowerCase() === 'windowed'
+    return String(value || '')
+        .trim()
+        .toLowerCase() === 'windowed'
         ? 'windowed'
         : 'fullscreen';
 }
 
 export function normalizeStationMode(value, fallback = 'free') {
-    return String(value || fallback).trim().toLowerCase() === 'locked'
+    return String(value || fallback)
+        .trim()
+        .toLowerCase() === 'locked'
         ? 'locked'
         : 'free';
 }
@@ -45,7 +47,9 @@ export function normalizeAutoStart(value, fallback = true) {
         return value;
     }
 
-    const normalized = String(value || '').trim().toLowerCase();
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase();
     if (['1', 'true', 'yes', 'on'].includes(normalized)) {
         return true;
     }
@@ -55,8 +59,11 @@ export function normalizeAutoStart(value, fallback = true) {
     return Boolean(fallback);
 }
 
-export function normalizeUpdateChannel() {
-    return 'stable';
+export function normalizeUpdateChannel(value, fallback = 'stable') {
+    const normalized = String(value || fallback)
+        .trim()
+        .toLowerCase();
+    return normalized === '' ? 'stable' : normalized;
 }
 
 export function normalizeOneTap(value, fallback = false) {
@@ -64,7 +71,9 @@ export function normalizeOneTap(value, fallback = false) {
         return value;
     }
 
-    const normalized = String(value || '').trim().toLowerCase();
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase();
     if (['1', 'true', 'yes', 'on'].includes(normalized)) {
         return true;
     }
@@ -90,9 +99,14 @@ export function sanitizeBaseUrl(value, fallback = DEFAULT_BASE_URL) {
 }
 
 export function sanitizeUpdateBaseUrl(value, baseUrl = DEFAULT_BASE_URL) {
-    const fallback = new URL('/desktop-updates/', `${sanitizeBaseUrl(baseUrl)}/`);
+    const fallback = new URL(
+        '/desktop-updates/',
+        `${sanitizeBaseUrl(baseUrl)}/`
+    );
     try {
-        const url = new URL(String(value || fallback.toString()).trim() || fallback);
+        const url = new URL(
+            String(value || fallback.toString()).trim() || fallback
+        );
         if (!['http:', 'https:'].includes(url.protocol)) {
             return fallback.toString();
         }
@@ -108,15 +122,18 @@ export function sanitizeUpdateBaseUrl(value, baseUrl = DEFAULT_BASE_URL) {
 }
 
 export function getSurfaceMeta(surface) {
-    return SURFACE_META[normalizeSurface(surface)];
+    return getTurneroSurfaceDefinition(normalizeSurface(surface), {
+        family: 'desktop',
+    });
 }
 
 export function getSurfaceRoute(surface) {
-    return getSurfaceMeta(surface).route;
+    return String(getSurfaceMeta(surface)?.route || '');
 }
 
 export function createBuildConfig(partial = {}) {
     const surface = normalizeSurface(partial.surface);
+    const surfaceMeta = getSurfaceMeta(surface);
     const baseUrl = sanitizeBaseUrl(partial.baseUrl, DEFAULT_BASE_URL);
     return {
         surface,
@@ -129,7 +146,10 @@ export function createBuildConfig(partial = {}) {
         ),
         oneTap: normalizeOneTap(partial.oneTap, false),
         autoStart: normalizeAutoStart(partial.autoStart, true),
-        updateChannel: normalizeUpdateChannel(partial.updateChannel),
+        updateChannel: normalizeUpdateChannel(
+            partial.updateChannel,
+            surfaceMeta?.updateChannel || 'stable'
+        ),
         updateBaseUrl: sanitizeUpdateBaseUrl(partial.updateBaseUrl, baseUrl),
     };
 }
@@ -138,7 +158,9 @@ export function mergeRuntimeConfig(buildConfig, persisted = {}) {
     return {
         surface: normalizeSurface(buildConfig.surface),
         baseUrl: sanitizeBaseUrl(persisted.baseUrl, buildConfig.baseUrl),
-        launchMode: normalizeLaunchMode(persisted.launchMode || buildConfig.launchMode),
+        launchMode: normalizeLaunchMode(
+            persisted.launchMode || buildConfig.launchMode
+        ),
         stationMode: normalizeStationMode(
             persisted.stationMode,
             buildConfig.stationMode
@@ -148,9 +170,13 @@ export function mergeRuntimeConfig(buildConfig, persisted = {}) {
             buildConfig.stationConsultorio
         ),
         oneTap: normalizeOneTap(persisted.oneTap, buildConfig.oneTap),
-        autoStart: normalizeAutoStart(persisted.autoStart, buildConfig.autoStart),
+        autoStart: normalizeAutoStart(
+            persisted.autoStart,
+            buildConfig.autoStart
+        ),
         updateChannel: normalizeUpdateChannel(
-            persisted.updateChannel || buildConfig.updateChannel
+            persisted.updateChannel || buildConfig.updateChannel,
+            buildConfig.updateChannel
         ),
         updateBaseUrl: sanitizeUpdateBaseUrl(
             persisted.updateBaseUrl || buildConfig.updateBaseUrl,
@@ -189,10 +215,17 @@ export function createSurfaceUrl(config) {
 
 export function buildUpdateFeedUrl(config, platform = process.platform) {
     const platformSegment = platform === 'darwin' ? 'mac' : 'win';
+    const relativePath = resolveTurneroUpdateRelativeDirectory(
+        normalizeSurface(config.surface),
+        getTurneroDefaultTargetKey(normalizeSurface(config.surface), {
+            targetKey: platformSegment,
+        }),
+        {
+            channel: normalizeUpdateChannel(config.updateChannel, 'stable'),
+        }
+    );
     return new URL(
-        `${normalizeUpdateChannel(config.updateChannel)}/${normalizeSurface(
-            config.surface
-        )}/${platformSegment}/`,
+        relativePath,
         sanitizeUpdateBaseUrl(config.updateBaseUrl, config.baseUrl)
     ).toString();
 }

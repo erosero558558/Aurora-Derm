@@ -39,20 +39,26 @@ function app_downloads_page_escape(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
-function app_downloads_page_surface(array $catalog): string
+function app_downloads_page_surface(array $catalog, array $surfaceMap): string
 {
-    $requested = strtolower(trim((string) ($_GET['surface'] ?? 'operator')));
-    return array_key_exists($requested, $catalog) ? $requested : 'operator';
-}
-
-function app_downloads_page_platform(string $surface): string
-{
-    if ($surface === 'sala_tv') {
-        return 'android_tv';
+    $requested = strtolower(trim((string) ($_GET['surface'] ?? '')));
+    if ($requested !== '' && array_key_exists($requested, $catalog) && array_key_exists($requested, $surfaceMap)) {
+        return $requested;
     }
 
-    $requested = strtolower(trim((string) ($_GET['platform'] ?? 'win')));
-    return $requested === 'mac' ? 'mac' : 'win';
+    foreach (array_keys($surfaceMap) as $surfaceId) {
+        if (array_key_exists($surfaceId, $catalog)) {
+            return $surfaceId;
+        }
+    }
+
+    return 'operator';
+}
+
+function app_downloads_page_platform(array $surfaceDefinition): string
+{
+    $requested = strtolower(trim((string) ($_GET['platform'] ?? '')));
+    return turnero_surface_registry_default_target_key($surfaceDefinition, $requested);
 }
 
 function app_downloads_page_station(): string
@@ -102,14 +108,17 @@ function app_downloads_page_absolute(string $path): string
     return $scheme . '://' . $host . $path;
 }
 
+$surfaceMap = turnero_surface_registry_map();
+$surfaceUiMap = app_downloads_surface_ui_map();
 $catalog = read_app_downloads_catalog();
-$surface = app_downloads_page_surface($catalog);
-$platform = app_downloads_page_platform($surface);
+$surface = app_downloads_page_surface($catalog, $surfaceMap);
+$surfaceDefinition = $surfaceMap[$surface] ?? [];
+$platform = app_downloads_page_platform($surfaceDefinition);
 $station = app_downloads_page_station();
 $lock = app_downloads_page_bool($_GET['lock'] ?? ($surface === 'operator' ? '1' : '0'), $surface === 'operator');
 $oneTap = app_downloads_page_bool($_GET['one_tap'] ?? '0', false);
 $surfaceConfig = $catalog[$surface];
-$targetKey = $surface === 'sala_tv' ? 'android_tv' : $platform;
+$targetKey = $platform;
 $downloadTarget = $surfaceConfig['targets'][$targetKey] ?? null;
 $preparedSurfaceUrl = app_downloads_page_build_surface_url_safe($surfaceConfig, $surface, $station, $lock, $oneTap);
 $absolutePreparedSurfaceUrl = app_downloads_page_absolute($preparedSurfaceUrl);
@@ -117,55 +126,17 @@ $absoluteDownloadUrl = $downloadTarget !== null
     ? app_downloads_page_absolute((string) ($downloadTarget['url'] ?? ''))
     : '';
 $setupQuery = app_downloads_page_build_query($surface, $platform, $station, $lock, $oneTap);
-$surfaceCards = [
-    'operator' => [
-        'title' => 'Operador',
-        'eyebrow' => 'Genius Numpad 1000',
-        'description' => 'Llamado, re-llamado, completar y no show con el numpad en el PC del consultorio.',
-    ],
-    'kiosk' => [
-        'title' => 'Kiosco',
-        'eyebrow' => 'Recepción de pacientes',
-        'description' => 'Check-in y emisión de ticket en un equipo separado para mostrador o mini PC.',
-    ],
-    'sala_tv' => [
-        'title' => 'Sala TV',
-        'eyebrow' => 'TCL C655 / Google TV',
-        'description' => 'Pantalla de llamados para pacientes con APK Android TV y fallback web.',
-    ],
-];
-$hardwareNotes = [
-    'operator' => [
-        'Conecta el receptor USB del Genius Numpad 1000 al PC operador, no a la TV.',
-        'Si el Enter del numpad no llega como `NumpadEnter`, calibra la tecla externa dentro de la app.',
-        'Usa `C1 fijo` o `C2 fijo` cuando ese equipo quede dedicado a un consultorio.',
-    ],
-    'kiosk' => [
-        'Mantén la impresora térmica conectada antes del primer ticket real.',
-        'Deja el equipo en fullscreen y usa autostart si el kiosco permanece encendido todo el día.',
-        'La versión web sigue disponible como respaldo inmediato.',
-    ],
-    'sala_tv' => [
-        'Instala la APK directamente en la TCL C655 y prioriza Ethernet sobre Wi-Fi.',
-        'Valida audio, campanilla y reconexión antes de dejar la pantalla en producción.',
-        'Mantén `sala-turnos.html` como fallback de respaldo desde navegador.',
-    ],
-];
-$surfaceTitle = $surfaceCards[$surface]['title'];
-$surfaceEyebrow = $surfaceCards[$surface]['eyebrow'];
-$surfaceDescription = $surfaceCards[$surface]['description'];
-$initialPayload = [
-    'catalog' => $catalog,
-    'state' => [
-        'surface' => $surface,
-        'platform' => $platform,
-        'station' => $station,
-        'lock' => $lock,
-        'oneTap' => $oneTap,
-    ],
-    'copy' => $surfaceCards,
-    'notes' => $hardwareNotes,
-];
+$surfaceTitle = (string) ($surfaceUiMap[$surface]['catalog']['title'] ?? $surface);
+$surfaceEyebrow = (string) ($surfaceUiMap[$surface]['catalog']['eyebrow'] ?? '');
+$surfaceDescription = (string) ($surfaceUiMap[$surface]['catalog']['description'] ?? '');
+$currentTargetOptions = array_keys(isset($surfaceConfig['targets']) && is_array($surfaceConfig['targets']) ? $surfaceConfig['targets'] : []);
+$initialPayload = build_app_downloads_runtime_payload([
+    'surface' => $surface,
+    'platform' => $platform,
+    'station' => $station,
+    'lock' => $lock,
+    'oneTap' => $oneTap,
+]);
 ?>
 <!doctype html>
 <html lang="es">
@@ -198,13 +169,12 @@ $initialPayload = [
                     </div>
                 </div>
                 <div class="app-downloads-surface-strip">
-                    <?php foreach ($surfaceCards as $surfaceKey => $card): ?>
+                    <?php foreach ($surfaceUiMap as $surfaceKey => $surfaceUi): ?>
+                        <?php $surfaceTargetOptions = array_keys(isset($catalog[$surfaceKey]['targets']) && is_array($catalog[$surfaceKey]['targets']) ? $catalog[$surfaceKey]['targets'] : []); ?>
                         <a
                             href="/app-downloads/?<?php echo app_downloads_page_escape(app_downloads_page_build_query(
                                 $surfaceKey,
-                                $surfaceKey === 'sala_tv'
-                                    ? 'android_tv'
-                                    : ($platform === 'mac' ? 'mac' : 'win'),
+                                $surfaceTargetOptions[0] ?? 'win',
                                 $station,
                                 $surfaceKey === 'operator' ? $lock : false,
                                 $surfaceKey === 'operator' ? $oneTap : false
@@ -212,9 +182,9 @@ $initialPayload = [
                             data-surface-card="<?php echo app_downloads_page_escape($surfaceKey); ?>"
                             class="app-downloads-surface-card<?php echo $surfaceKey === $surface ? ' is-active' : ''; ?>"
                         >
-                            <span><?php echo app_downloads_page_escape($card['eyebrow']); ?></span>
-                            <strong><?php echo app_downloads_page_escape($card['title']); ?></strong>
-                            <small><?php echo app_downloads_page_escape($card['description']); ?></small>
+                            <span><?php echo app_downloads_page_escape((string) ($surfaceUi['catalog']['eyebrow'] ?? '')); ?></span>
+                            <strong><?php echo app_downloads_page_escape((string) ($surfaceUi['catalog']['title'] ?? $surfaceKey)); ?></strong>
+                            <small><?php echo app_downloads_page_escape((string) ($surfaceUi['catalog']['description'] ?? '')); ?></small>
                         </a>
                     <?php endforeach; ?>
                 </div>
@@ -238,20 +208,25 @@ $initialPayload = [
                     <label class="app-downloads-field" for="appDownloadsSurface">
                         <span>Equipo</span>
                         <select id="appDownloadsSurface" name="surface">
-                            <option value="operator"<?php echo $surface === 'operator' ? ' selected' : ''; ?>>Operador</option>
-                            <option value="kiosk"<?php echo $surface === 'kiosk' ? ' selected' : ''; ?>>Kiosco</option>
-                            <option value="sala_tv"<?php echo $surface === 'sala_tv' ? ' selected' : ''; ?>>Sala TV</option>
+                            <?php foreach ($surfaceUiMap as $surfaceKey => $surfaceUi): ?>
+                                <option value="<?php echo app_downloads_page_escape($surfaceKey); ?>"<?php echo $surface === $surfaceKey ? ' selected' : ''; ?>>
+                                    <?php echo app_downloads_page_escape((string) ($surfaceUi['catalog']['title'] ?? $surfaceKey)); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </label>
                     <label
-                        class="app-downloads-field<?php echo $surface === 'sala_tv' ? ' is-hidden' : ''; ?>"
+                        class="app-downloads-field<?php echo count($currentTargetOptions) <= 1 ? ' is-hidden' : ''; ?>"
                         id="appDownloadsPlatformField"
                         for="appDownloadsPlatform"
                     >
-                        <span>Plataforma</span>
+                        <span>Descarga</span>
                         <select id="appDownloadsPlatform" name="platform">
-                            <option value="win"<?php echo $platform === 'win' ? ' selected' : ''; ?>>Windows</option>
-                            <option value="mac"<?php echo $platform === 'mac' ? ' selected' : ''; ?>>macOS</option>
+                            <?php foreach ($currentTargetOptions as $currentTargetOption): ?>
+                                <option value="<?php echo app_downloads_page_escape($currentTargetOption); ?>"<?php echo $platform === $currentTargetOption ? ' selected' : ''; ?>>
+                                    <?php echo app_downloads_page_escape((string) (($surfaceConfig['targets'][$currentTargetOption]['label'] ?? $currentTargetOption))); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </label>
                     <div
@@ -326,9 +301,9 @@ $initialPayload = [
                             id="appDownloadsPrimaryAction"
                             href="<?php echo app_downloads_page_escape($absoluteDownloadUrl); ?>"
                             class="app-downloads-primary-btn"
-                            <?php echo $surface !== 'sala_tv' ? 'download' : ''; ?>
+                            <?php echo (($surfaceUiMap[$surface]['family'] ?? '') !== 'android') ? 'download' : ''; ?>
                         >
-                            <?php echo $surface === 'sala_tv' ? 'Descargar APK' : 'Descargar instalador'; ?>
+                            <?php echo (($surfaceUiMap[$surface]['family'] ?? '') === 'android') ? 'Descargar APK' : 'Descargar instalador'; ?>
                         </a>
                         <button
                             id="appDownloadsCopyDownloadBtn"
@@ -349,7 +324,7 @@ $initialPayload = [
                         </button>
                         <a
                             id="appDownloadsQrBtn"
-                            href="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;data=<?php echo rawurlencode($surface === 'sala_tv' ? $absoluteDownloadUrl : $absolutePreparedSurfaceUrl); ?>"
+                            href="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;data=<?php echo rawurlencode((($surfaceUiMap[$surface]['catalog']['qrTarget'] ?? 'prepared') === 'download') ? $absoluteDownloadUrl : $absolutePreparedSurfaceUrl); ?>"
                             target="_blank"
                             rel="noopener"
                         >
@@ -367,7 +342,7 @@ $initialPayload = [
                         <div id="appDownloadsSetupChecks" class="app-downloads-setup-checks"></div>
                     </section>
                     <ul id="appDownloadsNotes" class="app-downloads-notes">
-                        <?php foreach ($hardwareNotes[$surface] as $note): ?>
+                        <?php foreach (($surfaceUiMap[$surface]['catalog']['notes'] ?? []) as $note): ?>
                             <li><?php echo app_downloads_page_escape($note); ?></li>
                         <?php endforeach; ?>
                     </ul>

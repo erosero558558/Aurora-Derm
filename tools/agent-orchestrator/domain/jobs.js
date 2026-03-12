@@ -12,6 +12,86 @@ function computeAgeSeconds(value, nowMs = Date.now()) {
     return Number.isFinite(ageSeconds) ? ageSeconds : null;
 }
 
+function parseOptionalInteger(value) {
+    const parsed = Number.parseInt(String(value ?? ''), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeStringArray(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => String(item || '').trim()).filter(Boolean);
+}
+
+function computeHeadDrift(currentHead, remoteHead) {
+    const current = String(currentHead || '').trim();
+    const remote = String(remoteHead || '').trim();
+    return Boolean(current && remote && current !== remote);
+}
+
+function computeTelemetryGap(snapshot = {}) {
+    const healthy = Boolean(snapshot.healthy);
+    const lastErrorMessage = String(
+        snapshot.last_error_message || snapshot.lastErrorMessage || ''
+    ).trim();
+    const currentHead = String(
+        snapshot.current_head || snapshot.currentHead || ''
+    ).trim();
+    const remoteHead = String(
+        snapshot.remote_head || snapshot.remoteHead || ''
+    ).trim();
+    const dirtyPathsCount =
+        parseOptionalInteger(
+            snapshot.dirty_paths_count ?? snapshot.dirtyPathsCount
+        ) ?? 0;
+    const dirtyPathsSample = normalizeStringArray(
+        snapshot.dirty_paths_sample ?? snapshot.dirtyPathsSample
+    );
+    const dirtyPaths = normalizeStringArray(
+        snapshot.dirty_paths ?? snapshot.dirtyPaths
+    );
+
+    return (
+        !healthy &&
+        Boolean(lastErrorMessage) &&
+        !currentHead &&
+        !remoteHead &&
+        dirtyPathsCount <= 0 &&
+        dirtyPathsSample.length === 0 &&
+        dirtyPaths.length === 0
+    );
+}
+
+function computeFailureReason(snapshot = {}) {
+    if (snapshot.configured === false) return 'unconfigured';
+
+    const ageSeconds = parseOptionalInteger(
+        snapshot.age_seconds ?? snapshot.ageSeconds
+    );
+    const expectedMaxLagSeconds =
+        parseOptionalInteger(
+            snapshot.expected_max_lag_seconds ?? snapshot.expectedMaxLagSeconds
+        ) ?? 0;
+    if (
+        ageSeconds !== null &&
+        expectedMaxLagSeconds > 0 &&
+        ageSeconds > expectedMaxLagSeconds
+    ) {
+        return 'stale';
+    }
+
+    const lastErrorMessage = String(
+        snapshot.last_error_message || snapshot.lastErrorMessage || ''
+    ).trim();
+    if (lastErrorMessage) return lastErrorMessage;
+
+    if (snapshot.verified === false) return 'unverified';
+
+    const state = String(snapshot.state || '').trim();
+    if (state === 'failed') return 'failed';
+    if (!snapshot.healthy) return 'unhealthy';
+    return '';
+}
+
 function normalizeRegistryJob(job = {}) {
     return {
         key: String(job.key || '').trim(),
@@ -51,12 +131,18 @@ function normalizeSnapshotFromFile(job, payload = {}, nowMs = Date.now()) {
         String(payload.started_at || '').trim();
     const ageSeconds = computeAgeSeconds(checkedAt, nowMs);
     const state = String(payload.state || 'unknown').trim() || 'unknown';
+    const currentHead = String(payload.current_head || '').trim();
+    const remoteHead = String(payload.remote_head || '').trim();
+    const dirtyPathsCount =
+        parseOptionalInteger(payload.dirty_paths_count) ?? 0;
+    const dirtyPathsSample = normalizeStringArray(payload.dirty_paths_sample);
+    const dirtyPaths = normalizeStringArray(payload.dirty_paths);
     const healthy =
         state !== 'failed' &&
         ageSeconds !== null &&
         ageSeconds <= Number(job.expected_max_lag_seconds || 0);
 
-    return {
+    const snapshot = {
         key: job.key,
         job_id: String(payload.job_id || job.job_id || '').trim(),
         enabled: job.enabled,
@@ -76,17 +162,47 @@ function normalizeSnapshotFromFile(job, payload = {}, nowMs = Date.now()) {
         last_success_at: String(payload.last_success_at || '').trim(),
         last_error_at: String(payload.last_error_at || '').trim(),
         last_error_message: String(payload.last_error_message || '').trim(),
+        repo_path: String(payload.repo_path || job.repo_path || '').trim(),
+        branch: String(payload.branch || job.branch || '').trim(),
+        status_path: String(job.status_path || '').trim(),
+        log_path: String(payload.log_path || job.log_path || '').trim(),
+        lock_file: String(payload.lock_file || job.lock_file || '').trim(),
+        current_head: currentHead,
+        remote_head: remoteHead,
+        duration_ms: parseOptionalInteger(payload.duration_ms),
+        dirty_paths_count: dirtyPathsCount,
+        dirty_paths_sample: dirtyPathsSample,
+        dirty_paths: dirtyPaths,
         details: payload,
     };
+
+    snapshot.head_drift = computeHeadDrift(currentHead, remoteHead);
+    snapshot.telemetry_gap = computeTelemetryGap(snapshot);
+    snapshot.failure_reason = computeFailureReason(snapshot);
+    return snapshot;
 }
 
 function normalizeSnapshotFromHealth(job, payload = {}) {
-    const ageSecondsRaw = Number.parseInt(
-        String(payload.ageSeconds ?? payload.age_seconds ?? ''),
-        10
+    const ageSeconds = parseOptionalInteger(
+        payload.ageSeconds ?? payload.age_seconds
     );
-    const ageSeconds = Number.isFinite(ageSecondsRaw) ? ageSecondsRaw : null;
-    return {
+    const currentHead = String(
+        payload.currentHead || payload.current_head || ''
+    ).trim();
+    const remoteHead = String(
+        payload.remoteHead || payload.remote_head || ''
+    ).trim();
+    const dirtyPathsCount =
+        parseOptionalInteger(
+            payload.dirtyPathsCount ?? payload.dirty_paths_count
+        ) ?? 0;
+    const dirtyPathsSample = normalizeStringArray(
+        payload.dirtyPathsSample ?? payload.dirty_paths_sample
+    );
+    const dirtyPaths = normalizeStringArray(
+        payload.dirtyPaths ?? payload.dirty_paths
+    );
+    const snapshot = {
         key: job.key,
         job_id: String(
             payload.jobId || payload.job_id || job.job_id || ''
@@ -128,8 +244,43 @@ function normalizeSnapshotFromHealth(job, payload = {}) {
         last_error_message: String(
             payload.lastErrorMessage || payload.last_error_message || ''
         ).trim(),
+        repo_path: String(
+            payload.repoPath || payload.repo_path || job.repo_path || ''
+        ).trim(),
+        branch: String(payload.branch || job.branch || '').trim(),
+        status_path: String(
+            payload.statusPath || payload.status_path || job.status_path || ''
+        ).trim(),
+        log_path: String(
+            payload.logPath || payload.log_path || job.log_path || ''
+        ).trim(),
+        lock_file: String(
+            payload.lockFile || payload.lock_file || job.lock_file || ''
+        ).trim(),
+        current_head: currentHead,
+        remote_head: remoteHead,
+        duration_ms: parseOptionalInteger(
+            payload.durationMs ?? payload.duration_ms
+        ),
+        dirty_paths_count: dirtyPathsCount,
+        dirty_paths_sample: dirtyPathsSample,
+        dirty_paths: dirtyPaths,
         details: payload,
     };
+
+    snapshot.head_drift =
+        payload.headDrift !== undefined || payload.head_drift !== undefined
+            ? Boolean(payload.headDrift ?? payload.head_drift)
+            : computeHeadDrift(currentHead, remoteHead);
+    snapshot.telemetry_gap =
+        payload.telemetryGap !== undefined ||
+        payload.telemetry_gap !== undefined
+            ? Boolean(payload.telemetryGap ?? payload.telemetry_gap)
+            : computeTelemetryGap(snapshot);
+    snapshot.failure_reason =
+        String(payload.failureReason || payload.failure_reason || '').trim() ||
+        computeFailureReason(snapshot);
+    return snapshot;
 }
 
 async function resolveJobSnapshot(jobRaw, deps = {}) {
@@ -146,7 +297,7 @@ async function resolveJobSnapshot(jobRaw, deps = {}) {
             const payload = JSON.parse(raw);
             return normalizeSnapshotFromFile(job, payload);
         } catch (error) {
-            return {
+            const snapshot = {
                 key: job.key,
                 job_id: job.job_id,
                 enabled: job.enabled,
@@ -164,8 +315,17 @@ async function resolveJobSnapshot(jobRaw, deps = {}) {
                 last_success_at: '',
                 last_error_at: '',
                 last_error_message: `status_read_failed: ${error.message}`,
+                current_head: '',
+                remote_head: '',
+                dirty_paths_count: 0,
+                dirty_paths_sample: [],
+                dirty_paths: [],
+                head_drift: false,
+                telemetry_gap: false,
                 details: null,
             };
+            snapshot.failure_reason = computeFailureReason(snapshot);
+            return snapshot;
         }
     }
 
@@ -190,7 +350,7 @@ async function resolveJobSnapshot(jobRaw, deps = {}) {
         }
     }
 
-    return {
+    const snapshot = {
         key: job.key,
         job_id: job.job_id,
         enabled: job.enabled,
@@ -208,8 +368,17 @@ async function resolveJobSnapshot(jobRaw, deps = {}) {
         last_success_at: '',
         last_error_at: '',
         last_error_message: '',
+        current_head: '',
+        remote_head: '',
+        dirty_paths_count: 0,
+        dirty_paths_sample: [],
+        dirty_paths: [],
+        head_drift: false,
+        telemetry_gap: false,
         details: null,
     };
+    snapshot.failure_reason = computeFailureReason(snapshot);
+    return snapshot;
 }
 
 async function buildJobsSnapshot(registry = {}, deps = {}) {
@@ -236,11 +405,23 @@ function summarizeJobsSnapshot(jobs = []) {
     for (const job of safeJobs) {
         summary[job.key] = {
             healthy: Boolean(job.healthy),
+            state: String(job.state || ''),
             age_seconds:
                 job.age_seconds === null || job.age_seconds === undefined
                     ? null
                     : Number(job.age_seconds),
             deployed_commit: String(job.deployed_commit || ''),
+            last_error_message: String(job.last_error_message || ''),
+            failure_reason: String(job.failure_reason || ''),
+            dirty_paths_count:
+                job.dirty_paths_count === null ||
+                job.dirty_paths_count === undefined
+                    ? 0
+                    : Number(job.dirty_paths_count),
+            head_drift: Boolean(job.head_drift),
+            telemetry_gap: Boolean(job.telemetry_gap),
+            current_head: String(job.current_head || ''),
+            remote_head: String(job.remote_head || ''),
         };
     }
 
@@ -262,6 +443,9 @@ module.exports = {
     buildJobsSnapshot,
     summarizeJobsSnapshot,
     findJobSnapshot,
+    computeHeadDrift,
+    computeTelemetryGap,
+    computeFailureReason,
     parseIsoMillis,
     computeAgeSeconds,
 };

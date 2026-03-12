@@ -7,6 +7,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectDir = path.resolve(__dirname, '..');
 const require = createRequire(import.meta.url);
 
+function failMissingDependency(packageName) {
+    console.error(
+        `[turnero-desktop] Falta instalar \`${packageName}\`. Ejecuta \`npm --prefix src/apps/turnero-desktop install\` antes de abrir el shell.`
+    );
+    process.exit(1);
+}
+
 function parseArgs(argv) {
     const parsed = {};
     for (let index = 0; index < argv.length; index += 1) {
@@ -28,7 +35,16 @@ function parseArgs(argv) {
 
 const args = parseArgs(process.argv.slice(2));
 const surface = String(args.surface || 'operator');
-const electronBinary = require('electron');
+let electronBinary;
+
+try {
+    electronBinary = require('electron');
+} catch (error) {
+    if (error && error.code === 'MODULE_NOT_FOUND') {
+        failMissingDependency('electron');
+    }
+    throw error;
+}
 
 const child = spawn(electronBinary, ['.'], {
     cwd: projectDir,

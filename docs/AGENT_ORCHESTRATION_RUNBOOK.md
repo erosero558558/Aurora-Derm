@@ -36,6 +36,7 @@ Operar el sistema en modo `codex-only` con dos lanes humanos activos:
     - `node agent-orchestrator.js publish checkpoint <CDX-ID> --summary "..." --expect-rev <n> --json`
 5. Confirmar producción:
     - `curl -s https://pielarmonia.com/api.php?resource=health`
+    - revisar `checks.publicSync.failureReason`, `checks.publicSync.currentHead`, `checks.publicSync.remoteHead`, `checks.publicSync.headDrift`, `checks.publicSync.telemetryGap`, `checks.publicSync.lastErrorMessage` y `checks.publicSync.dirtyPathsSample` cuando el cron quede `failed`
 
 ## Guardrails
 
@@ -55,6 +56,9 @@ Operar el sistema en modo `codex-only` con dos lanes humanos activos:
     - refrescar con `leases heartbeat <task_id> --ttl-hours 4 --expect-rev <n> --json`
 4. Si `jobs verify public_main_sync --json` falla:
     - revisar cron VPS, status file y `health`
+    - comparar `checks.publicSync.currentHead` vs `checks.publicSync.remoteHead`; si `headDrift=true`, el host no coincide con el remoto aunque el cron ya tenga telemetría completa
+    - si `telemetryGap=true`, tratarlo como runtime host desactualizado o incompleto: el cron falló sin exponer `currentHead`, `remoteHead` ni `dirtyPaths`
+    - si `failureReason=working_tree_dirty` y `telemetryGap=false`, usar `dirtyPathsCount` y `dirtyPathsSample` para ubicar el drift real antes de intervenir el host
 
 ## Evidencia
 

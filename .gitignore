@@ -2,7 +2,8 @@
 env.php
 
 # Datos locales
-data/
+data/*
+!data/turnero-surfaces.json
 uploads/
 cookies.txt
 

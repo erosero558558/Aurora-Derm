@@ -53,6 +53,13 @@ const hasSuiteStory = Boolean(
         suiteStoryCurrent.label &&
         (suiteStoryCurrent.deck || suiteStoryPrevious?.href || suiteStoryNext?.href)
 );
+const demoState =
+    page?.demoState && typeof page.demoState === 'object' ? page.demoState : {};
+const proof =
+    demoState?.proof && typeof demoState.proof === 'object' ? demoState.proof : {};
+const proofItems = Array.isArray(proof.items) ? proof.items : [];
+const hasProof = Boolean((proof.title || proof.deck) && proofItems.length);
+const demoStateJson = JSON.stringify(demoState);
 
 const hasShowcase = Boolean(mockup.title || mockup.rows?.length || mockup.chips?.length);
 const hasSteps = Boolean(steps.title && stepItems.length);
@@ -257,6 +264,31 @@ const actionClass = (variant = 'secondary') => [
             }
         </div>
     </section>
+
+{
+    hasProof ? (
+        <section class="v6-suite-proof-band is-surface" data-v6-turnero-proof={surfacePageKey}>
+            <div class="v6-suite-shell">
+                <div class="v6-suite-proof">
+                    <header class="v6-suite-proof__head">
+                        {proof.eyebrow ? <p class="v6-suite-eyebrow">{proof.eyebrow}</p> : null}
+                        {proof.title ? <h2>{proof.title}</h2> : null}
+                        {proof.deck ? <span>{proof.deck}</span> : null}
+                    </header>
+                    <div class="v6-suite-proof__grid">
+                        {proofItems.map((item) => (
+                            <article class="v6-suite-proof__card" data-v6-turnero-proof-card={item.id}>
+                                <p>{item.label}</p>
+                                <strong>{item.value}</strong>
+                                {item.detail ? <span>{item.detail}</span> : null}
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </section>
+    ) : null
+}
 
 {
     suiteMapItems.length ? (
@@ -563,3 +595,9 @@ const actionClass = (variant = 'secondary') => [
     </div>
 </div>
 </div>
+
+<script
+    type="application/json"
+    data-v6-turnero-demo-state={surfacePageKey}
+    set:html={demoStateJson}
+></script>

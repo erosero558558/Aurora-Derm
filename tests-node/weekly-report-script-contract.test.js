@@ -132,6 +132,61 @@ test('weekly report script integra bloque telemedicina operativo', () => {
     }
 });
 
+test('weekly report script integra bloque public sync operativo', () => {
+    const rawReport = loadScript();
+    const rawWarnings = readFileSync(
+        resolve(__dirname, '..', 'bin', 'powershell', 'Common.Warnings.ps1'),
+        'utf8'
+    );
+    const requiredReportSnippets = [
+        "$publicSyncCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'publicSync' -DefaultValue $null",
+        '$publicSyncExpectedMaxLagSeconds',
+        '$publicSyncLastCheckedAt',
+        '$publicSyncTelemetryGap',
+        'public_sync_unconfigured',
+        'public_sync_working_tree_dirty_${publicSyncDirtyPathsCount}',
+        'public_sync_telemetry_gap',
+        'public_sync_last_error_message=$publicSyncLastErrorMessage',
+        'public_sync_current_head=$publicSyncCurrentHead',
+        'public_sync_dirty_paths_sample=$publicSyncDirtyPathsSampleLabel',
+    ];
+    const requiredWarningsSnippets = [
+        '## Public Sync Ops',
+        'publicSync = [ordered]@{',
+        'expectedMaxLagSeconds = $publicSyncExpectedMaxLagSeconds',
+        'lastErrorMessage = $publicSyncLastErrorMessage',
+        'dirtyPathsSample = @($publicSyncDirtyPathsSample)',
+        'telemetryGap = [bool]$publicSyncTelemetryGap',
+    ];
+
+    for (const snippet of requiredReportSnippets) {
+        assert.equal(
+            rawReport.includes(snippet),
+            true,
+            `falta snippet publicSync en REPORTE-SEMANAL-PRODUCCION.ps1: ${snippet}`
+        );
+    }
+
+    for (const snippet of requiredWarningsSnippets) {
+        assert.equal(
+            rawWarnings.includes(snippet),
+            true,
+            `falta snippet publicSync en Common.Warnings.ps1: ${snippet}`
+        );
+    }
+
+    assert.match(
+        rawWarnings,
+        /if \(\$WarningCode\.StartsWith\('public_sync_'\)\) \{\s+return 'observability'/,
+        'publicSync debe mapearse a impacto observability'
+    );
+    assert.match(
+        rawWarnings,
+        /if \(\$WarningCode\.StartsWith\('public_sync_'\)\) \{\s+return 'docs\/PUBLIC_MAIN_UPDATE_RUNBOOK\.md'/,
+        'publicSync debe apuntar al runbook canonico'
+    );
+});
+
 test('weekly report script integra bloque lead ops comercial', () => {
     const rawReport = loadScript();
     const rawWarnings = readFileSync(

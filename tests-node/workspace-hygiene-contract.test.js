@@ -25,7 +25,9 @@ function listTrackedRepoPaths() {
 }
 
 function listTrackedRootFiles() {
-    return listTrackedRepoPaths().filter((entry) => !entry.includes('/')).sort();
+    return listTrackedRepoPaths()
+        .filter((entry) => !entry.includes('/'))
+        .sort();
 }
 
 function listTrackedRootDirectories() {
@@ -78,6 +80,23 @@ test('gitignore permite versionar evidencia por tarea en verification/agent-runs
             `falta exception en .gitignore: ${entry}`
         );
     }
+});
+
+test('gitignore permite versionar el registry canonico de surfaces del turnero', () => {
+    const raw = readRepoFile('.gitignore');
+
+    assert.equal(
+        raw.includes('!data/turnero-surfaces.json'),
+        true,
+        'falta exception en .gitignore: !data/turnero-surfaces.json'
+    );
+
+    const trackedPaths = listTrackedRepoPaths();
+    assert.equal(
+        trackedPaths.includes('data/turnero-surfaces.json'),
+        true,
+        'data/turnero-surfaces.json debe quedar versionado para builds CI/deploy'
+    );
 });
 
 test('prettierignore excluye colas derivadas de agentes', () => {
@@ -570,7 +589,9 @@ test('frontera de json yaml yml txt y toml en raiz queda explicita y limitada', 
     }
 
     assert.equal(
-        readme.includes('.json') && readme.includes('.yaml') && readme.includes('.txt'),
+        readme.includes('.json') &&
+            readme.includes('.yaml') &&
+            readme.includes('.txt'),
         true,
         'README.md debe documentar que docs/ROOT_SURFACES.md cubre tambien superficies de control'
     );
@@ -658,7 +679,8 @@ test('frontera de dotfiles y singletones especiales en raiz queda explicita y li
     }
 
     assert.equal(
-        readme.includes('dotfiles') && readme.includes('singletones especiales'),
+        readme.includes('dotfiles') &&
+            readme.includes('singletones especiales'),
         true,
         'README.md debe documentar que ROOT_SURFACES cubre tambien dotfiles y singletones especiales'
     );
@@ -702,6 +724,7 @@ test('frontera de directorios en raiz queda explicita y limitada', () => {
         'components',
         'content',
         'controllers',
+        'data',
         'docs',
         'en',
         'es',
@@ -1072,7 +1095,9 @@ test('media legacy de raiz sale del front door y queda archivada fuera del runti
         'falta hero-woman.webp archivado'
     );
     assert.equal(
-        archiveReadme.includes('No son parte del gateway publico V6 ni del shell admin.'),
+        archiveReadme.includes(
+            'No son parte del gateway publico V6 ni del shell admin.'
+        ),
         true,
         'images/archive/root-legacy/README.md debe aclarar que el archivo es historico'
     );
@@ -1090,7 +1115,9 @@ test('legacy public css sale de la raiz activa y queda archivado fuera del front
         'styles-critical.min.css',
         'styles-deferred.min.css',
     ];
-    const archiveReadme = readRepoFile('styles/archive/public-legacy/README.md');
+    const archiveReadme = readRepoFile(
+        'styles/archive/public-legacy/README.md'
+    );
 
     for (const file of legacyPublicCss) {
         assert.equal(
@@ -1108,7 +1135,9 @@ test('legacy public css sale de la raiz activa y queda archivado fuera del front
     }
 
     assert.equal(
-        archiveReadme.includes('No forman parte del runtime publico ni admin activo.'),
+        archiveReadme.includes(
+            'No forman parte del runtime publico ni admin activo.'
+        ),
         true,
         'styles/archive/public-legacy/README.md debe aclarar que el archivo es historico'
     );
@@ -1393,7 +1422,9 @@ test('runtime publico y verificacion prod no aceptan residuos JS legacy de raiz'
     const archiveReadme = readRepoFile('js/archive/root-legacy/README.md');
     const commonHttp = readRepoFile('bin/powershell/Common.Http.ps1');
     const smokeProd = readRepoFile('scripts/ops/prod/SMOKE-PRODUCCION.ps1');
-    const verifyDeploy = readRepoFile('scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1');
+    const verifyDeploy = readRepoFile(
+        'scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1'
+    );
     const legacyEngineFiles = [
         'chat-widget-engine.js',
         'chat-engine.js',
@@ -1416,7 +1447,9 @@ test('runtime publico y verificacion prod no aceptan residuos JS legacy de raiz'
             `residuo JS legacy no debe seguir en raiz: ${file}`
         );
         assert.equal(
-            existsSync(resolve(REPO_ROOT, 'js', 'archive', 'root-legacy', file)),
+            existsSync(
+                resolve(REPO_ROOT, 'js', 'archive', 'root-legacy', file)
+            ),
             true,
             `falta residuo JS legacy archivado: ${file}`
         );

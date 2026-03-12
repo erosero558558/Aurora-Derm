@@ -24,6 +24,16 @@ on:
                 required: false
                 default: 'main'
                 type: string
+            dispatch_transport_fallback:
+                description: 'Disparar deploy-hosting por transporte si el repair detecta host vivo pero desactualizado'
+                required: false
+                default: false
+                type: boolean
+            dispatch_self_hosted_fallback:
+                description: 'Disparar deploy-frontend-selfhosted si el repair detecta host vivo pero desactualizado'
+                required: false
+                default: false
+                type: boolean
 
 concurrency:
     group: repair-git-sync-main
@@ -31,6 +41,7 @@ concurrency:
 
 permissions:
     contents: read
+    actions: write
     issues: write
 
 jobs:
@@ -52,6 +63,10 @@ jobs:
             TELEMEDICINE_REPAIR_REASON: not_evaluated
             TELEMEDICINE_REPAIR_FAILURES: -1
             TELEMEDICINE_REPAIR_NON_TELE_FAILURES: -1
+            DISPATCH_TRANSPORT_FALLBACK_INPUT: ${{ github.event.inputs.dispatch_transport_fallback || 'false' }}
+            AUTO_TRANSPORT_FALLBACK_AUTOMATION: ${{ vars.AUTO_TRANSPORT_FALLBACK_FROM_REPAIR || 'false' }}
+            DISPATCH_SELF_HOSTED_FALLBACK_INPUT: ${{ github.event.inputs.dispatch_self_hosted_fallback || 'false' }}
+            AUTO_SELF_HOSTED_FALLBACK_AUTOMATION: ${{ vars.AUTO_SELF_HOSTED_FALLBACK_FROM_REPAIR || 'false' }}
 
         steps:
             - name: Checkout
@@ -338,6 +353,616 @@ jobs:
                     });
                   }
                   NODE
+
+            - name: Evaluar fallback de transporte post-repair
+              if: ${{ always() }}
+              id: transport_fallback
+              shell: bash
+              env:
+                  VERIFY_REPORT_PATH: verification/last-deploy-verify.json
+                  SSH_REPAIR_OUTCOME: ${{ steps.ssh_repair.outcome }}
+                  VERIFY_OUTCOME: ${{ steps.verify_after_repair.outcome }}
+                  SMOKE_OUTCOME: ${{ steps.smoke_post_repair.outcome }}
+                  DISPATCH_EVENT_NAME: ${{ github.event_name }}
+                  DISPATCH_TRANSPORT_FALLBACK_INPUT: ${{ env.DISPATCH_TRANSPORT_FALLBACK_INPUT }}
+                  AUTO_TRANSPORT_FALLBACK_AUTOMATION: ${{ env.AUTO_TRANSPORT_FALLBACK_AUTOMATION }}
+                  DISPATCH_SELF_HOSTED_FALLBACK_INPUT: ${{ env.DISPATCH_SELF_HOSTED_FALLBACK_INPUT }}
+                  AUTO_SELF_HOSTED_FALLBACK_AUTOMATION: ${{ env.AUTO_SELF_HOSTED_FALLBACK_AUTOMATION }}
+              run: |
+                  set -euo pipefail
+
+                  normalize_bool() {
+                    case "$(echo "${1:-false}" | tr '[:upper:]' '[:lower:]')" in
+                      1|true|yes|y|on) echo "true" ;;
+                      *) echo "false" ;;
+                    esac
+                  }
+
+                  dispatch_requested='false'
+                  if [ "${DISPATCH_EVENT_NAME}" = "workflow_dispatch" ]; then
+                    dispatch_requested="$(normalize_bool "${DISPATCH_TRANSPORT_FALLBACK_INPUT}")"
+                  else
+                    dispatch_requested="$(normalize_bool "${AUTO_TRANSPORT_FALLBACK_AUTOMATION}")"
+                  fi
+
+                  self_hosted_requested='false'
+                  if [ "${DISPATCH_EVENT_NAME}" = "workflow_dispatch" ]; then
+                    self_hosted_requested="$(normalize_bool "${DISPATCH_SELF_HOSTED_FALLBACK_INPUT}")"
+                  else
+                    self_hosted_requested="$(normalize_bool "${AUTO_SELF_HOSTED_FALLBACK_AUTOMATION}")"
+                  fi
+
+                  TRANSPORT_FALLBACK_DISPATCH_REQUESTED="${dispatch_requested}" \
+                  SELF_HOSTED_FALLBACK_DISPATCH_REQUESTED="${self_hosted_requested}" \
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const outputPath = process.env.GITHUB_OUTPUT;
+                  const envPath = process.env.GITHUB_ENV;
+                  const reportPath =
+                    process.env.VERIFY_REPORT_PATH || 'verification/last-deploy-verify.json';
+
+                  function append(path, key, value) {
+                    if (!path) return;
+                    fs.appendFileSync(path, `${key}=${String(value)}\n`);
+                  }
+
+                  function normalizeOutcome(value) {
+                    return String(value || '').trim().toLowerCase();
+                  }
+
+                  function normalizeBool(value) {
+                    const normalized = String(value || '').trim().toLowerCase();
+                    return ['1', 'true', 'yes', 'y', 'on'].includes(normalized);
+                  }
+
+                  function readFailureAssets(filePath) {
+                    try {
+                      const raw = fs.readFileSync(filePath, 'utf8');
+                      const parsed = JSON.parse(raw);
+                      const failures = Array.isArray(parsed?.failures) ? parsed.failures : [];
+                      return failures
+                        .map((item) =>
+                          String(item?.Asset || item?.asset || item?.name || '').trim()
+                        )
+                        .filter(Boolean);
+                    } catch {
+                      return [];
+                    }
+                  }
+
+                  const failureAssets = readFailureAssets(reportPath);
+                  const failureSet = new Set(failureAssets);
+                  const sshRepairOutcome = normalizeOutcome(process.env.SSH_REPAIR_OUTCOME);
+                  const verifyOutcome = normalizeOutcome(process.env.VERIFY_OUTCOME);
+                  const smokeOutcome = normalizeOutcome(process.env.SMOKE_OUTCOME);
+                  const dispatchRequested = normalizeBool(
+                    process.env.TRANSPORT_FALLBACK_DISPATCH_REQUESTED
+                  );
+                  const selfHostedDispatchRequested = normalizeBool(
+                    process.env.SELF_HOSTED_FALLBACK_DISPATCH_REQUESTED
+                  );
+
+                  const indexRefDrift = failureAssets.some((asset) =>
+                    [
+                      'index-ref:script-entry',
+                      'index-asset-refs:script-entry',
+                      'index-ref:style-entry',
+                      'index-asset-refs:style-entry',
+                    ].includes(asset)
+                  );
+                  const publicSyncBlocked = failureAssets.some((asset) =>
+                    [
+                      'health-public-sync-healthy',
+                      'health-public-sync-working-tree-dirty',
+                      'health-public-sync-telemetry-gap',
+                      'health-public-sync-head-drift',
+                    ].includes(asset)
+                  );
+                  const deployFreshnessBlocked = failureSet.has('deploy-freshness');
+                  const hostStaleSignals = [];
+
+                  if (deployFreshnessBlocked) {
+                    hostStaleSignals.push('deploy-freshness');
+                  }
+                  if (indexRefDrift) {
+                    hostStaleSignals.push('index-ref-drift');
+                  }
+                  if (publicSyncBlocked) {
+                    hostStaleSignals.push('public-sync-blocked');
+                  }
+
+                  const sshRepairFailed =
+                    sshRepairOutcome !== '' &&
+                    sshRepairOutcome !== 'success' &&
+                    sshRepairOutcome !== 'skipped';
+                  const verifyFailed = verifyOutcome === 'failure';
+                  const smokeSucceeded = smokeOutcome === 'success';
+                  const recommended =
+                    verifyFailed && smokeSucceeded && (hostStaleSignals.length > 0 || sshRepairFailed);
+                  const dispatchReady = recommended && dispatchRequested;
+                  const selfHostedDispatchReady =
+                    recommended && selfHostedDispatchRequested;
+                  const connectivityDiagnoseDispatchReady =
+                    recommended && (dispatchRequested || selfHostedDispatchRequested);
+
+                  const reasonTokens = [];
+                  if (sshRepairFailed) {
+                    reasonTokens.push(`ssh:${sshRepairOutcome}`);
+                  }
+                  if (verifyFailed) {
+                    reasonTokens.push('verify:failure');
+                  }
+                  if (smokeSucceeded) {
+                    reasonTokens.push('smoke:success');
+                  }
+                  for (const signal of hostStaleSignals) {
+                    reasonTokens.push(signal);
+                  }
+                  if (failureAssets.length > 0) {
+                    reasonTokens.push(`failure_assets:${failureAssets.join(',')}`);
+                  }
+                  const reason = reasonTokens.join(';') || 'not_applicable';
+                  const failureAssetsCsv = failureAssets.join(',');
+
+                  append(
+                    outputPath,
+                    'transport_fallback_recommended',
+                    recommended ? 'true' : 'false'
+                  );
+                  append(
+                    outputPath,
+                    'transport_fallback_dispatch_requested',
+                    dispatchRequested ? 'true' : 'false'
+                  );
+                  append(
+                    outputPath,
+                    'transport_fallback_dispatch_ready',
+                    dispatchReady ? 'true' : 'false'
+                  );
+                  append(
+                    outputPath,
+                    'self_hosted_fallback_dispatch_requested',
+                    selfHostedDispatchRequested ? 'true' : 'false'
+                  );
+                  append(
+                    outputPath,
+                    'self_hosted_fallback_dispatch_ready',
+                    selfHostedDispatchReady ? 'true' : 'false'
+                  );
+                  append(
+                    outputPath,
+                    'connectivity_diagnose_dispatch_ready',
+                    connectivityDiagnoseDispatchReady ? 'true' : 'false'
+                  );
+                  append(outputPath, 'transport_fallback_reason', reason);
+                  append(outputPath, 'transport_fallback_failure_assets', failureAssetsCsv);
+
+                  append(
+                    envPath,
+                    'TRANSPORT_FALLBACK_RECOMMENDED',
+                    recommended ? 'true' : 'false'
+                  );
+                  append(
+                    envPath,
+                    'TRANSPORT_FALLBACK_DISPATCH_REQUESTED',
+                    dispatchRequested ? 'true' : 'false'
+                  );
+                  append(
+                    envPath,
+                    'TRANSPORT_FALLBACK_DISPATCH_READY',
+                    dispatchReady ? 'true' : 'false'
+                  );
+                  append(
+                    envPath,
+                    'SELF_HOSTED_FALLBACK_DISPATCH_REQUESTED',
+                    selfHostedDispatchRequested ? 'true' : 'false'
+                  );
+                  append(
+                    envPath,
+                    'SELF_HOSTED_FALLBACK_DISPATCH_READY',
+                    selfHostedDispatchReady ? 'true' : 'false'
+                  );
+                  append(
+                    envPath,
+                    'CONNECTIVITY_DIAGNOSE_DISPATCH_READY',
+                    connectivityDiagnoseDispatchReady ? 'true' : 'false'
+                  );
+                  append(envPath, 'TRANSPORT_FALLBACK_REASON', reason);
+                  append(envPath, 'TRANSPORT_FALLBACK_FAILURE_ASSETS', failureAssetsCsv);
+                  NODE
+
+            - name: Disparar diagnostico de conectividad desde repair
+              id: connectivity_diagnose_dispatch
+              if: ${{ always() && steps.transport_fallback.outputs.connectivity_diagnose_dispatch_ready == 'true' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const ref =
+                        context.payload.workflow_run?.head_branch ||
+                        (context.ref || '').replace('refs/heads/', '') ||
+                        'main';
+                      const headSha =
+                        context.payload.workflow_run?.head_sha ||
+                        context.sha ||
+                        '';
+                      const workflowId = 'diagnose-host-connectivity.yml';
+                      const dispatchStartedAt = Date.now();
+
+                      function wait(ms) {
+                        return new Promise((resolve) => setTimeout(resolve, ms));
+                      }
+
+                      async function findDispatchedRun() {
+                        const runs = await github.paginate(
+                          github.rest.actions.listWorkflowRunsForWorkflow,
+                          {
+                            owner,
+                            repo,
+                            workflow_id: workflowId,
+                            branch: ref,
+                            event: 'workflow_dispatch',
+                            per_page: 20,
+                          }
+                        );
+                        return (
+                          runs.find((run) => {
+                            const createdAtMs = Date.parse(run.created_at || '');
+                            if (!Number.isFinite(createdAtMs)) {
+                              return false;
+                            }
+                            if (createdAtMs < dispatchStartedAt - 60_000) {
+                              return false;
+                            }
+                            if (headSha && run.head_sha && run.head_sha !== headSha) {
+                              return false;
+                            }
+                            return true;
+                          }) || null
+                        );
+                      }
+
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner,
+                        repo,
+                        workflow_id: workflowId,
+                        ref,
+                      });
+
+                      let observedRun = null;
+                      for (let attempt = 0; attempt < 6; attempt += 1) {
+                        await wait(attempt === 0 ? 2000 : 4000);
+                        observedRun = await findDispatchedRun();
+                        if (observedRun) {
+                          break;
+                        }
+                      }
+
+                      core.setOutput(
+                        'connectivity_diagnose_run_id',
+                        observedRun ? String(observedRun.id) : ''
+                      );
+                      core.setOutput(
+                        'connectivity_diagnose_run_url',
+                        observedRun?.html_url || ''
+                      );
+                      core.setOutput(
+                        'connectivity_diagnose_run_status',
+                        observedRun?.status || 'dispatched_not_observed'
+                      );
+                      core.setOutput(
+                        'connectivity_diagnose_run_conclusion',
+                        observedRun?.conclusion || ''
+                      );
+
+                      core.info(
+                        observedRun
+                          ? `Workflow ${workflowId} disparado desde repair (run_id=${observedRun.id}, status=${observedRun.status}, url=${observedRun.html_url}).`
+                          : `Workflow ${workflowId} disparado desde repair (run no observado aun).`
+                      );
+
+            - name: Disparar transport fallback desde repair
+              if: ${{ always() && steps.transport_fallback.outputs.transport_fallback_dispatch_ready == 'true' }}
+              uses: actions/github-script@v7
+              env:
+                  TRANSPORT_FALLBACK_REASON: ${{ steps.transport_fallback.outputs.transport_fallback_reason }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const ref =
+                        context.payload.workflow_run?.head_branch ||
+                        (context.ref || '').replace('refs/heads/', '') ||
+                        'main';
+
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner,
+                        repo,
+                        workflow_id: 'deploy-hosting.yml',
+                        ref,
+                        inputs: {
+                          force_transport_deploy: 'true',
+                          protocol: 'ftps',
+                          require_staging_canary: 'false',
+                          allow_prod_without_staging: 'true',
+                          run_postdeploy_fast: 'false',
+                          run_postdeploy_gate: 'false',
+                          skip_public_conversion_smoke: 'true',
+                        },
+                      });
+
+                      core.info(
+                        `Workflow deploy-hosting.yml disparado desde repair (ref=${ref}, reason=${process.env.TRANSPORT_FALLBACK_REASON || 'n/a'}).`
+                      );
+
+            - name: Disparar self-hosted fallback desde repair
+              id: self_hosted_fallback_dispatch
+              if: ${{ always() && steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready == 'true' }}
+              uses: actions/github-script@v7
+              env:
+                  TRANSPORT_FALLBACK_REASON: ${{ steps.transport_fallback.outputs.transport_fallback_reason }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const ref =
+                        context.payload.workflow_run?.head_branch ||
+                        (context.ref || '').replace('refs/heads/', '') ||
+                        'main';
+                      const headSha =
+                        context.payload.workflow_run?.head_sha ||
+                        context.sha ||
+                        '';
+                      const workflowId = 'deploy-frontend-selfhosted.yml';
+                      const dispatchStartedAt = Date.now();
+
+                      function wait(ms) {
+                        return new Promise((resolve) => setTimeout(resolve, ms));
+                      }
+
+                      async function findDispatchedRun() {
+                        const runs = await github.paginate(
+                          github.rest.actions.listWorkflowRunsForWorkflow,
+                          {
+                            owner,
+                            repo,
+                            workflow_id: workflowId,
+                            branch: ref,
+                            event: 'workflow_dispatch',
+                            per_page: 20,
+                          }
+                        );
+                        return (
+                          runs.find((run) => {
+                            const createdAtMs = Date.parse(run.created_at || '');
+                            if (!Number.isFinite(createdAtMs)) {
+                              return false;
+                            }
+                            if (createdAtMs < dispatchStartedAt - 60_000) {
+                              return false;
+                            }
+                            if (headSha && run.head_sha && run.head_sha !== headSha) {
+                              return false;
+                            }
+                            return true;
+                          }) || null
+                        );
+                      }
+
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner,
+                        repo,
+                        workflow_id: workflowId,
+                        ref,
+                        inputs: {
+                          protocol: 'auto',
+                          remote_dir: '/public_html/',
+                          run_build: 'true',
+                        },
+                      });
+
+                      let observedRun = null;
+                      for (let attempt = 0; attempt < 6; attempt += 1) {
+                        await wait(attempt === 0 ? 2000 : 4000);
+                        observedRun = await findDispatchedRun();
+                        if (observedRun) {
+                          break;
+                        }
+                      }
+
+                      const state = !observedRun
+                        ? 'dispatched_not_observed'
+                        : observedRun.status === 'queued'
+                          ? 'queued'
+                          : observedRun.status === 'in_progress'
+                            ? 'started'
+                            : `completed:${observedRun.conclusion || 'unknown'}`;
+
+                      core.setOutput(
+                        'self_hosted_fallback_run_id',
+                        observedRun ? String(observedRun.id) : ''
+                      );
+                      core.setOutput(
+                        'self_hosted_fallback_run_url',
+                        observedRun?.html_url || ''
+                      );
+                      core.setOutput(
+                        'self_hosted_fallback_run_status',
+                        observedRun?.status || 'dispatched_not_observed'
+                      );
+                      core.setOutput(
+                        'self_hosted_fallback_run_conclusion',
+                        observedRun?.conclusion || ''
+                      );
+                      core.setOutput('self_hosted_fallback_state', state);
+
+                      core.info(
+                        observedRun
+                          ? `Workflow ${workflowId} disparado desde repair (run_id=${observedRun.id}, status=${observedRun.status}, state=${state}, url=${observedRun.html_url}, reason=${process.env.TRANSPORT_FALLBACK_REASON || 'n/a'}).`
+                          : `Workflow ${workflowId} disparado desde repair (run no observado aun, reason=${process.env.TRANSPORT_FALLBACK_REASON || 'n/a'}).`
+                      );
+
+            - name: Crear/actualizar incidente self-hosted fallback de repair
+              if: ${{ always() && steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready == 'true' && (steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state == 'queued' || steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state == 'dispatched_not_observed') }}
+              uses: actions/github-script@v7
+              env:
+                  TRANSPORT_FALLBACK_REASON: ${{ steps.transport_fallback.outputs.transport_fallback_reason }}
+                  SELF_HOSTED_FALLBACK_STATE: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state }}
+                  SELF_HOSTED_FALLBACK_RUN_STATUS: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_status }}
+                  SELF_HOSTED_FALLBACK_RUN_URL: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_url }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Repair git sync self-hosted fallback sin runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = `state:${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}|run_status:${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}|reason:${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`;
+                      const signalMarker = `<!-- repair-git-sync-self-hosted-runner-signal:${signal} -->`;
+                      const baseLabels = ['production-alert', 'repair-git-sync', 'self-hosted-runner', 'severity:warning'];
+
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const mergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+
+                      const body = [
+                        'El workflow `Repair Git Sync (Self-Heal)` detecto que el fallback self-hosted sigue sin capacidad observable.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Trigger: ${context.eventName}`,
+                        `- self_hosted_fallback_state: ${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}`,
+                        `- self_hosted_fallback_run_status: ${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}`,
+                        `- self_hosted_fallback_run_url: ${process.env.SELF_HOSTED_FALLBACK_RUN_URL || ''}`,
+                        `- transport_fallback_reason: ${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const labels = mergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), labels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels
+                            });
+                            core.info(`Issue repair-git-sync self-hosted fallback actualizo labels: #${existing.number}`);
+                          }
+                          core.info(`Issue repair-git-sync self-hosted fallback ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body,
+                          labels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente repair-git-sync self-hosted fallback actualizado por cambio de senal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- self_hosted_fallback_state: ${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}`,
+                            `- self_hosted_fallback_run_status: ${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}`,
+                            `- self_hosted_fallback_run_url: ${process.env.SELF_HOSTED_FALLBACK_RUN_URL || ''}`,
+                            `- transport_fallback_reason: ${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue repair-git-sync self-hosted fallback actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue repair-git-sync self-hosted fallback creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente self-hosted fallback de repair al recuperar
+              if: ${{ always() && (steps.transport_fallback.outputs.transport_fallback_recommended != 'true' || (steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready == 'true' && steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state != 'queued' && steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state != 'dispatched_not_observed')) }}
+              uses: actions/github-script@v7
+              env:
+                  TRANSPORT_FALLBACK_RECOMMENDED: ${{ steps.transport_fallback.outputs.transport_fallback_recommended }}
+                  SELF_HOSTED_FALLBACK_STATE: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state }}
+                  SELF_HOSTED_FALLBACK_RUN_STATUS: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_status }}
+                  SELF_HOSTED_FALLBACK_RUN_URL: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_url }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Repair git sync self-hosted fallback sin runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente self-hosted fallback de repair abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por workflow de repair git sync (self-hosted fallback).',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`,
+                          `- transport_fallback_recommended: ${process.env.TRANSPORT_FALLBACK_RECOMMENDED || 'false'}`,
+                          `- self_hosted_fallback_state: ${process.env.SELF_HOSTED_FALLBACK_STATE || 'not_required'}`,
+                          `- self_hosted_fallback_run_status: ${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'n/a'}`,
+                          `- self_hosted_fallback_run_url: ${process.env.SELF_HOSTED_FALLBACK_RUN_URL || ''}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue repair-git-sync self-hosted fallback cerrado: #${existing.number}`);
 
             - name: Crear/actualizar incidente telemedicina de repair
               if: ${{ always() && github.event_name != 'workflow_dispatch' && (env.TELEMEDICINE_REPAIR_STATUS == 'degraded' || env.TELEMEDICINE_REPAIR_STATUS == 'unknown') }}
@@ -635,5 +1260,17 @@ jobs:
                     echo "- telemedicine_repair_failures: \`${TELEMEDICINE_REPAIR_FAILURES}\`";
                     echo "- telemedicine_repair_non_tele_failures: \`${TELEMEDICINE_REPAIR_NON_TELE_FAILURES}\`";
                     echo "- telemedicine_repair_step_outcome: \`${{ steps.telemedicine_repair.outcome }}\`";
+                    echo "- connectivity_diagnose_dispatched: \`${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_ready }}\`";
+                    echo "- connectivity_diagnose_run_status: \`${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_status }}\`";
+                    echo "- connectivity_diagnose_run_url: \`${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_url }}\`";
+                    echo "- transport_fallback_requested: \`${{ steps.transport_fallback.outputs.transport_fallback_dispatch_requested }}\`";
+                    echo "- transport_fallback_recommended: \`${{ steps.transport_fallback.outputs.transport_fallback_recommended }}\`";
+                    echo "- transport_fallback_dispatched: \`${{ steps.transport_fallback.outputs.transport_fallback_dispatch_ready }}\`";
+                    echo "- transport_fallback_reason: \`${{ steps.transport_fallback.outputs.transport_fallback_reason }}\`";
+                    echo "- transport_fallback_failure_assets: \`${{ steps.transport_fallback.outputs.transport_fallback_failure_assets }}\`";
+                    echo "- self_hosted_fallback_requested: \`${{ steps.transport_fallback.outputs.self_hosted_fallback_dispatch_requested }}\`";
+                    echo "- self_hosted_fallback_dispatched: \`${{ steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready }}\`";
+                    echo "- self_hosted_fallback_state: \`${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state }}\`";
+                    echo "- self_hosted_fallback_run_url: \`${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_url }}\`";
                     echo "- result: \`${{ job.status }}\`";
                   } >> "$GITHUB_STEP_SUMMARY"

@@ -3,7 +3,7 @@
     "period": {
         "timezone": "America/Guayaquil",
         "window_days": 7,
-        "updated_at": "2026-02-28T22:51:40.371Z"
+        "updated_at": "2026-03-11T08:16:46.749Z"
     },
     "targets": {
         "rework_reduction_pct": 40,
@@ -22,9 +22,9 @@
         "traceability_pct": 0
     },
     "current": {
-        "tasks_total": 136,
+        "tasks_total": 194,
         "tasks_in_progress": 0,
-        "tasks_done": 136,
+        "tasks_done": 194,
         "tasks_with_rework": 0,
         "file_conflicts": 0,
         "file_conflicts_handoff": 0,
@@ -42,27 +42,27 @@
             }
         },
         "totals": {
-            "tasks": 136,
-            "done_tasks": 136,
+            "tasks": 194,
+            "done_tasks": 194,
             "active_tasks": 0,
-            "weighted_points_total": 262,
-            "weighted_done_points_total": 262,
+            "weighted_points_total": 365,
+            "weighted_done_points_total": 365,
             "weighted_active_points_total": 0
         },
         "executors": [
             {
                 "executor": "codex",
-                "tasks": 115,
-                "done_tasks": 115,
+                "tasks": 173,
+                "done_tasks": 173,
                 "active_tasks": 0,
-                "weighted_points": 226,
-                "weighted_done_points": 226,
+                "weighted_points": 329,
+                "weighted_done_points": 329,
                 "weighted_active_points": 0,
-                "tasks_pct": 84.6,
-                "done_tasks_pct": 84.6,
+                "tasks_pct": 89.2,
+                "done_tasks_pct": 89.2,
                 "active_tasks_pct": 0,
-                "weighted_points_pct": 86.3,
-                "weighted_done_points_pct": 86.3,
+                "weighted_points_pct": 90.1,
+                "weighted_done_points_pct": 90.1,
                 "weighted_active_points_pct": 0
             },
             {
@@ -73,11 +73,11 @@
                 "weighted_points": 23,
                 "weighted_done_points": 23,
                 "weighted_active_points": 0,
-                "tasks_pct": 8.8,
-                "done_tasks_pct": 8.8,
+                "tasks_pct": 6.2,
+                "done_tasks_pct": 6.2,
                 "active_tasks_pct": 0,
-                "weighted_points_pct": 8.8,
-                "weighted_done_points_pct": 8.8,
+                "weighted_points_pct": 6.3,
+                "weighted_done_points_pct": 6.3,
                 "weighted_active_points_pct": 0
             },
             {
@@ -88,11 +88,11 @@
                 "weighted_points": 13,
                 "weighted_done_points": 13,
                 "weighted_active_points": 0,
-                "tasks_pct": 6.6,
-                "done_tasks_pct": 6.6,
+                "tasks_pct": 4.6,
+                "done_tasks_pct": 4.6,
                 "active_tasks_pct": 0,
-                "weighted_points_pct": 5,
-                "weighted_done_points_pct": 5,
+                "weighted_points_pct": 3.6,
+                "weighted_done_points_pct": 3.6,
                 "weighted_active_points_pct": 0
             }
         ],
@@ -100,35 +100,35 @@
             {
                 "rank": 1,
                 "executor": "codex",
-                "weighted_done_points": 226,
-                "weighted_done_points_pct": 86.3,
-                "done_tasks": 115,
-                "done_tasks_pct": 84.6
+                "weighted_done_points": 329,
+                "weighted_done_points_pct": 90.1,
+                "done_tasks": 173,
+                "done_tasks_pct": 89.2
             },
             {
                 "rank": 2,
                 "executor": "jules",
                 "weighted_done_points": 23,
-                "weighted_done_points_pct": 8.8,
+                "weighted_done_points_pct": 6.3,
                 "done_tasks": 12,
-                "done_tasks_pct": 8.8
+                "done_tasks_pct": 6.2
             },
             {
                 "rank": 3,
                 "executor": "kimi",
                 "weighted_done_points": 13,
-                "weighted_done_points_pct": 5,
+                "weighted_done_points_pct": 3.6,
                 "done_tasks": 9,
-                "done_tasks_pct": 6.6
+                "done_tasks_pct": 4.6
             }
         ],
         "top_executor": {
             "rank": 1,
             "executor": "codex",
-            "weighted_done_points": 226,
-            "weighted_done_points_pct": 86.3,
-            "done_tasks": 115,
-            "done_tasks_pct": 84.6
+            "weighted_done_points": 329,
+            "weighted_done_points_pct": 90.1,
+            "done_tasks": 173,
+            "done_tasks_pct": 89.2
         }
     },
     "baseline_contribution": {
@@ -235,30 +235,30 @@
         "rows": [
             {
                 "executor": "codex",
-                "weighted_done_points_pct_current": 86.3,
+                "weighted_done_points_pct_current": 90.1,
                 "weighted_done_points_pct_baseline": 0,
-                "weighted_done_points_pct_delta": 86.3,
-                "done_tasks_pct_current": 84.6,
+                "weighted_done_points_pct_delta": 90.1,
+                "done_tasks_pct_current": 89.2,
                 "done_tasks_pct_baseline": 0,
-                "done_tasks_pct_delta": 84.6
+                "done_tasks_pct_delta": 89.2
             },
             {
                 "executor": "jules",
-                "weighted_done_points_pct_current": 8.8,
+                "weighted_done_points_pct_current": 6.3,
                 "weighted_done_points_pct_baseline": 66.7,
-                "weighted_done_points_pct_delta": -57.9,
-                "done_tasks_pct_current": 8.8,
+                "weighted_done_points_pct_delta": -60.4,
+                "done_tasks_pct_current": 6.2,
                 "done_tasks_pct_baseline": 50,
-                "done_tasks_pct_delta": -41.2
+                "done_tasks_pct_delta": -43.8
             },
             {
                 "executor": "kimi",
-                "weighted_done_points_pct_current": 5,
+                "weighted_done_points_pct_current": 3.6,
                 "weighted_done_points_pct_baseline": 33.3,
-                "weighted_done_points_pct_delta": -28.3,
-                "done_tasks_pct_current": 6.6,
+                "weighted_done_points_pct_delta": -29.7,
+                "done_tasks_pct_current": 4.6,
                 "done_tasks_pct_baseline": 50,
-                "done_tasks_pct_delta": -43.4
+                "done_tasks_pct_delta": -45.4
             }
         ]
     },
@@ -266,30 +266,8 @@
         "version": 1,
         "source_file": "verification/agent-contribution-history.json",
         "window_days": 7,
-        "snapshots_total": 5,
+        "snapshots_total": 8,
         "daily": [
-            {
-                "date": "2026-02-24",
-                "captured_at": "2026-02-24T22:21:13.934Z",
-                "top_executor": "jules",
-                "executors": {
-                    "codex": {
-                        "weighted_done_points_pct": 0,
-                        "done_tasks_pct": 0,
-                        "active_tasks_pct": 33.3
-                    },
-                    "jules": {
-                        "weighted_done_points_pct": 66.7,
-                        "done_tasks_pct": 50,
-                        "active_tasks_pct": 33.3
-                    },
-                    "kimi": {
-                        "weighted_done_points_pct": 33.3,
-                        "done_tasks_pct": 50,
-                        "active_tasks_pct": 33.3
-                    }
-                }
-            },
             {
                 "date": "2026-02-25",
                 "captured_at": "2026-02-25T17:39:39.144Z",
@@ -377,31 +355,97 @@
                         "active_tasks_pct": 0
                     }
                 }
+            },
+            {
+                "date": "2026-03-01",
+                "captured_at": "2026-03-01T22:08:44.776Z",
+                "top_executor": "codex",
+                "executors": {
+                    "codex": {
+                        "weighted_done_points_pct": 86.4,
+                        "done_tasks_pct": 84.7,
+                        "active_tasks_pct": 0
+                    },
+                    "jules": {
+                        "weighted_done_points_pct": 8.7,
+                        "done_tasks_pct": 8.8,
+                        "active_tasks_pct": 0
+                    },
+                    "kimi": {
+                        "weighted_done_points_pct": 4.9,
+                        "done_tasks_pct": 6.6,
+                        "active_tasks_pct": 0
+                    }
+                }
+            },
+            {
+                "date": "2026-03-02",
+                "captured_at": "2026-03-02T23:53:06.544Z",
+                "top_executor": "codex",
+                "executors": {
+                    "codex": {
+                        "weighted_done_points_pct": 88.1,
+                        "done_tasks_pct": 86.4,
+                        "active_tasks_pct": 0
+                    },
+                    "jules": {
+                        "weighted_done_points_pct": 7.6,
+                        "done_tasks_pct": 7.8,
+                        "active_tasks_pct": 0
+                    },
+                    "kimi": {
+                        "weighted_done_points_pct": 4.3,
+                        "done_tasks_pct": 5.8,
+                        "active_tasks_pct": 0
+                    }
+                }
+            },
+            {
+                "date": "2026-03-11",
+                "captured_at": "2026-03-11T08:16:46.744Z",
+                "top_executor": "codex",
+                "executors": {
+                    "codex": {
+                        "weighted_done_points_pct": 90.1,
+                        "done_tasks_pct": 89.2,
+                        "active_tasks_pct": 0
+                    },
+                    "jules": {
+                        "weighted_done_points_pct": 6.3,
+                        "done_tasks_pct": 6.2,
+                        "active_tasks_pct": 0
+                    },
+                    "kimi": {
+                        "weighted_done_points_pct": 3.6,
+                        "done_tasks_pct": 4.6,
+                        "active_tasks_pct": 0
+                    }
+                }
             }
         ],
         "executors": ["codex", "jules", "kimi"],
         "weekly_delta": {
             "available": true,
-            "from_date": "2026-02-24",
-            "to_date": "2026-02-28",
+            "from_date": "2026-02-25",
+            "to_date": "2026-03-11",
             "rows": [
                 {
                     "executor": "codex",
-                    "weighted_done_points_pct_from": 0,
-                    "weighted_done_points_pct_to": 86.3,
-                    "weighted_done_points_pct_delta": 86.3
+                    "weighted_done_points_pct_from": 47.8,
+                    "weighted_done_points_pct_to": 90.1,
+                    "weighted_done_points_pct_delta": 42.3
                 },
                 {
                     "executor": "jules",
-                    "weighted_done_points_pct_from": 66.7,
-                    "weighted_done_points_pct_to": 8.8,
-                    "weighted_done_points_pct_delta": -57.9
+                    "weighted_done_points_pct_from": 33.3,
+                    "weighted_done_points_pct_to": 6.3,
+                    "weighted_done_points_pct_delta": -27
                 },
                 {
                     "executor": "kimi",
-                    "weighted_done_points_pct_from": 33.3,
-                    "weighted_done_points_pct_to": 5,
-                    "weighted_done_points_pct_delta": -28.3
+                    "weighted_done_points_pct_from": 18.8,
+                    "weighted_done_points_pct_to": 3.6,
+                    "weighted_done_points_pct_delta": -15.2
                 }
             ]
         }
@@ -421,8 +465,8 @@
                 "payments": 2,
                 "default": 1
             },
-            "total_weight": 30,
-            "total_weighted_points": 3000,
+            "total_weight": 34,
+            "total_weighted_points": 3400,
             "overall_weighted_score_pct": 100,
             "priority_weight": 10,
             "priority_weighted_points": 1000,
@@ -431,9 +475,9 @@
             "policy_source": "governance-policy.json"
         },
         "totals": {
-            "domains": 23,
+            "domains": 27,
             "by_signal": {
-                "GREEN": 23,
+                "GREEN": 27,
                 "YELLOW": 0,
                 "RED": 0
             }
@@ -441,9 +485,9 @@
         "domains": {
             "calendar": {
                 "domain": "calendar",
-                "tasks_total": 11,
+                "tasks_total": 13,
                 "active_tasks": 0,
-                "done_tasks": 11,
+                "done_tasks": 13,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -460,9 +504,9 @@
             },
             "chat": {
                 "domain": "chat",
-                "tasks_total": 8,
+                "tasks_total": 9,
                 "active_tasks": 0,
-                "done_tasks": 8,
+                "done_tasks": 9,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -496,11 +540,30 @@
                 "signal_score_pct": 100,
                 "weighted_score_points": 200
             },
+            "frontend-public": {
+                "domain": "frontend-public",
+                "tasks_total": 45,
+                "active_tasks": 0,
+                "done_tasks": 45,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
             "frontend-admin": {
                 "domain": "frontend-admin",
-                "tasks_total": 24,
+                "tasks_total": 29,
                 "active_tasks": 0,
-                "done_tasks": 24,
+                "done_tasks": 29,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -517,28 +580,9 @@
             },
             "ops": {
                 "domain": "ops",
-                "tasks_total": 21,
+                "tasks_total": 22,
                 "active_tasks": 0,
-                "done_tasks": 21,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
-            "frontend-public": {
-                "domain": "frontend-public",
-                "tasks_total": 17,
-                "active_tasks": 0,
-                "done_tasks": 17,
+                "done_tasks": 22,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -555,9 +599,9 @@
             },
             "frontend-qa": {
                 "domain": "frontend-qa",
-                "tasks_total": 11,
+                "tasks_total": 14,
                 "active_tasks": 0,
-                "done_tasks": 11,
+                "done_tasks": 14,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -574,9 +618,9 @@
             },
             "tooling": {
                 "domain": "tooling",
-                "tasks_total": 11,
+                "tasks_total": 12,
                 "active_tasks": 0,
-                "done_tasks": 11,
+                "done_tasks": 12,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -610,11 +654,49 @@
                 "signal_score_pct": 100,
                 "weighted_score_points": 100
             },
+            "deploy": {
+                "domain": "deploy",
+                "tasks_total": 6,
+                "active_tasks": 0,
+                "done_tasks": 6,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
             "docs": {
                 "domain": "docs",
-                "tasks_total": 5,
+                "tasks_total": 6,
                 "active_tasks": 0,
-                "done_tasks": 5,
+                "done_tasks": 6,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            "frontend": {
+                "domain": "frontend",
+                "tasks_total": 6,
+                "active_tasks": 0,
+                "done_tasks": 6,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -648,11 +730,11 @@
                 "signal_score_pct": 100,
                 "weighted_score_points": 100
             },
-            "deploy": {
-                "domain": "deploy",
-                "tasks_total": 3,
+            "monitoring": {
+                "domain": "monitoring",
+                "tasks_total": 4,
                 "active_tasks": 0,
-                "done_tasks": 3,
+                "done_tasks": 4,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -667,8 +749,27 @@
                 "signal_score_pct": 100,
                 "weighted_score_points": 100
             },
-            "monitoring": {
-                "domain": "monitoring",
+            "lib": {
+                "domain": "lib",
+                "tasks_total": 2,
+                "active_tasks": 0,
+                "done_tasks": 2,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            "observability": {
+                "domain": "observability",
                 "tasks_total": 2,
                 "active_tasks": 0,
                 "done_tasks": 2,
@@ -705,8 +806,46 @@
                 "signal_score_pct": 100,
                 "weighted_score_points": 100
             },
+            "analytics": {
+                "domain": "analytics",
+                "tasks_total": 1,
+                "active_tasks": 0,
+                "done_tasks": 1,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
             "audit": {
                 "domain": "audit",
+                "tasks_total": 1,
+                "active_tasks": 0,
+                "done_tasks": 1,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            "auth": {
+                "domain": "auth",
                 "tasks_total": 1,
                 "active_tasks": 0,
                 "done_tasks": 1,
@@ -819,46 +958,27 @@
                 "signal_score_pct": 100,
                 "weighted_score_points": 100
             },
-            "lib": {
-                "domain": "lib",
-                "tasks_total": 1,
-                "active_tasks": 0,
-                "done_tasks": 1,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
-            "observability": {
-                "domain": "observability",
-                "tasks_total": 1,
-                "active_tasks": 0,
-                "done_tasks": 1,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
             "performance": {
                 "domain": "performance",
+                "tasks_total": 1,
+                "active_tasks": 0,
+                "done_tasks": 1,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            "telemedicine": {
+                "domain": "telemedicine",
                 "tasks_total": 1,
                 "active_tasks": 0,
                 "done_tasks": 1,
@@ -880,9 +1000,9 @@
         "ranking": [
             {
                 "domain": "calendar",
-                "tasks_total": 11,
+                "tasks_total": 13,
                 "active_tasks": 0,
-                "done_tasks": 11,
+                "done_tasks": 13,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -899,9 +1019,9 @@
             },
             {
                 "domain": "chat",
-                "tasks_total": 8,
+                "tasks_total": 9,
                 "active_tasks": 0,
-                "done_tasks": 8,
+                "done_tasks": 9,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -936,10 +1056,29 @@
                 "weighted_score_points": 200
             },
             {
-                "domain": "frontend-admin",
-                "tasks_total": 24,
+                "domain": "frontend-public",
+                "tasks_total": 45,
                 "active_tasks": 0,
-                "done_tasks": 24,
+                "done_tasks": 45,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
+                "domain": "frontend-admin",
+                "tasks_total": 29,
+                "active_tasks": 0,
+                "done_tasks": 29,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -956,28 +1095,9 @@
             },
             {
                 "domain": "ops",
-                "tasks_total": 21,
+                "tasks_total": 22,
                 "active_tasks": 0,
-                "done_tasks": 21,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
-            {
-                "domain": "frontend-public",
-                "tasks_total": 17,
-                "active_tasks": 0,
-                "done_tasks": 17,
+                "done_tasks": 22,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -994,9 +1114,9 @@
             },
             {
                 "domain": "frontend-qa",
-                "tasks_total": 11,
+                "tasks_total": 14,
                 "active_tasks": 0,
-                "done_tasks": 11,
+                "done_tasks": 14,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -1013,9 +1133,9 @@
             },
             {
                 "domain": "tooling",
-                "tasks_total": 11,
+                "tasks_total": 12,
                 "active_tasks": 0,
-                "done_tasks": 11,
+                "done_tasks": 12,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -1050,10 +1170,48 @@
                 "weighted_score_points": 100
             },
             {
-                "domain": "docs",
-                "tasks_total": 5,
+                "domain": "deploy",
+                "tasks_total": 6,
                 "active_tasks": 0,
-                "done_tasks": 5,
+                "done_tasks": 6,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
+                "domain": "docs",
+                "tasks_total": 6,
+                "active_tasks": 0,
+                "done_tasks": 6,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
+                "domain": "frontend",
+                "tasks_total": 6,
+                "active_tasks": 0,
+                "done_tasks": 6,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -1088,10 +1246,10 @@
                 "weighted_score_points": 100
             },
             {
-                "domain": "deploy",
-                "tasks_total": 3,
+                "domain": "monitoring",
+                "tasks_total": 4,
                 "active_tasks": 0,
-                "done_tasks": 3,
+                "done_tasks": 4,
                 "blocked_tasks": 0,
                 "failed_tasks": 0,
                 "ready_tasks": 0,
@@ -1107,7 +1265,26 @@
                 "weighted_score_points": 100
             },
             {
-                "domain": "monitoring",
+                "domain": "lib",
+                "tasks_total": 2,
+                "active_tasks": 0,
+                "done_tasks": 2,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
+                "domain": "observability",
                 "tasks_total": 2,
                 "active_tasks": 0,
                 "done_tasks": 2,
@@ -1145,7 +1322,45 @@
                 "weighted_score_points": 100
             },
             {
+                "domain": "analytics",
+                "tasks_total": 1,
+                "active_tasks": 0,
+                "done_tasks": 1,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
                 "domain": "audit",
+                "tasks_total": 1,
+                "active_tasks": 0,
+                "done_tasks": 1,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
+                "domain": "auth",
                 "tasks_total": 1,
                 "active_tasks": 0,
                 "done_tasks": 1,
@@ -1259,45 +1474,26 @@
                 "weighted_score_points": 100
             },
             {
-                "domain": "lib",
-                "tasks_total": 1,
-                "active_tasks": 0,
-                "done_tasks": 1,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
-            {
-                "domain": "observability",
-                "tasks_total": 1,
-                "active_tasks": 0,
-                "done_tasks": 1,
-                "blocked_tasks": 0,
-                "failed_tasks": 0,
-                "ready_tasks": 0,
-                "review_tasks": 0,
-                "in_progress_tasks": 0,
-                "blocking_conflicts": 0,
-                "handoff_conflicts": 0,
-                "active_expired_handoffs": 0,
-                "reasons": ["stable"],
-                "signal": "GREEN",
-                "weight": 1,
-                "signal_score_pct": 100,
-                "weighted_score_points": 100
-            },
-            {
                 "domain": "performance",
+                "tasks_total": 1,
+                "active_tasks": 0,
+                "done_tasks": 1,
+                "blocked_tasks": 0,
+                "failed_tasks": 0,
+                "ready_tasks": 0,
+                "review_tasks": 0,
+                "in_progress_tasks": 0,
+                "blocking_conflicts": 0,
+                "handoff_conflicts": 0,
+                "active_expired_handoffs": 0,
+                "reasons": ["stable"],
+                "signal": "GREEN",
+                "weight": 1,
+                "signal_score_pct": 100,
+                "weighted_score_points": 100
+            },
+            {
+                "domain": "telemedicine",
                 "tasks_total": 1,
                 "active_tasks": 0,
                 "done_tasks": 1,
@@ -1321,10 +1517,12 @@
         "version": 1,
         "source_file": "verification/agent-domain-health-history.json",
         "window_days": 7,
-        "snapshots_total": 5,
+        "snapshots_total": 8,
         "domains": [
             ".github",
+            "analytics",
             "audit",
+            "auth",
             "autopilot reliability",
             "backend",
             "calendar",
@@ -1334,6 +1532,7 @@
             "conversion-funnel",
             "deploy",
             "docs",
+            "frontend",
             "frontend-admin",
             "frontend-public",
             "frontend-qa",
@@ -1345,110 +1544,10 @@
             "payments",
             "performance",
             "platform",
+            "telemedicine",
             "tooling"
         ],
         "daily": [
-            {
-                "date": "2026-02-24",
-                "captured_at": "2026-02-24T22:21:13.935Z",
-                "counts_by_signal": {
-                    "GREEN": 7,
-                    "YELLOW": 3,
-                    "RED": 0
-                },
-                "domains": {
-                    "audit": {
-                        "signal": "GREEN",
-                        "tasks_total": 1,
-                        "active_tasks": 0,
-                        "done_tasks": 1,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "backend": {
-                        "signal": "YELLOW",
-                        "tasks_total": 2,
-                        "active_tasks": 1,
-                        "done_tasks": 1,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "calendar": {
-                        "signal": "GREEN",
-                        "tasks_total": 0,
-                        "active_tasks": 0,
-                        "done_tasks": 0,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "chat": {
-                        "signal": "GREEN",
-                        "tasks_total": 0,
-                        "active_tasks": 0,
-                        "done_tasks": 0,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "codex-governance": {
-                        "signal": "YELLOW",
-                        "tasks_total": 1,
-                        "active_tasks": 1,
-                        "done_tasks": 0,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "docs": {
-                        "signal": "GREEN",
-                        "tasks_total": 2,
-                        "active_tasks": 0,
-                        "done_tasks": 2,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "ops": {
-                        "signal": "YELLOW",
-                        "tasks_total": 1,
-                        "active_tasks": 1,
-                        "done_tasks": 0,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "payments": {
-                        "signal": "GREEN",
-                        "tasks_total": 0,
-                        "active_tasks": 0,
-                        "done_tasks": 0,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "platform": {
-                        "signal": "GREEN",
-                        "tasks_total": 1,
-                        "active_tasks": 0,
-                        "done_tasks": 1,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    },
-                    "tooling": {
-                        "signal": "GREEN",
-                        "tasks_total": 1,
-                        "active_tasks": 0,
-                        "done_tasks": 1,
-                        "blocking_conflicts": 0,
-                        "handoff_conflicts": 0,
-                        "active_expired_handoffs": 0
-                    }
-                }
-            },
             {
                 "date": "2026-02-25",
                 "captured_at": "2026-02-25T17:39:39.145Z",
@@ -2221,12 +2320,711 @@
                         "active_expired_handoffs": 0
                     }
                 }
+            },
+            {
+                "date": "2026-03-01",
+                "captured_at": "2026-03-01T22:08:44.777Z",
+                "counts_by_signal": {
+                    "GREEN": 23,
+                    "YELLOW": 0,
+                    "RED": 0
+                },
+                "domains": {
+                    ".github": {
+                        "signal": "GREEN",
+                        "tasks_total": 8,
+                        "active_tasks": 0,
+                        "done_tasks": 8,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "audit": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "autopilot reliability": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "backend": {
+                        "signal": "GREEN",
+                        "tasks_total": 4,
+                        "active_tasks": 0,
+                        "done_tasks": 4,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "calendar": {
+                        "signal": "GREEN",
+                        "tasks_total": 11,
+                        "active_tasks": 0,
+                        "done_tasks": 11,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "chat": {
+                        "signal": "GREEN",
+                        "tasks_total": 8,
+                        "active_tasks": 0,
+                        "done_tasks": 8,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "ci orchestration": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "codex-governance": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "conversion-funnel": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "deploy": {
+                        "signal": "GREEN",
+                        "tasks_total": 3,
+                        "active_tasks": 0,
+                        "done_tasks": 3,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "docs": {
+                        "signal": "GREEN",
+                        "tasks_total": 5,
+                        "active_tasks": 0,
+                        "done_tasks": 5,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-admin": {
+                        "signal": "GREEN",
+                        "tasks_total": 25,
+                        "active_tasks": 0,
+                        "done_tasks": 25,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-public": {
+                        "signal": "GREEN",
+                        "tasks_total": 17,
+                        "active_tasks": 0,
+                        "done_tasks": 17,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-qa": {
+                        "signal": "GREEN",
+                        "tasks_total": 11,
+                        "active_tasks": 0,
+                        "done_tasks": 11,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "gate reliability": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "lib": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "monitoring": {
+                        "signal": "GREEN",
+                        "tasks_total": 2,
+                        "active_tasks": 0,
+                        "done_tasks": 2,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "observability": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "ops": {
+                        "signal": "GREEN",
+                        "tasks_total": 21,
+                        "active_tasks": 0,
+                        "done_tasks": 21,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "payments": {
+                        "signal": "GREEN",
+                        "tasks_total": 0,
+                        "active_tasks": 0,
+                        "done_tasks": 0,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "performance": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "platform": {
+                        "signal": "GREEN",
+                        "tasks_total": 2,
+                        "active_tasks": 0,
+                        "done_tasks": 2,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "tooling": {
+                        "signal": "GREEN",
+                        "tasks_total": 11,
+                        "active_tasks": 0,
+                        "done_tasks": 11,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    }
+                }
+            },
+            {
+                "date": "2026-03-02",
+                "captured_at": "2026-03-02T23:53:06.545Z",
+                "counts_by_signal": {
+                    "GREEN": 24,
+                    "YELLOW": 0,
+                    "RED": 0
+                },
+                "domains": {
+                    ".github": {
+                        "signal": "GREEN",
+                        "tasks_total": 8,
+                        "active_tasks": 0,
+                        "done_tasks": 8,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "analytics": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "audit": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "autopilot reliability": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "backend": {
+                        "signal": "GREEN",
+                        "tasks_total": 4,
+                        "active_tasks": 0,
+                        "done_tasks": 4,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "calendar": {
+                        "signal": "GREEN",
+                        "tasks_total": 12,
+                        "active_tasks": 0,
+                        "done_tasks": 12,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "chat": {
+                        "signal": "GREEN",
+                        "tasks_total": 8,
+                        "active_tasks": 0,
+                        "done_tasks": 8,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "ci orchestration": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "codex-governance": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "conversion-funnel": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "deploy": {
+                        "signal": "GREEN",
+                        "tasks_total": 6,
+                        "active_tasks": 0,
+                        "done_tasks": 6,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "docs": {
+                        "signal": "GREEN",
+                        "tasks_total": 6,
+                        "active_tasks": 0,
+                        "done_tasks": 6,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-admin": {
+                        "signal": "GREEN",
+                        "tasks_total": 29,
+                        "active_tasks": 0,
+                        "done_tasks": 29,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-public": {
+                        "signal": "GREEN",
+                        "tasks_total": 17,
+                        "active_tasks": 0,
+                        "done_tasks": 17,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-qa": {
+                        "signal": "GREEN",
+                        "tasks_total": 13,
+                        "active_tasks": 0,
+                        "done_tasks": 13,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "gate reliability": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "lib": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "monitoring": {
+                        "signal": "GREEN",
+                        "tasks_total": 4,
+                        "active_tasks": 0,
+                        "done_tasks": 4,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "observability": {
+                        "signal": "GREEN",
+                        "tasks_total": 2,
+                        "active_tasks": 0,
+                        "done_tasks": 2,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "ops": {
+                        "signal": "GREEN",
+                        "tasks_total": 22,
+                        "active_tasks": 0,
+                        "done_tasks": 22,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "payments": {
+                        "signal": "GREEN",
+                        "tasks_total": 0,
+                        "active_tasks": 0,
+                        "done_tasks": 0,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "performance": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "platform": {
+                        "signal": "GREEN",
+                        "tasks_total": 2,
+                        "active_tasks": 0,
+                        "done_tasks": 2,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "tooling": {
+                        "signal": "GREEN",
+                        "tasks_total": 12,
+                        "active_tasks": 0,
+                        "done_tasks": 12,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    }
+                }
+            },
+            {
+                "date": "2026-03-11",
+                "captured_at": "2026-03-11T08:16:46.747Z",
+                "counts_by_signal": {
+                    "GREEN": 27,
+                    "YELLOW": 0,
+                    "RED": 0
+                },
+                "domains": {
+                    ".github": {
+                        "signal": "GREEN",
+                        "tasks_total": 8,
+                        "active_tasks": 0,
+                        "done_tasks": 8,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "analytics": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "audit": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "auth": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "autopilot reliability": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "backend": {
+                        "signal": "GREEN",
+                        "tasks_total": 4,
+                        "active_tasks": 0,
+                        "done_tasks": 4,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "calendar": {
+                        "signal": "GREEN",
+                        "tasks_total": 13,
+                        "active_tasks": 0,
+                        "done_tasks": 13,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "chat": {
+                        "signal": "GREEN",
+                        "tasks_total": 9,
+                        "active_tasks": 0,
+                        "done_tasks": 9,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "ci orchestration": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "codex-governance": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "conversion-funnel": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "deploy": {
+                        "signal": "GREEN",
+                        "tasks_total": 6,
+                        "active_tasks": 0,
+                        "done_tasks": 6,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "docs": {
+                        "signal": "GREEN",
+                        "tasks_total": 6,
+                        "active_tasks": 0,
+                        "done_tasks": 6,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend": {
+                        "signal": "GREEN",
+                        "tasks_total": 6,
+                        "active_tasks": 0,
+                        "done_tasks": 6,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-admin": {
+                        "signal": "GREEN",
+                        "tasks_total": 29,
+                        "active_tasks": 0,
+                        "done_tasks": 29,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-public": {
+                        "signal": "GREEN",
+                        "tasks_total": 45,
+                        "active_tasks": 0,
+                        "done_tasks": 45,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "frontend-qa": {
+                        "signal": "GREEN",
+                        "tasks_total": 14,
+                        "active_tasks": 0,
+                        "done_tasks": 14,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "gate reliability": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "lib": {
+                        "signal": "GREEN",
+                        "tasks_total": 2,
+                        "active_tasks": 0,
+                        "done_tasks": 2,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "monitoring": {
+                        "signal": "GREEN",
+                        "tasks_total": 4,
+                        "active_tasks": 0,
+                        "done_tasks": 4,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "observability": {
+                        "signal": "GREEN",
+                        "tasks_total": 2,
+                        "active_tasks": 0,
+                        "done_tasks": 2,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "ops": {
+                        "signal": "GREEN",
+                        "tasks_total": 22,
+                        "active_tasks": 0,
+                        "done_tasks": 22,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "payments": {
+                        "signal": "GREEN",
+                        "tasks_total": 0,
+                        "active_tasks": 0,
+                        "done_tasks": 0,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "performance": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "platform": {
+                        "signal": "GREEN",
+                        "tasks_total": 2,
+                        "active_tasks": 0,
+                        "done_tasks": 2,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "telemedicine": {
+                        "signal": "GREEN",
+                        "tasks_total": 1,
+                        "active_tasks": 0,
+                        "done_tasks": 1,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    },
+                    "tooling": {
+                        "signal": "GREEN",
+                        "tasks_total": 12,
+                        "active_tasks": 0,
+                        "done_tasks": 12,
+                        "blocking_conflicts": 0,
+                        "handoff_conflicts": 0,
+                        "active_expired_handoffs": 0
+                    }
+                }
             }
         ],
         "window_delta": {
             "available": true,
-            "from_date": "2026-02-24",
-            "to_date": "2026-02-28",
+            "from_date": "2026-02-25",
+            "to_date": "2026-03-11",
             "rows": [
                 {
                     "domain": ".github",
@@ -2237,7 +3035,23 @@
                     "blocking_conflicts_delta": 0
                 },
                 {
+                    "domain": "analytics",
+                    "signal_from": "GREEN",
+                    "signal_to": "GREEN",
+                    "blocking_conflicts_from": 0,
+                    "blocking_conflicts_to": 0,
+                    "blocking_conflicts_delta": 0
+                },
+                {
                     "domain": "audit",
+                    "signal_from": "GREEN",
+                    "signal_to": "GREEN",
+                    "blocking_conflicts_from": 0,
+                    "blocking_conflicts_to": 0,
+                    "blocking_conflicts_delta": 0
+                },
+                {
+                    "domain": "auth",
                     "signal_from": "GREEN",
                     "signal_to": "GREEN",
                     "blocking_conflicts_from": 0,
@@ -2254,7 +3068,7 @@
                 },
                 {
                     "domain": "backend",
-                    "signal_from": "YELLOW",
+                    "signal_from": "GREEN",
                     "signal_to": "GREEN",
                     "blocking_conflicts_from": 0,
                     "blocking_conflicts_to": 0,
@@ -2286,7 +3100,7 @@
                 },
                 {
                     "domain": "codex-governance",
-                    "signal_from": "YELLOW",
+                    "signal_from": "GREEN",
                     "signal_to": "GREEN",
                     "blocking_conflicts_from": 0,
                     "blocking_conflicts_to": 0,
@@ -2310,6 +3124,14 @@
                 },
                 {
                     "domain": "docs",
+                    "signal_from": "GREEN",
+                    "signal_to": "GREEN",
+                    "blocking_conflicts_from": 0,
+                    "blocking_conflicts_to": 0,
+                    "blocking_conflicts_delta": 0
+                },
+                {
+                    "domain": "frontend",
                     "signal_from": "GREEN",
                     "signal_to": "GREEN",
                     "blocking_conflicts_from": 0,
@@ -2374,7 +3196,7 @@
                 },
                 {
                     "domain": "ops",
-                    "signal_from": "YELLOW",
+                    "signal_from": "GREEN",
                     "signal_to": "GREEN",
                     "blocking_conflicts_from": 0,
                     "blocking_conflicts_to": 0,
@@ -2398,6 +3220,14 @@
                 },
                 {
                     "domain": "platform",
+                    "signal_from": "GREEN",
+                    "signal_to": "GREEN",
+                    "blocking_conflicts_from": 0,
+                    "blocking_conflicts_to": 0,
+                    "blocking_conflicts_delta": 0
+                },
+                {
+                    "domain": "telemedicine",
                     "signal_from": "GREEN",
                     "signal_to": "GREEN",
                     "blocking_conflicts_from": 0,
@@ -2432,7 +3262,7 @@
         ]
     },
     "delta": {
-        "tasks_total": 129,
+        "tasks_total": 187,
         "file_conflicts": 0,
         "file_conflicts_handoff": 0,
         "traceability_pct": 100

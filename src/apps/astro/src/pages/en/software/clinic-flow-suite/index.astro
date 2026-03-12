@@ -2,10 +2,8 @@
 import PublicShellV6 from '../../../../layouts/PublicShellV6.astro';
 import SoftwareLandingV6 from '../../../../components/public-v6/SoftwareLandingV6.astro';
 import {
-    getV6NavigationModel,
-    getV6SoftwareNavOverrides,
+    getV6SoftwareNavigationModel,
     getV6SoftwarePage,
-    mergeV6NavModel,
     v6SoftwarePath,
 } from '../../../../lib/public-v6.js';
 
@@ -14,10 +12,7 @@ const pageKey = 'landing';
 const pathname = v6SoftwarePath(locale, pageKey);
 const page = getV6SoftwarePage(locale, pageKey);
 if (!page) throw new Error('Software page not found in V6: landing');
-const navModel = mergeV6NavModel(
-    getV6NavigationModel(locale, pathname),
-    getV6SoftwareNavOverrides(locale)
-);
+const navModel = getV6SoftwareNavigationModel(locale, pathname);
 ---
 
 <PublicShellV6

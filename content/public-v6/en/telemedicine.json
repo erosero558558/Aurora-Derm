@@ -1,6 +1,6 @@
 {
     "title": "Telemedicine | Piel en Armonia",
-    "description": "Remote dermatology consultation with clear triage, responsible escalation, and continuity in Quito.",
+    "description": "Remote dermatology with clear first guidance, careful diagnosis, a responsible in-clinic handoff, and follow-up in Quito.",
     "breadcrumb": [
         {
             "label": "Home",
@@ -17,64 +17,64 @@
         "srcset": "/images/optimized/v6-clinic-consent-trust-400.webp 400w, /images/optimized/v6-clinic-consent-trust.webp 900w",
         "alt": "Remote dermatology consultation"
     },
-    "lead": "Telemedicine matters when it saves time without thinning out diagnosis, medical judgment, or continuity.",
+    "lead": "Telemedicine works best when it helps you move sooner without losing medical oversight or clarity about what comes next.",
     "ui": {
         "menu": {
-            "initiatives": "Remote initiatives",
-            "bookingStatus": "Schedule status"
+            "initiatives": "Support",
+            "bookingStatus": "Online booking"
         },
         "thesis": {
             "eyebrow": "Remote clinical model",
-            "title": "Online care when it adds real clinical value",
-            "body": "We define what can be handled remotely, what deserves closer watch, and when clinic review becomes the wiser step."
+            "title": "Remote care when it truly helps",
+            "body": "We decide what can be handled remotely, what needs closer watch, and when it makes more sense to see you in clinic."
         },
         "statement": {
-            "eyebrow": "Remote clinical direction",
-            "title": "Useful telemedicine, without losing medical judgment",
+            "eyebrow": "Remote review",
+            "title": "Useful telemedicine, with clear limits and medical oversight",
             "signature": "Hybrid model, Quito",
             "image": "/images/optimized/v6-clinic-doctor-narvaez.webp",
-            "alt": "Telemedicine clinical direction"
+            "alt": "Telemedicine clinical team"
         },
         "internalMessage": {
-            "description": "We review context, risk, and progression to decide whether remote care is enough or whether in-clinic examination is already needed."
+            "description": "We review context, risk, and progression to decide whether remote follow-up is enough or whether an in-person exam is already the better move."
         },
         "rail": {
-            "title": "Care pathway",
+            "title": "Sections",
             "aria": "Telemedicine sections"
         },
         "kpis": {
-            "blocks": "Route blocks",
-            "criteria": "Clinical criteria",
-            "model": "Escalation model",
+            "blocks": "Key points",
+            "criteria": "When it helps",
+            "model": "Care model",
             "modelValue": "Hybrid"
         },
         "initiatives": {
-            "aria": "Telemedicine initiatives",
-            "ctaLabel": "Open section"
+            "aria": "Telemedicine support",
+            "ctaLabel": "See details"
         },
-        "blockCtaLabel": "View schedule status"
+        "blockCtaLabel": "See options"
     },
     "blocks": [
         {
             "title": "How it works",
             "items": [
-                "You share key history and clinical images taken with enough context to guide first review.",
+                "You share key history and photos with enough context to guide an initial review.",
                 "We prioritize risk to decide whether the case can be handled remotely.",
-                "We deliver an initial plan, care guidance, and a follow-up window when needed.",
+                "We send an initial plan, clear care steps, and a follow-up window when needed.",
                 "If warning signs appear, we speed the move into clinic."
             ]
         },
         {
             "title": "When it usually fits",
             "items": [
-                "Previously assessed inflammatory flares that need adjustment",
-                "Follow-up of active treatment plans with recent change",
-                "Questions about progression between scheduled reviews",
-                "Initial guidance before traveling to clinic"
+                "Previously assessed inflammatory flares that need an adjustment",
+                "Follow-up on active treatment plans after a recent change",
+                "Questions about how things are evolving between reviews",
+                "Initial guidance before arranging a clinic visit"
             ]
         },
         {
-            "title": "When escalation is required",
+            "title": "When clinic review makes more sense",
             "items": [
                 "Rapidly changing, bleeding, or non-healing lesions",
                 "Intense pain, accelerated spread, or functional impact",
@@ -86,33 +86,33 @@
     "initiatives": [
         {
             "title": "Visual triage",
-            "copy": "A first reading through clinical images that helps prioritize risk and response timing.",
+            "copy": "A first read through clinical photos to prioritize risk and response timing.",
             "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
             "href": "#v6-tele-block-1"
         },
         {
             "title": "Flare control",
-            "copy": "Remote adjustments that contain flares between reviews and avoid lost days.",
+            "copy": "Remote adjustments that help contain flares between reviews and keep care moving.",
             "image": "/images/optimized/v6-clinic-acne-rosacea.webp",
             "href": "#v6-tele-block-2"
         },
         {
-            "title": "In-clinic escalation",
-            "copy": "Referral into clinic when lesion behavior calls for direct examination.",
+            "title": "Clinic handoff",
+            "copy": "A move into clinic when the way a lesion behaves calls for direct examination.",
             "image": "/images/optimized/v6-clinic-clinic-environment.webp",
             "href": "#v6-tele-block-3"
         },
         {
-            "title": "Quito continuity",
-            "copy": "A hybrid route shaped for Quito, with remote follow-up and timely clinic control.",
+            "title": "Hybrid follow-up in Quito",
+            "copy": "A model built for Quito, combining remote follow-up with timely in-clinic review.",
             "image": "/images/optimized/v6-clinic-doctor-rosero.webp",
             "href": "#v6-booking-status"
         }
     ],
     "bookingStatus": {
-        "eyebrow": "Active route",
+        "eyebrow": "After this review",
         "title": "Online booking under maintenance",
-        "description": "If you need to compare other paths afterwards, you can return to services and continue from there.",
+        "description": "If you want to compare other care options afterwards, you can go back to services and choose the one that fits best.",
         "ctaLabel": "View services",
         "ctaHref": "/en/services/"
     }

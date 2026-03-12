@@ -12,17 +12,17 @@
         "header": {
             "primaryNavAria": "Navegacion principal",
             "megaCategoryTabsAria": "Categorias del mega menu",
-            "openCategoryLabel": "Explorar categoria",
-            "mobileNavAria": "Navegacion movil",
+            "openCategoryLabel": "Ver seccion",
+            "mobileNavAria": "Menu principal",
             "search": {
-                "dialogAria": "Buscador de rutas dermatologicas",
-                "eyebrow": "Busqueda rapida",
-                "inputLabel": "Escriba un servicio o tema",
-                "placeholder": "Acne, laser, telemedicina, cicatrices...",
-                "hint": "Use palabras simples. Le mostramos rutas clinicas activas y el siguiente paso mas util.",
+                "dialogAria": "Buscador de servicios y temas",
+                "eyebrow": "Encuentre por donde empezar",
+                "inputLabel": "Escriba un sintoma, servicio o tratamiento",
+                "placeholder": "Acne, lunares, laser, telemedicina...",
+                "hint": "Puede buscar sintomas, tratamientos o telemedicina. Le mostramos opciones utiles para seguir.",
                 "resultsAria": "Resultados de busqueda",
-                "emptyTitle": "No encontramos una ruta activa con esa busqueda",
-                "emptyBody": "Pruebe con diagnostico, acne, laser o telemedicina para abrir una ruta vigente.",
+                "emptyTitle": "No vimos una coincidencia clara",
+                "emptyBody": "Pruebe con diagnostico, acne, lunares, laser o telemedicina.",
                 "closeLabel": "Cerrar buscador",
                 "resultsLimit": 8
             }
@@ -39,11 +39,11 @@
         }
     },
     "header": {
-        "contactLabel": "Contacto",
+        "contactLabel": "WhatsApp",
         "contactHref": "https://wa.me/593982453672",
-        "searchLabel": "Buscar rutas",
-        "menuLabel": "Menu",
-        "closeMenuLabel": "Cerrar menu",
+        "searchLabel": "Buscar por servicio o tema",
+        "menuLabel": "Explorar",
+        "closeMenuLabel": "Cerrar",
         "switchLabel": "EN",
         "switchHref": "/en/",
         "links": [
@@ -95,7 +95,7 @@
                 "label": "Diagnostico integral",
                 "href": "/es/servicios/diagnostico-integral/",
                 "eyebrow": "Consulta inicial",
-                "deck": "Primera lectura completa para definir prioridad, riesgo y siguiente paso con claridad."
+                "deck": "Primera lectura completa para definir prioridad, riesgo y como seguir con claridad."
             },
             {
                 "label": "Acne y rosacea",
@@ -137,7 +137,7 @@
                 "label": "Piel, cabello y unas",
                 "href": "/es/servicios/piel-cabello-unas/",
                 "eyebrow": "Consulta integral",
-                "deck": "Ruta integral para sintomas, cambios visibles y continuidad."
+                "deck": "Atencion integral para sintomas, cambios visibles y seguimiento claro."
             },
             {
                 "label": "Cancer de piel",
@@ -155,19 +155,19 @@
                 "label": "Cicatrices",
                 "href": "/es/servicios/cicatrices/",
                 "eyebrow": "Secuelas cutaneas",
-                "deck": "Ruta para textura, relieve y combinacion de tratamientos."
+                "deck": "Opciones para textura, relieve y combinacion de tratamientos."
             },
             {
                 "label": "Granitos en brazos y piernas",
                 "href": "/es/servicios/granitos-brazos-piernas/",
                 "eyebrow": "Consulta integral",
-                "deck": "Valoracion de lesiones pequenas y persistentes con criterio dermatologico."
+                "deck": "Valoracion de lesiones pequenas y persistentes con una lectura dermatologica clara."
             },
             {
                 "label": "Telemedicina",
                 "href": "/es/telemedicina/",
-                "eyebrow": "Continuidad",
-                "deck": "Orientacion remota cuando acelera decisiones sin perder criterio medico."
+                "eyebrow": "Primer paso",
+                "deck": "Orientacion remota cuando acelera decisiones sin perder claridad sobre como seguir."
             },
             {
                 "label": "Legal y consentimiento",
@@ -192,8 +192,8 @@
                 "heading": "Consulta inicial",
                 "context": {
                     "eyebrow": "Primera evaluacion",
-                    "title": "Empiece por la ruta que mejor ordena su caso",
-                    "deck": "La primera consulta define prioridad, riesgo y seguimiento para que usted avance con criterio desde el inicio.",
+                    "title": "Empiece por el servicio que mejor ordena su caso",
+                    "deck": "La primera consulta define prioridad, riesgo y seguimiento para que usted avance con claridad desde el inicio.",
                     "href": "/es/servicios/diagnostico-integral/"
                 },
                 "items": [
@@ -230,11 +230,11 @@
                         "href": "/es/servicios/dermatologia-pediatrica/",
                         "children": [
                             {
-                                "label": "Ruta familiar",
+                                "label": "Apoyo para familia",
                                 "href": "/es/servicios/dermatologia-pediatrica/"
                             },
                             {
-                                "label": "Rutas activas",
+                                "label": "Ver servicios",
                                 "href": "/es/servicios/"
                             }
                         ]
@@ -246,7 +246,7 @@
                 "heading": "Tratamientos medicos",
                 "context": {
                     "eyebrow": "Intervencion indicada",
-                    "title": "Tratamientos y tecnologia con criterio dermatologico",
+                    "title": "Tratamientos y tecnologia indicados con lectura dermatologica",
                     "deck": "Indicamos cada tratamiento por fototipo, tolerancia y objetivo clinico, con control posterior definido.",
                     "href": "/es/servicios/laser-dermatologico/"
                 },
@@ -288,7 +288,7 @@
                                 "href": "/es/servicios/bioestimuladores-colageno/"
                             },
                             {
-                                "label": "Ver todas las rutas",
+                                "label": "Ver todos los servicios",
                                 "href": "/es/servicios/"
                             }
                         ]
@@ -297,11 +297,11 @@
             },
             {
                 "id": "extended-care",
-                "heading": "Continuidad y claridad",
+                "heading": "Seguimiento claro",
                 "context": {
-                    "eyebrow": "Continuidad",
-                    "title": "Telemedicina, consentimiento y siguientes pasos claros",
-                    "deck": "Esta capa une orientacion remota, consentimiento entendible y acciones concretas para continuar.",
+                    "eyebrow": "Telemedicina y apoyo",
+                    "title": "Telemedicina, consentimiento y accesos faciles de ubicar",
+                    "deck": "Aqui reunimos orientacion remota, consentimiento claro y accesos concretos para seguir.",
                     "href": "/es/telemedicina/"
                 },
                 "items": [
@@ -314,7 +314,7 @@
                                 "href": "/es/telemedicina/"
                             },
                             {
-                                "label": "Criterios de escalamiento",
+                                "label": "Cuando conviene pasar a consulta",
                                 "href": "/es/telemedicina/"
                             }
                         ]
@@ -351,18 +351,18 @@
             }
         ],
         "featured": {
-            "eyebrow": "Direccion medica",
-            "title": "Cada ruta explica que observar, como decidir y cuando escalar",
-            "deck": "La promesa de la casa es simple: criterio medico, lenguaje humano y seguimiento comprensible.",
+            "eyebrow": "Dermatologia clara",
+            "title": "Le explicamos que mirar, como decidir y cuando conviene pasar a consulta",
+            "deck": "La promesa de la casa es simple: lectura medica clara, lenguaje humano y seguimiento comprensible.",
             "href": "/es/servicios/"
         }
     },
     "footer": {
         "headline": "Dermatologia medica clara para Quito",
-        "deck": "Cuidado clinico contemporaneo con decisiones explicadas, trato humano y continuidad real.",
+        "deck": "Cuidado dermatologico actual con decisiones explicadas y trato cercano.",
         "columns": [
             {
-                "title": "Rutas activas",
+                "title": "Servicios y apoyo",
                 "links": [
                     {
                         "label": "Servicios",
@@ -373,7 +373,7 @@
                         "href": "/es/telemedicina/"
                     },
                     {
-                        "label": "Estado de agenda",
+                        "label": "Reserva online",
                         "href": "/es/servicios/"
                     }
                 ]

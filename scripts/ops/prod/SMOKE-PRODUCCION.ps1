@@ -655,10 +655,47 @@ if ($null -ne $healthResult -and $healthResult.Ok) {
                 $configured = $false
                 $healthy = $false
                 $ageSeconds = 999999
+                $state = ''
+                $lastErrorMessage = ''
+                $currentHead = ''
+                $remoteHead = ''
+                $dirtyPathsCount = 0
+                $dirtyPathsSample = @()
                 try { $jobId = [string]$publicSync.jobId } catch { $jobId = '' }
                 try { $configured = [bool]$publicSync.configured } catch { $configured = $false }
                 try { $healthy = [bool]$publicSync.healthy } catch { $healthy = $false }
                 try { $ageSeconds = [int]$publicSync.ageSeconds } catch { $ageSeconds = 999999 }
+                try { $state = [string]$publicSync.state } catch { $state = '' }
+                try { $lastErrorMessage = [string]$publicSync.lastErrorMessage } catch { $lastErrorMessage = '' }
+                try { $currentHead = [string]$publicSync.currentHead } catch { $currentHead = '' }
+                try { $remoteHead = [string]$publicSync.remoteHead } catch { $remoteHead = '' }
+                try { $dirtyPathsCount = [int]$publicSync.dirtyPathsCount } catch { $dirtyPathsCount = 0 }
+                try {
+                    if ($null -ne $publicSync.dirtyPathsSample) {
+                        $dirtyPathsSample = @($publicSync.dirtyPathsSample)
+                    }
+                } catch {
+                    $dirtyPathsSample = @()
+                }
+                $dirtyPathsSampleLabel = if ($dirtyPathsSample.Count -eq 0) {
+                    'none'
+                } else {
+                    (@($dirtyPathsSample | Select-Object -First 5 | ForEach-Object { [string]$_ }) -join ', ')
+                }
+                $headDrift = (
+                    -not [string]::IsNullOrWhiteSpace($currentHead) -and
+                    -not [string]::IsNullOrWhiteSpace($remoteHead) -and
+                    $currentHead -ne $remoteHead
+                )
+                $telemetryGap = (
+                    -not $healthy -and
+                    -not [string]::IsNullOrWhiteSpace($lastErrorMessage) -and
+                    [string]::IsNullOrWhiteSpace($currentHead) -and
+                    [string]::IsNullOrWhiteSpace($remoteHead) -and
+                    $dirtyPathsCount -le 0
+                )
+
+                Write-Host "[INFO] checks.publicSync state=$state lastErrorMessage=$lastErrorMessage currentHead=$currentHead remoteHead=$remoteHead headDrift=$headDrift dirtyPathsCount=$dirtyPathsCount telemetryGap=$telemetryGap dirtyPathsSample=$dirtyPathsSampleLabel"
 
                 if (-not $configured) {
                     Write-Host "[FAIL] checks.publicSync.configured=false"
@@ -669,11 +706,19 @@ if ($null -ne $healthResult -and $healthResult.Ok) {
                     $contractFailures += 1
                 }
                 if (-not $healthy) {
-                    Write-Host "[FAIL] checks.publicSync.healthy=false"
+                    Write-Host "[FAIL] checks.publicSync.healthy=false (state=$state, lastErrorMessage=$lastErrorMessage, dirtyPathsCount=$dirtyPathsCount)"
                     $contractFailures += 1
                 }
                 if ($ageSeconds -gt 120) {
-                    Write-Host "[FAIL] checks.publicSync.ageSeconds alto: $ageSeconds"
+                    Write-Host "[FAIL] checks.publicSync.ageSeconds alto: $ageSeconds (state=$state, currentHead=$currentHead, remoteHead=$remoteHead)"
+                    $contractFailures += 1
+                }
+                if ($headDrift) {
+                    Write-Host "[FAIL] checks.publicSync head drift detectado: currentHead=$currentHead remoteHead=$remoteHead"
+                    $contractFailures += 1
+                }
+                if ($telemetryGap) {
+                    Write-Host "[FAIL] checks.publicSync failed sin telemetria runtime suficiente (currentHead/remoteHead/dirtyPathsCount ausentes)"
                     $contractFailures += 1
                 }
             }

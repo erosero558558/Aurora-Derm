@@ -2,10 +2,8 @@
 import PublicShellV6 from '../../../../layouts/PublicShellV6.astro';
 import SoftwareSurfacePageV6 from '../../../../components/public-v6/SoftwareSurfacePageV6.astro';
 import {
-    getV6NavigationModel,
-    getV6SoftwareNavOverrides,
+    getV6SoftwareNavigationModel,
     getV6SoftwarePage,
-    mergeV6NavModel,
     v6SoftwarePath,
 } from '../../../../lib/public-v6.js';
 
@@ -28,10 +26,7 @@ if (!pageKey) throw new Error(`Invalid software route in V6: ${surface}`);
 const pathname = v6SoftwarePath(locale, pageKey);
 const page = getV6SoftwarePage(locale, pageKey);
 if (!page) throw new Error(`Software page not found in V6: ${pageKey}`);
-const navModel = mergeV6NavModel(
-    getV6NavigationModel(locale, pathname),
-    getV6SoftwareNavOverrides(locale)
-);
+const navModel = getV6SoftwareNavigationModel(locale, pathname);
 ---
 
 <PublicShellV6

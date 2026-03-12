@@ -19,31 +19,72 @@ require_cmd() {
 }
 
 require_cmd git
-require_cmd npm
 require_cmd curl
 require_cmd perl
 require_cmd systemctl
 test -x "$NGINX_BIN"
 test -d "$REPO"
 
-reset_generated_vendor_metadata() {
+collect_generated_vendor_metadata_files() {
     local generated_files=(
+        "vendor/autoload.php"
+        "vendor/composer/autoload_classmap.php"
+        "vendor/composer/autoload_files.php"
+        "vendor/composer/autoload_namespaces.php"
+        "vendor/composer/autoload_psr4.php"
         "vendor/composer/autoload_real.php"
         "vendor/composer/autoload_static.php"
         "vendor/composer/installed.php"
+        "vendor/composer/installed.json"
+        "vendor/composer/InstalledVersions.php"
+        "vendor/composer/platform_check.php"
     )
     local file
-    local tracked_files=()
     for file in "${generated_files[@]}"; do
         if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
-            tracked_files+=("$file")
+            printf '%s\n' "$file"
         fi
     done
+
+    git ls-files -- 'vendor/bin/*'
+}
+
+reset_generated_vendor_metadata() {
+    local tracked_files=()
+    local file
+
+    while IFS= read -r file; do
+        if [ -n "$file" ]; then
+            tracked_files+=("$file")
+        fi
+    done < <(collect_generated_vendor_metadata_files)
 
     if [ "${#tracked_files[@]}" -gt 0 ]; then
         git checkout -- "${tracked_files[@]}"
         echo "Reset tracked Composer-generated metadata."
     fi
+}
+
+verify_canonical_public_artifacts() {
+    local required_paths=(
+        "es/index.html"
+        "en/index.html"
+        "_astro"
+        "script.js"
+        "styles.css"
+        "styles-deferred.css"
+        "js/chunks"
+        "js/engines"
+    )
+    local required_path
+    for required_path in "${required_paths[@]}"; do
+        if [ ! -e "$REPO/$required_path" ]; then
+            echo "Missing canonical public artifact: $REPO/$required_path" >&2
+            exit 1
+        fi
+    done
+
+    echo "Canonical public artifacts present in repo checkout."
 }
 
 cd "$REPO"
@@ -86,18 +127,11 @@ if [ "$INSTALL_DEPS" = "true" ]; then
     else
         echo "Composer not found; skipping composer install."
     fi
-    npm ci
 fi
 
-echo "== Astro build =="
-npm run astro:build
-npm run astro:sync
-
-echo "== Verify static output =="
-test -f "$REPO/es/index.html"
-test -f "$REPO/en/index.html"
-test -d "$REPO/_astro"
-ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro"
+echo "== Verify canonical public artifacts =="
+verify_canonical_public_artifacts
+ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro" "$REPO/js/chunks" "$REPO/js/engines"
 
 if [ -f "$SITE_PATH" ]; then
     echo "== Patch live Nginx redirect safety =="

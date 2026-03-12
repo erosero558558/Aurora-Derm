@@ -33,6 +33,10 @@ El workflow `.github/workflows/deploy-hosting.yml` se encarga de:
 6.  Smoke post-deploy de routing público, conversión pública y manifiesto de cutover.
 7.  Dispatch opcional de post-deploy (`post-deploy-fast.yml` y `post-deploy-gate.yml`) con propagación de `admin_rollout_stage` y flags del gate admin UI.
 
+Cuando la estrategia activa es `git-sync`, el host promueve los artefactos
+versionados ya comprometidos en `main`; no recompila Astro en el VPS durante el
+cron de publicación.
+
 ### Dispatch Post-Deploy desde Deploy Hosting
 
 En ejecuciones manuales (`workflow_dispatch`) de `deploy-hosting.yml`:
@@ -57,6 +61,11 @@ Si `git-sync` no replica `origin/main` o GitHub runners no alcanzan el hosting, 
 - [PUBLIC_MAIN_UPDATE_RUNBOOK.md](./PUBLIC_MAIN_UPDATE_RUNBOOK.md)
 - Script reusable canónico: `bin/deploy-public-v3-live.sh`
 - Compatibilidad temporal: `bin/deploy-public-v2-live.sh` delega a V3
+
+El wrapper `bin/deploy-public-v3-live.sh` resetea el repo al commit objetivo,
+instala dependencias PHP si hace falta, verifica que existan los artefactos
+versionados de publicación y luego recarga Nginx. No regenera los artefactos
+V6 en el servidor.
 
 Contrato operativo local:
 

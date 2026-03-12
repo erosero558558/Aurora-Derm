@@ -1025,13 +1025,46 @@ try {
         $publicSyncJobId = ''
         $publicSyncAgeSeconds = 999999
         $publicSyncState = ''
+        $publicSyncLastErrorMessage = ''
         $publicSyncDeployedCommit = ''
+        $publicSyncCurrentHead = ''
+        $publicSyncRemoteHead = ''
+        $publicSyncDirtyPathsCount = 0
+        $publicSyncDirtyPathsSample = @()
         try { $publicSyncConfigured = [bool]$publicSyncNode.configured } catch { $publicSyncConfigured = $false }
         try { $publicSyncHealthy = [bool]$publicSyncNode.healthy } catch { $publicSyncHealthy = $false }
         try { $publicSyncJobId = [string]$publicSyncNode.jobId } catch { $publicSyncJobId = '' }
         try { $publicSyncAgeSeconds = [int]$publicSyncNode.ageSeconds } catch { $publicSyncAgeSeconds = 999999 }
         try { $publicSyncState = [string]$publicSyncNode.state } catch { $publicSyncState = '' }
+        try { $publicSyncLastErrorMessage = [string]$publicSyncNode.lastErrorMessage } catch { $publicSyncLastErrorMessage = '' }
         try { $publicSyncDeployedCommit = [string]$publicSyncNode.deployedCommit } catch { $publicSyncDeployedCommit = '' }
+        try { $publicSyncCurrentHead = [string]$publicSyncNode.currentHead } catch { $publicSyncCurrentHead = '' }
+        try { $publicSyncRemoteHead = [string]$publicSyncNode.remoteHead } catch { $publicSyncRemoteHead = '' }
+        try { $publicSyncDirtyPathsCount = [int]$publicSyncNode.dirtyPathsCount } catch { $publicSyncDirtyPathsCount = 0 }
+        try {
+            if ($null -ne $publicSyncNode.dirtyPathsSample) {
+                $publicSyncDirtyPathsSample = @($publicSyncNode.dirtyPathsSample)
+            }
+        } catch {
+            $publicSyncDirtyPathsSample = @()
+        }
+        $publicSyncDirtyPathsSampleLabel = if ($publicSyncDirtyPathsSample.Count -eq 0) {
+            'none'
+        } else {
+            (@($publicSyncDirtyPathsSample | Select-Object -First 5 | ForEach-Object { [string]$_ }) -join ', ')
+        }
+        $publicSyncHeadDrift = (
+            -not [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+            -not [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+            $publicSyncCurrentHead -ne $publicSyncRemoteHead
+        )
+        $publicSyncTelemetryGap = (
+            -not $publicSyncHealthy -and
+            -not [string]::IsNullOrWhiteSpace($publicSyncLastErrorMessage) -and
+            [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+            [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+            $publicSyncDirtyPathsCount -le 0
+        )
 
         if ($publicSyncConfigured) {
             Write-Host "[OK]  public sync configurado (jobId=$publicSyncJobId, state=$publicSyncState, ageSeconds=$publicSyncAgeSeconds)"
@@ -1042,6 +1075,7 @@ try {
         if (-not [string]::IsNullOrWhiteSpace($publicSyncDeployedCommit)) {
             Write-Host "[INFO] public sync deployedCommit=$publicSyncDeployedCommit"
         }
+        Write-Host "[INFO] public sync lastErrorMessage=$publicSyncLastErrorMessage currentHead=$publicSyncCurrentHead remoteHead=$publicSyncRemoteHead headDrift=$publicSyncHeadDrift dirtyPathsCount=$publicSyncDirtyPathsCount telemetryGap=$publicSyncTelemetryGap dirtyPathsSample=$publicSyncDirtyPathsSampleLabel"
 
         if ($RequireCronReady) {
             if (-not $publicSyncConfigured) {
@@ -1067,7 +1101,7 @@ try {
                     Asset = 'health-public-sync-healthy'
                     Match = $false
                     LocalHash = 'true'
-                    RemoteHash = 'false'
+                    RemoteHash = if ($publicSyncState) { "${publicSyncState}:$publicSyncLastErrorMessage" } else { 'false' }
                     RemoteUrl = $healthUrl
                 }
             }
@@ -1077,6 +1111,33 @@ try {
                     Match = $false
                     LocalHash = '<=120'
                     RemoteHash = [string]$publicSyncAgeSeconds
+                    RemoteUrl = $healthUrl
+                }
+            }
+            if ($publicSyncLastErrorMessage -eq 'working_tree_dirty') {
+                $results += [PSCustomObject]@{
+                    Asset = 'health-public-sync-working-tree-dirty'
+                    Match = $false
+                    LocalHash = 'clean'
+                    RemoteHash = [string]$publicSyncDirtyPathsCount
+                    RemoteUrl = $healthUrl
+                }
+            }
+            if ($publicSyncHeadDrift) {
+                $results += [PSCustomObject]@{
+                    Asset = 'health-public-sync-head-drift'
+                    Match = $false
+                    LocalHash = if ($publicSyncCurrentHead) { $publicSyncCurrentHead } else { 'missing' }
+                    RemoteHash = if ($publicSyncRemoteHead) { $publicSyncRemoteHead } else { 'missing' }
+                    RemoteUrl = $healthUrl
+                }
+            }
+            if ($publicSyncTelemetryGap) {
+                $results += [PSCustomObject]@{
+                    Asset = 'health-public-sync-telemetry-gap'
+                    Match = $false
+                    LocalHash = 'currentHead+remoteHead+dirtyPathsCount'
+                    RemoteHash = 'missing'
                     RemoteUrl = $healthUrl
                 }
             }

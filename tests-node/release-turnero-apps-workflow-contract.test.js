@@ -52,8 +52,9 @@ test('release-turnero-apps habilita contents write y jobs canonicos', () => {
     const jobs = parsed?.jobs || {};
 
     assert.equal(parsed?.permissions?.contents, 'write');
+    assert.equal(typeof jobs['resolve-release-plan'], 'object');
     assert.equal(typeof jobs['build-desktop'], 'object');
-    assert.equal(typeof jobs['build-sala-tv'], 'object');
+    assert.equal(typeof jobs['build-android'], 'object');
     assert.equal(typeof jobs['package-release'], 'object');
     assert.equal(typeof jobs['publish-to-hosting'], 'object');
     assert.equal(typeof jobs['publish-github-release'], 'object');
@@ -63,8 +64,8 @@ test('release-turnero-apps empaqueta bundle, publica APK y deja rutas de hosting
     const { raw } = loadWorkflow();
 
     for (const snippet of [
+        'node bin/resolve-turnero-release-plan.js --github-output "$GITHUB_OUTPUT"',
         'node bin/stage-turnero-app-release.js',
-        'TurneroSalaTV.apk',
         'turnero-apps-release-bundle',
         'actions/download-artifact@v4',
         'actions/upload-artifact@v4',
@@ -72,8 +73,13 @@ test('release-turnero-apps empaqueta bundle, publica APK y deja rutas de hosting
         'softprops/action-gh-release@v2',
         'desktop-updates/stable/**/*',
         'app-downloads/stable/**/*',
-        'gradle -p src/apps/turnero-sala-tv-android assembleRelease',
-        'npm run ${{ matrix.npm_script }} --',
+        'gradle -p "${{ matrix.gradle_project }}" "${{ matrix.build_task }}"',
+        '${{ matrix.source_artifact }}',
+        '${{ matrix.staged_artifact_path }}',
+        'npm run build:surface --',
+        'pattern: turnero-desktop-*',
+        'pattern: turnero-android-*',
+        '--androidRoot artifacts/android',
     ]) {
         assert.equal(
             raw.includes(snippet),

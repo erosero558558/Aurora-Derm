@@ -419,6 +419,54 @@ $servicesCatalogVersion = [string](Get-ObjectValueOrDefault -Object $health -Pro
 $servicesCatalogCount = [int](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogCount' -DefaultValue 0)
 $servicesCatalogConfigured = [bool](Get-ObjectValueOrDefault -Object $health -Property 'servicesCatalogConfigured' -DefaultValue $false)
 $healthChecks = Get-ObjectValueOrDefault -Object $health -Property 'checks' -DefaultValue $null
+$publicSyncCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'publicSync' -DefaultValue $null
+$publicSyncConfigured = [bool](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'configured' -DefaultValue $false)
+$publicSyncHealthy = [bool](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'healthy' -DefaultValue $false)
+$publicSyncJobId = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'jobId' -DefaultValue '')
+$publicSyncState = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'state' -DefaultValue 'unknown')
+$publicSyncAgeSeconds = [int](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'ageSeconds' -DefaultValue 999999)
+$publicSyncExpectedMaxLagSeconds = [int](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'expectedMaxLagSeconds' -DefaultValue 120)
+$publicSyncLastCheckedAt = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastCheckedAt' -DefaultValue '')
+$publicSyncLastSuccessAt = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastSuccessAt' -DefaultValue '')
+$publicSyncLastErrorAt = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastErrorAt' -DefaultValue '')
+$publicSyncLastErrorMessage = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastErrorMessage' -DefaultValue '')
+$publicSyncDeployedCommit = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'deployedCommit' -DefaultValue '')
+$publicSyncDurationMs = Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'durationMs' -DefaultValue $null
+$publicSyncCurrentHead = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'currentHead' -DefaultValue '')
+$publicSyncRemoteHead = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'remoteHead' -DefaultValue '')
+$publicSyncRepoPath = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'repoPath' -DefaultValue '')
+$publicSyncBranch = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'branch' -DefaultValue '')
+$publicSyncStatusPath = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'statusPath' -DefaultValue '')
+$publicSyncLogPath = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'logPath' -DefaultValue '')
+$publicSyncLockFile = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lockFile' -DefaultValue '')
+$publicSyncDirtyPathsCount = [int](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'dirtyPathsCount' -DefaultValue 0)
+$publicSyncDirtyPathsSample = @(
+    Convert-ToArraySafe -Value (Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'dirtyPathsSample' -DefaultValue @())
+)
+$publicSyncDirtyPathsSampleLabel = if ($publicSyncDirtyPathsSample.Count -eq 0) {
+    'none'
+} else {
+    (@($publicSyncDirtyPathsSample | Select-Object -First 5 | ForEach-Object { [string]$_ }) -join ', ')
+}
+$publicSyncHeadDrift = $false
+if (
+    -not [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+    -not [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+    $publicSyncCurrentHead -ne $publicSyncRemoteHead
+) {
+    $publicSyncHeadDrift = $true
+}
+$publicSyncTelemetryGap = $false
+if (
+    $publicSyncConfigured -and
+    -not $publicSyncHealthy -and
+    -not [string]::IsNullOrWhiteSpace($publicSyncLastErrorMessage) -and
+    [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+    [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+    $publicSyncDirtyPathsCount -le 0
+) {
+    $publicSyncTelemetryGap = $true
+}
 $telemedicineCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'telemedicine' -DefaultValue $null
 $telemedicineConfigured = [bool](Get-ObjectValueOrDefault -Object $telemedicineCheck -Property 'configured' -DefaultValue $false)
 $telemedicineIntakesObj = Get-ObjectValueOrDefault -Object $telemedicineCheck -Property 'intakes' -DefaultValue $null
@@ -702,6 +750,24 @@ if (-not $sentryBackendConfigured) {
 }
 if (-not $sentryFrontendConfigured) {
     $warnings.Add('sentry_frontend_no_configurado')
+}
+if (-not $publicSyncConfigured) {
+    $warnings.Add('public_sync_unconfigured')
+}
+if ($publicSyncConfigured -and -not $publicSyncHealthy) {
+    $warnings.Add("public_sync_unhealthy_${publicSyncState}")
+}
+if ($publicSyncConfigured -and $publicSyncAgeSeconds -gt $publicSyncExpectedMaxLagSeconds) {
+    $warnings.Add("public_sync_age_alta_${publicSyncAgeSeconds}s")
+}
+if ($publicSyncConfigured -and $publicSyncLastErrorMessage -eq 'working_tree_dirty') {
+    $warnings.Add("public_sync_working_tree_dirty_${publicSyncDirtyPathsCount}")
+}
+if ($publicSyncConfigured -and $publicSyncHeadDrift) {
+    $warnings.Add('public_sync_head_drift')
+}
+if ($publicSyncConfigured -and $publicSyncTelemetryGap) {
+    $warnings.Add('public_sync_telemetry_gap')
 }
 if ($servicesCatalogSource -ne 'file') {
     $warnings.Add("services_catalog_${servicesCatalogSource}")
@@ -1011,6 +1077,8 @@ Write-Host "Reporte markdown: $reportMdPath"
 Write-Host "Reporte json: $reportJsonPath"
 Write-Host "start_checkout_rate_pct=$startCheckoutRatePct booking_confirmed=$bookingConfirmed booking_confirmed_rate_pct=$bookingConfirmedRatePct error_rate_pct=$errorRatePct core_p95_max_ms=$coreP95Max figo_post_p95_ms=$figoPostP95"
 Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurrence_rate_pct=$retentionRecurrenceRatePct retention_report_alert_count=$retentionReportAlertCount sentry_backend=$sentryBackendConfigured sentry_frontend=$sentryFrontendConfigured"
+Write-Host "public_sync_configured=$publicSyncConfigured public_sync_healthy=$publicSyncHealthy public_sync_state=$publicSyncState public_sync_age_seconds=$publicSyncAgeSeconds public_sync_expected_max_lag_seconds=$publicSyncExpectedMaxLagSeconds public_sync_last_error_message=$publicSyncLastErrorMessage public_sync_dirty_paths_count=$publicSyncDirtyPathsCount public_sync_telemetry_gap=$publicSyncTelemetryGap"
+Write-Host "public_sync_job_id=$publicSyncJobId public_sync_deployed_commit=$publicSyncDeployedCommit public_sync_current_head=$publicSyncCurrentHead public_sync_remote_head=$publicSyncRemoteHead public_sync_head_drift=$publicSyncHeadDrift public_sync_dirty_paths_sample=$publicSyncDirtyPathsSampleLabel"
 Write-Host "idempotency_requests_with_key=$idempotencyRequestsWithKey idempotency_conflict_rate_pct=$idempotencyConflictRatePct idempotency_replay_rate_pct=$idempotencyReplayRatePct"
 Write-Host "service_funnel_source=$serviceFunnelSource service_funnel_rows=$serviceFunnelRowsCount service_funnel_alert_count=$serviceFunnelAlertCount"
 Write-Host "services_catalog_source=$servicesCatalogSource services_catalog_version=$servicesCatalogVersion services_catalog_count=$servicesCatalogCount services_catalog_configured=$servicesCatalogConfigured"

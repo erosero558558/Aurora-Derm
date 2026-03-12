@@ -5,6 +5,7 @@ const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 const locale = navModel?.locale === 'en' ? 'en' : 'es';
 const header = navModel?.header && typeof navModel.header === 'object' ? navModel.header : {};
 const mega = navModel?.mega && typeof navModel.mega === 'object' ? navModel.mega : {};
+const megaFeatured = mega?.featured && typeof mega.featured === 'object' ? mega.featured : {};
 const brand = navModel?.brand && typeof navModel.brand === 'object' ? navModel.brand : {};
 const headerUi = navModel?.ui?.header && typeof navModel.ui.header === 'object' ? navModel.ui.header : {};
 const links = (Array.isArray(header.links) ? header.links : [])
@@ -49,10 +50,16 @@ const megaColumns = (Array.isArray(mega.columns) ? mega.columns : [])
                     .map((child) => ({
                         label: hasText(child?.label) ? child.label.trim() : '',
                         href: hasText(child?.href) ? child.href.trim() : '',
+                        isActive: isActive(child?.href),
                     }))
                     .filter((child) => child.label && child.href),
             }))
-            .filter((item) => item.label && item.href);
+            .filter((item) => item.label && item.href)
+            .map((item) => ({
+                ...item,
+                isActive: isActive(item.href) || item.children.some((child) => child.isActive),
+            }));
+        const contextHref = hasText(context?.href) ? context.href.trim() : '';
         return {
             id: hasText(column?.id) ? column.id.trim() : `v6-mega-column-${index + 1}`,
             heading: hasText(column?.heading) ? column.heading.trim() : '',
@@ -60,9 +67,10 @@ const megaColumns = (Array.isArray(mega.columns) ? mega.columns : [])
                 eyebrow: hasText(context?.eyebrow) ? context.eyebrow.trim() : '',
                 title: hasText(context?.title) ? context.title.trim() : '',
                 deck: hasText(context?.deck) ? context.deck.trim() : '',
-                href: hasText(context?.href) ? context.href.trim() : '',
+                href: contextHref,
             },
             items,
+            isActive: Boolean((contextHref && isActive(contextHref)) || items.some((item) => item.isActive)),
         };
     })
     .filter(
@@ -75,9 +83,14 @@ const megaColumns = (Array.isArray(mega.columns) ? mega.columns : [])
     );
 const megaPanelId = 'v6-mega-panel';
 const searchPanelId = 'v6-search-panel';
+const drawerPanelId = 'v6-drawer-panel';
 const megaLabel = hasText(mega.title) ? mega.title.trim() : '';
 const megaCloseLabel = hasText(mega.closeLabel) ? mega.closeLabel.trim() : '';
 const megaRootHref = megaLink ? megaLink.href : '';
+const megaFeaturedEyebrow = hasText(megaFeatured?.eyebrow) ? megaFeatured.eyebrow.trim() : '';
+const megaFeaturedTitle = hasText(megaFeatured?.title) ? megaFeatured.title.trim() : '';
+const megaFeaturedDeck = hasText(megaFeatured?.deck) ? megaFeatured.deck.trim() : '';
+const megaFeaturedHref = hasText(megaFeatured?.href) ? megaFeatured.href.trim() : megaRootHref;
 const menuLabel = hasText(header.menuLabel) ? header.menuLabel.trim() : '';
 const closeMenuLabel = hasText(header.closeMenuLabel) ? header.closeMenuLabel.trim() : '';
 const searchLabel = hasText(header.searchLabel) ? header.searchLabel.trim() : '';
@@ -128,7 +141,58 @@ const addSearchEntry = (entry) => {
 
 customSearchEntries.forEach((entry) => addSearchEntry(entry));
 
+const preferredSearchHrefs =
+    locale === 'en'
+        ? [
+              '/en/services/diagnostico-integral/',
+              '/en/services/acne-rosacea/',
+              '/en/services/laser-dermatologico/',
+              '/en/telemedicine/',
+              '/en/services/cancer-piel/',
+              '/en/services/dermatologia-pediatrica/',
+          ]
+        : [
+              '/es/servicios/diagnostico-integral/',
+              '/es/servicios/acne-rosacea/',
+              '/es/servicios/laser-dermatologico/',
+              '/es/telemedicina/',
+              '/es/servicios/cancer-piel/',
+              '/es/servicios/dermatologia-pediatrica/',
+          ];
+const searchQuickLinks = [];
+const searchQuickKeys = new Set();
+
+preferredSearchHrefs.forEach((href) => {
+    const match = searchEntries.find((entry) => entry.href === href);
+    if (!match || searchQuickKeys.has(match.href)) return;
+    searchQuickKeys.add(match.href);
+    searchQuickLinks.push(match);
+});
+
+searchEntries.forEach((entry) => {
+    if (searchQuickLinks.length >= 6 || searchQuickKeys.has(entry.href)) return;
+    searchQuickKeys.add(entry.href);
+    searchQuickLinks.push(entry);
+});
+
 const searchIndexJson = JSON.stringify(searchEntries);
+const defaultMegaColumnIndex = megaColumns.findIndex((column) => column.isActive);
+const initialMegaColumnIndex = defaultMegaColumnIndex >= 0 ? defaultMegaColumnIndex : 0;
+const activePrimaryLink = links.find((item) => isActive(item.href)) || null;
+const activeMegaColumn =
+    megaColumns.find((column) => column.isActive) ||
+    megaColumns[initialMegaColumnIndex] ||
+    null;
+const drawerQuickLabel = locale === 'en' ? 'Quick actions' : 'Acciones rapidas';
+const drawerStatusEyebrow = locale === 'en' ? 'Open right now' : 'Abierto ahora';
+const drawerStatusDeck =
+    locale === 'en'
+        ? 'Stay here, or use the sections below to move into another part of the site.'
+        : 'Puede seguir aqui, o usar las secciones de abajo para moverse a otra parte del sitio.';
+const drawerPrimaryLabel = locale === 'en' ? 'Main sections' : 'Secciones principales';
+const drawerExploreLabel = locale === 'en' ? 'Explore by topic' : 'Explore por tema';
+const drawerActiveLabel = locale === 'en' ? 'Open now' : 'Abierto ahora';
+const searchSuggestionLabel = locale === 'en' ? 'Suggested searches' : 'Busquedas sugeridas';
 const hasMega = Boolean(megaLink && megaLabel && megaCloseLabel && megaRootHref && megaColumns.length);
 const hasSearch =
     Boolean(
@@ -198,7 +262,20 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
                     </button>
                 ) : null
             }
-            {hasDrawer ? <button class="v6-header__menu" type="button" data-v6-drawer-open aria-label={menuLabel}>{menuLabel}</button> : null}
+            {
+                hasDrawer ? (
+                    <button
+                        class="v6-header__menu"
+                        type="button"
+                        data-v6-drawer-open
+                        aria-label={menuLabel}
+                        aria-expanded="false"
+                        aria-controls={drawerPanelId}
+                    >
+                        {menuLabel}
+                    </button>
+                ) : null
+            }
         </div>
     </div>
 
@@ -225,13 +302,13 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
                             const detailPanelId = `v6-mega-detail-${index + 1}`;
                             return (
                                 <button
-                                    class:list={['v6-mega__tab', index === 0 && 'is-active']}
+                                    class:list={['v6-mega__tab', index === initialMegaColumnIndex && 'is-active']}
                                     type="button"
                                     data-v6-mega-tab
                                     data-v6-mega-focusable
                                     data-v6-target={detailPanelId}
                                     aria-controls={detailPanelId}
-                                    aria-selected={index === 0 ? 'true' : 'false'}
+                                    aria-selected={index === initialMegaColumnIndex ? 'true' : 'false'}
                                 >
                                     <span>{column.heading}</span>
                                     <span class="v6-mega__arrow" aria-hidden="true">&gt;</span>
@@ -250,11 +327,11 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
                             return (
                                 <section
                                     id={detailPanelId}
-                                    class:list={['v6-mega__section', 'v6-mega__detail', index === 0 && 'is-active']}
+                                    class:list={['v6-mega__section', 'v6-mega__detail', index === initialMegaColumnIndex && 'is-active']}
                                     data-v6-mega-section
                                     data-v6-mega-detail
                                     data-v6-column-id={column.id || detailPanelId}
-                                    hidden={index !== 0}
+                                    hidden={index !== initialMegaColumnIndex}
                                 >
                                     <a class="v6-mega__context" href={sectionHref} data-v6-mega-focusable>
                                         <p>{context.eyebrow}</p>
@@ -310,16 +387,61 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
         hasDrawer ? (
     <div class="v6-drawer" data-v6-drawer hidden>
         <div class="v6-drawer__scrim" data-v6-drawer-close></div>
-        <aside class="v6-drawer__panel" aria-label={mobileNavAria || undefined}>
+        <aside id={drawerPanelId} class="v6-drawer__panel" data-v6-drawer-panel aria-label={mobileNavAria || undefined}>
             <header>
-                {brandLogo ? <strong>{brandLogo}</strong> : null}
-                {closeMenuLabel ? <button type="button" data-v6-drawer-close>{closeMenuLabel}</button> : null}
+                <div class="v6-drawer__brand">
+                    {brandLogo ? <strong>{brandLogo}</strong> : null}
+                    {brandTag ? <small>{brandTag}</small> : null}
+                </div>
+                {closeMenuLabel ? <button type="button" data-v6-drawer-close data-v6-drawer-focusable>{closeMenuLabel}</button> : null}
             </header>
-            <nav>
+            {
+                megaFeaturedTitle || megaFeaturedDeck || megaFeaturedEyebrow ? (
+                    <div class="v6-drawer__intro">
+                        {megaFeaturedEyebrow ? <p>{megaFeaturedEyebrow}</p> : null}
+                        {megaFeaturedTitle ? <h2>{megaFeaturedTitle}</h2> : null}
+                        {megaFeaturedDeck ? <p>{megaFeaturedDeck}</p> : null}
+                        {
+                            megaFeaturedHref && openCategoryLabel ? (
+                                <a class="v6-drawer__intro-link" href={megaFeaturedHref} data-v6-drawer-focusable>
+                                    <span>{openCategoryLabel}</span>
+                                    <span aria-hidden="true">&gt;</span>
+                                </a>
+                            ) : null
+                        }
+                    </div>
+                ) : null
+            }
+            <div class="v6-drawer__quick">
+                <p class="v6-drawer__section-kicker">{drawerQuickLabel}</p>
+                {
+                    hasSearch ? (
+                        <button type="button" class="v6-drawer__quick-button" data-v6-drawer-search-open data-v6-drawer-focusable>
+                            {searchLabel}
+                        </button>
+                    ) : null
+                }
+                {hasContact ? <a class="v6-drawer__quick-link" href={contactHref} target="_blank" rel="noopener noreferrer" data-v6-drawer-focusable>{contactLabel}</a> : null}
+            </div>
+            {
+                activePrimaryLink ? (
+                    <div class="v6-drawer__status">
+                        <p>{drawerStatusEyebrow}</p>
+                        <strong>{activePrimaryLink.label}</strong>
+                        {activeMegaColumn?.heading ? <span>{activeMegaColumn.heading}</span> : null}
+                        <p>{drawerStatusDeck}</p>
+                    </div>
+                ) : null
+            }
+            <nav class="v6-drawer__primary">
+                <p class="v6-drawer__section-kicker">{drawerPrimaryLabel}</p>
                 {
                     links.map((link) => (
-                        <a href={link.href}>
-                            <span>{link.label}</span>
+                        <a class:list={['v6-drawer__primary-link', isActive(link.href) && 'is-active']} href={link.href} data-v6-drawer-focusable>
+                            <span class="v6-drawer__primary-meta">
+                                <span>{link.label}</span>
+                                {isActive(link.href) ? <small>{drawerActiveLabel}</small> : null}
+                            </span>
                             <span aria-hidden="true">&gt;</span>
                         </a>
                     ))
@@ -328,33 +450,49 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
             {
                 hasMega ? (
             <section class="v6-drawer__mega">
-                <h3>{megaLabel}</h3>
+                <div class="v6-drawer__section-head">
+                    <p class="v6-drawer__section-kicker">{drawerExploreLabel}</p>
+                    <h3>{megaLabel}</h3>
+                </div>
                 {
                     megaColumns.map((column, index) => (
                         <article class="v6-drawer__group">
                             <button
                                 type="button"
-                                class:list={['v6-drawer__group-toggle', index === 0 && 'is-active']}
+                                class:list={['v6-drawer__group-toggle', (index === initialMegaColumnIndex || column.isActive) && 'is-active']}
                                 data-v6-drawer-group-toggle
+                                data-v6-drawer-focusable
                                 data-v6-target={`v6-drawer-group-${index + 1}`}
                                 aria-controls={`v6-drawer-group-${index + 1}`}
-                                aria-expanded={index === 0 ? 'true' : 'false'}
+                                aria-expanded={index === initialMegaColumnIndex ? 'true' : 'false'}
                             >
-                                <span>{column.heading}</span>
-                                <span aria-hidden="true">+</span>
+                                <span class="v6-drawer__group-meta">
+                                    {column.context.eyebrow ? <small>{column.context.eyebrow}</small> : null}
+                                    <span>{column.heading}</span>
+                                </span>
+                                <span class="v6-drawer__group-indicator" data-v6-drawer-indicator aria-hidden="true">{index === initialMegaColumnIndex ? '-' : '+'}</span>
                             </button>
-                            <div id={`v6-drawer-group-${index + 1}`} data-v6-drawer-group-panel hidden={index !== 0}>
+                            <div id={`v6-drawer-group-${index + 1}`} data-v6-drawer-group-panel hidden={index !== initialMegaColumnIndex}>
+                                {
+                                    column.context.title || column.context.deck ? (
+                                        <a class="v6-drawer__context" href={column.context.href} data-v6-drawer-focusable>
+                                            {column.context.eyebrow ? <p>{column.context.eyebrow}</p> : null}
+                                            {column.context.title ? <h4>{column.context.title}</h4> : null}
+                                            {column.context.deck ? <p>{column.context.deck}</p> : null}
+                                        </a>
+                                    ) : null
+                                }
                                 <ul>
                                     {(column.items || []).map((item) => (
                                         <li>
-                                            <a href={item.href}>
+                                            <a class:list={['v6-drawer__item-link', item.isActive && 'is-active']} href={item.href} data-v6-drawer-focusable>
                                                 <span>{item.label}</span>
                                                 <span aria-hidden="true">&gt;</span>
                                             </a>
                                             {
                                                 Array.isArray(item.children) && item.children.length ? (
                                                     <ul class="v6-drawer__subitems">
-                                                        {item.children.map((child) => <li><a href={child.href}>{child.label}</a></li>)}
+                                                        {item.children.map((child) => <li><a class:list={[child.isActive && 'is-active']} href={child.href} data-v6-drawer-focusable>{child.label}</a></li>)}
                                                     </ul>
                                                 ) : null
                                             }
@@ -369,8 +507,7 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
                 ) : null
             }
             <footer>
-                {hasSwitch ? <a href={switchHref}>{switchLabel}</a> : null}
-                {hasContact ? <a href={contactHref} target="_blank" rel="noopener noreferrer">{contactLabel}</a> : null}
+                {hasSwitch ? <a class="v6-drawer__footer-link" href={switchHref} data-v6-drawer-focusable>{switchLabel}</a> : null}
             </footer>
         </aside>
     </div>
@@ -411,6 +548,21 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
             </label>
 
             {searchHint ? <p class="v6-search__hint">{searchHint}</p> : null}
+
+            {
+                searchQuickLinks.length ? (
+                    <div class="v6-search__suggestions">
+                        <p>{searchSuggestionLabel}</p>
+                        <div class="v6-search__quick-links">
+                            {searchQuickLinks.map((entry) => (
+                                <a class="v6-search__quick-link" href={entry.href}>
+                                    <span>{entry.label}</span>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                ) : null
+            }
 
             <ul class="v6-search__results" data-v6-search-results aria-label={searchResultsAria}></ul>
         </section>

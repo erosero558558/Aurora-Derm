@@ -4,6 +4,7 @@ param(
     [int]$MaxLatencyMs = 3500,
     [switch]$AllowDegradedFigo,
     [switch]$AllowDegradedServicePriorities,
+    [switch]$AllowDegradedPublicSync,
     [switch]$SkipBackupCheck,
     [switch]$AllowStoreCalendar,
     [switch]$AllowBlockedCalendar,
@@ -38,6 +39,21 @@ $checks = @(
 $results = @()
 $failures = @()
 $effectiveAllowStoreCalendar = [bool]$AllowStoreCalendar
+
+function Add-MonitorFailure {
+    param(
+        [string]$Message,
+        [switch]$AllowDegraded
+    )
+
+    if ($AllowDegraded) {
+        $warningMessage = $Message -replace '^\[FAIL\]', '[WARN]'
+        Write-Host $warningMessage
+        return
+    }
+
+    $script:failures += $Message
+}
 
 Write-Host "== Monitor Produccion =="
 Write-Host "Dominio: $base"
@@ -100,6 +116,94 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                     $reason = ''
                     try { $reason = [string]$health.checks.backup.reason } catch {}
                     $failures += "[FAIL] backup no saludable (reason=$reason)"
+                }
+            }
+
+            $publicSyncNode = $null
+            try { $publicSyncNode = $health.checks.publicSync } catch { $publicSyncNode = $null }
+            if ($null -eq $publicSyncNode) {
+                Add-MonitorFailure -Message '[FAIL] health.checks.publicSync ausente' -AllowDegraded:$AllowDegradedPublicSync
+            } else {
+                $publicSyncConfigured = $false
+                $publicSyncHealthy = $false
+                $publicSyncJobId = ''
+                $publicSyncState = 'unknown'
+                $publicSyncAgeSeconds = 999999
+                $publicSyncExpectedMaxLagSeconds = 120
+                $publicSyncFailureReason = ''
+                $publicSyncLastErrorMessage = ''
+                $publicSyncCurrentHead = ''
+                $publicSyncRemoteHead = ''
+                $publicSyncDirtyPathsCount = 0
+                $publicSyncDirtyPathsSample = @()
+
+                try { $publicSyncConfigured = [bool]$publicSyncNode.configured } catch { $publicSyncConfigured = $false }
+                try { $publicSyncHealthy = [bool]$publicSyncNode.healthy } catch { $publicSyncHealthy = $false }
+                try { $publicSyncJobId = [string]$publicSyncNode.jobId } catch { $publicSyncJobId = '' }
+                try { $publicSyncState = [string]$publicSyncNode.state } catch { $publicSyncState = 'unknown' }
+                try { $publicSyncAgeSeconds = [int]$publicSyncNode.ageSeconds } catch { $publicSyncAgeSeconds = 999999 }
+                try { $publicSyncExpectedMaxLagSeconds = [int]$publicSyncNode.expectedMaxLagSeconds } catch { $publicSyncExpectedMaxLagSeconds = 120 }
+                try { $publicSyncFailureReason = [string]$publicSyncNode.failureReason } catch { $publicSyncFailureReason = '' }
+                try { $publicSyncLastErrorMessage = [string]$publicSyncNode.lastErrorMessage } catch { $publicSyncLastErrorMessage = '' }
+                try { $publicSyncCurrentHead = [string]$publicSyncNode.currentHead } catch { $publicSyncCurrentHead = '' }
+                try { $publicSyncRemoteHead = [string]$publicSyncNode.remoteHead } catch { $publicSyncRemoteHead = '' }
+                try { $publicSyncDirtyPathsCount = [int]$publicSyncNode.dirtyPathsCount } catch { $publicSyncDirtyPathsCount = 0 }
+                try {
+                    if ($null -ne $publicSyncNode.dirtyPathsSample) {
+                        $publicSyncDirtyPathsSample = @($publicSyncNode.dirtyPathsSample)
+                    }
+                } catch {
+                    $publicSyncDirtyPathsSample = @()
+                }
+
+                if ([string]::IsNullOrWhiteSpace($publicSyncFailureReason) -and -not [string]::IsNullOrWhiteSpace($publicSyncLastErrorMessage)) {
+                    $publicSyncFailureReason = $publicSyncLastErrorMessage
+                }
+
+                $publicSyncDirtyPathsSampleLabel = if ($publicSyncDirtyPathsSample.Count -eq 0) {
+                    'none'
+                } else {
+                    (@($publicSyncDirtyPathsSample | Select-Object -First 5 | ForEach-Object { [string]$_ }) -join ', ')
+                }
+                $publicSyncHeadDrift = (
+                    -not [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+                    -not [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+                    $publicSyncCurrentHead -ne $publicSyncRemoteHead
+                )
+                $publicSyncTelemetryGap = (
+                    -not $publicSyncHealthy -and
+                    -not [string]::IsNullOrWhiteSpace($publicSyncFailureReason) -and
+                    [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+                    [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+                    $publicSyncDirtyPathsCount -le 0
+                )
+
+                Write-Host "[INFO] health.publicSync configured=$publicSyncConfigured healthy=$publicSyncHealthy jobId=$publicSyncJobId state=$publicSyncState ageSeconds=$publicSyncAgeSeconds expectedMaxLagSeconds=$publicSyncExpectedMaxLagSeconds failureReason=$publicSyncFailureReason lastErrorMessage=$publicSyncLastErrorMessage currentHead=$publicSyncCurrentHead remoteHead=$publicSyncRemoteHead headDrift=$publicSyncHeadDrift dirtyPathsCount=$publicSyncDirtyPathsCount telemetryGap=$publicSyncTelemetryGap dirtyPathsSample=$publicSyncDirtyPathsSampleLabel"
+
+                if (-not $publicSyncConfigured) {
+                    Add-MonitorFailure -Message '[FAIL] health.publicSync.configured=false' -AllowDegraded:$AllowDegradedPublicSync
+                }
+                if ($publicSyncConfigured -and $publicSyncJobId -ne '8d31e299-7e57-4959-80b5-aaa2d73e9674') {
+                    Add-MonitorFailure -Message "[FAIL] health.publicSync.jobId invalido ($publicSyncJobId)" -AllowDegraded:$AllowDegradedPublicSync
+                }
+                if ($publicSyncConfigured -and -not $publicSyncHealthy) {
+                    Add-MonitorFailure -Message "[FAIL] health.publicSync unhealthy (state=$publicSyncState, failureReason=$publicSyncFailureReason, headDrift=$publicSyncHeadDrift, telemetryGap=$publicSyncTelemetryGap, dirtyPathsCount=$publicSyncDirtyPathsCount)" -AllowDegraded:$AllowDegradedPublicSync
+                }
+                if ($publicSyncConfigured -and $publicSyncAgeSeconds -gt $publicSyncExpectedMaxLagSeconds) {
+                    Add-MonitorFailure -Message "[FAIL] health.publicSync stale age=$publicSyncAgeSeconds max=$publicSyncExpectedMaxLagSeconds (state=$publicSyncState)" -AllowDegraded:$AllowDegradedPublicSync
+                }
+                if ($publicSyncConfigured -and $publicSyncHeadDrift) {
+                    Add-MonitorFailure -Message "[FAIL] health.publicSync head drift (currentHead=$publicSyncCurrentHead remoteHead=$publicSyncRemoteHead)" -AllowDegraded:$AllowDegradedPublicSync
+                }
+                if ($publicSyncConfigured -and $publicSyncTelemetryGap) {
+                    Add-MonitorFailure -Message "[FAIL] health.publicSync telemetry gap (failureReason=$publicSyncFailureReason lastErrorMessage=$publicSyncLastErrorMessage)" -AllowDegraded:$AllowDegradedPublicSync
+                }
+                if (
+                    $publicSyncConfigured -and
+                    $publicSyncFailureReason -eq 'working_tree_dirty' -and
+                    -not $publicSyncTelemetryGap
+                ) {
+                    Add-MonitorFailure -Message "[FAIL] health.publicSync working tree dirty (dirtyPathsCount=$publicSyncDirtyPathsCount dirtyPathsSample=$publicSyncDirtyPathsSampleLabel)" -AllowDegraded:$AllowDegradedPublicSync
                 }
             }
 

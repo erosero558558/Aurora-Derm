@@ -8,6 +8,7 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 parseBoard: ctx.parseBoard,
                 parseHandoffs: ctx.parseHandoffs,
                 loadMetricsSnapshot: ctx.loadMetricsSnapshot,
+                loadJobsSnapshot: ctx.loadJobsSnapshot,
                 analyzeConflicts: ctx.analyzeConflicts,
                 toConflictJsonRecord: ctx.toConflictJsonRecord,
                 attachDiagnostics: ctx.attachDiagnostics,
@@ -65,6 +66,7 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 parseBoard: ctx.parseBoard,
                 parseHandoffs: ctx.parseHandoffs,
                 loadMetricsSnapshot: ctx.loadMetricsSnapshot,
+                loadJobsSnapshot: ctx.loadJobsSnapshot,
             });
         },
 

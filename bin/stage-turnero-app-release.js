@@ -4,52 +4,17 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-
-const DESKTOP_SURFACES = Object.freeze({
-    operator: {
-        artifactBase: 'TurneroOperador',
-        webFallbackUrl: '/operador-turnos.html',
-        guideUrl: '/app-downloads/?surface=operator',
-        targets: {
-            win: {
-                label: 'Windows',
-                manualFile: 'TurneroOperadorSetup.exe',
-                feedFile: 'latest.yml',
-            },
-            mac: {
-                label: 'macOS',
-                manualFile: 'TurneroOperador.dmg',
-                updateFile: 'TurneroOperador.zip',
-                feedFile: 'latest-mac.yml',
-            },
-        },
-    },
-    kiosk: {
-        artifactBase: 'TurneroKiosco',
-        webFallbackUrl: '/kiosco-turnos.html',
-        guideUrl: '/app-downloads/?surface=kiosk',
-        targets: {
-            win: {
-                label: 'Windows',
-                manualFile: 'TurneroKioscoSetup.exe',
-                feedFile: 'latest.yml',
-            },
-            mac: {
-                label: 'macOS',
-                manualFile: 'TurneroKiosco.dmg',
-                updateFile: 'TurneroKiosco.zip',
-                feedFile: 'latest-mac.yml',
-            },
-        },
-    },
-});
-
-const TV_SURFACE = Object.freeze({
-    artifactName: 'TurneroSalaTV.apk',
-    webFallbackUrl: '/sala-turnos.html',
-    guideUrl: '/app-downloads/?surface=sala_tv',
-    label: 'Android TV APK',
-});
+const {
+    buildTurneroReleaseArtifactName,
+    getTurneroDefaultTargetKey,
+    getTurneroRegistryDefaults,
+    getTurneroTargetDefinition,
+    listTurneroSurfaceDefinitions,
+    listTurneroTargetKeys,
+    resolveTurneroDownloadPublicPath,
+    resolveTurneroUpdatePublicFeedPath,
+    resolveTurneroUpdatePublicPayloadPath,
+} = require('../lib/turnero-surface-registry.js');
 
 function parseArgs(argv) {
     const parsed = {};
@@ -84,7 +49,10 @@ function toWebPath(filePath, outputRoot) {
 }
 
 function sha256(filePath) {
-    return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+    return crypto
+        .createHash('sha256')
+        .update(fs.readFileSync(filePath))
+        .digest('hex');
 }
 
 function copyTrackedFile(sourcePath, destinationPath, outputRoot, records) {
@@ -100,7 +68,12 @@ function copyTrackedFile(sourcePath, destinationPath, outputRoot, records) {
     return record;
 }
 
-function copyCompanionBlockmap(sourcePath, destinationPath, outputRoot, records) {
+function copyCompanionBlockmap(
+    sourcePath,
+    destinationPath,
+    outputRoot,
+    records
+) {
     const blockmapSource = `${sourcePath}.blockmap`;
     if (!fs.existsSync(blockmapSource)) {
         return null;
@@ -120,57 +93,120 @@ function requireFile(filePath, description) {
     return filePath;
 }
 
-function requireApk(tvRoot) {
-    const exactMatch = path.join(tvRoot, TV_SURFACE.artifactName);
-    if (fs.existsSync(exactMatch)) {
-        return exactMatch;
-    }
-
-    const candidates = fs
-        .readdirSync(tvRoot, { withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name.endsWith('.apk'))
-        .map((entry) => entry.name)
-        .sort();
-
-    if (candidates.length === 0) {
-        throw new Error(`No se encontro ningun APK en ${tvRoot}`);
-    }
-
-    return path.join(tvRoot, candidates[0]);
-}
-
 function buildShaLines(records) {
     return records
         .map((record) => `${record.sha256}  ${record.path.replace(/^\//, '')}`)
         .join('\n');
 }
 
-function stageDesktopSurface(surfaceKey, meta, outputRoot, desktopRoot, channel, version, releasedAt) {
+function publicPathToOutputPath(outputRoot, publicPath) {
+    return path.join(
+        outputRoot,
+        ...String(publicPath || '')
+            .replace(/^\/+/, '')
+            .split('/')
+            .filter(Boolean)
+    );
+}
+
+function resolveDesktopSourceDir(desktopRoot, surface, targetKey) {
+    const candidates = [
+        path.join(desktopRoot, surface.id, targetKey),
+        path.join(
+            desktopRoot,
+            buildTurneroReleaseArtifactName(surface, targetKey)
+        ),
+        path.join(
+            desktopRoot,
+            String(surface.desktop?.distDir || ''),
+            targetKey
+        ),
+    ];
+
+    for (const candidate of candidates) {
+        const resolved = path.resolve(candidate);
+        if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
+            return resolved;
+        }
+    }
+
+    throw new Error(
+        `No se encontro build desktop para ${surface.id}/${targetKey} en ${desktopRoot}`
+    );
+}
+
+function resolveAndroidArtifactFile(androidRoot, surface, targetKey) {
+    const target = getTurneroTargetDefinition(surface, targetKey);
+    const candidates = [
+        path.join(androidRoot, String(surface.android?.stagedArtifact || '')),
+        path.join(
+            androidRoot,
+            buildTurneroReleaseArtifactName(surface, targetKey),
+            String(surface.android?.stagedArtifact || target?.manualFile || '')
+        ),
+        path.join(androidRoot, String(surface.android?.sourceArtifact || '')),
+        path.join(
+            androidRoot,
+            buildTurneroReleaseArtifactName(surface, targetKey),
+            path.basename(String(surface.android?.sourceArtifact || ''))
+        ),
+    ].filter((candidate) => String(candidate || '').trim() !== '');
+
+    for (const candidate of candidates) {
+        const resolved = path.resolve(candidate);
+        if (fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
+            return resolved;
+        }
+    }
+
+    const apkCandidates = fs
+        .readdirSync(androidRoot, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.apk'))
+        .map((entry) => path.join(androidRoot, entry.name))
+        .sort();
+
+    if (apkCandidates.length > 0) {
+        return apkCandidates[0];
+    }
+
+    throw new Error(
+        `No se encontro artefacto Android para ${surface.id}/${targetKey} en ${androidRoot}`
+    );
+}
+
+function stageDesktopSurface(
+    surface,
+    outputRoot,
+    desktopRoot,
+    channel,
+    version,
+    releasedAt
+) {
     const surfaceManifest = {
         version,
         updatedAt: releasedAt,
-        webFallbackUrl: meta.webFallbackUrl,
-        guideUrl: meta.guideUrl,
+        webFallbackUrl: surface.webFallbackUrl,
+        guideUrl: surface.guideUrl,
         targets: {},
         updates: {},
         files: [],
     };
 
-    for (const [platformKey, platformMeta] of Object.entries(meta.targets)) {
-        const sourceDir = path.join(desktopRoot, surfaceKey, platformKey);
-        requireFile(sourceDir, `directorio ${surfaceKey}/${platformKey}`);
+    for (const targetKey of listTurneroTargetKeys(surface)) {
+        const target = getTurneroTargetDefinition(surface, targetKey);
+        const sourceDir = resolveDesktopSourceDir(
+            desktopRoot,
+            surface,
+            targetKey
+        );
 
         const manualSource = requireFile(
-            path.join(sourceDir, platformMeta.manualFile),
-            `instalador ${surfaceKey}/${platformKey}`
+            path.join(sourceDir, target.manualFile),
+            `instalador ${surface.id}/${targetKey}`
         );
-        const manualDestination = path.join(
+        const manualDestination = publicPathToOutputPath(
             outputRoot,
-            'app-downloads',
-            channel,
-            surfaceKey,
-            platformKey,
-            path.basename(platformMeta.manualFile)
+            resolveTurneroDownloadPublicPath(surface, targetKey, { channel })
         );
         const manualRecord = copyTrackedFile(
             manualSource,
@@ -185,37 +221,48 @@ function stageDesktopSurface(surfaceKey, meta, outputRoot, desktopRoot, channel,
             surfaceManifest.files
         );
 
-        surfaceManifest.targets[platformKey] = {
-            label: platformMeta.label,
+        surfaceManifest.targets[targetKey] = {
+            label: target.label,
             url: manualRecord.path,
             sha256: manualRecord.sha256,
             bytes: manualRecord.bytes,
         };
 
+        if (
+            target.feedFile === '' ||
+            target.updateFile === '' ||
+            target.updatePath === ''
+        ) {
+            continue;
+        }
+
         const feedSource = requireFile(
-            path.join(sourceDir, platformMeta.feedFile),
-            `feed update ${surfaceKey}/${platformKey}`
-        );
-        const updateDir = path.join(
-            outputRoot,
-            'desktop-updates',
-            channel,
-            surfaceKey,
-            platformKey
+            path.join(sourceDir, target.feedFile),
+            `feed update ${surface.id}/${targetKey}`
         );
         const feedRecord = copyTrackedFile(
             feedSource,
-            path.join(updateDir, path.basename(platformMeta.feedFile)),
+            publicPathToOutputPath(
+                outputRoot,
+                resolveTurneroUpdatePublicFeedPath(surface, targetKey, {
+                    channel,
+                })
+            ),
             outputRoot,
             surfaceManifest.files
         );
 
-        const updateFileName = platformMeta.updateFile || platformMeta.manualFile;
+        const updateFileName = target.updateFile || target.manualFile;
         const updateSource = requireFile(
             path.join(sourceDir, updateFileName),
-            `payload update ${surfaceKey}/${platformKey}`
+            `payload update ${surface.id}/${targetKey}`
         );
-        const updateDestination = path.join(updateDir, path.basename(updateFileName));
+        const updateDestination = publicPathToOutputPath(
+            outputRoot,
+            resolveTurneroUpdatePublicPayloadPath(surface, targetKey, {
+                channel,
+            })
+        );
         const updateRecord = copyTrackedFile(
             updateSource,
             updateDestination,
@@ -229,7 +276,7 @@ function stageDesktopSurface(surfaceKey, meta, outputRoot, desktopRoot, channel,
             surfaceManifest.files
         );
 
-        surfaceManifest.updates[platformKey] = {
+        surfaceManifest.updates[targetKey] = {
             feedUrl: feedRecord.path,
             payloadUrl: updateRecord.path,
         };
@@ -238,30 +285,46 @@ function stageDesktopSurface(surfaceKey, meta, outputRoot, desktopRoot, channel,
     return surfaceManifest;
 }
 
-function stageTvSurface(outputRoot, tvRoot, channel, version, releasedAt) {
-    const apkSource = requireApk(tvRoot);
-    const destination = path.join(
+function stageAndroidSurface(
+    surface,
+    outputRoot,
+    androidRoot,
+    channel,
+    version,
+    releasedAt
+) {
+    const targetKey = getTurneroDefaultTargetKey(surface, {
+        targetKey: String(surface.android?.targetKey || ''),
+    });
+    const target = getTurneroTargetDefinition(surface, targetKey);
+    const artifactSource = resolveAndroidArtifactFile(
+        androidRoot,
+        surface,
+        targetKey
+    );
+    const destination = publicPathToOutputPath(
         outputRoot,
-        'app-downloads',
-        channel,
-        'sala-tv',
-        'android',
-        TV_SURFACE.artifactName
+        resolveTurneroDownloadPublicPath(surface, targetKey, { channel })
     );
     const files = [];
-    const apkRecord = copyTrackedFile(apkSource, destination, outputRoot, files);
+    const artifactRecord = copyTrackedFile(
+        artifactSource,
+        destination,
+        outputRoot,
+        files
+    );
 
     return {
         version,
         updatedAt: releasedAt,
-        webFallbackUrl: TV_SURFACE.webFallbackUrl,
-        guideUrl: TV_SURFACE.guideUrl,
+        webFallbackUrl: surface.webFallbackUrl,
+        guideUrl: surface.guideUrl,
         targets: {
-            android_tv: {
-                label: TV_SURFACE.label,
-                url: apkRecord.path,
-                sha256: apkRecord.sha256,
-                bytes: apkRecord.bytes,
+            [targetKey]: {
+                label: target?.label || 'Android',
+                url: artifactRecord.path,
+                sha256: artifactRecord.sha256,
+                bytes: artifactRecord.bytes,
             },
         },
         files,
@@ -279,17 +342,21 @@ function main() {
     const outputRoot = path.resolve(
         String(args.outputRoot || 'release/turnero-apps').trim()
     );
+    const defaults = getTurneroRegistryDefaults();
     const desktopRoot = path.resolve(
         String(args.desktopRoot || 'src/apps/turnero-desktop/dist').trim()
     );
-    const tvRoot = path.resolve(
+    const androidRoot = path.resolve(
         String(
             args.tvRoot ||
+                args.androidRoot ||
                 'src/apps/turnero-sala-tv-android/app/build/outputs/apk/release'
         ).trim()
     );
-    const baseUrl = String(args.baseUrl || 'https://pielarmonia.com').trim();
-    const releasedAt = String(args.releasedAt || new Date().toISOString()).trim();
+    const baseUrl = String(args.baseUrl || defaults.baseUrl).trim();
+    const releasedAt = String(
+        args.releasedAt || new Date().toISOString()
+    ).trim();
 
     resetDir(outputRoot);
 
@@ -302,46 +369,50 @@ function main() {
         apps: {},
     };
 
-    manifest.apps.operator = stageDesktopSurface(
-        'operator',
-        DESKTOP_SURFACES.operator,
-        outputRoot,
-        desktopRoot,
-        channel,
-        version,
-        releasedAt
-    );
-    manifest.apps.kiosk = stageDesktopSurface(
-        'kiosk',
-        DESKTOP_SURFACES.kiosk,
-        outputRoot,
-        desktopRoot,
-        channel,
-        version,
-        releasedAt
-    );
-    manifest.apps.sala_tv = stageTvSurface(
-        outputRoot,
-        tvRoot,
-        channel,
-        version,
-        releasedAt
-    );
+    for (const surface of listTurneroSurfaceDefinitions({
+        family: 'desktop',
+    })) {
+        manifest.apps[surface.id] = stageDesktopSurface(
+            surface,
+            outputRoot,
+            desktopRoot,
+            channel,
+            version,
+            releasedAt
+        );
+    }
+
+    for (const surface of listTurneroSurfaceDefinitions({
+        family: 'android',
+    })) {
+        manifest.apps[surface.id] = stageAndroidSurface(
+            surface,
+            outputRoot,
+            androidRoot,
+            channel,
+            version,
+            releasedAt
+        );
+    }
 
     const manifestPath = path.join(
         outputRoot,
-        'app-downloads',
+        trimBasePath(defaults.downloadBasePath),
         channel,
         'release-manifest.json'
     );
     ensureDir(path.dirname(manifestPath));
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-    const shaRecords = []
-        .concat(manifest.apps.operator.files)
-        .concat(manifest.apps.kiosk.files)
-        .concat(manifest.apps.sala_tv.files);
-    const shaPath = path.join(outputRoot, 'app-downloads', channel, 'SHA256SUMS.txt');
+    const shaRecords = Object.values(manifest.apps).flatMap((surface) =>
+        Array.isArray(surface.files) ? surface.files : []
+    );
+    const shaPath = path.join(
+        outputRoot,
+        trimBasePath(defaults.downloadBasePath),
+        channel,
+        'SHA256SUMS.txt'
+    );
     fs.writeFileSync(shaPath, `${buildShaLines(shaRecords)}\n`);
 
     const summary = {
@@ -354,6 +425,12 @@ function main() {
     };
 
     process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+}
+
+function trimBasePath(value) {
+    return String(value || '')
+        .replace(/^\/+/, '')
+        .replace(/\/+$/, '');
 }
 
 try {

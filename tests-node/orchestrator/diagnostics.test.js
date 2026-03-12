@@ -21,6 +21,33 @@ const POLICY = {
     },
 };
 
+const JOB_POLICY = {
+    enforcement: {
+        warning_policies: {
+            public_main_sync_unconfigured: {
+                enabled: true,
+                severity: 'warning',
+            },
+            public_main_sync_failed: {
+                enabled: true,
+                severity: 'warning',
+            },
+            public_main_sync_stale: {
+                enabled: true,
+                severity: 'warning',
+            },
+            public_main_sync_head_drift: {
+                enabled: true,
+                severity: 'warning',
+            },
+            public_main_sync_telemetry_gap: {
+                enabled: true,
+                severity: 'warning',
+            },
+        },
+    },
+};
+
 const ACTIVE_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
 
 test('diagnostics buildWarnFirstDiagnostics genera warnings policy-driven', () => {
@@ -71,4 +98,77 @@ test('diagnostics attachDiagnostics agrega counts aditivos', () => {
     assert.equal(report.errors_count, 1);
     assert.equal(Array.isArray(report.diagnostics), true);
     assert.equal(report.diagnostics.length, 2);
+});
+
+test('diagnostics no marca public_main_sync como unconfigured cuando no se cargo snapshot', () => {
+    const list = diagnostics.buildWarnFirstDiagnostics({
+        source: 'conflicts',
+        policy: JOB_POLICY,
+    });
+    assert.deepEqual(list, []);
+});
+
+test('diagnostics prioriza failed sobre unconfigured cuando existe snapshot verificado', () => {
+    const list = diagnostics.buildWarnFirstDiagnostics({
+        source: 'codex-check',
+        policy: JOB_POLICY,
+        jobsSnapshot: [
+            {
+                key: 'public_main_sync',
+                configured: true,
+                verified: true,
+                healthy: false,
+                state: 'failed',
+                verification_source: 'health_url',
+                age_seconds: 45,
+                expected_max_lag_seconds: 120,
+            },
+        ],
+    });
+
+    const codes = list.map((item) => item.code).sort();
+    assert.deepEqual(codes, ['warn.jobs.public_main_sync_failed']);
+});
+
+test('diagnostics agrega señales canonicas de head drift y telemetry gap', () => {
+    const list = diagnostics.buildWarnFirstDiagnostics({
+        source: 'status',
+        policy: JOB_POLICY,
+        jobsSnapshot: [
+            {
+                key: 'public_main_sync',
+                configured: true,
+                verified: true,
+                healthy: false,
+                state: 'failed',
+                verification_source: 'health_url',
+                age_seconds: 45,
+                expected_max_lag_seconds: 120,
+                last_error_message: 'working_tree_dirty',
+                failure_reason: 'working_tree_dirty',
+                current_head: 'abc1234',
+                remote_head: 'def5678',
+                head_drift: true,
+                telemetry_gap: true,
+                dirty_paths_count: 0,
+                dirty_paths_sample: [],
+            },
+        ],
+    });
+
+    const codes = list.map((item) => item.code).sort();
+    assert.deepEqual(codes, [
+        'warn.jobs.public_main_sync_failed',
+        'warn.jobs.public_main_sync_head_drift',
+        'warn.jobs.public_main_sync_telemetry_gap',
+    ]);
+    const failed = list.find(
+        (item) => item.code === 'warn.jobs.public_main_sync_failed'
+    );
+    assert.match(failed.message, /reason=working_tree_dirty/);
+    assert.match(failed.message, /head_drift=true/);
+    assert.match(failed.message, /telemetry_gap=true/);
+    assert.equal(failed.meta.failure_reason, 'working_tree_dirty');
+    assert.equal(failed.meta.head_drift, true);
+    assert.equal(failed.meta.telemetry_gap, true);
 });

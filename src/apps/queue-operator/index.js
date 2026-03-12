@@ -1,5 +1,13 @@
-import { getState, subscribe, updateState } from '../admin-v3/shared/core/store.js';
-import { hasFocusedInput, setText, createToast } from '../admin-v3/shared/ui/render.js';
+import {
+    getState,
+    subscribe,
+    updateState,
+} from '../admin-v3/shared/core/store.js';
+import {
+    hasFocusedInput,
+    setText,
+    createToast,
+} from '../admin-v3/shared/ui/render.js';
 import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
 import {
     checkAuthStatus,
@@ -10,7 +18,10 @@ import {
     pollOperatorAuthStatus,
     startOperatorAuth,
 } from '../admin-v3/shared/modules/auth.js';
-import { refreshAdminData, refreshStatusLabel } from '../admin-v3/shared/modules/data.js';
+import {
+    refreshAdminData,
+    refreshStatusLabel,
+} from '../admin-v3/shared/modules/data.js';
 import {
     applyQueueRuntimeDefaults,
     hydrateQueueFromData,
@@ -28,6 +39,13 @@ import {
     dismissQueueSensitiveDialog,
     handleQueueAction,
 } from '../admin-v3/core/boot/listeners/action-groups/queue.js';
+import {
+    eventMatchesBinding,
+    isNumpadAddEvent,
+    isNumpadDecimalEvent,
+    isNumpadEnterEvent,
+    isNumpadSubtractEvent,
+} from '../admin-v3/shared/modules/queue/runtime/numpad/index.js';
 
 const QUEUE_REFRESH_MS = 8000;
 const OPERATOR_HEARTBEAT_MS = 15000;
@@ -35,21 +53,161 @@ const OPERATOR_HEARTBEAT_MS = 15000;
 let refreshIntervalId = 0;
 let operatorHeartbeat = null;
 let operatorAuthPollPromise = null;
+
+function createEmptyShellState() {
+    return {
+        available: false,
+        packaged: false,
+        appMode: 'web',
+        version: '',
+        name: '',
+        platform: '',
+        arch: '',
+        updateChannel: 'stable',
+        configPath: '',
+        updateFeedUrl: '',
+    };
+}
+
+function createEmptyNumpadValidationState() {
+    return {
+        bindingFingerprint: '',
+        validatedActions: {
+            call: false,
+            recall: false,
+            complete: false,
+            noShow: false,
+        },
+        lastAction: '',
+        lastCode: '',
+        lastAt: '',
+    };
+}
 const operatorRuntime = {
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
-    numpadSeen: false,
-    lastNumpadCode: '',
-    lastNumpadAt: '',
+    numpad: createEmptyNumpadValidationState(),
+    shell: createEmptyShellState(),
 };
 
 function getById(id) {
     return document.getElementById(id);
 }
 
-function resolveOperatorAppMode() {
+function escapeHtml(value) {
+    return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function getDesktopBridge() {
     return typeof window.turneroDesktop === 'object' &&
-        window.turneroDesktop !== null &&
-        typeof window.turneroDesktop.openSettings === 'function'
+        window.turneroDesktop !== null
+        ? window.turneroDesktop
+        : null;
+}
+
+function formatShellPlatformLabel(platform) {
+    const normalized = String(platform || '')
+        .trim()
+        .toLowerCase();
+    if (normalized === 'win32') {
+        return 'Windows';
+    }
+    if (normalized === 'darwin') {
+        return 'macOS';
+    }
+    if (normalized === 'linux') {
+        return 'Linux';
+    }
+    return normalized || 'Web';
+}
+
+function getShellModeLabel() {
+    if (!operatorRuntime.shell.available) {
+        return 'Fallback web';
+    }
+
+    return operatorRuntime.shell.packaged
+        ? 'Desktop instalada'
+        : 'Desktop en desarrollo';
+}
+
+function getShellReadiness() {
+    if (!operatorRuntime.shell.available) {
+        return {
+            state: 'warning',
+            detail: 'Fallback web activo · instala el shell para autostart y updates.',
+        };
+    }
+
+    const shellName = String(
+        operatorRuntime.shell.name || 'Turnero Operador'
+    ).trim();
+    const platformLabel = formatShellPlatformLabel(
+        operatorRuntime.shell.platform
+    );
+    const version = operatorRuntime.shell.version
+        ? ` v${operatorRuntime.shell.version}`
+        : '';
+    const updateChannel = String(
+        operatorRuntime.shell.updateChannel || 'stable'
+    ).trim();
+    const channelSuffix = updateChannel ? ` · canal ${updateChannel}` : '';
+    const shellIdentity = `${shellName}${version} · ${platformLabel}${channelSuffix}`;
+
+    if (operatorRuntime.shell.packaged) {
+        return {
+            state: 'ready',
+            detail: `Desktop instalada · ${shellIdentity} · F10 reabre configuracion.`,
+        };
+    }
+
+    return {
+        state: 'warning',
+        detail: `Desktop en desarrollo · ${shellIdentity} · valida el instalador antes del piloto.`,
+    };
+}
+
+async function refreshDesktopSnapshot() {
+    const bridge = getDesktopBridge();
+    if (!bridge || typeof bridge.getRuntimeSnapshot !== 'function') {
+        operatorRuntime.shell = createEmptyShellState();
+        syncShellSettingsButton();
+        return operatorRuntime.shell;
+    }
+
+    try {
+        const snapshot = await bridge.getRuntimeSnapshot();
+        operatorRuntime.shell = {
+            available: true,
+            packaged: Boolean(snapshot?.packaged),
+            appMode: String(
+                snapshot?.appMode ||
+                    (snapshot?.packaged ? 'packaged' : 'development')
+            ),
+            version: String(snapshot?.version || ''),
+            name: String(snapshot?.name || 'Turnero Operador'),
+            platform: String(snapshot?.platform || ''),
+            arch: String(snapshot?.arch || ''),
+            updateChannel: String(snapshot?.config?.updateChannel || 'stable'),
+            configPath: String(snapshot?.configPath || ''),
+            updateFeedUrl: String(snapshot?.updateFeedUrl || ''),
+        };
+    } catch (_error) {
+        operatorRuntime.shell = createEmptyShellState();
+    }
+
+    syncShellSettingsButton();
+    return operatorRuntime.shell;
+}
+
+function resolveOperatorAppMode() {
+    const bridge = getDesktopBridge();
+    return operatorRuntime.shell.available ||
+        (bridge && typeof bridge.openSettings === 'function')
         ? 'desktop'
         : 'web';
 }
@@ -64,11 +222,15 @@ function resolveOperatorInstance() {
 
 function buildOperatorHeartbeatPayload() {
     const state = getState();
-    const stationNumber = Number(state.queue.stationConsultorio || 1) === 2 ? 2 : 1;
+    const stationNumber =
+        Number(state.queue.stationConsultorio || 1) === 2 ? 2 : 1;
     const stationKey = `c${stationNumber}`;
     const locked = state.queue.stationMode === 'locked';
-    const stationLabel = locked ? `Operador C${stationNumber} fijo` : 'Operador modo libre';
-    const readyForLiveUse = operatorRuntime.online && operatorRuntime.numpadSeen;
+    const stationLabel = locked
+        ? `Operador C${stationNumber} fijo`
+        : 'Operador modo libre';
+    const numpadStatus = buildOperatorNumpadStatus(state.queue);
+    const readyForLiveUse = operatorRuntime.online && numpadStatus.ready;
     const status = !operatorRuntime.online
         ? 'alert'
         : readyForLiveUse
@@ -78,7 +240,9 @@ function buildOperatorHeartbeatPayload() {
         ? 'Equipo sin red; recupera conectividad antes de operar.'
         : readyForLiveUse
           ? `Equipo listo para operar en ${locked ? `C${stationNumber} fijo` : 'modo libre'}.`
-          : 'Falta validar el numpad antes del primer llamado.';
+          : `${numpadStatus.label}. Falta validar ${formatOperatorLabelList(
+                numpadStatus.pendingLabels
+            )} antes del primer llamado.`;
 
     return {
         instance: resolveOperatorInstance(),
@@ -87,15 +251,31 @@ function buildOperatorHeartbeatPayload() {
         status,
         summary,
         networkOnline: operatorRuntime.online,
-        lastEvent: operatorRuntime.numpadSeen ? 'numpad_detected' : 'heartbeat',
-        lastEventAt: operatorRuntime.lastNumpadAt || new Date().toISOString(),
+        lastEvent: numpadStatus.seen ? 'numpad_detected' : 'heartbeat',
+        lastEventAt: numpadStatus.lastAt || new Date().toISOString(),
         details: {
             station: stationKey,
             stationMode: locked ? 'locked' : 'free',
             oneTap: Boolean(state.queue.oneTap),
-            numpadSeen: Boolean(operatorRuntime.numpadSeen),
-            lastNumpadCode: String(operatorRuntime.lastNumpadCode || ''),
+            callKeyLabel: numpadStatus.callKeyLabel,
+            numpadSeen: Boolean(numpadStatus.seen),
+            numpadReady: Boolean(numpadStatus.ready),
+            numpadProgress: numpadStatus.validatedCount,
+            numpadRequired: numpadStatus.requiredCount,
+            numpadLabel: numpadStatus.label,
+            numpadSummary: numpadStatus.summary,
+            lastNumpadCode: String(numpadStatus.lastCode || ''),
             shellMode: resolveOperatorAppMode(),
+            shellName: String(operatorRuntime.shell.name || ''),
+            shellVersion: String(operatorRuntime.shell.version || ''),
+            shellPlatform: String(operatorRuntime.shell.platform || ''),
+            shellPackaged: Boolean(operatorRuntime.shell.packaged),
+            shellUpdateChannel: String(
+                operatorRuntime.shell.updateChannel || ''
+            ),
+            shellUpdateFeedUrl: String(
+                operatorRuntime.shell.updateFeedUrl || ''
+            ),
         },
     };
 }
@@ -417,8 +597,144 @@ function humanizeCallKeyLabel(value) {
     }
     return raw
         .replace(/^NumpadEnter$/i, 'Numpad Enter')
+        .replace(/^NumpadAdd$/i, 'Numpad Add')
         .replace(/^NumpadDecimal$/i, 'Numpad Decimal')
         .replace(/^NumpadSubtract$/i, 'Numpad Subtract');
+}
+
+function formatOperatorLabelList(labels) {
+    if (!Array.isArray(labels) || labels.length === 0) {
+        return '';
+    }
+
+    if (labels.length === 1) {
+        return labels[0];
+    }
+
+    if (labels.length === 2) {
+        return `${labels[0]} y ${labels[1]}`;
+    }
+
+    return `${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]}`;
+}
+
+function getOperatorCallKeyBinding(queueState = getState().queue) {
+    const customBinding =
+        queueState?.customCallKey &&
+        typeof queueState.customCallKey === 'object'
+            ? queueState.customCallKey
+            : null;
+
+    return {
+        binding: customBinding,
+        fingerprint: customBinding
+            ? `${String(customBinding.code || '')}|${String(customBinding.key || '')}|${Number(customBinding.location || 0)}`
+            : 'default:numpadenter',
+        label: humanizeCallKeyLabel(
+            customBinding
+                ? customBinding.code || customBinding.key || 'tecla externa'
+                : 'NumpadEnter'
+        ),
+    };
+}
+
+function syncOperatorNumpadBinding(queueState = getState().queue) {
+    const binding = getOperatorCallKeyBinding(queueState);
+    if (operatorRuntime.numpad.bindingFingerprint === binding.fingerprint) {
+        return binding;
+    }
+
+    operatorRuntime.numpad.bindingFingerprint = binding.fingerprint;
+    operatorRuntime.numpad.validatedActions.call = false;
+
+    if (!Object.values(operatorRuntime.numpad.validatedActions).some(Boolean)) {
+        operatorRuntime.numpad.lastAction = '';
+        operatorRuntime.numpad.lastCode = '';
+        operatorRuntime.numpad.lastAt = '';
+    }
+
+    return binding;
+}
+
+function buildOperatorNumpadStatus(queueState = getState().queue) {
+    const callKeyBinding = syncOperatorNumpadBinding(queueState);
+    const checks = [
+        {
+            id: 'call',
+            label: callKeyBinding.label,
+            validated: Boolean(operatorRuntime.numpad.validatedActions.call),
+        },
+        {
+            id: 'recall',
+            label: '+',
+            validated: Boolean(operatorRuntime.numpad.validatedActions.recall),
+        },
+        {
+            id: 'complete',
+            label: '.',
+            validated: Boolean(
+                operatorRuntime.numpad.validatedActions.complete
+            ),
+        },
+        {
+            id: 'noShow',
+            label: '-',
+            validated: Boolean(operatorRuntime.numpad.validatedActions.noShow),
+        },
+    ];
+    const validatedCount = checks.filter((check) => check.validated).length;
+    const requiredCount = checks.length;
+    const ready = validatedCount === requiredCount;
+    const pendingLabels = checks
+        .filter((check) => !check.validated)
+        .map((check) => check.label);
+    const label = ready
+        ? 'Numpad listo'
+        : `Numpad ${validatedCount}/${requiredCount}`;
+    const summary = ready
+        ? `${label} · ${checks.map((check) => check.label).join(', ')}`
+        : `${label} · faltan ${formatOperatorLabelList(pendingLabels)}`;
+
+    return {
+        callKeyLabel: callKeyBinding.label,
+        ready,
+        seen: validatedCount > 0,
+        validatedCount,
+        requiredCount,
+        pendingLabels,
+        label,
+        summary,
+        headline: `${validatedCount}/${requiredCount} teclas operativas listas`,
+        checks,
+        lastAction: operatorRuntime.numpad.lastAction,
+        lastCode: operatorRuntime.numpad.lastCode,
+        lastAt: operatorRuntime.numpad.lastAt,
+    };
+}
+
+function renderOperatorNumpadMatrix(queueState = getState().queue) {
+    const root = getById('operatorNumpadMatrix');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const status = buildOperatorNumpadStatus(queueState);
+    root.innerHTML = status.checks
+        .map(
+            (check) => `
+                <span
+                    id="operatorNumpadCheck_${escapeHtml(check.id)}"
+                    class="queue-operator-numpad-chip"
+                    data-state="${check.validated ? 'ready' : 'warning'}"
+                >
+                    <span class="queue-operator-numpad-chip__label">${escapeHtml(
+                        check.label
+                    )}</span>
+                    <strong class="queue-operator-numpad-chip__state">${check.validated ? 'OK' : 'Pendiente'}</strong>
+                </span>
+            `
+        )
+        .join('');
 }
 
 function setReadinessCheck(id, state, detail) {
@@ -436,6 +752,7 @@ function setReadinessCheck(id, state, detail) {
 
 function updateOperatorReadiness() {
     const state = getState();
+    const numpadStatus = buildOperatorNumpadStatus(state.queue);
     const stationLabel = `C${Number(state.queue.stationConsultorio || 1)} ${
         state.queue.stationMode === 'locked' ? 'fijo' : 'libre'
     }`;
@@ -445,15 +762,7 @@ function updateOperatorReadiness() {
     const networkSummary = operatorRuntime.online
         ? 'Sesión activa y red en línea'
         : 'Equipo sin red; no conviene operar así';
-    const shellSummary =
-        typeof window.turneroDesktop === 'object' &&
-        window.turneroDesktop !== null &&
-        typeof window.turneroDesktop.openSettings === 'function'
-            ? 'App desktop instalada'
-            : 'Fallback web activo';
-    const numpadSummary = operatorRuntime.numpadSeen
-        ? `Detectado ${humanizeCallKeyLabel(operatorRuntime.lastNumpadCode)}`
-        : 'Presiona una tecla del bloque numérico';
+    const shellSummary = getShellReadiness();
 
     setReadinessCheck('operatorReadyRoute', 'ready', routeSummary);
     setReadinessCheck(
@@ -463,64 +772,91 @@ function updateOperatorReadiness() {
     );
     setReadinessCheck(
         'operatorReadyShell',
-        typeof window.turneroDesktop === 'object' &&
-            window.turneroDesktop !== null &&
-            typeof window.turneroDesktop.openSettings === 'function'
-            ? 'ready'
-            : 'warning',
-        shellSummary
+        shellSummary.state,
+        shellSummary.detail
     );
     setReadinessCheck(
         'operatorReadyNumpad',
-        operatorRuntime.numpadSeen ? 'ready' : 'warning',
-        numpadSummary
+        numpadStatus.ready ? 'ready' : 'warning',
+        numpadStatus.headline
     );
+    renderOperatorNumpadMatrix(state.queue);
 
     const readinessTitle = getById('operatorReadinessTitle');
     const readinessSummary = getById('operatorReadinessSummary');
     const hasDanger = !operatorRuntime.online;
-    const readyForLiveUse = operatorRuntime.online && operatorRuntime.numpadSeen;
+    const readyForLiveUse = operatorRuntime.online && numpadStatus.ready;
+    const pendingCount = numpadStatus.pendingLabels.length;
 
     if (readinessTitle) {
         readinessTitle.textContent = hasDanger
             ? 'Conexión pendiente'
             : readyForLiveUse
               ? 'Equipo listo para operar'
-              : 'Falta probar el numpad';
+              : pendingCount === numpadStatus.requiredCount
+                ? 'Falta validar el numpad'
+                : `Faltan validar ${pendingCount} tecla(s)`;
     }
 
     if (readinessSummary) {
         readinessSummary.textContent = hasDanger
             ? 'Recupera la conexión antes de llamar o completar tickets.'
             : readyForLiveUse
-              ? 'La ruta, la sesión y el numpad ya respondieron. Puedes pasar al primer llamado real.'
-              : 'Presiona una tecla del Genius Numpad 1000 para validar el receptor USB antes del primer llamado real.';
+              ? 'La ruta, la sesión y las cuatro teclas operativas ya respondieron. Puedes pasar al primer llamado real.'
+              : `Valida ${formatOperatorLabelList(
+                    numpadStatus.pendingLabels
+                )} en el Genius Numpad 1000 antes del primer llamado real.`;
     }
 }
 
 function noteNumpadActivity(event) {
+    const state = getState();
+    const callKeyBinding = syncOperatorNumpadBinding(state.queue);
     const code = String(event?.code || '').trim();
-    if (!code.startsWith('Numpad')) {
+    const key = String(event?.key || '').trim();
+    const codeNormalized = code.toLowerCase();
+    const keyNormalized = key.toLowerCase();
+
+    let action = '';
+    if (
+        callKeyBinding.binding
+            ? eventMatchesBinding(event, callKeyBinding.binding)
+            : isNumpadEnterEvent(event, codeNormalized, keyNormalized)
+    ) {
+        operatorRuntime.numpad.validatedActions.call = true;
+        action = 'call';
+    } else if (isNumpadAddEvent(codeNormalized, keyNormalized)) {
+        operatorRuntime.numpad.validatedActions.recall = true;
+        action = 'recall';
+    } else if (isNumpadDecimalEvent(codeNormalized, keyNormalized)) {
+        operatorRuntime.numpad.validatedActions.complete = true;
+        action = 'complete';
+    } else if (isNumpadSubtractEvent(codeNormalized, keyNormalized)) {
+        operatorRuntime.numpad.validatedActions.noShow = true;
+        action = 'noShow';
+    }
+
+    if (!action) {
         return;
     }
 
-    operatorRuntime.numpadSeen = true;
-    operatorRuntime.lastNumpadCode = code;
-    operatorRuntime.lastNumpadAt = new Date().toISOString();
+    operatorRuntime.numpad.lastAction = action;
+    operatorRuntime.numpad.lastCode = code || key || action;
+    operatorRuntime.numpad.lastAt = new Date().toISOString();
     syncOperatorHeartbeat('numpad');
 }
 
 function updateOperatorActionGuide() {
     const state = getState();
+    const numpadStatus = buildOperatorNumpadStatus(state.queue);
     const activeTicket = getActiveCalledTicketForStation();
     const waitingTicket = getWaitingForConsultorio(
         Number(state.queue.stationConsultorio || 1)
     );
     const pendingAction = state.queue.pendingSensitiveAction;
 
-    let title = 'Listo para llamar';
-    let summary =
-        'Pulsa Numpad Enter para llamar el siguiente ticket del consultorio activo.';
+    let title;
+    let summary;
 
     if (pendingAction && pendingAction.action) {
         const actionLabel =
@@ -538,7 +874,7 @@ function updateOperatorActionGuide() {
             'Usa + para re-llamar, . para preparar completar y - para preparar no show.';
     } else if (waitingTicket && waitingTicket.ticketCode) {
         title = `Siguiente: ${waitingTicket.ticketCode}`;
-        summary = `Pulsa Numpad Enter para llamar ${waitingTicket.ticketCode} en C${Number(
+        summary = `Pulsa ${numpadStatus.callKeyLabel} para llamar ${waitingTicket.ticketCode} en C${Number(
             state.queue.stationConsultorio || 1
         )}.`;
     } else {
@@ -557,12 +893,26 @@ function syncShellSettingsButton() {
         return;
     }
 
-    const canOpenSettings =
-        typeof window.turneroDesktop === 'object' &&
-        window.turneroDesktop !== null &&
-        typeof window.turneroDesktop.openSettings === 'function';
+    const bridge = getDesktopBridge();
+    const canOpenSettings = bridge && typeof bridge.openSettings === 'function';
 
     button.classList.toggle('is-hidden', !canOpenSettings);
+    if (canOpenSettings) {
+        const shellName = String(
+            operatorRuntime.shell.name || 'Turnero Desktop'
+        ).trim();
+        const platformLabel = formatShellPlatformLabel(
+            operatorRuntime.shell.platform
+        );
+        button.textContent =
+            operatorRuntime.shell.packaged &&
+            operatorRuntime.shell.platform === 'win32'
+                ? 'Configurar Windows app (F10)'
+                : 'Configurar app (F10)';
+        button.title = operatorRuntime.shell.available
+            ? `Reabre la configuracion local de ${shellName} (${platformLabel}).`
+            : 'Reabre la configuracion local del shell desktop.';
+    }
 }
 
 function updateOperatorChrome() {
@@ -572,11 +922,19 @@ function updateOperatorChrome() {
     }`;
     const oneTapLabel = state.queue.oneTap ? '1 tecla ON' : '1 tecla OFF';
     const callKey = state.queue.customCallKey
-        ? String(state.queue.customCallKey.code || state.queue.customCallKey.key || 'tecla externa')
+        ? String(
+              state.queue.customCallKey.code ||
+                  state.queue.customCallKey.key ||
+                  'tecla externa'
+          )
         : 'Numpad Enter';
+    const shellModeLabel = getShellModeLabel();
 
     setText('#operatorStationSummary', stationLabel);
-    setText('#operatorOneTapSummary', `${oneTapLabel} · ${refreshStatusLabel()}`);
+    setText(
+        '#operatorOneTapSummary',
+        `${oneTapLabel} · ${refreshStatusLabel()} · ${shellModeLabel}`
+    );
     setText('#operatorCallKeySummary', humanizeCallKeyLabel(callKey));
     renderQueueSection();
     updateOperatorActionGuide();
@@ -612,11 +970,15 @@ async function bootAuthenticatedSurface(showToast = false) {
     mountAuthenticatedView();
     const ok = await refreshAdminData();
     await hydrateQueueFromData();
+    await refreshDesktopSnapshot();
     ensureOperatorHeartbeat().start({ immediate: false });
     updateOperatorChrome();
     startRefreshLoop();
     if (showToast) {
-        createToast(ok ? 'Operador conectado' : 'Operador cargado con respaldo local', ok ? 'success' : 'warning');
+        createToast(
+            ok ? 'Operador conectado' : 'Operador cargado con respaldo local',
+            ok ? 'success' : 'warning'
+        );
     }
 }
 
@@ -735,7 +1097,9 @@ async function handleLoginSubmit(event) {
         setSubmitting(true);
         setLoginStatus(
             state.auth.requires2FA ? 'warning' : 'neutral',
-            state.auth.requires2FA ? 'Validando segundo factor' : 'Validando credenciales',
+            state.auth.requires2FA
+                ? 'Validando segundo factor'
+                : 'Validando credenciales',
             state.auth.requires2FA
                 ? 'Comprobando el código 2FA antes de abrir la consola operativa.'
                 : 'Comprobando tu sesión de operador.'
@@ -826,12 +1190,9 @@ async function handleDocumentClick(event) {
 
     if (actionNode.id === 'operatorAppSettingsBtn') {
         event.preventDefault();
-        if (
-            typeof window.turneroDesktop === 'object' &&
-            window.turneroDesktop !== null &&
-            typeof window.turneroDesktop.openSettings === 'function'
-        ) {
-            await window.turneroDesktop.openSettings();
+        const bridge = getDesktopBridge();
+        if (bridge && typeof bridge.openSettings === 'function') {
+            await bridge.openSettings();
         }
         return;
     }
@@ -913,20 +1274,29 @@ function attachKeyboardBridge() {
             return;
         }
 
-        noteNumpadActivity(event);
-        await queueNumpadAction({
-            key: event.key,
-            code: event.code,
-            location: event.location,
-        });
-        updateOperatorChrome();
+        try {
+            await queueNumpadAction({
+                key: event.key,
+                code: event.code,
+                location: event.location,
+            });
+        } finally {
+            noteNumpadActivity(event);
+            updateOperatorChrome();
+        }
     });
 }
 
 function attachVisibilityRefresh() {
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && getState().auth.authenticated) {
-            void refreshQueueState().then(() => updateOperatorChrome());
+        if (
+            document.visibilityState === 'visible' &&
+            getState().auth.authenticated
+        ) {
+            void Promise.all([
+                refreshQueueState(),
+                refreshDesktopSnapshot(),
+            ]).then(() => updateOperatorChrome());
         }
     });
 
@@ -947,7 +1317,7 @@ function attachVisibilityRefresh() {
 
 async function boot() {
     applyQueueRuntimeDefaults();
-    syncShellSettingsButton();
+    await refreshDesktopSnapshot();
     subscribe(() => {
         if (getState().auth.authenticated) {
             updateOperatorChrome();
@@ -961,6 +1331,17 @@ async function boot() {
     document.addEventListener('input', handleDocumentInput);
     attachKeyboardBridge();
     attachVisibilityRefresh();
+
+    const desktopBridge = getDesktopBridge();
+    if (desktopBridge && typeof desktopBridge.onBootStatus === 'function') {
+        desktopBridge.onBootStatus(() => {
+            void refreshDesktopSnapshot().then(() => {
+                if (getState().auth.authenticated) {
+                    updateOperatorChrome();
+                }
+            });
+        });
+    }
 
     const loginForm = getById('operatorLoginForm');
     if (loginForm instanceof HTMLFormElement) {

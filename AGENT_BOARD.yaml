@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 494
+  revision: 560
   updated_at: 2026-03-12
 
 tasks:
@@ -7121,7 +7121,7 @@ tasks:
     owner: ernes
     executor: codex
     status: done
-    status_since_at: "2026-03-11T18:19:46.284Z"
+    status_since_at: "2026-03-11T06:23:54.034Z"
     risk: high
     scope: auth
     codex_instance: codex_backend_ops
@@ -7142,7 +7142,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-03-11T18:19:46.284Z"
+    lease_cleared_at: "2026-03-11T06:23:54.034Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -7155,56 +7155,18 @@ tasks:
     updated_at: 2026-03-11
 
   - id: AG-184
-    title: "WhatsApp OpenClaw full-auto backend"
-    owner: ernes
+    title: "Humanize shared public V6 editorial language across home hub service and telemedicine"
+    owner: Ernesto
     executor: codex
-    status: in_progress
-    status_since_at: "2026-03-11T18:19:54.741Z"
-    risk: high
-    scope: calendar
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
-    lane_lock: strict
-    cross_domain: false
-    files: ["api.php", "controllers/HealthController.php", "controllers/PaymentController.php", "controllers/AppointmentController.php", "lib/routes.php", "lib/ApiConfig.php", "lib/BookingService.php", "lib/LeadOpsService.php", "env.example.php", "tests/Integration/LeadOpsEndpointsTest.php"]
-    source_signal: manual
-    source_ref: ""
-    priority_score: 0
-    sla_due_at: ""
-    last_attempt_at: ""
-    attempts: 0
-    blocked_reason: ""
-    lease_id: "lease_AG-184_20260311181954741_09b1f2"
-    lease_owner: "ernes"
-    lease_created_at: "2026-03-11T18:19:54.741Z"
-    heartbeat_at: "2026-03-11T18:19:54.741Z"
-    lease_expires_at: "2026-03-11T22:19:54.741Z"
-    lease_reason: "board_write"
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
-    runtime_impact: low
-    critical_zone: false
-    acceptance: "WhatsApp OpenClaw full-auto backend"
-    acceptance_ref: ""
-    evidence_ref: ""
-    depends_on: []
-    prompt: "WhatsApp OpenClaw full-auto backend"
-    created_at: 2026-03-11
-    updated_at: 2026-03-11
-
-  - id: AG-185
-    title: "WhatsApp OpenClaw admin ops surface"
-    owner: ernes
-    executor: codex
-    status: in_progress
-    status_since_at: "2026-03-12T04:18:05.344Z"
-    risk: medium
-    scope: frontend-admin
+    status: done
+    status_since_at: "2026-03-11T06:34:06.505Z"
+    risk: low
+    scope: frontend
     codex_instance: codex_frontend
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
-    files: ["src/apps/admin-v3/sections/dashboard/render/index.js", "src/apps/admin-v3/sections/dashboard/render/overview.js", "src/apps/admin-v3/sections/dashboard/markup/actions.js", "src/apps/admin-v3/ui/frame/templates/sections/dashboard/overview.js", "src/apps/admin-v3/ui/frame/templates/sections/dashboard/signal.js", "src/apps/admin-v3/shared/modules/auth.js", "src/apps/admin-v3/shared/modules/data/remote.js"]
+    files: ["content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/hub.json", "content/public-v6/en/hub.json", "content/public-v6/es/service.json", "content/public-v6/en/service.json", "content/public-v6/es/telemedicine.json", "content/public-v6/en/telemedicine.json"]
     source_signal: manual
     source_ref: ""
     priority_score: 0
@@ -7212,134 +7174,894 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: "lease_AG-185_20260312041805344_c05b5d"
-    lease_owner: "ernes"
-    lease_created_at: "2026-03-12T04:18:05.344Z"
-    heartbeat_at: "2026-03-12T04:18:05.344Z"
-    lease_expires_at: "2026-03-12T08:18:05.344Z"
-    lease_reason: "board_write"
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T06:34:06.505Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Humanize shared public V6 editorial language across home hub service and telemedicine"
+    acceptance_ref: "verification/agent-runs/AG-184.md"
+    evidence_ref: "verification/agent-runs/AG-184.md"
+    depends_on: []
+    prompt: "Humanize shared public V6 editorial language across home hub service and telemedicine"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-185
+    title: "Refine public V6 mobile shell interaction and navigation copy"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T06:51:16.225Z"
+    risk: low
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "js/public-v6-shell.js", "src/apps/astro/src/styles/public-v6/layout.css"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T06:51:16.225Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Refine public V6 mobile shell interaction and navigation copy"
+    acceptance_ref: "verification/agent-runs/AG-185.md"
+    evidence_ref: "verification/agent-runs/AG-185.md"
+    depends_on: []
+    prompt: "Refine public V6 mobile shell interaction and navigation copy"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-186
+    title: "Refine public V6 telemedicine editorial copy"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T07:04:58.070Z"
+    risk: low
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["content/public-v6/es/telemedicine.json", "content/public-v6/en/telemedicine.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T07:04:58.070Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Refine public V6 telemedicine editorial copy"
+    acceptance_ref: "verification/agent-runs/AG-186.md"
+    evidence_ref: "verification/agent-runs/AG-186.md"
+    depends_on: []
+    prompt: "Refine public V6 telemedicine editorial copy"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-187
+    title: "Refine public V6 service detail editorial copy"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T07:15:29.349Z"
+    risk: low
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["content/public-v6/es/service.json", "content/public-v6/en/service.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T07:15:29.349Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Refine public V6 service detail editorial copy"
+    acceptance_ref: "verification/agent-runs/AG-187.md"
+    evidence_ref: "verification/agent-runs/AG-187.md"
+    depends_on: []
+    prompt: "Refine public V6 service detail editorial copy"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-188
+    title: "Refine public V6 home and hub microcopy"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T07:25:03.097Z"
+    risk: low
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/hub.json", "content/public-v6/en/hub.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T07:25:03.097Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Refine public V6 home and hub microcopy"
+    acceptance_ref: "verification/agent-runs/AG-188.md"
+    evidence_ref: "verification/agent-runs/AG-188.md"
+    depends_on: []
+    prompt: "Refine public V6 home and hub microcopy"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-189
+    title: "Polish public V6 mobile shell interactions"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T07:33:55.339Z"
+    risk: low
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "src/apps/astro/src/styles/public-v6/layout.css"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T07:33:55.339Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Polish public V6 mobile shell interactions"
+    acceptance_ref: "verification/agent-runs/AG-189.md"
+    evidence_ref: "verification/agent-runs/AG-189.md"
+    depends_on: []
+    prompt: "Polish public V6 mobile shell interactions"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-190
+    title: "Turnero release ops stabilization"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T17:53:10.256Z"
+    risk: medium
+    scope: ops
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tests/queue-display.spec.js", "docs/RUNBOOK_TURNERO_APPS_RELEASE.md", "docs/TURNERO_NATIVE_SURFACES.md", "verification/agent-runs/AG-190.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T17:53:10.256Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero release ops stabilization"
+    acceptance_ref: "verification/agent-runs/AG-190.md"
+    evidence_ref: "verification/agent-runs/AG-190.md"
+    depends_on: []
+    prompt: "Turnero release ops stabilization"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-191
+    title: "Turnero native readme portability"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T17:53:05.419Z"
+    risk: low
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/turnero-desktop/README.md", "src/apps/turnero-sala-tv-android/README.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T17:53:05.419Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero native readme portability"
+    acceptance_ref: "verification/agent-runs/AG-191.md"
+    evidence_ref: "verification/agent-runs/AG-191.md"
+    depends_on: []
+    prompt: "Turnero native readme portability"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-192
+    title: "Turnero phase 3: frontend surfaces consolidation"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T18:08:43.023Z"
+    risk: medium
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/shared/modules/queue/render/section/install-hub.js", "src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T18:08:43.023Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero phase 3: frontend surfaces consolidation"
+    acceptance_ref: "verification/agent-runs/AG-192.md"
+    evidence_ref: "verification/agent-runs/AG-192.md"
+    depends_on: []
+    prompt: "Turnero phase 3: frontend surfaces consolidation"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-193
+    title: "Turnero phase 3: distribution backend consolidation"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T18:08:52.180Z"
+    risk: medium
+    scope: ops
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["app-downloads/app-downloads.js", "app-downloads/index.php", "controllers/AdminDataController.php", "lib/AppDownloadsCatalog.php"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T18:08:52.180Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero phase 3: distribution backend consolidation"
+    acceptance_ref: "verification/agent-runs/AG-193.md"
+    evidence_ref: "verification/agent-runs/AG-193.md"
+    depends_on: []
+    prompt: "Turnero phase 3: distribution backend consolidation"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-194
+    title: "Turnero phase 3: catalog content consolidation"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T18:09:01.612Z"
+    risk: low
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["content/app-downloads/catalog.php"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T18:09:01.612Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero phase 3: catalog content consolidation"
+    acceptance_ref: "verification/agent-runs/AG-194.md"
+    evidence_ref: "verification/agent-runs/AG-194.md"
+    depends_on: []
+    prompt: "Turnero phase 3: catalog content consolidation"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-195
+    title: "Public main sync canonical deploy stabilization"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T18:41:26.557Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["bin/deploy-public-v3-live.sh", "bin/deploy-public-v3-cron-sync.sh", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "docs/DEPLOYMENT.md", "tests-node/deploy-public-v3-live-script.test.js", "tests-node/deploy-public-v3-cron-sync-script.test.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T18:41:26.557Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Public main sync canonical deploy stabilization"
+    acceptance_ref: "verification/agent-runs/AG-195.md"
+    evidence_ref: "verification/agent-runs/AG-195.md"
+    depends_on: []
+    prompt: "Public main sync canonical deploy stabilization"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-196
+    title: "Public main sync diagnostics accuracy"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T18:57:21.549Z"
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["tools/agent-orchestrator/commands/runtime-governance.js", "tools/agent-orchestrator/commands/conflicts.js", "tools/agent-orchestrator/commands/codex.js", "tools/agent-orchestrator/domain/diagnostics.js", "tests-node/orchestrator/diagnostics.test.js", "tests-node/agent-orchestrator-cli.test.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T18:57:21.549Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Public main sync diagnostics accuracy"
+    acceptance_ref: "verification/agent-runs/AG-196.md"
+    evidence_ref: "verification/agent-runs/AG-196.md"
+    depends_on: []
+    prompt: "Public main sync diagnostics accuracy"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-197
+    title: "Turnero PHP contract runner repair"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T19:04:55.923Z"
+    risk: medium
+    scope: tooling
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["bin/run-phpunit.js", "package.json", "tests-node/run-phpunit-wrapper.test.js", "docs/RUNBOOK_TURNERO_APPS_RELEASE.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T19:04:55.923Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero PHP contract runner repair"
+    acceptance_ref: "verification/agent-runs/AG-197.md"
+    evidence_ref: "verification/agent-runs/AG-197.md"
+    depends_on: []
+    prompt: "Turnero PHP contract runner repair"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-198
+    title: "Public main sync dirty-tree self-heal hardening"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T19:13:39.267Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["bin/deploy-public-v3-cron-sync.sh", "bin/deploy-public-v3-live.sh", "tests-node/deploy-public-v3-cron-sync-script.test.js", "tests-node/deploy-public-v3-live-script.test.js", "verification/agent-runs/AG-198.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T19:13:39.267Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Public main sync dirty-tree self-heal hardening"
+    acceptance_ref: "verification/agent-runs/AG-198.md"
+    evidence_ref: "verification/agent-runs/AG-198.md"
+    depends_on: []
+    prompt: "Public main sync dirty-tree self-heal hardening"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-199
+    title: "Turnero Operador Windows v1 hardening"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T19:20:16.969Z"
+    risk: medium
+    scope: frontend
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/turnero-desktop/src/main.mjs", "src/apps/turnero-desktop/src/preload.cjs", "src/apps/turnero-desktop/src/renderer/boot.js", "src/apps/turnero-desktop/README.md", "src/apps/queue-operator/index.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T19:20:16.969Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero Operador Windows v1 hardening"
+    acceptance_ref: "verification/agent-runs/AG-199.md"
+    evidence_ref: "verification/agent-runs/AG-199.md"
+    depends_on: []
+    prompt: "Turnero Operador Windows v1 hardening"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-200
+    title: "Turnero install hub and software suite UX stabilization"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T23:45:31.083Z"
+    risk: medium
+    scope: src
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/shared/modules/queue/render/section/install-hub.js", "src/apps/admin-v3/shared/modules/queue/render/section/install-hub/index.js", "src/apps/admin-v3/shared/modules/queue/render/section/install-hub/constants.js", "src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/lib/public-v6.js", "content/public-v6/es/software.json", "content/public-v6/en/software.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T23:45:31.083Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero install hub and software suite UX stabilization"
+    acceptance_ref: "verification/agent-runs/AG-200.md"
+    evidence_ref: "verification/agent-runs/AG-200.md"
+    depends_on: ["AG-192", "AG-194"]
+    prompt: "Turnero install hub and software suite UX stabilization"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-201
+    title: "Public main sync telemetry propagation"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T23:47:47.435Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["lib/public_sync.php", "tools/agent-orchestrator/domain/jobs.js", "tests-node/orchestrator/jobs-engine.test.js", "tests-node/agent-jobs-cli.test.js", "docs/AGENT_ORCHESTRATION_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T23:47:47.435Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Public main sync telemetry propagation"
+    acceptance_ref: "verification/agent-runs/AG-201.md"
+    evidence_ref: "verification/agent-runs/AG-201.md"
+    depends_on: []
+    prompt: "Public main sync telemetry propagation"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-202
+    title: "Turnero native release toolchain hardening"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-11T23:50:54.538Z"
+    risk: high
+    scope: .github
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/release-turnero-apps.yml", "bin/stage-turnero-app-release.js", "bin/resolve-turnero-release-plan.js", "bin/scaffold-turnero-surface.js", "lib/turnero-surface-registry.js", "lib/TurneroSurfaceRegistry.php", "tests-node/turnero-surface-registry.test.js", "tests-node/resolve-turnero-release-plan.test.js", "tests-node/scaffold-turnero-surface-script.test.js", "tests-node/stage-turnero-app-release-script.test.js", "tests-node/release-turnero-apps-workflow-contract.test.js", "docs/TURNERO_NATIVE_SURFACES.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-11T23:50:54.538Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Turnero native release toolchain hardening"
+    acceptance_ref: "verification/agent-runs/AG-202.md"
+    evidence_ref: "verification/agent-runs/AG-202.md"
+    depends_on: ["AG-190", "AG-193", "AG-201"]
+    prompt: "Turnero native release toolchain hardening"
+    created_at: 2026-03-11
+    updated_at: 2026-03-11
+
+  - id: AG-203
+    title: "Prod ops public sync telemetry adoption"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T00:07:52.234Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["scripts/ops/prod/REPORTE-SEMANAL-PRODUCCION.ps1", "scripts/ops/prod/SMOKE-PRODUCCION.ps1", "scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1", "bin/powershell/Common.Warnings.ps1", "tests-node/weekly-report-script-contract.test.js", "tests-node/prod-ops-public-sync-contract.test.js", "scripts/ops/prod/README.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T00:07:52.234Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Prod ops public sync telemetry adoption"
+    acceptance_ref: "verification/agent-runs/AG-203.md"
+    evidence_ref: "verification/agent-runs/AG-203.md"
+    depends_on: []
+    prompt: "Prod ops public sync telemetry adoption"
+    created_at: 2026-03-11
+    updated_at: 2026-03-12
+
+  - id: AG-204
+    title: "Public main sync canonical head-drift diagnostics"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T00:19:59.206Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["lib/public_sync.php", "tools/agent-orchestrator/domain/jobs.js", "tools/agent-orchestrator/domain/diagnostics.js", "agent-orchestrator.js", "tests-node/orchestrator/jobs-engine.test.js", "tests-node/agent-jobs-cli.test.js", "tests-node/orchestrator/diagnostics.test.js", "tests-node/agent-orchestrator-cli.test.js", "docs/AGENT_ORCHESTRATION_RUNBOOK.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T00:19:59.206Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Public main sync canonical head-drift diagnostics"
+    acceptance_ref: "verification/agent-runs/AG-204.md"
+    evidence_ref: "verification/agent-runs/AG-204.md"
+    depends_on: []
+    prompt: "Public main sync canonical head-drift diagnostics"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-205
+    title: "Prod monitor public sync incident triage"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T00:33:45.377Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["scripts/ops/prod/MONITOR-PRODUCCION.ps1", "scripts/ops/prod/README.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "tests-node/prod-monitor-public-sync-contract.test.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T00:33:45.377Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Prod monitor public sync incident triage"
+    acceptance_ref: "verification/agent-runs/AG-205.md"
+    evidence_ref: "verification/agent-runs/AG-205.md"
+    depends_on: []
+    prompt: "Prod monitor public sync incident triage"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-206
+    title: "Agent gate covers prod public sync ops contracts"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T01:13:02.790Z"
+    risk: medium
+    scope: tooling
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["package.json", "verification/agent-runs/AG-206.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T01:13:02.790Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Agent gate covers prod public sync ops contracts"
+    acceptance_ref: "verification/agent-runs/AG-206.md"
+    evidence_ref: "verification/agent-runs/AG-206.md"
+    depends_on: []
+    prompt: "Agent gate covers prod public sync ops contracts"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-207
+    title: "Repair host git sync rollout and verify public_main_sync"
+    owner: Ernesto
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-12T04:31:03.271Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/repair-git-sync.yml", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-207_20260312043103271_594254"
+    lease_owner: "Ernesto"
+    lease_created_at: "2026-03-12T04:31:03.271Z"
+    heartbeat_at: "2026-03-12T04:33:05.530Z"
+    lease_expires_at: "2026-03-12T08:33:05.530Z"
+    lease_reason: "leases_heartbeat"
     lease_cleared_at: ""
     lease_cleared_reason: ""
     runtime_impact: low
     critical_zone: false
-    acceptance: "WhatsApp OpenClaw admin ops surface"
+    acceptance: "Repair host git sync rollout and verify public_main_sync"
     acceptance_ref: ""
     evidence_ref: ""
-    depends_on: ["AG-184"]
-    prompt: "WhatsApp OpenClaw admin ops surface"
-    created_at: 2026-03-12
-    updated_at: 2026-03-12
-
-  - id: AG-186
-    title: "WhatsApp OpenClaw admin ops QA coverage"
-    owner: ernes
-    executor: codex
-    status: done
-    status_since_at: "2026-03-12T05:01:03.991Z"
-    risk: medium
-    scope: frontend-qa
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
-    lane_lock: strict
-    cross_domain: false
-    files: ["tests/admin.spec.js"]
-    source_signal: manual
-    source_ref: ""
-    priority_score: 0
-    sla_due_at: ""
-    last_attempt_at: ""
-    attempts: 0
-    blocked_reason: ""
-    lease_id: ""
-    lease_owner: ""
-    lease_created_at: ""
-    heartbeat_at: ""
-    lease_expires_at: ""
-    lease_reason: ""
-    lease_cleared_at: "2026-03-12T05:01:03.991Z"
-    lease_cleared_reason: "terminal:done"
-    runtime_impact: low
-    critical_zone: false
-    acceptance: "WhatsApp OpenClaw admin ops QA coverage"
-    acceptance_ref: "verification/agent-runs/AG-186.md"
-    evidence_ref: "verification/agent-runs/AG-186.md"
-    depends_on: ["AG-185"]
-    prompt: "WhatsApp OpenClaw admin ops QA coverage"
-    created_at: 2026-03-12
-    updated_at: 2026-03-12
-
-  - id: AG-187
-    title: "Queue operator OpenClaw QA hardening"
-    owner: ernes
-    executor: codex
-    status: done
-    status_since_at: "2026-03-12T05:10:13.482Z"
-    risk: medium
-    scope: frontend-qa
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
-    lane_lock: strict
-    cross_domain: false
-    files: ["tests/queue-operator.spec.js"]
-    source_signal: manual
-    source_ref: ""
-    priority_score: 0
-    sla_due_at: ""
-    last_attempt_at: ""
-    attempts: 0
-    blocked_reason: ""
-    lease_id: ""
-    lease_owner: ""
-    lease_created_at: ""
-    heartbeat_at: ""
-    lease_expires_at: ""
-    lease_reason: ""
-    lease_cleared_at: "2026-03-12T05:10:13.482Z"
-    lease_cleared_reason: "terminal:done"
-    runtime_impact: low
-    critical_zone: false
-    acceptance: "Queue operator OpenClaw QA hardening"
-    acceptance_ref: "verification/agent-runs/AG-187.md"
-    evidence_ref: "verification/agent-runs/AG-187.md"
-    depends_on: ["AG-184"]
-    prompt: "Queue operator OpenClaw QA hardening"
-    created_at: 2026-03-12
-    updated_at: 2026-03-12
-
-  - id: AG-188
-    title: "OpenClaw shared-session cross-surface spec"
-    owner: ernes
-    executor: codex
-    status: done
-    status_since_at: "2026-03-12T05:17:03.543Z"
-    risk: medium
-    scope: frontend-qa
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
-    lane_lock: strict
-    cross_domain: false
-    files: ["tests/operator-auth-shared-session.spec.js"]
-    source_signal: manual
-    source_ref: ""
-    priority_score: 0
-    sla_due_at: ""
-    last_attempt_at: ""
-    attempts: 0
-    blocked_reason: ""
-    lease_id: ""
-    lease_owner: ""
-    lease_created_at: ""
-    heartbeat_at: ""
-    lease_expires_at: ""
-    lease_reason: ""
-    lease_cleared_at: "2026-03-12T05:17:03.543Z"
-    lease_cleared_reason: "terminal:done"
-    runtime_impact: low
-    critical_zone: false
-    acceptance: "OpenClaw shared-session cross-surface spec"
-    acceptance_ref: "verification/agent-runs/AG-188.md"
-    evidence_ref: "verification/agent-runs/AG-188.md"
-    depends_on: ["AG-184"]
-    prompt: "OpenClaw shared-session cross-surface spec"
+    depends_on: []
+    prompt: "Repair host git sync rollout and verify public_main_sync"
     created_at: 2026-03-12
     updated_at: 2026-03-12

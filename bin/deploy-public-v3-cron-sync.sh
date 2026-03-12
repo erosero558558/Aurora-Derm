@@ -23,6 +23,9 @@ CURRENT_HEAD=""
 REMOTE_HEAD=""
 DEPLOYED_COMMIT=""
 PREV_LAST_SUCCESS_AT=""
+DIRTY_PATHS_COUNT=0
+DIRTY_PATHS_JSON="[]"
+DIRTY_PATHS_SAMPLE_JSON="[]"
 
 require_cmd() {
     local command_name="$1"
@@ -52,6 +55,124 @@ read_previous_status_field() {
         return 0
     fi
     sed -n "s/.*\"${field}\":[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p" "$PUBLIC_SYNC_STATUS_PATH" | head -n 1
+}
+
+json_array_from_args() {
+    local items=("$@")
+    local index=0
+    printf '['
+    while [ "$index" -lt "${#items[@]}" ]; do
+        if [ "$index" -gt 0 ]; then
+            printf ', '
+        fi
+        printf '"%s"' "$(json_escape "${items[$index]}")"
+        index="$((index + 1))"
+    done
+    printf ']'
+}
+
+reset_dirty_path_telemetry() {
+    DIRTY_PATHS_COUNT=0
+    DIRTY_PATHS_JSON="[]"
+    DIRTY_PATHS_SAMPLE_JSON="[]"
+}
+
+record_dirty_path_telemetry() {
+    local dirty_paths=("$@")
+    local dirty_paths_sample=("${dirty_paths[@]:0:10}")
+    DIRTY_PATHS_COUNT="${#dirty_paths[@]}"
+    DIRTY_PATHS_JSON="$(json_array_from_args "${dirty_paths[@]}")"
+    DIRTY_PATHS_SAMPLE_JSON="$(json_array_from_args "${dirty_paths_sample[@]}")"
+}
+
+composer_generated_vendor_path_allowed() {
+    case "$1" in
+        vendor/autoload.php|vendor/bin/*|vendor/composer/autoload_classmap.php|vendor/composer/autoload_files.php|vendor/composer/autoload_namespaces.php|vendor/composer/autoload_psr4.php|vendor/composer/autoload_real.php|vendor/composer/autoload_static.php|vendor/composer/installed.php|vendor/composer/installed.json|vendor/composer/InstalledVersions.php|vendor/composer/platform_check.php)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+canonical_derived_path_allowed() {
+    case "$1" in
+        es/*|en/*|_astro/*|script.js|styles.css|styles-deferred.css|js/chunks/*|js/engines/*)
+            return 0
+            ;;
+        *)
+            composer_generated_vendor_path_allowed "$1"
+            ;;
+    esac
+}
+
+collect_dirty_paths() {
+    local line=""
+    local raw_path=""
+    while IFS= read -r line; do
+        if [ -z "$line" ]; then
+            continue
+        fi
+        raw_path="${line:3}"
+        raw_path="${raw_path##* -> }"
+        printf '%s\n' "$raw_path"
+    done < <(git status --porcelain)
+}
+
+restore_canonical_derived_paths() {
+    local dirty_paths=()
+    local dirty_path=""
+    local tracked_restore=()
+    local clean_targets=()
+
+    while IFS= read -r dirty_path; do
+        if [ -z "$dirty_path" ]; then
+            continue
+        fi
+        dirty_paths+=("$dirty_path")
+    done < <(collect_dirty_paths)
+
+    if [ "${#dirty_paths[@]}" -eq 0 ]; then
+        reset_dirty_path_telemetry
+        return 0
+    fi
+
+    record_dirty_path_telemetry "${dirty_paths[@]}"
+
+    for dirty_path in "${dirty_paths[@]}"; do
+        if ! canonical_derived_path_allowed "$dirty_path"; then
+            return 1
+        fi
+        clean_targets+=("$dirty_path")
+        if git ls-files --error-unmatch -- "$dirty_path" >/dev/null 2>&1; then
+            tracked_restore+=("$dirty_path")
+        fi
+    done
+
+    if [ "${#tracked_restore[@]}" -gt 0 ]; then
+        git restore --worktree --source=HEAD -- "${tracked_restore[@]}"
+    fi
+
+    if [ "${#clean_targets[@]}" -gt 0 ]; then
+        git clean -fd -- "${clean_targets[@]}"
+    fi
+
+    if [ -n "$(git status --porcelain)" ]; then
+        dirty_paths=()
+        while IFS= read -r dirty_path; do
+            if [ -z "$dirty_path" ]; then
+                continue
+            fi
+            dirty_paths+=("$dirty_path")
+        done < <(collect_dirty_paths)
+        record_dirty_path_telemetry "${dirty_paths[@]}"
+        return 1
+    fi
+
+    reset_dirty_path_telemetry
+    echo "Restored canonical derived publish paths from HEAD."
+    return 0
 }
 
 write_status() {
@@ -92,6 +213,9 @@ write_status() {
   "current_head": "$(json_escape "$CURRENT_HEAD")",
   "remote_head": "$(json_escape "$REMOTE_HEAD")",
   "deployed_commit": "$(json_escape "$DEPLOYED_COMMIT")",
+  "dirty_paths_count": $DIRTY_PATHS_COUNT,
+  "dirty_paths_sample": $DIRTY_PATHS_SAMPLE_JSON,
+  "dirty_paths": $DIRTY_PATHS_JSON,
   "duration_ms": $duration_ms,
   "lock_file": "$(json_escape "$LOCK_FILE")",
   "log_path": "$(json_escape "$LOG_PATH")"
@@ -164,7 +288,7 @@ fi
         exit 0
     fi
 
-    if [ -n "$(git status --porcelain)" ]; then
+    if ! restore_canonical_derived_paths; then
         LAST_ERROR_MESSAGE="working_tree_dirty"
         echo "Working tree is dirty. Refusing to overwrite local changes."
         git status --short || true

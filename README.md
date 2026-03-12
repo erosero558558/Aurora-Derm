@@ -25,6 +25,7 @@ gobernanza operativa de Piel en Armonia.
 - `docs/PRODUCTION_TEST_CHECKLIST.md`
 - `docs/CALENDAR_CUTOVER.md`
 - `docs/STABILITY_14_DAYS_PLAN.md`
+- `docs/TURNERO_NATIVE_SURFACES.md`
 - `docs/ROOT_SURFACES.md`
 - `AGENTS.md`
 

@@ -42,7 +42,9 @@ async function waitForHomeV6Runtime(page) {
                 page.evaluate(() => {
                     const header = document.querySelector('[data-v6-header]');
                     const hero = document.querySelector('[data-v6-hero]');
-                    const strip = document.querySelector('[data-v6-news-strip]');
+                    const strip = document.querySelector(
+                        '[data-v6-news-strip]'
+                    );
                     return {
                         mega: header?.dataset.v6MegaReady || '',
                         drawer: header?.dataset.v6DrawerReady || '',
@@ -59,6 +61,27 @@ async function waitForHomeV6Runtime(page) {
             search: 'true',
             hero: 'true',
             news: 'true',
+        });
+}
+
+async function waitForShellV6Runtime(page) {
+    await expect
+        .poll(
+            () =>
+                page.evaluate(() => {
+                    const header = document.querySelector('[data-v6-header]');
+                    return {
+                        mega: header?.dataset.v6MegaReady || '',
+                        drawer: header?.dataset.v6DrawerReady || '',
+                        search: header?.dataset.v6SearchReady || '',
+                    };
+                }),
+            { timeout: 15000 }
+        )
+        .toEqual({
+            mega: 'true',
+            drawer: 'true',
+            search: 'true',
         });
 }
 
@@ -144,4 +167,5 @@ module.exports = {
     waitForAnalyticsBridge,
     waitForBookingStatus,
     waitForHomeV6Runtime,
+    waitForShellV6Runtime,
 };

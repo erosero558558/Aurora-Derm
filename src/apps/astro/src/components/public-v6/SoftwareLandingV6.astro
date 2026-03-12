@@ -16,6 +16,8 @@ const journeys =
     page?.journeys && typeof page.journeys === 'object' ? page.journeys : {};
 const surfaces =
     page?.surfaces && typeof page.surfaces === 'object' ? page.surfaces : {};
+const nativeApps =
+    page?.nativeApps && typeof page.nativeApps === 'object' ? page.nativeApps : {};
 const integrations =
     page?.integrations && typeof page.integrations === 'object'
         ? page.integrations
@@ -38,6 +40,7 @@ const focusCards = Array.isArray(focus.cards) ? focus.cards : [];
 const moduleCards = Array.isArray(modules.cards) ? modules.cards : [];
 const journeyLanes = Array.isArray(journeys.lanes) ? journeys.lanes : [];
 const surfaceCards = Array.isArray(surfaces.cards) ? surfaces.cards : [];
+const nativeAppCards = Array.isArray(nativeApps.cards) ? nativeApps.cards : [];
 const integrationGroups = Array.isArray(integrations.groups)
     ? integrations.groups
     : [];
@@ -62,10 +65,18 @@ const hasSuiteStory = Boolean(
         suiteStoryCurrent.label &&
         (suiteStoryCurrent.deck || suiteStoryNext?.href)
 );
+const demoState =
+    page?.demoState && typeof page.demoState === 'object' ? page.demoState : {};
+const proof =
+    demoState?.proof && typeof demoState.proof === 'object' ? demoState.proof : {};
+const proofItems = Array.isArray(proof.items) ? proof.items : [];
+const hasProof = Boolean((proof.title || proof.deck) && proofItems.length);
+const demoStateJson = JSON.stringify(demoState);
 
 const hasModules = Boolean(modules.title && moduleCards.length);
 const hasJourneys = Boolean(journeys.title && journeyLanes.length);
 const hasSurfaces = Boolean(surfaces.title && surfaceCards.length);
+const hasNativeApps = Boolean(nativeApps.title && nativeAppCards.length);
 const hasIntegrations = Boolean(integrations.title && integrationGroups.length);
 const hasPricing = Boolean(pricing.title && pricingPlans.length);
 const hasSecurity = Boolean(security.title && securityCards.length);
@@ -82,6 +93,7 @@ const sectionDefs = [
     hasModules ? { id: 'v6-suite-modules', label: modules.title } : null,
     hasJourneys ? { id: 'v6-suite-journeys', label: journeys.title } : null,
     hasSurfaces ? { id: 'v6-suite-surfaces', label: surfaces.title } : null,
+    hasNativeApps ? { id: 'v6-suite-native-apps', label: nativeApps.title } : null,
     hasIntegrations
         ? { id: 'v6-suite-integrations', label: integrations.title }
         : null,
@@ -213,6 +225,37 @@ const actionClass = (variant = 'secondary') => [
         </div>
     </div>
 </section>
+
+{
+    hasProof ? (
+        <section class="v6-suite-proof-band" data-v6-turnero-proof="landing">
+            <div class="v6-suite-shell">
+                <div class="v6-suite-proof">
+                    <header class="v6-suite-proof__head">
+                        {proof.eyebrow ? <p class="v6-suite-eyebrow">{proof.eyebrow}</p> : null}
+                        {proof.title ? <h2>{proof.title}</h2> : null}
+                        {proof.deck ? <span>{proof.deck}</span> : null}
+                    </header>
+                    <div class="v6-suite-proof__grid">
+                        {proofItems.map((item) => (
+                            <article class="v6-suite-proof__card" data-v6-turnero-proof-card={item.id}>
+                                <p>{item.label}</p>
+                                <strong>{item.value}</strong>
+                                {item.detail ? <span>{item.detail}</span> : null}
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+<script
+    type="application/json"
+    data-v6-turnero-demo-state="landing"
+    set:html={demoStateJson}
+></script>
 
 {
     suiteMapItems.length ? (
@@ -495,6 +538,64 @@ const actionClass = (variant = 'secondary') => [
                             </div>
                             <div class="v6-suite-surface-card__stage">
                                 <SoftwareMockupV6 mockup={card.mockup} compact={true} />
+                            </div>
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasNativeApps ? (
+        <section
+            id="v6-suite-native-apps"
+            class="v6-suite-section"
+            data-v6-suite-landing-section="native"
+            data-v6-suite-landing-section-order="04"
+        >
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    <div class="v6-suite-landing-tag" data-v6-suite-landing-tag>
+                        <span>04</span>
+                    </div>
+                    {nativeApps.eyebrow ? <p>{nativeApps.eyebrow}</p> : null}
+                    <h2>{nativeApps.title}</h2>
+                    {nativeApps.deck ? <span>{nativeApps.deck}</span> : null}
+                </header>
+
+                <div class="v6-suite-grid v6-suite-grid--three v6-suite-native-grid">
+                    {nativeAppCards.map((card) => (
+                        <article
+                            class:list={['v6-suite-card', 'v6-suite-card--native']}
+                            data-v6-suite-native-card
+                            data-v6-suite-native-surface={card.surfaceId}
+                        >
+                            <div class="v6-suite-native-card__head">
+                                {card.eyebrow ? <p>{card.eyebrow}</p> : null}
+                                {card.targetSummary ? (
+                                    <span class="v6-suite-native-card__target">
+                                        {card.targetSummary}
+                                    </span>
+                                ) : null}
+                            </div>
+                            <h3>{card.title}</h3>
+                            {card.copy ? <span>{card.copy}</span> : null}
+                            {Array.isArray(card.bullets) && card.bullets.length ? (
+                                <ul>
+                                    {card.bullets.map((bullet) => <li>{bullet}</li>)}
+                                </ul>
+                            ) : null}
+                            <div class="v6-suite-actions v6-suite-actions--compact">
+                                <a class:list={actionClass('primary')} href={card.guideHref}>
+                                    {card.guideLabel}
+                                </a>
+                                {card.webHref ? (
+                                    <a class:list={actionClass('ghost')} href={card.webHref}>
+                                        {card.webLabel}
+                                    </a>
+                                ) : null}
                             </div>
                         </article>
                     ))}

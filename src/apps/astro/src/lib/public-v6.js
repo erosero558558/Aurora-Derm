@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+    buildTurneroDemoState,
+    enhanceSoftwareLandingPage,
+    enhanceSoftwareSurfacePage,
+} from './turnero-demo-state.js';
 
 const REPO_ROOT = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -68,6 +73,93 @@ const SOFTWARE_STORY_LABELS = {
         progress: 'Suite progression',
         previous: 'Previous step',
         next: 'Next step',
+    },
+};
+
+const TURNERO_NATIVE_SURFACE_ORDER = ['operator', 'kiosk', 'sala_tv'];
+
+const TURNERO_NATIVE_APPS_COPY = {
+    es: {
+        section: {
+            eyebrow: 'Apps nativas',
+            title: 'Operador, kiosco y sala listos para instalar',
+            deck: 'La misma base canónica ya gobierna instaladores, actualizaciones y centro de descargas. Desde la landing principal puede verse qué se instala en recepción, check-in y TV de sala, con respaldo web inmediato.',
+            guideLabel: 'Abrir instaladores',
+            webLabel: 'Abrir respaldo web',
+        },
+        cards: {
+            operator: {
+                eyebrow: 'Recepción / Operador',
+                title: 'Turnero Operador',
+                copy: 'Shell de escritorio para llamar, reimprimir y cerrar turnos con numpad dedicado y configuración por consultorio.',
+                bullets: [
+                    'Windows y macOS bajo el mismo contrato de release',
+                    'Atajos, bloqueo por estación y update estable',
+                    'Ruta web de respaldo si el escritorio aún no está instalado',
+                ],
+            },
+            kiosk: {
+                eyebrow: 'Check-in / Kiosco',
+                title: 'Turnero Kiosco',
+                copy: 'App nativa para check-in guiado, impresión térmica y soporte visible cuando recepción necesita intervenir.',
+                bullets: [
+                    'Flujo con cita y sin cita sobre la misma cola',
+                    'Pensado para mini PC o mostrador sin hardware propietario',
+                    'Mantiene fallback web para contingencia inmediata',
+                ],
+            },
+            sala_tv: {
+                eyebrow: 'Pantalla / Sala TV',
+                title: 'Turnero Sala TV',
+                copy: 'APK para Android TV con llamados en vivo, privacidad visible y continuidad cuando la sala necesita una pantalla dedicada.',
+                bullets: [
+                    'APK nativa para Google TV y Android TV',
+                    'Pantalla de llamados con campanilla y reconexión visible',
+                    'Respaldo web disponible desde navegador si hace falta',
+                ],
+            },
+        },
+    },
+    en: {
+        section: {
+            eyebrow: 'Native apps',
+            title: 'Operator, kiosk, and waiting-room display ready to install',
+            deck: 'The same canonical base now drives installers, updates, and the download center. The main landing can show what gets installed at reception, check-in, and the waiting-room TV, with a web fallback still available.',
+            guideLabel: 'Open installers',
+            webLabel: 'Open web fallback',
+        },
+        cards: {
+            operator: {
+                eyebrow: 'Reception / Operator',
+                title: 'Turnero Operator',
+                copy: 'Desktop shell for calling, reprinting, and closing tickets with a dedicated numpad and room-aware setup.',
+                bullets: [
+                    'Windows and macOS under the same release contract',
+                    'Shortcuts, station lock, and stable update feed',
+                    'Immediate web fallback when desktop is not installed yet',
+                ],
+            },
+            kiosk: {
+                eyebrow: 'Check-in / Kiosk',
+                title: 'Turnero Kiosk',
+                copy: 'Native check-in app for guided arrival, thermal printing, and visible help when reception needs to step in.',
+                bullets: [
+                    'Scheduled and walk-in flows on the same queue state',
+                    'Designed for mini PCs and front-desk stations without proprietary hardware',
+                    'Keeps a web fallback ready for fast contingency use',
+                ],
+            },
+            sala_tv: {
+                eyebrow: 'Display / Sala TV',
+                title: 'Turnero Sala TV',
+                copy: 'Android TV APK for live room calls, privacy-safe display, and a dedicated waiting-room screen when browsers are not enough.',
+                bullets: [
+                    'Native APK for Google TV and Android TV',
+                    'Live call display with bell and visible reconnection state',
+                    'Browser fallback remains available when needed',
+                ],
+            },
+        },
     },
 };
 
@@ -193,7 +285,9 @@ function sanitizeHomeHero(hero) {
                       return null;
                   }
                   return {
-                      id: normalizeText(slide?.id) || `v6-hero-slide-${index + 1}`,
+                      id:
+                          normalizeText(slide?.id) ||
+                          `v6-hero-slide-${index + 1}`,
                       category: normalizeText(slide?.category),
                       title,
                       description,
@@ -208,7 +302,9 @@ function sanitizeHomeHero(hero) {
 
     return {
         autoplayMs:
-            Number.isFinite(rawAutoplay) && rawAutoplay > 1000 ? rawAutoplay : 7000,
+            Number.isFinite(rawAutoplay) && rawAutoplay > 1000
+                ? rawAutoplay
+                : 7000,
         labels: {
             prev: normalizeText(labels.prev),
             next: normalizeText(labels.next),
@@ -519,7 +615,9 @@ function sanitizeSoftwareSurfaceCard(card) {
     const href = normalizeHref(card?.href);
     const ctaLabel = normalizeText(card?.ctaLabel);
     const mockup = sanitizeSoftwareMockup(card?.mockup, title);
-    const hasMockup = Boolean(mockup.title || mockup.rows.length || mockup.chips.length);
+    const hasMockup = Boolean(
+        mockup.title || mockup.rows.length || mockup.chips.length
+    );
     if (!title || !href || !ctaLabel || !hasMockup) {
         return null;
     }
@@ -530,6 +628,92 @@ function sanitizeSoftwareSurfaceCard(card) {
         href,
         ctaLabel,
         mockup,
+    };
+}
+
+function readTurneroSurfaceRegistry() {
+    return readJson(path.join('data', 'turnero-surfaces.json'));
+}
+
+function listTurneroNativeSurfaceDefinitions() {
+    const registry = readTurneroSurfaceRegistry();
+    const surfaces = Array.isArray(registry?.surfaces) ? registry.surfaces : [];
+    return surfaces.filter((surface) => {
+        const surfaceId = normalizeText(surface?.id);
+        return surfaceId && TURNERO_NATIVE_SURFACE_ORDER.includes(surfaceId);
+    });
+}
+
+function summarizeTurneroTargets(surface) {
+    const targets = isObject(surface?.targets) ? surface.targets : {};
+    return Object.values(targets)
+        .map((target) => normalizeText(target?.label))
+        .filter(Boolean)
+        .join(' · ');
+}
+
+function buildTurneroGuideHref(surface) {
+    const surfaceId = normalizeText(surface?.id);
+    const guideUrl = normalizeHref(surface?.guideUrl);
+    if (guideUrl) {
+        return guideUrl;
+    }
+    return surfaceId ? `/app-downloads/?surface=${surfaceId}` : '';
+}
+
+function buildTurneroWebFallbackHref(surface) {
+    return (
+        normalizeHref(surface?.webFallbackUrl) || normalizeHref(surface?.route)
+    );
+}
+
+function buildSoftwareLandingNativeApps(locale, nativeApps = {}) {
+    const safeLocale = normalizeLocale(locale);
+    const copy =
+        TURNERO_NATIVE_APPS_COPY[safeLocale] || TURNERO_NATIVE_APPS_COPY.es;
+    const nativeAppSource = isObject(nativeApps) ? nativeApps : {};
+    const surfaceMap = new Map(
+        listTurneroNativeSurfaceDefinitions().map((surface) => [
+            normalizeText(surface?.id),
+            surface,
+        ])
+    );
+
+    const cards = TURNERO_NATIVE_SURFACE_ORDER.map((surfaceId) => {
+        const surface = surfaceMap.get(surfaceId);
+        const cardCopy = copy.cards[surfaceId];
+        const guideHref = buildTurneroGuideHref(surface);
+        if (!surface || !cardCopy || !guideHref) {
+            return null;
+        }
+
+        return {
+            surfaceId,
+            eyebrow: normalizeText(cardCopy.eyebrow),
+            title:
+                normalizeText(cardCopy.title) ||
+                normalizeText(surface?.productName),
+            copy: normalizeText(cardCopy.copy),
+            bullets: sanitizeTextList(cardCopy.bullets),
+            targetSummary: summarizeTurneroTargets(surface),
+            guideHref,
+            guideLabel: normalizeText(copy.section.guideLabel),
+            webHref: buildTurneroWebFallbackHref(surface),
+            webLabel: normalizeText(copy.section.webLabel),
+        };
+    }).filter(Boolean);
+
+    return {
+        eyebrow:
+            normalizeText(nativeAppSource.eyebrow) ||
+            normalizeText(copy.section.eyebrow),
+        title:
+            normalizeText(nativeAppSource.title) ||
+            normalizeText(copy.section.title),
+        deck:
+            normalizeText(nativeAppSource.deck) ||
+            normalizeText(copy.section.deck),
+        cards,
     };
 }
 
@@ -649,6 +833,7 @@ function sanitizeSoftwareNav(nav) {
     const rawLimit = Number(searchUi.resultsLimit || 8);
     return {
         brand: {
+            logo: normalizeText(source?.brand?.logo),
             tag: normalizeText(source?.brand?.tag),
         },
         ui: {
@@ -664,7 +849,9 @@ function sanitizeSoftwareNav(nav) {
                     emptyBody: normalizeText(searchUi.emptyBody),
                     closeLabel: normalizeText(searchUi.closeLabel),
                     resultsLimit:
-                        Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 8,
+                        Number.isFinite(rawLimit) && rawLimit > 0
+                            ? rawLimit
+                            : 8,
                 },
             },
         },
@@ -676,14 +863,18 @@ function sanitizeSoftwareNav(nav) {
                 ? header.links.map(sanitizeSoftwareHeaderLink).filter(Boolean)
                 : [],
             searchEntries: Array.isArray(header.searchEntries)
-                ? header.searchEntries.map(sanitizeSoftwareSearchEntry).filter(Boolean)
+                ? header.searchEntries
+                      .map(sanitizeSoftwareSearchEntry)
+                      .filter(Boolean)
                 : [],
         },
         footer: {
             headline: normalizeText(footer.headline),
             deck: normalizeText(footer.deck),
             columns: Array.isArray(footer.columns)
-                ? footer.columns.map(sanitizeSoftwareFooterColumn).filter(Boolean)
+                ? footer.columns
+                      .map(sanitizeSoftwareFooterColumn)
+                      .filter(Boolean)
                 : [],
         },
     };
@@ -699,7 +890,11 @@ function buildSoftwareSuiteRoutes(locale, nav = {}, pages = {}) {
 
     const linkByPageKey = new Map();
     for (const link of links) {
-        const pageKey = resolveSoftwarePageKey(safeLocale, link?.id, link?.href);
+        const pageKey = resolveSoftwarePageKey(
+            safeLocale,
+            link?.id,
+            link?.href
+        );
         if (!pageKey || linkByPageKey.has(pageKey)) {
             continue;
         }
@@ -738,7 +933,11 @@ function buildSoftwareSuiteRoutes(locale, nav = {}, pages = {}) {
     }).filter(Boolean);
 }
 
-function buildSoftwareSuiteStory(locale, pageKey = 'landing', suiteRoutes = []) {
+function buildSoftwareSuiteStory(
+    locale,
+    pageKey = 'landing',
+    suiteRoutes = []
+) {
     const safeLocale = normalizeLocale(locale);
     const safePageKey = normalizeSoftwarePageKey(pageKey);
     const labels = SOFTWARE_STORY_LABELS[safeLocale];
@@ -776,7 +975,9 @@ function buildSoftwareSuiteRouteMap(locale, suiteRoutes = []) {
         routeMap.set(route.pageKey, route);
     }
 
-    const missingKeys = SOFTWARE_PAGE_KEYS.filter((pageKey) => !routeMap.has(pageKey));
+    const missingKeys = SOFTWARE_PAGE_KEYS.filter(
+        (pageKey) => !routeMap.has(pageKey)
+    );
     if (missingKeys.length) {
         failSoftwareContract(
             `${safeLocale}.suiteRoutes missing keys: ${missingKeys.join(', ')}`
@@ -791,7 +992,9 @@ function buildSoftwareSuiteRouteMap(locale, suiteRoutes = []) {
 
     for (const pageKey of SOFTWARE_PAGE_KEYS) {
         const route = routeMap.get(pageKey);
-        const expectedHref = normalizePath(SOFTWARE_ROUTE_MAP[safeLocale]?.[pageKey]);
+        const expectedHref = normalizePath(
+            SOFTWARE_ROUTE_MAP[safeLocale]?.[pageKey]
+        );
         if (!route?.href || route.href !== expectedHref) {
             failSoftwareContract(
                 `${safeLocale}.${pageKey}.suiteRoute href mismatch: expected ${expectedHref || 'n/a'}`
@@ -815,35 +1018,65 @@ function softwareActionLinksTo(actions = [], href = '') {
     return actions.some((action) => normalizePath(action?.href) === targetHref);
 }
 
-function assertSoftwareLandingContract(locale, page = {}, routeMap = new Map()) {
+function assertSoftwareLandingContract(
+    locale,
+    page = {},
+    routeMap = new Map()
+) {
     const safeLocale = normalizeLocale(locale);
-    const expectedSurfaceKeys = SOFTWARE_PAGE_KEYS.filter((pageKey) => pageKey !== 'landing');
+    const expectedSurfaceKeys = SOFTWARE_PAGE_KEYS.filter(
+        (pageKey) => pageKey !== 'landing'
+    );
     const surfacePageKeys = new Set(
         Array.isArray(page?.surfaces?.cards)
-            ? page.surfaces.cards.map((card) => normalizeSoftwarePageKey(card?.pageKey))
+            ? page.surfaces.cards.map((card) =>
+                  normalizeSoftwarePageKey(card?.pageKey)
+              )
             : []
     );
 
     if (!page.heading || !page.hero?.title || !page.hero?.deck) {
-        failSoftwareContract(`${safeLocale}.landing missing heading or hero copy`);
+        failSoftwareContract(
+            `${safeLocale}.landing missing heading or hero copy`
+        );
+    }
+    if (page?.demoState?.version !== 'turnero-demo-state-v1') {
+        failSoftwareContract(
+            `${safeLocale}.landing missing canonical turnero demo state`
+        );
     }
     if (!Array.isArray(page?.hero?.actions) || page.hero.actions.length < 2) {
-        failSoftwareContract(`${safeLocale}.landing.hero requires at least 2 actions`);
+        failSoftwareContract(
+            `${safeLocale}.landing.hero requires at least 2 actions`
+        );
     }
     if (!Array.isArray(page?.focus?.cards) || page.focus.cards.length < 3) {
-        failSoftwareContract(`${safeLocale}.landing.focus requires at least 3 cards`);
+        failSoftwareContract(
+            `${safeLocale}.landing.focus requires at least 3 cards`
+        );
     }
     if (!Array.isArray(page?.modules?.cards) || page.modules.cards.length < 3) {
-        failSoftwareContract(`${safeLocale}.landing.modules requires at least 3 cards`);
+        failSoftwareContract(
+            `${safeLocale}.landing.modules requires at least 3 cards`
+        );
     }
-    if (!Array.isArray(page?.journeys?.lanes) || page.journeys.lanes.length < 2) {
-        failSoftwareContract(`${safeLocale}.landing.journeys requires at least 2 lanes`);
+    if (
+        !Array.isArray(page?.journeys?.lanes) ||
+        page.journeys.lanes.length < 2
+    ) {
+        failSoftwareContract(
+            `${safeLocale}.landing.journeys requires at least 2 lanes`
+        );
     }
     if (!Array.isArray(page?.pricing?.plans) || page.pricing.plans.length < 2) {
-        failSoftwareContract(`${safeLocale}.landing.pricing requires at least 2 plans`);
+        failSoftwareContract(
+            `${safeLocale}.landing.pricing requires at least 2 plans`
+        );
     }
     if (!Array.isArray(page?.faq?.items) || page.faq.items.length < 3) {
-        failSoftwareContract(`${safeLocale}.landing.faq requires at least 3 items`);
+        failSoftwareContract(
+            `${safeLocale}.landing.faq requires at least 3 items`
+        );
     }
     if (
         !page?.suiteStory?.current ||
@@ -851,10 +1084,14 @@ function assertSoftwareLandingContract(locale, page = {}, routeMap = new Map()) 
         page.suiteStory.currentIndex !== 1 ||
         page.suiteStory.total !== SOFTWARE_PAGE_KEYS.length
     ) {
-        failSoftwareContract(`${safeLocale}.landing.suiteStory current stage mismatch`);
+        failSoftwareContract(
+            `${safeLocale}.landing.suiteStory current stage mismatch`
+        );
     }
     if (page?.suiteStory?.next?.pageKey !== 'demo') {
-        failSoftwareContract(`${safeLocale}.landing.suiteStory next stage must be demo`);
+        failSoftwareContract(
+            `${safeLocale}.landing.suiteStory next stage must be demo`
+        );
     }
     if (
         !Array.isArray(page?.surfaces?.cards) ||
@@ -876,7 +1113,10 @@ function assertSoftwareLandingContract(locale, page = {}, routeMap = new Map()) 
     if (
         !Array.isArray(page?.finalCta?.actions) ||
         !page.finalCta.actions.length ||
-        !softwareActionLinksTo(page.finalCta.actions, routeMap.get('demo')?.href)
+        !softwareActionLinksTo(
+            page.finalCta.actions,
+            routeMap.get('demo')?.href
+        )
     ) {
         failSoftwareContract(
             `${safeLocale}.landing.finalCta must include an internal action to demo`
@@ -884,36 +1124,63 @@ function assertSoftwareLandingContract(locale, page = {}, routeMap = new Map()) 
     }
 }
 
-function assertSoftwareSurfaceContract(locale, page = {}, pageKey = 'landing', routeMap = new Map()) {
+function assertSoftwareSurfaceContract(
+    locale,
+    page = {},
+    pageKey = 'landing',
+    routeMap = new Map()
+) {
     const safeLocale = normalizeLocale(locale);
     const safePageKey = normalizeSoftwarePageKey(pageKey);
     const currentIndex = SOFTWARE_PAGE_KEYS.indexOf(safePageKey);
-    const previousPageKey = currentIndex > 0 ? SOFTWARE_PAGE_KEYS[currentIndex - 1] : null;
+    const previousPageKey =
+        currentIndex > 0 ? SOFTWARE_PAGE_KEYS[currentIndex - 1] : null;
     const nextPageKey =
         currentIndex >= 0 && currentIndex < SOFTWARE_PAGE_KEYS.length - 1
             ? SOFTWARE_PAGE_KEYS[currentIndex + 1]
             : null;
 
     if (!page.heading || !page.hero?.title || !page.hero?.deck) {
-        failSoftwareContract(`${safeLocale}.${safePageKey} missing heading or hero copy`);
+        failSoftwareContract(
+            `${safeLocale}.${safePageKey} missing heading or hero copy`
+        );
+    }
+    if (page?.demoState?.version !== 'turnero-demo-state-v1') {
+        failSoftwareContract(
+            `${safeLocale}.${safePageKey} missing canonical turnero demo state`
+        );
     }
     if (!Array.isArray(page?.hero?.actions) || page.hero.actions.length < 2) {
-        failSoftwareContract(`${safeLocale}.${safePageKey}.hero requires at least 2 actions`);
+        failSoftwareContract(
+            `${safeLocale}.${safePageKey}.hero requires at least 2 actions`
+        );
     }
-    if (!page?.mockup?.title || !Array.isArray(page?.mockup?.rows) || page.mockup.rows.length < 2) {
+    if (
+        !page?.mockup?.title ||
+        !Array.isArray(page?.mockup?.rows) ||
+        page.mockup.rows.length < 2
+    ) {
         failSoftwareContract(
             `${safeLocale}.${safePageKey}.mockup requires title and at least 2 rows`
         );
     }
     if (!Array.isArray(page?.steps?.items) || page.steps.items.length < 3) {
-        failSoftwareContract(`${safeLocale}.${safePageKey}.steps requires at least 3 items`);
+        failSoftwareContract(
+            `${safeLocale}.${safePageKey}.steps requires at least 3 items`
+        );
     }
-    if (!Array.isArray(page?.advantages?.cards) || page.advantages.cards.length < 2) {
+    if (
+        !Array.isArray(page?.advantages?.cards) ||
+        page.advantages.cards.length < 2
+    ) {
         failSoftwareContract(
             `${safeLocale}.${safePageKey}.advantages requires at least 2 cards`
         );
     }
-    if (!Array.isArray(page?.connections?.items) || page.connections.items.length < 2) {
+    if (
+        !Array.isArray(page?.connections?.items) ||
+        page.connections.items.length < 2
+    ) {
         failSoftwareContract(
             `${safeLocale}.${safePageKey}.connections requires at least 2 items`
         );
@@ -921,9 +1188,12 @@ function assertSoftwareSurfaceContract(locale, page = {}, pageKey = 'landing', r
     if (
         !page?.suiteRoute ||
         page.suiteRoute.pageKey !== safePageKey ||
-        normalizePath(page.suiteRoute.href) !== normalizePath(routeMap.get(safePageKey)?.href)
+        normalizePath(page.suiteRoute.href) !==
+            normalizePath(routeMap.get(safePageKey)?.href)
     ) {
-        failSoftwareContract(`${safeLocale}.${safePageKey}.suiteRoute mismatch`);
+        failSoftwareContract(
+            `${safeLocale}.${safePageKey}.suiteRoute mismatch`
+        );
     }
     if (
         !page?.suiteStory?.current ||
@@ -931,9 +1201,14 @@ function assertSoftwareSurfaceContract(locale, page = {}, pageKey = 'landing', r
         page.suiteStory.currentIndex !== currentIndex + 1 ||
         page.suiteStory.total !== SOFTWARE_PAGE_KEYS.length
     ) {
-        failSoftwareContract(`${safeLocale}.${safePageKey}.suiteStory current stage mismatch`);
+        failSoftwareContract(
+            `${safeLocale}.${safePageKey}.suiteStory current stage mismatch`
+        );
     }
-    if (previousPageKey && page?.suiteStory?.previous?.pageKey !== previousPageKey) {
+    if (
+        previousPageKey &&
+        page?.suiteStory?.previous?.pageKey !== previousPageKey
+    ) {
         failSoftwareContract(
             `${safeLocale}.${safePageKey}.suiteStory previous stage must be ${previousPageKey}`
         );
@@ -947,11 +1222,16 @@ function assertSoftwareSurfaceContract(locale, page = {}, pageKey = 'landing', r
         !Array.isArray(page?.finalCta?.actions) ||
         !page.finalCta.actions.length
     ) {
-        failSoftwareContract(`${safeLocale}.${safePageKey}.finalCta requires actions`);
+        failSoftwareContract(
+            `${safeLocale}.${safePageKey}.finalCta requires actions`
+        );
     }
     if (
         nextPageKey &&
-        !softwareActionLinksTo(page.finalCta.actions, routeMap.get(nextPageKey)?.href)
+        !softwareActionLinksTo(
+            page.finalCta.actions,
+            routeMap.get(nextPageKey)?.href
+        )
     ) {
         failSoftwareContract(
             `${safeLocale}.${safePageKey}.finalCta must link to next stage ${nextPageKey}`
@@ -960,7 +1240,9 @@ function assertSoftwareSurfaceContract(locale, page = {}, pageKey = 'landing', r
     if (
         !nextPageKey &&
         !page.finalCta.actions.some(
-            (action) => normalizePath(action?.href) !== normalizePath(routeMap.get(safePageKey)?.href)
+            (action) =>
+                normalizePath(action?.href) !==
+                normalizePath(routeMap.get(safePageKey)?.href)
         )
     ) {
         failSoftwareContract(
@@ -1005,7 +1287,10 @@ function sanitizeSoftwareLandingPage(page) {
     const modules = isObject(source.modules) ? source.modules : {};
     const journeys = isObject(source.journeys) ? source.journeys : {};
     const surfaces = isObject(source.surfaces) ? source.surfaces : {};
-    const integrations = isObject(source.integrations) ? source.integrations : {};
+    const nativeApps = isObject(source.nativeApps) ? source.nativeApps : {};
+    const integrations = isObject(source.integrations)
+        ? source.integrations
+        : {};
     const pricing = isObject(source.pricing) ? source.pricing : {};
     const security = isObject(source.security) ? source.security : {};
     const faq = isObject(source.faq) ? source.faq : {};
@@ -1036,7 +1321,9 @@ function sanitizeSoftwareLandingPage(page) {
             title: normalizeText(journeys.title),
             deck: normalizeText(journeys.deck),
             lanes: Array.isArray(journeys.lanes)
-                ? journeys.lanes.map(sanitizeSoftwareJourneyLane).filter(Boolean)
+                ? journeys.lanes
+                      .map(sanitizeSoftwareJourneyLane)
+                      .filter(Boolean)
                 : [],
         },
         surfaces: {
@@ -1044,9 +1331,12 @@ function sanitizeSoftwareLandingPage(page) {
             title: normalizeText(surfaces.title),
             deck: normalizeText(surfaces.deck),
             cards: Array.isArray(surfaces.cards)
-                ? surfaces.cards.map(sanitizeSoftwareSurfaceCard).filter(Boolean)
+                ? surfaces.cards
+                      .map(sanitizeSoftwareSurfaceCard)
+                      .filter(Boolean)
                 : [],
         },
+        nativeApps: buildSoftwareLandingNativeApps(source.locale, nativeApps),
         integrations: {
             eyebrow: normalizeText(integrations.eyebrow),
             title: normalizeText(integrations.title),
@@ -1070,7 +1360,9 @@ function sanitizeSoftwareLandingPage(page) {
             title: normalizeText(security.title),
             deck: normalizeText(security.deck),
             cards: Array.isArray(security.cards)
-                ? security.cards.map(sanitizeSoftwareSecurityCard).filter(Boolean)
+                ? security.cards
+                      .map(sanitizeSoftwareSecurityCard)
+                      .filter(Boolean)
                 : [],
         },
         faq: {
@@ -1105,7 +1397,9 @@ function sanitizeSoftwareSurfacePage(page) {
             eyebrow: normalizeText(advantages.eyebrow),
             title: normalizeText(advantages.title),
             cards: Array.isArray(advantages.cards)
-                ? advantages.cards.map(sanitizeSoftwareModuleCard).filter(Boolean)
+                ? advantages.cards
+                      .map(sanitizeSoftwareModuleCard)
+                      .filter(Boolean)
                 : [],
         },
         connections: {
@@ -1122,7 +1416,11 @@ function finalizeSoftwareLandingPage(locale, page = {}, suiteRoutes = []) {
     const surfaceCards = Array.isArray(page?.surfaces?.cards)
         ? page.surfaces.cards
               .map((card) => {
-                  const pageKey = resolveSoftwarePageKey(safeLocale, '', card?.href);
+                  const pageKey = resolveSoftwarePageKey(
+                      safeLocale,
+                      '',
+                      card?.href
+                  );
                   const suiteRoute = suiteRoutes.find(
                       (route) => route.pageKey === pageKey
                   );
@@ -1174,41 +1472,78 @@ function sanitizeSoftwareData(locale, payload) {
     const pages = isObject(source.pages) ? source.pages : {};
     const sanitizedNav = sanitizeSoftwareNav(source.nav);
     const sanitizedPages = {
-        landing: sanitizeSoftwareLandingPage(pages.landing),
+        landing: sanitizeSoftwareLandingPage({
+            ...(isObject(pages.landing) ? pages.landing : {}),
+            locale,
+        }),
         demo: sanitizeSoftwareSurfacePage(pages.demo),
         status: sanitizeSoftwareSurfacePage(pages.status),
         dashboard: sanitizeSoftwareSurfacePage(pages.dashboard),
     };
-    const suiteRoutes = buildSoftwareSuiteRoutes(locale, sanitizedNav, sanitizedPages);
+    const suiteRoutes = buildSoftwareSuiteRoutes(
+        locale,
+        sanitizedNav,
+        sanitizedPages
+    );
     const routeMap = buildSoftwareSuiteRouteMap(locale, suiteRoutes);
-    const finalLanding = finalizeSoftwareLandingPage(
+    const demoState = buildTurneroDemoState(locale);
+    const finalizedLanding = finalizeSoftwareLandingPage(
         locale,
         sanitizedPages.landing,
         suiteRoutes
     );
-    const finalDemo = finalizeSoftwareSurfacePage(
+    const finalizedDemo = finalizeSoftwareSurfacePage(
         locale,
         sanitizedPages.demo,
         'demo',
         suiteRoutes
     );
-    const finalStatus = finalizeSoftwareSurfacePage(
+    const finalizedStatus = finalizeSoftwareSurfacePage(
         locale,
         sanitizedPages.status,
         'status',
         suiteRoutes
     );
-    const finalDashboard = finalizeSoftwareSurfacePage(
+    const finalizedDashboard = finalizeSoftwareSurfacePage(
         locale,
         sanitizedPages.dashboard,
         'dashboard',
         suiteRoutes
     );
+    const finalLanding = enhanceSoftwareLandingPage({
+        page: finalizedLanding,
+        locale,
+        suiteRoutes,
+        demoState,
+    });
+    const finalDemo = enhanceSoftwareSurfacePage({
+        page: finalizedDemo,
+        locale,
+        pageKey: 'demo',
+        demoState,
+    });
+    const finalStatus = enhanceSoftwareSurfacePage({
+        page: finalizedStatus,
+        locale,
+        pageKey: 'status',
+        demoState,
+    });
+    const finalDashboard = enhanceSoftwareSurfacePage({
+        page: finalizedDashboard,
+        locale,
+        pageKey: 'dashboard',
+        demoState,
+    });
 
     assertSoftwareLandingContract(locale, finalLanding, routeMap);
     assertSoftwareSurfaceContract(locale, finalDemo, 'demo', routeMap);
     assertSoftwareSurfaceContract(locale, finalStatus, 'status', routeMap);
-    assertSoftwareSurfaceContract(locale, finalDashboard, 'dashboard', routeMap);
+    assertSoftwareSurfaceContract(
+        locale,
+        finalDashboard,
+        'dashboard',
+        routeMap
+    );
 
     return {
         nav: {
@@ -1217,6 +1552,7 @@ function sanitizeSoftwareData(locale, payload) {
                 routes: suiteRoutes,
             },
         },
+        demoState,
         pages: {
             landing: finalLanding,
             demo: finalDemo,
@@ -1288,7 +1624,9 @@ function mapSoftwareSwitch(pathname, locale) {
     const safeLocale = normalizeLocale(locale);
     const sourceMap = SOFTWARE_ROUTE_MAP[safeLocale];
     const targetMap = SOFTWARE_ROUTE_MAP[safeLocale === 'es' ? 'en' : 'es'];
-    const entry = Object.entries(sourceMap).find(([, route]) => route === safePath);
+    const entry = Object.entries(sourceMap).find(
+        ([, route]) => route === safePath
+    );
     if (!entry) {
         return null;
     }
@@ -1344,7 +1682,9 @@ export function getV6NavigationModel(locale, pathname = '/') {
 }
 
 export function getV6HomeData(locale) {
-    return sanitizeHomeData(readLocaleJson(normalizeLocale(locale), 'home.json'));
+    return sanitizeHomeData(
+        readLocaleJson(normalizeLocale(locale), 'home.json')
+    );
 }
 
 export function getV6HubData(locale) {
@@ -1390,13 +1730,182 @@ export function getV6SoftwareData(locale) {
 
 export function getV6SoftwarePage(locale, pageKey = 'landing') {
     const payload = getV6SoftwareData(locale);
-    const pages = payload && typeof payload.pages === 'object' ? payload.pages : {};
+    const pages =
+        payload && typeof payload.pages === 'object' ? payload.pages : {};
     return pages[pageKey] || null;
 }
 
 export function getV6SoftwareNavOverrides(locale) {
     const payload = getV6SoftwareData(locale);
     return payload && typeof payload.nav === 'object' ? payload.nav : {};
+}
+
+function buildSoftwareShellHeaderLinks(locale, links = []) {
+    const safeLocale = normalizeLocale(locale);
+    const allowedIds = ['software', 'demo', 'status', 'dashboard', 'legal'];
+    const sourceLinks = Array.isArray(links) ? links : [];
+    const linkMap = new Map(
+        sourceLinks
+            .map((link) => [
+                normalizeText(link?.id),
+                {
+                    id: normalizeText(link?.id),
+                    label: normalizeText(link?.label),
+                    href: normalizeHref(link?.href),
+                    kind: 'standard',
+                },
+            ])
+            .filter(([, link]) => link.label && link.href)
+    );
+
+    return allowedIds
+        .map((id) => {
+            const existing = linkMap.get(id);
+            if (existing) {
+                return existing;
+            }
+
+            if (id === 'legal') {
+                return {
+                    id,
+                    label: 'Legal',
+                    href:
+                        safeLocale === 'en'
+                            ? '/en/legal/terms/'
+                            : '/es/legal/terminos/',
+                    kind: 'standard',
+                };
+            }
+
+            const pageKey = SOFTWARE_PAGE_KEY_BY_NAV_ID[id];
+            const href = normalizePath(
+                SOFTWARE_ROUTE_MAP[safeLocale]?.[pageKey]
+            );
+            if (!href) {
+                return null;
+            }
+
+            return {
+                id,
+                label:
+                    safeLocale === 'en'
+                        ? pageKey === 'landing'
+                            ? 'Suite'
+                            : pageKey === 'status'
+                              ? 'Queue status'
+                              : pageKey === 'dashboard'
+                                ? 'Dashboard'
+                                : 'Demo'
+                        : pageKey === 'landing'
+                          ? 'Suite'
+                          : pageKey === 'status'
+                            ? 'Estado'
+                            : pageKey === 'dashboard'
+                              ? 'Dashboard'
+                              : 'Demo',
+                href,
+                kind: 'standard',
+            };
+        })
+        .filter(Boolean);
+}
+
+export function getV6SoftwareNavigationModel(locale, pathname = '/') {
+    const safeLocale = normalizeLocale(locale);
+    const baseNavModel = getV6NavigationModel(safeLocale, pathname);
+    const softwareNavModel = getV6SoftwareNavOverrides(safeLocale);
+    const baseUi = isObject(baseNavModel?.ui) ? baseNavModel.ui : {};
+    const baseHeaderUi = isObject(baseUi.header) ? baseUi.header : {};
+    const baseFooterUi = isObject(baseUi.footer) ? baseUi.footer : {};
+    const basePageHeadUi = isObject(baseUi.pageHead) ? baseUi.pageHead : {};
+    const baseShellUi = isObject(baseUi.shell) ? baseUi.shell : {};
+    const softwareUi = isObject(softwareNavModel?.ui)
+        ? softwareNavModel.ui
+        : {};
+    const softwareHeaderUi = isObject(softwareUi.header)
+        ? softwareUi.header
+        : {};
+    const softwareHeader = isObject(softwareNavModel?.header)
+        ? softwareNavModel.header
+        : {};
+    const softwareFooter = isObject(softwareNavModel?.footer)
+        ? softwareNavModel.footer
+        : {};
+    const softwareBrand = isObject(softwareNavModel?.brand)
+        ? softwareNavModel.brand
+        : {};
+
+    return {
+        locale: safeLocale,
+        pathname: normalizePath(pathname),
+        brand: {
+            logo:
+                normalizeText(softwareBrand.logo) ||
+                (safeLocale === 'en'
+                    ? 'Clinic Flow Suite'
+                    : 'Turnero para clinicas'),
+            tag:
+                normalizeText(softwareBrand.tag) ||
+                (safeLocale === 'en'
+                    ? 'Backed by Piel en Armonia'
+                    : 'Respaldado por Piel en Armonia'),
+        },
+        ui: {
+            shell: {
+                ...baseShellUi,
+            },
+            header: {
+                ...baseHeaderUi,
+                ...softwareHeaderUi,
+                search: {
+                    ...(isObject(baseHeaderUi.search)
+                        ? baseHeaderUi.search
+                        : {}),
+                    ...(isObject(softwareHeaderUi.search)
+                        ? softwareHeaderUi.search
+                        : {}),
+                },
+            },
+            footer: {
+                ...baseFooterUi,
+            },
+            pageHead: {
+                ...basePageHeadUi,
+            },
+        },
+        header: {
+            contactLabel: normalizeText(softwareHeader.contactLabel),
+            contactHref: normalizeHref(softwareHeader.contactHref),
+            searchLabel: normalizeText(softwareHeader.searchLabel),
+            menuLabel:
+                normalizeText(softwareHeader.menuLabel) ||
+                normalizeText(baseNavModel?.header?.menuLabel),
+            closeMenuLabel:
+                normalizeText(softwareHeader.closeMenuLabel) ||
+                normalizeText(baseNavModel?.header?.closeMenuLabel),
+            switchLabel: normalizeText(baseNavModel?.header?.switchLabel),
+            switchHref: buildLocaleSwitchHref(safeLocale, pathname),
+            links: buildSoftwareShellHeaderLinks(
+                safeLocale,
+                softwareHeader.links
+            ),
+            searchEntries: Array.isArray(softwareHeader.searchEntries)
+                ? softwareHeader.searchEntries
+                : [],
+        },
+        mega: {},
+        footer: {
+            headline: normalizeText(softwareFooter.headline),
+            deck: normalizeText(softwareFooter.deck),
+            columns: Array.isArray(softwareFooter.columns)
+                ? softwareFooter.columns
+                : [],
+            policies: Array.isArray(baseNavModel?.footer?.policies)
+                ? baseNavModel.footer.policies
+                : [],
+            copyright: normalizeText(baseNavModel?.footer?.copyright),
+        },
+    };
 }
 
 export function getV6Services(locale) {
@@ -1442,12 +1951,17 @@ export function getV6AssetById(assetId) {
 
 export function v6SoftwarePath(locale, pageKey = 'landing') {
     const safeLocale = normalizeLocale(locale);
-    return SOFTWARE_ROUTE_MAP[safeLocale]?.[pageKey] || SOFTWARE_ROUTE_MAP[safeLocale].landing;
+    return (
+        SOFTWARE_ROUTE_MAP[safeLocale]?.[pageKey] ||
+        SOFTWARE_ROUTE_MAP[safeLocale].landing
+    );
 }
 
 export function mergeV6NavModel(baseNavModel = {}, overrides = {}) {
     const baseUi =
-        baseNavModel && typeof baseNavModel.ui === 'object' ? baseNavModel.ui : {};
+        baseNavModel && typeof baseNavModel.ui === 'object'
+            ? baseNavModel.ui
+            : {};
     const overrideUi =
         overrides && typeof overrides.ui === 'object' ? overrides.ui : {};
     const baseHeaderUi =
@@ -1471,9 +1985,13 @@ export function mergeV6NavModel(baseNavModel = {}, overrides = {}) {
             ? overrideUi.pageHead
             : {};
     const overrideHeader =
-        overrides && typeof overrides.header === 'object' ? overrides.header : {};
+        overrides && typeof overrides.header === 'object'
+            ? overrides.header
+            : {};
     const overrideFooter =
-        overrides && typeof overrides.footer === 'object' ? overrides.footer : {};
+        overrides && typeof overrides.footer === 'object'
+            ? overrides.footer
+            : {};
     const baseHeader =
         baseNavModel && typeof baseNavModel.header === 'object'
             ? baseNavModel.header
@@ -1509,7 +2027,8 @@ export function mergeV6NavModel(baseNavModel = {}, overrides = {}) {
                 ...baseHeaderUi,
                 ...overrideHeaderUi,
                 search: {
-                    ...(baseHeaderUi.search && typeof baseHeaderUi.search === 'object'
+                    ...(baseHeaderUi.search &&
+                    typeof baseHeaderUi.search === 'object'
                         ? baseHeaderUi.search
                         : {}),
                     ...(overrideHeaderUi.search &&

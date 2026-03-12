@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
     mkdtempSync,
+    mkdirSync,
     writeFileSync,
     readFileSync,
     copyFileSync,
@@ -44,6 +45,74 @@ function writeFixtureFiles(dir, { board, handoffs, plan }) {
     writeFileSync(
         join(dir, 'PLAN_MAESTRO_CODEX_2026.md'),
         `${plan.trim()}\n`,
+        'utf8'
+    );
+}
+
+function writePublicSyncJobsFixture(dir, options = {}) {
+    const runtimeDir = join(dir, 'runtime');
+    const statusPath = join(runtimeDir, 'public-sync-status.json');
+    const checkedAt =
+        String(options.checked_at || '').trim() || new Date().toISOString();
+    mkdirSync(runtimeDir, { recursive: true });
+    writeFileSync(
+        statusPath,
+        `${JSON.stringify(
+            {
+                version: 1,
+                job_id: 'job-public-main-sync',
+                job_key: 'public_main_sync',
+                state: options.state || 'failed',
+                checked_at: checkedAt,
+                last_success_at: String(options.last_success_at || '').trim(),
+                last_error_at:
+                    String(options.last_error_at || '').trim() || checkedAt,
+                last_error_message:
+                    String(options.last_error_message || '').trim() ||
+                    'working_tree_dirty',
+                deployed_commit: String(options.deployed_commit || '').trim(),
+                current_head: String(options.current_head || '').trim(),
+                remote_head: String(options.remote_head || '').trim(),
+                dirty_paths_count:
+                    Number.parseInt(
+                        String(options.dirty_paths_count ?? '0'),
+                        10
+                    ) || 0,
+                dirty_paths_sample: Array.isArray(options.dirty_paths_sample)
+                    ? options.dirty_paths_sample
+                    : [],
+                dirty_paths: Array.isArray(options.dirty_paths)
+                    ? options.dirty_paths
+                    : [],
+            },
+            null,
+            2
+        )}\n`,
+        'utf8'
+    );
+    writeFileSync(
+        join(dir, 'AGENT_JOBS.yaml'),
+        `version: 1
+updated_at: "2026-03-11T00:00:00Z"
+jobs:
+  - key: public_main_sync
+    job_id: "job-public-main-sync"
+    enabled: true
+    type: external_cron
+    owner: codex_backend_ops
+    environment: production
+    repo_path: /var/www/figo
+    branch: main
+    schedule: "* * * * *"
+    command: /root/sync-pielarmonia.sh
+    wrapper_fallback: /var/www/figo/bin/deploy-public-v3-cron-sync.sh
+    lock_file: /tmp/sync-pielarmonia.lock
+    log_path: /var/log/sync-pielarmonia.log
+    status_path: "${statusPath.replace(/\\/g, '/')}"
+    expected_max_lag_seconds: 120
+    source_of_truth: host_cron
+    publish_strategy: main_auto_guarded
+`,
         'utf8'
     );
 }
@@ -2384,6 +2453,170 @@ test('conflicts, handoffs y codex-check soportan --json con salida estable', (t)
     assert.equal(Array.isArray(json.plan_blocks), true);
     assert.equal(json.plan_blocks[0].task_id, 'CDX-001');
     assert.equal(json.codex_active_ids.includes('CDX-001'), true);
+});
+
+test('conflicts y codex-check reportan public_main_sync failed sin degradar a unconfigured', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForConflictFixture({ codexStatus: 'in_progress' }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithCodexBlock({ status: 'review' }),
+    });
+    writeGovernancePolicy(dir, {
+        version: 1,
+        enforcement: {
+            warning_policies: {
+                public_main_sync_unconfigured: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+                public_main_sync_failed: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+                public_main_sync_head_drift: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+                public_main_sync_telemetry_gap: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+            },
+        },
+    });
+    writePublicSyncJobsFixture(dir, {
+        state: 'failed',
+        last_error_message: 'working_tree_dirty',
+    });
+
+    let json = parseJsonStdout(runCli(dir, ['conflicts', '--json']));
+    let codes = json.diagnostics.map((item) => item.code);
+    assert.equal(codes.includes('warn.jobs.public_main_sync_failed'), true);
+    assert.equal(
+        codes.includes('warn.jobs.public_main_sync_telemetry_gap'),
+        true
+    );
+    assert.equal(
+        codes.includes('warn.jobs.public_main_sync_unconfigured'),
+        false
+    );
+
+    json = parseJsonStdout(runCli(dir, ['codex-check', '--json'], 1));
+    codes = json.diagnostics.map((item) => item.code);
+    assert.equal(codes.includes('warn.jobs.public_main_sync_failed'), true);
+    assert.equal(
+        codes.includes('warn.jobs.public_main_sync_telemetry_gap'),
+        true
+    );
+    assert.equal(
+        codes.includes('warn.jobs.public_main_sync_unconfigured'),
+        false
+    );
+});
+
+test('conflicts y codex-check reportan public_main_sync head drift cuando los heads divergen', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForConflictFixture({ codexStatus: 'in_progress' }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithCodexBlock({ status: 'review' }),
+    });
+    writeGovernancePolicy(dir, {
+        version: 1,
+        enforcement: {
+            warning_policies: {
+                public_main_sync_unconfigured: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+                public_main_sync_failed: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+                public_main_sync_head_drift: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+            },
+        },
+    });
+    writePublicSyncJobsFixture(dir, {
+        state: 'failed',
+        last_error_message: 'working_tree_dirty',
+        current_head: 'abc1234',
+        remote_head: 'def5678',
+    });
+
+    let json = parseJsonStdout(runCli(dir, ['conflicts', '--json']));
+    let codes = json.diagnostics.map((item) => item.code);
+    assert.equal(codes.includes('warn.jobs.public_main_sync_failed'), true);
+    assert.equal(codes.includes('warn.jobs.public_main_sync_head_drift'), true);
+    assert.equal(
+        codes.includes('warn.jobs.public_main_sync_unconfigured'),
+        false
+    );
+
+    json = parseJsonStdout(runCli(dir, ['codex-check', '--json'], 1));
+    codes = json.diagnostics.map((item) => item.code);
+    assert.equal(codes.includes('warn.jobs.public_main_sync_failed'), true);
+    assert.equal(codes.includes('warn.jobs.public_main_sync_head_drift'), true);
+    assert.equal(
+        codes.includes('warn.jobs.public_main_sync_unconfigured'),
+        false
+    );
+});
+
+test('status expone failure_reason y telemetry_gap para public_main_sync legacy', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForConflictFixture({ codexStatus: 'in_progress' }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithCodexBlock({ status: 'review' }),
+    });
+    writeGovernancePolicy(dir, {
+        version: 1,
+        enforcement: {
+            warning_policies: {
+                public_main_sync_failed: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+            },
+        },
+    });
+    writePublicSyncJobsFixture(dir, {
+        state: 'failed',
+        last_error_message: 'working_tree_dirty',
+    });
+
+    const json = parseJsonStdout(runCli(dir, ['status', '--json']));
+    assert.equal(
+        json.jobs.public_main_sync.failure_reason,
+        'working_tree_dirty'
+    );
+    assert.equal(json.jobs.public_main_sync.telemetry_gap, true);
+    assert.equal(json.jobs.public_main_sync.head_drift, false);
+
+    const failed = json.diagnostics.find(
+        (item) => item.code === 'warn.jobs.public_main_sync_failed'
+    );
+    assert.ok(failed);
+    assert.match(failed.message, /reason=working_tree_dirty/);
+    assert.match(failed.message, /telemetry_gap=true/);
+
+    const telemetryGap = json.diagnostics.find(
+        (item) => item.code === 'warn.jobs.public_main_sync_telemetry_gap'
+    );
+    assert.ok(telemetryGap);
+    assert.equal(telemetryGap.meta.failure_reason, 'working_tree_dirty');
+    assert.equal(telemetryGap.meta.telemetry_gap, true);
 });
 
 test('handoffs create/close escriben eventos append-only en board events', (t) => {

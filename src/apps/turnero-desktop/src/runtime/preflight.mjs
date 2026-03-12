@@ -102,7 +102,9 @@ async function probeHealth(url, fetchImpl, timeoutMs) {
             payload && typeof payload === 'object' && payload.data
                 ? payload.data
                 : {};
-        const healthStatus = String(healthData.status || '').trim().toLowerCase();
+        const healthStatus = String(healthData.status || '')
+            .trim()
+            .toLowerCase();
         const detail =
             healthStatus === 'ok' || healthStatus === 'healthy'
                 ? 'Health OK'
@@ -158,7 +160,10 @@ export async function runPreflightChecks(
     { fetchImpl = globalThis.fetch, packaged = false, timeoutMs = 4500 } = {}
 ) {
     const surfaceUrl = createSurfaceUrl(config);
-    const healthUrl = new URL('/api.php?resource=health', `${config.baseUrl}/`).toString();
+    const healthUrl = new URL(
+        '/api.php?resource=health',
+        `${config.baseUrl}/`
+    ).toString();
     const checks = [
         createCheck(
             'profile',
@@ -172,9 +177,34 @@ export async function runPreflightChecks(
             packaged ? 'ready' : 'warning',
             packaged
                 ? 'Shell empaquetado listo para clínica'
-                : 'Modo desarrollo o fallback local'
+                : 'Modo desarrollo o fallback local; el preflight remoto completo se activa solo en desktop instalada'
         ),
     ];
+
+    if (!packaged) {
+        checks.push(
+            createCheck(
+                'surface',
+                'Superficie remota',
+                'warning',
+                `Se valida solo en desktop instalada: ${surfaceUrl}`
+            ),
+            createCheck(
+                'health',
+                'API de salud',
+                'warning',
+                `Se valida solo en desktop instalada: ${healthUrl}`
+            )
+        );
+
+        return {
+            checkedAt: new Date().toISOString(),
+            surfaceUrl,
+            healthUrl,
+            checks,
+            ...summarizeChecks(checks),
+        };
+    }
 
     if (typeof fetchImpl !== 'function') {
         checks.push(

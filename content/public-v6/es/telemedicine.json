@@ -1,6 +1,6 @@
 {
     "title": "Telemedicina | Piel en Armonia",
-    "description": "Consulta dermatologica remota con triage claro, escalamiento responsable y continuidad en Quito.",
+    "description": "Consulta dermatologica remota con orientacion inicial clara, paso responsable a consulta presencial y seguimiento en Quito.",
     "breadcrumb": [
         {
             "label": "Inicio",
@@ -17,64 +17,64 @@
         "srcset": "/images/optimized/v6-clinic-consent-trust-400.webp 400w, /images/optimized/v6-clinic-consent-trust.webp 900w",
         "alt": "Consulta dermatologica remota"
     },
-    "lead": "La telemedicina vale cuando ahorra tiempo sin diluir criterio medico ni continuidad para usted.",
+    "lead": "La telemedicina sirve cuando le ayuda a avanzar antes, sin perder respaldo medico ni claridad sobre lo que sigue.",
     "ui": {
         "menu": {
-            "initiatives": "Iniciativas remotas",
-            "bookingStatus": "Estado de agenda"
+            "initiatives": "Apoyos",
+            "bookingStatus": "Reserva online"
         },
         "thesis": {
             "eyebrow": "Modelo clinico remoto",
-            "title": "Atencion remota cuando aporta valor clinico real",
-            "body": "Definimos que puede resolverse a distancia, que debe observarse de cerca y cuando conviene pasar al consultorio."
+            "title": "Atencion remota cuando de verdad ayuda",
+            "body": "Definimos que puede resolverse a distancia, que merece vigilancia cercana y en que momento ya conviene verle en consultorio."
         },
         "statement": {
-            "eyebrow": "Direccion clinica remota",
-            "title": "Telemedicina util, sin perder criterio medico",
+            "eyebrow": "Revision remota",
+            "title": "Telemedicina util, con limites claros y respaldo medico",
             "signature": "Modelo hibrido, Quito",
             "image": "/images/optimized/v6-clinic-doctor-narvaez.webp",
-            "alt": "Direccion clinica de telemedicina"
+            "alt": "Equipo clinico de telemedicina"
         },
         "internalMessage": {
-            "description": "Revisamos contexto, riesgo y evolucion para decidir si usted puede seguir remoto o si el examen presencial ya es necesario."
+            "description": "Revisamos contexto, riesgo y evolucion para decidir si basta con seguimiento remoto o si ya hace falta examinarle en persona."
         },
         "rail": {
-            "title": "Recorrido de atencion",
+            "title": "Secciones",
             "aria": "Secciones de telemedicina"
         },
         "kpis": {
-            "blocks": "Bloques de ruta",
-            "criteria": "Criterios clinicos",
-            "model": "Modelo de escalamiento",
+            "blocks": "Puntos clave",
+            "criteria": "Cuando ayuda",
+            "model": "Modelo de atencion",
             "modelValue": "Hibrido"
         },
         "initiatives": {
-            "aria": "Iniciativas de telemedicina",
-            "ctaLabel": "Abrir seccion"
+            "aria": "Apoyos de telemedicina",
+            "ctaLabel": "Ver detalle"
         },
-        "blockCtaLabel": "Ver estado de agenda"
+        "blockCtaLabel": "Ver opciones"
     },
     "blocks": [
         {
             "title": "Como funciona",
             "items": [
-                "Usted comparte antecedentes clave y fotografias tomadas con contexto clinico.",
-                "Priorizamos riesgo para definir si su caso puede resolverse de forma remota.",
-                "Entregamos un plan inicial, cuidados y ventana de control cuando corresponde.",
+                "Usted comparte antecedentes clave y fotografias tomadas con suficiente contexto para orientar la primera lectura.",
+                "Priorizamos el riesgo para decidir si su caso puede manejarse a distancia.",
+                "Le entregamos un plan inicial, cuidados concretos y, si hace falta, una ventana de control.",
                 "Si aparecen senales de alarma, aceleramos el paso a consulta presencial."
             ]
         },
         {
             "title": "Cuando suele encajar",
             "items": [
-                "Brotes inflamatorios ya evaluados que requieren ajuste",
-                "Seguimiento de tratamientos activos con cambios recientes",
-                "Dudas sobre evolucion entre controles programados",
-                "Orientacion inicial antes de desplazarse al consultorio"
+                "Brotes inflamatorios ya evaluados que necesitan ajuste",
+                "Seguimiento de tratamientos activos despues de cambios recientes",
+                "Dudas sobre la evolucion entre controles",
+                "Orientacion inicial antes de organizar una visita al consultorio"
             ]
         },
         {
-            "title": "Cuando debe escalar",
+            "title": "Cuando conviene pasar a presencial",
             "items": [
                 "Lesiones que cambian rapido, sangran o no cicatrizan",
                 "Dolor intenso, extension acelerada o compromiso funcional",
@@ -86,33 +86,33 @@
     "initiatives": [
         {
             "title": "Triage visual",
-            "copy": "Una primera lectura con imagenes clinicas para priorizar riesgo y tiempo de respuesta.",
+            "copy": "Una primera lectura con imagenes clinicas para priorizar el riesgo y responder a tiempo.",
             "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
             "href": "#v6-tele-block-1"
         },
         {
             "title": "Control de brote",
-            "copy": "Ajustes remotos para contener brotes entre controles y evitar dias perdidos.",
+            "copy": "Ajustes remotos para contener brotes entre controles y evitar esperar de mas.",
             "image": "/images/optimized/v6-clinic-acne-rosacea.webp",
             "href": "#v6-tele-block-2"
         },
         {
-            "title": "Escalamiento presencial",
-            "copy": "Derivacion al consultorio cuando el comportamiento de la lesion exige examen directo.",
+            "title": "Paso a consulta presencial",
+            "copy": "Le citamos en consultorio cuando el comportamiento de la lesion pide examen directo.",
             "image": "/images/optimized/v6-clinic-clinic-environment.webp",
             "href": "#v6-tele-block-3"
         },
         {
-            "title": "Continuidad Quito",
-            "copy": "Ruta hibrida pensada para Quito, con seguimiento remoto y control presencial oportuno.",
+            "title": "Seguimiento hibrido en Quito",
+            "copy": "Modelo pensado para combinar control remoto con revision presencial cuando aporta valor real.",
             "image": "/images/optimized/v6-clinic-doctor-rosero.webp",
             "href": "#v6-booking-status"
         }
     ],
     "bookingStatus": {
-        "eyebrow": "Ruta activa",
+        "eyebrow": "Despues de esta orientacion",
         "title": "Reserva online en mantenimiento",
-        "description": "Si despues necesita comparar otras rutas, puede volver a servicios y seguir desde ahi.",
+        "description": "Si luego quiere comparar otras formas de atencion, puede volver a servicios y elegir la que mejor ordene su caso.",
         "ctaLabel": "Ver servicios",
         "ctaHref": "/es/servicios/"
     }

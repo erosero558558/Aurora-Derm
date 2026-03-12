@@ -12,35 +12,49 @@
     }
 
     const catalog = payload.catalog || {};
-    const copy = payload.copy || {};
-    const notes = payload.notes || {};
+    const surfaces = payload.surfaces || {};
     const state = payload.state || {};
+    const surfaceIds = Object.keys(surfaces);
+    const fallbackSurfaceId =
+        surfaceIds[0] || Object.keys(catalog)[0] || 'operator';
 
     const surfaceInput = document.getElementById('appDownloadsSurface');
     const platformInput = document.getElementById('appDownloadsPlatform');
     const stationInput = document.getElementById('appDownloadsStation');
     const lockInput = document.getElementById('appDownloadsLock');
     const oneTapInput = document.getElementById('appDownloadsOneTap');
-    const operatorFields = document.getElementById('appDownloadsOperatorFields');
+    const operatorFields = document.getElementById(
+        'appDownloadsOperatorFields'
+    );
     const platformField = document.getElementById('appDownloadsPlatformField');
     const queryPreview = document.getElementById('appDownloadsQueryPreview');
     const resultEyebrow = document.getElementById('appDownloadsResultEyebrow');
     const resultTitle = document.getElementById('appDownloadsResultTitle');
-    const resultDescription = document.getElementById('appDownloadsResultDescription');
+    const resultDescription = document.getElementById(
+        'appDownloadsResultDescription'
+    );
     const versionNode = document.getElementById('appDownloadsVersion');
     const updatedAtNode = document.getElementById('appDownloadsUpdatedAt');
     const targetLabelNode = document.getElementById('appDownloadsTargetLabel');
     const targetUrlNode = document.getElementById('appDownloadsTargetUrl');
     const preparedUrlNode = document.getElementById('appDownloadsPreparedUrl');
     const primaryAction = document.getElementById('appDownloadsPrimaryAction');
-    const openPreparedBtn = document.getElementById('appDownloadsOpenPreparedBtn');
+    const openPreparedBtn = document.getElementById(
+        'appDownloadsOpenPreparedBtn'
+    );
     const qrBtn = document.getElementById('appDownloadsQrBtn');
     const notesNode = document.getElementById('appDownloadsNotes');
     const toastNode = document.getElementById('appDownloadsToast');
-    const copyDownloadBtn = document.getElementById('appDownloadsCopyDownloadBtn');
-    const copyPreparedBtn = document.getElementById('appDownloadsCopyPreparedBtn');
+    const copyDownloadBtn = document.getElementById(
+        'appDownloadsCopyDownloadBtn'
+    );
+    const copyPreparedBtn = document.getElementById(
+        'appDownloadsCopyPreparedBtn'
+    );
     const setupTitleNode = document.getElementById('appDownloadsSetupTitle');
-    const setupSummaryNode = document.getElementById('appDownloadsSetupSummary');
+    const setupSummaryNode = document.getElementById(
+        'appDownloadsSetupSummary'
+    );
     const setupChecksNode = document.getElementById('appDownloadsSetupChecks');
     const surfaceCards = Array.from(
         document.querySelectorAll('[data-surface-card]')
@@ -48,10 +62,93 @@
     let readinessTimerId = 0;
     let readinessRunToken = 0;
 
+    function escapeHtml(value) {
+        return String(value || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function getSurfaceMeta(surfaceId) {
+        return surfaces[surfaceId] || surfaces[fallbackSurfaceId] || {};
+    }
+
+    function getSurfaceCatalog(surfaceId) {
+        return catalog[surfaceId] || catalog[fallbackSurfaceId] || {};
+    }
+
+    function getTargetKeys(surfaceId) {
+        const surfaceMeta = getSurfaceMeta(surfaceId);
+        const surfaceCatalog = getSurfaceCatalog(surfaceId);
+        const catalogTargets =
+            surfaceCatalog && typeof surfaceCatalog.targets === 'object'
+                ? surfaceCatalog.targets
+                : {};
+        const orderedKeys = Array.isArray(surfaceMeta.targetOrder)
+            ? surfaceMeta.targetOrder.filter((targetKey) =>
+                  Object.prototype.hasOwnProperty.call(
+                      catalogTargets,
+                      targetKey
+                  )
+              )
+            : [];
+        return orderedKeys.length > 0
+            ? orderedKeys
+            : Object.keys(catalogTargets);
+    }
+
+    function getDefaultTargetKey(surfaceId) {
+        const targetKeys = getTargetKeys(surfaceId);
+        if (targetKeys.includes('win')) {
+            return 'win';
+        }
+        return targetKeys[0] || '';
+    }
+
+    function normalizeState(rawState) {
+        const requestedSurface =
+            String(rawState.surface || '').trim() || fallbackSurfaceId;
+        const surface = surfaces[requestedSurface]
+            ? requestedSurface
+            : fallbackSurfaceId;
+        const surfaceMeta = getSurfaceMeta(surface);
+        const launchDefaults =
+            surfaceMeta.launchDefaults &&
+            typeof surfaceMeta.launchDefaults === 'object'
+                ? surfaceMeta.launchDefaults
+                : {};
+        const targetKeys = getTargetKeys(surface);
+        const requestedPlatform = String(rawState.platform || '').trim();
+        const platform = targetKeys.includes(requestedPlatform)
+            ? requestedPlatform
+            : getDefaultTargetKey(surface);
+
+        return {
+            surface,
+            platform,
+            station:
+                String(rawState.station || launchDefaults.station || 'c1')
+                    .trim()
+                    .toLowerCase() === 'c2'
+                    ? 'c2'
+                    : 'c1',
+            lock:
+                typeof rawState.lock === 'boolean'
+                    ? rawState.lock
+                    : Boolean(launchDefaults.lock),
+            oneTap:
+                typeof rawState.oneTap === 'boolean'
+                    ? rawState.oneTap
+                    : Boolean(launchDefaults.one_tap),
+        };
+    }
+
     function buildQuery(next) {
         const params = new URLSearchParams();
         params.set('surface', next.surface);
-        params.set('platform', next.surface === 'sala_tv' ? 'android_tv' : next.platform);
+        params.set('platform', next.platform);
         if (next.surface === 'operator') {
             params.set('station', next.station);
             params.set('lock', next.lock ? '1' : '0');
@@ -66,7 +163,10 @@
             window.location.origin
         );
         if (next.surface === 'operator') {
-            url.searchParams.set('station', next.station === 'c2' ? 'c2' : 'c1');
+            url.searchParams.set(
+                'station',
+                next.station === 'c2' ? 'c2' : 'c1'
+            );
             url.searchParams.set('lock', next.lock ? '1' : '0');
             url.searchParams.set('one_tap', next.oneTap ? '1' : '0');
         }
@@ -106,20 +206,71 @@
 
     function getCurrentState() {
         return {
-            surface: surfaceInput instanceof HTMLSelectElement ? surfaceInput.value : state.surface || 'operator',
-            platform: platformInput instanceof HTMLSelectElement ? platformInput.value : state.platform || 'win',
-            station: stationInput instanceof HTMLSelectElement ? stationInput.value : state.station || 'c1',
-            lock: lockInput instanceof HTMLInputElement ? lockInput.checked : Boolean(state.lock),
-            oneTap: oneTapInput instanceof HTMLInputElement ? oneTapInput.checked : Boolean(state.oneTap),
+            surface:
+                surfaceInput instanceof HTMLSelectElement
+                    ? surfaceInput.value
+                    : state.surface || fallbackSurfaceId,
+            platform:
+                platformInput instanceof HTMLSelectElement
+                    ? platformInput.value
+                    : state.platform || getDefaultTargetKey(fallbackSurfaceId),
+            station:
+                stationInput instanceof HTMLSelectElement
+                    ? stationInput.value
+                    : state.station || 'c1',
+            lock:
+                lockInput instanceof HTMLInputElement
+                    ? lockInput.checked
+                    : Boolean(state.lock),
+            oneTap:
+                oneTapInput instanceof HTMLInputElement
+                    ? oneTapInput.checked
+                    : Boolean(state.oneTap),
         };
     }
 
-    function renderNotes(surface) {
+    function populatePlatformOptions(surfaceId, selectedTargetKey) {
+        if (!(platformInput instanceof HTMLSelectElement)) {
+            return;
+        }
+
+        const surfaceCatalog = getSurfaceCatalog(surfaceId);
+        const targetKeys = getTargetKeys(surfaceId);
+        const selectedKey = targetKeys.includes(selectedTargetKey)
+            ? selectedTargetKey
+            : getDefaultTargetKey(surfaceId);
+
+        platformInput.innerHTML = targetKeys
+            .map((targetKey) => {
+                const target =
+                    surfaceCatalog.targets && surfaceCatalog.targets[targetKey]
+                        ? surfaceCatalog.targets[targetKey]
+                        : {};
+                return `<option value="${escapeHtml(targetKey)}"${
+                    targetKey === selectedKey ? ' selected' : ''
+                }>${escapeHtml(String(target.label || targetKey))}</option>`;
+            })
+            .join('');
+        platformInput.value = selectedKey;
+
+        if (platformField instanceof HTMLElement) {
+            platformField.classList.toggle('is-hidden', targetKeys.length <= 1);
+        }
+    }
+
+    function renderNotes(surfaceId) {
         if (!(notesNode instanceof HTMLElement)) {
             return;
         }
-        const surfaceNotes = Array.isArray(notes[surface]) ? notes[surface] : [];
-        notesNode.innerHTML = surfaceNotes.map((note) => `<li>${String(note)}</li>`).join('');
+
+        const notes =
+            getSurfaceMeta(surfaceId).catalog &&
+            Array.isArray(getSurfaceMeta(surfaceId).catalog.notes)
+                ? getSurfaceMeta(surfaceId).catalog.notes
+                : [];
+        notesNode.innerHTML = notes
+            .map((note) => `<li>${escapeHtml(String(note || ''))}</li>`)
+            .join('');
     }
 
     async function probeUrl(url) {
@@ -165,20 +316,24 @@
 
     function renderSetupStatus(payload) {
         if (setupTitleNode) {
-            setupTitleNode.textContent = String(payload.title || 'Puesta en marcha');
+            setupTitleNode.textContent = String(
+                payload.title || 'Puesta en marcha'
+            );
         }
         if (setupSummaryNode) {
             setupSummaryNode.textContent = String(payload.summary || '');
         }
         if (setupChecksNode instanceof HTMLElement) {
-            setupChecksNode.innerHTML = (Array.isArray(payload.checks) ? payload.checks : [])
+            setupChecksNode.innerHTML = (
+                Array.isArray(payload.checks) ? payload.checks : []
+            )
                 .map(
                     (check) => `
                         <article class="app-downloads-setup-check" data-state="${String(
                             check.state || 'warning'
                         )}">
-                            <strong>${String(check.label || 'Check')}</strong>
-                            <span>${String(check.detail || '')}</span>
+                            <strong>${escapeHtml(String(check.label || 'Check'))}</strong>
+                            <span>${escapeHtml(String(check.detail || ''))}</span>
                         </article>
                     `
                 )
@@ -186,7 +341,40 @@
         }
     }
 
-    function scheduleReadinessCheck(next, absoluteTargetUrl, preparedUrl) {
+    function buildProfileSummary(next, surfaceMeta, target) {
+        if (next.surface === 'operator') {
+            return `${next.station === 'c2' ? 'C2' : 'C1'} ${
+                next.lock ? 'fijo' : 'libre'
+            } · ${next.oneTap ? '1 tecla ON' : '1 tecla OFF'}`;
+        }
+        if (surfaceMeta.family === 'android') {
+            return String(target?.label || 'Android');
+        }
+        return `${String(target?.label || 'Descarga')} para ${String(
+            surfaceMeta.catalog?.title || next.surface
+        )}`;
+    }
+
+    function buildHardwareSummary(next, surfaceMeta) {
+        const notes = Array.isArray(surfaceMeta.catalog?.notes)
+            ? surfaceMeta.catalog.notes
+            : [];
+        if (notes.length > 0) {
+            return String(notes[0] || '');
+        }
+        if (surfaceMeta.family === 'android') {
+            return 'Valida audio, red y apertura automática antes de operar.';
+        }
+        return 'Confirma el equipo físico y el shell asignado antes de instalar.';
+    }
+
+    function scheduleReadinessCheck(
+        next,
+        surfaceMeta,
+        target,
+        absoluteTargetUrl,
+        preparedUrl
+    ) {
         window.clearTimeout(readinessTimerId);
 
         renderSetupStatus({
@@ -215,114 +403,121 @@
                 return;
             }
 
-            const hardwareCheck =
-                next.surface === 'operator'
-                    ? {
-                          label: 'Hardware',
-                          state: 'warning',
-                          detail:
-                              'Conecta el receptor USB del Genius Numpad 1000 y valida la primera tecla en Operador.',
-                      }
-                    : next.surface === 'kiosk'
-                      ? {
-                            label: 'Hardware',
-                            state: 'warning',
-                            detail:
-                                'Conecta impresora térmica y deja el equipo en pantalla completa antes del primer ticket.',
-                        }
-                      : {
-                            label: 'Hardware',
-                            state: 'warning',
-                            detail:
-                                'Instala la APK en la TCL C655, prioriza Ethernet y valida audio/campanilla.',
-                        };
-
             const checks = [
                 {
                     label: 'Instalador o APK',
                     state: downloadProbe.state,
-                    detail:
-                        downloadProbe.ok
-                            ? `${next.surface === 'sala_tv' ? 'APK' : 'Descarga'} publicada y disponible.`
-                            : `Publicación pendiente. ${downloadProbe.detail}`,
+                    detail: downloadProbe.ok
+                        ? `${
+                              surfaceMeta.family === 'android'
+                                  ? 'APK'
+                                  : 'Descarga'
+                          } publicada y disponible.`
+                        : `Publicación pendiente. ${downloadProbe.detail}`,
                 },
                 {
                     label: 'Ruta preparada',
                     state: preparedProbe.state,
-                    detail:
-                        preparedProbe.ok
-                            ? `La superficie responde con este preset. ${preparedProbe.detail}`
-                            : `La ruta aún no responde. ${preparedProbe.detail}`,
+                    detail: preparedProbe.ok
+                        ? `La superficie responde con este preset. ${preparedProbe.detail}`
+                        : `La ruta aun no responde. ${preparedProbe.detail}`,
                 },
                 {
                     label: 'Perfil del equipo',
                     state: 'ready',
-                    detail:
-                        next.surface === 'operator'
-                            ? `${next.station === 'c2' ? 'C2' : 'C1'} ${
-                                  next.lock ? 'fijo' : 'libre'
-                              } · ${next.oneTap ? '1 tecla ON' : '1 tecla OFF'}`
-                            : next.surface === 'kiosk'
-                              ? `${next.platform === 'mac' ? 'macOS' : 'Windows'} para kiosco dedicado`
-                              : 'Android TV para TCL C655',
+                    detail: buildProfileSummary(next, surfaceMeta, target),
                 },
-                hardwareCheck,
+                {
+                    label: 'Hardware',
+                    state: 'warning',
+                    detail: buildHardwareSummary(next, surfaceMeta),
+                },
             ];
 
             const hasDanger = checks.some((check) => check.state === 'danger');
-            const title = hasDanger ? 'Falta publicación o ruta' : 'Listo para instalación';
-            const summary = hasDanger
-                ? 'Todavía no conviene pasar al equipo final: falta confirmar instalador o superficie.'
-                : 'La descarga y la ruta preparada ya responden. Continúa con la instalación física.';
-
             renderSetupStatus({
-                title,
-                summary,
+                title: hasDanger
+                    ? 'Falta publicación o ruta'
+                    : 'Listo para instalacion',
+                summary: hasDanger
+                    ? 'Todavia no conviene pasar al equipo final: falta confirmar instalador o superficie.'
+                    : 'La descarga y la ruta preparada ya responden. Continua con la instalacion fisica.',
                 checks,
             });
         }, 180);
     }
 
     function render() {
-        const next = getCurrentState();
-        const surfaceConfig = catalog[next.surface] || catalog.operator || {};
-        const surfaceCopy = copy[next.surface] || copy.operator || {};
-        const targetKey = next.surface === 'sala_tv' ? 'android_tv' : next.platform;
-        const target =
-            (surfaceConfig.targets && surfaceConfig.targets[targetKey]) ||
-            (surfaceConfig.targets && (surfaceConfig.targets.win || surfaceConfig.targets.mac)) ||
-            { label: 'Sin artefacto', url: '' };
+        const next = normalizeState(getCurrentState());
+        const surfaceMeta = getSurfaceMeta(next.surface);
+        const surfaceCatalog = getSurfaceCatalog(next.surface);
+
+        populatePlatformOptions(next.surface, next.platform);
+        next.platform =
+            platformInput instanceof HTMLSelectElement
+                ? platformInput.value
+                : next.platform;
+
+        const target = (surfaceCatalog.targets &&
+            surfaceCatalog.targets[next.platform]) ||
+            (surfaceCatalog.targets &&
+                surfaceCatalog.targets[getDefaultTargetKey(next.surface)]) || {
+                label: 'Sin artefacto',
+                url: '',
+            };
         const absoluteTargetUrl = target.url
             ? new URL(String(target.url), window.location.origin).toString()
             : '';
-        const preparedUrl = buildPreparedUrl(next, surfaceConfig);
+        const preparedUrl = buildPreparedUrl(next, surfaceCatalog);
         const query = buildQuery(next);
         const qrTarget =
-            next.surface === 'sala_tv' ? absoluteTargetUrl : preparedUrl;
+            surfaceMeta.catalog?.qrTarget === 'download'
+                ? absoluteTargetUrl
+                : preparedUrl;
 
-        if (operatorFields instanceof HTMLElement) {
-            operatorFields.classList.toggle('is-hidden', next.surface !== 'operator');
+        if (surfaceInput instanceof HTMLSelectElement) {
+            surfaceInput.value = next.surface;
         }
-        if (platformField instanceof HTMLElement) {
-            platformField.classList.toggle('is-hidden', next.surface === 'sala_tv');
+        if (stationInput instanceof HTMLSelectElement) {
+            stationInput.value = next.station;
+        }
+        if (lockInput instanceof HTMLInputElement) {
+            lockInput.checked = next.lock;
+        }
+        if (oneTapInput instanceof HTMLInputElement) {
+            oneTapInput.checked = next.oneTap;
+        }
+        if (operatorFields instanceof HTMLElement) {
+            operatorFields.classList.toggle(
+                'is-hidden',
+                next.surface !== 'operator'
+            );
         }
         if (resultEyebrow) {
-            resultEyebrow.textContent = String(surfaceCopy.eyebrow || '');
+            resultEyebrow.textContent = String(
+                surfaceMeta.catalog?.eyebrow || ''
+            );
         }
         if (resultTitle) {
-            resultTitle.textContent = String(surfaceCopy.title || '');
+            resultTitle.textContent = String(
+                surfaceMeta.catalog?.title || next.surface
+            );
         }
         if (resultDescription) {
-            resultDescription.textContent = String(surfaceCopy.description || '');
+            resultDescription.textContent = String(
+                surfaceMeta.catalog?.description || ''
+            );
         }
         if (versionNode) {
-            versionNode.textContent = `v${String(surfaceConfig.version || '0.1.0')}`;
+            versionNode.textContent = `v${String(surfaceCatalog.version || '0.1.0')}`;
         }
         if (updatedAtNode) {
-            updatedAtNode.textContent = String(surfaceConfig.updatedAt || '');
+            updatedAtNode.textContent = String(surfaceCatalog.updatedAt || '');
         }
         if (targetLabelNode) {
-            targetLabelNode.textContent = String(target.label || 'Sin artefacto');
+            targetLabelNode.textContent = String(
+                target.label || 'Sin artefacto'
+            );
         }
         if (targetUrlNode) {
             targetUrlNode.textContent = absoluteTargetUrl;
@@ -335,8 +530,11 @@
         }
         if (primaryAction instanceof HTMLAnchorElement) {
             primaryAction.href = absoluteTargetUrl || '#';
-            primaryAction.textContent = next.surface === 'sala_tv' ? 'Descargar APK' : 'Descargar instalador';
-            if (next.surface === 'sala_tv') {
+            primaryAction.textContent =
+                surfaceMeta.family === 'android'
+                    ? 'Descargar APK'
+                    : 'Descargar instalador';
+            if (surfaceMeta.family === 'android') {
                 primaryAction.removeAttribute('download');
             } else {
                 primaryAction.setAttribute('download', '');
@@ -351,11 +549,18 @@
         surfaceCards.forEach((node) => {
             node.classList.toggle(
                 'is-active',
-                String(node.getAttribute('data-surface-card') || '') === next.surface
+                String(node.getAttribute('data-surface-card') || '') ===
+                    next.surface
             );
         });
         renderNotes(next.surface);
-        scheduleReadinessCheck(next, absoluteTargetUrl, preparedUrl);
+        scheduleReadinessCheck(
+            next,
+            surfaceMeta,
+            target,
+            absoluteTargetUrl,
+            preparedUrl
+        );
 
         const nextUrl = `${window.location.pathname}?${query}`;
         window.history.replaceState(null, '', nextUrl);

@@ -288,7 +288,7 @@
                         "bullets": [
                             "Bloqueo por consultorio o estacion",
                             "Atajos numpad y bulk actions",
-                            "Vista clara de sincronizacion y pendientes"
+                            "Vista clara de sincronizacion y estado operativo"
                         ],
                         "featured": true
                     },
@@ -373,11 +373,7 @@
                             "kind": "phone",
                             "eyebrow": "Paciente",
                             "title": "Check-in listo",
-                            "chips": [
-                                "QR",
-                                "WhatsApp",
-                                "SMS"
-                            ],
+                            "chips": ["QR", "WhatsApp", "SMS"],
                             "rows": [
                                 {
                                     "label": "Tengo cita",
@@ -408,11 +404,7 @@
                             "kind": "status",
                             "eyebrow": "Vista privada",
                             "title": "Cola de sede",
-                            "chips": [
-                                "Sala A",
-                                "Privacidad",
-                                "Live"
-                            ],
+                            "chips": ["Sala A", "Privacidad", "Live"],
                             "rows": [
                                 {
                                     "label": "Llamando ahora",
@@ -677,11 +669,7 @@
                 "kind": "phone",
                 "eyebrow": "Demo movil",
                 "title": "Llegada confirmada",
-                "chips": [
-                    "QR",
-                    "WhatsApp",
-                    "SMS"
-                ],
+                "chips": ["QR", "WhatsApp", "SMS"],
                 "rows": [
                     {
                         "label": "Flujo",
@@ -811,11 +799,7 @@
                 "kind": "status",
                 "eyebrow": "Cola de sala",
                 "title": "Turno vinculado",
-                "chips": [
-                    "Privacidad activa",
-                    "Sala A",
-                    "Live"
-                ],
+                "chips": ["Privacidad activa", "Sala A", "Live"],
                 "rows": [
                     {
                         "label": "Llamando ahora",
@@ -945,11 +929,7 @@
                 "kind": "dashboard",
                 "eyebrow": "Sede Quito Norte",
                 "title": "Resumen diario",
-                "chips": [
-                    "Hoy",
-                    "3 consultorios",
-                    "1 sede piloto"
-                ],
+                "chips": ["Hoy", "3 consultorios", "1 sede piloto"],
                 "rows": [
                     {
                         "label": "Espera media",

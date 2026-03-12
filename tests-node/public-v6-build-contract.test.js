@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 
 const repoRoot = path.join(__dirname, '..');
 
@@ -236,8 +237,68 @@ test('build-public-v6 runner preserves canonical sequence and report output', ()
     );
 });
 
+test('turnero demo state exposes a canonical schema for landing and software surfaces', async () => {
+    const moduleUrl = pathToFileURL(
+        path.join(
+            repoRoot,
+            'src',
+            'apps',
+            'astro',
+            'src',
+            'lib',
+            'turnero-demo-state.js'
+        )
+    ).href;
+    const { buildTurneroDemoState } = await import(moduleUrl);
+    const esState = buildTurneroDemoState('es');
+    const enState = buildTurneroDemoState('en');
+
+    assert.equal(
+        esState.version,
+        'turnero-demo-state-v1',
+        'el sandbox canonico debe publicar version estable'
+    );
+    assert.equal(
+        enState.version,
+        'turnero-demo-state-v1',
+        'la version del sandbox debe ser igual en ambos locales'
+    );
+    assert.equal(
+        esState.queue.currentTicket,
+        enState.queue.currentTicket,
+        'el ticket actual debe compartirse entre locales'
+    );
+    assert.equal(
+        esState.queue.averageWaitMinutes,
+        8,
+        'la espera media del sandbox debe quedar fijada en el contrato'
+    );
+    assert.equal(
+        esState.queue.noShowRatePct,
+        6.2,
+        'el no-show del sandbox debe quedar fijado en el contrato'
+    );
+    assert.equal(
+        esState.queue.servedToday,
+        124,
+        'los tickets atendidos del sandbox deben quedar fijados en el contrato'
+    );
+    assert.equal(
+        esState.proof.items.length,
+        5,
+        'el sandbox debe exponer cinco pruebas operativas canonicas'
+    );
+    assert.match(
+        read(path.join('src', 'apps', 'astro', 'src', 'lib', 'public-v6.js')),
+        /getV6SoftwareNavigationModel/u,
+        'public-v6 debe exponer una navegacion dedicada para software'
+    );
+});
+
 test('astro sync recreates canonical targets before copying dist contents', () => {
-    const syncScript = read(path.join('src', 'apps', 'astro', 'scripts', 'sync-dist.mjs'));
+    const syncScript = read(
+        path.join('src', 'apps', 'astro', 'scripts', 'sync-dist.mjs')
+    );
 
     assert.match(
         syncScript,
@@ -332,7 +393,9 @@ test('script.js deja solo chunks publicos alcanzables y un shell activo', () => 
         .sort();
     const reachable = Array.from(collectReachablePublicChunks()).sort();
     const stale = allChunks.filter((entry) => !reachable.includes(entry));
-    const activeShells = reachable.filter((entry) => entry.startsWith('shell-'));
+    const activeShells = reachable.filter((entry) =>
+        entry.startsWith('shell-')
+    );
 
     assert.deepEqual(
         stale,

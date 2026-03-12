@@ -11,6 +11,7 @@ on:
 
 permissions:
     contents: read
+    issues: write
 
 jobs:
     diagnose:
@@ -29,6 +30,10 @@ jobs:
               run: |
                   set -euo pipefail
 
+                  REPORT_TEXT="connectivity-report.txt"
+                  REPORT_TSV="connectivity-report.tsv"
+                  : > "${REPORT_TSV}"
+
                   normalize_ports() {
                     local csv="$1"
                     echo "$csv" | tr ',' '\n' | tr -d ' ' | awk 'NF>0' | sort -u
@@ -45,6 +50,7 @@ jobs:
 
                     if [ -z "$host" ]; then
                       echo "- ${label}: host vacío"
+                      printf 'host\t%s\t%s\tfalse\t\t\n' "$label" "" >> "${REPORT_TSV}"
                       return 0
                     fi
 
@@ -61,8 +67,10 @@ jobs:
                       if timeout 3 bash -c "cat < /dev/null > /dev/tcp/${host}/${port}" 2>/dev/null; then
                         echo "  - port ${port}: OPEN"
                         opened="${opened}${port},"
+                        printf 'port\t%s\t%s\t%s\topen\t%s\n' "$label" "$host" "$port" "$ips" >> "${REPORT_TSV}"
                       else
                         echo "  - port ${port}: closed"
+                        printf 'port\t%s\t%s\t%s\tclosed\t%s\n' "$label" "$host" "$port" "$ips" >> "${REPORT_TSV}"
                       fi
                     done < <(normalize_ports "$PORTS_INPUT")
 
@@ -71,6 +79,7 @@ jobs:
                     else
                       echo "  - resumen: sin puertos abiertos en la lista"
                     fi
+                    printf 'host\t%s\t%s\ttrue\t%s\t%s\n' "$label" "$host" "$ips" "${opened%,}" >> "${REPORT_TSV}"
                   }
 
                   {
@@ -82,12 +91,276 @@ jobs:
                     check_ports "secrets.FTP_SERVER" "${FTP_SERVER_SECRET}"
                     check_ports "vars.SSH_HOST" "${SSH_HOST_VAR}"
                     check_ports "vars.FTP_SERVER" "${FTP_SERVER_VAR}"
-                  } | tee connectivity-report.txt
+                  } | tee "${REPORT_TEXT}"
+
+            - name: Consolidar reporte de conectividad
+              id: connectivity_summary
+              shell: bash
+              env:
+                  PORTS_INPUT: ${{ env.PORTS_INPUT }}
+              run: |
+                  set -euo pipefail
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const textPath = 'connectivity-report.txt';
+                  const tsvPath = 'connectivity-report.tsv';
+                  const jsonPath = 'connectivity-report.json';
+                  const outputPath = process.env.GITHUB_OUTPUT;
+                  const envPath = process.env.GITHUB_ENV;
+
+                  function append(path, key, value) {
+                    if (!path) return;
+                    fs.appendFileSync(path, `${key}=${String(value)}\n`);
+                  }
+
+                  const tsvLines = fs.existsSync(tsvPath)
+                    ? fs
+                        .readFileSync(tsvPath, 'utf8')
+                        .split(/\r?\n/)
+                        .filter(Boolean)
+                    : [];
+
+                  const hosts = [];
+                  const ports = [];
+                  for (const line of tsvLines) {
+                    const parts = line.split('\t');
+                    if (parts[0] === 'host') {
+                      hosts.push({
+                        label: parts[1] || '',
+                        host: parts[2] || '',
+                        configured: (parts[3] || '') === 'true',
+                        ips: parts[4] || '',
+                        open_ports: parts[5] ? parts[5].split(',').filter(Boolean) : [],
+                      });
+                      continue;
+                    }
+                    if (parts[0] === 'port') {
+                      ports.push({
+                        label: parts[1] || '',
+                        host: parts[2] || '',
+                        port: parts[3] || '',
+                        status: parts[4] || 'unknown',
+                        ips: parts[5] || '',
+                      });
+                    }
+                  }
+
+                  const configuredHosts = hosts.filter((host) => host.configured);
+                  const openPorts = ports.filter((port) => port.status === 'open');
+                  const openTargets = openPorts.map((port) => `${port.host}:${port.port}`);
+                  const status =
+                    configuredHosts.length === 0
+                      ? 'not_configured'
+                      : openTargets.length > 0
+                        ? 'reachable'
+                        : 'unreachable';
+                  const signal = `status:${status}|configured_hosts:${configuredHosts.length}|open_targets:${openTargets.join(',') || 'none'}`;
+
+                  const payload = {
+                    generated_at: new Date().toISOString(),
+                    ports_input: String(process.env.PORTS_INPUT || ''),
+                    status,
+                    reachable_any: openTargets.length > 0,
+                    issue_ready: status === 'unreachable',
+                    configured_host_count: configuredHosts.length,
+                    open_targets: openTargets,
+                    hosts,
+                    ports,
+                    text_artifact: textPath,
+                  };
+
+                  fs.writeFileSync(jsonPath, JSON.stringify(payload, null, 2));
+
+                  append(outputPath, 'connectivity_status', status);
+                  append(outputPath, 'reachable_any', payload.reachable_any ? 'true' : 'false');
+                  append(outputPath, 'issue_ready', payload.issue_ready ? 'true' : 'false');
+                  append(outputPath, 'configured_host_count', String(configuredHosts.length));
+                  append(outputPath, 'open_targets', openTargets.join(','));
+                  append(outputPath, 'connectivity_signal', signal);
+
+                  append(envPath, 'CONNECTIVITY_STATUS', status);
+                  append(envPath, 'CONNECTIVITY_REACHABLE_ANY', payload.reachable_any ? 'true' : 'false');
+                  append(envPath, 'CONNECTIVITY_ISSUE_READY', payload.issue_ready ? 'true' : 'false');
+                  append(envPath, 'CONNECTIVITY_CONFIGURED_HOST_COUNT', String(configuredHosts.length));
+                  append(envPath, 'CONNECTIVITY_OPEN_TARGETS', openTargets.join(','));
+                  append(envPath, 'CONNECTIVITY_SIGNAL', signal);
+                  NODE
+
+            - name: Connectivity summary
+              if: ${{ always() }}
+              shell: bash
+              run: |
+                  {
+                    echo "## Diagnose host connectivity";
+                    echo "- connectivity_status: \`${{ steps.connectivity_summary.outputs.connectivity_status }}\`";
+                    echo "- configured_host_count: \`${{ steps.connectivity_summary.outputs.configured_host_count }}\`";
+                    echo "- reachable_any: \`${{ steps.connectivity_summary.outputs.reachable_any }}\`";
+                    echo "- open_targets: \`${{ steps.connectivity_summary.outputs.open_targets }}\`";
+                    echo "- report_json: \`connectivity-report.json\`";
+                    echo "- report_text: \`connectivity-report.txt\`";
+                  } >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Crear/actualizar incidente de conectividad deploy host
+              if: ${{ always() && steps.connectivity_summary.outputs.issue_ready == 'true' }}
+              uses: actions/github-script@v7
+              env:
+                  CONNECTIVITY_STATUS: ${{ steps.connectivity_summary.outputs.connectivity_status }}
+                  CONNECTIVITY_CONFIGURED_HOST_COUNT: ${{ steps.connectivity_summary.outputs.configured_host_count }}
+                  CONNECTIVITY_OPEN_TARGETS: ${{ steps.connectivity_summary.outputs.open_targets }}
+                  CONNECTIVITY_SIGNAL: ${{ steps.connectivity_summary.outputs.connectivity_signal }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signalMarker = `<!-- diagnose-host-connectivity-signal:${process.env.CONNECTIVITY_SIGNAL || 'unknown'} -->`;
+                      const baseLabels = ['production-alert', 'diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning'];
+
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const mergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+
+                      const body = [
+                        'El workflow `Diagnose Host Connectivity` no encontro ninguna ruta de deploy abierta desde GitHub-hosted.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'unknown'}`,
+                        `- configured_host_count: ${process.env.CONNECTIVITY_CONFIGURED_HOST_COUNT || '0'}`,
+                        `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'none'}`,
+                        `- artifact_json: connectivity-report.json`,
+                        `- artifact_text: connectivity-report.txt`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const labels = mergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), labels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels
+                            });
+                            core.info(`Issue diagnose-host-connectivity actualizo labels: #${existing.number}`);
+                          }
+                          core.info(`Issue diagnose-host-connectivity ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body,
+                          labels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente de conectividad actualizado por cambio de senal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'unknown'}`,
+                            `- configured_host_count: ${process.env.CONNECTIVITY_CONFIGURED_HOST_COUNT || '0'}`,
+                            `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'none'}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue diagnose-host-connectivity actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue diagnose-host-connectivity creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente de conectividad deploy host al recuperar
+              if: ${{ always() && steps.connectivity_summary.outputs.reachable_any == 'true' }}
+              uses: actions/github-script@v7
+              env:
+                  CONNECTIVITY_STATUS: ${{ steps.connectivity_summary.outputs.connectivity_status }}
+                  CONNECTIVITY_OPEN_TARGETS: ${{ steps.connectivity_summary.outputs.open_targets }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente de conectividad abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por Diagnose Host Connectivity.',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`,
+                          `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'reachable'}`,
+                          `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'n/a'}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue diagnose-host-connectivity cerrado: #${existing.number}`);
 
             - name: Publicar reporte
               uses: actions/upload-artifact@v4
               with:
                   name: connectivity-report
-                  path: connectivity-report.txt
+                  path: |
+                      connectivity-report.txt
+                      connectivity-report.json
                   if-no-files-found: warn
                   retention-days: 7

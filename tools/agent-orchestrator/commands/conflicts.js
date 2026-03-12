@@ -1,6 +1,6 @@
 'use strict';
 
-function handleConflictsCommand(ctx) {
+async function handleConflictsCommand(ctx) {
     const {
         args,
         parseBoard,
@@ -10,6 +10,7 @@ function handleConflictsCommand(ctx) {
         attachDiagnostics,
         buildWarnFirstDiagnostics,
         loadMetricsSnapshot,
+        loadJobsSnapshot,
     } = ctx;
     const strict = args.includes('--strict');
     const wantsJson = args.includes('--json');
@@ -19,6 +20,10 @@ function handleConflictsCommand(ctx) {
     const metricsSnapshot =
         typeof loadMetricsSnapshot === 'function'
             ? loadMetricsSnapshot()
+            : null;
+    const jobsSnapshot =
+        typeof loadJobsSnapshot === 'function'
+            ? await loadJobsSnapshot()
             : null;
 
     const report = {
@@ -39,6 +44,7 @@ function handleConflictsCommand(ctx) {
             handoffData,
             conflictAnalysis: analysis,
             metricsSnapshot,
+            jobsSnapshot,
         })
     );
 

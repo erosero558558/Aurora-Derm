@@ -318,11 +318,17 @@ test.describe('Sala turnos display', () => {
         await page.goto('/sala-turnos.html');
 
         await expect(page.locator('#displaySetupTitle')).toContainText(
-            'Falta probar la campanilla'
+            'Falta habilitar audio'
+        );
+        await expect(page.locator('#displaySetupChecks')).toContainText(
+            'Toca "Probar campanilla" una vez para habilitar audio'
         );
         await page.locator('#displayBellTestBtn').click();
         await expect(page.locator('#displaySetupTitle')).toContainText(
             'Sala TV lista para llamados'
+        );
+        await expect(page.locator('#displaySetupChecks')).toContainText(
+            'Audio desbloqueado'
         );
         await expect(page.locator('#displaySetupChecks')).toContainText(
             'Prueba sonora confirmada'

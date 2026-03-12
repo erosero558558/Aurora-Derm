@@ -91,6 +91,12 @@ body {
     font-weight: 700;
 }
 
+.boot-actions button:disabled,
+.boot-config__actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 .boot-hint {
     margin-top: 16px;
     color: #aab9cb;
@@ -295,6 +301,24 @@ body {
 .boot-config__hint {
     margin: 14px 0 0;
     color: #aab9cb;
+}
+
+.boot-config__hint--gate {
+    padding: 12px 14px;
+    border: 1px solid rgba(230, 179, 107, 0.22);
+    background: rgba(230, 179, 107, 0.08);
+}
+
+.boot-config__hint--gate[data-state='ready'] {
+    border-color: rgba(34, 197, 94, 0.32);
+    background: rgba(34, 197, 94, 0.12);
+    color: #d8f7e3;
+}
+
+.boot-config__hint--gate[data-state='danger'] {
+    border-color: rgba(248, 113, 113, 0.32);
+    background: rgba(248, 113, 113, 0.12);
+    color: #ffd8d8;
 }
 
 @media (max-width: 720px) {

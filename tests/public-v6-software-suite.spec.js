@@ -24,6 +24,14 @@ async function expectNoPlaceholderLinks(page, scopeSelector) {
     expect(invalidHrefs).toEqual([]);
 }
 
+async function readTurneroDemoState(page, stateId) {
+    const raw = await page
+        .locator(`[data-v6-turnero-demo-state="${stateId}"]`)
+        .first()
+        .textContent();
+    return JSON.parse(String(raw || '{}'));
+}
+
 test.describe('Public V6 software suite', () => {
     test('software landing renders full section rail without placeholder links', async ({
         page,
@@ -47,13 +55,22 @@ test.describe('Public V6 software suite', () => {
         await expect(page.locator('[data-v6-suite-module-role="lead"]').first()).toBeVisible();
         await expect(
             page.locator('[data-v6-section-nav="software"] [data-v6-section-link]')
-        ).toHaveCount(7);
+        ).toHaveCount(8);
         await expect(
             page.locator('.v6-suite-surface-grid .v6-suite-surface-card')
         ).toHaveCount(3);
         await expect(
             page.locator('.v6-suite-surface-grid .v6-suite-surface-card__stage')
         ).toHaveCount(3);
+        await expect(
+            page.locator('[data-v6-turnero-proof="landing"] [data-v6-turnero-proof-card]')
+        ).toHaveCount(5);
+        await expect(page.locator('[data-v6-suite-native-card]')).toHaveCount(3);
+        await expect(
+            page.locator(
+                '[data-v6-suite-native-surface="operator"] a[href="/app-downloads/?surface=operator"]'
+            )
+        ).toBeVisible();
         await expect(page.locator('.v6-suite-faq__item')).toHaveCount(4);
 
         const landingSections = await page
@@ -70,6 +87,7 @@ test.describe('Public V6 software suite', () => {
             { key: 'operations', order: '01' },
             { key: 'audiences', order: '02' },
             { key: 'surfaces', order: '03' },
+            { key: 'native', order: '04' },
         ]);
 
         await expectNoPlaceholderLinks(
@@ -103,6 +121,9 @@ test.describe('Public V6 software suite', () => {
         await expect(page.locator('.v6-suite-showcase__stage').first()).toBeVisible();
         await expect(page.locator('.v6-suite-showcase .v6-suite-mockup__row')).toHaveCount(3);
         await expect(page.locator('.v6-suite-list-grid .v6-suite-list-item')).toHaveCount(4);
+        await expect(
+            page.locator('[data-v6-turnero-proof="status"] [data-v6-turnero-proof-card]')
+        ).toHaveCount(5);
 
         const surfaceSections = await page.locator('[data-v6-suite-surface-section]').evaluateAll((nodes) =>
             nodes.map((node) => ({
@@ -217,12 +238,12 @@ test.describe('Public V6 software suite', () => {
 
         await menuButton.click();
         await expect(panel).toBeVisible();
-        await expect(menuLinks).toHaveCount(7);
+        await expect(menuLinks).toHaveCount(8);
 
-        await menuLinks.nth(4).click();
+        await menuLinks.nth(5).click();
         await expect(page).toHaveURL(/#v6-suite-pricing$/);
         await expect(panel).toBeHidden();
-        await expect(menuLinks.nth(4)).toHaveAttribute('aria-current', 'location');
+        await expect(menuLinks.nth(5)).toHaveAttribute('aria-current', 'location');
         await expect(railLink).toHaveAttribute('aria-current', 'location');
     });
 
@@ -284,7 +305,7 @@ test.describe('Public V6 software suite', () => {
         });
 
         expect(surfaceMobileStyles.surfacePosition).toBe('static');
-        expect(surfaceMobileStyles.surfaceColumns.trim().split(/\s+/).length).toBe(1);
+        expect(surfaceMobileStyles.surfaceColumns.trim().split(/\s+/)).toHaveLength(1);
     });
 
     test('software header search indexes software routes on software pages', async ({
@@ -310,6 +331,73 @@ test.describe('Public V6 software suite', () => {
             .first();
         await expect(result).toBeVisible();
         await expect(result).toContainText(/dashboard/i);
+    });
+
+    test('software shell stays exclusive and avoids clinical navigation bleed', async ({
+        page,
+    }) => {
+        await gotoPublicRoute(page, '/es/software/turnero-clinicas/');
+
+        const headerLinks = await page
+            .locator('[data-v6-header] a[href]')
+            .evaluateAll((nodes) =>
+                nodes.map((node) => ({
+                    href: node.getAttribute('href') || '',
+                    text: (node.textContent || '').trim(),
+                }))
+            );
+        const pageText = await page.locator('body').innerText();
+
+        expect(
+            headerLinks.some(
+                (item) =>
+                    item.href.includes('/es/servicios/') ||
+                    item.href.includes('/es/telemedicina/')
+            )
+        ).toBeFalsy();
+        expect(pageText).not.toContain('Dermatologia clara');
+        expect(pageText).not.toContain('Telemedicina');
+        await expect(page.locator('[data-v6-header] [data-v6-mega-trigger]')).toHaveCount(0);
+    });
+
+    test('landing and software surfaces share the same canonical turnero demo state', async ({
+        page,
+    }) => {
+        const routes = [
+            {
+                href: '/es/software/turnero-clinicas/',
+                stateId: 'landing',
+            },
+            {
+                href: '/es/software/turnero-clinicas/demo/',
+                stateId: 'demo',
+            },
+            {
+                href: '/es/software/turnero-clinicas/estado-turno/',
+                stateId: 'status',
+            },
+            {
+                href: '/es/software/turnero-clinicas/dashboard/',
+                stateId: 'dashboard',
+            },
+        ];
+
+        const states = [];
+
+        for (const route of routes) {
+            await gotoPublicRoute(page, route.href);
+            states.push(await readTurneroDemoState(page, route.stateId));
+        }
+
+        expect(states).toHaveLength(4);
+        for (const state of states) {
+            expect(state.version).toBe('turnero-demo-state-v1');
+            expect(state.queue.currentTicket).toBe('A-041');
+            expect(state.queue.nextTicket).toBe('A-042');
+            expect(state.queue.averageWaitMinutes).toBe(8);
+            expect(state.queue.noShowRatePct).toBe(6.2);
+            expect(state.queue.servedToday).toBe(124);
+        }
     });
 
     test('software suite map navigates between sibling surfaces and updates active state', async ({

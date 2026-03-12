@@ -170,6 +170,14 @@ const DEFAULT_GOVERNANCE_POLICY = {
             },
             public_main_sync_stale: { severity: 'warning', enabled: true },
             public_main_sync_failed: { severity: 'warning', enabled: true },
+            public_main_sync_head_drift: {
+                severity: 'warning',
+                enabled: true,
+            },
+            public_main_sync_telemetry_gap: {
+                severity: 'warning',
+                enabled: true,
+            },
         },
         board_leases: {
             enabled: true,
@@ -1881,6 +1889,7 @@ const governanceRuntime =
         appendHandoffBoardEvent,
         parseExpectedBoardRevisionFlag,
         buildCodexCheckReport,
+        loadJobsSnapshot,
         ALLOWED_STATUSES,
         currentDate,
         writeBoard,

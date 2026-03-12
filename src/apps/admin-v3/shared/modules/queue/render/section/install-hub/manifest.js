@@ -6,31 +6,33 @@ export function mergeManifest() {
     if (!appDownloads || typeof appDownloads !== 'object') {
         return DEFAULT_APP_DOWNLOADS;
     }
+    const catalog =
+        appDownloads.catalog && typeof appDownloads.catalog === 'object'
+            ? appDownloads.catalog
+            : appDownloads;
     return {
         operator: {
             ...DEFAULT_APP_DOWNLOADS.operator,
-            ...(appDownloads.operator || {}),
+            ...(catalog.operator || {}),
             targets: {
                 ...DEFAULT_APP_DOWNLOADS.operator.targets,
-                ...((appDownloads.operator && appDownloads.operator.targets) ||
-                    {}),
+                ...((catalog.operator && catalog.operator.targets) || {}),
             },
         },
         kiosk: {
             ...DEFAULT_APP_DOWNLOADS.kiosk,
-            ...(appDownloads.kiosk || {}),
+            ...(catalog.kiosk || {}),
             targets: {
                 ...DEFAULT_APP_DOWNLOADS.kiosk.targets,
-                ...((appDownloads.kiosk && appDownloads.kiosk.targets) || {}),
+                ...((catalog.kiosk && catalog.kiosk.targets) || {}),
             },
         },
         sala_tv: {
             ...DEFAULT_APP_DOWNLOADS.sala_tv,
-            ...(appDownloads.sala_tv || {}),
+            ...(catalog.sala_tv || {}),
             targets: {
                 ...DEFAULT_APP_DOWNLOADS.sala_tv.targets,
-                ...((appDownloads.sala_tv && appDownloads.sala_tv.targets) ||
-                    {}),
+                ...((catalog.sala_tv && catalog.sala_tv.targets) || {}),
             },
         },
     };

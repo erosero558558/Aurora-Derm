@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build, Platform, Arch } from 'electron-builder';
 import {
     createBuildConfig,
     buildUpdateFeedUrl,
@@ -9,6 +8,24 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectDir = path.resolve(__dirname, '..');
+
+function failMissingDependency(packageName) {
+    console.error(
+        `[turnero-desktop] Falta instalar \`${packageName}\`. Ejecuta \`npm --prefix src/apps/turnero-desktop install\` antes de empaquetar el instalador de Windows.`
+    );
+    process.exit(1);
+}
+
+async function loadElectronBuilder() {
+    try {
+        return await import('electron-builder');
+    } catch (error) {
+        if (error && error.code === 'ERR_MODULE_NOT_FOUND') {
+            failMissingDependency('electron-builder');
+        }
+        throw error;
+    }
+}
 
 function parseArgs(argv) {
     const parsed = {};
@@ -62,6 +79,8 @@ function createBuilderConfig(surface, platform, config) {
         win: {
             target: [{ target: 'nsis', arch: ['x64'] }],
             artifactName: `${meta.artifactBase}Setup.\${ext}`,
+            signAndEditExecutable: false,
+            verifyUpdateCodeSignature: false,
         },
         nsis: {
             oneClick: false,
@@ -88,6 +107,7 @@ function createBuilderConfig(surface, platform, config) {
     };
 }
 
+const { build, Platform, Arch } = await loadElectronBuilder();
 const args = parseArgs(process.argv.slice(2));
 const surface = String(args.surface || 'operator');
 const platform = String(args.platform || 'win');

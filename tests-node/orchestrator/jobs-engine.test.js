@@ -84,6 +84,14 @@ test('jobs-engine resolveJobSnapshot usa status file local como fuente primaria'
                 checked_at: checkedAt,
                 last_success_at: checkedAt,
                 deployed_commit: 'abc1234',
+                repo_path: '/var/www/figo',
+                branch: 'main',
+                current_head: 'abc1234',
+                remote_head: 'abc1234',
+                dirty_paths_count: 2,
+                dirty_paths_sample: ['vendor/autoload.php', '_astro/app.js'],
+                dirty_paths: ['vendor/autoload.php', '_astro/app.js'],
+                duration_ms: 1234,
             },
             null,
             2
@@ -110,6 +118,23 @@ test('jobs-engine resolveJobSnapshot usa status file local como fuente primaria'
     assert.equal(snapshot.healthy, true);
     assert.equal(snapshot.state, 'ok');
     assert.equal(snapshot.deployed_commit, 'abc1234');
+    assert.equal(snapshot.repo_path, '/var/www/figo');
+    assert.equal(snapshot.branch, 'main');
+    assert.equal(snapshot.current_head, 'abc1234');
+    assert.equal(snapshot.remote_head, 'abc1234');
+    assert.equal(snapshot.duration_ms, 1234);
+    assert.equal(snapshot.dirty_paths_count, 2);
+    assert.deepEqual(snapshot.dirty_paths_sample, [
+        'vendor/autoload.php',
+        '_astro/app.js',
+    ]);
+    assert.deepEqual(snapshot.dirty_paths, [
+        'vendor/autoload.php',
+        '_astro/app.js',
+    ]);
+    assert.equal(snapshot.head_drift, false);
+    assert.equal(snapshot.telemetry_gap, false);
+    assert.equal(snapshot.failure_reason, '');
     assert.equal(typeof snapshot.age_seconds, 'number');
 });
 
@@ -129,6 +154,21 @@ test('jobs-engine resolveJobSnapshot usa health_url cuando no existe status loca
                         deployedCommit: 'def5678',
                         lastCheckedAt: '2026-03-03T12:00:32Z',
                         lastSuccessAt: '2026-03-03T12:00:32Z',
+                        repoPath: '/var/www/figo',
+                        branch: 'main',
+                        statusPath:
+                            '/var/lib/pielarmonia/public-sync-status.json',
+                        logPath: '/var/log/sync-pielarmonia.log',
+                        lockFile: '/tmp/sync-pielarmonia.lock',
+                        currentHead: 'abc1111',
+                        remoteHead: 'def5678',
+                        durationMs: 4321,
+                        dirtyPathsCount: 2,
+                        dirtyPathsSample: [
+                            'vendor/autoload.php',
+                            '_astro/app.js',
+                        ],
+                        dirtyPaths: ['vendor/autoload.php', '_astro/app.js'],
                     },
                 },
             };
@@ -154,6 +194,72 @@ test('jobs-engine resolveJobSnapshot usa health_url cuando no existe status loca
     assert.equal(snapshot.healthy, true);
     assert.equal(snapshot.age_seconds, 41);
     assert.equal(snapshot.deployed_commit, 'def5678');
+    assert.equal(snapshot.repo_path, '/var/www/figo');
+    assert.equal(snapshot.branch, 'main');
+    assert.equal(
+        snapshot.status_path,
+        '/var/lib/pielarmonia/public-sync-status.json'
+    );
+    assert.equal(snapshot.log_path, '/var/log/sync-pielarmonia.log');
+    assert.equal(snapshot.lock_file, '/tmp/sync-pielarmonia.lock');
+    assert.equal(snapshot.current_head, 'abc1111');
+    assert.equal(snapshot.remote_head, 'def5678');
+    assert.equal(snapshot.duration_ms, 4321);
+    assert.equal(snapshot.dirty_paths_count, 2);
+    assert.deepEqual(snapshot.dirty_paths_sample, [
+        'vendor/autoload.php',
+        '_astro/app.js',
+    ]);
+    assert.deepEqual(snapshot.dirty_paths, [
+        'vendor/autoload.php',
+        '_astro/app.js',
+    ]);
+    assert.equal(snapshot.head_drift, true);
+    assert.equal(snapshot.telemetry_gap, false);
+    assert.equal(snapshot.failure_reason, '');
+});
+
+test('jobs-engine resolveJobSnapshot infiere telemetry_gap desde health_url legacy', async () => {
+    const fetchImpl = async () => ({
+        ok: true,
+        async json() {
+            return {
+                checks: {
+                    publicSync: {
+                        configured: true,
+                        jobId: '8d31e299-7e57-4959-80b5-aaa2d73e9674',
+                        state: 'failed',
+                        healthy: false,
+                        ageSeconds: 12,
+                        expectedMaxLagSeconds: 120,
+                        lastCheckedAt: '2026-03-03T12:00:32Z',
+                        lastErrorMessage: 'working_tree_dirty',
+                        dirtyPathsCount: 0,
+                    },
+                },
+            };
+        },
+    });
+
+    const snapshot = await jobs.resolveJobSnapshot(
+        {
+            key: 'public_main_sync',
+            job_id: '8d31e299-7e57-4959-80b5-aaa2d73e9674',
+            health_url: 'https://pielarmonia.com/api.php?resource=health',
+            expected_max_lag_seconds: 120,
+        },
+        {
+            existsSync: () => false,
+            readFileSync: () => '',
+            fetchImpl,
+        }
+    );
+
+    assert.equal(snapshot.verification_source, 'health_url');
+    assert.equal(snapshot.healthy, false);
+    assert.equal(snapshot.head_drift, false);
+    assert.equal(snapshot.telemetry_gap, true);
+    assert.equal(snapshot.failure_reason, 'working_tree_dirty');
 });
 
 test('jobs-engine registry_only fallback y summary mantienen contrato estable', async () => {
@@ -181,8 +287,16 @@ test('jobs-engine registry_only fallback y summary mantienen contrato estable', 
         failing: 1,
         public_main_sync: {
             healthy: false,
+            state: 'unknown',
             age_seconds: null,
             deployed_commit: '',
+            last_error_message: '',
+            failure_reason: 'unverified',
+            dirty_paths_count: 0,
+            head_drift: false,
+            telemetry_gap: false,
+            current_head: '',
+            remote_head: '',
         },
     });
     assert.equal(

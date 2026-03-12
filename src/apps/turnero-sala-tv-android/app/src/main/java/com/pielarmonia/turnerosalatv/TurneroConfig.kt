@@ -3,12 +3,16 @@ package com.pielarmonia.turnerosalatv
 import android.net.Uri
 
 object TurneroConfig {
-    const val BASE_URL = "https://pielarmonia.com"
-    const val SURFACE_PATH = "/sala-turnos.html"
     const val RECONNECT_DELAY_MS = 5000L
 
-    private val baseUri: Uri = Uri.parse(BASE_URL)
-    private val surfaceUri: Uri = Uri.parse("${BASE_URL.trimEnd('/')}$SURFACE_PATH")
+    private val baseUrl: String = BuildConfig.TURNERO_BASE_URL.trim().ifBlank {
+        "https://pielarmonia.com"
+    }
+    private val surfacePath: String = BuildConfig.TURNERO_SURFACE_PATH.trim().ifBlank {
+        "/sala-turnos.html"
+    }
+    private val baseUri: Uri = Uri.parse(baseUrl)
+    private val surfaceUri: Uri = Uri.parse("${baseUrl.trimEnd('/')}$surfacePath")
 
     fun surfaceUrl(): String = surfaceUri.toString()
     fun userAgentSuffix(): String = "TurneroSalaTV/${BuildConfig.VERSION_NAME}"

@@ -7,6 +7,10 @@ val turneroVersionName =
     providers.gradleProperty("turneroVersionName").orElse("0.1.0")
 val turneroVersionCode =
     providers.gradleProperty("turneroVersionCode").orElse("1")
+val turneroBaseUrl =
+    providers.gradleProperty("turneroBaseUrl").orElse("https://pielarmonia.com")
+val turneroSurfacePath =
+    providers.gradleProperty("turneroSurfacePath").orElse("/sala-turnos.html")
 
 android {
     namespace = "com.pielarmonia.turnerosalatv"
@@ -18,6 +22,8 @@ android {
         targetSdk = 35
         versionCode = turneroVersionCode.get().toInt()
         versionName = turneroVersionName.get()
+        buildConfigField("String", "TURNERO_BASE_URL", "\"${turneroBaseUrl.get()}\"")
+        buildConfigField("String", "TURNERO_SURFACE_PATH", "\"${turneroSurfacePath.get()}\"")
     }
 
     buildTypes {

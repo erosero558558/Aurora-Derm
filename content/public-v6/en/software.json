@@ -288,7 +288,7 @@
                         "bullets": [
                             "Station or consult room lock",
                             "Numpad shortcuts and bulk actions",
-                            "Clear sync and pending-state visibility"
+                            "Clear sync and live-state visibility"
                         ],
                         "featured": true
                     },
@@ -373,11 +373,7 @@
                             "kind": "phone",
                             "eyebrow": "Patient",
                             "title": "Check-in ready",
-                            "chips": [
-                                "QR",
-                                "WhatsApp",
-                                "SMS"
-                            ],
+                            "chips": ["QR", "WhatsApp", "SMS"],
                             "rows": [
                                 {
                                     "label": "Scheduled",
@@ -408,11 +404,7 @@
                             "kind": "status",
                             "eyebrow": "Private view",
                             "title": "Site queue",
-                            "chips": [
-                                "Room A",
-                                "Privacy",
-                                "Live"
-                            ],
+                            "chips": ["Room A", "Privacy", "Live"],
                             "rows": [
                                 {
                                     "label": "Calling now",
@@ -443,11 +435,7 @@
                             "kind": "dashboard",
                             "eyebrow": "Management",
                             "title": "Daily summary",
-                            "chips": [
-                                "Quito North",
-                                "Today",
-                                "3 rooms"
-                            ],
+                            "chips": ["Quito North", "Today", "3 rooms"],
                             "rows": [
                                 {
                                     "label": "Average wait",
@@ -677,11 +665,7 @@
                 "kind": "phone",
                 "eyebrow": "Mobile demo",
                 "title": "Arrival confirmed",
-                "chips": [
-                    "QR",
-                    "WhatsApp",
-                    "SMS"
-                ],
+                "chips": ["QR", "WhatsApp", "SMS"],
                 "rows": [
                     {
                         "label": "Flow",
@@ -811,11 +795,7 @@
                 "kind": "status",
                 "eyebrow": "Site queue",
                 "title": "Ticket linked",
-                "chips": [
-                    "Privacy active",
-                    "Room A",
-                    "Live"
-                ],
+                "chips": ["Privacy active", "Room A", "Live"],
                 "rows": [
                     {
                         "label": "Calling now",
@@ -945,11 +925,7 @@
                 "kind": "dashboard",
                 "eyebrow": "Quito North site",
                 "title": "Daily summary",
-                "chips": [
-                    "Today",
-                    "3 rooms",
-                    "1 pilot site"
-                ],
+                "chips": ["Today", "3 rooms", "1 pilot site"],
                 "rows": [
                     {
                         "label": "Average wait",

@@ -202,6 +202,19 @@ Para separar operación por equipo:
 - El hub ahora también muestra `Ronda maestra`: toma esa misma secuencia y la ordena en una sola lista global de los siguientes movimientos más útiles del turno, para decidir qué tocar primero sin tener que comparar todos los carriles a mano.
 - El hub ahora también muestra `Cobertura siguiente`: indica si `C1` y `C2` ya tienen cubierto el paciente que entra después del cierre actual o si conviene preasignar desde cola general antes de que aparezca un hueco.
 - El hub ahora también muestra `Reserva inmediata`: indica si cada consultorio tiene un segundo turno ya preparado después del siguiente o si depende de cola general para no quedarse sin cola útil.
+- El hub ahora también muestra `Cola general guiada`: toma los próximos tickets sin consultorio y propone a qué `C1/C2` conviene mandarlos primero según hueco inmediato, reserva y carga visible.
+- El hub ahora también muestra `Proyección de cola`: toma esa misma guía de generales y deja visible cómo quedarían `C1` y `C2` si sigues esas recomendaciones, antes de tocar la operación real.
+- El hub ahora también muestra `Ingresos nuevos`: simula los próximos dos ingresos sobre esa proyección y deja a mano el operador recomendado por carril si entra más gente de inmediato.
+- El hub ahora también muestra `Escenarios de ingreso`: separa la recomendación inmediata de recepción entre `con cita` y `sin cita`, para abrir el operador correcto sin comparar manualmente toda la cola.
+- El hub ahora también muestra `Guion de recepción`: compacta cola general, con cita, sin cita y próximo ingreso en un guion corto para mostrador.
+- El hub ahora también muestra `Recepción simultánea`: resuelve cuándo llegan dos personas juntas y divide `con cita` y `sin cita` para no chocar en el mismo carril.
+- El hub ahora también muestra `Semáforo de recepción`: marca por carril si recepción debe dejarlo `abierto`, `solo citas` o `contener` sin leer varios panels a la vez.
+- El hub ahora también muestra `Ventana estimada`: calcula una ventana visible por consultorio para decir en mostrador cuánto tardaría en abrirse el siguiente espacio útil.
+- El hub ahora también muestra `Respuesta de mostrador`: convierte la lectura operativa en frases listas para decirle al paciente sin traducir manualmente los panels.
+- El hub ahora también muestra `Plan B de recepción`: deja lista una segunda ruta por `con cita` y `sin cita` si el paciente no acepta la primera sugerencia visible.
+- El hub ahora también muestra `Objeciones rápidas`: responde en un clic a “quiero lo más rápido”, “necesito una espera corta” o “prefiero la otra opción” usando la misma ventana viva del turno.
+- El hub ahora también muestra `Cierre de mostrador`: deja la frase final para despedir al paciente, con ventana estimada y una regla clara de qué hacer si no lo llaman a tiempo.
+- El hub ahora también muestra `Revalidación de espera`: guía qué decir si el paciente vuelve a preguntar, separando cita, sin cita y la comparación visible entre carriles antes de moverlo.
 - El hub ahora también muestra `Bloqueos vivos`: detecta los cuellos que frenan la ronda inmediata, por ejemplo un ticket llamado que bloquea el siguiente paso o un consultorio con ticket pero sin operador listo, y deja el ticket cargable al lookup para destrabarlo rápido.
 - El hub ahora también muestra `SLA vivo`: lista los tickets que ya cayeron o están por caer en ventana de riesgo, con etiqueta de `vence en` o `vencido hace`, para intervenir antes de que esa presión se convierta en bloqueo operativo.
 - El hub ahora también muestra un `Radar de espera`: tres carriles (`General`, `C1`, `C2`) ordenados por antigüedad/presión, para que recepción vea primero cuál ticket está envejeciendo y ejecute la siguiente jugada sin bajar a la tabla.
@@ -222,6 +235,14 @@ Para separar operación por equipo:
 - `admin.html#queue` también incluye un deck de `contingencia rápida` para resolver `numpad`, `térmica`, `campanilla TV` y `fallback/realtime` sin salir del admin.
 - En `Turnero Operador`, el primer arranque abre una configuración guiada para dejar el equipo en `C1 fijo`, `C2 fijo` o `modo libre`; luego puede reabrirse con `F10` o `Ctrl/Cmd + ,`.
 - `/app-downloads/` expone el mismo catálogo de apps para instalar fuera del admin con presets por equipo.
+
+### Windows Operador v1
+
+- usar el mismo `TurneroOperadorSetup.exe` en las dos PCs operador
+- PC 1: provisionar `C1 fijo`; PC 2: provisionar `C2 fijo`
+- no almacenar credenciales ni 2FA en el shell; la autenticacion sigue en `operador-turnos.html`
+- validar en cada PC: shell `Desktop instalada`, estacion correcta, `1 tecla` segun operacion y matriz del numpad completa (`llamar`, `+`, `.`, `-`)
+- si hace falta reconfigurar una PC, usar `F10` o `Ctrl/Cmd + ,` en vez de reinstalar
 
 Comandos base:
 

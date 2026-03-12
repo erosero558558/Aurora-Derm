@@ -20,7 +20,7 @@ function parseExpectedRevisionFromFlags(
     return parsed;
 }
 
-function handleCodexCheckCommand(ctx) {
+async function handleCodexCheckCommand(ctx) {
     const {
         args = [],
         buildCodexCheckReport,
@@ -29,12 +29,17 @@ function handleCodexCheckCommand(ctx) {
         parseBoard,
         parseHandoffs,
         loadMetricsSnapshot,
+        loadJobsSnapshot,
     } = ctx;
     const wantsJson = args.includes('--json');
     const report = buildCodexCheckReport();
     const metricsSnapshot =
         typeof loadMetricsSnapshot === 'function'
             ? loadMetricsSnapshot()
+            : null;
+    const jobsSnapshot =
+        typeof loadJobsSnapshot === 'function'
+            ? await loadJobsSnapshot()
             : null;
     const reportWithDiagnostics = attachDiagnostics(
         report,
@@ -43,6 +48,7 @@ function handleCodexCheckCommand(ctx) {
             board: parseBoard(),
             handoffData: parseHandoffs(),
             metricsSnapshot,
+            jobsSnapshot,
         })
     );
 
@@ -64,7 +70,7 @@ function handleCodexCheckCommand(ctx) {
     return report;
 }
 
-function handleCodexCommand(ctx) {
+async function handleCodexCommand(ctx) {
     const {
         args,
         parseFlags,
@@ -164,7 +170,7 @@ function handleCodexCommand(ctx) {
             files: task.files || [],
             updated_at: currentDate(),
         });
-        runCodexCheck();
+        await runCodexCheck();
         console.log(`Codex start OK: ${taskId} (${block})`);
         for (const diag of wipDiagnostics) {
             console.log(`WARN [${diag.code}] ${diag.message}`);
@@ -215,7 +221,7 @@ function handleCodexCommand(ctx) {
                 .toLowerCase(),
         });
     }
-    runCodexCheck();
+    await runCodexCheck();
     console.log(`Codex stop OK: ${taskId} -> ${nextStatus}`);
 }
 

@@ -2,54 +2,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/TurneroSurfaceRegistry.php';
+
 function app_downloads_catalog_defaults(): array
 {
-    return [
-        'operator' => [
-            'version' => '0.1.0',
-            'updatedAt' => '',
-            'webFallbackUrl' => '/operador-turnos.html',
-            'guideUrl' => '/app-downloads/?surface=operator',
-            'targets' => [
-                'win' => [
-                    'url' => '/app-downloads/stable/operator/win/TurneroOperadorSetup.exe',
-                    'label' => 'Windows',
-                ],
-                'mac' => [
-                    'url' => '/app-downloads/stable/operator/mac/TurneroOperador.dmg',
-                    'label' => 'macOS',
-                ],
-            ],
-        ],
-        'kiosk' => [
-            'version' => '0.1.0',
-            'updatedAt' => '',
-            'webFallbackUrl' => '/kiosco-turnos.html',
-            'guideUrl' => '/app-downloads/?surface=kiosk',
-            'targets' => [
-                'win' => [
-                    'url' => '/app-downloads/stable/kiosk/win/TurneroKioscoSetup.exe',
-                    'label' => 'Windows',
-                ],
-                'mac' => [
-                    'url' => '/app-downloads/stable/kiosk/mac/TurneroKiosco.dmg',
-                    'label' => 'macOS',
-                ],
-            ],
-        ],
-        'sala_tv' => [
-            'version' => '0.1.0',
-            'updatedAt' => '',
-            'webFallbackUrl' => '/sala-turnos.html',
-            'guideUrl' => '/app-downloads/?surface=sala_tv',
-            'targets' => [
-                'android_tv' => [
-                    'url' => '/app-downloads/stable/sala-tv/android/TurneroSalaTV.apk',
-                    'label' => 'Android TV APK',
-                ],
-            ],
-        ],
-    ];
+    return turnero_surface_registry_catalog_defaults();
 }
 
 function app_downloads_catalog_timestamp(): string
@@ -95,8 +52,7 @@ function app_downloads_merge_surface(
     array $loaded,
     array $manifestSurface,
     string $updatedAt
-): array
-{
+): array {
     $targets = isset($loaded['targets']) && is_array($loaded['targets'])
         ? $loaded['targets']
         : [];
@@ -146,30 +102,92 @@ function read_app_downloads_catalog(): array
         }
     }
 
+    $resolved = [];
+    foreach ($defaults as $surfaceId => $surfaceDefaults) {
+        if (!is_array($surfaceDefaults)) {
+            continue;
+        }
+
+        $resolved[$surfaceId] = app_downloads_merge_surface(
+            $surfaceDefaults,
+            isset($loaded[$surfaceId]) && is_array($loaded[$surfaceId]) ? $loaded[$surfaceId] : [],
+            isset($manifestApps[$surfaceId]) && is_array($manifestApps[$surfaceId])
+                ? $manifestApps[$surfaceId]
+                : [],
+            $updatedAt
+        );
+    }
+
+    return $resolved;
+}
+
+function app_downloads_surface_ui_map(): array
+{
+    $surfaces = [];
+    foreach (turnero_surface_registry_surfaces() as $surfaceDefinition) {
+        $surfaceId = (string) ($surfaceDefinition['id'] ?? '');
+        if ($surfaceId === '') {
+            continue;
+        }
+
+        $catalog = isset($surfaceDefinition['catalog']) && is_array($surfaceDefinition['catalog'])
+            ? $surfaceDefinition['catalog']
+            : [];
+        $ops = isset($surfaceDefinition['ops']) && is_array($surfaceDefinition['ops'])
+            ? $surfaceDefinition['ops']
+            : [];
+        $installHubOps = isset($ops['installHub']) && is_array($ops['installHub'])
+            ? $ops['installHub']
+            : [];
+        $telemetryOps = isset($ops['telemetry']) && is_array($ops['telemetry'])
+            ? $ops['telemetry']
+            : [];
+        $productName = (string) (($surfaceDefinition['productName'] ?? '') ?: $surfaceId);
+
+        $surfaces[$surfaceId] = [
+            'id' => $surfaceId,
+            'family' => (string) ($surfaceDefinition['family'] ?? ''),
+            'webFallbackUrl' => (string) ($surfaceDefinition['webFallbackUrl'] ?? '/'),
+            'guideUrl' => (string) ($surfaceDefinition['guideUrl'] ?? ('/app-downloads/?surface=' . $surfaceId)),
+            'catalog' => [
+                'title' => (string) (($catalog['title'] ?? '') ?: $productName),
+                'eyebrow' => (string) ($catalog['eyebrow'] ?? ''),
+                'description' => (string) ($catalog['description'] ?? ''),
+                'qrTarget' => (string) ($catalog['qrTarget'] ?? 'prepared'),
+                'notes' => isset($catalog['notes']) && is_array($catalog['notes'])
+                    ? array_values(array_map(static fn ($note): string => (string) $note, $catalog['notes']))
+                    : [],
+            ],
+            'ops' => [
+                'installHub' => [
+                    'eyebrow' => (string) (($installHubOps['eyebrow'] ?? '') ?: ($catalog['eyebrow'] ?? '')),
+                    'title' => (string) (($installHubOps['title'] ?? '') ?: (($catalog['title'] ?? '') ?: $productName)),
+                    'description' => (string) (($installHubOps['description'] ?? '') ?: ($catalog['description'] ?? '')),
+                    'recommendedFor' => (string) ($installHubOps['recommendedFor'] ?? ''),
+                    'notes' => isset($installHubOps['notes']) && is_array($installHubOps['notes'])
+                        ? array_values(array_map(static fn ($note): string => (string) $note, $installHubOps['notes']))
+                        : [],
+                ],
+                'telemetry' => [
+                    'title' => (string) (($telemetryOps['title'] ?? '') ?: (($installHubOps['title'] ?? '') ?: (($catalog['title'] ?? '') ?: $productName))),
+                    'emptySummary' => (string) ($telemetryOps['emptySummary'] ?? ''),
+                ],
+            ],
+            'targetOrder' => turnero_surface_registry_target_keys($surfaceDefinition),
+            'launchDefaults' => isset($surfaceDefinition['launchDefaults']) && is_array($surfaceDefinition['launchDefaults'])
+                ? $surfaceDefinition['launchDefaults']
+                : [],
+        ];
+    }
+
+    return $surfaces;
+}
+
+function build_app_downloads_runtime_payload(array $state = []): array
+{
     return [
-        'operator' => app_downloads_merge_surface(
-            $defaults['operator'],
-            isset($loaded['operator']) && is_array($loaded['operator']) ? $loaded['operator'] : [],
-            isset($manifestApps['operator']) && is_array($manifestApps['operator'])
-                ? $manifestApps['operator']
-                : [],
-            $updatedAt
-        ),
-        'kiosk' => app_downloads_merge_surface(
-            $defaults['kiosk'],
-            isset($loaded['kiosk']) && is_array($loaded['kiosk']) ? $loaded['kiosk'] : [],
-            isset($manifestApps['kiosk']) && is_array($manifestApps['kiosk'])
-                ? $manifestApps['kiosk']
-                : [],
-            $updatedAt
-        ),
-        'sala_tv' => app_downloads_merge_surface(
-            $defaults['sala_tv'],
-            isset($loaded['sala_tv']) && is_array($loaded['sala_tv']) ? $loaded['sala_tv'] : [],
-            isset($manifestApps['sala_tv']) && is_array($manifestApps['sala_tv'])
-                ? $manifestApps['sala_tv']
-                : [],
-            $updatedAt
-        ),
+        'catalog' => read_app_downloads_catalog(),
+        'surfaces' => app_downloads_surface_ui_map(),
+        'state' => $state,
     ];
 }
