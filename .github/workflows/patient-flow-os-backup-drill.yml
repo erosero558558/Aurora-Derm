@@ -1,0 +1,334 @@
+name: Patient Flow OS Backup Drill
+
+on:
+    workflow_dispatch:
+        inputs:
+            target_environment:
+                description: 'Entorno fuente del backup drill'
+                required: true
+                default: 'production'
+                type: choice
+                options:
+                    - staging
+                    - production
+            max_rto_seconds:
+                description: 'Budget máximo de restore time objective en segundos'
+                required: true
+                default: '900'
+                type: string
+            max_rpo_seconds:
+                description: 'Budget máximo de recovery point objective en segundos'
+                required: true
+                default: '3600'
+                type: string
+            retention_days:
+                description: 'Retención en días para el artifact cifrado del backup drill'
+                required: true
+                default: '30'
+                type: string
+            confirm_drill_reset:
+                description: 'Confirmar explícitamente el reset destructivo del drill database'
+                required: false
+                default: false
+                type: boolean
+
+permissions:
+    contents: read
+
+concurrency:
+    group: patient-flow-os-backup-drill-${{ github.ref }}-${{ github.event.inputs.target_environment || 'production' }}
+    cancel-in-progress: false
+
+jobs:
+    patient-flow-os-backup-drill:
+        runs-on: ubuntu-latest
+        timeout-minutes: 40
+        environment:
+            name: ${{ format('patient-flow-os-{0}', github.event.inputs.target_environment || 'production') }}
+        defaults:
+            run:
+                shell: bash
+                working-directory: src/apps/patient-flow-os
+        env:
+            SOURCE_DATABASE_URL: ${{ secrets.PATIENT_FLOW_OS_DATABASE_URL }}
+            DRILL_DATABASE_URL: ${{ secrets.PATIENT_FLOW_OS_DRILL_DATABASE_URL }}
+            TARGET_ENVIRONMENT_INPUT: ${{ github.event.inputs.target_environment || 'production' }}
+            MAX_RTO_SECONDS_INPUT: ${{ github.event.inputs.max_rto_seconds || '900' }}
+            MAX_RPO_SECONDS_INPUT: ${{ github.event.inputs.max_rpo_seconds || '3600' }}
+            RETENTION_DAYS_INPUT: ${{ github.event.inputs.retention_days || '30' }}
+            CONFIRM_DRILL_RESET: ${{ github.event.inputs.confirm_drill_reset || 'false' }}
+            BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE }}
+            ARCHIVE_DESTINATION: github_artifact_encrypted
+            ENCRYPTION_MODE: gpg_symmetric
+            ENCRYPTION_KEY_REF: github_secret:PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE
+            BACKUP_DRILL_ARTIFACT_ROOT: ${{ github.workspace }}/verification/patient-flow-os-backup-drill
+            BACKUP_DRILL_WORK_ROOT: ${{ runner.temp }}/patient-flow-os-backup-drill
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validar secrets, thresholds y confirmación
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "${SOURCE_DATABASE_URL}" ]; then
+                    echo "::error::Falta el secret PATIENT_FLOW_OS_DATABASE_URL."
+                    exit 1
+                  fi
+                  if [ -z "${DRILL_DATABASE_URL}" ]; then
+                    echo "::error::Falta el secret PATIENT_FLOW_OS_DRILL_DATABASE_URL."
+                    exit 1
+                  fi
+                  if [ -z "${BACKUP_ENCRYPTION_PASSPHRASE}" ]; then
+                    echo "::error::Falta el secret PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE."
+                    exit 1
+                  fi
+                  if [ "${CONFIRM_DRILL_RESET}" != "true" ]; then
+                    echo "::error::confirm_drill_reset=true es obligatorio para resetear el drill database."
+                    exit 1
+                  fi
+                  case "${MAX_RTO_SECONDS_INPUT}" in
+                    ''|*[!0-9]*)
+                      echo "::error::max_rto_seconds debe ser entero positivo."
+                      exit 1
+                      ;;
+                  esac
+                  case "${MAX_RPO_SECONDS_INPUT}" in
+                    ''|*[!0-9]*)
+                      echo "::error::max_rpo_seconds debe ser entero positivo."
+                      exit 1
+                      ;;
+                  esac
+                  case "${RETENTION_DAYS_INPUT}" in
+                    ''|*[!0-9]*)
+                      echo "::error::retention_days debe ser entero positivo."
+                      exit 1
+                      ;;
+                  esac
+
+                  mkdir -p "${BACKUP_DRILL_ARTIFACT_ROOT}"
+                  mkdir -p "${BACKUP_DRILL_WORK_ROOT}"
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: src/apps/patient-flow-os/package-lock.json
+
+            - name: Instalar postgresql-client y gnupg
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y postgresql-client gnupg
+
+            - name: Instalar dependencias
+              run: npm ci
+
+            - name: Build Patient Flow OS
+              run: npm run build
+
+            - name: Smoke e inspect del source database
+              run: |
+                  set -euo pipefail
+                  DATABASE_URL="${SOURCE_DATABASE_URL}" npm run cutover -- smoke --json > "${BACKUP_DRILL_ARTIFACT_ROOT}/source-smoke.json"
+                  DATABASE_URL="${SOURCE_DATABASE_URL}" npm run cutover -- inspect --json > "${BACKUP_DRILL_ARTIFACT_ROOT}/source-inspect.json"
+
+            - name: Capturar logical backup con pg_dump
+              run: |
+                  set -euo pipefail
+                  BACKUP_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+                  DUMP_PATH="${BACKUP_DRILL_WORK_ROOT}/patient-flow-os.dump"
+                  DUMP_SHA_PATH="${BACKUP_DRILL_ARTIFACT_ROOT}/patient-flow-os.dump.sha256"
+
+                  pg_dump \
+                    --format=custom \
+                    --no-owner \
+                    --no-privileges \
+                    --file "${DUMP_PATH}" \
+                    "${SOURCE_DATABASE_URL}"
+
+                  BACKUP_FINISHED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+                  sha256sum "${DUMP_PATH}" > "${DUMP_SHA_PATH}"
+                  DUMP_BYTES="$(stat -c%s "${DUMP_PATH}")"
+
+                  {
+                    echo "BACKUP_STARTED_AT=${BACKUP_STARTED_AT}"
+                    echo "BACKUP_FINISHED_AT=${BACKUP_FINISHED_AT}"
+                    echo "DUMP_PATH=${DUMP_PATH}"
+                    echo "DUMP_SHA_PATH=${DUMP_SHA_PATH}"
+                    echo "DUMP_BYTES=${DUMP_BYTES}"
+                  } >> "${GITHUB_ENV}"
+
+            - name: Resetear drill database y restaurar backup
+              run: |
+                  set -euo pipefail
+
+                  psql "${DRILL_DATABASE_URL}" -v ON_ERROR_STOP=1 -c "DROP SCHEMA IF EXISTS public CASCADE;"
+                  psql "${DRILL_DATABASE_URL}" -v ON_ERROR_STOP=1 -c "CREATE SCHEMA public;"
+
+                  RESTORE_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+                  pg_restore \
+                    --no-owner \
+                    --no-privileges \
+                    --dbname "${DRILL_DATABASE_URL}" \
+                    "${DUMP_PATH}"
+                  RESTORE_FINISHED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+
+                  {
+                    echo "RESTORE_STARTED_AT=${RESTORE_STARTED_AT}"
+                    echo "RESTORE_FINISHED_AT=${RESTORE_FINISHED_AT}"
+                  } >> "${GITHUB_ENV}"
+
+            - name: Cifrar backup, calcular expiry y eliminar dump plano
+              run: |
+                  set -euo pipefail
+
+                  ENCRYPTED_DUMP_PATH="${BACKUP_DRILL_ARTIFACT_ROOT}/patient-flow-os.dump.gpg"
+                  ENCRYPTED_DUMP_SHA_PATH="${BACKUP_DRILL_ARTIFACT_ROOT}/patient-flow-os.dump.gpg.sha256"
+                  EXPIRES_AT="$(
+                    node -e "const base = new Date(process.env.BACKUP_FINISHED_AT); base.setUTCDate(base.getUTCDate() + Number(process.env.RETENTION_DAYS_INPUT || '30')); process.stdout.write(base.toISOString());"
+                  )"
+
+                  gpg \
+                    --batch \
+                    --yes \
+                    --pinentry-mode loopback \
+                    --passphrase "${BACKUP_ENCRYPTION_PASSPHRASE}" \
+                    --cipher-algo AES256 \
+                    --symmetric \
+                    --output "${ENCRYPTED_DUMP_PATH}" \
+                    "${DUMP_PATH}"
+
+                  sha256sum "${ENCRYPTED_DUMP_PATH}" > "${ENCRYPTED_DUMP_SHA_PATH}"
+                  ENCRYPTED_DUMP_BYTES="$(stat -c%s "${ENCRYPTED_DUMP_PATH}")"
+
+                  if command -v shred >/dev/null 2>&1; then
+                    shred -u "${DUMP_PATH}"
+                  else
+                    rm -f "${DUMP_PATH}"
+                  fi
+
+                  {
+                    echo "ENCRYPTED_DUMP_PATH=${ENCRYPTED_DUMP_PATH}"
+                    echo "ENCRYPTED_DUMP_SHA_PATH=${ENCRYPTED_DUMP_SHA_PATH}"
+                    echo "ENCRYPTED_DUMP_BYTES=${ENCRYPTED_DUMP_BYTES}"
+                    echo "EXPIRES_AT=${EXPIRES_AT}"
+                  } >> "${GITHUB_ENV}"
+
+            - name: Smoke e inspect del restored drill database
+              run: |
+                  set -euo pipefail
+                  DATABASE_URL="${DRILL_DATABASE_URL}" npm run cutover -- smoke --json > "${BACKUP_DRILL_ARTIFACT_ROOT}/restore-smoke.json"
+                  DATABASE_URL="${DRILL_DATABASE_URL}" npm run cutover -- inspect --json > "${BACKUP_DRILL_ARTIFACT_ROOT}/restore-inspect.json"
+
+            - name: Escribir backup drill manifest
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+                  const path = require('path');
+
+                  const artifactRoot = process.env.BACKUP_DRILL_ARTIFACT_ROOT;
+                  const manifest = {
+                    generatedAt: new Date().toISOString(),
+                    sourceEnvironment: process.env.TARGET_ENVIRONMENT_INPUT || 'production',
+                    restoreTarget: 'drill',
+                    backupMode: 'logical_pg_dump',
+                    archiveDestination: process.env.ARCHIVE_DESTINATION || 'github_artifact_encrypted',
+                    dumpPath: process.env.DUMP_PATH,
+                    dumpSha256Path: process.env.DUMP_SHA_PATH,
+                    encryptedDumpPath: process.env.ENCRYPTED_DUMP_PATH,
+                    encryptedDumpSha256Path: process.env.ENCRYPTED_DUMP_SHA_PATH,
+                    encryptionMode: process.env.ENCRYPTION_MODE || 'gpg_symmetric',
+                    encryptionKeyRef: process.env.ENCRYPTION_KEY_REF || 'github_secret:PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE',
+                    dumpBytes: Number(process.env.DUMP_BYTES || '0'),
+                    encryptedDumpBytes: Number(process.env.ENCRYPTED_DUMP_BYTES || '0'),
+                    retentionDays: Number(process.env.RETENTION_DAYS_INPUT || '30'),
+                    expiresAt: process.env.EXPIRES_AT,
+                    sourceSmokePath: path.join(artifactRoot, 'source-smoke.json'),
+                    sourceInspectPath: path.join(artifactRoot, 'source-inspect.json'),
+                    restoreSmokePath: path.join(artifactRoot, 'restore-smoke.json'),
+                    restoreInspectPath: path.join(artifactRoot, 'restore-inspect.json'),
+                    backupStartedAt: process.env.BACKUP_STARTED_AT,
+                    backupFinishedAt: process.env.BACKUP_FINISHED_AT,
+                    restoreStartedAt: process.env.RESTORE_STARTED_AT,
+                    restoreFinishedAt: process.env.RESTORE_FINISHED_AT
+                  };
+                  fs.writeFileSync(
+                    path.join(artifactRoot, 'backup-drill-manifest.json'),
+                    `${JSON.stringify(manifest, null, 2)}\n`
+                  );
+                  NODE
+
+            - name: Construir backup drill packet
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- backup-drill-packet \
+                    --input "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-drill-manifest.json" \
+                    --artifacts-dir "${BACKUP_DRILL_ARTIFACT_ROOT}" \
+                    --source-environment "${TARGET_ENVIRONMENT_INPUT}" \
+                    --max-rto-seconds "${MAX_RTO_SECONDS_INPUT}" \
+                    --max-rpo-seconds "${MAX_RPO_SECONDS_INPUT}" \
+                    --label "patient-flow-os-${TARGET_ENVIRONMENT_INPUT}-backup-drill" \
+                    --json \
+                    > "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-drill-packet-command.json"
+
+            - name: Verificar backup drill packet
+              run: |
+                  set -euo pipefail
+                  npm run cutover -- verify-backup-drill \
+                    --input "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-drill-packet.json" \
+                    --source-environment "${TARGET_ENVIRONMENT_INPUT}" \
+                    --max-rto-seconds "${MAX_RTO_SECONDS_INPUT}" \
+                    --max-rpo-seconds "${MAX_RPO_SECONDS_INPUT}" \
+                    --json \
+                    > "${BACKUP_DRILL_ARTIFACT_ROOT}/backup-drill-verification.json"
+
+            - name: Publicar artifacts de backup drill
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: patient-flow-os-backup-drill-artifacts
+                  path: verification/patient-flow-os-backup-drill/
+                  if-no-files-found: warn
+                  retention-days: ${{ fromJSON(github.event.inputs.retention_days || '30') }}
+
+            - name: Resumen de backup drill
+              if: ${{ always() }}
+              env:
+                  PACKET_JSON: ${{ env.BACKUP_DRILL_ARTIFACT_ROOT }}/backup-drill-packet.json
+                  VERIFICATION_JSON: ${{ env.BACKUP_DRILL_ARTIFACT_ROOT }}/backup-drill-verification.json
+              run: |
+                  node - <<'NODE'
+                  const fs = require('fs');
+
+                  const lines = ['## Patient Flow OS Backup Drill', ''];
+                  lines.push(`- Source environment: \`patient-flow-os-${process.env.TARGET_ENVIRONMENT_INPUT || 'production'}\``);
+                  lines.push(`- RTO budget: \`${process.env.MAX_RTO_SECONDS_INPUT || '900'}s\``);
+                  lines.push(`- RPO budget: \`${process.env.MAX_RPO_SECONDS_INPUT || '3600'}s\``);
+
+                  if (process.env.PACKET_JSON && fs.existsSync(process.env.PACKET_JSON)) {
+                    const packet = JSON.parse(fs.readFileSync(process.env.PACKET_JSON, 'utf8'));
+                    lines.push(`- Backup drill ready: \`${packet.ok === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Backup mode: \`${packet.backupMode || 'logical_pg_dump'}\``);
+                    lines.push(`- Restore target: \`${packet.restoreTarget || 'drill'}\``);
+                    lines.push(`- Archive destination: \`${packet.archiveDestination || 'github_artifact_encrypted'}\``);
+                    lines.push(`- Dump bytes: \`${packet?.summary?.dumpBytes ?? 'n/a'}\``);
+                    lines.push(`- Encrypted dump ready: \`${packet?.summary?.encryptedDumpReady === true ? 'yes' : 'no'}\``);
+                    lines.push(`- Encrypted dump bytes: \`${packet?.summary?.encryptedDumpBytes ?? 'n/a'}\``);
+                    lines.push(`- Measured RTO: \`${packet?.summary?.measuredRtoSeconds ?? 'n/a'}s\``);
+                    lines.push(`- Estimated RPO: \`${packet?.summary?.estimatedRpoSeconds ?? 'n/a'}s\``);
+                    lines.push(`- Retention days: \`${packet?.summary?.retentionDays ?? (process.env.RETENTION_DAYS_INPUT || 'n/a')}\``);
+                    lines.push(`- Expires at: \`${packet?.summary?.expiresAt || 'n/a'}\``);
+                    lines.push(`- Dump sha256: \`${packet?.evidence?.dumpSha256 || 'n/a'}\``);
+                    lines.push(`- Encrypted dump sha256: \`${packet?.evidence?.encryptedDumpSha256 || 'n/a'}\``);
+                  }
+
+                  if (process.env.VERIFICATION_JSON && fs.existsSync(process.env.VERIFICATION_JSON)) {
+                    const verification = JSON.parse(fs.readFileSync(process.env.VERIFICATION_JSON, 'utf8'));
+                    lines.push(`- Backup drill verification: \`${verification?.backupDrillVerification?.ok === true ? 'passed' : 'failed'}\``);
+                  }
+
+                  lines.push('- Backup drill artifact set: `backup-drill-manifest.json`, `patient-flow-os.dump.sha256`, `patient-flow-os.dump.gpg`, `patient-flow-os.dump.gpg.sha256`, `source-smoke.json`, `source-inspect.json`, `restore-smoke.json`, `restore-inspect.json`, `backup-drill-packet.json`, `backup-drill-checklist.json`, `backup-drill-verification.json`');
+                  lines.push(`- Artifact: \`patient-flow-os-backup-drill-artifacts\``);
+                  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+                  NODE

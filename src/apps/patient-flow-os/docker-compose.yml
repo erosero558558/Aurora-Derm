@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: patient_flow_os
+      POSTGRES_USER: patient_flow_os
+      POSTGRES_PASSWORD: patient_flow_os
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
