@@ -203,21 +203,56 @@ jobs:
 
             - name: Crear/actualizar incidente de conectividad deploy host
               if: ${{ always() && steps.connectivity_summary.outputs.issue_ready == 'true' }}
-              uses: actions/github-script@v7
+              shell: bash
               env:
+                  GITHUB_TOKEN: ${{ github.token }}
+                  GITHUB_API_URL: ${{ github.api_url }}
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+                  GITHUB_RUN_ID: ${{ github.run_id }}
+                  GITHUB_SERVER_URL: ${{ github.server_url }}
                   CONNECTIVITY_STATUS: ${{ steps.connectivity_summary.outputs.connectivity_status }}
                   CONNECTIVITY_CONFIGURED_HOST_COUNT: ${{ steps.connectivity_summary.outputs.configured_host_count }}
                   CONNECTIVITY_OPEN_TARGETS: ${{ steps.connectivity_summary.outputs.open_targets }}
                   CONNECTIVITY_SIGNAL: ${{ steps.connectivity_summary.outputs.connectivity_signal }}
-              with:
-                  script: |
-                      const owner = context.repo.owner;
-                      const repo = context.repo.repo;
+              run: |
+                  set -euo pipefail
+                  node <<'NODE'
+                      const token = process.env.GITHUB_TOKEN || '';
+                      if (!token) {
+                        throw new Error('GITHUB_TOKEN missing');
+                      }
+                      const [owner, repo] = String(process.env.GITHUB_REPOSITORY || '').split('/');
+                      if (!owner || !repo) {
+                        throw new Error(`Invalid GITHUB_REPOSITORY: ${process.env.GITHUB_REPOSITORY || ''}`);
+                      }
+                      const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';
                       const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';
-                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const runUrl = `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${owner}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID || ''}`;
                       const now = new Date().toISOString();
                       const signalMarker = `<!-- diagnose-host-connectivity-signal:${process.env.CONNECTIVITY_SIGNAL || 'unknown'} -->`;
                       const baseLabels = ['production-alert', 'diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning'];
+
+                      async function githubRequest(path, options = {}) {
+                        const method = options.method || 'GET';
+                        const response = await fetch(`${apiBase}${path}`, {
+                          method,
+                          headers: {
+                            authorization: `Bearer ${token}`,
+                            accept: 'application/vnd.github+json',
+                            'content-type': 'application/json',
+                            'user-agent': 'diagnose-host-connectivity',
+                          },
+                          body: options.body ? JSON.stringify(options.body) : undefined,
+                        });
+                        if (!response.ok) {
+                          const errorBody = await response.text();
+                          throw new Error(`${method} ${path} failed: ${response.status} ${errorBody}`);
+                        }
+                        if (response.status === 204) {
+                          return null;
+                        }
+                        return response.json();
+                      }
 
                       const normalizeLabels = (labels) =>
                         (labels || [])
@@ -248,12 +283,8 @@ jobs:
                         signalMarker
                       ].join('\n');
 
-                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
-                        owner,
-                        repo,
-                        state: 'open',
-                        per_page: 100
-                      });
+                      const openIssues =
+                        (await githubRequest(`/repos/${owner}/${repo}/issues?state=open&per_page=100`)) || [];
 
                       const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
                       if (existing) {
@@ -262,98 +293,128 @@ jobs:
                         const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), labels);
                         if (existingBody.includes(signalMarker)) {
                           if (!labelsAlreadyApplied) {
-                            await github.rest.issues.update({
-                              owner,
-                              repo,
-                              issue_number: existing.number,
-                              labels
+                            await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}`, {
+                              method: 'PATCH',
+                              body: { labels },
                             });
-                            core.info(`Issue diagnose-host-connectivity actualizo labels: #${existing.number}`);
+                            console.log(`Issue diagnose-host-connectivity actualizo labels: #${existing.number}`);
                           }
-                          core.info(`Issue diagnose-host-connectivity ya refleja la misma senal: #${existing.number}`);
+                          console.log(`Issue diagnose-host-connectivity ya refleja la misma senal: #${existing.number}`);
                           return;
                         }
-                        await github.rest.issues.update({
-                          owner,
-                          repo,
-                          issue_number: existing.number,
-                          body,
-                          labels
+                        await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}`, {
+                          method: 'PATCH',
+                          body: {
+                            body,
+                            labels,
+                          },
                         });
-                        await github.rest.issues.createComment({
-                          owner,
-                          repo,
-                          issue_number: existing.number,
-                          body: [
-                            'Incidente de conectividad actualizado por cambio de senal.',
-                            '',
-                            `- Fecha: ${now}`,
-                            `- Run: ${runUrl}`,
-                            `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'unknown'}`,
-                            `- configured_host_count: ${process.env.CONNECTIVITY_CONFIGURED_HOST_COUNT || '0'}`,
-                            `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'none'}`
-                          ].join('\n')
+                        await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}/comments`, {
+                          method: 'POST',
+                          body: {
+                            body: [
+                              'Incidente de conectividad actualizado por cambio de senal.',
+                              '',
+                              `- Fecha: ${now}`,
+                              `- Run: ${runUrl}`,
+                              `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'unknown'}`,
+                              `- configured_host_count: ${process.env.CONNECTIVITY_CONFIGURED_HOST_COUNT || '0'}`,
+                              `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'none'}`
+                            ].join('\n'),
+                          },
                         });
-                        core.info(`Issue diagnose-host-connectivity actualizado: #${existing.number}`);
+                        console.log(`Issue diagnose-host-connectivity actualizado: #${existing.number}`);
                       } else {
-                        const created = await github.rest.issues.create({
-                          owner,
-                          repo,
-                          title,
-                          body,
-                          labels: baseLabels
+                        const created = await githubRequest(`/repos/${owner}/${repo}/issues`, {
+                          method: 'POST',
+                          body: {
+                            title,
+                            body,
+                            labels: baseLabels,
+                          },
                         });
-                        core.info(`Issue diagnose-host-connectivity creado: #${created.data.number}`);
+                        console.log(`Issue diagnose-host-connectivity creado: #${created.number}`);
                       }
+                  NODE
 
             - name: Cerrar incidente de conectividad deploy host al recuperar
               if: ${{ always() && steps.connectivity_summary.outputs.reachable_any == 'true' }}
-              uses: actions/github-script@v7
+              shell: bash
               env:
+                  GITHUB_TOKEN: ${{ github.token }}
+                  GITHUB_API_URL: ${{ github.api_url }}
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+                  GITHUB_RUN_ID: ${{ github.run_id }}
+                  GITHUB_SERVER_URL: ${{ github.server_url }}
                   CONNECTIVITY_STATUS: ${{ steps.connectivity_summary.outputs.connectivity_status }}
                   CONNECTIVITY_OPEN_TARGETS: ${{ steps.connectivity_summary.outputs.open_targets }}
-              with:
-                  script: |
-                      const owner = context.repo.owner;
-                      const repo = context.repo.repo;
+              run: |
+                  set -euo pipefail
+                  node <<'NODE'
+                      const token = process.env.GITHUB_TOKEN || '';
+                      if (!token) {
+                        throw new Error('GITHUB_TOKEN missing');
+                      }
+                      const [owner, repo] = String(process.env.GITHUB_REPOSITORY || '').split('/');
+                      if (!owner || !repo) {
+                        throw new Error(`Invalid GITHUB_REPOSITORY: ${process.env.GITHUB_REPOSITORY || ''}`);
+                      }
+                      const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';
                       const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';
-                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const runUrl = `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${owner}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID || ''}`;
                       const now = new Date().toISOString();
 
-                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
-                        owner,
-                        repo,
-                        state: 'open',
-                        per_page: 100
-                      });
+                      async function githubRequest(path, options = {}) {
+                        const method = options.method || 'GET';
+                        const response = await fetch(`${apiBase}${path}`, {
+                          method,
+                          headers: {
+                            authorization: `Bearer ${token}`,
+                            accept: 'application/vnd.github+json',
+                            'content-type': 'application/json',
+                            'user-agent': 'diagnose-host-connectivity',
+                          },
+                          body: options.body ? JSON.stringify(options.body) : undefined,
+                        });
+                        if (!response.ok) {
+                          const errorBody = await response.text();
+                          throw new Error(`${method} ${path} failed: ${response.status} ${errorBody}`);
+                        }
+                        if (response.status === 204) {
+                          return null;
+                        }
+                        return response.json();
+                      }
+
+                      const openIssues =
+                        (await githubRequest(`/repos/${owner}/${repo}/issues?state=open&per_page=100`)) || [];
 
                       const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
                       if (!existing) {
-                        core.info('No hay incidente de conectividad abierto para cerrar.');
+                        console.log('No hay incidente de conectividad abierto para cerrar.');
                         return;
                       }
 
-                      await github.rest.issues.createComment({
-                        owner,
-                        repo,
-                        issue_number: existing.number,
-                        body: [
-                          'Recuperado automaticamente por Diagnose Host Connectivity.',
-                          '',
-                          `- Fecha: ${now}`,
-                          `- Run: ${runUrl}`,
-                          `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'reachable'}`,
-                          `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'n/a'}`
-                        ].join('\n')
+                      await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}/comments`, {
+                        method: 'POST',
+                        body: {
+                          body: [
+                            'Recuperado automaticamente por Diagnose Host Connectivity.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'reachable'}`,
+                            `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'n/a'}`
+                          ].join('\n'),
+                        },
                       });
 
-                      await github.rest.issues.update({
-                        owner,
-                        repo,
-                        issue_number: existing.number,
-                        state: 'closed'
+                      await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}`, {
+                        method: 'PATCH',
+                        body: { state: 'closed' },
                       });
-                      core.info(`Issue diagnose-host-connectivity cerrado: #${existing.number}`);
+                      console.log(`Issue diagnose-host-connectivity cerrado: #${existing.number}`);
+                  NODE
 
             - name: Publicar reporte
               uses: actions/upload-artifact@v4

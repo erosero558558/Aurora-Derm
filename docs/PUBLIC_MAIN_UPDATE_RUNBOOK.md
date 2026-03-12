@@ -159,6 +159,9 @@ and `connectivity-report.json`. When every configured host origin finishes
 without puertos abiertos, it raises
 `[ALERTA PROD] Diagnose host connectivity sin ruta de deploy`; that incident
 closes automatically once a later diagnose run observes any open target again.
+The workflow now manages that incident with shell + native Node fetch instead
+of `actions/github-script`, so the diagnostic run no longer depends on
+downloading that action before the job can even start.
 
 If you need to skip repair and update the page immediately, dispatch
 `deploy-hosting.yml` directly with the transport fallback command above.

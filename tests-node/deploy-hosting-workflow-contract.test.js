@@ -709,6 +709,10 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
         'connectivity-report.json',
         'connectivity-report.txt',
         'connectivity-report.tsv',
+        "GITHUB_TOKEN: ${{ github.token }}",
+        "const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';",
+        "authorization: `Bearer ${token}`",
+        "'user-agent': 'diagnose-host-connectivity'",
         "append(outputPath, 'connectivity_status', status);",
         "append(outputPath, 'reachable_any', payload.reachable_any ? 'true' : 'false');",
         "append(outputPath, 'issue_ready', payload.issue_ready ? 'true' : 'false');",
@@ -734,4 +738,10 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
             `falta wiring en diagnose-host-connectivity: ${snippet}`
         );
     }
+
+    assert.equal(
+        raw.includes('uses: actions/github-script@v7'),
+        false,
+        'diagnose-host-connectivity ya no debe depender de actions/github-script@v7'
+    );
 });
