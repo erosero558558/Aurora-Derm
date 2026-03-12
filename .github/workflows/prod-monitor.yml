@@ -303,7 +303,6 @@ jobs:
                     } else {
                       $configured = $false
                       $healthy = $false
-                      $operationallyHealthy = $false
                       $repoHygieneIssue = $false
                       $headDrift = $false
                       $telemetryGap = $false
@@ -311,7 +310,6 @@ jobs:
 
                       try { $configured = [bool]$publicSync.configured } catch { $configured = $false }
                       try { $healthy = [bool]$publicSync.healthy } catch { $healthy = $false }
-                      try { $operationallyHealthy = [bool]$publicSync.operationallyHealthy } catch { $operationallyHealthy = $healthy }
                       try { $repoHygieneIssue = [bool]$publicSync.repoHygieneIssue } catch { $repoHygieneIssue = $false }
                       try { $headDrift = [bool]$publicSync.headDrift } catch { $headDrift = $false }
                       try { $telemetryGap = [bool]$publicSync.telemetryGap } catch { $telemetryGap = $false }
@@ -324,9 +322,6 @@ jobs:
                       }
                       if (-not $healthy) {
                         $reasons.Add('public_sync_unhealthy')
-                      }
-                      if (-not $operationallyHealthy) {
-                        $reasons.Add('public_sync_operationally_unhealthy')
                       }
                       if ($repoHygieneIssue) {
                         $reasons.Add('public_sync_repo_hygiene')
