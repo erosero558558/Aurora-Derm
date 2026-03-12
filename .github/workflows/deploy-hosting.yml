@@ -676,7 +676,8 @@ jobs:
                       }
 
                       async function listRecentRuns() {
-                        const response = await github.rest.actions.listWorkflowRunsForWorkflow(
+                        const response = await github.request(
+                          'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',
                           {
                             owner,
                             repo,
@@ -824,7 +825,8 @@ jobs:
                       }
 
                       async function listRecentRuns() {
-                        const response = await github.rest.actions.listWorkflowRunsForWorkflow(
+                        const response = await github.request(
+                          'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',
                           {
                             owner,
                             repo,
