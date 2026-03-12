@@ -134,6 +134,33 @@ test('deploy-hosting contiene pasos de dispatch hacia post-deploy', () => {
     );
 });
 
+test('deploy-hosting clasifica bloqueos de conectividad del runner en el preflight de transporte', () => {
+    const { raw } = loadWorkflow();
+
+    for (const snippet of [
+        'TRANSPORT_PREFLIGHT_REASON: not_evaluated',
+        'mkdir -p .public-cutover',
+        'echo "TRANSPORT_PREFLIGHT_REASON=ok" >> "$GITHUB_ENV"',
+        'echo "TRANSPORT_PREFLIGHT_REASON=runner_tcp_unreachable" >> "$GITHUB_ENV"',
+        "reason: 'runner_tcp_unreachable'",
+        "reason: 'ok'",
+        'reachable: false',
+        'reachable: true',
+        '.public-cutover/transport-preflight.json',
+        "fs.writeFileSync('.public-cutover/transport-preflight.json', JSON.stringify(payload, null, 2));",
+        'transport_preflight_reason: \\`${TRANSPORT_PREFLIGHT_REASON}\\`',
+        'transport_preflight_target: \\`${DEPLOY_PROTOCOL}:${FTP_SERVER_PORT}\\`',
+        'transport_preflight_artifact: \\`.public-cutover/transport-preflight.json\\`',
+        '::error::No se puede abrir ${HOST}:${PORT} desde GitHub Runner.',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta clasificacion de bloqueo de red en deploy-hosting: ${snippet}`
+        );
+    }
+});
+
 test('deploy-hosting evalua y gestiona incidente dedicado de telemedicina post-cutover', () => {
     const { raw, parsed } = loadWorkflow();
     const steps = parsed?.jobs?.['deploy-prod']?.steps || [];

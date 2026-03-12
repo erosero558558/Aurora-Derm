@@ -461,6 +461,7 @@ jobs:
             TELEMEDICINE_DEPLOY_REASON: not_evaluated
             TELEMEDICINE_DEPLOY_FAILURES: -1
             TELEMEDICINE_DEPLOY_NON_TELE_FAILURES: -1
+            TRANSPORT_PREFLIGHT_REASON: not_evaluated
 
         steps:
             - name: Checkout
@@ -516,10 +517,39 @@ jobs:
                   set -euo pipefail
                   HOST="${{ secrets.FTP_SERVER }}"
                   PORT="${FTP_SERVER_PORT}"
+                  mkdir -p .public-cutover
                   echo "Testeando conectividad TCP a ${HOST}:${PORT} ..."
                   if timeout 8 bash -c "cat < /dev/null > /dev/tcp/${HOST}/${PORT}" 2>/dev/null; then
+                    echo "TRANSPORT_PREFLIGHT_REASON=ok" >> "$GITHUB_ENV"
+                    node <<'NODE'
+                    const fs = require('node:fs');
+                    const payload = {
+                      attempted: true,
+                      reachable: true,
+                      reason: 'ok',
+                      protocol: process.env.DEPLOY_PROTOCOL || '',
+                      port: process.env.FTP_SERVER_PORT || '',
+                      target: `${process.env.DEPLOY_PROTOCOL || ''}:${process.env.FTP_SERVER_PORT || ''}`,
+                      generated_at: new Date().toISOString(),
+                    };
+                    fs.writeFileSync('.public-cutover/transport-preflight.json', JSON.stringify(payload, null, 2));
+                    NODE
                     echo "TCP OK en ${HOST}:${PORT}"
                   else
+                    echo "TRANSPORT_PREFLIGHT_REASON=runner_tcp_unreachable" >> "$GITHUB_ENV"
+                    node <<'NODE'
+                    const fs = require('node:fs');
+                    const payload = {
+                      attempted: true,
+                      reachable: false,
+                      reason: 'runner_tcp_unreachable',
+                      protocol: process.env.DEPLOY_PROTOCOL || '',
+                      port: process.env.FTP_SERVER_PORT || '',
+                      target: `${process.env.DEPLOY_PROTOCOL || ''}:${process.env.FTP_SERVER_PORT || ''}`,
+                      generated_at: new Date().toISOString(),
+                    };
+                    fs.writeFileSync('.public-cutover/transport-preflight.json', JSON.stringify(payload, null, 2));
+                    NODE
                     echo "::error::No se puede abrir ${HOST}:${PORT} desde GitHub Runner."
                     exit 1
                   fi
@@ -1613,6 +1643,9 @@ jobs:
                     echo "- postdeploy_rollout_dispatch_manifest: \`.public-cutover/postdeploy-rollout-dispatch.json\`";
                     echo "- public_cutover_artifact: \`public-cutover-evidence\`";
                     echo "- public_cutover_repo_vars: \`PROD_MONITOR_ENABLE_PUBLIC_CUTOVER,PUBLIC_CUTOVER_STARTED_AT,PUBLIC_CUTOVER_WINDOW_HOURS,PROD_MONITOR_ENABLE_PUBLIC_V4_ROLLOUT,PUBLIC_V4_ROLLOUT_STAGE,PUBLIC_V4_ROLLOUT_SURFACE_TEST,PUBLIC_V4_ROLLOUT_SURFACE_CONTROL,PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING,PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT,PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP,PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT,PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL\`";
+                    echo "- transport_preflight_reason: \`${TRANSPORT_PREFLIGHT_REASON}\`";
+                    echo "- transport_preflight_target: \`${DEPLOY_PROTOCOL}:${FTP_SERVER_PORT}\`";
+                    echo "- transport_preflight_artifact: \`.public-cutover/transport-preflight.json\`";
                     echo "- telemedicine_deploy_status: \`${TELEMEDICINE_DEPLOY_STATUS}\`";
                     echo "- telemedicine_deploy_reason: \`${TELEMEDICINE_DEPLOY_REASON}\`";
                     echo "- telemedicine_deploy_failures: \`${TELEMEDICINE_DEPLOY_FAILURES}\`";

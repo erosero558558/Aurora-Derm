@@ -134,6 +134,20 @@ failures without the stale-host signature do not auto-dispatch transport.
 If you need to skip repair and update the page immediately, dispatch
 `deploy-hosting.yml` directly with the transport fallback command above.
 
+If `deploy-hosting.yml` stops at `Preflight red (Prod)` and the summary reports
+`transport_preflight_reason=runner_tcp_unreachable`, GitHub Actions cannot open
+the selected transport port from the runner. Try both `ftps:21` and `sftp:22`;
+if both report `runner_tcp_unreachable`, treat it as a runner-to-host network
+block, not as a repo/build regression.
+
+In that case, inspect `.public-cutover/transport-preflight.json` from the run
+artifact and move to a manual host-side publish path:
+
+1. Publish from the server or hosting console, for example `bash ./bin/deploy-public-v3-live.sh` in `/var/www/figo`
+2. Verify page freshness with `pwsh -File scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1`
+3. Verify cron health with `node agent-orchestrator.js jobs verify public_main_sync --json`
+4. Restore runner reachability to `:21` or `:22` before depending on `deploy-hosting.yml` again
+
 After a transport fallback publish, verify both layers explicitly:
 
 1. Page freshness via `pwsh -File scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1`
