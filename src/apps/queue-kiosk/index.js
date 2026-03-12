@@ -1,4 +1,9 @@
 import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
+import {
+    getTurneroClinicBrandName,
+    getTurneroConsultorioLabel,
+    loadTurneroClinicProfile,
+} from '../queue-shared/clinic-profile.js';
 
 const API_ENDPOINT = '/api.php';
 const CHAT_ENDPOINT = '/figo-chat.php';
@@ -69,6 +74,7 @@ const state = {
     voiceGuideSupported: false,
     voiceGuideBusy: false,
     voiceGuideUtterance: null,
+    clinicProfile: null,
 };
 
 let kioskHeartbeat = null;
@@ -118,6 +124,26 @@ function escapeHtml(value) {
 
 function getById(id) {
     return document.getElementById(id);
+}
+
+function getKioskConsultorioLabel(consultorio) {
+    return getTurneroConsultorioLabel(state.clinicProfile, consultorio);
+}
+
+function applyKioskClinicProfile(profile) {
+    state.clinicProfile = profile;
+    const clinicName = getTurneroClinicBrandName(profile);
+    document.title = `Kiosco de Turnos | ${clinicName}`;
+
+    const welcomeBrand = document.querySelector('#kioskWelcomeScreen strong');
+    if (welcomeBrand instanceof HTMLElement) {
+        welcomeBrand.textContent = `Bienvenida a ${clinicName}`;
+    }
+
+    const headerBrand = document.querySelector('.kiosk-brand strong');
+    if (headerBrand instanceof HTMLElement) {
+        headerBrand.textContent = clinicName;
+    }
 }
 
 function resolveKioskAppMode() {
@@ -524,7 +550,8 @@ function buildVoiceGuideText() {
         state.selectedFlow === 'walkin'
             ? 'Si no tienes cita, escribe iniciales y pulsa Generar turno.'
             : 'Si tienes cita, escribe telefono, fecha y hora y pulsa Confirmar check in.';
-    return `Bienvenida al kiosco de turnos de Aurora Derm. ${flowHint} Si necesitas ayuda, pulsa Necesito apoyo y recepcion te asistira. Conserva tu ticket y espera el llamado en la pantalla de sala.`;
+    const clinicName = getTurneroClinicBrandName(state.clinicProfile);
+    return `Bienvenida al kiosco de turnos de ${clinicName}. ${flowHint} Si necesitas ayuda, pulsa Necesito apoyo y recepcion te asistira. Conserva tu ticket y espera el llamado en la pantalla de sala.`;
 }
 
 function runVoiceGuide({ source = 'button' } = {}) {
@@ -2027,7 +2054,11 @@ function renderQueuePanel(queueState) {
                 .map(
                     (ticket) => `
                         <article class="queue-called-card">
-                            <header>Consultorio ${escapeHtml(ticket.assignedConsultorio)}</header>
+                            <header>${escapeHtml(
+                                getKioskConsultorioLabel(
+                                    ticket.assignedConsultorio
+                                )
+                            )}</header>
                             <strong>${escapeHtml(ticket.ticketCode || '--')}</strong>
                             <span>${escapeHtml(ticket.patientInitials || '--')}</span>
                         </article>
@@ -3265,6 +3296,9 @@ function stopQueuePolling({ reason = 'paused' } = {}) {
 }
 
 function initKiosk() {
+    void loadTurneroClinicProfile().then((profile) => {
+        applyKioskClinicProfile(profile);
+    });
     document.body.dataset.kioskMode = 'star';
     ensureKioskStarStyles();
     state.idleResetMs = resolveIdleResetMs();

@@ -45,6 +45,7 @@ const initialState = {
         leadOpsMeta: null,
         queueSurfaceStatus: null,
         appDownloads: null,
+        turneroClinicProfile: null,
         clinicalHistoryMeta: null,
         mediaFlowMeta: null,
         funnelMetrics: null,

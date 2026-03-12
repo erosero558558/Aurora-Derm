@@ -48,8 +48,17 @@ function getSuggestedDomain(queueFocus) {
     return 'operations';
 }
 
-function buildDomainCopy(domain) {
+function buildDomainCopy(domain, adminMode = 'expert') {
     if (domain === 'deployment') {
+        if (adminMode === 'basic') {
+            return {
+                title: 'Experiencia: Despliegue',
+                summary:
+                    'Checklist de apertura, perfil por clínica y canon web del piloto viven aquí. Los instaladores quedan para el siguiente release.',
+                primaryHref: '#queueOpeningChecklist',
+                primaryLabel: 'Ir a apertura diaria',
+            };
+        }
         return {
             title: 'Experiencia: Despliegue',
             summary:
@@ -101,9 +110,15 @@ function applyDomainVisibility(hub, effectiveDomain) {
 function buildModel(hub) {
     const selectedDomain = loadSelection();
     const suggestedDomain = getSuggestedDomain(hub?.dataset?.queueFocus || '');
+    const adminMode =
+        String(hub?.dataset?.queueAdminMode || '')
+            .trim()
+            .toLowerCase() === 'basic'
+            ? 'basic'
+            : 'expert';
     const effectiveDomain =
         selectedDomain === 'auto' ? suggestedDomain : selectedDomain;
-    const copy = buildDomainCopy(effectiveDomain);
+    const copy = buildDomainCopy(effectiveDomain, adminMode);
 
     return {
         selectedDomain,

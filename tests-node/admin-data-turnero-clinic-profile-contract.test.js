@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
+const { resolve } = require('node:path');
+
+test('AdminDataController expone turneroClinicProfile para el piloto web por clinica', () => {
+    const phpScript = `
+        $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'admin-data-turnero-profile-' . bin2hex(random_bytes(6));
+        mkdir($tempDir, 0777, true);
+        putenv('PIELARMONIA_DATA_DIR=' . $tempDir);
+        putenv('PIELARMONIA_AVAILABILITY_SOURCE=store');
+        ini_set('log_errors', '1');
+        ini_set('error_log', $tempDir . DIRECTORY_SEPARATOR . 'php-error.log');
+        if (!defined('TESTING_ENV')) {
+            define('TESTING_ENV', true);
+        }
+        require 'api-lib.php';
+        require 'controllers/AdminDataController.php';
+        ensure_data_file();
+        try {
+            AdminDataController::index([
+                'store' => read_store(),
+                'isAdmin' => true,
+            ]);
+        } catch (TestingExitException $e) {
+            echo json_encode($e->payload);
+        }
+    `;
+
+    const result = spawnSync('php', ['-r', phpScript], {
+        cwd: resolve(__dirname, '..'),
+        encoding: 'utf8',
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    const profile = payload?.data?.turneroClinicProfile;
+
+    assert.equal(payload.ok, true);
+    assert.equal(profile?.schema, 'turnero-clinic-profile/v1');
+    assert.equal(profile?.clinic_id, 'piel-armonia-quito');
+    assert.equal(profile?.release?.admin_mode_default, 'basic');
+    assert.equal(profile?.release?.separate_deploy, true);
+    assert.equal(profile?.release?.native_apps_blocking, false);
+    assert.equal(profile?.surfaces?.operator?.route, '/operador-turnos.html');
+    assert.equal(profile?.surfaces?.kiosk?.route, '/kiosco-turnos.html');
+    assert.equal(profile?.surfaces?.display?.route, '/sala-turnos.html');
+});

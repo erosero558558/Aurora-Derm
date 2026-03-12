@@ -52,6 +52,11 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
             data.appDownloads && typeof data.appDownloads === 'object'
                 ? data.appDownloads
                 : fallbackState?.appDownloads || null,
+        turneroClinicProfile:
+            data.turneroClinicProfile &&
+            typeof data.turneroClinicProfile === 'object'
+                ? data.turneroClinicProfile
+                : fallbackState?.turneroClinicProfile || null,
         clinicalHistoryMeta:
             data.clinicalHistoryMeta &&
             typeof data.clinicalHistoryMeta === 'object'
@@ -78,6 +83,7 @@ export function normalizeAdminStorePayload(payload, currentFunnelMetrics) {
         leadOpsMeta: payload.leadOpsMeta || null,
         queueSurfaceStatus: payload.queueSurfaceStatus || null,
         appDownloads: payload.appDownloads || null,
+        turneroClinicProfile: payload.turneroClinicProfile || null,
         clinicalHistoryMeta: payload.clinicalHistoryMeta || null,
         mediaFlowMeta: payload.mediaFlowMeta || null,
         funnelMetrics: payload.funnelMetrics || currentFunnelMetrics,

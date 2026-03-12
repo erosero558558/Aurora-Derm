@@ -143,10 +143,10 @@ $initialPayload = build_app_downloads_runtime_payload([
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Centro de instalacion turnero - Piel en Armonia</title>
+        <title>Instaladores opcionales del turnero - Piel en Armonia</title>
         <meta
             name="description"
-            content="Descarga Operador, Kiosco y Sala TV con el perfil correcto para cada equipo."
+            content="Instaladores opcionales del turnero para el siguiente release. El piloto estable actual corre por web."
         />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="/app-downloads/app-downloads.css?v=app-downloads-20260310-v2" />
@@ -155,11 +155,12 @@ $initialPayload = build_app_downloads_runtime_payload([
         <main class="app-downloads-shell">
             <section class="app-downloads-hero">
                 <div class="app-downloads-hero__copy">
-                    <p class="app-downloads-kicker">Centro de instalacion</p>
-                    <h1>Prepara cada equipo sin mezclar operador, kiosco y TV</h1>
+                    <p class="app-downloads-kicker">Siguiente release</p>
+                    <h1>Instaladores opcionales para Operador, Kiosco y Sala TV</h1>
                     <p>
-                        Usa esta pagina para elegir el dispositivo correcto, descargar la app adecuada
-                        y validar la ruta operativa antes de ponerla en uso.
+                        El piloto estable actual sale por web con `admin`, `operador`, `kiosco`
+                        y `sala`. Esta página queda como centro opcional para preparar instaladores
+                        cuando existan artefactos reales por equipo.
                     </p>
                     <div class="app-downloads-hero__actions">
                         <a href="/admin.html#queue">Abrir admin de soporte</a>

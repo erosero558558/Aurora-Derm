@@ -36,6 +36,12 @@ import {
     getWaitingForConsultorio,
 } from '../admin-v3/shared/modules/queue/selectors.js';
 import {
+    getTurneroClinicBrandName,
+    getTurneroClinicShortName,
+    getTurneroConsultorioLabel,
+    loadTurneroClinicProfile,
+} from '../queue-shared/clinic-profile.js';
+import {
     dismissQueueSensitiveDialog,
     handleQueueAction,
 } from '../admin-v3/core/boot/listeners/action-groups/queue.js';
@@ -88,6 +94,7 @@ const operatorRuntime = {
     numpad: createEmptyNumpadValidationState(),
     shell: createEmptyShellState(),
 };
+let operatorClinicProfile = null;
 
 function getById(id) {
     return document.getElementById(id);
@@ -100,6 +107,25 @@ function escapeHtml(value) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+}
+
+function getOperatorConsultorioShortLabel(consultorio) {
+    return getTurneroConsultorioLabel(operatorClinicProfile, consultorio, {
+        short: true,
+    });
+}
+
+function applyOperatorClinicProfile(profile) {
+    operatorClinicProfile = profile;
+    const clinicName = getTurneroClinicBrandName(profile);
+    const clinicShortName = getTurneroClinicShortName(profile);
+
+    document.title = `Turnero Operador - ${clinicName}`;
+    document.querySelectorAll('.queue-operator-kicker').forEach((node) => {
+        if (node instanceof HTMLElement) {
+            node.textContent = `${clinicShortName} · Operador`;
+        }
+    });
 }
 
 function getDesktopBridge() {
@@ -226,8 +252,9 @@ function buildOperatorHeartbeatPayload() {
         Number(state.queue.stationConsultorio || 1) === 2 ? 2 : 1;
     const stationKey = `c${stationNumber}`;
     const locked = state.queue.stationMode === 'locked';
+    const stationShortLabel = getOperatorConsultorioShortLabel(stationNumber);
     const stationLabel = locked
-        ? `Operador C${stationNumber} fijo`
+        ? `Operador ${stationShortLabel} fijo`
         : 'Operador modo libre';
     const numpadStatus = buildOperatorNumpadStatus(state.queue);
     const readyForLiveUse = operatorRuntime.online && numpadStatus.ready;
@@ -753,7 +780,9 @@ function setReadinessCheck(id, state, detail) {
 function updateOperatorReadiness() {
     const state = getState();
     const numpadStatus = buildOperatorNumpadStatus(state.queue);
-    const stationLabel = `C${Number(state.queue.stationConsultorio || 1)} ${
+    const stationLabel = `${getOperatorConsultorioShortLabel(
+        Number(state.queue.stationConsultorio || 1)
+    )} ${
         state.queue.stationMode === 'locked' ? 'fijo' : 'libre'
     }`;
     const routeSummary = `${stationLabel} · ${
@@ -874,8 +903,8 @@ function updateOperatorActionGuide() {
             'Usa + para re-llamar, . para preparar completar y - para preparar no show.';
     } else if (waitingTicket && waitingTicket.ticketCode) {
         title = `Siguiente: ${waitingTicket.ticketCode}`;
-        summary = `Pulsa ${numpadStatus.callKeyLabel} para llamar ${waitingTicket.ticketCode} en C${Number(
-            state.queue.stationConsultorio || 1
+        summary = `Pulsa ${numpadStatus.callKeyLabel} para llamar ${waitingTicket.ticketCode} en ${getOperatorConsultorioShortLabel(
+            Number(state.queue.stationConsultorio || 1)
         )}.`;
     } else {
         title = 'Sin tickets en espera';
@@ -917,7 +946,9 @@ function syncShellSettingsButton() {
 
 function updateOperatorChrome() {
     const state = getState();
-    const stationLabel = `C${Number(state.queue.stationConsultorio || 1)} ${
+    const stationLabel = `${getOperatorConsultorioShortLabel(
+        Number(state.queue.stationConsultorio || 1)
+    )} ${
         state.queue.stationMode === 'locked' ? 'bloqueado' : 'libre'
     }`;
     const oneTapLabel = state.queue.oneTap ? '1 tecla ON' : '1 tecla OFF';
@@ -1317,6 +1348,7 @@ function attachVisibilityRefresh() {
 
 async function boot() {
     applyQueueRuntimeDefaults();
+    applyOperatorClinicProfile(await loadTurneroClinicProfile());
     await refreshDesktopSnapshot();
     subscribe(() => {
         if (getState().auth.authenticated) {

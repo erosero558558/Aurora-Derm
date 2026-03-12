@@ -24,8 +24,9 @@ export function renderQueueAppsHub() {
                 <div>
                     <h4>Apps operativas</h4>
                     <p>
-                        Instala Operador, Kiosco y Sala TV desde el mismo centro de
-                        control para separar cada equipo por uso.
+                        Corte web piloto para operador, kiosco y sala. Las apps
+                        nativas quedan como capa opcional, no como bloqueo del
+                        release.
                     </p>
                 </div>
                 <div class="queue-apps-hub__header-meta">
@@ -38,6 +39,7 @@ export function renderQueueAppsHub() {
                 </div>
             </div>
             <div id="queueDomainSwitcher" class="queue-domain-switcher"></div>
+            <div id="queueAdminViewMode" class="queue-admin-view-mode"></div>
             <div id="queueFocusMode" class="queue-focus-mode" data-focus-match="opening operations incidents closing"></div>
             <div id="queueNumpadGuide" class="queue-numpad-guide" data-focus-match="opening operations incidents" data-queue-domain-match="operations incidents"></div>
             <div id="queueConsultorioBoard" class="queue-consultorio-board" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>
@@ -72,6 +74,9 @@ export function renderQueueAppsHub() {
             <div id="queueDeskEscalationReopen" class="queue-desk-escalation-reopen" data-focus-match="opening operations incidents closing"></div>
             <div id="queueDeskEscalationLimit" class="queue-desk-escalation-limit" data-focus-match="opening operations incidents closing"></div>
             <div id="queueDeskEscalationBridge" class="queue-desk-escalation-bridge" data-focus-match="opening operations incidents closing"></div>
+            <div id="queueDeskEscalationBrief" class="queue-desk-escalation-brief" data-focus-match="opening operations incidents closing"></div>
+            <div id="queueDeskEscalationReturn" class="queue-desk-escalation-return" data-focus-match="opening operations incidents closing"></div>
+            <div id="queueDeskEscalationResolution" class="queue-desk-escalation-resolution" data-focus-match="opening operations incidents closing"></div>
             <div id="queueBlockers" class="queue-blockers" data-focus-match="opening operations incidents closing"></div>
             <div id="queueSlaDeck" class="queue-sla-deck" data-focus-match="opening operations incidents closing"></div>
             <div id="queueWaitRadar" class="queue-wait-radar" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>

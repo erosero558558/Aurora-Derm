@@ -4,11 +4,28 @@
 
 Operacion estable del turnero de sala para 2 consultorios con cola unica, llamado desde operador/admin y visualizacion en TV.
 
+## Corte web de produccion
+
+Este release sale como `piloto web por clinica`, no como suite nativa completa.
+
+Canon operativo del corte:
+
+- `admin.html#queue` en `basic` por defecto para operar la cola sin ruido del hub largo.
+- `operador-turnos.html` como superficie canónica de llamado/cierre por consultorio.
+- `kiosco-turnos.html` para check-in y turnos `con cita` / `sin cita`.
+- `sala-turnos.html` para visualización en vivo en sala o TV.
+
+Notas del corte:
+
+- `expert` conserva paneles avanzados de coaching, simulación y recepción, pero no bloquea el piloto.
+- `app-downloads/`, Electron y Android TV quedan como `siguiente release`; no son requisito para el go-live web.
+- Cada clínica debe desplegar su propia copia con `content/turnero/clinic-profile.json` dedicado; no hay runtime multi-tenant compartido en este corte.
+
 ## Superficies operativas
 
 - `kiosco-turnos.html`: check-in/captura de turno y asistente de sala.
 - `operador-turnos.html`: flujo diario con numpad, lock por estación y acciones rápidas.
-- `admin.html#queue`: hub de descargas, configuracion y operación de respaldo.
+- `admin.html#queue`: operación de respaldo y administración; `basic` por defecto, `expert` solo para soporte avanzado.
 - `sala-turnos.html`: panel de llamados en vivo para pacientes.
 
 ## Politica de privacidad
@@ -177,6 +194,8 @@ Se emiten eventos `CustomEvent('piel:queue-ops')` para telemetria UI (best effor
 
 ## Apps operativas
 
+Estas apps quedan preservadas como capa opcional. No bloquean el corte web estable del piloto.
+
 Para separar operación por equipo:
 
 - `Turnero Operador` empaqueta `operador-turnos.html` como app Electron para Windows (`.exe`) y macOS (`.dmg`).
@@ -224,6 +243,9 @@ Para separar operación por equipo:
 - El hub ahora también muestra `Reapertura de escala`: indica qué decir si la referencia confirmada ya se venció y si hace falta solo actualizar la ventana o reabrir un cambio real.
 - El hub ahora también muestra `Límite de reapertura`: marca cuándo ya no conviene seguir ajustando verbalmente en mostrador y el siguiente paso debe pasar al operador.
 - El hub ahora también muestra `Puente a operación`: deja lista la frase breve para traspasar el caso al operador cuando mostrador ya agotó su margen de ajuste.
+- El hub ahora también muestra `Brief para operador`: resume en una sola frase qué debe validar operación cuando mostrador ya decidió escalar el caso.
+- El hub ahora también muestra `Retorno a mostrador`: deja lista la respuesta corta que operación debe devolver para cerrar la conversación sin reabrir la negociación en recepción.
+- El hub ahora también muestra `Resolución devuelta`: deja la frase final que mostrador usa cuando operación ya cerró la decisión y solo toca confirmar la salida definida.
 - El hub ahora también muestra `Bloqueos vivos`: detecta los cuellos que frenan la ronda inmediata, por ejemplo un ticket llamado que bloquea el siguiente paso o un consultorio con ticket pero sin operador listo, y deja el ticket cargable al lookup para destrabarlo rápido.
 - El hub ahora también muestra `SLA vivo`: lista los tickets que ya cayeron o están por caer en ventana de riesgo, con etiqueta de `vence en` o `vencido hace`, para intervenir antes de que esa presión se convierta en bloqueo operativo.
 - El hub ahora también muestra un `Radar de espera`: tres carriles (`General`, `C1`, `C2`) ordenados por antigüedad/presión, para que recepción vea primero cuál ticket está envejeciendo y ejecute la siguiente jugada sin bajar a la tabla.

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../lib/QueueService.php';
 require_once __DIR__ . '/../lib/QueueSurfaceStatusStore.php';
 require_once __DIR__ . '/../lib/AppDownloadsCatalog.php';
 require_once __DIR__ . '/../lib/CaseMediaFlowService.php';
+require_once __DIR__ . '/../lib/TurneroClinicProfile.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 require_once __DIR__ . '/../lib/clinical_history/bootstrap.php';
 
@@ -105,6 +106,7 @@ class AdminDataController
         }
 
         $store['appDownloads'] = self::buildAppDownloads();
+        $store['turneroClinicProfile'] = read_turnero_clinic_profile();
         $store['queueSurfaceStatus'] = QueueSurfaceStatusStore::readSummary();
 
         $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(

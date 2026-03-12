@@ -1,4 +1,9 @@
 import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
+import {
+    getTurneroClinicBrandName,
+    getTurneroConsultorioLabel,
+    loadTurneroClinicProfile,
+} from '../queue-shared/clinic-profile.js';
 
 const API_ENDPOINT = '/api.php';
 const POLL_MS = 2500;
@@ -37,6 +42,8 @@ const state = {
     bellPrimed: false,
     lastBellSource: '',
     lastBellOutcome: 'idle',
+    clinicProfile: null,
+    lastRenderedState: null,
 };
 
 let displayHeartbeat = null;
@@ -60,6 +67,40 @@ function emitQueueOpsEvent(eventName, detail = {}) {
 
 function getById(id) {
     return document.getElementById(id);
+}
+
+function getDisplayConsultorioLabel(consultorio) {
+    if (Number(consultorio || 0) !== 1 && Number(consultorio || 0) !== 2) {
+        return 'Recepcion';
+    }
+    return getTurneroConsultorioLabel(state.clinicProfile, consultorio);
+}
+
+function applyDisplayClinicProfile(profile) {
+    state.clinicProfile = profile;
+    const clinicName = getTurneroClinicBrandName(profile);
+    document.title = `Sala de Espera | ${clinicName}`;
+
+    const brandNode = document.querySelector('.display-brand strong');
+    if (brandNode instanceof HTMLElement) {
+        brandNode.textContent = clinicName;
+    }
+
+    if (state.lastRenderedState) {
+        renderState(state.lastRenderedState);
+        return;
+    }
+
+    renderCalledTicket(
+        'displayConsultorio1',
+        null,
+        getDisplayConsultorioLabel(1)
+    );
+    renderCalledTicket(
+        'displayConsultorio2',
+        null,
+        getDisplayConsultorioLabel(2)
+    );
 }
 
 function resolveDisplayAppMode() {
@@ -619,10 +660,7 @@ function setDisplayAnnouncement(ticket) {
     }
 
     const consultorio = Number(ticket?.assignedConsultorio || 0);
-    const consultorioLabel =
-        consultorio === 1 || consultorio === 2
-            ? `Consultorio ${consultorio}`
-            : 'Recepcion';
+    const consultorioLabel = getDisplayConsultorioLabel(consultorio);
     const ticketCode = normalizeTicketCodeForDisplay(
         ticket?.ticketCode || '--'
     );
@@ -1118,8 +1156,16 @@ function renderNoDataFallback(message = 'No hay turnos pendientes.') {
     state.lastRenderedSignature = '';
     state.lastCalledSignature = '';
     state.callBaselineReady = true;
-    renderCalledTicket('displayConsultorio1', null, 'Consultorio 1');
-    renderCalledTicket('displayConsultorio2', null, 'Consultorio 2');
+    renderCalledTicket(
+        'displayConsultorio1',
+        null,
+        getDisplayConsultorioLabel(1)
+    );
+    renderCalledTicket(
+        'displayConsultorio2',
+        null,
+        getDisplayConsultorioLabel(2)
+    );
     setDisplayAnnouncement(null);
     const list = getById('displayNextList');
     if (list) {
@@ -1449,6 +1495,7 @@ function computeDisplayRenderSignature(queueState) {
 
 function renderState(queueState) {
     const normalizedState = normalizeQueueStatePayload(queueState);
+    state.lastRenderedState = normalizedState;
     const renderSignature = computeDisplayRenderSignature(normalizedState);
     const isSameRender = renderSignature === state.lastRenderedSignature;
 
@@ -1474,12 +1521,12 @@ function renderState(queueState) {
         renderCalledTicket(
             'displayConsultorio1',
             byConsultorio[1],
-            'Consultorio 1'
+            getDisplayConsultorioLabel(1)
         );
         renderCalledTicket(
             'displayConsultorio2',
             byConsultorio[2],
-            'Consultorio 2'
+            getDisplayConsultorioLabel(2)
         );
         renderNextTickets(normalizedState?.nextTickets || []);
         renderUpdatedAt(normalizedState);
@@ -1727,6 +1774,9 @@ function updateClock() {
 }
 
 function initDisplay() {
+    void loadTurneroClinicProfile().then((profile) => {
+        applyDisplayClinicProfile(profile);
+    });
     document.body.dataset.displayMode = 'star';
     ensureDisplayStarStyles();
     loadBellPreference();
