@@ -792,9 +792,8 @@ jobs:
                         return candidates[0]?.run || null;
                       }
 
-                      async function findDispatchedRun(dispatchTimestamp = dispatchStartedAtIso) {
-                        const runs = await github.paginate(
-                          github.rest.actions.listWorkflowRunsForWorkflow,
+                      async function listRecentRuns() {
+                        const response = await github.rest.actions.listWorkflowRunsForWorkflow(
                           {
                             owner,
                             repo,
@@ -804,6 +803,13 @@ jobs:
                             per_page: 20,
                           }
                         );
+                        return Array.isArray(response.data?.workflow_runs)
+                          ? response.data.workflow_runs
+                          : [];
+                      }
+
+                      async function findDispatchedRun(dispatchTimestamp = dispatchStartedAtIso) {
+                        const runs = await listRecentRuns();
                         return selectBestDispatchedRun(runs, dispatchTimestamp);
                       }
 
@@ -937,8 +943,7 @@ jobs:
                       }
 
                       async function listRecentRuns() {
-                        return github.paginate(
-                          github.rest.actions.listWorkflowRunsForWorkflow,
+                        const response = await github.rest.actions.listWorkflowRunsForWorkflow(
                           {
                             owner,
                             repo,
@@ -948,6 +953,9 @@ jobs:
                             per_page: 20,
                           }
                         );
+                        return Array.isArray(response.data?.workflow_runs)
+                          ? response.data.workflow_runs
+                          : [];
                       }
 
                       function formatRecentRuns(runs) {
