@@ -804,6 +804,166 @@ jobs:
                           : `Workflow ${workflowId} disparado desde repair (run no observado aun, reason=${process.env.TRANSPORT_FALLBACK_REASON || 'n/a'}).`
                       );
 
+            - name: Crear/actualizar incidente self-hosted fallback de repair
+              if: ${{ always() && steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready == 'true' && (steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state == 'queued' || steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state == 'dispatched_not_observed') }}
+              uses: actions/github-script@v7
+              env:
+                  TRANSPORT_FALLBACK_REASON: ${{ steps.transport_fallback.outputs.transport_fallback_reason }}
+                  SELF_HOSTED_FALLBACK_STATE: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state }}
+                  SELF_HOSTED_FALLBACK_RUN_STATUS: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_status }}
+                  SELF_HOSTED_FALLBACK_RUN_URL: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_url }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Repair git sync self-hosted fallback sin runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = `state:${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}|run_status:${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}|reason:${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`;
+                      const signalMarker = `<!-- repair-git-sync-self-hosted-runner-signal:${signal} -->`;
+                      const baseLabels = ['production-alert', 'repair-git-sync', 'self-hosted-runner', 'severity:warning'];
+
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const mergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'severity:critical' && label !== 'severity:warning'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+
+                      const body = [
+                        'El workflow `Repair Git Sync (Self-Heal)` detecto que el fallback self-hosted sigue sin capacidad observable.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Trigger: ${context.eventName}`,
+                        `- self_hosted_fallback_state: ${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}`,
+                        `- self_hosted_fallback_run_status: ${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}`,
+                        `- self_hosted_fallback_run_url: ${process.env.SELF_HOSTED_FALLBACK_RUN_URL || ''}`,
+                        `- transport_fallback_reason: ${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (existing) {
+                        const existingBody = String(existing.body || '');
+                        const labels = mergedLabels(existing.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(existing.labels), labels);
+                        if (existingBody.includes(signalMarker)) {
+                          if (!labelsAlreadyApplied) {
+                            await github.rest.issues.update({
+                              owner,
+                              repo,
+                              issue_number: existing.number,
+                              labels
+                            });
+                            core.info(`Issue repair-git-sync self-hosted fallback actualizo labels: #${existing.number}`);
+                          }
+                          core.info(`Issue repair-git-sync self-hosted fallback ya refleja la misma senal: #${existing.number}`);
+                          return;
+                        }
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body,
+                          labels
+                        });
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Incidente repair-git-sync self-hosted fallback actualizado por cambio de senal.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- self_hosted_fallback_state: ${process.env.SELF_HOSTED_FALLBACK_STATE || 'unknown'}`,
+                            `- self_hosted_fallback_run_status: ${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'unknown'}`,
+                            `- self_hosted_fallback_run_url: ${process.env.SELF_HOSTED_FALLBACK_RUN_URL || ''}`,
+                            `- transport_fallback_reason: ${process.env.TRANSPORT_FALLBACK_REASON || 'unknown'}`
+                          ].join('\n')
+                        });
+                        core.info(`Issue repair-git-sync self-hosted fallback actualizado: #${existing.number}`);
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title,
+                          body,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue repair-git-sync self-hosted fallback creado: #${created.data.number}`);
+                      }
+
+            - name: Cerrar incidente self-hosted fallback de repair al recuperar
+              if: ${{ always() && (steps.transport_fallback.outputs.transport_fallback_recommended != 'true' || (steps.transport_fallback.outputs.self_hosted_fallback_dispatch_ready == 'true' && steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state != 'queued' && steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state != 'dispatched_not_observed')) }}
+              uses: actions/github-script@v7
+              env:
+                  TRANSPORT_FALLBACK_RECOMMENDED: ${{ steps.transport_fallback.outputs.transport_fallback_recommended }}
+                  SELF_HOSTED_FALLBACK_STATE: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_state }}
+                  SELF_HOSTED_FALLBACK_RUN_STATUS: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_status }}
+                  SELF_HOSTED_FALLBACK_RUN_URL: ${{ steps.self_hosted_fallback_dispatch.outputs.self_hosted_fallback_run_url }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const title = '[ALERTA PROD] Repair git sync self-hosted fallback sin runner';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      if (!existing) {
+                        core.info('No hay incidente self-hosted fallback de repair abierto para cerrar.');
+                        return;
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        body: [
+                          'Recuperado automaticamente por workflow de repair git sync (self-hosted fallback).',
+                          '',
+                          `- Fecha: ${now}`,
+                          `- Run: ${runUrl}`,
+                          `- transport_fallback_recommended: ${process.env.TRANSPORT_FALLBACK_RECOMMENDED || 'false'}`,
+                          `- self_hosted_fallback_state: ${process.env.SELF_HOSTED_FALLBACK_STATE || 'not_required'}`,
+                          `- self_hosted_fallback_run_status: ${process.env.SELF_HOSTED_FALLBACK_RUN_STATUS || 'n/a'}`,
+                          `- self_hosted_fallback_run_url: ${process.env.SELF_HOSTED_FALLBACK_RUN_URL || ''}`
+                        ].join('\n')
+                      });
+
+                      await github.rest.issues.update({
+                        owner,
+                        repo,
+                        issue_number: existing.number,
+                        state: 'closed'
+                      });
+                      core.info(`Issue repair-git-sync self-hosted fallback cerrado: #${existing.number}`);
+
             - name: Crear/actualizar incidente telemedicina de repair
               if: ${{ always() && github.event_name != 'workflow_dispatch' && (env.TELEMEDICINE_REPAIR_STATUS == 'degraded' || env.TELEMEDICINE_REPAIR_STATUS == 'unknown') }}
               uses: actions/github-script@v7

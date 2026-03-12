@@ -154,6 +154,12 @@ Read the repair summary before re-running anything manually:
 - `self_hosted_fallback_state=started` means the Windows runner picked up the job.
 - `self_hosted_fallback_state=dispatched_not_observed` means GitHub accepted the dispatch but the repair workflow could not observe the downstream run quickly enough.
 
+`diagnose-host-connectivity.yml` now publishes both `connectivity-report.txt`
+and `connectivity-report.json`. When every configured host origin finishes
+without puertos abiertos, it raises
+`[ALERTA PROD] Diagnose host connectivity sin ruta de deploy`; that incident
+closes automatically once a later diagnose run observes any open target again.
+
 If you need to skip repair and update the page immediately, dispatch
 `deploy-hosting.yml` directly with the transport fallback command above.
 
@@ -181,6 +187,13 @@ of the workflow still needs separate follow-up.
 If `deploy-frontend-selfhosted.yml` stays `queued`, the repo is ready but no
 self-hosted Windows runner is online. Restoring that runner is a separate
 infrastructure action from fixing the host network path.
+
+`repair-git-sync.yml` now raises
+`[ALERTA PROD] Repair git sync self-hosted fallback sin runner` when it
+dispatches `deploy-frontend-selfhosted.yml` and the downstream run stays
+`queued` or `dispatched_not_observed`. The incident closes automatically once
+the self-hosted fallback is observed running/completed, or when repair no
+longer recommends that fallback path.
 
 In that case, inspect `.public-cutover/transport-preflight.json` from the run
 artifact and move to a manual host-side publish path:
