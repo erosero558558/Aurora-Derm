@@ -230,7 +230,7 @@ function shouldUseRealAI() {
 
 function buildWelcomeMessage(usingRealAI) {
     let message =
-        'Hola! Soy el <strong>Dr. Virtual</strong> de <strong>Piel en Armonia</strong>.<br><br>';
+        'Hola! Soy el <strong>Dr. Virtual</strong> de <strong>Aurora Derm</strong>.<br><br>';
 
     if (usingRealAI) {
         message +=

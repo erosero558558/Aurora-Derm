@@ -356,7 +356,7 @@ test.describe('Public V6 software suite', () => {
             )
         ).toBeFalsy();
         expect(pageText).not.toContain('Dermatologia clara');
-        expect(pageText).not.toContain('Telemedicina');
+        expect(pageText).not.toContain('Teledermatologia');
         await expect(page.locator('[data-v6-header] [data-v6-mega-trigger]')).toHaveCount(0);
     });
 

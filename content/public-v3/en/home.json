@@ -1,5 +1,5 @@
 {
-    "title": "Piel en Armonia | Precision Dermatology in Quito",
+    "title": "Aurora Derm | Precision Dermatology in Quito",
     "description": "Clinical dermatology and medical aesthetics with clear decisions, continuity, and secure booking in Quito.",
     "slides": [
         {
@@ -58,9 +58,9 @@
         },
         {
             "id": "tele-stage",
-            "eyebrow": "Telemedicine",
-            "category": "Telemedicine",
-            "title": "Telemedicine when it clarifies. In-person care when the case requires it.",
+            "eyebrow": "Teledermatology",
+            "category": "Teledermatology",
+            "title": "Teledermatology when it clarifies. In-person care when the case requires it.",
             "deck": "Remote care preserves the same clinical language, prioritization, and booking flow.",
             "tone": "porcelain",
             "media": "/images/optimized/service-telemedicina.webp",
@@ -71,7 +71,7 @@
             },
             "stats": ["Remote evaluation", "Timely escalation", "Single flow"],
             "primary": {
-                "label": "Open telemedicine",
+                "label": "Open teledermatology",
                 "href": "/en/telemedicine/",
                 "target": "telemedicine"
             },
@@ -126,7 +126,7 @@
         }
     ],
     "telemedicine": {
-        "eyebrow": "Telemedicine",
+        "eyebrow": "Teledermatology",
         "title": "Remote care integrated into the same clinical system.",
         "deck": "Video, phone, or WhatsApp for early guidance, with in-person escalation when needed.",
         "tone": "ink",

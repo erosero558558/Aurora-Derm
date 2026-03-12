@@ -1,6 +1,19 @@
 (function () {
     'use strict';
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function normalizeList(value) {
+        return Array.isArray(value) ? value : [];
+    }
+
     function normalizeIndex(index, total) {
         if (!total) return 0;
         if (index < 0) return total - 1;
@@ -59,6 +72,7 @@
         }
 
         syncFocusables();
+        syncHeaderOffset();
         if (tabs.length) {
             activateTab(tabs[0].getAttribute('data-v6-target') || '', false);
         }
@@ -84,21 +98,26 @@
             );
         }
 
+        function syncHeaderOffset() {
+            var headerHeight = Math.round(header.getBoundingClientRect().height);
+            if (!headerHeight) return;
+            header.style.setProperty('--v6-header-offset', headerHeight + 'px');
+        }
+
         function openPanel() {
             if (!panel.hidden) return;
             if (hoverIntent) {
                 window.clearTimeout(hoverIntent);
                 hoverIntent = null;
             }
+            syncHeaderOffset();
             panel.hidden = false;
             trigger.setAttribute('aria-expanded', 'true');
             panel.classList.add('is-open');
             header.classList.add('is-mega-open');
             if (backdrop) {
                 backdrop.hidden = false;
-                window.requestAnimationFrame(function () {
-                    backdrop.classList.add('is-visible');
-                });
+                backdrop.classList.add('is-visible');
             }
             syncFocusables();
             window.requestAnimationFrame(alignPointer);
@@ -298,7 +317,10 @@
             }
         });
 
-        window.addEventListener('resize', alignPointer);
+        window.addEventListener('resize', function () {
+            syncHeaderOffset();
+            alignPointer();
+        });
     }
 
     function bootHeaderSearch() {
@@ -1260,6 +1282,139 @@
         sync();
     }
 
+    function renderCaseStoryCard(item) {
+        var cover = item && typeof item === 'object' && item.cover
+            ? item.cover
+            : {};
+        var tags = normalizeList(item.tags)
+            .map(function (tag) {
+                return '<span>' + escapeHtml(tag) + '</span>';
+            })
+            .join('');
+        var comparePairs = normalizeList(item.comparePairs);
+        var compareMarkup = '';
+        if (comparePairs.length) {
+            compareMarkup =
+                '<div class="v6-case-stories__compare">' +
+                comparePairs
+                    .slice(0, 1)
+                    .map(function (pair) {
+                        var before = pair && typeof pair === 'object' ? pair.before || {} : {};
+                        var after = pair && typeof pair === 'object' ? pair.after || {} : {};
+                        return (
+                            '<figure>' +
+                            '<img src="' +
+                            escapeHtml(before.url || '') +
+                            '" alt="' +
+                            escapeHtml(before.alt || '') +
+                            '" loading="lazy" decoding="async" />' +
+                            '<figcaption>Before</figcaption>' +
+                            '</figure>' +
+                            '<figure>' +
+                            '<img src="' +
+                            escapeHtml(after.url || '') +
+                            '" alt="' +
+                            escapeHtml(after.alt || '') +
+                            '" loading="lazy" decoding="async" />' +
+                            '<figcaption>After</figcaption>' +
+                            '</figure>'
+                        );
+                    })
+                    .join('') +
+                '</div>';
+        }
+
+        return (
+            '<article class="v6-case-stories__card" data-v6-case-story="' +
+            escapeHtml(item.slug || item.storyId || '') +
+            '">' +
+            '<figure class="v6-case-stories__cover">' +
+            '<img src="' +
+            escapeHtml(cover.url || '') +
+            '" alt="' +
+            escapeHtml(cover.alt || item.title || '') +
+            '" loading="lazy" decoding="async" />' +
+            '</figure>' +
+            '<div class="v6-case-stories__meta">' +
+            '<p>' +
+            escapeHtml(item.category || '') +
+            '</p>' +
+            '<h3>' +
+            escapeHtml(item.title || '') +
+            '</h3>' +
+            '<p>' +
+            escapeHtml(item.summary || item.deck || '') +
+            '</p>' +
+            (tags ? '<div class="v6-case-stories__tags">' + tags + '</div>' : '') +
+            compareMarkup +
+            (item.disclaimer
+                ? '<small>' + escapeHtml(item.disclaimer) + '</small>'
+                : '') +
+            '</div>' +
+            '</article>'
+        );
+    }
+
+    function bootCaseStories() {
+        var roots = Array.from(
+            document.querySelectorAll('[data-v6-case-stories]')
+        );
+        if (!roots.length) return;
+
+        roots.forEach(function (root) {
+            if (!(root instanceof HTMLElement)) return;
+            if (root.dataset.v6CaseStoriesReady === 'loading') return;
+
+            var locale = root.getAttribute('data-v6-locale') || 'es';
+            var state = root.querySelector('[data-v6-case-stories-state]');
+            var grid = root.querySelector('[data-v6-case-stories-grid]');
+            if (!(grid instanceof HTMLElement) || !(state instanceof HTMLElement))
+                return;
+
+            root.dataset.v6CaseStoriesReady = 'loading';
+            fetch(
+                '/api.php?resource=public-case-stories&locale=' +
+                    encodeURIComponent(locale),
+                {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json' },
+                }
+            )
+                .then(function (response) {
+                    return response.ok ? response.json() : Promise.reject();
+                })
+                .then(function (payload) {
+                    var data =
+                        payload && typeof payload === 'object' && payload.data
+                            ? payload.data
+                            : {};
+                    var items = normalizeList(data.items);
+                    if (!items.length) {
+                        root.dataset.v6CaseStoriesReady = 'empty';
+                        grid.hidden = true;
+                        state.hidden = false;
+                        return;
+                    }
+
+                    grid.innerHTML = items
+                        .map(function (item) {
+                            return renderCaseStoryCard(
+                                item && typeof item === 'object' ? item : {}
+                            );
+                        })
+                        .join('');
+                    state.hidden = true;
+                    grid.hidden = false;
+                    root.dataset.v6CaseStoriesReady = 'true';
+                })
+                .catch(function () {
+                    root.dataset.v6CaseStoriesReady = 'empty';
+                    grid.hidden = true;
+                    state.hidden = false;
+                });
+        });
+    }
+
     function bootstrap() {
         bootMegaMenu();
         bootHeaderSearch();
@@ -1268,6 +1423,7 @@
         bootSectionNavigation();
         bootDrawer();
         bootHero();
+        bootCaseStories();
         bootBackTop();
     }
 

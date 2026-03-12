@@ -225,7 +225,7 @@ async function processWithKimi(message) {
     if (isOutOfScopeIntent(message)) {
         removeTypingIndicator();
         addBotMessage(
-            `Puedo ayudarte con temas de <strong>Piel en Armonía</strong> (servicios, precios, citas, pagos, horarios y ubicación).<br><br>Si deseas, te ayudo ahora con:<br>- <a href="#servicios" data-action="minimize-chat">Servicios y tratamientos</a><br>- <a href="#v5-booking" data-action="minimize-chat">Reservar cita</a><br>- <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp directo</a>`,
+            `Puedo ayudarte con temas de <strong>Aurora Derm</strong> (servicios, precios, citas, pagos, horarios y ubicación).<br><br>Si deseas, te ayudo ahora con:<br>- <a href="#servicios" data-action="minimize-chat">Servicios y tratamientos</a><br>- <a href="#v5-booking" data-action="minimize-chat">Reservar cita</a><br>- <a href="https://wa.me/593982453672" target="_blank" rel="noopener noreferrer">WhatsApp directo</a>`,
             false
         );
         isProcessingMessage = false;
@@ -366,7 +366,7 @@ function isGenericAssistantReply(text) {
 
     const genericPatterns = [
         /gracias por tu mensaje/,
-        /puedo ayudarte con piel en armonia/,
+        /puedo ayudarte con aurora derm/,
         /soy figo/,
         /asistente virtual/,
         /modo offline/,
@@ -395,10 +395,10 @@ function shouldRefineWithFigo(botResponse) {
     return isGenericAssistantReply(botResponse);
 }
 
-const SYSTEM_PROMPT = `Eres el Dr. Virtual, asistente inteligente de la clinica dermatologica "Piel en Armonia" en Quito, Ecuador.
+const SYSTEM_PROMPT = `Eres el Dr. Virtual, asistente inteligente de la clinica dermatologica "Aurora Derm" en Quito, Ecuador.
 
 INFORMACION DE LA CLINICA:
-- Nombre: Piel en Armonia
+- Nombre: Aurora Derm
 - Doctores: Dr. Javier Rosero (Dermatologo Clinico) y Dra. Carolina Narvaez (Dermatologa Estetica)
 - Direccion: Valparaiso 13-183 y Sodiro, Consultorio Dr. Celio Caiza, Quito (Frente al Colegio de las Mercedarias, a 2 cuadras de la Maternidad Isidro Ayora)
 - Telefono/WhatsApp: 098 245 3672
@@ -418,7 +418,7 @@ SERVICIOS Y PRECIOS (con IVA 15%):
 OPCIONES DE CONSULTA ONLINE:
 1. Llamada telefonica: tel:+593982453672
 2. WhatsApp Video: https://wa.me/593982453672
-3. Video Web (Jitsi): https://meet.jit.si/PielEnArmonia-Consulta
+3. Video Web (Jitsi): https://meet.jit.si/AuroraDerm-Consulta
 
 INSTRUCCIONES:
 - Se profesional, amable y empatico
@@ -441,8 +441,8 @@ const FIGO_EXPERT_PROMPT = `MODO FIGO PRO:
 - Responde con pasos claros y accionables, no con texto general.
 - Si preguntan por pagos, explica el flujo real del sitio: reservar cita -> modal de pago -> metodo (tarjeta/transferencia/efectivo) -> confirmacion.
 - Si faltan datos para ayudar mejor, haz una sola pregunta de seguimiento concreta.
-- Mantente enfocado en Piel en Armonía (servicios, precios, citas, pagos, ubicación y contacto).
-- Si preguntan temas fuera de la clínica (capitales, noticias, deportes o cultura general), explica que solo atiendes temas de Piel en Armonía y redirige a servicios/citas.
+- Mantente enfocado en Aurora Derm (servicios, precios, citas, pagos, ubicación y contacto).
+- Si preguntan temas fuera de la clínica (capitales, noticias, deportes o cultura general), explica que solo atiendes temas de Aurora Derm y redirige a servicios/citas.
 - Evita decir "modo offline" salvo que realmente no haya conexion con el servidor.`;
 
 function buildAppointmentContextSummary() {
@@ -807,7 +807,7 @@ async function tryRealAI(message) {
             );
 
             const precisionPrompt = `Tu respuesta anterior fue demasiado general.
-Responde con información específica para la web de Piel en Armonía.
+Responde con información específica para la web de Aurora Derm.
 Incluye pasos concretos y el siguiente paso recomendado para el paciente.
 Pregunta original del paciente: "${message}"`;
 
@@ -912,7 +912,7 @@ function processLocalResponse(message, isOffline = true) {
     }
     // FUERA DE ALCANCE
     else if (isOutOfScopeIntent(normalizedMsg)) {
-        response = `Puedo ayudarte solo con temas de <strong>Piel en Armonía</strong>.<br><br>
+        response = `Puedo ayudarte solo con temas de <strong>Aurora Derm</strong>.<br><br>
 Puedes consultarme sobre:<br>
 - Servicios y tratamientos dermatologicos<br>
 - Precios y formas de pago<br>
@@ -929,7 +929,7 @@ Si quieres, te llevo directo a <a href="#v5-booking" data-action="minimize-chat"
         )
     ) {
         response =
-            '¡Hola! Soy <strong>Figo</strong>, asistente de <strong>Piel en Armonía</strong>.<br><br>';
+            '¡Hola! Soy <strong>Figo</strong>, asistente de <strong>Aurora Derm</strong>.<br><br>';
         response += 'Puedo ayudarte con:<br>';
         response += '• Servicios dermatologicos<br>';
         response += '• Precios de tratamientos<br>';

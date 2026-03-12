@@ -83,7 +83,7 @@ test.describe('Chat Engine Unit Tests', () => {
             return lastMessage;
         });
 
-        expect(result).toContain('Piel en Armonía');
+        expect(result).toContain('Aurora Derm');
         expect(result).toContain('Reservar cita');
         expect(result).not.toContain('Quito');
     });

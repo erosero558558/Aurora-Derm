@@ -1,5 +1,5 @@
 {
-    "title": "Services | Piel en Armonia",
+    "title": "Services | Aurora Derm",
     "description": "Editorial dermatology catalogue with clear medical routes, useful filters, and booking continuity.",
     "hero": {
         "eyebrow": "Clinical catalogue",
@@ -15,7 +15,7 @@
     },
     "telemedicine": {
         "eyebrow": "Care mode",
-        "title": "Telemedicine belongs to the clinical system, not to a disconnected shortcut.",
+        "title": "Teledermatology belongs to the clinical system, not to a disconnected shortcut.",
         "deck": "Start remotely when appropriate and escalate to clinic when medical judgment requires it.",
         "href": "/en/telemedicine/",
         "tone": "porcelain"

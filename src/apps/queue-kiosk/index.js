@@ -524,7 +524,7 @@ function buildVoiceGuideText() {
         state.selectedFlow === 'walkin'
             ? 'Si no tienes cita, escribe iniciales y pulsa Generar turno.'
             : 'Si tienes cita, escribe telefono, fecha y hora y pulsa Confirmar check in.';
-    return `Bienvenida al kiosco de turnos de Piel en Armonia. ${flowHint} Si necesitas ayuda, pulsa Necesito apoyo y recepcion te asistira. Conserva tu ticket y espera el llamado en la pantalla de sala.`;
+    return `Bienvenida al kiosco de turnos de Aurora Derm. ${flowHint} Si necesitas ayuda, pulsa Necesito apoyo y recepcion te asistira. Conserva tu ticket y espera el llamado en la pantalla de sala.`;
 }
 
 function runVoiceGuide({ source = 'button' } = {}) {

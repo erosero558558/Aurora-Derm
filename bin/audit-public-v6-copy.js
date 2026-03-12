@@ -18,6 +18,7 @@ const bannedPatterns = [
     /\bdefinitive cure\b/i,
     /\brisk[- ]free\b/i,
 ];
+const legacyBrandPatterns = [/\bpiel en armonia\b/i];
 
 const technicalPatterns = [
     /\bbridge\b/i,
@@ -507,6 +508,17 @@ function inspectLocale(locale, dir) {
         inspectStructuredCopy(locale, rel, payload, findings);
 
         strings.forEach((text) => {
+            legacyBrandPatterns.forEach((pattern) => {
+                if (pattern.test(text)) {
+                    findings.push({
+                        locale,
+                        file: rel,
+                        type: 'legacy_brand',
+                        pattern: String(pattern),
+                        text,
+                    });
+                }
+            });
             bannedPatterns.forEach((pattern) => {
                 if (pattern.test(text)) {
                     findings.push({

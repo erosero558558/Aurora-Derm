@@ -7,6 +7,8 @@ const ROOT = path.resolve(__dirname, '..');
 
 const requiredFiles = [
     'content/public-v6/assets-manifest.json',
+    'content/public-v6/image-slot-registry.json',
+    'content/public-v6/image-decisions.json',
     'content/public-v6/es/navigation.json',
     'content/public-v6/es/home.json',
     'content/public-v6/es/hub.json',
@@ -20,6 +22,13 @@ const requiredFiles = [
     'content/public-v6/en/telemedicine.json',
     'content/public-v6/en/legal.json',
 ];
+
+const LEGAL_SLOT_MAP = {
+    terms: 'terminos',
+    privacy: 'privacidad',
+    cookies: 'cookies',
+    'medical-disclaimer': 'aviso-medico',
+};
 
 function readJson(relativePath) {
     const full = path.join(ROOT, relativePath);
@@ -96,6 +105,7 @@ function requireStringField(issues, file, json, pathExpr, type) {
 
 function run() {
     const issues = [];
+    const expectedSlotIds = new Set();
 
     for (const file of requiredFiles) {
         if (!fs.existsSync(path.join(ROOT, file))) {
@@ -109,6 +119,16 @@ function run() {
 
     const manifest = readJson('content/public-v6/assets-manifest.json');
     const assets = Array.isArray(manifest.assets) ? manifest.assets : [];
+    const registry = readJson('content/public-v6/image-slot-registry.json');
+    const slotRegistry = Array.isArray(registry.slots) ? registry.slots : [];
+    const decisionsPayload = readJson('content/public-v6/image-decisions.json');
+    const decisions = Array.isArray(decisionsPayload.decisions)
+        ? decisionsPayload.decisions
+        : [];
+    const assetIds = new Set(assets.map((asset) => String(asset.id || '').trim()).filter(Boolean));
+    const assetsById = new Map(
+        assets.map((asset) => [String(asset.id || '').trim(), asset])
+    );
 
     if (!assets.length) {
         issues.push({ type: 'empty_assets_manifest' });
@@ -118,6 +138,78 @@ function run() {
         if (!asset.id || !asset.src) {
             issues.push({ type: 'asset_schema', asset });
             return;
+        }
+        [
+            'status',
+            'sourceType',
+            'orientation',
+            'tone',
+        ].forEach((field) => {
+            if (typeof asset[field] !== 'string' || !asset[field].trim()) {
+                issues.push({
+                    type: 'asset_schema',
+                    asset: asset.id,
+                    detail: `missing string field ${field}`,
+                });
+            }
+        });
+        if (typeof asset.publicWebSafe !== 'boolean') {
+            issues.push({
+                type: 'asset_schema',
+                asset: asset.id,
+                detail: 'publicWebSafe must be boolean',
+            });
+        }
+        if (
+            !Array.isArray(asset.editorialTags) ||
+            asset.editorialTags.some((item) => typeof item !== 'string' || !item.trim())
+        ) {
+            issues.push({
+                type: 'asset_schema',
+                asset: asset.id,
+                detail: 'editorialTags invalid',
+            });
+        }
+        if (
+            !Array.isArray(asset.allowedSlotRoles) ||
+            asset.allowedSlotRoles.some((item) => typeof item !== 'string' || !item.trim())
+        ) {
+            issues.push({
+                type: 'asset_schema',
+                asset: asset.id,
+                detail: 'allowedSlotRoles invalid',
+            });
+        }
+        if (
+            !asset.localeAlt ||
+            typeof asset.localeAlt !== 'object' ||
+            typeof asset.localeAlt.es !== 'string' ||
+            typeof asset.localeAlt.en !== 'string'
+        ) {
+            issues.push({
+                type: 'asset_schema',
+                asset: asset.id,
+                detail: 'localeAlt.es/en required',
+            });
+        }
+        if (
+            !asset.generation ||
+            typeof asset.generation !== 'object' ||
+            typeof asset.generation.strategy !== 'string' ||
+            typeof asset.generation.source !== 'string'
+        ) {
+            issues.push({
+                type: 'asset_schema',
+                asset: asset.id,
+                detail: 'generation.strategy/source required',
+            });
+        }
+        if (asset.sourceType === 'real_case' && asset.publicWebSafe !== false) {
+            issues.push({
+                type: 'asset_policy',
+                asset: asset.id,
+                detail: 'real_case assets cannot be publicWebSafe=true',
+            });
         }
         if (!existsWebAsset(asset.src)) {
             issues.push({
@@ -140,9 +232,122 @@ function run() {
         }
     });
 
+    if (!slotRegistry.length) {
+        issues.push({ type: 'empty_slot_registry' });
+    }
+
+    const seenSlotIds = new Set();
+    slotRegistry.forEach((slot) => {
+        const slotId = String(slot?.slotId || '').trim();
+        if (!slotId) {
+            issues.push({ type: 'slot_registry_schema', detail: 'slotId missing' });
+            return;
+        }
+        if (seenSlotIds.has(slotId)) {
+            issues.push({ type: 'slot_registry_schema', detail: `duplicate slotId ${slotId}` });
+        }
+        seenSlotIds.add(slotId);
+        [
+            'surface',
+            'pageKey',
+            'slotRole',
+            'localeMode',
+        ].forEach((field) => {
+            if (typeof slot[field] !== 'string' || !slot[field].trim()) {
+                issues.push({
+                    type: 'slot_registry_schema',
+                    detail: `${slotId}: missing string ${field}`,
+                });
+            }
+        });
+        if (
+            !Array.isArray(slot.allowedAssetKinds) ||
+            slot.allowedAssetKinds.some((item) => typeof item !== 'string' || !item.trim())
+        ) {
+            issues.push({
+                type: 'slot_registry_schema',
+                detail: `${slotId}: allowedAssetKinds invalid`,
+            });
+        }
+        if (
+            !Array.isArray(slot.requiredTags) ||
+            slot.requiredTags.some((item) => typeof item !== 'string' || !item.trim())
+        ) {
+            issues.push({
+                type: 'slot_registry_schema',
+                detail: `${slotId}: requiredTags invalid`,
+            });
+        }
+        ['currentAssetId', 'fallbackAssetId'].forEach((field) => {
+            const value = String(slot?.[field] || '').trim();
+            if (value && !assetIds.has(value)) {
+                issues.push({
+                    type: 'slot_registry_schema',
+                    detail: `${slotId}: unknown ${field} ${value}`,
+                });
+            }
+        });
+    });
+
+    const seenDecisionSlots = new Set();
+    decisions.forEach((decision) => {
+        const slotId = String(decision?.slotId || '').trim();
+        const assetId = String(decision?.assetId || '').trim();
+        if (!slotId || !assetId) {
+            issues.push({
+                type: 'image_decisions_schema',
+                detail: 'slotId and assetId required',
+            });
+            return;
+        }
+        if (!seenSlotIds.has(slotId)) {
+            issues.push({
+                type: 'image_decisions_schema',
+                detail: `${slotId}: slot missing from registry`,
+            });
+        }
+        if (!assetIds.has(assetId)) {
+            issues.push({
+                type: 'image_decisions_schema',
+                detail: `${slotId}: asset ${assetId} missing from manifest`,
+            });
+        }
+        if (seenDecisionSlots.has(slotId)) {
+            issues.push({
+                type: 'image_decisions_schema',
+                detail: `${slotId}: duplicate decision`,
+            });
+        }
+        if (!Number.isInteger(decision?.revision) || Number(decision.revision) <= 0) {
+            issues.push({
+                type: 'image_decisions_schema',
+                detail: `${slotId}: revision must be a positive integer`,
+            });
+        }
+        ['approvedAt', 'approvedBy'].forEach((field) => {
+            if (typeof decision?.[field] !== 'string' || !decision[field].trim()) {
+                issues.push({
+                    type: 'image_decisions_schema',
+                    detail: `${slotId}: missing ${field}`,
+                });
+            }
+        });
+        const asset = assetsById.get(assetId);
+        if (asset && (asset.publicWebSafe !== true || asset.sourceType === 'real_case')) {
+            issues.push({
+                type: 'image_decisions_schema',
+                detail: `${slotId}: asset ${assetId} is not eligible for public web publication`,
+            });
+        }
+        seenDecisionSlots.add(slotId);
+    });
+
     const contentFiles = requiredFiles.filter(
         (file) =>
-            file.endsWith('.json') && !file.endsWith('assets-manifest.json')
+            file.endsWith('.json') &&
+            !file.endsWith('assets-manifest.json') &&
+            !file.endsWith('image-slot-registry.json') &&
+            !file.endsWith('image-decisions.json')
     );
     const imageRefs = new Set();
     contentFiles.forEach((file) => {
@@ -226,6 +431,29 @@ function run() {
             ].forEach((field) =>
                 requireStringField(issues, file, json, field, 'home_schema')
             );
+
+            (Array.isArray(json.hero?.slides) ? json.hero.slides : []).forEach(
+                (slide, index) => {
+                    const slotId =
+                        String(slide?.id || '').trim() || `s${index + 1}`;
+                    expectedSlotIds.add(`home.hero.slides.${slotId}`);
+                }
+            );
+            (Array.isArray(json.editorial?.cards) ? json.editorial.cards : []).forEach(
+                (card, index) => {
+                    const slotId =
+                        String(card?.id || '').trim() || `card${index + 1}`;
+                    expectedSlotIds.add(`home.editorial.cards.${slotId}`);
+                }
+            );
+            (Array.isArray(json.corporateMatrix?.cards)
+                ? json.corporateMatrix.cards
+                : []
+            ).forEach((card, index) => {
+                const slotId =
+                    String(card?.id || '').trim() || `card${index + 1}`;
+                expectedSlotIds.add(`home.corporateMatrix.cards.${slotId}`);
+            });
         }
 
         if (file.endsWith('hub.json')) {
@@ -264,6 +492,35 @@ function run() {
                 'bookingStatus.ctaHref',
             ].forEach((field) =>
                 requireStringField(issues, file, json, field, 'hub_schema')
+            );
+
+            expectedSlotIds.add('hub.hero');
+            (Array.isArray(json.featured) ? json.featured : []).forEach(
+                (_card, index) => {
+                    expectedSlotIds.add(`hub.featured.${index}`);
+                }
+            );
+            (Array.isArray(json.sections) ? json.sections : []).forEach(
+                (section, sectionIndex) => {
+                    const sectionId =
+                        String(section?.id || '').trim() ||
+                        `section-${sectionIndex + 1}`;
+                    (Array.isArray(section?.cards) ? section.cards : []).forEach(
+                        (card, cardIndex) => {
+                            const cardKey =
+                                String(card?.slug || '').trim() ||
+                                `card-${cardIndex + 1}`;
+                            expectedSlotIds.add(
+                                `hub.sections.${sectionId}.cards.${cardKey}`
+                            );
+                        }
+                    );
+                }
+            );
+            (Array.isArray(json.initiatives) ? json.initiatives : []).forEach(
+                (_card, index) => {
+                    expectedSlotIds.add(`hub.initiatives.${index}`);
+                }
             );
         }
 
@@ -398,6 +655,13 @@ function run() {
                             detail: `${label}: related must contain at least 1 slug`,
                         });
                     }
+
+                    if (typeof service?.slug === 'string' && service.slug.trim()) {
+                        expectedSlotIds.add(`service.${service.slug.trim()}.hero`);
+                        expectedSlotIds.add(
+                            `service.${service.slug.trim()}.statement`
+                        );
+                    }
                 });
             }
         }
@@ -436,6 +700,14 @@ function run() {
                     'telemedicine_schema'
                 )
             );
+
+            expectedSlotIds.add('telemedicine.hero');
+            expectedSlotIds.add('telemedicine.statement');
+            (Array.isArray(json.initiatives) ? json.initiatives : []).forEach(
+                (_item, index) => {
+                    expectedSlotIds.add(`telemedicine.initiatives.${index}`);
+                }
+            );
         }
 
         if (file.endsWith('legal.json')) {
@@ -469,6 +741,67 @@ function run() {
             ].forEach((field) =>
                 requireStringField(issues, file, json, field, 'legal_schema')
             );
+
+            expectedSlotIds.add('legal.statement');
+            Object.keys(json.pages || {}).forEach((slug) => {
+                const canonicalSlug = LEGAL_SLOT_MAP[slug] || slug;
+                expectedSlotIds.add(`legal.pages.${canonicalSlug}.hero`);
+                expectedSlotIds.add(`legal.indexCards.${canonicalSlug}`);
+            });
+        }
+    });
+
+    expectedSlotIds.forEach((slotId) => {
+        if (!seenSlotIds.has(slotId)) {
+            issues.push({
+                type: 'slot_registry_coverage',
+                detail: `missing expected slot ${slotId}`,
+            });
+        }
+    });
+
+    slotRegistry.forEach((slot) => {
+        const slotId = String(slot?.slotId || '').trim();
+        if (!slotId) {
+            return;
+        }
+
+        if (!seenDecisionSlots.has(slotId)) {
+            issues.push({
+                type: 'image_decisions_coverage',
+                detail: `${slotId}: missing approved decision`,
+            });
+            return;
+        }
+
+        const decision = decisions.find(
+            (item) => String(item?.slotId || '').trim() === slotId
+        );
+        const asset = assetsById.get(String(decision?.assetId || '').trim());
+        if (!asset) {
+            return;
+        }
+
+        if (
+            Array.isArray(slot.allowedAssetKinds) &&
+            slot.allowedAssetKinds.length &&
+            !slot.allowedAssetKinds.includes(String(asset.kind || '').trim())
+        ) {
+            issues.push({
+                type: 'image_decisions_policy',
+                detail: `${slotId}: asset ${asset.id} kind ${asset.kind} not allowed`,
+            });
+        }
+
+        if (
+            Array.isArray(asset.allowedSlotRoles) &&
+            asset.allowedSlotRoles.length &&
+            !asset.allowedSlotRoles.includes(String(slot.slotRole || '').trim())
+        ) {
+            issues.push({
+                type: 'image_decisions_policy',
+                detail: `${slotId}: asset ${asset.id} slot role mismatch`,
+            });
         }
     });
 

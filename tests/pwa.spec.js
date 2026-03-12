@@ -28,7 +28,7 @@ test('PWA Manifest and Service Worker Check', async ({ page }) => {
     const manifestResponse = await page.request.get('/manifest.json');
     expect(manifestResponse.ok()).toBeTruthy();
     const manifestJson = await manifestResponse.json();
-    expect(manifestJson.name).toContain('Piel en Armonía');
+    expect(manifestJson.name).toContain('Aurora Derm');
     expect(manifestJson.display).toBe('standalone');
 
     // 4. Verify Icons

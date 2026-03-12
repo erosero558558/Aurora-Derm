@@ -1,8 +1,17 @@
 {
     "locale": "en",
     "brand": {
-        "logo": "Piel en Armonia",
-        "tag": "Medical dermatology in Quito"
+        "logo": "Aurora Derm",
+        "tag": "Clear clinical dermatology in Quito",
+        "voicePillars": [
+            "clinical clarity",
+            "calm warmth",
+            "precise follow-up"
+        ],
+        "utility": {
+            "label": "For clinics",
+            "href": "/en/software/clinic-flow-suite/"
+        }
     },
     "ui": {
         "shell": {
@@ -18,11 +27,11 @@
                 "dialogAria": "Service and topic search",
                 "eyebrow": "Find where to begin",
                 "inputLabel": "Type a symptom, service, or treatment",
-                "placeholder": "Acne, moles, laser, telemedicine...",
-                "hint": "You can search symptoms, treatments, or telemedicine. We will show useful ways to move forward.",
+                "placeholder": "Acne, moles, laser, teledermatology...",
+                "hint": "You can search symptoms, treatments, or teledermatology. We will show useful ways to move forward.",
                 "resultsAria": "Search results",
                 "emptyTitle": "We did not find a clear match",
-                "emptyBody": "Try diagnosis, acne, moles, laser, or telemedicine.",
+                "emptyBody": "Try diagnosis, acne, moles, laser, or teledermatology.",
                 "closeLabel": "Close search",
                 "resultsLimit": 8
             }
@@ -41,7 +50,7 @@
     "header": {
         "contactLabel": "WhatsApp",
         "contactHref": "https://wa.me/593982453672",
-        "searchLabel": "Search by service or topic",
+        "searchLabel": "Search by specialty, topic, or treatment",
         "menuLabel": "Explore",
         "closeMenuLabel": "Close",
         "switchLabel": "ES",
@@ -55,13 +64,13 @@
             },
             {
                 "id": "programs",
-                "label": "Services",
+                "label": "Specialties",
                 "href": "/en/services/",
                 "kind": "mega"
             },
             {
                 "id": "diagnosis",
-                "label": "Diagnosis",
+                "label": "First visit",
                 "href": "/en/services/diagnostico-integral/",
                 "kind": "standard"
             },
@@ -73,14 +82,8 @@
             },
             {
                 "id": "telemedicine",
-                "label": "Telemedicine",
+                "label": "Teledermatology",
                 "href": "/en/telemedicine/",
-                "kind": "standard"
-            },
-            {
-                "id": "software",
-                "label": "Software",
-                "href": "/en/software/clinic-flow-suite/",
                 "kind": "standard"
             },
             {
@@ -164,36 +167,30 @@
                 "deck": "Assessment for small persistent lesions with a clear dermatology read."
             },
             {
-                "label": "Telemedicine",
+                "label": "Teledermatology",
                 "href": "/en/telemedicine/",
-                "eyebrow": "First step",
-                "deck": "Remote guidance when it helps you move faster without losing clarity on what comes next."
+                "eyebrow": "Teledermatology",
+                "deck": "Remote guidance when it helps you move sooner, with clear direction on what comes next."
             },
             {
                 "label": "Legal and consent",
                 "href": "/en/legal/terms/",
                 "eyebrow": "Legal framework",
                 "deck": "Terms, privacy, and consent foundations for care delivery."
-            },
-            {
-                "label": "Clinic software",
-                "href": "/en/software/clinic-flow-suite/",
-                "eyebrow": "B2B suite",
-                "deck": "Kiosk, waiting room display, reception, and web booking for growing clinics."
             }
         ]
     },
     "mega": {
-        "title": "Dermatology services",
+        "title": "Specialties",
         "closeLabel": "Close panel",
         "columns": [
             {
                 "id": "entry-routes",
-                "heading": "First consultation",
+                "heading": "First visit",
                 "context": {
-                    "eyebrow": "Initial evaluation",
-                    "title": "Start with the service that brings order to your case",
-                    "deck": "The first consultation defines priority, risk, and follow-up so you can move forward with clarity from the start.",
+                    "eyebrow": "Start here",
+                    "title": "Start with the evaluation that brings order to your case",
+                    "deck": "Aurora Derm begins with a clear first read so timing, risk, and next steps are defined without confusion.",
                     "href": "/en/services/diagnostico-integral/"
                 },
                 "items": [
@@ -243,11 +240,11 @@
             },
             {
                 "id": "procedures",
-                "heading": "Medical treatments",
+                "heading": "Treatments",
                 "context": {
-                    "eyebrow": "Indicated intervention",
-                    "title": "Treatments and technology chosen with dermatology oversight",
-                    "deck": "Each treatment is indicated by phototype, tolerance, and clinical objective, with defined follow-up after care.",
+                    "eyebrow": "Responsible technology",
+                    "title": "Treatments chosen with medical judgment and clear follow-through",
+                    "deck": "Laser, peels, and medical dermoaesthetics come in when they improve the clinical decision and can be followed safely.",
                     "href": "/en/services/laser-dermatologico/"
                 },
                 "items": [
@@ -297,16 +294,16 @@
             },
             {
                 "id": "extended-care",
-                "heading": "Clear follow-up",
+                "heading": "Follow-up",
                 "context": {
-                    "eyebrow": "Telemedicine and support",
-                    "title": "Telemedicine, consent, and practical access in one place",
-                    "deck": "This section brings together remote guidance, clear consent, and direct ways to keep moving.",
+                    "eyebrow": "Ongoing care",
+                    "title": "Teledermatology, follow-up, and consent in one patient map",
+                    "deck": "This section brings together remote guidance, thoughtful follow-up, and the legal framework that supports care.",
                     "href": "/en/telemedicine/"
                 },
                 "items": [
                     {
-                        "label": "Telemedicine",
+                        "label": "Teledermatology",
                         "href": "/en/telemedicine/",
                         "children": [
                             {
@@ -320,6 +317,20 @@
                         ]
                     },
                     {
+                        "label": "Dermatology follow-up",
+                        "href": "/en/services/piel-cabello-unas/",
+                        "children": [
+                            {
+                                "label": "Skin, hair and nails",
+                                "href": "/en/services/piel-cabello-unas/"
+                            },
+                            {
+                                "label": "Pediatric dermatology",
+                                "href": "/en/services/dermatologia-pediatrica/"
+                            }
+                        ]
+                    },
+                    {
                         "label": "Legal and consent",
                         "href": "/en/legal/terms/",
                         "children": [
@@ -328,22 +339,8 @@
                                 "href": "/en/legal/privacy/"
                             },
                             {
-                                "label": "Cookies",
-                                "href": "/en/legal/cookies/"
-                            }
-                        ]
-                    },
-                    {
-                        "label": "Clinic software",
-                        "href": "/en/software/clinic-flow-suite/",
-                        "children": [
-                            {
-                                "label": "See suite",
-                                "href": "/en/software/clinic-flow-suite/"
-                            },
-                            {
-                                "label": "Book demo",
-                                "href": "https://wa.me/593982453672?text=Hello%2C%20I%20want%20to%20see%20a%20demo%20of%20the%20clinic%20software"
+                                "label": "Medical disclaimer",
+                                "href": "/en/legal/medical-disclaimer/"
                             }
                         ]
                     }
@@ -351,35 +348,35 @@
             }
         ],
         "featured": {
-            "eyebrow": "Dermatology, clearly explained",
-            "title": "We explain what to watch, how to decide, and when in-clinic care makes sense",
-            "deck": "The promise is simple: clear medical guidance, human language, and follow-up you can understand.",
+            "eyebrow": "Aurora Derm",
+            "title": "Clear clinical dermatology, with calm warmth and precise follow-up",
+            "deck": "The promise is simple: explain well, treat with judgment, and guide each decision without making it feel heavy.",
             "href": "/en/services/"
         }
     },
     "footer": {
-        "headline": "Clear medical dermatology for Quito",
-        "deck": "Current dermatology care with explained decisions and a human tone.",
+        "headline": "Aurora Derm",
+        "deck": "Clear clinical dermatology in Quito, with explained decisions and precise follow-up.",
         "columns": [
             {
-                "title": "Services and support",
+                "title": "Start care",
                 "links": [
                     {
-                        "label": "Services",
+                        "label": "Specialties",
                         "href": "/en/services/"
                     },
                     {
-                        "label": "Telemedicine",
+                        "label": "First visit",
+                        "href": "/en/services/diagnostico-integral/"
+                    },
+                    {
+                        "label": "Teledermatology",
                         "href": "/en/telemedicine/"
-                    },
-                    {
-                        "label": "Online booking",
-                        "href": "/en/services/"
                     }
                 ]
             },
             {
-                "title": "Policies and consent",
+                "title": "Legal and consent",
                 "links": [
                     {
                         "label": "Terms",
@@ -408,19 +405,15 @@
                 ]
             },
             {
-                "title": "Software",
+                "title": "For clinics",
                 "links": [
                     {
                         "label": "Clinic flow suite",
                         "href": "/en/software/clinic-flow-suite/"
                     },
                     {
-                        "label": "Mobile check-in",
-                        "href": "/en/software/clinic-flow-suite/demo/"
-                    },
-                    {
-                        "label": "Site dashboard",
-                        "href": "/en/software/clinic-flow-suite/dashboard/"
+                        "label": "Request a demo",
+                        "href": "https://wa.me/593982453672?text=Hello%2C%20I%20want%20to%20see%20a%20demo%20of%20the%20clinic%20software"
                     }
                 ]
             }
@@ -451,6 +444,6 @@
                 "href": "/en/"
             }
         ],
-        "copyright": "Copyright 2026 Piel en Armonia"
+        "copyright": "Copyright 2026 Aurora Derm"
     }
 }

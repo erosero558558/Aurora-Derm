@@ -1,8 +1,8 @@
-# Public V6 Visual Contract (Sony-Guided, Strict)
+# Public V6 Visual Contract (Aurora Baseline, Strict)
 
-Version: `v6-r2`
-Date: `2026-03-03`
-Reference pack: `docs/reference/sony-captures/*`
+Version: `v6-r3`
+Date: `2026-03-12`
+Reference pack: `verification/public-v6-screenshots/*`
 
 ## Scope
 
@@ -19,10 +19,10 @@ Contrato estricto para `/es/` y `/en/` con extensiones a hub/service/tele/legal.
 | ID     | Bloque          | Criterio estricto                                                         | Evidencia |
 | ------ | --------------- | ------------------------------------------------------------------------- | --------- |
 | VC-01  | Header          | Existe `data-v6-header` en home ES                                        | A,D       |
-| VC-02  | Header          | Fondo header negro (`rgb <= 16`)                                          | A,D,F,G   |
+| VC-02  | Header          | Shell header claro Aurora (`rgb >= 240` en rango ivory/perla)             | A,D,F,G   |
 | VC-03  | Header          | Altura header desktop entre 68px y 96px                                   | A,F,G     |
-| VC-04  | Header          | Logo tipografico en mayusculas visible                                    | A,F,G     |
-| VC-05  | Header          | Navegacion primaria con >= 7 items desktop                                | A,F,G     |
+| VC-04  | Header          | Logo tipografico visible en mixed-case                                     | A,F,G     |
+| VC-05  | Header          | Navegacion primaria clinica con >= 6 items desktop                         | A,F,G     |
 | VC-06  | Header          | Item de contacto visible en extremo derecho                               | A,F,G     |
 | VC-07  | Header          | Icono de busqueda visible en desktop                                      | A,F,G     |
 | VC-08  | Header          | Control de idioma visible en banda blanca interior                        | F,G       |
@@ -53,7 +53,7 @@ Contrato estricto para `/es/` y `/en/` con extensiones a hub/service/tele/legal.
 | VC-33  | News strip      | Columna izquierda etiqueta editorial fija                                 | A,B       |
 | VC-34  | News strip      | Columna derecha contiene titular + enlace                                 | A,B       |
 | VC-35  | News strip      | Selector de idioma discreto alineado derecha                              | A,B       |
-| VC-36  | Editorial       | Seccion atmosferica azul profunda en home                                 | B,C       |
+| VC-36  | Editorial       | Seccion atmosferica clara con gradientes Aurora en home                   | B,C       |
 | VC-37  | Editorial       | Fondo con glow vertical o gradiente multicapa                             | B,C       |
 | VC-38  | Editorial       | Grid editorial 2 columnas desktop                                         | B,C       |
 | VC-39  | Editorial       | Grid editorial 1 columna mobile (<900px)                                  | B,C       |
@@ -68,9 +68,9 @@ Contrato estricto para `/es/` y `/en/` con extensiones a hub/service/tele/legal.
 | VC-48  | Internas        | Grillas de cards en hub/servicios, min 3 columnas desktop                 | G         |
 | VC-49  | Internas        | Cards con imagen arriba + metadata + CTA abajo                            | G         |
 | VC-50  | Internas        | Boton back-to-top fijo en esquina inferior                                | B,C,F,G   |
-| VC-51  | Internas        | Telemedicina muestra exactamente 3 KPI tiles en desktop                   | F,G       |
-| VC-52  | Internas        | Telemedicina incluye >=4 cards de iniciativas con imagen/titulo/copy/cta  | F,G       |
-| VC-53  | Internas        | Telemedicina mantiene bloque lead ancho (>=1.5x card estandar) en desktop | F,G       |
+| VC-51  | Internas        | Teledermatologia muestra exactamente 3 KPI tiles en desktop               | F,G       |
+| VC-52  | Internas        | Teledermatologia incluye >=4 cards de iniciativas con imagen/titulo/copy/cta | F,G       |
+| VC-53  | Internas        | Teledermatologia mantiene bloque lead ancho (>=1.5x card estandar) en desktop | F,G       |
 | VC-54  | Internas        | Legal expone >=4 tabs en indice superior                                  | F,G       |
 | VC-55  | Internas        | Legal renderiza >=2 bloques de clausulas con filas numeradas              | F,G       |
 | VC-56  | Internas        | Legal incluye indice visual de politicas con >=4 cards y metadata         | F,G       |
@@ -121,7 +121,7 @@ Contrato estricto para `/es/` y `/en/` con extensiones a hub/service/tele/legal.
 | VC-101 | Internas        | Barra de herramientas interna muestra idioma + menu de pagina             | F,G       |
 | VC-102 | Internas        | Click en menu de pagina abre panel y actualiza estado expandido           | F,G       |
 | VC-103 | Internas        | Teclado abre menu, enfoca primer link y Escape devuelve foco al boton     | F,G       |
-| VC-104 | Internas        | Geometria de idioma/menu en rango Sony-like (tamano/posicion)             | F,G       |
+| VC-104 | Internas        | Geometria de idioma/menu en rango Aurora (tamano/posicion)                | F,G       |
 
 ## Geometry tolerances
 

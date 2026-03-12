@@ -1,6 +1,6 @@
 {
-    "title": "Piel en Armonia | Dermatologia medica en Quito",
-    "description": "Dermatologia medica en Quito con diagnostico claro, tratamientos indicados y seguimiento que usted puede comprender.",
+    "title": "Aurora Derm | Dermatologia clinica clara en Quito",
+    "description": "Aurora Derm ofrece dermatologia clinica clara en Quito, con primera evaluacion precisa, tratamientos indicados y seguimiento comprensible.",
     "hero": {
         "autoplayMs": 7000,
         "labels": {
@@ -15,7 +15,7 @@
         "slides": [
             {
                 "id": "s1",
-                "category": "Diagnostico",
+                "category": "Primera consulta",
                 "title": "Diagnosticar bien al principio cambia todo el camino.",
                 "description": "Escuchamos su historia, examinamos piel, cabello y unas, y ordenamos un plan que usted puede entender desde la primera cita.",
                 "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
@@ -35,12 +35,12 @@
             },
             {
                 "id": "s3",
-                "category": "Telemedicina",
-                "title": "Telemedicina para avanzar temprano, sin decidir a ciegas.",
+                "category": "Teledermatologia",
+                "title": "Teledermatologia para avanzar temprano, sin decidir a ciegas.",
                 "description": "Resolvemos la primera orientacion a distancia y, si el caso lo exige, coordinamos el paso al consultorio en Quito.",
                 "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
                 "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w",
-                "alt": "Inicio de telemedicina con contexto clinico e imagenes",
+                "alt": "Inicio de teledermatologia con contexto clinico e imagenes",
                 "href": "/es/telemedicina/"
             },
             {
@@ -55,7 +55,7 @@
             },
             {
                 "id": "s5",
-                "category": "Equipo",
+                "category": "Aurora Derm",
                 "title": "Un equipo que explica cada decision sin rodeos.",
                 "description": "Usted recibe una lectura dermatologica actual, acompanamiento cercano y un plan que se entiende en cada etapa.",
                 "image": "/images/optimized/v6-clinic-team-roundtable.webp",
@@ -66,19 +66,19 @@
         ]
     },
     "newsStrip": {
-        "label": "Empiece aqui",
-        "headline": "Aunque la agenda web siga en pausa, su primer paso no tiene por que esperar.",
+        "label": "Aurora Derm",
+        "headline": "Dermatologia clinica clara para avanzar sin demora, incluso con la agenda web en pausa.",
         "href": "/es/servicios/",
         "expandLabel": "Expandir",
         "collapseLabel": "Contraer",
-        "detail": "Empiece por telemedicina o abrir la consulta que mas se parezca a lo que le esta pasando.",
-        "ctaLabel": "Ver servicios",
+        "detail": "Empiece por teledermatologia o por la primera consulta que mejor ordene lo que usted esta viviendo hoy.",
+        "ctaLabel": "Ver especialidades",
         "localeAria": "Selector de idioma"
     },
     "editorial": {
-        "eyebrow": "Dermatologia clara",
-        "title": "Explicamos lo que vemos y como conviene seguir.",
-        "deck": "Estas entradas resumen lo que solemos mirar primero, que decisiones ayudan de verdad y como sostener el seguimiento sin volverlo complicado.",
+        "eyebrow": "Aurora Derm",
+        "title": "Explicamos lo que vemos, por que importa y como conviene seguir.",
+        "deck": "Estas entradas resumen como ordenamos la primera lectura, cuando indicamos tecnologia y de que forma sostenemos el seguimiento sin volverlo complejo.",
         "ctaLabel": "Ver servicio",
         "cards": [
             {
@@ -121,8 +121,8 @@
                 "id": "c4",
                 "type": "info",
                 "size": "tall",
-                "category": "Telemedicina",
-                "title": "Telemedicina cuando el tiempo importa",
+                "category": "Teledermatologia",
+                "title": "Teledermatologia cuando el tiempo importa",
                 "copy": "Usted recibe una primera orientacion sin esperar de mas y, si hace falta examen directo, coordinamos el paso al consultorio.",
                 "href": "/es/telemedicina/",
                 "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
@@ -156,9 +156,9 @@
         ]
     },
     "corporateMatrix": {
-        "eyebrow": "Donde suele empezar",
+        "eyebrow": "Ruta del paciente",
         "title": "Una forma mas clara de elegir por donde empezar",
-        "deck": "Cada ficha explica cuando suele ayudar ese servicio, como se trabaja y cuando vale la pena mirar otra opcion.",
+        "deck": "Cada ficha explica cuando suele ayudar, como se aborda y cuando conviene pasar a otra etapa del cuidado.",
         "ctaLabel": "Ver servicio",
         "cards": [
             {
@@ -203,12 +203,12 @@
             },
             {
                 "id": "m5",
-                "category": "Telemedicina",
-                "title": "Telemedicina y paso a consulta",
+                "category": "Teledermatologia",
+                "title": "Teledermatologia y paso a consulta",
                 "copy": "La orientacion remota ayuda a decidir cuando basta seguir a distancia y cuando vale la pena verle pronto en Quito.",
                 "href": "/es/telemedicina/",
                 "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
-                "alt": "Inicio de telemedicina con contexto clinico e imagenes",
+                "alt": "Inicio de teledermatologia con contexto clinico e imagenes",
                 "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w"
             },
             {
@@ -224,10 +224,10 @@
         ]
     },
     "bookingStatus": {
-        "eyebrow": "Empiece aqui",
+        "eyebrow": "Primer paso",
         "title": "Reserva online en mantenimiento",
-        "description": "Si quiere avanzar hoy sin llamar primero, empiece por telemedicina o revise el servicio que mas se parezca a lo que le esta pasando.",
-        "ctaLabel": "Abrir telemedicina",
+        "description": "Si quiere avanzar hoy sin llamar primero, abra teledermatologia o la especialidad que mejor se parezca a lo que le esta pasando.",
+        "ctaLabel": "Abrir teledermatologia",
         "ctaHref": "/es/telemedicina/"
     }
 }

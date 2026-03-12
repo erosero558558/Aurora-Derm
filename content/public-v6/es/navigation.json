@@ -1,8 +1,17 @@
 {
     "locale": "es",
     "brand": {
-        "logo": "Piel en Armonia",
-        "tag": "Dermatologia medica en Quito"
+        "logo": "Aurora Derm",
+        "tag": "Dermatologia clinica clara en Quito",
+        "voicePillars": [
+            "claridad clinica",
+            "calidez serena",
+            "seguimiento preciso"
+        ],
+        "utility": {
+            "label": "Para clinicas",
+            "href": "/es/software/turnero-clinicas/"
+        }
     },
     "ui": {
         "shell": {
@@ -18,11 +27,11 @@
                 "dialogAria": "Buscador de servicios y temas",
                 "eyebrow": "Encuentre por donde empezar",
                 "inputLabel": "Escriba un sintoma, servicio o tratamiento",
-                "placeholder": "Acne, lunares, laser, telemedicina...",
-                "hint": "Puede buscar sintomas, tratamientos o telemedicina. Le mostramos opciones utiles para seguir.",
+                "placeholder": "Acne, lunares, laser, teledermatologia...",
+                "hint": "Puede buscar sintomas, tratamientos o teledermatologia. Le mostramos opciones utiles para seguir.",
                 "resultsAria": "Resultados de busqueda",
                 "emptyTitle": "No vimos una coincidencia clara",
-                "emptyBody": "Pruebe con diagnostico, acne, lunares, laser o telemedicina.",
+                "emptyBody": "Pruebe con diagnostico, acne, lunares, laser o teledermatologia.",
                 "closeLabel": "Cerrar buscador",
                 "resultsLimit": 8
             }
@@ -41,7 +50,7 @@
     "header": {
         "contactLabel": "WhatsApp",
         "contactHref": "https://wa.me/593982453672",
-        "searchLabel": "Buscar por servicio o tema",
+        "searchLabel": "Buscar por especialidad, tema o tratamiento",
         "menuLabel": "Explorar",
         "closeMenuLabel": "Cerrar",
         "switchLabel": "EN",
@@ -55,13 +64,13 @@
             },
             {
                 "id": "programs",
-                "label": "Servicios",
+                "label": "Especialidades",
                 "href": "/es/servicios/",
                 "kind": "mega"
             },
             {
                 "id": "diagnosis",
-                "label": "Diagnostico",
+                "label": "Primera consulta",
                 "href": "/es/servicios/diagnostico-integral/",
                 "kind": "standard"
             },
@@ -73,14 +82,8 @@
             },
             {
                 "id": "telemedicine",
-                "label": "Telemedicina",
+                "label": "Teledermatologia",
                 "href": "/es/telemedicina/",
-                "kind": "standard"
-            },
-            {
-                "id": "software",
-                "label": "Software",
-                "href": "/es/software/turnero-clinicas/",
                 "kind": "standard"
             },
             {
@@ -164,36 +167,30 @@
                 "deck": "Valoracion de lesiones pequenas y persistentes con una lectura dermatologica clara."
             },
             {
-                "label": "Telemedicina",
+                "label": "Teledermatologia",
                 "href": "/es/telemedicina/",
-                "eyebrow": "Primer paso",
-                "deck": "Orientacion remota cuando acelera decisiones sin perder claridad sobre como seguir."
+                "eyebrow": "Teledermatologia",
+                "deck": "Orientacion remota cuando conviene avanzar antes, con claridad sobre el siguiente paso."
             },
             {
                 "label": "Legal y consentimiento",
                 "href": "/es/legal/terminos/",
                 "eyebrow": "Marco legal",
                 "deck": "Terminos, privacidad y bases de consentimiento para la atencion."
-            },
-            {
-                "label": "Software para clinicas",
-                "href": "/es/software/turnero-clinicas/",
-                "eyebrow": "Suite B2B",
-                "deck": "Kiosco, TV sala, recepcion y agenda web para clinicas pequenas y medianas."
             }
         ]
     },
     "mega": {
-        "title": "Servicios dermatologicos",
+        "title": "Especialidades",
         "closeLabel": "Cerrar panel",
         "columns": [
             {
                 "id": "entry-routes",
-                "heading": "Consulta inicial",
+                "heading": "Primera consulta",
                 "context": {
-                    "eyebrow": "Primera evaluacion",
-                    "title": "Empiece por el servicio que mejor ordena su caso",
-                    "deck": "La primera consulta define prioridad, riesgo y seguimiento para que usted avance con claridad desde el inicio.",
+                    "eyebrow": "Empiece aqui",
+                    "title": "Empiece por la evaluacion que mejor ordena su caso",
+                    "deck": "Aurora Derm prioriza una primera lectura clara para definir riesgo, tiempos y como conviene seguir.",
                     "href": "/es/servicios/diagnostico-integral/"
                 },
                 "items": [
@@ -243,11 +240,11 @@
             },
             {
                 "id": "procedures",
-                "heading": "Tratamientos medicos",
+                "heading": "Tratamientos",
                 "context": {
-                    "eyebrow": "Intervencion indicada",
-                    "title": "Tratamientos y tecnologia indicados con lectura dermatologica",
-                    "deck": "Indicamos cada tratamiento por fototipo, tolerancia y objetivo clinico, con control posterior definido.",
+                    "eyebrow": "Tecnologia responsable",
+                    "title": "Tratamientos indicados con criterio medico y seguimiento claro",
+                    "deck": "Laser, peeling y dermoestetica medica entran cuando mejoran una decision clinica y pueden seguirse con seguridad.",
                     "href": "/es/servicios/laser-dermatologico/"
                 },
                 "items": [
@@ -297,16 +294,16 @@
             },
             {
                 "id": "extended-care",
-                "heading": "Seguimiento claro",
+                "heading": "Seguimiento",
                 "context": {
-                    "eyebrow": "Telemedicina y apoyo",
-                    "title": "Telemedicina, consentimiento y accesos faciles de ubicar",
-                    "deck": "Aqui reunimos orientacion remota, consentimiento claro y accesos concretos para seguir.",
+                    "eyebrow": "Acompanamiento continuo",
+                    "title": "Teledermatologia, controles y consentimiento en un mismo mapa",
+                    "deck": "Aqui reunimos orientacion remota, seguimiento responsable y el marco legal que sostiene la atencion.",
                     "href": "/es/telemedicina/"
                 },
                 "items": [
                     {
-                        "label": "Telemedicina",
+                        "label": "Teledermatologia",
                         "href": "/es/telemedicina/",
                         "children": [
                             {
@@ -320,6 +317,20 @@
                         ]
                     },
                     {
+                        "label": "Seguimiento dermatologico",
+                        "href": "/es/servicios/piel-cabello-unas/",
+                        "children": [
+                            {
+                                "label": "Piel, cabello y unas",
+                                "href": "/es/servicios/piel-cabello-unas/"
+                            },
+                            {
+                                "label": "Dermatologia pediatrica",
+                                "href": "/es/servicios/dermatologia-pediatrica/"
+                            }
+                        ]
+                    },
+                    {
                         "label": "Legal y consentimiento",
                         "href": "/es/legal/terminos/",
                         "children": [
@@ -328,22 +339,8 @@
                                 "href": "/es/legal/privacidad/"
                             },
                             {
-                                "label": "Cookies",
-                                "href": "/es/legal/cookies/"
-                            }
-                        ]
-                    },
-                    {
-                        "label": "Software para clinicas",
-                        "href": "/es/software/turnero-clinicas/",
-                        "children": [
-                            {
-                                "label": "Ver suite",
-                                "href": "/es/software/turnero-clinicas/"
-                            },
-                            {
-                                "label": "Agendar demo",
-                                "href": "https://wa.me/593982453672?text=Hola%2C%20quiero%20ver%20una%20demo%20del%20software%20para%20clinicas"
+                                "label": "Aviso medico",
+                                "href": "/es/legal/aviso-medico/"
                             }
                         ]
                     }
@@ -351,35 +348,35 @@
             }
         ],
         "featured": {
-            "eyebrow": "Dermatologia clara",
-            "title": "Le explicamos que mirar, como decidir y cuando conviene pasar a consulta",
-            "deck": "La promesa de la casa es simple: lectura medica clara, lenguaje humano y seguimiento comprensible.",
+            "eyebrow": "Aurora Derm",
+            "title": "Dermatologia clinica clara, con calidez serena y seguimiento preciso",
+            "deck": "La promesa es simple: explicar bien, tratar con criterio y acompanar cada decision sin volverla compleja.",
             "href": "/es/servicios/"
         }
     },
     "footer": {
-        "headline": "Dermatologia medica clara para Quito",
-        "deck": "Cuidado dermatologico actual con decisiones explicadas y trato cercano.",
+        "headline": "Aurora Derm",
+        "deck": "Dermatologia clinica clara en Quito, con decisiones explicadas y seguimiento preciso.",
         "columns": [
             {
-                "title": "Servicios y apoyo",
+                "title": "Empezar",
                 "links": [
                     {
-                        "label": "Servicios",
+                        "label": "Especialidades",
                         "href": "/es/servicios/"
                     },
                     {
-                        "label": "Telemedicina",
+                        "label": "Primera consulta",
+                        "href": "/es/servicios/diagnostico-integral/"
+                    },
+                    {
+                        "label": "Teledermatologia",
                         "href": "/es/telemedicina/"
-                    },
-                    {
-                        "label": "Reserva online",
-                        "href": "/es/servicios/"
                     }
                 ]
             },
             {
-                "title": "Politicas y consentimiento",
+                "title": "Legal y consentimiento",
                 "links": [
                     {
                         "label": "Terminos",
@@ -408,19 +405,15 @@
                 ]
             },
             {
-                "title": "Software",
+                "title": "Para clinicas",
                 "links": [
                     {
                         "label": "Turnero para clinicas",
                         "href": "/es/software/turnero-clinicas/"
                     },
                     {
-                        "label": "Check-in movil",
-                        "href": "/es/software/turnero-clinicas/demo/"
-                    },
-                    {
-                        "label": "Dashboard de sede",
-                        "href": "/es/software/turnero-clinicas/dashboard/"
+                        "label": "Solicitar demo",
+                        "href": "https://wa.me/593982453672?text=Hola%2C%20quiero%20ver%20una%20demo%20del%20software%20para%20clinicas"
                     }
                 ]
             }
@@ -451,6 +444,6 @@
                 "href": "/es/"
             }
         ],
-        "copyright": "Copyright 2026 Piel en Armonia"
+        "copyright": "Copyright 2026 Aurora Derm"
     }
 }

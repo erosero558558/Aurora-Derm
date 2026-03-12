@@ -1,17 +1,23 @@
 :root {
-    --v6-color-black: #090909;
-    --v6-color-ink: #14161b;
-    --v6-color-white: #ffffff;
-    --v6-color-smoke: #ededf0;
-    --v6-color-muted: #b8bcc4;
-    --v6-color-line: #2a2d34;
-    --v6-color-blue-a: #001940;
-    --v6-color-blue-b: #0f2d68;
-    --v6-color-blue-c: #0a3e88;
-    --v6-color-glow: rgba(67, 138, 255, 0.28);
-    --v6-radius-sm: 10px;
-    --v6-radius-md: 14px;
-    --v6-radius-lg: 18px;
+    --v6-color-black: #20262b;
+    --v6-color-ink: #20262b;
+    --v6-color-white: #fffcf7;
+    --v6-color-smoke: #f6f2eb;
+    --v6-color-muted: #7f9487;
+    --v6-color-line: #ded6cc;
+    --v6-color-blue-a: #d6b08c;
+    --v6-color-blue-b: #7f9487;
+    --v6-color-blue-c: #4e665c;
+    --v6-color-glow: rgba(214, 176, 140, 0.24);
+    --v6-color-pearl: #f6f2eb;
+    --v6-color-ivory: #fffcf7;
+    --v6-color-sand: #ded6cc;
+    --v6-color-champagne: #d6b08c;
+    --v6-color-sage: #7f9487;
+    --v6-color-moss: #4e665c;
+    --v6-radius-sm: 12px;
+    --v6-radius-md: 20px;
+    --v6-radius-lg: 28px;
     --v6-space-1: 8px;
     --v6-space-2: 12px;
     --v6-space-3: 16px;
@@ -19,7 +25,8 @@
     --v6-space-5: 32px;
     --v6-space-6: 48px;
     --v6-space-7: 72px;
-    --v6-shadow-soft: 0 18px 36px rgba(3, 8, 24, 0.24);
+    --v6-shadow-soft: 0 24px 56px rgba(68, 57, 43, 0.12);
     --v6-max-width: 1260px;
-    --v6-font-sans: "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+    --v6-font-sans: 'Instrument Sans', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+    --v6-font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
 }

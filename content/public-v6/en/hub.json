@@ -1,35 +1,35 @@
 {
-    "title": "Dermatology services | Piel en Armonia",
-    "description": "Dermatology services in Quito with clear diagnosis, indicated technology, and follow-up you can actually understand.",
+    "title": "Dermatology specialties | Aurora Derm",
+    "description": "Aurora Derm organizes its dermatology specialties in Quito with a clear first read, indicated treatment, and follow-up you can understand.",
     "breadcrumb": [
         {
             "label": "Home",
             "href": "/en/"
         },
         {
-            "label": "Services",
+            "label": "Specialties",
             "href": "/en/services/"
         }
     ],
-    "heading": "Dermatology services",
+    "heading": "Dermatology specialties",
     "heroImage": {
         "src": "/images/optimized/v6-clinic-hub-editorial-map.webp",
         "srcset": "/images/optimized/v6-clinic-hub-editorial-map-400.webp 400w, /images/optimized/v6-clinic-hub-editorial-map-640.webp 640w, /images/optimized/v6-clinic-hub-editorial-map-800.webp 800w, /images/optimized/v6-clinic-hub-editorial-map-1024.webp 1024w, /images/optimized/v6-clinic-hub-editorial-map-1200.webp 1200w, /images/optimized/v6-clinic-hub-editorial-map-1344.webp 1344w, /images/optimized/v6-clinic-hub-editorial-map.webp 1400w",
         "alt": "Editorial map of dermatology routes and clinical decisions"
     },
-    "introTitle": "Find the service that best matches what your skin needs today",
-    "introDeck": "Each service explains timing, scope, and follow-up so you can understand the plan before deciding.",
+    "introTitle": "Find the specialty that best organizes what your skin needs today",
+    "introDeck": "Each page explains scope, timing, and follow-up so you can understand the plan before deciding.",
     "ui": {
         "menu": {
-            "featured": "Featured services",
+            "featured": "Featured pathways",
             "initiatives": "Helpful support"
         },
         "featured": {
             "eyebrow": "Where to start",
-            "title": "Three strong places to begin"
+            "title": "Three clear ways to begin"
         },
         "sectionLabelPrefix": "Section",
-        "routeLabel": "services",
+        "routeLabel": "pathways",
         "ctaLabel": "See service",
         "railAria": "Service sections",
         "initiatives": {
@@ -53,8 +53,8 @@
             "href": "/en/services/laser-dermatologico/"
         },
         {
-            "category": "Telemedicine",
-            "title": "Telemedicine with a careful clinic handoff",
+            "category": "Teledermatology",
+            "title": "Teledermatology with a careful clinic handoff",
             "copy": "Remote care helps decide whether follow-up at a distance is enough or if it makes sense to see you in clinic soon.",
             "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
             "href": "/en/telemedicine/"
@@ -63,8 +63,8 @@
     "sections": [
         {
             "id": "clinical-core",
-            "title": "Medical foundation",
-            "deck": "Services that clarify diagnosis and support common conditions with clear follow-up from the start.",
+            "title": "Start and assess",
+            "deck": "Pathways that clarify diagnosis and support common conditions with clear follow-up from the start.",
             "cards": [
                 {
                     "slug": "diagnostico-integral",
@@ -94,7 +94,7 @@
         },
         {
             "id": "procedures",
-            "title": "Treatments we indicate responsibly",
+            "title": "Treat with judgment",
             "deck": "Procedures and technology when they add clinical value and can be followed safely.",
             "cards": [
                 {
@@ -125,7 +125,7 @@
         },
         {
             "id": "extended",
-            "title": "Follow-up and family decisions",
+            "title": "Follow through and adjust",
             "deck": "Options for longer follow-up, mixed presentations, and shared decisions that need structure.",
             "cards": [
                 {
@@ -146,8 +146,8 @@
                 },
                 {
                     "slug": "telemedicine",
-                    "category": "Telemedicine",
-                    "title": "Telemedicine",
+                    "category": "Teledermatology",
+                    "title": "Teledermatology",
                     "copy": "Remote guidance helps decide whether online follow-up is enough or if clinic review makes more sense.",
                     "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
                     "href": "/en/telemedicine/"
@@ -206,7 +206,7 @@
             "href": "/en/legal/terms/"
         },
         {
-            "category": "Telemedicine",
+            "category": "Teledermatology",
             "title": "Clinic handoff on time",
             "copy": "Remote care keeps clear signals for moving into clinic when it is needed.",
             "image": "/images/optimized/v6-clinic-hub-editorial-map.webp",
@@ -214,10 +214,10 @@
         }
     ],
     "bookingStatus": {
-        "eyebrow": "Start here",
+        "eyebrow": "First step",
         "title": "Online booking under maintenance",
-        "description": "You can start today with telemedicine or open the service that sounds closest to what you are feeling.",
-        "ctaLabel": "Open telemedicine",
+        "description": "You can start today with teledermatology or open the pathway that sounds closest to what you are feeling.",
+        "ctaLabel": "Open teledermatology",
         "ctaHref": "/en/telemedicine/"
     }
 }

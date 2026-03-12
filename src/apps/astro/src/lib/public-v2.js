@@ -446,7 +446,7 @@ export function getPublicNavigationModel(locale, pathname = '/') {
     return {
         locale,
         pathname,
-        brand: 'Piel en Armonia',
+        brand: 'Aurora Derm',
         switchHref: getLocaleSwitchPath(
             locale === 'en' ? 'es' : 'en',
             pathname
@@ -464,7 +464,10 @@ export function getPublicNavigationModel(locale, pathname = '/') {
                 kind: 'mega',
             },
             {
-                label: locale === 'en' ? 'Telemedicine' : 'Telemedicina',
+                label:
+                    locale === 'en'
+                        ? 'Teledermatology'
+                        : 'Teledermatologia',
                 href: telemedicinePath(locale),
             },
             {
@@ -483,8 +486,8 @@ export function getPublicNavigationModel(locale, pathname = '/') {
                         : 'Un catalogo publico mas limpio para cuidado clinico, estetico y pediatrico.',
                 deck:
                     locale === 'en'
-                        ? 'Browse by family and then move into the right consultation, procedure, or telemedicine route.'
-                        : 'Navega por familia y luego entra a la consulta, procedimiento o ruta online correcta.',
+                        ? 'Browse by family and then move into the right consultation, procedure, or teledermatology route.'
+                        : 'Navega por familia y luego entra a la consulta, procedimiento o ruta de teledermatologia correcta.',
                 href: serviceHubPath(locale),
             },
             families: FAMILY_ORDER.map((family) => ({
@@ -512,12 +515,12 @@ export function getHomeV2Data(locale) {
     return {
         title:
             locale === 'en'
-                ? 'Piel en Armonia | Editorial dermatology'
-                : 'Piel en Armonia | Dermatologia editorial',
+                ? 'Aurora Derm | Editorial dermatology'
+                : 'Aurora Derm | Dermatologia editorial',
         description:
             locale === 'en'
-                ? 'A rebuilt public dermatology frontend with editorial structure, service programmes, telemedicine, and booking continuity.'
-                : 'Un frontend publico de dermatologia reconstruido con estructura editorial, programas de servicio, telemedicina y continuidad de reserva.',
+                ? 'A rebuilt public dermatology frontend with editorial structure, service programmes, teledermatology, and booking continuity.'
+                : 'Un frontend publico de dermatologia reconstruido con estructura editorial, programas de servicio, teledermatologia y continuidad de reserva.',
         slides: [
             {
                 id: 'clinical-stage',
@@ -583,21 +586,23 @@ export function getHomeV2Data(locale) {
                 id: 'tele-stage',
                 category:
                     dictionary.nav_telemedicine ||
-                    (locale === 'en' ? 'Telemedicine' : 'Telemedicina'),
+                    (locale === 'en'
+                        ? 'Teledermatology'
+                        : 'Teledermatologia'),
                 title:
                     locale === 'en'
                         ? 'Remote dermatology when the case fits, in-person escalation when it does not.'
                         : 'Dermatologia remota cuando el caso encaja, escalamiento presencial cuando no.',
                 deck:
                     locale === 'en'
-                        ? 'Telemedicine is now presented as part of the same editorial care system.'
-                        : 'La telemedicina ahora se presenta como parte del mismo sistema editorial de cuidado.',
+                        ? 'Teledermatology is now presented as part of the same editorial care system.'
+                        : 'La teledermatologia ahora se presenta como parte del mismo sistema editorial de cuidado.',
                 media: IMAGE_MAP.telemedicine,
                 primary: {
                     label:
                         locale === 'en'
-                            ? 'Open telemedicine'
-                            : 'Abrir telemedicina',
+                            ? 'Open teledermatology'
+                            : 'Abrir teledermatologia',
                     href: telemedicinePath(locale),
                     target: 'telemedicine',
                 },
@@ -616,8 +621,8 @@ export function getHomeV2Data(locale) {
                 eyebrow: locale === 'en' ? 'Latest' : 'Actualizacion',
                 title:
                     locale === 'en'
-                        ? 'Clinical intake now supports telemedicine-first triage.'
-                        : 'La entrada clinica ahora soporta triage inicial por telemedicina.',
+                        ? 'Clinical intake now supports teledermatology-first triage.'
+                        : 'La entrada clinica ahora soporta triage inicial por teledermatologia.',
                 href: telemedicinePath(locale),
             },
             {
@@ -701,15 +706,17 @@ export function getHomeV2Data(locale) {
         telemedicine: {
             eyebrow:
                 dictionary.nav_telemedicine ||
-                (locale === 'en' ? 'Telemedicine' : 'Telemedicina'),
+                (locale === 'en'
+                    ? 'Teledermatology'
+                    : 'Teledermatologia'),
             title:
                 locale === 'en'
                     ? 'Remote care belongs inside the same editorial system.'
                     : 'La atencion remota pertenece al mismo sistema editorial.',
             deck:
                 locale === 'en'
-                    ? 'Use telemedicine for first guidance, ongoing acne or dermatitis review, and structured escalation to clinic when the case needs it.'
-                    : 'Usa telemedicina para orientacion inicial, seguimiento de acne o dermatitis y escalamiento estructurado a consultorio cuando el caso lo requiera.',
+                    ? 'Use teledermatology for first guidance, ongoing acne or dermatitis review, and structured escalation to clinic when the case needs it.'
+                    : 'Usa teledermatologia para orientacion inicial, seguimiento de acne o dermatitis y escalamiento estructurado a consultorio cuando el caso lo requiera.',
             points:
                 locale === 'en'
                     ? [
@@ -779,8 +786,8 @@ export function getHomeV2Data(locale) {
                     : 'La capa de conversion sigue intacta, pero ya no define el lenguaje visual de la pagina.',
             deck:
                 locale === 'en'
-                    ? 'Start from a general assessment, a specific service hint, or telemedicine and keep the same appointment hooks.'
-                    : 'Empieza por valoracion general, por una pista de servicio o por telemedicina y conserva los mismos hooks de cita.',
+                    ? 'Start from a general assessment, a specific service hint, or teledermatology and keep the same appointment hooks.'
+                    : 'Empieza por valoracion general, por una pista de servicio o por teledermatologia y conserva los mismos hooks de cita.',
             actionLabel: locale === 'en' ? 'Open booking' : 'Abrir reserva',
             serviceHint: 'consulta',
         },
@@ -792,8 +799,8 @@ export function getHubV2Data(locale) {
     return {
         title:
             locale === 'en'
-                ? 'Services | Piel en Armonia'
-                : 'Servicios | Piel en Armonia',
+                ? 'Services | Aurora Derm'
+                : 'Servicios | Aurora Derm',
         description:
             locale === 'en'
                 ? 'Editorial service catalogue grouped by family, programme, and care mode.'
@@ -827,8 +834,8 @@ export function getHubV2Data(locale) {
             eyebrow: locale === 'en' ? 'Care modes' : 'Modos de atencion',
             title:
                 locale === 'en'
-                    ? 'Telemedicine remains part of the same system, not a detached route.'
-                    : 'Telemedicina sigue dentro del mismo sistema, no como ruta separada.',
+                    ? 'Teledermatology remains part of the same system, not a detached route.'
+                    : 'Teledermatologia sigue dentro del mismo sistema, no como ruta separada.',
             deck:
                 locale === 'en'
                     ? 'Use it when remote intake fits and escalate to clinic when the case demands examination or procedure.'
@@ -857,7 +864,7 @@ export function getServiceDetailV2Data(slug, locale) {
 
     return {
         service,
-        title: `${service.hero} | Piel en Armonia`,
+        title: `${service.hero} | Aurora Derm`,
         description: service.summary,
         family: service.category === 'children' ? 'children' : service.category,
         bookingHint: mapServiceHint(service.slug),
@@ -961,8 +968,8 @@ export function getTelemedicineV2Data(locale) {
     return {
         title:
             locale === 'en'
-                ? 'Telemedicine | Piel en Armonia'
-                : 'Telemedicina | Piel en Armonia',
+                ? 'Teledermatology | Aurora Derm'
+                : 'Teledermatologia | Aurora Derm',
         description:
             locale === 'en'
                 ? 'Remote dermatology intake and escalation as a premium editorial experience.'
@@ -970,11 +977,13 @@ export function getTelemedicineV2Data(locale) {
         hero: {
             eyebrow:
                 dictionary.nav_telemedicine ||
-                (locale === 'en' ? 'Telemedicine' : 'Telemedicina'),
+                (locale === 'en'
+                    ? 'Teledermatology'
+                    : 'Teledermatologia'),
             title:
                 locale === 'en'
-                    ? 'Telemedicine rebuilt as a service experience, not just a shortcut to conversion.'
-                    : 'Telemedicina reconstruida como experiencia de servicio, no solo como atajo a conversion.',
+                    ? 'Teledermatology rebuilt as a service experience, not just a shortcut to conversion.'
+                    : 'Teledermatologia reconstruida como experiencia de servicio, no solo como atajo a conversion.',
             deck:
                 locale === 'en'
                     ? 'Remote dermatology is presented with fit, workflow, and escalation logic before the booking layer appears.'

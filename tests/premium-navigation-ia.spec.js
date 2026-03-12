@@ -16,7 +16,7 @@ function normalizeText(value) {
 }
 
 test.describe('Public navigation IA V6', () => {
-    test('desktop nav keeps the Sony-like order and mega panel taxonomy', async ({
+    test('desktop nav keeps the Aurora patient-first order and mega taxonomy', async ({
         page,
     }) => {
         await page.setViewportSize({ width: 1366, height: 900 });
@@ -29,11 +29,10 @@ test.describe('Public navigation IA V6', () => {
         const normalizedLabels = navLabels.map(normalizeText);
         expect(normalizedLabels).toEqual([
             'inicio',
-            'servicios',
-            'diagnostico',
+            'especialidades',
+            'primera consulta',
             'tratamientos',
-            'telemedicina',
-            'equipo medico',
+            'teledermatologia',
             'legal',
         ]);
 
@@ -48,7 +47,7 @@ test.describe('Public navigation IA V6', () => {
             megaMenu.locator(
                 '[data-v6-mega-detail]:not([hidden]) .v6-mega__context h3'
             )
-        ).toContainText('Empiece por la ruta que aclara su caso');
+        ).toContainText('Empiece por la evaluacion que mejor ordena su caso');
         await expect(
             megaMenu.locator(
                 '[data-v6-mega-detail]:not([hidden]) .v6-mega__items > li'
@@ -74,7 +73,7 @@ test.describe('Public navigation IA V6', () => {
         await openButton.click();
 
         await expect(drawer).toBeVisible();
-        await expect(drawer.locator('nav > a')).toHaveCount(7);
+        await expect(drawer.locator('nav > a')).toHaveCount(6);
         await expect(
             drawer.locator('[data-v6-drawer-group-toggle]')
         ).toHaveCount(3);

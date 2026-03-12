@@ -14,7 +14,7 @@ test.describe('Public home V6', () => {
     }) => {
         await gotoPublicRoute(page, '/es/');
 
-        await expect(page).toHaveTitle(/Piel en Armonia/i);
+        await expect(page).toHaveTitle(/Aurora Derm/i);
         await expect(page.locator('[data-v6-header]')).toBeVisible();
         await expect(page.locator('[data-v6-hero]')).toBeVisible();
         expect(

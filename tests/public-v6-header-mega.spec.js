@@ -7,7 +7,7 @@ const {
 } = require('./helpers/public-v6');
 
 test.describe('Public V6 header and mega menu', () => {
-    test('desktop header mounts sony-like hierarchy and mega panel', async ({
+    test('desktop header mounts the Aurora hierarchy and mega panel', async ({
         page,
     }) => {
         await gotoPublicRoute(page, '/es/');
@@ -16,7 +16,10 @@ test.describe('Public V6 header and mega menu', () => {
         await expect(header).toBeVisible();
         await expect(
             header.locator('.v6-header__nav .v6-header__link')
-        ).toHaveCount(7);
+        ).toHaveCount(6);
+        await expect(header.locator('.v6-header__nav')).not.toContainText(
+            'Software'
+        );
 
         const trigger = header.locator('[data-v6-mega-trigger]').first();
         const mega = header.locator('[data-v6-mega]').first();
@@ -103,12 +106,12 @@ test.describe('Public V6 header and mega menu', () => {
             .poll(() => page.evaluate(() => document.body.style.overflow))
             .toBe('hidden');
 
-        await input.fill('telemedicina');
+        await input.fill('teledermatologia');
         const result = overlay
             .locator('[data-v6-search-result] a[href="/es/telemedicina/"]')
             .first();
         await expect(result).toBeVisible();
-        await expect(result).toContainText('Telemedicina');
+        await expect(result).toContainText('Teledermatologia');
 
         await page.keyboard.press('Escape');
         await expect(overlay).toBeHidden();
@@ -136,6 +139,9 @@ test.describe('Public V6 header and mega menu', () => {
             drawer.locator('[data-v6-drawer-group-toggle]')
         ).toHaveCount(3);
         await expect(drawer.locator('.v6-drawer__intro')).toBeVisible();
+        await expect(drawer.locator('footer a[href="/es/software/turnero-clinicas/"]')).toHaveText(
+            'Para clinicas'
+        );
 
         const toggles = drawer.locator('[data-v6-drawer-group-toggle]');
         await toggles.nth(1).click();
@@ -164,7 +170,7 @@ test.describe('Public V6 header and mega menu', () => {
         await expect(drawer).toBeVisible();
         await expect(
             drawer.locator('.v6-drawer__primary-link.is-active').first()
-        ).toContainText('Telemedicina');
+        ).toContainText('Teledermatologia');
         const expandedGroup = drawer
             .locator('[data-v6-drawer-group-toggle][aria-expanded="true"]')
             .first();

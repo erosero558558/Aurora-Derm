@@ -1,7 +1,7 @@
 {
-    "title": "Service detail | Piel en Armonia",
-    "description": "Dermatology service pages with a clear medical read, understandable stages, and measurable follow-up.",
-    "voiceNote": "Each page turns options, limits, and ways forward into language you can understand without losing precision.",
+    "title": "Specialty detail | Aurora Derm",
+    "description": "Aurora Derm specialty pages bring a clear medical read, understandable stages, and measurable follow-up.",
+    "voiceNote": "Each page turns options, limits, and ways forward into language you can understand without losing precision or calm.",
     "ui": {
         "menu": {
             "glance": "At a glance",
@@ -16,18 +16,18 @@
             "hub": "Services"
         },
         "thesis": {
-            "eyebrow": "Clinical editorial",
-            "titleSuffix": "with a clear medical read and follow-up",
-            "body": "Each stage clarifies what to watch, what to expect, and when in-clinic care protects progress."
+            "eyebrow": "Aurora Derm",
+            "titleSuffix": "with a clear medical read and precise follow-up",
+            "body": "Each stage clarifies what to watch, what to expect, and when in-clinic care protects progress without confusion."
         },
         "statement": {
             "eyebrow": "Medical read",
             "titleTemplate": "{service} is recommended after a careful review of your case",
-            "signature": "Clinical team, Quito",
+            "signature": "Aurora Derm, Quito",
             "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
             "alt": "Clinical dermatology direction with a structured read"
         },
-        "internalMessageFallback": "Your final plan is confirmed in consultation, with clear medical explanation and no shortcuts.",
+        "internalMessageFallback": "Your final plan is confirmed in consultation, with clear medical explanation, calm guidance, and no shortcuts.",
         "rail": {
             "title": "Sections",
             "aria": "Service sections"
@@ -49,8 +49,8 @@
         "bookingStatus": {
             "eyebrow": "Start here",
             "title": "Online booking under maintenance",
-            "description": "If you are still unsure whether you need to come in, start with telemedicine and we will help you sort out the clearest option.",
-            "ctaLabel": "Open telemedicine",
+            "description": "If you are still unsure whether you need to come in, start with teledermatology and we will help you sort out the clearest option.",
+            "ctaLabel": "Open teledermatology",
             "ctaHref": "/en/telemedicine/"
         }
     },
@@ -258,7 +258,7 @@
             "faq": [
                 "How often should moles be checked?",
                 "Which signs require urgent consultation?",
-                "Can this start through telemedicine?"
+                "Can this start through teledermatology?"
             ],
             "related": ["diagnostico-integral", "piel-cabello-unas"],
             "faqAnswers": [
@@ -473,13 +473,13 @@
             ],
             "faq": [
                 "Which cases fit this service?",
-                "Can this start through telemedicine?",
+                "Can this start through teledermatology?",
                 "How often should follow-up be scheduled?"
             ],
             "related": ["diagnostico-integral", "dermatologia-pediatrica"],
             "faqAnswers": [
                 "This service includes mixed cases: hair shedding, nail changes, and skin symptoms appearing together.",
-                "Yes. Telemedicine works as first triage and defines when direct in-clinic examination is needed.",
+                "Yes. Teledermatology works as first triage and defines when direct in-clinic examination is needed.",
                 "First follow-up is commonly planned in 4 to 8 weeks based on findings and early response."
             ],
             "cardAssetId": "v6-clinic-piel-cabello-unas",
@@ -510,7 +510,7 @@
             "faq": [
                 "What should we bring to the first visit?",
                 "How is the plan explained to children and adolescents?",
-                "Can this combine with telemedicine?"
+                "Can this combine with teledermatology?"
             ],
             "related": ["diagnostico-integral", "acne-rosacea"],
             "faqAnswers": [

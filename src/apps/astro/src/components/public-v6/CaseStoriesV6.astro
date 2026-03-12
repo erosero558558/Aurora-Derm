@@ -1,0 +1,31 @@
+---
+const { locale = 'es' } = Astro.props;
+const copy =
+    locale === 'en'
+        ? {
+              eyebrow: 'Case Media Flow',
+              title: 'Editorial case stories prepared from the clinical flow.',
+              deck: 'Published stories are hydrated at runtime after a human review gate. If the feed is empty, the website keeps its shell without forcing a static gallery.',
+              empty: 'There are no published stories yet.',
+          }
+        : {
+              eyebrow: 'Case Media Flow',
+              title: 'Casos editoriales preparados desde el flujo clinico.',
+              deck: 'Las historias publicadas se hidratan en runtime despues del gate humano. Si el feed esta vacio, la web mantiene su shell sin forzar una galeria estatica.',
+              empty: 'Todavia no hay historias publicadas.',
+          };
+---
+
+<section class="v6-case-stories" data-v6-case-stories data-v6-locale={locale}>
+    <div class="v6-case-stories__head">
+        <p>{copy.eyebrow}</p>
+        <h2>{copy.title}</h2>
+        <p>{copy.deck}</p>
+    </div>
+
+    <div class="v6-case-stories__state" data-v6-case-stories-state>
+        <p>{copy.empty}</p>
+    </div>
+
+    <div class="v6-case-stories__grid" data-v6-case-stories-grid hidden></div>
+</section>

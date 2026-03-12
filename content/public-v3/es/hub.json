@@ -1,5 +1,5 @@
 {
-    "title": "Servicios | Piel en Armonia",
+    "title": "Servicios | Aurora Derm",
     "description": "Catalogo dermatologico editorial con rutas medicas claras, filtros utiles y continuidad de reserva.",
     "hero": {
         "eyebrow": "Catalogo clinico",
@@ -15,7 +15,7 @@
     },
     "telemedicine": {
         "eyebrow": "Modo de atencion",
-        "title": "Telemedicina forma parte del sistema clinico, no de un atajo aislado.",
+        "title": "Teledermatologia forma parte del sistema clinico, no de un atajo aislado.",
         "deck": "Inicie remoto cuando el caso lo permita y escale a consultorio cuando el criterio medico lo indique.",
         "href": "/es/telemedicina/",
         "tone": "porcelain"

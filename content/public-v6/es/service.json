@@ -1,7 +1,7 @@
 {
-    "title": "Detalle de servicio | Piel en Armonia",
-    "description": "Fichas dermatologicas con lectura medica clara, etapas entendibles y seguimiento medible.",
-    "voiceNote": "Cada ficha traduce opciones, limites y formas de seguir a un lenguaje claro para que usted decida con calma.",
+    "title": "Detalle de especialidad | Aurora Derm",
+    "description": "Fichas dermatologicas de Aurora Derm con lectura medica clara, etapas entendibles y seguimiento medible.",
+    "voiceNote": "Cada ficha traduce opciones, limites y formas de seguir a un lenguaje claro para que usted decida con calma y criterio.",
     "ui": {
         "menu": {
             "glance": "Vista rapida",
@@ -16,18 +16,18 @@
             "hub": "Servicios"
         },
         "thesis": {
-            "eyebrow": "Editorial clinica",
-            "titleSuffix": "con lectura medica y seguimiento claro",
-            "body": "Cada etapa muestra que observar, que esperar y cuando conviene pasar a consulta para cuidar la evolucion de su piel."
+            "eyebrow": "Aurora Derm",
+            "titleSuffix": "con lectura medica clara y seguimiento preciso",
+            "body": "Cada etapa muestra que observar, que esperar y cuando conviene pasar a consulta para cuidar la evolucion de su piel sin perder claridad."
         },
         "statement": {
             "eyebrow": "Lectura medica",
             "titleTemplate": "{service} se indica despues de revisar bien su caso",
-            "signature": "Equipo clinico, Quito",
+            "signature": "Aurora Derm, Quito",
             "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
             "alt": "Direccion clinica dermatologica con lectura estructurada"
         },
-        "internalMessageFallback": "La decision final se confirma en consulta, con explicacion medica clara y sin atajos.",
+        "internalMessageFallback": "La decision final se confirma en consulta, con explicacion medica clara, calma y sin atajos.",
         "rail": {
             "title": "Secciones",
             "aria": "Secciones del servicio"
@@ -49,8 +49,8 @@
         "bookingStatus": {
             "eyebrow": "Primer paso",
             "title": "Reserva online en mantenimiento",
-            "description": "Si todavia no sabe si necesita venir al consultorio, empiece por telemedicina y ordene su caso con una primera orientacion clara.",
-            "ctaLabel": "Abrir telemedicina",
+            "description": "Si todavia no sabe si necesita venir al consultorio, empiece por teledermatologia y ordene su caso con una primera orientacion clara.",
+            "ctaLabel": "Abrir teledermatologia",
             "ctaHref": "/es/telemedicina/"
         }
     },
@@ -258,7 +258,7 @@
             "faq": [
                 "Cada cuanto conviene revisar lunares?",
                 "Que signos exigen consulta inmediata?",
-                "Puede comenzar por telemedicina?"
+                "Puede comenzar por teledermatologia?"
             ],
             "related": ["diagnostico-integral", "piel-cabello-unas"],
             "faqAnswers": [
@@ -468,13 +468,13 @@
             ],
             "faq": [
                 "Que casos entran en este servicio?",
-                "Puede iniciar por telemedicina?",
+                "Puede iniciar por teledermatologia?",
                 "Cada cuanto se realiza control?"
             ],
             "related": ["diagnostico-integral", "dermatologia-pediatrica"],
             "faqAnswers": [
                 "Incluye casos mixtos: caida de cabello, cambios de unas y sintomas cutaneos que aparecen juntos.",
-                "Si, la telemedicina sirve para triage y define cuando su caso necesita examen presencial.",
+                "Si, la teledermatologia sirve para triage y define cuando su caso necesita examen presencial.",
                 "El primer control suele ser entre 4 y 8 semanas, segun hallazgos iniciales y evolucion temprana."
             ],
             "cardAssetId": "v6-clinic-piel-cabello-unas",
@@ -505,7 +505,7 @@
             "faq": [
                 "Que debo llevar a la primera cita?",
                 "Como se explica el plan al nino o adolescente?",
-                "Puede combinarse con telemedicina?"
+                "Puede combinarse con teledermatologia?"
             ],
             "related": ["diagnostico-integral", "acne-rosacea"],
             "faqAnswers": [

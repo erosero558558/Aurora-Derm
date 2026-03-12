@@ -283,8 +283,8 @@ const heroBookingLabel =
 <style>
     .v6-page-hero-media--tele {
         background:
-            radial-gradient(circle at top left, rgba(114, 170, 222, 0.18), transparent 28%),
-            linear-gradient(180deg, #eef3f8 0%, #f7f9fc 100%);
+            radial-gradient(circle at top left, rgba(214, 176, 140, 0.16), transparent 28%),
+            linear-gradient(180deg, #fffdf8 0%, #f6f2eb 100%);
         padding: 20px clamp(18px, 3vw, 28px) 8px;
     }
 
@@ -301,9 +301,9 @@ const heroBookingLabel =
         margin: 0;
         overflow: hidden;
         border-radius: 24px;
-        border: 1px solid rgba(184, 194, 212, 0.72);
-        background: #dce4ee;
-        box-shadow: 0 28px 58px rgba(15, 25, 46, 0.12);
+        border: 1px solid rgba(222, 214, 204, 0.88);
+        background: #efe8dc;
+        box-shadow: 0 28px 58px rgba(68, 57, 43, 0.12);
     }
 
     .v6-tele-hero-shell__media img {
@@ -317,8 +317,8 @@ const heroBookingLabel =
     .v6-tele-hero-shell__panel {
         border-radius: 24px;
         border: 1px solid rgba(183, 191, 208, 0.78);
-        background: rgba(255, 255, 255, 0.94);
-        box-shadow: 0 24px 46px rgba(12, 21, 38, 0.1);
+        background: rgba(255, 252, 247, 0.94);
+        box-shadow: 0 24px 46px rgba(68, 57, 43, 0.1);
         padding: clamp(22px, 2.1vw, 30px);
         display: grid;
         gap: 14px;
@@ -335,7 +335,7 @@ const heroBookingLabel =
 
     .v6-tele-hero-shell__eyebrow,
     .v6-tele-hero-shell__chips span {
-        color: #65758d;
+        color: var(--v6-color-sage);
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-size: 10px;
@@ -343,21 +343,22 @@ const heroBookingLabel =
     }
 
     .v6-tele-hero-shell__panel h2 {
-        color: #202c3e;
-        font-size: clamp(30px, 2.5vw, 41px);
+        color: var(--v6-color-ink);
+        font-family: var(--v6-font-display);
+        font-size: clamp(32px, 2.6vw, 43px);
         line-height: 1.08;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.04em;
     }
 
     .v6-tele-hero-shell__panel > p,
     .v6-tele-hero-shell__support {
-        color: #4e5d74;
+        color: rgba(32, 38, 43, 0.7);
         font-size: clamp(16px, 1.12vw, 19px);
         line-height: 1.56;
     }
 
     .v6-tele-hero-shell__support {
-        color: #637089;
+        color: rgba(32, 38, 43, 0.58);
     }
 
     .v6-tele-hero-shell__chips {
@@ -369,15 +370,15 @@ const heroBookingLabel =
     .v6-tele-hero-shell__chips article {
         min-height: 86px;
         border-radius: 16px;
-        background: #f3f6fb;
-        border: 1px solid rgba(184, 194, 214, 0.72);
+        background: rgba(246, 242, 235, 0.82);
+        border: 1px solid rgba(222, 214, 204, 0.92);
         padding: 12px 13px 13px;
         display: grid;
         gap: 6px;
     }
 
     .v6-tele-hero-shell__chips strong {
-        color: #203049;
+        color: var(--v6-color-ink);
         font-size: clamp(17px, 1.45vw, 24px);
         line-height: 1.15;
     }
@@ -391,17 +392,17 @@ const heroBookingLabel =
         width: fit-content;
         padding: 0 18px;
         border-radius: 999px;
-        background: #152844;
-        color: #f5f8ff;
+        background: rgba(78, 102, 92, 0.96);
+        color: #fffdf8;
         font-size: 14px;
         font-weight: 700;
         letter-spacing: 0.01em;
-        box-shadow: 0 14px 28px rgba(16, 31, 59, 0.18);
+        box-shadow: 0 14px 28px rgba(68, 57, 43, 0.16);
     }
 
     .v6-tele-hero-shell__cta:hover,
     .v6-tele-hero-shell__cta:focus-visible {
-        background: #1d3559;
+        background: rgba(78, 102, 92, 0.84);
     }
 
     @media (max-width: 1100px) {
@@ -433,4 +434,3 @@ const heroBookingLabel =
         }
     }
 </style>
-

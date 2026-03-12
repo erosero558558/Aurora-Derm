@@ -2,14 +2,14 @@
     "es": {
         "brand": {
             "eyebrow": "Dermatologia de precision",
-            "line1": "Piel en",
-            "line2": "Armonia"
+            "line1": "Aurora",
+            "line2": "Derm"
         },
         "labels": {
             "primaryNav": "Principal",
             "home": "Inicio",
             "services": "Servicios",
-            "telemedicine": "Telemedicina",
+            "telemedicine": "Teledermatologia",
             "legal": "Legal",
             "book": "Reservar",
             "openCatalogue": "Abrir catalogo",
@@ -32,7 +32,7 @@
             {
                 "id": "telemedicine",
                 "href": "/es/telemedicina/",
-                "label": "Telemedicina"
+                "label": "Teledermatologia"
             },
             {
                 "id": "legal",
@@ -106,7 +106,7 @@
                     "title": "Modos de atencion",
                     "items": [
                         {
-                            "label": "Telemedicina",
+                            "label": "Teledermatologia",
                             "href": "/es/telemedicina/"
                         },
                         {
@@ -135,8 +135,8 @@
         },
         "footer": {
             "eyebrow": "Experiencia publica",
-            "title": "Piel en Armonia",
-            "deck": "Experiencia publica unificada para diagnostico, tratamiento, telemedicina y reserva con precios claros.",
+            "title": "Aurora Derm",
+            "deck": "Experiencia publica unificada para diagnostico, tratamiento, teledermatologia y reserva con precios claros.",
             "ctaLabel": "Abrir reserva",
             "catalogTitle": "Catalogo",
             "catalogClinical": "Dermatologia clinica",
@@ -154,14 +154,14 @@
     "en": {
         "brand": {
             "eyebrow": "Precision dermatology",
-            "line1": "Piel en",
-            "line2": "Armonia"
+            "line1": "Aurora",
+            "line2": "Derm"
         },
         "labels": {
             "primaryNav": "Primary",
             "home": "Home",
             "services": "Services",
-            "telemedicine": "Telemedicine",
+            "telemedicine": "Teledermatology",
             "legal": "Legal",
             "book": "Book",
             "openCatalogue": "Open catalogue",
@@ -184,7 +184,7 @@
             {
                 "id": "telemedicine",
                 "href": "/en/telemedicine/",
-                "label": "Telemedicine"
+                "label": "Teledermatology"
             },
             {
                 "id": "legal",
@@ -258,7 +258,7 @@
                     "title": "Care modes",
                     "items": [
                         {
-                            "label": "Telemedicine",
+                            "label": "Teledermatology",
                             "href": "/en/telemedicine/"
                         },
                         {
@@ -287,8 +287,8 @@
         },
         "footer": {
             "eyebrow": "Public experience",
-            "title": "Piel en Armonia",
-            "deck": "Unified public experience for diagnosis, treatment, telemedicine, and booking with transparent pricing.",
+            "title": "Aurora Derm",
+            "deck": "Unified public experience for diagnosis, treatment, teledermatology, and booking with transparent pricing.",
             "ctaLabel": "Open booking",
             "catalogTitle": "Catalogue",
             "catalogClinical": "Clinical dermatology",

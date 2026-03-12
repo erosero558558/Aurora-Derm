@@ -1,8 +1,8 @@
 {
-    "title": "Telemedicina | Piel en Armonia",
+    "title": "Teledermatologia | Aurora Derm",
     "description": "Dermatologia remota integrada al mismo sistema clinico de la sede Quito.",
     "hero": {
-        "eyebrow": "Telemedicina clinica",
+        "eyebrow": "Teledermatologia clinica",
         "title": "Orientacion remota con criterio medico y ruta de escalamiento clara.",
         "deck": "Esta pagina explica cuando iniciar remoto, que informacion enviar y cuando pasar a consulta presencial.",
         "tone": "ink",
@@ -44,7 +44,7 @@
         "eyebrow": "Reserva",
         "title": "La reserva remota conserva la misma seguridad operativa del flujo principal.",
         "deck": "Puede ingresar a la cita con modalidad online preseleccionada y contexto clinico listo.",
-        "actionLabel": "Reservar telemedicina",
+        "actionLabel": "Reservar teledermatologia",
         "serviceHint": "video",
         "tone": "silver"
     }

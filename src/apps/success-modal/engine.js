@@ -96,7 +96,7 @@ function formatDateForIcs(date) {
 }
 
 function generateGoogleCalendarUrl(appointment, startDate, endDate) {
-    const title = encodeURIComponent('Cita - Piel en Armonia');
+    const title = encodeURIComponent('Cita - Aurora Derm');
     const details = encodeURIComponent(
         `Servicio: ${getServiceName(appointment.service)}\nDoctor: ${getDoctorName(appointment.doctor)}\nPrecio: ${appointment.price || ''}`
     );
@@ -108,11 +108,11 @@ function generateGoogleCalendarUrl(appointment, startDate, endDate) {
 function generateIcs(appointment, startDate, endDate) {
     return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Piel en Armonia//Consulta//ES
+PRODID:-//Aurora Derm//Consulta//ES
 BEGIN:VEVENT
 DTSTART:${formatDateForIcs(startDate)}
 DTEND:${formatDateForIcs(endDate)}
-SUMMARY:Cita - Piel en Armonia
+SUMMARY:Cita - Aurora Derm
 DESCRIPTION:Servicio: ${getServiceName(appointment.service)}\\nDoctor: ${getDoctorName(appointment.doctor)}\\nPrecio: ${appointment.price || ''}
 LOCATION:${getClinicAddress()}
 END:VEVENT

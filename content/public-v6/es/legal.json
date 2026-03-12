@@ -1,6 +1,6 @@
 {
-    "title": "Legal | Piel en Armonia",
-    "description": "Informacion legal clara sobre el uso del sitio, la privacidad, las cookies y los limites de la orientacion medica digital.",
+    "title": "Legal | Aurora Derm",
+    "description": "Informacion legal clara de Aurora Derm sobre uso del sitio, privacidad, cookies y limites de la orientacion medica digital.",
     "index": [
         {
             "slug": "terminos",
@@ -35,18 +35,18 @@
         },
         "thesis": {
             "eyebrow": "Uso del sitio",
-            "title": "Reglas simples para usar el sitio y los canales medicos",
-            "body": "Aqui explicamos que protege cada politica, que limites existen y que puede esperar cuando comparte informacion."
+            "title": "Reglas simples para usar el sitio y los canales clinicos",
+            "body": "Aqui explicamos que protege cada politica, que limites existen y que puede esperar cuando comparte informacion con Aurora Derm."
         },
         "statement": {
             "eyebrow": "Lenguaje claro",
             "title": "Lo legal tambien debe poder entenderse a la primera",
-            "signature": "Cumplimiento y politica",
+            "signature": "Aurora Derm",
             "image": "/images/optimized/v6-clinic-legal-governance.webp",
             "alt": "Privacidad, consentimiento y reglas del sitio en un marco claro"
         },
         "internalMessage": {
-            "description": "Estas paginas ordenan privacidad, consentimiento y uso responsable de los canales digitales."
+            "description": "Estas paginas ordenan privacidad, consentimiento y uso responsable de los canales digitales de Aurora Derm."
         },
         "sectionLabel": "Seccion",
         "blockLabel": "Bloque",
@@ -67,9 +67,9 @@
                     ]
                 },
                 {
-                    "title": "Contenido y propiedad",
-                    "items": [
-                        "Los textos, imagenes y disenos pertenecen a Piel en Armonia o a terceros autorizados.",
+                        "title": "Contenido y propiedad",
+                        "items": [
+                        "Los textos, imagenes y disenos pertenecen a Aurora Derm o a terceros autorizados.",
                         "No se permite reproduccion comercial total o parcial sin autorizacion escrita.",
                         "Las referencias a marcas o servicios de terceros se usan solo con fines informativos."
                     ]

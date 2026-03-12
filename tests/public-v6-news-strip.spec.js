@@ -39,9 +39,7 @@ test.describe('Public V6 news strip', () => {
         await expect(toggle).toHaveAttribute('aria-expanded', 'true');
         await expect(strip).toHaveAttribute('data-v6-expanded', 'true');
         await expect(panel).toBeVisible();
-        await expect(panel).toContainText(
-            'telemedicina o abrir la consulta'
-        );
+        await expect(panel).toContainText('teledermatologia o por la primera consulta');
         await expect(panel.locator('a[href="/es/servicios/"]')).toBeVisible();
 
         await toggle.click();

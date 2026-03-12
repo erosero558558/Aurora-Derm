@@ -69,7 +69,7 @@ Deliver a premium and sober dermatology voice for Quito: emotionally warm, medic
 
 - IA must be dermatology-first and action-oriented.
 - Menu labels must describe routes, not corporate placeholders.
-- Keep Sony-like hierarchy and interaction density without corporate vocabulary drift.
+- Keep an Aurora patient-first hierarchy with calm, premium density and no corporate filler.
 
 ## Booking freeze copy standard
 
@@ -96,4 +96,4 @@ Unified booking title by locale:
 - `node bin/validate-public-v6-content.js` must pass.
 - `npm run audit:public:v6:copy` must pass.
 - `npm run test:frontend:qa:v6` must pass.
-- `npm run audit:public:v6:sony-parity` must stay >= 50.
+- `npm run audit:public:v6:sony-parity` stays as a legacy alias and must validate the Aurora baseline >= 50.

@@ -184,6 +184,18 @@ function normalizeLocale(locale) {
     return locale === 'en' ? 'en' : 'es';
 }
 
+function canonicalLegalSlotSlug(locale, slug) {
+    const safeLocale = normalizeLocale(locale);
+    const safeSlug = normalizeText(slug);
+    if (!safeSlug) {
+        return '';
+    }
+    if (safeLocale === 'en') {
+        return LEGAL_SLUG_MAP_EN_TO_ES[safeSlug] || safeSlug;
+    }
+    return safeSlug;
+}
+
 function normalizeSoftwarePageKey(pageKey) {
     return SOFTWARE_PAGE_KEYS.includes(pageKey) ? pageKey : 'landing';
 }
@@ -255,6 +267,424 @@ function sanitizeImageAsset(asset, fallbackAlt = '') {
         srcset,
         alt,
     };
+}
+
+function cloneJson(value) {
+    if (value === null || value === undefined) {
+        return value;
+    }
+    return JSON.parse(JSON.stringify(value));
+}
+
+function getV6SlotRegistry() {
+    return readJson(path.join('content', 'public-v6', 'image-slot-registry.json'));
+}
+
+function getV6ImageDecisions() {
+    return readJson(path.join('content', 'public-v6', 'image-decisions.json'));
+}
+
+function getLocalizedAssetAlt(asset, locale, fallbackAlt = '') {
+    const safeLocale = normalizeLocale(locale);
+    const localeAlt =
+        asset &&
+        typeof asset.localeAlt === 'object' &&
+        asset.localeAlt !== null &&
+        typeof asset.localeAlt[safeLocale] === 'string'
+            ? asset.localeAlt[safeLocale]
+            : '';
+    return (
+        normalizeText(localeAlt) ||
+        normalizeText(safeLocale === 'en' ? asset?.alt_en : asset?.alt_es) ||
+        normalizeText(fallbackAlt)
+    );
+}
+
+function getV6PublicAssetById(assetId) {
+    const asset = getV6AssetById(assetId);
+    if (!asset) {
+        return null;
+    }
+    if (asset.publicWebSafe === false) {
+        return null;
+    }
+    if (normalizeText(asset.sourceType) === 'real_case') {
+        return null;
+    }
+    return asset;
+}
+
+function inferAssetIdFromImagePath(imagePath) {
+    const target = normalizeText(imagePath);
+    if (!target) {
+        return '';
+    }
+    const manifest = getV6AssetsManifest();
+    const assets = Array.isArray(manifest.assets) ? manifest.assets : [];
+    const matched = assets.find((asset) => {
+        if (normalizeText(asset?.src) === target) {
+            return true;
+        }
+        const srcset = normalizeText(asset?.srcset);
+        if (!srcset) {
+            return false;
+        }
+        return srcset
+            .split(',')
+            .map((entry) => normalizeText(entry).split(/\s+/)[0])
+            .includes(target);
+    });
+    return normalizeText(matched?.id);
+}
+
+function findV6SlotById(slotId) {
+    const registry = getV6SlotRegistry();
+    const slots = Array.isArray(registry?.slots) ? registry.slots : [];
+    return slots.find((slot) => normalizeText(slot?.slotId) === normalizeText(slotId)) || null;
+}
+
+function findV6DecisionBySlotId(slotId) {
+    const decisions = getV6ImageDecisions();
+    const items = Array.isArray(decisions?.decisions) ? decisions.decisions : [];
+    return items.find((item) => normalizeText(item?.slotId) === normalizeText(slotId)) || null;
+}
+
+function resolveV6SlotImage(slotId, locale, options = {}) {
+    const safeLocale = normalizeLocale(locale);
+    const slot = findV6SlotById(slotId);
+    const decision = findV6DecisionBySlotId(slotId);
+    const fallbackAssetId =
+        normalizeText(options.fallbackAssetId) ||
+        normalizeText(slot?.fallbackAssetId) ||
+        normalizeText(slot?.currentAssetId);
+    const requestedAssetId =
+        normalizeText(decision?.assetId) ||
+        normalizeText(slot?.currentAssetId) ||
+        fallbackAssetId;
+
+    const asset =
+        getV6PublicAssetById(requestedAssetId) ||
+        getV6PublicAssetById(fallbackAssetId);
+
+    if (!asset) {
+        return {
+            slotId: normalizeText(slotId),
+            assetId: fallbackAssetId,
+            src: normalizeText(options.fallbackSrc),
+            srcset: normalizeText(options.fallbackSrcset),
+            alt: normalizeText(options.fallbackAlt),
+        };
+    }
+
+    const altOverrideRaw = decision?.altOverride;
+    const altOverride =
+        typeof altOverrideRaw === 'string'
+            ? altOverrideRaw
+            : altOverrideRaw &&
+                typeof altOverrideRaw === 'object' &&
+                typeof altOverrideRaw[safeLocale] === 'string'
+              ? altOverrideRaw[safeLocale]
+              : '';
+
+    return {
+        slotId: normalizeText(slotId),
+        assetId: normalizeText(asset?.id),
+        src: normalizeText(asset?.src) || normalizeText(options.fallbackSrc),
+        srcset: normalizeText(asset?.srcset) || normalizeText(options.fallbackSrcset),
+        alt:
+            normalizeText(altOverride) ||
+            getLocalizedAssetAlt(asset, safeLocale, options.fallbackAlt),
+    };
+}
+
+function applyHomeImageDecisions(payload, locale) {
+    const source = isObject(payload) ? cloneJson(payload) : {};
+    const hero = isObject(source.hero) ? source.hero : {};
+    const slides = Array.isArray(hero.slides) ? hero.slides : [];
+    hero.slides = slides.map((slide, index) => {
+        const safeSlide = isObject(slide) ? { ...slide } : {};
+        const slotId = `home.hero.slides.${normalizeText(safeSlide.id) || `s${index + 1}`}`;
+        const resolved = resolveV6SlotImage(slotId, locale, {
+            fallbackAssetId: inferAssetIdFromImagePath(safeSlide.image),
+            fallbackSrc: safeSlide.image,
+            fallbackSrcset: safeSlide.srcset,
+            fallbackAlt: safeSlide.alt || safeSlide.title,
+        });
+        return {
+            ...safeSlide,
+            image: resolved.src,
+            srcset: resolved.srcset,
+            alt: resolved.alt,
+            assetId: resolved.assetId,
+            slotId,
+        };
+    });
+    source.hero = hero;
+
+    const editorial = isObject(source.editorial) ? source.editorial : {};
+    const editorialCards = Array.isArray(editorial.cards) ? editorial.cards : [];
+    editorial.cards = editorialCards.map((card, index) => {
+        const safeCard = isObject(card) ? { ...card } : {};
+        const slotId = `home.editorial.cards.${normalizeText(safeCard.id) || `card${index + 1}`}`;
+        const resolved = resolveV6SlotImage(slotId, locale, {
+            fallbackAssetId: inferAssetIdFromImagePath(safeCard.image),
+            fallbackSrc: safeCard.image,
+            fallbackSrcset: safeCard.srcset,
+            fallbackAlt: safeCard.alt || safeCard.title,
+        });
+        return {
+            ...safeCard,
+            image: resolved.src,
+            srcset: resolved.srcset,
+            alt: resolved.alt,
+            assetId: resolved.assetId,
+            slotId,
+        };
+    });
+    source.editorial = editorial;
+
+    const corporateMatrix = isObject(source.corporateMatrix) ? source.corporateMatrix : {};
+    const matrixCards = Array.isArray(corporateMatrix.cards)
+        ? corporateMatrix.cards
+        : [];
+    corporateMatrix.cards = matrixCards.map((card, index) => {
+        const safeCard = isObject(card) ? { ...card } : {};
+        const slotId = `home.corporateMatrix.cards.${normalizeText(safeCard.id) || `card${index + 1}`}`;
+        const resolved = resolveV6SlotImage(slotId, locale, {
+            fallbackAssetId: inferAssetIdFromImagePath(safeCard.image),
+            fallbackSrc: safeCard.image,
+            fallbackSrcset: safeCard.srcset,
+            fallbackAlt: safeCard.alt || safeCard.title,
+        });
+        return {
+            ...safeCard,
+            image: resolved.src,
+            srcset: resolved.srcset,
+            alt: resolved.alt,
+            assetId: resolved.assetId,
+            slotId,
+        };
+    });
+    source.corporateMatrix = corporateMatrix;
+
+    return source;
+}
+
+function applyHubImageDecisions(payload, locale) {
+    const source = isObject(payload) ? cloneJson(payload) : {};
+    const resolvedHero = resolveV6SlotImage('hub.hero', locale, {
+        fallbackAssetId: inferAssetIdFromImagePath(source?.heroImage?.src || source?.heroImage),
+        fallbackSrc: source?.heroImage?.src || source?.heroImage,
+        fallbackSrcset: source?.heroImage?.srcset,
+        fallbackAlt: source?.heroImage?.alt || source?.heading,
+    });
+    source.heroImage = {
+        src: resolvedHero.src,
+        srcset: resolvedHero.srcset,
+        alt: resolvedHero.alt,
+        assetId: resolvedHero.assetId,
+        slotId: 'hub.hero',
+    };
+
+    const featured = Array.isArray(source.featured) ? source.featured : [];
+    source.featured = featured.map((card, index) => {
+        const safeCard = isObject(card) ? { ...card } : {};
+        const slotId = `hub.featured.${index}`;
+        const resolved = resolveV6SlotImage(slotId, locale, {
+            fallbackAssetId: inferAssetIdFromImagePath(safeCard.image),
+            fallbackSrc: safeCard.image,
+            fallbackAlt: safeCard.title,
+        });
+        return {
+            ...safeCard,
+            image: resolved.src,
+            alt: resolved.alt,
+            assetId: resolved.assetId,
+            slotId,
+        };
+    });
+
+    const sections = Array.isArray(source.sections) ? source.sections : [];
+    source.sections = sections.map((section, sectionIndex) => {
+        const safeSection = isObject(section) ? { ...section } : {};
+        const sectionId = normalizeText(safeSection.id) || `section-${sectionIndex + 1}`;
+        const cards = Array.isArray(safeSection.cards) ? safeSection.cards : [];
+        safeSection.cards = cards.map((card, cardIndex) => {
+            const safeCard = isObject(card) ? { ...card } : {};
+            const cardKey = normalizeText(safeCard.slug) || `card-${cardIndex + 1}`;
+            const slotId = `hub.sections.${sectionId}.cards.${cardKey}`;
+            const resolved = resolveV6SlotImage(slotId, locale, {
+                fallbackAssetId: inferAssetIdFromImagePath(safeCard.image),
+                fallbackSrc: safeCard.image,
+                fallbackAlt: safeCard.title,
+            });
+            return {
+                ...safeCard,
+                image: resolved.src,
+                alt: resolved.alt,
+                assetId: resolved.assetId,
+                slotId,
+            };
+        });
+        return safeSection;
+    });
+
+    const initiatives = Array.isArray(source.initiatives) ? source.initiatives : [];
+    source.initiatives = initiatives.map((card, index) => {
+        const safeCard = isObject(card) ? { ...card } : {};
+        const slotId = `hub.initiatives.${index}`;
+        const resolved = resolveV6SlotImage(slotId, locale, {
+            fallbackAssetId: inferAssetIdFromImagePath(safeCard.image),
+            fallbackSrc: safeCard.image,
+            fallbackAlt: safeCard.title,
+        });
+        return {
+            ...safeCard,
+            image: resolved.src,
+            alt: resolved.alt,
+            assetId: resolved.assetId,
+            slotId,
+        };
+    });
+
+    return source;
+}
+
+function applyTelemedicineImageDecisions(payload, locale) {
+    const source = isObject(payload) ? cloneJson(payload) : {};
+    const resolvedHero = resolveV6SlotImage('telemedicine.hero', locale, {
+        fallbackAssetId: inferAssetIdFromImagePath(source?.heroImage?.src || source?.hero?.mediaMeta?.src || source?.hero?.media),
+        fallbackSrc: source?.heroImage?.src || source?.hero?.mediaMeta?.src || source?.hero?.media,
+        fallbackSrcset: source?.heroImage?.srcset || source?.hero?.mediaMeta?.srcset,
+        fallbackAlt: source?.heroImage?.alt || source?.hero?.mediaMeta?.alt || source?.heading || source?.hero?.title,
+    });
+    source.heroImage = {
+        src: resolvedHero.src,
+        srcset: resolvedHero.srcset,
+        alt: resolvedHero.alt,
+        assetId: resolvedHero.assetId,
+        slotId: 'telemedicine.hero',
+    };
+
+    const ui = isObject(source.ui) ? { ...source.ui } : {};
+    const statement = isObject(ui.statement) ? { ...ui.statement } : {};
+    const resolvedStatement = resolveV6SlotImage('telemedicine.statement', locale, {
+        fallbackAssetId: inferAssetIdFromImagePath(statement.image),
+        fallbackSrc: statement.image,
+        fallbackAlt: statement.alt || statement.title || source.lead,
+    });
+    statement.image = resolvedStatement.src;
+    statement.alt = resolvedStatement.alt;
+    statement.assetId = resolvedStatement.assetId;
+    statement.slotId = 'telemedicine.statement';
+    ui.statement = statement;
+    source.ui = ui;
+
+    const initiatives = Array.isArray(source.initiatives) ? source.initiatives : [];
+    source.initiatives = initiatives.map((item, index) => {
+        const safeItem = isObject(item) ? { ...item } : {};
+        const slotId = `telemedicine.initiatives.${index}`;
+        const resolved = resolveV6SlotImage(slotId, locale, {
+            fallbackAssetId: inferAssetIdFromImagePath(safeItem.image),
+            fallbackSrc: safeItem.image,
+            fallbackAlt: safeItem.title,
+        });
+        return {
+            ...safeItem,
+            image: resolved.src,
+            alt: resolved.alt,
+            assetId: resolved.assetId,
+            slotId,
+        };
+    });
+
+    return source;
+}
+
+function applyLegalImageDecisions(payload, locale) {
+    const source = isObject(payload) ? cloneJson(payload) : {};
+    const ui = isObject(source.ui) ? { ...source.ui } : {};
+    const statement = isObject(ui.statement) ? { ...ui.statement } : {};
+    const resolvedStatement = resolveV6SlotImage('legal.statement', locale, {
+        fallbackAssetId: inferAssetIdFromImagePath(statement.image),
+        fallbackSrc: statement.image,
+        fallbackAlt: statement.alt || statement.title,
+    });
+    statement.image = resolvedStatement.src;
+    statement.alt = resolvedStatement.alt;
+    statement.assetId = resolvedStatement.assetId;
+    statement.slotId = 'legal.statement';
+    ui.statement = statement;
+    source.ui = ui;
+
+    const pages = isObject(source.pages) ? { ...source.pages } : {};
+    for (const [slug, page] of Object.entries(pages)) {
+        const safePage = isObject(page) ? { ...page } : {};
+        const canonicalSlug = canonicalLegalSlotSlug(locale, slug);
+        const heroSlotId = `legal.pages.${canonicalSlug}.hero`;
+        const heroResolved = resolveV6SlotImage(heroSlotId, locale, {
+            fallbackAssetId: inferAssetIdFromImagePath(safePage.heroImage),
+            fallbackSrc: safePage.heroImage,
+            fallbackAlt: safePage.heading,
+        });
+        const indexCardResolved = resolveV6SlotImage(`legal.indexCards.${canonicalSlug}`, locale, {
+            fallbackAssetId: heroResolved.assetId || inferAssetIdFromImagePath(safePage.heroImage),
+            fallbackSrc: heroResolved.src || safePage.heroImage,
+            fallbackAlt: safePage.heading,
+        });
+        safePage.heroImage = heroResolved.src;
+        safePage.heroImageAssetId = heroResolved.assetId;
+        safePage.heroImageSlotId = heroSlotId;
+        safePage.heroImageAlt = heroResolved.alt;
+        safePage.indexCardImage = indexCardResolved.src || heroResolved.src;
+        safePage.indexCardAssetId = indexCardResolved.assetId || heroResolved.assetId;
+        safePage.indexCardSlotId = `legal.indexCards.${canonicalSlug}`;
+        pages[slug] = safePage;
+    }
+    source.pages = pages;
+    return source;
+}
+
+function applyServiceImageDecisions(payload, locale) {
+    const source = isObject(payload) ? cloneJson(payload) : {};
+    const services = Array.isArray(source.services) ? source.services : [];
+    source.services = services.map((service) => {
+        const safeService = isObject(service) ? { ...service } : {};
+        const slug = normalizeText(safeService.slug);
+        if (!slug) {
+            return safeService;
+        }
+
+        const heroSlotId = `service.${slug}.hero`;
+        const statementSlotId = `service.${slug}.statement`;
+        const heroResolved = resolveV6SlotImage(heroSlotId, locale, {
+            fallbackAssetId:
+                normalizeText(safeService.cardAssetId) ||
+                inferAssetIdFromImagePath(safeService.heroImage),
+            fallbackSrc: safeService.heroImage,
+            fallbackAlt: safeService.heroAlt || safeService.title,
+        });
+        const statementResolved = resolveV6SlotImage(statementSlotId, locale, {
+            fallbackAssetId:
+                normalizeText(safeService.statementAssetId) ||
+                inferAssetIdFromImagePath(safeService.statementImage),
+            fallbackSrc: safeService.statementImage,
+            fallbackAlt: safeService.statementAlt || safeService.title,
+        });
+
+        return {
+            ...safeService,
+            heroImage: heroResolved.src || safeService.heroImage,
+            heroAlt: heroResolved.alt || normalizeText(safeService.heroAlt) || normalizeText(safeService.title),
+            heroImageAssetId: heroResolved.assetId,
+            heroImageSlotId: heroSlotId,
+            statementImage: statementResolved.src || safeService.statementImage,
+            statementAlt: statementResolved.alt || normalizeText(safeService.statementAlt) || normalizeText(safeService.title),
+            statementImageAssetId: statementResolved.assetId,
+            statementImageSlotId: statementSlotId,
+        };
+    });
+    return source;
 }
 
 function sanitizeBookingStatus(status) {
@@ -1682,21 +2112,33 @@ export function getV6NavigationModel(locale, pathname = '/') {
 }
 
 export function getV6HomeData(locale) {
+    const safeLocale = normalizeLocale(locale);
     return sanitizeHomeData(
-        readLocaleJson(normalizeLocale(locale), 'home.json')
+        applyHomeImageDecisions(readLocaleJson(safeLocale, 'home.json'), safeLocale)
     );
 }
 
 export function getV6HubData(locale) {
-    return sanitizeHubData(readLocaleJson(normalizeLocale(locale), 'hub.json'));
+    const safeLocale = normalizeLocale(locale);
+    return sanitizeHubData(
+        applyHubImageDecisions(readLocaleJson(safeLocale, 'hub.json'), safeLocale)
+    );
 }
 
 export function getV6TelemedicineData(locale) {
-    return readLocaleJson(normalizeLocale(locale), 'telemedicine.json');
+    const safeLocale = normalizeLocale(locale);
+    return applyTelemedicineImageDecisions(
+        readLocaleJson(safeLocale, 'telemedicine.json'),
+        safeLocale
+    );
 }
 
 export function getV6LegalData(locale) {
-    return readLocaleJson(normalizeLocale(locale), 'legal.json');
+    const safeLocale = normalizeLocale(locale);
+    return applyLegalImageDecisions(
+        readLocaleJson(safeLocale, 'legal.json'),
+        safeLocale
+    );
 }
 
 export function getV6LegalIndex(locale) {
@@ -1718,7 +2160,11 @@ export function getV6LegalAltSlug(locale, slug) {
 }
 
 export function getV6ServiceData(locale) {
-    return readLocaleJson(normalizeLocale(locale), 'service.json');
+    const safeLocale = normalizeLocale(locale);
+    return applyServiceImageDecisions(
+        readLocaleJson(safeLocale, 'service.json'),
+        safeLocale
+    );
 }
 
 function hydrateV6ServiceMedia(service, locale) {
@@ -1879,8 +2325,8 @@ export function getV6SoftwareNavigationModel(locale, pathname = '/') {
             tag:
                 normalizeText(softwareBrand.tag) ||
                 (safeLocale === 'en'
-                    ? 'Backed by Piel en Armonia'
-                    : 'Respaldado por Piel en Armonia'),
+                    ? 'Backed by Aurora Derm'
+                    : 'Respaldado por Aurora Derm'),
         },
         ui: {
             shell: {

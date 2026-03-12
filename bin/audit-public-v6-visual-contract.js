@@ -1113,11 +1113,11 @@ async function run() {
         addCheck(
             checks,
             'VC-02',
-            'header black background',
+            'header uses a light Aurora shell',
             (() => {
                 const rgb = parseRgb(desktopHome.headerRgb);
                 return Boolean(
-                    rgb && rgb[0] <= 16 && rgb[1] <= 16 && rgb[2] <= 16
+                    rgb && rgb[0] >= 240 && rgb[1] >= 240 && rgb[2] >= 228
                 );
             })(),
             { headerRgb: desktopHome.headerRgb }
@@ -1132,9 +1132,9 @@ async function run() {
         addCheck(
             checks,
             'VC-04',
-            'logo uppercase style',
+            'logo stays visible in mixed case display style',
             desktopHome.logoText.trim().length > 0 &&
-                desktopHome.logoTransform === 'uppercase',
+                desktopHome.logoTransform !== 'uppercase',
             {
                 logoTransform: desktopHome.logoTransform,
             }
@@ -1142,8 +1142,8 @@ async function run() {
         addCheck(
             checks,
             'VC-05',
-            'desktop nav items >= 7',
-            desktopHome.navCount >= 7,
+            'desktop nav items >= 6',
+            desktopHome.navCount >= 6,
             { navItems: desktopHome.navCount }
         );
         addCheck(
@@ -2006,7 +2006,7 @@ async function run() {
         addCheck(
             checks,
             'VC-104',
-            'page tools keep sony-like geometry for language and menu button',
+            'page tools keep Aurora geometry for language and menu button',
             desktopHub.toolsRightAligned &&
                 desktopHub.langHasSlash &&
                 desktopHub.langFontSize >= 11 &&

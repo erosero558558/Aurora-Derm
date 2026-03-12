@@ -34,8 +34,9 @@ test.describe('Public V6 copy integrity', () => {
             await gotoPublicRoute(page, route);
             await waitForBookingStatus(page, 'Reserva online en mantenimiento');
             const text = await page.locator('body').innerText();
+            expect(text).toMatch(/Aurora Derm/i);
             expect(text.toLowerCase()).toContain('usted');
-            expect(text.toLowerCase()).toContain('telemedicina');
+            expect(text.toLowerCase()).toContain('teledermatologia');
             expect(text.toLowerCase()).toContain(
                 'reserva online en mantenimiento'
             );
@@ -58,7 +59,8 @@ test.describe('Public V6 copy integrity', () => {
                 'Online booking under maintenance'
             );
             const text = await page.locator('body').innerText();
-            expect(text.toLowerCase()).toContain('telemedicine');
+            expect(text).toMatch(/Aurora Derm/i);
+            expect(text.toLowerCase()).toContain('teledermatology');
             expect(text.toLowerCase()).toContain(
                 'online booking under maintenance'
             );

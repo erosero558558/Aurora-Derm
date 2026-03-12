@@ -1,35 +1,35 @@
 {
-    "title": "Servicios dermatologicos | Piel en Armonia",
-    "description": "Servicios dermatologicos en Quito con diagnostico claro, tecnologia indicada y seguimiento que se entiende.",
+    "title": "Especialidades dermatologicas | Aurora Derm",
+    "description": "Aurora Derm organiza sus especialidades dermatologicas en Quito con primera evaluacion clara, tratamientos indicados y seguimiento entendible.",
     "breadcrumb": [
         {
             "label": "Inicio",
             "href": "/es/"
         },
         {
-            "label": "Servicios",
+            "label": "Especialidades",
             "href": "/es/servicios/"
         }
     ],
-    "heading": "Servicios dermatologicos",
+    "heading": "Especialidades dermatologicas",
     "heroImage": {
         "src": "/images/optimized/v6-clinic-hub-editorial-map.webp",
         "srcset": "/images/optimized/v6-clinic-hub-editorial-map-400.webp 400w, /images/optimized/v6-clinic-hub-editorial-map-640.webp 640w, /images/optimized/v6-clinic-hub-editorial-map-800.webp 800w, /images/optimized/v6-clinic-hub-editorial-map-1024.webp 1024w, /images/optimized/v6-clinic-hub-editorial-map-1200.webp 1200w, /images/optimized/v6-clinic-hub-editorial-map-1344.webp 1344w, /images/optimized/v6-clinic-hub-editorial-map.webp 1400w",
         "alt": "Mapa editorial de rutas dermatologicas y decisiones clinicas"
     },
-    "introTitle": "Encuentre el servicio que mejor describe lo que su piel necesita hoy",
-    "introDeck": "Cada servicio resume tiempos, alcance y seguimiento para que usted entienda el plan antes de decidir.",
+    "introTitle": "Encuentre la especialidad que mejor ordena lo que su piel necesita hoy",
+    "introDeck": "Cada pagina resume alcance, tiempos y seguimiento para que usted entienda el plan antes de decidir.",
     "ui": {
         "menu": {
-            "featured": "Servicios destacados",
+            "featured": "Rutas destacadas",
             "initiatives": "Apoyos utiles"
         },
         "featured": {
             "eyebrow": "Para empezar",
-            "title": "Tres buenos puntos de partida"
+            "title": "Tres formas claras de empezar"
         },
         "sectionLabelPrefix": "Seccion",
-        "routeLabel": "servicios",
+        "routeLabel": "rutas",
         "ctaLabel": "Ver servicio",
         "railAria": "Secciones de servicios",
         "initiatives": {
@@ -53,8 +53,8 @@
             "href": "/es/servicios/laser-dermatologico/"
         },
         {
-            "category": "Telemedicina",
-            "title": "Telemedicina con paso a presencial bien cuidado",
+            "category": "Teledermatologia",
+            "title": "Teledermatologia con paso a consulta bien cuidado",
             "copy": "La atencion remota ayuda a decidir si basta seguir a distancia o si conviene verle pronto en el consultorio.",
             "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
             "href": "/es/telemedicina/"
@@ -63,8 +63,8 @@
     "sections": [
         {
             "id": "clinical-core",
-            "title": "Base medica",
-            "deck": "Servicios para aclarar el diagnostico y sostener condiciones frecuentes con seguimiento claro desde el inicio.",
+            "title": "Empezar y evaluar",
+            "deck": "Rutas para aclarar el diagnostico y sostener condiciones frecuentes con seguimiento claro desde el inicio.",
             "cards": [
                 {
                     "slug": "diagnostico-integral",
@@ -94,7 +94,7 @@
         },
         {
             "id": "procedures",
-            "title": "Tratamientos indicados de forma responsable",
+            "title": "Tratar con criterio",
             "deck": "Procedimientos y tecnologia cuando aportan valor clinico y pueden seguirse con seguridad.",
             "cards": [
                 {
@@ -125,7 +125,7 @@
         },
         {
             "id": "extended",
-            "title": "Seguimiento y decisiones en familia",
+            "title": "Seguir y ajustar",
             "deck": "Opciones para seguimiento prolongado, cuadros mixtos y decisiones compartidas que necesitan orden.",
             "cards": [
                 {
@@ -146,8 +146,8 @@
                 },
                 {
                     "slug": "telemedicine",
-                    "category": "Telemedicina",
-                    "title": "Telemedicina",
+                    "category": "Teledermatologia",
+                    "title": "Teledermatologia",
                     "copy": "Orientacion remota para decidir si basta seguir online o si conviene pasar al consultorio.",
                     "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
                     "href": "/es/telemedicina/"
@@ -206,7 +206,7 @@
             "href": "/es/legal/terminos/"
         },
         {
-            "category": "Telemedicina",
+            "category": "Teledermatologia",
             "title": "Paso a consulta a tiempo",
             "copy": "La atencion remota mantiene senales claras para pasar al consultorio cuando hace falta.",
             "image": "/images/optimized/v6-clinic-hub-editorial-map.webp",
@@ -214,10 +214,10 @@
         }
     ],
     "bookingStatus": {
-        "eyebrow": "Empiece aqui",
+        "eyebrow": "Primer paso",
         "title": "Reserva online en mantenimiento",
-        "description": "Puede empezar hoy por telemedicina o entrar al servicio que mas se parezca a lo que usted esta sintiendo.",
-        "ctaLabel": "Abrir telemedicina",
+        "description": "Puede empezar hoy por teledermatologia o entrar a la ruta que mas se parezca a lo que usted esta sintiendo.",
+        "ctaLabel": "Abrir teledermatologia",
         "ctaHref": "/es/telemedicina/"
     }
 }

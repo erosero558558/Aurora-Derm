@@ -76,7 +76,7 @@ const indexCards = safeIndexItems.map((item, index) => {
         title: item.title,
         href: item.href,
         summary: normalizeText(source.summary),
-        image: normalizeText(source.heroImage),
+        image: normalizeText(source.indexCardImage || source.heroImage),
         sectionLabel: `${sectionLabel} ${formatCount(index + 1)}`.trim(),
         clauses,
     };
@@ -122,6 +122,7 @@ const statement = {
     alt: normalizeText(statementUi.alt),
 };
 const heroImage = normalizeText(page.heroImage);
+const heroImageAlt = normalizeText(page.heroImageAlt) || heading;
 const heading = normalizeText(page.heading);
 const summary = normalizeText(page.summary);
 const internalDescription = normalizeText(internalMessageUi.description);
@@ -141,7 +142,7 @@ const internalDescription = normalizeText(internalMessageUi.description);
 {
     heroImage ? (
         <section class="v6-page-hero-media is-internal" data-v6-internal-hero>
-            <img src={heroImage} alt={heading} loading="eager" fetchpriority="high" />
+            <img src={heroImage} alt={heroImageAlt} loading="eager" fetchpriority="high" />
         </section>
     ) : null
 }

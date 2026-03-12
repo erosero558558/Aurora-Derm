@@ -99,7 +99,7 @@ test.describe('Checklist de Pruebas en Producción', () => {
     test('2. Panel Admin - Login fallido', async ({ page, request }) => {
         await skipIfPhpRuntimeMissing(test, request);
         await page.goto('/admin.html');
-        await expect(page).toHaveTitle(/Admin|Piel en Armonía/);
+        await expect(page).toHaveTitle(/Admin|Aurora Derm/);
 
         // Login con contraseña incorrecta
         await page.fill('input[type="password"]', 'incorrecta');
@@ -337,4 +337,3 @@ test.describe('Checklist de Pruebas en Producción', () => {
         }
     });
 });
-

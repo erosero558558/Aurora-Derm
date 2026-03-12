@@ -52,6 +52,10 @@ test('public-v6 copy contract: required ui labels exist in ES and EN', () => {
 
     const requiredByFile = {
         'navigation.json': [
+            'brand.logo',
+            'brand.tag',
+            'brand.utility.label',
+            'brand.utility.href',
             'ui.shell.skipToContent',
             'ui.shell.backToTop',
             'ui.header.primaryNavAria',
@@ -118,6 +122,37 @@ test('public-v6 copy contract: required ui labels exist in ES and EN', () => {
         for (const field of required) {
             assertString(json, file, field);
         }
+    }
+});
+
+test('public-v6 brand contract: Aurora Derm is canonical in navigation ES and EN', () => {
+    const files = [
+        'content/public-v6/es/navigation.json',
+        'content/public-v6/en/navigation.json',
+    ];
+
+    for (const file of files) {
+        const json = readJson(file);
+        assert.equal(
+            json?.brand?.logo,
+            'Aurora Derm',
+            `${file}: brand.logo must be Aurora Derm`
+        );
+        assert.equal(
+            typeof json?.brand?.utility?.href,
+            'string',
+            `${file}: brand.utility.href must be a string`
+        );
+        assert.ok(
+            String(json?.brand?.utility?.href || '').includes('/software/'),
+            `${file}: brand.utility.href must link to software`
+        );
+        const raw = JSON.stringify(json).toLowerCase();
+        assert.equal(
+            raw.includes('piel en armonia'),
+            false,
+            `${file}: legacy brand must not appear`
+        );
     }
 });
 

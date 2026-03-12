@@ -1,11 +1,11 @@
 {
     "brandEyebrow": "Dermatologia de precision",
-    "brandLine1": "Piel en",
-    "brandLine2": "Armonia",
+    "brandLine1": "Aurora",
+    "brandLine2": "Derm",
     "labels": {
         "home": "Inicio",
         "services": "Servicios",
-        "telemedicine": "Telemedicina",
+        "telemedicine": "Teledermatologia",
         "legal": "Legal",
         "book": "Reservar",
         "primaryNav": "Principal",
@@ -35,8 +35,8 @@
     },
     "footer": {
         "eyebrow": "Experiencia publica",
-        "title": "Piel en Armonia",
-        "deck": "Experiencia publica unificada para diagnostico, tratamiento, telemedicina y reserva con precios claros.",
+        "title": "Aurora Derm",
+        "deck": "Experiencia publica unificada para diagnostico, tratamiento, teledermatologia y reserva con precios claros.",
         "ctaLabel": "Abrir reserva",
         "catalogTitle": "Catalogo",
         "careModesTitle": "Modos de atencion",

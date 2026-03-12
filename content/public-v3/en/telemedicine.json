@@ -1,8 +1,8 @@
 {
-    "title": "Telemedicine | Piel en Armonia",
+    "title": "Teledermatology | Aurora Derm",
     "description": "Remote dermatology integrated into the same clinical system in Quito.",
     "hero": {
-        "eyebrow": "Clinical telemedicine",
+        "eyebrow": "Clinical teledermatology",
         "title": "Remote guidance with medical criteria and a clear escalation path.",
         "deck": "This page explains when to start remotely, what to share, and when to move to in-person care.",
         "tone": "ink",
@@ -44,7 +44,7 @@
         "eyebrow": "Booking",
         "title": "Remote booking keeps the same operational security as the main flow.",
         "deck": "You can start with online mode preselected and clinical context already structured.",
-        "actionLabel": "Book telemedicine",
+        "actionLabel": "Book teledermatology",
         "serviceHint": "video",
         "tone": "silver"
     }

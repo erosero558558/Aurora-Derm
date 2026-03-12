@@ -606,7 +606,7 @@ export function getServiceDetailV3Data(slug, locale) {
 
     return {
         service,
-        title: `${service.hero} | Piel en Armonia`,
+        title: `${service.hero} | Aurora Derm`,
         description: service.summary,
         family,
         bookingHint: serviceHint,

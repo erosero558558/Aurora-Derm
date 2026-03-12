@@ -1,15 +1,15 @@
 {
     "id": "/",
-    "name": "Piel en Armonía | Dermatología Especializada",
-    "short_name": "PielArmonía",
-    "description": "Clínica dermatológica especializada en Quito. Tratamientos de acné, rejuvenecimiento facial, láser y más. Agenda tu cita en línea.",
+    "name": "Aurora Derm | Dermatologia clinica clara en Quito",
+    "short_name": "AuroraDerm",
+    "description": "Clinica dermatologica especializada en Quito. Tratamientos de acne, teledermatologia, laser y mas. Agenda tu cita en linea.",
     "lang": "es",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
     "display_override": ["window-controls-overlay", "standalone"],
     "background_color": "#ffffff",
-    "theme_color": "#0d1a2f",
+    "theme_color": "#f6f2eb",
     "orientation": "portrait",
     "categories": ["health", "medical"],
     "icons": [
@@ -32,14 +32,14 @@
             "sizes": "640x365",
             "type": "image/webp",
             "form_factor": "narrow",
-            "label": "Página principal de Piel en Armonía"
+            "label": "Pagina principal de Aurora Derm"
         },
         {
             "src": "/images/optimized/hero-woman-1344.webp",
             "sizes": "1344x768",
             "type": "image/webp",
             "form_factor": "wide",
-            "label": "Página principal de Piel en Armonía"
+            "label": "Pagina principal de Aurora Derm"
         }
     ]
 }

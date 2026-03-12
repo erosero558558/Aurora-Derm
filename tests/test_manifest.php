@@ -19,7 +19,7 @@ if ($json === null) {
     exit(1);
 }
 
-if (!isset($json['name']) || strpos($json['name'], 'Piel en Armonía') === false) {
+if (!isset($json['name']) || strpos($json['name'], 'Aurora Derm') === false) {
     echo "FAILED: manifest.json 'name' is incorrect.\n";
     exit(1);
 }

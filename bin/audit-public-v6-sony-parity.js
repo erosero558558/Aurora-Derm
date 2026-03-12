@@ -64,7 +64,7 @@ function getBlockMeta(vcNumber) {
             block: 'Header',
             captures: 'A,D,E',
             artifact: 'verification/public-v6-screenshots/home-es-desktop.png',
-            note: 'Header negro, jerarquia superior y mega menu.',
+            note: 'Header Aurora claro, jerarquia superior y mega menu.',
         };
     }
     if (rangeIncludes(vcNumber, 16, 30)) {
@@ -91,7 +91,7 @@ function getBlockMeta(vcNumber) {
                 vcNumber === 39
                     ? 'verification/public-v6-screenshots/home-es-mobile.png'
                     : 'verification/public-v6-screenshots/home-es-desktop.png',
-            note: 'Fondo atmosferico azul y ritmo editorial tipo masonry.',
+            note: 'Fondo atmosferico Aurora y ritmo editorial tipo masonry.',
         };
     }
     if (rangeIncludes(vcNumber, 45, 50)) {
@@ -194,7 +194,7 @@ function writeArtifacts(payload) {
     fs.writeFileSync(jsonPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 
     const mdLines = [
-        '# Public V6 Sony Parity 50',
+        '# Public V6 Aurora Baseline 50 (legacy sony alias)',
         '',
         `- Status: **${payload.ok ? 'PASS' : 'FAIL'}**`,
         `- Points: **${payload.summary.passed}/${payload.summary.total}** (required: ${payload.summary.min_points})`,
@@ -202,7 +202,7 @@ function writeArtifacts(payload) {
         `- Missing source IDs: **${payload.summary.missing_source_ids}**`,
         `- Missing evidence files: **${payload.summary.missing_evidence_files}**`,
         '',
-        '| Point | Result | VC Source | Block | Sony Ref | Evidence | Metric |',
+        '| Point | Result | VC Source | Block | Legacy Ref | Evidence | Metric |',
         '|---|---|---|---|---|---|---|',
         ...payload.points.map((point) => {
             const metric = Object.keys(point.source_meta || {}).length
@@ -230,7 +230,7 @@ function main() {
 
     process.stdout.write(
         [
-            `Public V6 Sony parity ledger: ${payload.ok ? 'PASS' : 'FAIL'}`,
+            `Public V6 Aurora baseline ledger (legacy sony alias): ${payload.ok ? 'PASS' : 'FAIL'}`,
             `Points: ${payload.summary.passed}/${payload.summary.total} (required ${payload.summary.min_points})`,
             'Artifacts:',
             `- ${toPosix(path.relative(ROOT, artifacts.jsonPath))}`,

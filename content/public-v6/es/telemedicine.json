@@ -1,37 +1,37 @@
 {
-    "title": "Telemedicina | Piel en Armonia",
-    "description": "Consulta dermatologica remota con orientacion inicial clara, paso responsable a consulta presencial y seguimiento en Quito.",
+    "title": "Teledermatologia | Aurora Derm",
+    "description": "Aurora Derm ofrece teledermatologia con orientacion inicial clara, paso responsable a consulta presencial y seguimiento en Quito.",
     "breadcrumb": [
         {
             "label": "Inicio",
             "href": "/es/"
         },
         {
-            "label": "Telemedicina",
+            "label": "Teledermatologia",
             "href": "/es/telemedicina/"
         }
     ],
-    "heading": "Telemedicina dermatologica en Quito",
+    "heading": "Teledermatologia en Quito",
     "heroImage": {
         "src": "/images/optimized/v6-clinic-telemedicine-intake.webp",
         "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w",
-        "alt": "Inicio de telemedicina con contexto clinico e imagenes"
+        "alt": "Inicio de teledermatologia con contexto clinico e imagenes"
     },
-    "lead": "La telemedicina sirve cuando le ayuda a avanzar antes, sin perder respaldo medico ni claridad sobre lo que sigue.",
+    "lead": "La teledermatologia sirve cuando le ayuda a avanzar antes, sin perder respaldo medico ni claridad sobre lo que sigue.",
     "ui": {
         "menu": {
             "initiatives": "Apoyos",
             "bookingStatus": "Reserva online"
         },
         "thesis": {
-            "eyebrow": "Modelo clinico remoto",
-            "title": "Atencion remota cuando de verdad ayuda",
+            "eyebrow": "Modelo Aurora Derm",
+            "title": "Atencion remota cuando de verdad ordena el siguiente paso",
             "body": "Definimos que puede resolverse a distancia, que merece vigilancia cercana y en que momento ya conviene verle en consultorio."
         },
         "statement": {
             "eyebrow": "Revision remota",
-            "title": "Telemedicina util, con limites claros y respaldo medico",
-            "signature": "Modelo hibrido, Quito",
+            "title": "Teledermatologia util, con limites claros y respaldo medico",
+            "signature": "Aurora Derm, Quito",
             "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
             "alt": "Revision dermatologica remota con seguimiento y ajuste"
         },
@@ -40,7 +40,7 @@
         },
         "rail": {
             "title": "Secciones",
-            "aria": "Secciones de telemedicina"
+            "aria": "Secciones de teledermatologia"
         },
         "kpis": {
             "blocks": "Puntos clave",
@@ -49,7 +49,7 @@
             "modelValue": "Hibrido"
         },
         "initiatives": {
-            "aria": "Apoyos de telemedicina",
+            "aria": "Apoyos de teledermatologia",
             "ctaLabel": "Ver detalle"
         },
         "blockCtaLabel": "Ver opciones"
@@ -112,8 +112,8 @@
     "bookingStatus": {
         "eyebrow": "Despues de esta orientacion",
         "title": "Reserva online en mantenimiento",
-        "description": "Si luego quiere comparar otras formas de atencion, puede volver a servicios y elegir la que mejor ordene su caso.",
-        "ctaLabel": "Ver servicios",
+        "description": "Si despues quiere comparar otras formas de atencion, puede volver a especialidades y elegir la ruta que mejor ordene su caso.",
+        "ctaLabel": "Ver especialidades",
         "ctaHref": "/es/servicios/"
     }
 }

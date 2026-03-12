@@ -28,6 +28,11 @@ const homeHref = locale === 'en' ? '/en/' : '/es/';
 const currentPath = normalizePath(navModel?.pathname || homeHref);
 const brandLogo = hasText(brand.logo) ? brand.logo.trim() : '';
 const brandTag = hasText(brand.tag) ? brand.tag.trim() : '';
+const brandUtility =
+    brand?.utility && typeof brand.utility === 'object' ? brand.utility : {};
+const brandUtilityLabel = hasText(brandUtility.label) ? brandUtility.label.trim() : '';
+const brandUtilityHref = hasText(brandUtility.href) ? brandUtility.href.trim() : '';
+const hasBrandUtility = Boolean(brandUtilityLabel && brandUtilityHref);
 
 const isActive = (href) => {
     const target = normalizePath(href);
@@ -507,6 +512,7 @@ const hasDrawer = Boolean(menuLabel && (links.length || hasMega || hasSwitch || 
                 ) : null
             }
             <footer>
+                {hasBrandUtility ? <a class="v6-drawer__footer-link" href={brandUtilityHref} data-v6-drawer-focusable>{brandUtilityLabel}</a> : null}
                 {hasSwitch ? <a class="v6-drawer__footer-link" href={switchHref} data-v6-drawer-focusable>{switchLabel}</a> : null}
             </footer>
         </aside>

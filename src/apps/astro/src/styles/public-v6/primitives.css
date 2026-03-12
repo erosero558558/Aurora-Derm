@@ -7,8 +7,10 @@ body {
     margin: 0;
     padding: 0;
     font-family: var(--v6-font-sans);
-    color: #222831;
-    background: #f0f1f4;
+    color: var(--v6-color-ink);
+    background:
+        radial-gradient(circle at top left, rgba(214, 176, 140, 0.12), transparent 26%),
+        linear-gradient(180deg, var(--v6-color-ivory) 0%, var(--v6-color-pearl) 100%);
 }
 
 a {
@@ -47,7 +49,8 @@ button {
     left: -999px;
     top: 0;
     padding: var(--v6-space-2) var(--v6-space-3);
-    background: #ffffff;
+    background: var(--v6-color-ivory);
+    border: 1px solid var(--v6-color-line);
     z-index: 2000;
 }
 
@@ -62,10 +65,11 @@ button {
     bottom: 18px;
     width: 42px;
     height: 42px;
-    border: 1px solid #9aa3b2;
-    background: rgba(18, 22, 30, 0.9);
-    color: #ffffff;
-    border-radius: 6px;
+    border: 1px solid rgba(78, 102, 92, 0.18);
+    background: rgba(255, 252, 247, 0.92);
+    color: var(--v6-color-moss);
+    border-radius: 12px;
+    box-shadow: 0 16px 34px rgba(68, 57, 43, 0.12);
     z-index: 130;
     opacity: 0;
     pointer-events: none;
