@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 557
+  revision: 560
   updated_at: 2026-03-12
 
 tasks:
@@ -8025,5 +8025,43 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-206.md"
     depends_on: []
     prompt: "Agent gate covers prod public sync ops contracts"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-207
+    title: "Repair host git sync rollout and verify public_main_sync"
+    owner: Ernesto
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-12T04:31:03.271Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/repair-git-sync.yml", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-207_20260312043103271_594254"
+    lease_owner: "Ernesto"
+    lease_created_at: "2026-03-12T04:31:03.271Z"
+    heartbeat_at: "2026-03-12T04:33:05.530Z"
+    lease_expires_at: "2026-03-12T08:33:05.530Z"
+    lease_reason: "leases_heartbeat"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Repair host git sync rollout and verify public_main_sync"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Repair host git sync rollout and verify public_main_sync"
     created_at: 2026-03-12
     updated_at: 2026-03-12

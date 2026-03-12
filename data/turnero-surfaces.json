@@ -1,0 +1,206 @@
+{
+    "schema": "turnero-surface-registry/v1",
+    "defaults": {
+        "channel": "stable",
+        "version": "0.1.0",
+        "baseUrl": "https://pielarmonia.com",
+        "downloadBasePath": "/app-downloads/",
+        "updateBasePath": "/desktop-updates/"
+    },
+    "surfaces": [
+        {
+            "id": "operator",
+            "family": "desktop",
+            "route": "/operador-turnos.html",
+            "productName": "Turnero Operador",
+            "artifactBase": "TurneroOperador",
+            "executableName": "TurneroOperador",
+            "appId": "com.pielarmonia.turnero.operator",
+            "webFallbackUrl": "/operador-turnos.html",
+            "guideUrl": "/app-downloads/?surface=operator",
+            "updateChannel": "stable",
+            "catalog": {
+                "title": "Operador",
+                "eyebrow": "Genius Numpad 1000",
+                "description": "Llamado, re-llamado, completar y no show con el numpad en el PC del consultorio.",
+                "qrTarget": "prepared",
+                "notes": [
+                    "Conecta el receptor USB del Genius Numpad 1000 al PC operador, no a la TV.",
+                    "Si el Enter del numpad no llega como `NumpadEnter`, calibra la tecla externa dentro de la app.",
+                    "Usa `C1 fijo` o `C2 fijo` cuando ese equipo quede dedicado a un consultorio."
+                ]
+            },
+            "ops": {
+                "installHub": {
+                    "eyebrow": "Recepcion + consultorio",
+                    "title": "Operador",
+                    "description": "Superficie diaria para llamar, re-llamar, completar y operar con el Genius Numpad 1000.",
+                    "recommendedFor": "PC operador",
+                    "notes": [
+                        "Conecta aqui el receptor USB 2.4 GHz del numpad.",
+                        "La app desktop ahora puede quedar configurada como C1, C2 o modo libre desde el primer arranque."
+                    ]
+                },
+                "telemetry": {
+                    "title": "Operador",
+                    "emptySummary": "Todavia no hay senal del equipo operador. Abre la app o el fallback web para registrar heartbeat."
+                }
+            },
+            "launchDefaults": {
+                "station": "c1",
+                "lock": false,
+                "one_tap": false
+            },
+            "release": {
+                "artifactName": "turnero-desktop-operator"
+            },
+            "desktop": {
+                "buildDir": "src/apps/turnero-desktop",
+                "distDir": "src/apps/turnero-desktop/dist/operator",
+                "supportsAutoUpdate": true
+            },
+            "targets": {
+                "win": {
+                    "label": "Windows",
+                    "downloadPath": "operator/win",
+                    "manualFile": "TurneroOperadorSetup.exe",
+                    "updatePath": "operator/win",
+                    "updateFile": "TurneroOperadorSetup.exe",
+                    "feedFile": "latest.yml"
+                },
+                "mac": {
+                    "label": "macOS",
+                    "downloadPath": "operator/mac",
+                    "manualFile": "TurneroOperador.dmg",
+                    "updatePath": "operator/mac",
+                    "updateFile": "TurneroOperador.zip",
+                    "feedFile": "latest-mac.yml"
+                }
+            }
+        },
+        {
+            "id": "kiosk",
+            "family": "desktop",
+            "route": "/kiosco-turnos.html",
+            "productName": "Turnero Kiosco",
+            "artifactBase": "TurneroKiosco",
+            "executableName": "TurneroKiosco",
+            "appId": "com.pielarmonia.turnero.kiosk",
+            "webFallbackUrl": "/kiosco-turnos.html",
+            "guideUrl": "/app-downloads/?surface=kiosk",
+            "updateChannel": "stable",
+            "catalog": {
+                "title": "Kiosco",
+                "eyebrow": "Recepcion de pacientes",
+                "description": "Check-in y emision de ticket en un equipo separado para mostrador o mini PC.",
+                "qrTarget": "prepared",
+                "notes": [
+                    "Mantén la impresora térmica conectada antes del primer ticket real.",
+                    "Deja el equipo en fullscreen y usa autostart si el kiosco permanece encendido todo el día.",
+                    "La versión web sigue disponible como respaldo inmediato."
+                ]
+            },
+            "ops": {
+                "installHub": {
+                    "eyebrow": "Recepcion de pacientes",
+                    "title": "Kiosco",
+                    "description": "Instalador dedicado para check-in, generacion de ticket y operacion simple en mostrador.",
+                    "recommendedFor": "PC o mini PC de kiosco",
+                    "notes": [
+                        "Manten el equipo en fullscreen y con impresora termica conectada.",
+                        "La version web sigue disponible como respaldo inmediato."
+                    ]
+                },
+                "telemetry": {
+                    "title": "Kiosco",
+                    "emptySummary": "Todavia no hay senal del kiosco. Abre el equipo o el fallback web antes de dejar autoservicio."
+                }
+            },
+            "launchDefaults": {},
+            "release": {
+                "artifactName": "turnero-desktop-kiosk"
+            },
+            "desktop": {
+                "buildDir": "src/apps/turnero-desktop",
+                "distDir": "src/apps/turnero-desktop/dist/kiosk",
+                "supportsAutoUpdate": true
+            },
+            "targets": {
+                "win": {
+                    "label": "Windows",
+                    "downloadPath": "kiosk/win",
+                    "manualFile": "TurneroKioscoSetup.exe",
+                    "updatePath": "kiosk/win",
+                    "updateFile": "TurneroKioscoSetup.exe",
+                    "feedFile": "latest.yml"
+                },
+                "mac": {
+                    "label": "macOS",
+                    "downloadPath": "kiosk/mac",
+                    "manualFile": "TurneroKiosco.dmg",
+                    "updatePath": "kiosk/mac",
+                    "updateFile": "TurneroKiosco.zip",
+                    "feedFile": "latest-mac.yml"
+                }
+            }
+        },
+        {
+            "id": "sala_tv",
+            "family": "android",
+            "route": "/sala-turnos.html",
+            "productName": "Turnero Sala TV",
+            "artifactBase": "TurneroSalaTV",
+            "appId": "com.pielarmonia.turnerosalatv",
+            "webFallbackUrl": "/sala-turnos.html",
+            "guideUrl": "/app-downloads/?surface=sala_tv",
+            "updateChannel": "stable",
+            "catalog": {
+                "title": "Sala TV",
+                "eyebrow": "TCL C655 / Google TV",
+                "description": "Pantalla de llamados para pacientes con APK Android TV y fallback web.",
+                "qrTarget": "download",
+                "notes": [
+                    "Instala la APK directamente en la TCL C655 y prioriza Ethernet sobre Wi-Fi.",
+                    "Valida audio, campanilla y reconexión antes de dejar la pantalla en producción.",
+                    "Mantén `sala-turnos.html` como fallback de respaldo desde navegador."
+                ]
+            },
+            "ops": {
+                "installHub": {
+                    "eyebrow": "Pantalla de sala",
+                    "title": "Sala TV",
+                    "description": "APK para Android TV en la TCL C655 con WebView controlado, reconexion y campanilla.",
+                    "recommendedFor": "TCL C655 / Google TV",
+                    "notes": [
+                        "Instala en la TV y prioriza Ethernet sobre Wi-Fi.",
+                        "Usa el QR desde otra pantalla para simplificar la instalacion del APK."
+                    ]
+                },
+                "telemetry": {
+                    "title": "Sala TV",
+                    "emptySummary": "Todavia no hay senal de la TV de sala. Abre la app Android TV o el fallback web para registrar estado."
+                }
+            },
+            "launchDefaults": {},
+            "release": {
+                "artifactName": "turnero-android-sala-tv"
+            },
+            "android": {
+                "gradleProject": "src/apps/turnero-sala-tv-android",
+                "buildTask": "assembleRelease",
+                "sourceArtifact": "app/build/outputs/apk/release/app-release.apk",
+                "stagedArtifact": "TurneroSalaTV.apk",
+                "targetKey": "android_tv",
+                "baseUrl": "https://pielarmonia.com",
+                "surfacePath": "/sala-turnos.html"
+            },
+            "targets": {
+                "android_tv": {
+                    "label": "Android TV APK",
+                    "downloadPath": "sala-tv/android",
+                    "manualFile": "TurneroSalaTV.apk"
+                }
+            }
+        }
+    ]
+}

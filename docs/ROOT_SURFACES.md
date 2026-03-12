@@ -243,6 +243,7 @@ Lista aprobada actual:
 - `bin`
 - `content`
 - `controllers`
+- `data`
 - `docs`
 - `en`
 - `es`
@@ -271,7 +272,7 @@ permanecer ignorados o claramente fuera del carril versionado:
 - `.git/`
 - `node_modules/`
 - `.phpunit.cache/`
-- `data/`
+- `data/` fuera de `data/turnero-surfaces.json`
 - `test-results/`
 - `%TEMP%/`
 
