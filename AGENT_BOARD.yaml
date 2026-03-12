@@ -6,7 +6,7 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 560
+  revision: 577
   updated_at: 2026-03-12
 
 tasks:
@@ -8032,8 +8032,8 @@ tasks:
     title: "Repair host git sync rollout and verify public_main_sync"
     owner: Ernesto
     executor: codex
-    status: in_progress
-    status_since_at: "2026-03-12T04:31:03.271Z"
+    status: done
+    status_since_at: "2026-03-12T05:10:52.774Z"
     risk: high
     scope: deploy
     codex_instance: codex_backend_ops
@@ -8048,20 +8048,210 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: "lease_AG-207_20260312043103271_594254"
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:10:52.774Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Repair host git sync rollout and verify public_main_sync"
+    acceptance_ref: "verification/agent-runs/AG-207.md"
+    evidence_ref: "verification/agent-runs/AG-207.md"
+    depends_on: []
+    prompt: "Repair host git sync rollout and verify public_main_sync"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-208
+    title: "Create transport preflight incident in deploy-hosting"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T05:14:02.212Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/deploy-hosting.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:14:02.212Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Create transport preflight incident in deploy-hosting"
+    acceptance_ref: "verification/agent-runs/AG-208.md"
+    evidence_ref: "verification/agent-runs/AG-208.md"
+    depends_on: []
+    prompt: "Create transport preflight incident in deploy-hosting"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-209
+    title: "Create self-hosted fallback runner incident in repair-git-sync"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T05:24:33.989Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/repair-git-sync.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:24:33.989Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Create self-hosted fallback runner incident in repair-git-sync"
+    acceptance_ref: "verification/agent-runs/AG-209.md"
+    evidence_ref: "verification/agent-runs/AG-209.md"
+    depends_on: []
+    prompt: "Create self-hosted fallback runner incident in repair-git-sync"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-210
+    title: "Add structured connectivity incident to diagnose-host-connectivity"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T05:31:16.599Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/diagnose-host-connectivity.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:31:16.599Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Add structured connectivity incident to diagnose-host-connectivity"
+    acceptance_ref: "verification/agent-runs/AG-210.md"
+    evidence_ref: "verification/agent-runs/AG-210.md"
+    depends_on: []
+    prompt: "Add structured connectivity incident to diagnose-host-connectivity"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-211
+    title: "Dispatch connectivity diagnosis from deploy-hosting transport preflight"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-12T05:38:42.808Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: [".github/workflows/deploy-hosting.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-12T05:38:42.808Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Dispatch connectivity diagnosis from deploy-hosting transport preflight"
+    acceptance_ref: "verification/agent-runs/AG-211.md"
+    evidence_ref: "verification/agent-runs/AG-211.md"
+    depends_on: []
+    prompt: "Dispatch connectivity diagnosis from deploy-hosting transport preflight"
+    created_at: 2026-03-12
+    updated_at: 2026-03-12
+
+  - id: AG-212
+    title: "Publish deploy observability batch to main and refresh production page"
+    owner: Ernesto
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-12T05:43:18.813Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["AGENT_BOARD.yaml", "verification/agent-runs/AG-212.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-212_20260312054318813_f45943"
     lease_owner: "Ernesto"
-    lease_created_at: "2026-03-12T04:31:03.271Z"
-    heartbeat_at: "2026-03-12T04:33:05.530Z"
-    lease_expires_at: "2026-03-12T08:33:05.530Z"
-    lease_reason: "leases_heartbeat"
+    lease_created_at: "2026-03-12T05:43:18.813Z"
+    heartbeat_at: "2026-03-12T05:43:18.813Z"
+    lease_expires_at: "2026-03-12T09:43:18.813Z"
+    lease_reason: "board_write"
     lease_cleared_at: ""
     lease_cleared_reason: ""
     runtime_impact: low
     critical_zone: false
-    acceptance: "Repair host git sync rollout and verify public_main_sync"
+    acceptance: "Publish deploy observability batch to main and refresh production page"
     acceptance_ref: ""
     evidence_ref: ""
     depends_on: []
-    prompt: "Repair host git sync rollout and verify public_main_sync"
+    prompt: "Publish deploy observability batch to main and refresh production page"
     created_at: 2026-03-12
     updated_at: 2026-03-12

@@ -184,6 +184,13 @@ is keyed by `transport_preflight_target` and closes automatically after a later
 transport preflight returns `transport_preflight_reason=ok`, even if the rest
 of the workflow still needs separate follow-up.
 
+When that transport preflight fails, `deploy-hosting.yml` now also dispatches
+`diagnose-host-connectivity.yml` automatically and records
+`connectivity_diagnose_run_status` plus `connectivity_diagnose_run_url` in both
+the workflow summary and the transport incident. If the status stays
+`dispatched_not_observed`, GitHub accepted the dispatch but the downstream
+diagnostic run was not observable yet from the parent workflow.
+
 If `deploy-frontend-selfhosted.yml` stays `queued`, the repo is ready but no
 self-hosted Windows runner is online. Restoring that runner is a separate
 infrastructure action from fixing the host network path.

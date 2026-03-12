@@ -217,6 +217,50 @@ test('deploy-hosting gestiona incidente dedicado de transporte runner-host', () 
     }
 });
 
+test('deploy-hosting dispara diagnostico de conectividad cuando falla el preflight de transporte', () => {
+    const { raw, parsed } = loadWorkflow();
+    const steps = parsed?.jobs?.['deploy-prod']?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    for (const expectedStepName of [
+        'Disparar diagnostico de conectividad desde deploy-hosting',
+        'Hydrate connectivity diagnose status (deploy-hosting)',
+    ]) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de diagnostico de conectividad en deploy-hosting: ${expectedStepName}`
+        );
+    }
+
+    for (const snippet of [
+        "CONNECTIVITY_DIAGNOSE_RUN_STATUS: not_requested",
+        "CONNECTIVITY_DIAGNOSE_RUN_URL: ''",
+        "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}",
+        "const workflowId = 'diagnose-host-connectivity.yml';",
+        "workflow_id: workflowId",
+        "Workflow ${workflowId} disparado desde deploy-hosting (run_id=${observedRun.id}, status=${observedRun.status}, url=${observedRun.html_url}).",
+        "Workflow ${workflowId} disparado desde deploy-hosting (run no observado aun).",
+        'CONNECTIVITY_DIAGNOSE_RUN_ID_INPUT',
+        "append(outputPath, 'connectivity_diagnose_run_status', runStatus);",
+        "append(outputPath, 'connectivity_diagnose_run_url', runUrl);",
+        "append(envPath, 'CONNECTIVITY_DIAGNOSE_RUN_STATUS', runStatus);",
+        "append(envPath, 'CONNECTIVITY_DIAGNOSE_RUN_URL', runUrl);",
+        "CONNECTIVITY_DIAGNOSE_RUN_STATUS: ${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_status }}",
+        "CONNECTIVITY_DIAGNOSE_RUN_URL: ${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_url }}",
+        "`- connectivity_diagnose_run_status: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_STATUS || 'not_requested'}`",
+        "`- connectivity_diagnose_run_url: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_URL || ''}`",
+        'connectivity_diagnose_run_status: \\`${CONNECTIVITY_DIAGNOSE_RUN_STATUS}\\`',
+        'connectivity_diagnose_run_url: \\`${CONNECTIVITY_DIAGNOSE_RUN_URL}\\`',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de diagnostico de conectividad en deploy-hosting: ${snippet}`
+        );
+    }
+});
+
 test('deploy-hosting evalua y gestiona incidente dedicado de telemedicina post-cutover', () => {
     const { raw, parsed } = loadWorkflow();
     const steps = parsed?.jobs?.['deploy-prod']?.steps || [];
