@@ -141,6 +141,110 @@ test("GET /v1/provider-runtime exposes canonical provider bindings for a tenant"
   }
 });
 
+test("GET /v1/brand-surfaces/slots lists seeded brand surface slots for a tenant", async () => {
+  const { app } = await createTestApp();
+
+  try {
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/brand-surfaces/slots?tenantSlug=green-valley&surface=home"
+    });
+
+    assert.equal(response.statusCode, 200);
+    const payload = readJson(response) as {
+      tenantId: string;
+      items: Array<{ slot: { slotId: string; surface: string } }>;
+    };
+
+    assert.equal(payload.tenantId, "tnt_green");
+    assert.ok(payload.items.length > 0);
+    assert.ok(payload.items.every((item) => item.slot.surface === "home"));
+    assert.ok(payload.items.some((item) => item.slot.slotId === "home.hero.slides.s1"));
+  } finally {
+    await app.close();
+  }
+});
+
+test("POST /v1/brand-surfaces/slots/:slotId/inspect returns an approval card", async () => {
+  const { app } = await createTestApp();
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/brand-surfaces/slots/hub.hero/inspect",
+      payload: {
+        tenantSlug: "green-valley",
+        actorId: "openclaw"
+      }
+    });
+
+    assert.equal(response.statusCode, 200);
+    const payload = readJson(response) as {
+      tenantId: string;
+      slot: { slotId: string };
+      recommendation: { mode: string; candidateAssetId: string | null };
+      card: { now: string; why: string; risk: string; whatReady: string; approval: string };
+    };
+
+    assert.equal(payload.tenantId, "tnt_green");
+    assert.equal(payload.slot.slotId, "hub.hero");
+    assert.equal(payload.recommendation.mode, "reuse_existing");
+    assert.equal(payload.recommendation.candidateAssetId, "v6-clinic-hub-editorial-map");
+    assert.match(payload.card.approval, /Approve|export/i);
+  } finally {
+    await app.close();
+  }
+});
+
+test("brand surface review flow exports publication packets through the API", async () => {
+  const { app } = await createTestApp();
+
+  try {
+    const inspectResponse = await app.inject({
+      method: "POST",
+      url: "/v1/brand-surfaces/slots/legal.statement/inspect",
+      payload: {
+        tenantSlug: "green-valley",
+        actorId: "openclaw"
+      }
+    });
+    assert.equal(inspectResponse.statusCode, 200);
+    const inspectPayload = readJson(inspectResponse) as {
+      recommendation: { id: string };
+    };
+
+    const reviewResponse = await app.inject({
+      method: "POST",
+      url: `/v1/brand-surfaces/recommendations/${inspectPayload.recommendation.id}/review`,
+      payload: {
+        tenantSlug: "green-valley",
+        actor: "brand_editor",
+        decision: "approve"
+      }
+    });
+    assert.equal(reviewResponse.statusCode, 200);
+    const reviewPayload = readJson(reviewResponse) as {
+      packet: { approvedDecisions: Array<{ slotId: string }>; approvedAssets: Array<Record<string, unknown>> } | null;
+    };
+    assert.ok(reviewPayload.packet);
+    assert.equal(reviewPayload.packet?.approvedDecisions[0]?.slotId, "legal.statement");
+    assert.doesNotMatch(JSON.stringify(reviewPayload.packet), /privateCaseRefs/);
+
+    const packetsResponse = await app.inject({
+      method: "GET",
+      url: "/v1/brand-surfaces/publication-packets?tenantSlug=green-valley&latest=true"
+    });
+    assert.equal(packetsResponse.statusCode, 200);
+    const packetsPayload = readJson(packetsResponse) as {
+      items: Array<{ approvedDecisions: Array<{ slotId: string }> }>;
+    };
+    assert.equal(packetsPayload.items.length, 1);
+    assert.equal(packetsPayload.items[0]?.approvedDecisions[0]?.slotId, "legal.statement");
+  } finally {
+    await app.close();
+  }
+});
+
 test("POST /v1/messages/patient-flow confirms the canonical case appointment", async () => {
   const { app } = await createTestApp();
 

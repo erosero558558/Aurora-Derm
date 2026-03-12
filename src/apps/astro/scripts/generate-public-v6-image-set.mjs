@@ -1827,19 +1827,117 @@ function buildManifestSrcSet(asset) {
         .join(', ');
 }
 
+function readExistingManifest() {
+    if (!fs.existsSync(MANIFEST_PATH)) {
+        return { assets: [] };
+    }
+    try {
+        return JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
+    } catch (_error) {
+        return { assets: [] };
+    }
+}
+
+function defaultManifestMetadata(asset) {
+    return {
+        status: 'approved',
+        sourceType: 'ai_generated',
+        publicWebSafe: true,
+        orientation: asset.kind === 'portrait' ? 'portrait' : 'landscape',
+        editorialTags: [asset.scene, asset.kind].filter(Boolean),
+        allowedSlotRoles:
+            asset.kind === 'portrait'
+                ? ['profile_portrait']
+                : asset.kind === 'wide'
+                  ? ['page_hero', 'seo_hero', 'initiative_card']
+                  : [
+                        'hero_slide',
+                        'editorial_card',
+                        'matrix_card',
+                        'featured_card',
+                        'hub_card',
+                        'initiative_card',
+                        'statement_band',
+                        'index_card',
+                        'page_hero',
+                    ],
+        tone: 'ink',
+        localeAlt: {
+            es: asset.altEs,
+            en: asset.altEn,
+        },
+        generation: {
+            strategy: 'local_editorial_illustration',
+            source: 'src/apps/astro/scripts/generate-public-v6-image-set.mjs',
+            promptPack: 'docs/public-v6-image-refresh.md',
+            reviewState: 'approved',
+        },
+    };
+}
+
 function buildManifest() {
+    const existingManifest = readExistingManifest();
+    const existingAssets = new Map(
+        (Array.isArray(existingManifest.assets) ? existingManifest.assets : []).map(
+            (asset) => [asset.id, asset]
+        )
+    );
     return {
         version: '2026.03-v6-image-relaunch',
         updated_at: new Date().toISOString().slice(0, 10),
-        assets: ASSETS.map((asset) => ({
-            id: asset.id,
-            kind: asset.kind,
-            src: `/images/optimized/${baseName(asset.id)}.webp`,
-            srcset: buildManifestSrcSet(asset),
-            sizes: KIND_DEFAULT_SIZES[asset.kind] || KIND_DEFAULT_SIZES.card,
-            alt_es: asset.altEs,
-            alt_en: asset.altEn,
-        })),
+        assets: ASSETS.map((asset) => {
+            const existing = existingAssets.get(asset.id) || {};
+            const defaults = defaultManifestMetadata(asset);
+            const existingLocaleAlt =
+                existing.localeAlt && typeof existing.localeAlt === 'object'
+                    ? existing.localeAlt
+                    : {};
+            const existingGeneration =
+                existing.generation && typeof existing.generation === 'object'
+                    ? existing.generation
+                    : {};
+
+            return {
+                ...existing,
+                id: asset.id,
+                kind: asset.kind,
+                src: `/images/optimized/${baseName(asset.id)}.webp`,
+                srcset: buildManifestSrcSet(asset),
+                sizes: KIND_DEFAULT_SIZES[asset.kind] || KIND_DEFAULT_SIZES.card,
+                alt_es: asset.altEs,
+                alt_en: asset.altEn,
+                status: existing.status || defaults.status,
+                sourceType: existing.sourceType || defaults.sourceType,
+                publicWebSafe:
+                    typeof existing.publicWebSafe === 'boolean'
+                        ? existing.publicWebSafe
+                        : defaults.publicWebSafe,
+                orientation: existing.orientation || defaults.orientation,
+                editorialTags:
+                    Array.isArray(existing.editorialTags) &&
+                    existing.editorialTags.length
+                        ? existing.editorialTags
+                        : defaults.editorialTags,
+                allowedSlotRoles:
+                    Array.isArray(existing.allowedSlotRoles) &&
+                    existing.allowedSlotRoles.length
+                        ? existing.allowedSlotRoles
+                        : defaults.allowedSlotRoles,
+                tone: existing.tone || defaults.tone,
+                localeAlt: {
+                    ...defaults.localeAlt,
+                    ...existingLocaleAlt,
+                    es: existingLocaleAlt.es || asset.altEs,
+                    en: existingLocaleAlt.en || asset.altEn,
+                },
+                generation: {
+                    ...defaults.generation,
+                    ...existingGeneration,
+                    source:
+                        existingGeneration.source || defaults.generation.source,
+                },
+            };
+        }),
     };
 }
 

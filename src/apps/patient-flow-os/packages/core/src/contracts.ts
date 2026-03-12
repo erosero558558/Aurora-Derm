@@ -715,6 +715,134 @@ export const ClinicDashboardProjectionSchema = z.object({
   attentionCases: z.array(ClinicDashboardAttentionCaseSchema)
 });
 
+export const BrandAssetSourceTypeSchema = z.enum([
+  "editorial_library",
+  "ai_generated",
+  "real_case"
+]);
+
+export const BrandSurfaceSlotLocaleModeSchema = z.enum(["shared", "per_locale"]);
+
+export const BrandSurfaceRecommendationModeSchema = z.enum([
+  "reuse_existing",
+  "generate_new"
+]);
+
+export const BrandSurfaceRecommendationStatusSchema = z.enum([
+  "pending_review",
+  "approved",
+  "rejected",
+  "snoozed"
+]);
+
+export const BrandSurfaceApprovalDecisionSchema = z.enum([
+  "approve",
+  "edit",
+  "reject",
+  "snooze"
+]);
+
+export const BrandAssetDraftStatusSchema = z.enum([
+  "draft",
+  "approved",
+  "rejected",
+  "archived"
+]);
+
+export const BrandSurfaceSlotSchema = z.object({
+  tenantId: z.string().min(1),
+  slotId: z.string().min(1),
+  surface: z.string().min(1),
+  pageKey: z.string().min(1),
+  slotRole: z.string().min(1),
+  currentAssetId: z.string().nullable(),
+  fallbackAssetId: z.string().nullable(),
+  allowedAssetKinds: z.array(z.string().min(1)),
+  requiredTags: z.array(z.string().min(1)),
+  localeMode: BrandSurfaceSlotLocaleModeSchema
+});
+
+export const BrandGenerationBriefSchema = z.object({
+  title: z.string().min(1),
+  prompt: z.string().min(1),
+  requiredTags: z.array(z.string().min(1)),
+  prohibitedSources: z.array(z.string().min(1)),
+  references: z.array(z.string().min(1)),
+  tone: z.string().min(1),
+  notes: z.string().nullable()
+});
+
+export const BrandAssetDraftSchema = z.object({
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
+  proposedSlotId: z.string().nullable(),
+  sourceType: BrandAssetSourceTypeSchema,
+  status: BrandAssetDraftStatusSchema,
+  publicWebSafe: z.boolean(),
+  assetId: z.string().nullable(),
+  prompt: z.string().min(1),
+  references: z.array(z.string().min(1)),
+  sourceMasterPath: z.string().nullable(),
+  optimizedFiles: z.array(z.string().min(1)),
+  createdAt: TimestampSchema,
+  reviewedAt: TimestampSchema.nullable()
+});
+
+export const BrandSurfaceRecommendationSchema = z.object({
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
+  slotId: z.string().min(1),
+  mode: BrandSurfaceRecommendationModeSchema,
+  candidateAssetId: z.string().nullable(),
+  generationBrief: BrandGenerationBriefSchema.nullable(),
+  rationale: z.string().min(1),
+  confidence: z.number().min(0).max(1),
+  privateCaseRefs: z.array(z.string().min(1)),
+  status: BrandSurfaceRecommendationStatusSchema,
+  createdAt: TimestampSchema,
+  updatedAt: TimestampSchema
+});
+
+export const BrandSurfaceApprovalSchema = z.object({
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
+  recommendationId: z.string().min(1),
+  decision: BrandSurfaceApprovalDecisionSchema,
+  approvedAssetId: z.string().nullable(),
+  altOverride: z.record(z.string(), z.string()).nullable(),
+  note: z.string().nullable(),
+  actor: z.string().min(1),
+  createdAt: TimestampSchema
+});
+
+export const BrandPublicationDecisionSchema = z.object({
+  slotId: z.string().min(1),
+  assetId: z.string().min(1),
+  altOverride: z.record(z.string(), z.string()).nullable(),
+  approvedAt: TimestampSchema,
+  approvedBy: z.string().min(1),
+  sourceRecommendationId: z.string().nullable()
+});
+
+export const BrandPublicationAssetSchema = z.object({
+  assetId: z.string().min(1),
+  sourceType: BrandAssetSourceTypeSchema,
+  publicWebSafe: z.boolean(),
+  manifestEntry: z.record(z.string(), z.unknown()),
+  sourceMasterPath: z.string().nullable(),
+  optimizedFiles: z.array(z.string().min(1))
+});
+
+export const BrandPublicationPacketSchema = z.object({
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
+  revision: z.number().int().positive(),
+  approvedDecisions: z.array(BrandPublicationDecisionSchema),
+  approvedAssets: z.array(BrandPublicationAssetSchema),
+  exportedAt: TimestampSchema,
+  exportedBy: z.string().min(1)
+});
+
 export const PatientCaseSnapshotSchema = z.object({
   case: PatientCaseSchema,
   patient: PatientSchema,
@@ -756,7 +884,12 @@ export const BootstrapStateSchema = z.object({
   callbacks: z.array(CallbackLeadSchema),
   playbooks: z.array(PlaybookSchema),
   auditEntries: z.array(AuditEntrySchema),
-  copilotReviewDecisions: z.array(CopilotReviewDecisionSchema)
+  copilotReviewDecisions: z.array(CopilotReviewDecisionSchema),
+  brandSurfaceSlots: z.array(BrandSurfaceSlotSchema).default([]),
+  brandAssetDrafts: z.array(BrandAssetDraftSchema).default([]),
+  brandSurfaceRecommendations: z.array(BrandSurfaceRecommendationSchema).default([]),
+  brandSurfaceApprovals: z.array(BrandSurfaceApprovalSchema).default([]),
+  brandPublicationPackets: z.array(BrandPublicationPacketSchema).default([])
 });
 
 export type TenantConfig = z.infer<typeof TenantConfigSchema>;
@@ -807,6 +940,20 @@ export type WaitRoomDisplayProjection = z.infer<typeof WaitRoomDisplayProjection
 export type ClinicDashboardCaseSummary = z.infer<typeof ClinicDashboardCaseSummarySchema>;
 export type ClinicDashboardAttentionCase = z.infer<typeof ClinicDashboardAttentionCaseSchema>;
 export type ClinicDashboardProjection = z.infer<typeof ClinicDashboardProjectionSchema>;
+export type BrandAssetSourceType = z.infer<typeof BrandAssetSourceTypeSchema>;
+export type BrandSurfaceSlotLocaleMode = z.infer<typeof BrandSurfaceSlotLocaleModeSchema>;
+export type BrandSurfaceRecommendationMode = z.infer<typeof BrandSurfaceRecommendationModeSchema>;
+export type BrandSurfaceRecommendationStatus = z.infer<typeof BrandSurfaceRecommendationStatusSchema>;
+export type BrandSurfaceApprovalDecision = z.infer<typeof BrandSurfaceApprovalDecisionSchema>;
+export type BrandAssetDraftStatus = z.infer<typeof BrandAssetDraftStatusSchema>;
+export type BrandSurfaceSlot = z.infer<typeof BrandSurfaceSlotSchema>;
+export type BrandGenerationBrief = z.infer<typeof BrandGenerationBriefSchema>;
+export type BrandAssetDraft = z.infer<typeof BrandAssetDraftSchema>;
+export type BrandSurfaceRecommendation = z.infer<typeof BrandSurfaceRecommendationSchema>;
+export type BrandSurfaceApproval = z.infer<typeof BrandSurfaceApprovalSchema>;
+export type BrandPublicationDecision = z.infer<typeof BrandPublicationDecisionSchema>;
+export type BrandPublicationAsset = z.infer<typeof BrandPublicationAssetSchema>;
+export type BrandPublicationPacket = z.infer<typeof BrandPublicationPacketSchema>;
 export type TenantProviderDispatchMode = z.infer<typeof TenantProviderDispatchModeSchema>;
 export type TenantProviderWebhookAuthMode = z.infer<typeof TenantProviderWebhookAuthModeSchema>;
 export type TenantProviderBindingStatus = z.infer<typeof TenantProviderBindingStatusSchema>;

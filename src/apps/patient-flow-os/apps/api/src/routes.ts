@@ -10,6 +10,7 @@ import type {
   TenantConfig
 } from "../../../packages/core/src/index.js";
 import { CaseChannelSchema, ChannelSchema, PatientCaseStatusSchema, SurfaceSchema } from "../../../packages/core/src/index.js";
+import { createBrandSurfaceService } from "./brand-surface.js";
 import { PatientCaseCopilotService } from "./copilot.js";
 import { renderClinicDashboard, renderHomePage, renderOpsConsole, renderPatientFlowLink, renderWaitRoomDisplay } from "./html.js";
 import { OpenClawImportBundleSchema, importOpenClawProjectedCases } from "./openclaw-import.js";
@@ -193,6 +194,30 @@ const WaitRoomSurfaceQuerySchema = TenantReferenceSchema.extend({
   locationSlug: z.string().min(1).optional()
 }).refine((value) => Boolean(value.locationId || value.locationSlug), {
   message: "locationId or locationSlug is required"
+});
+
+const ListBrandSurfaceSlotsSchema = TenantReferenceSchema.extend({
+  surface: z.string().min(1).optional(),
+  pageKey: z.string().min(1).optional(),
+  slotRole: z.string().min(1).optional()
+});
+
+const InspectBrandSurfaceSlotSchema = TenantReferenceSchema.extend({
+  actorId: z.string().min(1).optional(),
+  tone: z.string().min(1).optional(),
+  note: z.string().min(1).optional()
+});
+
+const ReviewBrandSurfaceRecommendationSchema = TenantReferenceSchema.extend({
+  actor: z.string().min(1),
+  decision: z.enum(["approve", "edit", "reject", "snooze"]),
+  approvedAssetId: z.string().min(1).nullable().optional(),
+  altOverride: z.record(z.string(), z.string()).nullable().optional(),
+  note: z.string().nullable().optional()
+});
+
+const ListBrandPublicationPacketsSchema = TenantReferenceSchema.extend({
+  latest: z.coerce.boolean().optional()
 });
 
 function toHttpError(reply: FastifyReply, error: unknown): FastifyReply {
@@ -384,6 +409,7 @@ export async function registerRoutes(
   copilotService?: PatientCaseCopilotService
 ): Promise<void> {
   const copilot = copilotService ?? new PatientCaseCopilotService(repository, runtime);
+  const brandSurface = createBrandSurfaceService(repository);
   const opsNextBestActionHandler = withErrors(async (request) => {
     const body = OpsNextBestActionSchema.parse(request.body);
     const tenant = resolveTenant(repository, body);
@@ -427,6 +453,71 @@ export async function registerRoutes(
       persistence: getRepositoryPersistenceMode(repository),
       persistenceError: getRepositoryPersistenceError(repository)
     }))
+  );
+
+  app.get(
+    "/v1/brand-surfaces/slots",
+    withErrors((request) => {
+      const query = ListBrandSurfaceSlotsSchema.parse(request.query);
+      const tenant = resolveTenant(repository, query);
+      return {
+        tenantId: tenant.id,
+        items: brandSurface.listSlots(tenant.id, {
+          surface: query.surface,
+          pageKey: query.pageKey,
+          slotRole: query.slotRole
+        })
+      };
+    })
+  );
+
+  app.post(
+    "/v1/brand-surfaces/slots/:slotId/inspect",
+    withErrors((request) => {
+      const params = z.object({ slotId: z.string().min(1) }).parse(request.params);
+      const body = InspectBrandSurfaceSlotSchema.parse(request.body);
+      const tenant = resolveTenant(repository, body);
+      return {
+        tenantId: tenant.id,
+        ...brandSurface.inspectSlot(tenant.id, params.slotId, {
+          actorId: body.actorId,
+          tone: body.tone,
+          note: body.note
+        })
+      };
+    })
+  );
+
+  app.post(
+    "/v1/brand-surfaces/recommendations/:recommendationId/review",
+    withErrors((request) => {
+      const params = z.object({ recommendationId: z.string().min(1) }).parse(request.params);
+      const body = ReviewBrandSurfaceRecommendationSchema.parse(request.body);
+      const tenant = resolveTenant(repository, body);
+      return {
+        tenantId: tenant.id,
+        ...brandSurface.reviewRecommendation(tenant.id, params.recommendationId, {
+          actor: body.actor,
+          decision: body.decision,
+          approvedAssetId: body.approvedAssetId,
+          altOverride: body.altOverride,
+          note: body.note
+        })
+      };
+    })
+  );
+
+  app.get(
+    "/v1/brand-surfaces/publication-packets",
+    withErrors((request) => {
+      const query = ListBrandPublicationPacketsSchema.parse(request.query);
+      const tenant = resolveTenant(repository, query);
+      const packets = brandSurface.listPublicationPackets(tenant.id);
+      return {
+        tenantId: tenant.id,
+        items: query.latest ? packets.slice(-1) : packets
+      };
+    })
   );
 
   app.get(
