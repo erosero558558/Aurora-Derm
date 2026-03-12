@@ -69,6 +69,10 @@ jobs:
             TELEMEDICINE_REPAIR_REASON: not_evaluated
             TELEMEDICINE_REPAIR_FAILURES: -1
             TELEMEDICINE_REPAIR_NON_TELE_FAILURES: -1
+            CONNECTIVITY_DIAGNOSE_RUN_ID: ''
+            CONNECTIVITY_DIAGNOSE_RUN_URL: ''
+            CONNECTIVITY_DIAGNOSE_RUN_STATUS: not_requested
+            CONNECTIVITY_DIAGNOSE_RUN_CONCLUSION: ''
             DISPATCH_TRANSPORT_FALLBACK_INPUT: ${{ github.event.inputs.dispatch_transport_fallback || 'false' }}
             AUTO_TRANSPORT_FALLBACK_AUTOMATION: ${{ vars.AUTO_TRANSPORT_FALLBACK_FROM_REPAIR || 'false' }}
             DISPATCH_SELF_HOSTED_FALLBACK_INPUT: ${{ github.event.inputs.dispatch_self_hosted_fallback || 'false' }}
@@ -806,6 +810,113 @@ jobs:
                           : `Workflow ${workflowId} disparado desde repair (mode=${process.env.CONNECTIVITY_DIAGNOSE_DISPATCH_MODE || 'unknown'}, run no observado aun).`
                       );
 
+            - name: Hydrate connectivity diagnose status (repair)
+              if: ${{ always() }}
+              id: connectivity_diagnose_status
+              uses: actions/github-script@v7
+              env:
+                  CONNECTIVITY_DIAGNOSE_DISPATCH_READY: ${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_ready }}
+                  CONNECTIVITY_DIAGNOSE_RUN_ID_INPUT: ${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_id }}
+                  CONNECTIVITY_DIAGNOSE_RUN_URL_INPUT: ${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_url }}
+                  CONNECTIVITY_DIAGNOSE_RUN_STATUS_INPUT: ${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_status }}
+                  CONNECTIVITY_DIAGNOSE_RUN_CONCLUSION_INPUT: ${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_conclusion }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const workflowId = 'diagnose-host-connectivity.yml';
+                      const ref =
+                        context.payload.workflow_run?.head_branch ||
+                        (context.ref || '').replace('refs/heads/', '') ||
+                        'main';
+                      const headSha =
+                        context.payload.workflow_run?.head_sha ||
+                        context.sha ||
+                        '';
+
+                      function normalizeRun(value) {
+                        return String(value || '').trim();
+                      }
+
+                      function normalizeBool(value) {
+                        return ['1', 'true', 'yes', 'y', 'on'].includes(normalizeRun(value).toLowerCase());
+                      }
+
+                      function wait(ms) {
+                        return new Promise((resolve) => setTimeout(resolve, ms));
+                      }
+
+                      async function findDispatchedRun() {
+                        const runs = await github.paginate(
+                          github.rest.actions.listWorkflowRunsForWorkflow,
+                          {
+                            owner,
+                            repo,
+                            workflow_id: workflowId,
+                            branch: ref,
+                            event: 'workflow_dispatch',
+                            per_page: 20,
+                          }
+                        );
+                        const cutoffMs = Date.now() - 15 * 60 * 1000;
+                        return (
+                          runs.find((run) => {
+                            const createdAtMs = Date.parse(run.created_at || '');
+                            if (!Number.isFinite(createdAtMs) || createdAtMs < cutoffMs) {
+                              return false;
+                            }
+                            if (headSha && run.head_sha && run.head_sha !== headSha) {
+                              return false;
+                            }
+                            return true;
+                          }) || null
+                        );
+                      }
+
+                      const shouldExpose = normalizeBool(process.env.CONNECTIVITY_DIAGNOSE_DISPATCH_READY);
+                      let runId = shouldExpose ? normalizeRun(process.env.CONNECTIVITY_DIAGNOSE_RUN_ID_INPUT) : '';
+                      let runUrl = shouldExpose ? normalizeRun(process.env.CONNECTIVITY_DIAGNOSE_RUN_URL_INPUT) : '';
+                      let runStatus = shouldExpose
+                        ? normalizeRun(process.env.CONNECTIVITY_DIAGNOSE_RUN_STATUS_INPUT) || 'dispatched_not_observed'
+                        : 'not_requested';
+                      let runConclusion = shouldExpose
+                        ? normalizeRun(process.env.CONNECTIVITY_DIAGNOSE_RUN_CONCLUSION_INPUT)
+                        : '';
+
+                      if (shouldExpose && (!runId || runStatus === 'dispatched_not_observed')) {
+                        let observedRun = null;
+                        for (let attempt = 0; attempt < 6; attempt += 1) {
+                          await wait(attempt === 0 ? 2000 : 4000);
+                          observedRun = await findDispatchedRun();
+                          if (observedRun) {
+                            break;
+                          }
+                        }
+                        if (observedRun) {
+                          runId = String(observedRun.id || '');
+                          runUrl = String(observedRun.html_url || '');
+                          runStatus = String(observedRun.status || '') || runStatus;
+                          runConclusion = String(observedRun.conclusion || '');
+                          core.info(
+                            `Hydrated late ${workflowId} run from repair (run_id=${runId}, status=${runStatus}, url=${runUrl}).`
+                          );
+                        } else {
+                          core.info(
+                            `Hydrate connectivity diagnose status (repair) still unresolved after retry window (status=${runStatus}).`
+                          );
+                        }
+                      }
+
+                      core.setOutput('connectivity_diagnose_run_id', runId);
+                      core.setOutput('connectivity_diagnose_run_url', runUrl);
+                      core.setOutput('connectivity_diagnose_run_status', runStatus);
+                      core.setOutput('connectivity_diagnose_run_conclusion', runConclusion);
+
+                      core.exportVariable('CONNECTIVITY_DIAGNOSE_RUN_ID', runId);
+                      core.exportVariable('CONNECTIVITY_DIAGNOSE_RUN_URL', runUrl);
+                      core.exportVariable('CONNECTIVITY_DIAGNOSE_RUN_STATUS', runStatus);
+                      core.exportVariable('CONNECTIVITY_DIAGNOSE_RUN_CONCLUSION', runConclusion);
+
             - name: Disparar transport fallback desde repair
               if: ${{ always() && steps.transport_fallback.outputs.transport_fallback_dispatch_ready == 'true' }}
               uses: actions/github-script@v7
@@ -1409,8 +1520,8 @@ jobs:
                     echo "- telemedicine_repair_step_outcome: \`${{ steps.telemedicine_repair.outcome }}\`";
                     echo "- connectivity_diagnose_dispatched: \`${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_ready }}\`";
                     echo "- connectivity_diagnose_dispatch_mode: \`${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_mode }}\`";
-                    echo "- connectivity_diagnose_run_status: \`${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_status }}\`";
-                    echo "- connectivity_diagnose_run_url: \`${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_url }}\`";
+                    echo "- connectivity_diagnose_run_status: \`${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_status }}\`";
+                    echo "- connectivity_diagnose_run_url: \`${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_url }}\`";
                     echo "- transport_fallback_requested: \`${{ steps.transport_fallback.outputs.transport_fallback_dispatch_requested }}\`";
                     echo "- transport_fallback_recommended: \`${{ steps.transport_fallback.outputs.transport_fallback_recommended }}\`";
                     echo "- transport_fallback_dispatched: \`${{ steps.transport_fallback.outputs.transport_fallback_dispatch_ready }}\`";
