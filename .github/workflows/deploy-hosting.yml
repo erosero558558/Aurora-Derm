@@ -911,7 +911,6 @@ jobs:
                       core.exportVariable('CONNECTIVITY_DIAGNOSE_RUN_URL', runUrl);
                       core.exportVariable('CONNECTIVITY_DIAGNOSE_RUN_STATUS', runStatus);
                       core.exportVariable('CONNECTIVITY_DIAGNOSE_RUN_CONCLUSION', runConclusion);
-
             - name: Crear/actualizar incidente de transporte deploy-hosting
               if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}
               uses: actions/github-script@v7

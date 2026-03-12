@@ -278,7 +278,6 @@ test('deploy-hosting dispara diagnostico de conectividad cuando falla el preflig
         );
     }
 });
-
 test('deploy-hosting evalua y gestiona incidente dedicado de telemedicina post-cutover', () => {
     const { raw, parsed } = loadWorkflow();
     const steps = parsed?.jobs?.['deploy-prod']?.steps || [];
