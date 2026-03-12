@@ -86,6 +86,38 @@ Verificar que un `backup-drill-packet.json` cumple los budgets de `RTO/RPO`:
 npm run cutover -- verify-backup-drill --input .\artifacts\backup-drill\backup-drill-packet.json --source-environment production --max-rto-seconds 900 --max-rpo-seconds 3600 --json
 ```
 
+Verificar que un `backup-escrow-packet.json` cumple la política del escrow externo:
+
+```powershell
+npm run cutover -- verify-backup-escrow --input .\artifacts\backup-drill\backup-escrow-packet.json --source-environment production --max-object-age-hours 24 --json
+```
+
+Construir un backup escrow replica packet desde `backup-escrow-replica-manifest.json`:
+
+```powershell
+npm run cutover -- backup-escrow-replica-packet --input .\artifacts\backup-drill\backup-escrow-replica-manifest.json --artifacts-dir .\artifacts\backup-drill --source-environment production --max-object-age-hours 24 --json
+```
+
+Verificar que un `backup-escrow-replica-packet.json` demuestra réplica multi-sitio íntegra y distinta del escrow primario:
+
+```powershell
+npm run cutover -- verify-backup-escrow-replica --input .\artifacts\backup-drill\backup-escrow-replica-packet.json --source-environment production --max-object-age-hours 24 --json
+```
+
+Construir un backup escrow restore packet desde `backup-escrow-restore-manifest.json`:
+
+```powershell
+npm run cutover -- backup-escrow-restore-packet --input .\artifacts\backup-drill\backup-escrow-restore-manifest.json --artifacts-dir .\artifacts\backup-escrow-restore --source-environment production --max-rto-seconds 900 --json
+```
+
+Verificar que un `backup-escrow-restore-packet.json` demuestra restore íntegro desde el objeto cifrado externo:
+
+```powershell
+npm run cutover -- verify-backup-escrow-restore --input .\artifacts\backup-escrow-restore\backup-escrow-restore-packet.json --source-environment production --max-rto-seconds 900 --json
+```
+
+`backup-escrow-restore-packet` acepta como `backupEscrowPacketPath` tanto un `backup-escrow-packet.json` primario como un `backup-escrow-replica-packet.json`; el manifest debe declarar `restoreSource=primary|replica` cuando se quiera fijar explícitamente el origen.
+
 Construir un promotion packet desde `workflow-manifest.json` y los artifacts post-cutover:
 
 ```powershell
@@ -102,6 +134,12 @@ Construir un backup drill packet desde `backup-drill-manifest.json`:
 
 ```powershell
 npm run cutover -- backup-drill-packet --input .\artifacts\backup-drill\backup-drill-manifest.json --artifacts-dir .\artifacts\backup-drill --source-environment production --max-rto-seconds 900 --max-rpo-seconds 3600 --json
+```
+
+Construir un backup escrow packet desde `backup-escrow-manifest.json`:
+
+```powershell
+npm run cutover -- backup-escrow-packet --input .\artifacts\backup-drill\backup-escrow-manifest.json --artifacts-dir .\artifacts\backup-drill --source-environment production --max-object-age-hours 24 --json
 ```
 
 ## Guardrails
@@ -121,6 +159,12 @@ npm run cutover -- backup-drill-packet --input .\artifacts\backup-drill\backup-d
 - `verify-backup-drill` falla si el packet no cumple smoke, integridad de restore o budgets de `RTO/RPO`.
 - `backup-drill-packet` falla si la evidencia de `pg_dump/pg_restore` no deja un drill verificable.
 - `backup-drill-packet` y `verify-backup-drill` exigen evidencia de dump cifrado, checksum cifrado y metadatos de retención/expiración.
+- `backup-escrow-packet` falla si la evidencia del escrow externo no deja bucket/key/tags/metadata trazables.
+- `verify-backup-escrow` falla si el objeto externo no existe en evidencia local, si deriva de un drill no verde o si excede el budget de edad configurado.
+- `backup-escrow-replica-packet` falla si la réplica secundaria no conserva checksum, metadata/tags o aislamiento respecto del escrow primario.
+- `verify-backup-escrow-replica` falla si la réplica no es trazable, si no deriva de un escrow primario verde o si no aporta un target distinto.
+- `backup-escrow-restore-packet` falla si el restore desde el escrow primario o desde la réplica no conserva checksums, smoke o totales canónicos.
+- `verify-backup-escrow-restore` falla si el restore desde escrow excede el budget de `RTO`, si no preserva integridad o si la evidencia local está incompleta.
 
 ## Workflow manual en GitHub Actions
 
@@ -244,15 +288,29 @@ Objetivo:
 - ejecutar `pg_dump` sobre `PATIENT_FLOW_OS_DATABASE_URL`,
 - restaurar el dump en `PATIENT_FLOW_OS_DRILL_DATABASE_URL`,
 - cifrar el dump con `gpg --symmetric` antes de retener artifacts,
+- publicar el dump cifrado a un escrow externo S3-compatible con tags y metadata de retención,
 - correr smoke/inspect en source y restore,
 - calcular evidencia explícita de `RTO/RPO`,
-- emitir `backup-drill-packet.json` y su verificación.
+- emitir `backup-drill-packet.json`, `backup-escrow-packet.json` y sus verificaciones.
 
 Secrets requeridos por environment:
 
 - `PATIENT_FLOW_OS_DATABASE_URL`
 - `PATIENT_FLOW_OS_DRILL_DATABASE_URL`
 - `PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_ACCESS_KEY_ID`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_SECRET_ACCESS_KEY`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_REGION`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_BUCKET`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_BUCKET`
+
+Variables recomendadas por environment:
+
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_PREFIX`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_LIFECYCLE_POLICY_REF`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_REGION`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_PREFIX`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_REPLICA_LIFECYCLE_POLICY_REF`
 
 Inputs principales:
 
@@ -260,6 +318,7 @@ Inputs principales:
 - `max_rto_seconds`: budget máximo de restore time objective.
 - `max_rpo_seconds`: budget máximo de recovery point objective.
 - `retention_days`: días de retención del dump cifrado y del artifact publicado.
+- `max_escrow_age_hours`: edad máxima aceptada para el objeto subido al escrow externo al momento de verificarlo.
 - `confirm_drill_reset`: debe ser `true` para resetear el drill database antes del restore.
 
 Artifacts de backup drill:
@@ -279,12 +338,148 @@ Artifacts de backup drill:
 - `backup-drill-checklist.json`
 - `backup-drill-checklist.md`
 - `backup-drill-verification.json`
+- `backup-escrow-manifest.json`
+- `escrow-put-object-response.json`
+- `escrow-head-object.json`
+- `escrow-object-tagging.json`
+- `backup-escrow-packet-command.json`
+- `backup-escrow-packet.json`
+- `backup-escrow-packet.md`
+- `backup-escrow-checklist.json`
+- `backup-escrow-checklist.md`
+- `backup-escrow-verification.json`
+- `backup-escrow-replica-manifest.json`
+- `replica-escrow-put-object-response.json`
+- `replica-escrow-head-object.json`
+- `replica-escrow-object-tagging.json`
+- `backup-escrow-replica-packet-command.json`
+- `backup-escrow-replica-packet.json`
+- `backup-escrow-replica-packet.md`
+- `backup-escrow-replica-checklist.json`
+- `backup-escrow-replica-checklist.md`
+- `backup-escrow-replica-verification.json`
 
 Notas operativas:
 
 - El dump plano se usa solo dentro del runner efímero para `pg_restore`; el artifact retenido es `patient-flow-os.dump.gpg`.
 - El manifest registra `archiveDestination=github_artifact_encrypted`, `encryptionMode=gpg_symmetric`, `encryptionKeyRef`, `retentionDays` y `expiresAt`.
 - `verify-backup-drill` ahora bloquea si falta el dump cifrado, su checksum o la ventana auditable de expiración.
+- El escrow externo publica el dump cifrado en S3 con `archiveDestination=aws_s3_encrypted`, metadata (`source_environment`, `retention_days`, `expires_at`, `backup_mode`, `lifecycle_policy_ref`) y tags equivalentes.
+- `verify-backup-escrow` bloquea si el escrow no deriva de un `backup-drill-packet` verde, si el objeto excede `max_escrow_age_hours` o si tags/metadata no reflejan la política de retención.
+- El mismo workflow publica una réplica secundaria del dump cifrado con `replicationMode=escrow_replica_copy`, bucket/region distintos y verificación explícita de checksum y aislamiento frente al escrow primario.
+- `verify-backup-escrow-replica` bloquea si la réplica apunta al mismo target del escrow primario, si no conserva el mismo checksum cifrado o si metadata/tags no reflejan el contrato de lifecycle replica.
+
+## Workflow de escrow restore
+
+Existe un quinto workflow manual en `.github/workflows/patient-flow-os-escrow-restore.yml`.
+
+Objetivo:
+
+- descargar el `backup-escrow-packet.json` y el resto de evidencia del run `Patient Flow OS Backup Drill`,
+- verificar el escrow packet antes de tocar el drill database,
+- descargar el objeto cifrado desde S3-compatible, descifrarlo y restaurarlo en `PATIENT_FLOW_OS_DRILL_DATABASE_URL`,
+- correr smoke/inspect post-restore,
+- emitir `backup-escrow-restore-packet.json` y su verificación como evidencia formal de disaster recovery desde escrow externo.
+
+Secrets requeridos por environment:
+
+- `PATIENT_FLOW_OS_DRILL_DATABASE_URL`
+- `PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_ACCESS_KEY_ID`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_SECRET_ACCESS_KEY`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_REGION`
+
+Inputs principales:
+
+- `source_run_id`: run id del workflow `Patient Flow OS Backup Drill` que publicó el escrow packet.
+- `backup_escrow_packet_path`: ruta dentro del artifact fuente hacia `backup-escrow-packet.json`.
+- `source_artifact_name`: por defecto `patient-flow-os-backup-drill-artifacts`.
+- `target_environment`: `staging` o `production`, usado para resolver el environment protegido `patient-flow-os-*`.
+- `max_rto_seconds`: budget máximo permitido para el restore desde escrow.
+
+Artifacts de escrow restore:
+
+- `patient-flow-os-escrow-restore-artifacts`
+- `source-backup-escrow-packet.json`
+- `source-backup-drill-packet.json`
+- `source-smoke.json`
+- `source-inspect.json`
+- `source-backup-escrow-checklist.json`
+- `source-backup-escrow-verification.json`
+- `escrow-get-object-response.json`
+- `downloaded-patient-flow-os.dump.gpg.sha256`
+- `restored-patient-flow-os.dump.sha256`
+- `restore-smoke.json`
+- `restore-inspect.json`
+- `backup-escrow-restore-manifest.json`
+- `backup-escrow-restore-packet.json`
+- `backup-escrow-restore-packet.md`
+- `backup-escrow-restore-checklist.json`
+- `backup-escrow-restore-checklist.md`
+- `backup-escrow-restore-verification.json`
+
+Notas operativas:
+
+- El workflow usa el mismo environment declarado como `source_environment` al verificar el escrow packet y al construir/verificar el restore packet.
+- El restore corre sobre un drill DB aislado; no muta el `PATIENT_FLOW_OS_DATABASE_URL` primario.
+- El restore exige coincidencia entre checksum del dump cifrado descargado y el checksum declarado en el escrow packet, y entre checksum del dump descifrado y el checksum del dump fuente del backup drill.
+- `verify-backup-escrow-restore` bloquea si cambian los totales canónicos entre source/restore, si el smoke restaurado falla o si el `RTO` medido excede el budget configurado.
+
+## Workflow de escrow replica restore
+
+Existe un sexto workflow manual en `.github/workflows/patient-flow-os-escrow-replica-restore.yml`.
+
+Objetivo:
+
+- descargar el `backup-escrow-replica-packet.json` y el resto de evidencia del run `Patient Flow OS Backup Drill`,
+- verificar el replica packet antes de tocar el drill database,
+- descargar el objeto cifrado desde el bucket secundario, descifrarlo y restaurarlo en `PATIENT_FLOW_OS_DRILL_DATABASE_URL`,
+- correr smoke/inspect post-restore,
+- emitir `backup-escrow-restore-packet.json` y su verificación como evidencia formal de disaster recovery desde la réplica multi-sitio.
+
+Secrets requeridos por environment:
+
+- `PATIENT_FLOW_OS_DRILL_DATABASE_URL`
+- `PATIENT_FLOW_OS_BACKUP_ENCRYPTION_PASSPHRASE`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_ACCESS_KEY_ID`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_SECRET_ACCESS_KEY`
+- `PATIENT_FLOW_OS_BACKUP_ESCROW_AWS_REGION`
+
+Inputs principales:
+
+- `source_run_id`: run id del workflow `Patient Flow OS Backup Drill` que publicó el replica escrow packet.
+- `backup_escrow_replica_packet_path`: ruta dentro del artifact fuente hacia `backup-escrow-replica-packet.json`.
+- `source_artifact_name`: por defecto `patient-flow-os-backup-drill-artifacts`.
+- `target_environment`: `staging` o `production`, usado para resolver el environment protegido `patient-flow-os-*`.
+- `max_rto_seconds`: budget máximo permitido para el restore desde escrow réplica.
+
+Artifacts de escrow replica restore:
+
+- `patient-flow-os-escrow-replica-restore-artifacts`
+- `source-backup-escrow-replica-packet.json`
+- `source-backup-drill-packet.json`
+- `source-smoke.json`
+- `source-inspect.json`
+- `source-backup-escrow-replica-checklist.json`
+- `source-backup-escrow-replica-verification.json`
+- `escrow-replica-get-object-response.json`
+- `downloaded-patient-flow-os.dump.gpg.sha256`
+- `restored-patient-flow-os.dump.sha256`
+- `restore-smoke.json`
+- `restore-inspect.json`
+- `backup-escrow-restore-manifest.json`
+- `backup-escrow-restore-packet.json`
+- `backup-escrow-restore-packet.md`
+- `backup-escrow-restore-checklist.json`
+- `backup-escrow-restore-checklist.md`
+- `backup-escrow-restore-verification.json`
+
+Notas operativas:
+
+- El workflow fuerza `restoreSource=replica` al construir el manifest y valida que el packet fuente realmente sea de réplica.
+- El restore corre sobre un drill DB aislado; no muta el `PATIENT_FLOW_OS_DATABASE_URL` primario.
+- El restore exige coincidencia entre checksum del dump cifrado descargado y el checksum declarado en el replica packet, y entre checksum del dump descifrado y el checksum del dump fuente del backup drill.
+- `verify-backup-escrow-restore` bloquea igual que en el restore primario: si cambian los totales canónicos entre source/restore, si el smoke restaurado falla o si el `RTO` medido excede el budget configurado.
 
 ## Flujo recomendado
 
@@ -301,4 +496,10 @@ Notas operativas:
 11. `verify-rollback-packet` para bloquear un restore cuando el packet no es seguro o incompleto.
 12. `backup-drill-packet` para convertir evidencia de `pg_dump/pg_restore` en un packet con métricas de `RTO/RPO`, cifrado y expiración auditable.
 13. `verify-backup-drill` para bloquear un drill cuando no cumple budgets, cuando el restore no conserva el estado canónico o cuando falta la evidencia de cifrado/retención.
-14. En CI, usar el workflow `Patient Flow OS Cutover` para generar el packet de staging, `Patient Flow OS Promote` para consumir ese packet y ejecutar el replay en `patient-flow-os-production`, `Patient Flow OS Rollback` para rehearsal/restore simétricos y `Patient Flow OS Backup Drill` para validar backup físico real sobre un drill DB aislado.
+14. `backup-escrow-packet` para convertir la publicación del dump cifrado a S3 en un packet de escrow auditable con bucket/key/tags/metadata.
+15. `verify-backup-escrow` para bloquear un escrow cuando el objeto externo no respeta la política declarada o cuando su evidencia local es incompleta.
+16. `backup-escrow-replica-packet` para convertir la publicación al escrow secundario en un packet verificable de réplica multi-sitio.
+17. `verify-backup-escrow-replica` para bloquear una réplica cuando no aporta aislamiento real respecto del bucket primario o cuando no conserva el checksum cifrado.
+18. `backup-escrow-restore-packet` para convertir la restauración desde el objeto cifrado externo, primario o réplica, en un packet verificable de disaster recovery.
+19. `verify-backup-escrow-restore` para bloquear restores desde escrow cuando no preservan checksums, smoke, totales o budget de `RTO`.
+20. En CI, usar el workflow `Patient Flow OS Cutover` para generar el packet de staging, `Patient Flow OS Promote` para consumir ese packet y ejecutar el replay en `patient-flow-os-production`, `Patient Flow OS Rollback` para rehearsal/restore simétricos, `Patient Flow OS Backup Drill` para validar backup físico real, escrow externo primario y réplica multi-sitio sobre un drill DB aislado, `Patient Flow OS Escrow Restore` para probar la recuperación real desde el objeto cifrado externo primario y `Patient Flow OS Escrow Replica Restore` para probar la recuperación desde el bucket secundario.

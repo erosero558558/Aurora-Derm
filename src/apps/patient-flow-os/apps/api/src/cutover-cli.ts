@@ -111,6 +111,78 @@ interface BackupDrillManifest {
   restoreFinishedAt: string;
 }
 
+interface BackupEscrowManifest {
+  generatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  escrowProvider: "aws_s3";
+  archiveDestination: "aws_s3_encrypted";
+  bucket: string;
+  key: string;
+  region: string;
+  lifecyclePolicyRef: string;
+  backupMode: "logical_pg_dump";
+  encryptionMode: "gpg_symmetric";
+  encryptionKeyRef: string;
+  encryptedDumpPath: string;
+  encryptedDumpSha256Path: string;
+  backupDrillPacketPath: string;
+  putObjectResponsePath: string;
+  headObjectPath: string;
+  objectTaggingPath: string;
+  retentionDays: number;
+  expiresAt: string;
+  uploadStartedAt: string;
+  uploadFinishedAt: string;
+}
+
+interface BackupEscrowReplicaManifest {
+  generatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  replicaProvider: "aws_s3";
+  archiveDestination: "aws_s3_encrypted";
+  replicationMode: "escrow_replica_copy";
+  sourceBackupEscrowPacketPath: string;
+  bucket: string;
+  key: string;
+  region: string;
+  lifecyclePolicyRef: string;
+  encryptionMode: "gpg_symmetric";
+  encryptionKeyRef: string;
+  encryptedDumpPath: string;
+  encryptedDumpSha256Path: string;
+  putObjectResponsePath: string;
+  headObjectPath: string;
+  objectTaggingPath: string;
+  retentionDays: number;
+  expiresAt: string;
+  uploadStartedAt: string;
+  uploadFinishedAt: string;
+}
+
+interface BackupEscrowRestoreManifest {
+  generatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  restoreTarget: "drill" | "staging";
+  restoreSource?: "primary" | "replica";
+  escrowProvider: "aws_s3";
+  archiveDestination: "aws_s3_encrypted";
+  backupEscrowPacketPath: string;
+  sourceSmokePath: string;
+  sourceInspectPath: string;
+  downloadedEncryptedDumpPath: string;
+  downloadedEncryptedDumpSha256Path: string;
+  decryptedDumpPath: string;
+  decryptedDumpSha256Path: string;
+  restoreSmokePath: string;
+  restoreInspectPath: string;
+  downloadStartedAt: string;
+  downloadFinishedAt: string;
+  decryptStartedAt: string;
+  decryptFinishedAt: string;
+  restoreStartedAt: string;
+  restoreFinishedAt: string;
+}
+
 export interface SmokeFinding {
   severity: "error" | "warning";
   code: string;
@@ -323,6 +395,198 @@ export interface CutoverBackupDrillVerification {
   checks: BackupDrillVerificationCheck[];
 }
 
+export interface BackupEscrowVerificationCheck {
+  id: string;
+  ok: boolean;
+  message: string;
+}
+
+export interface CutoverBackupEscrowPacket {
+  ok: boolean;
+  generatedAt: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  escrowProvider: "aws_s3";
+  archiveDestination: "aws_s3_encrypted";
+  summary: {
+    sourceBackupDrillReady: boolean;
+    objectUploaded: boolean;
+    metadataAligned: boolean;
+    tagsAligned: boolean;
+    retentionDays: number;
+    expiresAt: string;
+    uploadDurationSeconds: number;
+    objectAgeHours: number;
+    maxObjectAgeHours: number;
+  };
+  escrowObject: {
+    bucket: string;
+    key: string;
+    region: string;
+    versionId: string | null;
+    eTag: string | null;
+    lastModified: string | null;
+    serverSideEncryption: string | null;
+    lifecyclePolicyRef: string;
+  };
+  evidence: {
+    backupEscrowManifestPath: string;
+    backupDrillPacketPath: string;
+    encryptedDumpPath: string;
+    encryptedDumpSha256Path: string;
+    encryptedDumpSha256: string | null;
+    putObjectResponsePath: string;
+    headObjectPath: string;
+    objectTaggingPath: string;
+  };
+  automatedChecks: PromotionChecklistItem[];
+  manualChecks: PromotionChecklistItem[];
+}
+
+export interface CutoverBackupEscrowVerification {
+  ok: boolean;
+  validatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  maxObjectAgeHours: number;
+  checks: BackupEscrowVerificationCheck[];
+}
+
+export interface BackupEscrowReplicaVerificationCheck {
+  id: string;
+  ok: boolean;
+  message: string;
+}
+
+export interface CutoverBackupEscrowReplicaPacket {
+  ok: boolean;
+  generatedAt: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  replicaProvider: "aws_s3";
+  archiveDestination: "aws_s3_encrypted";
+  replicationMode: "escrow_replica_copy";
+  summary: {
+    sourceBackupEscrowReady: boolean;
+    sourceBackupDrillReady: boolean;
+    replicaUploaded: boolean;
+    metadataAligned: boolean;
+    tagsAligned: boolean;
+    encryptedDumpChecksumMatchesSource: boolean;
+    replicaTargetDistinctFromPrimary: boolean;
+    retentionDays: number;
+    expiresAt: string;
+    uploadDurationSeconds: number;
+    objectAgeHours: number;
+    maxObjectAgeHours: number;
+  };
+  sourceEscrowObject: {
+    bucket: string;
+    key: string;
+    region: string;
+    versionId: string | null;
+    eTag: string | null;
+    lastModified: string | null;
+    serverSideEncryption: string | null;
+    lifecyclePolicyRef: string;
+  };
+  replicaEscrowObject: {
+    bucket: string;
+    key: string;
+    region: string;
+    versionId: string | null;
+    eTag: string | null;
+    lastModified: string | null;
+    serverSideEncryption: string | null;
+    lifecyclePolicyRef: string;
+  };
+  evidence: {
+    backupEscrowReplicaManifestPath: string;
+    sourceBackupEscrowPacketPath: string;
+    backupDrillPacketPath: string | null;
+    encryptedDumpPath: string;
+    encryptedDumpSha256Path: string;
+    encryptedDumpSha256: string | null;
+    putObjectResponsePath: string;
+    headObjectPath: string;
+    objectTaggingPath: string;
+  };
+  automatedChecks: PromotionChecklistItem[];
+  manualChecks: PromotionChecklistItem[];
+}
+
+export interface CutoverBackupEscrowReplicaVerification {
+  ok: boolean;
+  validatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  maxObjectAgeHours: number;
+  checks: BackupEscrowReplicaVerificationCheck[];
+}
+
+export interface BackupEscrowRestoreVerificationCheck {
+  id: string;
+  ok: boolean;
+  message: string;
+}
+
+export interface CutoverBackupEscrowRestorePacket {
+  ok: boolean;
+  generatedAt: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  restoreTarget: "drill" | "staging";
+  restoreSource: "primary" | "replica";
+  escrowProvider: "aws_s3";
+  archiveDestination: "aws_s3_encrypted";
+  summary: {
+    sourceEscrowReady: boolean;
+    sourceBackupDrillReady: boolean;
+    sourceSmokeOk: boolean;
+    restoreSmokeOk: boolean;
+    downloadedDumpMatchesEscrowChecksum: boolean;
+    decryptedDumpMatchesSourceDumpChecksum: boolean;
+    totalsMatch: boolean;
+    downloadDurationSeconds: number;
+    decryptDurationSeconds: number;
+    restoreDurationSeconds: number;
+    measuredRtoSeconds: number;
+    maxRtoSeconds: number;
+    sourceTotals: StateSummary["totals"] | null;
+    restoredTotals: StateSummary["totals"] | null;
+  };
+  escrowObject: {
+    bucket: string;
+    key: string;
+    region: string;
+    versionId: string | null;
+    eTag: string | null;
+  };
+  evidence: {
+    backupEscrowRestoreManifestPath: string;
+    backupEscrowPacketPath: string;
+    sourceBackupDrillPacketPath: string | null;
+    sourceSmokePath: string;
+    sourceInspectPath: string;
+    downloadedEncryptedDumpPath: string;
+    downloadedEncryptedDumpSha256Path: string;
+    downloadedEncryptedDumpSha256: string | null;
+    decryptedDumpPath: string;
+    decryptedDumpSha256Path: string;
+    decryptedDumpSha256: string | null;
+    restoreSmokePath: string;
+    restoreInspectPath: string;
+  };
+  automatedChecks: PromotionChecklistItem[];
+  manualChecks: PromotionChecklistItem[];
+}
+
+export interface CutoverBackupEscrowRestoreVerification {
+  ok: boolean;
+  validatedAt: string;
+  sourceEnvironment: "staging" | "production";
+  maxRtoSeconds: number;
+  checks: BackupEscrowRestoreVerificationCheck[];
+}
+
 export interface CutoverCommandResult {
   command: string;
   inputPath?: string;
@@ -357,6 +621,12 @@ export interface CutoverCommandResult {
   rollbackVerification?: CutoverRollbackVerification;
   backupDrillPacket?: CutoverBackupDrillPacket;
   backupDrillVerification?: CutoverBackupDrillVerification;
+  backupEscrowPacket?: CutoverBackupEscrowPacket;
+  backupEscrowVerification?: CutoverBackupEscrowVerification;
+  backupEscrowReplicaPacket?: CutoverBackupEscrowReplicaPacket;
+  backupEscrowReplicaVerification?: CutoverBackupEscrowReplicaVerification;
+  backupEscrowRestorePacket?: CutoverBackupEscrowRestorePacket;
+  backupEscrowRestoreVerification?: CutoverBackupEscrowRestoreVerification;
   state?: BootstrapState;
 }
 
@@ -1339,6 +1609,106 @@ async function readSha256File(filePath: string | null | undefined): Promise<stri
   const content = (await readFile(filePath!, "utf8")).trim();
   const checksum = content.split(/\s+/)[0] ?? "";
   return checksum.length > 0 ? checksum : null;
+}
+
+function stripWrappingQuotes(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  return value.replace(/^"+|"+$/g, "");
+}
+
+function hoursBetween(startedAt: string, finishedAt: string): number {
+  const delta = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
+  if (!Number.isFinite(delta)) {
+    return 0;
+  }
+  return Math.max(0, Math.round((delta / 3600000) * 100) / 100);
+}
+
+function metadataValue(record: unknown, key: string): string | null {
+  if (!record || typeof record !== "object") {
+    return null;
+  }
+  const candidate = (record as Record<string, unknown>)[key];
+  return typeof candidate === "string" && candidate.trim().length > 0 ? candidate : null;
+}
+
+function tagSetToMap(tagSet: unknown): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!Array.isArray(tagSet)) {
+    return map;
+  }
+  for (const entry of tagSet) {
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+    const key = typeof (entry as Record<string, unknown>).Key === "string"
+      ? ((entry as Record<string, unknown>).Key as string)
+      : null;
+    const value = typeof (entry as Record<string, unknown>).Value === "string"
+      ? ((entry as Record<string, unknown>).Value as string)
+      : null;
+    if (key && value) {
+      map.set(key, value);
+    }
+  }
+  return map;
+}
+
+type BackupEscrowSourcePacket = CutoverBackupEscrowPacket | CutoverBackupEscrowReplicaPacket;
+
+function isBackupEscrowReplicaPacket(packet: unknown): packet is CutoverBackupEscrowReplicaPacket {
+  return !!packet && typeof packet === "object" && (packet as { replicationMode?: unknown }).replicationMode === "escrow_replica_copy";
+}
+
+function resolveBackupEscrowRestoreSource(
+  manifest: BackupEscrowRestoreManifest,
+  packet: BackupEscrowSourcePacket | null
+): "primary" | "replica" {
+  if (manifest.restoreSource === "primary" || manifest.restoreSource === "replica") {
+    return manifest.restoreSource;
+  }
+  return isBackupEscrowReplicaPacket(packet) ? "replica" : "primary";
+}
+
+function getBackupEscrowSourceObject(
+  packet: BackupEscrowSourcePacket | null,
+  restoreSource: "primary" | "replica"
+): {
+  bucket: string;
+  key: string;
+  region: string;
+  versionId: string | null;
+  eTag: string | null;
+} {
+  if (restoreSource === "replica" && isBackupEscrowReplicaPacket(packet)) {
+    return {
+      bucket: packet.replicaEscrowObject?.bucket ?? "",
+      key: packet.replicaEscrowObject?.key ?? "",
+      region: packet.replicaEscrowObject?.region ?? "",
+      versionId: packet.replicaEscrowObject?.versionId ?? null,
+      eTag: packet.replicaEscrowObject?.eTag ?? null
+    };
+  }
+
+  if (packet && "escrowObject" in packet) {
+    return {
+      bucket: packet.escrowObject?.bucket ?? "",
+      key: packet.escrowObject?.key ?? "",
+      region: packet.escrowObject?.region ?? "",
+      versionId: packet.escrowObject?.versionId ?? null,
+      eTag: packet.escrowObject?.eTag ?? null
+    };
+  }
+
+  return {
+    bucket: "",
+    key: "",
+    region: "",
+    versionId: null,
+    eTag: null
+  };
 }
 
 function renderPromotionChecklist(items: PromotionChecklistItem[]): string[] {
@@ -2330,6 +2700,1346 @@ async function buildBackupDrillVerification(
   };
 }
 
+async function buildBackupEscrowPacket(params: {
+  manifestPath: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  maxObjectAgeHours: number;
+}): Promise<CutoverBackupEscrowPacket> {
+  const manifest = JSON.parse(await readFile(params.manifestPath, "utf8")) as BackupEscrowManifest;
+  const backupDrillPacket = await readJsonIfExists<CutoverBackupDrillPacket>(manifest.backupDrillPacketPath);
+  const putObjectResponse = await readJsonIfExists<Record<string, unknown>>(manifest.putObjectResponsePath);
+  const headObject = await readJsonIfExists<Record<string, unknown>>(manifest.headObjectPath);
+  const objectTagging = await readJsonIfExists<Record<string, unknown>>(manifest.objectTaggingPath);
+  const encryptedDumpSha256 = await readSha256File(manifest.encryptedDumpSha256Path);
+  const metadata = (headObject?.Metadata ?? null) as unknown;
+  const tags = tagSetToMap(objectTagging?.TagSet ?? null);
+  const eTag = stripWrappingQuotes(
+    typeof headObject?.ETag === "string"
+      ? headObject.ETag
+      : typeof putObjectResponse?.ETag === "string"
+        ? putObjectResponse.ETag
+        : null
+  );
+  const versionId =
+    typeof headObject?.VersionId === "string"
+      ? headObject.VersionId
+      : typeof putObjectResponse?.VersionId === "string"
+        ? putObjectResponse.VersionId
+        : null;
+  const lastModified =
+    typeof headObject?.LastModified === "string"
+      ? headObject.LastModified
+      : manifest.uploadFinishedAt;
+  const serverSideEncryption =
+    typeof headObject?.ServerSideEncryption === "string"
+      ? headObject.ServerSideEncryption
+      : typeof putObjectResponse?.ServerSideEncryption === "string"
+        ? putObjectResponse.ServerSideEncryption
+        : null;
+  const objectUploaded =
+    typeof manifest.bucket === "string" &&
+    manifest.bucket.trim().length > 0 &&
+    typeof manifest.key === "string" &&
+    manifest.key.trim().length > 0 &&
+    typeof eTag === "string" &&
+    eTag.length > 0;
+  const metadataAligned =
+    metadataValue(metadata, "source_environment") === manifest.sourceEnvironment &&
+    metadataValue(metadata, "retention_days") === String(manifest.retentionDays) &&
+    metadataValue(metadata, "expires_at") === manifest.expiresAt &&
+    metadataValue(metadata, "backup_mode") === manifest.backupMode &&
+    metadataValue(metadata, "encryption_mode") === manifest.encryptionMode &&
+    metadataValue(metadata, "lifecycle_policy_ref") === manifest.lifecyclePolicyRef;
+  const tagsAligned =
+    tags.get("source_environment") === manifest.sourceEnvironment &&
+    tags.get("retention_days") === String(manifest.retentionDays) &&
+    tags.get("expires_at") === manifest.expiresAt &&
+    tags.get("backup_mode") === manifest.backupMode &&
+    tags.get("lifecycle_policy_ref") === manifest.lifecyclePolicyRef;
+  const sourceBackupDrillReady = backupDrillPacket?.ok === true;
+  const retentionRecorded =
+    manifest.retentionDays > 0 &&
+    Number.isFinite(Date.parse(manifest.expiresAt)) &&
+    Number.isFinite(Date.parse(manifest.uploadFinishedAt)) &&
+    Date.parse(manifest.expiresAt) > Date.parse(manifest.uploadFinishedAt);
+  const uploadDurationSeconds = secondsBetween(manifest.uploadStartedAt, manifest.uploadFinishedAt);
+  const objectAgeHours = hoursBetween(lastModified ?? manifest.uploadFinishedAt, nowIso());
+
+  const automatedChecks: PromotionChecklistItem[] = [
+    {
+      id: "backup_drill_ready",
+      title: "Source backup drill packet is green before external escrow",
+      status: sourceBackupDrillReady ? "passed" : "failed",
+      message:
+        sourceBackupDrillReady
+          ? "The source backup drill packet was ready before escrow publication."
+          : "Backup drill packet is missing or failed before escrow publication.",
+      evidencePath: manifest.backupDrillPacketPath
+    },
+    {
+      id: "encrypted_dump_checksum_present",
+      title: "Encrypted dump checksum exists before escrow upload",
+      status:
+        typeof encryptedDumpSha256 === "string" && /^[a-f0-9]{64}$/i.test(encryptedDumpSha256)
+          ? "passed"
+          : "failed",
+      message:
+        typeof encryptedDumpSha256 === "string" && /^[a-f0-9]{64}$/i.test(encryptedDumpSha256)
+          ? "Encrypted dump checksum was recorded before escrow upload."
+          : "Encrypted dump checksum is missing or invalid.",
+      evidencePath: manifest.encryptedDumpSha256Path
+    },
+    {
+      id: "escrow_upload_recorded",
+      title: "External escrow upload recorded bucket, key and etag",
+      status: objectUploaded ? "passed" : "failed",
+      message:
+        objectUploaded
+          ? "Escrow upload recorded the external object coordinates."
+          : "Escrow upload is missing bucket, key or etag.",
+      evidencePath: manifest.putObjectResponsePath
+    },
+    {
+      id: "escrow_head_object_present",
+      title: "External escrow head-object evidence exists",
+      status: (await pathExists(manifest.headObjectPath)) ? "passed" : "failed",
+      message:
+        (await pathExists(manifest.headObjectPath))
+          ? "head-object evidence exists for the uploaded escrow object."
+          : "head-object evidence is missing.",
+      evidencePath: manifest.headObjectPath
+    },
+    {
+      id: "escrow_metadata_aligned",
+      title: "External escrow metadata matches the retention contract",
+      status: metadataAligned ? "passed" : "failed",
+      message:
+        metadataAligned
+          ? "Object metadata matches source environment, retention and expiry."
+          : "Object metadata is missing or does not match the retention contract.",
+      evidencePath: manifest.headObjectPath
+    },
+    {
+      id: "escrow_tags_aligned",
+      title: "External escrow tags match the lifecycle contract",
+      status: tagsAligned ? "passed" : "failed",
+      message:
+        tagsAligned
+          ? "Object tags carry the same lifecycle metadata as the manifest."
+          : "Object tags are missing or do not match the lifecycle contract.",
+      evidencePath: manifest.objectTaggingPath
+    },
+    {
+      id: "escrow_retention_recorded",
+      title: "Escrow retention and expiry were recorded",
+      status: retentionRecorded ? "passed" : "failed",
+      message:
+        retentionRecorded
+          ? `Escrow object expires at ${manifest.expiresAt} after ${manifest.retentionDays} retention day(s).`
+          : "Escrow retention days or expiresAt is missing or invalid.",
+      evidencePath: params.manifestPath
+    },
+    {
+      id: "escrow_age_within_budget",
+      title: "Escrow object age stays within the configured budget",
+      status: objectAgeHours <= params.maxObjectAgeHours ? "passed" : "failed",
+      message:
+        objectAgeHours <= params.maxObjectAgeHours
+          ? `Escrow object age ${objectAgeHours}h is within ${params.maxObjectAgeHours}h.`
+          : `Escrow object age ${objectAgeHours}h exceeded ${params.maxObjectAgeHours}h.`,
+      evidencePath: manifest.headObjectPath
+    }
+  ];
+
+  const manualChecks: PromotionChecklistItem[] = [
+    {
+      id: "review_bucket_lifecycle",
+      title: "Review external bucket lifecycle and rotation",
+      status: "pending",
+      message:
+        "Confirm the lifecycle policy reference exists in the target bucket and expires escrow objects on schedule."
+    },
+    {
+      id: "review_escrow_access",
+      title: "Review external escrow credentials and access scope",
+      status: "pending",
+      message:
+        "Confirm the AWS credentials are restricted to the escrow bucket/prefix and follow the expected rotation policy."
+    }
+  ];
+
+  return {
+    ok: automatedChecks.every((check) => check.status === "passed"),
+    generatedAt: nowIso(),
+    label: params.label,
+    sourceEnvironment: params.sourceEnvironment,
+    escrowProvider: manifest.escrowProvider,
+    archiveDestination: manifest.archiveDestination,
+    summary: {
+      sourceBackupDrillReady,
+      objectUploaded,
+      metadataAligned,
+      tagsAligned,
+      retentionDays: manifest.retentionDays,
+      expiresAt: manifest.expiresAt,
+      uploadDurationSeconds,
+      objectAgeHours,
+      maxObjectAgeHours: params.maxObjectAgeHours
+    },
+    escrowObject: {
+      bucket: manifest.bucket,
+      key: manifest.key,
+      region: manifest.region,
+      versionId,
+      eTag,
+      lastModified,
+      serverSideEncryption,
+      lifecyclePolicyRef: manifest.lifecyclePolicyRef
+    },
+    evidence: {
+      backupEscrowManifestPath: params.manifestPath,
+      backupDrillPacketPath: manifest.backupDrillPacketPath,
+      encryptedDumpPath: manifest.encryptedDumpPath,
+      encryptedDumpSha256Path: manifest.encryptedDumpSha256Path,
+      encryptedDumpSha256,
+      putObjectResponsePath: manifest.putObjectResponsePath,
+      headObjectPath: manifest.headObjectPath,
+      objectTaggingPath: manifest.objectTaggingPath
+    },
+    automatedChecks,
+    manualChecks
+  };
+}
+
+async function writeBackupEscrowPacketArtifacts(
+  outputDir: string,
+  packet: CutoverBackupEscrowPacket
+): Promise<{
+  packetJsonPath: string;
+  packetMdPath: string;
+  checklistJsonPath: string;
+  checklistMdPath: string;
+}> {
+  const packetJsonPath = join(outputDir, "backup-escrow-packet.json");
+  const packetMdPath = join(outputDir, "backup-escrow-packet.md");
+  const checklistJsonPath = join(outputDir, "backup-escrow-checklist.json");
+  const checklistMdPath = join(outputDir, "backup-escrow-checklist.md");
+
+  await writeJsonFile(packetJsonPath, packet);
+  await writeJsonFile(checklistJsonPath, {
+    generatedAt: packet.generatedAt,
+    sourceEnvironment: packet.sourceEnvironment,
+    escrowProvider: packet.escrowProvider,
+    archiveDestination: packet.archiveDestination,
+    automatedChecks: packet.automatedChecks,
+    manualChecks: packet.manualChecks
+  });
+
+  const packetMd = [
+    "# Patient Flow OS Backup Escrow Packet",
+    "",
+    `- Label: ${packet.label}`,
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Escrow provider: ${packet.escrowProvider}`,
+    `- Archive destination: ${packet.archiveDestination}`,
+    `- Generated at: ${packet.generatedAt}`,
+    `- Escrow ready: ${packet.ok ? "yes" : "no"}`,
+    `- Upload duration: ${packet.summary.uploadDurationSeconds}s`,
+    `- Object age: ${packet.summary.objectAgeHours}h`,
+    `- Object age budget: ${packet.summary.maxObjectAgeHours}h`,
+    `- Retention days: ${packet.summary.retentionDays}`,
+    `- Expires at: ${packet.summary.expiresAt}`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Escrow Object",
+    "",
+    `- bucket: \`${packet.escrowObject.bucket}\``,
+    `- key: \`${packet.escrowObject.key}\``,
+    `- region: \`${packet.escrowObject.region}\``,
+    `- versionId: \`${packet.escrowObject.versionId || "n/a"}\``,
+    `- eTag: \`${packet.escrowObject.eTag || "n/a"}\``,
+    `- lastModified: \`${packet.escrowObject.lastModified || "n/a"}\``,
+    `- server-side encryption: \`${packet.escrowObject.serverSideEncryption || "n/a"}\``,
+    `- lifecycle policy ref: \`${packet.escrowObject.lifecyclePolicyRef}\``,
+    "",
+    "## Evidence",
+    "",
+    `- backup-escrow-manifest.json: \`${packet.evidence.backupEscrowManifestPath}\``,
+    `- backup-drill-packet.json: \`${packet.evidence.backupDrillPacketPath}\``,
+    `- encrypted dump path: \`${packet.evidence.encryptedDumpPath}\``,
+    `- encrypted dump sha256 path: \`${packet.evidence.encryptedDumpSha256Path}\``,
+    `- encrypted dump sha256: \`${packet.evidence.encryptedDumpSha256 || "n/a"}\``,
+    `- put-object response: \`${packet.evidence.putObjectResponsePath}\``,
+    `- head-object response: \`${packet.evidence.headObjectPath}\``,
+    `- object tagging response: \`${packet.evidence.objectTaggingPath}\``
+  ].join("\n");
+  await writeMarkdownFile(packetMdPath, packetMd);
+
+  const checklistMd = [
+    "# Patient Flow OS Backup Escrow Checklist",
+    "",
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Escrow provider: ${packet.escrowProvider}`,
+    `- Archive destination: ${packet.archiveDestination}`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Manual Review",
+    "",
+    ...renderPromotionChecklist(packet.manualChecks)
+  ].join("\n");
+  await writeMarkdownFile(checklistMdPath, checklistMd);
+
+  return {
+    packetJsonPath,
+    packetMdPath,
+    checklistJsonPath,
+    checklistMdPath
+  };
+}
+
+async function buildBackupEscrowVerification(
+  packet: Partial<CutoverBackupEscrowPacket>,
+  sourceEnvironment: "staging" | "production",
+  maxObjectAgeHours: number
+): Promise<CutoverBackupEscrowVerification> {
+  const checks: BackupEscrowVerificationCheck[] = [];
+  const pushCheck = (id: string, ok: boolean, message: string): void => {
+    checks.push({ id, ok, message });
+  };
+
+  pushCheck("packet.ok", packet.ok === true, "Backup escrow packet must already be marked as ready.");
+  pushCheck(
+    "packet.source_environment",
+    packet.sourceEnvironment === sourceEnvironment,
+    "Backup escrow packet must match the expected source environment."
+  );
+  pushCheck(
+    "packet.escrow_provider",
+    packet.escrowProvider === "aws_s3",
+    "Backup escrow packet must declare aws_s3 as the provider."
+  );
+  pushCheck(
+    "packet.archive_destination",
+    packet.archiveDestination === "aws_s3_encrypted",
+    "Backup escrow packet must declare aws_s3_encrypted as archive destination."
+  );
+  pushCheck(
+    "packet.summary.source_backup_drill_ready",
+    packet.summary?.sourceBackupDrillReady === true,
+    "Source backup drill packet must be green before escrow verification."
+  );
+  pushCheck(
+    "packet.summary.object_uploaded",
+    packet.summary?.objectUploaded === true,
+    "Escrow packet must confirm the external object upload."
+  );
+  pushCheck(
+    "packet.summary.metadata_aligned",
+    packet.summary?.metadataAligned === true,
+    "Escrow packet metadata must match the retention contract."
+  );
+  pushCheck(
+    "packet.summary.tags_aligned",
+    packet.summary?.tagsAligned === true,
+    "Escrow packet tags must match the lifecycle contract."
+  );
+  pushCheck(
+    "packet.summary.retention_days_positive",
+    typeof packet.summary?.retentionDays === "number" && packet.summary.retentionDays > 0,
+    "Escrow packet must include a positive retention window."
+  );
+  pushCheck(
+    "packet.summary.expires_at_valid",
+    typeof packet.summary?.expiresAt === "string" &&
+      Number.isFinite(Date.parse(packet.summary.expiresAt)) &&
+      Date.parse(packet.summary.expiresAt) > Date.parse(packet.generatedAt ?? ""),
+    "Escrow packet must include a valid expiresAt after packet generation."
+  );
+  pushCheck(
+    "packet.summary.object_age_within_budget",
+    typeof packet.summary?.objectAgeHours === "number" && packet.summary.objectAgeHours <= maxObjectAgeHours,
+    "Escrow object age must stay within the configured budget."
+  );
+  pushCheck(
+    "packet.escrow_object.bucket_present",
+    typeof packet.escrowObject?.bucket === "string" && packet.escrowObject.bucket.trim().length > 0,
+    "Escrow packet must include the external bucket name."
+  );
+  pushCheck(
+    "packet.escrow_object.key_present",
+    typeof packet.escrowObject?.key === "string" && packet.escrowObject.key.trim().length > 0,
+    "Escrow packet must include the external object key."
+  );
+  pushCheck(
+    "packet.escrow_object.etag_present",
+    typeof packet.escrowObject?.eTag === "string" && packet.escrowObject.eTag.trim().length > 0,
+    "Escrow packet must include a non-empty object etag."
+  );
+  pushCheck(
+    "packet.evidence.manifest_exists",
+    await pathExists(packet.evidence?.backupEscrowManifestPath),
+    "Backup escrow manifest must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.backup_drill_packet_exists",
+    await pathExists(packet.evidence?.backupDrillPacketPath),
+    "Source backup drill packet artifact must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.head_object_exists",
+    await pathExists(packet.evidence?.headObjectPath),
+    "head-object evidence must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.object_tagging_exists",
+    await pathExists(packet.evidence?.objectTaggingPath),
+    "object tagging evidence must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.encrypted_dump_sha256_present",
+    typeof packet.evidence?.encryptedDumpSha256 === "string" &&
+      /^[a-f0-9]{64}$/i.test(packet.evidence.encryptedDumpSha256),
+    "Escrow packet must include a valid checksum for the encrypted dump."
+  );
+
+  return {
+    ok: checks.every((check) => check.ok),
+    validatedAt: nowIso(),
+    sourceEnvironment,
+    maxObjectAgeHours,
+    checks
+  };
+}
+
+async function buildBackupEscrowReplicaPacket(params: {
+  manifestPath: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  maxObjectAgeHours: number;
+}): Promise<CutoverBackupEscrowReplicaPacket> {
+  const manifest = JSON.parse(await readFile(params.manifestPath, "utf8")) as BackupEscrowReplicaManifest;
+  const sourceBackupEscrowPacket = await readJsonIfExists<CutoverBackupEscrowPacket>(
+    manifest.sourceBackupEscrowPacketPath
+  );
+  const sourceBackupDrillPacket = sourceBackupEscrowPacket?.evidence?.backupDrillPacketPath
+    ? await readJsonIfExists<CutoverBackupDrillPacket>(sourceBackupEscrowPacket.evidence.backupDrillPacketPath)
+    : null;
+  const putObjectResponse = await readJsonIfExists<Record<string, unknown>>(manifest.putObjectResponsePath);
+  const headObject = await readJsonIfExists<Record<string, unknown>>(manifest.headObjectPath);
+  const objectTagging = await readJsonIfExists<Record<string, unknown>>(manifest.objectTaggingPath);
+  const encryptedDumpSha256 = await readSha256File(manifest.encryptedDumpSha256Path);
+  const metadata = (headObject?.Metadata ?? null) as unknown;
+  const tags = tagSetToMap(objectTagging?.TagSet ?? null);
+  const eTag = stripWrappingQuotes(
+    typeof headObject?.ETag === "string"
+      ? headObject.ETag
+      : typeof putObjectResponse?.ETag === "string"
+        ? putObjectResponse.ETag
+        : null
+  );
+  const versionId =
+    typeof headObject?.VersionId === "string"
+      ? headObject.VersionId
+      : typeof putObjectResponse?.VersionId === "string"
+        ? putObjectResponse.VersionId
+        : null;
+  const lastModified =
+    typeof headObject?.LastModified === "string"
+      ? headObject.LastModified
+      : manifest.uploadFinishedAt;
+  const serverSideEncryption =
+    typeof headObject?.ServerSideEncryption === "string"
+      ? headObject.ServerSideEncryption
+      : typeof putObjectResponse?.ServerSideEncryption === "string"
+        ? putObjectResponse.ServerSideEncryption
+        : null;
+  const replicaUploaded =
+    typeof manifest.bucket === "string" &&
+    manifest.bucket.trim().length > 0 &&
+    typeof manifest.key === "string" &&
+    manifest.key.trim().length > 0 &&
+    typeof eTag === "string" &&
+    eTag.length > 0;
+  const metadataAligned =
+    metadataValue(metadata, "source_environment") === manifest.sourceEnvironment &&
+    metadataValue(metadata, "retention_days") === String(manifest.retentionDays) &&
+    metadataValue(metadata, "expires_at") === manifest.expiresAt &&
+    metadataValue(metadata, "backup_mode") === "logical_pg_dump" &&
+    metadataValue(metadata, "encryption_mode") === manifest.encryptionMode &&
+    metadataValue(metadata, "replication_mode") === manifest.replicationMode &&
+    metadataValue(metadata, "lifecycle_policy_ref") === manifest.lifecyclePolicyRef;
+  const tagsAligned =
+    tags.get("source_environment") === manifest.sourceEnvironment &&
+    tags.get("retention_days") === String(manifest.retentionDays) &&
+    tags.get("expires_at") === manifest.expiresAt &&
+    tags.get("backup_mode") === "logical_pg_dump" &&
+    tags.get("replication_mode") === manifest.replicationMode &&
+    tags.get("lifecycle_policy_ref") === manifest.lifecyclePolicyRef;
+  const sourceBackupEscrowReady = sourceBackupEscrowPacket?.ok === true;
+  const sourceBackupDrillReady =
+    sourceBackupEscrowPacket?.summary?.sourceBackupDrillReady === true || sourceBackupDrillPacket?.ok === true;
+  const encryptedDumpChecksumMatchesSource =
+    typeof encryptedDumpSha256 === "string" &&
+    typeof sourceBackupEscrowPacket?.evidence?.encryptedDumpSha256 === "string" &&
+    encryptedDumpSha256 === sourceBackupEscrowPacket.evidence.encryptedDumpSha256;
+  const replicaTargetDistinctFromPrimary =
+    typeof sourceBackupEscrowPacket?.escrowObject?.bucket === "string" &&
+    typeof sourceBackupEscrowPacket?.escrowObject?.key === "string" &&
+    typeof sourceBackupEscrowPacket?.escrowObject?.region === "string"
+      ? sourceBackupEscrowPacket.escrowObject.bucket !== manifest.bucket ||
+        sourceBackupEscrowPacket.escrowObject.key !== manifest.key ||
+        sourceBackupEscrowPacket.escrowObject.region !== manifest.region
+      : false;
+  const uploadDurationSeconds = secondsBetween(manifest.uploadStartedAt, manifest.uploadFinishedAt);
+  const objectAgeHours = hoursBetween(lastModified ?? manifest.uploadFinishedAt, nowIso());
+
+  const automatedChecks: PromotionChecklistItem[] = [
+    {
+      id: "source_backup_escrow_ready",
+      title: "Primary backup escrow packet is green before replica publication",
+      status: sourceBackupEscrowReady ? "passed" : "failed",
+      message:
+        sourceBackupEscrowReady
+          ? "The primary backup escrow packet was ready before replica publication."
+          : "Primary backup escrow packet is missing or failed before replica publication.",
+      evidencePath: manifest.sourceBackupEscrowPacketPath
+    },
+    {
+      id: "source_backup_drill_ready",
+      title: "Source backup drill remains green behind the replica",
+      status: sourceBackupDrillReady ? "passed" : "failed",
+      message:
+        sourceBackupDrillReady
+          ? "The replica still points to a green backup drill packet."
+          : "Replica evidence lost the source backup drill green state.",
+      evidencePath: sourceBackupEscrowPacket?.evidence?.backupDrillPacketPath
+    },
+    {
+      id: "replica_checksum_matches_source",
+      title: "Replica escrow uses the same encrypted dump checksum as the primary escrow",
+      status: encryptedDumpChecksumMatchesSource ? "passed" : "failed",
+      message:
+        encryptedDumpChecksumMatchesSource
+          ? "Replica escrow points to the same encrypted dump checksum as the primary escrow."
+          : "Replica escrow checksum differs from the primary escrow dump checksum.",
+      evidencePath: manifest.encryptedDumpSha256Path
+    },
+    {
+      id: "replica_upload_recorded",
+      title: "Replica escrow upload recorded bucket, key and etag",
+      status: replicaUploaded ? "passed" : "failed",
+      message:
+        replicaUploaded
+          ? "Replica escrow upload recorded the replica object coordinates."
+          : "Replica escrow upload is missing bucket, key or etag.",
+      evidencePath: manifest.putObjectResponsePath
+    },
+    {
+      id: "replica_target_distinct",
+      title: "Replica escrow target differs from the primary escrow target",
+      status: replicaTargetDistinctFromPrimary ? "passed" : "failed",
+      message:
+        replicaTargetDistinctFromPrimary
+          ? "Replica escrow target is distinct from the primary bucket/key/region."
+          : "Replica escrow target matches the primary target and does not provide isolation.",
+      evidencePath: params.manifestPath
+    },
+    {
+      id: "replica_head_object_present",
+      title: "Replica escrow head-object evidence exists",
+      status: (await pathExists(manifest.headObjectPath)) ? "passed" : "failed",
+      message:
+        (await pathExists(manifest.headObjectPath))
+          ? "head-object evidence exists for the replica escrow object."
+          : "head-object evidence is missing for the replica escrow object.",
+      evidencePath: manifest.headObjectPath
+    },
+    {
+      id: "replica_metadata_aligned",
+      title: "Replica escrow metadata matches the lifecycle contract",
+      status: metadataAligned ? "passed" : "failed",
+      message:
+        metadataAligned
+          ? "Replica object metadata matches source environment, retention, expiry and replication mode."
+          : "Replica object metadata is missing or does not match the lifecycle contract.",
+      evidencePath: manifest.headObjectPath
+    },
+    {
+      id: "replica_tags_aligned",
+      title: "Replica escrow tags match the lifecycle contract",
+      status: tagsAligned ? "passed" : "failed",
+      message:
+        tagsAligned
+          ? "Replica object tags carry the same lifecycle metadata as the manifest."
+          : "Replica object tags are missing or do not match the lifecycle contract.",
+      evidencePath: manifest.objectTaggingPath
+    },
+    {
+      id: "replica_age_within_budget",
+      title: "Replica escrow object age stays within the configured budget",
+      status: objectAgeHours <= params.maxObjectAgeHours ? "passed" : "failed",
+      message:
+        objectAgeHours <= params.maxObjectAgeHours
+          ? `Replica escrow object age ${objectAgeHours}h is within ${params.maxObjectAgeHours}h.`
+          : `Replica escrow object age ${objectAgeHours}h exceeded ${params.maxObjectAgeHours}h.`,
+      evidencePath: manifest.headObjectPath
+    }
+  ];
+
+  const manualChecks: PromotionChecklistItem[] = [
+    {
+      id: "review_replica_region_isolation",
+      title: "Review replica region and failure-domain isolation",
+      status: "pending",
+      message:
+        "Confirm the replica bucket/region represents an isolated failure domain relative to the primary escrow."
+    },
+    {
+      id: "review_replica_access_scope",
+      title: "Review replica escrow credentials and lifecycle policy",
+      status: "pending",
+      message:
+        "Confirm replica IAM scope, lifecycle retention and object lock policy are aligned with the DR target."
+    }
+  ];
+
+  return {
+    ok: automatedChecks.every((check) => check.status === "passed"),
+    generatedAt: nowIso(),
+    label: params.label,
+    sourceEnvironment: params.sourceEnvironment,
+    replicaProvider: manifest.replicaProvider,
+    archiveDestination: manifest.archiveDestination,
+    replicationMode: manifest.replicationMode,
+    summary: {
+      sourceBackupEscrowReady,
+      sourceBackupDrillReady,
+      replicaUploaded,
+      metadataAligned,
+      tagsAligned,
+      encryptedDumpChecksumMatchesSource,
+      replicaTargetDistinctFromPrimary,
+      retentionDays: manifest.retentionDays,
+      expiresAt: manifest.expiresAt,
+      uploadDurationSeconds,
+      objectAgeHours,
+      maxObjectAgeHours: params.maxObjectAgeHours
+    },
+    sourceEscrowObject: {
+      bucket: sourceBackupEscrowPacket?.escrowObject?.bucket ?? "",
+      key: sourceBackupEscrowPacket?.escrowObject?.key ?? "",
+      region: sourceBackupEscrowPacket?.escrowObject?.region ?? "",
+      versionId: sourceBackupEscrowPacket?.escrowObject?.versionId ?? null,
+      eTag: sourceBackupEscrowPacket?.escrowObject?.eTag ?? null,
+      lastModified: sourceBackupEscrowPacket?.escrowObject?.lastModified ?? null,
+      serverSideEncryption: sourceBackupEscrowPacket?.escrowObject?.serverSideEncryption ?? null,
+      lifecyclePolicyRef: sourceBackupEscrowPacket?.escrowObject?.lifecyclePolicyRef ?? ""
+    },
+    replicaEscrowObject: {
+      bucket: manifest.bucket,
+      key: manifest.key,
+      region: manifest.region,
+      versionId,
+      eTag,
+      lastModified,
+      serverSideEncryption,
+      lifecyclePolicyRef: manifest.lifecyclePolicyRef
+    },
+    evidence: {
+      backupEscrowReplicaManifestPath: params.manifestPath,
+      sourceBackupEscrowPacketPath: manifest.sourceBackupEscrowPacketPath,
+      backupDrillPacketPath: sourceBackupEscrowPacket?.evidence?.backupDrillPacketPath ?? null,
+      encryptedDumpPath: manifest.encryptedDumpPath,
+      encryptedDumpSha256Path: manifest.encryptedDumpSha256Path,
+      encryptedDumpSha256,
+      putObjectResponsePath: manifest.putObjectResponsePath,
+      headObjectPath: manifest.headObjectPath,
+      objectTaggingPath: manifest.objectTaggingPath
+    },
+    automatedChecks,
+    manualChecks
+  };
+}
+
+async function writeBackupEscrowReplicaPacketArtifacts(
+  outputDir: string,
+  packet: CutoverBackupEscrowReplicaPacket
+): Promise<{
+  packetJsonPath: string;
+  packetMdPath: string;
+  checklistJsonPath: string;
+  checklistMdPath: string;
+}> {
+  const packetJsonPath = join(outputDir, "backup-escrow-replica-packet.json");
+  const packetMdPath = join(outputDir, "backup-escrow-replica-packet.md");
+  const checklistJsonPath = join(outputDir, "backup-escrow-replica-checklist.json");
+  const checklistMdPath = join(outputDir, "backup-escrow-replica-checklist.md");
+
+  await writeJsonFile(packetJsonPath, packet);
+  await writeJsonFile(checklistJsonPath, {
+    generatedAt: packet.generatedAt,
+    sourceEnvironment: packet.sourceEnvironment,
+    replicaProvider: packet.replicaProvider,
+    archiveDestination: packet.archiveDestination,
+    replicationMode: packet.replicationMode,
+    automatedChecks: packet.automatedChecks,
+    manualChecks: packet.manualChecks
+  });
+
+  const packetMd = [
+    "# Patient Flow OS Backup Escrow Replica Packet",
+    "",
+    `- Label: ${packet.label}`,
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Replica provider: ${packet.replicaProvider}`,
+    `- Archive destination: ${packet.archiveDestination}`,
+    `- Replication mode: ${packet.replicationMode}`,
+    `- Generated at: ${packet.generatedAt}`,
+    `- Replica ready: ${packet.ok ? "yes" : "no"}`,
+    `- Upload duration: ${packet.summary.uploadDurationSeconds}s`,
+    `- Object age: ${packet.summary.objectAgeHours}h`,
+    `- Object age budget: ${packet.summary.maxObjectAgeHours}h`,
+    `- Retention days: ${packet.summary.retentionDays}`,
+    `- Expires at: ${packet.summary.expiresAt}`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Primary Escrow Object",
+    "",
+    `- bucket: \`${packet.sourceEscrowObject.bucket}\``,
+    `- key: \`${packet.sourceEscrowObject.key}\``,
+    `- region: \`${packet.sourceEscrowObject.region}\``,
+    `- versionId: \`${packet.sourceEscrowObject.versionId || "n/a"}\``,
+    `- eTag: \`${packet.sourceEscrowObject.eTag || "n/a"}\``,
+    `- lastModified: \`${packet.sourceEscrowObject.lastModified || "n/a"}\``,
+    `- server-side encryption: \`${packet.sourceEscrowObject.serverSideEncryption || "n/a"}\``,
+    `- lifecycle policy ref: \`${packet.sourceEscrowObject.lifecyclePolicyRef || "n/a"}\``,
+    "",
+    "## Replica Escrow Object",
+    "",
+    `- bucket: \`${packet.replicaEscrowObject.bucket}\``,
+    `- key: \`${packet.replicaEscrowObject.key}\``,
+    `- region: \`${packet.replicaEscrowObject.region}\``,
+    `- versionId: \`${packet.replicaEscrowObject.versionId || "n/a"}\``,
+    `- eTag: \`${packet.replicaEscrowObject.eTag || "n/a"}\``,
+    `- lastModified: \`${packet.replicaEscrowObject.lastModified || "n/a"}\``,
+    `- server-side encryption: \`${packet.replicaEscrowObject.serverSideEncryption || "n/a"}\``,
+    `- lifecycle policy ref: \`${packet.replicaEscrowObject.lifecyclePolicyRef}\``,
+    "",
+    "## Evidence",
+    "",
+    `- backup-escrow-replica-manifest.json: \`${packet.evidence.backupEscrowReplicaManifestPath}\``,
+    `- source backup-escrow-packet.json: \`${packet.evidence.sourceBackupEscrowPacketPath}\``,
+    `- backup-drill-packet.json: \`${packet.evidence.backupDrillPacketPath || "n/a"}\``,
+    `- encrypted dump path: \`${packet.evidence.encryptedDumpPath}\``,
+    `- encrypted dump sha256 path: \`${packet.evidence.encryptedDumpSha256Path}\``,
+    `- encrypted dump sha256: \`${packet.evidence.encryptedDumpSha256 || "n/a"}\``,
+    `- put-object response: \`${packet.evidence.putObjectResponsePath}\``,
+    `- head-object response: \`${packet.evidence.headObjectPath}\``,
+    `- object tagging response: \`${packet.evidence.objectTaggingPath}\``
+  ].join("\n");
+  await writeMarkdownFile(packetMdPath, packetMd);
+
+  const checklistMd = [
+    "# Patient Flow OS Backup Escrow Replica Checklist",
+    "",
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Replica provider: ${packet.replicaProvider}`,
+    `- Archive destination: ${packet.archiveDestination}`,
+    `- Replication mode: ${packet.replicationMode}`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Manual Review",
+    "",
+    ...renderPromotionChecklist(packet.manualChecks)
+  ].join("\n");
+  await writeMarkdownFile(checklistMdPath, checklistMd);
+
+  return {
+    packetJsonPath,
+    packetMdPath,
+    checklistJsonPath,
+    checklistMdPath
+  };
+}
+
+async function buildBackupEscrowReplicaVerification(
+  packet: Partial<CutoverBackupEscrowReplicaPacket>,
+  sourceEnvironment: "staging" | "production",
+  maxObjectAgeHours: number
+): Promise<CutoverBackupEscrowReplicaVerification> {
+  const checks: BackupEscrowReplicaVerificationCheck[] = [];
+  const pushCheck = (id: string, ok: boolean, message: string): void => {
+    checks.push({ id, ok, message });
+  };
+
+  pushCheck("packet.ok", packet.ok === true, "Backup escrow replica packet must already be marked as ready.");
+  pushCheck(
+    "packet.source_environment",
+    packet.sourceEnvironment === sourceEnvironment,
+    "Backup escrow replica packet must match the expected source environment."
+  );
+  pushCheck(
+    "packet.replica_provider",
+    packet.replicaProvider === "aws_s3",
+    "Backup escrow replica packet must declare aws_s3 as the provider."
+  );
+  pushCheck(
+    "packet.archive_destination",
+    packet.archiveDestination === "aws_s3_encrypted",
+    "Backup escrow replica packet must declare aws_s3_encrypted as archive destination."
+  );
+  pushCheck(
+    "packet.replication_mode",
+    packet.replicationMode === "escrow_replica_copy",
+    "Backup escrow replica packet must declare escrow_replica_copy as replication mode."
+  );
+  pushCheck(
+    "packet.summary.source_backup_escrow_ready",
+    packet.summary?.sourceBackupEscrowReady === true,
+    "Primary backup escrow packet must be green before replica verification."
+  );
+  pushCheck(
+    "packet.summary.source_backup_drill_ready",
+    packet.summary?.sourceBackupDrillReady === true,
+    "Replica packet must still trace back to a green backup drill packet."
+  );
+  pushCheck(
+    "packet.summary.replica_uploaded",
+    packet.summary?.replicaUploaded === true,
+    "Replica packet must confirm the secondary object upload."
+  );
+  pushCheck(
+    "packet.summary.metadata_aligned",
+    packet.summary?.metadataAligned === true,
+    "Replica packet metadata must match the lifecycle contract."
+  );
+  pushCheck(
+    "packet.summary.tags_aligned",
+    packet.summary?.tagsAligned === true,
+    "Replica packet tags must match the lifecycle contract."
+  );
+  pushCheck(
+    "packet.summary.encrypted_dump_checksum_matches_source",
+    packet.summary?.encryptedDumpChecksumMatchesSource === true,
+    "Replica packet checksum must match the primary escrow checksum."
+  );
+  pushCheck(
+    "packet.summary.replica_target_distinct",
+    packet.summary?.replicaTargetDistinctFromPrimary === true,
+    "Replica packet target must differ from the primary escrow target."
+  );
+  pushCheck(
+    "packet.summary.retention_days_positive",
+    typeof packet.summary?.retentionDays === "number" && packet.summary.retentionDays > 0,
+    "Replica packet must include a positive retention window."
+  );
+  pushCheck(
+    "packet.summary.expires_at_valid",
+    typeof packet.summary?.expiresAt === "string" &&
+      Number.isFinite(Date.parse(packet.summary.expiresAt)) &&
+      Date.parse(packet.summary.expiresAt) > Date.parse(packet.generatedAt ?? ""),
+    "Replica packet must include a valid expiresAt after packet generation."
+  );
+  pushCheck(
+    "packet.summary.object_age_within_budget",
+    typeof packet.summary?.objectAgeHours === "number" && packet.summary.objectAgeHours <= maxObjectAgeHours,
+    "Replica escrow object age must stay within the configured budget."
+  );
+  pushCheck(
+    "packet.source_escrow_object.bucket_present",
+    typeof packet.sourceEscrowObject?.bucket === "string" && packet.sourceEscrowObject.bucket.trim().length > 0,
+    "Replica packet must include the primary escrow bucket."
+  );
+  pushCheck(
+    "packet.replica_escrow_object.bucket_present",
+    typeof packet.replicaEscrowObject?.bucket === "string" && packet.replicaEscrowObject.bucket.trim().length > 0,
+    "Replica packet must include the replica bucket."
+  );
+  pushCheck(
+    "packet.replica_escrow_object.key_present",
+    typeof packet.replicaEscrowObject?.key === "string" && packet.replicaEscrowObject.key.trim().length > 0,
+    "Replica packet must include the replica object key."
+  );
+  pushCheck(
+    "packet.replica_escrow_object.etag_present",
+    typeof packet.replicaEscrowObject?.eTag === "string" && packet.replicaEscrowObject.eTag.trim().length > 0,
+    "Replica packet must include a non-empty replica object etag."
+  );
+  pushCheck(
+    "packet.evidence.manifest_exists",
+    await pathExists(packet.evidence?.backupEscrowReplicaManifestPath),
+    "Backup escrow replica manifest must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.source_backup_escrow_packet_exists",
+    await pathExists(packet.evidence?.sourceBackupEscrowPacketPath),
+    "Source backup escrow packet artifact must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.backup_drill_packet_exists",
+    await pathExists(packet.evidence?.backupDrillPacketPath),
+    "Source backup drill packet artifact must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.head_object_exists",
+    await pathExists(packet.evidence?.headObjectPath),
+    "Replica head-object evidence must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.object_tagging_exists",
+    await pathExists(packet.evidence?.objectTaggingPath),
+    "Replica object tagging evidence must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.encrypted_dump_sha256_present",
+    typeof packet.evidence?.encryptedDumpSha256 === "string" &&
+      /^[a-f0-9]{64}$/i.test(packet.evidence.encryptedDumpSha256),
+    "Replica packet must include a valid checksum for the encrypted dump."
+  );
+
+  return {
+    ok: checks.every((check) => check.ok),
+    validatedAt: nowIso(),
+    sourceEnvironment,
+    maxObjectAgeHours,
+    checks
+  };
+}
+
+async function buildBackupEscrowRestorePacket(params: {
+  manifestPath: string;
+  label: string;
+  sourceEnvironment: "staging" | "production";
+  maxRtoSeconds: number;
+}): Promise<CutoverBackupEscrowRestorePacket> {
+  const manifest = JSON.parse(await readFile(params.manifestPath, "utf8")) as BackupEscrowRestoreManifest;
+  const backupEscrowPacket = await readJsonIfExists<BackupEscrowSourcePacket>(manifest.backupEscrowPacketPath);
+  const detectedRestoreSource = isBackupEscrowReplicaPacket(backupEscrowPacket) ? "replica" : "primary";
+  const restoreSource = resolveBackupEscrowRestoreSource(manifest, backupEscrowPacket);
+  const restoreSourceMatchesPacket = backupEscrowPacket !== null && restoreSource === detectedRestoreSource;
+  const sourceBackupDrillPacketPath = backupEscrowPacket?.evidence?.backupDrillPacketPath ?? null;
+  const sourceBackupDrillPacket = sourceBackupDrillPacketPath
+    ? await readJsonIfExists<CutoverBackupDrillPacket>(sourceBackupDrillPacketPath)
+    : null;
+  const sourceSmoke = await readJsonIfExists<CutoverCommandResult>(manifest.sourceSmokePath);
+  const sourceInspect = await readJsonIfExists<CutoverCommandResult>(manifest.sourceInspectPath);
+  const restoreSmoke = await readJsonIfExists<CutoverCommandResult>(manifest.restoreSmokePath);
+  const restoreInspect = await readJsonIfExists<CutoverCommandResult>(manifest.restoreInspectPath);
+  const downloadedEncryptedDumpSha256 = await readSha256File(manifest.downloadedEncryptedDumpSha256Path);
+  const decryptedDumpSha256 = await readSha256File(manifest.decryptedDumpSha256Path);
+  const sourceEscrowReady = backupEscrowPacket?.ok === true;
+  const sourceBackupDrillReady =
+    backupEscrowPacket?.summary?.sourceBackupDrillReady === true || sourceBackupDrillPacket?.ok === true;
+  const sourceSmokeOk = sourceSmoke?.smoke?.ok === true;
+  const restoreSmokeOk = restoreSmoke?.smoke?.ok === true;
+  const downloadedDumpMatchesEscrowChecksum =
+    typeof downloadedEncryptedDumpSha256 === "string" &&
+    typeof backupEscrowPacket?.evidence?.encryptedDumpSha256 === "string" &&
+    downloadedEncryptedDumpSha256 === backupEscrowPacket.evidence.encryptedDumpSha256;
+  const decryptedDumpMatchesSourceDumpChecksum =
+    typeof decryptedDumpSha256 === "string" &&
+    typeof sourceBackupDrillPacket?.evidence?.dumpSha256 === "string" &&
+    decryptedDumpSha256 === sourceBackupDrillPacket.evidence.dumpSha256;
+  const sourceTotals = sourceInspect?.summary?.totals ?? null;
+  const restoredTotals = restoreInspect?.summary?.totals ?? null;
+  const totalsMatch =
+    sourceTotals !== null &&
+    restoredTotals !== null &&
+    JSON.stringify(sourceTotals) === JSON.stringify(restoredTotals);
+  const downloadDurationSeconds = secondsBetween(manifest.downloadStartedAt, manifest.downloadFinishedAt);
+  const decryptDurationSeconds = secondsBetween(manifest.decryptStartedAt, manifest.decryptFinishedAt);
+  const restoreDurationSeconds = secondsBetween(manifest.restoreStartedAt, manifest.restoreFinishedAt);
+  const measuredRtoSeconds = restoreDurationSeconds;
+  const sourcePacketLabel =
+    restoreSource === "replica" ? "backup escrow replica packet" : "backup escrow packet";
+  const sourceEscrowObject = getBackupEscrowSourceObject(backupEscrowPacket, detectedRestoreSource);
+
+  const automatedChecks: PromotionChecklistItem[] = [
+    {
+      id: "restore_source_matches_packet",
+      title: "Restore source declaration matches the escrow packet type",
+      status: restoreSourceMatchesPacket ? "passed" : "failed",
+      message:
+        restoreSourceMatchesPacket
+          ? `Restore source \`${restoreSource}\` matches the selected escrow packet.`
+          : `Restore source \`${restoreSource}\` does not match the selected escrow packet type.`,
+      evidencePath: manifest.backupEscrowPacketPath
+    },
+    {
+      id: "source_escrow_ready",
+      title: `Source ${sourcePacketLabel} is green before restore`,
+      status: sourceEscrowReady ? "passed" : "failed",
+      message:
+        sourceEscrowReady
+          ? `The source ${sourcePacketLabel} was ready before restore.`
+          : `Source ${sourcePacketLabel} is missing or failed before restore.`,
+      evidencePath: manifest.backupEscrowPacketPath
+    },
+    {
+      id: "source_backup_drill_ready",
+      title: "Source backup drill remains green behind the escrow restore source",
+      status: sourceBackupDrillReady ? "passed" : "failed",
+      message:
+        sourceBackupDrillReady
+          ? "The restore source still traces back to a green backup drill packet."
+          : "Restore source no longer traces back to a green backup drill packet.",
+      evidencePath: sourceBackupDrillPacketPath ?? undefined
+    },
+    {
+      id: "source_smoke_ok",
+      title: "Source smoke evidence is green before escrow restore",
+      status: sourceSmokeOk ? "passed" : "failed",
+      message:
+        sourceSmokeOk
+          ? "The source state was healthy when the escrow artifact was created."
+          : "Source smoke evidence is missing or failed.",
+      evidencePath: manifest.sourceSmokePath
+    },
+    {
+      id: "downloaded_dump_matches_escrow_checksum",
+      title: "Downloaded encrypted dump matches the selected escrow checksum",
+      status: downloadedDumpMatchesEscrowChecksum ? "passed" : "failed",
+      message:
+        downloadedDumpMatchesEscrowChecksum
+          ? "The downloaded encrypted dump matches the checksum stored in the selected escrow source packet."
+          : "Downloaded encrypted dump checksum does not match the selected escrow source packet.",
+      evidencePath: manifest.downloadedEncryptedDumpSha256Path
+    },
+    {
+      id: "decrypted_dump_matches_source_dump_checksum",
+      title: "Decrypted dump matches the original source dump checksum",
+      status: decryptedDumpMatchesSourceDumpChecksum ? "passed" : "failed",
+      message:
+        decryptedDumpMatchesSourceDumpChecksum
+          ? "The decrypted dump matches the original dump checksum captured during backup drill."
+          : "Decrypted dump checksum does not match the original backup drill dump checksum.",
+      evidencePath: manifest.decryptedDumpSha256Path
+    },
+    {
+      id: "restore_smoke_ok",
+      title: "Restored database from escrow passes canonical smoke",
+      status: restoreSmokeOk ? "passed" : "failed",
+      message:
+        restoreSmokeOk
+          ? "The restored database is healthy after escrow restore."
+          : "Restore smoke failed or is missing.",
+      evidencePath: manifest.restoreSmokePath
+    },
+    {
+      id: "totals_match",
+      title: "Source and escrow-restored canonical totals match",
+      status: totalsMatch ? "passed" : "failed",
+      message:
+        totalsMatch
+          ? "Canonical totals match after escrow restore."
+          : "Source and restored totals differ or inspect evidence is missing.",
+      evidencePath: `${manifest.sourceInspectPath} -> ${manifest.restoreInspectPath}`
+    },
+    {
+      id: "rto_within_budget",
+      title: "Escrow restore stayed within the configured RTO",
+      status: measuredRtoSeconds <= params.maxRtoSeconds ? "passed" : "failed",
+      message:
+        measuredRtoSeconds <= params.maxRtoSeconds
+          ? `Escrow restore RTO ${measuredRtoSeconds}s is within ${params.maxRtoSeconds}s.`
+          : `Escrow restore RTO ${measuredRtoSeconds}s exceeded ${params.maxRtoSeconds}s.`,
+      evidencePath: params.manifestPath
+    }
+  ];
+
+  const manualChecks: PromotionChecklistItem[] = [
+    {
+      id: "review_drill_target_isolation",
+      title: "Review drill target isolation for escrow restore",
+      status: "pending",
+      message: "Confirm the escrow restore ran against an isolated drill target and not a live database."
+    },
+    {
+      id: "review_download_cleanup",
+      title: "Review cleanup of downloaded and decrypted dump files",
+      status: "pending",
+      message:
+        "Confirm the downloaded encrypted artifact and decrypted dump were handled according to the expected local cleanup policy."
+    }
+  ];
+
+  return {
+    ok: automatedChecks.every((check) => check.status === "passed"),
+    generatedAt: nowIso(),
+    label: params.label,
+    sourceEnvironment: params.sourceEnvironment,
+    restoreTarget: manifest.restoreTarget,
+    restoreSource,
+    escrowProvider: manifest.escrowProvider,
+    archiveDestination: manifest.archiveDestination,
+    summary: {
+      sourceEscrowReady,
+      sourceBackupDrillReady,
+      sourceSmokeOk,
+      restoreSmokeOk,
+      downloadedDumpMatchesEscrowChecksum,
+      decryptedDumpMatchesSourceDumpChecksum,
+      totalsMatch,
+      downloadDurationSeconds,
+      decryptDurationSeconds,
+      restoreDurationSeconds,
+      measuredRtoSeconds,
+      maxRtoSeconds: params.maxRtoSeconds,
+      sourceTotals,
+      restoredTotals
+    },
+    escrowObject: sourceEscrowObject,
+    evidence: {
+      backupEscrowRestoreManifestPath: params.manifestPath,
+      backupEscrowPacketPath: manifest.backupEscrowPacketPath,
+      sourceBackupDrillPacketPath,
+      sourceSmokePath: manifest.sourceSmokePath,
+      sourceInspectPath: manifest.sourceInspectPath,
+      downloadedEncryptedDumpPath: manifest.downloadedEncryptedDumpPath,
+      downloadedEncryptedDumpSha256Path: manifest.downloadedEncryptedDumpSha256Path,
+      downloadedEncryptedDumpSha256,
+      decryptedDumpPath: manifest.decryptedDumpPath,
+      decryptedDumpSha256Path: manifest.decryptedDumpSha256Path,
+      decryptedDumpSha256,
+      restoreSmokePath: manifest.restoreSmokePath,
+      restoreInspectPath: manifest.restoreInspectPath
+    },
+    automatedChecks,
+    manualChecks
+  };
+}
+
+async function writeBackupEscrowRestorePacketArtifacts(
+  outputDir: string,
+  packet: CutoverBackupEscrowRestorePacket
+): Promise<{
+  packetJsonPath: string;
+  packetMdPath: string;
+  checklistJsonPath: string;
+  checklistMdPath: string;
+}> {
+  const packetJsonPath = join(outputDir, "backup-escrow-restore-packet.json");
+  const packetMdPath = join(outputDir, "backup-escrow-restore-packet.md");
+  const checklistJsonPath = join(outputDir, "backup-escrow-restore-checklist.json");
+  const checklistMdPath = join(outputDir, "backup-escrow-restore-checklist.md");
+
+  await writeJsonFile(packetJsonPath, packet);
+  await writeJsonFile(checklistJsonPath, {
+    generatedAt: packet.generatedAt,
+    sourceEnvironment: packet.sourceEnvironment,
+    restoreTarget: packet.restoreTarget,
+    restoreSource: packet.restoreSource,
+    escrowProvider: packet.escrowProvider,
+    archiveDestination: packet.archiveDestination,
+    automatedChecks: packet.automatedChecks,
+    manualChecks: packet.manualChecks
+  });
+
+  const packetMd = [
+    "# Patient Flow OS Backup Escrow Restore Packet",
+    "",
+    `- Label: ${packet.label}`,
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Restore target: ${packet.restoreTarget}`,
+    `- Restore source: ${packet.restoreSource}`,
+    `- Escrow provider: ${packet.escrowProvider}`,
+    `- Archive destination: ${packet.archiveDestination}`,
+    `- Generated at: ${packet.generatedAt}`,
+    `- Restore ready: ${packet.ok ? "yes" : "no"}`,
+    `- Download duration: ${packet.summary.downloadDurationSeconds}s`,
+    `- Decrypt duration: ${packet.summary.decryptDurationSeconds}s`,
+    `- Restore duration: ${packet.summary.restoreDurationSeconds}s`,
+    `- Measured RTO: ${packet.summary.measuredRtoSeconds}s`,
+    `- RTO budget: ${packet.summary.maxRtoSeconds}s`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Escrow Object",
+    "",
+    `- bucket: \`${packet.escrowObject.bucket}\``,
+    `- key: \`${packet.escrowObject.key}\``,
+    `- region: \`${packet.escrowObject.region}\``,
+    `- versionId: \`${packet.escrowObject.versionId || "n/a"}\``,
+    `- eTag: \`${packet.escrowObject.eTag || "n/a"}\``,
+    "",
+    "## Evidence",
+    "",
+    `- backup-escrow-restore-manifest.json: \`${packet.evidence.backupEscrowRestoreManifestPath}\``,
+    `- source escrow packet: \`${packet.evidence.backupEscrowPacketPath}\``,
+    `- backup-drill-packet.json: \`${packet.evidence.sourceBackupDrillPacketPath || "n/a"}\``,
+    `- source-smoke.json: \`${packet.evidence.sourceSmokePath}\``,
+    `- source-inspect.json: \`${packet.evidence.sourceInspectPath}\``,
+    `- downloaded encrypted dump path: \`${packet.evidence.downloadedEncryptedDumpPath}\``,
+    `- downloaded encrypted dump sha256 path: \`${packet.evidence.downloadedEncryptedDumpSha256Path}\``,
+    `- downloaded encrypted dump sha256: \`${packet.evidence.downloadedEncryptedDumpSha256 || "n/a"}\``,
+    `- decrypted dump path: \`${packet.evidence.decryptedDumpPath}\``,
+    `- decrypted dump sha256 path: \`${packet.evidence.decryptedDumpSha256Path}\``,
+    `- decrypted dump sha256: \`${packet.evidence.decryptedDumpSha256 || "n/a"}\``,
+    `- restore-smoke.json: \`${packet.evidence.restoreSmokePath}\``,
+    `- restore-inspect.json: \`${packet.evidence.restoreInspectPath}\``
+  ].join("\n");
+  await writeMarkdownFile(packetMdPath, packetMd);
+
+  const checklistMd = [
+    "# Patient Flow OS Backup Escrow Restore Checklist",
+    "",
+    `- Source environment: ${packet.sourceEnvironment}`,
+    `- Restore target: ${packet.restoreTarget}`,
+    `- Restore source: ${packet.restoreSource}`,
+    `- Escrow provider: ${packet.escrowProvider}`,
+    `- Archive destination: ${packet.archiveDestination}`,
+    "",
+    "## Automated Checks",
+    "",
+    ...renderPromotionChecklist(packet.automatedChecks),
+    "",
+    "## Manual Review",
+    "",
+    ...renderPromotionChecklist(packet.manualChecks)
+  ].join("\n");
+  await writeMarkdownFile(checklistMdPath, checklistMd);
+
+  return {
+    packetJsonPath,
+    packetMdPath,
+    checklistJsonPath,
+    checklistMdPath
+  };
+}
+
+async function buildBackupEscrowRestoreVerification(
+  packet: Partial<CutoverBackupEscrowRestorePacket>,
+  sourceEnvironment: "staging" | "production",
+  maxRtoSeconds: number
+): Promise<CutoverBackupEscrowRestoreVerification> {
+  const checks: BackupEscrowRestoreVerificationCheck[] = [];
+  const pushCheck = (id: string, ok: boolean, message: string): void => {
+    checks.push({ id, ok, message });
+  };
+
+  pushCheck("packet.ok", packet.ok === true, "Backup escrow restore packet must already be marked as ready.");
+  pushCheck(
+    "packet.source_environment",
+    packet.sourceEnvironment === sourceEnvironment,
+    "Backup escrow restore packet must match the expected source environment."
+  );
+  pushCheck(
+    "packet.restore_source",
+    packet.restoreSource === "primary" || packet.restoreSource === "replica",
+    "Backup escrow restore packet must declare whether it restored from primary or replica escrow."
+  );
+  pushCheck(
+    "packet.summary.source_escrow_ready",
+    packet.summary?.sourceEscrowReady === true,
+    "Source escrow packet must be green before restore verification."
+  );
+  pushCheck(
+    "packet.summary.source_backup_drill_ready",
+    packet.summary?.sourceBackupDrillReady === true,
+    "Restore source must still trace back to a green backup drill packet."
+  );
+  pushCheck(
+    "packet.summary.source_smoke_ok",
+    packet.summary?.sourceSmokeOk === true,
+    "Source smoke must be green before escrow restore."
+  );
+  pushCheck(
+    "packet.summary.restore_smoke_ok",
+    packet.summary?.restoreSmokeOk === true,
+    "Restored database from escrow must pass canonical smoke."
+  );
+  pushCheck(
+    "packet.summary.downloaded_dump_matches_escrow_checksum",
+    packet.summary?.downloadedDumpMatchesEscrowChecksum === true,
+    "Downloaded encrypted dump must match the escrow checksum."
+  );
+  pushCheck(
+    "packet.summary.decrypted_dump_matches_source_dump_checksum",
+    packet.summary?.decryptedDumpMatchesSourceDumpChecksum === true,
+    "Decrypted dump must match the original source dump checksum."
+  );
+  pushCheck(
+    "packet.summary.totals_match",
+    packet.summary?.totalsMatch === true,
+    "Source and escrow-restored totals must match."
+  );
+  pushCheck(
+    "packet.summary.rto_within_budget",
+    typeof packet.summary?.measuredRtoSeconds === "number" && packet.summary.measuredRtoSeconds <= maxRtoSeconds,
+    "Escrow restore RTO must stay within the configured budget."
+  );
+  pushCheck(
+    "packet.escrow_object.bucket_present",
+    typeof packet.escrowObject?.bucket === "string" && packet.escrowObject.bucket.trim().length > 0,
+    "Escrow restore packet must include the bucket name."
+  );
+  pushCheck(
+    "packet.escrow_object.key_present",
+    typeof packet.escrowObject?.key === "string" && packet.escrowObject.key.trim().length > 0,
+    "Escrow restore packet must include the object key."
+  );
+  pushCheck(
+    "packet.evidence.manifest_exists",
+    await pathExists(packet.evidence?.backupEscrowRestoreManifestPath),
+    "Backup escrow restore manifest must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.backup_escrow_packet_exists",
+    await pathExists(packet.evidence?.backupEscrowPacketPath),
+    "Source escrow packet artifact must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.backup_drill_packet_exists",
+    await pathExists(packet.evidence?.sourceBackupDrillPacketPath),
+    "Source backup drill packet artifact must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.restore_smoke_exists",
+    await pathExists(packet.evidence?.restoreSmokePath),
+    "Restore smoke evidence must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.restore_inspect_exists",
+    await pathExists(packet.evidence?.restoreInspectPath),
+    "Restore inspect evidence must exist on disk."
+  );
+  pushCheck(
+    "packet.evidence.downloaded_encrypted_dump_sha256_present",
+    typeof packet.evidence?.downloadedEncryptedDumpSha256 === "string" &&
+      /^[a-f0-9]{64}$/i.test(packet.evidence.downloadedEncryptedDumpSha256),
+    "Escrow restore packet must include a checksum for the downloaded encrypted dump."
+  );
+  pushCheck(
+    "packet.evidence.decrypted_dump_sha256_present",
+    typeof packet.evidence?.decryptedDumpSha256 === "string" &&
+      /^[a-f0-9]{64}$/i.test(packet.evidence.decryptedDumpSha256),
+    "Escrow restore packet must include a checksum for the decrypted dump."
+  );
+
+  return {
+    ok: checks.every((check) => check.ok),
+    validatedAt: nowIso(),
+    sourceEnvironment,
+    maxRtoSeconds,
+    checks
+  };
+}
+
 function renderHumanResult(result: CutoverCommandResult): string {
   const lines = [
     `command: ${result.command}`,
@@ -2430,6 +4140,45 @@ function renderHumanResult(result: CutoverCommandResult): string {
     const failedChecks = result.backupDrillVerification.checks.filter((check) => !check.ok).length;
     lines.push(`backupDrillVerification: ${result.backupDrillVerification.ok ? "passed" : `failed (${failedChecks} checks)`}`);
   }
+  if (result.backupEscrowPacket) {
+    const failedAutomatedChecks = result.backupEscrowPacket.automatedChecks.filter(
+      (check) => check.status !== "passed"
+    ).length;
+    lines.push(`backupEscrowPacket: ${result.backupEscrowPacket.ok ? "ready" : `blocked (${failedAutomatedChecks} automated checks)`}`);
+    lines.push(
+      `backupEscrowObject: s3://${result.backupEscrowPacket.escrowObject.bucket}/${result.backupEscrowPacket.escrowObject.key} age=${result.backupEscrowPacket.summary.objectAgeHours}h expiresAt=${result.backupEscrowPacket.summary.expiresAt}`
+    );
+  }
+  if (result.backupEscrowVerification) {
+    const failedChecks = result.backupEscrowVerification.checks.filter((check) => !check.ok).length;
+    lines.push(`backupEscrowVerification: ${result.backupEscrowVerification.ok ? "passed" : `failed (${failedChecks} checks)`}`);
+  }
+  if (result.backupEscrowReplicaPacket) {
+    const failedAutomatedChecks = result.backupEscrowReplicaPacket.automatedChecks.filter(
+      (check) => check.status !== "passed"
+    ).length;
+    lines.push(`backupEscrowReplicaPacket: ${result.backupEscrowReplicaPacket.ok ? "ready" : `blocked (${failedAutomatedChecks} automated checks)`}`);
+    lines.push(
+      `backupEscrowReplicaObject: s3://${result.backupEscrowReplicaPacket.replicaEscrowObject.bucket}/${result.backupEscrowReplicaPacket.replicaEscrowObject.key} age=${result.backupEscrowReplicaPacket.summary.objectAgeHours}h distinct=${result.backupEscrowReplicaPacket.summary.replicaTargetDistinctFromPrimary ? "yes" : "no"}`
+    );
+  }
+  if (result.backupEscrowReplicaVerification) {
+    const failedChecks = result.backupEscrowReplicaVerification.checks.filter((check) => !check.ok).length;
+    lines.push(`backupEscrowReplicaVerification: ${result.backupEscrowReplicaVerification.ok ? "passed" : `failed (${failedChecks} checks)`}`);
+  }
+  if (result.backupEscrowRestorePacket) {
+    const failedAutomatedChecks = result.backupEscrowRestorePacket.automatedChecks.filter(
+      (check) => check.status !== "passed"
+    ).length;
+    lines.push(`backupEscrowRestorePacket: ${result.backupEscrowRestorePacket.ok ? "ready" : `blocked (${failedAutomatedChecks} automated checks)`}`);
+    lines.push(
+      `backupEscrowRestore: source=${result.backupEscrowRestorePacket.restoreSource}, target=${result.backupEscrowRestorePacket.restoreTarget}, rto=${result.backupEscrowRestorePacket.summary.measuredRtoSeconds}s, totalsMatch=${result.backupEscrowRestorePacket.summary.totalsMatch ? "yes" : "no"}`
+    );
+  }
+  if (result.backupEscrowRestoreVerification) {
+    const failedChecks = result.backupEscrowRestoreVerification.checks.filter((check) => !check.ok).length;
+    lines.push(`backupEscrowRestoreVerification: ${result.backupEscrowRestoreVerification.ok ? "passed" : `failed (${failedChecks} checks)`}`);
+  }
 
   for (const tenant of result.summary.tenants) {
     lines.push(
@@ -2462,6 +4211,12 @@ function helpText(): string {
     "  rollback-packet --input <workflow-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--label <value>]",
     "  verify-backup-drill --input <backup-drill-packet.json> [--source-environment staging|production] [--max-rto-seconds <n>] [--max-rpo-seconds <n>]",
     "  backup-drill-packet --input <backup-drill-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--max-rto-seconds <n>] [--max-rpo-seconds <n>] [--label <value>]",
+    "  verify-backup-escrow --input <backup-escrow-packet.json> [--source-environment staging|production] [--max-object-age-hours <n>]",
+    "  backup-escrow-packet --input <backup-escrow-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--max-object-age-hours <n>] [--label <value>]",
+    "  verify-backup-escrow-replica --input <backup-escrow-replica-packet.json> [--source-environment staging|production] [--max-object-age-hours <n>]",
+    "  backup-escrow-replica-packet --input <backup-escrow-replica-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--max-object-age-hours <n>] [--label <value>]",
+    "  verify-backup-escrow-restore --input <backup-escrow-restore-packet.json> [--source-environment staging|production] [--max-rto-seconds <n>]",
+    "  backup-escrow-restore-packet --input <backup-escrow-restore-manifest.json> --artifacts-dir <dir> [--source-environment staging|production] [--max-rto-seconds <n>] [--label <value>]  # source packet may be primary or replica",
     "",
     "Options:",
     "  --json                 Print machine-readable JSON",
@@ -2475,6 +4230,7 @@ function helpText(): string {
     "  --label <value>        Label used in generated promotion packets",
     "  --max-rto-seconds <n>  Maximum allowed restore time objective in seconds",
     "  --max-rpo-seconds <n>  Maximum allowed recovery point objective in seconds",
+    "  --max-object-age-hours <n>  Maximum allowed age in hours for the external escrow object",
     "  --allow-destructive    Required for replace-state, seed-demo and replace cutovers",
     "  --help                 Show help"
   ].join("\n");
@@ -2536,6 +4292,7 @@ export async function executeCutoverCommand(
       "post-inspect": { type: "string" },
       "max-rto-seconds": { type: "string" },
       "max-rpo-seconds": { type: "string" },
+      "max-object-age-hours": { type: "string" },
       label: { type: "string" }
     }
   });
@@ -2568,6 +4325,11 @@ export async function executeCutoverCommand(
     parsed.values["max-rpo-seconds"],
     "--max-rpo-seconds",
     3600
+  );
+  const maxObjectAgeHours = parsePositiveIntegerFlag(
+    parsed.values["max-object-age-hours"],
+    "--max-object-age-hours",
+    24
   );
   const allowDestructive = parsed.values["allow-destructive"] ?? false;
   const mode = parsed.values.mode ?? "merge";
@@ -2941,6 +4703,195 @@ export async function executeCutoverCommand(
 
     if (!packet.ok) {
       throw new CutoverCommandError("backup drill packet is not ready", result);
+    }
+
+    return result;
+  }
+
+  if (command === "verify-backup-escrow") {
+    if (!inputPath) {
+      throw new Error("verify-backup-escrow requires --input");
+    }
+
+    const packet = JSON.parse(await readFile(inputPath, "utf8")) as Partial<CutoverBackupEscrowPacket>;
+    const backupEscrowVerification = await buildBackupEscrowVerification(
+      packet,
+      sourceEnvironment,
+      maxObjectAgeHours
+    );
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary: summarizeState(createEmptyBootstrapState()),
+      backupEscrowPacket:
+        typeof packet === "object" && packet !== null
+          ? (packet as CutoverBackupEscrowPacket)
+          : undefined,
+      backupEscrowVerification
+    };
+
+    if (!backupEscrowVerification.ok) {
+      throw new CutoverCommandError("backup escrow packet failed verification", result);
+    }
+
+    return result;
+  }
+
+  if (command === "backup-escrow-packet") {
+    if (!inputPath) {
+      throw new Error("backup-escrow-packet requires --input <backup-escrow-manifest.json>");
+    }
+    if (!artifactsDir) {
+      throw new Error("backup-escrow-packet requires --artifacts-dir");
+    }
+
+    const packet = await buildBackupEscrowPacket({
+      manifestPath: inputPath,
+      label,
+      sourceEnvironment,
+      maxObjectAgeHours
+    });
+    const outputFiles = await writeBackupEscrowPacketArtifacts(artifactsDir, packet);
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary: summarizeState(createEmptyBootstrapState()),
+      outputPath: outputFiles.packetJsonPath,
+      backupEscrowPacket: packet
+    };
+
+    if (!packet.ok) {
+      throw new CutoverCommandError("backup escrow packet is not ready", result);
+    }
+
+    return result;
+  }
+
+  if (command === "verify-backup-escrow-replica") {
+    if (!inputPath) {
+      throw new Error("verify-backup-escrow-replica requires --input");
+    }
+
+    const packet = JSON.parse(await readFile(inputPath, "utf8")) as Partial<CutoverBackupEscrowReplicaPacket>;
+    const backupEscrowReplicaVerification = await buildBackupEscrowReplicaVerification(
+      packet,
+      sourceEnvironment,
+      maxObjectAgeHours
+    );
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary: summarizeState(createEmptyBootstrapState()),
+      backupEscrowReplicaPacket:
+        typeof packet === "object" && packet !== null
+          ? (packet as CutoverBackupEscrowReplicaPacket)
+          : undefined,
+      backupEscrowReplicaVerification
+    };
+
+    if (!backupEscrowReplicaVerification.ok) {
+      throw new CutoverCommandError("backup escrow replica packet failed verification", result);
+    }
+
+    return result;
+  }
+
+  if (command === "backup-escrow-replica-packet") {
+    if (!inputPath) {
+      throw new Error("backup-escrow-replica-packet requires --input <backup-escrow-replica-manifest.json>");
+    }
+    if (!artifactsDir) {
+      throw new Error("backup-escrow-replica-packet requires --artifacts-dir");
+    }
+
+    const packet = await buildBackupEscrowReplicaPacket({
+      manifestPath: inputPath,
+      label,
+      sourceEnvironment,
+      maxObjectAgeHours
+    });
+    const outputFiles = await writeBackupEscrowReplicaPacketArtifacts(artifactsDir, packet);
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary: summarizeState(createEmptyBootstrapState()),
+      outputPath: outputFiles.packetJsonPath,
+      backupEscrowReplicaPacket: packet
+    };
+
+    if (!packet.ok) {
+      throw new CutoverCommandError("backup escrow replica packet is not ready", result);
+    }
+
+    return result;
+  }
+
+  if (command === "verify-backup-escrow-restore") {
+    if (!inputPath) {
+      throw new Error("verify-backup-escrow-restore requires --input");
+    }
+
+    const packet = JSON.parse(await readFile(inputPath, "utf8")) as Partial<CutoverBackupEscrowRestorePacket>;
+    const backupEscrowRestoreVerification = await buildBackupEscrowRestoreVerification(
+      packet,
+      sourceEnvironment,
+      maxRtoSeconds
+    );
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary:
+        packet.summary?.restoredTotals !== null && packet.summary?.restoredTotals
+          ? {
+              tenants: [],
+              totals: packet.summary.restoredTotals
+            }
+          : summarizeState(createEmptyBootstrapState()),
+      backupEscrowRestorePacket:
+        typeof packet === "object" && packet !== null
+          ? (packet as CutoverBackupEscrowRestorePacket)
+          : undefined,
+      backupEscrowRestoreVerification
+    };
+
+    if (!backupEscrowRestoreVerification.ok) {
+      throw new CutoverCommandError("backup escrow restore packet failed verification", result);
+    }
+
+    return result;
+  }
+
+  if (command === "backup-escrow-restore-packet") {
+    if (!inputPath) {
+      throw new Error("backup-escrow-restore-packet requires --input <backup-escrow-restore-manifest.json>");
+    }
+    if (!artifactsDir) {
+      throw new Error("backup-escrow-restore-packet requires --artifacts-dir");
+    }
+
+    const packet = await buildBackupEscrowRestorePacket({
+      manifestPath: inputPath,
+      label,
+      sourceEnvironment,
+      maxRtoSeconds
+    });
+    const outputFiles = await writeBackupEscrowRestorePacketArtifacts(artifactsDir, packet);
+    const result: CutoverCommandResult = {
+      command,
+      inputPath,
+      summary:
+        packet.summary.restoredTotals !== null
+          ? {
+              tenants: [],
+              totals: packet.summary.restoredTotals
+            }
+          : summarizeState(createEmptyBootstrapState()),
+      outputPath: outputFiles.packetJsonPath,
+      backupEscrowRestorePacket: packet
+    };
+
+    if (!packet.ok) {
+      throw new CutoverCommandError("backup escrow restore packet is not ready", result);
     }
 
     return result;
