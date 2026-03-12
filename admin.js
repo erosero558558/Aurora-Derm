@@ -97,7 +97,7 @@ function n(t) {
     })();
     try {
         (await (async function () {
-            const t = await import('./js/admin-chunks/index-HWrE4Qq0.js');
+            const t = await import('./js/admin-chunks/index-CUKNGmOb.js');
             await (async function (t, e = '') {
                 if (!t || 'object' != typeof t) return;
                 if (e) {

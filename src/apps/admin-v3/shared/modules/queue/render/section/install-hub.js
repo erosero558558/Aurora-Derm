@@ -2091,6 +2091,27 @@ function getOpsLogSourceLabel(source) {
     if (value === 'reserve') {
         return 'Reserva';
     }
+    if (value === 'general_guidance') {
+        return 'Cola general';
+    }
+    if (value === 'projection') {
+        return 'Proyección';
+    }
+    if (value === 'new_intake') {
+        return 'Ingresos nuevos';
+    }
+    if (value === 'intake_scenarios') {
+        return 'Escenarios';
+    }
+    if (value === 'reception_script') {
+        return 'Guion';
+    }
+    if (value === 'reception_collision') {
+        return 'Recepción simultánea';
+    }
+    if (value === 'reception_lights') {
+        return 'Semáforo';
+    }
     if (value === 'blockers') {
         return 'Bloqueos';
     }
@@ -2122,6 +2143,13 @@ function filterOpsLogItems(items, filter) {
                 'master_sequence',
                 'coverage',
                 'reserve',
+                'general_guidance',
+                'projection',
+                'new_intake',
+                'intake_scenarios',
+                'reception_script',
+                'reception_collision',
+                'reception_lights',
                 'blockers',
                 'sla_live',
             ].includes(item.source)
@@ -8881,6 +8909,2079 @@ function renderQueueReserveDeck(manifest, detectedPlatform) {
     });
 }
 
+function buildQueueGeneralGuidanceTarget(
+    tickets,
+    manifest,
+    detectedPlatform,
+    consultorio
+) {
+    const slot = Number(consultorio || 0) === 2 ? 2 : 1;
+    const slotKey = `c${slot}`;
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        slot
+    );
+    const assignedWaiting = getAssignedWaitingTicketsFromList(tickets, slot);
+    const currentTicket = getCalledTicketForConsultorioFromList(tickets, slot);
+    const totalLoad = assignedWaiting.length + (currentTicket ? 1 : 0);
+    const operatorReady =
+        operatorContext.operatorAssigned && operatorContext.operatorLive;
+
+    let score = 10 + totalLoad * 3 + (operatorReady ? 0 : 1);
+    let badge = 'Balance';
+    let reason = `Balancea la carga visible de ${slotKey.toUpperCase()}.`;
+
+    if (currentTicket && assignedWaiting.length === 0) {
+        score = operatorReady ? 0 : 1;
+        badge = 'Hueco inmediato';
+        reason = `Cubre el hueco que queda cuando cierres ${currentTicket.ticketCode}.`;
+    } else if (assignedWaiting.length === 0) {
+        score = operatorReady ? 2 : 3;
+        badge = 'Rellena cola';
+        reason = `Reconstruye la cola propia de ${slotKey.toUpperCase()} sin esperar a la tabla.`;
+    } else if (assignedWaiting.length === 1) {
+        score = operatorReady ? 4 : 5;
+        badge = 'Deja reserva';
+        reason = `Deja una reserva detrás de ${assignedWaiting[0].ticketCode} para que ${slotKey.toUpperCase()} no se seque.`;
+    }
+
+    return {
+        slot,
+        slotKey,
+        score,
+        badge,
+        reason,
+        operatorLabel: operatorContext.operatorLabel,
+        operatorReady,
+        loadLabel: `Atención ${currentTicket ? currentTicket.ticketCode : 'Libre'} · Espera ${assignedWaiting.length}`,
+    };
+}
+
+function buildQueueGeneralGuidance(manifest, detectedPlatform) {
+    const sourceTickets = getQueueSource().queueTickets.map((ticket) => ({
+        ...ticket,
+    }));
+    const generalTickets = getUnassignedWaitingTicketsFromList(
+        sourceTickets
+    ).slice(0, 4);
+    const items = [];
+
+    generalTickets.forEach((ticket, index) => {
+        const c1Target = buildQueueGeneralGuidanceTarget(
+            sourceTickets,
+            manifest,
+            detectedPlatform,
+            1
+        );
+        const c2Target = buildQueueGeneralGuidanceTarget(
+            sourceTickets,
+            manifest,
+            detectedPlatform,
+            2
+        );
+        const target = c1Target.score <= c2Target.score ? c1Target : c2Target;
+        items.push({
+            index,
+            ticketId: Number(ticket.id || 0),
+            ticketCode: String(ticket.ticketCode || ''),
+            priorityLabel: formatQueuePriorityTypeLabel(ticket),
+            ageLabel: formatQueueTicketAgeLabel(ticket, 'waiting'),
+            targetSlot: target.slot,
+            targetSlotKey: target.slotKey,
+            badge: target.badge,
+            reason: target.reason,
+            operatorLabel: target.operatorLabel,
+            loadLabel: target.loadLabel,
+            pivot: buildQueueTicketRoutePivot(
+                ticket,
+                `Cargar ${String(ticket.ticketCode || '')}`,
+                `Es el siguiente ticket general recomendado para ${target.slotKey.toUpperCase()}.`
+            ),
+        });
+        const targetIndex = sourceTickets.findIndex(
+            (candidate) => Number(candidate.id || 0) === Number(ticket.id || 0)
+        );
+        if (targetIndex >= 0) {
+            sourceTickets[targetIndex] = {
+                ...sourceTickets[targetIndex],
+                assignedConsultorio: target.slot,
+            };
+        }
+    });
+
+    const top = items[0] || null;
+    return {
+        title: 'Cola general guiada',
+        summary: top
+            ? `${top.ticketCode} conviene enviarlo a ${top.targetSlotKey.toUpperCase()}. ${top.reason}`
+            : 'No hay tickets generales esperando una recomendación de consultorio.',
+        statusLabel: items.length
+            ? `${items.length} ticket(s) general(es) guiado(s)`
+            : 'Sin cola general',
+        statusState: top ? 'ready' : 'idle',
+        items,
+        projectedTickets: sourceTickets,
+    };
+}
+
+function copyQueueGeneralGuidance(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Cola general guiada - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...(panel.items.length
+            ? panel.items.map(
+                  (item, index) =>
+                      `${index + 1}. ${item.ticketCode} -> ${item.targetSlotKey.toUpperCase()} · ${item.badge} · ${item.reason}`
+              )
+            : ['Sin tickets generales pendientes.']),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Cola general copiada', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar la cola general guiada', 'error');
+        });
+}
+
+function renderQueueGeneralGuidance(manifest, detectedPlatform) {
+    const root = document.getElementById('queueGeneralGuidance');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueGeneralGuidance(manifest, detectedPlatform);
+    setHtml(
+        '#queueGeneralGuidance',
+        `
+            <section class="queue-general-guidance__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-general-guidance__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Asignación sugerida para general</p>
+                        <h5 id="queueGeneralGuidanceTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueGeneralGuidanceSummary" class="queue-general-guidance__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-general-guidance__meta">
+                        <span
+                            id="queueGeneralGuidanceStatus"
+                            class="queue-general-guidance__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueGeneralGuidanceCopyBtn"
+                            type="button"
+                            class="queue-general-guidance__action"
+                            ${panel.items.length ? '' : 'disabled'}
+                        >
+                            Copiar cola general
+                        </button>
+                    </div>
+                </div>
+                ${
+                    panel.items.length
+                        ? `
+                            <div id="queueGeneralGuidanceItems" class="queue-general-guidance__list" role="list" aria-label="Asignación guiada de cola general">
+                                ${panel.items
+                                    .map(
+                                        (item, index) => `
+                                            <article
+                                                id="queueGeneralGuidanceItem_${index}"
+                                                class="queue-general-guidance__item"
+                                                role="listitem"
+                                            >
+                                                <div class="queue-general-guidance__copy">
+                                                    <div class="queue-general-guidance__headline">
+                                                        <span class="queue-general-guidance__lane">${escapeHtml(
+                                                            item.targetSlotKey.toUpperCase()
+                                                        )}</span>
+                                                        <strong id="queueGeneralGuidanceHeadline_${index}">${escapeHtml(
+                                                            `${item.ticketCode} · ${item.badge}`
+                                                        )}</strong>
+                                                    </div>
+                                                    <p id="queueGeneralGuidanceReason_${index}" class="queue-general-guidance__reason">${escapeHtml(
+                                                        `${item.priorityLabel} · ${item.ageLabel}. ${item.reason}`
+                                                    )}</p>
+                                                    <p id="queueGeneralGuidanceTarget_${index}" class="queue-general-guidance__target">${escapeHtml(
+                                                        `Enviar a ${item.targetSlotKey.toUpperCase()}. ${item.operatorLabel}. ${item.loadLabel}`
+                                                    )}</p>
+                                                </div>
+                                                <div class="queue-general-guidance__actions">
+                                                    <span class="queue-general-guidance__badge">${escapeHtml(
+                                                        `Enviar a ${item.targetSlotKey.toUpperCase()}`
+                                                    )}</span>
+                                                    <button
+                                                        id="queueGeneralGuidanceLoad_${index}"
+                                                        type="button"
+                                                        class="queue-general-guidance__load"
+                                                        data-queue-general-guidance-ticket="${escapeHtml(
+                                                            item.ticketCode
+                                                        )}"
+                                                    >
+                                                        ${escapeHtml(
+                                                            item.pivot?.label ||
+                                                                'Cargar ticket'
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </article>
+                                        `
+                                    )
+                                    .join('')}
+                            </div>
+                        `
+                        : `
+                            <article id="queueGeneralGuidanceEmpty" class="queue-general-guidance__empty">
+                                <strong>Sin cola general por guiar</strong>
+                                <p>Todo lo pendiente ya tiene consultorio o no hay tickets esperando reparto.</p>
+                            </article>
+                        `
+                }
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueGeneralGuidanceCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueGeneralGuidance(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-general-guidance-ticket]').forEach(
+        (button) => {
+            if (!(button instanceof HTMLButtonElement)) {
+                return;
+            }
+            button.onclick = () => {
+                const ticketCode = String(
+                    button.dataset.queueGeneralGuidanceTicket || ''
+                ).trim();
+                if (!ticketCode) {
+                    return;
+                }
+                persistQueueTicketLookupTerm(ticketCode);
+                appendOpsLogEntry({
+                    source: 'general_guidance',
+                    tone: 'info',
+                    title: 'Cola general guiada: ticket cargado',
+                    summary: `${ticketCode} quedó cargado desde la cola general guiada.`,
+                });
+                rerenderQueueOpsHub(manifest, detectedPlatform);
+            };
+        }
+    );
+}
+
+function buildQueueProjectedLane(
+    manifest,
+    detectedPlatform,
+    guidance,
+    consultorio
+) {
+    const slot = Number(consultorio || 0) === 2 ? 2 : 1;
+    const slotKey = `c${slot}`;
+    const tickets = Array.isArray(guidance?.projectedTickets)
+        ? guidance.projectedTickets
+        : getQueueSource().queueTickets;
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        slot
+    );
+    const currentTicket = getCalledTicketForConsultorioFromList(tickets, slot);
+    const waitingTickets = getAssignedWaitingTicketsFromList(
+        tickets,
+        slot
+    ).slice(0, 3);
+    const sequenceCodes = waitingTickets.map((ticket) =>
+        String(ticket.ticketCode || '')
+    );
+    const firstProjected = waitingTickets[0] || null;
+
+    let state = 'idle';
+    let badge = 'Sin cola proyectada';
+    let headline = `${slotKey.toUpperCase()} seguiría vacío`;
+    let currentLabel = currentTicket
+        ? `${currentTicket.ticketCode} · ${formatQueueTicketAgeLabel(
+              currentTicket,
+              'called'
+          )}`
+        : 'Sin paciente en atención';
+    let sequenceLabel = 'Sin pasos proyectados';
+    let supportLabel =
+        'No hay tickets listos para sostener este carril tras aplicar la guía.';
+
+    if (waitingTickets.length >= 2) {
+        state = 'ready';
+        badge = `${waitingTickets.length} pasos`;
+        headline = `${slotKey.toUpperCase()} quedaría con reserva real`;
+        sequenceLabel = sequenceCodes.join(' -> ');
+        supportLabel = `${sequenceCodes[0]} sostiene el siguiente turno y ${sequenceCodes[1]} deja respaldo inmediato.`;
+    } else if (waitingTickets.length === 1 && currentTicket) {
+        state = 'suggested';
+        badge = '1 paso';
+        headline = `${slotKey.toUpperCase()} queda cubierto, pero sin reserva`;
+        sequenceLabel = sequenceCodes[0];
+        supportLabel = `${sequenceCodes[0]} entra después de ${currentTicket.ticketCode}, pero todavía faltaría otro turno detrás.`;
+    } else if (waitingTickets.length === 1) {
+        state = 'warning';
+        badge = '1 paso';
+        headline = `${slotKey.toUpperCase()} tendría un único paso proyectado`;
+        sequenceLabel = sequenceCodes[0];
+        supportLabel = `${sequenceCodes[0]} reconstruye ${slotKey.toUpperCase()}, pero aún no deja colchón de reserva.`;
+    } else if (currentTicket) {
+        state = 'alert';
+        badge = 'Sin siguiente';
+        headline = `${slotKey.toUpperCase()} seguiría sin cola tras el cierre actual`;
+        supportLabel = `No hay tickets proyectados después de ${currentTicket.ticketCode}.`;
+    }
+
+    return {
+        slot,
+        slotKey,
+        state,
+        badge,
+        headline,
+        currentLabel,
+        sequenceLabel,
+        supportLabel,
+        operatorLabel: operatorContext.operatorLabel,
+        pivot: firstProjected
+            ? buildQueueTicketRoutePivot(
+                  firstProjected,
+                  `Cargar ${firstProjected.ticketCode}`,
+                  `Es el primer turno proyectado para ${slotKey.toUpperCase()} después de aplicar la guía.`
+              )
+            : null,
+    };
+}
+
+function buildQueueProjectedDeck(manifest, detectedPlatform) {
+    const guidance = buildQueueGeneralGuidance(manifest, detectedPlatform);
+    const cards = [1, 2].map((slot) =>
+        buildQueueProjectedLane(manifest, detectedPlatform, guidance, slot)
+    );
+    const top =
+        cards.find((card) => card.state === 'alert') ||
+        cards.find((card) => card.state === 'warning') ||
+        cards.find((card) => card.state === 'suggested') ||
+        cards.find((card) => card.state === 'ready') ||
+        null;
+    const stableCount = cards.filter((card) => card.state === 'ready').length;
+
+    return {
+        title: 'Proyección de cola',
+        summary: top
+            ? `${top.headline}. ${top.supportLabel}`
+            : 'No hay carriles con proyección útil ahora mismo.',
+        statusLabel: top
+            ? `${stableCount}/2 carril(es) con reserva proyectada`
+            : 'Sin proyección',
+        statusState: top ? top.state : 'idle',
+        cards,
+    };
+}
+
+function copyQueueProjectedDeck(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Proyección de cola - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...panel.cards.flatMap((card) => [
+            `${card.slotKey.toUpperCase()} - ${card.badge}`,
+            `Actual: ${card.currentLabel}`,
+            `Secuencia: ${card.sequenceLabel}`,
+            `Lectura: ${card.supportLabel}`,
+            '',
+        ]),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Proyección copiada', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar la proyección', 'error');
+        });
+}
+
+function renderQueueProjectedDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueProjectedDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueProjectedDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueProjectedDeck',
+        `
+            <section class="queue-projected-deck__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-projected-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Lectura después de aplicar la guía</p>
+                        <h5 id="queueProjectedDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueProjectedDeckSummary" class="queue-projected-deck__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-projected-deck__meta">
+                        <span
+                            id="queueProjectedDeckStatus"
+                            class="queue-projected-deck__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueProjectedDeckCopyBtn"
+                            type="button"
+                            class="queue-projected-deck__action"
+                            ${panel.cards.length ? '' : 'disabled'}
+                        >
+                            Copiar proyección
+                        </button>
+                    </div>
+                </div>
+                <div id="queueProjectedDeckCards" class="queue-projected-deck__grid" role="list" aria-label="Proyección de cola por consultorio">
+                    ${panel.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueProjectedCard_${escapeHtml(card.slotKey)}"
+                                    class="queue-projected-card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-projected-card__head">
+                                        <div>
+                                            <p class="queue-projected-card__lane">${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</p>
+                                            <strong id="queueProjectedHeadline_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.headline)}</strong>
+                                        </div>
+                                        <span class="queue-projected-card__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueProjectedCurrent_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-projected-card__fact">${escapeHtml(
+                                        `Actual: ${card.currentLabel}`
+                                    )}</p>
+                                    <p id="queueProjectedSequence_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-projected-card__fact">${escapeHtml(
+                                        `Secuencia: ${card.sequenceLabel}`
+                                    )}</p>
+                                    <p id="queueProjectedSupport_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-projected-card__fact queue-projected-card__fact--support">${escapeHtml(
+                                        card.supportLabel
+                                    )}</p>
+                                    <div class="queue-projected-card__actions">
+                                        <span class="queue-projected-card__tag">${escapeHtml(
+                                            card.operatorLabel
+                                        )}</span>
+                                        <button
+                                            id="queueProjectedPrimary_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            type="button"
+                                            class="queue-projected-card__action"
+                                            data-queue-projected-ticket="${escapeHtml(
+                                                card.pivot?.ticketCode || ''
+                                            )}"
+                                            ${card.pivot ? '' : 'disabled'}
+                                        >
+                                            ${escapeHtml(
+                                                card.pivot?.label ||
+                                                    'Sin proyección'
+                                            )}
+                                        </button>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueProjectedDeckCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueProjectedDeck(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-projected-ticket]').forEach((button) => {
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+        button.onclick = () => {
+            const ticketCode = String(
+                button.dataset.queueProjectedTicket || ''
+            ).trim();
+            if (!ticketCode) {
+                return;
+            }
+            persistQueueTicketLookupTerm(ticketCode);
+            appendOpsLogEntry({
+                source: 'projection',
+                tone: 'info',
+                title: 'Proyección de cola: ticket cargado',
+                summary: `${ticketCode} quedó cargado desde la proyección de cola.`,
+            });
+            rerenderQueueOpsHub(manifest, detectedPlatform);
+        };
+    });
+}
+
+function buildQueueIncomingSimulation(manifest, detectedPlatform) {
+    const guidance = buildQueueGeneralGuidance(manifest, detectedPlatform);
+    const simulationTickets = Array.isArray(guidance?.projectedTickets)
+        ? guidance.projectedTickets.map((ticket) => ({ ...ticket }))
+        : getQueueSource().queueTickets.map((ticket) => ({ ...ticket }));
+    const steps = [];
+
+    for (let index = 0; index < 2; index += 1) {
+        const c1Target = buildQueueGeneralGuidanceTarget(
+            simulationTickets,
+            manifest,
+            detectedPlatform,
+            1
+        );
+        const c2Target = buildQueueGeneralGuidanceTarget(
+            simulationTickets,
+            manifest,
+            detectedPlatform,
+            2
+        );
+        const target = c1Target.score <= c2Target.score ? c1Target : c2Target;
+        const label = `Ingreso ${index + 1}`;
+        steps.push({
+            index,
+            label,
+            slot: target.slot,
+            slotKey: target.slotKey,
+            badge: target.badge,
+            reason: target.reason,
+            operatorLabel: target.operatorLabel,
+        });
+        simulationTickets.push({
+            id: -910000 - index,
+            ticketCode: `NUEVO-${index + 1}`,
+            queueType: 'walk_in',
+            patientInitials: 'NV',
+            priorityClass: 'walk_in',
+            status: 'waiting',
+            assignedConsultorio: target.slot,
+            createdAt: new Date(Date.now() + index * 1000).toISOString(),
+        });
+    }
+
+    return {
+        guidance,
+        steps,
+    };
+}
+
+function buildQueueIncomingCard(
+    manifest,
+    detectedPlatform,
+    intake,
+    consultorio
+) {
+    const slot = Number(consultorio || 0) === 2 ? 2 : 1;
+    const slotKey = `c${slot}`;
+    const operatorContext = buildConsultorioOperatorContext(
+        manifest,
+        detectedPlatform,
+        slot
+    );
+    const projectedTickets = Array.isArray(intake?.guidance?.projectedTickets)
+        ? intake.guidance.projectedTickets
+        : getQueueSource().queueTickets;
+    const currentTicket = getCalledTicketForConsultorioFromList(
+        projectedTickets,
+        slot
+    );
+    const projectedWaiting = getAssignedWaitingTicketsFromList(
+        projectedTickets,
+        slot
+    ).slice(0, 3);
+    const projectedCodes = projectedWaiting.map((ticket) =>
+        String(ticket.ticketCode || '')
+    );
+    const incomingSteps = (
+        Array.isArray(intake?.steps) ? intake.steps : []
+    ).filter((step) => Number(step.slot || 0) === slot);
+    const operatorReady =
+        operatorContext.operatorAssigned && operatorContext.operatorLive;
+
+    let state = 'idle';
+    let badge = 'Sin ingreso sugerido';
+    let headline = `${slotKey.toUpperCase()} no sería el próximo destino`;
+    let supportLabel =
+        'La proyección actual no necesita mandar gente nueva a este carril todavía.';
+
+    if (incomingSteps.length >= 2) {
+        state = operatorReady ? 'ready' : 'warning';
+        badge = operatorReady ? 'Absorbe 2' : 'Prepara operador';
+        headline = `${slotKey.toUpperCase()} absorbería los 2 próximos ingresos`;
+        supportLabel = operatorReady
+            ? `${incomingSteps[0].label} entraría primero y ${incomingSteps[1].label} volvería a ${slotKey.toUpperCase()} sin romper la reserva visible.`
+            : `${incomingSteps[0].label} y ${incomingSteps[1].label} caerían aquí, pero conviene abrir el operador antes de confiar en ese flujo.`;
+    } else if (incomingSteps.length === 1) {
+        state = operatorReady ? 'suggested' : 'warning';
+        badge = operatorReady ? 'Absorbe 1' : 'Abre operador';
+        headline = `${slotKey.toUpperCase()} absorbería 1 ingreso nuevo`;
+        supportLabel = operatorReady
+            ? `${incomingSteps[0].label} caería primero aquí. ${incomingSteps[0].reason}`
+            : `${incomingSteps[0].label} caería primero aquí, pero conviene abrir el operador antes de que llegue ese ingreso.`;
+    } else if (projectedWaiting.length >= 2) {
+        state = 'idle';
+        badge = 'Reserva completa';
+        headline = `${slotKey.toUpperCase()} ya quedó cubierto por ahora`;
+        supportLabel = `${projectedCodes[0]}${projectedCodes[1] ? ` y ${projectedCodes[1]}` : ''} ya sostienen este carril; deja que el otro absorba lo nuevo.`;
+    } else if (projectedWaiting.length === 1 || currentTicket) {
+        state = 'warning';
+        badge = 'Prioriza el otro';
+        headline = `${slotKey.toUpperCase()} no sería el siguiente destino`;
+        supportLabel =
+            'Tras la proyección actual, el otro carril ofrece una ventana más limpia para los próximos ingresos.';
+    } else {
+        state = 'alert';
+        badge = 'Sin base';
+        headline = `${slotKey.toUpperCase()} sigue sin base para absorber`;
+        supportLabel =
+            'Primero reconstruye contexto, cola u operador antes de mandar ingresos nuevos aquí.';
+    }
+
+    return {
+        slot,
+        slotKey,
+        state,
+        badge,
+        headline,
+        currentLabel: currentTicket
+            ? `${currentTicket.ticketCode} · ${formatQueueTicketAgeLabel(
+                  currentTicket,
+                  'called'
+              )}`
+            : 'Sin paciente en atención',
+        sequenceLabel: projectedCodes.length
+            ? projectedCodes.join(' -> ')
+            : 'Sin cola proyectada',
+        incomingLabel: incomingSteps.length
+            ? incomingSteps.map((step) => step.label).join(' -> ')
+            : 'Sin ingreso nuevo sugerido',
+        supportLabel,
+        operatorLabel: operatorContext.operatorLabel,
+        actionLabel: operatorReady
+            ? `Revisar operador ${slotKey.toUpperCase()}`
+            : `Abrir operador ${slotKey.toUpperCase()}`,
+        operatorUrl: operatorContext.operatorUrl,
+    };
+}
+
+function buildQueueIncomingDeck(manifest, detectedPlatform) {
+    const intake = buildQueueIncomingSimulation(manifest, detectedPlatform);
+    const cards = [1, 2].map((slot) =>
+        buildQueueIncomingCard(manifest, detectedPlatform, intake, slot)
+    );
+    const steps = Array.isArray(intake.steps) ? intake.steps : [];
+    const first = steps[0] || null;
+    const second = steps[1] || null;
+    const top =
+        cards.find((card) => card.state === 'alert') ||
+        cards.find((card) => card.state === 'warning') ||
+        cards.find((card) => card.state === 'suggested') ||
+        cards.find((card) => card.state === 'ready') ||
+        null;
+
+    let summary =
+        'La proyección de nuevos ingresos no detecta un carril claramente preferido ahora mismo.';
+    if (first && second && first.slot === second.slot) {
+        summary = `${first.label} y ${second.label} convendrían a ${first.slotKey.toUpperCase()} si entra gente nueva ahora.`;
+    } else if (first && second) {
+        summary = `${first.label} conviene a ${first.slotKey.toUpperCase()}. ${second.label} volvería a ${second.slotKey.toUpperCase()} si entra otra persona enseguida.`;
+    } else if (first) {
+        summary = `${first.label} conviene a ${first.slotKey.toUpperCase()} si recepción recibe a alguien nuevo ahora.`;
+    }
+
+    return {
+        title: 'Ingresos nuevos',
+        summary,
+        statusLabel: steps.length
+            ? `${steps.length} ingreso(s) nuevos guiados`
+            : 'Sin simulación de ingresos',
+        statusState: top ? top.state : 'idle',
+        cards,
+    };
+}
+
+function copyQueueIncomingDeck(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Ingresos nuevos - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...panel.cards.flatMap((card) => [
+            `${card.slotKey.toUpperCase()} - ${card.badge}`,
+            `Actual: ${card.currentLabel}`,
+            `Base: ${card.sequenceLabel}`,
+            `Nuevos: ${card.incomingLabel}`,
+            `Lectura: ${card.supportLabel}`,
+            '',
+        ]),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Ingresos nuevos copiados', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar la guía de ingresos', 'error');
+        });
+}
+
+function renderQueueIncomingDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueIncomingDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueIncomingDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueIncomingDeck',
+        `
+            <section class="queue-incoming-deck__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-incoming-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Si entra gente nueva ahora</p>
+                        <h5 id="queueIncomingDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueIncomingDeckSummary" class="queue-incoming-deck__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-incoming-deck__meta">
+                        <span
+                            id="queueIncomingDeckStatus"
+                            class="queue-incoming-deck__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueIncomingDeckCopyBtn"
+                            type="button"
+                            class="queue-incoming-deck__action"
+                            ${panel.cards.length ? '' : 'disabled'}
+                        >
+                            Copiar ingresos
+                        </button>
+                    </div>
+                </div>
+                <div id="queueIncomingDeckCards" class="queue-incoming-deck__grid" role="list" aria-label="Guía de ingresos nuevos por consultorio">
+                    ${panel.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueIncomingCard_${escapeHtml(card.slotKey)}"
+                                    class="queue-incoming-card"
+                                    data-state="${escapeHtml(card.state)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-incoming-card__head">
+                                        <div>
+                                            <p class="queue-incoming-card__lane">${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</p>
+                                            <strong id="queueIncomingHeadline_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.headline)}</strong>
+                                        </div>
+                                        <span class="queue-incoming-card__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueIncomingCurrent_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-incoming-card__fact">${escapeHtml(
+                                        `Actual: ${card.currentLabel}`
+                                    )}</p>
+                                    <p id="queueIncomingSequence_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-incoming-card__fact">${escapeHtml(
+                                        `Base: ${card.sequenceLabel} · Nuevos: ${card.incomingLabel}`
+                                    )}</p>
+                                    <p id="queueIncomingSupport_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-incoming-card__fact queue-incoming-card__fact--support">${escapeHtml(
+                                        card.supportLabel
+                                    )}</p>
+                                    <div class="queue-incoming-card__actions">
+                                        <span class="queue-incoming-card__tag">${escapeHtml(
+                                            card.operatorLabel
+                                        )}</span>
+                                        <a
+                                            id="queueIncomingOpen_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            href="${escapeHtml(card.operatorUrl)}"
+                                            class="queue-incoming-card__action"
+                                            data-queue-incoming-open="${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            data-queue-incoming-label="${escapeHtml(
+                                                card.actionLabel
+                                            )}"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            ${escapeHtml(card.actionLabel)}
+                                        </a>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueIncomingDeckCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueIncomingDeck(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-incoming-open]').forEach((link) => {
+        if (!(link instanceof HTMLAnchorElement)) {
+            return;
+        }
+        link.onclick = () => {
+            const slotKey = String(link.dataset.queueIncomingOpen || '').trim();
+            const actionLabel = String(
+                link.dataset.queueIncomingLabel || ''
+            ).trim();
+            appendOpsLogEntry({
+                source: 'new_intake',
+                tone: 'info',
+                title: `Ingresos nuevos ${slotKey.toUpperCase()}: operador abierto`,
+                summary: `${actionLabel || 'Se abrió el operador'} desde la guía de ingresos nuevos.`,
+            });
+        };
+    });
+}
+
+function buildQueueScenarioCandidates(
+    manifest,
+    detectedPlatform,
+    tickets,
+    queueType
+) {
+    const scenarioType =
+        String(queueType || '')
+            .trim()
+            .toLowerCase() === 'appointment'
+            ? 'appointment'
+            : 'walk_in';
+    const cards = [1, 2].map((slot) => {
+        const slotKey = `c${slot}`;
+        const operatorContext = buildConsultorioOperatorContext(
+            manifest,
+            detectedPlatform,
+            slot
+        );
+        const currentTicket = getCalledTicketForConsultorioFromList(
+            tickets,
+            slot
+        );
+        const waitingTickets = getAssignedWaitingTicketsFromList(
+            tickets,
+            slot
+        ).slice(0, 3);
+        const waitingCount = waitingTickets.length;
+        const reserveDepth = waitingCount;
+        let score = 0;
+        let reason = '';
+        let badge = '';
+
+        if (scenarioType === 'appointment') {
+            score =
+                waitingCount * 4 +
+                (currentTicket ? 0 : 2) +
+                (operatorContext.operatorAssigned &&
+                operatorContext.operatorLive
+                    ? 0
+                    : 1);
+            badge = 'Con cita';
+            if (waitingCount === 0 && currentTicket) {
+                reason = `Queda hueco directo cuando cierres ${currentTicket.ticketCode}.`;
+            } else if (waitingCount <= 1) {
+                reason = `Mantiene la cita en un carril corto sin amontonar la espera.`;
+            } else {
+                reason = `Absorbe la cita, pero ya cargaría una cola más larga.`;
+            }
+        } else {
+            score =
+                (operatorContext.operatorAssigned &&
+                operatorContext.operatorLive
+                    ? 0
+                    : 4) +
+                (reserveDepth >= 2 ? 0 : reserveDepth === 1 ? 3 : 6) +
+                (currentTicket ? 0 : 2);
+            badge = 'Sin cita';
+            if (reserveDepth >= 2) {
+                reason = `Ya tiene reserva suficiente para absorber un walk-in sin romper el ritmo.`;
+            } else if (reserveDepth === 1) {
+                reason = `Puede absorber un walk-in, pero te deja un colchón más corto.`;
+            } else {
+                reason = `Recibir un walk-in aquí abriría un hueco muy rápido.`;
+            }
+        }
+
+        return {
+            slot,
+            slotKey,
+            score,
+            badge,
+            reason,
+            operatorLabel: operatorContext.operatorLabel,
+            operatorUrl: operatorContext.operatorUrl,
+            currentLabel: currentTicket
+                ? `${currentTicket.ticketCode} · ${formatQueueTicketAgeLabel(
+                      currentTicket,
+                      'called'
+                  )}`
+                : 'Sin paciente en atención',
+            sequenceLabel: waitingTickets.length
+                ? waitingTickets
+                      .map((ticket) => String(ticket.ticketCode || ''))
+                      .join(' -> ')
+                : 'Sin cola proyectada',
+            operatorReady:
+                operatorContext.operatorAssigned &&
+                operatorContext.operatorLive,
+        };
+    });
+
+    return cards.sort((left, right) => {
+        if (left.score !== right.score) {
+            return left.score - right.score;
+        }
+        return left.slot - right.slot;
+    });
+}
+
+function buildQueueScenarioTarget(
+    manifest,
+    detectedPlatform,
+    tickets,
+    queueType
+) {
+    return (
+        buildQueueScenarioCandidates(
+            manifest,
+            detectedPlatform,
+            tickets,
+            queueType
+        )[0] || null
+    );
+}
+
+function buildQueueScenarioDeck(manifest, detectedPlatform) {
+    const guidance = buildQueueGeneralGuidance(manifest, detectedPlatform);
+    const projectedTickets = Array.isArray(guidance?.projectedTickets)
+        ? guidance.projectedTickets
+        : getQueueSource().queueTickets;
+    const appointmentScenario = buildQueueScenarioTarget(
+        manifest,
+        detectedPlatform,
+        projectedTickets,
+        'appointment'
+    );
+    const walkInScenario = buildQueueScenarioTarget(
+        manifest,
+        detectedPlatform,
+        projectedTickets,
+        'walk_in'
+    );
+    const cards = [appointmentScenario, walkInScenario];
+    const top =
+        cards.find((card) => !card.operatorReady) ||
+        cards.find((card) => card.badge === 'Con cita') ||
+        cards[0] ||
+        null;
+
+    return {
+        title: 'Escenarios de ingreso',
+        summary:
+            appointmentScenario && walkInScenario
+                ? `Si llega con cita conviene ${appointmentScenario.slotKey.toUpperCase()}. Si llega sin cita conviene ${walkInScenario.slotKey.toUpperCase()}.`
+                : 'No hay lectura suficiente para decidir el próximo ingreso.',
+        statusLabel: '2 escenarios listos',
+        statusState: top && !top.operatorReady ? 'warning' : 'ready',
+        cards,
+    };
+}
+
+function copyQueueScenarioDeck(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Escenarios de ingreso - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...panel.cards.flatMap((card) => [
+            `${card.badge} -> ${card.slotKey.toUpperCase()}`,
+            `Actual: ${card.currentLabel}`,
+            `Base: ${card.sequenceLabel}`,
+            `Lectura: ${card.reason}`,
+            '',
+        ]),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Escenarios copiados', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar escenarios', 'error');
+        });
+}
+
+function renderQueueScenarioDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueScenarioDeck');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueScenarioDeck(manifest, detectedPlatform);
+    setHtml(
+        '#queueScenarioDeck',
+        `
+            <section class="queue-scenario-deck__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-scenario-deck__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Recepción por tipo</p>
+                        <h5 id="queueScenarioDeckTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueScenarioDeckSummary" class="queue-scenario-deck__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-scenario-deck__meta">
+                        <span
+                            id="queueScenarioDeckStatus"
+                            class="queue-scenario-deck__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueScenarioDeckCopyBtn"
+                            type="button"
+                            class="queue-scenario-deck__action"
+                        >
+                            Copiar escenarios
+                        </button>
+                    </div>
+                </div>
+                <div id="queueScenarioDeckCards" class="queue-scenario-deck__grid" role="list" aria-label="Escenarios de ingreso por tipo">
+                    ${panel.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueScenarioCard_${escapeHtml(card.badge === 'Con cita' ? 'appointment' : 'walkin')}"
+                                    class="queue-scenario-card"
+                                    data-state="${escapeHtml(
+                                        card.operatorReady ? 'ready' : 'warning'
+                                    )}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-scenario-card__head">
+                                        <div>
+                                            <p class="queue-scenario-card__lane">${escapeHtml(
+                                                card.badge
+                                            )}</p>
+                                            <strong id="queueScenarioHeadline_${escapeHtml(card.badge === 'Con cita' ? 'appointment' : 'walkin')}">${escapeHtml(
+                                                `${card.badge}: ${card.slotKey.toUpperCase()}`
+                                            )}</strong>
+                                        </div>
+                                        <span class="queue-scenario-card__badge">${escapeHtml(
+                                            card.operatorReady
+                                                ? 'Operable'
+                                                : 'Abre operador'
+                                        )}</span>
+                                    </div>
+                                    <p id="queueScenarioCurrent_${escapeHtml(card.badge === 'Con cita' ? 'appointment' : 'walkin')}" class="queue-scenario-card__fact">${escapeHtml(
+                                        `Actual: ${card.currentLabel}`
+                                    )}</p>
+                                    <p id="queueScenarioSequence_${escapeHtml(card.badge === 'Con cita' ? 'appointment' : 'walkin')}" class="queue-scenario-card__fact">${escapeHtml(
+                                        `Base: ${card.sequenceLabel}`
+                                    )}</p>
+                                    <p id="queueScenarioSupport_${escapeHtml(card.badge === 'Con cita' ? 'appointment' : 'walkin')}" class="queue-scenario-card__fact queue-scenario-card__fact--support">${escapeHtml(
+                                        card.reason
+                                    )}</p>
+                                    <div class="queue-scenario-card__actions">
+                                        <span class="queue-scenario-card__tag">${escapeHtml(
+                                            card.operatorLabel
+                                        )}</span>
+                                        <a
+                                            id="queueScenarioOpen_${escapeHtml(card.badge === 'Con cita' ? 'appointment' : 'walkin')}"
+                                            href="${escapeHtml(card.operatorUrl)}"
+                                            class="queue-scenario-card__action"
+                                            data-queue-scenario-open="${escapeHtml(
+                                                card.badge === 'Con cita'
+                                                    ? 'appointment'
+                                                    : 'walkin'
+                                            )}"
+                                            data-queue-scenario-label="${escapeHtml(
+                                                card.badge
+                                            )}"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            ${escapeHtml(
+                                                card.operatorReady
+                                                    ? `Abrir ${card.slotKey.toUpperCase()}`
+                                                    : `Preparar ${card.slotKey.toUpperCase()}`
+                                            )}
+                                        </a>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueScenarioDeckCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueScenarioDeck(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-scenario-open]').forEach((link) => {
+        if (!(link instanceof HTMLAnchorElement)) {
+            return;
+        }
+        link.onclick = () => {
+            const label = String(link.dataset.queueScenarioLabel || '').trim();
+            appendOpsLogEntry({
+                source: 'intake_scenarios',
+                tone: 'info',
+                title: 'Escenarios de ingreso: operador abierto',
+                summary: `${label || 'Escenario'} quedó abierto desde el panel de recepción por tipo.`,
+            });
+        };
+    });
+}
+
+function buildQueueReceptionScript(manifest, detectedPlatform) {
+    const guidance = buildQueueGeneralGuidance(manifest, detectedPlatform);
+    const incoming = buildQueueIncomingDeck(manifest, detectedPlatform);
+    const scenarios = buildQueueScenarioDeck(manifest, detectedPlatform);
+    const generalLead = Array.isArray(guidance.items)
+        ? guidance.items[0]
+        : null;
+    const appointmentScenario =
+        Array.isArray(scenarios.cards) &&
+        scenarios.cards.find((card) => card.badge === 'Con cita');
+    const walkInScenario =
+        Array.isArray(scenarios.cards) &&
+        scenarios.cards.find((card) => card.badge === 'Sin cita');
+    const incomingLead =
+        Array.isArray(incoming.cards) &&
+        incoming.cards
+            .filter(
+                (card) =>
+                    String(card.incomingLabel || '') !==
+                    'Sin ingreso nuevo sugerido'
+            )
+            .sort((left, right) => {
+                const leftLabel = String(left.incomingLabel || '');
+                const rightLabel = String(right.incomingLabel || '');
+                return leftLabel.localeCompare(rightLabel);
+            })[0];
+
+    const items = [];
+
+    if (generalLead) {
+        items.push({
+            key: 'general',
+            tone: 'ready',
+            label: 'Cola general',
+            headline: `${generalLead.ticketCode} -> ${generalLead.targetSlotKey.toUpperCase()}`,
+            detail: generalLead.reason,
+            actionLabel: `Abrir ${generalLead.targetSlotKey.toUpperCase()}`,
+            actionUrl: buildConsultorioOperatorContext(
+                manifest,
+                detectedPlatform,
+                generalLead.targetSlot
+            ).operatorUrl,
+        });
+    }
+
+    if (appointmentScenario) {
+        items.push({
+            key: 'appointment',
+            tone: appointmentScenario.operatorReady ? 'ready' : 'warning',
+            label: 'Con cita',
+            headline: `Enviar a ${appointmentScenario.slotKey.toUpperCase()}`,
+            detail: appointmentScenario.reason,
+            actionLabel: appointmentScenario.operatorReady
+                ? `Abrir ${appointmentScenario.slotKey.toUpperCase()}`
+                : `Preparar ${appointmentScenario.slotKey.toUpperCase()}`,
+            actionUrl: appointmentScenario.operatorUrl,
+        });
+    }
+
+    if (walkInScenario) {
+        items.push({
+            key: 'walkin',
+            tone: walkInScenario.operatorReady ? 'ready' : 'warning',
+            label: 'Sin cita',
+            headline: `Enviar a ${walkInScenario.slotKey.toUpperCase()}`,
+            detail: walkInScenario.reason,
+            actionLabel: walkInScenario.operatorReady
+                ? `Abrir ${walkInScenario.slotKey.toUpperCase()}`
+                : `Preparar ${walkInScenario.slotKey.toUpperCase()}`,
+            actionUrl: walkInScenario.operatorUrl,
+        });
+    }
+
+    if (incomingLead) {
+        items.push({
+            key: 'incoming',
+            tone: incomingLead.state === 'warning' ? 'warning' : 'ready',
+            label: 'Si entra otro',
+            headline: `${incomingLead.incomingLabel} -> ${incomingLead.slotKey.toUpperCase()}`,
+            detail: incomingLead.supportLabel,
+            actionLabel: incomingLead.actionLabel,
+            actionUrl: incomingLead.operatorUrl,
+        });
+    }
+
+    const top =
+        items.find((item) => item.tone === 'warning') || items[0] || null;
+
+    return {
+        title: 'Guion de recepción',
+        summary: top
+            ? `${top.label}: ${top.headline}. ${top.detail}`
+            : 'No hay guion corto disponible ahora mismo.',
+        statusLabel: items.length
+            ? `${items.length} decisiones rápidas`
+            : 'Sin guion disponible',
+        statusState: top ? top.tone : 'idle',
+        items,
+    };
+}
+
+function copyQueueReceptionScript(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Guion de recepción - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...(panel.items.length
+            ? panel.items.map(
+                  (item, index) =>
+                      `${index + 1}. ${item.label}: ${item.headline}. ${item.detail}`
+              )
+            : ['Sin guion operativo visible.']),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Guion copiado', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar el guion', 'error');
+        });
+}
+
+function renderQueueReceptionScript(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReceptionScript');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueReceptionScript(manifest, detectedPlatform);
+    setHtml(
+        '#queueReceptionScript',
+        `
+            <section class="queue-reception-script__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-reception-script__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Qué hacer en mostrador ahora</p>
+                        <h5 id="queueReceptionScriptTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueReceptionScriptSummary" class="queue-reception-script__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-reception-script__meta">
+                        <span
+                            id="queueReceptionScriptStatus"
+                            class="queue-reception-script__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueReceptionScriptCopyBtn"
+                            type="button"
+                            class="queue-reception-script__action"
+                            ${panel.items.length ? '' : 'disabled'}
+                        >
+                            Copiar guion
+                        </button>
+                    </div>
+                </div>
+                ${
+                    panel.items.length
+                        ? `
+                            <div id="queueReceptionScriptItems" class="queue-reception-script__list" role="list" aria-label="Guion operativo de recepción">
+                                ${panel.items
+                                    .map(
+                                        (item, index) => `
+                                            <article
+                                                id="queueReceptionScriptItem_${index}"
+                                                class="queue-reception-script__item"
+                                                data-state="${escapeHtml(item.tone)}"
+                                                role="listitem"
+                                            >
+                                                <div class="queue-reception-script__copy">
+                                                    <div class="queue-reception-script__headline">
+                                                        <span class="queue-reception-script__lane">${escapeHtml(
+                                                            item.label
+                                                        )}</span>
+                                                        <strong id="queueReceptionScriptHeadline_${index}">${escapeHtml(
+                                                            item.headline
+                                                        )}</strong>
+                                                    </div>
+                                                    <p id="queueReceptionScriptDetail_${index}" class="queue-reception-script__detail">${escapeHtml(
+                                                        item.detail
+                                                    )}</p>
+                                                </div>
+                                                <div class="queue-reception-script__actions">
+                                                    <a
+                                                        id="queueReceptionScriptOpen_${index}"
+                                                        href="${escapeHtml(
+                                                            item.actionUrl
+                                                        )}"
+                                                        class="queue-reception-script__open"
+                                                        data-queue-reception-script-label="${escapeHtml(
+                                                            item.label
+                                                        )}"
+                                                        target="_blank"
+                                                        rel="noopener"
+                                                    >
+                                                        ${escapeHtml(
+                                                            item.actionLabel
+                                                        )}
+                                                    </a>
+                                                </div>
+                                            </article>
+                                        `
+                                    )
+                                    .join('')}
+                            </div>
+                        `
+                        : `
+                            <article id="queueReceptionScriptEmpty" class="queue-reception-script__empty">
+                                <strong>Sin guion visible</strong>
+                                <p>Abre la cola del turno para reconstruir las decisiones rápidas de recepción.</p>
+                            </article>
+                        `
+                }
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueReceptionScriptCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueReceptionScript(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-reception-script-label]').forEach(
+        (link) => {
+            if (!(link instanceof HTMLAnchorElement)) {
+                return;
+            }
+            link.onclick = () => {
+                const label = String(
+                    link.dataset.queueReceptionScriptLabel || ''
+                ).trim();
+                appendOpsLogEntry({
+                    source: 'reception_script',
+                    tone: 'info',
+                    title: 'Guion de recepción: operador abierto',
+                    summary: `${label || 'Recepción'} quedó abierto desde el guion operativo.`,
+                });
+            };
+        }
+    );
+}
+
+function buildQueueReceptionCollisionPlan(manifest, detectedPlatform) {
+    const guidance = buildQueueGeneralGuidance(manifest, detectedPlatform);
+    const projectedTickets = Array.isArray(guidance?.projectedTickets)
+        ? guidance.projectedTickets
+        : getQueueSource().queueTickets;
+    const appointmentCandidates = buildQueueScenarioCandidates(
+        manifest,
+        detectedPlatform,
+        projectedTickets,
+        'appointment'
+    );
+    const walkInCandidates = buildQueueScenarioCandidates(
+        manifest,
+        detectedPlatform,
+        projectedTickets,
+        'walk_in'
+    );
+    const appointmentLead = appointmentCandidates[0] || null;
+    const walkInPreferred = walkInCandidates[0] || null;
+    let walkInLead = walkInPreferred;
+    let forcedSplit = false;
+
+    if (
+        appointmentLead &&
+        walkInPreferred &&
+        Number(appointmentLead.slot || 0) === Number(walkInPreferred.slot || 0)
+    ) {
+        const alternateWalkIn =
+            walkInCandidates.find(
+                (candidate) =>
+                    Number(candidate.slot || 0) !==
+                    Number(appointmentLead.slot || 0)
+            ) || null;
+        if (alternateWalkIn) {
+            forcedSplit = true;
+            walkInLead = {
+                ...alternateWalkIn,
+                reason: `Con cita toma ${appointmentLead.slotKey.toUpperCase()} primero. Desvía el sin cita a ${alternateWalkIn.slotKey.toUpperCase()} para no chocar en el mismo carril. ${alternateWalkIn.reason}`,
+            };
+        }
+    }
+
+    const items = [];
+
+    if (appointmentLead) {
+        items.push({
+            key: 'appointment',
+            tone: appointmentLead.operatorReady ? 'ready' : 'warning',
+            laneLabel: 'Con cita',
+            headline: `1. Con cita -> ${appointmentLead.slotKey.toUpperCase()}`,
+            detail: appointmentLead.reason,
+            support: `Base actual: ${appointmentLead.currentLabel} · ${appointmentLead.sequenceLabel}`,
+            actionLabel: appointmentLead.operatorReady
+                ? `Abrir ${appointmentLead.slotKey.toUpperCase()}`
+                : `Preparar ${appointmentLead.slotKey.toUpperCase()}`,
+            actionUrl: appointmentLead.operatorUrl,
+        });
+    }
+
+    if (walkInLead) {
+        items.push({
+            key: 'walkin',
+            tone: walkInLead.operatorReady
+                ? forcedSplit
+                    ? 'suggested'
+                    : 'ready'
+                : 'warning',
+            laneLabel: forcedSplit ? 'Sin cita desviado' : 'Sin cita',
+            headline: `2. Sin cita -> ${walkInLead.slotKey.toUpperCase()}`,
+            detail: walkInLead.reason,
+            support: `Base actual: ${walkInLead.currentLabel} · ${walkInLead.sequenceLabel}`,
+            actionLabel: walkInLead.operatorReady
+                ? `Abrir ${walkInLead.slotKey.toUpperCase()}`
+                : `Preparar ${walkInLead.slotKey.toUpperCase()}`,
+            actionUrl: walkInLead.operatorUrl,
+        });
+    }
+
+    const top =
+        items.find((item) => item.tone === 'warning') ||
+        items.find((item) => item.tone === 'suggested') ||
+        items[0] ||
+        null;
+
+    let summary = 'No hay lectura suficiente para resolver una llegada doble.';
+    if (appointmentLead && walkInLead) {
+        summary = forcedSplit
+            ? `Si llegan dos personas juntas, con cita entra por ${appointmentLead.slotKey.toUpperCase()} y sin cita se desvía a ${walkInLead.slotKey.toUpperCase()} para no bloquear el mismo carril.`
+            : `Si llegan dos personas juntas, con cita conviene ${appointmentLead.slotKey.toUpperCase()} y sin cita conviene ${walkInLead.slotKey.toUpperCase()}.`;
+    }
+
+    let statusLabel = 'Sin llegada doble visible';
+    if (items.length) {
+        statusLabel = forcedSplit
+            ? 'Cruce de mostrador resuelto'
+            : 'Ingreso doble cubierto';
+        if (items.some((item) => item.tone === 'warning')) {
+            statusLabel = forcedSplit
+                ? 'Cruce resuelto con preparación'
+                : 'Ingreso doble con preparación';
+        }
+    }
+
+    return {
+        title: 'Recepción simultánea',
+        summary,
+        statusLabel,
+        statusState: top ? top.tone : 'idle',
+        forcedSplit,
+        items,
+    };
+}
+
+function copyQueueReceptionCollision(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Recepción simultánea - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...(panel.items.length
+            ? panel.items.map((item) =>
+                  `${item.headline}. ${item.detail} ${item.support}`.trim()
+              )
+            : ['Sin guion para llegada doble.']),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Recepción simultánea copiada', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar la recepción simultánea', 'error');
+        });
+}
+
+function renderQueueReceptionCollision(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReceptionCollision');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueReceptionCollisionPlan(manifest, detectedPlatform);
+    setHtml(
+        '#queueReceptionCollision',
+        `
+            <section class="queue-reception-collision__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-reception-collision__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Si llegan dos personas juntas</p>
+                        <h5 id="queueReceptionCollisionTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueReceptionCollisionSummary" class="queue-reception-collision__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-reception-collision__meta">
+                        <span
+                            id="queueReceptionCollisionStatus"
+                            class="queue-reception-collision__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueReceptionCollisionCopyBtn"
+                            type="button"
+                            class="queue-reception-collision__action"
+                            ${panel.items.length ? '' : 'disabled'}
+                        >
+                            Copiar llegada doble
+                        </button>
+                    </div>
+                </div>
+                ${
+                    panel.items.length
+                        ? `
+                            <div id="queueReceptionCollisionCards" class="queue-reception-collision__grid" role="list" aria-label="Guía de recepción simultánea">
+                                ${panel.items
+                                    .map(
+                                        (item) => `
+                                            <article
+                                                id="queueReceptionCollisionCard_${escapeHtml(
+                                                    item.key
+                                                )}"
+                                                class="queue-reception-collision__card"
+                                                data-state="${escapeHtml(item.tone)}"
+                                                role="listitem"
+                                            >
+                                                <div class="queue-reception-collision__card-head">
+                                                    <div>
+                                                        <p class="queue-reception-collision__lane">${escapeHtml(
+                                                            item.laneLabel
+                                                        )}</p>
+                                                        <strong id="queueReceptionCollisionHeadline_${escapeHtml(
+                                                            item.key
+                                                        )}">${escapeHtml(
+                                                            item.headline
+                                                        )}</strong>
+                                                    </div>
+                                                    <span class="queue-reception-collision__badge">${escapeHtml(
+                                                        item.tone === 'warning'
+                                                            ? 'Preparar'
+                                                            : item.tone ===
+                                                                'suggested'
+                                                              ? 'Desvío'
+                                                              : 'Listo'
+                                                    )}</span>
+                                                </div>
+                                                <p id="queueReceptionCollisionDetail_${escapeHtml(
+                                                    item.key
+                                                )}" class="queue-reception-collision__detail">${escapeHtml(
+                                                    item.detail
+                                                )}</p>
+                                                <p id="queueReceptionCollisionSupport_${escapeHtml(
+                                                    item.key
+                                                )}" class="queue-reception-collision__support">${escapeHtml(
+                                                    item.support
+                                                )}</p>
+                                                <div class="queue-reception-collision__actions">
+                                                    <a
+                                                        id="queueReceptionCollisionOpen_${escapeHtml(
+                                                            item.key
+                                                        )}"
+                                                        href="${escapeHtml(
+                                                            item.actionUrl
+                                                        )}"
+                                                        class="queue-reception-collision__open"
+                                                        data-queue-reception-collision-label="${escapeHtml(
+                                                            item.laneLabel
+                                                        )}"
+                                                        target="_blank"
+                                                        rel="noopener"
+                                                    >
+                                                        ${escapeHtml(
+                                                            item.actionLabel
+                                                        )}
+                                                    </a>
+                                                </div>
+                                            </article>
+                                        `
+                                    )
+                                    .join('')}
+                            </div>
+                        `
+                        : `
+                            <article id="queueReceptionCollisionEmpty" class="queue-reception-collision__empty">
+                                <strong>Sin llegada doble visible</strong>
+                                <p>Hace falta más contexto de cola para repartir dos ingresos a la vez.</p>
+                            </article>
+                        `
+                }
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById(
+        'queueReceptionCollisionCopyBtn'
+    );
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueReceptionCollision(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-reception-collision-label]').forEach(
+        (link) => {
+            if (!(link instanceof HTMLAnchorElement)) {
+                return;
+            }
+            link.onclick = () => {
+                const label = String(
+                    link.dataset.queueReceptionCollisionLabel || ''
+                ).trim();
+                appendOpsLogEntry({
+                    source: 'reception_collision',
+                    tone: 'info',
+                    title: 'Recepción simultánea: operador abierto',
+                    summary: `${label || 'Llegada doble'} quedó abierto desde la guía de recepción simultánea.`,
+                });
+            };
+        }
+    );
+}
+
+function buildQueueReceptionLights(manifest, detectedPlatform) {
+    const guidance = buildQueueGeneralGuidance(manifest, detectedPlatform);
+    const projectedTickets = Array.isArray(guidance?.projectedTickets)
+        ? guidance.projectedTickets
+        : getQueueSource().queueTickets;
+    const appointmentCandidates = buildQueueScenarioCandidates(
+        manifest,
+        detectedPlatform,
+        projectedTickets,
+        'appointment'
+    );
+    const walkInCandidates = buildQueueScenarioCandidates(
+        manifest,
+        detectedPlatform,
+        projectedTickets,
+        'walk_in'
+    );
+    const coverageDeck = buildQueueCoverageDeck(manifest, detectedPlatform);
+    const reserveDeck = buildQueueReserveDeck(manifest, detectedPlatform);
+    const coverageBySlot = new Map(
+        (coverageDeck.cards || []).map((card) => [card.slot, card])
+    );
+    const reserveBySlot = new Map(
+        (reserveDeck.cards || []).map((card) => [card.slot, card])
+    );
+
+    const cards = [1, 2].map((slot) => {
+        const slotKey = `c${slot}`;
+        const operatorContext = buildConsultorioOperatorContext(
+            manifest,
+            detectedPlatform,
+            slot
+        );
+        const appointmentRank =
+            appointmentCandidates.findIndex(
+                (candidate) => Number(candidate.slot || 0) === slot
+            ) + 1;
+        const walkInRank =
+            walkInCandidates.findIndex(
+                (candidate) => Number(candidate.slot || 0) === slot
+            ) + 1;
+        const coverageCard = coverageBySlot.get(slot) || null;
+        const reserveCard = reserveBySlot.get(slot) || null;
+
+        let mode = 'hold';
+        let tone = 'warning';
+        let badge = 'Contener';
+        let headline = `${slotKey.toUpperCase()} contener ingresos nuevos`;
+        let detail =
+            'Evita mandar gente nueva aquí hasta que el otro carril absorba más carga o se recupere la base.';
+
+        if (walkInRank === 1) {
+            mode = 'open';
+            tone = operatorContext.operatorAssigned ? 'ready' : 'warning';
+            badge = 'Abierto';
+            headline = `${slotKey.toUpperCase()} abierto para recepción`;
+            detail =
+                appointmentRank === 1
+                    ? 'Es el carril más limpio para recibir tanto citas como sin cita ahora mismo.'
+                    : 'Es el carril más limpio para absorber sin cita sin romper el resto del flujo.';
+        } else if (appointmentRank === 1) {
+            mode = 'appointments';
+            tone = operatorContext.operatorAssigned ? 'suggested' : 'warning';
+            badge = 'Solo citas';
+            headline = `${slotKey.toUpperCase()} reservar para citas`;
+            detail =
+                'Mantén este carril para quienes llegan con cita y deja que el otro absorba la entrada espontánea.';
+        } else if (
+            ['ready', 'suggested'].includes(String(reserveCard?.state || '')) ||
+            ['ready', 'suggested'].includes(String(coverageCard?.state || ''))
+        ) {
+            mode = 'buffer';
+            tone = 'suggested';
+            badge = 'Reserva';
+            headline = `${slotKey.toUpperCase()} mantener en reserva`;
+            detail =
+                'Este carril ya sostiene su propio siguiente paso; úsalo como colchón y no lo cargues primero desde mostrador.';
+        }
+
+        return {
+            slot,
+            slotKey,
+            mode,
+            tone,
+            badge,
+            headline,
+            detail,
+            appointmentLabel:
+                appointmentRank === 1
+                    ? 'Con cita: preferido'
+                    : appointmentRank === 2
+                      ? 'Con cita: respaldo'
+                      : 'Con cita: sin lectura',
+            walkInLabel:
+                walkInRank === 1
+                    ? 'Sin cita: preferido'
+                    : walkInRank === 2
+                      ? 'Sin cita: mejor el otro'
+                      : 'Sin cita: sin lectura',
+            supportLabel: `${operatorContext.operatorLabel}. ${
+                reserveCard?.badge || coverageCard?.badge || 'Sin soporte extra'
+            }`,
+            actionLabel: operatorContext.operatorAssigned
+                ? `Abrir ${slotKey.toUpperCase()}`
+                : `Preparar ${slotKey.toUpperCase()}`,
+            actionUrl: operatorContext.operatorUrl,
+        };
+    });
+
+    const openCard = cards.find((card) => card.mode === 'open') || null;
+    const appointmentCard =
+        cards.find((card) => card.mode === 'appointments') || null;
+    const bufferCard = cards.find((card) => card.mode === 'buffer') || null;
+    const top =
+        cards.find((card) => card.tone === 'warning') ||
+        cards.find((card) => card.mode === 'open') ||
+        cards.find((card) => card.mode === 'appointments') ||
+        cards[0] ||
+        null;
+
+    let summary =
+        'Recepción no tiene un carril claramente abierto ahora mismo.';
+    if (openCard && appointmentCard && openCard.slot !== appointmentCard.slot) {
+        summary = `${openCard.slotKey.toUpperCase()} queda abierto para sin cita; ${appointmentCard.slotKey.toUpperCase()} conviene reservarlo para citas.`;
+    } else if (openCard && bufferCard) {
+        summary = `${openCard.slotKey.toUpperCase()} queda abierto y ${bufferCard.slotKey.toUpperCase()} se mantiene como reserva.`;
+    } else if (openCard) {
+        summary = `${openCard.slotKey.toUpperCase()} es el carril más limpio para recibir ahora.`;
+    } else if (appointmentCard) {
+        summary = `${appointmentCard.slotKey.toUpperCase()} conserva la mejor ventana para citas; evita cargar el otro carril sin revisar la cola.`;
+    }
+
+    const openCount = cards.filter((card) => card.mode === 'open').length;
+    const appointmentsCount = cards.filter(
+        (card) => card.mode === 'appointments'
+    ).length;
+
+    return {
+        title: 'Semáforo de recepción',
+        summary,
+        statusLabel:
+            openCount > 0
+                ? `${openCount} carril(es) abierto(s) · ${appointmentsCount} reservado(s) para citas`
+                : 'Recepción contenida',
+        statusState: top ? top.tone : 'idle',
+        cards,
+    };
+}
+
+function copyQueueReceptionLights(panel) {
+    if (!panel) {
+        return Promise.resolve();
+    }
+    const report = [
+        `Semáforo de recepción - ${formatDateTime(new Date().toISOString())}`,
+        `Estado: ${panel.statusLabel}`,
+        panel.summary,
+        '',
+        ...panel.cards.flatMap((card) => [
+            `${card.slotKey.toUpperCase()} - ${card.badge}`,
+            card.headline,
+            card.detail,
+            `${card.appointmentLabel} · ${card.walkInLabel}`,
+            card.supportLabel,
+            '',
+        ]),
+    ];
+    return navigator.clipboard
+        .writeText(report.join('\n').trim())
+        .then(() => {
+            createToast('Semáforo copiado', 'success');
+        })
+        .catch(() => {
+            createToast('No se pudo copiar el semáforo', 'error');
+        });
+}
+
+function renderQueueReceptionLights(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReceptionLights');
+    if (!(root instanceof HTMLElement)) {
+        return;
+    }
+
+    const panel = buildQueueReceptionLights(manifest, detectedPlatform);
+    setHtml(
+        '#queueReceptionLights',
+        `
+            <section class="queue-reception-lights__shell" data-state="${escapeHtml(
+                panel.statusState
+            )}">
+                <div class="queue-reception-lights__header">
+                    <div>
+                        <p class="queue-app-card__eyebrow">Lectura rápida por carril</p>
+                        <h5 id="queueReceptionLightsTitle" class="queue-app-card__title">${escapeHtml(
+                            panel.title
+                        )}</h5>
+                        <p id="queueReceptionLightsSummary" class="queue-reception-lights__summary">${escapeHtml(
+                            panel.summary
+                        )}</p>
+                    </div>
+                    <div class="queue-reception-lights__meta">
+                        <span
+                            id="queueReceptionLightsStatus"
+                            class="queue-reception-lights__status"
+                            data-state="${escapeHtml(panel.statusState)}"
+                        >
+                            ${escapeHtml(panel.statusLabel)}
+                        </span>
+                        <button
+                            id="queueReceptionLightsCopyBtn"
+                            type="button"
+                            class="queue-reception-lights__action"
+                            ${panel.cards.length ? '' : 'disabled'}
+                        >
+                            Copiar semáforo
+                        </button>
+                    </div>
+                </div>
+                <div id="queueReceptionLightsCards" class="queue-reception-lights__grid" role="list" aria-label="Semáforo de recepción por consultorio">
+                    ${panel.cards
+                        .map(
+                            (card) => `
+                                <article
+                                    id="queueReceptionLightsCard_${escapeHtml(
+                                        card.slotKey
+                                    )}"
+                                    class="queue-reception-lights__card"
+                                    data-state="${escapeHtml(card.tone)}"
+                                    role="listitem"
+                                >
+                                    <div class="queue-reception-lights__card-head">
+                                        <div>
+                                            <p class="queue-reception-lights__lane">${escapeHtml(
+                                                card.slotKey.toUpperCase()
+                                            )}</p>
+                                            <strong id="queueReceptionLightsHeadline_${escapeHtml(
+                                                card.slotKey
+                                            )}">${escapeHtml(card.headline)}</strong>
+                                        </div>
+                                        <span id="queueReceptionLightsBadge_${escapeHtml(
+                                            card.slotKey
+                                        )}" class="queue-reception-lights__badge">${escapeHtml(
+                                            card.badge
+                                        )}</span>
+                                    </div>
+                                    <p id="queueReceptionLightsDetail_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-reception-lights__detail">${escapeHtml(
+                                        card.detail
+                                    )}</p>
+                                    <p id="queueReceptionLightsRules_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-reception-lights__rules">${escapeHtml(
+                                        `${card.appointmentLabel} · ${card.walkInLabel}`
+                                    )}</p>
+                                    <p id="queueReceptionLightsSupport_${escapeHtml(
+                                        card.slotKey
+                                    )}" class="queue-reception-lights__support">${escapeHtml(
+                                        card.supportLabel
+                                    )}</p>
+                                    <div class="queue-reception-lights__actions">
+                                        <a
+                                            id="queueReceptionLightsOpen_${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            href="${escapeHtml(card.actionUrl)}"
+                                            class="queue-reception-lights__open"
+                                            data-queue-reception-lights-label="${escapeHtml(
+                                                card.slotKey
+                                            )}"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            ${escapeHtml(card.actionLabel)}
+                                        </a>
+                                    </div>
+                                </article>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `
+    );
+
+    const copyButton = document.getElementById('queueReceptionLightsCopyBtn');
+    if (copyButton instanceof HTMLButtonElement) {
+        copyButton.onclick = () => {
+            void copyQueueReceptionLights(panel);
+        };
+    }
+
+    root.querySelectorAll('[data-queue-reception-lights-label]').forEach(
+        (link) => {
+            if (!(link instanceof HTMLAnchorElement)) {
+                return;
+            }
+            link.onclick = () => {
+                const label = String(
+                    link.dataset.queueReceptionLightsLabel || ''
+                ).trim();
+                appendOpsLogEntry({
+                    source: 'reception_lights',
+                    tone: 'info',
+                    title: 'Semáforo de recepción: operador abierto',
+                    summary: `${label || 'Carril'} quedó abierto desde el semáforo de recepción.`,
+                });
+            };
+        }
+    );
+}
+
 function getQueueBlockerWeight(item) {
     const action = String(item?.actionLabel || '')
         .trim()
@@ -13860,6 +15961,13 @@ function rerenderQueueOpsHub(manifest, detectedPlatform) {
     renderQueueMasterSequencePanel(manifest, detectedPlatform);
     renderQueueCoverageDeck(manifest, detectedPlatform);
     renderQueueReserveDeck(manifest, detectedPlatform);
+    renderQueueGeneralGuidance(manifest, detectedPlatform);
+    renderQueueProjectedDeck(manifest, detectedPlatform);
+    renderQueueIncomingDeck(manifest, detectedPlatform);
+    renderQueueScenarioDeck(manifest, detectedPlatform);
+    renderQueueReceptionScript(manifest, detectedPlatform);
+    renderQueueReceptionCollision(manifest, detectedPlatform);
+    renderQueueReceptionLights(manifest, detectedPlatform);
     renderQueueBlockersPanel(manifest, detectedPlatform);
     renderQueueSlaDeck(manifest, detectedPlatform);
     renderQueueWaitRadar(manifest, detectedPlatform);
@@ -14283,6 +16391,13 @@ export function renderQueueInstallHub(options = {}) {
     renderQueueMasterSequencePanel(manifest, platform);
     renderQueueCoverageDeck(manifest, platform);
     renderQueueReserveDeck(manifest, platform);
+    renderQueueGeneralGuidance(manifest, platform);
+    renderQueueProjectedDeck(manifest, platform);
+    renderQueueIncomingDeck(manifest, platform);
+    renderQueueScenarioDeck(manifest, platform);
+    renderQueueReceptionScript(manifest, platform);
+    renderQueueReceptionCollision(manifest, platform);
+    renderQueueReceptionLights(manifest, platform);
     renderQueueBlockersPanel(manifest, platform);
     renderQueueSlaDeck(manifest, platform);
     renderQueueWaitRadar(manifest, platform);
