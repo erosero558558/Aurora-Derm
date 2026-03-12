@@ -610,8 +610,12 @@ jobs:
                   const dispatchReady = recommended && dispatchRequested;
                   const selfHostedDispatchReady =
                     recommended && selfHostedDispatchRequested;
-                  const connectivityDiagnoseDispatchReady =
-                    recommended && (dispatchRequested || selfHostedDispatchRequested);
+                  const connectivityDiagnoseDispatchReady = recommended;
+                  const connectivityDiagnoseDispatchMode = !recommended
+                    ? 'not_required'
+                    : dispatchRequested || selfHostedDispatchRequested
+                      ? 'with_fallback'
+                      : 'diagnose_only';
 
                   const reasonTokens = [];
                   if (sshRepairFailed) {
@@ -662,6 +666,11 @@ jobs:
                     'connectivity_diagnose_dispatch_ready',
                     connectivityDiagnoseDispatchReady ? 'true' : 'false'
                   );
+                  append(
+                    outputPath,
+                    'connectivity_diagnose_dispatch_mode',
+                    connectivityDiagnoseDispatchMode
+                  );
                   append(outputPath, 'transport_fallback_reason', reason);
                   append(outputPath, 'transport_fallback_failure_assets', failureAssetsCsv);
 
@@ -695,6 +704,11 @@ jobs:
                     'CONNECTIVITY_DIAGNOSE_DISPATCH_READY',
                     connectivityDiagnoseDispatchReady ? 'true' : 'false'
                   );
+                  append(
+                    envPath,
+                    'CONNECTIVITY_DIAGNOSE_DISPATCH_MODE',
+                    connectivityDiagnoseDispatchMode
+                  );
                   append(envPath, 'TRANSPORT_FALLBACK_REASON', reason);
                   append(envPath, 'TRANSPORT_FALLBACK_FAILURE_ASSETS', failureAssetsCsv);
                   NODE
@@ -703,6 +717,8 @@ jobs:
               id: connectivity_diagnose_dispatch
               if: ${{ always() && steps.transport_fallback.outputs.connectivity_diagnose_dispatch_ready == 'true' }}
               uses: actions/github-script@v7
+              env:
+                  CONNECTIVITY_DIAGNOSE_DISPATCH_MODE: ${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_mode }}
               with:
                   script: |
                       const owner = context.repo.owner;
@@ -786,8 +802,8 @@ jobs:
 
                       core.info(
                         observedRun
-                          ? `Workflow ${workflowId} disparado desde repair (run_id=${observedRun.id}, status=${observedRun.status}, url=${observedRun.html_url}).`
-                          : `Workflow ${workflowId} disparado desde repair (run no observado aun).`
+                          ? `Workflow ${workflowId} disparado desde repair (mode=${process.env.CONNECTIVITY_DIAGNOSE_DISPATCH_MODE || 'unknown'}, run_id=${observedRun.id}, status=${observedRun.status}, url=${observedRun.html_url}).`
+                          : `Workflow ${workflowId} disparado desde repair (mode=${process.env.CONNECTIVITY_DIAGNOSE_DISPATCH_MODE || 'unknown'}, run no observado aun).`
                       );
 
             - name: Disparar transport fallback desde repair
@@ -1392,6 +1408,7 @@ jobs:
                     echo "- telemedicine_repair_non_tele_failures: \`${TELEMEDICINE_REPAIR_NON_TELE_FAILURES}\`";
                     echo "- telemedicine_repair_step_outcome: \`${{ steps.telemedicine_repair.outcome }}\`";
                     echo "- connectivity_diagnose_dispatched: \`${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_ready }}\`";
+                    echo "- connectivity_diagnose_dispatch_mode: \`${{ steps.transport_fallback.outputs.connectivity_diagnose_dispatch_mode }}\`";
                     echo "- connectivity_diagnose_run_status: \`${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_status }}\`";
                     echo "- connectivity_diagnose_run_url: \`${{ steps.connectivity_diagnose_dispatch.outputs.connectivity_diagnose_run_url }}\`";
                     echo "- transport_fallback_requested: \`${{ steps.transport_fallback.outputs.transport_fallback_dispatch_requested }}\`";

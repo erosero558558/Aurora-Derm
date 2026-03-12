@@ -138,8 +138,9 @@ gh workflow run repair-git-sync.yml --ref main \
 ```
 
 `repair-git-sync.yml` now evaluates `verification/last-deploy-verify.json`
-before escalating. It only dispatches `deploy-hosting.yml` automatically when
-the pattern is consistent with a stale host rather than a total outage:
+before escalating. Once the pattern is consistent with a stale host rather than
+a total outage, it always dispatches `diagnose-host-connectivity.yml` and then
+keeps the actual deploy fallbacks conservative:
 
 - `ssh_repair_outcome != success`
 - `verify_after_repair_outcome = failure`
@@ -149,8 +150,8 @@ the pattern is consistent with a stale host rather than a total outage:
   `health-public-sync-working-tree-dirty`, or
   `health-public-sync-telemetry-gap`
 
-This keeps the emergency transport fallback conservative. Generic verify
-failures without the stale-host signature do not auto-dispatch transport.
+Generic verify failures without the stale-host signature do not dispatch the
+connectivity diagnose or the deploy fallbacks.
 
 During a successful SSH repair, the workflow now also re-installs the canonical
 host wrapper:
@@ -173,15 +174,16 @@ gh workflow run repair-git-sync.yml --ref main \
   -f dispatch_self_hosted_fallback=true
 ```
 
-With that flag enabled, `repair-git-sync.yml` now does three things off the same
-stale-host signature:
+With the same stale-host signature, `repair-git-sync.yml` now behaves like this:
 
-1. dispatches `diagnose-host-connectivity.yml`
-2. dispatches `deploy-hosting.yml` transport fallback
-3. dispatches `deploy-frontend-selfhosted.yml` and records its initial state
+1. It always dispatches `diagnose-host-connectivity.yml`.
+2. It dispatches `deploy-hosting.yml` only if `dispatch_transport_fallback=true` or the repo automation enables that fallback.
+3. It dispatches `deploy-frontend-selfhosted.yml` only if `dispatch_self_hosted_fallback=true` or the repo automation enables that fallback.
 
 Read the repair summary before re-running anything manually:
 
+- `connectivity_diagnose_dispatch_mode=diagnose_only` means repair only escalated the network probe and left deploy fallbacks untouched.
+- `connectivity_diagnose_dispatch_mode=with_fallback` means the same repair run also requested at least one deploy fallback path.
 - `connectivity_diagnose_run_status` tells you whether the network probe was observed.
 - `self_hosted_fallback_state=queued` means the self-hosted runner is not available yet; the fallback is waiting for runner capacity, not blocked by repo logic.
 - `self_hosted_fallback_state=started` means the Windows runner picked up the job.
