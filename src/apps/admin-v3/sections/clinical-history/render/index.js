@@ -1023,3 +1023,348 @@ function selectField(id, label, value, choices, options = {}) {
         </label>
     `;
 }
+
+function buildDraftForm(draft, saving) {
+    const disabled = saving || normalizeString(draft.sessionId) === '';
+    const pregnancyValue = pregnancySelectValue(
+        draft.intake.datosPaciente.embarazo
+    );
+    const reviewReasons = draft.reviewReasons.join(', ');
+
+    return `
+        <div class="clinical-history-form-grid">
+            <section class="clinical-history-form-section">
+                <header>
+                    <h4>Intake estructurado</h4>
+                    <p>Motivo de consulta, evolucion y datos del paciente.</p>
+                </header>
+                ${inputField(
+                    'intake_motivo_consulta',
+                    'Motivo de consulta',
+                    draft.intake.motivoConsulta,
+                    {
+                        placeholder: 'Ej. prurito, acne inflamatorio, rash',
+                        disabled,
+                    }
+                )}
+                ${textareaField(
+                    'intake_enfermedad_actual',
+                    'Enfermedad actual',
+                    draft.intake.enfermedadActual,
+                    {
+                        rows: 5,
+                        placeholder:
+                            'Evolucion temporal, distribucion, desencadenantes.',
+                        disabled,
+                    }
+                )}
+                <div class="clinical-history-inline-grid">
+                    ${textareaField(
+                        'intake_antecedentes',
+                        'Antecedentes',
+                        draft.intake.antecedentes,
+                        {
+                            rows: 4,
+                            placeholder:
+                                'Dermatologicos, familiares, cronicos.',
+                            disabled,
+                        }
+                    )}
+                    ${textareaField(
+                        'intake_alergias',
+                        'Alergias',
+                        draft.intake.alergias,
+                        {
+                            rows: 4,
+                            placeholder: 'Medicamentos, alimentos, contacto.',
+                            disabled,
+                        }
+                    )}
+                </div>
+                <div class="clinical-history-inline-grid">
+                    ${textareaField(
+                        'intake_medicacion_actual',
+                        'Medicacion actual',
+                        draft.intake.medicacionActual,
+                        {
+                            rows: 4,
+                            placeholder: 'Nombre, dosis, frecuencia.',
+                            disabled,
+                        }
+                    )}
+                    ${textareaField(
+                        'intake_ros_red_flags',
+                        'ROS / red flags',
+                        listToTextarea(draft.intake.rosRedFlags),
+                        {
+                            rows: 4,
+                            placeholder:
+                                'Una linea por dato clinico o red flag.',
+                            hint: 'Cada linea se guarda como item separado.',
+                            disabled,
+                        }
+                    )}
+                </div>
+                ${textareaField(
+                    'intake_resumen_clinico',
+                    'Resumen clinico',
+                    draft.intake.resumenClinico,
+                    {
+                        rows: 4,
+                        placeholder: 'Resumen limpio para pasar a la consulta.',
+                        disabled,
+                    }
+                )}
+                ${textareaField(
+                    'intake_preguntas_faltantes',
+                    'Preguntas faltantes del intake',
+                    listToTextarea(draft.intake.preguntasFaltantes),
+                    {
+                        rows: 3,
+                        placeholder: 'Una pregunta por linea.',
+                        disabled,
+                    }
+                )}
+                <div class="clinical-history-inline-grid">
+                    ${inputField(
+                        'patient_edad_anios',
+                        'Edad (anos)',
+                        draft.intake.datosPaciente.edadAnios ?? '',
+                        {
+                            type: 'number',
+                            min: '0',
+                            step: '1',
+                            disabled,
+                        }
+                    )}
+                    ${inputField(
+                        'patient_peso_kg',
+                        'Peso (kg)',
+                        draft.intake.datosPaciente.pesoKg ?? '',
+                        {
+                            type: 'number',
+                            min: '0',
+                            step: '0.1',
+                            disabled,
+                        }
+                    )}
+                    ${selectField(
+                        'patient_sexo_biologico',
+                        'Sexo biologico',
+                        draft.intake.datosPaciente.sexoBiologico,
+                        [
+                            { value: '', label: 'Sin dato' },
+                            { value: 'femenino', label: 'Femenino' },
+                            { value: 'masculino', label: 'Masculino' },
+                            { value: 'intersexual', label: 'Intersexual' },
+                        ],
+                        { disabled }
+                    )}
+                    ${selectField(
+                        'patient_embarazo',
+                        'Embarazo',
+                        pregnancyValue,
+                        [
+                            { value: '', label: 'Sin dato' },
+                            { value: 'no', label: 'No' },
+                            { value: 'yes', label: 'Si' },
+                        ],
+                        { disabled }
+                    )}
+                </div>
+            </section>
+
+            <section class="clinical-history-form-section">
+                <header>
+                    <h4>Sintesis del medico</h4>
+                    <p>Bloque solo interno: resumen, CIE-10, plan y guardrails.</p>
+                </header>
+                ${textareaField(
+                    'clinician_resumen',
+                    'Resumen medico',
+                    draft.clinicianDraft.resumen,
+                    {
+                        rows: 4,
+                        placeholder: 'Sintesis final para presentar o firmar.',
+                        disabled,
+                    }
+                )}
+                <div class="clinical-history-inline-grid">
+                    ${textareaField(
+                        'clinician_preguntas_faltantes',
+                        'Preguntas faltantes',
+                        listToTextarea(draft.clinicianDraft.preguntasFaltantes),
+                        {
+                            rows: 4,
+                            placeholder: 'Una linea por pregunta.',
+                            disabled,
+                        }
+                    )}
+                    ${textareaField(
+                        'clinician_cie10',
+                        'CIE-10 sugeridos',
+                        listToTextarea(draft.clinicianDraft.cie10Sugeridos),
+                        {
+                            rows: 4,
+                            placeholder: 'Ej. L20.9',
+                            disabled,
+                        }
+                    )}
+                </div>
+                ${textareaField(
+                    'clinician_tratamiento',
+                    'Tratamiento borrador',
+                    draft.clinicianDraft.tratamientoBorrador,
+                    {
+                        rows: 4,
+                        placeholder:
+                            'No se muestra al paciente; requiere firma humana.',
+                        disabled,
+                    }
+                )}
+                <div class="clinical-history-inline-grid">
+                    ${textareaField(
+                        'posologia_texto',
+                        'Posologia borrador',
+                        draft.clinicianDraft.posologiaBorrador.texto,
+                        {
+                            rows: 4,
+                            placeholder: 'Ej. 1 comp cada 12 h por 7 dias.',
+                            disabled,
+                        }
+                    )}
+                    ${textareaField(
+                        'posologia_base_calculo',
+                        'Base de calculo',
+                        draft.clinicianDraft.posologiaBorrador.baseCalculo,
+                        {
+                            rows: 4,
+                            placeholder: 'Regla, mg/kg, fuente o criterio.',
+                            disabled,
+                        }
+                    )}
+                </div>
+                <div class="clinical-history-inline-grid">
+                    ${inputField(
+                        'posologia_peso_kg',
+                        'Peso usado (kg)',
+                        draft.clinicianDraft.posologiaBorrador.pesoKg ?? '',
+                        {
+                            type: 'number',
+                            min: '0',
+                            step: '0.1',
+                            disabled,
+                        }
+                    )}
+                    ${inputField(
+                        'posologia_edad_anios',
+                        'Edad usada (anos)',
+                        draft.clinicianDraft.posologiaBorrador.edadAnios ?? '',
+                        {
+                            type: 'number',
+                            min: '0',
+                            step: '1',
+                            disabled,
+                        }
+                    )}
+                    ${inputField(
+                        'posologia_units',
+                        'Unidades',
+                        draft.clinicianDraft.posologiaBorrador.units,
+                        {
+                            placeholder: 'mg, mg/kg/dia, ml',
+                            disabled,
+                        }
+                    )}
+                </div>
+                ${checkboxField(
+                    'posologia_ambiguous',
+                    'La posologia sigue ambigua',
+                    draft.clinicianDraft.posologiaBorrador.ambiguous === true,
+                    {
+                        hint: 'Mantiene el caso en revisado con cautela.',
+                        disabled,
+                    }
+                )}
+                ${checkboxField(
+                    'requires_human_review',
+                    'Requiere revision humana',
+                    draft.requiresHumanReview === true,
+                    {
+                        hint:
+                            reviewReasons ||
+                            'Toda aprobacion final sigue siendo humana.',
+                        disabled,
+                    }
+                )}
+            </section>
+        </div>
+    `;
+}
+
+function syncDraftStatusMeta() {
+    const state = getState();
+    const slice = getClinicalHistorySlice(state);
+    const review = currentReviewSource(state);
+    const draft = currentDraftSource(state);
+
+    let meta = 'Sin cambios';
+    if (slice.saving) {
+        meta = 'Guardando borrador clinico...';
+    } else if (slice.loading) {
+        meta = 'Cargando sesion clinica...';
+    } else if (slice.error) {
+        meta = slice.error;
+    } else if (slice.dirty) {
+        meta = 'Cambios sin guardar';
+    } else if (draft.updatedAt) {
+        meta = `Ultima actualizacion ${readableTimestamp(draft.updatedAt)}`;
+    }
+
+    setText('#clinicalHistoryDraftMeta', meta);
+    setText(
+        '#clinicalHistoryDraftSummary',
+        review.session.sessionId
+            ? `Editando ${currentSelectionLabel(review)} • ${formatReviewStatus(
+                  draft.reviewStatus
+              )}`
+            : 'Selecciona un caso para editar anamnesis, plan y guardrails.'
+    );
+    setText(
+        '#clinicalHistoryFollowUpMeta',
+        review.session.sessionId
+            ? `La pregunta saldra por el mismo hilo de ${currentSelectionLabel(
+                  review
+              )}.`
+            : 'Envia una pregunta puntual al paciente sin salir del review.'
+    );
+
+    const hasSelection = normalizeString(review.session.sessionId) !== '';
+    const sharedDisabled = !hasSelection || slice.loading || slice.saving;
+    const saveButton = document.getElementById('clinicalHistorySaveBtn');
+    const approveButton = document.getElementById('clinicalHistoryApproveBtn');
+    const refreshButton = document.getElementById('clinicalHistoryRefreshBtn');
+    const reviewButton = document.getElementById(
+        'clinicalHistoryReviewRequiredBtn'
+    );
+    const followUpButton = document.getElementById(
+        'clinicalHistorySendFollowUpBtn'
+    );
+
+    if (saveButton instanceof HTMLButtonElement) {
+        saveButton.disabled = sharedDisabled;
+    }
+    if (approveButton instanceof HTMLButtonElement) {
+        approveButton.disabled = sharedDisabled;
+    }
+    if (refreshButton instanceof HTMLButtonElement) {
+        refreshButton.disabled = sharedDisabled;
+    }
+    if (reviewButton instanceof HTMLButtonElement) {
+        reviewButton.disabled = sharedDisabled;
+    }
+    if (followUpButton instanceof HTMLButtonElement) {
+        followUpButton.disabled =
+            sharedDisabled || normalizeString(slice.followUpQuestion) === '';
+    }
+}
