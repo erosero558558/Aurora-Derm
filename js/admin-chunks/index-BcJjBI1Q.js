@@ -17984,16 +17984,17 @@ function Xc() {
 async function eu(e) {
     const t = pc(e),
         a = Lc();
-    return !t ||
-        a.loading ||
-        a.saving ||
-        (a.dirty &&
-            pc(a.selectedSessionId) !== t &&
-            !window.confirm(
-                'Hay cambios sin guardar en este borrador. ¿Deseas cambiar de caso igualmente?'
-            ))
+    return !t || a.loading || a.saving
         ? null
-        : Jc(t, { force: !0 });
+        : t === pc(a.selectedSessionId) && a.current
+          ? Rc()
+          : a.dirty &&
+              pc(a.selectedSessionId) !== t &&
+              !window.confirm(
+                  'Hay cambios sin guardar en este borrador. ¿Deseas cambiar de caso igualmente?'
+              )
+            ? null
+            : Jc(t, { force: !0 });
 }
 async function tu(e = '') {
     const t = pc(e) || pc(pr(uc)),

@@ -1741,6 +1741,13 @@ async function maybeSwitchSession(sessionId) {
     }
 
     if (
+        desiredSessionId === normalizeString(slice.selectedSessionId) &&
+        slice.current
+    ) {
+        return currentReviewSource();
+    }
+
+    if (
         slice.dirty &&
         normalizeString(slice.selectedSessionId) !== desiredSessionId
     ) {
