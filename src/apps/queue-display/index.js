@@ -1,7 +1,10 @@
 import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
 import {
     getTurneroClinicBrandName,
+    getTurneroClinicProfileFingerprint,
+    getTurneroClinicShortName,
     getTurneroConsultorioLabel,
+    getTurneroSurfaceContract,
     loadTurneroClinicProfile,
 } from '../queue-shared/clinic-profile.js';
 
@@ -79,11 +82,30 @@ function getDisplayConsultorioLabel(consultorio) {
 function applyDisplayClinicProfile(profile) {
     state.clinicProfile = profile;
     const clinicName = getTurneroClinicBrandName(profile);
+    const clinicShortName = getTurneroClinicShortName(profile);
+    const clinicId = String(profile?.clinic_id || '').trim() || 'sin-clinic-id';
+    const clinicCity = String(profile?.branding?.city || '').trim();
+    const consultorioSummary = [
+        getTurneroConsultorioLabel(profile, 1, { short: true }),
+        getTurneroConsultorioLabel(profile, 2, { short: true }),
+    ].join(' / ');
     document.title = `Sala de Espera | ${clinicName}`;
 
     const brandNode = document.querySelector('.display-brand strong');
     if (brandNode instanceof HTMLElement) {
         brandNode.textContent = clinicName;
+    }
+
+    const brandMeta = getById('displayBrandMeta');
+    if (brandMeta instanceof HTMLElement) {
+        brandMeta.textContent = `Vista pacientes · ${consultorioSummary}`;
+    }
+
+    const clinicMeta = getById('displayClinicMeta');
+    if (clinicMeta instanceof HTMLElement) {
+        clinicMeta.textContent = [clinicId, clinicCity || clinicShortName]
+            .filter(Boolean)
+            .join(' · ');
     }
 
     if (state.lastRenderedState) {
@@ -114,10 +136,29 @@ function resolveDisplayAppMode() {
 function buildDisplayHeartbeatPayload() {
     const connectionState = String(state.connectionState || 'paused');
     const healthySync = Boolean(state.lastHealthySyncAt);
+    const surfaceContract = getTurneroSurfaceContract(
+        state.clinicProfile,
+        'display'
+    );
+    const clinicId = String(state.clinicProfile?.clinic_id || '').trim();
+    const clinicName = String(
+        state.clinicProfile?.branding?.name ||
+            state.clinicProfile?.branding?.short_name ||
+            ''
+    ).trim();
+    const profileFingerprint = getTurneroClinicProfileFingerprint(
+        state.clinicProfile
+    );
+    const profileSource = String(
+        state.clinicProfile?.runtime_meta?.source || 'remote'
+    ).trim();
 
     let status = 'warning';
     let summary = 'Sala TV pendiente de validación.';
-    if (connectionState === 'offline') {
+    if (surfaceContract.state === 'alert') {
+        status = 'alert';
+        summary = surfaceContract.detail;
+    } else if (connectionState === 'offline') {
         status = 'alert';
         summary = 'Sala TV sin conexión; usa respaldo local y confirma llamados manuales.';
     } else if (state.bellMuted) {
@@ -154,6 +195,13 @@ function buildDisplayHeartbeatPayload() {
             bellPrimed: Boolean(state.bellPrimed),
             bellOutcome: String(state.lastBellOutcome || 'idle'),
             healthySync,
+            clinicId,
+            clinicName,
+            profileSource,
+            profileFingerprint,
+            surfaceContractState: String(surfaceContract.state || ''),
+            surfaceRouteExpected: String(surfaceContract.expectedRoute || ''),
+            surfaceRouteCurrent: String(surfaceContract.currentRoute || ''),
         },
     };
 }
@@ -736,12 +784,21 @@ function renderDisplaySetupStatus() {
         state.lastBellAt > 0
             ? formatElapsedAge(Date.now() - state.lastBellAt)
             : '';
+    const surfaceContract = getTurneroSurfaceContract(
+        state.clinicProfile,
+        'display'
+    );
     const snapshotSavedAt = Date.parse(String(state.lastSnapshot?.savedAt || ''));
     const snapshotAge = Number.isFinite(snapshotSavedAt)
         ? formatElapsedAge(Date.now() - snapshotSavedAt)
         : '';
 
     const checks = [
+        {
+            label: 'Perfil de clínica',
+            state: surfaceContract.state === 'alert' ? 'danger' : 'ready',
+            detail: surfaceContract.detail,
+        },
         {
             label: 'Conexion y cola',
             state:
@@ -795,7 +852,13 @@ function renderDisplaySetupStatus() {
     let title = 'Finaliza la puesta en marcha';
     let summary =
         'Confirma conexion, audio y campanilla antes de dejar la TV en operacion continua.';
-    if (connectionState === 'offline') {
+    if (surfaceContract.state === 'alert') {
+        title =
+            surfaceContract.reason === 'profile_missing'
+                ? 'Perfil de clínica no cargado'
+                : 'Ruta del piloto incorrecta';
+        summary = surfaceContract.detail;
+    } else if (connectionState === 'offline') {
         title = 'Sala TV en contingencia';
         summary =
             'La TV puede seguir mostrando respaldo local, pero el enlace con la cola no esta disponible.';

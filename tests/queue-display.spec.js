@@ -10,6 +10,151 @@ function json(route, payload, status = 200) {
 }
 
 test.describe('Sala turnos display', () => {
+    test('aplica branding del perfil clinico en la cabecera de sala', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                        city: 'Quito',
+                    },
+                    consultorios: {
+                        c1: { label: 'Dermatología 1', short_label: 'D1' },
+                        c2: { label: 'Dermatología 2', short_label: 'D2' },
+                    },
+                    surfaces: {
+                        display: {
+                            enabled: true,
+                            route: '/sala-turnos.html',
+                        },
+                    },
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, {
+                ok: true,
+                data: {
+                    updatedAt: new Date().toISOString(),
+                    callingNow: [],
+                    nextTickets: [],
+                },
+            });
+        });
+
+        await page.goto('/sala-turnos.html');
+
+        await expect(page).toHaveTitle(/Clinica Norte/i);
+        await expect(page.locator('.display-brand strong')).toContainText(
+            'Clinica Norte'
+        );
+        await expect(page.locator('#displayBrandMeta')).toContainText(
+            'Vista pacientes · D1 / D2'
+        );
+        await expect(page.locator('#displayClinicMeta')).toContainText(
+            'clinica-norte-demo · Quito'
+        );
+    });
+
+    test('degrada sala si la ruta del perfil no coincide con la superficie activa', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    surfaces: {
+                        display: {
+                            enabled: true,
+                            route: '/sala-alt.html',
+                        },
+                    },
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, {
+                ok: true,
+                data: {
+                    updatedAt: new Date().toISOString(),
+                    callingNow: [],
+                    nextTickets: [],
+                },
+            });
+        });
+
+        await page.goto('/sala-turnos.html');
+
+        await expect(page.locator('#displaySetupTitle')).toContainText(
+            'Ruta del piloto incorrecta'
+        );
+        await expect(page.locator('#displaySetupChecks')).toContainText(
+            '/sala-alt.html'
+        );
+    });
+
+    test('degrada sala si clinic-profile.json no carga y queda en perfil de respaldo', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                route.fulfill({
+                    status: 404,
+                    contentType: 'application/json; charset=utf-8',
+                    body: JSON.stringify({ ok: false }),
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, {
+                ok: true,
+                data: {
+                    updatedAt: new Date().toISOString(),
+                    callingNow: [],
+                    nextTickets: [],
+                },
+            });
+        });
+
+        await page.goto('/sala-turnos.html');
+
+        await expect(page.locator('#displaySetupTitle')).toContainText(
+            'Perfil de clínica no cargado'
+        );
+        await expect(page.locator('#displaySetupChecks')).toContainText(
+            'perfil de respaldo'
+        );
+    });
+
     test('renderiza llamados activos y siguientes turnos', async ({ page }) => {
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());

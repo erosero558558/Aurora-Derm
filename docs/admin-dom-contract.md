@@ -121,6 +121,15 @@ This document freezes the active admin frontend contract after the total cutover
 - `#queueOpsPilot`, `#queueOpsPilotTitle`, `#queueOpsPilotSummary`, `#queueOpsPilotProgressValue`, `#queueOpsPilotChipConfirmed`, `#queueOpsPilotChipSuggested`, `#queueOpsPilotChipEquipment`, `#queueOpsPilotChipIssues`
 - `#queueOpsPilotReadiness`, `#queueOpsPilotReadinessTitle`, `#queueOpsPilotReadinessStatus`, `#queueOpsPilotReadinessSummary`, `#queueOpsPilotReadinessSupport`
 - `#queueOpsPilotReadinessItem_profile`, `#queueOpsPilotReadinessItem_surfaces`, `#queueOpsPilotReadinessItem_publish`, `#queueOpsPilotReadinessItem_health`, `#queueOpsPilotReadinessItem_smoke`
+- `#queueOpsPilotIssues`, `#queueOpsPilotIssuesTitle`, `#queueOpsPilotIssuesStatus`, `#queueOpsPilotIssuesSummary`, `#queueOpsPilotIssuesSupport`, `#queueOpsPilotIssuesItems`
+- `#queueOpsPilotIssuesItem_profile`, `#queueOpsPilotIssuesItem_publish`, `#queueOpsPilotIssuesItem_health`, `#queueOpsPilotIssuesItem_smoke`, `#queueOpsPilotIssuesItem_surface_operator`
+- `#queueOpsPilotCanon`, `#queueOpsPilotCanonTitle`, `#queueOpsPilotCanonStatus`, `#queueOpsPilotCanonItems`, `#queueOpsPilotCanonSupport`
+- `#queueOpsPilotCanonItem_admin`, `#queueOpsPilotCanonItem_operator`, `#queueOpsPilotCanonItem_kiosk`, `#queueOpsPilotCanonItem_display`
+- `#queueOpsPilotSmoke`, `#queueOpsPilotSmokeTitle`, `#queueOpsPilotSmokeStatus`, `#queueOpsPilotSmokeSummary`, `#queueOpsPilotSmokeSupport`, `#queueOpsPilotSmokeItems`
+- `#queueOpsPilotSmokeItem_admin`, `#queueOpsPilotSmokeItem_operator`, `#queueOpsPilotSmokeItem_kiosk`, `#queueOpsPilotSmokeItem_display`, `#queueOpsPilotSmokeItem_end_to_end`
+- `#queueOpsPilotSmokeAction_admin`, `#queueOpsPilotSmokeAction_operator`, `#queueOpsPilotSmokeAction_kiosk`, `#queueOpsPilotSmokeAction_display`, `#queueOpsPilotSmokeAction_end_to_end`
+- `#queueOpsPilotHandoff`, `#queueOpsPilotHandoffTitle`, `#queueOpsPilotHandoffSummary`, `#queueOpsPilotHandoffSupport`, `#queueOpsPilotHandoffItems`, `#queueOpsPilotHandoffCopyBtn`
+- `#queueOpsPilotHandoffItem_clinic`, `#queueOpsPilotHandoffItem_profile_source`, `#queueOpsPilotHandoffItem_release`, `#queueOpsPilotHandoffItem_publish`, `#queueOpsPilotHandoffItem_canon`, `#queueOpsPilotHandoffItem_blockers`, `#queueOpsPilotHandoffItem_smoke`
 - `#queueSurfaceTelemetry`, `#queueSurfaceTelemetryTitle`, `#queueSurfaceTelemetrySummary`, `#queueSurfaceTelemetryAutoMeta`, `#queueSurfaceTelemetryAutoState`, `#queueSurfaceTelemetryStatus`, `#queueSurfaceTelemetryCards`
 - `#queueOpsAlerts`, `#queueOpsAlertsTitle`, `#queueOpsAlertsSummary`, `#queueOpsAlertsChipTotal`, `#queueOpsAlertsChipPending`, `#queueOpsAlertsChipReviewed`, `#queueOpsAlertsApplyBtn`, `#queueOpsAlertsItems`, `#queueOpsAlert_kiosk_printer_pending`, `#queueOpsAlertReview_kiosk_printer_pending`
 - `#queueOpeningChecklist`, `#queueOpeningChecklistTitle`, `#queueOpeningChecklistSummary`, `#queueOpeningChecklistAssistChip`, `#queueOpeningChecklistApplyBtn`, `#queueOpeningChecklistResetBtn`, `#queueOpeningChecklistSteps`, `#queueOpeningToggle_operator_ready`
@@ -211,7 +220,16 @@ This document freezes the active admin frontend contract after the total cutover
 - `GET /api.php?resource=data` now includes `data.appDownloads` for `operator`, `kiosk` and `sala_tv`, including `guideUrl` for the public install center. This catalog is optional for the piloto web and does not block the canonical web release.
 - `GET /api.php?resource=data` now also includes `data.queueSurfaceStatus` with grouped heartbeats for `operator`, `kiosk` and `display`.
 - `GET /api.php?resource=data` now also includes `data.turneroClinicProfile` with `clinic_id`, `branding`, `consultorios`, `surfaces` and `release.admin_mode_default`.
+- The admin runtime also persists `data.turneroClinicProfileMeta` locally to distinguish `remote` vs `fallback_local`; `queueOpsPilotReadinessItem_profile` must block go-live when the profile source is only local fallback.
 - `admin.html#queue` now runs in `queueAdminViewModeV1=basic|expert`; `basic` is the production default for the piloto web and `expert` keeps the advanced hub as non-blocking support tooling.
 - In deployment/basic, `#queueOpsPilotReadiness` is the canonical go-live gate for the piloto web: it evaluates `perfil por clínica`, `superficies web`, `publicación del release`, `señal viva + heartbeats` and `smoke final`.
+- In deployment/basic, `#queueOpsPilotIssues` is the short actionable blocker deck for the same piloto web: it must surface only the unresolved items that still stop go-live (`perfil`, `publish`, `health`, `canon` or `smoke`) and may link directly to the affected surface or health check.
+- In deployment/basic, `#queueOpsPilotSmoke` is the repeatable smoke sequence for the piloto web: it must expose direct clinic-specific links for `admin`, `operator`, `kiosk`, `display` and the final called-flow closeout.
+- In deployment/basic, `#queueOpsPilotCanon` is also a live route contract: each `#queueOpsPilotCanonItem_*` must expose whether the surface is `Verificada`, `Declarada` or `Bloquea` against the route declared in `turneroClinicProfile.surfaces.*.route`, and `#queueOpsPilotCanonSupport` must summarize any route drift.
+- In deployment/basic, `#queueOpsPilotCanonItem_*` must also block if `queueSurfaceStatus.*.latest.details.clinicId` differs from `turneroClinicProfile.clinic_id`, even when the route matches.
+- In deployment/basic, `#queueOpsPilotCanonItem_*` must also block if `queueSurfaceStatus.*.latest.details.profileFingerprint` differs from the active profile fingerprint, even when `clinicId` and route still match.
+- In deployment/basic, `#queueOpsPilotHandoff` is the shareable opening packet for the clinic pilot: it must summarize `clinic_id`, release mode, deployed commit, `bloqueo activo` and smoke progress, and `#queueOpsPilotHandoffCopyBtn` must copy the packet plus canonical routes.
+- `queueOpeningChecklistV1`, `queueShiftHandoffV1` and `queueOpsLogV1` now persist `clinicId` in their payloads; if the active `turneroClinicProfile.clinic_id` changes, runtime must reset those states before rendering the piloto web.
+- `state.queue.activity[*]` now also carries `clinicId`; `queueOpsPilotSmoke` and checklist assist must ignore local call activity that belongs to another clinic or lacks `clinicId`.
 - Rollback is operational (`revert + deploy`), not a runtime variant switch.
 - Any DOM contract break requires explicit test migration in active admin suites.

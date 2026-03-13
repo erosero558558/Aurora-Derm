@@ -37,8 +37,10 @@ import {
 } from '../admin-v3/shared/modules/queue/selectors.js';
 import {
     getTurneroClinicBrandName,
+    getTurneroClinicProfileFingerprint,
     getTurneroClinicShortName,
     getTurneroConsultorioLabel,
+    getTurneroSurfaceContract,
     loadTurneroClinicProfile,
 } from '../queue-shared/clinic-profile.js';
 import {
@@ -93,6 +95,7 @@ const operatorRuntime = {
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
     numpad: createEmptyNumpadValidationState(),
     shell: createEmptyShellState(),
+    surfaceContract: null,
 };
 let operatorClinicProfile = null;
 
@@ -117,8 +120,21 @@ function getOperatorConsultorioShortLabel(consultorio) {
 
 function applyOperatorClinicProfile(profile) {
     operatorClinicProfile = profile;
+    operatorRuntime.surfaceContract = getTurneroSurfaceContract(
+        profile,
+        'operator'
+    );
     const clinicName = getTurneroClinicBrandName(profile);
     const clinicShortName = getTurneroClinicShortName(profile);
+    const clinicId = String(profile?.clinic_id || '').trim() || 'sin-clinic-id';
+    const clinicCity = String(profile?.branding?.city || '').trim();
+    const consultorioSummary = [
+        getTurneroConsultorioLabel(profile, 1, { short: true }),
+        getTurneroConsultorioLabel(profile, 2, { short: true }),
+    ].join(' / ');
+    const operatorRoute = String(
+        profile?.surfaces?.operator?.route || '/operador-turnos.html'
+    ).trim();
 
     document.title = `Turnero Operador - ${clinicName}`;
     document.querySelectorAll('.queue-operator-kicker').forEach((node) => {
@@ -126,6 +142,20 @@ function applyOperatorClinicProfile(profile) {
             node.textContent = `${clinicShortName} · Operador`;
         }
     });
+    setText(
+        '#operatorClinicMeta',
+        [
+            'Piloto web por clínica',
+            clinicId,
+            clinicCity || clinicShortName,
+        ]
+            .filter(Boolean)
+            .join(' · ')
+    );
+    setText(
+        '#operatorSurfaceMeta',
+        `Ruta ${operatorRoute} · ${consultorioSummary}`
+    );
 }
 
 function getDesktopBridge() {
@@ -256,14 +286,33 @@ function buildOperatorHeartbeatPayload() {
     const stationLabel = locked
         ? `Operador ${stationShortLabel} fijo`
         : 'Operador modo libre';
+    const clinicId = String(operatorClinicProfile?.clinic_id || '').trim();
+    const clinicName = String(
+        operatorClinicProfile?.branding?.name ||
+            operatorClinicProfile?.branding?.short_name ||
+            ''
+    ).trim();
+    const profileFingerprint = getTurneroClinicProfileFingerprint(
+        operatorClinicProfile
+    );
+    const profileSource = String(
+        operatorClinicProfile?.runtime_meta?.source || 'remote'
+    ).trim();
     const numpadStatus = buildOperatorNumpadStatus(state.queue);
+    const surfaceContract =
+        operatorRuntime.surfaceContract ||
+        getTurneroSurfaceContract(operatorClinicProfile, 'operator');
     const readyForLiveUse = operatorRuntime.online && numpadStatus.ready;
-    const status = !operatorRuntime.online
+    const status = surfaceContract.state === 'alert'
+        ? 'alert'
+        : !operatorRuntime.online
         ? 'alert'
         : readyForLiveUse
           ? 'ready'
           : 'warning';
-    const summary = !operatorRuntime.online
+    const summary = surfaceContract.state === 'alert'
+        ? surfaceContract.detail
+        : !operatorRuntime.online
         ? 'Equipo sin red; recupera conectividad antes de operar.'
         : readyForLiveUse
           ? `Equipo listo para operar en ${locked ? `C${stationNumber} fijo` : 'modo libre'}.`
@@ -303,6 +352,13 @@ function buildOperatorHeartbeatPayload() {
             shellUpdateFeedUrl: String(
                 operatorRuntime.shell.updateFeedUrl || ''
             ),
+            clinicId,
+            clinicName,
+            profileSource,
+            profileFingerprint,
+            surfaceContractState: String(surfaceContract.state || ''),
+            surfaceRouteExpected: String(surfaceContract.expectedRoute || ''),
+            surfaceRouteCurrent: String(surfaceContract.currentRoute || ''),
         },
     };
 }
@@ -780,6 +836,9 @@ function setReadinessCheck(id, state, detail) {
 function updateOperatorReadiness() {
     const state = getState();
     const numpadStatus = buildOperatorNumpadStatus(state.queue);
+    const surfaceContract =
+        operatorRuntime.surfaceContract ||
+        getTurneroSurfaceContract(operatorClinicProfile, 'operator');
     const stationLabel = `${getOperatorConsultorioShortLabel(
         Number(state.queue.stationConsultorio || 1)
     )} ${
@@ -793,7 +852,13 @@ function updateOperatorReadiness() {
         : 'Equipo sin red; no conviene operar así';
     const shellSummary = getShellReadiness();
 
-    setReadinessCheck('operatorReadyRoute', 'ready', routeSummary);
+    setReadinessCheck(
+        'operatorReadyRoute',
+        surfaceContract.state === 'alert' ? 'danger' : 'ready',
+        surfaceContract.state === 'alert'
+            ? surfaceContract.detail
+            : routeSummary
+    );
     setReadinessCheck(
         'operatorReadyNetwork',
         operatorRuntime.online ? 'ready' : 'danger',
@@ -813,13 +878,21 @@ function updateOperatorReadiness() {
 
     const readinessTitle = getById('operatorReadinessTitle');
     const readinessSummary = getById('operatorReadinessSummary');
-    const hasDanger = !operatorRuntime.online;
-    const readyForLiveUse = operatorRuntime.online && numpadStatus.ready;
+    const hasDanger =
+        !operatorRuntime.online || surfaceContract.state === 'alert';
+    const readyForLiveUse =
+        operatorRuntime.online &&
+        numpadStatus.ready &&
+        surfaceContract.state !== 'alert';
     const pendingCount = numpadStatus.pendingLabels.length;
 
     if (readinessTitle) {
         readinessTitle.textContent = hasDanger
-            ? 'Conexión pendiente'
+            ? surfaceContract.state === 'alert'
+                ? surfaceContract.reason === 'profile_missing'
+                    ? 'Perfil de clínica no cargado'
+                    : 'Ruta del piloto incorrecta'
+                : 'Conexión pendiente'
             : readyForLiveUse
               ? 'Equipo listo para operar'
               : pendingCount === numpadStatus.requiredCount
@@ -829,7 +902,9 @@ function updateOperatorReadiness() {
 
     if (readinessSummary) {
         readinessSummary.textContent = hasDanger
-            ? 'Recupera la conexión antes de llamar o completar tickets.'
+            ? surfaceContract.state === 'alert'
+                ? surfaceContract.detail
+                : 'Recupera la conexión antes de llamar o completar tickets.'
             : readyForLiveUse
               ? 'La ruta, la sesión y las cuatro teclas operativas ya respondieron. Puedes pasar al primer llamado real.'
               : `Valida ${formatOperatorLabelList(

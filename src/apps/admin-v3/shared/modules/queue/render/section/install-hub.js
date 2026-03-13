@@ -48,6 +48,7 @@ import {
     buildQueueOpsPilot as buildQueueOpsPilotModule,
     renderQueueOpsPilot as renderQueueOpsPilotModule,
 } from './install-hub/pilot.js';
+import { hasRecentQueueSmokeSignalForState } from './install-hub/smoke-signal.js';
 import {
     buildPlaybookDefinitions as buildPlaybookDefinitionsModule,
     buildQueuePlaybook as buildQueuePlaybookModule,
@@ -69,6 +70,7 @@ const QUEUE_OPS_ALERTS_STORAGE_KEY = 'queueOpsAlertsV1';
 const QUEUE_OPS_FOCUS_MODE_STORAGE_KEY = 'queueOpsFocusModeV1';
 const QUEUE_OPS_PLAYBOOK_STORAGE_KEY = 'queueOpsPlaybookV1';
 const QUEUE_ADMIN_VIEW_MODE_STORAGE_KEY = 'queueAdminViewModeV1';
+const QUEUE_ADMIN_VIEW_MODE_CLINIC_STORAGE_KEY = 'queueAdminViewModeClinicV1';
 const QUEUE_TICKET_LOOKUP_STORAGE_KEY = 'queueTicketLookupV1';
 const QUEUE_OPS_LOG_MAX_ITEMS = 24;
 const QUEUE_OPS_INTERACTION_HOLD_MS = 900;
@@ -160,6 +162,8 @@ let opsLogFilter = null;
 let queueTicketLookupTerm = null;
 let queueTicketSimulationContext = null;
 let queueAdminViewMode = null;
+let queueAdminViewModeClinicId = null;
+let installPresetClinicId = null;
 
 function getDefaultAppDownloads() {
     return getInstallHubDefaultAppDownloads();
@@ -187,6 +191,11 @@ function getManifestCatalogPayload() {
 function getTurneroClinicProfile() {
     const profile = getState().data.turneroClinicProfile;
     return profile && typeof profile === 'object' ? profile : null;
+}
+
+function getTurneroClinicProfileMeta() {
+    const meta = getState().data.turneroClinicProfileMeta;
+    return meta && typeof meta === 'object' ? meta : null;
 }
 
 function getTurneroClinicBrandName() {
@@ -298,7 +307,25 @@ function getQueueAdminViewModeDefault() {
 }
 
 function loadStoredQueueAdminViewMode() {
+    const activeClinicId = getActiveQueueOpsClinicId();
     try {
+        const storedClinicId = String(
+            window.localStorage.getItem(
+                QUEUE_ADMIN_VIEW_MODE_CLINIC_STORAGE_KEY
+            ) || ''
+        );
+        if (storedClinicId && storedClinicId !== activeClinicId) {
+            const fallbackMode = getQueueAdminViewModeDefault();
+            window.localStorage.setItem(
+                QUEUE_ADMIN_VIEW_MODE_STORAGE_KEY,
+                fallbackMode
+            );
+            window.localStorage.setItem(
+                QUEUE_ADMIN_VIEW_MODE_CLINIC_STORAGE_KEY,
+                activeClinicId
+            );
+            return fallbackMode;
+        }
         return normalizeQueueAdminViewMode(
             window.localStorage.getItem(QUEUE_ADMIN_VIEW_MODE_STORAGE_KEY) ||
                 getQueueAdminViewModeDefault()
@@ -309,18 +336,26 @@ function loadStoredQueueAdminViewMode() {
 }
 
 function ensureQueueAdminViewMode() {
-    if (!queueAdminViewMode) {
+    const activeClinicId = getActiveQueueOpsClinicId();
+    if (!queueAdminViewMode || queueAdminViewModeClinicId !== activeClinicId) {
         queueAdminViewMode = loadStoredQueueAdminViewMode();
+        queueAdminViewModeClinicId = activeClinicId;
     }
     return queueAdminViewMode;
 }
 
 function persistQueueAdminViewMode(nextMode) {
+    const activeClinicId = getActiveQueueOpsClinicId();
     queueAdminViewMode = normalizeQueueAdminViewMode(nextMode);
+    queueAdminViewModeClinicId = activeClinicId;
     try {
         window.localStorage.setItem(
             QUEUE_ADMIN_VIEW_MODE_STORAGE_KEY,
             queueAdminViewMode
+        );
+        window.localStorage.setItem(
+            QUEUE_ADMIN_VIEW_MODE_CLINIC_STORAGE_KEY,
+            activeClinicId
         );
     } catch (_error) {
         // localStorage can be unavailable in some browser modes
@@ -590,6 +625,9 @@ function normalizeInstallPreset(rawPreset, detectedPlatform) {
               : 'win';
 
     return {
+        clinicId: String(
+            raw.clinicId || getActiveQueueOpsClinicId()
+        ).trim() || getActiveQueueOpsClinicId(),
         surface:
             raw.surface === 'kiosk' || raw.surface === 'sala_tv'
                 ? raw.surface
@@ -602,6 +640,7 @@ function normalizeInstallPreset(rawPreset, detectedPlatform) {
 }
 
 function loadStoredInstallPreset(detectedPlatform) {
+    const activeClinicId = getActiveQueueOpsClinicId();
     try {
         const rawValue = window.localStorage.getItem(
             QUEUE_INSTALL_PRESET_STORAGE_KEY
@@ -609,7 +648,11 @@ function loadStoredInstallPreset(detectedPlatform) {
         if (!rawValue) {
             return null;
         }
-        return normalizeInstallPreset(JSON.parse(rawValue), detectedPlatform);
+        const parsed = JSON.parse(rawValue);
+        if (String(parsed?.clinicId || '').trim() !== activeClinicId) {
+            return null;
+        }
+        return normalizeInstallPreset(parsed, detectedPlatform);
     } catch (_error) {
         return null;
     }
@@ -617,6 +660,7 @@ function loadStoredInstallPreset(detectedPlatform) {
 
 function persistInstallPreset(nextPreset, detectedPlatform) {
     installPreset = normalizeInstallPreset(nextPreset, detectedPlatform);
+    installPresetClinicId = installPreset.clinicId;
     try {
         window.localStorage.setItem(
             QUEUE_INSTALL_PRESET_STORAGE_KEY,
@@ -674,18 +718,22 @@ function buildDerivedInstallPreset(detectedPlatform) {
 }
 
 function ensureInstallPreset(detectedPlatform) {
-    if (installPreset) {
+    const activeClinicId = getActiveQueueOpsClinicId();
+    if (installPreset && installPresetClinicId === activeClinicId) {
         return installPreset;
     }
 
     const storedPreset = loadStoredInstallPreset(detectedPlatform);
     if (storedPreset) {
         installPreset = storedPreset;
+        installPresetClinicId = storedPreset.clinicId;
         return installPreset;
     }
 
-    installPreset = buildDerivedInstallPreset(detectedPlatform);
-    return installPreset;
+    return persistInstallPreset(
+        buildDerivedInstallPreset(detectedPlatform),
+        detectedPlatform
+    );
 }
 
 function getInstallPresetLabel(detectedPlatform) {
@@ -768,6 +816,10 @@ function getTodayLocalIsoDate() {
     return `${year}-${month}-${day}`;
 }
 
+function getActiveQueueOpsClinicId() {
+    return String(getTurneroClinicId() || 'default-clinic').trim() || 'default-clinic';
+}
+
 function formatOpeningChecklistDate(isoDate) {
     const value = String(isoDate || '').trim();
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -777,9 +829,13 @@ function formatOpeningChecklistDate(isoDate) {
     return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-function createOpeningChecklistState(date = getTodayLocalIsoDate()) {
+function createOpeningChecklistState(
+    date = getTodayLocalIsoDate(),
+    clinicId = getActiveQueueOpsClinicId()
+) {
     return {
         date,
+        clinicId,
         steps: OPENING_CHECKLIST_STEP_IDS.reduce((acc, key) => {
             acc[key] = false;
             return acc;
@@ -789,12 +845,15 @@ function createOpeningChecklistState(date = getTodayLocalIsoDate()) {
 
 function normalizeOpeningChecklistState(rawState) {
     const today = getTodayLocalIsoDate();
+    const activeClinicId = getActiveQueueOpsClinicId();
     const source = rawState && typeof rawState === 'object' ? rawState : {};
-    const date = String(source.date || '').trim() === today ? today : today;
+    const sameClinic = String(source.clinicId || '').trim() === activeClinicId;
+    const sameDate = String(source.date || '').trim() === today;
     return {
-        date,
+        date: today,
+        clinicId: activeClinicId,
         steps: OPENING_CHECKLIST_STEP_IDS.reduce((acc, key) => {
-            acc[key] = Boolean(source.steps && source.steps[key]);
+            acc[key] = sameClinic && sameDate && Boolean(source.steps && source.steps[key]);
             return acc;
         }, {}),
     };
@@ -802,18 +861,36 @@ function normalizeOpeningChecklistState(rawState) {
 
 function loadOpeningChecklistState() {
     const today = getTodayLocalIsoDate();
+    const activeClinicId = getActiveQueueOpsClinicId();
     try {
         const raw = localStorage.getItem(QUEUE_OPENING_CHECKLIST_STORAGE_KEY);
         if (!raw) {
-            return createOpeningChecklistState(today);
+            return createOpeningChecklistState(today, activeClinicId);
         }
         const parsed = JSON.parse(raw);
-        if (String(parsed?.date || '') !== today) {
-            return createOpeningChecklistState(today);
+        if (
+            String(parsed?.date || '').trim() !== today ||
+            String(parsed?.clinicId || '').trim() !== activeClinicId
+        ) {
+            const resetState = createOpeningChecklistState(today, activeClinicId);
+            localStorage.setItem(
+                QUEUE_OPENING_CHECKLIST_STORAGE_KEY,
+                JSON.stringify(resetState)
+            );
+            return resetState;
         }
         return normalizeOpeningChecklistState(parsed);
     } catch (_error) {
-        return createOpeningChecklistState(today);
+        const resetState = createOpeningChecklistState(today, activeClinicId);
+        try {
+            localStorage.setItem(
+                QUEUE_OPENING_CHECKLIST_STORAGE_KEY,
+                JSON.stringify(resetState)
+            );
+        } catch (_storageError) {
+            // ignore storage write failures
+        }
+        return resetState;
     }
 }
 
@@ -832,7 +909,12 @@ function persistOpeningChecklistState(nextState) {
 
 function ensureOpeningChecklistState() {
     const today = getTodayLocalIsoDate();
-    if (!openingChecklistState || openingChecklistState.date !== today) {
+    const activeClinicId = getActiveQueueOpsClinicId();
+    if (
+        !openingChecklistState ||
+        openingChecklistState.date !== today ||
+        openingChecklistState.clinicId !== activeClinicId
+    ) {
         openingChecklistState = loadOpeningChecklistState();
     }
     return openingChecklistState;
@@ -854,7 +936,10 @@ function setOpeningChecklistStep(stepId, complete) {
 
 function resetOpeningChecklistState() {
     return persistOpeningChecklistState(
-        createOpeningChecklistState(getTodayLocalIsoDate())
+        createOpeningChecklistState(
+            getTodayLocalIsoDate(),
+            getActiveQueueOpsClinicId()
+        )
     );
 }
 
@@ -878,9 +963,13 @@ function applyOpeningChecklistSuggestions(stepIds) {
     });
 }
 
-function createShiftHandoffState(date = getTodayLocalIsoDate()) {
+function createShiftHandoffState(
+    date = getTodayLocalIsoDate(),
+    clinicId = getActiveQueueOpsClinicId()
+) {
     return {
         date,
+        clinicId,
         steps: SHIFT_HANDOFF_STEP_IDS.reduce((acc, key) => {
             acc[key] = false;
             return acc;
@@ -890,11 +979,15 @@ function createShiftHandoffState(date = getTodayLocalIsoDate()) {
 
 function normalizeShiftHandoffState(rawState) {
     const today = getTodayLocalIsoDate();
+    const activeClinicId = getActiveQueueOpsClinicId();
     const source = rawState && typeof rawState === 'object' ? rawState : {};
+    const sameClinic = String(source.clinicId || '').trim() === activeClinicId;
+    const sameDate = String(source.date || '').trim() === today;
     return {
-        date: String(source.date || '').trim() === today ? today : today,
+        date: today,
+        clinicId: activeClinicId,
         steps: SHIFT_HANDOFF_STEP_IDS.reduce((acc, key) => {
-            acc[key] = Boolean(source.steps && source.steps[key]);
+            acc[key] = sameClinic && sameDate && Boolean(source.steps && source.steps[key]);
             return acc;
         }, {}),
     };
@@ -902,18 +995,36 @@ function normalizeShiftHandoffState(rawState) {
 
 function loadShiftHandoffState() {
     const today = getTodayLocalIsoDate();
+    const activeClinicId = getActiveQueueOpsClinicId();
     try {
         const raw = localStorage.getItem(QUEUE_SHIFT_HANDOFF_STORAGE_KEY);
         if (!raw) {
-            return createShiftHandoffState(today);
+            return createShiftHandoffState(today, activeClinicId);
         }
         const parsed = JSON.parse(raw);
-        if (String(parsed?.date || '') !== today) {
-            return createShiftHandoffState(today);
+        if (
+            String(parsed?.date || '').trim() !== today ||
+            String(parsed?.clinicId || '').trim() !== activeClinicId
+        ) {
+            const resetState = createShiftHandoffState(today, activeClinicId);
+            localStorage.setItem(
+                QUEUE_SHIFT_HANDOFF_STORAGE_KEY,
+                JSON.stringify(resetState)
+            );
+            return resetState;
         }
         return normalizeShiftHandoffState(parsed);
     } catch (_error) {
-        return createShiftHandoffState(today);
+        const resetState = createShiftHandoffState(today, activeClinicId);
+        try {
+            localStorage.setItem(
+                QUEUE_SHIFT_HANDOFF_STORAGE_KEY,
+                JSON.stringify(resetState)
+            );
+        } catch (_storageError) {
+            // ignore storage write failures
+        }
+        return resetState;
     }
 }
 
@@ -932,7 +1043,12 @@ function persistShiftHandoffState(nextState) {
 
 function ensureShiftHandoffState() {
     const today = getTodayLocalIsoDate();
-    if (!shiftHandoffState || shiftHandoffState.date !== today) {
+    const activeClinicId = getActiveQueueOpsClinicId();
+    if (
+        !shiftHandoffState ||
+        shiftHandoffState.date !== today ||
+        shiftHandoffState.clinicId !== activeClinicId
+    ) {
         shiftHandoffState = loadShiftHandoffState();
     }
     return shiftHandoffState;
@@ -954,7 +1070,10 @@ function setShiftHandoffStep(stepId, complete) {
 
 function resetShiftHandoffState() {
     return persistShiftHandoffState(
-        createShiftHandoffState(getTodayLocalIsoDate())
+        createShiftHandoffState(
+            getTodayLocalIsoDate(),
+            getActiveQueueOpsClinicId()
+        )
     );
 }
 
@@ -978,9 +1097,13 @@ function applyShiftHandoffSuggestions(stepIds) {
     });
 }
 
-function createOpsLogState(date = getTodayLocalIsoDate()) {
+function createOpsLogState(
+    date = getTodayLocalIsoDate(),
+    clinicId = getActiveQueueOpsClinicId()
+) {
     return {
         date,
+        clinicId,
         items: [],
     };
 }
@@ -1008,10 +1131,14 @@ function normalizeOpsLogItem(rawItem) {
 
 function normalizeOpsLogState(rawState) {
     const today = getTodayLocalIsoDate();
+    const activeClinicId = getActiveQueueOpsClinicId();
     const source = rawState && typeof rawState === 'object' ? rawState : {};
+    const sameClinic = String(source.clinicId || '').trim() === activeClinicId;
+    const sameDate = String(source.date || '').trim() === today;
     return {
-        date: String(source.date || '').trim() === today ? today : today,
-        items: Array.isArray(source.items)
+        date: today,
+        clinicId: activeClinicId,
+        items: sameClinic && sameDate && Array.isArray(source.items)
             ? source.items
                   .map((item) => normalizeOpsLogItem(item))
                   .slice(0, QUEUE_OPS_LOG_MAX_ITEMS)
@@ -1021,18 +1148,36 @@ function normalizeOpsLogState(rawState) {
 
 function loadOpsLogState() {
     const today = getTodayLocalIsoDate();
+    const activeClinicId = getActiveQueueOpsClinicId();
     try {
         const raw = localStorage.getItem(QUEUE_OPS_LOG_STORAGE_KEY);
         if (!raw) {
-            return createOpsLogState(today);
+            return createOpsLogState(today, activeClinicId);
         }
         const parsed = JSON.parse(raw);
-        if (String(parsed?.date || '') !== today) {
-            return createOpsLogState(today);
+        if (
+            String(parsed?.date || '').trim() !== today ||
+            String(parsed?.clinicId || '').trim() !== activeClinicId
+        ) {
+            const resetState = createOpsLogState(today, activeClinicId);
+            localStorage.setItem(
+                QUEUE_OPS_LOG_STORAGE_KEY,
+                JSON.stringify(resetState)
+            );
+            return resetState;
         }
         return normalizeOpsLogState(parsed);
     } catch (_error) {
-        return createOpsLogState(today);
+        const resetState = createOpsLogState(today, activeClinicId);
+        try {
+            localStorage.setItem(
+                QUEUE_OPS_LOG_STORAGE_KEY,
+                JSON.stringify(resetState)
+            );
+        } catch (_storageError) {
+            // ignore storage write failures
+        }
+        return resetState;
     }
 }
 
@@ -1051,7 +1196,12 @@ function persistOpsLogState(nextState) {
 
 function ensureOpsLogState() {
     const today = getTodayLocalIsoDate();
-    if (!opsLogState || opsLogState.date !== today) {
+    const activeClinicId = getActiveQueueOpsClinicId();
+    if (
+        !opsLogState ||
+        opsLogState.date !== today ||
+        opsLogState.clinicId !== activeClinicId
+    ) {
         opsLogState = loadOpsLogState();
     }
     return opsLogState;
@@ -1513,31 +1663,11 @@ function getOperatorSurfaceDetailsForStation(consultorio) {
 }
 
 function hasRecentQueueSmokeSignal(maxAgeSec = 21600) {
-    const queueMeta = getQueueSource().queueMeta;
-    if (Number(queueMeta?.calledCount || 0) > 0) {
-        return true;
-    }
-
-    const queueTickets = Array.isArray(getState().data?.queueTickets)
-        ? getState().data.queueTickets
-        : [];
-    if (
-        queueTickets.some((ticket) => String(ticket.status || '') === 'called')
-    ) {
-        return true;
-    }
-
-    return (getState().queue?.activity || []).some((entry) => {
-        const message = String(entry?.message || '');
-        if (!/(Llamado C\d ejecutado|Re-llamar)/i.test(message)) {
-            return false;
-        }
-        const entryMs = Date.parse(String(entry?.at || ''));
-        if (!Number.isFinite(entryMs)) {
-            return true;
-        }
-        return Date.now() - entryMs <= maxAgeSec * 1000;
-    });
+    return hasRecentQueueSmokeSignalForState(
+        getState(),
+        getTurneroClinicId(),
+        maxAgeSec
+    );
 }
 
 function buildOpeningChecklistAssist(detectedPlatform) {
@@ -2096,7 +2226,14 @@ async function copyShiftHandoffSummary(detectedPlatform) {
     }
 }
 
+function syncClinicScopedQueueOpsState() {
+    ensureOpeningChecklistState();
+    ensureShiftHandoffState();
+    ensureOpsLogState();
+}
+
 function buildQueueOpsPilot(manifest, detectedPlatform) {
+    syncClinicScopedQueueOpsState();
     return buildQueueOpsPilotModule(manifest, detectedPlatform, {
         ensureOpeningChecklistState,
         buildOpeningChecklistSteps,
@@ -2104,6 +2241,7 @@ function buildQueueOpsPilot(manifest, detectedPlatform) {
         getQueueSyncHealth,
         getSurfaceTelemetryState,
         getTurneroClinicProfile,
+        getTurneroClinicProfileMeta,
         getTurneroClinicBrandName,
         getTurneroPublicSyncStatus,
         hasRecentQueueSmokeSignal,
@@ -2121,6 +2259,7 @@ function renderQueueOpsPilot(manifest, detectedPlatform) {
         buildOpeningChecklistAssist,
         applyOpeningChecklistSuggestions,
         appendOpsLogEntry,
+        createToast,
         getInstallPresetLabel,
         renderQueueFocusMode,
         renderQueueQuickConsole,

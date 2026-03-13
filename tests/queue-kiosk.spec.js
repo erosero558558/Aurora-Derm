@@ -10,6 +10,151 @@ function json(route, payload, status = 200) {
 }
 
 test.describe('Kiosco turnos', () => {
+    test('aplica branding del perfil clinico en cabecera y contexto del kiosco', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                        city: 'Quito',
+                    },
+                    consultorios: {
+                        c1: { label: 'Dermatología 1', short_label: 'D1' },
+                        c2: { label: 'Dermatología 2', short_label: 'D2' },
+                    },
+                    surfaces: {
+                        kiosk: {
+                            enabled: true,
+                            route: '/kiosco-turnos.html',
+                        },
+                    },
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            if ((url.searchParams.get('resource') || '') === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 0,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                    },
+                });
+            }
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await expect(page).toHaveTitle(/Clinica Norte/i);
+        await expect(page.locator('.kiosk-brand strong')).toContainText(
+            'Clinica Norte'
+        );
+        await expect(page.locator('#kioskClinicMeta')).toContainText(
+            'clinica-norte-demo · Quito'
+        );
+        await expect(page.locator('#kioskClinicContext')).toContainText(
+            'Norte · /kiosco-turnos.html · Dermatología 1 · Dermatología 2'
+        );
+    });
+
+    test('degrada kiosco si la ruta del perfil no coincide con la superficie activa', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    surfaces: {
+                        kiosk: {
+                            enabled: true,
+                            route: '/kiosco-alt.html',
+                        },
+                    },
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            if ((url.searchParams.get('resource') || '') === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 0,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                    },
+                });
+            }
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await expect(page.locator('#kioskSetupTitle')).toContainText(
+            'Ruta del piloto incorrecta'
+        );
+        await expect(page.locator('#kioskSetupChecks')).toContainText(
+            '/kiosco-alt.html'
+        );
+    });
+
+    test('degrada kiosco si clinic-profile.json no carga y queda en perfil de respaldo', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                route.fulfill({
+                    status: 404,
+                    contentType: 'application/json; charset=utf-8',
+                    body: JSON.stringify({ ok: false }),
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            if ((url.searchParams.get('resource') || '') === 'queue-state') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 0,
+                        calledCount: 0,
+                        callingNow: [],
+                        nextTickets: [],
+                    },
+                });
+            }
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await expect(page.locator('#kioskSetupTitle')).toContainText(
+            'Perfil de clínica no cargado'
+        );
+        await expect(page.locator('#kioskSetupChecks')).toContainText(
+            'perfil de respaldo'
+        );
+    });
+
     test('genera walk-in y responde asistente de sala', async ({ page }) => {
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());

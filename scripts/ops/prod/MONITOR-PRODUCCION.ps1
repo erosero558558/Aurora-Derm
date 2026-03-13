@@ -10,7 +10,7 @@ param(
     [switch]$AllowBlockedCalendar,
     [switch]$RequireServicePrioritiesFunnel,
     [switch]$AllowDegradedTelemedicineDiagnostics,
-    [string]$GitHubRepo = 'erosero558558/piel-en-armonia',
+    [string]$GitHubRepo = 'erosero558558/Aurora-Derm',
     [string]$GitHubApiBase = 'https://api.github.com',
     [int]$GitHubAlertsTimeoutSec = 15,
     [int]$GitHubAlertsIssueLimit = 30,

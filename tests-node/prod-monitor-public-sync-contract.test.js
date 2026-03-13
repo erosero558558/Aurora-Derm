@@ -62,7 +62,7 @@ test('prod monitor clasifica incidentes publicSync con telemetria canonica', () 
 test('prod monitor clasifica alertas GitHub de deploy dentro del mismo triage', () => {
     const raw = load(MONITOR_PATH);
     const requiredSnippets = [
-        "[string]$GitHubRepo = 'erosero558558/piel-en-armonia'",
+        "[string]$GitHubRepo = 'erosero558558/Aurora-Derm'",
         '$githubDeployAlertsSummary = Get-GitHubProductionAlertSummary',
         '[INFO] github.deployAlerts fetchOk=$githubDeployAlertsFetchOk',
         '[WARN] github.deployAlerts unreachable (repo=$GitHubRepo error=$githubDeployAlertsError)',

@@ -42,8 +42,10 @@ export function renderQueueOpsPilotActionMarkup(
 export function bindQueueOpsPilotActions(manifest, detectedPlatform, deps) {
     const {
         buildOpeningChecklistAssist,
+        buildQueueOpsPilot,
         applyOpeningChecklistSuggestions,
         appendOpsLogEntry,
+        createToast,
         getInstallPresetLabel,
         renderQueueFocusMode,
         renderQueueQuickConsole,
@@ -52,6 +54,42 @@ export function bindQueueOpsPilotActions(manifest, detectedPlatform, deps) {
         renderOpeningChecklist,
         renderQueueOpsLog,
     } = deps;
+
+    const copyHandoffButton = document.getElementById(
+        'queueOpsPilotHandoffCopyBtn'
+    );
+    if (copyHandoffButton instanceof HTMLButtonElement) {
+        copyHandoffButton.onclick = async () => {
+            const pilot = buildQueueOpsPilot(manifest, detectedPlatform);
+            const report = [
+                `Paquete de apertura - ${pilot.title}`,
+                pilot.handoffSummary,
+                ...pilot.handoffItems.map(
+                    (item) => `${item.label}: ${item.value}`
+                ),
+                '',
+                'Rutas canónicas:',
+                ...pilot.canonicalSurfaces.map((item) =>
+                    `- ${item.label}: ${item.url || item.route}`
+                ),
+                '',
+                'Secuencia de smoke:',
+                ...pilot.smokeSteps.map(
+                    (step) =>
+                        `- [${step.ready ? 'x' : ' '}] ${step.label}: ${step.detail}`
+                ),
+            ]
+                .join('\n')
+                .trim();
+            try {
+                await navigator.clipboard.writeText(report);
+                createToast('Paquete de apertura copiado', 'success');
+            } catch (_error) {
+                createToast('No se pudo copiar el paquete de apertura', 'error');
+            }
+        };
+    }
+
     const applyButton = document.getElementById('queueOpsPilotApplyBtn');
     if (!(applyButton instanceof HTMLButtonElement)) {
         return;

@@ -132,7 +132,25 @@ export async function refreshAdminData() {
         };
     } catch (_error) {
         const fallback = loadLocalAdminFallback();
-        writeAdminDataInStore(fallback);
+        writeAdminDataInStore({
+            ...fallback,
+            turneroClinicProfileMeta: fallback.turneroClinicProfile
+                ? {
+                      source: 'fallback_local',
+                      cached: true,
+                      clinicId: String(
+                          fallback.turneroClinicProfile?.clinic_id || ''
+                      ).trim(),
+                      profileFingerprint: String(
+                          fallback.turneroClinicProfileMeta?.profileFingerprint ||
+                              ''
+                      ).trim(),
+                      fetchedAt: String(
+                          fallback.turneroClinicProfileMeta?.fetchedAt || ''
+                      ).trim(),
+                  }
+                : null,
+        });
         writeWhatsappOpenclawOpsSnapshot(
             normalizeWhatsappOpenclawOpsSnapshot(
                 getState().data?.whatsappOpenclawOps || null,

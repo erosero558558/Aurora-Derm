@@ -47,6 +47,15 @@ function toString(value, fallback = '') {
     return normalized || fallback;
 }
 
+function hashClinicProfileSource(input) {
+    let hash = 2166136261;
+    for (let index = 0; index < input.length; index += 1) {
+        hash ^= input.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
 export function normalizeTurneroClinicProfile(rawProfile) {
     const source =
         rawProfile && typeof rawProfile === 'object' ? rawProfile : {};
@@ -200,6 +209,46 @@ export function getTurneroClinicShortName(profile) {
     );
 }
 
+export function getTurneroClinicProfileFingerprint(profile) {
+    const normalized = normalizeTurneroClinicProfile(profile);
+    const source = [
+        normalized.clinic_id,
+        normalized.branding.base_url,
+        normalized.consultorios.c1.label,
+        normalized.consultorios.c1.short_label,
+        normalized.consultorios.c2.label,
+        normalized.consultorios.c2.short_label,
+        normalized.surfaces.admin.enabled ? '1' : '0',
+        normalized.surfaces.admin.route,
+        normalized.surfaces.operator.enabled ? '1' : '0',
+        normalized.surfaces.operator.route,
+        normalized.surfaces.kiosk.enabled ? '1' : '0',
+        normalized.surfaces.kiosk.route,
+        normalized.surfaces.display.enabled ? '1' : '0',
+        normalized.surfaces.display.route,
+        normalized.release.mode,
+        normalized.release.admin_mode_default,
+        normalized.release.separate_deploy ? '1' : '0',
+        normalized.release.native_apps_blocking ? '1' : '0',
+    ].join('|');
+
+    return hashClinicProfileSource(source);
+}
+
+export function getTurneroClinicProfileRuntimeMeta(profile) {
+    const source = String(profile?.runtime_meta?.source || 'remote')
+        .trim()
+        .toLowerCase();
+
+    return {
+        source: source === 'fallback_default' ? 'fallback_default' : 'remote',
+        profileFingerprint: String(
+            profile?.runtime_meta?.profileFingerprint ||
+                getTurneroClinicProfileFingerprint(profile)
+        ).trim(),
+    };
+}
+
 export function getTurneroConsultorioLabel(
     profile,
     consultorio,
@@ -215,6 +264,111 @@ export function getTurneroConsultorioLabel(
     return short
         ? toString(source?.short_label, fallback.short_label)
         : toString(source?.label, fallback.label);
+}
+
+function normalizeSurfaceRouteForMatch(value) {
+    const normalized = toString(value);
+    if (!normalized) {
+        return '';
+    }
+
+    try {
+        const parsed = new URL(normalized, 'https://turnero.local');
+        return `${parsed.pathname}${parsed.hash || ''}` || '/';
+    } catch (_error) {
+        return normalized;
+    }
+}
+
+function resolveCurrentSurfaceRoute(options = {}) {
+    if (toString(options.currentRoute)) {
+        return normalizeSurfaceRouteForMatch(options.currentRoute);
+    }
+
+    if (
+        typeof window !== 'undefined' &&
+        window.location &&
+        typeof window.location.pathname === 'string'
+    ) {
+        return normalizeSurfaceRouteForMatch(
+            `${window.location.pathname || ''}${window.location.hash || ''}`
+        );
+    }
+
+    return '';
+}
+
+export function getTurneroSurfaceContract(profile, surface, options = {}) {
+    const normalizedProfile = normalizeTurneroClinicProfile(profile);
+    const runtimeMeta = getTurneroClinicProfileRuntimeMeta(profile);
+    const surfaceKey = String(surface || '').trim().toLowerCase();
+    const fallbackSurface =
+        normalizedProfile.surfaces[surfaceKey] ||
+        FALLBACK_PROFILE.surfaces.operator;
+    const enabled = fallbackSurface.enabled !== false;
+    const expectedRoute = normalizeSurfaceRouteForMatch(fallbackSurface.route);
+    const currentRoute = resolveCurrentSurfaceRoute(options);
+    const routeMatches =
+        expectedRoute === '' || currentRoute === ''
+            ? true
+            : expectedRoute === currentRoute;
+
+    if (!enabled) {
+        return {
+            surface: surfaceKey,
+            enabled,
+            expectedRoute,
+            currentRoute,
+            routeMatches: false,
+            state: 'alert',
+            label: fallbackSurface.label,
+            detail: `${fallbackSurface.label} está deshabilitada en el perfil de ${getTurneroClinicShortName(
+                normalizedProfile
+            )}.`,
+            reason: 'disabled',
+        };
+    }
+
+    if (runtimeMeta.source !== 'remote') {
+        return {
+            surface: surfaceKey,
+            enabled,
+            expectedRoute,
+            currentRoute,
+            routeMatches,
+            state: 'alert',
+            label: fallbackSurface.label,
+            detail:
+                'No se pudo cargar clinic-profile.json; la superficie quedó con perfil de respaldo y no puede operar como piloto.',
+            reason: 'profile_missing',
+        };
+    }
+
+    if (!routeMatches) {
+        return {
+            surface: surfaceKey,
+            enabled,
+            expectedRoute,
+            currentRoute,
+            routeMatches,
+            state: 'alert',
+            label: fallbackSurface.label,
+            detail: `La ruta activa (${currentRoute || 'sin ruta'}) no coincide con la canónica (${expectedRoute || 'sin ruta declarada'}).`,
+            reason: 'route_mismatch',
+        };
+    }
+
+    return {
+        surface: surfaceKey,
+        enabled,
+        expectedRoute,
+        currentRoute,
+        routeMatches,
+        state: 'ready',
+        label: fallbackSurface.label,
+        detail: `Ruta canónica verificada: ${expectedRoute || currentRoute || 'sin ruta'}.`,
+        reason: 'ready',
+    };
 }
 
 export function loadTurneroClinicProfile() {
@@ -234,8 +388,30 @@ export function loadTurneroClinicProfile() {
             }
             return response.json();
         })
-        .then((payload) => normalizeTurneroClinicProfile(payload))
-        .catch(() => normalizeTurneroClinicProfile(FALLBACK_PROFILE));
+        .then((payload) => {
+            const profile = normalizeTurneroClinicProfile(payload);
+            return {
+                ...profile,
+                runtime_meta: {
+                    source: 'remote',
+                    profileFingerprint:
+                        getTurneroClinicProfileFingerprint(profile),
+                },
+            };
+        })
+        .catch(() => {
+            const fallbackProfile = normalizeTurneroClinicProfile(
+                FALLBACK_PROFILE
+            );
+            return {
+                ...fallbackProfile,
+                runtime_meta: {
+                    source: 'fallback_default',
+                    profileFingerprint:
+                        getTurneroClinicProfileFingerprint(fallbackProfile),
+                },
+            };
+        });
 
     return clinicProfilePromise;
 }

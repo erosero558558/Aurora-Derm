@@ -3,9 +3,13 @@ import { renderQueueActivity } from '../render.js';
 
 export function appendActivity(message) {
     updateState((state) => {
+        const clinicId = String(
+            state?.data?.turneroClinicProfile?.clinic_id || 'default-clinic'
+        ).trim();
         const nextActivity = [
             {
                 at: new Date().toISOString(),
+                clinicId,
                 message: String(message || ''),
             },
             ...(state.queue.activity || []),

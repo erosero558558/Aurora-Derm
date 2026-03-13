@@ -8,13 +8,16 @@
             content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
         />
         <title>Sala de Espera | Turnero</title>
-        <link rel="stylesheet" href="queue-display.css?v=queue-20260310-setup1" />
+        <link rel="stylesheet" href="queue-display.css?v=queue-20260312-profile1" />
     </head>
     <body>
         <header class="display-header">
             <div class="display-brand">
                 <strong>Aurora Derm</strong>
-                <span>Turnero de sala de espera · Vista pacientes (lectura grande)</span>
+                <span id="displayBrandMeta">
+                    Turnero de sala de espera · Vista pacientes (lectura grande)
+                </span>
+                <span id="displayClinicMeta">Piloto web por clínica</span>
                 <span class="display-privacy-pill" aria-label="Privacidad activa">
                     Privacidad activa: ticket + iniciales
                 </span>
@@ -79,7 +82,7 @@
         </main>
 
         <script
-            src="js/queue-display.js?v=queue-20260310-telemetry1"
+            src="js/queue-display.js?v=queue-20260312-profile1"
             type="module"
         ></script>
     </body>

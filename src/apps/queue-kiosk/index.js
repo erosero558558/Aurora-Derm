@@ -1,7 +1,10 @@
 import { createSurfaceHeartbeatClient } from '../queue-shared/surface-heartbeat.js';
 import {
     getTurneroClinicBrandName,
+    getTurneroClinicProfileFingerprint,
+    getTurneroClinicShortName,
     getTurneroConsultorioLabel,
+    getTurneroSurfaceContract,
     loadTurneroClinicProfile,
 } from '../queue-shared/clinic-profile.js';
 
@@ -133,6 +136,16 @@ function getKioskConsultorioLabel(consultorio) {
 function applyKioskClinicProfile(profile) {
     state.clinicProfile = profile;
     const clinicName = getTurneroClinicBrandName(profile);
+    const clinicShortName = getTurneroClinicShortName(profile);
+    const clinicId = String(profile?.clinic_id || '').trim() || 'sin-clinic-id';
+    const clinicCity = String(profile?.branding?.city || '').trim();
+    const kioskRoute = String(
+        profile?.surfaces?.kiosk?.route || '/kiosco-turnos.html'
+    ).trim();
+    const consultorioSummary = [
+        getKioskConsultorioLabel(1),
+        getKioskConsultorioLabel(2),
+    ].join(' · ');
     document.title = `Kiosco de Turnos | ${clinicName}`;
 
     const welcomeBrand = document.querySelector('#kioskWelcomeScreen strong');
@@ -143,6 +156,23 @@ function applyKioskClinicProfile(profile) {
     const headerBrand = document.querySelector('.kiosk-brand strong');
     if (headerBrand instanceof HTMLElement) {
         headerBrand.textContent = clinicName;
+    }
+
+    const clinicMeta = getById('kioskClinicMeta');
+    if (clinicMeta instanceof HTMLElement) {
+        clinicMeta.textContent = [clinicId, clinicCity || clinicShortName]
+            .filter(Boolean)
+            .join(' · ');
+    }
+
+    const clinicContext = getById('kioskClinicContext');
+    if (clinicContext instanceof HTMLElement) {
+        clinicContext.textContent = `${clinicShortName} · ${kioskRoute} · ${consultorioSummary}`;
+    }
+
+    const headerNote = document.querySelector('.kiosk-header-note');
+    if (headerNote instanceof HTMLElement) {
+        headerNote.textContent = `Piloto web por clínica · ${clinicCity || clinicShortName}`;
     }
 }
 
@@ -161,10 +191,29 @@ function buildKioskHeartbeatPayload() {
     const printerPrinted = Boolean(printer?.printed);
     const printerErrorCode = String(printer?.errorCode || '');
     const healthySync = Boolean(state.queueLastHealthySyncAt);
+    const surfaceContract = getTurneroSurfaceContract(
+        state.clinicProfile,
+        'kiosk'
+    );
+    const clinicId = String(state.clinicProfile?.clinic_id || '').trim();
+    const clinicName = String(
+        state.clinicProfile?.branding?.name ||
+            state.clinicProfile?.branding?.short_name ||
+            ''
+    ).trim();
+    const profileFingerprint = getTurneroClinicProfileFingerprint(
+        state.clinicProfile
+    );
+    const profileSource = String(
+        state.clinicProfile?.runtime_meta?.source || 'remote'
+    ).trim();
 
     let status = 'warning';
     let summary = 'Kiosco pendiente de validación.';
-    if (connectionState === 'offline') {
+    if (surfaceContract.state === 'alert') {
+        status = 'alert';
+        summary = surfaceContract.detail;
+    } else if (connectionState === 'offline') {
         status = 'alert';
         summary =
             'Kiosco sin conexión; usa contingencia local y deriva si crece la fila.';
@@ -199,6 +248,13 @@ function buildKioskHeartbeatPayload() {
             printerErrorCode,
             healthySync,
             flow: String(state.selectedFlow || 'checkin'),
+            clinicId,
+            clinicName,
+            profileSource,
+            profileFingerprint,
+            surfaceContractState: String(surfaceContract.state || ''),
+            surfaceRouteExpected: String(surfaceContract.expectedRoute || ''),
+            surfaceRouteCurrent: String(surfaceContract.currentRoute || ''),
         },
     };
 }
@@ -1522,6 +1578,10 @@ function renderKioskSetupStatus() {
     const printerReady = Boolean(printer?.printed);
     const printerBlocked = Boolean(printer && !printer.printed);
     const hasHealthySync = Boolean(state.queueLastHealthySyncAt);
+    const surfaceContract = getTurneroSurfaceContract(
+        state.clinicProfile,
+        'kiosk'
+    );
     const oldestQueuedAt = Date.parse(
         String(state.offlineOutbox[0]?.queuedAt || '')
     );
@@ -1530,6 +1590,11 @@ function renderKioskSetupStatus() {
         : '';
 
     const checks = [
+        {
+            label: 'Perfil de clínica',
+            state: surfaceContract.state === 'alert' ? 'danger' : 'ready',
+            detail: surfaceContract.detail,
+        },
         {
             label: 'Conexion con cola',
             state:
@@ -1581,7 +1646,13 @@ function renderKioskSetupStatus() {
     let title = 'Finaliza la puesta en marcha';
     let summary =
         'Revisa backend, termica y pendientes antes de dejar el kiosco en autoservicio.';
-    if (connectionState === 'offline') {
+    if (surfaceContract.state === 'alert') {
+        title =
+            surfaceContract.reason === 'profile_missing'
+                ? 'Perfil de clínica no cargado'
+                : 'Ruta del piloto incorrecta';
+        summary = surfaceContract.detail;
+    } else if (connectionState === 'offline') {
         title = 'Kiosco en contingencia';
         summary =
             'El kiosco puede seguir capturando datos, pero el backend no responde. Si la fila crece, deriva a recepcion.';

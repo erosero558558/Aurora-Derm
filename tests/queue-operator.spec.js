@@ -149,6 +149,7 @@ async function setupOperatorAuthOperatorMocks(
     let statusIndex = 0;
     let startIndex = 0;
     const startRequests = [];
+    const heartbeatRequests = [];
 
     await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
         const action =
@@ -259,9 +260,23 @@ async function setupOperatorAuthOperatorMocks(
 
         if (
             resource === 'health' ||
-            resource === 'funnel-metrics' ||
-            resource === 'queue-surface-heartbeat'
+            resource === 'funnel-metrics'
         ) {
+            return json(route, { ok: true, data: {} });
+        }
+
+        if (resource === 'queue-surface-heartbeat') {
+            let body = {};
+            try {
+                body = request.postDataJSON() || {};
+            } catch (_error) {
+                body = {};
+            }
+            heartbeatRequests.push({
+                method: request.method(),
+                url: request.url(),
+                body,
+            });
             return json(route, { ok: true, data: {} });
         }
 
@@ -271,10 +286,175 @@ async function setupOperatorAuthOperatorMocks(
     return {
         challenge: startResponse.challenge,
         startRequests,
+        heartbeatRequests,
     };
 }
 
 test.describe('Turnero Operador', () => {
+    test('aplica branding del perfil clinico en la vista de acceso', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                        city: 'Quito',
+                    },
+                    consultorios: {
+                        c1: { label: 'Dermatología 1', short_label: 'D1' },
+                        c2: { label: 'Dermatología 2', short_label: 'D2' },
+                    },
+                    surfaces: {
+                        operator: {
+                            enabled: true,
+                            route: '/operador-turnos.html',
+                        },
+                    },
+                })
+        );
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: false,
+                mode: 'local',
+                status: 'anonymous',
+            })
+        );
+
+        await page.goto(operatorUrl());
+
+        await expect(page).toHaveTitle(/Clinica Norte/i);
+        await expect(page.locator('.queue-operator-kicker').first()).toContainText(
+            'Norte · Operador'
+        );
+        await expect(page.locator('#operatorClinicMeta')).toContainText(
+            'clinica-norte-demo'
+        );
+        await expect(page.locator('#operatorSurfaceMeta')).toContainText(
+            '/operador-turnos.html · D1 / D2'
+        );
+    });
+
+    test('degrada operador si la ruta del perfil no coincide con la superficie activa', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    consultorios: {
+                        c1: { label: 'Dermatología 1', short_label: 'D1' },
+                        c2: { label: 'Dermatología 2', short_label: 'D2' },
+                    },
+                    surfaces: {
+                        operator: {
+                            enabled: true,
+                            route: '/operador-alt.html',
+                        },
+                    },
+                })
+        );
+
+        await setupOperatorAuthOperatorMocks(page);
+        await installWindowOpenRecorder(page);
+        await page.goto(operatorUrl('station=c2&lock=1&one_tap=1'));
+        await page.locator('#operatorOpenClawBtn').click();
+
+        await expect(page.locator('#operatorApp')).toBeVisible();
+        await expect(page.locator('#operatorReadinessTitle')).toContainText(
+            'Ruta del piloto incorrecta'
+        );
+        await expect(page.locator('#operatorReadyRoute')).toContainText(
+            '/operador-alt.html'
+        );
+    });
+
+    test('degrada operador si clinic-profile.json no carga y queda en perfil de respaldo', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                route.fulfill({
+                    status: 404,
+                    contentType: 'application/json; charset=utf-8',
+                    body: JSON.stringify({ ok: false }),
+                })
+        );
+
+        await setupOperatorAuthOperatorMocks(page);
+        await installWindowOpenRecorder(page);
+        await page.goto(operatorUrl('station=c1&lock=1'));
+        await page.locator('#operatorOpenClawBtn').click();
+
+        await expect(page.locator('#operatorReadinessTitle')).toContainText(
+            'Perfil de clínica no cargado'
+        );
+        await expect(page.locator('#operatorReadyRoute')).toContainText(
+            'perfil de respaldo'
+        );
+    });
+
+    test('incluye clinicId del perfil clinico en el heartbeat del operador', async ({
+        page,
+    }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    consultorios: {
+                        c1: { label: 'Dermatología 1', short_label: 'D1' },
+                        c2: { label: 'Dermatología 2', short_label: 'D2' },
+                    },
+                    surfaces: {
+                        operator: {
+                            enabled: true,
+                            route: '/operador-turnos.html',
+                        },
+                    },
+                })
+        );
+
+        const { challenge, heartbeatRequests } =
+            await setupOperatorAuthOperatorMocks(page);
+        await installWindowOpenRecorder(page);
+        await page.goto(operatorUrl('station=c1&lock=1'));
+
+        await page.locator('#operatorOpenClawBtn').click();
+        await expect(page.locator('#operatorApp')).toBeVisible();
+
+        await expect.poll(() => heartbeatRequests.length).toBeGreaterThan(0);
+
+        const latestHeartbeat =
+            heartbeatRequests[heartbeatRequests.length - 1]?.body || {};
+        const details =
+            latestHeartbeat.details && typeof latestHeartbeat.details === 'object'
+                ? latestHeartbeat.details
+                : {};
+
+        expect(challenge.challengeId).toBeTruthy();
+        expect(details.clinicId).toBe('clinica-norte-demo');
+        expect(details.clinicName).toBe('Clinica Norte');
+        expect(details.profileSource).toBe('remote');
+        expect(details.profileFingerprint).toMatch(/^[0-9a-f]{8}$/);
+        expect(details.surfaceRouteExpected).toBe('/operador-turnos.html');
+    });
+
     test('usa OpenClaw en modo operador y autentica sin pedir clave local', async ({
         page,
     }) => {

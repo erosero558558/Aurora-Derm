@@ -2,6 +2,7 @@ import { getState } from '../../../../../../core/store.js';
 import { getQueueSource } from '../../../../selectors.js';
 import { ensureInstallPreset } from '../state.js';
 import { getSurfaceTelemetryState } from '../telemetry.js';
+import { hasRecentQueueSmokeSignalForState } from '../smoke-signal.js';
 
 function getLatestSurfaceDetails(surfaceKey) {
     const group = getSurfaceTelemetryState(surfaceKey);
@@ -15,22 +16,11 @@ function getLatestSurfaceDetails(surfaceKey) {
 }
 
 function hasRecentQueueSmokeSignal(maxAgeSec = 21600) {
-    const queueMeta = getQueueSource().queueMeta;
-    if (Number(queueMeta?.calledCount || 0) > 0) return true;
-
-    const queueTickets = Array.isArray(getState().data?.queueTickets)
-        ? getState().data.queueTickets
-        : [];
-    if (queueTickets.some((ticket) => String(ticket.status || '') === 'called'))
-        return true;
-
-    return (getState().queue?.activity || []).some((entry) => {
-        const message = String(entry?.message || '');
-        if (!/(Llamado C\d ejecutado|Re-llamar)/i.test(message)) return false;
-        const entryMs = Date.parse(String(entry?.at || ''));
-        if (!Number.isFinite(entryMs)) return true;
-        return Date.now() - entryMs <= maxAgeSec * 1000;
-    });
+    return hasRecentQueueSmokeSignalForState(
+        getState(),
+        String(getState().data?.turneroClinicProfile?.clinic_id || 'default-clinic'),
+        maxAgeSec
+    );
 }
 
 export function buildOpeningChecklistAssist(detectedPlatform) {

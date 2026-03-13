@@ -19,7 +19,7 @@ param(
     [switch]$SkipAssetHashChecks,
     [switch]$ForceAssetHashChecks,
     [string]$ReportPath = 'verification/last-deploy-verify.json',
-    [string]$GitHubRepo = 'erosero558558/piel-en-armonia',
+    [string]$GitHubRepo = 'erosero558558/Aurora-Derm',
     [string]$GitHubApiBase = 'https://api.github.com',
     [int]$GitHubAlertsTimeoutSec = 15,
     [int]$GitHubAlertsIssueLimit = 30,
@@ -1617,8 +1617,7 @@ try {
 if ($RunSmoke) {
     Write-Host ""
     Write-Host "Ejecutando smoke..."
-    & $smokeScriptPath `
-        -Domain $base `
+    & $smokeScriptPath -Domain $base `
         -TestFigoPost `
         -AllowDegradedFigo:$AllowDegradedFigo `
         -AllowRecursiveFigo:$AllowRecursiveFigo `

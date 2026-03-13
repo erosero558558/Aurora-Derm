@@ -194,7 +194,7 @@ test('weekly report script integra bloque GitHub deploy alerts operativo', () =>
         'utf8'
     );
     const requiredReportSnippets = [
-        "[string]$GitHubRepo = 'erosero558558/piel-en-armonia'",
+        "[string]$GitHubRepo = 'erosero558558/Aurora-Derm'",
         '$githubDeployAlertsSummary = Get-GitHubProductionAlertSummary',
         'github_deploy_alerts_unreachable',
         'github_deploy_alerts_open_${githubDeployAlertsRelevantCount}',

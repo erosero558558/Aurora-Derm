@@ -94,7 +94,7 @@ const PUBLISH_EVENTS_PATH = resolve(
 const DEFAULT_GITHUB_REPOSITORY =
     process.env.AGENT_GITHUB_REPOSITORY ||
     process.env.GITHUB_REPOSITORY ||
-    'erosero558558/piel-en-armonia';
+    'erosero558558/Aurora-Derm';
 const DEFAULT_PRIORITY_DOMAINS = ['calendar', 'chat', 'payments'];
 const DEFAULT_DOMAIN_HEALTH_WEIGHTS = {
     calendar: 5,

@@ -8,7 +8,7 @@
             content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
         />
         <title>Kiosco de Turnos | Aurora Derm</title>
-        <link rel="stylesheet" href="queue-kiosk.css?v=queue-20260310-setup1" />
+        <link rel="stylesheet" href="queue-kiosk.css?v=queue-20260312-profile1" />
     </head>
     <body>
         <div
@@ -25,6 +25,7 @@
             <div class="kiosk-brand">
                 <strong>Aurora Derm</strong>
                 <span>Kiosco de turnos</span>
+                <span id="kioskClinicMeta">Piloto web por clínica</span>
             </div>
             <div class="kiosk-header-tools">
                 <p class="kiosk-header-note">Pensado para uso simple y seguro</p>
@@ -71,6 +72,9 @@
         <main class="kiosk-layout">
             <section class="kiosk-card kiosk-checkin-card">
                 <h1>Registro en sala de espera</h1>
+                <p id="kioskClinicContext" class="kiosk-clinic-context">
+                    Ruta canónica del piloto · check-in con cita y sin cita
+                </p>
                 <p>
                     Selecciona tu opcion para generar turno o confirmar cita.
                 </p>
@@ -318,7 +322,7 @@
         </main>
 
         <script
-            src="js/queue-kiosk.js?v=queue-20260310-telemetry1"
+            src="js/queue-kiosk.js?v=queue-20260312-profile1"
             type="module"
         ></script>
     </body>

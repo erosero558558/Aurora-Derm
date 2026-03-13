@@ -12,7 +12,7 @@ param(
     [int]$MaxHealthTimingMs = 2000,
     [int]$FigoPostRetries = 3,
     [int]$FigoPostRetryDelaySec = 2,
-    [string]$GitHubRepo = 'erosero558558/piel-en-armonia',
+    [string]$GitHubRepo = 'erosero558558/Aurora-Derm',
     [string]$GitHubApiBase = 'https://api.github.com',
     [int]$GitHubAlertsTimeoutSec = 15,
     [int]$GitHubAlertsIssueLimit = 30,

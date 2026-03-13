@@ -56,7 +56,7 @@ test('prod smoke expone telemetria rica de publicSync', () => {
 test('prod smoke integra github.deployAlerts en el gate cron manual', () => {
     const raw = load(SMOKE_PATH);
     const requiredSnippets = [
-        "[string]$GitHubRepo = 'erosero558558/piel-en-armonia'",
+        "[string]$GitHubRepo = 'erosero558558/Aurora-Derm'",
         '[switch]$AllowOpenGitHubDeployAlerts',
         '$githubDeployAlerts = Get-GitHubProductionAlertSummary',
         "$githubDeployAlertsSeverity = if ($AllowOpenGitHubDeployAlerts) { 'WARN' } else { 'FAIL' }",
@@ -102,7 +102,7 @@ test('prod verify propaga telemetria de publicSync a resultados y consola', () =
 test('prod verify integra github.deployAlerts y propaga el override al smoke', () => {
     const raw = load(VERIFY_PATH);
     const requiredSnippets = [
-        "[string]$GitHubRepo = 'erosero558558/piel-en-armonia'",
+        "[string]$GitHubRepo = 'erosero558558/Aurora-Derm'",
         '[switch]$AllowOpenGitHubDeployAlerts',
         '$githubDeployAlerts = Get-GitHubProductionAlertSummary',
         "[INFO] github.deployAlerts fetchOk=$githubDeployAlertsFetchOk repo=$GitHubRepo relevantCount=$githubDeployAlertsRelevantCount transportCount=$githubDeployAlertsTransportCount connectivityCount=$githubDeployAlertsConnectivityCount repairGitSyncCount=$githubDeployAlertsRepairGitSyncCount selfHostedRunnerCount=$githubDeployAlertsSelfHostedRunnerCount issueNumbers=$githubDeployAlertsIssueNumbersLabel issueRefs=$githubDeployAlertsIssueRefsLabel",

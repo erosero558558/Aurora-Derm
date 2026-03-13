@@ -1,3 +1,5 @@
+import { getTurneroClinicProfileFingerprint } from '../../../../queue-shared/clinic-profile.js';
+
 function normalizeCallbacks(list) {
     return (Array.isArray(list) ? list : []).map((item) => ({
         ...item,
@@ -18,6 +20,35 @@ function normalizeQueueTickets(data) {
 }
 
 export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
+    const remoteProfile =
+        data.turneroClinicProfile &&
+        typeof data.turneroClinicProfile === 'object'
+            ? data.turneroClinicProfile
+            : null;
+    const fallbackProfile =
+        fallbackState?.turneroClinicProfile &&
+        typeof fallbackState.turneroClinicProfile === 'object'
+            ? fallbackState.turneroClinicProfile
+            : null;
+    const profile = remoteProfile || fallbackProfile || null;
+    const fallbackProfileMeta =
+        fallbackState?.turneroClinicProfileMeta &&
+        typeof fallbackState.turneroClinicProfileMeta === 'object'
+            ? fallbackState.turneroClinicProfileMeta
+            : null;
+    const turneroClinicProfileMeta = profile
+        ? {
+              source: remoteProfile ? 'remote' : 'fallback_local',
+              cached: remoteProfile ? false : true,
+              clinicId: String(profile?.clinic_id || '').trim(),
+              profileFingerprint:
+                  getTurneroClinicProfileFingerprint(profile),
+              fetchedAt: remoteProfile
+                  ? new Date().toISOString()
+                  : String(fallbackProfileMeta?.fetchedAt || '').trim(),
+          }
+        : null;
+
     return {
         appointments: Array.isArray(data.appointments) ? data.appointments : [],
         callbacks: Array.isArray(data.callbacks) ? data.callbacks : [],
@@ -52,11 +83,8 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
             data.appDownloads && typeof data.appDownloads === 'object'
                 ? data.appDownloads
                 : fallbackState?.appDownloads || null,
-        turneroClinicProfile:
-            data.turneroClinicProfile &&
-            typeof data.turneroClinicProfile === 'object'
-                ? data.turneroClinicProfile
-                : fallbackState?.turneroClinicProfile || null,
+        turneroClinicProfile: profile,
+        turneroClinicProfileMeta: turneroClinicProfileMeta,
         clinicalHistoryMeta:
             data.clinicalHistoryMeta &&
             typeof data.clinicalHistoryMeta === 'object'
@@ -84,6 +112,7 @@ export function normalizeAdminStorePayload(payload, currentFunnelMetrics) {
         queueSurfaceStatus: payload.queueSurfaceStatus || null,
         appDownloads: payload.appDownloads || null,
         turneroClinicProfile: payload.turneroClinicProfile || null,
+        turneroClinicProfileMeta: payload.turneroClinicProfileMeta || null,
         clinicalHistoryMeta: payload.clinicalHistoryMeta || null,
         mediaFlowMeta: payload.mediaFlowMeta || null,
         funnelMetrics: payload.funnelMetrics || currentFunnelMetrics,
