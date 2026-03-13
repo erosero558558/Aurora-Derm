@@ -1398,7 +1398,9 @@ function syncOperatorActionAvailability() {
     document.querySelectorAll('[data-action]').forEach((node) => {
         const action = String(node.getAttribute('data-action') || '').trim();
         const blocker = getOperatorActionGuard(action, node);
-        const disabled = Boolean(blocker);
+        const allowInteractionThroughGuard =
+            blocker?.key === 'pilot_profile' || blocker?.key === 'pilot_route';
+        const disabled = Boolean(blocker) && !allowInteractionThroughGuard;
         const guardDisabledState = node.getAttribute(
             'data-operator-guard-disabled'
         );
@@ -2175,7 +2177,8 @@ async function boot() {
         });
     }
 
-    const auth = await checkAuthStatus();
+    await checkAuthStatus();
+    const auth = getState().auth;
     if (auth.authenticated) {
         await operatorRuntime.queueAdapter?.markSessionAuthenticated?.(true);
         await bootAuthenticatedSurface();
