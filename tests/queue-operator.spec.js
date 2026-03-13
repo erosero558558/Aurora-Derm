@@ -1,6 +1,10 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
+const {
+    buildOperatorAuthChallenge,
+    installLegacyAdminAuthMock,
+    installWindowOpenRecorder,
+} = require('./helpers/admin-auth-mocks');
 
 function json(route, payload, status = 200) {
     return route.fulfill({
@@ -16,47 +20,16 @@ function operatorUrl(query = '') {
     return `/operador-turnos.html${search ? `?${search}` : ''}`;
 }
 
-function buildOperatorAuthChallenge(overrides = {}) {
-    const challengeId = String(
-        overrides.challengeId || 'challenge-operator-openclaw'
-    );
-
-    return {
-        challengeId,
-        helperUrl:
-            overrides.helperUrl ||
-            `http://127.0.0.1:4173/resolve?challenge=${encodeURIComponent(challengeId)}`,
-        manualCode: overrides.manualCode || 'OPR123-456XYZ',
-        pollAfterMs: Number(overrides.pollAfterMs || 50),
-        expiresAt:
-            overrides.expiresAt ||
-            new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        status: overrides.status || 'pending',
-    };
-}
-
-async function installWindowOpenRecorder(page, { blocked = false } = {}) {
-    await page.addInitScript(
-        ({ popupBlocked }) => {
-            window.__openedUrls = [];
-            window.open = (url) => {
-                window.__openedUrls.push(String(url || ''));
-                if (popupBlocked) {
-                    return null;
-                }
-                return {
-                    focus() {},
-                };
-            };
-        },
-        { popupBlocked: blocked }
-    );
-}
-
 async function setupOperatorAuthOperatorMocks(
     page,
-    { statusResponses = null, startPayload = null, startResponses = null } = {}
+    {
+        statusResponses = null,
+        startPayload = null,
+        startResponses = null,
+        failQueueStateInitially = false,
+    } = {}
 ) {
+    let failQueueState = Boolean(failQueueStateInitially);
     let queueTickets = [
         {
             id: 2201,

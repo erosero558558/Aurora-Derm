@@ -1,5 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const {
+    buildOperatorAuthChallenge,
+    installWindowOpenRecorder,
+} = require('./helpers/admin-auth-mocks');
 
 function json(route, payload, status = 200) {
     return route.fulfill({
@@ -19,18 +23,6 @@ function operatorUrl(query = '') {
     const params = new URLSearchParams(String(query || ''));
     const search = params.toString();
     return `/operador-turnos.html${search ? `?${search}` : ''}`;
-}
-
-function buildOperatorAuthChallenge(index) {
-    const challengeId = `shared-openclaw-${index}`;
-    return {
-        challengeId,
-        helperUrl: `http://127.0.0.1:4173/resolve?challenge=${encodeURIComponent(challengeId)}`,
-        manualCode: `SHARED-${String(index).padStart(3, '0')}`,
-        pollAfterMs: 50,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        status: 'pending',
-    };
 }
 
 function buildQueueState(ticket) {
@@ -55,24 +47,6 @@ function buildQueueState(ticket) {
             },
         ],
     };
-}
-
-async function installWindowOpenRecorder(page, { blocked = false } = {}) {
-    await page.addInitScript(
-        ({ popupBlocked }) => {
-            window.__openedUrls = [];
-            window.open = (url) => {
-                window.__openedUrls.push(String(url || ''));
-                if (popupBlocked) {
-                    return null;
-                }
-                return {
-                    focus() {},
-                };
-            };
-        },
-        { popupBlocked: blocked }
-    );
 }
 
 async function waitForAdminReady(page) {
@@ -178,7 +152,10 @@ async function installSharedOperatorAuthMocks(context) {
         if (action === 'start') {
             challengeSequence += 1;
             startCount += 1;
-            lastIssuedChallenge = buildOperatorAuthChallenge(challengeSequence);
+            lastIssuedChallenge = buildOperatorAuthChallenge({
+                challengeId: `shared-openclaw-${challengeSequence}`,
+                manualCode: `SHARED-${String(challengeSequence).padStart(3, '0')}`,
+            });
             authState = {
                 authenticated: false,
                 status: 'pending',

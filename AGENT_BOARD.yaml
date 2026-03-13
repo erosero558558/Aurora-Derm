@@ -6,7 +6,8 @@ policy:
   codex_partition_model: dual_fixed_domains
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
-  revision: 601
+  codex_transversal_instance: codex_transversal
+  revision: 604
   updated_at: 2026-03-13
 
 tasks:
@@ -22,6 +23,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["backup-receiver.php", "verify-backup.php", "lib/backup.php", "tests/BackupReceiverTest.php", "env.example.php", "docs/RUNBOOKS.md"]
     source_signal: manual
     source_ref: ""
@@ -60,6 +65,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/ratelimit.php", "tests/RateLimiterTest.php", "tests/Security/RateLimiterTest.php", "tests/Unit/Security/RateLimiterTest.php", "env.example.php"]
     source_signal: manual
     source_ref: ""
@@ -98,6 +107,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["docs/openapi.yaml", "README.md"]
     source_signal: manual
     source_ref: ""
@@ -136,6 +149,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/mailer.php", "templates/email", "tests/MailerTest.php"]
     source_signal: manual
     source_ref: ""
@@ -174,6 +191,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["js/engines", "docs/dead-code-audit.md"]
     source_signal: manual
     source_ref: ""
@@ -212,6 +233,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".editorconfig", ".gitattributes"]
     source_signal: manual
     source_ref: ""
@@ -250,6 +275,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/audit.php", "lib/ratelimit.php", "lib/email.php"]
     source_signal: manual
     source_ref: ""
@@ -288,6 +317,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["KIMI_TASKS.md"]
     source_signal: manual
     source_ref: ""
@@ -326,6 +359,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENTS.md", "AGENT_BOARD.yaml", "AGENT_HANDOFFS.yaml", "PLAN_MAESTRO_CODEX_2026.md", "agent-orchestrator.js", "bin/validate-agent-governance.php", ".github/workflows/agent-governance.yml"]
     source_signal: manual
     source_ref: ""
@@ -364,6 +401,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "PLAN_MAESTRO_OPERATIVO_2026.md", "bin/verify-sentry-events.js", "bin/prod-readiness-summary.js", ".github/workflows/sentry-events-verify.yml", "docs/MONITORING_SETUP.md", "verification/agent-runs/CDX-002.md"]
     source_signal: manual
     source_ref: ""
@@ -402,6 +443,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "REPORTE-SEMANAL-PRODUCCION.ps1", "VERIFICAR-DESPLIEGUE.ps1", "MONITOR-PRODUCCION.ps1", "bin/powershell/Common.Http.ps1", "bin/powershell/Common.Metrics.ps1", "bin/powershell/Common.Warnings.ps1", "verification/agent-runs/CDX-003.md"]
     source_signal: manual
     source_ref: ""
@@ -440,6 +485,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "controllers/AnalyticsController.php", "lib/analytics/FunnelMetricsService.php", "lib/analytics/RetentionReportService.php", "lib/analytics/PrometheusCounterParser.php", "lib/analytics/AnalyticsLabelNormalizer.php", "lib/analytics/RetentionCsvExporter.php", "tests/Integration/AnalyticsRetentionMetricsTest.php", "tests/Integration/AnalyticsServiceFunnelMetricsTest.php", "tests/Integration/AnalyticsRetentionReportTest.php", "tests/Integration/ServicePriorityControllerTest.php", "verification/agent-runs/CDX-004.md"]
     source_signal: manual
     source_ref: ""
@@ -478,6 +527,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "lib/storage.php", "lib/backup.php", "lib/storage/StorePaths.php", "lib/storage/StoreCrypto.php", "lib/storage/StorePersistence.php", "lib/storage/StorageConfig.php", "lib/backup/BackupConfig.php", "lib/backup/BackupCrypto.php", "lib/backup/BackupHealthService.php", "lib/backup/BackupReplicationService.php", "tests/test_storage_backup.php", "tests/test_storage_encryption.php", "tests/BackupReceiverTest.php", "tests/verify_disaster_recovery_cli.php", "tests/Integration/verify_disaster_recovery.php", "tests/Unit/Storage/StorageSQLiteFallbackTest.php", "verification/agent-runs/CDX-005.md"]
     source_signal: manual
     source_ref: ""
@@ -516,6 +569,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "lib/figo_queue.php", "lib/QueueService.php", "lib/figo_queue/QueueConfig.php", "lib/figo_queue/JobRepository.php", "lib/figo_queue/GatewayClient.php", "lib/figo_queue/JobProcessor.php", "lib/queue/TicketFactory.php", "lib/queue/TicketPriorityPolicy.php", "lib/queue/QueueSummaryBuilder.php", "figo-backend.php", "figo-chat.php", "tests/test_queue_service.php", "tests/test_figo_queue_core.php", "verification/agent-runs/CDX-006.md"]
     source_signal: manual
     source_ref: ""
@@ -554,6 +611,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "controllers/AppointmentController.php", "controllers/PaymentController.php", "lib/BookingService.php", "lib/models.php", "lib/validation.php", "lib/db.php", "lib/storage/StorageConfig.php", "lib/storage/StorePersistence.php", "controllers/AdminDataController.php", "lib/calendar/CalendarBookingService.php", "lib/email.php", "lib/backup/BackupHealthService.php", "payment-lib.php", "lib/telemedicine/TelemedicineIntakeService.php", "lib/telemedicine/TelemedicineRepository.php", "lib/telemedicine/TelemedicineSuitabilityEvaluator.php", "lib/telemedicine/TelemedicineConsentSnapshot.php", "lib/telemedicine/TelemedicineChannelMapper.php", "lib/telemedicine/TelemedicineEncounterPlanner.php", "lib/telemedicine/ClinicalMediaService.php", "lib/telemedicine/LegacyTelemedicineBridge.php", "lib/telemedicine/TelemedicineBackfillService.php", "tests/Unit/TelemedicineSuitabilityEvaluatorTest.php", "tests/Unit/TelemedicineChannelMapperTest.php", "tests/Integration/TelemedicineLegacyBridgeTest.php", "tests/Integration/TelemedicineStorageParityTest.php", "tests/Integration/TelemedicineBackfillTest.php", "bin/backfill-telemedicine-intakes.php", "verification/agent-runs/CDX-007.md"]
     source_signal: manual
     source_ref: ""
@@ -592,6 +653,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_CODEX_2026.md", "controllers/HealthController.php", "controllers/AdminDataController.php", "controllers/SystemController.php", "lib/telemedicine/TelemedicineOpsSnapshot.php", "docs/API.md", "docs/openapi.yaml", "tests/Integration/TelemedicineHealthSnapshotTest.php", "tests/Integration/TelemedicineAdminReadModelTest.php", "tests/Integration/TelemedicineMetricsExportTest.php", "verification/agent-runs/CDX-008.md"]
     source_signal: manual
     source_ref: ""
@@ -630,6 +695,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["index.html", "styles-deferred.css", "src/apps/chat/ui-engine.js", "src/apps/chat/widget-engine.js"]
     source_signal: manual
     source_ref: ""
@@ -668,6 +737,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/analytics/engine.js", "src/apps/booking/engine.js", "api.php", "controllers/AdminDataController.php"]
     source_signal: manual
     source_ref: ""
@@ -706,6 +779,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["js/main.js", "rollup.config.mjs", "src/bundles/ui.js", "src/bundles/engagement.js"]
     source_signal: manual
     source_ref: ""
@@ -744,6 +821,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/prod-monitor.yml"]
     source_signal: issue
     source_ref: "issue#279"
@@ -782,6 +863,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/repair-git-sync.yml"]
     source_signal: issue
     source_ref: "issue#263"
@@ -820,6 +905,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/ci.yml"]
     source_signal: workflow
     source_ref: "run#22379873691"
@@ -858,6 +947,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/ci.yml"]
     source_signal: workflow
     source_ref: "run#22379426844"
@@ -896,6 +989,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["controllers/AvailabilityController.php", "controllers/AppointmentController.php", "lib/calendar/CalendarAvailabilityService.php", "lib/calendar/CalendarBookingService.php"]
     source_signal: workflow
     source_ref: "run#22379136316"
@@ -934,6 +1031,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/ci.yml"]
     source_signal: workflow
     source_ref: "run#22379059437"
@@ -972,6 +1073,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["figo-chat.php", "figo-backend.php", "src/apps/chat/engine.js", "src/apps/chat/ui-engine.js"]
     source_signal: workflow
     source_ref: "workflow:ci:main"
@@ -1010,6 +1115,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/shared/data-engine.js", "src/bundles/data.js", "js/data.js", "js/i18n.js", "js/router.js", "templates/partials/head-links.html"]
     source_signal: manual
     source_ref: "tech-debt-audit-2026-02-24"
@@ -1048,6 +1157,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["rollup.config.mjs", "eslint.config.js", ".github/workflows/ci.yml"]
     source_signal: manual
     source_ref: "tech-debt-audit-2026-02-24"
@@ -1086,6 +1199,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/ci.yml", "tests/figo-chat-contract.spec.js", "GATE-POSTDEPLOY.ps1"]
     source_signal: manual
     source_ref: "tech-debt-audit-2026-02-24"
@@ -1124,6 +1241,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["templates/partials/tele-head-links.html", "telemedicina.html", "styles.css", "styles-critical.css"]
     source_signal: manual
     source_ref: "html-monolith-refactor-2026-02-24"
@@ -1162,6 +1283,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/agent-governance.yml"]
     source_signal: workflow
     source_ref: "workflow:agent-governance:main"
@@ -1200,6 +1325,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/repair-git-sync.yml"]
     source_signal: issue
     source_ref: "issue#282"
@@ -1238,6 +1367,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/post-deploy-gate.yml"]
     source_signal: issue
     source_ref: "issue#281"
@@ -1276,6 +1409,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/agent-autopilot.yml"]
     source_signal: workflow
     source_ref: "workflow:agent-autopilot:main"
@@ -1314,6 +1451,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/post-deploy-gate.yml"]
     source_signal: workflow
     source_ref: "workflow:post-deploy-gate-git-sync:main"
@@ -1352,6 +1493,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/repair-git-sync.yml"]
     source_signal: workflow
     source_ref: "workflow:repair-git-sync-self-heal:main"
@@ -1390,6 +1535,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/ci.yml"]
     source_signal: workflow
     source_ref: "workflow:ci:codex/prod-readiness-workflows-20260225"
@@ -1428,6 +1577,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/post-deploy-gate.yml"]
     source_signal: workflow
     source_ref: "workflow:post-deploy-gate-git-sync:codex/prod-readiness-workflows-20260225"
@@ -1466,6 +1619,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tools/agent-orchestrator/domain/github-signals.js", "tools/agent-orchestrator/commands/runtime-intake.js", "tools/agent-orchestrator/domain/signals.js"]
     source_signal: workflow
     source_ref: "run#22385808120"
@@ -1504,6 +1661,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/agent-autopilot.yml", "AGENTS.md", "CLAUDE.md"]
     source_signal: workflow
     source_ref: "run#22381918604"
@@ -1542,6 +1703,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/post-deploy-gate.yml", "GATE-POSTDEPLOY.ps1", "bin/verify-gate.php"]
     source_signal: workflow
     source_ref: "run#22385825677"
@@ -1580,6 +1745,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "verification/agent-runs/AG-034.md"]
     source_signal: manual
     source_ref: ""
@@ -1618,6 +1787,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/phase2-flakiness-probe.yml", "bin/run-phase2-flakiness.js", "tests/phase2-calendar-consistency.spec.js", "tests/chat-booking-calendar-errors.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -1656,6 +1829,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["REPORTE-SEMANAL-PRODUCCION.ps1", "controllers/HealthController.php", ".github/workflows/nightly-stability.yml", ".github/workflows/post-deploy-fast.yml", "bin/verify-gate.php"]
     source_signal: manual
     source_ref: ""
@@ -1694,6 +1871,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["templates/partials/body-hero.html", "styles.css", "styles-deferred.css", "js/main.js", "src/apps/analytics/engine.js"]
     source_signal: manual
     source_ref: ""
@@ -1732,6 +1913,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["templates/partials/body-modals.html", "templates/partials/body-sections.html", "styles-deferred.css", "src/apps/booking/engine.js", "src/apps/booking/ui-entry.js", "src/apps/modal-ux/engine.js", "src/apps/engagement/forms.js"]
     source_signal: manual
     source_ref: ""
@@ -1770,6 +1955,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["styles-deferred.css", "src/apps/chat/engine.js", "src/apps/chat/ui-engine.js", "src/apps/chat/widget-engine.js", "src/apps/chat/shell.js", "src/apps/booking/engine.js", "src/apps/booking/ui-entry.js"]
     source_signal: manual
     source_ref: ""
@@ -1808,6 +1997,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["templates/telemedicina.template.html", "templates/partials/tele-body-main.html", "templates/partials/tele-body-nav.html", "styles.css", "styles-telemedicina.css"]
     source_signal: manual
     source_ref: ""
@@ -1846,6 +2039,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["templates/partials/body-hero.html", "templates/partials/body-sections.html", "templates/partials/body-modals.html", "styles.css", "styles-deferred.css", "js/main.js", "src/apps/booking/ui-entry.js", "src/apps/chat/ui-engine.js"]
     source_signal: manual
     source_ref: ""
@@ -1884,6 +2081,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html", "admin.css", "src/apps/admin/modules/ui.js", "src/apps/admin/modules/dashboard.js", "src/apps/admin/modules/appointments.js", "src/apps/admin/modules/availability.js"]
     source_signal: manual
     source_ref: ""
@@ -1922,6 +2123,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html", "admin.css", "src/apps/admin/index.js", "src/apps/admin/modules/ui.js", "src/apps/admin/modules/state.js"]
     source_signal: manual
     source_ref: ""
@@ -1960,6 +2165,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/homepage.spec.js", "tests/chat-mobile-layout.spec.js", "tests/booking.spec.js", "tests/admin.spec.js", "tests/visual-regression.spec.js", "playwright.config.js", "verification/agent-runs/AG-044.md"]
     source_signal: manual
     source_ref: ""
@@ -1998,6 +2207,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "PLAN_MAESTRO_2026_STATUS.md", "PLAN_MAESTRO_OPERATIVO_2026.md", "verification/agent-runs/AG-045.md"]
     source_signal: manual
     source_ref: ""
@@ -2036,6 +2249,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/post-deploy-fast.yml", ".github/workflows/nightly-stability.yml", ".github/workflows/post-deploy-gate.yml", "docs/RUNBOOKS.md", "PLAN_MAESTRO_CODEX_2026.md"]
     source_signal: manual
     source_ref: ""
@@ -2074,6 +2291,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["REPORTE-SEMANAL-PRODUCCION.ps1", ".github/workflows/weekly-kpi-report.yml", "PLAN_MAESTRO_CODEX_2026.md"]
     source_signal: manual
     source_ref: ""
@@ -2112,6 +2333,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["PLAN_MAESTRO_CODEX_2026.md"]
     source_signal: manual
     source_ref: ""
@@ -2150,6 +2375,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml"]
     source_signal: manual
     source_ref: ""
@@ -2188,6 +2417,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["PLAN_MAESTRO_CODEX_2026.md"]
     source_signal: manual
     source_ref: ""
@@ -2226,6 +2459,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tools/agent-orchestrator/core/queues.js", "tests-node/orchestrator/core-queues.test.js"]
     source_signal: manual
     source_ref: ""
@@ -2264,6 +2501,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/resolve-board-revision-conflict.js", "tests-node/resolve-board-revision-conflict.test.js", "package.json", "AGENTS.md"]
     source_signal: manual
     source_ref: ""
@@ -2302,6 +2543,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml"]
     source_signal: manual
     source_ref: ""
@@ -2340,6 +2585,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/storage.php", "lib/db.php", "controllers/HealthController.php", "tests/Unit/Storage/StorageSQLiteFallbackTest.php"]
     source_signal: manual
     source_ref: ""
@@ -2378,6 +2627,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["figo-backend.php", "lib/figo_utils.php", "tests/Unit/Figo/FigoUtilsConfigTest.php"]
     source_signal: manual
     source_ref: ""
@@ -2416,6 +2669,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["controllers/AppointmentController.php", "lib/models.php", "tests/Integration/AppointmentErrorCodesTest.php"]
     source_signal: manual
     source_ref: ""
@@ -2454,6 +2711,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["controllers/AppointmentController.php", "controllers/HealthController.php", "controllers/AnalyticsController.php", "REPORTE-SEMANAL-PRODUCCION.ps1", "tests/Integration/AnalyticsRetentionMetricsTest.php"]
     source_signal: manual
     source_ref: ""
@@ -2492,6 +2753,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["controllers/AnalyticsController.php", "lib/routes.php", "lib/ApiConfig.php", "tests/Integration/AnalyticsRetentionReportTest.php", "docs/openapi.yaml"]
     source_signal: manual
     source_ref: ""
@@ -2530,6 +2795,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["servicios/acne.html", "servicios/laser.html", "styles.css", "styles-deferred.css"]
     source_signal: manual
     source_ref: ""
@@ -2568,6 +2837,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "REPORTE-SEMANAL-PRODUCCION.ps1"]
     source_signal: manual
     source_ref: ""
@@ -2606,6 +2879,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "PLAN_MAESTRO_CODEX_2026.md"]
     source_signal: manual
     source_ref: ""
@@ -2644,6 +2921,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "REPORTE-SEMANAL-PRODUCCION.ps1", "PLAN_MAESTRO_CODEX_2026.md"]
     source_signal: manual
     source_ref: ""
@@ -2682,6 +2963,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["docs/RUNBOOKS.md", "README.md"]
     source_signal: manual
     source_ref: ""
@@ -2720,6 +3005,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js", "package.json"]
     source_signal: manual
     source_ref: ""
@@ -2758,6 +3047,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/sync-main-safe.js", "tests-node/sync-main-safe.test.js", "package.json", "README.md", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -2796,6 +3089,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js", "package.json", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -2834,6 +3131,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/nightly-stability.yml", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -2872,6 +3173,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["package.json", "tests-node/nightly-stability-workflow-contract.test.js", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -2910,6 +3215,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/post-deploy-fast.yml", "package.json", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -2948,6 +3257,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html", "src/apps/admin/index.js", "src/apps/admin/modules/availability.js"]
     source_signal: manual
     source_ref: ""
@@ -2986,6 +3299,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html", "src/apps/admin/index.js", "src/apps/admin/modules/ui.js", "src/apps/admin/modules/availability.js"]
     source_signal: manual
     source_ref: ""
@@ -3024,6 +3341,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -3062,6 +3383,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/resolve-board-revision-conflict.js", "tests-node/resolve-board-revision-conflict.test.js", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -3100,6 +3425,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/sync-main-safe.js", "tests-node/sync-main-safe.test.js"]
     source_signal: manual
     source_ref: ""
@@ -3138,6 +3467,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/agent-intake.yml", ".github/workflows/agent-autopilot.yml", ".github/workflows/agent-kimi-autopilot.yml", ".github/workflows/jules-pr.yml"]
     source_signal: manual
     source_ref: ""
@@ -3176,6 +3509,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin.spec.js", "tests/admin-availability-responsive.spec.js", "tests/admin-navigation-responsive.spec.js", "tests/admin-quick-nav.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -3214,6 +3551,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".gitignore", "package.json", "JULES_TASKS.md", "KIMI_TASKS.md"]
     source_signal: manual
     source_ref: ""
@@ -3252,6 +3593,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["templates/partials/body-hero.html", "content/es.json", "content/en.json", "js/main.js"]
     source_signal: manual
     source_ref: ""
@@ -3290,6 +3635,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/resolve-board-revision-conflict.js", "bin/sync-main-safe.js", "tests-node/resolve-board-revision-conflict.test.js"]
     source_signal: manual
     source_ref: ""
@@ -3328,6 +3677,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html"]
     source_signal: manual
     source_ref: ""
@@ -3366,6 +3719,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html"]
     source_signal: manual
     source_ref: ""
@@ -3404,6 +3761,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html"]
     source_signal: manual
     source_ref: ""
@@ -3442,6 +3803,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html"]
     source_signal: manual
     source_ref: ""
@@ -3480,6 +3845,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html"]
     source_signal: manual
     source_ref: ""
@@ -3518,6 +3887,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html", "src/apps/admin/index.js", "src/apps/admin/modules/availability.js"]
     source_signal: manual
     source_ref: ""
@@ -3556,6 +3929,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js"]
     source_signal: manual
     source_ref: ""
@@ -3594,6 +3971,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js"]
     source_signal: manual
     source_ref: ""
@@ -3632,6 +4013,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js", "src/apps/admin/modules/availability.js"]
     source_signal: manual
     source_ref: ""
@@ -3670,6 +4055,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["servicios/acne.html", "servicios/laser.html"]
     source_signal: manual
     source_ref: ""
@@ -3708,6 +4097,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/weekly-kpi-report.yml", "tests-node/weekly-kpi-workflow-contract.test.js"]
     source_signal: manual
     source_ref: ""
@@ -3746,6 +4139,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["servicios/acne.html", "servicios/laser.html"]
     source_signal: manual
     source_ref: ""
@@ -3784,6 +4181,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/callbacks.js"]
     source_signal: manual
     source_ref: ""
@@ -3822,6 +4223,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/calendar-write-smoke.yml", "tests-node/calendar-write-smoke-workflow-contract.test.js", "package.json"]
     source_signal: manual
     source_ref: ""
@@ -3860,6 +4265,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/calendar-write-smoke-api.js", ".github/workflows/calendar-write-smoke.yml", "tests-node/calendar-write-smoke-workflow-contract.test.js", "package.json"]
     source_signal: manual
     source_ref: ""
@@ -3898,6 +4307,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/callbacks.js"]
     source_signal: manual
     source_ref: ""
@@ -3936,6 +4349,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/appointments.js"]
     source_signal: manual
     source_ref: ""
@@ -3974,6 +4391,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["controllers/QueueController.php", "lib/QueueService.php", "lib/TicketPrinter.php", "lib/routes.php", "lib/ApiConfig.php", "lib/models.php", "lib/storage.php", "controllers/AdminDataController.php"]
     source_signal: manual
     source_ref: ""
@@ -4012,6 +4433,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "src/apps/chat/engine.js"]
     source_signal: manual
     source_ref: ""
@@ -4050,6 +4475,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/queue.js", "src/apps/admin/index.js", "src/apps/admin/modules/data.js"]
     source_signal: manual
     source_ref: ""
@@ -4088,6 +4517,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/queue-kiosk.spec.js", "tests/queue-display.spec.js", "tests/admin-queue.spec.js", "AGENT_BOARD.yaml"]
     source_signal: manual
     source_ref: ""
@@ -4126,6 +4559,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/QueueService.php", "controllers/QueueController.php", "tests/test_queue_service.php"]
     source_signal: manual
     source_ref: ""
@@ -4164,6 +4601,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/queue.js"]
     source_signal: manual
     source_ref: ""
@@ -4202,6 +4643,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/queue.js"]
     source_signal: manual
     source_ref: ""
@@ -4240,6 +4685,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js", "src/apps/admin/modules/queue.js", "src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js"]
     source_signal: manual
     source_ref: ""
@@ -4278,6 +4727,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/queue.js"]
     source_signal: manual
     source_ref: ""
@@ -4316,6 +4769,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js", "src/apps/admin/modules/queue.js"]
     source_signal: manual
     source_ref: ""
@@ -4354,6 +4811,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/queue.js", "src/apps/admin/index.js", "admin.js", "tests/admin-queue.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -4392,6 +4853,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "js/queue-kiosk.js", "js/queue-display.js"]
     source_signal: manual
     source_ref: ""
@@ -4430,6 +4895,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "js/queue-kiosk.js", "js/queue-display.js"]
     source_signal: manual
     source_ref: ""
@@ -4468,6 +4937,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "js/queue-kiosk.js", "js/queue-display.js"]
     source_signal: manual
     source_ref: ""
@@ -4506,6 +4979,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "js/queue-kiosk.js", "js/queue-display.js"]
     source_signal: manual
     source_ref: ""
@@ -4544,6 +5021,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "js/queue-kiosk.js", "js/queue-display.js"]
     source_signal: manual
     source_ref: ""
@@ -4582,6 +5063,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/queue-integrated-flow.spec.js", "verification/agent-runs/AG-113.md"]
     source_signal: manual
     source_ref: ""
@@ -4620,6 +5105,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin-queue.spec.js", "tests/queue-integrated-flow.spec.js", "verification/agent-runs/AG-114.md"]
     source_signal: manual
     source_ref: ""
@@ -4658,6 +5147,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin-queue.spec.js", "tests/queue-integrated-flow.spec.js", "verification/agent-runs/AG-115.md"]
     source_signal: manual
     source_ref: ""
@@ -4696,6 +5189,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin-queue.spec.js", "tests/queue-integrated-flow.spec.js", "verification/agent-runs/AG-116.md"]
     source_signal: manual
     source_ref: ""
@@ -4734,6 +5231,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/modules/queue.js", "src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js", "queue-kiosk.css", "queue-display.css", "admin.css", "tests/admin-queue.spec.js", "tests/queue-kiosk.spec.js", "tests/queue-display.spec.js", "tests/queue-integrated-flow.spec.js", "docs/RUNBOOK_TURNERO_SALA.md", "PLAN_MAESTRO_2026_STATUS.md", "verification/agent-runs/AG-117.md"]
     source_signal: manual
     source_ref: ""
@@ -4772,6 +5273,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js", "src/apps/admin/modules/queue.js", "admin.html"]
     source_signal: manual
     source_ref: ""
@@ -4810,6 +5315,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js"]
     source_signal: manual
     source_ref: ""
@@ -4848,6 +5357,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js"]
     source_signal: manual
     source_ref: ""
@@ -4886,6 +5399,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js"]
     source_signal: manual
     source_ref: ""
@@ -4924,6 +5441,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-display/index.js"]
     source_signal: manual
     source_ref: ""
@@ -4962,6 +5483,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js"]
     source_signal: manual
     source_ref: ""
@@ -5000,6 +5525,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["sala-turnos.html", "src/apps/queue-display/index.js"]
     source_signal: manual
     source_ref: ""
@@ -5038,6 +5567,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["kiosco-turnos.html", "src/apps/queue-kiosk/index.js"]
     source_signal: manual
     source_ref: ""
@@ -5076,6 +5609,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin-queue.spec.js", "docs/RUNBOOK_TURNERO_SALA.md"]
     source_signal: manual
     source_ref: ""
@@ -5114,6 +5651,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin-queue.spec.js", "tests/queue-kiosk.spec.js", "tests/queue-display.spec.js", "tests/queue-integrated-flow.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -5152,6 +5693,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin-queue.spec.js", "docs/RUNBOOK_TURNERO_SALA.md"]
     source_signal: manual
     source_ref: ""
@@ -5190,6 +5735,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js"]
     source_signal: manual
     source_ref: ""
@@ -5228,6 +5777,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/admin-queue.spec.js", "docs/RUNBOOK_TURNERO_SALA.md"]
     source_signal: manual
     source_ref: ""
@@ -5266,6 +5819,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["playwright.config.js", "tests/admin-queue.spec.js", "tests/queue-display.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -5304,6 +5861,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js", "admin.html"]
     source_signal: manual
     source_ref: ""
@@ -5342,6 +5903,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/queue-display/index.js", "sala-turnos.html"]
     source_signal: manual
     source_ref: ""
@@ -5380,6 +5945,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["kiosco-turnos.html", "src/apps/queue-kiosk/index.js"]
     source_signal: manual
     source_ref: ""
@@ -5418,6 +5987,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin/index.js"]
     source_signal: manual
     source_ref: ""
@@ -5456,6 +6029,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html", "src/apps/admin/index.js", "src/apps/admin-v2/core/flags.js", "src/apps/admin-v3/index.js", "src/apps/admin-v3/core/boot.js"]
     source_signal: manual
     source_ref: ""
@@ -5494,6 +6071,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin.html", "src/apps/admin/index.js", "src/apps/admin-v3/index.js"]
     source_signal: manual
     source_ref: ""
@@ -5532,6 +6113,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/features.php", "controllers/SystemController.php", "GATE-ADMIN-ROLLOUT.ps1", "ADMIN-UI-CONTINGENCIA.ps1", "tests/test_system_features_endpoint.php", "tests/test_features_class.php", "tests/test-features.php"]
     source_signal: manual
     source_ref: ""
@@ -5570,6 +6155,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["docs/ADMIN-UI-ROLLOUT.md", "docs/DEPLOYMENT.md", "tests/admin-ui-runtime-smoke.spec.js", "tests/admin-ui-variant.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -5608,6 +6197,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin-v3/sections/dashboard.js", "src/apps/admin-v3/sections/appointments.js", "src/apps/admin-v3/sections/callbacks.js", "src/apps/admin-v3/ui/frame.js", "src/apps/admin-v3/ui/dom.js"]
     source_signal: manual
     source_ref: ""
@@ -5646,6 +6239,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin-v3/sections/reviews.js", "src/apps/admin-v3/sections/availability.js"]
     source_signal: manual
     source_ref: ""
@@ -5684,6 +6281,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin-v3.css"]
     source_signal: manual
     source_ref: ""
@@ -5722,6 +6323,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["GATE-ADMIN-ROLLOUT.ps1", "tests/admin-v3-canary-runtime.spec.js", "docs/ADMIN-UI-ROLLOUT.md", "docs/DEPLOYMENT.md"]
     source_signal: manual
     source_ref: ""
@@ -5760,6 +6365,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["docs/RUNBOOKS.md", "tests-node/post-deploy-fast-workflow-contract.test.js", "tests-node/post-deploy-gate-workflow-contract.test.js", "tests-node/deploy-hosting-workflow-contract.test.js", "tests-node/admin-rollout-gate-contract.test.js", "package.json"]
     source_signal: manual
     source_ref: ""
@@ -5798,6 +6407,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/deploy-hosting.yml", ".github/workflows/post-deploy-fast.yml", ".github/workflows/post-deploy-gate.yml", "GATE-ADMIN-ROLLOUT.ps1", "docs/DEPLOYMENT.md"]
     source_signal: manual
     source_ref: ""
@@ -5836,6 +6449,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/deploy-public-v3-cron-sync.sh", "docs/PUBLIC_V3_CRON_INSTALL.md", "verification/agent-runs/AG-146.md"]
     source_signal: manual
     source_ref: ""
@@ -5874,6 +6491,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "docs/PUBLIC_V3_CRON_INSTALL.md", "docs/DEPLOYMENT.md", "verification/agent-runs/AG-147.md"]
     source_signal: manual
     source_ref: ""
@@ -5912,6 +6533,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["verification/agent-runs/AG-148.md"]
     source_signal: manual
     source_ref: ""
@@ -5950,6 +6575,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["verification/agent-runs/AG-149.md"]
     source_signal: manual
     source_ref: ""
@@ -5988,6 +6617,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/telemedicina-conversion-qa.spec.js", "verification/agent-runs/AG-150.md"]
     source_signal: manual
     source_ref: ""
@@ -6026,6 +6659,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/hub.json", "content/public-v6/en/hub.json", "content/public-v6/es/telemedicine.json", "content/public-v6/en/telemedicine.json", "content/public-v6/es/legal.json", "content/public-v6/en/legal.json", "content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "src/apps/astro/src/components/public-v6/HeroShowcaseV6.astro", "src/apps/astro/src/components/public-v6/NewsStripV6.astro", "src/apps/astro/src/components/public-v6/EditorialGridV6.astro", "src/apps/astro/src/components/public-v6/ServiceHubV6.astro", "src/apps/astro/src/components/public-v6/ServiceDetailV6.astro", "src/apps/astro/src/components/public-v6/TelemedicinePageV6.astro", "src/apps/astro/src/components/public-v6/LegalPageV6.astro", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "src/apps/astro/src/components/public-v6/PublicFooterV6.astro", "src/apps/astro/src/components/public-v6/BookingStatusV6.astro"]
     source_signal: manual
     source_ref: ""
@@ -6064,6 +6701,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["package.json", ".htaccess", "nginx-pielarmonia.conf", "bin/check-public-conversion-smoke.js", "bin/check-public-routing-smoke.js", "bin/check-public-v6-artifacts.js", "bin/assert-public-v6-single-source.js", "bin/lib/public-v6-local-server.js", "bin/run-staging-acceptance-gate.js", "docs/DEPLOYMENT.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "docs/PUBLIC_V2_MANUAL_DEPLOY.md", "docs/PUBLIC_V3_CRON_INSTALL.md", "docs/PUBLIC_V3_MANUAL_DEPLOY.md", "docs/public-v6-canonical-source.md", "README.md", "src/apps/astro/scripts/sync-dist.mjs", "tests-node/public-conversion-smoke.test.js", "tests-node/publish-checkpoint-command.test.js", "tools/agent-orchestrator/commands/publish.js", "verification/public-v6-canonical/summary.md", "verification/public-v6-canonical/routes.json", "verification/public-v6-canonical/publish-contract.json"]
     source_signal: manual
     source_ref: ""
@@ -6102,6 +6743,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["package.json", "AGENT_BOARD.yaml", "tests/helpers/public-v3.js", "tests/helpers/public-v6.js", "tests/public-v6-header-mega.spec.js", "tests/public-v6-hero-stage.spec.js", "tests/public-v6-news-strip.spec.js", "tests/public-v6-editorial-grid.spec.js", "tests/public-v6-copy.spec.js", "tests/public-v6-page-menu.spec.js", "tests/public-v6-hub-featured.spec.js", "tests/public-v6-hub-initiatives.spec.js", "tests/public-v6-internal-geometry.spec.js", "tests/public-v6-internal-rail.spec.js", "tests/public-v6-internal-surfaces.spec.js", "tests/public-v6-mega-two-panel.spec.js", "tests/public-v6-statement-band.spec.js", "tests-node/public-v6-test-helper-contract.test.js", "verification/agent-runs/AG-153.md"]
     source_signal: manual
     source_ref: ""
@@ -6140,6 +6785,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "src/apps/astro/src/lib/public-v6.js", "tests/helpers/public-v6.js", "tests/homepage.spec.js", "tests/telemedicina-conversion-qa.spec.js", "tests/service-pages-qa.spec.js", "tests/service-pages-premium-new.spec.js", "tests/legal.spec.js", "tests/language-route-equivalence.spec.js", "tests/mobile-overflow-regression.spec.js", "tests/premium-navigation-ia.spec.js", "tests/staging-acceptance-gate.spec.js", "tests/deferred-content-fallback.spec.js", "tests/home-deferred-hydration.spec.js", "tests/public-v3-entry-surface-taxonomy.spec.js", "tests/service-booking-hints-parity.spec.js", "verification/agent-runs/AG-154.md"]
     source_signal: manual
     source_ref: ""
@@ -6178,6 +6827,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: handoff_allowed
     cross_domain: true
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "src/apps/astro/src/components/public-v6/NewsStripV6.astro", "src/apps/astro/src/styles/public-v6/layout.css", "src/apps/astro/src/styles/public-v6/components.css", "js/public-v6-shell.js", "content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "content/public-v6/es/home.json", "content/public-v6/en/home.json", "tests/helpers/public-v6.js", "tests/public-v6-header-mega.spec.js", "tests/public-v6-news-strip.spec.js", "verification/agent-runs/AG-155.md"]
     source_signal: manual
     source_ref: ""
@@ -6216,6 +6869,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/build-public-v6.js", "bin/assert-public-v6-single-source.js", "package.json", "tests-node/public-v6-build-contract.test.js", "docs/public-v6-canonical-source.md", "docs/DEPLOYMENT.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "verification/agent-runs/AG-156.md", "verification/public-v6-canonical/artifact-drift.json"]
     source_signal: manual
     source_ref: ""
@@ -6254,6 +6911,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/PageHeadV6.astro", "src/apps/astro/src/components/public-v6/ServiceHubV6.astro", "src/apps/astro/src/components/public-v6/ServiceDetailV6.astro", "src/apps/astro/src/components/public-v6/TelemedicinePageV6.astro", "src/apps/astro/src/components/public-v6/LegalPageV6.astro", "src/apps/astro/src/styles/public-v6/components.css", "js/public-v6-shell.js"]
     source_signal: manual
     source_ref: ""
@@ -6292,6 +6953,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/hub.json", "content/public-v6/es/service.json", "content/public-v6/es/telemedicine.json", "content/public-v6/es/legal.json", "content/public-v6/en/hub.json", "content/public-v6/en/service.json", "content/public-v6/en/telemedicine.json", "content/public-v6/en/legal.json"]
     source_signal: manual
     source_ref: ""
@@ -6330,6 +6995,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json"]
     source_signal: manual
     source_ref: ""
@@ -6368,6 +7037,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/layouts/PublicShellV6.astro", "src/apps/astro/src/components/public-v6/HeroShowcaseV6.astro", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "content/public-v6/es/home.json", "content/public-v6/en/home.json"]
     source_signal: manual
     source_ref: ""
@@ -6406,6 +7079,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/PageHeadV6.astro", "src/apps/astro/src/components/public-v6/ServiceDetailV6.astro", "src/apps/astro/src/components/public-v6/ServiceHubV6.astro", "src/apps/astro/src/components/public-v6/TelemedicinePageV6.astro", "src/apps/astro/src/components/public-v6/LegalPageV6.astro"]
     source_signal: manual
     source_ref: ""
@@ -6444,6 +7121,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/BookingStatusV6.astro", "src/apps/astro/src/components/public-v6/CorporateMatrixV6.astro", "src/apps/astro/src/components/public-v6/EditorialGridV6.astro", "src/apps/astro/src/components/public-v6/NewsStripV6.astro", "src/apps/astro/src/components/public-v6/PublicFooterV6.astro", "src/apps/astro/src/layouts/PublicShellV6.astro", "content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json"]
     source_signal: manual
     source_ref: ""
@@ -6482,6 +7163,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/PublicHeaderV6.astro"]
     source_signal: manual
     source_ref: ""
@@ -6520,6 +7205,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/PageHeadV6.astro", "src/apps/astro/src/components/public-v6/ServiceHubV6.astro", "src/apps/astro/src/components/public-v6/ServiceDetailV6.astro", "src/apps/astro/src/components/public-v6/TelemedicinePageV6.astro", "src/apps/astro/src/components/public-v6/LegalPageV6.astro", "src/apps/astro/src/components/public-v6/InternalStatementBandV6.astro", "content/public-v6/es/hub.json", "content/public-v6/es/service.json", "content/public-v6/es/telemedicine.json", "content/public-v6/es/legal.json", "content/public-v6/en/hub.json", "content/public-v6/en/service.json", "content/public-v6/en/telemedicine.json", "content/public-v6/en/legal.json"]
     source_signal: manual
     source_ref: ""
@@ -6558,6 +7247,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/HeroShowcaseV6.astro", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "src/apps/astro/src/components/public-v6/NewsStripV6.astro", "src/apps/astro/src/components/public-v6/CorporateMatrixV6.astro", "src/apps/astro/src/layouts/PublicShellV6.astro"]
     source_signal: manual
     source_ref: ""
@@ -6596,6 +7289,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/public-v6-news-strip.spec.js"]
     source_signal: manual
     source_ref: ""
@@ -6634,6 +7331,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/home.json", "content/public-v6/en/home.json", "es/index.html", "en/index.html"]
     source_signal: manual
     source_ref: ""
@@ -6672,6 +7373,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/lib/public-v6.js", "src/apps/astro/src/pages/es/index.astro", "src/apps/astro/src/pages/en/index.astro", "src/apps/astro/src/pages/es/servicios/index.astro", "src/apps/astro/src/pages/en/services/index.astro"]
     source_signal: manual
     source_ref: ""
@@ -6710,6 +7415,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/pages/en/software/clinic-flow-suite/index.astro", "src/apps/astro/src/pages/es/software/turnero-clinicas/index.astro", "src/apps/astro/src/pages/en/software/clinic-flow-suite/[surface].astro", "src/apps/astro/src/pages/es/software/turnero-clinicas/[surface].astro", "content/public-v6/es/home.json", "content/public-v6/en/home.json"]
     source_signal: manual
     source_ref: ""
@@ -6748,6 +7457,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/pages/en/software/clinic-flow-suite/index.astro", "src/apps/astro/src/pages/es/software/turnero-clinicas/index.astro", "src/apps/astro/src/pages/en/software/clinic-flow-suite/[surface].astro", "src/apps/astro/src/pages/es/software/turnero-clinicas/[surface].astro", "content/public-v6/en/software.json", "content/public-v6/es/software.json"]
     source_signal: manual
     source_ref: ""
@@ -6786,6 +7499,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/styles/public-v6/components.css"]
     source_signal: manual
     source_ref: ""
@@ -6824,6 +7541,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/components/public-v6/SoftwareMockupV6.astro", "src/apps/astro/src/styles/public-v6/components.css"]
     source_signal: manual
     source_ref: ""
@@ -6862,6 +7583,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/components/public-v6/SoftwareMockupV6.astro", "src/apps/astro/src/styles/public-v6/components.css"]
     source_signal: manual
     source_ref: ""
@@ -6900,6 +7625,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/lib/public-v6.js", "src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro"]
     source_signal: manual
     source_ref: ""
@@ -6938,6 +7667,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/lib/public-v6.js", "src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/styles/public-v6/components.css"]
     source_signal: manual
     source_ref: ""
@@ -6976,6 +7709,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/lib/public-v6.js", "src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro"]
     source_signal: manual
     source_ref: ""
@@ -7014,6 +7751,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/software.json", "content/public-v6/en/software.json"]
     source_signal: manual
     source_ref: ""
@@ -7052,6 +7793,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/components/public-v6/SoftwareMockupV6.astro", "src/apps/astro/src/styles/public-v6/components.css"]
     source_signal: manual
     source_ref: ""
@@ -7090,6 +7835,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/astro/src/components/public-v6/HeroShowcaseV6.astro", "src/apps/astro/src/components/public-v6/ServiceHubV6.astro", "src/apps/astro/src/components/public-v6/ServiceDetailV6.astro", "src/apps/astro/src/components/public-v6/TelemedicinePageV6.astro", "content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/hub.json", "content/public-v6/en/hub.json", "content/public-v6/es/telemedicine.json", "content/public-v6/en/telemedicine.json"]
     source_signal: manual
     source_ref: ""
@@ -7128,6 +7877,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["admin-auth.php", "api.php", "lib/ApiKernel.php", "lib/auth.php", "controllers/OperatorAuthController.php", "lib/routes.php", "env.example.php", "tests/CriticalFlowsE2ETest.php"]
     source_signal: manual
     source_ref: ""
@@ -7166,6 +7919,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/hub.json", "content/public-v6/en/hub.json", "content/public-v6/es/service.json", "content/public-v6/en/service.json", "content/public-v6/es/telemedicine.json", "content/public-v6/en/telemedicine.json"]
     source_signal: manual
     source_ref: ""
@@ -7204,6 +7961,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "js/public-v6-shell.js", "src/apps/astro/src/styles/public-v6/layout.css"]
     source_signal: manual
     source_ref: ""
@@ -7242,6 +8003,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/telemedicine.json", "content/public-v6/en/telemedicine.json"]
     source_signal: manual
     source_ref: ""
@@ -7280,6 +8045,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/service.json", "content/public-v6/en/service.json"]
     source_signal: manual
     source_ref: ""
@@ -7318,6 +8087,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/home.json", "content/public-v6/en/home.json", "content/public-v6/es/hub.json", "content/public-v6/en/hub.json"]
     source_signal: manual
     source_ref: ""
@@ -7356,6 +8129,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/public-v6/es/navigation.json", "content/public-v6/en/navigation.json", "src/apps/astro/src/components/public-v6/PublicHeaderV6.astro", "src/apps/astro/src/styles/public-v6/layout.css"]
     source_signal: manual
     source_ref: ""
@@ -7394,6 +8171,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tests/queue-display.spec.js", "docs/RUNBOOK_TURNERO_APPS_RELEASE.md", "docs/TURNERO_NATIVE_SURFACES.md", "verification/agent-runs/AG-190.md"]
     source_signal: manual
     source_ref: ""
@@ -7432,6 +8213,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/turnero-desktop/README.md", "src/apps/turnero-sala-tv-android/README.md"]
     source_signal: manual
     source_ref: ""
@@ -7470,6 +8255,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin-v3/shared/modules/queue/render/section/install-hub.js", "src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro"]
     source_signal: manual
     source_ref: ""
@@ -7508,6 +8297,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["app-downloads/app-downloads.js", "app-downloads/index.php", "controllers/AdminDataController.php", "lib/AppDownloadsCatalog.php"]
     source_signal: manual
     source_ref: ""
@@ -7546,6 +8339,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["content/app-downloads/catalog.php"]
     source_signal: manual
     source_ref: ""
@@ -7584,6 +8381,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/deploy-public-v3-live.sh", "bin/deploy-public-v3-cron-sync.sh", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "docs/DEPLOYMENT.md", "tests-node/deploy-public-v3-live-script.test.js", "tests-node/deploy-public-v3-cron-sync-script.test.js"]
     source_signal: manual
     source_ref: ""
@@ -7622,6 +8423,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["tools/agent-orchestrator/commands/runtime-governance.js", "tools/agent-orchestrator/commands/conflicts.js", "tools/agent-orchestrator/commands/codex.js", "tools/agent-orchestrator/domain/diagnostics.js", "tests-node/orchestrator/diagnostics.test.js", "tests-node/agent-orchestrator-cli.test.js"]
     source_signal: manual
     source_ref: ""
@@ -7660,6 +8465,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/run-phpunit.js", "package.json", "tests-node/run-phpunit-wrapper.test.js", "docs/RUNBOOK_TURNERO_APPS_RELEASE.md"]
     source_signal: manual
     source_ref: ""
@@ -7698,6 +8507,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/deploy-public-v3-cron-sync.sh", "bin/deploy-public-v3-live.sh", "tests-node/deploy-public-v3-cron-sync-script.test.js", "tests-node/deploy-public-v3-live-script.test.js", "verification/agent-runs/AG-198.md"]
     source_signal: manual
     source_ref: ""
@@ -7736,6 +8549,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/turnero-desktop/src/main.mjs", "src/apps/turnero-desktop/src/preload.cjs", "src/apps/turnero-desktop/src/renderer/boot.js", "src/apps/turnero-desktop/README.md", "src/apps/queue-operator/index.js"]
     source_signal: manual
     source_ref: ""
@@ -7774,6 +8591,10 @@ tasks:
     domain_lane: frontend_content
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["src/apps/admin-v3/shared/modules/queue/render/section/install-hub.js", "src/apps/admin-v3/shared/modules/queue/render/section/install-hub/index.js", "src/apps/admin-v3/shared/modules/queue/render/section/install-hub/constants.js", "src/apps/astro/src/components/public-v6/SoftwareLandingV6.astro", "src/apps/astro/src/components/public-v6/SoftwareSurfacePageV6.astro", "src/apps/astro/src/lib/public-v6.js", "content/public-v6/es/software.json", "content/public-v6/en/software.json"]
     source_signal: manual
     source_ref: ""
@@ -7812,6 +8633,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/public_sync.php", "tools/agent-orchestrator/domain/jobs.js", "tests-node/orchestrator/jobs-engine.test.js", "tests-node/agent-jobs-cli.test.js", "docs/AGENT_ORCHESTRATION_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -7850,6 +8675,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/release-turnero-apps.yml", "bin/stage-turnero-app-release.js", "bin/resolve-turnero-release-plan.js", "bin/scaffold-turnero-surface.js", "lib/turnero-surface-registry.js", "lib/TurneroSurfaceRegistry.php", "tests-node/turnero-surface-registry.test.js", "tests-node/resolve-turnero-release-plan.test.js", "tests-node/scaffold-turnero-surface-script.test.js", "tests-node/stage-turnero-app-release-script.test.js", "tests-node/release-turnero-apps-workflow-contract.test.js", "docs/TURNERO_NATIVE_SURFACES.md"]
     source_signal: manual
     source_ref: ""
@@ -7888,6 +8717,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["scripts/ops/prod/REPORTE-SEMANAL-PRODUCCION.ps1", "scripts/ops/prod/SMOKE-PRODUCCION.ps1", "scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1", "bin/powershell/Common.Warnings.ps1", "tests-node/weekly-report-script-contract.test.js", "tests-node/prod-ops-public-sync-contract.test.js", "scripts/ops/prod/README.md"]
     source_signal: manual
     source_ref: ""
@@ -7926,6 +8759,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["lib/public_sync.php", "tools/agent-orchestrator/domain/jobs.js", "tools/agent-orchestrator/domain/diagnostics.js", "agent-orchestrator.js", "tests-node/orchestrator/jobs-engine.test.js", "tests-node/agent-jobs-cli.test.js", "tests-node/orchestrator/diagnostics.test.js", "tests-node/agent-orchestrator-cli.test.js", "docs/AGENT_ORCHESTRATION_RUNBOOK.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -7964,6 +8801,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["scripts/ops/prod/MONITOR-PRODUCCION.ps1", "scripts/ops/prod/README.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "tests-node/prod-monitor-public-sync-contract.test.js"]
     source_signal: manual
     source_ref: ""
@@ -8002,6 +8843,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["package.json", "verification/agent-runs/AG-206.md"]
     source_signal: manual
     source_ref: ""
@@ -8040,6 +8885,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/repair-git-sync.yml", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -8078,6 +8927,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/deploy-hosting.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -8116,6 +8969,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/repair-git-sync.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -8154,6 +9011,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/diagnose-host-connectivity.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -8192,6 +9053,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/deploy-hosting.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -8230,6 +9095,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["AGENT_BOARD.yaml", "verification/agent-runs/AG-212.md"]
     source_signal: manual
     source_ref: ""
@@ -8268,6 +9137,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/diagnose-host-connectivity.yml", "tests-node/deploy-hosting-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md"]
     source_signal: manual
     source_ref: ""
@@ -8306,6 +9179,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/powershell/Common.Http.ps1", "tests-node/prod-ops-public-sync-contract.test.js", "verification/agent-runs/AG-214.md"]
     source_signal: manual
     source_ref: ""
@@ -8344,6 +9221,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1", "tests-node/prod-verify-asset-cache-contract.test.js", "verification/agent-runs/AG-215.md"]
     source_signal: manual
     source_ref: ""
@@ -8382,6 +9263,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["bin/powershell/Common.Http.ps1", "bin/powershell/Common.Warnings.ps1", "scripts/ops/prod/MONITOR-PRODUCCION.ps1", "scripts/ops/prod/README.md", "scripts/ops/prod/REPORTE-SEMANAL-PRODUCCION.ps1", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "tests-node/prod-monitor-public-sync-contract.test.js", "tests-node/weekly-report-script-contract.test.js", "verification/agent-runs/AG-221.md"]
     source_signal: manual
     source_ref: ""
@@ -8420,6 +9305,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1", "scripts/ops/prod/SMOKE-PRODUCCION.ps1", "bin/powershell/Common.Http.ps1", "scripts/ops/prod/README.md", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "tests-node/prod-ops-public-sync-contract.test.js", "tests-node/prod-verify-asset-cache-contract.test.js"]
     source_signal: manual
     source_ref: ""
@@ -8458,6 +9347,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: [".github/workflows/prod-monitor.yml", "tests-node/prod-monitor-workflow-contract.test.js", "docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "verification/agent-runs/AG-220.md"]
     source_signal: manual
     source_ref: ""
@@ -8496,6 +9389,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
     files: ["scripts/ops/admin/GATE-ADMIN-ROLLOUT.ps1", "tests-node/admin-rollout-gate-contract.test.js", "docs/RUNBOOKS.md"]
     source_signal: manual
     source_ref: ""
@@ -8519,5 +9416,47 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-219.md"
     depends_on: []
     prompt: "Restore admin rollout gate policy compatibility"
+    created_at: 2026-03-13
+    updated_at: 2026-03-13
+
+  - id: AG-220
+    title: "Consolidar helpers OpenClaw compartidos en specs del operador"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-13T19:00:11.769Z"
+    risk: low
+    scope: frontend-qa
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["tests/helpers/admin-auth-mocks.js", "tests/queue-operator.spec.js", "tests/operator-auth-shared-session.spec.js", "tests-node/admin-auth-mocks-helper.test.js", "verification/agent-runs/AG-220.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-13T19:00:11.769Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Consolidar helpers OpenClaw compartidos en specs del operador"
+    acceptance_ref: "verification/agent-runs/AG-220.md"
+    evidence_ref: "verification/agent-runs/AG-220.md"
+    depends_on: []
+    prompt: "Consolidar helpers OpenClaw compartidos en specs del operador"
     created_at: 2026-03-13
     updated_at: 2026-03-13

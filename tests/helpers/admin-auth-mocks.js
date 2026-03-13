@@ -8,6 +8,50 @@ function fulfillJson(route, payload, status = 200) {
     });
 }
 
+function buildOperatorAuthChallenge(overrides = {}, defaults = {}) {
+    const challengeId = String(
+        overrides.challengeId ||
+            defaults.challengeId ||
+            'challenge-operator-openclaw'
+    );
+
+    return {
+        challengeId,
+        helperUrl:
+            overrides.helperUrl ||
+            defaults.helperUrl ||
+            `http://127.0.0.1:4173/resolve?challenge=${encodeURIComponent(challengeId)}`,
+        manualCode:
+            overrides.manualCode || defaults.manualCode || 'OPR123-456XYZ',
+        pollAfterMs: Number(
+            overrides.pollAfterMs || defaults.pollAfterMs || 50
+        ),
+        expiresAt:
+            overrides.expiresAt ||
+            defaults.expiresAt ||
+            new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        status: overrides.status || defaults.status || 'pending',
+    };
+}
+
+async function installWindowOpenRecorder(page, { blocked = false } = {}) {
+    await page.addInitScript(
+        ({ popupBlocked }) => {
+            window.__openedUrls = [];
+            window.open = (url) => {
+                window.__openedUrls.push(String(url || ''));
+                if (popupBlocked) {
+                    return null;
+                }
+                return {
+                    focus() {},
+                };
+            };
+        },
+        { popupBlocked: blocked }
+    );
+}
+
 function buildLegacyAdminAuthPayload(overrides = {}) {
     const authenticated = Boolean(
         overrides.authenticated === undefined ? true : overrides.authenticated
@@ -302,6 +346,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
 }
 
 module.exports = {
+    buildOperatorAuthChallenge,
     buildLegacyAdminAuthPayload,
     buildOpenClawAdminAuthPayload,
     buildOpenClawAdminChallenge,
@@ -309,4 +354,5 @@ module.exports = {
     installLegacyAdminAuthMock,
     installLegacyAdminLoginFlowMock,
     installOpenClawAdminAuthMock,
+    installWindowOpenRecorder,
 };
