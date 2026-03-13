@@ -63,6 +63,13 @@ const SOFTWARE_PAGE_KEY_BY_NAV_ID = {
     dashboard: 'dashboard',
 };
 
+const SOFTWARE_OG_IMAGE_BY_PAGE_KEY = {
+    landing: '/images/optimized/v6-software-og-suite.jpg',
+    demo: '/images/optimized/v6-software-og-demo.jpg',
+    status: '/images/optimized/v6-software-og-status.jpg',
+    dashboard: '/images/optimized/v6-software-og-dashboard.jpg',
+};
+
 const SOFTWARE_STORY_LABELS = {
     es: {
         progress: 'Recorrido de la suite',
@@ -277,7 +284,9 @@ function cloneJson(value) {
 }
 
 function getV6SlotRegistry() {
-    return readJson(path.join('content', 'public-v6', 'image-slot-registry.json'));
+    return readJson(
+        path.join('content', 'public-v6', 'image-slot-registry.json')
+    );
 }
 
 function getV6ImageDecisions() {
@@ -340,13 +349,23 @@ function inferAssetIdFromImagePath(imagePath) {
 function findV6SlotById(slotId) {
     const registry = getV6SlotRegistry();
     const slots = Array.isArray(registry?.slots) ? registry.slots : [];
-    return slots.find((slot) => normalizeText(slot?.slotId) === normalizeText(slotId)) || null;
+    return (
+        slots.find(
+            (slot) => normalizeText(slot?.slotId) === normalizeText(slotId)
+        ) || null
+    );
 }
 
 function findV6DecisionBySlotId(slotId) {
     const decisions = getV6ImageDecisions();
-    const items = Array.isArray(decisions?.decisions) ? decisions.decisions : [];
-    return items.find((item) => normalizeText(item?.slotId) === normalizeText(slotId)) || null;
+    const items = Array.isArray(decisions?.decisions)
+        ? decisions.decisions
+        : [];
+    return (
+        items.find(
+            (item) => normalizeText(item?.slotId) === normalizeText(slotId)
+        ) || null
+    );
 }
 
 function resolveV6SlotImage(slotId, locale, options = {}) {
@@ -390,7 +409,9 @@ function resolveV6SlotImage(slotId, locale, options = {}) {
         slotId: normalizeText(slotId),
         assetId: normalizeText(asset?.id),
         src: normalizeText(asset?.src) || normalizeText(options.fallbackSrc),
-        srcset: normalizeText(asset?.srcset) || normalizeText(options.fallbackSrcset),
+        srcset:
+            normalizeText(asset?.srcset) ||
+            normalizeText(options.fallbackSrcset),
         alt:
             normalizeText(altOverride) ||
             getLocalizedAssetAlt(asset, safeLocale, options.fallbackAlt),
@@ -422,7 +443,9 @@ function applyHomeImageDecisions(payload, locale) {
     source.hero = hero;
 
     const editorial = isObject(source.editorial) ? source.editorial : {};
-    const editorialCards = Array.isArray(editorial.cards) ? editorial.cards : [];
+    const editorialCards = Array.isArray(editorial.cards)
+        ? editorial.cards
+        : [];
     editorial.cards = editorialCards.map((card, index) => {
         const safeCard = isObject(card) ? { ...card } : {};
         const slotId = `home.editorial.cards.${normalizeText(safeCard.id) || `card${index + 1}`}`;
@@ -443,7 +466,9 @@ function applyHomeImageDecisions(payload, locale) {
     });
     source.editorial = editorial;
 
-    const corporateMatrix = isObject(source.corporateMatrix) ? source.corporateMatrix : {};
+    const corporateMatrix = isObject(source.corporateMatrix)
+        ? source.corporateMatrix
+        : {};
     const matrixCards = Array.isArray(corporateMatrix.cards)
         ? corporateMatrix.cards
         : [];
@@ -473,7 +498,9 @@ function applyHomeImageDecisions(payload, locale) {
 function applyHubImageDecisions(payload, locale) {
     const source = isObject(payload) ? cloneJson(payload) : {};
     const resolvedHero = resolveV6SlotImage('hub.hero', locale, {
-        fallbackAssetId: inferAssetIdFromImagePath(source?.heroImage?.src || source?.heroImage),
+        fallbackAssetId: inferAssetIdFromImagePath(
+            source?.heroImage?.src || source?.heroImage
+        ),
         fallbackSrc: source?.heroImage?.src || source?.heroImage,
         fallbackSrcset: source?.heroImage?.srcset,
         fallbackAlt: source?.heroImage?.alt || source?.heading,
@@ -507,11 +534,13 @@ function applyHubImageDecisions(payload, locale) {
     const sections = Array.isArray(source.sections) ? source.sections : [];
     source.sections = sections.map((section, sectionIndex) => {
         const safeSection = isObject(section) ? { ...section } : {};
-        const sectionId = normalizeText(safeSection.id) || `section-${sectionIndex + 1}`;
+        const sectionId =
+            normalizeText(safeSection.id) || `section-${sectionIndex + 1}`;
         const cards = Array.isArray(safeSection.cards) ? safeSection.cards : [];
         safeSection.cards = cards.map((card, cardIndex) => {
             const safeCard = isObject(card) ? { ...card } : {};
-            const cardKey = normalizeText(safeCard.slug) || `card-${cardIndex + 1}`;
+            const cardKey =
+                normalizeText(safeCard.slug) || `card-${cardIndex + 1}`;
             const slotId = `hub.sections.${sectionId}.cards.${cardKey}`;
             const resolved = resolveV6SlotImage(slotId, locale, {
                 fallbackAssetId: inferAssetIdFromImagePath(safeCard.image),
@@ -529,7 +558,9 @@ function applyHubImageDecisions(payload, locale) {
         return safeSection;
     });
 
-    const initiatives = Array.isArray(source.initiatives) ? source.initiatives : [];
+    const initiatives = Array.isArray(source.initiatives)
+        ? source.initiatives
+        : [];
     source.initiatives = initiatives.map((card, index) => {
         const safeCard = isObject(card) ? { ...card } : {};
         const slotId = `hub.initiatives.${index}`;
@@ -553,10 +584,22 @@ function applyHubImageDecisions(payload, locale) {
 function applyTelemedicineImageDecisions(payload, locale) {
     const source = isObject(payload) ? cloneJson(payload) : {};
     const resolvedHero = resolveV6SlotImage('telemedicine.hero', locale, {
-        fallbackAssetId: inferAssetIdFromImagePath(source?.heroImage?.src || source?.hero?.mediaMeta?.src || source?.hero?.media),
-        fallbackSrc: source?.heroImage?.src || source?.hero?.mediaMeta?.src || source?.hero?.media,
-        fallbackSrcset: source?.heroImage?.srcset || source?.hero?.mediaMeta?.srcset,
-        fallbackAlt: source?.heroImage?.alt || source?.hero?.mediaMeta?.alt || source?.heading || source?.hero?.title,
+        fallbackAssetId: inferAssetIdFromImagePath(
+            source?.heroImage?.src ||
+                source?.hero?.mediaMeta?.src ||
+                source?.hero?.media
+        ),
+        fallbackSrc:
+            source?.heroImage?.src ||
+            source?.hero?.mediaMeta?.src ||
+            source?.hero?.media,
+        fallbackSrcset:
+            source?.heroImage?.srcset || source?.hero?.mediaMeta?.srcset,
+        fallbackAlt:
+            source?.heroImage?.alt ||
+            source?.hero?.mediaMeta?.alt ||
+            source?.heading ||
+            source?.hero?.title,
     });
     source.heroImage = {
         src: resolvedHero.src,
@@ -568,11 +611,15 @@ function applyTelemedicineImageDecisions(payload, locale) {
 
     const ui = isObject(source.ui) ? { ...source.ui } : {};
     const statement = isObject(ui.statement) ? { ...ui.statement } : {};
-    const resolvedStatement = resolveV6SlotImage('telemedicine.statement', locale, {
-        fallbackAssetId: inferAssetIdFromImagePath(statement.image),
-        fallbackSrc: statement.image,
-        fallbackAlt: statement.alt || statement.title || source.lead,
-    });
+    const resolvedStatement = resolveV6SlotImage(
+        'telemedicine.statement',
+        locale,
+        {
+            fallbackAssetId: inferAssetIdFromImagePath(statement.image),
+            fallbackSrc: statement.image,
+            fallbackAlt: statement.alt || statement.title || source.lead,
+        }
+    );
     statement.image = resolvedStatement.src;
     statement.alt = resolvedStatement.alt;
     statement.assetId = resolvedStatement.assetId;
@@ -580,7 +627,9 @@ function applyTelemedicineImageDecisions(payload, locale) {
     ui.statement = statement;
     source.ui = ui;
 
-    const initiatives = Array.isArray(source.initiatives) ? source.initiatives : [];
+    const initiatives = Array.isArray(source.initiatives)
+        ? source.initiatives
+        : [];
     source.initiatives = initiatives.map((item, index) => {
         const safeItem = isObject(item) ? { ...item } : {};
         const slotId = `telemedicine.initiatives.${index}`;
@@ -627,17 +676,24 @@ function applyLegalImageDecisions(payload, locale) {
             fallbackSrc: safePage.heroImage,
             fallbackAlt: safePage.heading,
         });
-        const indexCardResolved = resolveV6SlotImage(`legal.indexCards.${canonicalSlug}`, locale, {
-            fallbackAssetId: heroResolved.assetId || inferAssetIdFromImagePath(safePage.heroImage),
-            fallbackSrc: heroResolved.src || safePage.heroImage,
-            fallbackAlt: safePage.heading,
-        });
+        const indexCardResolved = resolveV6SlotImage(
+            `legal.indexCards.${canonicalSlug}`,
+            locale,
+            {
+                fallbackAssetId:
+                    heroResolved.assetId ||
+                    inferAssetIdFromImagePath(safePage.heroImage),
+                fallbackSrc: heroResolved.src || safePage.heroImage,
+                fallbackAlt: safePage.heading,
+            }
+        );
         safePage.heroImage = heroResolved.src;
         safePage.heroImageAssetId = heroResolved.assetId;
         safePage.heroImageSlotId = heroSlotId;
         safePage.heroImageAlt = heroResolved.alt;
         safePage.indexCardImage = indexCardResolved.src || heroResolved.src;
-        safePage.indexCardAssetId = indexCardResolved.assetId || heroResolved.assetId;
+        safePage.indexCardAssetId =
+            indexCardResolved.assetId || heroResolved.assetId;
         safePage.indexCardSlotId = `legal.indexCards.${canonicalSlug}`;
         pages[slug] = safePage;
     }
@@ -675,11 +731,17 @@ function applyServiceImageDecisions(payload, locale) {
         return {
             ...safeService,
             heroImage: heroResolved.src || safeService.heroImage,
-            heroAlt: heroResolved.alt || normalizeText(safeService.heroAlt) || normalizeText(safeService.title),
+            heroAlt:
+                heroResolved.alt ||
+                normalizeText(safeService.heroAlt) ||
+                normalizeText(safeService.title),
             heroImageAssetId: heroResolved.assetId,
             heroImageSlotId: heroSlotId,
             statementImage: statementResolved.src || safeService.statementImage,
-            statementAlt: statementResolved.alt || normalizeText(safeService.statementAlt) || normalizeText(safeService.title),
+            statementAlt:
+                statementResolved.alt ||
+                normalizeText(safeService.statementAlt) ||
+                normalizeText(safeService.title),
             statementImageAssetId: statementResolved.assetId,
             statementImageSlotId: statementSlotId,
         };
@@ -1869,6 +1931,7 @@ function finalizeSoftwareLandingPage(locale, page = {}, suiteRoutes = []) {
     return {
         ...page,
         pageKey: 'landing',
+        ogImageSrc: SOFTWARE_OG_IMAGE_BY_PAGE_KEY.landing,
         suiteRoute:
             suiteRoutes.find((route) => route.pageKey === 'landing') || null,
         suiteMap: suiteRoutes,
@@ -1890,6 +1953,9 @@ function finalizeSoftwareSurfacePage(
     return {
         ...page,
         pageKey: safePageKey,
+        ogImageSrc:
+            SOFTWARE_OG_IMAGE_BY_PAGE_KEY[safePageKey] ||
+            SOFTWARE_OG_IMAGE_BY_PAGE_KEY.landing,
         suiteRoute:
             suiteRoutes.find((route) => route.pageKey === safePageKey) || null,
         suiteMap: suiteRoutes,
@@ -2114,14 +2180,20 @@ export function getV6NavigationModel(locale, pathname = '/') {
 export function getV6HomeData(locale) {
     const safeLocale = normalizeLocale(locale);
     return sanitizeHomeData(
-        applyHomeImageDecisions(readLocaleJson(safeLocale, 'home.json'), safeLocale)
+        applyHomeImageDecisions(
+            readLocaleJson(safeLocale, 'home.json'),
+            safeLocale
+        )
     );
 }
 
 export function getV6HubData(locale) {
     const safeLocale = normalizeLocale(locale);
     return sanitizeHubData(
-        applyHubImageDecisions(readLocaleJson(safeLocale, 'hub.json'), safeLocale)
+        applyHubImageDecisions(
+            readLocaleJson(safeLocale, 'hub.json'),
+            safeLocale
+        )
     );
 }
 

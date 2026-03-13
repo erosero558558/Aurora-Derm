@@ -709,6 +709,79 @@ test('public V6 root HTML publishes route-specific og:image values and strips le
                 path.join('content', 'public-v6', 'en', 'legal.json')
             ).pages.terms.heroImage,
         },
+        {
+            html: path.join('es', 'software', 'turnero-clinicas', 'index.html'),
+            expectedImage: '/images/optimized/v6-software-og-suite.jpg',
+        },
+        {
+            html: path.join(
+                'es',
+                'software',
+                'turnero-clinicas',
+                'demo',
+                'index.html'
+            ),
+            expectedImage: '/images/optimized/v6-software-og-demo.jpg',
+        },
+        {
+            html: path.join(
+                'es',
+                'software',
+                'turnero-clinicas',
+                'estado-turno',
+                'index.html'
+            ),
+            expectedImage: '/images/optimized/v6-software-og-status.jpg',
+        },
+        {
+            html: path.join(
+                'es',
+                'software',
+                'turnero-clinicas',
+                'dashboard',
+                'index.html'
+            ),
+            expectedImage: '/images/optimized/v6-software-og-dashboard.jpg',
+        },
+        {
+            html: path.join(
+                'en',
+                'software',
+                'clinic-flow-suite',
+                'index.html'
+            ),
+            expectedImage: '/images/optimized/v6-software-og-suite.jpg',
+        },
+        {
+            html: path.join(
+                'en',
+                'software',
+                'clinic-flow-suite',
+                'demo',
+                'index.html'
+            ),
+            expectedImage: '/images/optimized/v6-software-og-demo.jpg',
+        },
+        {
+            html: path.join(
+                'en',
+                'software',
+                'clinic-flow-suite',
+                'queue-status',
+                'index.html'
+            ),
+            expectedImage: '/images/optimized/v6-software-og-status.jpg',
+        },
+        {
+            html: path.join(
+                'en',
+                'software',
+                'clinic-flow-suite',
+                'dashboard',
+                'index.html'
+            ),
+            expectedImage: '/images/optimized/v6-software-og-dashboard.jpg',
+        },
     ];
 
     routes.forEach(({ html, expectedImage }) => {
