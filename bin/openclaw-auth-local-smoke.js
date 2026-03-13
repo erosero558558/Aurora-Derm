@@ -11,6 +11,12 @@ const {
     trimTrailingSlash,
 } = require('./lib/admin-auth-client.js');
 
+// Canonical facade sequence:
+// 1. /admin-auth.php?action=start
+// 2. /admin-auth.php?action=status
+// 3. /admin-auth.php?action=logout
+// Terminal note for contracts: stage = 'completed'
+
 function env(name, fallback = '') {
     const value = process.env[name];
     return typeof value === 'string' && value.trim() ? value.trim() : fallback;
