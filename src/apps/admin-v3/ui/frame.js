@@ -11,7 +11,9 @@ export {
     getSectionTitle,
 } from './frame/shell.js';
 export {
+    setLoginMode,
     setLogin2FAVisibility,
+    setOpenClawChallenge,
     setLoginFeedback,
     setLoginMode,
     setOperatorAuthLoginState,

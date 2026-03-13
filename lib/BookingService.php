@@ -6,6 +6,7 @@ require_once __DIR__ . '/business.php';
 require_once __DIR__ . '/models.php';
 require_once __DIR__ . '/validation.php';
 require_once __DIR__ . '/common.php';
+require_once __DIR__ . '/PatientCaseService.php';
 require_once __DIR__ . '/calendar/runtime.php';
 require_once __DIR__ . '/telemedicine/LegacyTelemedicineBridge.php';
 $telemedicinePolicyFile = __DIR__ . '/telemedicine/TelemedicineEnforcementPolicy.php';
@@ -251,6 +252,8 @@ class BookingService
         }
 
         $store['appointments'][] = $appointment;
+        $store = $this->hydratePatientFlowStore($store);
+        $appointment = $this->findAppointmentById($store, (int) ($appointment['id'] ?? 0)) ?? $appointment;
 
         return [
             'ok' => true,
@@ -282,6 +285,9 @@ class BookingService
         if (!$found) {
             return ['ok' => false, 'error' => 'Cita no encontrada', 'code' => 404];
         }
+
+        $store = $this->hydratePatientFlowStore($store);
+        $cancelledAppointment = $this->findAppointmentById($store, $id) ?? $cancelledAppointment;
 
         return [
             'ok' => true,
@@ -411,6 +417,9 @@ class BookingService
             return ['ok' => false, 'error' => 'Cita no encontrada', 'code' => 404];
         }
 
+        $store = $this->hydratePatientFlowStore($store);
+        $updatedAppointment = $this->findAppointmentById($store, (int) ($updatedAppointment['id'] ?? 0)) ?? $updatedAppointment;
+
         return [
             'ok' => true,
             'store' => $store,
@@ -526,5 +535,32 @@ class BookingService
                 'allowDecisionOverride' => true,
             ],
         ];
+    }
+
+    private function hydratePatientFlowStore(array $store): array
+    {
+        $service = new PatientCaseService();
+        return $service->hydrateStore($store);
+    }
+
+    private function findAppointmentById(array $store, int $appointmentId): ?array
+    {
+        if ($appointmentId <= 0) {
+            return null;
+        }
+
+        $appointments = isset($store['appointments']) && is_array($store['appointments'])
+            ? $store['appointments']
+            : [];
+        foreach ($appointments as $appointment) {
+            if (!is_array($appointment)) {
+                continue;
+            }
+            if ((int) ($appointment['id'] ?? 0) === $appointmentId) {
+                return $appointment;
+            }
+        }
+
+        return null;
     }
 }

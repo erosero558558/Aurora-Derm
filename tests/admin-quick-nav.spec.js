@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
 
 test.use({
     serviceWorkers: 'block',
@@ -59,15 +60,7 @@ function buildFunnelPayload() {
 }
 
 async function setupAdminApiMocks(page) {
-    const agentSessionId = 'ags_test_quick_nav';
-
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
-        jsonResponse(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_test_token',
-        })
-    );
+    await installLegacyAdminAuthMock(page);
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
@@ -86,48 +79,6 @@ async function setupAdminApiMocks(page) {
                 ok: true,
                 data: {},
                 meta: buildDataPayload().data.availabilityMeta,
-            });
-        }
-
-        if (resource === 'admin-agent-status') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    session: null,
-                    health: {
-                        relay: {
-                            mode: 'online',
-                        },
-                    },
-                    tools: [],
-                },
-            });
-        }
-
-        if (resource === 'admin-agent-session-start') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    session: {
-                        sessionId: agentSessionId,
-                        status: 'active',
-                        riskMode: 'autopilot_partial',
-                    },
-                    context: {
-                        section: 'dashboard',
-                    },
-                    messages: [],
-                    turns: [],
-                    toolCalls: [],
-                    approvals: [],
-                    events: [],
-                    health: {
-                        relay: {
-                            mode: 'online',
-                        },
-                    },
-                    tools: [],
-                },
             });
         }
 
@@ -178,26 +129,37 @@ test.describe('Admin navigation desktop', () => {
         await expect(page).toHaveURL(/#availability$/);
     });
 
-    test('Ctrl+K abre el copiloto y la paleta rapida sigue disponible por boton', async ({
+    test('quick command se abre con Ctrl+K y ejecuta acciones contextuales', async ({
         page,
     }) => {
         await setupAdminApiMocks(page);
         await page.goto('/admin.html');
 
-        await expect(page.locator('#adminAgentPanel')).toHaveClass(/is-hidden/);
-
-        await page.keyboard.press('Control+K');
-        await expect(page.locator('#adminAgentPanel')).not.toHaveClass(
+        await expect(page.locator('#adminCommandPalette')).toHaveClass(
             /is-hidden/
         );
-        await expect(page.locator('#adminAgentPrompt')).toBeFocused();
+        const commandInput = page.locator('#adminQuickCommand');
 
-        await page
-            .locator('button[data-action="open-command-palette"]')
-            .click();
+        await page.keyboard.press('Control+K');
         await expect(page.locator('#adminCommandPalette')).not.toHaveClass(
             /is-hidden/
         );
-        await expect(page.locator('#adminQuickCommand')).toBeFocused();
+        await expect(commandInput).toBeFocused();
+
+        await commandInput.fill('callbacks pendientes');
+        await page.keyboard.press('Enter');
+
+        await expect(page.locator('#callbacks')).toHaveClass(/active/);
+        await expect(
+            page.locator(
+                '.callback-quick-filter-btn[data-filter-value="pending"]'
+            )
+        ).toHaveClass(/is-active/);
+        await expect(page.locator('#adminContextTitle')).toContainText(
+            'Pendientes de contacto'
+        );
+        await expect(page.locator('#adminRefreshStatus')).toContainText(
+            /Datos:/
+        );
     });
 });

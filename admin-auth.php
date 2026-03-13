@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/api-lib.php';
 require_once __DIR__ . '/controllers/OperatorAuthController.php';
+require_once __DIR__ . '/lib/InternalConsoleReadiness.php';
 
 apply_security_headers(false);
 api_apply_cors(['GET', 'POST', 'OPTIONS'], ['Content-Type', 'X-CSRF-Token'], true);
@@ -14,9 +15,15 @@ $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $action = strtolower(trim((string) ($_GET['action'] ?? 'status')));
 const ADMIN_LOGIN_ACTION = 'admin-login';
 const ADMIN_LOGIN_FAIL_ACTION = 'admin-login-failed';
+$prefersOpenClawAuth = function_exists('internal_console_prefers_openclaw_auth')
+    ? internal_console_prefers_openclaw_auth()
+    : operator_auth_is_enabled();
+$legacyPasswordEnabled = function_exists('internal_console_allows_legacy_password_auth')
+    ? internal_console_allows_legacy_password_auth()
+    : !$prefersOpenClawAuth;
 
 if ($method === 'GET' && $action === 'status') {
-    if (operator_auth_is_enabled()) {
+    if ($prefersOpenClawAuth && operator_auth_is_enabled()) {
         $isAuth = operator_auth_is_authenticated();
         audit_log_event('admin.status', [
             'authenticated' => $isAuth,
@@ -26,15 +33,34 @@ if ($method === 'GET' && $action === 'status') {
     }
 
     $isAuth = legacy_admin_is_authenticated();
+    if (!$isAuth && $prefersOpenClawAuth) {
+        $payload = operator_auth_config_error_payload();
+        audit_log_event('admin.status', [
+            'authenticated' => false,
+            'mode' => OPERATOR_AUTH_SOURCE,
+            'configured' => false,
+            'preferred' => true,
+        ]);
+        json_response($payload);
+    }
+
+    $legacyConfigured = admin_password_is_configured();
+    $twoFactorEnabled = trim((string) getenv('PIELARMONIA_ADMIN_2FA_SECRET')) !== '';
     audit_log_event('admin.status', [
-        'authenticated' => $isAuth
+        'authenticated' => $isAuth,
+        'mode' => 'legacy_password',
+        'configured' => $legacyConfigured,
     ]);
     $resp = [
         'ok' => true,
         'authenticated' => $isAuth,
-        'capabilities' => $isAuth
-            ? admin_agent_capabilities_payload()
-            : ['adminAgent' => false],
+        'status' => $isAuth ? 'authenticated' : ($legacyConfigured ? 'anonymous' : 'legacy_auth_not_configured'),
+        'mode' => 'legacy_password',
+        'configured' => $legacyConfigured,
+        'twoFactorEnabled' => $twoFactorEnabled,
+        'recommendedMode' => $prefersOpenClawAuth
+            ? OPERATOR_AUTH_SOURCE
+            : 'legacy_password',
     ];
     if ($isAuth) {
         $resp['csrfToken'] = generate_csrf_token();
@@ -48,19 +74,30 @@ if ($method === 'POST' && $action === 'start') {
 }
 
 if ($method === 'POST' && $action === 'login') {
-    if (operator_auth_is_enabled()) {
+    if (!$legacyPasswordEnabled) {
         audit_log_event('admin.login_legacy_disabled', [
             'action' => $action,
-            'mode' => operator_auth_mode(),
+            'mode' => internal_console_primary_auth_mode(),
         ]);
         json_response([
             'ok' => false,
-            'error' => 'El acceso por clave ya no esta disponible. Usa ChatGPT/OpenClaw desde el panel.'
+            'code' => 'legacy_auth_disabled',
+            'error' => 'El acceso por clave ya no esta disponible por defecto. Solo esta disponible cuando PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password en este entorno.'
         ], 401);
     }
 
     // Limite de intentos globales por IP para el endpoint de login.
     require_rate_limit(ADMIN_LOGIN_ACTION, 12, 300);
+
+    if (!admin_password_is_configured()) {
+        audit_log_event('admin.login_misconfigured', [
+            'reason' => 'missing_admin_password',
+        ]);
+        json_response([
+            'ok' => false,
+            'error' => 'Acceso admin no configurado en este entorno.',
+        ], 503);
+    }
 
     // Bloqueo temporal por credenciales fallidas repetidas.
     if (is_rate_limited(ADMIN_LOGIN_FAIL_ACTION, 5, 900)) {
@@ -119,20 +156,20 @@ if ($method === 'POST' && $action === 'login') {
     json_response([
         'ok' => true,
         'authenticated' => true,
-        'csrfToken' => generate_csrf_token(),
-        'capabilities' => admin_agent_capabilities_payload(),
+        'csrfToken' => generate_csrf_token()
     ]);
 }
 
 if ($method === 'POST' && $action === 'login-2fa') {
-    if (operator_auth_is_enabled()) {
+    if (!$legacyPasswordEnabled) {
         audit_log_event('admin.login_legacy_disabled', [
             'action' => $action,
-            'mode' => operator_auth_mode(),
+            'mode' => internal_console_primary_auth_mode(),
         ]);
         json_response([
             'ok' => false,
-            'error' => 'El acceso por clave ya no esta disponible. Usa ChatGPT/OpenClaw desde el panel.'
+            'code' => 'legacy_auth_disabled',
+            'error' => 'El acceso por clave ya no esta disponible por defecto. Solo esta disponible cuando PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password en este entorno.'
         ], 401);
     }
 
@@ -177,13 +214,12 @@ if ($method === 'POST' && $action === 'login-2fa') {
     json_response([
         'ok' => true,
         'authenticated' => true,
-        'csrfToken' => generate_csrf_token(),
-        'capabilities' => admin_agent_capabilities_payload(),
+        'csrfToken' => generate_csrf_token()
     ]);
 }
 
 if ($method === 'POST' && $action === 'logout') {
-    if (operator_auth_is_enabled()) {
+    if ($prefersOpenClawAuth && operator_auth_is_enabled()) {
         OperatorAuthController::logout();
     }
 
@@ -194,10 +230,7 @@ if ($method === 'POST' && $action === 'logout') {
 
     json_response([
         'ok' => true,
-        'authenticated' => false,
-        'capabilities' => [
-            'adminAgent' => false,
-        ],
+        'authenticated' => false
     ]);
 }
 

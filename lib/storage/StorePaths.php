@@ -4,6 +4,23 @@ declare(strict_types=1);
 
 final class StorePaths
 {
+    private static function resolveCacheKey(): string
+    {
+        $parts = [
+            getenv('PIELARMONIA_DATA_DIR'),
+            getenv('PIELARMONIA_HOME_DIR'),
+            getenv('HOME'),
+            getenv('USERPROFILE'),
+            getenv('HOMEDRIVE'),
+            getenv('HOMEPATH'),
+        ];
+
+        return implode('|', array_map(
+            static fn ($value): string => is_string($value) ? trim($value) : '',
+            $parts
+        ));
+    }
+
     public static function dataHomeDirCandidate(): string
     {
         $home = '';
@@ -101,6 +118,13 @@ final class StorePaths
     public static function resolveDataDir(): array
     {
         static $resolved = null;
+        static $cacheKey = null;
+        $currentCacheKey = self::resolveCacheKey();
+        if ($cacheKey !== $currentCacheKey) {
+            $resolved = null;
+            $cacheKey = $currentCacheKey;
+        }
+
         if (is_array($resolved) && isset($resolved['path'], $resolved['source'])) {
             return $resolved;
         }

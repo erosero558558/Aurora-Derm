@@ -63,14 +63,6 @@ test.describe('Google Calendar E2E write flow', () => {
             'TEST_ENABLE_CALENDAR_WRITE=true es requerido para pruebas con escritura real.'
         );
 
-        const adminPassword =
-            getEnv('TEST_ADMIN_PASSWORD') ||
-            getEnv('PIELARMONIA_ADMIN_PASSWORD');
-        test.skip(
-            !adminPassword,
-            'TEST_ADMIN_PASSWORD o PIELARMONIA_ADMIN_PASSWORD es requerido para cleanup seguro.'
-        );
-
         const healthResp = await request.get('/api.php?resource=health');
         expect(healthResp.ok()).toBeTruthy();
         const health = await healthResp.json();
@@ -171,7 +163,8 @@ test.describe('Google Calendar E2E write flow', () => {
                 `/api.php?resource=availability&doctor=${encodeURIComponent(assignedDoctor)}&service=laser&days=21`
             );
             expect(availabilityForDoctorResp.ok()).toBeTruthy();
-            const availabilityForDoctor = await availabilityForDoctorResp.json();
+            const availabilityForDoctor =
+                await availabilityForDoctorResp.json();
             expect(availabilityForDoctor.ok).toBe(true);
 
             const nextSlot = pickFirstSlot(
@@ -192,7 +185,9 @@ test.describe('Google Calendar E2E write flow', () => {
                     },
                 }
             );
-            expect(rescheduleResp.status(), await rescheduleResp.text()).toBe(200);
+            expect(rescheduleResp.status(), await rescheduleResp.text()).toBe(
+                200
+            );
             const rescheduled = await rescheduleResp.json();
             expect(rescheduled.ok).toBe(true);
             expect(String(rescheduled.data.date)).toBe(nextSlot.date);
@@ -206,7 +201,8 @@ test.describe('Google Calendar E2E write flow', () => {
                 `/api.php?resource=booked-slots&date=${encodeURIComponent(nextSlot.date)}&doctor=${encodeURIComponent(assignedDoctor)}&service=laser`
             );
             expect(bookedAfterRescheduleResp.ok()).toBeTruthy();
-            const bookedAfterReschedule = await bookedAfterRescheduleResp.json();
+            const bookedAfterReschedule =
+                await bookedAfterRescheduleResp.json();
             expect(bookedAfterReschedule.ok).toBe(true);
             expect(Array.isArray(bookedAfterReschedule.data)).toBe(true);
             expect(bookedAfterReschedule.data).toContain(nextSlot.time);

@@ -212,6 +212,8 @@ function buildPublicSyncDiagnosticMeta(job = {}) {
         last_error_message: String(job.last_error_message || ''),
         verification_source: String(job.verification_source || ''),
         state: String(job.state || ''),
+        operationally_healthy: Boolean(job.operationally_healthy),
+        repo_hygiene_issue: Boolean(job.repo_hygiene_issue),
         head_drift: Boolean(job.head_drift),
         telemetry_gap: Boolean(job.telemetry_gap),
         current_head: String(job.current_head || ''),
@@ -248,6 +250,27 @@ function buildPublicSyncFailureMessage(job = {}) {
     }
     if (Number(job.dirty_paths_count || 0) > 0) {
         parts.push(`dirty_paths=${Number(job.dirty_paths_count || 0)}`);
+    }
+    return parts.join(' ');
+}
+
+function buildPublicSyncRepoHygieneMessage(job = {}) {
+    const parts = [
+        `public_main_sync repo hygiene issue: reason=${job.failure_reason || job.last_error_message || 'working_tree_dirty'}`,
+        `source=${job.verification_source || 'unknown'}`,
+        `dirty_paths=${Number(job.dirty_paths_count || 0)}`,
+    ];
+    if (
+        Array.isArray(job.dirty_paths_sample) &&
+        job.dirty_paths_sample.length
+    ) {
+        parts.push(
+            `sample=${job.dirty_paths_sample
+                .slice(0, 5)
+                .map((item) => String(item || '').trim())
+                .filter(Boolean)
+                .join(',')}`
+        );
     }
     return parts.join(' ');
 }
@@ -486,8 +509,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         publicSyncJob &&
         warnPolicyEnabled(warnPolicyMap, 'public_main_sync_failed') &&
         publicSyncJob.verified !== false &&
-        (!publicSyncJob.healthy ||
-            String(publicSyncJob.state || '') === 'failed')
+        !publicSyncJob.healthy
     ) {
         diagnostics.push(
             makeDiagnostic({
@@ -502,6 +524,28 @@ function buildWarnFirstDiagnostics(input = {}) {
             })
         );
     }
+    const repoHygieneWarning = getPublicSyncWarnState(
+        warnPolicyMap,
+        'public_main_sync_repo_hygiene',
+        'public_main_sync_failed'
+    );
+    if (
+        hasJobsSnapshot &&
+        publicSyncJob &&
+        repoHygieneWarning.enabled &&
+        publicSyncJob.verified !== false &&
+        publicSyncJob.repo_hygiene_issue
+    ) {
+        diagnostics.push(
+            makeDiagnostic({
+                code: 'warn.jobs.public_main_sync_repo_hygiene',
+                severity: repoHygieneWarning.severity,
+                source,
+                message: buildPublicSyncRepoHygieneMessage(publicSyncJob),
+                meta: buildPublicSyncDiagnosticMeta(publicSyncJob),
+            })
+        );
+    }
     const headDriftWarning = getPublicSyncWarnState(
         warnPolicyMap,
         'public_main_sync_head_drift',
@@ -512,8 +556,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         publicSyncJob &&
         headDriftWarning.enabled &&
         publicSyncJob.verified !== false &&
-        (!publicSyncJob.healthy ||
-            String(publicSyncJob.state || '') === 'failed') &&
+        !publicSyncJob.healthy &&
         publicSyncJob.head_drift
     ) {
         diagnostics.push(
@@ -536,8 +579,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         publicSyncJob &&
         telemetryGapWarning.enabled &&
         publicSyncJob.verified !== false &&
-        (!publicSyncJob.healthy ||
-            String(publicSyncJob.state || '') === 'failed') &&
+        !publicSyncJob.healthy &&
         publicSyncJob.telemetry_gap
     ) {
         diagnostics.push(
@@ -610,6 +652,7 @@ module.exports = {
     attachDiagnostics,
     buildPublicSyncDiagnosticMeta,
     buildPublicSyncFailureMessage,
+    buildPublicSyncRepoHygieneMessage,
     makeDiagnostic,
     getWarnPolicyMap,
     warnPolicyEnabled,

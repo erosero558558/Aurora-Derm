@@ -22,6 +22,7 @@ require_once __DIR__ . '/lib/Router.php';
 require_once __DIR__ . '/controllers/HealthController.php';
 require_once __DIR__ . '/controllers/PaymentController.php';
 require_once __DIR__ . '/controllers/AdminDataController.php';
+require_once __DIR__ . '/controllers/PatientCaseController.php';
 require_once __DIR__ . '/controllers/TelemedicineAdminController.php';
 require_once __DIR__ . '/controllers/TelemedicinePolicyController.php';
 require_once __DIR__ . '/controllers/AppointmentController.php';

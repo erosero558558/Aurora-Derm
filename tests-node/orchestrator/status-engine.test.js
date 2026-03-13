@@ -71,6 +71,42 @@ test('status-engine buildStatusReport y renderStatusText conservan campos clave'
         },
         byStatus: { in_progress: 1 },
         byExecutor: { codex: 1 },
+        codex_instances: {
+            total_instances: 1,
+            rows: [
+                {
+                    codex_instance: 'codex_transversal',
+                    tasks: 1,
+                    active_tasks: 1,
+                    in_progress_tasks: 1,
+                    done_tasks: 0,
+                },
+            ],
+        },
+        provider_modes: {
+            total_provider_modes: 1,
+            rows: [
+                {
+                    provider_mode: 'openclaw_chatgpt',
+                    tasks: 1,
+                    active_tasks: 1,
+                    in_progress_tasks: 1,
+                    done_tasks: 0,
+                },
+            ],
+        },
+        runtime_surfaces: {
+            total_runtime_surfaces: 1,
+            rows: [
+                {
+                    runtime_surface: 'figo_queue',
+                    tasks: 1,
+                    active_tasks: 1,
+                    in_progress_tasks: 1,
+                    done_tasks: 0,
+                },
+            ],
+        },
         redExplanation: {
             signal: 'NOT_RED',
             blockers: [],
@@ -83,6 +119,12 @@ test('status-engine buildStatusReport y renderStatusText conservan campos clave'
     assert.equal(data.conflicts_breakdown.blocking, 1);
     assert.equal(data.totals.byExecutor.codex, 1);
     assert.equal(data.evidence_summary.debt_count, 1);
+    assert.equal(
+        data.codex_instances.rows[0].codex_instance,
+        'codex_transversal'
+    );
+    assert.equal(data.provider_modes.rows[0].provider_mode, 'openclaw_chatgpt');
+    assert.equal(data.runtime_surfaces.rows[0].runtime_surface, 'figo_queue');
 
     const output = statusEngine.renderStatusText(data, {
         wantsExplainRed: true,
@@ -94,6 +136,21 @@ test('status-engine buildStatusReport y renderStatusText conservan campos clave'
     assert.match(output, /Semaforo por dominio/);
     assert.match(output, /Aporte \(ranking por completado ponderado\)/);
     assert.match(output, /Evidence terminal:/);
+    assert.match(output, /Por codex_instance:/);
+    assert.match(
+        output,
+        /codex_transversal: tasks=1, active=1, in_progress=1, done=0/
+    );
+    assert.match(output, /Por provider_mode:/);
+    assert.match(
+        output,
+        /openclaw_chatgpt: tasks=1, active=1, in_progress=1, done=0/
+    );
+    assert.match(output, /Por runtime_surface:/);
+    assert.match(
+        output,
+        /figo_queue: tasks=1, active=1, in_progress=1, done=0/
+    );
     assert.match(output, /Explain RED \(status\)/);
     assert.match(output, /\[GREEN\] #1 codex/);
 });

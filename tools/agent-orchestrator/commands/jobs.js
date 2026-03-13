@@ -38,7 +38,7 @@ async function handleJobsCommand(ctx) {
         console.log('== Jobs Status ==');
         for (const job of jobs) {
             console.log(
-                `- ${job.key}: healthy=${job.healthy} state=${job.state} source=${job.verification_source} age=${job.age_seconds ?? 'n/a'}s`
+                `- ${job.key}: healthy=${job.healthy} repo_hygiene_issue=${job.repo_hygiene_issue} state=${job.state} source=${job.verification_source} age=${job.age_seconds ?? 'n/a'}s`
             );
         }
         return report;
@@ -69,11 +69,11 @@ async function handleJobsCommand(ctx) {
     }
     if (!report.ok) {
         throw new Error(
-            `jobs verify fallo para ${job.key}: healthy=${job.healthy} source=${job.verification_source}`
+            `jobs verify fallo para ${job.key}: healthy=${job.healthy} repo_hygiene_issue=${job.repo_hygiene_issue} source=${job.verification_source}`
         );
     }
     console.log(
-        `OK: ${job.key} healthy=${job.healthy} age=${job.age_seconds ?? 'n/a'}s commit=${job.deployed_commit || 'n/a'}`
+        `OK: ${job.key} healthy=${job.healthy} repo_hygiene_issue=${job.repo_hygiene_issue} age=${job.age_seconds ?? 'n/a'}s commit=${job.deployed_commit || 'n/a'}`
     );
     return report;
 }

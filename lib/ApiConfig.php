@@ -23,6 +23,7 @@ class ApiConfig
             'payment-config:GET' => [60, 60],
             'monitoring-config:GET' => [60, 60],
             'metrics:GET' => [60, 60],
+            'health-diagnostics:GET' => [30, 60],
             'funnel-metrics:GET' => [60, 60],
             'retention-report:GET' => [30, 60],
             'lead-ai-queue:GET' => [60, 60],
@@ -97,7 +98,6 @@ class ApiConfig
             ['method' => 'GET', 'resource' => 'monitoring-config'],
             ['method' => 'GET', 'resource' => 'features'],
             ['method' => 'GET', 'resource' => 'public-runtime-config'],
-            ['method' => 'GET', 'resource' => 'metrics'],
             ['method' => 'GET', 'resource' => 'payment-config'],
             ['method' => 'GET', 'resource' => 'availability'],
             ['method' => 'GET', 'resource' => 'reviews'],
@@ -134,8 +134,15 @@ class ApiConfig
             ['method' => 'GET', 'resource' => 'reschedule'],
             ['method' => 'PATCH', 'resource' => 'reschedule'],
             ['method' => 'GET', 'resource' => 'content'],
-            // Previously handled inline as public
             ['method' => 'GET', 'resource' => 'health'],
+        ];
+    }
+
+    public static function getDiagnosticsEndpoints(): array
+    {
+        return [
+            ['method' => 'GET', 'resource' => 'metrics'],
+            ['method' => 'GET', 'resource' => 'health-diagnostics'],
         ];
     }
 }

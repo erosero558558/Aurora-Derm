@@ -2,15 +2,60 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const {
+    adminOpenClawLogin,
+    getAdminAuthStatus,
+    getEnv,
+    getOperatorAuthTestEnv,
+} = require('./helpers/admin-auth');
 const { skipIfPhpRuntimeMissing } = require('./helpers/php-backend');
 
-const ADMIN_PASSWORD = process.env.PIELARMONIA_ADMIN_PASSWORD || 'admin123';
+const ADMIN_PASSWORD = getEnv('PIELARMONIA_ADMIN_PASSWORD');
+const ADMIN_AUTH_MODE = getEnv('TEST_ADMIN_AUTH_MODE', 'openclaw_chatgpt');
+const OPERATOR_AUTH_ENV = getOperatorAuthTestEnv();
+const ENV_PATH = path.join(__dirname, '../env.php');
+const PUBLIC_HOME_PATH = '/es/';
+let envFileManaged = false;
+let envFileBackup = null;
 
-function toLocalDateKey(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+function toPhpSingleQuoted(value) {
+    return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function buildManagedEnvPhp() {
+    const lines = ['<?php'];
+
+    if (ADMIN_AUTH_MODE === 'legacy_password') {
+        lines.push(
+            "putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password');"
+        );
+    } else {
+        for (const [key, value] of Object.entries(OPERATOR_AUTH_ENV)) {
+            lines.push(
+                `putenv('${toPhpSingleQuoted(key)}=${toPhpSingleQuoted(value)}');`
+            );
+        }
+    }
+
+    if (ADMIN_PASSWORD) {
+        lines.push(
+            `putenv('PIELARMONIA_ADMIN_PASSWORD=${toPhpSingleQuoted(ADMIN_PASSWORD)}');`
+        );
+    }
+
+    lines.push('?>', '');
+    return lines.join('\n');
+}
+
+async function expectLegacyPublicShellAbsent(page) {
+    await expect(page.locator('#appointmentForm')).toHaveCount(0);
+    await expect(page.locator('#paymentModal')).toHaveCount(0);
+    await expect(page.locator('#chatbotWidget')).toHaveCount(0);
+}
+
+async function expectAdminAccessGateVisible(page) {
+    await expect(page.locator('#loginScreen')).toBeVisible();
+    await expect(page.locator('#adminDashboard')).toBeHidden();
 }
 
 test.describe('Checklist de Pruebas en Producción', () => {
@@ -25,44 +70,51 @@ test.describe('Checklist de Pruebas en Producción', () => {
             }
         }
 
-        // Set up env.php for E2E tests authentication
-        const envPath = path.join(__dirname, '../env.php');
         try {
-            fs.writeFileSync(
-                envPath,
-                `<?php putenv('PIELARMONIA_ADMIN_PASSWORD=${ADMIN_PASSWORD}'); ?>`
-            );
+            if (fs.existsSync(ENV_PATH)) {
+                envFileBackup = fs.readFileSync(ENV_PATH, 'utf8');
+            }
+            fs.writeFileSync(ENV_PATH, buildManagedEnvPhp());
+            envFileManaged = true;
         } catch (e) {
             console.warn('Could not create env.php for E2E tests:', e.message);
         }
     });
 
     test.afterAll(async () => {
-        // Clean up env.php
-        const envPath = path.join(__dirname, '../env.php');
-        if (fs.existsSync(envPath)) {
-            try {
-                fs.unlinkSync(envPath);
-            } catch (e) {
-                console.warn('Could not cleanup env.php:', e.message);
+        if (!envFileManaged) {
+            return;
+        }
+
+        try {
+            if (envFileBackup !== null) {
+                fs.writeFileSync(ENV_PATH, envFileBackup);
+            } else if (fs.existsSync(ENV_PATH)) {
+                fs.unlinkSync(ENV_PATH);
             }
+        } catch (e) {
+            console.warn('Could not cleanup env.php:', e.message);
         }
     });
 
     // 1. Pre-check de servidor (archivos, variables, permisos)
-    test('1. Pre-check de servidor - Archivos críticos existen', async () => {
+    test('1. Pre-check de servidor - Entrypoints y archivos críticos existen', async () => {
         const requiredFiles = [
-            'index.html',
             'index.php',
+            'es/index.html',
+            'en/index.html',
+            'es/servicios/index.html',
+            'es/telemedicina/index.html',
+            'es/legal/terminos/index.html',
+            'es/legal/privacidad/index.html',
+            'es/legal/cookies/index.html',
+            'es/legal/aviso-medico/index.html',
             'styles.css',
             'styles-deferred.css',
             'script.js',
+            'js/public-v6-shell.js',
             'js/engines/chat-engine.js',
             'js/engines/booking-engine.js',
-            'terminos.html',
-            'privacidad.html',
-            'cookies.html',
-            'aviso-medico.html',
             'legal.css',
             'admin.html',
             'admin.js',
@@ -71,6 +123,7 @@ test.describe('Checklist de Pruebas en Producción', () => {
             'payment-lib.php',
             'admin-auth.php',
             'figo-chat.php',
+            '_astro',
         ];
 
         for (const file of requiredFiles) {
@@ -96,22 +149,53 @@ test.describe('Checklist de Pruebas en Producción', () => {
     });
 
     // 2. Pruebas del panel admin
-    test('2. Panel Admin - Login fallido', async ({ page, request }) => {
+    test('2. Panel Admin - Gate inicial sin sesion no abre el dashboard', async ({
+        page,
+        request,
+    }) => {
         await skipIfPhpRuntimeMissing(test, request);
         await page.goto('/admin.html');
-        await expect(page).toHaveTitle(/Admin|Aurora Derm/);
+        await expect(page).toHaveTitle(
+            /Nucleo Interno de Consultorio|Admin|Piel en Armonia|Piel en Armonía/
+        );
 
-        // Login con contraseña incorrecta
-        await page.fill('input[type="password"]', 'incorrecta');
-        await page.click('button[type="submit"]');
+        await expectAdminAccessGateVisible(page);
 
-        // Debería mostrar error o no redirigir al dashboard
-        // Asumimos que el dashboard tiene un ID específico o clase
-        const dashboard = page.locator('#dashboard-view, .dashboard-container');
-        await expect(dashboard).toBeHidden();
+        const passwordInput = page.locator('#adminPassword');
+        const legacyStage = page.locator('#legacyLoginStage');
+        const openClawStage = page.locator('#openclawLoginStage');
+        const loginButton = page.locator('#loginBtn');
+        const statusTitle = page.locator('#adminLoginStatusTitle');
+        const statusMessage = page.locator('#adminLoginStatusMessage');
 
-        // El input de password debería seguir visible
-        await expect(page.locator('input[type="password"]')).toBeVisible();
+        if (await passwordInput.isVisible()) {
+            await expect(legacyStage).toBeVisible();
+            await passwordInput.fill('incorrecta');
+            await loginButton.click();
+
+            await expectAdminAccessGateVisible(page);
+            await expect(passwordInput).toBeVisible();
+            await expect(statusTitle).toContainText(
+                'No se pudo iniciar sesion'
+            );
+            await expect(statusMessage).toContainText(
+                /Credenciales|Verifica la clave/i
+            );
+            return;
+        }
+
+        await expect(openClawStage).toBeVisible();
+        await expect(legacyStage).toBeHidden();
+        await loginButton.click();
+
+        await expectAdminAccessGateVisible(page);
+        await expect(openClawStage).toBeVisible();
+        await expect(statusTitle).toContainText(
+            /OpenClaw|Challenge|Email|Helper/i
+        );
+        await expect(statusMessage).toContainText(
+            /OpenClaw|helper|configur|challenge|sesion|identidad/i
+        );
     });
 
     test('2. Panel Admin - Login exitoso y navegacion', async ({
@@ -119,17 +203,38 @@ test.describe('Checklist de Pruebas en Producción', () => {
         request,
     }) => {
         await skipIfPhpRuntimeMissing(test, request);
-        if (!process.env.PIELARMONIA_ADMIN_PASSWORD) {
-            test.skip(
-                true,
-                'PIELARMONIA_ADMIN_PASSWORD no está definido para validar login exitoso en producción.'
-            );
-        }
-        await page.goto('/admin.html');
+        const browserRequest = page.context().request;
+        const authStatus = await getAdminAuthStatus(browserRequest);
+        test.skip(
+            !authStatus.ok,
+            `No se pudo consultar admin-auth status (HTTP ${authStatus.httpStatus}).`
+        );
 
-        // Login correcto
-        await page.fill('input[type="password"]', ADMIN_PASSWORD);
-        await page.click('button[type="submit"]');
+        if (authStatus.mode === 'openclaw_chatgpt') {
+            const login = await adminOpenClawLogin(browserRequest);
+            test.skip(
+                !login.ok,
+                `No se pudo autenticar OpenClaw: ${login.reason}`
+            );
+        } else {
+            test.skip(
+                !ADMIN_PASSWORD,
+                'PIELARMONIA_ADMIN_PASSWORD no está definido para validar login legacy.'
+            );
+
+            await page.goto('/admin.html');
+
+            const passwordInput = page.locator('#adminPassword');
+            const loginButton = page.locator('#loginBtn');
+
+            await expectAdminAccessGateVisible(page);
+            await expect(passwordInput).toBeVisible();
+            await expect(loginButton).toBeVisible();
+            await passwordInput.fill(ADMIN_PASSWORD);
+            await loginButton.click();
+        }
+
+        await page.goto('/admin.html');
 
         // 1. Confirm login success via toast or URL change first
         // This confirms the backend auth worked
@@ -165,97 +270,57 @@ test.describe('Checklist de Pruebas en Producción', () => {
     });
 
     // 3. Flujo de cita pública
-    test('3. Cita Pública - Carga de formulario', async ({ page }) => {
-        await page.goto('/index.html');
+    test('3. Cita Pública - Home muestra la ruta de reserva en mantenimiento', async ({
+        page,
+    }) => {
+        await page.goto(PUBLIC_HOME_PATH);
 
-        const appointmentForm = page.locator('#appointmentForm');
-        await expect(appointmentForm).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-v6-header]')).toBeVisible();
+        await expect(page.locator('[data-v6-news-strip]')).toContainText(
+            'Aunque la agenda web siga en pausa, su primer paso no tiene por que esperar.'
+        );
 
-        const serviceSelect = page
-            .locator('#serviceSelect, select[name="service"]')
-            .first();
-        const dateInput = page
-            .locator('#dateInput, input[name="date"]')
-            .first();
-        await expect(serviceSelect).toBeVisible();
-        await expect(dateInput).toBeVisible();
+        const bookingStatus = page.locator('[data-v6-booking-status]');
+        await expect(bookingStatus).toBeVisible();
+        await expect(bookingStatus).toContainText(
+            'Reserva online en mantenimiento'
+        );
+        await expect(
+            bookingStatus.getByRole('link', { name: 'Abrir telemedicina' })
+        ).toHaveAttribute('href', '/es/telemedicina/');
+
+        await expectLegacyPublicShellAbsent(page);
     });
 
-    test('3. Cita Pública - Flujo básico (mock)', async ({ page }) => {
-        await page.goto('/index.html');
+    test('3. Cita Pública - Telemedicina mantiene el fallback de reserva hacia servicios', async ({
+        page,
+    }) => {
+        await page.goto(PUBLIC_HOME_PATH);
 
-        const appointmentForm = page.locator('#appointmentForm');
-        await expect(appointmentForm).toBeVisible({ timeout: 15000 });
+        const bookingStatus = page.locator('[data-v6-booking-status]');
+        const telemedicineLink = bookingStatus.getByRole('link', {
+            name: 'Abrir telemedicina',
+        });
 
-        // Llenar formulario
-        const serviceSelect = page
-            .locator('#serviceSelect, select[name="service"]')
-            .first();
-        await serviceSelect.selectOption({ index: 1 });
+        await Promise.all([
+            page.waitForURL(/\/es\/telemedicina\/$/),
+            telemedicineLink.click(),
+        ]);
 
-        // Seleccionar doctor si existe el campo y es visible
-        const doctorSelect = page
-            .locator('#doctorSelect, select[name="doctor"]')
-            .first();
-        if (await doctorSelect.isVisible()) {
-            await doctorSelect.selectOption({ index: 1 });
-        }
+        await expect(page.locator('h1')).toContainText(
+            'Telemedicina dermatologica en Quito'
+        );
+        await expectLegacyPublicShellAbsent(page);
 
-        // Fecha futura
-        const dateInput = page.locator('#dateInput, input[name="date"]').first();
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 2); // 2 días en el futuro
-        await dateInput.fill(toLocalDateKey(futureDate));
-        await dateInput.dispatchEvent('change');
+        const telemedicineStatus = page.locator('[data-v6-booking-status]');
+        await expect(telemedicineStatus).toContainText(
+            'Reserva online en mantenimiento'
+        );
 
-        // Esperar horarios
-        // Esto puede variar según la implementación (select o botones)
-        await page.waitForTimeout(1500);
-
-        // Intentar seleccionar hora si aparece un select de hora
-        const timeSelect = page.locator('#timeSelect, select[name="time"]').first();
-        if (await timeSelect.isVisible()) {
-            // Seleccionar primera opcion habilitada y con valor real
-            const enabledValues = await timeSelect.evaluate((select) =>
-                Array.from(select.options)
-                    .filter(
-                        (option) =>
-                            !option.disabled &&
-                            option.value !== '' &&
-                            !option.hidden
-                    )
-                    .map((option) => option.value)
-            );
-
-            if (enabledValues.length > 0) {
-                await timeSelect.selectOption(enabledValues[0]);
-            }
-        }
-
-        // Llenar datos personales
-        await appointmentForm.locator('input[name="name"]').fill('Test Automático');
-        await appointmentForm
-            .locator('input[name="email"]')
-            .fill('test@example.com');
-        await appointmentForm.locator('input[name="phone"]').fill('0991234567');
-
-        // Checkbox privacidad
-        const privacy = appointmentForm.locator('input[name="privacyConsent"]');
-        if (await privacy.isVisible()) {
-            await privacy.check();
-        }
-
-        // Enviar (no hacemos submit real para no llenar la base de datos de basura en producción real sin querer,
-        // pero en test environment sí. El script asume entorno de pruebas).
-        // Si estamos en producción real, esto crearía una cita.
-        // Para el checklist, se pide verificar el flujo.
-
-        // Descomentar para probar el submit real:
-        /*
-    const submitBtn = page.locator('button[type="submit"]');
-    await submitBtn.click();
-    await expect(page.locator('.modal-success, .alert-success')).toBeVisible({ timeout: 10000 });
-    */
+        const servicesLink = telemedicineStatus.getByRole('link', {
+            name: 'Ver servicios',
+        });
+        await expect(servicesLink).toHaveAttribute('href', '/es/servicios/');
     });
 
     // 4. Validación de disponibilidad
@@ -273,23 +338,21 @@ test.describe('Checklist de Pruebas en Producción', () => {
     });
 
     // 5. Flujo de callback
-    test('5. Callback - Formulario existe', async ({ page }) => {
-        await page.goto('/index.html');
-        // Buscar formulario de callback (puede estar en un modal o sección)
-        // Asumimos un botón que abre el modal o una sección visible
-        // Buscamos inputs típicos de callback
-        const callbackInputs = page.locator(
-            'input[name="telefono"], input[name="phone"]'
-        );
-        // Verificar si hay algún formulario de "te llamamos"
-        // Esto depende de la UI específica
-        await expect(callbackInputs.first()).toBeVisible();
+    test('5. Contacto rápido - CTA de WhatsApp existe', async ({ page }) => {
+        await page.goto(PUBLIC_HOME_PATH);
+
+        const whatsappCta = page
+            .locator('[data-v6-header] a[href*="wa.me/"]')
+            .first();
+        await expect(whatsappCta).toBeVisible();
+        await expect(whatsappCta).toHaveAttribute('href', /wa\.me\/593/);
     });
 
     // 6. Flujo de reseñas
     test('6. Resenas - Carga correcta', async ({ page, request }) => {
         await skipIfPhpRuntimeMissing(test, request);
-        await page.goto('/index.html');
+        await page.goto(PUBLIC_HOME_PATH);
+        await expect(page.locator('[data-v6-header]')).toBeVisible();
         // Verificar que la sección de reseñas existe
         const reviewsSection = page.locator('#reviews, .reviews-section');
         if (await reviewsSection.isVisible()) {

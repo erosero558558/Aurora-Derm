@@ -5,6 +5,7 @@
 $domain = 'https://pielarmonia.com';
 $checks = [];
 $failures = 0;
+$diagnosticsToken = trim((string) (getenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN') ?: getenv('PIELARMONIA_CRON_SECRET') ?: ''));
 
 function check($name, $callback)
 {
@@ -27,13 +28,37 @@ function check($name, $callback)
     }
 }
 
-function fetch($url)
+function diagnostics_headers(): array
+{
+    global $diagnosticsToken;
+
+    $headers = [
+        'User-Agent: PielArmoniaGateCheck/1.0',
+    ];
+
+    if ($diagnosticsToken === '') {
+        return $headers;
+    }
+
+    $headerName = trim((string) (getenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER') ?: 'Authorization'));
+    $prefix = trim((string) (getenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX') ?: 'Bearer'));
+    $headerValue = $prefix !== '' ? ($prefix . ' ' . $diagnosticsToken) : $diagnosticsToken;
+    $headers[] = $headerName . ': ' . $headerValue;
+
+    return $headers;
+}
+
+function fetch($url, array $headers = [])
 {
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'PielArmoniaGateCheck/1.0');
+    if ($headers === []) {
+        curl_setopt($ch, CURLOPT_USERAGENT, 'PielArmoniaGateCheck/1.0');
+    } else {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    }
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
@@ -46,14 +71,18 @@ function fetch($url)
     return ['code' => $httpCode, 'body' => $response];
 }
 
-function fetchHeaders($url)
+function fetchHeaders($url, array $headers = [])
 {
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, true);
     curl_setopt($ch, CURLOPT_NOBODY, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'PielArmoniaGateCheck/1.0');
+    if ($headers === []) {
+        curl_setopt($ch, CURLOPT_USERAGENT, 'PielArmoniaGateCheck/1.0');
+    } else {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    }
     $response = curl_exec($ch);
     $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     $headers = substr($response, 0, $headerSize);
@@ -91,7 +120,9 @@ check('Security Headers', function () use ($domain) {
 
 // 3. Check Health API
 check('Health API (200 OK & JSON)', function () use ($domain) {
-    $res = fetch($domain . '/api.php?resource=health');
+    global $diagnosticsToken;
+    $resource = $diagnosticsToken !== '' ? 'health-diagnostics' : 'health';
+    $res = fetch($domain . '/api.php?resource=' . $resource, diagnostics_headers());
     if ($res['code'] !== 200) {
         echo " (HTTP " . $res['code'] . ") ";
         return false;
@@ -102,8 +133,17 @@ check('Health API (200 OK & JSON)', function () use ($domain) {
         return false;
     }
 
-    // Strict checks
-    $requiredFields = ['timingMs', 'version', 'dataDirWritable', 'storeEncrypted', 'checks'];
+    $requiredFields = ['timingMs', 'version', 'dataDirWritable'];
+    if ($resource === 'health-diagnostics') {
+        $requiredFields = array_merge($requiredFields, [
+            'storeEncrypted',
+            'storeEncryptionConfigured',
+            'storeEncryptionRequired',
+            'storeEncryptionStatus',
+            'storeEncryptionCompliant',
+            'checks',
+        ]);
+    }
     foreach ($requiredFields as $f) {
         if (!isset($json[$f])) {
             echo " (Missing field: $f) ";
@@ -111,7 +151,7 @@ check('Health API (200 OK & JSON)', function () use ($domain) {
         }
     }
 
-    if (!isset($json['checks']['backup']['ok'])) {
+    if ($resource === 'health-diagnostics' && !isset($json['checks']['backup']['ok'])) {
         echo " (Backup check missing) ";
         return false;
     }

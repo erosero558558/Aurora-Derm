@@ -17,7 +17,12 @@ class AuthSessionTest extends TestCase
         putenv('PIELARMONIA_ADMIN_PASSWORD');
         putenv('PIELARMONIA_ADMIN_PASSWORD_HASH');
         putenv('PIELARMONIA_ADMIN_2FA_SECRET');
+        putenv('PIELARMONIA_ADMIN_EMAIL');
         putenv('PIELARMONIA_OPERATOR_AUTH_MODE');
+        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST');
+        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWED_EMAILS');
+        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
+        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET');
     }
 
     protected function tearDown(): void
@@ -26,19 +31,25 @@ class AuthSessionTest extends TestCase
         putenv('PIELARMONIA_ADMIN_PASSWORD');
         putenv('PIELARMONIA_ADMIN_PASSWORD_HASH');
         putenv('PIELARMONIA_ADMIN_2FA_SECRET');
+        putenv('PIELARMONIA_ADMIN_EMAIL');
         putenv('PIELARMONIA_OPERATOR_AUTH_MODE');
+        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST');
+        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWED_EMAILS');
+        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
+        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET');
     }
 
-    public function testVerifyAdminPasswordDefault(): void
+    public function testVerifyAdminPasswordFailsClosedWhenUnconfigured(): void
     {
-        // Default fallback is 'admin123' if env vars are missing
-        $this->assertTrue(verify_admin_password('admin123'));
+        $this->assertFalse(admin_password_is_configured());
+        $this->assertFalse(verify_admin_password('admin123'));
         $this->assertFalse(verify_admin_password('wrong'));
     }
 
     public function testVerifyAdminPasswordEnvPlain(): void
     {
         putenv('PIELARMONIA_ADMIN_PASSWORD=secret123');
+        $this->assertTrue(admin_password_is_configured());
         $this->assertTrue(verify_admin_password('secret123'));
         $this->assertFalse(verify_admin_password('admin123'));
     }
@@ -48,6 +59,7 @@ class AuthSessionTest extends TestCase
         $hash = password_hash('hashed_secret', PASSWORD_DEFAULT);
         putenv('PIELARMONIA_ADMIN_PASSWORD_HASH=' . $hash);
 
+        $this->assertTrue(admin_password_is_configured());
         $this->assertTrue(verify_admin_password('hashed_secret'));
         $this->assertFalse(verify_admin_password('wrong_secret'));
     }
@@ -72,5 +84,24 @@ class AuthSessionTest extends TestCase
     {
         $this->assertSame('disabled', operator_auth_mode());
         $this->assertFalse(operator_auth_is_enabled());
+    }
+
+    public function testOperatorAuthAllowlistFallsBackToAdminEmail(): void
+    {
+        putenv('PIELARMONIA_ADMIN_EMAIL=doctor@example.com');
+
+        $this->assertSame(['doctor@example.com'], operator_auth_allowed_emails());
+    }
+
+    public function testOperatorAuthConfigurationSnapshotReportsMissingSetup(): void
+    {
+        putenv('PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt');
+
+        $snapshot = operator_auth_configuration_snapshot();
+
+        $this->assertTrue($snapshot['enabled']);
+        $this->assertFalse($snapshot['configured']);
+        $this->assertContains('bridge_token', $snapshot['missing']);
+        $this->assertContains('allowlist', $snapshot['missing']);
     }
 }

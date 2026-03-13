@@ -249,6 +249,20 @@ if (!function_exists('public_sync_compute_head_drift')) {
     }
 }
 
+if (!function_exists('public_sync_has_dirty_path_evidence')) {
+    /**
+     * @param array<int,string> $dirtyPathsSample
+     * @param array<int,string> $dirtyPaths
+     */
+    function public_sync_has_dirty_path_evidence(
+        int $dirtyPathsCount,
+        array $dirtyPathsSample,
+        array $dirtyPaths
+    ): bool {
+        return $dirtyPathsCount > 0 || count($dirtyPathsSample) > 0 || count($dirtyPaths) > 0;
+    }
+}
+
 if (!function_exists('public_sync_compute_telemetry_gap')) {
     /**
      * @param array<int,string> $dirtyPathsSample
@@ -307,6 +321,58 @@ if (!function_exists('public_sync_compute_failure_reason')) {
     }
 }
 
+if (!function_exists('public_sync_compute_repo_hygiene_issue')) {
+    /**
+     * @param array<int,string> $dirtyPathsSample
+     * @param array<int,string> $dirtyPaths
+     */
+    function public_sync_compute_repo_hygiene_issue(
+        string $failureReason,
+        bool $headDrift,
+        bool $telemetryGap,
+        int $dirtyPathsCount,
+        array $dirtyPathsSample,
+        array $dirtyPaths
+    ): bool {
+        return $failureReason === 'working_tree_dirty' &&
+            !$headDrift &&
+            !$telemetryGap &&
+            public_sync_has_dirty_path_evidence($dirtyPathsCount, $dirtyPathsSample, $dirtyPaths);
+    }
+}
+
+if (!function_exists('public_sync_compute_operational_health')) {
+    function public_sync_compute_operational_health(
+        bool $configured,
+        bool $statusExists,
+        string $state,
+        ?int $ageSeconds,
+        int $expectedMaxLagSeconds,
+        bool $headDrift,
+        bool $telemetryGap,
+        bool $repoHygieneIssue
+    ): bool {
+        if (
+            !$configured ||
+            !$statusExists ||
+            $state === '' ||
+            $state === 'unknown' ||
+            $ageSeconds === null ||
+            $ageSeconds > $expectedMaxLagSeconds ||
+            $headDrift ||
+            $telemetryGap
+        ) {
+            return false;
+        }
+
+        if ($state === 'failed' && !$repoHygieneIssue) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
 if (!function_exists('public_sync_health_snapshot')) {
     /**
      * @return array<string,mixed>
@@ -344,7 +410,7 @@ if (!function_exists('public_sync_health_snapshot')) {
             }
         }
 
-        $healthy = false;
+        $reportedHealthy = false;
         if (
             (bool) ($config['configured'] ?? false) &&
             (bool) ($statusEnvelope['exists'] ?? false) &&
@@ -353,11 +419,11 @@ if (!function_exists('public_sync_health_snapshot')) {
             $ageSeconds !== null &&
             $ageSeconds <= $expectedMaxLagSeconds
         ) {
-            $healthy = true;
+            $reportedHealthy = true;
         }
 
         $telemetryGap = public_sync_compute_telemetry_gap(
-            $healthy,
+            $reportedHealthy,
             $lastErrorMessage,
             $currentHead,
             $remoteHead,
@@ -367,12 +433,30 @@ if (!function_exists('public_sync_health_snapshot')) {
         );
         $failureReason = public_sync_compute_failure_reason([
             'configured' => (bool) ($config['configured'] ?? false),
-            'healthy' => $healthy,
+            'healthy' => $reportedHealthy,
             'state' => $state !== '' ? $state : 'unknown',
             'ageSeconds' => $ageSeconds,
             'expectedMaxLagSeconds' => $expectedMaxLagSeconds,
             'lastErrorMessage' => $lastErrorMessage,
         ]);
+        $repoHygieneIssue = public_sync_compute_repo_hygiene_issue(
+            $failureReason,
+            $headDrift,
+            $telemetryGap,
+            $dirtyPathsCount,
+            $dirtyPathsSample,
+            $dirtyPaths
+        );
+        $operationallyHealthy = public_sync_compute_operational_health(
+            (bool) ($config['configured'] ?? false),
+            (bool) ($statusEnvelope['exists'] ?? false),
+            $state !== '' ? $state : 'unknown',
+            $ageSeconds,
+            $expectedMaxLagSeconds,
+            $headDrift,
+            $telemetryGap,
+            $repoHygieneIssue
+        );
 
         return [
             'configured' => (bool) ($config['configured'] ?? false),
@@ -386,7 +470,9 @@ if (!function_exists('public_sync_health_snapshot')) {
             'repoPath' => $repoPath,
             'branch' => $branch,
             'state' => $state !== '' ? $state : 'unknown',
-            'healthy' => $healthy,
+            'healthy' => $operationallyHealthy,
+            'operationallyHealthy' => $operationallyHealthy,
+            'repoHygieneIssue' => $repoHygieneIssue,
             'ageSeconds' => $ageSeconds,
             'expectedMaxLagSeconds' => $expectedMaxLagSeconds,
             'lastCheckedAt' => $lastCheckedAt,

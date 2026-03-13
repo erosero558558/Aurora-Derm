@@ -1,12 +1,10 @@
 import { getState, updateState } from '../../shared/core/store.js';
-import { hydrateAgentSession } from '../../shared/modules/agent.js';
 import { createToast } from '../../shared/ui/render.js';
 import {
-    isOperatorAuthMode,
+    checkAuthStatus,
     loginWith2FA,
     loginWithPassword,
-    pollOperatorAuthStatus,
-    startOperatorAuth,
+    startOpenClawLogin,
 } from '../../shared/modules/auth.js';
 import { syncQueueAutoRefresh } from '../../shared/modules/queue.js';
 import {
@@ -16,109 +14,193 @@ import {
     setLogin2FAVisibility,
     setLoginFeedback,
     setLoginMode,
-    setOperatorAuthLoginState,
     setLoginSubmittingState,
+    setOpenClawChallenge,
     showDashboardView,
 } from '../../ui/frame.js';
 import { refreshDataAndRender } from './rendering.js';
 
-let operatorAuthPollPromise = null;
+const OPENCLAW_TERMINAL_STATUSES = new Set([
+    'anonymous',
+    'operator_auth_not_configured',
+    'openclaw_no_logueado',
+    'email_no_permitido',
+    'challenge_expirado',
+    'helper_no_disponible',
+]);
 
-function resolveOperatorAuthFeedback(auth) {
-    const status = String(auth?.status || 'anonymous').trim();
+let openClawPollTimer = 0;
+let openClawPolling = false;
+
+function normalizeAuthStatus(status) {
+    return String(status || 'anonymous')
+        .trim()
+        .toLowerCase();
+}
+
+function clearOpenClawPollTimer() {
+    if (openClawPollTimer) {
+        window.clearTimeout(openClawPollTimer);
+        openClawPollTimer = 0;
+    }
+}
+
+function openHelperWindow(helperUrl) {
+    const url = String(helperUrl || '').trim();
+    if (!url) {
+        return false;
+    }
+
+    try {
+        const popup = window.open(url, '_blank', 'noopener,noreferrer');
+        return Boolean(popup);
+    } catch (_error) {
+        return false;
+    }
+}
+
+function buildOpenClawFeedback(auth) {
+    const status = normalizeAuthStatus(auth.status);
+    const challenge = auth.challenge || null;
 
     switch (status) {
         case 'pending':
             return {
                 tone: 'warning',
-                title: 'Esperando confirmacion en OpenClaw',
-                message:
-                    'Completa el login de ChatGPT/OpenAI en OpenClaw y el panel se autenticara en cuanto reciba la confirmacion.',
+                title: 'Challenge activo',
+                message: challenge?.manualCode
+                    ? `Confirma el codigo ${challenge.manualCode} desde el helper local y deja esta pantalla abierta.`
+                    : 'Esperando a que OpenClaw confirme la identidad del operador.',
+            };
+        case 'autenticado':
+        case 'authenticated':
+            return {
+                tone: 'success',
+                title: 'Acceso concedido',
+                message: auth.operator?.email
+                    ? `Sesion autorizada para ${auth.operator.email}. Cargando centro operativo.`
+                    : 'Sesion autorizada por OpenClaw. Cargando centro operativo.',
             };
         case 'openclaw_no_logueado':
             return {
                 tone: 'warning',
-                title: 'OpenClaw necesita tu sesion',
+                title: 'Completa tu sesion en OpenClaw',
                 message:
-                    auth?.error ||
-                    'Inicia sesion en OpenClaw con tu perfil autorizado y vuelve a generar el enlace.',
-            };
-        case 'helper_no_disponible':
-            return {
-                tone: 'danger',
-                title: 'No se pudo completar el bridge',
-                message:
-                    auth?.error ||
-                    'El helper local de OpenClaw no esta disponible en este equipo.',
-            };
-        case 'challenge_expirado':
-            return {
-                tone: 'warning',
-                title: 'El enlace expiro',
-                message:
-                    auth?.error ||
-                    'Genera un nuevo challenge y completa el login sin cerrar esta pantalla.',
+                    auth.lastError ||
+                    'El helper local necesita una sesion activa de OpenClaw antes de continuar.',
             };
         case 'email_no_permitido':
             return {
                 tone: 'danger',
-                title: 'Email no autorizado',
+                title: 'Email no permitido',
                 message:
-                    auth?.error ||
-                    'El correo autenticado en OpenClaw no esta permitido para operar este panel.',
+                    auth.lastError ||
+                    'La identidad resuelta por OpenClaw no esta autorizada para operar este panel.',
+            };
+        case 'challenge_expirado':
+            return {
+                tone: 'warning',
+                title: 'Challenge expirado',
+                message:
+                    auth.lastError ||
+                    'El codigo ya expiro. Genera un nuevo challenge para continuar.',
+            };
+        case 'helper_no_disponible':
+            return {
+                tone: 'danger',
+                title: 'Helper local no disponible',
+                message:
+                    auth.lastError ||
+                    'No se pudo contactar al helper local de OpenClaw en este equipo.',
             };
         case 'operator_auth_not_configured':
             return {
                 tone: 'danger',
-                title: 'OpenClaw no esta configurado',
+                title: 'OpenClaw no configurado',
                 message:
-                    auth?.error ||
-                    'Falta configuracion del bridge local para completar el acceso.',
+                    auth.lastError ||
+                    'Este entorno aun no tiene configurado el acceso delegado por OpenClaw para el consultorio.',
             };
         default:
             return {
                 tone: 'neutral',
-                title: 'Proteccion activa',
+                title: 'Sesion local OpenClaw',
                 message:
-                    'Abre OpenClaw para validar tu sesion sin usar una clave local en este panel.',
+                    'Genera un challenge para validar la identidad del operador desde este laptop.',
             };
     }
 }
 
-function syncLoginSurface(auth = getState().auth) {
-    if (isOperatorAuthMode(auth)) {
-        setLoginMode(auth.mode);
-        setLogin2FAVisibility(false);
-        resetLoginForm();
-        setOperatorAuthLoginState(auth);
-        setLoginFeedback(resolveOperatorAuthFeedback(auth));
+function buildLegacyFeedback(auth) {
+    const status = normalizeAuthStatus(auth.status);
+
+    if (auth.requires2FA) {
+        return {
+            tone: 'warning',
+            title: 'Codigo 2FA requerido',
+            message:
+                'El backend valido la clave. Ingresa ahora el codigo de seis digitos.',
+        };
+    }
+
+    if (status === 'legacy_auth_not_configured') {
+        return {
+            tone: 'danger',
+            title: 'Acceso no configurado',
+            message:
+                auth.lastError ||
+                'El acceso por clave no esta configurado en este entorno.',
+        };
+    }
+
+    return {
+        tone: 'neutral',
+        title: 'Acceso de respaldo',
+        message:
+            'Usa tu clave solo si necesitas entrar como respaldo al nucleo interno.',
+    };
+}
+
+function syncLoginSurfaceFromState() {
+    const auth = getState().auth;
+    const mode =
+        String(auth.mode || 'legacy_password').trim() || 'legacy_password';
+    const status = normalizeAuthStatus(auth.status);
+
+    setLoginMode(mode);
+
+    if (mode === 'openclaw_chatgpt') {
+        setOpenClawChallenge(auth.challenge, {
+            status,
+            error: auth.lastError,
+        });
+        setLoginSubmittingState(false, { mode, status });
+        setLoginFeedback(buildOpenClawFeedback(auth));
         return;
     }
 
-    setLoginMode('legacy_password');
-    setOperatorAuthLoginState({ status: 'anonymous', challenge: null });
     setLogin2FAVisibility(Boolean(auth.requires2FA));
-    setLoginFeedback({
-        tone: auth.requires2FA ? 'warning' : 'neutral',
-        title: auth.requires2FA ? 'Codigo 2FA requerido' : 'Proteccion activa',
-        message: auth.requires2FA
-            ? 'El backend ya valido la clave. Falta ingresar el codigo de seis digitos.'
-            : 'Usa tu clave de administrador para acceder al centro operativo.',
-    });
+    setLoginSubmittingState(false, { mode, status });
+    setLoginFeedback(buildLegacyFeedback(auth));
 }
 
-async function finalizeInteractiveLogin(toastMessage = 'Sesion iniciada') {
-    setLoginFeedback({
-        tone: 'success',
-        title: 'Acceso concedido',
-        message: 'Sesion autenticada. Cargando centro operativo.',
-    });
+function scheduleOpenClawPoll(delayMs = 1200) {
+    clearOpenClawPollTimer();
+    openClawPollTimer = window.setTimeout(
+        () => {
+            void pollOpenClawStatus();
+        },
+        Math.max(600, Number(delayMs || 1200))
+    );
+}
+
+async function finishAuthenticatedLogin(toastMessage = 'Sesion iniciada') {
+    clearOpenClawPollTimer();
     showDashboardView();
     hideCommandPalette();
     setLogin2FAVisibility(false);
     resetLoginForm({ clearPassword: true });
     await refreshDataAndRender(false);
-    await hydrateAgentSession();
     syncQueueAutoRefresh({
         immediate: getState().ui.activeSection === 'queue',
         reason: 'login',
@@ -126,55 +208,110 @@ async function finalizeInteractiveLogin(toastMessage = 'Sesion iniciada') {
     createToast(toastMessage, 'success');
 }
 
-function ensureOperatorAuthPolling() {
-    const auth = getState().auth;
-    if (
-        operatorAuthPollPromise ||
-        !isOperatorAuthMode(auth) ||
-        auth.authenticated ||
-        String(auth.status || '') !== 'pending'
-    ) {
-        return operatorAuthPollPromise;
+async function pollOpenClawStatus() {
+    if (openClawPolling) {
+        return;
     }
 
-    operatorAuthPollPromise = pollOperatorAuthStatus({
-        onUpdate: (snapshot) => {
-            syncLoginSurface(snapshot);
-        },
-    })
-        .then(async (snapshot) => {
-            operatorAuthPollPromise = null;
-            syncLoginSurface(snapshot);
-            if (snapshot.authenticated) {
-                await finalizeInteractiveLogin('Sesion iniciada con OpenClaw');
-            }
-            return snapshot;
-        })
-        .catch((error) => {
-            operatorAuthPollPromise = null;
-            setLoginFeedback({
-                tone: 'danger',
-                title: 'No se pudo iniciar sesion',
-                message:
-                    error?.message ||
-                    'No se pudo consultar el estado del login OpenClaw.',
-            });
-            createToast(
-                error?.message || 'No se pudo consultar el estado de OpenClaw',
-                'error'
-            );
-            return getState().auth;
-        });
+    openClawPolling = true;
+    try {
+        await checkAuthStatus();
+    } finally {
+        openClawPolling = false;
+    }
 
-    return operatorAuthPollPromise;
+    const auth = getState().auth;
+    syncLoginSurfaceFromState();
+
+    if (auth.authenticated) {
+        await finishAuthenticatedLogin('Sesion iniciada con OpenClaw');
+        return;
+    }
+
+    if (String(auth.mode || '') !== 'openclaw_chatgpt') {
+        clearOpenClawPollTimer();
+        return;
+    }
+
+    const status = normalizeAuthStatus(auth.status);
+    if (status === 'pending' && auth.challenge) {
+        scheduleOpenClawPoll(auth.challenge.pollAfterMs || 1200);
+        return;
+    }
+
+    if (OPENCLAW_TERMINAL_STATUSES.has(status)) {
+        clearOpenClawPollTimer();
+    }
 }
 
-export function primeLoginSurface(auth = getState().auth) {
-    setLoginSubmittingState(false);
-    syncLoginSurface(auth);
-    if (isOperatorAuthMode(auth) && String(auth.status || '') === 'pending') {
-        void ensureOperatorAuthPolling();
+async function handleOpenClawSubmit() {
+    clearOpenClawPollTimer();
+    setLoginSubmittingState(true, {
+        mode: 'openclaw_chatgpt',
+        status: getState().auth.status,
+    });
+    setLoginFeedback({
+        tone: 'neutral',
+        title: 'Preparando challenge',
+        message:
+            'Solicitando un codigo temporal al backend y abriendo el helper local.',
+    });
+
+    try {
+        const result = await startOpenClawLogin();
+        const auth = getState().auth;
+        syncLoginSurfaceFromState();
+
+        if (result.authenticated || auth.authenticated) {
+            await finishAuthenticatedLogin('Sesion iniciada con OpenClaw');
+            return;
+        }
+
+        const helperOpened = openHelperWindow(result.challenge?.helperUrl);
+        if (!helperOpened && result.challenge?.helperUrl) {
+            createToast(
+                'Abre el helper local desde el enlace del challenge.',
+                'warning'
+            );
+        }
+
+        if (
+            normalizeAuthStatus(result.status) === 'pending' &&
+            result.challenge
+        ) {
+            scheduleOpenClawPoll(result.challenge.pollAfterMs || 1200);
+            createToast('Challenge OpenClaw emitido', 'info');
+        }
+    } catch (error) {
+        updateState((state) => ({
+            ...state,
+            auth: {
+                ...state.auth,
+                lastError:
+                    error instanceof Error
+                        ? error.message
+                        : 'No se pudo iniciar el flujo OpenClaw.',
+            },
+        }));
+        syncLoginSurfaceFromState();
+        createToast(
+            error?.message || 'No se pudo iniciar el flujo OpenClaw',
+            'error'
+        );
+    } finally {
+        const auth = getState().auth;
+        setLoginSubmittingState(false, {
+            mode: auth.mode || 'openclaw_chatgpt',
+            status: auth.status,
+        });
     }
+}
+
+export function primeLoginSurface() {
+    if (!getState().auth.requires2FA) {
+        resetLoginForm();
+    }
+    syncLoginSurfaceFromState();
 }
 
 export function resetTwoFactorStage() {
@@ -183,6 +320,7 @@ export function resetTwoFactorStage() {
         auth: {
             ...state.auth,
             requires2FA: false,
+            status: 'anonymous',
         },
     }));
 
@@ -190,7 +328,7 @@ export function resetTwoFactorStage() {
     resetLoginForm();
     setLoginFeedback({
         tone: 'neutral',
-        title: 'Ingreso protegido',
+        title: 'Acceso de respaldo',
         message: 'Volviste al paso de clave. Puedes reintentar el acceso.',
     });
     focusLoginField('password');
@@ -200,8 +338,8 @@ export async function handleLoginSubmit(event) {
     event.preventDefault();
 
     const state = getState();
-    if (isOperatorAuthMode(state.auth)) {
-        await startOperatorAuthFlow(false);
+    if (String(state.auth.mode || '') === 'openclaw_chatgpt') {
+        await handleOpenClawSubmit();
         return;
     }
 
@@ -213,7 +351,12 @@ export async function handleLoginSubmit(event) {
     const code = codeInput instanceof HTMLInputElement ? codeInput.value : '';
 
     try {
-        setLoginSubmittingState(true);
+        setLoginSubmittingState(true, {
+            mode: 'legacy_password',
+            status: state.auth.requires2FA
+                ? 'two_factor_required'
+                : 'anonymous',
+        });
         setLoginFeedback({
             tone: state.auth.requires2FA ? 'warning' : 'neutral',
             title: state.auth.requires2FA
@@ -241,7 +384,12 @@ export async function handleLoginSubmit(event) {
             }
         }
 
-        await finalizeInteractiveLogin('Sesion iniciada');
+        setLoginFeedback({
+            tone: 'success',
+            title: 'Acceso concedido',
+            message: 'Sesion autenticada. Cargando centro operativo.',
+        });
+        await finishAuthenticatedLogin('Sesion iniciada');
     } catch (error) {
         setLoginFeedback({
             tone: 'danger',
@@ -253,68 +401,36 @@ export async function handleLoginSubmit(event) {
         focusLoginField(getState().auth.requires2FA ? '2fa' : 'password');
         createToast(error?.message || 'No se pudo iniciar sesion', 'error');
     } finally {
-        setLoginSubmittingState(false);
-    }
-}
-
-export async function startOperatorAuthFlow(forceNew = false) {
-    try {
-        setLoginSubmittingState(true);
-        setLoginFeedback({
-            tone: 'neutral',
-            title: forceNew ? 'Generando nuevo enlace' : 'Abriendo OpenClaw',
-            message:
-                'Preparando el challenge local para validar tu sesion de operador.',
+        setLoginSubmittingState(false, {
+            mode: 'legacy_password',
+            status: getState().auth.requires2FA
+                ? 'two_factor_required'
+                : 'anonymous',
         });
-
-        const snapshot = await startOperatorAuth({
-            forceNew,
-            openHelper: true,
-        });
-        syncLoginSurface(snapshot);
-
-        if (snapshot.authenticated) {
-            await finalizeInteractiveLogin('Sesion iniciada con OpenClaw');
-            return snapshot;
-        }
-
-        if (String(snapshot.status || '') === 'pending') {
-            createToast(
-                snapshot.helperUrlOpened
-                    ? 'OpenClaw listo para confirmar'
-                    : 'Usa el enlace manual de OpenClaw si la ventana no se abrio',
-                snapshot.helperUrlOpened ? 'info' : 'warning'
-            );
-            void ensureOperatorAuthPolling();
-            return snapshot;
-        }
-
-        createToast(
-            snapshot.error || 'No se pudo iniciar el flujo OpenClaw',
-            'warning'
-        );
-        return snapshot;
-    } catch (error) {
-        setLoginFeedback({
-            tone: 'danger',
-            title: 'No se pudo iniciar sesion',
-            message:
-                error?.message ||
-                'No se pudo abrir el flujo OpenClaw para este panel.',
-        });
-        createToast(
-            error?.message || 'No se pudo abrir el flujo OpenClaw',
-            'error'
-        );
-        return getState().auth;
-    } finally {
-        setLoginSubmittingState(false);
     }
 }
 
 export async function bootAuthenticatedUi() {
+    clearOpenClawPollTimer();
     showDashboardView();
     hideCommandPalette();
     await refreshDataAndRender(false);
-    await hydrateAgentSession();
+}
+
+export function resumeOpenClawPolling() {
+    const auth = getState().auth;
+    if (
+        auth.authenticated ||
+        String(auth.mode || '') !== 'openclaw_chatgpt' ||
+        normalizeAuthStatus(auth.status) !== 'pending' ||
+        !auth.challenge
+    ) {
+        return;
+    }
+
+    scheduleOpenClawPoll(auth.challenge.pollAfterMs || 1200);
+}
+
+export function stopOpenClawPolling() {
+    clearOpenClawPollTimer();
 }

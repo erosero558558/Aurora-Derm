@@ -217,7 +217,9 @@ async function collectTaskCreateInteractiveFlags(
 
         if (!String(merged.template || '').trim()) {
             const answer = (
-                await askFn('Template (docs|bugfix|critical, enter=none): ')
+                await askFn(
+                    'Template (docs|bugfix|critical|runtime, enter=none): '
+                )
             ).trim();
             if (answer) merged.template = answer;
         }
@@ -282,6 +284,13 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
         options.currentDate || (() => new Date().toISOString().slice(0, 10));
     const allowedTaskExecutors = options.allowedTaskExecutors || new Set();
     const allowedStatuses = options.allowedStatuses || new Set();
+    const allowedCodexInstances = options.allowedCodexInstances || new Set();
+    const allowedDomainLanes = options.allowedDomainLanes || new Set();
+    const allowedLaneLocks = options.allowedLaneLocks || new Set();
+    const allowedProviderModes = options.allowedProviderModes || new Set();
+    const allowedRuntimeSurfaces = options.allowedRuntimeSurfaces || new Set();
+    const allowedRuntimeTransports =
+        options.allowedRuntimeTransports || new Set();
 
     if (!rawTask || typeof rawTask !== 'object') {
         throw new Error(
@@ -310,6 +319,18 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
             .trim()
             .toLowerCase(),
         cross_domain: Boolean(rawTask.cross_domain),
+        provider_mode: String(rawTask.provider_mode || '')
+            .trim()
+            .toLowerCase(),
+        runtime_surface: String(rawTask.runtime_surface || '')
+            .trim()
+            .toLowerCase(),
+        runtime_transport: String(rawTask.runtime_transport || '')
+            .trim()
+            .toLowerCase(),
+        runtime_last_transport: String(rawTask.runtime_last_transport || '')
+            .trim()
+            .toLowerCase(),
         files: Array.isArray(rawTask.files)
             ? rawTask.files.map((v) => String(v || '').trim()).filter(Boolean)
             : [],
@@ -351,10 +372,20 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
         task.codex_instance =
             task.domain_lane === 'frontend_content'
                 ? 'codex_frontend'
-                : 'codex_backend_ops';
+                : task.domain_lane === 'transversal_runtime'
+                  ? 'codex_transversal'
+                  : 'codex_backend_ops';
     }
     if (!task.lane_lock) {
         task.lane_lock = task.cross_domain ? 'handoff_allowed' : 'strict';
+    }
+    if (
+        !task.provider_mode &&
+        (task.runtime_surface ||
+            task.runtime_transport ||
+            task.runtime_last_transport)
+    ) {
+        task.provider_mode = 'openclaw_chatgpt';
     }
 
     if (!/^AG-\d+$/.test(task.id)) {
@@ -379,6 +410,63 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
     if (allowedStatuses.size > 0 && !allowedStatuses.has(task.status)) {
         throw new Error(
             `task create --apply: status invalido (${task.status})`
+        );
+    }
+    if (
+        allowedCodexInstances.size > 0 &&
+        !allowedCodexInstances.has(task.codex_instance)
+    ) {
+        throw new Error(
+            `task create --apply: codex_instance invalido (${task.codex_instance})`
+        );
+    }
+    if (
+        allowedDomainLanes.size > 0 &&
+        !allowedDomainLanes.has(task.domain_lane)
+    ) {
+        throw new Error(
+            `task create --apply: domain_lane invalido (${task.domain_lane})`
+        );
+    }
+    if (allowedLaneLocks.size > 0 && !allowedLaneLocks.has(task.lane_lock)) {
+        throw new Error(
+            `task create --apply: lane_lock invalido (${task.lane_lock})`
+        );
+    }
+    if (
+        task.provider_mode &&
+        allowedProviderModes.size > 0 &&
+        !allowedProviderModes.has(task.provider_mode)
+    ) {
+        throw new Error(
+            `task create --apply: provider_mode invalido (${task.provider_mode})`
+        );
+    }
+    if (
+        task.runtime_surface &&
+        allowedRuntimeSurfaces.size > 0 &&
+        !allowedRuntimeSurfaces.has(task.runtime_surface)
+    ) {
+        throw new Error(
+            `task create --apply: runtime_surface invalido (${task.runtime_surface})`
+        );
+    }
+    if (
+        task.runtime_transport &&
+        allowedRuntimeTransports.size > 0 &&
+        !allowedRuntimeTransports.has(task.runtime_transport)
+    ) {
+        throw new Error(
+            `task create --apply: runtime_transport invalido (${task.runtime_transport})`
+        );
+    }
+    if (
+        task.runtime_last_transport &&
+        allowedRuntimeTransports.size > 0 &&
+        !allowedRuntimeTransports.has(task.runtime_last_transport)
+    ) {
+        throw new Error(
+            `task create --apply: runtime_last_transport invalido (${task.runtime_last_transport})`
         );
     }
     if (!['low', 'medium', 'high'].includes(task.risk)) {

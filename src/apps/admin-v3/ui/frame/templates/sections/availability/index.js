@@ -8,6 +8,7 @@ export function renderAvailabilitySection() {
             <div class="sony-panel availability-container">
                 ${renderAvailabilityHeader()}
                 ${renderAvailabilityStatusRow()}
+                <div id="availabilityReviewContext" class="appointments-review-context availability-review-context is-hidden"></div>
                 <div id="availabilityCalendar" class="availability-calendar-grid"></div>
                 ${renderAvailabilityDetailGrid()}
             </div>

@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
 
 test.use({
     serviceWorkers: 'block',
@@ -25,13 +26,7 @@ async function setupVisualMocks(page) {
     const upcoming = new Date();
     upcoming.setDate(upcoming.getDate() + 1);
 
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
-        jsonResponse(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_test_token',
-        })
-    );
+    await installLegacyAdminAuthMock(page);
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
@@ -167,10 +162,9 @@ test.describe('Admin sony_v3 visual structure', () => {
             page.locator('[data-admin-workbench]').first()
         ).toBeVisible();
         await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
-        await expect(page.locator('#dashboardAdvancedAnalytics')).not.toHaveJSProperty(
-            'open',
-            true
-        );
+        await expect(
+            page.locator('#dashboardAdvancedAnalytics')
+        ).not.toHaveJSProperty('open', true);
         await expect(page.locator('.admin-quick-nav-item')).toHaveCount(0);
 
         const bgToken = await page.evaluate(() =>

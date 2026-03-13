@@ -15,7 +15,7 @@ class OperatorAuthController
         $payload = operator_auth_create_challenge();
         $status = match ((string) ($payload['status'] ?? '')) {
             'pending' => 202,
-            'operator_auth_not_configured' => 503,
+            'operator_auth_not_configured' => 200,
             'operator_auth_storage_error' => 500,
             default => 400,
         };
@@ -28,11 +28,6 @@ class OperatorAuthController
         start_secure_session();
 
         $payload = operator_auth_status_payload();
-        $status = (string) ($payload['status'] ?? '');
-        if ($status === 'operator_auth_not_configured') {
-            json_response($payload, 503);
-        }
-
         json_response($payload);
     }
 

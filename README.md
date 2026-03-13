@@ -3,6 +3,11 @@
 Repositorio principal de la web publica, panel admin, backend PHP y
 gobernanza operativa de Piel en Armonia.
 
+## Foco actual
+
+- Nucleo interno de consultorio: `turnero + acceso OpenClaw + historias clinicas`
+- La web publica queda en pausa funcional; solo recibe fixes criticos, seguridad y mantenimiento minimo.
+
 ## Estado canonico
 
 - Web publica: Astro V6 + `content/public-v6/**`
@@ -16,6 +21,8 @@ gobernanza operativa de Piel en Armonia.
 - `docs/OPERATIONS_INDEX.md`
 - `docs/LEADOPS_OPENCLAW.md`
 - `docs/public-v6-canonical-source.md`
+- `docs/RUNTIME_ARTIFACT_POLICY.md`
+- `docs/BRANCH_SLICING_GUARDRAILS.md`
 - `docs/ADMIN-UI-ROLLOUT.md`
 - `docs/LOCAL_SERVER.md`
 - `docs/CONTRIBUTING.md`
@@ -55,7 +62,7 @@ Notas de testing local:
 Variable minima recomendada:
 
 ```powershell
-$env:PIELARMONIA_ADMIN_PASSWORD = "admin123"
+$env:PIELARMONIA_ADMIN_PASSWORD = "tu-clave-segura"
 ```
 
 Overrides utiles para tooling local:
@@ -86,6 +93,9 @@ Higiene local:
 - `npm run build:public:v6`
 - `npm run check:public:v6:artifacts`
 - `npm run check:public:runtime:artifacts`
+- `npm run check:runtime:compat:versions`
+- `npm run check:runtime:artifacts`
+- `npm run check:deploy:artifacts`
 - `npm run chunks:public:check`
 - `npm run chunks:public:prune`
 - `npm run benchmark:local`
@@ -93,6 +103,7 @@ Higiene local:
 - `npm run test:frontend:qa:v6`
 - `npm run gate:public:v6:canonical-publish`
 - `check:public:runtime:artifacts` valida `styles.css`, `styles-deferred.css`, `script.js`, `js/chunks/**` y `js/engines/**`, exige un solo shell activo y escribe `verification/public-v6-canonical/runtime-artifacts-report.json`.
+- `check:runtime:compat:versions` valida solo las superficies puente de compatibilidad que siguen fijando versiones runtime, incluido `sw.js`.
 - `chunks:public:prune` limpia `js/chunks/*.js` que ya no cuelgan del grafo activo de `script.js`.
 - Los snapshots legacy `booking-engine.js` y `utils.js` ya no viven en raiz activa; quedaron archivados en `js/archive/root-legacy/**`.
 
@@ -101,6 +112,7 @@ Higiene local:
 - `npm run gate:admin:rollout`
 - `npm run chunks:admin:check`
 - `npm run chunks:admin:prune`
+- `npm run check:runtime:artifacts`
 - Implementacion PowerShell canonica: `scripts/ops/admin/**` (wrappers compatibles en raiz)
 - `chunks:admin:check` tambien falla si `admin.js` o el chunk activo contienen marcadores de merge.
 - `GATE-ADMIN-ROLLOUT.ps1` propaga `-Domain` hacia Playwright con `TEST_BASE_URL` para evitar drift de servidores locales viejos.
@@ -151,7 +163,8 @@ Higiene local:
 
 ## Reglas practicas
 
-- No editar a mano `es/**`, `en/**`, `_astro/**`, `styles.css`, `styles-deferred.css`, `script.js`, `js/chunks/**` ni `js/engines/**`; son artefactos versionados de deploy/runtime.
+- No editar a mano `es/**`, `en/**`, `_astro/**`, `styles.css`, `styles-deferred.css`, `script.js`, `js/chunks/**` ni `js/engines/**`; son artefactos versionados de deploy/runtime. Revisalos como outputs y valida con `docs/RUNTIME_ARTIFACT_POLICY.md`, `npm run check:runtime:artifacts` o `npm run check:deploy:artifacts`.
+- Si una iniciativa toca ops, queue runtime, desktop, tests o governance al mismo tiempo, cortala con `docs/BRANCH_SLICING_GUARDRAILS.md` antes de crecer el diff.
 - No reactivar `legacy` ni `sony_v2` en admin; el rollback es `revert + deploy`.
 - Si tocas orquestacion o board, sigue `AGENTS.md` y valida con `npm run agent:gate`.
 - Si dudas que comando usar, revisa `docs/OPERATIONS_INDEX.md`.

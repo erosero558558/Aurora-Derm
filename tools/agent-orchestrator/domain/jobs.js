@@ -22,6 +22,24 @@ function normalizeStringArray(value) {
     return value.map((item) => String(item || '').trim()).filter(Boolean);
 }
 
+function hasDirtyPathEvidence(snapshot = {}) {
+    const dirtyPathsCount =
+        parseOptionalInteger(
+            snapshot.dirty_paths_count ?? snapshot.dirtyPathsCount
+        ) ?? 0;
+    const dirtyPathsSample = normalizeStringArray(
+        snapshot.dirty_paths_sample ?? snapshot.dirtyPathsSample
+    );
+    const dirtyPaths = normalizeStringArray(
+        snapshot.dirty_paths ?? snapshot.dirtyPaths
+    );
+    return (
+        dirtyPathsCount > 0 ||
+        dirtyPathsSample.length > 0 ||
+        dirtyPaths.length > 0
+    );
+}
+
 function computeHeadDrift(currentHead, remoteHead) {
     const current = String(currentHead || '').trim();
     const remote = String(remoteHead || '').trim();
@@ -90,6 +108,77 @@ function computeFailureReason(snapshot = {}) {
     if (state === 'failed') return 'failed';
     if (!snapshot.healthy) return 'unhealthy';
     return '';
+}
+
+function computeRepoHygieneIssue(snapshot = {}) {
+    const failureReason = String(
+        snapshot.failure_reason ||
+            snapshot.failureReason ||
+            snapshot.last_error_message ||
+            snapshot.lastErrorMessage ||
+            ''
+    ).trim();
+    const headDrift = Boolean(snapshot.head_drift ?? snapshot.headDrift);
+    const telemetryGap = Boolean(
+        snapshot.telemetry_gap ?? snapshot.telemetryGap
+    );
+
+    return (
+        failureReason === 'working_tree_dirty' &&
+        !headDrift &&
+        !telemetryGap &&
+        hasDirtyPathEvidence(snapshot)
+    );
+}
+
+function computeOperationalHealth(snapshot = {}) {
+    if (snapshot.configured === false || snapshot.verified === false) {
+        return false;
+    }
+
+    const ageSeconds = parseOptionalInteger(
+        snapshot.age_seconds ?? snapshot.ageSeconds
+    );
+    const expectedMaxLagSeconds =
+        parseOptionalInteger(
+            snapshot.expected_max_lag_seconds ?? snapshot.expectedMaxLagSeconds
+        ) ?? 0;
+    const state = String(snapshot.state || 'unknown').trim() || 'unknown';
+    const headDrift = Boolean(snapshot.head_drift ?? snapshot.headDrift);
+    const telemetryGap = Boolean(
+        snapshot.telemetry_gap ?? snapshot.telemetryGap
+    );
+    const repoHygieneIssue = Boolean(
+        snapshot.repo_hygiene_issue ?? snapshot.repoHygieneIssue
+    );
+
+    if (
+        ageSeconds === null ||
+        (expectedMaxLagSeconds > 0 && ageSeconds > expectedMaxLagSeconds) ||
+        !state ||
+        state === 'unknown' ||
+        headDrift ||
+        telemetryGap
+    ) {
+        return false;
+    }
+
+    if (state === 'failed' && !repoHygieneIssue) {
+        return false;
+    }
+
+    return true;
+}
+
+function finalizeSnapshot(snapshot = {}) {
+    const normalized = { ...snapshot };
+    normalized.head_drift = Boolean(normalized.head_drift);
+    normalized.telemetry_gap = Boolean(normalized.telemetry_gap);
+    normalized.failure_reason = String(normalized.failure_reason || '').trim();
+    normalized.repo_hygiene_issue = computeRepoHygieneIssue(normalized);
+    normalized.operationally_healthy = computeOperationalHealth(normalized);
+    normalized.healthy = normalized.operationally_healthy;
+    return normalized;
 }
 
 function normalizeRegistryJob(job = {}) {
@@ -179,7 +268,7 @@ function normalizeSnapshotFromFile(job, payload = {}, nowMs = Date.now()) {
     snapshot.head_drift = computeHeadDrift(currentHead, remoteHead);
     snapshot.telemetry_gap = computeTelemetryGap(snapshot);
     snapshot.failure_reason = computeFailureReason(snapshot);
-    return snapshot;
+    return finalizeSnapshot(snapshot);
 }
 
 function normalizeSnapshotFromHealth(job, payload = {}) {
@@ -280,7 +369,7 @@ function normalizeSnapshotFromHealth(job, payload = {}) {
     snapshot.failure_reason =
         String(payload.failureReason || payload.failure_reason || '').trim() ||
         computeFailureReason(snapshot);
-    return snapshot;
+    return finalizeSnapshot(snapshot);
 }
 
 async function resolveJobSnapshot(jobRaw, deps = {}) {
@@ -325,7 +414,7 @@ async function resolveJobSnapshot(jobRaw, deps = {}) {
                 details: null,
             };
             snapshot.failure_reason = computeFailureReason(snapshot);
-            return snapshot;
+            return finalizeSnapshot(snapshot);
         }
     }
 
@@ -378,7 +467,7 @@ async function resolveJobSnapshot(jobRaw, deps = {}) {
         details: null,
     };
     snapshot.failure_reason = computeFailureReason(snapshot);
-    return snapshot;
+    return finalizeSnapshot(snapshot);
 }
 
 async function buildJobsSnapshot(registry = {}, deps = {}) {
@@ -413,6 +502,8 @@ function summarizeJobsSnapshot(jobs = []) {
             deployed_commit: String(job.deployed_commit || ''),
             last_error_message: String(job.last_error_message || ''),
             failure_reason: String(job.failure_reason || ''),
+            repo_hygiene_issue: Boolean(job.repo_hygiene_issue),
+            operationally_healthy: Boolean(job.operationally_healthy),
             dirty_paths_count:
                 job.dirty_paths_count === null ||
                 job.dirty_paths_count === undefined
@@ -446,6 +537,8 @@ module.exports = {
     computeHeadDrift,
     computeTelemetryGap,
     computeFailureReason,
+    computeRepoHygieneIssue,
+    computeOperationalHealth,
     parseIsoMillis,
     computeAgeSeconds,
 };

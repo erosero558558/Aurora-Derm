@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @runInSeparateProcess
+ * @preserveGlobalState disabled
  */
 class OperatorAuthControllerTest extends TestCase
 {
@@ -166,6 +167,93 @@ class OperatorAuthControllerTest extends TestCase
         self::assertSame(200, $status['status']);
         self::assertFalse((bool) ($status['payload']['authenticated'] ?? true));
         self::assertSame('email_no_permitido', (string) ($status['payload']['status'] ?? ''));
+    }
+
+    public function testStartReturnsSetupPayloadWhenConfigIsIncomplete(): void
+    {
+        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
+
+        $response = $this->captureResponse(static fn () => \OperatorAuthController::start([]), 'POST');
+
+        self::assertSame(200, $response['status']);
+        self::assertTrue((bool) ($response['payload']['ok'] ?? false));
+        self::assertFalse((bool) ($response['payload']['configured'] ?? true));
+        self::assertSame(
+            'operator_auth_not_configured',
+            (string) ($response['payload']['status'] ?? '')
+        );
+        self::assertContains(
+            'bridge_token',
+            $response['payload']['configuration']['missing'] ?? []
+        );
+    }
+
+    public function testInvalidBridgeSignatureIsRejected(): void
+    {
+        $start = $this->captureResponse(static fn () => \OperatorAuthController::start([]), 'POST');
+        $challenge = $start['payload']['challenge'] ?? [];
+
+        $bridgePayload = [
+            'challengeId' => (string) ($challenge['challengeId'] ?? ''),
+            'nonce' => (string) ($challenge['nonce'] ?? ''),
+            'status' => 'completed',
+            'email' => 'operator@example.com',
+            'profileId' => 'openai-codex:test-profile',
+            'accountId' => 'acct-test-operator',
+            'deviceId' => 'device-test-03',
+            'timestamp' => gmdate('c'),
+            'signature' => str_repeat('0', 64),
+        ];
+
+        $complete = $this->captureResponse(
+            static fn () => \OperatorAuthController::complete([]),
+            'POST',
+            $bridgePayload,
+            ['HTTP_AUTHORIZATION' => 'Bearer operator-auth-bridge-test-token']
+        );
+
+        self::assertSame(401, $complete['status']);
+        self::assertFalse((bool) ($complete['payload']['ok'] ?? true));
+        self::assertSame(
+            'Firma del bridge invalida',
+            (string) ($complete['payload']['error'] ?? '')
+        );
+    }
+
+    public function testTimestampOutsideWindowIsRejected(): void
+    {
+        $start = $this->captureResponse(static fn () => \OperatorAuthController::start([]), 'POST');
+        $challenge = $start['payload']['challenge'] ?? [];
+
+        $bridgePayload = [
+            'challengeId' => (string) ($challenge['challengeId'] ?? ''),
+            'nonce' => (string) ($challenge['nonce'] ?? ''),
+            'status' => 'completed',
+            'email' => 'operator@example.com',
+            'profileId' => 'openai-codex:test-profile',
+            'accountId' => 'acct-test-operator',
+            'deviceId' => 'device-test-04',
+            'timestamp' => gmdate('c', time() - 3600),
+        ];
+        $bridgePayload['signature'] = hash_hmac(
+            'sha256',
+            \operator_auth_bridge_signature_payload($bridgePayload),
+            'operator-auth-bridge-test-secret'
+        );
+
+        $complete = $this->captureResponse(
+            static fn () => \OperatorAuthController::complete([]),
+            'POST',
+            $bridgePayload,
+            ['HTTP_AUTHORIZATION' => 'Bearer operator-auth-bridge-test-token']
+        );
+
+        self::assertSame(400, $complete['status']);
+        self::assertFalse((bool) ($complete['payload']['ok'] ?? true));
+        self::assertSame(
+            'Timestamp del bridge fuera de ventana',
+            (string) ($complete['payload']['error'] ?? '')
+        );
     }
 
     /**

@@ -266,9 +266,29 @@ qs_assert_equals(
     'active help request should retain ticket code'
 );
 
-$helpResolve = $service->patchHelpRequest(($helpCreate['store'] ?? []), [
+$helpAttendLegacy = $service->patchTicket(($helpCreate['store'] ?? []), [
+    'id' => $helpTicketId,
+    'action' => 'atender_apoyo',
+]);
+qs_assert_true(($helpAttendLegacy['ok'] ?? false) === true, 'legacy ticket action should mark help request attending');
+$attendingState = $service->getQueueState($helpAttendLegacy['store'] ?? []);
+qs_assert_equals(
+    'attending',
+    (string) ($attendingState['data']['activeHelpRequests'][0]['status'] ?? ''),
+    'legacy ticket action should update active help request status'
+);
+
+$helpResolve = $service->patchHelpRequest(($helpAttendLegacy['store'] ?? []), [
     'ticketId' => $helpTicketId,
     'status' => 'resolved',
+    'context' => [
+        'reviewSource' => 'appointments',
+        'reviewAssessmentKind' => 'appointment_match',
+        'reviewAssessmentLabel' => 'Cita vigente',
+        'resolutionOutcome' => 'appointment_confirmed',
+        'resolutionOutcomeLabel' => 'Cita vigente confirmada',
+        'resolutionNote' => 'La cita exacta ya existe en agenda.',
+    ],
 ]);
 qs_assert_true(($helpResolve['ok'] ?? false) === true, 'help request should resolve');
 $resolvedState = $service->getQueueState($helpResolve['store'] ?? []);
@@ -276,6 +296,16 @@ qs_assert_equals(
     0,
     (int) ($resolvedState['data']['assistancePendingCount'] ?? 0),
     'resolved help request should clear pending assistance count'
+);
+qs_assert_equals(
+    1,
+    count($resolvedState['data']['recentResolvedHelpRequests'] ?? []),
+    'resolved help request should appear in recent resolved list'
+);
+qs_assert_equals(
+    'appointment_confirmed',
+    (string) (($resolvedState['data']['recentResolvedHelpRequests'][0]['context']['resolutionOutcome'] ?? '')),
+    'resolved help request should retain structured resolution outcome'
 );
 
 // 8) Printer fallback behavior when disabled

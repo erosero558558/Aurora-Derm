@@ -3,6 +3,11 @@
 
 const { mkdirSync, writeFileSync } = require('fs');
 const { dirname, resolve } = require('path');
+const {
+    loginAdmin,
+    logoutAdmin,
+    requestJson,
+} = require('./lib/admin-auth-client.js');
 
 function parseStringArg(name, fallback) {
     const prefix = `--${name}=`;
@@ -58,37 +63,10 @@ function usage() {
         '  --days=N                      Ventana de disponibilidad (default 21)',
         '  --min-lead-minutes=N          Anticipacion minima para slot (default 70)',
         '  --require-google=true|false   Exigir calendarSource=google (default TEST_REQUIRE_GOOGLE_CALENDAR=true)',
-        '  --admin-password=VALUE        Password admin (default TEST_ADMIN_PASSWORD o PIELARMONIA_ADMIN_PASSWORD)',
+        '  --admin-password=VALUE        Password admin solo para cleanup legacy (default TEST_ADMIN_PASSWORD o PIELARMONIA_ADMIN_PASSWORD)',
         '  --json-out=PATH               Reporte JSON (default verification/calendar-write-smoke/api-write-smoke-last.json)',
         '  --help                        Muestra esta ayuda',
     ].join('\n');
-}
-
-function splitSetCookieHeader(rawValue) {
-    if (!rawValue) return [];
-    return String(rawValue)
-        .split(/,(?=[^;,]+=[^;,]+)/g)
-        .map((item) => item.trim())
-        .filter(Boolean);
-}
-
-function extractCookieHeader(response) {
-    let setCookies = [];
-    if (response && response.headers) {
-        if (typeof response.headers.getSetCookie === 'function') {
-            setCookies = response.headers.getSetCookie();
-        } else {
-            const raw = response.headers.get('set-cookie');
-            setCookies = splitSetCookieHeader(raw);
-        }
-    }
-    if (!Array.isArray(setCookies) || setCookies.length === 0) {
-        return '';
-    }
-    return setCookies
-        .map((cookie) => String(cookie).split(';')[0].trim())
-        .filter(Boolean)
-        .join('; ');
 }
 
 function parseSlotToUtcMs(date, time) {
@@ -133,63 +111,6 @@ function truncate(value, max = 300) {
     const text = String(value || '');
     if (text.length <= max) return text;
     return `${text.slice(0, max)}...`;
-}
-
-async function requestJson(baseUrl, method, path, options = {}) {
-    const timeoutMs = Number(options.timeoutMs || 20000);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const headers = Object.assign(
-        {
-            Accept: 'application/json',
-        },
-        options.headers || {}
-    );
-
-    /** @type {any} */
-    let body = undefined;
-    if (options.body !== undefined) {
-        body = JSON.stringify(options.body);
-        if (!Object.prototype.hasOwnProperty.call(headers, 'Content-Type')) {
-            headers['Content-Type'] = 'application/json';
-        }
-    }
-
-    const url = path.startsWith('http')
-        ? path
-        : `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
-    let response;
-    try {
-        response = await fetch(url, {
-            method,
-            headers,
-            body,
-            signal: controller.signal,
-        });
-    } finally {
-        clearTimeout(timer);
-    }
-
-    const rawText = await response.text();
-    let json = null;
-    if (rawText) {
-        try {
-            json = JSON.parse(rawText);
-        } catch (_error) {
-            json = null;
-        }
-    }
-
-    return {
-        ok: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        json,
-        text: rawText,
-        headers: response.headers,
-        cookieHeader: extractCookieHeader(response),
-        url,
-    };
 }
 
 function assertOrThrow(condition, message) {
@@ -293,9 +214,8 @@ async function main() {
     try {
         assertOrThrow(baseUrl.startsWith('http'), 'base-url invalida');
         assertOrThrow(service.length > 0, 'service vacio');
-        assertOrThrow(adminPassword.length > 0, 'admin-password vacio');
 
-        const health = await runStep('health', async () => {
+        await runStep('health', async () => {
             const response = await requestJson(
                 baseUrl,
                 'GET',
@@ -389,7 +309,7 @@ async function main() {
         );
         report.appointment.createSlot = createSlot;
 
-        const created = await runStep('create_appointment', async () => {
+        await runStep('create_appointment', async () => {
             const stamp = Date.now();
             const payload = {
                 service,
@@ -628,30 +548,9 @@ async function main() {
         if (appointmentId && Number.isFinite(appointmentId)) {
             report.cleanup.attempted = true;
             try {
-                const loginResponse = await requestJson(
-                    baseUrl,
-                    'POST',
-                    '/admin-auth.php?action=login',
-                    {
-                        body: { password: adminPassword },
-                    }
-                );
-                assertOrThrow(
-                    loginResponse.ok && loginResponse.json,
-                    `admin login failed http ${loginResponse.status}`
-                );
-                assertOrThrow(
-                    loginResponse.json.ok !== false,
-                    `admin login invalid: ${truncate(loginResponse.text)}`
-                );
-                assertOrThrow(
-                    loginResponse.json.twoFactorRequired !== true,
-                    'admin login requiere 2FA'
-                );
-                const csrfToken = String(loginResponse.json.csrfToken || '');
-                const cookie = loginResponse.cookieHeader;
-                assertOrThrow(csrfToken.length > 0, 'csrf token vacio');
-                assertOrThrow(cookie.length > 0, 'cookie de sesion vacia');
+                const login = await loginAdmin(baseUrl, {
+                    password: adminPassword,
+                });
 
                 const cancelResponse = await requestJson(
                     baseUrl,
@@ -659,8 +558,8 @@ async function main() {
                     '/api.php?resource=appointments',
                     {
                         headers: {
-                            Cookie: cookie,
-                            'X-CSRF-Token': csrfToken,
+                            Cookie: login.cookie,
+                            'X-CSRF-Token': login.csrfToken,
                         },
                         body: {
                             id: appointmentId,
@@ -673,14 +572,9 @@ async function main() {
                     `cancel appointment failed http ${cancelResponse.status}`
                 );
 
-                await requestJson(
-                    baseUrl,
-                    'POST',
-                    '/admin-auth.php?action=logout',
-                    {
-                        headers: { Cookie: cookie },
-                    }
-                ).catch(() => {});
+                await logoutAdmin(baseUrl, {
+                    headers: { Cookie: login.cookie },
+                }).catch(() => {});
 
                 report.cleanup.status = 'success';
                 report.cleanup.details = `appointment ${appointmentId} cancelled`;

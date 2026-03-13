@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/AnalyticsLabelNormalizer.php';
 require_once __DIR__ . '/PrometheusCounterParser.php';
+require_once __DIR__ . '/../QueueAssistantMetricsStore.php';
 require_once __DIR__ . '/RetentionReportService.php';
 
 final class FunnelMetricsService
@@ -301,6 +302,7 @@ final class FunnelMetricsService
             'surfaceFunnel' => self::buildSurfaceFunnelBreakdown($surfaceFunnelBreakdown),
             'retention' => RetentionReportService::buildSnapshot($store),
             'idempotency' => self::buildIdempotencySnapshot($rawMetrics),
+            'queueAssistant' => QueueAssistantMetricsStore::buildReport(),
             'generatedAt' => gmdate('c'),
         ];
     }

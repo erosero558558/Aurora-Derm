@@ -245,6 +245,76 @@ test('metrics-engine buildDomainHealth calcula semaforo y score por dominio', ()
     );
 });
 
+test('metrics-engine resume codex_instance, provider_mode y runtime_surface para runtime transversal', () => {
+    const tasks = [
+        {
+            id: 'AG-900',
+            codex_instance: 'codex_transversal',
+            provider_mode: 'openclaw_chatgpt',
+            runtime_surface: 'figo_queue',
+            status: 'in_progress',
+        },
+        {
+            id: 'AG-901',
+            codex_instance: 'codex_transversal',
+            provider_mode: 'openclaw_chatgpt',
+            runtime_surface: 'leadops_worker',
+            status: 'done',
+        },
+        {
+            id: 'AG-902',
+            codex_instance: 'codex_backend_ops',
+            provider_mode: '',
+            runtime_surface: '',
+            status: 'ready',
+        },
+    ];
+
+    const codexInstances = metrics.buildCodexInstanceSummary(tasks, {
+        activeStatuses: ACTIVE_STATUSES,
+    });
+    const providerModes = metrics.buildProviderModeSummary(tasks, {
+        activeStatuses: ACTIVE_STATUSES,
+    });
+    const runtimeSurfaces = metrics.buildRuntimeSurfaceSummary(tasks, {
+        activeStatuses: ACTIVE_STATUSES,
+    });
+
+    assert.equal(codexInstances.total_instances, 2);
+    assert.deepEqual(
+        codexInstances.rows.map((row) => row.codex_instance),
+        ['codex_backend_ops', 'codex_transversal']
+    );
+    assert.deepEqual(
+        providerModes.rows.map((row) => row.provider_mode),
+        ['none', 'openclaw_chatgpt']
+    );
+    assert.deepEqual(
+        runtimeSurfaces.rows.map((row) => row.runtime_surface),
+        ['figo_queue', 'leadops_worker', 'none']
+    );
+
+    const transversal = codexInstances.rows.find(
+        (row) => row.codex_instance === 'codex_transversal'
+    );
+    const openclaw = providerModes.rows.find(
+        (row) => row.provider_mode === 'openclaw_chatgpt'
+    );
+    const figo = runtimeSurfaces.rows.find(
+        (row) => row.runtime_surface === 'figo_queue'
+    );
+
+    assert.equal(transversal.tasks, 2);
+    assert.equal(transversal.active_tasks, 1);
+    assert.equal(transversal.done_tasks, 1);
+    assert.equal(openclaw.tasks, 2);
+    assert.equal(openclaw.active_tasks, 1);
+    assert.equal(openclaw.done_tasks, 1);
+    assert.equal(figo.tasks, 1);
+    assert.equal(figo.active_tasks, 1);
+    assert.equal(figo.done_tasks, 0);
+});
+
 test('metrics-engine domain health history summary detecta regresion GREEN->RED', () => {
     let history = metrics.upsertDomainHealthHistory(
         null,

@@ -43,6 +43,9 @@ async function handleTaskCommand(ctx) {
         ALLOWED_CODEX_INSTANCES,
         ALLOWED_DOMAIN_LANES,
         ALLOWED_LANE_LOCKS,
+        ALLOWED_PROVIDER_MODES,
+        ALLOWED_RUNTIME_SURFACES,
+        ALLOWED_RUNTIME_TRANSPORTS,
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
         buildTaskCreateInferenceExplainLines,
@@ -69,7 +72,7 @@ async function handleTaskCommand(ctx) {
         )
     ) {
         throw new Error(
-            'Uso: node agent-orchestrator.js task <ls|create|claim|start|finish> [AG-001] [--owner x] [--executor y] [--status z] [--files a,b] [--codex-instance codex_backend_ops|codex_frontend] [--domain-lane backend_ops|frontend_content] [--lane-lock strict|handoff_allowed] [--cross-domain true|false] [--evidence path] [--active|--mine]'
+            'Uso: node agent-orchestrator.js task <ls|create|claim|start|finish> [AG-001] [--owner x] [--executor y] [--status z] [--files a,b] [--template docs|bugfix|critical|runtime] [--codex-instance codex_backend_ops|codex_frontend|codex_transversal] [--domain-lane backend_ops|frontend_content|transversal_runtime] [--lane-lock strict|handoff_allowed] [--provider-mode openclaw_chatgpt] [--runtime-surface figo_queue|leadops_worker|operator_auth] [--runtime-transport hybrid_http_cli|http_bridge|cli_helper] [--cross-domain true|false] [--evidence path] [--active|--mine]'
         );
     }
 
@@ -125,6 +128,9 @@ async function handleTaskCommand(ctx) {
             ALLOWED_CODEX_INSTANCES,
             ALLOWED_DOMAIN_LANES,
             ALLOWED_LANE_LOCKS,
+            ALLOWED_PROVIDER_MODES,
+            ALLOWED_RUNTIME_SURFACES,
+            ALLOWED_RUNTIME_TRANSPORTS,
             inferDomainLaneFromFiles,
             ensureTaskDualCodexDefaults,
             currentDate,
@@ -459,6 +465,12 @@ function hasFlag(flags = {}, kebabName, snakeName) {
     );
 }
 
+function normalizeOptionalToken(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase();
+}
+
 function isRetiredExecutor(executor, retiredExecutors) {
     return retiredExecutors.has(
         String(executor || '')
@@ -493,6 +505,26 @@ function applyDualCodexOverrides(task, flags = {}, helpers = {}) {
         'domain_lane'
     );
     const explicitLaneLock = readStringFlag(flags, 'lane-lock', 'lane_lock');
+    const explicitProviderMode = readStringFlag(
+        flags,
+        'provider-mode',
+        'provider_mode'
+    );
+    const explicitRuntimeSurface = readStringFlag(
+        flags,
+        'runtime-surface',
+        'runtime_surface'
+    );
+    const explicitRuntimeTransport = readStringFlag(
+        flags,
+        'runtime-transport',
+        'runtime_transport'
+    );
+    const explicitRuntimeLastTransport = readStringFlag(
+        flags,
+        'runtime-last-transport',
+        'runtime_last_transport'
+    );
     const hasCrossDomainFlag = hasFlag(flags, 'cross-domain', 'cross_domain');
 
     if (explicitDomainLane) {
@@ -503,6 +535,18 @@ function applyDualCodexOverrides(task, flags = {}, helpers = {}) {
     }
     if (explicitLaneLock) {
         task.lane_lock = explicitLaneLock;
+    }
+    if (explicitProviderMode) {
+        task.provider_mode = explicitProviderMode;
+    }
+    if (explicitRuntimeSurface) {
+        task.runtime_surface = explicitRuntimeSurface;
+    }
+    if (explicitRuntimeTransport) {
+        task.runtime_transport = explicitRuntimeTransport;
+    }
+    if (explicitRuntimeLastTransport) {
+        task.runtime_last_transport = explicitRuntimeLastTransport;
     }
     if (hasCrossDomainFlag) {
         task.cross_domain = isFlagEnabled(
@@ -943,6 +987,9 @@ async function handleTaskCreate(ctx) {
         ALLOWED_CODEX_INSTANCES,
         ALLOWED_DOMAIN_LANES,
         ALLOWED_LANE_LOCKS,
+        ALLOWED_PROVIDER_MODES,
+        ALLOWED_RUNTIME_SURFACES,
+        ALLOWED_RUNTIME_TRANSPORTS,
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
         currentDate,
@@ -1506,7 +1553,10 @@ async function handleTaskCreate(ctx) {
         throw new Error(`task create: risk invalido (${risk})`);
     }
     const runtimeImpact = String(
-        flags['runtime-impact'] || flags.runtime_impact || 'low'
+        flags['runtime-impact'] ||
+            flags.runtime_impact ||
+            template?.runtime_impact ||
+            'low'
     )
         .trim()
         .toLowerCase();
@@ -1515,11 +1565,9 @@ async function handleTaskCreate(ctx) {
             `task create: runtime_impact invalido (${runtimeImpact})`
         );
     }
-    const criticalZoneFlag = isFlagEnabled(
-        flags,
-        'critical-zone',
-        'critical_zone'
-    );
+    const criticalZoneFlag = hasFlag(flags, 'critical-zone', 'critical_zone')
+        ? isFlagEnabled(flags, 'critical-zone', 'critical_zone')
+        : Boolean(template?.critical_zone);
 
     const owner = String(
         flags.owner || detectDefaultOwner() || 'unassigned'
@@ -1578,17 +1626,24 @@ async function handleTaskCreate(ctx) {
         throw createRetiredExecutorError(executor, 'task create');
     }
 
-    const explicitCodexInstance = readStringFlag(
-        flags,
-        'codex-instance',
-        'codex_instance'
-    );
-    const explicitDomainLane = readStringFlag(
-        flags,
-        'domain-lane',
-        'domain_lane'
-    );
-    const explicitLaneLock = readStringFlag(flags, 'lane-lock', 'lane_lock');
+    const explicitCodexInstance =
+        readStringFlag(flags, 'codex-instance', 'codex_instance') ||
+        normalizeOptionalToken(template?.codex_instance);
+    const explicitDomainLane =
+        readStringFlag(flags, 'domain-lane', 'domain_lane') ||
+        normalizeOptionalToken(template?.domain_lane);
+    const explicitLaneLock =
+        readStringFlag(flags, 'lane-lock', 'lane_lock') ||
+        normalizeOptionalToken(template?.lane_lock);
+    const explicitProviderMode =
+        readStringFlag(flags, 'provider-mode', 'provider_mode') ||
+        normalizeOptionalToken(template?.provider_mode);
+    const explicitRuntimeSurface =
+        readStringFlag(flags, 'runtime-surface', 'runtime_surface') ||
+        normalizeOptionalToken(template?.runtime_surface);
+    const explicitRuntimeTransport =
+        readStringFlag(flags, 'runtime-transport', 'runtime_transport') ||
+        normalizeOptionalToken(template?.runtime_transport);
     const hasCrossDomainFlag = hasFlag(flags, 'cross-domain', 'cross_domain');
     const inferredLane = inferDomainLaneFromFiles(files);
     const crossDomain = hasCrossDomainFlag
@@ -1604,7 +1659,9 @@ async function handleTaskCreate(ctx) {
         explicitCodexInstance ||
         (domainLane === 'frontend_content'
             ? 'codex_frontend'
-            : 'codex_backend_ops');
+            : domainLane === 'transversal_runtime'
+              ? 'codex_transversal'
+              : 'codex_backend_ops');
     const laneLock =
         explicitLaneLock || (crossDomain ? 'handoff_allowed' : 'strict');
     if (!ALLOWED_DOMAIN_LANES.has(domainLane)) {
@@ -1617,6 +1674,30 @@ async function handleTaskCreate(ctx) {
     }
     if (!ALLOWED_LANE_LOCKS.has(laneLock)) {
         throw new Error(`task create: lane_lock invalido (${laneLock})`);
+    }
+    if (
+        explicitProviderMode &&
+        !ALLOWED_PROVIDER_MODES.has(explicitProviderMode)
+    ) {
+        throw new Error(
+            `task create: provider_mode invalido (${explicitProviderMode})`
+        );
+    }
+    if (
+        explicitRuntimeSurface &&
+        !ALLOWED_RUNTIME_SURFACES.has(explicitRuntimeSurface)
+    ) {
+        throw new Error(
+            `task create: runtime_surface invalido (${explicitRuntimeSurface})`
+        );
+    }
+    if (
+        explicitRuntimeTransport &&
+        !ALLOWED_RUNTIME_TRANSPORTS.has(explicitRuntimeTransport)
+    ) {
+        throw new Error(
+            `task create: runtime_transport invalido (${explicitRuntimeTransport})`
+        );
     }
 
     const acceptance = String(flags.acceptance || title).trim();
@@ -1641,6 +1722,10 @@ async function handleTaskCreate(ctx) {
         domain_lane: domainLane,
         lane_lock: laneLock,
         cross_domain: crossDomain,
+        provider_mode: explicitProviderMode,
+        runtime_surface: explicitRuntimeSurface,
+        runtime_transport: explicitRuntimeTransport,
+        runtime_last_transport: '',
         files,
         source_signal: String(
             flags['source-signal'] || flags.source_signal || 'manual'

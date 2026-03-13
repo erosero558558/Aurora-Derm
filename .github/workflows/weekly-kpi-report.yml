@@ -339,7 +339,7 @@ jobs:
                   } else {
                     Write-Host 'FailOnCycleNotReady desactivado para esta corrida.'
                   }
-                  & ./REPORTE-SEMANAL-PRODUCCION.ps1 @reportParams
+                  & ./scripts/ops/prod/REPORTE-SEMANAL-PRODUCCION.ps1 @reportParams
 
             - name: Detectar ultimo reporte
               if: ${{ always() }}

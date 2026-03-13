@@ -1,7 +1,6 @@
 import { attachKeyboardShortcuts } from '../shared/core/keyboard.js';
 import { getState } from '../shared/core/store.js';
 import { checkAuthStatus } from '../shared/modules/auth.js';
-import { focusAgentPrompt, renderAgentPanel } from '../shared/modules/agent.js';
 import {
     hideCommandPalette,
     renderV3Frame,
@@ -23,6 +22,7 @@ import {
     bootAuthenticatedUi,
     handleLoginSubmit,
     primeLoginSurface,
+    resumeOpenClawPolling,
 } from './boot/auth.js';
 import {
     attachActionListeners,
@@ -76,7 +76,6 @@ export async function bootAdminV3() {
     attachKeyboardShortcuts({
         navigateToSection,
         focusQuickCommand,
-        focusAgentPrompt,
         focusCurrentSearch,
         runQuickAction,
         closeSidebar: () => closeSidebar({ restoreFocus: true }),
@@ -92,17 +91,16 @@ export async function bootAdminV3() {
         queueNumpadAction,
     });
 
-    const auth = await checkAuthStatus();
-    if (auth.authenticated) {
+    await checkAuthStatus();
+    if (getState().auth.authenticated) {
         await bootAuthenticatedUi();
         setActiveSection(getState().ui.activeSection);
     } else {
         showLoginView();
         hideCommandPalette();
-        primeLoginSurface(auth);
+        primeLoginSurface();
+        resumeOpenClawPolling();
     }
-
-    renderAgentPanel();
 
     initQueueAutoRefresh();
     initPushModule();

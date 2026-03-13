@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineIntakeService.php';
+require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
 
 final class TelemedicineAdminController
 {
@@ -10,6 +11,26 @@ final class TelemedicineAdminController
     {
         if (($context['isAdmin'] ?? false) !== true) {
             json_response(['ok' => false, 'error' => 'No autorizado'], 401);
+        }
+
+        if (function_exists('internal_console_clinical_data_ready') && !internal_console_clinical_data_ready()) {
+            $payload = function_exists('internal_console_clinical_guard_payload')
+                ? internal_console_clinical_guard_payload([
+                    'data' => [
+                        'items' => [],
+                        'count' => 0,
+                    ],
+                ])
+                : [
+                    'ok' => false,
+                    'code' => 'clinical_storage_not_ready',
+                    'error' => 'Historias clinicas bloqueadas hasta habilitar almacenamiento cifrado.',
+                    'data' => [
+                        'items' => [],
+                        'count' => 0,
+                    ],
+                ];
+            json_response($payload, 409);
         }
 
         $filters = isset($context['query']) && is_array($context['query'])
@@ -35,6 +56,26 @@ final class TelemedicineAdminController
         }
 
         require_csrf();
+
+        if (function_exists('internal_console_clinical_data_ready') && !internal_console_clinical_data_ready()) {
+            $payload = function_exists('internal_console_clinical_guard_payload')
+                ? internal_console_clinical_guard_payload([
+                    'data' => [
+                        'intake' => null,
+                        'appointment' => null,
+                    ],
+                ])
+                : [
+                    'ok' => false,
+                    'code' => 'clinical_storage_not_ready',
+                    'error' => 'Historias clinicas bloqueadas hasta habilitar almacenamiento cifrado.',
+                    'data' => [
+                        'intake' => null,
+                        'appointment' => null,
+                    ],
+                ];
+            json_response($payload, 409);
+        }
 
         $payload = require_json_body();
         $intakeId = (int) ($payload['intakeId'] ?? $payload['id'] ?? 0);

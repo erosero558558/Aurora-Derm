@@ -34,6 +34,27 @@ Objetivos IA permitidos:
 6. El worker publica `summary` y `draft` en `lead-ai-result`.
 7. Admin muestra el resumen, el borrador y el estado comercial final (`contactado`, `cita_cerrada`, `sin_respuesta`, `descartado`).
 
+## Integracion con el orquestador
+
+- El orquestador ya no trata OpenClaw como plugin externo: lo modela como `provider_mode=openclaw_chatgpt`.
+- Las tareas operativas del runtime viven en `domain_lane=transversal_runtime` con `codex_instance=codex_transversal`.
+- Las superficies canónicas son:
+    - `figo_queue`
+    - `leadops_worker`
+    - `operator_auth`
+- `operator_auth` es superficie verificable, no invocable.
+
+Comandos utiles:
+
+- `node agent-orchestrator.js runtime verify openclaw_chatgpt --json`
+- `node agent-orchestrator.js runtime invoke <AG-ID> --expect-rev <n> --json`
+
+Chequeos por surface:
+
+- `figo_queue`: `GET /figo-ai-bridge.php`
+- `leadops_worker`: `GET /api.php?resource=health`
+- `operator_auth`: `GET /api.php?resource=operator-auth-status`
+
 ## Configuracion del servidor
 
 Variables minimas en `env.php`:
@@ -83,6 +104,56 @@ Para una corrida unica sin loop:
 ```powershell
 node bin/lead-ai-worker.js
 ```
+
+## Helper local para login admin
+
+El login admin por OpenClaw usa un helper HTTP local separado del worker LeadOps.
+
+Variables minimas del helper:
+
+- `PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL`
+- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN`
+- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET`
+- `OPENCLAW_RUNTIME_BASE_URL`
+
+Variables opcionales:
+
+- `OPENCLAW_GATEWAY_API_KEY`
+- `OPENCLAW_GATEWAY_KEY_HEADER`
+- `OPENCLAW_GATEWAY_KEY_PREFIX`
+- `OPENCLAW_HELPER_DEVICE_ID`
+
+Ejemplo PowerShell:
+
+```powershell
+$env:PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL = "http://127.0.0.1:4173"
+$env:PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN = "token_bridge_largo_rotado"
+$env:PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET = "secret_hmac_rotado"
+$env:OPENCLAW_RUNTIME_BASE_URL = "http://127.0.0.1:4141"
+npm run checklist:admin:openclaw-auth:local
+npm run smoke:admin:openclaw-auth:local
+npm run openclaw:auth:start
+```
+
+Interpretacion rapida del preflight:
+
+- `ok=false`: falta configuracion local o el runtime OpenClaw no responde.
+- `ok=true` y `readyForLogin=false`: la maquina ya puede completar el bridge, pero el operador aun no inicio sesion en OpenClaw.
+- `readyForLogin=true`: el laptop ya esta listo para abrir `admin.html`.
+- El reporte incluye `nextAction` para indicar el siguiente paso recomendado.
+- `checklist:admin:openclaw-auth:local` imprime el smoke manual canonico para el laptop del operador.
+- Implementacion canonica del checklist local: `scripts/ops/admin/CHECKLIST-OPENCLAW-AUTH-LOCAL.ps1`.
+- `smoke:admin:openclaw-auth:local` ejecuta el smoke no interactivo `start -> helper -> status -> logout`.
+- Implementacion canonica del smoke local: `scripts/ops/admin/SMOKE-OPENCLAW-AUTH-LOCAL.ps1`.
+- `npm run openclaw:auth:start` usa la implementacion canonica en `scripts/ops/admin/INICIAR-OPENCLAW-AUTH-HELPER.ps1`, corre `openclaw:auth-preflight` y solo despues levanta `openclaw:auth-helper`.
+
+Flujo esperado:
+
+1. Admin llama `POST /admin-auth.php?action=start`.
+2. El panel abre `helperUrl` en una ventana local.
+3. El helper consulta `GET /v1/session` y, si falta sesion, dispara `POST /v1/session/login`.
+4. El helper firma el resultado y publica `POST /api.php?resource=operator-auth-complete`.
+5. El panel sigue haciendo polling a `GET /admin-auth.php?action=status` hasta `autenticado` o estado terminal.
 
 ## Modo degradado
 

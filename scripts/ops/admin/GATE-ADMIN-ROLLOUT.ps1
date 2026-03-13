@@ -1,10 +1,9 @@
 param(
     [string]$Domain = 'https://pielarmonia.com',
-    [ValidateSet('internal', 'canary', 'general', 'rollback')]
-    [string]$Stage = 'general',
+    [ValidateSet('stable')]
+    [string]$Stage = 'stable',
+    [switch]$RequireOpenClawAuth,
     [switch]$SkipRuntimeSmoke,
-    [switch]$AllowFeatureApiFailure,
-    [switch]$AllowMissingAdminFlag,
     [string]$ReportPath = 'verification/last-admin-ui-rollout-gate.json'
 )
 
@@ -12,43 +11,18 @@ $ErrorActionPreference = 'Stop'
 $base = $Domain.TrimEnd('/')
 $failures = 0
 $timestampUtc = (Get-Date).ToUniversalTime().ToString('o')
-$allowFeatureApiFailureEffective = [bool]$AllowFeatureApiFailure -or $Stage -eq 'internal'
-$allowMissingAdminFlagEffective = [bool]$AllowMissingAdminFlag -or $Stage -eq 'internal'
 
 $report = [ordered]@{
     ok = $false
     timestamp_utc = $timestampUtc
     domain = $base
     stage = $Stage
-    options = [ordered]@{
-        skip_runtime_smoke = [bool]$SkipRuntimeSmoke
-        allow_feature_api_failure = [bool]$AllowFeatureApiFailure
-        allow_missing_admin_flag = [bool]$AllowMissingAdminFlag
-        allow_feature_api_failure_effective = [bool]$allowFeatureApiFailureEffective
-        allow_missing_admin_flag_effective = [bool]$allowMissingAdminFlagEffective
-    }
-    features = [ordered]@{
-        url = "$base/api.php?resource=features"
-        request_ok = $false
-        http_status = 0
-        response_ok = $false
-        has_admin_sony_ui = $false
-        admin_sony_ui = $null
-        has_admin_sony_ui_v3 = $false
-        admin_sony_ui_v3 = $null
-        expected_admin_sony_ui = $null
-        expected_admin_sony_ui_v3 = $null
-        stage_expectation_match_admin_sony_ui = $null
-        stage_expectation_match_admin_sony_ui_v3 = $null
-        warning = $null
-        error = $null
-    }
     page = [ordered]@{
         url = "$base/admin.html"
         ok = $false
         http_status = 0
+        error = ''
     }
-    url_checks = @()
     assets = [ordered]@{
         has_admin_v3_css = $false
         uses_canonical_runtime = $false
@@ -62,6 +36,27 @@ $report = [ordered]@{
         self_only_style = $false
         self_only_font = $false
     }
+    operator_auth = [ordered]@{
+        checked = $false
+        url = "$base/api.php?resource=operator-auth-status"
+        facade_url = "$base/admin-auth.php?action=status"
+        source = ''
+        ok = $null
+        contract_valid = $false
+        authenticated = $false
+        http_status = 0
+        error = ''
+        facade_http_status = 0
+        facade_error = ''
+        mode = ''
+        status = ''
+        configured = $false
+        helper_base_url = ''
+        bridge_token_configured = $false
+        bridge_secret_configured = $false
+        allowlist_configured = $false
+        missing = @()
+    }
     runtime_smoke = [ordered]@{
         executed = $false
         ok = $null
@@ -71,57 +66,8 @@ $report = [ordered]@{
     failures = 0
 }
 
-function Invoke-JsonGet {
-    param(
-        [string]$Url
-    )
-
-    try {
-        $response = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
-            'Accept' = 'application/json'
-            'User-Agent' = 'AdminUiRolloutGate/2.0'
-        }
-
-        $payload = $null
-        try {
-            $payload = $response.Content | ConvertFrom-Json -Depth 20
-        } catch {
-            $payload = $null
-        }
-
-        return [PSCustomObject]@{
-            Ok = $true
-            Status = [int]$response.StatusCode
-            Json = $payload
-            Raw = [string]$response.Content
-            Error = ''
-        }
-    } catch {
-        $status = 0
-        $raw = ''
-        $response = $_.Exception.Response
-        if ($null -ne $response) {
-            try { $status = [int]$response.StatusCode } catch { $status = 0 }
-            try {
-                $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
-                $raw = $reader.ReadToEnd()
-                $reader.Close()
-            } catch {}
-        }
-
-        return [PSCustomObject]@{
-            Ok = $false
-            Status = $status
-            Json = $null
-            Raw = $raw
-            Error = $_.Exception.Message
-        }
-    }
-}
-
 function Invoke-HttpCheck {
     param(
-        [string]$Name,
         [string]$Url
     )
 
@@ -132,7 +78,6 @@ function Invoke-HttpCheck {
         }
 
         return [PSCustomObject]@{
-            Name = $Name
             Ok = $true
             Status = [int]$response.StatusCode
             Headers = $response.Headers
@@ -153,45 +98,11 @@ function Invoke-HttpCheck {
         }
 
         return [PSCustomObject]@{
-            Name = $Name
             Ok = $false
             Status = $status
             Headers = @{}
             Body = $raw
             Error = $_.Exception.Message
-        }
-    }
-}
-
-function Get-ExpectedFeatureFlagsByStage {
-    param(
-        [string]$CurrentStage
-    )
-
-    switch ($CurrentStage) {
-        'canary' {
-            return [PSCustomObject]@{
-                admin_sony_ui = $true
-                admin_sony_ui_v3 = $true
-            }
-        }
-        'general' {
-            return [PSCustomObject]@{
-                admin_sony_ui = $true
-                admin_sony_ui_v3 = $true
-            }
-        }
-        'rollback' {
-            return [PSCustomObject]@{
-                admin_sony_ui = $false
-                admin_sony_ui_v3 = $false
-            }
-        }
-        default {
-            return [PSCustomObject]@{
-                admin_sony_ui = $null
-                admin_sony_ui_v3 = $null
-            }
         }
     }
 }
@@ -258,134 +169,90 @@ function Invoke-PlaywrightSmokeSuite {
     }
 }
 
+function ConvertFrom-JsonOrNull {
+    param(
+        [string]$Raw
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Raw)) {
+        return $null
+    }
+
+    try {
+        return $Raw | ConvertFrom-Json
+    } catch {
+        return $null
+    }
+}
+
+function Get-ObjectPropertyValue {
+    param(
+        $Object,
+        [string]$Name,
+        $Default = $null
+    )
+
+    if ($null -eq $Object) {
+        return $Default
+    }
+
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $Default
+    }
+
+    return $property.Value
+}
+
+function Test-OperatorAuthContractPayload {
+    param(
+        $Payload
+    )
+
+    if ($null -eq $Payload) {
+        return $false
+    }
+
+    $mode = Get-ObjectPropertyValue -Object $Payload -Name 'mode' -Default $null
+    $status = Get-ObjectPropertyValue -Object $Payload -Name 'status' -Default $null
+
+    return ($null -ne $mode) -and ($null -ne $status)
+}
+
+function Set-OperatorAuthReportFromPayload {
+    param(
+        $Report,
+        $Payload,
+        [string]$Source
+    )
+
+    $configuration = Get-ObjectPropertyValue -Object $Payload -Name 'configuration'
+
+    $Report['source'] = $Source
+    $Report['ok'] = [bool](Get-ObjectPropertyValue -Object $Payload -Name 'ok' -Default $true)
+    $Report['contract_valid'] = [bool](Test-OperatorAuthContractPayload -Payload $Payload)
+    $Report['authenticated'] = [bool](Get-ObjectPropertyValue -Object $Payload -Name 'authenticated' -Default $false)
+    $Report['mode'] = [string](Get-ObjectPropertyValue -Object $Payload -Name 'mode' -Default '')
+    $Report['status'] = [string](Get-ObjectPropertyValue -Object $Payload -Name 'status' -Default '')
+    $Report['configured'] = [bool](Get-ObjectPropertyValue -Object $Payload -Name 'configured' -Default $false)
+    $Report['helper_base_url'] = [string](Get-ObjectPropertyValue -Object $configuration -Name 'helperBaseUrl' -Default '')
+    $Report['bridge_token_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'bridgeTokenConfigured' -Default $false)
+    $Report['bridge_secret_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'bridgeSecretConfigured' -Default $false)
+    $Report['allowlist_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'allowlistConfigured' -Default $false)
+    $Report['missing'] = @(Get-ObjectPropertyValue -Object $configuration -Name 'missing' -Default @())
+}
+
 Write-Host "== Gate Admin UI Rollout =="
 Write-Host "Dominio: $base"
 Write-Host "Stage: $Stage"
-Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
-$featuresUrl = "$base/api.php?resource=features"
-$featuresResult = Invoke-JsonGet -Url $featuresUrl
-$featureValueV2 = $null
-$featureValueV3 = $null
-
-if ($featuresResult.Ok -and $null -ne $featuresResult.Json -and $featuresResult.Json.ok -eq $true) {
-    $report.features.request_ok = $true
-    $report.features.http_status = [int]$featuresResult.Status
-    $report.features.response_ok = $true
-    Write-Host "[OK]  Features API -> HTTP $($featuresResult.Status)"
-
-    if ($null -eq $featuresResult.Json.data) {
-        if ($allowMissingAdminFlagEffective) {
-            Write-Host "[WARN] Features API no contiene bloque data de flags admin (permitido por politica efectiva de stage/flag)."
-            $report.features.warning = 'missing_admin_flag_block_allowed'
-        } else {
-            Write-Host "[FAIL] Features API no contiene bloque data de flags admin"
-            $failures += 1
-            $report.features.error = 'missing_admin_flag_block'
-        }
-    } else {
-        if ($null -eq $featuresResult.Json.data.admin_sony_ui) {
-            if ($allowMissingAdminFlagEffective) {
-                Write-Host "[WARN] Features API no contiene data.admin_sony_ui (permitido por politica efectiva de stage/flag)."
-                $report.features.warning = 'missing_admin_sony_ui_allowed'
-            } else {
-                Write-Host "[FAIL] Features API no contiene data.admin_sony_ui"
-                $failures += 1
-                $report.features.error = 'missing_admin_sony_ui'
-            }
-        } else {
-            $featureValueV2 = [bool]$featuresResult.Json.data.admin_sony_ui
-            $report.features.has_admin_sony_ui = $true
-            $report.features.admin_sony_ui = [bool]$featureValueV2
-            $featureTextV2 = if ($featureValueV2) { 'true' } else { 'false' }
-            Write-Host "[INFO] admin_sony_ui actual: $featureTextV2"
-        }
-
-        if ($null -eq $featuresResult.Json.data.admin_sony_ui_v3) {
-            if ($allowMissingAdminFlagEffective) {
-                Write-Host "[WARN] Features API no contiene data.admin_sony_ui_v3 (permitido por politica efectiva de stage/flag)."
-                if ($null -eq $report.features.warning) {
-                    $report.features.warning = 'missing_admin_sony_ui_v3_allowed'
-                }
-            } else {
-                Write-Host "[FAIL] Features API no contiene data.admin_sony_ui_v3"
-                $failures += 1
-                if ($null -eq $report.features.error) {
-                    $report.features.error = 'missing_admin_sony_ui_v3'
-                }
-            }
-        } else {
-            $featureValueV3 = [bool]$featuresResult.Json.data.admin_sony_ui_v3
-            $report.features.has_admin_sony_ui_v3 = $true
-            $report.features.admin_sony_ui_v3 = [bool]$featureValueV3
-            $featureTextV3 = if ($featureValueV3) { 'true' } else { 'false' }
-            Write-Host "[INFO] admin_sony_ui_v3 actual: $featureTextV3"
-        }
-    }
-} else {
-    $report.features.request_ok = [bool]$featuresResult.Ok
-    $report.features.http_status = [int]$featuresResult.Status
-    if ($allowFeatureApiFailureEffective) {
-        Write-Host "[WARN] Features API no disponible (HTTP $($featuresResult.Status)); se continua por politica efectiva de stage/flag."
-        $report.features.warning = 'features_api_failure_allowed'
-    } else {
-        Write-Host "[FAIL] Features API no disponible (HTTP $($featuresResult.Status))"
-        if ($featuresResult.Error) {
-            Write-Host "       $($featuresResult.Error)"
-        }
-        $failures += 1
-        $report.features.error = 'features_api_failure'
-    }
-}
-
-$expectedFeatures = Get-ExpectedFeatureFlagsByStage -CurrentStage $Stage
-$report.features.expected_admin_sony_ui = $expectedFeatures.admin_sony_ui
-$report.features.expected_admin_sony_ui_v3 = $expectedFeatures.admin_sony_ui_v3
-
-if ($null -ne $expectedFeatures.admin_sony_ui -and $null -ne $featureValueV2) {
-    if ([bool]$featureValueV2 -ne [bool]$expectedFeatures.admin_sony_ui) {
-        $expectedText = if ($expectedFeatures.admin_sony_ui) { 'true' } else { 'false' }
-        $actualText = if ($featureValueV2) { 'true' } else { 'false' }
-        Write-Host "[FAIL] Stage '$Stage' requiere admin_sony_ui=$expectedText, actual=$actualText"
-        $failures += 1
-        $report.features.stage_expectation_match_admin_sony_ui = $false
-    } else {
-        Write-Host "[OK]  Stage '$Stage' coincide con admin_sony_ui esperado"
-        $report.features.stage_expectation_match_admin_sony_ui = $true
-    }
-} elseif ($Stage -eq 'internal') {
-    Write-Host "[INFO] Stage internal: no se fuerza valor de admin_sony_ui"
-    $report.features.stage_expectation_match_admin_sony_ui = $null
-}
-
-if ($null -ne $expectedFeatures.admin_sony_ui_v3 -and $null -ne $featureValueV3) {
-    if ([bool]$featureValueV3 -ne [bool]$expectedFeatures.admin_sony_ui_v3) {
-        $expectedText = if ($expectedFeatures.admin_sony_ui_v3) { 'true' } else { 'false' }
-        $actualText = if ($featureValueV3) { 'true' } else { 'false' }
-        Write-Host "[FAIL] Stage '$Stage' requiere admin_sony_ui_v3=$expectedText, actual=$actualText"
-        $failures += 1
-        $report.features.stage_expectation_match_admin_sony_ui_v3 = $false
-    } else {
-        Write-Host "[OK]  Stage '$Stage' coincide con admin_sony_ui_v3 esperado"
-        $report.features.stage_expectation_match_admin_sony_ui_v3 = $true
-    }
-} elseif ($Stage -eq 'internal') {
-    Write-Host "[INFO] Stage internal: no se fuerza valor de admin_sony_ui_v3"
-    $report.features.stage_expectation_match_admin_sony_ui_v3 = $null
-}
-
-$pageResult = Invoke-HttpCheck -Name 'Admin base' -Url $report.page.url
+$pageResult = Invoke-HttpCheck -Url $report.page.url
 $report.page.ok = [bool]$pageResult.Ok
 $report.page.http_status = [int]$pageResult.Status
-$report.url_checks += [ordered]@{
-    name = 'Admin base'
-    url = $report.page.url
-    ok = [bool]$pageResult.Ok
-    http_status = [int]$pageResult.Status
-}
+$report.page.error = [string]$pageResult.Error
 
 if (-not $pageResult.Ok) {
-    Write-Host "[FAIL] admin.html -> HTTP $($pageResult.Status)"
+    Write-Host "[FAIL] admin.html -> HTTP $($pageResult.Status) ($($pageResult.Error))"
     $failures += 1
 } else {
     Write-Host "[OK]  admin.html -> HTTP $($pageResult.Status)"
@@ -443,23 +310,69 @@ if ($report.csp.meta_present -and $report.csp.self_only_script -and $report.csp.
     $failures += 1
 }
 
-$extraUrlChecks = @(
-    @{ Name = 'Admin query legacy'; Url = "$base/admin.html?admin_ui=legacy" },
-    @{ Name = 'Admin query sony_v2'; Url = "$base/admin.html?admin_ui=sony_v2" },
-    @{ Name = 'Admin query sony_v3'; Url = "$base/admin.html?admin_ui=sony_v3" },
-    @{ Name = 'Admin contingency reset'; Url = "$base/admin.html?admin_ui_reset=1" }
-)
+$report.operator_auth.checked = $true
+$operatorAuthResult = Invoke-HttpCheck -Url $report.operator_auth.url
+$report.operator_auth.http_status = [int]$operatorAuthResult.Status
+$report.operator_auth.error = [string]$operatorAuthResult.Error
+$operatorAuthPayload = $null
+$operatorAuthContractValid = $false
 
-foreach ($check in $extraUrlChecks) {
-    $result = Invoke-HttpCheck -Name $check.Name -Url $check.Url
-    $report.url_checks += [ordered]@{
-        name = [string]$check.Name
-        url = [string]$check.Url
-        ok = [bool]$result.Ok
-        http_status = [int]$result.Status
+if ($operatorAuthResult.Ok) {
+    $operatorAuthPayload = ConvertFrom-JsonOrNull -Raw ([string]$operatorAuthResult.Body)
+    if ($null -ne $operatorAuthPayload) {
+        Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $operatorAuthPayload -Source 'operator-auth-status'
+        $operatorAuthContractValid = [bool]$report.operator_auth.contract_valid
+
+        if ($operatorAuthContractValid) {
+            Write-Host "[INFO] operator_auth source=$($report.operator_auth.source) mode=$($report.operator_auth.mode) status=$($report.operator_auth.status) configured=$($report.operator_auth.configured)"
+        } else {
+            Write-Host "[WARN] operator_auth-status respondio, pero no expone el contrato OpenClaw esperado."
+        }
+    } else {
+        $report.operator_auth.ok = $false
+        Write-Host "[WARN] operator_auth-status no devolvio JSON interpretable."
     }
+} else {
+    $report.operator_auth.ok = $false
+    Write-Host "[WARN] operator_auth-status no respondio correctamente (HTTP $($operatorAuthResult.Status)): $($operatorAuthResult.Error)"
+}
 
-    if (-not $result.Ok) {
+if (-not $operatorAuthContractValid) {
+    $facadeResult = Invoke-HttpCheck -Url $report.operator_auth.facade_url
+    $report.operator_auth.facade_http_status = [int]$facadeResult.Status
+    $report.operator_auth.facade_error = [string]$facadeResult.Error
+
+    if ($facadeResult.Ok) {
+        $facadePayload = ConvertFrom-JsonOrNull -Raw ([string]$facadeResult.Body)
+        if ($null -ne $facadePayload) {
+            $facadeHasContract = Test-OperatorAuthContractPayload -Payload $facadePayload
+            if ($facadeHasContract) {
+                Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $facadePayload -Source 'admin-auth-facade'
+                Write-Host "[INFO] operator_auth source=$($report.operator_auth.source) mode=$($report.operator_auth.mode) status=$($report.operator_auth.status) configured=$($report.operator_auth.configured)"
+            } else {
+                Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $facadePayload -Source 'admin-auth-facade-legacy'
+                Write-Host "[WARN] admin-auth facade respondio, pero sigue en contrato legacy sin mode/status OpenClaw."
+            }
+        } else {
+            Write-Host "[WARN] admin-auth facade no devolvio JSON interpretable."
+        }
+    } else {
+        Write-Host "[WARN] admin-auth facade no respondio correctamente (HTTP $($facadeResult.Status)): $($facadeResult.Error)"
+    }
+}
+
+if ($RequireOpenClawAuth) {
+    if (
+        $report.operator_auth.contract_valid -and
+        $report.operator_auth.mode -eq 'openclaw_chatgpt' -and
+        $report.operator_auth.configured
+    ) {
+        Write-Host "[OK]  operator auth OpenClaw configurado"
+    } else {
+        if (-not $report.operator_auth.contract_valid) {
+            Write-Host "[WARN] operator auth sin contrato OpenClaw valido. source=$($report.operator_auth.source)"
+        }
+        Write-Host "[FAIL] operator auth OpenClaw no esta configurado para este rollout"
         $failures += 1
     }
 }
@@ -472,19 +385,16 @@ if (-not $SkipRuntimeSmoke) {
         @{
             Name = 'admin-ui-runtime'
             Specs = @('tests/admin-ui-runtime-smoke.spec.js')
-        }
-    )
-
-    if (
-        $Stage -eq 'canary' -or
-        $Stage -eq 'general' -or
-        ($Stage -eq 'internal' -and $featureValueV3 -eq $true)
-    ) {
-        $runtimeSuites += @{
+        },
+        @{
             Name = 'admin-v3-runtime'
             Specs = @('tests/admin-v3-canary-runtime.spec.js')
+        },
+        @{
+            Name = 'admin-openclaw-auth'
+            Specs = @('tests/admin-openclaw-login.spec.js')
         }
-    }
+    )
 
     $runtimeOk = $true
     foreach ($suite in $runtimeSuites) {
@@ -515,7 +425,7 @@ try {
     if ($directory) {
         New-Item -ItemType Directory -Path $directory -Force | Out-Null
     }
-    $report | ConvertTo-Json -Depth 12 | Set-Content -Path $ReportPath -Encoding UTF8
+    $report | ConvertTo-Json -Depth 6 | Set-Content -Path $ReportPath -Encoding UTF8
     Write-Host "[INFO] Reporte escrito en $ReportPath"
 } catch {
     Write-Host "[WARN] No se pudo escribir reporte: $($_.Exception.Message)"

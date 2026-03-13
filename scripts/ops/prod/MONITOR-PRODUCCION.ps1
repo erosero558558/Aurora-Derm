@@ -10,7 +10,11 @@ param(
     [switch]$AllowBlockedCalendar,
     [switch]$RequireServicePrioritiesFunnel,
     [switch]$AllowDegradedTelemedicineDiagnostics,
-    [string]$GitHubRepo = 'erosero558558/Aurora-Derm',
+    [switch]$RequireAuthConfigured,
+    [switch]$RequireOperatorAuth,
+    [switch]$RequireAdminTwoFactor,
+    [switch]$RequireStoreEncryption,
+    [string]$GitHubRepo = 'erosero558558/piel-en-armonia',
     [string]$GitHubApiBase = 'https://api.github.com',
     [int]$GitHubAlertsTimeoutSec = 15,
     [int]$GitHubAlertsIssueLimit = 30,
@@ -28,11 +32,12 @@ $base = $Domain.TrimEnd('/')
 $todayDate = Get-Date -Format 'yyyy-MM-dd'
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
 $commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'
+$openClawAuthDiagnosticScriptPath = Join-Path $repoRoot 'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1'
 . $commonHttpPath
 
 $checks = @(
     @{ Name = 'home'; Url = "$base/"; MaxLatencyMs = 5000 },  # full HTML page — higher threshold
-    @{ Name = 'health'; Url = "$base/api.php?resource=health" },
+    @{ Name = 'health-diagnostics'; Url = "$base/api.php?resource=health-diagnostics" },
     @{ Name = 'reviews'; Url = "$base/api.php?resource=reviews" },
     @{ Name = 'availability'; Url = "$base/api.php?resource=availability" },
     @{ Name = 'booked-slots'; Url = "$base/api.php?resource=booked-slots&date=$todayDate&doctor=indiferente&service=consulta" },
@@ -57,6 +62,63 @@ function Add-MonitorFailure {
     }
 
     $script:failures += $Message
+}
+
+function Invoke-OpenClawAuthRolloutDiagnostic {
+    param(
+        [string]$BaseUrl,
+        [string]$ScriptPath
+    )
+
+    if (-not (Test-Path $ScriptPath)) {
+        return [PSCustomObject]@{
+            available = $false
+            ok = $false
+            diagnosis = 'diagnostic_script_missing'
+            nextAction = 'No se encontro scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1 en este workspace.'
+            source = ''
+            mode = ''
+            configured = $false
+            error = 'diagnostic_script_missing'
+        }
+    }
+
+    $reportPath = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-auth-rollout-monitor-" + [Guid]::NewGuid().ToString('N') + '.json')
+
+    try {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $reportPath *> $null
+
+        if (-not (Test-Path $reportPath)) {
+            throw 'No se genero reporte del diagnostico OpenClaw.'
+        }
+
+        $raw = Get-Content -Path $reportPath -Raw
+        $payload = ($raw -replace "^\uFEFF", '') | ConvertFrom-Json -Depth 12
+
+        return [PSCustomObject]@{
+            available = $true
+            ok = [bool]$payload.ok
+            diagnosis = [string]$payload.diagnosis
+            nextAction = [string]$payload.next_action
+            source = [string]$payload.resolved.source
+            mode = [string]$payload.resolved.mode
+            configured = [bool]$payload.resolved.configured
+            error = ''
+        }
+    } catch {
+        return [PSCustomObject]@{
+            available = $true
+            ok = $false
+            diagnosis = 'diagnostic_script_failed'
+            nextAction = 'No se pudo interpretar el diagnostico OpenClaw del admin.'
+            source = ''
+            mode = ''
+            configured = $false
+            error = $_.Exception.Message
+        }
+    } finally {
+        Remove-Item -Path $reportPath -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Write-Host "== Monitor Produccion =="
@@ -97,11 +159,11 @@ foreach ($c in $checks) {
     }
 }
 
-$healthResult = $results | Where-Object { $_.Name -eq 'health' } | Select-Object -First 1
+$healthResult = $results | Where-Object { $_.Name -eq 'health-diagnostics' } | Select-Object -First 1
 if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
     $health = Parse-JsonBody -Body $healthResult.Body -Depth 10
     if ($null -eq $health) {
-        $failures += '[FAIL] health: JSON invalido'
+        $failures += '[FAIL] health-diagnostics: JSON invalido'
     } else {
         try {
             if ($health.status -ne 'ok') {
@@ -113,6 +175,47 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
             if ([string]$health.dataDirSource -eq 'tmp') {
                 $failures += '[FAIL] health.dataDirSource=tmp (no persistente)'
             }
+
+            $storageNode = $null
+            try { $storageNode = $health.checks.storage } catch { $storageNode = $null }
+            if ($null -eq $storageNode) {
+                if ($RequireStoreEncryption) {
+                    $failures += '[FAIL] health.checks.storage ausente'
+                } else {
+                    Write-Host '[WARN] health.checks.storage ausente'
+                }
+            } else {
+                $storeEncrypted = $false
+                $storeEncryptionConfigured = $false
+                $storeEncryptionRequired = $false
+                $storeEncryptionStatus = 'unknown'
+                $storeEncryptionCompliant = $false
+                $storageBackend = 'unknown'
+                $storageSource = 'unknown'
+
+                try { $storeEncrypted = [bool]$storageNode.encrypted } catch { $storeEncrypted = $false }
+                try { $storeEncryptionConfigured = [bool]$storageNode.encryptionConfigured } catch { $storeEncryptionConfigured = $false }
+                try { $storeEncryptionRequired = [bool]$storageNode.encryptionRequired } catch { $storeEncryptionRequired = $false }
+                try { $storeEncryptionStatus = [string]$storageNode.encryptionStatus } catch { $storeEncryptionStatus = 'unknown' }
+                try { $storeEncryptionCompliant = [bool]$storageNode.encryptionCompliant } catch { $storeEncryptionCompliant = $false }
+                try { $storageBackend = [string]$storageNode.backend } catch { $storageBackend = 'unknown' }
+                try { $storageSource = [string]$storageNode.source } catch { $storageSource = 'unknown' }
+
+                Write-Host "[INFO] health.storage backend=$storageBackend source=$storageSource encrypted=$storeEncrypted encryptionConfigured=$storeEncryptionConfigured encryptionRequired=$storeEncryptionRequired encryptionStatus=$storeEncryptionStatus encryptionCompliant=$storeEncryptionCompliant"
+
+                if ($storeEncryptionRequired -and -not $storeEncryptionCompliant) {
+                    $failures += "[FAIL] health.storage.encryptionCompliant=false (status=$storeEncryptionStatus configured=$storeEncryptionConfigured required=$storeEncryptionRequired)"
+                } elseif ($RequireStoreEncryption -and -not $storeEncryptionCompliant) {
+                    $failures += "[FAIL] health.storage.encryptionCompliant=false (status=$storeEncryptionStatus configured=$storeEncryptionConfigured)"
+                } elseif (-not $storeEncryptionCompliant) {
+                    Write-Host "[WARN] health.storage encryption no compliant (status=$storeEncryptionStatus configured=$storeEncryptionConfigured required=$storeEncryptionRequired)"
+                } elseif ($storeEncryptionStatus -eq 'encrypted') {
+                    Write-Host '[OK]  health storage cifrado en reposo activo'
+                } else {
+                    Write-Host "[OK]  health storage status=$storeEncryptionStatus"
+                }
+            }
+
             if (-not $SkipBackupCheck) {
                 $backupOk = $false
                 try { $backupOk = [bool]$health.checks.backup.ok } catch { $backupOk = $false }
@@ -120,6 +223,63 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                     $reason = ''
                     try { $reason = [string]$health.checks.backup.reason } catch {}
                     $failures += "[FAIL] backup no saludable (reason=$reason)"
+                }
+            }
+
+            $authNode = $null
+            try { $authNode = $health.checks.auth } catch { $authNode = $null }
+            if ($null -eq $authNode) {
+                $failures += '[FAIL] health.checks.auth ausente'
+            } else {
+                $authMode = 'unknown'
+                $authStatus = 'unknown'
+                $authConfigured = $false
+                $authHardeningCompliant = $false
+                $authRecommendedMode = 'openclaw_chatgpt'
+                $authRecommendedModeActive = $false
+                $authOperatorAuthEnabled = $false
+                $authOperatorAuthConfigured = $false
+                $authLegacyPasswordConfigured = $false
+                $authTwoFactorEnabled = $false
+
+                try { $authMode = [string]$authNode.mode } catch { $authMode = 'unknown' }
+                try { $authStatus = [string]$authNode.status } catch { $authStatus = 'unknown' }
+                try { $authConfigured = [bool]$authNode.configured } catch { $authConfigured = $false }
+                try { $authHardeningCompliant = [bool]$authNode.hardeningCompliant } catch { $authHardeningCompliant = $false }
+                try { $authRecommendedMode = [string]$authNode.recommendedMode } catch { $authRecommendedMode = 'openclaw_chatgpt' }
+                try { $authRecommendedModeActive = [bool]$authNode.recommendedModeActive } catch { $authRecommendedModeActive = $false }
+                try { $authOperatorAuthEnabled = [bool]$authNode.operatorAuthEnabled } catch { $authOperatorAuthEnabled = $false }
+                try { $authOperatorAuthConfigured = [bool]$authNode.operatorAuthConfigured } catch { $authOperatorAuthConfigured = $false }
+                try { $authLegacyPasswordConfigured = [bool]$authNode.legacyPasswordConfigured } catch { $authLegacyPasswordConfigured = $false }
+                try { $authTwoFactorEnabled = [bool]$authNode.twoFactorEnabled } catch { $authTwoFactorEnabled = $false }
+
+                Write-Host "[INFO] health.auth mode=$authMode status=$authStatus configured=$authConfigured hardeningCompliant=$authHardeningCompliant recommendedMode=$authRecommendedMode recommendedModeActive=$authRecommendedModeActive operatorAuthEnabled=$authOperatorAuthEnabled operatorAuthConfigured=$authOperatorAuthConfigured legacyPasswordConfigured=$authLegacyPasswordConfigured twoFactorEnabled=$authTwoFactorEnabled"
+
+                if (-not $authConfigured) {
+                    $failures += "[FAIL] health.auth.configured=false (mode=$authMode status=$authStatus)"
+                }
+                if ($RequireOperatorAuth -and -not $authRecommendedModeActive) {
+                    $failures += "[FAIL] health.auth.mode=$authMode (esperado=$authRecommendedMode)"
+                } elseif (-not $authRecommendedModeActive) {
+                    Write-Host "[WARN] health.auth mode no recomendado (mode=$authMode expected=$authRecommendedMode)"
+                }
+                if ($RequireAdminTwoFactor -and -not $authTwoFactorEnabled) {
+                    $failures += '[FAIL] health.auth.twoFactorEnabled=false'
+                } elseif ($authMode -eq 'legacy_password' -and -not $authTwoFactorEnabled) {
+                    Write-Host '[WARN] health.auth legacy_password sin 2FA'
+                }
+                if ($RequireAuthConfigured -and -not $authHardeningCompliant) {
+                    $failures += "[FAIL] health.auth.hardeningCompliant=false (mode=$authMode recommendedMode=$authRecommendedMode twoFactorEnabled=$authTwoFactorEnabled)"
+                } elseif ($authConfigured -and -not $authHardeningCompliant) {
+                    Write-Host "[WARN] health.auth hardening pendiente (mode=$authMode recommendedMode=$authRecommendedMode twoFactorEnabled=$authTwoFactorEnabled)"
+                }
+
+                if ($RequireOperatorAuth) {
+                    $operatorAuthRollout = Invoke-OpenClawAuthRolloutDiagnostic -BaseUrl $base -ScriptPath $openClawAuthDiagnosticScriptPath
+                    Write-Host "[INFO] operator auth rollout diagnosis=$($operatorAuthRollout.diagnosis) source=$($operatorAuthRollout.source) mode=$($operatorAuthRollout.mode) configured=$($operatorAuthRollout.configured)"
+                    if (-not $operatorAuthRollout.ok) {
+                        Add-MonitorFailure -Message "[FAIL] operator auth rollout diagnosis=$($operatorAuthRollout.diagnosis) source=$($operatorAuthRollout.source) mode=$($operatorAuthRollout.mode) configured=$($operatorAuthRollout.configured) nextAction=$($operatorAuthRollout.nextAction)" -AllowDegraded:$false
+                    }
                 }
             }
 
@@ -134,6 +294,8 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 $publicSyncState = 'unknown'
                 $publicSyncAgeSeconds = 999999
                 $publicSyncExpectedMaxLagSeconds = 120
+                $publicSyncOperationallyHealthy = $false
+                $publicSyncRepoHygieneIssue = $false
                 $publicSyncFailureReason = ''
                 $publicSyncLastErrorMessage = ''
                 $publicSyncCurrentHead = ''
@@ -147,6 +309,8 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 try { $publicSyncState = [string]$publicSyncNode.state } catch { $publicSyncState = 'unknown' }
                 try { $publicSyncAgeSeconds = [int]$publicSyncNode.ageSeconds } catch { $publicSyncAgeSeconds = 999999 }
                 try { $publicSyncExpectedMaxLagSeconds = [int]$publicSyncNode.expectedMaxLagSeconds } catch { $publicSyncExpectedMaxLagSeconds = 120 }
+                try { $publicSyncOperationallyHealthy = [bool]$publicSyncNode.operationallyHealthy } catch { $publicSyncOperationallyHealthy = $publicSyncHealthy }
+                try { $publicSyncRepoHygieneIssue = [bool]$publicSyncNode.repoHygieneIssue } catch { $publicSyncRepoHygieneIssue = $false }
                 try { $publicSyncFailureReason = [string]$publicSyncNode.failureReason } catch { $publicSyncFailureReason = '' }
                 try { $publicSyncLastErrorMessage = [string]$publicSyncNode.lastErrorMessage } catch { $publicSyncLastErrorMessage = '' }
                 try { $publicSyncCurrentHead = [string]$publicSyncNode.currentHead } catch { $publicSyncCurrentHead = '' }
@@ -175,14 +339,31 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                     $publicSyncCurrentHead -ne $publicSyncRemoteHead
                 )
                 $publicSyncTelemetryGap = (
-                    -not $publicSyncHealthy -and
+                    -not $publicSyncOperationallyHealthy -and
                     -not [string]::IsNullOrWhiteSpace($publicSyncFailureReason) -and
                     [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
                     [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
                     $publicSyncDirtyPathsCount -le 0
                 )
+                if (-not $publicSyncRepoHygieneIssue) {
+                    $publicSyncRepoHygieneIssue = (
+                        $publicSyncFailureReason -eq 'working_tree_dirty' -and
+                        -not $publicSyncHeadDrift -and
+                        -not $publicSyncTelemetryGap -and
+                        $publicSyncDirtyPathsCount -gt 0
+                    )
+                }
+                if (
+                    -not $publicSyncOperationallyHealthy -and
+                    $publicSyncRepoHygieneIssue -and
+                    $publicSyncConfigured -and
+                    $publicSyncAgeSeconds -le $publicSyncExpectedMaxLagSeconds
+                ) {
+                    $publicSyncOperationallyHealthy = $true
+                    $publicSyncHealthy = $true
+                }
 
-                Write-Host "[INFO] health.publicSync configured=$publicSyncConfigured healthy=$publicSyncHealthy jobId=$publicSyncJobId state=$publicSyncState ageSeconds=$publicSyncAgeSeconds expectedMaxLagSeconds=$publicSyncExpectedMaxLagSeconds failureReason=$publicSyncFailureReason lastErrorMessage=$publicSyncLastErrorMessage currentHead=$publicSyncCurrentHead remoteHead=$publicSyncRemoteHead headDrift=$publicSyncHeadDrift dirtyPathsCount=$publicSyncDirtyPathsCount telemetryGap=$publicSyncTelemetryGap dirtyPathsSample=$publicSyncDirtyPathsSampleLabel"
+                Write-Host "[INFO] health.publicSync configured=$publicSyncConfigured healthy=$publicSyncHealthy operationallyHealthy=$publicSyncOperationallyHealthy repoHygieneIssue=$publicSyncRepoHygieneIssue jobId=$publicSyncJobId state=$publicSyncState ageSeconds=$publicSyncAgeSeconds expectedMaxLagSeconds=$publicSyncExpectedMaxLagSeconds failureReason=$publicSyncFailureReason lastErrorMessage=$publicSyncLastErrorMessage currentHead=$publicSyncCurrentHead remoteHead=$publicSyncRemoteHead headDrift=$publicSyncHeadDrift dirtyPathsCount=$publicSyncDirtyPathsCount telemetryGap=$publicSyncTelemetryGap dirtyPathsSample=$publicSyncDirtyPathsSampleLabel"
 
                 if (-not $publicSyncConfigured) {
                     Add-MonitorFailure -Message '[FAIL] health.publicSync.configured=false' -AllowDegraded:$AllowDegradedPublicSync
@@ -190,8 +371,8 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 if ($publicSyncConfigured -and $publicSyncJobId -ne '8d31e299-7e57-4959-80b5-aaa2d73e9674') {
                     Add-MonitorFailure -Message "[FAIL] health.publicSync.jobId invalido ($publicSyncJobId)" -AllowDegraded:$AllowDegradedPublicSync
                 }
-                if ($publicSyncConfigured -and -not $publicSyncHealthy) {
-                    Add-MonitorFailure -Message "[FAIL] health.publicSync unhealthy (state=$publicSyncState, failureReason=$publicSyncFailureReason, headDrift=$publicSyncHeadDrift, telemetryGap=$publicSyncTelemetryGap, dirtyPathsCount=$publicSyncDirtyPathsCount)" -AllowDegraded:$AllowDegradedPublicSync
+                if ($publicSyncConfigured -and -not $publicSyncOperationallyHealthy) {
+                    Add-MonitorFailure -Message "[FAIL] health.publicSync unhealthy (state=$publicSyncState, failureReason=$publicSyncFailureReason, repoHygieneIssue=$publicSyncRepoHygieneIssue, headDrift=$publicSyncHeadDrift, telemetryGap=$publicSyncTelemetryGap, dirtyPathsCount=$publicSyncDirtyPathsCount)" -AllowDegraded:$AllowDegradedPublicSync
                 }
                 if ($publicSyncConfigured -and $publicSyncAgeSeconds -gt $publicSyncExpectedMaxLagSeconds) {
                     Add-MonitorFailure -Message "[FAIL] health.publicSync stale age=$publicSyncAgeSeconds max=$publicSyncExpectedMaxLagSeconds (state=$publicSyncState)" -AllowDegraded:$AllowDegradedPublicSync
@@ -204,10 +385,9 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 }
                 if (
                     $publicSyncConfigured -and
-                    $publicSyncFailureReason -eq 'working_tree_dirty' -and
-                    -not $publicSyncTelemetryGap
+                    $publicSyncRepoHygieneIssue
                 ) {
-                    Add-MonitorFailure -Message "[FAIL] health.publicSync working tree dirty (dirtyPathsCount=$publicSyncDirtyPathsCount dirtyPathsSample=$publicSyncDirtyPathsSampleLabel)" -AllowDegraded:$AllowDegradedPublicSync
+                    Write-Host "[WARN] health.publicSync repo hygiene issue (dirtyPathsCount=$publicSyncDirtyPathsCount dirtyPathsSample=$publicSyncDirtyPathsSampleLabel)"
                 }
             }
 

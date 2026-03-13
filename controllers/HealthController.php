@@ -3,10 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
-$whatsappOpenclawBootstrap = __DIR__ . '/../lib/whatsapp_openclaw/bootstrap.php';
-if (is_file($whatsappOpenclawBootstrap)) {
-    require_once $whatsappOpenclawBootstrap;
-}
+require_once __DIR__ . '/../lib/PatientCaseService.php';
+require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
 
 class HealthController
 {
@@ -19,6 +17,18 @@ class HealthController
         $storageReady = ensure_data_file();
         $dataWritable = data_dir_writable();
         $storeEncrypted = store_file_is_encrypted();
+        $storeEncryptionConfigured = function_exists('storage_encryption_configured')
+            ? storage_encryption_configured()
+            : false;
+        $storeEncryptionRequired = function_exists('storage_encryption_required')
+            ? storage_encryption_required()
+            : false;
+        $storeEncryptionStatus = function_exists('storage_encryption_status')
+            ? storage_encryption_status()
+            : ($storeEncrypted ? 'encrypted' : 'plaintext');
+        $storeEncryptionCompliant = function_exists('storage_encryption_compliant')
+            ? storage_encryption_compliant()
+            : (!$storeEncryptionRequired || $storeEncrypted);
         $dataDirSource = function_exists('data_dir_source') ? data_dir_source() : 'unknown';
         $storageBackend = function_exists('storage_backend_mode') ? storage_backend_mode() : 'unknown';
         $sqliteDriverAvailable = function_exists('storage_sqlite_available') ? storage_sqlite_available() : false;
@@ -68,13 +78,17 @@ class HealthController
         $redisStatus = getenv('PIELARMONIA_REDIS_HOST') ? 'configured' : 'disabled';
         $idempotencySnapshot = self::collectIdempotencySnapshot();
         $store = isset($context['store']) && is_array($context['store']) ? $context['store'] : read_store();
+        $patientCaseService = new PatientCaseService();
+        $store = $patientCaseService->hydrateStore($store);
+        $patientFlowSnapshot = $patientCaseService->buildSummary($store);
+        $authSnapshot = self::collectAuthSnapshot();
+        $internalConsoleSnapshot = function_exists('internal_console_readiness_snapshot')
+            ? internal_console_readiness_snapshot()
+            : [];
         $telemedicineSnapshot = class_exists('TelemedicineOpsSnapshot')
             ? TelemedicineOpsSnapshot::build($store)
             : ['configured' => false];
         $leadOpsSnapshot = LeadOpsService::buildHealthSnapshot($store);
-        $whatsappOpenclawSnapshot = function_exists('whatsapp_openclaw_health_snapshot')
-            ? whatsapp_openclaw_health_snapshot($store)
-            : ['configured' => false, 'configuredMode' => 'disabled', 'bridgeMode' => 'disabled'];
         $appointments = isset($store['appointments']) && is_array($store['appointments']) ? $store['appointments'] : [];
         $confirmedAppointments = 0;
         foreach ($appointments as $appointment) {
@@ -88,7 +102,8 @@ class HealthController
             'appointmentsActive' => $confirmedAppointments,
             'callbacks' => isset($store['callbacks']) && is_array($store['callbacks']) ? count($store['callbacks']) : 0,
             'reviews' => isset($store['reviews']) && is_array($store['reviews']) ? count($store['reviews']) : 0,
-            'availabilityDays' => isset($store['availability']) && is_array($store['availability']) ? count($store['availability']) : 0
+            'availabilityDays' => isset($store['availability']) && is_array($store['availability']) ? count($store['availability']) : 0,
+            'patientCases' => isset($store['patient_cases']) && is_array($store['patient_cases']) ? count($store['patient_cases']) : 0,
         ];
 
         $backupCheck = [
@@ -129,12 +144,15 @@ class HealthController
                 'lockFile' => '',
                 'state' => 'unknown',
                 'healthy' => false,
+                'operationallyHealthy' => false,
+                'repoHygieneIssue' => false,
                 'ageSeconds' => null,
                 'expectedMaxLagSeconds' => 120,
                 'lastCheckedAt' => '',
                 'lastSuccessAt' => '',
                 'lastErrorAt' => '',
                 'lastErrorMessage' => '',
+                'failureReason' => '',
                 'deployedCommit' => '',
             ];
 
@@ -143,6 +161,7 @@ class HealthController
         audit_log_event('api.health', [
             'method' => $method,
             'resource' => $resource,
+            'diagnosticsVisible' => diagnostics_request_authorized($context),
             'storageReady' => $storageReady,
             'timingMs' => $timingMs,
             'version' => app_runtime_version(),
@@ -150,6 +169,17 @@ class HealthController
             'storageBackend' => $storageBackend,
             'sqliteDriverAvailable' => $sqliteDriverAvailable,
             'jsonFallbackEnabled' => $jsonFallbackEnabled,
+            'storeEncryptionConfigured' => $storeEncryptionConfigured,
+            'storeEncryptionRequired' => $storeEncryptionRequired,
+            'storeEncryptionStatus' => $storeEncryptionStatus,
+            'storeEncryptionCompliant' => $storeEncryptionCompliant,
+            'authMode' => (string) ($authSnapshot['mode'] ?? 'unknown'),
+            'authStatus' => (string) ($authSnapshot['status'] ?? 'unknown'),
+            'authConfigured' => (bool) ($authSnapshot['configured'] ?? false),
+            'authHardeningCompliant' => (bool) ($authSnapshot['hardeningCompliant'] ?? false),
+            'authTwoFactorEnabled' => (bool) ($authSnapshot['twoFactorEnabled'] ?? false),
+            'internalConsoleReady' => (bool) (($internalConsoleSnapshot['overall']['ready'] ?? false)),
+            'internalConsoleStatus' => (string) (($internalConsoleSnapshot['overall']['status'] ?? 'unknown')),
             'figoConfigured' => $figoConfigured,
             'figoRecursiveConfig' => $figoRecursive,
             'calendarConfigured' => $calendarClientConfigured,
@@ -176,15 +206,13 @@ class HealthController
             'leadOpsMode' => (string) ($leadOpsSnapshot['mode'] ?? 'disabled'),
             'leadOpsPendingCallbacks' => (int) ($leadOpsSnapshot['pendingCallbacks'] ?? 0),
             'leadOpsWorkerDegraded' => (bool) ($leadOpsSnapshot['degraded'] ?? true),
-            'whatsappOpenclawMode' => (string) ($whatsappOpenclawSnapshot['configuredMode'] ?? 'disabled'),
-            'whatsappOpenclawBridgeMode' => (string) ($whatsappOpenclawSnapshot['bridgeMode'] ?? 'disabled'),
-            'whatsappOpenclawPendingOutbox' => (int) ($whatsappOpenclawSnapshot['pendingOutbox'] ?? 0),
             'publicSyncConfigured' => (bool) ($publicSyncCheck['configured'] ?? false),
             'publicSyncHealthy' => (bool) ($publicSyncCheck['healthy'] ?? false),
+            'publicSyncRepoHygieneIssue' => (bool) ($publicSyncCheck['repoHygieneIssue'] ?? false),
             'publicSyncState' => (string) ($publicSyncCheck['state'] ?? 'unknown'),
             'publicSyncAgeSeconds' => $publicSyncCheck['ageSeconds'] ?? null,
         ]);
-        json_response([
+        $detailedPayload = [
             'ok' => true,
             'status' => 'ok',
             'storageReady' => $storageReady,
@@ -196,6 +224,17 @@ class HealthController
             'sqliteDriverAvailable' => $sqliteDriverAvailable,
             'jsonFallbackEnabled' => $jsonFallbackEnabled,
             'storeEncrypted' => $storeEncrypted,
+            'storeEncryptionConfigured' => $storeEncryptionConfigured,
+            'storeEncryptionRequired' => $storeEncryptionRequired,
+            'storeEncryptionStatus' => $storeEncryptionStatus,
+            'storeEncryptionCompliant' => $storeEncryptionCompliant,
+            'authMode' => (string) ($authSnapshot['mode'] ?? 'unknown'),
+            'authStatus' => (string) ($authSnapshot['status'] ?? 'unknown'),
+            'authConfigured' => (bool) ($authSnapshot['configured'] ?? false),
+            'authHardeningCompliant' => (bool) ($authSnapshot['hardeningCompliant'] ?? false),
+            'internalConsoleMode' => (string) (($internalConsoleSnapshot['mode'] ?? 'consultorio_core')),
+            'internalConsoleReady' => (bool) (($internalConsoleSnapshot['overall']['ready'] ?? false)),
+            'internalConsoleStatus' => (string) (($internalConsoleSnapshot['overall']['status'] ?? 'unknown')),
             'figoConfigured' => $figoConfigured,
             'figoRecursiveConfig' => $figoRecursive,
             'calendarConfigured' => $calendarClientConfigured,
@@ -221,11 +260,17 @@ class HealthController
                     'ready' => $storageReady,
                     'writable' => $dataWritable,
                     'encrypted' => $storeEncrypted,
+                    'encryptionConfigured' => $storeEncryptionConfigured,
+                    'encryptionRequired' => $storeEncryptionRequired,
+                    'encryptionStatus' => $storeEncryptionStatus,
+                    'encryptionCompliant' => $storeEncryptionCompliant,
                     'source' => $dataDirSource,
                     'backend' => $storageBackend,
                     'sqliteDriverAvailable' => $sqliteDriverAvailable,
                     'jsonFallbackEnabled' => $jsonFallbackEnabled
                 ],
+                'auth' => $authSnapshot,
+                'internalConsole' => $internalConsoleSnapshot,
                 'redis' => $redisStatus,
                 'php_version' => PHP_VERSION,
                 'calendar' => [
@@ -257,13 +302,36 @@ class HealthController
                     ? TelemedicineOpsSnapshot::forHealth($telemedicineSnapshot)
                     : ['configured' => false],
                 'leadOps' => $leadOpsSnapshot,
-                'whatsappOpenclaw' => $whatsappOpenclawSnapshot,
                 'backup' => $backupCheck,
                 'publicSync' => $publicSyncCheck,
+                'patientFlow' => $patientFlowSnapshot,
                 'storeCounts' => $storeCounts
             ],
             'timestamp' => local_date('c')
-        ]);
+        ];
+
+        if (diagnostics_request_authorized($context)) {
+            json_response($detailedPayload);
+        }
+
+        json_response(self::publicPayload($detailedPayload));
+    }
+
+    public static function diagnostics(array $context): void
+    {
+        if (!diagnostics_request_authorized($context)) {
+            audit_log_event('api.health_diagnostics_blocked', [
+                'method' => (string) ($context['method'] ?? 'GET'),
+                'resource' => (string) ($context['resource'] ?? 'health-diagnostics'),
+            ]);
+            json_response([
+                'ok' => false,
+                'error' => 'No autorizado',
+            ], 403);
+        }
+
+        $context['diagnosticsAuthorized'] = true;
+        self::check($context);
     }
 
     /**
@@ -334,6 +402,87 @@ class HealthController
             return trim($override);
         }
         return __DIR__ . '/../content/services.json';
+    }
+
+    /**
+     * @return array{
+     *   mode:string,
+     *   status:string,
+     *   configured:bool,
+     *   hardeningCompliant:bool,
+     *   recommendedMode:string,
+     *   recommendedModeActive:bool,
+     *   legacyPasswordConfigured:bool,
+     *   twoFactorEnabled:bool,
+     *   operatorAuthEnabled:bool,
+     *   operatorAuthConfigured:bool
+     * }
+     */
+    private static function collectAuthSnapshot(): array
+    {
+        $recommendedMode = defined('OPERATOR_AUTH_SOURCE') ? (string) OPERATOR_AUTH_SOURCE : 'openclaw_chatgpt';
+        $operatorAuthConfig = function_exists('operator_auth_configuration_snapshot')
+            ? operator_auth_configuration_snapshot()
+            : [];
+        $operatorAuthEnabled = array_key_exists('enabled', $operatorAuthConfig)
+            ? (bool) $operatorAuthConfig['enabled']
+            : (function_exists('operator_auth_is_enabled') ? operator_auth_is_enabled() : false);
+        $operatorAuthConfigured = array_key_exists('configured', $operatorAuthConfig)
+            ? (bool) $operatorAuthConfig['configured']
+            : (function_exists('operator_auth_is_configured') ? operator_auth_is_configured() : false);
+        $legacyPasswordConfigured = function_exists('admin_password_is_configured') ? admin_password_is_configured() : false;
+        $twoFactorEnabled = trim((string) getenv('PIELARMONIA_ADMIN_2FA_SECRET')) !== '';
+        $mode = $operatorAuthEnabled && array_key_exists('mode', $operatorAuthConfig)
+            ? (string) $operatorAuthConfig['mode']
+            : ($operatorAuthEnabled && function_exists('operator_auth_mode')
+                ? (string) operator_auth_mode()
+                : 'legacy_password');
+        if (trim($mode) === '') {
+            $mode = 'legacy_password';
+        }
+
+        $configured = $operatorAuthEnabled ? $operatorAuthConfigured : $legacyPasswordConfigured;
+        $status = $configured
+            ? 'configured'
+            : ($operatorAuthEnabled ? 'operator_auth_not_configured' : 'legacy_auth_not_configured');
+        $hardeningCompliant = $configured && (
+            ($operatorAuthEnabled && $mode === $recommendedMode)
+            || (!$operatorAuthEnabled && $mode === 'legacy_password' && $twoFactorEnabled)
+        );
+
+        return [
+            'mode' => $mode,
+            'status' => $status,
+            'configured' => $configured,
+            'hardeningCompliant' => $hardeningCompliant,
+            'recommendedMode' => $recommendedMode,
+            'recommendedModeActive' => $mode === $recommendedMode,
+            'legacyPasswordConfigured' => $legacyPasswordConfigured,
+            'twoFactorEnabled' => $twoFactorEnabled,
+            'operatorAuthEnabled' => $operatorAuthEnabled,
+            'operatorAuthConfigured' => $operatorAuthConfigured,
+            'operatorAuthMissing' => is_array($operatorAuthConfig['missing'] ?? null)
+                ? array_values($operatorAuthConfig['missing'])
+                : [],
+            'operatorAuthAllowedEmailCount' => (int) ($operatorAuthConfig['allowedEmailCount'] ?? 0),
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $detailedPayload
+     * @return array<string,mixed>
+     */
+    private static function publicPayload(array $detailedPayload): array
+    {
+        return [
+            'ok' => (bool) ($detailedPayload['ok'] ?? false),
+            'status' => (string) ($detailedPayload['status'] ?? 'unknown'),
+            'storageReady' => (bool) ($detailedPayload['storageReady'] ?? false),
+            'dataDirWritable' => (bool) ($detailedPayload['dataDirWritable'] ?? false),
+            'timingMs' => (int) ($detailedPayload['timingMs'] ?? 0),
+            'version' => (string) ($detailedPayload['version'] ?? app_runtime_version()),
+            'timestamp' => (string) ($detailedPayload['timestamp'] ?? local_date('c')),
+        ];
     }
 
     private static function resolveCalendarReachable(

@@ -10,6 +10,9 @@ async function handleStatusCommand(ctx) {
         parseHandoffs,
         analyzeConflicts,
         buildExecutorContribution,
+        buildCodexInstanceSummary,
+        buildProviderModeSummary,
+        buildRuntimeSurfaceSummary,
         loadMetricsSnapshot,
         normalizeContributionBaseline,
         buildContributionTrend,
@@ -40,6 +43,9 @@ async function handleStatusCommand(ctx) {
         handoffData.handoffs
     );
     const contribution = buildExecutorContribution(board.tasks);
+    const codexInstances = buildCodexInstanceSummary(board.tasks);
+    const providerModes = buildProviderModeSummary(board.tasks);
+    const runtimeSurfaces = buildRuntimeSurfaceSummary(board.tasks);
     const metricsSnapshot = loadMetricsSnapshot();
     const contributionBaseline = normalizeContributionBaseline(metricsSnapshot);
     const contributionTrend = buildContributionTrend(
@@ -73,6 +79,9 @@ async function handleStatusCommand(ctx) {
             byStatus: getStatusCounts(board.tasks),
             byExecutor: getExecutorCounts(board.tasks),
         },
+        codex_instances: codexInstances,
+        provider_modes: providerModes,
+        runtime_surfaces: runtimeSurfaces,
         contribution,
         contribution_trend: contributionTrend,
         domain_health: domainHealth,

@@ -173,6 +173,7 @@ final class LeadOpsEndpointsTest extends TestCase
                 'store' => \read_store(),
                 'method' => 'GET',
                 'resource' => 'health',
+                'diagnosticsAuthorized' => true,
             ]);
         });
 
@@ -248,6 +249,7 @@ final class LeadOpsEndpointsTest extends TestCase
                 'store' => \read_store(),
                 'method' => 'GET',
                 'resource' => 'health',
+                'diagnosticsAuthorized' => true,
             ]);
         });
 
@@ -282,6 +284,7 @@ final class LeadOpsEndpointsTest extends TestCase
                 'store' => \read_store(),
                 'method' => 'GET',
                 'resource' => 'health',
+                'diagnosticsAuthorized' => true,
             ]);
         });
 

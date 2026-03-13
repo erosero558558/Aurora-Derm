@@ -27,6 +27,180 @@ function createRuntimeIntakeCommands(ctx = {}) {
         return parsed;
     }
 
+    function dispatchPriorityRank(task) {
+        return Number(task?.priority_score || 0);
+    }
+
+    function dispatchCriticalRank(task) {
+        return task?.critical_zone ? 1 : 0;
+    }
+
+    function dispatchRuntimeImpactRank(task) {
+        return String(task?.runtime_impact || '').toLowerCase() === 'high'
+            ? 1
+            : 0;
+    }
+
+    function dispatchTransversalRuntimeRank(task) {
+        const scope = String(task?.scope || '').toLowerCase();
+        const lane = String(task?.domain_lane || '').toLowerCase();
+        const provider = String(task?.provider_mode || '').toLowerCase();
+        return scope === 'openclaw_runtime' ||
+            lane === 'transversal_runtime' ||
+            provider === 'openclaw_chatgpt'
+            ? 1
+            : 0;
+    }
+
+    function dispatchSlaDueAtTs(task) {
+        const dueTs = Date.parse(String(task?.sla_due_at || ''));
+        return Number.isFinite(dueTs) ? dueTs : Number.MAX_SAFE_INTEGER;
+    }
+
+    function normalizeDispatchToken(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase();
+    }
+
+    function isRuntimeDispatchTask(task) {
+        return (
+            normalizeDispatchToken(task?.provider_mode) ===
+                'openclaw_chatgpt' ||
+            normalizeDispatchToken(task?.scope) === 'openclaw_runtime' ||
+            normalizeDispatchToken(task?.domain_lane) ===
+                'transversal_runtime'
+        );
+    }
+
+    function compareDispatchTasks(a, b) {
+        const priorityDelta =
+            dispatchPriorityRank(b) - dispatchPriorityRank(a);
+        if (priorityDelta !== 0) return priorityDelta;
+
+        const criticalDelta =
+            dispatchCriticalRank(b) - dispatchCriticalRank(a);
+        if (criticalDelta !== 0) return criticalDelta;
+
+        const runtimeImpactDelta =
+            dispatchRuntimeImpactRank(b) - dispatchRuntimeImpactRank(a);
+        if (runtimeImpactDelta !== 0) return runtimeImpactDelta;
+
+        const transversalDelta =
+            dispatchTransversalRuntimeRank(b) -
+            dispatchTransversalRuntimeRank(a);
+        if (transversalDelta !== 0) return transversalDelta;
+
+        const dueDelta = dispatchSlaDueAtTs(a) - dispatchSlaDueAtTs(b);
+        if (dueDelta !== 0) return dueDelta;
+
+        return String(a?.id || '').localeCompare(String(b?.id || ''));
+    }
+
+    function toSkippedRuntimeTask(task, reason, runtimeState = '') {
+        const base =
+            typeof ctx.toTaskJson === 'function'
+                ? ctx.toTaskJson(task)
+                : {
+                      id: String(task?.id || ''),
+                      title: String(task?.title || ''),
+                      scope: String(task?.scope || ''),
+                      domain_lane: String(task?.domain_lane || ''),
+                      provider_mode: String(task?.provider_mode || ''),
+                      runtime_surface: String(task?.runtime_surface || ''),
+                      runtime_transport: String(task?.runtime_transport || ''),
+                  };
+        return {
+            ...base,
+            skip_reason: String(reason || 'runtime_surface_unhealthy'),
+            runtime_state: String(runtimeState || ''),
+        };
+    }
+
+    async function filterDispatchableRuntimeTasks(tasks = []) {
+        const readyTasks = Array.isArray(tasks) ? tasks : [];
+        const runtimeTasks = readyTasks.filter(isRuntimeDispatchTask);
+        if (
+            runtimeTasks.length === 0 ||
+            typeof ctx.verifyOpenClawRuntime !== 'function'
+        ) {
+            return {
+                runnable: readyTasks,
+                skipped: [],
+                diagnostics: [],
+            };
+        }
+
+        let verification;
+        try {
+            verification = await ctx.verifyOpenClawRuntime();
+        } catch (error) {
+            return {
+                runnable: readyTasks.filter((task) => !isRuntimeDispatchTask(task)),
+                skipped: runtimeTasks.map((task) =>
+                    toSkippedRuntimeTask(
+                        task,
+                        'runtime_health_check_failed',
+                        'unknown'
+                    )
+                ),
+                diagnostics: [
+                    {
+                        code: 'warn.dispatch.runtime_health_check_failed',
+                        severity: 'warning',
+                        message: `dispatch omitio ${runtimeTasks.length} tarea(s) runtime porque verifyOpenClawRuntime fallo: ${String(error?.message || error)}`,
+                    },
+                ],
+            };
+        }
+
+        const surfaceByKey = new Map(
+            (Array.isArray(verification?.surfaces) ? verification.surfaces : []).map(
+                (surface) => [
+                    normalizeDispatchToken(surface?.surface),
+                    surface,
+                ]
+            )
+        );
+        const runnable = [];
+        const skipped = [];
+        const diagnostics = [];
+
+        for (const task of readyTasks) {
+            if (!isRuntimeDispatchTask(task)) {
+                runnable.push(task);
+                continue;
+            }
+            const surfaceKey = normalizeDispatchToken(task?.runtime_surface);
+            const surface = surfaceByKey.get(surfaceKey);
+            if (surface && surface.healthy) {
+                runnable.push(task);
+                continue;
+            }
+            skipped.push(
+                toSkippedRuntimeTask(
+                    task,
+                    'runtime_surface_unhealthy',
+                    surface?.state || 'unhealthy'
+                )
+            );
+            diagnostics.push({
+                code: 'warn.dispatch.runtime_surface_unhealthy',
+                severity: 'warning',
+                message: `dispatch omitio ${String(task?.id || '(sin id)')} porque runtime_surface=${surfaceKey || 'vacio'} no esta saludable`,
+                task_id: String(task?.id || ''),
+                runtime_surface: surfaceKey,
+                runtime_state: String(surface?.state || 'unhealthy'),
+            });
+        }
+
+        return {
+            runnable,
+            skipped,
+            diagnostics,
+        };
+    }
+
     function buildBudgetSnapshot(board, today, procEnv) {
         const limits = {
             codex: parseDailyLimitFromEnv(procEnv.CODEX_DAILY_LIMIT, 999),
@@ -357,7 +531,7 @@ function createRuntimeIntakeCommands(ctx = {}) {
             return report;
         },
 
-        dispatch(args = []) {
+        async dispatch(args = []) {
             const wantsJson = args.includes('--json');
             const { flags } = ctx.parseFlags(args);
             const agent = String(flags.agent || '')
@@ -406,18 +580,25 @@ function createRuntimeIntakeCommands(ctx = {}) {
                 0,
                 Math.min(perRunLimit, budgetRemaining)
             );
-            const runnable = board.tasks
+            const readyTasks = board.tasks
                 .filter(
                     (t) =>
                         String(t.executor || '').toLowerCase() === agent &&
                         String(t.status || '') === 'ready'
                 )
-                .sort(
-                    (a, b) =>
-                        Number(b.priority_score || 0) -
-                        Number(a.priority_score || 0)
-                )
-                .slice(0, effectivePerRunLimit);
+                .sort(compareDispatchTasks);
+            const runtimeDispatchFilter =
+                agent === 'codex' && effectivePerRunLimit > 0
+                    ? await filterDispatchableRuntimeTasks(readyTasks)
+                    : {
+                          runnable: readyTasks,
+                          skipped: [],
+                          diagnostics: [],
+                      };
+            const runnable = runtimeDispatchFilter.runnable.slice(
+                0,
+                effectivePerRunLimit
+            );
             const dispatched = [];
             for (const task of runnable) {
                 task.status = 'in_progress';
@@ -457,18 +638,59 @@ function createRuntimeIntakeCommands(ctx = {}) {
                 budget_used_today: usage[agent],
                 budget_remaining_before_dispatch: budgetRemaining,
                 dispatched,
+                skipped_unhealthy_tasks: runtimeDispatchFilter.skipped,
+                dispatched_tasks:
+                    typeof ctx.toTaskJson === 'function'
+                        ? dispatchedTasks.map((task) => ctx.toTaskJson(task))
+                        : dispatchedTasks.map((task) => ({
+                              id: String(task?.id || ''),
+                              title: String(task?.title || ''),
+                              scope: String(task?.scope || ''),
+                              domain_lane: String(task?.domain_lane || ''),
+                              provider_mode: String(task?.provider_mode || ''),
+                              runtime_surface: String(
+                                  task?.runtime_surface || ''
+                              ),
+                              runtime_transport: String(
+                                  task?.runtime_transport || ''
+                              ),
+                          })),
             };
             if (wantsJson) {
                 const payload =
                     typeof ctx.attachDiagnostics === 'function'
-                        ? ctx.attachDiagnostics(report, wipDiagnostics)
+                        ? ctx.attachDiagnostics(report, [
+                              ...runtimeDispatchFilter.diagnostics,
+                              ...wipDiagnostics,
+                          ])
                         : report;
                 printJson(payload);
                 return payload;
             }
             console.log(`== Agent Dispatch (${agent}) ==`);
             console.log(`Dispatched: ${dispatched.join(', ') || 'none'}`);
+            if (runtimeDispatchFilter.skipped.length > 0) {
+                console.log(
+                    `Skipped unhealthy runtime tasks: ${runtimeDispatchFilter.skipped
+                        .map((task) => String(task.id || ''))
+                        .join(', ')}`
+                );
+            }
+            for (const task of dispatchedTasks) {
+                const scope = String(task?.scope || '');
+                const lane = String(task?.domain_lane || '');
+                const runtimeSurface = String(task?.runtime_surface || '');
+                const runtimeSuffix = runtimeSurface
+                    ? ` surface=${runtimeSurface}`
+                    : '';
+                console.log(
+                    `- ${String(task?.id || '')}: scope=${scope} lane=${lane}${runtimeSuffix}`
+                );
+            }
             for (const diag of wipDiagnostics) {
+                console.log(`WARN [${diag.code}] ${diag.message}`);
+            }
+            for (const diag of runtimeDispatchFilter.diagnostics) {
                 console.log(`WARN [${diag.code}] ${diag.message}`);
             }
             return report;

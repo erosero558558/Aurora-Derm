@@ -3,24 +3,24 @@ export function renderDashboardSignalPanel() {
         <article class="sony-panel dashboard-signal-panel" id="opsQueueLaunchCard">
             <header>
                 <div>
-                    <h3>Turnero de sala</h3>
-                    <small id="operationRefreshSignal">App separada para recepcion y consultorio</small>
+                    <h3>Nucleo de consultorio</h3>
+                    <small id="operationRefreshSignal">Turnero al frente, OpenClaw y clinica detras</small>
                 </div>
                 <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>
             </header>
             <p id="dashboardLiveMeta">
-                Abre el turnero solo cuando vayas a llamar pacientes.
+                Prioriza recepcion y consultorio antes de abrir herramientas secundarias.
             </p>
             <div class="dashboard-signal-stack">
                 <article class="dashboard-signal-card">
-                    <span>Estado</span>
+                    <span>Turnero</span>
                     <strong id="opsQueueStatus">Listo para abrir</strong>
                     <small id="opsQueueMeta">Sin cola activa</small>
                 </article>
                 <article class="dashboard-signal-card">
-                    <span>Mas herramientas</span>
-                    <strong id="dashboardQueueHealth">Turnero avanzado disponible</strong>
-                    <small id="dashboardFlowStatus">Resenas, diagnostico y cola completa siguen fuera del primer paso.</small>
+                    <span>Readiness</span>
+                    <strong id="dashboardQueueHealth">Piloto interno en revision</strong>
+                    <small id="dashboardFlowStatus">OpenClaw auth e historias clinicas deben quedar listas antes de uso real.</small>
                 </article>
             </div>
             <button
@@ -29,7 +29,7 @@ export function renderDashboardSignalPanel() {
                 class="dashboard-launch-btn"
                 data-action="open-operator-app"
             >
-                Abrir turnero
+                Abrir turnero operador
             </button>
             <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>
         </article>

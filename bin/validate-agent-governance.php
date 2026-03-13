@@ -488,6 +488,30 @@ function classifyFileLaneForDualCodex(string $rawFile): string
     if ($file === '') {
         return 'backend_ops';
     }
+    $transversalPatterns = [
+        'agent-orchestrator.js',
+        'agents.md',
+        'agent_board.yaml',
+        'agent_handoffs.yaml',
+        'agent_jobs.yaml',
+        'agent_signals.yaml',
+        'governance-policy.json',
+        'dual_codex_runbook.md',
+        'tri_lane_runtime_runbook.md',
+        'plan_maestro_codex_2026.md',
+        'tools/agent-orchestrator/**',
+        'bin/validate-agent-governance.php',
+        'figo-ai-bridge.php',
+        'check-ai-response.php',
+        'lib/figo_queue.php',
+        'lib/figo_queue/**',
+        'lib/auth.php',
+        'lib/leadopsservice.php',
+        'controllers/operatorauthcontroller.php',
+        'controllers/leadaicontroller.php',
+        'bin/lead-ai-worker.js',
+        'bin/lib/lead-ai-worker.js',
+    ];
     $backendPatterns = [
         'controllers/**',
         'lib/**',
@@ -506,6 +530,11 @@ function classifyFileLaneForDualCodex(string $rawFile): string
         'content/**',
         '*.html',
     ];
+    foreach ($transversalPatterns as $pattern) {
+        if (preg_match(wildcardToRegex($pattern), $file) === 1) {
+            return 'transversal_runtime';
+        }
+    }
     $matchesBackend = false;
     foreach ($backendPatterns as $pattern) {
         if (preg_match(wildcardToRegex($pattern), $file) === 1) {
@@ -660,9 +689,12 @@ $requiredDualTaskKeys = [
 $allowedStatuses = ['backlog', 'ready', 'in_progress', 'review', 'done', 'blocked', 'failed'];
 $allowedExecutors = ['codex', 'claude', 'kimi', 'jules', 'ci'];
 $retiredExecutors = ['claude', 'kimi', 'jules'];
-$allowedCodexInstances = ['codex_backend_ops', 'codex_frontend'];
-$allowedDomainLanes = ['backend_ops', 'frontend_content'];
+$allowedCodexInstances = ['codex_backend_ops', 'codex_frontend', 'codex_transversal'];
+$allowedDomainLanes = ['backend_ops', 'frontend_content', 'transversal_runtime'];
 $allowedLaneLocks = ['strict', 'handoff_allowed'];
+$allowedProviderModes = ['openclaw_chatgpt'];
+$allowedRuntimeSurfaces = ['figo_queue', 'leadops_worker', 'operator_auth'];
+$allowedRuntimeTransports = ['hybrid_http_cli', 'http_bridge', 'cli_helper'];
 $criticalScopes = ['payments', 'auth', 'calendar', 'deploy', 'env', 'security'];
 
 $board = [
@@ -761,6 +793,14 @@ foreach ($board['tasks'] as $idx => $task) {
     $domainLane = strtolower(trim((string) ($task['domain_lane'] ?? 'backend_ops')));
     $laneLock = strtolower(trim((string) ($task['lane_lock'] ?? 'strict')));
     $crossDomain = parseBooleanLike($task['cross_domain'] ?? false, false);
+    $providerMode = strtolower(trim((string) ($task['provider_mode'] ?? '')));
+    $runtimeSurface = strtolower(trim((string) ($task['runtime_surface'] ?? '')));
+    $runtimeTransport = strtolower(trim((string) ($task['runtime_transport'] ?? '')));
+    $runtimeLastTransport = strtolower(trim((string) ($task['runtime_last_transport'] ?? '')));
+    $isRuntimeTask = $providerMode === 'openclaw_chatgpt'
+        || $runtimeSurface !== ''
+        || $runtimeTransport !== ''
+        || $runtimeLastTransport !== '';
 
     $shouldValidateDual = $requiresDualTaskKeys || $hasAnyDualKey;
     if ($shouldValidateDual && !in_array($codexInstance, $allowedCodexInstances, true)) {
@@ -772,6 +812,18 @@ foreach ($board['tasks'] as $idx => $task) {
     if ($shouldValidateDual && !in_array($laneLock, $allowedLaneLocks, true)) {
         $errors[] = "Task {$id} tiene lane_lock invalido: {$laneLock}";
     }
+    if ($providerMode !== '' && !in_array($providerMode, $allowedProviderModes, true)) {
+        $errors[] = "Task {$id} tiene provider_mode invalido: {$providerMode}";
+    }
+    if ($runtimeSurface !== '' && !in_array($runtimeSurface, $allowedRuntimeSurfaces, true)) {
+        $errors[] = "Task {$id} tiene runtime_surface invalido: {$runtimeSurface}";
+    }
+    if ($runtimeTransport !== '' && !in_array($runtimeTransport, $allowedRuntimeTransports, true)) {
+        $errors[] = "Task {$id} tiene runtime_transport invalido: {$runtimeTransport}";
+    }
+    if ($runtimeLastTransport !== '' && !in_array($runtimeLastTransport, $allowedRuntimeTransports, true)) {
+        $errors[] = "Task {$id} tiene runtime_last_transport invalido: {$runtimeLastTransport}";
+    }
 
     if ($shouldValidateDual) {
         if ($domainLane === 'frontend_content' && $codexInstance !== 'codex_frontend') {
@@ -780,8 +832,28 @@ foreach ($board['tasks'] as $idx => $task) {
         if ($domainLane === 'backend_ops' && $codexInstance !== 'codex_backend_ops') {
             $errors[] = "Task {$id} con domain_lane=backend_ops requiere codex_instance=codex_backend_ops";
         }
-        if (($criticalZone || $runtimeImpact === 'high') && $codexInstance !== 'codex_backend_ops') {
+        if ($domainLane === 'transversal_runtime' && $codexInstance !== 'codex_transversal') {
+            $errors[] = "Task {$id} con domain_lane=transversal_runtime requiere codex_instance=codex_transversal";
+        }
+        if (($criticalZone || $runtimeImpact === 'high') && !$isRuntimeTask && $codexInstance !== 'codex_backend_ops') {
             $errors[] = "Task critica {$id} requiere codex_instance=codex_backend_ops";
+        }
+        if ($isRuntimeTask) {
+            if ($providerMode !== 'openclaw_chatgpt') {
+                $errors[] = "Task {$id} runtime requiere provider_mode=openclaw_chatgpt";
+            }
+            if ($domainLane !== 'transversal_runtime') {
+                $errors[] = "Task {$id} runtime requiere domain_lane=transversal_runtime";
+            }
+            if ($codexInstance !== 'codex_transversal') {
+                $errors[] = "Task {$id} runtime requiere codex_instance=codex_transversal";
+            }
+            if ($runtimeSurface === '') {
+                $errors[] = "Task {$id} runtime requiere runtime_surface";
+            }
+            if ($runtimeTransport === '') {
+                $errors[] = "Task {$id} runtime requiere runtime_transport";
+            }
         }
         if ($crossDomain && $laneLock !== 'handoff_allowed') {
             $errors[] = "Task {$id} con cross_domain=true requiere lane_lock=handoff_allowed";
@@ -799,6 +871,9 @@ foreach ($board['tasks'] as $idx => $task) {
     } elseif ($shouldValidateDual && !$crossDomain) {
         foreach ($task['files'] as $rawFile) {
             $fileLane = classifyFileLaneForDualCodex((string) $rawFile);
+            if (!$isRuntimeTask && $domainLane === 'backend_ops' && $fileLane === 'transversal_runtime') {
+                continue;
+            }
             if ($fileLane !== $domainLane) {
                 $normalizedFile = normalizePathToken((string) $rawFile);
                 $errors[] = "Task {$id} tiene file fuera de lane {$domainLane}: {$normalizedFile}=>{$fileLane}";
@@ -1037,6 +1112,49 @@ if (is_array($governancePolicy)) {
                 (!is_numeric($publishingPolicy[$numericKey]) || (int) $publishingPolicy[$numericKey] <= 0)
             ) {
                 $errors[] = "governance-policy.json requiere publishing.{$numericKey} > 0";
+            }
+        }
+    }
+
+    $runtimePolicy = $governancePolicy['runtime'] ?? null;
+    if (!is_array($runtimePolicy)) {
+        $errors[] = 'governance-policy.json requiere runtime como objeto';
+    } else {
+        $providers = $runtimePolicy['providers'] ?? null;
+        if (!is_array($providers) || count($providers) === 0) {
+            $errors[] = 'governance-policy.json requiere runtime.providers como objeto no vacio';
+        } else {
+            foreach ($providers as $providerName => $providerCfg) {
+                if (!is_array($providerCfg)) {
+                    $errors[] = "governance-policy.json requiere runtime.providers.{$providerName} como objeto";
+                    continue;
+                }
+                foreach (['default_transport', 'preferred_transport'] as $transportKey) {
+                    if (!isset($providerCfg[$transportKey]) || trim((string) $providerCfg[$transportKey]) === '') {
+                        $errors[] = "governance-policy.json requiere runtime.providers.{$providerName}.{$transportKey}";
+                    }
+                }
+                foreach (['surfaces', 'transports'] as $objectKey) {
+                    if (!isset($providerCfg[$objectKey]) || !is_array($providerCfg[$objectKey])) {
+                        $errors[] = "governance-policy.json requiere runtime.providers.{$providerName}.{$objectKey} como objeto";
+                    }
+                }
+            }
+        }
+
+        $runtimeQuotas = $runtimePolicy['quotas'] ?? null;
+        if (!is_array($runtimeQuotas)) {
+            $errors[] = 'governance-policy.json requiere runtime.quotas como objeto';
+        } else {
+            $byCodexInstance = $runtimeQuotas['by_codex_instance'] ?? null;
+            if (!is_array($byCodexInstance) || count($byCodexInstance) === 0) {
+                $errors[] = 'governance-policy.json requiere runtime.quotas.by_codex_instance como objeto no vacio';
+            } else {
+                foreach ($byCodexInstance as $instance => $rawLimit) {
+                    if (!is_numeric($rawLimit) || (int) $rawLimit <= 0) {
+                        $errors[] = "governance-policy.json tiene quota invalida en runtime.quotas.by_codex_instance.{$instance}";
+                    }
+                }
             }
         }
     }
@@ -1300,7 +1418,7 @@ $codexInProgress = [];
 $codexActive = [];
 $codexInProgressByInstance = [];
 $codexActiveByInstance = [];
-$allowedCodexInstances = ['codex_backend_ops', 'codex_frontend'];
+$allowedCodexInstances = ['codex_backend_ops', 'codex_frontend', 'codex_transversal'];
 foreach ($board['tasks'] as $task) {
     $id = (string) ($task['id'] ?? '');
     if (!str_starts_with($id, 'CDX-')) {
@@ -1331,16 +1449,16 @@ foreach ($board['tasks'] as $task) {
     }
 }
 
-if (count($codexInProgress) > 2) {
-    $errors[] = 'Mas de dos tareas CDX in_progress: ' . implode(', ', $codexInProgress);
+if (count($codexInProgress) > 3) {
+    $errors[] = 'Mas de tres tareas CDX in_progress: ' . implode(', ', $codexInProgress);
 }
 foreach ($codexInProgressByInstance as $codexInstance => $taskIds) {
     if (count($taskIds) > 1) {
         $errors[] = "Mas de una tarea CDX in_progress para {$codexInstance}: " . implode(', ', $taskIds);
     }
 }
-if (count($codexActive) > 2) {
-    $errors[] = 'Mas de dos tareas CDX activas: ' . implode(', ', $codexActive);
+if (count($codexActive) > 3) {
+    $errors[] = 'Mas de tres tareas CDX activas: ' . implode(', ', $codexActive);
 }
 foreach ($codexActiveByInstance as $codexInstance => $taskIds) {
     if (count($taskIds) > 1) {
@@ -1348,8 +1466,8 @@ foreach ($codexActiveByInstance as $codexInstance => $taskIds) {
     }
 }
 
-if (count($codexBlocks) > 2) {
-    $errors[] = 'PLAN_MAESTRO_CODEX_2026.md contiene mas de dos bloques CODEX_ACTIVE';
+if (count($codexBlocks) > 3) {
+    $errors[] = 'PLAN_MAESTRO_CODEX_2026.md contiene mas de tres bloques CODEX_ACTIVE';
 }
 
 $codexBlocksByInstance = [];

@@ -2,9 +2,10 @@
 'use strict';
 
 const {
-    buildConfig,
-    signBridgePayload,
-} = require('../../bin/lib/operator-auth-bridge.js');
+    normalizeEmail,
+    operatorAuthSignaturePayload,
+    signOperatorAuthPayload,
+} = require('../../bin/lib/operator-auth-signature.js');
 
 function getEnv(name, fallback = '') {
     const value = process.env[name];
@@ -22,8 +23,11 @@ function firstNonEmpty(...values) {
     return '';
 }
 
-function normalizeEmail(value) {
-    return String(value || '').trim().toLowerCase();
+function splitCsv(value) {
+    return String(value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
 }
 
 async function safeJson(response) {
@@ -61,52 +65,24 @@ function getOperatorAuthTestConfig(overrides = {}) {
         getEnv('PIELARMONIA_ADMIN_EMAIL'),
         'operator@example.com'
     );
-    const allowlist = String(rawAllowlist)
-        .split(',')
-        .map((item) => normalizeEmail(item))
-        .filter(Boolean);
+    const allowlist = splitCsv(rawAllowlist).map(normalizeEmail);
     const email = normalizeEmail(
-        firstNonEmpty(overrides.email, getEnv('TEST_OPERATOR_AUTH_EMAIL'), allowlist[0])
+        firstNonEmpty(
+            overrides.email,
+            getEnv('TEST_OPERATOR_AUTH_EMAIL'),
+            allowlist[0]
+        )
     );
     if (email && !allowlist.includes(email)) {
         allowlist.unshift(email);
     }
 
-    const bridgeConfig = buildConfig({
-        ...process.env,
-        PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL: firstNonEmpty(
-            overrides.helperBaseUrl,
-            getEnv('TEST_OPERATOR_AUTH_HELPER_BASE_URL'),
-            getEnv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL'),
-            'http://127.0.0.1:4173'
-        ),
-        PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN: firstNonEmpty(
-            overrides.bridgeToken,
-            getEnv('TEST_OPERATOR_AUTH_BRIDGE_TOKEN'),
-            getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN'),
-            'operator-auth-bridge-test-token'
-        ),
-        PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET: firstNonEmpty(
-            overrides.bridgeSecret,
-            getEnv('TEST_OPERATOR_AUTH_BRIDGE_SECRET'),
-            getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET')
-        ),
-        PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER: firstNonEmpty(
-            overrides.bridgeHeader,
-            getEnv('TEST_OPERATOR_AUTH_BRIDGE_HEADER'),
-            getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER')
-        ),
-        PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX: firstNonEmpty(
-            overrides.bridgePrefix,
-            getEnv('TEST_OPERATOR_AUTH_BRIDGE_PREFIX'),
-            getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX')
-        ),
-        PIELARMONIA_OPERATOR_AUTH_DEVICE_ID: firstNonEmpty(
-            overrides.deviceId,
-            getEnv('TEST_OPERATOR_AUTH_DEVICE_ID'),
-            'device-test-operator'
-        ),
-    });
+    const bridgeToken = firstNonEmpty(
+        overrides.bridgeToken,
+        getEnv('TEST_OPERATOR_AUTH_BRIDGE_TOKEN'),
+        getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN'),
+        'operator-auth-bridge-test-token'
+    );
 
     return {
         mode: 'openclaw_chatgpt',
@@ -122,17 +98,134 @@ function getOperatorAuthTestConfig(overrides = {}) {
             getEnv('TEST_OPERATOR_AUTH_ACCOUNT_ID'),
             'acct-test-operator'
         ),
-        deviceId: bridgeConfig.helperDeviceId || 'device-test-operator',
-        bridgeToken: bridgeConfig.bridgeToken,
-        bridgeSecret:
-            bridgeConfig.bridgeSecret || bridgeConfig.bridgeToken,
-        bridgeHeader: bridgeConfig.bridgeTokenHeader,
-        bridgePrefix: bridgeConfig.bridgeTokenPrefix,
-        helperBaseUrl: bridgeConfig.helperBaseUrl,
+        deviceId: firstNonEmpty(
+            overrides.deviceId,
+            getEnv('TEST_OPERATOR_AUTH_DEVICE_ID'),
+            'device-test-operator'
+        ),
+        bridgeToken,
+        bridgeSecret: firstNonEmpty(
+            overrides.bridgeSecret,
+            getEnv('TEST_OPERATOR_AUTH_BRIDGE_SECRET'),
+            getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET'),
+            bridgeToken
+        ),
+        bridgeHeader: firstNonEmpty(
+            overrides.bridgeHeader,
+            getEnv('TEST_OPERATOR_AUTH_BRIDGE_HEADER'),
+            getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER'),
+            'Authorization'
+        ),
+        bridgePrefix: firstNonEmpty(
+            overrides.bridgePrefix,
+            getEnv('TEST_OPERATOR_AUTH_BRIDGE_PREFIX'),
+            getEnv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX'),
+            'Bearer'
+        ),
+        helperBaseUrl: firstNonEmpty(
+            overrides.helperBaseUrl,
+            getEnv('TEST_OPERATOR_AUTH_HELPER_BASE_URL'),
+            getEnv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL'),
+            'http://127.0.0.1:4173'
+        ),
+    };
+}
+
+function getOperatorAuthTestEnv(overrides = {}) {
+    const config = getOperatorAuthTestConfig(overrides);
+
+    return {
+        PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY: config.mode,
+        PIELARMONIA_OPERATOR_AUTH_MODE: config.mode,
+        PIELARMONIA_OPERATOR_AUTH_ALLOWLIST: config.allowlist.join(','),
+        PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN: config.bridgeToken,
+        PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET: config.bridgeSecret,
+        PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER: config.bridgeHeader,
+        PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX: config.bridgePrefix,
+        PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL: config.helperBaseUrl,
+        PIELARMONIA_ADMIN_EMAIL: config.email,
+    };
+}
+
+async function requireLegacyPasswordMode(request) {
+    const snapshot = await getAdminAuthStatus(request);
+    if (!snapshot.ok) {
+        return {
+            ok: false,
+            reason: `No se pudo consultar admin-auth status (HTTP ${snapshot.httpStatus}).`,
+        };
+    }
+
+    if (snapshot.mode !== 'legacy_password') {
+        const preferred =
+            snapshot.mode || snapshot.recommendedMode || 'openclaw_chatgpt';
+        return {
+            ok: false,
+            reason: `Este entorno usa ${preferred} como acceso primario. Activa PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password para habilitar login por clave.`,
+        };
+    }
+
+    if (
+        snapshot.status === 'legacy_auth_not_configured' ||
+        snapshot.configured === false
+    ) {
+        return {
+            ok: false,
+            reason: 'Login legacy no configurado. Define PIELARMONIA_ADMIN_PASSWORD y el override legacy en este entorno.',
+        };
+    }
+
+    return {
+        ok: true,
+        snapshot,
+    };
+}
+
+async function requireOpenClawMode(request) {
+    const snapshot = await getAdminAuthStatus(request);
+    if (!snapshot.ok) {
+        return {
+            ok: false,
+            reason: `No se pudo consultar admin-auth status (HTTP ${snapshot.httpStatus}).`,
+        };
+    }
+
+    if (snapshot.mode !== 'openclaw_chatgpt') {
+        return {
+            ok: false,
+            reason: `Este entorno usa ${snapshot.mode || 'legacy_password'} como acceso primario. Activa OpenClaw para este flujo.`,
+        };
+    }
+
+    if (
+        snapshot.status === 'operator_auth_not_configured' ||
+        snapshot.configured === false
+    ) {
+        return {
+            ok: false,
+            reason: 'OpenClaw auth no configurado. Define bridge token, bridge secret y allowlist para este entorno.',
+        };
+    }
+
+    return {
+        ok: true,
+        snapshot,
     };
 }
 
 async function adminPasswordLogin(request, password) {
+    const preflight = await requireLegacyPasswordMode(request);
+    if (!preflight.ok) {
+        return preflight;
+    }
+
+    if (!String(password || '').trim()) {
+        return {
+            ok: false,
+            reason: 'Password admin requerido para login legacy.',
+        };
+    }
+
     const response = await request.post('/admin-auth.php?action=login', {
         data: { password },
     });
@@ -168,6 +261,11 @@ async function adminPasswordLogin(request, password) {
 }
 
 async function startOpenClawChallenge(request) {
+    const preflight = await requireOpenClawMode(request);
+    if (!preflight.ok) {
+        return preflight;
+    }
+
     const response = await request.post('/admin-auth.php?action=start', {
         data: {},
     });
@@ -176,7 +274,9 @@ async function startOpenClawChallenge(request) {
     if (response.status() !== 202 || body.ok !== true) {
         return {
             ok: false,
-            reason: body.error || `No se pudo iniciar challenge OpenClaw (HTTP ${response.status()}).`,
+            reason:
+                body.error ||
+                `No se pudo iniciar challenge OpenClaw (HTTP ${response.status()}).`,
             body,
         };
     }
@@ -220,7 +320,7 @@ async function completeOpenClawChallenge(request, challenge, overrides = {}) {
         };
     }
 
-    payload.signature = signBridgePayload(payload, config.bridgeSecret);
+    payload.signature = signOperatorAuthPayload(payload, config.bridgeSecret);
     const authHeader = config.bridgePrefix
         ? `${config.bridgePrefix} ${config.bridgeToken}`
         : config.bridgeToken;
@@ -285,7 +385,9 @@ async function consumeOpenClawSession(request, { retries = 4 } = {}) {
         ) {
             return {
                 ok: false,
-                reason: body.error || `OpenClaw devolvio estado terminal ${status}.`,
+                reason:
+                    body.error ||
+                    `OpenClaw devolvio estado terminal ${status}.`,
                 body,
             };
         }
@@ -335,16 +437,6 @@ async function adminLogin(request, overrides = {}) {
     }
 
     if (snapshot.mode === 'openclaw_chatgpt') {
-        if (
-            snapshot.status === 'operator_auth_not_configured' ||
-            snapshot.configured === false
-        ) {
-            return {
-                ok: false,
-                reason: 'OpenClaw auth no configurado. Define bridge token, bridge secret y allowlist para este entorno.',
-            };
-        }
-
         return adminOpenClawLogin(request, overrides);
     }
 
@@ -361,16 +453,6 @@ async function adminLogin(request, overrides = {}) {
         };
     }
 
-    if (
-        snapshot.status === 'legacy_auth_not_configured' ||
-        snapshot.configured === false
-    ) {
-        return {
-            ok: false,
-            reason: 'Login legacy no configurado. Define PIELARMONIA_ADMIN_PASSWORD y el override legacy en este entorno.',
-        };
-    }
-
     return adminPasswordLogin(request, password);
 }
 
@@ -382,6 +464,11 @@ module.exports = {
     getAdminAuthStatus,
     getEnv,
     getOperatorAuthTestConfig,
+    getOperatorAuthTestEnv,
+    operatorAuthSignaturePayload,
+    requireLegacyPasswordMode,
+    requireOpenClawMode,
     safeJson,
+    signOperatorAuthPayload,
     startOpenClawChallenge,
 };

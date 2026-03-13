@@ -1,183 +1,78 @@
 import { qs } from '../../shared/ui/render.js';
 
-const LEGACY_AUTH_MODE = 'legacy_password';
-
-function isOperatorAuthFlowVisible() {
-    const flow = qs('#adminOpenClawFlow');
-    return Boolean(flow && !flow.classList.contains('is-hidden'));
-}
-
-function formatChallengeExpiry(challenge) {
-    const expiresAt = String(challenge?.expiresAt || '').trim();
-    if (expiresAt === '') {
+function formatOpenClawExpiry(expiresAt) {
+    const value = String(expiresAt || '').trim();
+    if (!value) {
         return '';
     }
 
-    const date = new Date(expiresAt);
-    if (Number.isNaN(date.getTime())) {
-        return '';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
     }
 
-    return date.toLocaleTimeString('es-EC', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-function resolveOperatorAuthCopy(auth) {
-    const status = String(auth?.status || 'anonymous').trim();
-    const helperOpened = auth?.helperUrlOpened === true;
-    const expiresAt = formatChallengeExpiry(auth?.challenge);
-
-    switch (status) {
-        case 'pending':
-            return {
-                eyebrow: 'Esperando OpenClaw',
-                title: 'Confirma tu sesion en OpenClaw',
-                summary:
-                    'Completa el login de ChatGPT/OpenAI en la ventana que abrimos y el panel se autenticara automaticamente.',
-                support: helperOpened
-                    ? 'La ventana del helper ya fue abierta. Si no la ves, usa el enlace manual o vuelve a abrir OpenClaw.'
-                    : 'Tu navegador puede haber bloqueado la ventana. Usa el enlace manual o vuelve a abrir OpenClaw.',
-                primaryLabel: 'Volver a abrir OpenClaw',
-                helperMeta: expiresAt
-                    ? `El challenge actual expira a las ${expiresAt}.`
-                    : 'El challenge actual seguira valido por unos minutos.',
-                showRetry: true,
-            };
-        case 'openclaw_no_logueado':
-            return {
-                eyebrow: 'OpenClaw requiere sesion',
-                title: 'Inicia sesion en OpenClaw',
-                summary:
-                    'OpenClaw no encontro un perfil OAuth valido de ChatGPT/OpenAI en este equipo.',
-                support:
-                    'Abre OpenClaw, autentica tu perfil y luego genera un nuevo enlace.',
-                primaryLabel: 'Abrir OpenClaw',
-                helperMeta:
-                    'Despues de autenticarte en OpenClaw, vuelve aqui y genera un nuevo challenge.',
-                showRetry: true,
-            };
-        case 'helper_no_disponible':
-            return {
-                eyebrow: 'Helper local no disponible',
-                title: 'No se pudo completar el bridge',
-                summary:
-                    'El helper local de OpenClaw no pudo validar la sesion desde este equipo.',
-                support:
-                    'Verifica que `npm run auth:operator:bridge` siga vivo y vuelve a generar un enlace.',
-                primaryLabel: 'Abrir OpenClaw',
-                helperMeta:
-                    'Si el problema persiste, reinicia el helper local y reintenta.',
-                showRetry: true,
-            };
-        case 'challenge_expirado':
-            return {
-                eyebrow: 'Challenge expirado',
-                title: 'El enlace ya no es valido',
-                summary:
-                    'El challenge de OpenClaw expiro antes de completar la autenticacion.',
-                support:
-                    'Genera un nuevo enlace y termina el login sin cerrar esta pantalla.',
-                primaryLabel: 'Abrir OpenClaw',
-                helperMeta:
-                    'El siguiente challenge se abrira en una ventana nueva para continuar el acceso.',
-                showRetry: true,
-            };
-        case 'email_no_permitido':
-            return {
-                eyebrow: 'Acceso denegado',
-                title: 'El email no esta autorizado',
-                summary:
-                    'La cuenta autenticada en OpenClaw no forma parte de la allowlist del panel.',
-                support:
-                    'Cierra esa sesion en OpenClaw e intenta con un correo autorizado.',
-                primaryLabel: 'Abrir OpenClaw',
-                helperMeta:
-                    'El siguiente intento usara un challenge nuevo para otro perfil.',
-                showRetry: true,
-            };
-        case 'operator_auth_not_configured':
-            return {
-                eyebrow: 'Configuracion pendiente',
-                title: 'OpenClaw no esta listo en este entorno',
-                summary:
-                    'El backend tiene operator auth activo, pero faltan datos para completar el bridge.',
-                support:
-                    'Corrige la configuracion del entorno antes de reintentar.',
-                primaryLabel: 'Reintentar',
-                helperMeta:
-                    'Cuando la configuracion vuelva a estar disponible, podras generar un nuevo challenge.',
-                showRetry: true,
-            };
-        default:
-            return {
-                eyebrow: 'Ingreso protegido',
-                title: 'Acceso OpenClaw / ChatGPT',
-                summary:
-                    'Abre OpenClaw para validar tu sesion de operador sin usar una clave local.',
-                support:
-                    'La misma sesion se compartira con el panel y el turnero operador.',
-                primaryLabel: 'Abrir OpenClaw',
-                helperMeta:
-                    'Si el navegador bloquea la ventana, podras usar un enlace manual.',
-                showRetry: false,
-            };
+    try {
+        return new Intl.DateTimeFormat('es-EC', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        }).format(parsed);
+    } catch (_error) {
+        return parsed.toLocaleTimeString();
     }
 }
 
-export function setLoginMode(mode = LEGACY_AUTH_MODE) {
-    const operatorFlow = qs('#adminOpenClawFlow');
-    const legacyForm = qs('#loginForm');
-    const operatorMode = String(mode || '') !== LEGACY_AUTH_MODE;
-
-    operatorFlow?.classList.toggle('is-hidden', !operatorMode);
-    legacyForm?.classList.toggle('is-hidden', operatorMode);
-}
-
-export function setOperatorAuthLoginState(auth = {}) {
+export function setLoginMode(mode = 'legacy_password') {
+    const normalized =
+        String(mode || '')
+            .trim()
+            .toLowerCase() === 'openclaw_chatgpt'
+            ? 'openclaw_chatgpt'
+            : 'legacy_password';
+    const legacyStage = qs('#legacyLoginStage');
+    const openclawStage = qs('#openclawLoginStage');
+    const summary = qs('#adminLoginStepSummary');
     const eyebrow = qs('#adminLoginStepEyebrow');
     const title = qs('#adminLoginStepTitle');
-    const summary = qs('#adminLoginStepSummary');
     const support = qs('#adminLoginSupportCopy');
-    const openButton = qs('#adminOpenClawBtn');
-    const retryButton = qs('#adminOpenClawRetryBtn');
-    const helperMeta = qs('#adminOpenClawHelperMeta');
-    const helperLink = qs('#adminOpenClawHelperLink');
-    const helperLinkRow = qs('#adminOpenClawLinkRow');
-    const manualRow = qs('#adminOpenClawManualRow');
-    const manualCode = qs('#adminOpenClawManualCode');
-    const openClawSummary = qs('#adminOpenClawSummary');
-    const copy = resolveOperatorAuthCopy(auth);
-    const challenge = auth?.challenge || null;
-    const helperUrl = String(challenge?.helperUrl || '').trim();
-    const manualValue = String(challenge?.manualCode || '').trim();
+    const resetBtn = qs('#loginReset2FABtn');
+    const form = qs('#loginForm');
 
-    if (eyebrow) eyebrow.textContent = copy.eyebrow;
-    if (title) title.textContent = copy.title;
-    if (summary) summary.textContent = copy.summary;
-    if (support) support.textContent = copy.support;
-    if (openClawSummary) openClawSummary.textContent = copy.summary;
-    if (helperMeta) helperMeta.textContent = copy.helperMeta;
+    legacyStage?.classList.toggle(
+        'is-hidden',
+        normalized === 'openclaw_chatgpt'
+    );
+    openclawStage?.classList.toggle(
+        'is-hidden',
+        normalized !== 'openclaw_chatgpt'
+    );
+    form?.classList.remove('is-2fa-stage');
+    resetBtn?.classList.add('is-hidden');
 
-    if (openButton instanceof HTMLButtonElement) {
-        openButton.dataset.idleLabel = copy.primaryLabel;
-        openButton.textContent = copy.primaryLabel;
+    if (normalized === 'openclaw_chatgpt') {
+        if (eyebrow) eyebrow.textContent = 'Acceso delegado';
+        if (title) title.textContent = 'Entrar con OpenClaw';
+        if (summary) {
+            summary.textContent =
+                'Usa tu sesion local de OpenClaw para abrir el nucleo interno del consultorio.';
+        }
+        if (support) {
+            support.textContent =
+                'El panel abrira el helper local y esperara la confirmacion del operador autorizado.';
+        }
+        return;
     }
 
-    if (retryButton instanceof HTMLButtonElement) {
-        retryButton.classList.toggle('is-hidden', !copy.showRetry);
+    if (eyebrow) eyebrow.textContent = 'Ingreso de respaldo';
+    if (title) title.textContent = 'Acceso administrativo';
+    if (summary) {
+        summary.textContent =
+            'Usa tu clave solo como respaldo para entrar al centro interno.';
     }
-
-    if (helperLink instanceof HTMLAnchorElement) {
-        helperLink.href = helperUrl || '#';
+    if (support) {
+        support.textContent =
+            'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.';
     }
-    helperLinkRow?.classList.toggle('is-hidden', helperUrl === '');
-
-    if (manualCode) {
-        manualCode.textContent = manualValue;
-    }
-    manualRow?.classList.toggle('is-hidden', manualValue === '');
 }
 
 export function setLogin2FAVisibility(visible) {
@@ -198,17 +93,17 @@ export function setLogin2FAVisibility(visible) {
     if (eyebrow) {
         eyebrow.textContent = visible
             ? 'Verificacion secundaria'
-            : 'Ingreso protegido';
+            : 'Ingreso de respaldo';
     }
     if (title) {
         title.textContent = visible
             ? 'Confirma el codigo 2FA'
-            : 'Acceso de administrador';
+            : 'Acceso administrativo';
     }
     if (summary) {
         summary.textContent = visible
             ? 'Ingresa el codigo de seis digitos para terminar la autenticacion.'
-            : 'Usa tu clave para entrar al centro operativo.';
+            : 'Usa tu clave solo como respaldo para entrar al centro interno.';
     }
     if (support) {
         support.textContent = visible
@@ -219,10 +114,83 @@ export function setLogin2FAVisibility(visible) {
     setLoginSubmittingState(false);
 }
 
+export function setOpenClawChallenge(challenge, options = {}) {
+    const challengeCard = qs('#adminOpenClawChallengeCard');
+    const manualCode = qs('#adminOpenClawManualCode');
+    const meta = qs('#adminOpenClawChallengeMeta');
+    const helperLink = qs('#adminOpenClawHelperLink');
+    const introTitle = qs('#adminOpenClawIntroTitle');
+    const introMessage = qs('#adminOpenClawIntroMessage');
+    const status = String(options.status || 'anonymous')
+        .trim()
+        .toLowerCase();
+    const error = String(options.error || '').trim();
+
+    if (!(challengeCard instanceof HTMLElement)) {
+        return;
+    }
+
+    if (!challenge || typeof challenge !== 'object') {
+        challengeCard.classList.add('is-hidden');
+        if (manualCode) manualCode.textContent = '-';
+        if (meta) {
+            meta.textContent =
+                'El helper local mostrara aqui el challenge activo cuando inicies el flujo.';
+        }
+        if (helperLink instanceof HTMLAnchorElement) {
+            helperLink.href = '#';
+            helperLink.classList.add('is-hidden');
+        }
+        if (introTitle) introTitle.textContent = 'Sesion local OpenClaw';
+        if (introMessage) {
+            introMessage.textContent =
+                status === 'openclaw_no_logueado'
+                    ? 'Completa el inicio de sesion en OpenClaw y vuelve a generar un challenge.'
+                    : 'Este panel delega la identidad del operador a OpenClaw en este mismo laptop.';
+        }
+        return;
+    }
+
+    const expiresAt = formatOpenClawExpiry(challenge.expiresAt);
+    challengeCard.classList.remove('is-hidden');
+    if (manualCode) {
+        manualCode.textContent =
+            String(challenge.manualCode || '-').trim() || '-';
+    }
+    if (meta) {
+        meta.textContent =
+            status === 'pending'
+                ? expiresAt
+                    ? `Challenge activo. Expira a las ${expiresAt}.`
+                    : 'Challenge activo. Resuelvelo desde el helper local.'
+                : error ||
+                  (expiresAt
+                      ? `Ultimo challenge emitido. Expiraba a las ${expiresAt}.`
+                      : 'Ultimo challenge emitido para este operador.');
+    }
+    if (helperLink instanceof HTMLAnchorElement) {
+        const href = String(challenge.helperUrl || '').trim();
+        helperLink.href = href || '#';
+        helperLink.classList.toggle('is-hidden', !href);
+    }
+    if (introTitle) {
+        introTitle.textContent =
+            status === 'pending'
+                ? 'Esperando confirmacion de OpenClaw'
+                : 'Sesion local OpenClaw';
+    }
+    if (introMessage) {
+        introMessage.textContent =
+            status === 'pending'
+                ? 'Mantente en esta pantalla mientras el helper local termina la validacion.'
+                : 'Si ya completaste el login de OpenClaw, puedes generar un nuevo challenge.';
+    }
+}
+
 export function setLoginFeedback({
     tone = 'neutral',
-    title = 'Proteccion activa',
-    message = 'El panel usa autenticacion endurecida y activos self-hosted.',
+    title = 'Readiness del consultorio',
+    message = 'El panel comprueba acceso OpenClaw y seguridad clinica antes de abrir la operacion.',
 } = {}) {
     const card = qs('#adminLoginStatusCard');
     const titleEl = qs('#adminLoginStatusTitle');
@@ -233,59 +201,67 @@ export function setLoginFeedback({
     if (messageEl) messageEl.textContent = message;
 }
 
-export function setLoginSubmittingState(submitting) {
+export function setLoginSubmittingState(submitting, options = {}) {
     const button = qs('#loginBtn');
     const resetBtn = qs('#loginReset2FABtn');
     const passwordInput = qs('#adminPassword');
     const codeInput = qs('#admin2FACode');
-    const openClawButton = qs('#adminOpenClawBtn');
-    const retryClawButton = qs('#adminOpenClawRetryBtn');
     const group = qs('#group2FA');
-    const requires2FA = Boolean(
-        group && !group.classList.contains('is-hidden')
-    );
-    const operatorMode = isOperatorAuthFlowVisible();
+    const mode =
+        String(options.mode || '')
+            .trim()
+            .toLowerCase() === 'openclaw_chatgpt'
+            ? 'openclaw_chatgpt'
+            : 'legacy_password';
+    const status = String(options.status || 'anonymous')
+        .trim()
+        .toLowerCase();
+    const shouldRegenerateOpenClawChallenge =
+        status === 'pending' ||
+        status === 'openclaw_no_logueado' ||
+        status === 'email_no_permitido' ||
+        status === 'challenge_expirado' ||
+        status === 'helper_no_disponible';
+    const requires2FA =
+        mode === 'legacy_password'
+            ? Boolean(group && !group.classList.contains('is-hidden'))
+            : false;
 
     if (passwordInput instanceof HTMLInputElement) {
         passwordInput.disabled =
-            Boolean(submitting) || requires2FA || operatorMode;
+            mode === 'openclaw_chatgpt' || Boolean(submitting) || requires2FA;
     }
 
     if (codeInput instanceof HTMLInputElement) {
         codeInput.disabled =
-            Boolean(submitting) || !requires2FA || operatorMode;
+            mode === 'openclaw_chatgpt' || Boolean(submitting) || !requires2FA;
     }
 
     if (button instanceof HTMLButtonElement) {
-        const idleLabel = operatorMode
-            ? String(button.dataset.idleLabel || 'Abrir OpenClaw')
-            : requires2FA
-              ? 'Verificar y entrar'
-              : 'Ingresar';
         button.disabled = Boolean(submitting);
-        button.textContent = submitting
-            ? operatorMode
-                ? 'Preparando...'
+        if (mode === 'openclaw_chatgpt') {
+            button.textContent = submitting
+                ? 'Abriendo OpenClaw...'
+                : shouldRegenerateOpenClawChallenge
+                  ? 'Generar nuevo codigo'
+                  : 'Continuar con OpenClaw';
+        } else {
+            button.textContent = submitting
+                ? requires2FA
+                    ? 'Verificando...'
+                    : 'Ingresando...'
                 : requires2FA
-                  ? 'Verificando...'
-                  : 'Ingresando...'
-            : idleLabel;
+                  ? 'Verificar y entrar'
+                  : 'Ingresar';
+        }
     }
 
     if (resetBtn instanceof HTMLButtonElement) {
         resetBtn.disabled = Boolean(submitting);
-    }
-
-    if (openClawButton instanceof HTMLButtonElement) {
-        const idleLabel = String(
-            openClawButton.dataset.idleLabel || 'Abrir OpenClaw'
+        resetBtn.classList.toggle(
+            'is-hidden',
+            mode === 'openclaw_chatgpt' || !requires2FA
         );
-        openClawButton.disabled = Boolean(submitting);
-        openClawButton.textContent = submitting ? 'Preparando...' : idleLabel;
-    }
-
-    if (retryClawButton instanceof HTMLButtonElement) {
-        retryClawButton.disabled = Boolean(submitting);
     }
 }
 
@@ -303,16 +279,8 @@ export function resetLoginForm({ clearPassword = false } = {}) {
 }
 
 export function focusLoginField(field = 'password') {
-    const target =
-        field === '2fa'
-            ? qs('#admin2FACode')
-            : field === 'operator_auth'
-              ? qs('#adminOpenClawBtn')
-              : qs('#adminPassword');
-    if (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLButtonElement
-    ) {
+    const target = field === '2fa' ? qs('#admin2FACode') : qs('#adminPassword');
+    if (target instanceof HTMLInputElement) {
         target.focus();
         target.select?.();
     }

@@ -187,6 +187,63 @@ try {
             operator_auth_test_cleanup_cookie($cookieFile);
         }
     });
+
+    run_test('Operator auth rejects invalid bridge signature', function () use ($serverBaseUrl) {
+        $cookieFile = operator_auth_test_cookie_file();
+        try {
+            $start = operator_auth_test_http_request(
+                'POST',
+                $serverBaseUrl . '/api.php?resource=operator-auth-start',
+                [],
+                $cookieFile
+            );
+            assert_equals(202, $start['code'], 'start should create challenge');
+            $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];
+
+            $payload = operator_auth_test_build_completion_payload($challenge);
+            $payload['signature'] = str_repeat('0', 64);
+
+            $response = operator_auth_test_http_request(
+                'POST',
+                $serverBaseUrl . '/api.php?resource=operator-auth-complete',
+                $payload,
+                null,
+                ['Authorization: Bearer operator-auth-bridge-test-token']
+            );
+
+            assert_equals(401, $response['code'], 'invalid signature should be rejected');
+            assert_equals('Firma del bridge invalida', $response['body']['error'] ?? '', 'unexpected invalid signature error');
+        } finally {
+            operator_auth_test_cleanup_cookie($cookieFile);
+        }
+    });
+
+    run_test('Operator auth rejects bridge timestamp outside skew window', function () use ($serverBaseUrl) {
+        $cookieFile = operator_auth_test_cookie_file();
+        try {
+            $start = operator_auth_test_http_request(
+                'POST',
+                $serverBaseUrl . '/api.php?resource=operator-auth-start',
+                [],
+                $cookieFile
+            );
+            assert_equals(202, $start['code'], 'start should create challenge');
+            $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];
+
+            $response = operator_auth_test_complete_request($serverBaseUrl, $challenge, [
+                'timestamp' => gmdate('c', time() - 3600),
+            ]);
+
+            assert_equals(400, $response['code'], 'stale timestamp should be rejected');
+            assert_equals(
+                'Timestamp del bridge fuera de ventana',
+                $response['body']['error'] ?? '',
+                'unexpected stale timestamp error'
+            );
+        } finally {
+            operator_auth_test_cleanup_cookie($cookieFile);
+        }
+    });
 } finally {
     stop_test_php_server($server);
     delete_path_recursive($dataDir);

@@ -1,4 +1,5 @@
 export {
+    clearAppointmentReviewContext,
     approveTransfer,
     cancelAppointment,
     clearAppointmentFilters,
@@ -9,6 +10,8 @@ export {
     renderAppointmentsSection,
     setAppointmentDensity,
     setAppointmentFilter,
+    setAppointmentReviewContext,
     setAppointmentSearch,
     setAppointmentSort,
+    updateAppointmentReviewContext,
 } from './appointments/index.js';

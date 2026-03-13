@@ -37,6 +37,7 @@ const domainTaskCreate = require('./tools/agent-orchestrator/domain/task-create'
 const domainTaskShape = require('./tools/agent-orchestrator/domain/task-shape');
 const domainDiagnostics = require('./tools/agent-orchestrator/domain/diagnostics');
 const domainMetrics = require('./tools/agent-orchestrator/domain/metrics');
+const domainRuntime = require('./tools/agent-orchestrator/domain/runtime');
 const domainStatus = require('./tools/agent-orchestrator/domain/status');
 const domainJobs = require('./tools/agent-orchestrator/domain/jobs');
 const domainBoardLeases = require('./tools/agent-orchestrator/domain/board-leases');
@@ -56,6 +57,7 @@ const leasesCommandHandlers = require('./tools/agent-orchestrator/commands/lease
 const boardCommandHandlers = require('./tools/agent-orchestrator/commands/board');
 const jobsCommandHandlers = require('./tools/agent-orchestrator/commands/jobs');
 const publishCommandHandlers = require('./tools/agent-orchestrator/commands/publish');
+const runtimeCommandHandlers = require('./tools/agent-orchestrator/commands/runtime');
 const domainIntake = require('./tools/agent-orchestrator/domain/intake');
 const runtimeGovernanceCommands = require('./tools/agent-orchestrator/commands/runtime-governance');
 const runtimeIntakeCommands = require('./tools/agent-orchestrator/commands/runtime-intake');
@@ -124,6 +126,48 @@ const DEFAULT_GOVERNANCE_POLICY = {
         max_live_wait_seconds: 180,
         health_url: 'https://pielarmonia.com/api.php?resource=health',
         required_job_key: 'public_main_sync',
+    },
+    runtime: {
+        providers: {
+            openclaw_chatgpt: {
+                default_transport: 'hybrid_http_cli',
+                preferred_transport: 'http_bridge',
+                surfaces: {
+                    figo_queue: {
+                        verification: '/figo-ai-bridge.php',
+                        invoke: '/figo-ai-bridge.php',
+                        supports_invoke: true,
+                    },
+                    leadops_worker: {
+                        verification: '/api.php?resource=health',
+                        invoke: '/api.php?resource=lead-ai-request',
+                        supports_invoke: true,
+                    },
+                    operator_auth: {
+                        verification: '/api.php?resource=operator-auth-status',
+                        supports_invoke: false,
+                    },
+                },
+                transports: {
+                    hybrid_http_cli: {
+                        ready_states: ['healthy', 'degraded'],
+                    },
+                    http_bridge: {
+                        ready_states: ['healthy', 'degraded'],
+                    },
+                    cli_helper: {
+                        ready_states: ['healthy', 'degraded'],
+                    },
+                },
+            },
+        },
+        quotas: {
+            by_codex_instance: {
+                codex_backend_ops: 1,
+                codex_frontend: 1,
+                codex_transversal: 1,
+            },
+        },
     },
     domain_health: {
         priority_domains: DEFAULT_PRIORITY_DOMAINS,
@@ -257,9 +301,25 @@ const CRITICAL_SCOPE_ALLOWED_EXECUTORS = new Set(['codex']);
 const ALLOWED_CODEX_INSTANCES = new Set([
     'codex_backend_ops',
     'codex_frontend',
+    'codex_transversal',
 ]);
-const ALLOWED_DOMAIN_LANES = new Set(['backend_ops', 'frontend_content']);
+const ALLOWED_DOMAIN_LANES = new Set([
+    'backend_ops',
+    'frontend_content',
+    'transversal_runtime',
+]);
 const ALLOWED_LANE_LOCKS = new Set(['strict', 'handoff_allowed']);
+const ALLOWED_PROVIDER_MODES = new Set(['openclaw_chatgpt']);
+const ALLOWED_RUNTIME_SURFACES = new Set([
+    'figo_queue',
+    'leadops_worker',
+    'operator_auth',
+]);
+const ALLOWED_RUNTIME_TRANSPORTS = new Set([
+    'hybrid_http_cli',
+    'http_bridge',
+    'cli_helper',
+]);
 const DUAL_CODEX_OWNERSHIP_MATRIX =
     domainTaskGuards.DEFAULT_DUAL_CODEX_OWNERSHIP;
 const TASK_CREATE_TEMPLATES = {
@@ -281,6 +341,19 @@ const TASK_CREATE_TEMPLATES = {
         risk: 'high',
         scope: 'calendar',
         requireCriticalScope: true,
+    },
+    runtime: {
+        executor: 'codex',
+        status: 'ready',
+        risk: 'medium',
+        scope: 'openclaw_runtime',
+        domain_lane: 'transversal_runtime',
+        codex_instance: 'codex_transversal',
+        lane_lock: 'strict',
+        provider_mode: 'openclaw_chatgpt',
+        runtime_transport: 'hybrid_http_cli',
+        runtime_impact: 'high',
+        critical_zone: true,
     },
 };
 
@@ -432,12 +505,20 @@ function findCriticalScopeKeyword(scopeValue) {
 function inferDomainLaneFromFiles(files) {
     return domainTaskGuards.inferDomainLaneFromFiles(files, {
         ownershipMatrix: DUAL_CODEX_OWNERSHIP_MATRIX,
+        priorityLanePatterns: {
+            transversal_runtime:
+                domainTaskGuards.DEFAULT_TRANSVERSAL_PRIORITY_PATTERNS,
+        },
     });
 }
 
 function ensureTaskDualCodexDefaults(task) {
     return domainTaskGuards.ensureTaskDualCodexDefaults(task, {
         ownershipMatrix: DUAL_CODEX_OWNERSHIP_MATRIX,
+        priorityLanePatterns: {
+            transversal_runtime:
+                domainTaskGuards.DEFAULT_TRANSVERSAL_PRIORITY_PATTERNS,
+        },
     });
 }
 
@@ -460,6 +541,9 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
         allowedCodexInstances: ALLOWED_CODEX_INSTANCES,
         allowedDomainLanes: ALLOWED_DOMAIN_LANES,
         allowedLaneLocks: ALLOWED_LANE_LOCKS,
+        allowedProviderModes: ALLOWED_PROVIDER_MODES,
+        allowedRuntimeSurfaces: ALLOWED_RUNTIME_SURFACES,
+        allowedRuntimeTransports: ALLOWED_RUNTIME_TRANSPORTS,
         ownershipMatrix: DUAL_CODEX_OWNERSHIP_MATRIX,
         activeStatuses: ACTIVE_STATUSES,
         isExpired,
@@ -810,6 +894,12 @@ function normalizeTaskForCreateApply(rawTask) {
         currentDate,
         allowedTaskExecutors: ALLOWED_TASK_EXECUTORS,
         allowedStatuses: ALLOWED_STATUSES,
+        allowedCodexInstances: ALLOWED_CODEX_INSTANCES,
+        allowedDomainLanes: ALLOWED_DOMAIN_LANES,
+        allowedLaneLocks: ALLOWED_LANE_LOCKS,
+        allowedProviderModes: ALLOWED_PROVIDER_MODES,
+        allowedRuntimeSurfaces: ALLOWED_RUNTIME_SURFACES,
+        allowedRuntimeTransports: ALLOWED_RUNTIME_TRANSPORTS,
     });
 }
 
@@ -923,6 +1013,24 @@ function buildExecutorContribution(tasks) {
     });
 }
 
+function buildCodexInstanceSummary(tasks) {
+    return domainMetrics.buildCodexInstanceSummary(tasks, {
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
+function buildProviderModeSummary(tasks) {
+    return domainMetrics.buildProviderModeSummary(tasks, {
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
+function buildRuntimeSurfaceSummary(tasks) {
+    return domainMetrics.buildRuntimeSurfaceSummary(tasks, {
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
 function inferTaskDomain(task) {
     return domainMetrics.inferTaskDomain(task, { normalizePathToken });
 }
@@ -989,6 +1097,22 @@ async function loadJobsSnapshot() {
         existsSync,
         readFileSync,
         fetchImpl: typeof fetch === 'function' ? fetch : null,
+    });
+}
+
+async function verifyOpenClawRuntime() {
+    return domainRuntime.verifyOpenClawRuntime({
+        fetchImpl: typeof fetch === 'function' ? fetch : null,
+        governancePolicy: getGovernancePolicy(),
+        rootPath: ROOT,
+    });
+}
+
+async function invokeOpenClawRuntime(task) {
+    return domainRuntime.invokeOpenClawRuntime(task, {
+        fetchImpl: typeof fetch === 'function' ? fetch : null,
+        governancePolicy: getGovernancePolicy(),
+        rootPath: ROOT,
     });
 }
 
@@ -1136,6 +1260,9 @@ async function cmdStatus(args) {
         parseHandoffs,
         analyzeConflicts,
         buildExecutorContribution,
+        buildCodexInstanceSummary,
+        buildProviderModeSummary,
+        buildRuntimeSurfaceSummary,
         loadMetricsSnapshot,
         normalizeContributionBaseline,
         buildContributionTrend,
@@ -1214,6 +1341,9 @@ function cmdMetrics(args = []) {
         parseHandoffs,
         analyzeConflicts,
         buildExecutorContribution,
+        buildCodexInstanceSummary,
+        buildProviderModeSummary,
+        buildRuntimeSurfaceSummary,
         buildDomainHealth,
         existsSync,
         readFileSync,
@@ -1359,6 +1489,9 @@ async function cmdTask(args) {
         ALLOWED_CODEX_INSTANCES,
         ALLOWED_DOMAIN_LANES,
         ALLOWED_LANE_LOCKS,
+        ALLOWED_PROVIDER_MODES,
+        ALLOWED_RUNTIME_SURFACES,
+        ALLOWED_RUNTIME_TRANSPORTS,
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
         buildTaskCreateInferenceExplainLines,
@@ -1410,6 +1543,27 @@ async function cmdJobs(args) {
         buildJobsSnapshot: loadJobsSnapshot,
         findJobSnapshot: domainJobs.findJobSnapshot,
         printJson: coreOutput.printJson,
+    });
+}
+
+async function cmdRuntime(args) {
+    return runtimeCommandHandlers.handleRuntimeCommand({
+        args,
+        parseFlags,
+        parseBoard,
+        ensureTask,
+        currentDate,
+        isoNow,
+        writeBoardAndSync,
+        toTaskJson,
+        printJson: coreOutput.printJson,
+        verifyOpenClawRuntime,
+        invokeOpenClawRuntime,
+        parseExpectedBoardRevisionFlag,
+        OPENCLAW_PROVIDER: domainRuntime.OPENCLAW_PROVIDER,
+        getGovernancePolicy,
+        rootPath: ROOT,
+        fetchImpl: typeof fetch === 'function' ? fetch : null,
     });
 }
 
@@ -1709,6 +1863,14 @@ function upsertTasksFromSignals(board, signals, options = {}) {
             title: suggestedTask.title,
             risk: suggestedTask.risk,
             scope: suggestedTask.scope,
+            codex_instance: suggestedTask.codex_instance,
+            domain_lane: suggestedTask.domain_lane,
+            lane_lock: suggestedTask.lane_lock,
+            cross_domain: suggestedTask.cross_domain,
+            provider_mode: suggestedTask.provider_mode,
+            runtime_surface: suggestedTask.runtime_surface,
+            runtime_transport: suggestedTask.runtime_transport,
+            runtime_last_transport: suggestedTask.runtime_last_transport,
             files: suggestedTask.files,
             priority_score: suggestedTask.priority_score,
             sla_due_at: suggestedTask.sla_due_at,
@@ -1851,6 +2013,7 @@ const runtimeIntake = runtimeIntakeCommands.createRuntimeIntakeCommands({
     detectKimiRateLimitActive,
     getGitHubToken,
     fetchGitHubJson,
+    verifyOpenClawRuntime,
     attachDiagnostics,
     parseExpectedBoardRevisionFlag,
     buildBoardWipLimitDiagnostics,
@@ -1890,6 +2053,8 @@ const governanceRuntime =
         parseExpectedBoardRevisionFlag,
         buildCodexCheckReport,
         loadJobsSnapshot,
+        verifyOpenClawRuntime,
+        buildRuntimeBlockingErrors: domainRuntime.buildRuntimeBlockingErrors,
         ALLOWED_STATUSES,
         currentDate,
         writeBoard,
@@ -1917,6 +2082,7 @@ async function main() {
         board: () => cmdBoard(args),
         task: () => cmdTask(args),
         jobs: () => cmdJobs(args),
+        runtime: () => cmdRuntime(args),
         publish: () => cmdPublish(args),
         sync: () => cmdSync(),
         close: () => cmdClose(args),

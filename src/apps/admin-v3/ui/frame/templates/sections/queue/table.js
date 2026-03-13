@@ -2,6 +2,36 @@ export function renderQueueTableShell() {
     return `
         <ul id="queueNextAdminList" class="sony-list"></ul>
 
+        <div
+            id="queueReceptionGuidancePanel"
+            class="sony-panel soft queue-reception-guidance"
+        >
+            <div class="queue-reception-guidance__header">
+                <div>
+                    <h4>Guia de recepcion</h4>
+                    <p id="queueReceptionGuidanceMeta">
+                        Sin apoyos activos para recepcion.
+                    </p>
+                </div>
+            </div>
+            <ul id="queueReceptionGuidanceList" class="sony-list"></ul>
+        </div>
+
+        <div
+            id="queueReceptionResolutionsPanel"
+            class="sony-panel soft queue-reception-guidance"
+        >
+            <div class="queue-reception-guidance__header">
+                <div>
+                    <h4>Resoluciones recientes</h4>
+                    <p id="queueRecentResolutionsMeta">
+                        Sin cierres asistidos todavia.
+                    </p>
+                </div>
+            </div>
+            <ul id="queueRecentResolutionsList" class="sony-list"></ul>
+        </div>
+
         <div class="table-scroll">
             <table class="sony-table queue-admin-table">
                 <thead>

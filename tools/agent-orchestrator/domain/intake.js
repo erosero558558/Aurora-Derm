@@ -6,8 +6,36 @@ function normalizeText(value) {
     return String(value || '').trim();
 }
 
+function looksLikeOpenClawRuntimeText(text) {
+    const corpus = String(text || '').toLowerCase();
+    return (
+        corpus.includes('openclaw') ||
+        corpus.includes('leadops') ||
+        corpus.includes('lead ops') ||
+        corpus.includes('lead-ai-worker') ||
+        corpus.includes('lead_ai_worker') ||
+        corpus.includes('lead-ai-queue') ||
+        corpus.includes('lead-ai-result') ||
+        corpus.includes('operator auth') ||
+        corpus.includes('operator-auth') ||
+        corpus.includes('operator_auth') ||
+        corpus.includes('figo queue') ||
+        corpus.includes('figo-ai-bridge') ||
+        corpus.includes('figo_queue') ||
+        corpus.includes('check-ai-response') ||
+        corpus.includes('lib/auth.php') ||
+        corpus.includes('lib/leadopsservice.php') ||
+        corpus.includes('lib/figo_queue.php') ||
+        corpus.includes('controllers/operatorauthcontroller.php') ||
+        corpus.includes('controllers/leadaicontroller.php')
+    );
+}
+
 function normalizePathScopeFromText(text) {
     const corpus = String(text || '').toLowerCase();
+    if (looksLikeOpenClawRuntimeText(corpus)) {
+        return 'openclaw_runtime';
+    }
     if (
         corpus.includes('calendar') ||
         corpus.includes('availability') ||
@@ -46,6 +74,9 @@ function normalizePathScopeFromText(text) {
 
 function inferRuntimeImpact(text) {
     const corpus = String(text || '').toLowerCase();
+    if (looksLikeOpenClawRuntimeText(corpus)) {
+        return 'high';
+    }
     if (
         corpus.includes('prod') ||
         corpus.includes('production') ||
@@ -135,6 +166,16 @@ function computeSlaDueAt(signal, options = {}) {
 
 function inferFilesByScope(scope) {
     switch (String(scope || '').toLowerCase()) {
+        case 'openclaw_runtime':
+            return [
+                'figo-ai-bridge.php',
+                'lib/figo_queue.php',
+                'lib/figo_queue/JobProcessor.php',
+                'bin/lead-ai-worker.js',
+                'bin/lib/lead-ai-worker.js',
+                'lib/auth.php',
+                'controllers/OperatorAuthController.php',
+            ];
         case 'calendar':
             return [
                 'controllers/AvailabilityController.php',
@@ -163,6 +204,37 @@ function inferFilesByScope(scope) {
         default:
             return ['README.md'];
     }
+}
+
+function inferFilesByOpenClawSurface(surface) {
+    switch (String(surface || '').toLowerCase()) {
+        case 'leadops_worker':
+            return [
+                'bin/lead-ai-worker.js',
+                'bin/lib/lead-ai-worker.js',
+                'controllers/LeadAiController.php',
+                'lib/LeadOpsService.php',
+            ];
+        case 'operator_auth':
+            return ['lib/auth.php', 'controllers/OperatorAuthController.php'];
+        case 'figo_queue':
+        default:
+            return [
+                'figo-ai-bridge.php',
+                'check-ai-response.php',
+                'lib/figo_queue.php',
+                'lib/figo_queue/JobProcessor.php',
+            ];
+    }
+}
+
+function inferOpenClawSurfaceFromText(text) {
+    return taskGuards.inferOpenClawRuntimeSurface({
+        scope: 'openclaw_runtime',
+        title: String(text || ''),
+        source_ref: String(text || ''),
+        files: [String(text || '')],
+    });
 }
 
 function normalizeWorkflowSlug(value) {
@@ -308,6 +380,12 @@ function inferWorkflowFileFromSignal(signal) {
 function inferFilesFromSignal(signal, scope) {
     const corpus =
         `${String(signal?.title || '')} ${Array.isArray(signal?.labels) ? signal.labels.join(' ') : ''}`.toLowerCase();
+    if (String(scope || '').toLowerCase() === 'openclaw_runtime') {
+        const surface = inferOpenClawSurfaceFromText(
+            `${String(signal?.title || '')} ${String(signal?.source_ref || signal?.sourceRef || '')} ${Array.isArray(signal?.labels) ? signal.labels.join(' ') : ''}`
+        );
+        return inferFilesByOpenClawSurface(surface);
+    }
     if (String(scope || '').toLowerCase() === 'ops') {
         const workflowFile = inferWorkflowFileFromSignal(signal);
         if (workflowFile) {
@@ -448,9 +526,14 @@ function mergeSignals(existingSignals, incomingSignals, options = {}) {
 
 function buildTaskFromSignal(signal, options = {}) {
     const nowIso = String(options.nowIso || new Date().toISOString());
-    const scope = normalizePathScopeFromText(
-        `${signal.title} ${Array.isArray(signal.labels) ? signal.labels.join(' ') : ''}`
+    const labelsCorpus = Array.isArray(signal.labels)
+        ? signal.labels.join(' ')
+        : '';
+    const sourceRef = normalizeText(
+        signal.source_ref || signal.sourceRef || ''
     );
+    const scopeCorpus = `${signal.title} ${sourceRef} ${labelsCorpus}`;
+    const scope = normalizePathScopeFromText(scopeCorpus);
     const severity = String(
         signal.severity || inferSeverity(signal)
     ).toLowerCase();
@@ -461,13 +544,10 @@ function buildTaskFromSignal(signal, options = {}) {
         options
     );
     const runtimeImpact = String(
-        signal.runtime_impact || inferRuntimeImpact(signal.title)
+        signal.runtime_impact || inferRuntimeImpact(scopeCorpus)
     ).toLowerCase();
     const criticalZone = Boolean(signal.critical) || runtimeImpact === 'high';
     const owner = normalizeText(options.owner || 'orchestrator');
-    const sourceRef = normalizeText(
-        signal.source_ref || signal.sourceRef || ''
-    );
     const executor = chooseExecutor(
         {
             source: signal.source,
@@ -512,6 +592,12 @@ function buildTaskFromSignal(signal, options = {}) {
         created_at: String(nowIso).slice(0, 10),
         updated_at: String(nowIso).slice(0, 10),
     };
+    if (scope === 'openclaw_runtime') {
+        task.provider_mode = 'openclaw_chatgpt';
+        task.runtime_surface = inferOpenClawSurfaceFromText(scopeCorpus);
+        task.runtime_transport = 'hybrid_http_cli';
+        task.runtime_last_transport = '';
+    }
     return taskGuards.ensureTaskDualCodexDefaults(task);
 }
 

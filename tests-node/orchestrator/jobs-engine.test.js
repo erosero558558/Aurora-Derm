@@ -134,6 +134,8 @@ test('jobs-engine resolveJobSnapshot usa status file local como fuente primaria'
     ]);
     assert.equal(snapshot.head_drift, false);
     assert.equal(snapshot.telemetry_gap, false);
+    assert.equal(snapshot.repo_hygiene_issue, false);
+    assert.equal(snapshot.operationally_healthy, true);
     assert.equal(snapshot.failure_reason, '');
     assert.equal(typeof snapshot.age_seconds, 'number');
 });
@@ -191,7 +193,7 @@ test('jobs-engine resolveJobSnapshot usa health_url cuando no existe status loca
 
     assert.equal(snapshot.verification_source, 'health_url');
     assert.equal(snapshot.verified, true);
-    assert.equal(snapshot.healthy, true);
+    assert.equal(snapshot.healthy, false);
     assert.equal(snapshot.age_seconds, 41);
     assert.equal(snapshot.deployed_commit, 'def5678');
     assert.equal(snapshot.repo_path, '/var/www/figo');
@@ -216,7 +218,55 @@ test('jobs-engine resolveJobSnapshot usa health_url cuando no existe status loca
     ]);
     assert.equal(snapshot.head_drift, true);
     assert.equal(snapshot.telemetry_gap, false);
+    assert.equal(snapshot.repo_hygiene_issue, false);
+    assert.equal(snapshot.operationally_healthy, false);
     assert.equal(snapshot.failure_reason, '');
+});
+
+test('jobs-engine clasifica working_tree_dirty con dirty paths como repo hygiene sin rojo operacional', async () => {
+    const fetchImpl = async () => ({
+        ok: true,
+        async json() {
+            return {
+                checks: {
+                    publicSync: {
+                        configured: true,
+                        jobId: '8d31e299-7e57-4959-80b5-aaa2d73e9674',
+                        state: 'failed',
+                        healthy: false,
+                        ageSeconds: 12,
+                        expectedMaxLagSeconds: 120,
+                        lastCheckedAt: '2026-03-03T12:00:32Z',
+                        lastErrorMessage: 'working_tree_dirty',
+                        dirtyPathsCount: 2,
+                        dirtyPathsSample: ['_astro/app.js', 'styles.css'],
+                    },
+                },
+            };
+        },
+    });
+
+    const snapshot = await jobs.resolveJobSnapshot(
+        {
+            key: 'public_main_sync',
+            job_id: '8d31e299-7e57-4959-80b5-aaa2d73e9674',
+            health_url: 'https://pielarmonia.com/api.php?resource=health',
+            expected_max_lag_seconds: 120,
+        },
+        {
+            existsSync: () => false,
+            readFileSync: () => '',
+            fetchImpl,
+        }
+    );
+
+    assert.equal(snapshot.verification_source, 'health_url');
+    assert.equal(snapshot.healthy, true);
+    assert.equal(snapshot.operationally_healthy, true);
+    assert.equal(snapshot.repo_hygiene_issue, true);
+    assert.equal(snapshot.head_drift, false);
+    assert.equal(snapshot.telemetry_gap, false);
+    assert.equal(snapshot.failure_reason, 'working_tree_dirty');
 });
 
 test('jobs-engine resolveJobSnapshot infiere telemetry_gap desde health_url legacy', async () => {
@@ -257,6 +307,8 @@ test('jobs-engine resolveJobSnapshot infiere telemetry_gap desde health_url lega
 
     assert.equal(snapshot.verification_source, 'health_url');
     assert.equal(snapshot.healthy, false);
+    assert.equal(snapshot.operationally_healthy, false);
+    assert.equal(snapshot.repo_hygiene_issue, false);
     assert.equal(snapshot.head_drift, false);
     assert.equal(snapshot.telemetry_gap, true);
     assert.equal(snapshot.failure_reason, 'working_tree_dirty');
@@ -292,6 +344,8 @@ test('jobs-engine registry_only fallback y summary mantienen contrato estable', 
             deployed_commit: '',
             last_error_message: '',
             failure_reason: 'unverified',
+            repo_hygiene_issue: false,
+            operationally_healthy: false,
             dirty_paths_count: 0,
             head_drift: false,
             telemetry_gap: false,

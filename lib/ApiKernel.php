@@ -125,6 +125,7 @@ class ApiKernel
         }
 
         $publicEndpoints = ApiConfig::getPublicEndpoints();
+        $diagnosticsEndpoints = ApiConfig::getDiagnosticsEndpoints();
 
         $isPublic = false;
         foreach ($publicEndpoints as $endpoint) {
@@ -134,8 +135,38 @@ class ApiKernel
             }
         }
 
+        $isDiagnostics = false;
+        foreach ($diagnosticsEndpoints as $endpoint) {
+            if ($endpoint['method'] === $method && $endpoint['resource'] === $resource) {
+                $isDiagnostics = true;
+                break;
+            }
+        }
+
         $isAdmin = false;
-        if (!$isPublic) {
+        $diagnosticsAuthorized = false;
+        if ($isDiagnostics) {
+            $diagnosticsAuthorized = diagnostics_request_authorized([
+                'method' => $method,
+                'resource' => $resource,
+            ]);
+            if (!$diagnosticsAuthorized) {
+                start_secure_session();
+                $isAdmin = legacy_admin_is_authenticated() || operator_auth_is_authenticated();
+                $diagnosticsAuthorized = $isAdmin;
+            }
+            if (!$diagnosticsAuthorized) {
+                audit_log_event('api.unauthorized', [
+                    'method' => $method,
+                    'resource' => $resource,
+                    'reason' => 'diagnostics_required'
+                ]);
+                json_response([
+                    'ok' => false,
+                    'error' => 'No autorizado'
+                ], 403);
+            }
+        } elseif (!$isPublic) {
             start_secure_session();
             $isAdmin = legacy_admin_is_authenticated() || operator_auth_is_authenticated();
             if (!$isAdmin) {
@@ -152,7 +183,12 @@ class ApiKernel
         }
 
         $shouldAuditAccess = true;
-        if (!$isAdmin && $method === 'GET' && !api_should_audit_public_get($resource)) {
+        if (
+            !$isAdmin &&
+            !$diagnosticsAuthorized &&
+            $method === 'GET' &&
+            !api_should_audit_public_get($resource)
+        ) {
             $shouldAuditAccess = false;
         }
 
@@ -160,7 +196,7 @@ class ApiKernel
             audit_log_event('api.access', [
                 'method' => $method,
                 'resource' => $resource,
-                'scope' => $isAdmin ? 'admin' : 'public'
+                'scope' => $isAdmin ? 'admin' : ($diagnosticsAuthorized ? 'diagnostics' : 'public')
             ]);
         }
 
@@ -173,7 +209,7 @@ class ApiKernel
         $context = [
             'store' => $store,
             'isAdmin' => $isAdmin,
-            'agentAccess' => $isAdmin ? admin_agent_has_editorial_access() : false,
+            'diagnosticsAuthorized' => $diagnosticsAuthorized,
             'requestStartedAt' => $requestStartedAt,
             'method' => $method,
             'resource' => $resource

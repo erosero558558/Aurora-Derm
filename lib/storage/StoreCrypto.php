@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 final class StoreCrypto
 {
+    public static function hasEncryptionKey(): bool
+    {
+        return self::encryptionKey() !== '';
+    }
+
     public static function encryptPayload(string $plain): string
     {
         $key = self::encryptionKey();

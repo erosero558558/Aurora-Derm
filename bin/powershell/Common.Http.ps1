@@ -27,6 +27,44 @@ function Parse-JsonBody {
     }
 }
 
+function Get-DiagnosticsAuthHeaders {
+    param(
+        [string]$UserAgent = 'PielArmoniaHttp/1.0'
+    )
+
+    $headers = @{
+        'Cache-Control' = 'no-cache'
+        'User-Agent' = $UserAgent
+    }
+
+    $token = [string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        $token = [string]$env:PIELARMONIA_CRON_SECRET
+    }
+
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        return $headers
+    }
+
+    $headerName = [string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER
+    if ([string]::IsNullOrWhiteSpace($headerName)) {
+        $headerName = 'Authorization'
+    }
+
+    $prefix = [string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX
+    if ([string]::IsNullOrWhiteSpace($prefix)) {
+        $prefix = 'Bearer'
+    }
+
+    $headers[$headerName] = if ([string]::IsNullOrWhiteSpace($prefix)) {
+        $token
+    } else {
+        "$prefix $token"
+    }
+
+    return $headers
+}
+
 function Invoke-JsonGet {
     param(
         [string]$Name,
@@ -37,10 +75,7 @@ function Invoke-JsonGet {
     )
 
     try {
-        $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec -UseBasicParsing -Headers @{
-            'Cache-Control' = 'no-cache'
-            'User-Agent' = $UserAgent
-        }
+        $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec -UseBasicParsing -Headers (Get-DiagnosticsAuthHeaders -UserAgent $UserAgent)
         $status = [int]$resp.StatusCode
         $body = [string]$resp.Content
         if ($status -lt 200 -or $status -ge 300) {
@@ -94,10 +129,7 @@ function Invoke-JsonGetStrict {
         [int]$JsonDepth = 12
     )
 
-    $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec -UseBasicParsing -Headers @{
-        'Cache-Control' = 'no-cache'
-        'User-Agent' = $UserAgent
-    }
+    $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec -UseBasicParsing -Headers (Get-DiagnosticsAuthHeaders -UserAgent $UserAgent)
 
     $status = [int]$resp.StatusCode
     $body = [string]$resp.Content
@@ -126,10 +158,7 @@ function Invoke-TextGet {
     )
 
     try {
-        $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec -UseBasicParsing -Headers @{
-            'Cache-Control' = 'no-cache'
-            'User-Agent' = $UserAgent
-        }
+        $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec -UseBasicParsing -Headers (Get-DiagnosticsAuthHeaders -UserAgent $UserAgent)
         $status = [int]$resp.StatusCode
         return [pscustomobject]@{
             Name = $Name

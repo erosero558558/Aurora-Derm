@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v15-operator-apps-20260310-3';
+const CACHE_NAME = 'pielarmonia-v15-figo-20260226-themefix2';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

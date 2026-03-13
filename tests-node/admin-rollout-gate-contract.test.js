@@ -92,55 +92,28 @@ test('admin rollout root wrapper delega a la implementacion canonica de admin op
     );
 });
 
-test('admin rollout gate expone stages canonicos y contrato v3-only', () => {
+test('admin rollout gate expone stage estable y contrato v3-only', () => {
     const raw = loadScript();
 
     assert.equal(
-        raw.includes(
-            "[ValidateSet('internal', 'canary', 'general', 'rollback')]"
-        ),
+        raw.includes('[switch]$RequireOpenClawAuth'),
         true,
-        'falta set canonico de stages admin rollout'
+        'falta flag RequireOpenClawAuth para endurecer el gate'
     );
     assert.equal(
-        raw.includes('[switch]$AllowFeatureApiFailure'),
+        raw.includes("[ValidateSet('stable')]"),
         true,
-        'falta switch AllowFeatureApiFailure en el gate'
-    );
-    assert.equal(
-        raw.includes('[switch]$AllowMissingAdminFlag'),
-        true,
-        'falta switch AllowMissingAdminFlag en el gate'
-    );
-    assert.equal(
-        raw.includes('allow_feature_api_failure_effective'),
-        true,
-        'falta trazabilidad de allow_feature_api_failure_effective'
-    );
-    assert.equal(
-        raw.includes('allow_missing_admin_flag_effective'),
-        true,
-        'falta trazabilidad de allow_missing_admin_flag_effective'
-    );
-    assert.equal(
-        raw.includes('Get-ExpectedFeatureFlagsByStage'),
-        true,
-        'falta helper stage-aware de feature flags'
-    );
-    assert.equal(
-        raw.includes('admin_sony_ui_v3'),
-        true,
-        'falta validacion del flag admin_sony_ui_v3'
-    );
-    assert.equal(
-        raw.includes('Admin query sony_v3'),
-        true,
-        'falta chequeo de la URL inerte admin_ui=sony_v3'
+        'falta stage estable canonico'
     );
     assert.equal(
         raw.includes('url = "$base/admin.html"'),
         true,
         'falta chequeo canonico de admin.html'
+    );
+    assert.equal(
+        raw.includes("error = ''"),
+        true,
+        'falta campo de error para diagnostico del gate'
     );
     assert.equal(
         raw.includes('has_admin_v3_css = $false'),
@@ -161,6 +134,11 @@ test('admin rollout gate expone stages canonicos y contrato v3-only', () => {
         raw.includes('references_legacy_styles = $false'),
         true,
         'falta flag de referencias legacy en el reporte'
+    );
+    assert.equal(
+        raw.includes('operator_auth = [ordered]@{'),
+        true,
+        'falta bloque operator_auth en el reporte'
     );
 });
 
@@ -278,33 +256,29 @@ test('package.json expone check canonico para chunks admin', () => {
         true,
         'package.json debe exponer chunks:admin:check como diagnostico canonico'
     );
+});
+
+test('package.json expone gate endurecido para rollout OpenClaw del admin', () => {
+    const packageJson = loadFile(PACKAGE_JSON_PATH);
+
     assert.equal(
         packageJson.includes(
-            '"gate:admin:rollout": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage general"'
+            '"gate:admin:rollout:openclaw": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage stable -RequireOpenClawAuth"'
         ),
         true,
-        'gate:admin:rollout debe apuntar al stage general canonico'
+        'package.json debe exponer gate:admin:rollout:openclaw'
     );
+});
+
+test('package.json incluye la spec de login OpenClaw dentro del QA canonico del admin', () => {
+    const packageJson = loadFile(PACKAGE_JSON_PATH);
+
     assert.equal(
         packageJson.includes(
-            '"gate:admin:rollout:internal": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage internal"'
+            'tests/admin-openclaw-login.spec.js tests/admin-navigation-responsive.spec.js'
         ),
         true,
-        'falta atajo npm para stage internal'
-    );
-    assert.equal(
-        packageJson.includes(
-            '"gate:admin:rollout:canary": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage canary"'
-        ),
-        true,
-        'falta atajo npm para stage canary'
-    );
-    assert.equal(
-        packageJson.includes(
-            '"gate:admin:rollout:rollback": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage rollback"'
-        ),
-        true,
-        'gate:admin:rollout:rollback debe propagar el stage rollback'
+        'test:frontend:qa:admin debe cubrir admin-openclaw-login.spec.js dentro del carril canonico'
     );
 });
 
@@ -407,6 +381,150 @@ test('admin rollout gate registra suites runtime v3-only', () => {
         raw.includes("Specs = @('tests/admin-v3-canary-runtime.spec.js')"),
         true,
         'falta spec estable de runtime V3'
+    );
+    assert.equal(
+        raw.includes("Name = 'admin-openclaw-auth'"),
+        true,
+        'falta suite de login OpenClaw en el gate admin'
+    );
+    assert.equal(
+        raw.includes("Specs = @('tests/admin-openclaw-login.spec.js')"),
+        true,
+        'falta spec de login OpenClaw en el gate admin'
+    );
+});
+
+test('admin rollout gate captura la surface operator-auth-status y puede endurecer OpenClaw', () => {
+    const raw = loadScript();
+
+    assert.equal(
+        raw.includes('url = "$base/api.php?resource=operator-auth-status"'),
+        true,
+        'falta URL canonica de operator-auth-status en el reporte del gate'
+    );
+    assert.equal(
+        raw.includes('facade_url = "$base/admin-auth.php?action=status"'),
+        true,
+        'falta URL fallback de admin-auth.php?action=status en el reporte del gate'
+    );
+    assert.equal(
+        raw.includes("source = ''"),
+        true,
+        'falta campo source para diagnosticar que surface resolvio operator_auth'
+    );
+    assert.equal(
+        raw.includes('contract_valid = $false'),
+        true,
+        'falta flag contract_valid para endurecer el rollout OpenClaw'
+    );
+    assert.equal(
+        raw.includes('authenticated = $false'),
+        true,
+        'falta authenticated en el snapshot operator_auth del gate'
+    );
+    assert.equal(
+        raw.includes(
+            '$report.operator_auth.error = [string]$operatorAuthResult.Error'
+        ),
+        true,
+        'falta persistencia del error raw en operator_auth'
+    );
+    assert.equal(
+        raw.includes('facade_http_status = 0'),
+        true,
+        'falta facade_http_status en el reporte operator_auth'
+    );
+    assert.equal(
+        raw.includes("facade_error = ''"),
+        true,
+        'falta facade_error en el reporte operator_auth'
+    );
+    assert.equal(
+        raw.includes('bridge_token_configured = $false'),
+        true,
+        'falta flag de bridge token en operator_auth'
+    );
+    assert.equal(
+        raw.includes('allowlist_configured = $false'),
+        true,
+        'falta flag de allowlist en operator_auth'
+    );
+    assert.equal(
+        raw.includes('missing = @()'),
+        true,
+        'falta lista de missing config en operator_auth'
+    );
+    assert.equal(
+        raw.includes('if ($RequireOpenClawAuth) {'),
+        true,
+        'falta endurecimiento opcional del gate para OpenClaw'
+    );
+    assert.equal(
+        raw.includes('[OK]  operator auth OpenClaw configurado'),
+        true,
+        'falta feedback positivo del gate endurecido'
+    );
+    assert.equal(
+        raw.includes(
+            'admin-auth facade respondio, pero sigue en contrato legacy sin mode/status OpenClaw.'
+        ),
+        true,
+        'falta warning cuando la fachada admin-auth responde en contrato legacy'
+    );
+    assert.equal(
+        raw.includes(
+            '[WARN] operator auth sin contrato OpenClaw valido. source=$($report.operator_auth.source)'
+        ),
+        true,
+        'falta warning cuando RequireOpenClawAuth detecta contrato invalido'
+    );
+});
+
+test('admin rollout gate intenta resolver snapshot OpenClaw via fallback de la fachada admin-auth', () => {
+    const raw = loadScript();
+
+    assert.equal(
+        raw.includes('function Test-OperatorAuthContractPayload {'),
+        true,
+        'falta helper para validar el contrato operator_auth'
+    );
+    assert.equal(
+        raw.includes('function Set-OperatorAuthReportFromPayload {'),
+        true,
+        'falta helper para normalizar payloads operator_auth'
+    );
+    assert.equal(
+        raw.includes(
+            "Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $operatorAuthPayload -Source 'operator-auth-status'"
+        ),
+        true,
+        'falta aplicar el payload primario de operator-auth-status al reporte'
+    );
+    assert.equal(
+        raw.includes(
+            '$facadeResult = Invoke-HttpCheck -Url $report.operator_auth.facade_url'
+        ),
+        true,
+        'falta invocar la fachada admin-auth como fallback'
+    );
+    assert.equal(
+        raw.includes(
+            "Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $facadePayload -Source 'admin-auth-facade'"
+        ),
+        true,
+        'falta capturar el contrato OpenClaw desde la fachada admin-auth'
+    );
+    assert.equal(
+        raw.includes(
+            "Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $facadePayload -Source 'admin-auth-facade-legacy'"
+        ),
+        true,
+        'falta marcar la fachada admin-auth como legacy cuando no expone contrato OpenClaw'
+    );
+    assert.equal(
+        raw.includes('[WARN] admin-auth facade no respondio correctamente'),
+        true,
+        'falta warning explicito cuando falla la fachada admin-auth'
     );
 });
 

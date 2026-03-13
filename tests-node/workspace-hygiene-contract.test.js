@@ -307,11 +307,13 @@ test('frontera de markdowns en raiz queda explicita y limitada', () => {
         'README.md',
         'SECURITY_AUDIT.md',
         'SERVIDOR-LOCAL.md',
+        'TRI_LANE_RUNTIME_RUNBOOK.md',
     ].sort();
     const requiredEntries = [
         'README.md',
         'AGENTS.md',
         'DUAL_CODEX_RUNBOOK.md',
+        'TRI_LANE_RUNTIME_RUNBOOK.md',
         'PLAN_MAESTRO_CODEX_2026.md',
         'PLAN_MAESTRO_OPERATIVO_2026.md',
         'PLAN_MAESTRO_2026_STATUS.md',
@@ -1884,12 +1886,15 @@ test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan 
         true,
         'tests/pentest_p0.php debe usar TEST_BASE_URL o el host local canonico'
     );
+    assert.doesNotMatch(
+        pentestP0,
+        /admin123/,
+        'tests/pentest_p0.php no debe depender de admin123'
+    );
     assert.equal(
-        pentestP0.includes(
-            "getenv('PIELARMONIA_ADMIN_PASSWORD') ?: 'admin123'"
-        ),
+        pentestP0.includes('PIELARMONIA_ADMIN_PASSWORD no definido'),
         true,
-        'tests/pentest_p0.php debe usar la password admin desde env o fallback controlado'
+        'tests/pentest_p0.php debe saltar CSRF si falta la password admin'
     );
     assert.equal(
         penetration.includes(
@@ -1898,18 +1903,26 @@ test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan 
         true,
         'tests/penetration_test.php debe usar TEST_BASE_URL o el host local canonico'
     );
+    assert.doesNotMatch(
+        penetration,
+        /admin123/,
+        'tests/penetration_test.php no debe depender de admin123'
+    );
     assert.equal(
-        penetration.includes(
-            "getenv('PIELARMONIA_ADMIN_PASSWORD') ?: 'admin123'"
-        ),
+        penetration.includes('PIELARMONIA_ADMIN_PASSWORD no definido'),
         true,
-        'tests/penetration_test.php debe usar la password admin desde env o fallback controlado'
+        'tests/penetration_test.php debe saltar CSRF si falta la password admin'
     );
 
     assert.doesNotMatch(
         readme,
         /127\.0\.0\.1:8000|localhost:8000/,
         'README.md no debe seguir apuntando a 8000'
+    );
+    assert.doesNotMatch(
+        readme,
+        /admin123/,
+        'README.md no debe seguir sugiriendo admin123'
     );
     assert.doesNotMatch(
         serverLocal,

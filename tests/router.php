@@ -21,6 +21,7 @@ if (!is_dir($tempDataDir)) {
 // Force data directory to temp dir
 putenv('PIELARMONIA_DATA_DIR=' . $tempDataDir);
 putenv('PIELARMONIA_ADMIN_PASSWORD=secret');
+putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password');
 // Also define constant just in case, though putenv should work for data_dir_path()
 if (!defined('DATA_DIR')) {
     define('DATA_DIR', $tempDataDir);

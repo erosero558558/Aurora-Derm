@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
 
 test.use({
     serviceWorkers: 'block',
@@ -88,22 +89,7 @@ function buildDataPayload(sourceMode) {
 
 async function setupAdminApiMocks(page, sourceMode) {
     const dataPayload = buildDataPayload(sourceMode);
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
-        const url = new URL(route.request().url());
-        const action = url.searchParams.get('action') || '';
-        if (action === 'status') {
-            return jsonResponse(route, {
-                ok: true,
-                authenticated: true,
-                csrfToken: 'csrf_test_token',
-            });
-        }
-        return jsonResponse(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_test_token',
-        });
-    });
+    await installLegacyAdminAuthMock(page);
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
@@ -207,11 +193,11 @@ test.describe('Admin availability responsive tablet layout', () => {
             .evaluate((el) => getComputedStyle(el).gridTemplateColumns);
 
         expect(
-            outerGridColumns.trim().split(/\s+/).filter(Boolean).length
-        ).toBe(1);
+            outerGridColumns.trim().split(/\s+/).filter(Boolean)
+        ).toHaveLength(1);
         expect(
-            detailGridColumns.trim().split(/\s+/).filter(Boolean).length
-        ).toBe(1);
+            detailGridColumns.trim().split(/\s+/).filter(Boolean)
+        ).toHaveLength(1);
 
         await expect(
             page.locator('#availabilitySelectionSummary')

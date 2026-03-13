@@ -5,7 +5,7 @@ export function renderShellTopbar() {
     return `
         <header class="admin-v3-topbar">
             <div class="admin-v3-topbar__copy">
-                <p class="sony-kicker">Panel operativo</p>
+                <p class="sony-kicker">Nucleo interno</p>
                 <h2 id="pageTitle">Inicio</h2>
             </div>
             <div class="admin-v3-topbar__actions">

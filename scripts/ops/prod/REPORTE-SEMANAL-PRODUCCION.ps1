@@ -32,7 +32,7 @@ param(
     [double]$LeadOpsCloseRateMinWarnPct = 15,
     [int]$LeadOpsAiAcceptanceWarnMinSamples = 3,
     [double]$LeadOpsAiAcceptanceMinWarnPct = 25,
-    [string]$GitHubRepo = 'erosero558558/Aurora-Derm',
+    [string]$GitHubRepo = 'erosero558558/piel-en-armonia',
     [string]$GitHubApiBase = 'https://api.github.com',
     [int]$GitHubAlertsTimeoutSec = 15,
     [int]$GitHubAlertsIssueLimit = 30,
@@ -48,6 +48,8 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
 $commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'
 $commonMetricsPath = Join-Path $repoRoot 'bin/powershell/Common.Metrics.ps1'
 $commonWarningsPath = Join-Path $repoRoot 'bin/powershell/Common.Warnings.ps1'
+$openClawAuthDiagnosticScriptPath = Join-Path $repoRoot 'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1'
+$hostChecklistCommand = 'npm run checklist:prod:public-sync:host'
 . $commonHttpPath
 . $commonMetricsPath
 . $commonWarningsPath
@@ -55,17 +57,83 @@ if ($CriticalFreeCycleTarget -lt 1) {
     $CriticalFreeCycleTarget = 1
 }
 
+function Invoke-OpenClawAuthRolloutDiagnostic {
+    param(
+        [string]$BaseUrl,
+        [string]$ScriptPath
+    )
+
+    if (-not (Test-Path $ScriptPath)) {
+        return [PSCustomObject]@{
+            available = $false
+            ok = $false
+            diagnosis = 'diagnostic_script_missing'
+            nextAction = 'No se encontro scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1 en este workspace.'
+            source = ''
+            mode = ''
+            status = ''
+            configured = $false
+            operatorAuthStatusHttpStatus = 0
+            adminAuthFacadeHttpStatus = 0
+            error = 'diagnostic_script_missing'
+        }
+    }
+
+    $reportPath = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-auth-rollout-weekly-" + [Guid]::NewGuid().ToString('N') + '.json')
+
+    try {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $reportPath *> $null
+
+        if (-not (Test-Path $reportPath)) {
+            throw 'No se genero reporte del diagnostico OpenClaw.'
+        }
+
+        $raw = Get-Content -Path $reportPath -Raw
+        $payload = ($raw -replace "^\uFEFF", '') | ConvertFrom-Json -Depth 12
+
+        return [PSCustomObject]@{
+            available = $true
+            ok = [bool]$payload.ok
+            diagnosis = [string]$payload.diagnosis
+            nextAction = [string]$payload.next_action
+            source = [string]$payload.resolved.source
+            mode = [string]$payload.resolved.mode
+            status = [string]$payload.resolved.status
+            configured = [bool]$payload.resolved.configured
+            operatorAuthStatusHttpStatus = [int](Get-ObjectValueOrDefault -Object $payload.operator_auth_status -Property 'http_status' -DefaultValue 0)
+            adminAuthFacadeHttpStatus = [int](Get-ObjectValueOrDefault -Object $payload.admin_auth_facade -Property 'http_status' -DefaultValue 0)
+            error = ''
+        }
+    } catch {
+        return [PSCustomObject]@{
+            available = $true
+            ok = $false
+            diagnosis = 'diagnostic_script_failed'
+            nextAction = 'No se pudo interpretar el diagnostico OpenClaw del admin.'
+            source = ''
+            mode = ''
+            status = ''
+            configured = $false
+            operatorAuthStatusHttpStatus = 0
+            adminAuthFacadeHttpStatus = 0
+            error = $_.Exception.Message
+        }
+    } finally {
+        Remove-Item -Path $reportPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
 Write-Host '== Reporte Semanal Produccion =='
 Write-Host "Dominio: $base"
 Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
-$healthResult = Invoke-JsonGet -Name 'health' -Url "$base/api.php?resource=health" -TimeoutSec $TimeoutSec -UserAgent 'PielArmoniaWeeklyReport/1.0'
+$healthResult = Invoke-JsonGet -Name 'health-diagnostics' -Url "$base/api.php?resource=health-diagnostics" -TimeoutSec $TimeoutSec -UserAgent 'PielArmoniaWeeklyReport/1.0'
 $funnelResult = Invoke-JsonGet -Name 'funnel-metrics' -Url "$base/api.php?resource=funnel-metrics" -TimeoutSec $TimeoutSec -UserAgent 'PielArmoniaWeeklyReport/1.0'
 $retentionReportResult = Invoke-JsonGet -Name 'retention-report' -Url "$base/api.php?resource=retention-report&days=$RetentionReportDays" -TimeoutSec $TimeoutSec -UserAgent 'PielArmoniaWeeklyReport/1.0'
 $servicePrioritiesResult = Invoke-JsonGet -Name 'service-priorities' -Url "$base/api.php?resource=service-priorities&limit=12&categoryLimit=8&featuredLimit=3" -TimeoutSec $TimeoutSec -UserAgent 'PielArmoniaWeeklyReport/1.0'
 
 if (-not $healthResult.Ok) {
-    throw "No se pudo consultar health: $($healthResult.Error)"
+    throw "No se pudo consultar health-diagnostics: $($healthResult.Error)"
 }
 $health = $healthResult.Json
 $summary = $null
@@ -426,6 +494,8 @@ $healthChecks = Get-ObjectValueOrDefault -Object $health -Property 'checks' -Def
 $publicSyncCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'publicSync' -DefaultValue $null
 $publicSyncConfigured = [bool](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'configured' -DefaultValue $false)
 $publicSyncHealthy = [bool](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'healthy' -DefaultValue $false)
+$publicSyncOperationallyHealthy = [bool](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'operationallyHealthy' -DefaultValue $publicSyncHealthy)
+$publicSyncRepoHygieneIssue = [bool](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'repoHygieneIssue' -DefaultValue $false)
 $publicSyncJobId = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'jobId' -DefaultValue '')
 $publicSyncState = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'state' -DefaultValue 'unknown')
 $publicSyncAgeSeconds = [int](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'ageSeconds' -DefaultValue 999999)
@@ -433,6 +503,7 @@ $publicSyncExpectedMaxLagSeconds = [int](Get-ObjectValueOrDefault -Object $publi
 $publicSyncLastCheckedAt = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastCheckedAt' -DefaultValue '')
 $publicSyncLastSuccessAt = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastSuccessAt' -DefaultValue '')
 $publicSyncLastErrorAt = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastErrorAt' -DefaultValue '')
+$publicSyncFailureReason = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'failureReason' -DefaultValue '')
 $publicSyncLastErrorMessage = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'lastErrorMessage' -DefaultValue '')
 $publicSyncDeployedCommit = [string](Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'deployedCommit' -DefaultValue '')
 $publicSyncDurationMs = Get-ObjectValueOrDefault -Object $publicSyncCheck -Property 'durationMs' -DefaultValue $null
@@ -463,13 +534,33 @@ if (
 $publicSyncTelemetryGap = $false
 if (
     $publicSyncConfigured -and
-    -not $publicSyncHealthy -and
+    -not $publicSyncOperationallyHealthy -and
     -not [string]::IsNullOrWhiteSpace($publicSyncLastErrorMessage) -and
     [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
     [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
     $publicSyncDirtyPathsCount -le 0
 ) {
     $publicSyncTelemetryGap = $true
+}
+if ([string]::IsNullOrWhiteSpace($publicSyncFailureReason) -and -not [string]::IsNullOrWhiteSpace($publicSyncLastErrorMessage)) {
+    $publicSyncFailureReason = $publicSyncLastErrorMessage
+}
+if (-not $publicSyncRepoHygieneIssue) {
+    $publicSyncRepoHygieneIssue = (
+        $publicSyncFailureReason -eq 'working_tree_dirty' -and
+        -not $publicSyncHeadDrift -and
+        -not $publicSyncTelemetryGap -and
+        $publicSyncDirtyPathsCount -gt 0
+    )
+}
+if (
+    -not $publicSyncOperationallyHealthy -and
+    $publicSyncRepoHygieneIssue -and
+    $publicSyncConfigured -and
+    $publicSyncAgeSeconds -le $publicSyncExpectedMaxLagSeconds
+) {
+    $publicSyncOperationallyHealthy = $true
+    $publicSyncHealthy = $true
 }
 $githubDeployAlertsSummary = Get-GitHubProductionAlertSummary `
     -Repo $GitHubRepo `
@@ -559,6 +650,36 @@ $leadOpsWorkerLastErrorAt = [string](Get-ObjectValueOrDefault -Object $leadOpsCh
 $leadOpsFirstContactSampleSufficient = $leadOpsFirstContactSamples -ge $LeadOpsFirstContactWarnMinSamples
 $leadOpsCloseRateSampleSufficient = $leadOpsContactedCount -ge $LeadOpsCloseRateWarnMinSamples
 $leadOpsAiAcceptanceSampleSufficient = $leadOpsAiCompleted -ge $LeadOpsAiAcceptanceWarnMinSamples
+$authCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'auth' -DefaultValue $null
+$authMode = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'mode' -DefaultValue 'unknown')
+$authStatus = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'status' -DefaultValue 'unknown')
+$authConfigured = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'configured' -DefaultValue $false)
+$authHardeningCompliant = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'hardeningCompliant' -DefaultValue $false)
+$authRecommendedMode = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'recommendedMode' -DefaultValue 'openclaw_chatgpt')
+$authRecommendedModeActive = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'recommendedModeActive' -DefaultValue $false)
+$authLegacyPasswordConfigured = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'legacyPasswordConfigured' -DefaultValue $false)
+$authTwoFactorEnabled = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'twoFactorEnabled' -DefaultValue $false)
+$authOperatorAuthEnabled = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'operatorAuthEnabled' -DefaultValue $false)
+$authOperatorAuthConfigured = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'operatorAuthConfigured' -DefaultValue $false)
+$operatorAuthRollout = Invoke-OpenClawAuthRolloutDiagnostic -BaseUrl $base -ScriptPath $openClawAuthDiagnosticScriptPath
+$operatorAuthRolloutAvailable = [bool](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'available' -DefaultValue $false)
+$operatorAuthRolloutOk = [bool](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'ok' -DefaultValue $false)
+$operatorAuthRolloutDiagnosis = [string](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'diagnosis' -DefaultValue 'unknown')
+$operatorAuthRolloutNextAction = [string](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'nextAction' -DefaultValue '')
+$operatorAuthRolloutSource = [string](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'source' -DefaultValue '')
+$operatorAuthRolloutMode = [string](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'mode' -DefaultValue '')
+$operatorAuthRolloutStatus = [string](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'status' -DefaultValue '')
+$operatorAuthRolloutConfigured = [bool](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'configured' -DefaultValue $false)
+$operatorAuthRolloutOperatorAuthStatusHttpStatus = [int](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'operatorAuthStatusHttpStatus' -DefaultValue 0)
+$operatorAuthRolloutAdminAuthFacadeHttpStatus = [int](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'adminAuthFacadeHttpStatus' -DefaultValue 0)
+$storageCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'storage' -DefaultValue $null
+$storageBackend = [string](Get-ObjectValueOrDefault -Object $storageCheck -Property 'backend' -DefaultValue 'unknown')
+$storageSource = [string](Get-ObjectValueOrDefault -Object $storageCheck -Property 'source' -DefaultValue 'unknown')
+$storeEncrypted = [bool](Get-ObjectValueOrDefault -Object $storageCheck -Property 'encrypted' -DefaultValue $false)
+$storeEncryptionConfigured = [bool](Get-ObjectValueOrDefault -Object $storageCheck -Property 'encryptionConfigured' -DefaultValue $false)
+$storeEncryptionRequired = [bool](Get-ObjectValueOrDefault -Object $storageCheck -Property 'encryptionRequired' -DefaultValue $false)
+$storeEncryptionStatus = [string](Get-ObjectValueOrDefault -Object $storageCheck -Property 'encryptionStatus' -DefaultValue 'unknown')
+$storeEncryptionCompliant = [bool](Get-ObjectValueOrDefault -Object $storageCheck -Property 'encryptionCompliant' -DefaultValue $false)
 $servicePrioritiesSource = 'unreachable'
 $servicePrioritiesCatalogSource = 'unknown'
 $servicePrioritiesCatalogVersion = 'unknown'
@@ -788,16 +909,36 @@ if (-not $sentryBackendConfigured) {
 if (-not $sentryFrontendConfigured) {
     $warnings.Add('sentry_frontend_no_configurado')
 }
+if (-not $authConfigured) {
+    $warnings.Add("auth_status_${authStatus}")
+}
+if ($authMode -ne $authRecommendedMode) {
+    $warnings.Add("auth_mode_${authMode}")
+}
+if ($authMode -eq 'legacy_password' -and -not $authTwoFactorEnabled) {
+    $warnings.Add('auth_2fa_disabled')
+}
+if (-not $operatorAuthRolloutOk) {
+    $warnings.Add("auth_rollout_${operatorAuthRolloutDiagnosis}")
+}
+if ($storeEncryptionRequired -and -not $storeEncryptionCompliant) {
+    $warnings.Add("storage_encryption_required_noncompliant_${storeEncryptionStatus}")
+} elseif (-not $storeEncryptionCompliant) {
+    $warnings.Add("storage_encryption_noncompliant_${storeEncryptionStatus}")
+}
+if ($storageBackend -eq 'json_fallback') {
+    $warnings.Add('storage_backend_json_fallback')
+}
 if (-not $publicSyncConfigured) {
     $warnings.Add('public_sync_unconfigured')
 }
-if ($publicSyncConfigured -and -not $publicSyncHealthy) {
+if ($publicSyncConfigured -and -not $publicSyncOperationallyHealthy) {
     $warnings.Add("public_sync_unhealthy_${publicSyncState}")
 }
 if ($publicSyncConfigured -and $publicSyncAgeSeconds -gt $publicSyncExpectedMaxLagSeconds) {
     $warnings.Add("public_sync_age_alta_${publicSyncAgeSeconds}s")
 }
-if ($publicSyncConfigured -and $publicSyncLastErrorMessage -eq 'working_tree_dirty') {
+if ($publicSyncConfigured -and $publicSyncFailureReason -eq 'working_tree_dirty') {
     $warnings.Add("public_sync_working_tree_dirty_${publicSyncDirtyPathsCount}")
 }
 if ($publicSyncConfigured -and $publicSyncHeadDrift) {
@@ -1132,7 +1273,10 @@ Write-Host "Reporte markdown: $reportMdPath"
 Write-Host "Reporte json: $reportJsonPath"
 Write-Host "start_checkout_rate_pct=$startCheckoutRatePct booking_confirmed=$bookingConfirmed booking_confirmed_rate_pct=$bookingConfirmedRatePct error_rate_pct=$errorRatePct core_p95_max_ms=$coreP95Max figo_post_p95_ms=$figoPostP95"
 Write-Host "retention_no_show_rate_pct=$retentionNoShowRatePct retention_recurrence_rate_pct=$retentionRecurrenceRatePct retention_report_alert_count=$retentionReportAlertCount sentry_backend=$sentryBackendConfigured sentry_frontend=$sentryFrontendConfigured"
-Write-Host "public_sync_configured=$publicSyncConfigured public_sync_healthy=$publicSyncHealthy public_sync_state=$publicSyncState public_sync_age_seconds=$publicSyncAgeSeconds public_sync_expected_max_lag_seconds=$publicSyncExpectedMaxLagSeconds public_sync_last_error_message=$publicSyncLastErrorMessage public_sync_dirty_paths_count=$publicSyncDirtyPathsCount public_sync_telemetry_gap=$publicSyncTelemetryGap"
+Write-Host "auth_mode=$authMode auth_status=$authStatus auth_configured=$authConfigured auth_hardening_compliant=$authHardeningCompliant auth_recommended_mode=$authRecommendedMode auth_recommended_mode_active=$authRecommendedModeActive auth_two_factor_enabled=$authTwoFactorEnabled auth_operator_enabled=$authOperatorAuthEnabled auth_operator_configured=$authOperatorAuthConfigured auth_legacy_password_configured=$authLegacyPasswordConfigured"
+Write-Host "auth_rollout_available=$operatorAuthRolloutAvailable auth_rollout_ok=$operatorAuthRolloutOk auth_rollout_diagnosis=$operatorAuthRolloutDiagnosis auth_rollout_source=$operatorAuthRolloutSource auth_rollout_mode=$operatorAuthRolloutMode auth_rollout_status=$operatorAuthRolloutStatus auth_rollout_configured=$operatorAuthRolloutConfigured auth_rollout_operator_auth_status_http_status=$operatorAuthRolloutOperatorAuthStatusHttpStatus auth_rollout_admin_auth_facade_http_status=$operatorAuthRolloutAdminAuthFacadeHttpStatus auth_rollout_next_action=$operatorAuthRolloutNextAction"
+Write-Host "storage_backend=$storageBackend storage_source=$storageSource storage_encrypted=$storeEncrypted storage_encryption_configured=$storeEncryptionConfigured storage_encryption_required=$storeEncryptionRequired storage_encryption_status=$storeEncryptionStatus storage_encryption_compliant=$storeEncryptionCompliant storage_host_checklist_command=$hostChecklistCommand"
+Write-Host "public_sync_configured=$publicSyncConfigured public_sync_healthy=$publicSyncHealthy public_sync_operationally_healthy=$publicSyncOperationallyHealthy public_sync_repo_hygiene_issue=$publicSyncRepoHygieneIssue public_sync_state=$publicSyncState public_sync_age_seconds=$publicSyncAgeSeconds public_sync_expected_max_lag_seconds=$publicSyncExpectedMaxLagSeconds public_sync_failure_reason=$publicSyncFailureReason public_sync_last_error_message=$publicSyncLastErrorMessage public_sync_dirty_paths_count=$publicSyncDirtyPathsCount public_sync_telemetry_gap=$publicSyncTelemetryGap"
 Write-Host "public_sync_job_id=$publicSyncJobId public_sync_deployed_commit=$publicSyncDeployedCommit public_sync_current_head=$publicSyncCurrentHead public_sync_remote_head=$publicSyncRemoteHead public_sync_head_drift=$publicSyncHeadDrift public_sync_dirty_paths_sample=$publicSyncDirtyPathsSampleLabel"
 Write-Host "github_deploy_alerts_repo=$GitHubRepo github_deploy_alerts_fetch_ok=$githubDeployAlertsFetchOk github_deploy_alerts_relevant_count=$githubDeployAlertsRelevantCount github_deploy_transport_count=$githubDeployAlertsTransportCount github_deploy_connectivity_count=$githubDeployAlertsConnectivityCount github_deploy_repair_git_sync_count=$githubDeployAlertsRepairGitSyncCount github_deploy_self_hosted_runner_count=$githubDeployAlertsSelfHostedRunnerCount"
 Write-Host "github_deploy_alerts_issue_numbers=$githubDeployAlertsIssueNumbersLabel github_deploy_alerts_issue_refs=$githubDeployAlertsIssueRefsLabel github_deploy_alerts_error=$githubDeployAlertsError"

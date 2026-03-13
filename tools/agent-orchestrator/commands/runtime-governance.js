@@ -67,6 +67,8 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 parseHandoffs: ctx.parseHandoffs,
                 loadMetricsSnapshot: ctx.loadMetricsSnapshot,
                 loadJobsSnapshot: ctx.loadJobsSnapshot,
+                verifyOpenClawRuntime: ctx.verifyOpenClawRuntime,
+                buildRuntimeBlockingErrors: ctx.buildRuntimeBlockingErrors,
             });
         },
 

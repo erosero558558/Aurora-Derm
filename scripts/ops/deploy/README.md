@@ -22,4 +22,8 @@ versionado del gateway (`script.js`, `js/chunks/**`, `js/engines/**`), el
 runtime admin V3 (`admin.js`, `js/admin-chunks/**`,
 `js/admin-preboot-shortcuts.js`) y las superficies de turnero publicadas.
 
+La frontera canonica entre source y outputs versionados vive en
+`docs/RUNTIME_ARTIFACT_POLICY.md`; para revisar esos outputs como artefactos
+usar `npm run check:deploy:artifacts`.
+
 El archivo de raiz se mantiene como wrapper compatible.

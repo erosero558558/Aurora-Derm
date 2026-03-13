@@ -269,6 +269,128 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
         }
     }
 
+    const runtime = merged?.runtime;
+    if (runtime !== undefined) {
+        if (!runtime || typeof runtime !== 'object' || Array.isArray(runtime)) {
+            errors.push('runtime debe ser objeto');
+        } else {
+            const providers = runtime.providers;
+            const quotas = runtime.quotas;
+            if (
+                !providers ||
+                typeof providers !== 'object' ||
+                Array.isArray(providers)
+            ) {
+                errors.push('runtime.providers debe ser objeto');
+            } else {
+                for (const [providerName, providerCfg] of Object.entries(
+                    providers
+                )) {
+                    if (
+                        !providerCfg ||
+                        typeof providerCfg !== 'object' ||
+                        Array.isArray(providerCfg)
+                    ) {
+                        errors.push(
+                            `runtime.providers.${providerName} debe ser objeto`
+                        );
+                        continue;
+                    }
+                    for (const key of [
+                        'default_transport',
+                        'preferred_transport',
+                    ]) {
+                        if (
+                            Object.prototype.hasOwnProperty.call(
+                                providerCfg,
+                                key
+                            ) &&
+                            typeof providerCfg[key] !== 'string'
+                        ) {
+                            errors.push(
+                                `runtime.providers.${providerName}.${key} debe ser string`
+                            );
+                        }
+                    }
+                    for (const key of ['surfaces', 'transports']) {
+                        if (
+                            Object.prototype.hasOwnProperty.call(
+                                providerCfg,
+                                key
+                            ) &&
+                            (!providerCfg[key] ||
+                                typeof providerCfg[key] !== 'object' ||
+                                Array.isArray(providerCfg[key]))
+                        ) {
+                            errors.push(
+                                `runtime.providers.${providerName}.${key} debe ser objeto`
+                            );
+                        }
+                    }
+                    warnUnknownKeys(
+                        sourcePolicy?.runtime?.providers?.[providerName],
+                        [
+                            'default_transport',
+                            'preferred_transport',
+                            'surfaces',
+                            'transports',
+                        ],
+                        `runtime.providers.${providerName}`
+                    );
+                }
+            }
+            if (
+                quotas !== undefined &&
+                (!quotas || typeof quotas !== 'object' || Array.isArray(quotas))
+            ) {
+                errors.push('runtime.quotas debe ser objeto');
+            } else if (
+                quotas &&
+                typeof quotas === 'object' &&
+                !Array.isArray(quotas)
+            ) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        quotas,
+                        'by_codex_instance'
+                    )
+                ) {
+                    const byCodexInstance = quotas.by_codex_instance;
+                    if (
+                        !byCodexInstance ||
+                        typeof byCodexInstance !== 'object' ||
+                        Array.isArray(byCodexInstance)
+                    ) {
+                        errors.push(
+                            'runtime.quotas.by_codex_instance debe ser objeto'
+                        );
+                    } else {
+                        for (const [instance, rawLimit] of Object.entries(
+                            byCodexInstance
+                        )) {
+                            const limit = Number(rawLimit);
+                            if (!Number.isFinite(limit) || limit <= 0) {
+                                errors.push(
+                                    `runtime.quotas.by_codex_instance.${instance} invalido (${rawLimit})`
+                                );
+                            }
+                        }
+                    }
+                }
+                warnUnknownKeys(
+                    sourcePolicy?.runtime?.quotas,
+                    ['by_codex_instance'],
+                    'runtime.quotas'
+                );
+            }
+            warnUnknownKeys(
+                sourcePolicy?.runtime,
+                ['providers', 'quotas'],
+                'runtime'
+            );
+        }
+    }
+
     const enforcement = merged?.enforcement;
     if (enforcement !== undefined) {
         if (
@@ -626,6 +748,7 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
             'summary',
             'agents',
             'publishing',
+            'runtime',
             'enforcement',
         ],
         'root'
@@ -727,6 +850,15 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                         ? publishing.required_job_key
                         : '',
             },
+            runtime:
+                runtime &&
+                typeof runtime === 'object' &&
+                !Array.isArray(runtime)
+                    ? runtime
+                    : {
+                          providers: {},
+                          quotas: {},
+                      },
             enforcement:
                 enforcement &&
                 typeof enforcement === 'object' &&

@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../lib/PatientCaseService.php';
+
 class CallbackController
 {
     public static function index(array $context): void
     {
         // GET /callbacks (Admin)
-        $store = $context['store'];
+        $patientCaseService = new PatientCaseService();
+        $store = $patientCaseService->hydrateStore($context['store']);
         json_response([
             'ok' => true,
             'data' => LeadOpsService::enrichCallbacks($store['callbacks'] ?? [], $store)
@@ -18,6 +21,7 @@ class CallbackController
     {
         // POST /callbacks
         $store = $context['store'];
+        $patientCaseService = new PatientCaseService();
         require_rate_limit('callbacks', 5, 60);
         $payload = require_json_body();
         // Security: ensure we generate a new ID for new callbacks
@@ -40,6 +44,8 @@ class CallbackController
 
         $callback = LeadOpsService::enrichCallback($callback, $store);
         $store['callbacks'][] = $callback;
+        $store = $patientCaseService->hydrateStore($store);
+        $callback = self::findCallbackById($store, (int) ($callback['id'] ?? 0)) ?? $callback;
         write_store($store);
         maybe_send_callback_admin_notification($callback);
         json_response([
@@ -95,10 +101,32 @@ class CallbackController
                 'error' => 'Callback no encontrado'
             ], 404);
         }
+        $patientCaseService = new PatientCaseService();
+        $store = $patientCaseService->hydrateStore($store);
+        $updated = self::findCallbackById($store, $id) ?? $updated;
         write_store($store);
         json_response([
             'ok' => true,
             'data' => $updated
         ]);
+    }
+
+    private static function findCallbackById(array $store, int $callbackId): ?array
+    {
+        if ($callbackId <= 0) {
+            return null;
+        }
+
+        $callbacks = isset($store['callbacks']) && is_array($store['callbacks']) ? $store['callbacks'] : [];
+        foreach ($callbacks as $callback) {
+            if (!is_array($callback)) {
+                continue;
+            }
+            if ((int) ($callback['id'] ?? 0) === $callbackId) {
+                return $callback;
+            }
+        }
+
+        return null;
     }
 }

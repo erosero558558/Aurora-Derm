@@ -97,12 +97,18 @@ function verify_admin_password(string $password): bool
         return hash_equals($plain, $password);
     }
 
-    // Fallback for CI/Testing environments if env var is missing
-    if ($plain === false || $plain === '') {
-        return hash_equals('admin123', $password);
+    return false;
+}
+
+function admin_password_is_configured(): bool
+{
+    $hash = getenv('PIELARMONIA_ADMIN_PASSWORD_HASH');
+    if (is_string($hash) && trim($hash) !== '') {
+        return true;
     }
 
-    return false;
+    $plain = getenv('PIELARMONIA_ADMIN_PASSWORD');
+    return is_string($plain) && trim($plain) !== '';
 }
 
 function verify_2fa_code(string $code): bool
@@ -214,6 +220,7 @@ function operator_auth_allowed_emails(): array
     $rawCandidates = [
         getenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST'),
         getenv('PIELARMONIA_OPERATOR_AUTH_ALLOWED_EMAILS'),
+        getenv('PIELARMONIA_ADMIN_EMAIL'),
     ];
     $emails = [];
 
@@ -231,6 +238,43 @@ function operator_auth_allowed_emails(): array
     }
 
     return array_values(array_unique($emails));
+}
+
+function operator_auth_configuration_snapshot(): array
+{
+    $mode = operator_auth_mode();
+    $enabled = operator_auth_is_enabled();
+    $bridgeTokenConfigured = operator_auth_bridge_token() !== '';
+    $bridgeSecretConfigured = operator_auth_bridge_signature_secret() !== '';
+    $allowedEmails = operator_auth_allowed_emails();
+    $missing = [];
+
+    if (!$enabled) {
+        $missing[] = 'mode';
+    }
+    if (!$bridgeTokenConfigured) {
+        $missing[] = 'bridge_token';
+    }
+    if (!$bridgeSecretConfigured) {
+        $missing[] = 'bridge_secret';
+    }
+    if (count($allowedEmails) === 0) {
+        $missing[] = 'allowlist';
+    }
+
+    return [
+        'mode' => $mode,
+        'enabled' => $enabled,
+        'configured' => $enabled && count($missing) === 0,
+        'bridgeTokenConfigured' => $bridgeTokenConfigured,
+        'bridgeSecretConfigured' => $bridgeSecretConfigured,
+        'allowlistConfigured' => count($allowedEmails) > 0,
+        'allowedEmails' => $allowedEmails,
+        'allowedEmailCount' => count($allowedEmails),
+        'helperBaseUrl' => operator_auth_helper_base_url(),
+        'serverBaseUrl' => operator_auth_server_base_url(),
+        'missing' => $missing,
+    ];
 }
 
 function operator_auth_is_configured(): bool
@@ -457,12 +501,30 @@ function operator_auth_build_helper_url(array $challenge): string
 
 function operator_auth_config_error_payload(): array
 {
+    $snapshot = operator_auth_configuration_snapshot();
+    $missingLabels = [
+        'mode' => 'PIELARMONIA_OPERATOR_AUTH_MODE',
+        'bridge_token' => 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN',
+        'bridge_secret' => 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET',
+        'allowlist' => 'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST',
+    ];
+    $missingItems = array_map(
+        static fn (string $item): string => $missingLabels[$item] ?? $item,
+        is_array($snapshot['missing'] ?? null) ? $snapshot['missing'] : []
+    );
+    $error = count($missingItems) > 0
+        ? 'Configuracion incompleta de OpenClaw/ChatGPT. Falta: ' . implode(', ', $missingItems) . '.'
+        : 'El acceso OpenClaw/ChatGPT no esta configurado en este entorno.';
+
     return [
-        'ok' => false,
+        'ok' => true,
         'authenticated' => false,
         'status' => 'operator_auth_not_configured',
-        'mode' => operator_auth_mode(),
-        'error' => 'El acceso OpenClaw/ChatGPT no esta configurado en este entorno.',
+        'mode' => OPERATOR_AUTH_SOURCE,
+        'configured' => false,
+        'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'configuration' => $snapshot,
+        'error' => $error,
     ];
 }
 
@@ -985,6 +1047,109 @@ function operator_auth_logout_payload(): array
     ];
 }
 
+function resolve_request_header_value(string $headerName): string
+{
+    $normalized = strtoupper(str_replace('-', '_', $headerName));
+    if ($normalized === 'AUTHORIZATION') {
+        return trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['Authorization'] ?? ''));
+    }
+
+    $serverKey = 'HTTP_' . $normalized;
+    $received = trim((string) ($_SERVER[$serverKey] ?? ''));
+    if ($received === '' && $normalized !== 'AUTHORIZATION') {
+        $received = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
+    }
+
+    return $received;
+}
+
+function bearer_header_matches_expected_token(string $expected, string $headerName = 'Authorization', string $prefix = 'Bearer'): bool
+{
+    if ($expected === '') {
+        return false;
+    }
+
+    $received = resolve_request_header_value($headerName);
+    $normalized = trim($received);
+    if ($normalized !== '' && preg_match('/^' . preg_quote($prefix, '/') . '\s+(.+)$/i', $normalized, $matches) === 1) {
+        $normalized = trim((string) ($matches[1] ?? ''));
+    }
+
+    return $normalized !== '' && hash_equals($expected, $normalized);
+}
+
+function diagnostics_access_token(): string
+{
+    $candidates = [
+        getenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN'),
+        getenv('PIELARMONIA_CRON_SECRET'),
+    ];
+
+    foreach ($candidates as $candidate) {
+        if (is_string($candidate) && trim($candidate) !== '') {
+            return trim($candidate);
+        }
+    }
+
+    return '';
+}
+
+function diagnostics_access_token_header(): string
+{
+    $raw = getenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER');
+    return is_string($raw) && trim($raw) !== '' ? trim($raw) : 'Authorization';
+}
+
+function diagnostics_access_token_prefix(): string
+{
+    $raw = getenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX');
+    return is_string($raw) && trim($raw) !== '' ? trim($raw) : 'Bearer';
+}
+
+function request_is_localhost(): bool
+{
+    $clientIp = '';
+    if (function_exists('rate_limit_client_ip')) {
+        $clientIp = trim((string) rate_limit_client_ip());
+    }
+
+    if ($clientIp === '') {
+        $clientIp = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    }
+
+    return $clientIp === '127.0.0.1' || $clientIp === '::1';
+}
+
+function diagnostics_request_authorized(array $context = []): bool
+{
+    if (array_key_exists('diagnosticsAuthorized', $context)) {
+        return (bool) $context['diagnosticsAuthorized'];
+    }
+
+    if ((bool) ($context['isAdmin'] ?? false)) {
+        return true;
+    }
+
+    if (defined('TESTING_ENV') && TESTING_ENV) {
+        return true;
+    }
+
+    if (request_is_localhost()) {
+        return true;
+    }
+
+    $expected = diagnostics_access_token();
+    if ($expected === '') {
+        return false;
+    }
+
+    return bearer_header_matches_expected_token(
+        $expected,
+        diagnostics_access_token_header(),
+        diagnostics_access_token_prefix()
+    );
+}
+
 function operator_auth_require_bridge_token(): void
 {
     $expected = operator_auth_bridge_token();
@@ -997,18 +1162,7 @@ function operator_auth_require_bridge_token(): void
 
     $headerName = operator_auth_bridge_token_header();
     $prefix = operator_auth_bridge_token_prefix();
-    $normalized = strtoupper(str_replace('-', '_', $headerName));
-    $serverKey = $normalized === 'AUTHORIZATION' ? 'HTTP_AUTHORIZATION' : 'HTTP_' . $normalized;
-    $received = trim((string) ($_SERVER[$serverKey] ?? ''));
-    if ($received === '' && $normalized !== 'AUTHORIZATION') {
-        $received = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
-    }
-
-    if ($received !== '' && preg_match('/^' . preg_quote($prefix, '/') . '\s+(.+)$/i', $received, $matches) === 1) {
-        $received = trim((string) ($matches[1] ?? ''));
-    }
-
-    if (!hash_equals($expected, $received)) {
+    if (!bearer_header_matches_expected_token($expected, $headerName, $prefix)) {
         json_response([
             'ok' => false,
             'error' => 'No autorizado',

@@ -98,10 +98,15 @@ function normalize_callback(array $callback): array
 {
     $normalized = [
         'id' => isset($callback['id']) ? (int) $callback['id'] : (int) round(microtime(true) * 1000),
+        'tenantId' => isset($callback['tenantId']) && is_string($callback['tenantId']) && trim($callback['tenantId']) !== ''
+            ? trim($callback['tenantId'])
+            : get_current_tenant_id(),
         'telefono' => truncate_field(sanitize_phone((string) ($callback['telefono'] ?? '')), 20),
         'preferencia' => truncate_field(sanitize_xss((string) ($callback['preferencia'] ?? '')), 200),
         'fecha' => isset($callback['fecha']) ? (string) $callback['fecha'] : local_date('c'),
-        'status' => map_callback_status((string) ($callback['status'] ?? 'pendiente'))
+        'status' => map_callback_status((string) ($callback['status'] ?? 'pendiente')),
+        'patientCaseId' => truncate_field(trim((string) ($callback['patientCaseId'] ?? '')), 80),
+        'patientId' => truncate_field(trim((string) ($callback['patientId'] ?? '')), 80),
     ];
 
     if (isset($callback['leadOps']) && is_array($callback['leadOps'])) {
@@ -193,6 +198,8 @@ function normalize_appointment(array $appointment): array
         'visitMode' => truncate_field(trim((string) ($appointment['visitMode'] ?? '')), 50),
         'supportContactMethod' => truncate_field(trim((string) ($appointment['supportContactMethod'] ?? '')), 50),
         'dateBooked' => isset($appointment['dateBooked']) ? (string) $appointment['dateBooked'] : local_date('c'),
+        'patientCaseId' => truncate_field(trim((string) ($appointment['patientCaseId'] ?? '')), 80),
+        'patientId' => truncate_field(trim((string) ($appointment['patientId'] ?? '')), 80),
         'rescheduleToken' => isset($appointment['rescheduleToken']) && $appointment['rescheduleToken'] !== ''
             ? (string) $appointment['rescheduleToken']
             : bin2hex(random_bytes(16)),
@@ -303,14 +310,24 @@ function normalize_queue_ticket(array $ticket): array
         $estimatedWaitMin = 0;
     }
 
+    $assistanceReason = truncate_field(sanitize_xss(trim((string) (
+        $ticket['assistanceReason']
+        ?? ($ticket['assistance_reason'] ?? '')
+    ))), 80);
+
     return [
         'id' => isset($ticket['id']) ? (int) $ticket['id'] : (int) round(microtime(true) * 1000),
+        'tenantId' => isset($ticket['tenantId']) && is_string($ticket['tenantId']) && trim($ticket['tenantId']) !== ''
+            ? trim($ticket['tenantId'])
+            : get_current_tenant_id(),
         'ticketCode' => $ticketCode,
         'dailySeq' => $dailySeq,
         'queueType' => $queueType,
         'appointmentId' => $appointmentId,
         'patientInitials' => $initials,
         'phoneLast4' => $phoneLast4,
+        'patientCaseId' => truncate_field(trim((string) ($ticket['patientCaseId'] ?? '')), 80),
+        'patientId' => truncate_field(trim((string) ($ticket['patientId'] ?? '')), 80),
         'priorityClass' => $priorityClass,
         'status' => $status,
         'assignedConsultorio' => $assignedConsultorio,
@@ -321,10 +338,10 @@ function normalize_queue_ticket(array $ticket): array
         'needsAssistance' => $needsAssistance,
         'assistanceRequestStatus' => $assistanceRequestStatus,
         'activeHelpRequestId' => $activeHelpRequestId,
-        'assistanceReason' => truncate_field(sanitize_xss(trim((string) (
-            $ticket['assistanceReason']
-            ?? ($ticket['assistance_reason'] ?? '')
-        ))), 80),
+        'assistanceReason' => $assistanceReason,
+        'assistanceReasonLabel' => $assistanceReason !== ''
+            ? queue_help_request_reason_label($assistanceReason)
+            : '',
         'specialPriority' => $specialPriority,
         'lateArrival' => $lateArrival,
         'reprintRequestedAt' => truncate_field(trim((string) (
@@ -343,11 +360,14 @@ function queue_help_request_reason_label(string $reason): string
         'lost_ticket' => 'Perdio su ticket',
         'printer_issue' => 'Problema de impresion',
         'appointment_not_found' => 'Cita no encontrada',
+        'ticket_duplicate' => 'Ticket duplicado',
         'special_priority' => 'Prioridad especial',
         'accessibility' => 'Accesibilidad',
         'clinical_redirect' => 'Derivacion clinica',
         'late_arrival' => 'Llegada tarde',
         'offline_pending' => 'Pendiente offline',
+        'no_phone' => 'Sin celular',
+        'schedule_taken' => 'Horario ocupado',
         'reprint_requested' => 'Reimpresion solicitada',
         'general' => 'Apoyo general',
     ];
@@ -388,6 +408,9 @@ function normalize_queue_help_request(array $request): array
 
     return [
         'id' => isset($request['id']) ? (int) $request['id'] : (int) round(microtime(true) * 1000),
+        'tenantId' => isset($request['tenantId']) && is_string($request['tenantId']) && trim($request['tenantId']) !== ''
+            ? trim($request['tenantId'])
+            : get_current_tenant_id(),
         'source' => truncate_field(sanitize_xss(trim((string) ($request['source'] ?? 'kiosk'))), 40),
         'reason' => truncate_field($reason, 60),
         'reasonLabel' => queue_help_request_reason_label($reason),
@@ -403,6 +426,7 @@ function normalize_queue_help_request(array $request): array
             $request['ticketCode']
             ?? ($request['ticket_code'] ?? '')
         )), 20),
+        'patientCaseId' => truncate_field(trim((string) ($request['patientCaseId'] ?? ($request['patient_case_id'] ?? ''))), 80),
         'patientInitials' => truncate_field(strtoupper((string) (preg_replace(
             '/[^A-Z]/',
             '',

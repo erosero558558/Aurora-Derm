@@ -37,25 +37,6 @@ function countWaitingTickets(queueTickets, queueMeta) {
     ).length;
 }
 
-function countClinicalHistoryQueue(clinicalHistoryMeta) {
-    const queue =
-        clinicalHistoryMeta &&
-        Array.isArray(clinicalHistoryMeta.reviewQueue)
-            ? clinicalHistoryMeta.reviewQueue
-            : [];
-    if (queue.length > 0) {
-        return queue.length;
-    }
-
-    const summary =
-        clinicalHistoryMeta &&
-        clinicalHistoryMeta.summary &&
-        typeof clinicalHistoryMeta.summary === 'object'
-            ? clinicalHistoryMeta.summary
-            : {};
-    return Number(summary.reviewQueueCount || summary?.drafts?.reviewQueueCount || 0);
-}
-
 export function getChromeMetrics(state) {
     const section = state?.ui?.activeSection || 'dashboard';
     const config = SECTION_CONTEXT[section] || SECTION_CONTEXT.dashboard;
@@ -81,10 +62,10 @@ export function getChromeMetrics(state) {
         state?.data?.queueMeta && typeof state.data.queueMeta === 'object'
             ? state.data.queueMeta
             : null;
-    const clinicalHistoryMeta =
-        state?.data?.clinicalHistoryMeta &&
-        typeof state.data.clinicalHistoryMeta === 'object'
-            ? state.data.clinicalHistoryMeta
+    const internalConsoleMeta =
+        state?.data?.internalConsoleMeta &&
+        typeof state.data.internalConsoleMeta === 'object'
+            ? state.data.internalConsoleMeta
             : null;
 
     const pendingTransfers = countPendingTransfers(appointments);
@@ -95,13 +76,13 @@ export function getChromeMetrics(state) {
     return {
         auth,
         config,
+        internalConsoleMeta,
         appointments,
         reviews,
         pendingTransfers,
         pendingCallbacks,
         availabilityDays,
         waitingTickets,
-        clinicalHistoryQueue: countClinicalHistoryQueue(clinicalHistoryMeta),
         dashboardAlerts: pendingTransfers + pendingCallbacks,
     };
 }

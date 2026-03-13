@@ -32,6 +32,10 @@ const JOB_POLICY = {
                 enabled: true,
                 severity: 'warning',
             },
+            public_main_sync_repo_hygiene: {
+                enabled: true,
+                severity: 'warning',
+            },
             public_main_sync_stale: {
                 enabled: true,
                 severity: 'warning',
@@ -171,4 +175,41 @@ test('diagnostics agrega señales canonicas de head drift y telemetry gap', () =
     assert.equal(failed.meta.failure_reason, 'working_tree_dirty');
     assert.equal(failed.meta.head_drift, true);
     assert.equal(failed.meta.telemetry_gap, true);
+});
+
+test('diagnostics reclasifica working_tree_dirty con evidencia como repo hygiene', () => {
+    const list = diagnostics.buildWarnFirstDiagnostics({
+        source: 'status',
+        policy: JOB_POLICY,
+        jobsSnapshot: [
+            {
+                key: 'public_main_sync',
+                configured: true,
+                verified: true,
+                healthy: true,
+                operationally_healthy: true,
+                repo_hygiene_issue: true,
+                state: 'failed',
+                verification_source: 'health_url',
+                age_seconds: 45,
+                expected_max_lag_seconds: 120,
+                last_error_message: 'working_tree_dirty',
+                failure_reason: 'working_tree_dirty',
+                current_head: 'abc1234',
+                remote_head: 'abc1234',
+                head_drift: false,
+                telemetry_gap: false,
+                dirty_paths_count: 2,
+                dirty_paths_sample: ['styles.css'],
+            },
+        ],
+    });
+
+    const codes = list.map((item) => item.code).sort();
+    assert.deepEqual(codes, ['warn.jobs.public_main_sync_repo_hygiene']);
+    const repoHygiene = list[0];
+    assert.match(repoHygiene.message, /repo hygiene issue/);
+    assert.match(repoHygiene.message, /dirty_paths=2/);
+    assert.equal(repoHygiene.meta.repo_hygiene_issue, true);
+    assert.equal(repoHygiene.meta.operationally_healthy, true);
 });

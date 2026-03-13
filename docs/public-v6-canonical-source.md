@@ -2,6 +2,9 @@
 
 This document freezes the public web contract for the V6 cutover.
 
+The source-vs-output review policy for committed runtime artifacts lives in
+`docs/RUNTIME_ARTIFACT_POLICY.md`.
+
 ## Canonical authoring source
 
 Only these paths define the public website:
@@ -68,7 +71,8 @@ Canonical runtime flow:
 
 1. `npm run build`
 2. `npm run check:public:runtime:artifacts`
-3. Commit artifacts to `main`
+3. `npm run check:runtime:artifacts`
+4. Commit artifacts to `main`
 
 `check:public:runtime:artifacts` is the canonical verifier. It enforces:
 
@@ -81,6 +85,11 @@ Canonical runtime flow:
 It writes:
 
 - `verification/public-v6-canonical/runtime-artifacts-report.json`
+
+`check:runtime:artifacts` is the shared output-only review pass when the same
+change also touches admin runtime artifacts or runtime compatibility pins.
+`check:runtime:compat:versions` is the canonical validator for those
+compatibility pins, and `assets:versions:check` remains only as an alias.
 
 ## Root singleton public artifacts
 

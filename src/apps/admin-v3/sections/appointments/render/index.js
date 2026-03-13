@@ -14,6 +14,19 @@ export function renderAppointmentsSection() {
     const source = Array.isArray(state?.data?.appointments)
         ? state.data.appointments
         : [];
+    const draftAvailability =
+        state?.availability?.draft &&
+        typeof state.availability.draft === 'object'
+            ? state.availability.draft
+            : {};
+    const sourceAvailability =
+        state?.data?.availability && typeof state.data.availability === 'object'
+            ? state.data.availability
+            : {};
+    const availabilityMap =
+        Object.keys(draftAvailability).length || state?.availability?.draftDirty
+            ? draftAvailability
+            : sourceAvailability;
     const appointmentsState = state?.appointments || {
         filter: 'all',
         search: '',
@@ -27,5 +40,12 @@ export function renderAppointmentsSection() {
 
     renderAppointmentsTable(sorted);
     syncAppointmentControls(appointmentsState, sorted.length, source.length);
-    renderOpsDeck(computeOps(source), sorted.length, source.length);
+    renderOpsDeck(
+        computeOps(source),
+        sorted.length,
+        source.length,
+        source,
+        availabilityMap,
+        appointmentsState.reviewContext
+    );
 }

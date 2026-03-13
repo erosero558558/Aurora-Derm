@@ -158,6 +158,8 @@ test('jobs status/verify CLI expone snapshot estable para public_main_sync', (t)
     assert.equal(status.jobs[0].dirty_paths_count, 2);
     assert.equal(status.jobs[0].head_drift, false);
     assert.equal(status.jobs[0].telemetry_gap, false);
+    assert.equal(status.jobs[0].repo_hygiene_issue, false);
+    assert.equal(status.jobs[0].operationally_healthy, true);
     assert.equal(status.jobs[0].failure_reason, '');
     assert.deepEqual(status.jobs[0].dirty_paths_sample, [
         'vendor/autoload.php',
@@ -183,9 +185,65 @@ test('jobs status/verify CLI expone snapshot estable para public_main_sync', (t)
     assert.equal(verify.job.dirty_paths_count, 2);
     assert.equal(verify.job.head_drift, false);
     assert.equal(verify.job.telemetry_gap, false);
+    assert.equal(verify.job.repo_hygiene_issue, false);
+    assert.equal(verify.job.operationally_healthy, true);
     assert.equal(verify.job.failure_reason, '');
     assert.deepEqual(verify.job.dirty_paths, [
         'vendor/autoload.php',
         '_astro/app.js',
     ]);
+});
+
+test('jobs verify mantiene ok=true cuando public_main_sync solo tiene repo hygiene issue', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+    writeFixtureFiles(dir);
+
+    const statusPath = join(dir, 'runtime', 'public-sync-status.json');
+    const nowIso = new Date().toISOString();
+    writeFileSync(
+        statusPath,
+        `${JSON.stringify(
+            {
+                version: 1,
+                job_id: '8d31e299-7e57-4959-80b5-aaa2d73e9674',
+                job_key: 'public_main_sync',
+                state: 'failed',
+                checked_at: nowIso,
+                last_success_at: nowIso,
+                last_error_at: nowIso,
+                last_error_message: 'working_tree_dirty',
+                deployed_commit: 'abc1234',
+                repo_path: '/var/www/figo',
+                branch: 'main',
+                current_head: 'abc1234',
+                remote_head: 'abc1234',
+                dirty_paths_count: 2,
+                dirty_paths_sample: ['vendor/autoload.php', '_astro/app.js'],
+                dirty_paths: ['vendor/autoload.php', '_astro/app.js'],
+                duration_ms: 912,
+                lock_file: '/tmp/sync-pielarmonia.lock',
+                log_path: '/var/log/sync-pielarmonia.log',
+            },
+            null,
+            2
+        )}\n`,
+        'utf8'
+    );
+
+    const status = runCli(dir, ['jobs', 'status', '--json']);
+    assert.equal(status.jobs[0].healthy, true);
+    assert.equal(status.jobs[0].repo_hygiene_issue, true);
+    assert.equal(status.jobs[0].failure_reason, 'working_tree_dirty');
+
+    const verify = runCli(dir, [
+        'jobs',
+        'verify',
+        'public_main_sync',
+        '--json',
+    ]);
+    assert.equal(verify.ok, true);
+    assert.equal(verify.job.healthy, true);
+    assert.equal(verify.job.repo_hygiene_issue, true);
+    assert.equal(verify.job.failure_reason, 'working_tree_dirty');
 });

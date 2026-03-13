@@ -34,6 +34,9 @@ function buildStatusReport(input = {}) {
             byStatus,
             byExecutor,
         },
+        codex_instances: input.codex_instances || null,
+        provider_modes: input.provider_modes || null,
+        runtime_surfaces: input.runtime_surfaces || null,
         legacy_terminal_executor_tasks: {
             total: legacyTerminalExecutorTasks.length,
             by_executor: legacyTerminalExecutorTasks.reduce((acc, task) => {
@@ -103,6 +106,33 @@ function renderStatusText(data, options = {}) {
         data?.totals?.byExecutor || {}
     )) {
         lines.push(`- ${executor}: ${count}`);
+    }
+    if (Array.isArray(data?.codex_instances?.rows)) {
+        lines.push('');
+        lines.push('Por codex_instance:');
+        for (const row of data.codex_instances.rows) {
+            lines.push(
+                `- ${row.codex_instance}: tasks=${row.tasks}, active=${row.active_tasks}, in_progress=${row.in_progress_tasks}, done=${row.done_tasks}`
+            );
+        }
+    }
+    if (Array.isArray(data?.provider_modes?.rows)) {
+        lines.push('');
+        lines.push('Por provider_mode:');
+        for (const row of data.provider_modes.rows) {
+            lines.push(
+                `- ${row.provider_mode}: tasks=${row.tasks}, active=${row.active_tasks}, in_progress=${row.in_progress_tasks}, done=${row.done_tasks}`
+            );
+        }
+    }
+    if (Array.isArray(data?.runtime_surfaces?.rows)) {
+        lines.push('');
+        lines.push('Por runtime_surface:');
+        for (const row of data.runtime_surfaces.rows) {
+            lines.push(
+                `- ${row.runtime_surface}: tasks=${row.tasks}, active=${row.active_tasks}, in_progress=${row.in_progress_tasks}, done=${row.done_tasks}`
+            );
+        }
     }
 
     if (Array.isArray(data?.domain_health?.ranking)) {

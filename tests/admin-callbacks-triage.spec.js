@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
 
 test.use({
     serviceWorkers: 'block',
@@ -233,13 +234,7 @@ async function setupLeadOpsAdminApiMocks(page) {
         degraded: true,
     };
 
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
-        jsonResponse(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_test_token',
-        })
-    );
+    await installLegacyAdminAuthMock(page);
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
@@ -344,13 +339,7 @@ async function setupLeadOpsAdminApiMocks(page) {
 }
 
 async function setupAdminApiMocks(page) {
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
-        jsonResponse(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_test_token',
-        })
-    );
+    await installLegacyAdminAuthMock(page);
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());

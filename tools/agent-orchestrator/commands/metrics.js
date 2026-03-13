@@ -110,6 +110,9 @@ function handleMetricsCommand(ctx) {
         parseHandoffs,
         analyzeConflicts,
         buildExecutorContribution,
+        buildCodexInstanceSummary,
+        buildProviderModeSummary,
+        buildRuntimeSurfaceSummary,
         buildDomainHealth,
         existsSync,
         readFileSync,
@@ -179,6 +182,9 @@ function handleMetricsCommand(ctx) {
         (task) => task.status === 'in_progress'
     ).length;
     const contribution = buildExecutorContribution(board.tasks);
+    const codexInstances = buildCodexInstanceSummary(board.tasks);
+    const providerModes = buildProviderModeSummary(board.tasks);
+    const runtimeSurfaces = buildRuntimeSurfaceSummary(board.tasks);
     const domainHealth = buildDomainHealth(
         board.tasks,
         conflictAnalysis,
@@ -299,6 +305,9 @@ function handleMetricsCommand(ctx) {
             traceability_pct: traceability,
         },
         contribution,
+        codex_instances: codexInstances,
+        provider_modes: providerModes,
+        runtime_surfaces: runtimeSurfaces,
         baseline_contribution: baselineContribution,
         contribution_delta: contributionDelta,
         contribution_history: contributionHistorySummary,

@@ -1,381 +1,112 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-test.use({ serviceWorkers: 'block' });
-
-const CALENDAR_UNREACHABLE_MESSAGE = new RegExp(
-    [
-        'La agenda esta temporalmente no disponible',
-        'The schedule is temporarily unavailable',
-    ].join('|'),
-    'i'
-);
-
-const SLOT_UNAVAILABLE_MESSAGE = new RegExp(
-    [
-        'Ese horario ya no esta disponible',
-        'That slot is no longer available',
-    ].join('|'),
-    'i'
-);
-
-function toLocalDateKey(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+async function expectLegacyChatBookingShellAbsent(page) {
+    await expect(page.locator('#chatbotWidget')).toHaveCount(0);
+    await expect(page.locator('#chatbotContainer')).toHaveCount(0);
+    await expect(page.locator('#quickOptions')).toHaveCount(0);
+    await expect(
+        page.locator('button[data-action="quick-message"]')
+    ).toHaveCount(0);
 }
 
-function jsonResponse(route, payload, status = 200) {
-    return route.fulfill({
-        status,
-        contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify(payload),
-    });
+async function expectHeaderAssistanceSurfaces(page) {
+    await expect(page.locator('[data-v6-header]')).toBeVisible();
+    await expect(page.locator('[data-v6-search-open]')).toBeVisible();
+    await expect(page.locator('[data-v6-drawer-open]')).toHaveCount(1);
+    await expect(
+        page.locator('[data-v6-header] a[href*="wa.me/"]').first()
+    ).toHaveAttribute('href', /wa\.me\/593/);
 }
 
-function nextDate(daysAhead = 4) {
-    const date = new Date();
-    date.setDate(date.getDate() + daysAhead);
-    return toLocalDateKey(date);
-}
-
-async function mockApiWithAppointmentError(
-    page,
-    errorCode,
-    statusCode,
-    message
-) {
-    const dateValue = nextDate(4);
-
-    await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const request = route.request();
-        const url = new URL(request.url());
-        const resource = url.searchParams.get('resource') || '';
-
-        if (resource === 'availability') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    [dateValue]: ['10:00', '10:30', '11:00'],
-                },
-                meta: {
-                    source: 'google',
-                    mode: 'live',
-                    timezone: 'America/Guayaquil',
-                    doctor: String(
-                        url.searchParams.get('doctor') || 'indiferente'
-                    ),
-                    service: String(
-                        url.searchParams.get('service') || 'consulta'
-                    ),
-                    durationMin:
-                        String(
-                            url.searchParams.get('service') || 'consulta'
-                        ) === 'laser'
-                            ? 60
-                            : 30,
-                    generatedAt: new Date().toISOString(),
-                },
-            });
-        }
-
-        if (resource === 'booked-slots') {
-            return jsonResponse(route, {
-                ok: true,
-                data: [],
-                meta: {
-                    source: 'google',
-                    mode: 'live',
-                    timezone: 'America/Guayaquil',
-                    doctor: String(
-                        url.searchParams.get('doctor') || 'indiferente'
-                    ),
-                    service: String(
-                        url.searchParams.get('service') || 'consulta'
-                    ),
-                    durationMin:
-                        String(
-                            url.searchParams.get('service') || 'consulta'
-                        ) === 'laser'
-                            ? 60
-                            : 30,
-                    generatedAt: new Date().toISOString(),
-                },
-            });
-        }
-
-        if (resource === 'appointments' && request.method() === 'POST') {
-            return jsonResponse(
-                route,
-                {
-                    ok: false,
-                    code: errorCode,
-                    error: message,
-                },
-                statusCode
-            );
-        }
-
-        if (resource === 'reviews') {
-            return jsonResponse(route, { ok: true, data: [] });
-        }
-
-        if (resource === 'health') {
-            return jsonResponse(route, {
-                ok: true,
-                calendarSource: 'google',
-                calendarMode: 'live',
-                calendarReachable: true,
-            });
-        }
-
-        return jsonResponse(route, { ok: true, data: {} });
-    });
-
-    return { dateValue };
-}
-
-async function mockApiWithAvailabilityError(page, message) {
-    const dateValue = nextDate(5);
-
-    await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const request = route.request();
-        const url = new URL(request.url());
-        const resource = url.searchParams.get('resource') || '';
-
-        if (resource === 'availability') {
-            return jsonResponse(
-                route,
-                {
-                    ok: false,
-                    error: message,
-                },
-                503
-            );
-        }
-
-        if (resource === 'booked-slots') {
-            return jsonResponse(route, {
-                ok: true,
-                data: [],
-                meta: {
-                    source: 'google',
-                    mode: 'live',
-                    timezone: 'America/Guayaquil',
-                    doctor: String(
-                        url.searchParams.get('doctor') || 'indiferente'
-                    ),
-                    service: String(
-                        url.searchParams.get('service') || 'consulta'
-                    ),
-                    durationMin: 30,
-                    generatedAt: new Date().toISOString(),
-                },
-            });
-        }
-
-        if (resource === 'reviews') {
-            return jsonResponse(route, { ok: true, data: [] });
-        }
-
-        if (resource === 'health') {
-            return jsonResponse(route, {
-                ok: true,
-                calendarSource: 'google',
-                calendarMode: 'live',
-                calendarReachable: true,
-            });
-        }
-
-        return jsonResponse(route, { ok: true, data: {} });
-    });
-
-    return { dateValue };
-}
-
-async function openChatAndStartBooking(page) {
-    await page.addInitScript(() => {
-        localStorage.setItem('language', 'es');
-        localStorage.setItem(
-            'pa_cookie_consent_v1',
-            JSON.stringify({
-                status: 'rejected',
-                at: new Date().toISOString(),
-            })
-        );
-    });
-
-    await page.goto('/');
-    const chatbotWidget = page.locator('#chatbotWidget');
-    await expect(chatbotWidget).toBeVisible({ timeout: 15000 });
-    await expect(chatbotWidget).not.toHaveClass(/deferred-content/, {
-        timeout: 15000,
-    });
-
-    const toggle = page.locator('#chatbotWidget .chatbot-toggle');
-    await expect(toggle).toBeVisible({ timeout: 15000 });
-    await toggle.click();
-    await expect(page.locator('#chatbotContainer')).toHaveClass(/active/);
-    const appointmentQuickAction = page.locator(
-        '#quickOptions [data-action="quick-message"][data-value="appointment"]'
-    );
-    await expect(appointmentQuickAction).toBeVisible({ timeout: 10000 });
-    await appointmentQuickAction.click();
-}
-
-async function sendChatText(page, value) {
-    const input = page.locator('#chatInput');
-    await input.fill(value);
-    await input.press('Enter');
-}
-
-async function completeChatBookingUntilCashSelection(page, dateValue) {
-    await page
-        .locator(
-            '#chatMessages button[data-action="chat-booking"][data-value="consulta"]'
-        )
-        .last()
-        .click();
-    await page
-        .locator(
-            '#chatMessages button[data-action="chat-booking"][data-value="indiferente"]'
-        )
-        .last()
-        .click();
-
-    const dateInputs = page.locator('#chatMessages #chatDateInput');
-    await expect(dateInputs.last()).toBeVisible();
-    const beforeErrorDateInputCount = await dateInputs.count();
-    await dateInputs.last().evaluate((input, value) => {
-        input.value = String(value);
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    }, dateValue);
-
-    await page
-        .locator(
-            '#chatMessages button[data-action="chat-booking"][data-value="10:00"]'
-        )
-        .last()
-        .click();
-
-    await sendChatText(page, 'Paciente Test Agenda Real');
-    await expect(page.locator('#chatMessages')).toContainText(/email/i);
-    await sendChatText(page, 'agenda-real-test@example.com');
-    await expect(page.locator('#chatMessages')).toContainText(
-        /telefono|phone/i
-    );
-    await sendChatText(page, '+593987654321');
-
-    const cashButton = page
-        .locator(
-            '#chatMessages button[data-action="chat-booking"][data-value="efectivo"]'
-        )
-        .last();
-    await expect(cashButton).toBeVisible({ timeout: 10000 });
-    await cashButton.click();
-
-    return { beforeErrorDateInputCount };
-}
-
-test.describe('Chat booking con agenda real: errores de calendario', () => {
-    test('calendar_unreachable devuelve mensaje claro y vuelve al paso de fecha', async ({
+test.describe('Public V6 assistance fallback replaces legacy chat booking shell', () => {
+    test('root redirects to english home without live chat booking widget', async ({
         page,
     }) => {
-        const { dateValue } = await mockApiWithAppointmentError(
-            page,
-            'calendar_unreachable',
-            503,
-            'No se pudo consultar la agenda real'
+        await page.goto('/');
+
+        await page.waitForURL(/\/en\/$/);
+        await expect(page).toHaveURL(/\/en\/$/);
+        await expectHeaderAssistanceSurfaces(page);
+        await expect(page.locator('[data-v6-news-strip]')).toContainText(
+            'Even with online booking paused, your first step does not have to wait.'
         );
 
-        await openChatAndStartBooking(page);
-        const { beforeErrorDateInputCount } =
-            await completeChatBookingUntilCashSelection(page, dateValue);
-
-        await expect(page.locator('#chatMessages')).toContainText(
-            CALENDAR_UNREACHABLE_MESSAGE
+        const bookingStatus = page.locator('[data-v6-booking-status]');
+        await expect(bookingStatus).toContainText(
+            'Online booking under maintenance'
         );
-        await expect
-            .poll(() => page.locator('#chatMessages #chatDateInput').count())
-            .toBeGreaterThan(beforeErrorDateInputCount);
+        await expect(bookingStatus.getByRole('link')).toHaveAttribute(
+            'href',
+            '/en/telemedicine/'
+        );
+        await expectLegacyChatBookingShellAbsent(page);
     });
 
-    test('slot_unavailable devuelve mensaje de horario ocupado y vuelve a fecha', async ({
+    test('english home keeps search, drawer, whatsapp, and booking fallback available', async ({
         page,
     }) => {
-        const { dateValue } = await mockApiWithAppointmentError(
-            page,
-            'slot_unavailable',
-            409,
-            'Ese horario no esta disponible'
-        );
+        await page.goto('/en/');
 
-        await openChatAndStartBooking(page);
-        const { beforeErrorDateInputCount } =
-            await completeChatBookingUntilCashSelection(page, dateValue);
-
-        await expect(page.locator('#chatMessages')).toContainText(
-            SLOT_UNAVAILABLE_MESSAGE
+        await expectHeaderAssistanceSurfaces(page);
+        await expect(page.locator('[data-v6-hero]')).toBeVisible();
+        await expect(page.locator('[data-v6-booking-status]')).toContainText(
+            'Online booking under maintenance'
         );
-        await expect
-            .poll(() => page.locator('#chatMessages #chatDateInput').count())
-            .toBeGreaterThan(beforeErrorDateInputCount);
+        await expect(
+            page
+                .locator('[data-v6-booking-status]')
+                .getByRole('link', { name: 'Open telemedicine' })
+        ).toHaveAttribute('href', '/en/telemedicine/');
+        await expectLegacyChatBookingShellAbsent(page);
     });
 
-    test('slot_conflict devuelve mensaje de horario ocupado y vuelve a fecha', async ({
+    test('spanish service detail hands booking off to telemedicine instead of live chat', async ({
         page,
     }) => {
-        const { dateValue } = await mockApiWithAppointmentError(
-            page,
-            'slot_conflict',
-            409,
-            'slot_conflict'
+        await page.goto('/es/servicios/acne-rosacea/');
+
+        await expect(page.locator('h1')).toContainText('Acne y rosacea');
+        await expect(page.locator('[data-v6-booking-status]')).toContainText(
+            'Reserva online en mantenimiento'
         );
 
-        await openChatAndStartBooking(page);
-        const { beforeErrorDateInputCount } =
-            await completeChatBookingUntilCashSelection(page, dateValue);
-
-        await expect(page.locator('#chatMessages')).toContainText(
-            SLOT_UNAVAILABLE_MESSAGE
+        const telemedicineLink = page
+            .locator('[data-v6-booking-status]')
+            .getByRole('link');
+        await expect(telemedicineLink).toHaveAttribute(
+            'href',
+            '/es/telemedicina/'
         );
-        await expect
-            .poll(() => page.locator('#chatMessages #chatDateInput').count())
-            .toBeGreaterThan(beforeErrorDateInputCount);
+
+        await Promise.all([
+            page.waitForURL(/\/es\/telemedicina\/$/),
+            telemedicineLink.click(),
+        ]);
+
+        await expect(page.locator('h1')).toContainText(
+            'Telemedicina dermatologica en Quito'
+        );
+        await expectLegacyChatBookingShellAbsent(page);
     });
 
-    test('error de disponibilidad por mensaje muestra agenda no disponible', async ({
+    test('telemedicine keeps service and whatsapp handoff without chat shell', async ({
         page,
     }) => {
-        const { dateValue } = await mockApiWithAvailabilityError(
-            page,
-            'No se pudo consultar la agenda real en Google Calendar'
+        await page.goto('/es/telemedicina/');
+
+        await expectHeaderAssistanceSurfaces(page);
+        await expect(page.locator('h1')).toContainText(
+            'Telemedicina dermatologica en Quito'
         );
-
-        await openChatAndStartBooking(page);
-        await page
-            .locator(
-                '#chatMessages button[data-action="chat-booking"][data-value="consulta"]'
-            )
-            .last()
-            .click();
-        await page
-            .locator(
-                '#chatMessages button[data-action="chat-booking"][data-value="indiferente"]'
-            )
-            .last()
-            .click();
-
-        const dateInputs = page.locator('#chatMessages #chatDateInput');
-        await expect(dateInputs.last()).toBeVisible();
-        await dateInputs.last().evaluate((input, value) => {
-            input.value = String(value);
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-        }, dateValue);
-
-        await expect(page.locator('#chatMessages')).toContainText(
-            CALENDAR_UNREACHABLE_MESSAGE
+        await expect(page.locator('[data-v6-booking-status]')).toContainText(
+            'Reserva online en mantenimiento'
         );
+        await expect(
+            page
+                .locator('[data-v6-booking-status]')
+                .getByRole('link', { name: 'Ver servicios' })
+        ).toHaveAttribute('href', '/es/servicios/');
+        await expectLegacyChatBookingShellAbsent(page);
     });
 });

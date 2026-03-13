@@ -70,6 +70,7 @@ export function renderAppointmentsFocusPanel() {
             </div>
             <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>
             <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>
+            <div id="appointmentsQueueReview" class="appointments-review-context is-hidden"></div>
         </article>
     `;
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/business.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/PatientCaseService.php';
 require_once __DIR__ . '/storage/StorageConfig.php';
 require_once __DIR__ . '/storage/StorePaths.php';
 require_once __DIR__ . '/storage/StoreCrypto.php';
@@ -145,6 +146,34 @@ if (!function_exists('store_file_is_encrypted')) {
     function store_file_is_encrypted(): bool
     {
         return StorageConfig::storeFileIsEncrypted();
+    }
+}
+
+if (!function_exists('storage_encryption_configured')) {
+    function storage_encryption_configured(): bool
+    {
+        return StorageConfig::encryptionConfigured();
+    }
+}
+
+if (!function_exists('storage_encryption_required')) {
+    function storage_encryption_required(): bool
+    {
+        return StorageConfig::encryptionRequired();
+    }
+}
+
+if (!function_exists('storage_encryption_status')) {
+    function storage_encryption_status(): string
+    {
+        return StorageConfig::encryptionStatus();
+    }
+}
+
+if (!function_exists('storage_encryption_compliant')) {
+    function storage_encryption_compliant(): bool
+    {
+        return StorageConfig::encryptionCompliant();
     }
 }
 

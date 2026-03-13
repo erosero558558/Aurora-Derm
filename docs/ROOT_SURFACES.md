@@ -18,7 +18,10 @@ por que.
 
 - `README.md`: front door del repositorio.
 - `AGENTS.md`: politica canonica de orquestacion y gobernanza.
-- `DUAL_CODEX_RUNBOOK.md`: runbook operativo diario para lanes Codex.
+- `TRI_LANE_RUNTIME_RUNBOOK.md`: runbook operativo canonico para el modelo
+  `tri_lane_runtime`.
+- `DUAL_CODEX_RUNBOOK.md`: nota de migracion historica preservada por
+  compatibilidad.
 - `PLAN_MAESTRO_CODEX_2026.md`: fuente de estrategia y evidencia de la linea
   Codex, requerida por `AGENTS.md`.
 - `PLAN_MAESTRO_OPERATIVO_2026.md`: fuente unica de control operativo y ruta
@@ -64,6 +67,10 @@ Lista aprobada actual:
 - `eslint.config.js`: config de ESLint descubierta por el tooling.
 - `playwright.config.js`: config de Playwright descubierta por el tooling.
 
+`script.js` y `admin.js` permanecen en raiz por contrato de hosting/runtime,
+no como fuentes de autoria primaria. La frontera source-vs-output vive en
+`docs/RUNTIME_ARTIFACT_POLICY.md`.
+
 ## Superficies HTML permitidas en raiz
 
 Los `.html` que siguen en raiz deben ser shells servidos directamente por el
@@ -95,6 +102,10 @@ Lista aprobada actual:
 - `queue-display.css`
 - `ops-design-system.css`
 - `legal.css`
+
+`styles.css` y `styles-deferred.css` permanecen en raiz como runtime
+versionado. Su validacion va por checks de artifacts, no por inferencia
+manual de ownership en review.
 
 ## Superficies PHP permitidas en raiz
 

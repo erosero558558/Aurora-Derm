@@ -19,22 +19,9 @@ export function persistLocalAdminData(data) {
     );
     setStorageJson(LOCAL_DATA_KEYS.appDownloads, data.appDownloads || null);
     setStorageJson(
-        LOCAL_DATA_KEYS.turneroClinicProfile,
-        data.turneroClinicProfile || null
+        LOCAL_DATA_KEYS.internalConsoleMeta,
+        data.internalConsoleMeta || null
     );
-    setStorageJson(
-        LOCAL_DATA_KEYS.turneroClinicProfileMeta,
-        data.turneroClinicProfileMeta || null
-    );
-    setStorageJson(
-        LOCAL_DATA_KEYS.turneroClinicProfileCatalogStatus,
-        data.turneroClinicProfileCatalogStatus || null
-    );
-    setStorageJson(
-        LOCAL_DATA_KEYS.clinicalHistoryMeta,
-        data.clinicalHistoryMeta || null
-    );
-    setStorageJson(LOCAL_DATA_KEYS.mediaFlowMeta, data.mediaFlowMeta || null);
     setStorageJson(LOCAL_DATA_KEYS.health, data.health || null);
 }
 
@@ -53,23 +40,10 @@ export function loadLocalAdminFallback() {
             null
         ),
         appDownloads: getStorageJson(LOCAL_DATA_KEYS.appDownloads, null),
-        turneroClinicProfile: getStorageJson(
-            LOCAL_DATA_KEYS.turneroClinicProfile,
+        internalConsoleMeta: getStorageJson(
+            LOCAL_DATA_KEYS.internalConsoleMeta,
             null
         ),
-        turneroClinicProfileMeta: getStorageJson(
-            LOCAL_DATA_KEYS.turneroClinicProfileMeta,
-            null
-        ),
-        turneroClinicProfileCatalogStatus: getStorageJson(
-            LOCAL_DATA_KEYS.turneroClinicProfileCatalogStatus,
-            null
-        ),
-        clinicalHistoryMeta: getStorageJson(
-            LOCAL_DATA_KEYS.clinicalHistoryMeta,
-            null
-        ),
-        mediaFlowMeta: getStorageJson(LOCAL_DATA_KEYS.mediaFlowMeta, null),
         health: getStorageJson(LOCAL_DATA_KEYS.health, null),
         funnelMetrics: EMPTY_FUNNEL_METRICS,
     };

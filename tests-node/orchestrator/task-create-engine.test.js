@@ -17,6 +17,16 @@ const TEMPLATES = {
         risk: 'medium',
         scope: 'backend',
     },
+    runtime: {
+        executor: 'codex',
+        status: 'ready',
+        risk: 'medium',
+        scope: 'openclaw_runtime',
+        domain_lane: 'transversal_runtime',
+        codex_instance: 'codex_transversal',
+        provider_mode: 'openclaw_chatgpt',
+        runtime_transport: 'hybrid_http_cli',
+    },
 };
 
 test('task-create engine resuelve template valido e invalido', () => {
@@ -25,6 +35,13 @@ test('task-create engine resuelve template valido e invalido', () => {
     });
     assert.equal(docs.name, 'docs');
     assert.equal(docs.executor, 'codex');
+
+    const runtime = taskCreate.resolveTaskCreateTemplate('runtime', {
+        templates: TEMPLATES,
+    });
+    assert.equal(runtime.scope, 'openclaw_runtime');
+    assert.equal(runtime.domain_lane, 'transversal_runtime');
+    assert.equal(runtime.provider_mode, 'openclaw_chatgpt');
 
     assert.throws(
         () =>

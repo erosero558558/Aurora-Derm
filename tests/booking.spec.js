@@ -1,144 +1,175 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-test.describe('Flujo de reserva de cita', () => {
+test.use({ serviceWorkers: 'block' });
+
+async function dismissCookieBannerIfVisible(page) {
+    const banner = page.locator('#cookieBanner');
+    if (await banner.isVisible().catch(() => false)) {
+        const rejectButton = page.locator('#cookieRejectBtn');
+        if (await rejectButton.isVisible().catch(() => false)) {
+            await rejectButton.click();
+            await expect(banner).toBeHidden();
+        }
+    }
+}
+
+async function openPublicRoute(page, pathname) {
+    await page.goto(pathname);
+    await dismissCookieBannerIfVisible(page);
+}
+
+async function expectLegacyBookingShellAbsent(page) {
+    await expect(page.locator('script[data-data-bundle="true"]')).toHaveCount(
+        0
+    );
+    await expect(page.locator('#appointmentForm')).toHaveCount(0);
+    await expect(page.locator('#paymentModal')).toHaveCount(0);
+    await expect(page.locator('#chatbotWidget')).toHaveCount(0);
+}
+
+test.describe('Reserva online en mantenimiento', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/');
+        await page.addInitScript(() => {
+            localStorage.setItem(
+                'pa_cookie_consent_v1',
+                JSON.stringify({
+                    status: 'rejected',
+                    at: new Date().toISOString(),
+                })
+            );
+        });
     });
 
-    test('formulario de cita tiene todos los campos', async ({ page }) => {
-        const form = page.locator('#appointmentForm');
-        await expect(form).toBeVisible();
+    test('inicio conserva la orientacion del primer paso mientras la agenda web sigue pausada', async ({
+        page,
+    }) => {
+        await openPublicRoute(page, '/es/');
 
+        const newsStrip = page.locator('[data-v6-news-strip]');
+        await expect(newsStrip).toContainText(
+            'Aunque la agenda web siga en pausa, su primer paso no tiene por que esperar.'
+        );
+
+        await page.locator('[data-v6-news-toggle]').click();
+        const newsPanel = page.locator('[data-v6-news-panel]');
+        await expect(newsPanel).toBeVisible();
+        await expect(newsPanel).toContainText('telemedicina');
         await expect(
-            page.locator('#serviceSelect, [name="service"]').first()
+            newsPanel.getByRole('link', { name: 'Ver servicios' })
+        ).toHaveAttribute('href', '/es/servicios/');
+
+        await expectLegacyBookingShellAbsent(page);
+
+        const bookingStatus = page.locator('[data-v6-booking-status]');
+        await expect(bookingStatus).toContainText(
+            'Reserva online en mantenimiento'
+        );
+
+        const telemedicineCta = bookingStatus.getByRole('link', {
+            name: 'Abrir telemedicina',
+        });
+        await expect(telemedicineCta).toHaveAttribute(
+            'href',
+            '/es/telemedicina/'
+        );
+
+        await page.locator('[data-v6-search-open]').first().click();
+        await expect(page.locator('[data-v6-search]')).toBeVisible();
+
+        const searchInput = page.locator('[data-v6-search-input]');
+        await searchInput.fill('tele');
+
+        const telemedicineResult = page.locator(
+            '[data-v6-search-results] a[href="/es/telemedicina/"]'
+        );
+        await expect(telemedicineResult).toBeVisible();
+        await expect(telemedicineResult).toContainText('Telemedicina');
+
+        await Promise.all([
+            page.waitForURL(/\/es\/telemedicina\/$/),
+            telemedicineResult.click(),
+        ]);
+
+        await expect(page).toHaveURL(/\/es\/telemedicina\/$/);
+        await expect(page.locator('h1')).toContainText(
+            'Telemedicina dermatologica en Quito'
+        );
+    });
+
+    test('detalle de servicio muestra fallback a telemedicina en lugar del formulario legacy', async ({
+        page,
+    }) => {
+        await openPublicRoute(page, '/es/servicios/acne-rosacea/');
+
+        await expect(page.locator('h1')).toContainText('Acne y rosacea');
+        await expectLegacyBookingShellAbsent(page);
+
+        await page.locator('[data-v6-page-menu]').click();
+        const pageMenuPanel = page.locator('[data-v6-page-menu-panel]');
+        await expect(pageMenuPanel).toBeVisible();
+
+        await pageMenuPanel
+            .getByRole('link', { name: 'Reserva online' })
+            .click();
+        await expect(page).toHaveURL(/#v6-booking-status$/);
+
+        const bookingStatus = page.locator('[data-v6-booking-status]');
+        await expect(bookingStatus).toContainText(
+            'Reserva online en mantenimiento'
+        );
+        await expect(bookingStatus).toContainText('empiece por telemedicina');
+
+        const telemedicineLink = bookingStatus.getByRole('link', {
+            name: 'Abrir telemedicina',
+        });
+        await expect(telemedicineLink).toHaveAttribute(
+            'href',
+            '/es/telemedicina/'
+        );
+    });
+
+    test('telemedicina devuelve a servicios cuando la reserva online sigue pausada', async ({
+        page,
+    }) => {
+        await openPublicRoute(page, '/es/telemedicina/');
+
+        await expect(page.locator('h1')).toContainText(
+            'Telemedicina dermatologica en Quito'
+        );
+        await expectLegacyBookingShellAbsent(page);
+
+        await page.locator('[data-v6-page-menu]').click();
+        const pageMenuPanel = page.locator('[data-v6-page-menu-panel]');
+        await expect(pageMenuPanel).toBeVisible();
+        await expect(
+            pageMenuPanel.getByRole('link', { name: 'Reserva online' })
+        ).toHaveAttribute('href', '#v6-booking-status');
+
+        const bookingStatus = page.locator('[data-v6-booking-status]');
+        await expect(bookingStatus).toContainText(
+            'Reserva online en mantenimiento'
+        );
+
+        const servicesLink = bookingStatus.getByRole('link', {
+            name: 'Ver servicios',
+        });
+        await expect(servicesLink).toHaveAttribute('href', '/es/servicios/');
+
+        await Promise.all([
+            page.waitForURL(/\/es\/servicios\/$/),
+            servicesLink.click(),
+        ]);
+
+        await expect(page).toHaveURL(/\/es\/servicios\/$/);
+        await expect(page.locator('h1')).toContainText(
+            'Servicios dermatologicos'
+        );
+        await expect(
+            page.locator('[data-v6-hub-featured-card]').first()
         ).toBeVisible();
         await expect(
-            page.locator('[name="date"], #dateInput').first()
+            page.locator('[data-v6-catalog-card]').first()
         ).toBeVisible();
-        await expect(
-            page.locator('[name="doctor"], #doctorSelect').first()
-        ).toBeVisible();
-    });
-
-    test('seleccionar servicio muestra precio', async ({ page }) => {
-        const serviceSelect = page
-            .locator('#serviceSelect, [name="service"]')
-            .first();
-        await serviceSelect.selectOption('consulta');
-        // El precio debería aparecer en algún lugar
-        const priceText = page
-            .locator('[class*="price"], [id*="price"], [data-i18n*="price"]')
-            .first();
-        if (await priceText.isVisible()) {
-            await expect(priceText).toContainText(/\$/);
-        }
-    });
-
-    test('seleccionar fecha carga horarios', async ({ page }) => {
-        const serviceSelect = page
-            .locator('#serviceSelect, [name="service"]')
-            .first();
-        await serviceSelect.selectOption('consulta');
-
-        const doctorSelect = page
-            .locator('[name="doctor"], #doctorSelect')
-            .first();
-        if (await doctorSelect.isVisible()) {
-            await doctorSelect.selectOption('rosero');
-        }
-
-        const dateInput = page
-            .locator('[name="date"], #dateInput, input[type="date"]')
-            .first();
-        // Poner fecha de mañana
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const dateStr = tomorrow.toISOString().split('T')[0];
-        await dateInput.fill(dateStr);
-        await dateInput.dispatchEvent('change');
-
-        // Esperar que aparezcan horarios
-        await page.waitForTimeout(1000);
-        const timeSelect = page
-            .locator('[name="time"], #timeSelect, select')
-            .nth(2);
-        if (await timeSelect.isVisible()) {
-            const options = await timeSelect.locator('option').count();
-            expect(options).toBeGreaterThanOrEqual(1);
-        }
-    });
-
-    test('envío sin campos obligatorios muestra error', async ({ page }) => {
-        const form = page.locator('#appointmentForm');
-        const submitBtn = form
-            .locator('button[type="submit"], .btn-primary')
-            .first();
-        if (await submitBtn.isVisible()) {
-            await submitBtn.click();
-            // Debería mostrar algún tipo de validación
-            await page.waitForTimeout(500);
-        }
-    });
-
-    test('flujo completo con pago en efectivo', async ({ page }) => {
-        // Seleccionar servicio
-        const serviceSelect = page
-            .locator('#serviceSelect, [name="service"]')
-            .first();
-        await serviceSelect.selectOption('consulta');
-
-        // Seleccionar doctor
-        const doctorSelect = page
-            .locator('[name="doctor"], #doctorSelect')
-            .first();
-        if (await doctorSelect.isVisible()) {
-            await doctorSelect.selectOption('rosero');
-        }
-
-        // Seleccionar fecha futura
-        const dateInput = page
-            .locator('[name="date"], #dateInput, input[type="date"]')
-            .first();
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 7);
-        await dateInput.fill(futureDate.toISOString().split('T')[0]);
-        await dateInput.dispatchEvent('change');
-        await page.waitForTimeout(1500);
-
-        // Seleccionar hora si hay disponible
-        const timeSelect = page.locator('[name="time"]').first();
-        if (await timeSelect.isVisible()) {
-            const options = await timeSelect
-                .locator('option[value]:not([value=""])')
-                .all();
-            if (options.length > 0) {
-                await timeSelect.selectOption({ index: 1 });
-            }
-        }
-
-        // Llenar datos del paciente
-        const nameInput = page.locator('[name="name"], #nameInput').first();
-        if (await nameInput.isVisible()) {
-            await nameInput.fill('Test Paciente E2E');
-        }
-        const emailInput = page.locator('[name="email"], #emailInput').first();
-        if (await emailInput.isVisible()) {
-            await emailInput.fill('test-e2e@example.com');
-        }
-        const phoneInput = page.locator('[name="phone"], #phoneInput').first();
-        if (await phoneInput.isVisible()) {
-            await phoneInput.fill('+593999999999');
-        }
-
-        // Aceptar política de privacidad
-        const privacyCheck = page
-            .locator(
-                '[name="privacyConsent"], #privacyConsent, input[type="checkbox"]'
-            )
-            .first();
-        if (await privacyCheck.isVisible()) {
-            await privacyCheck.check();
-        }
     });
 });

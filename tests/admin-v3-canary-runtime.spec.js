@@ -1,6 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const { skipIfPhpRuntimeMissing } = require('./helpers/php-backend');
+const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
 
 test.use({
     serviceWorkers: 'block',
@@ -146,13 +147,7 @@ function buildFixtureState() {
 async function setupOperationalMocks(page) {
     const state = buildFixtureState();
 
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
-        jsonResponse(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_test_token',
-        })
-    );
+    await installLegacyAdminAuthMock(page);
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
@@ -231,10 +226,9 @@ test.describe('Admin sony_v3 runtime', () => {
         ).toBeVisible();
         await expect(page.locator('#pageTitle')).toHaveText('Inicio');
         await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
-        await expect(page.locator('#dashboardAdvancedAnalytics')).not.toHaveJSProperty(
-            'open',
-            true
-        );
+        await expect(
+            page.locator('#dashboardAdvancedAnalytics')
+        ).not.toHaveJSProperty('open', true);
 
         await page.keyboard.press('Control+K');
         await expect(page.locator('#adminCommandPalette')).not.toHaveClass(

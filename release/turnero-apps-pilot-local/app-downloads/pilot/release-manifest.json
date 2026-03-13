@@ -1,0 +1,56 @@
+{
+    "schema": "turnero-release-bundle/v1",
+    "channel": "pilot",
+    "version": "0.1.0",
+    "releasedAt": "2026-03-13T06:23:55.502Z",
+    "baseUrl": "https://pielarmonia.com",
+    "apps": {
+        "operator": {
+            "version": "0.1.0",
+            "updatedAt": "2026-03-13T06:23:55.502Z",
+            "webFallbackUrl": "/operador-turnos.html",
+            "guideUrl": "/app-downloads/?surface=operator",
+            "targets": {
+                "win": {
+                    "label": "Windows",
+                    "url": "/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe",
+                    "sha256": "42be7ebb5bf5442d5df8f51c4dbbd4ffac6ee584a45c36038115bf5ed95ed5cf",
+                    "bytes": 85958989
+                }
+            },
+            "updates": {
+                "win": {
+                    "feedUrl": "/desktop-updates/pilot/operator/win/latest.yml",
+                    "payloadUrl": "/desktop-updates/pilot/operator/win/TurneroOperadorSetup.exe"
+                }
+            },
+            "files": [
+                {
+                    "path": "/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe",
+                    "bytes": 85958989,
+                    "sha256": "42be7ebb5bf5442d5df8f51c4dbbd4ffac6ee584a45c36038115bf5ed95ed5cf"
+                },
+                {
+                    "path": "/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe.blockmap",
+                    "bytes": 90463,
+                    "sha256": "3be1f7ccdedcfe7216cee95ece52026dc9ada1ee81861ee93bf391a4a37cfd4f"
+                },
+                {
+                    "path": "/desktop-updates/pilot/operator/win/latest.yml",
+                    "bytes": 344,
+                    "sha256": "38e2d87d044e3830732368751233667ad0ca5e199314bc53f24c223a3f3fb402"
+                },
+                {
+                    "path": "/desktop-updates/pilot/operator/win/TurneroOperadorSetup.exe",
+                    "bytes": 85958989,
+                    "sha256": "42be7ebb5bf5442d5df8f51c4dbbd4ffac6ee584a45c36038115bf5ed95ed5cf"
+                },
+                {
+                    "path": "/desktop-updates/pilot/operator/win/TurneroOperadorSetup.exe.blockmap",
+                    "bytes": 90463,
+                    "sha256": "3be1f7ccdedcfe7216cee95ece52026dc9ada1ee81861ee93bf391a4a37cfd4f"
+                }
+            ]
+        }
+    }
+}

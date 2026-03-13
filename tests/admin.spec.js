@@ -1,683 +1,119 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const { skipIfPhpRuntimeMissing } = require('./helpers/php-backend');
-
-function jsonResponse(route, payload, status = 200) {
-    return route.fulfill({
-        status,
-        contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify(payload),
-    });
-}
-
-function buildOperatorAuthChallenge(overrides = {}) {
-    const challengeId = String(
-        overrides.challengeId || 'challenge-admin-openclaw'
-    );
-
-    return {
-        challengeId,
-        helperUrl:
-            overrides.helperUrl ||
-            `http://127.0.0.1:4173/resolve?challenge=${encodeURIComponent(challengeId)}`,
-        manualCode: overrides.manualCode || 'ABC123-DEF456',
-        pollAfterMs: Number(overrides.pollAfterMs || 50),
-        expiresAt:
-            overrides.expiresAt ||
-            new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        status: overrides.status || 'pending',
-    };
-}
-
-function buildWhatsappOpenclawOpsSnapshot(overrides = {}) {
-    const baseSnapshot = {
-        available: true,
-        configured: true,
-        configuredMode: 'openclaw_chatgpt',
-        bridgeConfigured: true,
-        bridgeMode: 'online',
-        bridgeStatus: {
-            healthy: true,
-        },
-        pendingOutbox: 0,
-        activeConversations: 0,
-        aliveHolds: 0,
-        bookingsClosed: 0,
-        paymentsStarted: 0,
-        paymentsCompleted: 0,
-        deliveryFailures: 0,
-        automationSuccessRate: 100,
-        lastInboundAt: '',
-        lastOutboundAt: '',
-        pendingOutboxItems: [],
-        failedOutboxItems: [],
-        activeHolds: [],
-        pendingCheckouts: [],
-        conversations: [],
-    };
-
-    return {
-        ...baseSnapshot,
-        ...overrides,
-        bridgeStatus: {
-            ...baseSnapshot.bridgeStatus,
-            ...(overrides.bridgeStatus || {}),
-        },
-        pendingOutboxItems: Array.isArray(overrides.pendingOutboxItems)
-            ? overrides.pendingOutboxItems
-            : baseSnapshot.pendingOutboxItems,
-        failedOutboxItems: Array.isArray(overrides.failedOutboxItems)
-            ? overrides.failedOutboxItems
-            : baseSnapshot.failedOutboxItems,
-        activeHolds: Array.isArray(overrides.activeHolds)
-            ? overrides.activeHolds
-            : baseSnapshot.activeHolds,
-        pendingCheckouts: Array.isArray(overrides.pendingCheckouts)
-            ? overrides.pendingCheckouts
-            : baseSnapshot.pendingCheckouts,
-        conversations: Array.isArray(overrides.conversations)
-            ? overrides.conversations
-            : baseSnapshot.conversations,
-    };
-}
-
-function applyWhatsappOpenclawOpsAction(snapshot, payload = {}) {
-    const action = String(payload.action || '').trim();
-    const nextSnapshot = {
-        ...snapshot,
-        failedOutboxItems: Array.isArray(snapshot.failedOutboxItems)
-            ? [...snapshot.failedOutboxItems]
-            : [],
-        activeHolds: Array.isArray(snapshot.activeHolds)
-            ? [...snapshot.activeHolds]
-            : [],
-        pendingCheckouts: Array.isArray(snapshot.pendingCheckouts)
-            ? [...snapshot.pendingCheckouts]
-            : [],
-    };
-    let response = {
-        ok: true,
-        action,
-    };
-
-    if (action === 'requeue_outbox') {
-        const failedId = String(payload.id || '').trim();
-        nextSnapshot.failedOutboxItems = nextSnapshot.failedOutboxItems.filter(
-            (item) => String(item?.id || '') !== failedId
-        );
-        nextSnapshot.deliveryFailures = Math.max(
-            0,
-            nextSnapshot.failedOutboxItems.length
-        );
-        response = {
-            ...response,
-            requeuedId: failedId,
-        };
-    } else if (action === 'expire_checkout') {
-        const sessionId = String(payload.paymentSessionId || '').trim();
-        const holdId = String(payload.holdId || '').trim();
-        const expiredCheckouts = nextSnapshot.pendingCheckouts.filter((item) => {
-            return (
-                sessionId &&
-                String(item?.paymentSessionId || '') === sessionId
-            );
-        });
-        nextSnapshot.pendingCheckouts = nextSnapshot.pendingCheckouts.filter(
-            (item) => String(item?.paymentSessionId || '') !== sessionId
-        );
-        if (holdId) {
-            nextSnapshot.activeHolds = nextSnapshot.activeHolds.filter(
-                (item) => String(item?.id || '') !== holdId
-            );
-        }
-        nextSnapshot.aliveHolds = nextSnapshot.activeHolds.length;
-        response = {
-            ...response,
-            expiredCount: expiredCheckouts.length,
-            expiredHolds: holdId ? 1 : 0,
-        };
-    } else if (action === 'release_hold') {
-        const holdId = String(payload.holdId || '').trim();
-        nextSnapshot.activeHolds = nextSnapshot.activeHolds.filter(
-            (item) => String(item?.id || '') !== holdId
-        );
-        nextSnapshot.aliveHolds = nextSnapshot.activeHolds.length;
-        response = {
-            ...response,
-            releasedHoldId: holdId,
-        };
-    } else if (action === 'sweep_stale') {
-        const expiredCount = nextSnapshot.pendingCheckouts.length;
-        const expiredHolds = nextSnapshot.activeHolds.length;
-        nextSnapshot.pendingCheckouts = [];
-        nextSnapshot.activeHolds = [];
-        nextSnapshot.aliveHolds = 0;
-        response = {
-            ...response,
-            expiredCount,
-            expiredHolds,
-        };
-    }
-
-    return {
-        snapshot: buildWhatsappOpenclawOpsSnapshot(nextSnapshot),
-        response,
-    };
-}
-
-async function installWindowOpenRecorder(page, { blocked = false } = {}) {
-    await page.addInitScript(
-        ({ popupBlocked }) => {
-            window.__openedUrls = [];
-            window.open = (url) => {
-                window.__openedUrls.push(String(url || ''));
-                if (popupBlocked) {
-                    return null;
-                }
-                return {
-                    focus() {},
-                };
-            };
-        },
-        { popupBlocked: blocked }
-    );
-}
-
-async function setupOperatorAuthAdminMocks(
-    page,
-    { dataOverrides = {}, statusResponses = null, startPayload = null } = {}
-) {
-    const baseData = {
-        appointments: [],
-        callbacks: [],
-        reviews: [],
-        availability: {},
-        availabilityMeta: {
-            source: 'store',
-            mode: 'live',
-            timezone: 'America/Guayaquil',
-            calendarConfigured: true,
-            calendarReachable: true,
-            generatedAt: new Date().toISOString(),
-        },
-    };
-
-    const mergedData = {
-        ...baseData,
-        ...dataOverrides,
-        availabilityMeta: {
-            ...baseData.availabilityMeta,
-            ...(dataOverrides.availabilityMeta || {}),
-        },
-    };
-
-    const challenge = buildOperatorAuthChallenge(
-        startPayload && startPayload.challenge ? startPayload.challenge : {}
-    );
-    const resolvedChallenge =
-        startPayload && startPayload.challenge
-            ? {
-                  ...challenge,
-                  ...startPayload.challenge,
-              }
-            : challenge;
-    const startResponse = {
-        ok: true,
-        authenticated: false,
-        mode: 'openclaw_chatgpt',
-        status: 'pending',
-        ...(startPayload || {}),
-        challenge: resolvedChallenge,
-    };
-    const defaultStatusResponses = [
-        {
-            ok: true,
-            authenticated: false,
-            mode: 'openclaw_chatgpt',
-            status: 'anonymous',
-        },
-        {
-            ok: true,
-            authenticated: false,
-            mode: 'openclaw_chatgpt',
-            status: 'pending',
-            challenge: startResponse.challenge,
-        },
-        {
-            ok: true,
-            authenticated: true,
-            mode: 'openclaw_chatgpt',
-            status: 'autenticado',
-            csrfToken: 'csrf_operator_auth',
-            operator: {
-                email: 'operator@example.com',
-                source: 'openclaw_chatgpt',
-            },
-        },
-    ];
-
-    let statusIndex = 0;
-
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
-        const url = new URL(route.request().url());
-        const action = String(
-            url.searchParams.get('action') || ''
-        ).toLowerCase();
-
-        if (action === 'status') {
-            const responses = Array.isArray(statusResponses)
-                ? statusResponses
-                : defaultStatusResponses;
-            const payload =
-                responses[
-                    Math.min(statusIndex, Math.max(responses.length - 1, 0))
-                ] || defaultStatusResponses[defaultStatusResponses.length - 1];
-            statusIndex += 1;
-            return jsonResponse(route, payload);
-        }
-
-        if (action === 'start') {
-            return jsonResponse(route, startResponse, 202);
-        }
-
-        if (action === 'logout') {
-            return jsonResponse(route, { ok: true });
-        }
-
-        return jsonResponse(route, { ok: true });
-    });
-
-    await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const url = new URL(route.request().url());
-        const resource = url.searchParams.get('resource') || '';
-
-        if (resource === 'features') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    admin_sony_ui: true,
-                },
-            });
-        }
-
-        if (resource === 'data') {
-            return jsonResponse(route, { ok: true, data: mergedData });
-        }
-
-        if (resource === 'health') {
-            return jsonResponse(route, { ok: true, data: {} });
-        }
-
-        if (resource === 'funnel-metrics') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    summary: {
-                        viewBooking: 0,
-                        startCheckout: 0,
-                        bookingConfirmed: 0,
-                        checkoutAbandon: 0,
-                        startRatePct: 0,
-                        confirmedRatePct: 0,
-                        abandonRatePct: 0,
-                    },
-                    checkoutAbandonByStep: [],
-                    checkoutEntryBreakdown: [],
-                    paymentMethodBreakdown: [],
-                    bookingStepBreakdown: [],
-                    sourceBreakdown: [],
-                    abandonReasonBreakdown: [],
-                    errorCodeBreakdown: [],
-                },
-            });
-        }
-
-        if (resource === 'availability') {
-            return jsonResponse(route, {
-                ok: true,
-                data: mergedData.availability,
-                meta: mergedData.availabilityMeta,
-            });
-        }
-
-        if (resource === 'monitoring-config') {
-            return jsonResponse(route, { ok: true, data: {} });
-        }
-
-        return jsonResponse(route, { ok: true, data: {} });
-    });
-
-    return {
-        challenge: startResponse.challenge,
-    };
-}
+const {
+    installLegacyAdminAuthMock,
+    installLegacyAdminLoginFlowMock,
+    installOpenClawAdminAuthMock,
+} = require('./helpers/admin-auth-mocks');
+const { installBasicAdminApiMocks } = require('./helpers/admin-api-mocks');
 
 async function setupAuthenticatedAdminMocks(page, overrides = {}) {
-    const {
-        whatsappOpenclawOps = {},
-        onWhatsappOpenclawOpsAction = null,
-        ...dataOverrides
-    } = overrides;
-    const baseData = {
-        appointments: [],
-        callbacks: [],
-        reviews: [],
-        availability: {},
-        availabilityMeta: {
-            source: 'store',
-            mode: 'live',
-            timezone: 'America/Guayaquil',
-            calendarConfigured: true,
-            calendarReachable: true,
-            generatedAt: new Date().toISOString(),
-        },
+    const funnelMetrics =
+        overrides.funnelMetrics && typeof overrides.funnelMetrics === 'object'
+            ? overrides.funnelMetrics
+            : null;
+    const dataOverrides = {
+        ...overrides,
     };
-    const mergedData = {
-        ...baseData,
-        ...dataOverrides,
-        availabilityMeta: {
-            ...baseData.availabilityMeta,
-            ...(dataOverrides.availabilityMeta || {}),
-        },
-    };
-    let openclawOpsSnapshot = buildWhatsappOpenclawOpsSnapshot(
-        whatsappOpenclawOps
-    );
-    const whatsappOpsActionRequests = [];
+    delete dataOverrides.funnelMetrics;
 
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
-        jsonResponse(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_test_token',
-        })
-    );
-
-    await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const url = new URL(route.request().url());
-        const resource = url.searchParams.get('resource') || '';
-        const method = route.request().method().toUpperCase();
-        let payload = {};
-        if (method === 'PATCH' || method === 'POST' || method === 'PUT') {
-            try {
-                payload = route.request().postDataJSON() || {};
-            } catch (_error) {
-                const rawBody = route.request().postData() || '';
-                const params = new URLSearchParams(rawBody);
-                payload = Object.fromEntries(params.entries());
-            }
-        }
-
-        const intendedMethod = String(payload._method || method).toUpperCase();
-
-        if (
-            resource === 'callbacks' &&
-            (method === 'PATCH' ||
-                method === 'POST' ||
-                intendedMethod === 'PATCH')
-        ) {
-            const callbackId = Number(payload.id || 0);
-            let callback = mergedData.callbacks.find(
-                (item) => Number(item.id || 0) === callbackId
-            );
-            if (callbackId > 0 && callback) {
-                callback.status = String(payload.status || callback.status);
-            } else {
-                mergedData.callbacks.forEach((item) => {
-                    if (String(item.status || '').toLowerCase() === 'pending') {
-                        item.status = String(payload.status || 'contactado');
-                    }
-                });
-                callback = mergedData.callbacks[0] || null;
-            }
-            return jsonResponse(route, { ok: true, data: callback || {} });
-        }
-
-        if (
-            resource === 'appointments' &&
-            (method === 'PATCH' ||
-                method === 'POST' ||
-                intendedMethod === 'PATCH')
-        ) {
-            const appointmentId = Number(payload.id || 0);
-            const appointment = mergedData.appointments.find(
-                (item) => Number(item.id || 0) === appointmentId
-            );
-            if (appointment) {
-                Object.assign(appointment, payload);
-            }
-            return jsonResponse(route, { ok: true, data: appointment || {} });
-        }
-
-        if (resource === 'data') {
-            return jsonResponse(route, { ok: true, data: mergedData });
-        }
-
-        if (resource === 'features') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    admin_sony_ui: true,
-                },
-            });
-        }
-
-        if (resource === 'funnel-metrics') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    summary: {
-                        viewBooking: 0,
-                        startCheckout: 0,
-                        bookingConfirmed: 0,
-                        checkoutAbandon: 0,
-                        startRatePct: 0,
-                        confirmedRatePct: 0,
-                        abandonRatePct: 0,
-                    },
-                    checkoutAbandonByStep: [],
-                    checkoutEntryBreakdown: [],
-                    paymentMethodBreakdown: [],
-                    bookingStepBreakdown: [],
-                    sourceBreakdown: [],
-                    abandonReasonBreakdown: [],
-                    errorCodeBreakdown: [],
-                },
-            });
-        }
-
-        if (resource === 'availability') {
-            return jsonResponse(route, {
-                ok: true,
-                data: mergedData.availability,
-                meta: mergedData.availabilityMeta,
-            });
-        }
-
-        if (resource === 'whatsapp-openclaw-ops') {
-            if (method === 'GET') {
-                return jsonResponse(route, {
-                    ok: true,
-                    data: openclawOpsSnapshot,
-                });
-            }
-
-            if (method === 'POST' || intendedMethod === 'POST') {
-                whatsappOpsActionRequests.push(payload);
-                const actionContext = {
-                    payload,
-                    snapshot: JSON.parse(
-                        JSON.stringify(openclawOpsSnapshot)
-                    ),
-                };
-                const handled =
-                    typeof onWhatsappOpenclawOpsAction === 'function'
-                        ? await onWhatsappOpenclawOpsAction(actionContext)
-                        : null;
-                const resolved =
-                    handled && typeof handled === 'object'
-                        ? {
-                              snapshot: handled.snapshot
-                                  ? buildWhatsappOpenclawOpsSnapshot(
-                                        handled.snapshot
-                                    )
-                                  : openclawOpsSnapshot,
-                              response: handled.response || {
-                                  ok: true,
-                                  action: String(payload.action || '').trim(),
-                              },
-                          }
-                        : applyWhatsappOpenclawOpsAction(
-                              openclawOpsSnapshot,
-                              payload
-                          );
-                openclawOpsSnapshot = resolved.snapshot;
-                return jsonResponse(route, {
-                    ok: true,
-                    data: resolved.response,
-                });
-            }
-        }
-
-        if (resource === 'monitoring-config') {
-            return jsonResponse(route, { ok: true, data: {} });
-        }
-
-        return jsonResponse(route, { ok: true, data: {} });
+    await installLegacyAdminAuthMock(page, {
+        csrfToken: 'csrf_test_token',
     });
 
-    return {
-        whatsappOpsActionRequests,
-    };
+    await installBasicAdminApiMocks(page, {
+        dataOverrides,
+        funnelMetrics,
+        handleRoute: async ({
+            route,
+            resource,
+            method,
+            payload,
+            intendedMethod,
+            context,
+            fulfillJson,
+        }) => {
+            const mergedData = context.data;
+
+            if (
+                resource === 'callbacks' &&
+                (method === 'PATCH' ||
+                    method === 'POST' ||
+                    intendedMethod === 'PATCH')
+            ) {
+                const callbackId = Number(payload.id || 0);
+                let callback = mergedData.callbacks.find(
+                    (item) => Number(item.id || 0) === callbackId
+                );
+                if (callbackId > 0 && callback) {
+                    callback.status = String(payload.status || callback.status);
+                } else {
+                    mergedData.callbacks.forEach((item) => {
+                        if (
+                            String(item.status || '').toLowerCase() ===
+                            'pending'
+                        ) {
+                            item.status = String(
+                                payload.status || 'contactado'
+                            );
+                        }
+                    });
+                    callback = mergedData.callbacks[0] || null;
+                }
+                await fulfillJson(route, { ok: true, data: callback || {} });
+                return true;
+            }
+
+            if (
+                resource === 'appointments' &&
+                (method === 'PATCH' ||
+                    method === 'POST' ||
+                    intendedMethod === 'PATCH')
+            ) {
+                const appointmentId = Number(payload.id || 0);
+                const appointment = mergedData.appointments.find(
+                    (item) => Number(item.id || 0) === appointmentId
+                );
+                if (appointment) {
+                    Object.assign(appointment, payload);
+                }
+                await fulfillJson(route, { ok: true, data: appointment || {} });
+                return true;
+            }
+
+            return false;
+        },
+    });
 }
 
 async function setupLoginAdminMocks(
     page,
     {
+        authMode = 'legacy_password',
         twoFactorRequired = false,
         dataOverrides = {},
-        loginStatus = 200,
-        loginPayload = null,
+        funnelMetrics = null,
+        loginError = '',
+        openClawOptions = {},
     } = {}
 ) {
-    const baseData = {
-        appointments: [],
-        callbacks: [],
-        reviews: [],
-        availability: {},
-        availabilityMeta: {
-            source: 'store',
-            mode: 'live',
-            timezone: 'America/Guayaquil',
-            calendarConfigured: true,
-            calendarReachable: true,
-            generatedAt: new Date().toISOString(),
-        },
-    };
+    if (authMode === 'openclaw_chatgpt') {
+        await installOpenClawAdminAuthMock(page, {
+            pollsBeforeTerminal: 1,
+            ...openClawOptions,
+        });
+    } else {
+        await installLegacyAdminLoginFlowMock(page, {
+            twoFactorRequired,
+            loginError,
+            csrfToken: 'csrf_login_test',
+        });
+    }
 
-    const mergedData = {
-        ...baseData,
-        ...dataOverrides,
-        availabilityMeta: {
-            ...baseData.availabilityMeta,
-            ...(dataOverrides.availabilityMeta || {}),
-        },
-    };
-
-    await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
-        const url = new URL(route.request().url());
-        const action = String(
-            url.searchParams.get('action') || ''
-        ).toLowerCase();
-
-        if (action === 'status') {
-            return jsonResponse(route, {
-                ok: true,
-                authenticated: false,
-            });
-        }
-
-        if (action === 'login') {
-            return jsonResponse(route, {
-                ok: loginStatus < 400,
-                twoFactorRequired,
-                csrfToken: twoFactorRequired ? '' : 'csrf_login_test',
-                ...(loginPayload || {}),
-            }, loginStatus);
-        }
-
-        if (action === 'login-2fa') {
-            return jsonResponse(route, {
-                ok: true,
-                csrfToken: 'csrf_login_test',
-            });
-        }
-
-        if (action === 'logout') {
-            return jsonResponse(route, { ok: true });
-        }
-
-        return jsonResponse(route, { ok: true });
-    });
-
-    await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const url = new URL(route.request().url());
-        const resource = url.searchParams.get('resource') || '';
-
-        if (resource === 'features') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    admin_sony_ui: true,
-                },
-            });
-        }
-
-        if (resource === 'data') {
-            return jsonResponse(route, { ok: true, data: mergedData });
-        }
-
-        if (resource === 'funnel-metrics') {
-            return jsonResponse(route, {
-                ok: true,
-                data: {
-                    summary: {
-                        viewBooking: 0,
-                        startCheckout: 0,
-                        bookingConfirmed: 0,
-                        checkoutAbandon: 0,
-                        startRatePct: 0,
-                        confirmedRatePct: 0,
-                        abandonRatePct: 0,
-                    },
-                    checkoutAbandonByStep: [],
-                    checkoutEntryBreakdown: [],
-                    paymentMethodBreakdown: [],
-                    bookingStepBreakdown: [],
-                    sourceBreakdown: [],
-                    abandonReasonBreakdown: [],
-                    errorCodeBreakdown: [],
-                },
-            });
-        }
-
-        if (resource === 'availability') {
-            return jsonResponse(route, {
-                ok: true,
-                data: mergedData.availability,
-                meta: mergedData.availabilityMeta,
-            });
-        }
-
-        if (resource === 'monitoring-config') {
-            return jsonResponse(route, { ok: true, data: {} });
-        }
-
-        if (resource === 'health') {
-            return jsonResponse(route, { ok: true, data: {} });
-        }
-
-        return jsonResponse(route, { ok: true, data: {} });
+    await installBasicAdminApiMocks(page, {
+        dataOverrides,
+        funnelMetrics,
     });
 }
 
@@ -688,26 +124,10 @@ async function waitForAdminReady(page) {
     );
 }
 
-async function waitForVisibleAdminLoginSurface(page) {
-    await expect
-        .poll(() =>
-            page.evaluate(() => {
-                const ids = ['adminOpenClawFlow', 'loginForm'];
-                return ids.some((id) => {
-                    const node = document.getElementById(id);
-                    return Boolean(
-                        node && !node.classList.contains('is-hidden')
-                    );
-                });
-            })
-        )
-        .toBe(true);
-}
-
 test.describe('Panel de administracion', () => {
     test('pagina admin carga correctamente', async ({ page }) => {
         await page.goto('/admin.html');
-        await expect(page).toHaveTitle(/Admin|Aurora Derm/);
+        await expect(page).toHaveTitle(/Admin|Piel en Armonia/);
     });
 
     test('formulario de login esta visible', async ({ page }) => {
@@ -749,7 +169,7 @@ test.describe('Panel de administracion', () => {
             });
 
         await page.reload();
-        await waitForVisibleAdminLoginSurface(page);
+        await expect(page.locator('#loginForm')).toBeVisible();
         await expect
             .poll(async () =>
                 page.evaluate(() =>
@@ -759,14 +179,44 @@ test.describe('Panel de administracion', () => {
             .toBe('dark');
     });
 
-    test('login con contrasena vacia no funciona', async ({ page }) => {
-        await setupLoginAdminMocks(page);
+    test('login OpenClaw por defecto actualiza el estado de sesion en el chrome', async ({
+        page,
+    }) => {
+        await setupLoginAdminMocks(page, {
+            authMode: 'openclaw_chatgpt',
+        });
+
         await page.goto('/admin.html');
         await waitForAdminReady(page);
-        const passwordInput = page.locator('input[type="password"]').first();
-        const loginBtn = page
-            .locator('button[type="submit"], .btn-primary')
-            .first();
+
+        await expect(page.locator('#openclawLoginStage')).toBeVisible();
+        await expect(page.locator('#legacyLoginStage')).toBeHidden();
+        await expect(page.locator('#adminPassword')).toBeHidden();
+        await expect(page.locator('#loginBtn')).toHaveText(
+            /OpenClaw|Continuar/
+        );
+
+        await page.locator('#loginBtn').click();
+
+        await expect(page.locator('#adminOpenClawChallengeCard')).toBeVisible();
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await expect(page.locator('#adminSessionState')).toHaveText(
+            /Sesion activa/
+        );
+        await expect(page.locator('#adminSessionMeta')).toContainText(
+            /OpenClaw validado/
+        );
+    });
+
+    test('login legacy de respaldo con contrasena vacia no funciona', async ({
+        page,
+    }) => {
+        await setupLoginAdminMocks(page);
+
+        await page.goto('/admin.html');
+        await waitForAdminReady(page);
+        const passwordInput = page.locator('#adminPassword');
+        const loginBtn = page.locator('#loginBtn');
         await expect(passwordInput).toBeVisible();
         await expect(loginBtn).toBeVisible();
 
@@ -774,23 +224,26 @@ test.describe('Panel de administracion', () => {
         await loginBtn.click();
 
         await expect(passwordInput).toBeVisible();
+        await expect(page.locator('#adminLoginStatusTitle')).toHaveText(
+            /No se pudo iniciar sesion/
+        );
+        await expect(page.locator('#adminLoginStatusMessage')).toContainText(
+            /Contrasena requerida/
+        );
         await expect(page.locator('#adminDashboard')).toHaveClass(/is-hidden/);
     });
 
-    test('login con contrasena incorrecta muestra error', async ({ page }) => {
+    test('login legacy de respaldo con contrasena incorrecta muestra error', async ({
+        page,
+    }) => {
         await setupLoginAdminMocks(page, {
-            loginStatus: 401,
-            loginPayload: {
-                error: 'Credenciales inválidas',
-            },
+            loginError: 'Credenciales inválidas',
         });
 
         await page.goto('/admin.html');
         await waitForAdminReady(page);
-        const passwordInput = page.locator('input[type="password"]').first();
-        const loginBtn = page
-            .locator('button[type="submit"], .btn-primary')
-            .first();
+        const passwordInput = page.locator('#adminPassword');
+        const loginBtn = page.locator('#loginBtn');
         await expect(passwordInput).toBeVisible();
         await expect(loginBtn).toBeVisible();
 
@@ -801,12 +254,13 @@ test.describe('Panel de administracion', () => {
             /No se pudo iniciar sesion/
         );
         await expect(page.locator('#adminLoginStatusMessage')).toContainText(
-            /Credenciales invalidas|Credenciales inválidas/
+            /Credenciales/
         );
+        await expect(passwordInput).toBeVisible();
         await expect(page.locator('#adminDashboard')).toHaveClass(/is-hidden/);
     });
 
-    test('login con 2FA muestra etapa dedicada y permite volver al paso de clave', async ({
+    test('login legacy de respaldo con 2FA muestra etapa dedicada y permite volver al paso de clave', async ({
         page,
     }) => {
         await setupLoginAdminMocks(page, { twoFactorRequired: true });
@@ -832,78 +286,7 @@ test.describe('Panel de administracion', () => {
         await expect(page.locator('#adminPassword')).toBeEnabled();
     });
 
-    test('login OpenClaw reemplaza la clave local y autentica tras el polling', async ({
-        page,
-    }) => {
-        await installWindowOpenRecorder(page);
-        const { challenge } = await setupOperatorAuthAdminMocks(page);
-
-        await page.goto('/admin.html');
-        await waitForAdminReady(page);
-
-        await expect(page.locator('#adminOpenClawFlow')).toBeVisible();
-        await expect(page.locator('#loginForm')).toHaveClass(/is-hidden/);
-        await expect(page.locator('#adminOpenClawBtn')).toBeVisible();
-
-        await page.locator('#adminOpenClawBtn').click();
-
-        await expect
-            .poll(() =>
-                page.evaluate(() => String(window.__openedUrls[0] || ''))
-            )
-            .toBe(challenge.helperUrl);
-
-        await expect(page.locator('#adminDashboard')).toBeVisible();
-        await expect(page.locator('#adminSessionState')).toHaveText(
-            /Sesion activa/
-        );
-        await expect(page.locator('#adminSessionMeta')).toContainText(
-            'OpenClaw / ChatGPT'
-        );
-    });
-
-    test('login OpenClaw muestra errores terminales del bridge sin volver a clave local', async ({
-        page,
-    }) => {
-        await installWindowOpenRecorder(page);
-        await setupOperatorAuthAdminMocks(page, {
-            statusResponses: [
-                {
-                    ok: true,
-                    authenticated: false,
-                    mode: 'openclaw_chatgpt',
-                    status: 'anonymous',
-                },
-                {
-                    ok: true,
-                    authenticated: false,
-                    mode: 'openclaw_chatgpt',
-                    status: 'openclaw_no_logueado',
-                    error: 'OpenClaw no encontro un perfil OAuth valido.',
-                },
-            ],
-        });
-
-        await page.goto('/admin.html');
-        await waitForAdminReady(page);
-
-        await expect(page.locator('#adminOpenClawFlow')).toBeVisible();
-        await expect(page.locator('#loginForm')).toHaveClass(/is-hidden/);
-
-        await page.locator('#adminOpenClawBtn').click();
-
-        await expect(page.locator('#adminLoginStatusTitle')).toHaveText(
-            /OpenClaw necesita tu sesion/
-        );
-        await expect(page.locator('#adminLoginStatusMessage')).toContainText(
-            'perfil OAuth valido'
-        );
-        await expect(page.locator('#adminOpenClawRetryBtn')).toBeVisible();
-        await expect(page.locator('#adminDashboard')).toHaveClass(/is-hidden/);
-        await expect(page.locator('#loginForm')).toHaveClass(/is-hidden/);
-    });
-
-    test('login exitoso actualiza el estado de sesion en el chrome v2', async ({
+    test('login legacy de respaldo exitoso actualiza el estado de sesion en el chrome v2', async ({
         page,
     }) => {
         await setupLoginAdminMocks(page, { twoFactorRequired: false });
@@ -934,6 +317,102 @@ test.describe('Panel de administracion', () => {
         await expect(page.locator('#funnelAbandonReasonList')).toHaveCount(1);
         await expect(page.locator('#funnelStepList')).toHaveCount(1);
         await expect(page.locator('#funnelErrorCodeList')).toHaveCount(1);
+    });
+
+    test('dashboard resume utilidad historica del asistente de sala', async ({
+        page,
+    }) => {
+        await setupAuthenticatedAdminMocks(page, {
+            funnelMetrics: {
+                queueAssistant: {
+                    today: {
+                        actioned: 5,
+                        resolvedWithoutHuman: 3,
+                        assistedResolutions: 2,
+                        escalated: 1,
+                        clinicalBlocked: 1,
+                    },
+                    last7d: {
+                        actioned: 21,
+                        resolvedWithoutHuman: 12,
+                        assistedResolutions: 6,
+                        escalated: 5,
+                        clinicalBlocked: 2,
+                        usefulSessions: 14,
+                        avgLatencyMs: 840,
+                    },
+                    intentBreakdown: [
+                        {
+                            label: 'wait_time',
+                            count: 6,
+                        },
+                    ],
+                    helpReasonBreakdown: [
+                        {
+                            label: 'clinical_redirect',
+                            count: 2,
+                        },
+                    ],
+                    reviewOutcomeBreakdown: [
+                        {
+                            label: 'appointment_confirmed',
+                            count: 4,
+                        },
+                    ],
+                    topIntent: {
+                        label: 'wait_time',
+                        count: 6,
+                    },
+                    topHelpReason: {
+                        label: 'clinical_redirect',
+                        count: 2,
+                    },
+                    topReviewOutcome: {
+                        label: 'appointment_confirmed',
+                        count: 4,
+                    },
+                },
+            },
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#dashboardAssistantUtility')).toBeVisible();
+        await expect(page.locator('#dashboardAssistantStatus')).toHaveText(
+            'Con derivaciones'
+        );
+        await expect(page.locator('#dashboardAssistantActioned')).toHaveText(
+            '5'
+        );
+        await expect(page.locator('#dashboardAssistantResolved')).toHaveText(
+            '3'
+        );
+        await expect(page.locator('#dashboardAssistantEscalated')).toHaveText(
+            '1'
+        );
+        await expect(page.locator('#dashboardAssistantBlocked')).toHaveText(
+            '1'
+        );
+        await expect(page.locator('#dashboardAssistantSummary')).toContainText(
+            'Hoy acciono 5'
+        );
+        await expect(page.locator('#dashboardAssistantSummary')).toContainText(
+            'recepcion cerro 2'
+        );
+        await expect(
+            page.locator('#dashboardAssistantWindowMeta')
+        ).toContainText('14 sesiones utiles');
+        await expect(
+            page.locator('#dashboardAssistantWindowMeta')
+        ).toContainText('6 cierre(s) asistidos');
+        await expect(
+            page.locator('#dashboardAssistantTopIntent')
+        ).toContainText('wait time');
+        await expect(
+            page.locator('#dashboardAssistantTopReason')
+        ).toContainText('clinical redirect');
+        await expect(
+            page.locator('#dashboardAssistantTopOutcome')
+        ).toContainText('appointment confirmed');
     });
 
     test('inicio operativo simplifica accesos y resuelve tareas en un clic', async ({
@@ -973,10 +452,9 @@ test.describe('Panel de administracion', () => {
         await expect(page.locator('#opsPendingSummaryCard')).toBeVisible();
         await expect(page.locator('#opsAvailabilitySummaryCard')).toBeVisible();
         await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
-        await expect(page.locator('#dashboardAdvancedAnalytics')).not.toHaveJSProperty(
-            'open',
-            true
-        );
+        await expect(
+            page.locator('#dashboardAdvancedAnalytics')
+        ).not.toHaveJSProperty('open', true);
         await expect(page.locator('#operationPendingReviewCount')).toHaveText(
             '1'
         );
@@ -1074,140 +552,6 @@ test.describe('Panel de administracion', () => {
 
         await expect(page.locator('#appointments')).toHaveClass(/active/);
         await expect(page.locator('#pageTitle')).toHaveText('Agenda');
-    });
-
-    test('dashboard muestra consola OpenClaw con snapshot operativo degradado', async ({
-        page,
-    }) => {
-        await setupAuthenticatedAdminMocks(page, {
-            whatsappOpenclawOps: {
-                bridgeMode: 'degraded',
-                pendingOutbox: 2,
-                deliveryFailures: 1,
-                aliveHolds: 2,
-                lastInboundAt: '2026-03-12T15:00:00.000Z',
-                lastOutboundAt: '2026-03-12T15:01:00.000Z',
-                failedOutboxItems: [
-                    {
-                        id: 'out_1',
-                        phone: '+593999111222',
-                        error: 'helper_no_disponible',
-                        text: 'Reintentar envio manual',
-                    },
-                ],
-                activeHolds: [
-                    {
-                        id: 'hold_1',
-                        phone: '+593999111222',
-                        date: '2026-03-12',
-                        time: '11:30',
-                        service: 'consulta',
-                    },
-                    {
-                        id: 'hold_2',
-                        phone: '+593999333444',
-                        date: '2026-03-12',
-                        time: '12:00',
-                        service: 'control',
-                    },
-                ],
-                pendingCheckouts: [
-                    {
-                        paymentSessionId: 'sess_1',
-                        holdId: 'hold_1',
-                        conversationId: 'conv_1',
-                        name: 'Paciente WhatsApp',
-                        date: '2026-03-12',
-                        time: '11:30',
-                        paymentStatus: 'checkout_pending',
-                    },
-                ],
-            },
-        });
-
-        await page.goto('/admin.html');
-        await expect(page.locator('#adminDashboard')).toBeVisible();
-        await expect(page.locator('#dashboardOpenclawOpsPanel')).toBeVisible();
-        await expect(page.locator('#openclawBridgeChip')).toHaveText(
-            'Degradado'
-        );
-        await expect(page.locator('#dashboardOpenclawOpsSummary')).toHaveText(
-            '1 entrega(s) fallida(s) requieren requeue o revision manual.'
-        );
-        await expect(page.locator('#openclawOpsOutboxCount')).toHaveText('2');
-        await expect(page.locator('#openclawOpsFailCount')).toHaveText('1');
-        await expect(page.locator('#openclawOpsHoldCount')).toHaveText('2');
-        await expect(page.locator('#openclawOpsCheckoutCount')).toHaveText('1');
-        await expect(
-            page.locator('#dashboardOpenclawOpsActions .operations-action-item')
-        ).toHaveCount(3);
-        await expect(page.locator('#dashboardOpenclawOpsActions')).toContainText(
-            'Reencolar fallo'
-        );
-        await expect(page.locator('#dashboardOpenclawOpsActions')).toContainText(
-            'Expirar checkout'
-        );
-        await expect(page.locator('#dashboardOpenclawOpsActions')).toContainText(
-            'Barrer stale'
-        );
-        await expect(
-            page.locator('#dashboardOpenclawOpsItems .dashboard-attention-item')
-        ).toHaveCount(3);
-    });
-
-    test('acciones OpenClaw del dashboard reencolan fallo y refrescan snapshot', async ({
-        page,
-    }) => {
-        const { whatsappOpsActionRequests } = await setupAuthenticatedAdminMocks(
-            page,
-            {
-                whatsappOpenclawOps: {
-                    bridgeMode: 'degraded',
-                    pendingOutbox: 1,
-                    deliveryFailures: 1,
-                    failedOutboxItems: [
-                        {
-                            id: 'out_1',
-                            phone: '+593999111222',
-                            error: 'helper_no_disponible',
-                        },
-                    ],
-                },
-            }
-        );
-
-        await page.goto('/admin.html');
-        await expect(page.locator('#adminDashboard')).toBeVisible();
-        await expect(page.locator('#openclawOpsFailCount')).toHaveText('1');
-        await expect(
-            page.locator(
-                '#dashboardOpenclawOpsActions [data-whatsapp-ops-action="requeue_outbox"]'
-            )
-        ).toBeVisible();
-
-        await page
-            .locator(
-                '#dashboardOpenclawOpsActions [data-whatsapp-ops-action="requeue_outbox"]'
-            )
-            .click();
-
-        await expect
-            .poll(() => whatsappOpsActionRequests.length)
-            .toBeGreaterThan(0);
-        expect(whatsappOpsActionRequests[0]).toEqual({
-            action: 'requeue_outbox',
-            id: 'out_1',
-        });
-        await expect(page.locator('#openclawOpsFailCount')).toHaveText('0');
-        await expect(page.locator('#dashboardOpenclawOpsSummary')).toHaveText(
-            'Bridge estable, sin fallos de entrega ni checkouts atascados en este momento.'
-        );
-        await expect(
-            page.locator('#dashboardOpenclawOpsActions .operations-action-item')
-        ).toHaveCount(1);
-        await expect(page.locator('#toastContainer')).toContainText(
-            'Outbox reencolado para reintento'
-        );
     });
 
     test('callbacks triage prioriza siguiente llamada y enfoca contacto', async ({

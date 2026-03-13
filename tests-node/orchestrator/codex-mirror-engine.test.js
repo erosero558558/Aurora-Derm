@@ -214,3 +214,80 @@ test('codex-mirror engine exige handoff activo para cross_domain activo', () => 
         true
     );
 });
+
+test('codex-mirror engine tolera tres bloques CODEX_ACTIVE y runtime transversal saludable', () => {
+    const report = buildCodexCheckReport(
+        {
+            board: {
+                tasks: [
+                    {
+                        id: 'CDX-001',
+                        executor: 'codex',
+                        status: 'in_progress',
+                        codex_instance: 'codex_backend_ops',
+                        domain_lane: 'backend_ops',
+                        files: ['controllers/AdminController.php'],
+                    },
+                    {
+                        id: 'CDX-002',
+                        executor: 'codex',
+                        status: 'review',
+                        codex_instance: 'codex_frontend',
+                        domain_lane: 'frontend_content',
+                        files: ['src/apps/chat/engine.js'],
+                    },
+                    {
+                        id: 'CDX-003',
+                        executor: 'codex',
+                        status: 'ready',
+                        codex_instance: 'codex_transversal',
+                        domain_lane: 'transversal_runtime',
+                        provider_mode: 'openclaw_chatgpt',
+                        runtime_surface: 'figo_queue',
+                        runtime_transport: 'hybrid_http_cli',
+                        critical_zone: true,
+                        runtime_impact: 'high',
+                        files: ['figo-ai-bridge.php'],
+                    },
+                ],
+            },
+            blocks: [
+                {
+                    block: 'C1',
+                    codex_instance: 'codex_backend_ops',
+                    task_id: 'CDX-001',
+                    status: 'in_progress',
+                    files: ['controllers/AdminController.php'],
+                    updated_at: '2026-02-25',
+                },
+                {
+                    block: 'C2',
+                    codex_instance: 'codex_frontend',
+                    task_id: 'CDX-002',
+                    status: 'review',
+                    files: ['src/apps/chat/engine.js'],
+                    updated_at: '2026-02-25',
+                },
+                {
+                    block: 'C3',
+                    codex_instance: 'codex_transversal',
+                    task_id: 'CDX-003',
+                    status: 'ready',
+                    files: ['figo-ai-bridge.php'],
+                    updated_at: '2026-02-25',
+                },
+            ],
+            handoffs: [],
+            codexPlanPath: 'PLAN_MAESTRO_CODEX_2026.md',
+        },
+        {
+            normalizePathToken,
+            activeStatuses: ACTIVE_STATUSES,
+            isExpired: () => false,
+        }
+    );
+
+    assert.equal(report.ok, true);
+    assert.equal(report.summary.plan_blocks, 3);
+    assert.equal(report.summary.codex_active, 3);
+});

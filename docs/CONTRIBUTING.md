@@ -105,6 +105,19 @@ npm run test:ui
 
     El comando `publish` exige `git status` limpio, bloquea `push` directo a `main` y, si detecta cambios de gobernanza/orquestación, ejecuta `npm run agent:conflicts`, `npm run agent:handoffs:lint` y `npm run agent:codex-check` antes del `push`.
 
+    Si la iniciativa toca mas de una superficie grande, no la metas en una
+    sola rama. Usa `docs/BRANCH_SLICING_GUARDRAILS.md` y separa, por defecto:
+    - `ops/deploy`
+    - `queue runtime`
+    - `desktop shells`
+    - `tests`
+    - `governance evidence`
+
+    Regla corta: source + outputs generados pueden viajar juntos; limpieza
+    amplia de tests, cambios de deploy y evidencia de gobernanza no deben
+    colarse en la misma rama salvo que el acople sea explicito y lo expliques
+    en el PR.
+
 2.  **Commits:** Usa mensajes claros y en imperativo.
     - Bien: `Add appointment validation logic`
     - Mal: `fix bug`

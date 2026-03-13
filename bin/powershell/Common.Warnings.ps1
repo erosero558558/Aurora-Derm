@@ -40,6 +40,10 @@ function Get-WarningSeverity {
         return 'non_critical'
     }
 
+    if ($WarningCode -eq 'auth_2fa_disabled') {
+        return 'non_critical'
+    }
+
     if (
         $WarningCode -eq 'calendar_unreachable' -or
         $WarningCode -eq 'calendar_token_unhealthy' -or
@@ -52,9 +56,11 @@ function Get-WarningSeverity {
 
     foreach ($prefix in @(
         'error_rate_alta_',
+        'auth_status_',
         'calendar_source_',
         'calendar_mode_',
         'public_sync_',
+        'storage_encryption_',
         'github_deploy_',
         'telemedicine_diagnostics_critical_',
         'telemedicine_dangling_links_',
@@ -67,7 +73,9 @@ function Get-WarningSeverity {
 
     foreach ($prefix in @(
         'core_p95_alto_',
+        'auth_mode_',
         'figo_post_p95_alto_',
+        'storage_backend_',
         'no_show_rate_alta_',
         'retention_report_',
         'services_catalog_',
@@ -105,6 +113,12 @@ function Get-WarningImpact {
     }
     if ($WarningCode.StartsWith('calendar_')) {
         return 'agenda'
+    }
+    if ($WarningCode.StartsWith('auth_')) {
+        return 'platform'
+    }
+    if ($WarningCode.StartsWith('storage_')) {
+        return 'platform'
     }
     if ($WarningCode.StartsWith('figo_post_p95_alto_')) {
         return 'chat'
@@ -161,6 +175,12 @@ function Get-WarningRunbookRef {
     if ($WarningCode.StartsWith('figo_post_p95_alto_')) {
         return 'docs/RUNBOOKS.md#24-chatbot-no-responde'
     }
+    if ($WarningCode.StartsWith('auth_')) {
+        return 'docs/DEPLOY_HOSTING_PLAYBOOK.md'
+    }
+    if ($WarningCode.StartsWith('storage_')) {
+        return 'docs/SECURITY.md'
+    }
     if ($WarningCode.StartsWith('core_p95_alto_') -or $WarningCode.StartsWith('error_rate_alta_')) {
         return 'docs/RUNBOOKS.md#25-falso-negativo-de-gate-por-latencia-p95'
     }
@@ -194,6 +214,48 @@ function Get-WarningRunbookRef {
     }
 
     return 'docs/RUNBOOKS.md#2-respuesta-a-incidentes-emergency-response'
+}
+
+function Get-WarningSuggestedCommand {
+    param([string]$WarningCode)
+
+    if ([string]::IsNullOrWhiteSpace($WarningCode)) {
+        return 'npm run gate:prod:fast'
+    }
+
+    if (
+        $WarningCode.StartsWith('public_sync_') -or
+        $WarningCode.StartsWith('github_deploy_') -or
+        $WarningCode.StartsWith('auth_') -or
+        $WarningCode.StartsWith('storage_')
+    ) {
+        return 'npm run checklist:prod:public-sync:host'
+    }
+
+    return 'npm run gate:prod:fast'
+}
+
+function Get-WarningRemediationSummary {
+    param([string]$WarningCode)
+
+    if ([string]::IsNullOrWhiteSpace($WarningCode)) {
+        return 'Seguir el runbook indicado y repetir el smoke canonico.'
+    }
+
+    if ($WarningCode.StartsWith('public_sync_')) {
+        return 'Ejecutar el checklist host-side y contrastar wrapper, status JSON, log, heads y dirty paths antes de reintentar public_main_sync.'
+    }
+    if ($WarningCode.StartsWith('github_deploy_')) {
+        return 'Correlacionar las alertas GitHub de deploy con wrapper, status y log del host antes de volver a publicar.'
+    }
+    if ($WarningCode.StartsWith('auth_')) {
+        return 'Ejecutar el checklist host-side y confirmar modo operator auth, 2FA y variables del host desde health-diagnostics.'
+    }
+    if ($WarningCode.StartsWith('storage_')) {
+        return 'Ejecutar el checklist host-side y confirmar clave de cifrado, flag de requirement y estado compliant del store.'
+    }
+
+    return 'Seguir el runbook indicado y repetir el smoke canonico.'
 }
 
 function Get-ObjectValueOrDefault {
@@ -332,11 +394,15 @@ function New-WeeklyWarningAnalysis {
         $warningSeverity = Get-WarningSeverity -WarningCode $warningCode
         $warningImpact = Get-WarningImpact -WarningCode $warningCode
         $warningRunbookRef = Get-WarningRunbookRef -WarningCode $warningCode
+        $warningSuggestedCommand = Get-WarningSuggestedCommand -WarningCode $warningCode
+        $warningRemediation = Get-WarningRemediationSummary -WarningCode $warningCode
         $warningDetails.Add([pscustomobject]@{
             code = $warningCode
             severity = $warningSeverity
             impact = $warningImpact
             runbookRef = $warningRunbookRef
+            remediation = $warningRemediation
+            suggestedCommand = $warningSuggestedCommand
         }) | Out-Null
 
         if ($warningSeverity -eq 'non_critical') {
@@ -389,7 +455,7 @@ function New-WeeklyWarningAnalysis {
     $warningDetailBlock = if ($warningDetails.Count -eq 0) {
         '- none'
     } else {
-        ($warningDetails | ForEach-Object { "- code: $($_.code) | severity: $($_.severity) | impact: $($_.impact) | runbook: $($_.runbookRef)" }) -join "`n"
+        ($warningDetails | ForEach-Object { "- code: $($_.code) | severity: $($_.severity) | impact: $($_.impact) | runbook: $($_.runbookRef) | remediation: $($_.remediation) | command: $($_.suggestedCommand)" }) -join "`n"
     }
 
     $warningsByImpactPayload = [ordered]@{}
@@ -404,6 +470,8 @@ function New-WeeklyWarningAnalysis {
                 severity = [string]$_.severity
                 impact = [string]$_.impact
                 runbookRef = [string]$_.runbookRef
+                remediation = [string]$_.remediation
+                suggestedCommand = [string]$_.suggestedCommand
             }
         }
     )
@@ -594,6 +662,11 @@ function Get-WeeklyReportMarkdown {
     $weeklyCycleLastCriticalGeneratedAtLabel = [string]$WeeklyCycleState.WeeklyCycleLastCriticalGeneratedAtLabel
     $weeklyCycleHistoryCount = [int]$WeeklyCycleState.WeeklyCycleHistoryCount
     $weeklyCycleHistoryBlock = [string]$WeeklyCycleState.WeeklyCycleHistoryBlock
+    $effectiveHostChecklistCommand = if ([string]::IsNullOrWhiteSpace([string]$hostChecklistCommand)) {
+        'npm run checklist:prod:public-sync:host'
+    } else {
+        [string]$hostChecklistCommand
+    }
 
     return @"
 # Weekly Production Report - Piel en Armonia
@@ -652,10 +725,49 @@ $serviceFunnelTopRowsBlock
 - sentry_backend_configured: $sentryBackendConfigured
 - sentry_frontend_configured: $sentryFrontendConfigured
 
+## Auth Posture
+
+- auth_mode: $authMode
+- auth_status: $authStatus
+- auth_configured: $authConfigured
+- auth_hardening_compliant: $authHardeningCompliant
+- auth_recommended_mode: $authRecommendedMode
+- auth_recommended_mode_active: $authRecommendedModeActive
+- auth_operator_enabled: $authOperatorAuthEnabled
+- auth_operator_configured: $authOperatorAuthConfigured
+- auth_legacy_password_configured: $authLegacyPasswordConfigured
+- auth_two_factor_enabled: $authTwoFactorEnabled
+
+## Operator Auth Rollout
+
+- auth_rollout_available: $operatorAuthRolloutAvailable
+- auth_rollout_ok: $operatorAuthRolloutOk
+- auth_rollout_diagnosis: $operatorAuthRolloutDiagnosis
+- auth_rollout_source: $operatorAuthRolloutSource
+- auth_rollout_mode: $operatorAuthRolloutMode
+- auth_rollout_status: $operatorAuthRolloutStatus
+- auth_rollout_configured: $operatorAuthRolloutConfigured
+- auth_rollout_operator_auth_status_http_status: $operatorAuthRolloutOperatorAuthStatusHttpStatus
+- auth_rollout_admin_auth_facade_http_status: $operatorAuthRolloutAdminAuthFacadeHttpStatus
+- auth_rollout_next_action: $operatorAuthRolloutNextAction
+
+## Storage Posture
+
+- storage_backend: $storageBackend
+- storage_source: $storageSource
+- storage_encrypted: $storeEncrypted
+- storage_encryption_configured: $storeEncryptionConfigured
+- storage_encryption_required: $storeEncryptionRequired
+- storage_encryption_status: $storeEncryptionStatus
+- storage_encryption_compliant: $storeEncryptionCompliant
+- storage_host_checklist_command: $effectiveHostChecklistCommand
+
 ## Public Sync Ops
 
 - public_sync_configured: $publicSyncConfigured
 - public_sync_healthy: $publicSyncHealthy
+- public_sync_operationally_healthy: $publicSyncOperationallyHealthy
+- public_sync_repo_hygiene_issue: $publicSyncRepoHygieneIssue
 - public_sync_job_id: $publicSyncJobId
 - public_sync_state: $publicSyncState
 - public_sync_age_seconds: $publicSyncAgeSeconds
@@ -663,6 +775,7 @@ $serviceFunnelTopRowsBlock
 - public_sync_last_checked_at: $publicSyncLastCheckedAt
 - public_sync_last_success_at: $publicSyncLastSuccessAt
 - public_sync_last_error_at: $publicSyncLastErrorAt
+- public_sync_failure_reason: $publicSyncFailureReason
 - public_sync_last_error_message: $publicSyncLastErrorMessage
 - public_sync_deployed_commit: $publicSyncDeployedCommit
 - public_sync_duration_ms: $publicSyncDurationMs
@@ -866,6 +979,7 @@ $weeklyCycleHistoryBlock
 
 - minute_0_5: run `npm run gate:prod:fast` and check health/availability/chat status.
 - minute_5_10: pick first critical warning and follow `runbookRef`.
+- minute_5_10_host: for `public_sync_*`, `github_deploy_*`, `auth_*` or `storage_*`, run `$effectiveHostChecklistCommand`.
 - minute_10_15: if still degraded, escalate and open/refresh incident issue `[ALERTA PROD]`.
 
 ## Release Guardrails
@@ -881,6 +995,12 @@ function New-WeeklyReportPayload {
         [object]$WarningsAnalysis,
         [object]$WeeklyCycleState
     )
+
+    $effectiveHostChecklistCommand = if ([string]::IsNullOrWhiteSpace([string]$hostChecklistCommand)) {
+        'npm run checklist:prod:public-sync:host'
+    } else {
+        [string]$hostChecklistCommand
+    }
 
     $summaryPayload = [ordered]@{
         viewBooking = $viewBooking
@@ -972,9 +1092,45 @@ function New-WeeklyReportPayload {
             sentryBackendConfigured = $sentryBackendConfigured
             sentryFrontendConfigured = $sentryFrontendConfigured
         }
+        auth = [ordered]@{
+            mode = $authMode
+            status = $authStatus
+            configured = [bool]$authConfigured
+            hardeningCompliant = [bool]$authHardeningCompliant
+            recommendedMode = $authRecommendedMode
+            recommendedModeActive = [bool]$authRecommendedModeActive
+            operatorAuthEnabled = [bool]$authOperatorAuthEnabled
+            operatorAuthConfigured = [bool]$authOperatorAuthConfigured
+            legacyPasswordConfigured = [bool]$authLegacyPasswordConfigured
+            twoFactorEnabled = [bool]$authTwoFactorEnabled
+        }
+        operatorAuthRollout = [ordered]@{
+            available = [bool]$operatorAuthRolloutAvailable
+            ok = [bool]$operatorAuthRolloutOk
+            diagnosis = $operatorAuthRolloutDiagnosis
+            source = $operatorAuthRolloutSource
+            mode = $operatorAuthRolloutMode
+            status = $operatorAuthRolloutStatus
+            configured = [bool]$operatorAuthRolloutConfigured
+            operatorAuthStatusHttpStatus = $operatorAuthRolloutOperatorAuthStatusHttpStatus
+            adminAuthFacadeHttpStatus = $operatorAuthRolloutAdminAuthFacadeHttpStatus
+            nextAction = $operatorAuthRolloutNextAction
+        }
+        storage = [ordered]@{
+            backend = $storageBackend
+            source = $storageSource
+            encrypted = [bool]$storeEncrypted
+            encryptionConfigured = [bool]$storeEncryptionConfigured
+            encryptionRequired = [bool]$storeEncryptionRequired
+            encryptionStatus = $storeEncryptionStatus
+            encryptionCompliant = [bool]$storeEncryptionCompliant
+            hostChecklistCommand = $effectiveHostChecklistCommand
+        }
         publicSync = [ordered]@{
             configured = [bool]$publicSyncConfigured
             healthy = [bool]$publicSyncHealthy
+            operationallyHealthy = [bool]$publicSyncOperationallyHealthy
+            repoHygieneIssue = [bool]$publicSyncRepoHygieneIssue
             jobId = $publicSyncJobId
             state = $publicSyncState
             ageSeconds = $publicSyncAgeSeconds
@@ -982,6 +1138,7 @@ function New-WeeklyReportPayload {
             lastCheckedAt = $publicSyncLastCheckedAt
             lastSuccessAt = $publicSyncLastSuccessAt
             lastErrorAt = $publicSyncLastErrorAt
+            failureReason = $publicSyncFailureReason
             lastErrorMessage = $publicSyncLastErrorMessage
             deployedCommit = $publicSyncDeployedCommit
             durationMs = $publicSyncDurationMs
@@ -1171,11 +1328,18 @@ function New-WeeklyReportPayload {
             targetMinutes = 15
             quickChecks = @(
                 'npm run gate:prod:fast',
+                $effectiveHostChecklistCommand,
                 'GET /api.php?resource=health',
                 'GET /api.php?resource=availability',
                 'POST /figo-chat.php'
             )
             defaultRunbook = 'docs/RUNBOOKS.md#2-respuesta-a-incidentes-emergency-response'
+            hostChecklistIssueFamilies = @(
+                'public_sync_*',
+                'github_deploy_*',
+                'auth_*',
+                'storage_*'
+            )
         }
     }
 

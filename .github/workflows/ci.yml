@@ -244,20 +244,20 @@ jobs:
               run: npm run test:critical:agenda
               env:
                   TEST_LOCAL_SERVER: php
-                  PIELARMONIA_ADMIN_PASSWORD: admin123
+                  PIELARMONIA_ADMIN_PASSWORD: test-ci-admin-password
                   TEST_ENABLE_CALENDAR_WRITE: 'false'
             - name: Run Critical Funnel Gate
               if: steps.changes.outputs.e2e == 'true'
               run: npm run test:critical:funnel
               env:
                   TEST_LOCAL_SERVER: php
-                  PIELARMONIA_ADMIN_PASSWORD: admin123
+                  PIELARMONIA_ADMIN_PASSWORD: test-ci-admin-password
             - name: Run Critical Payments Gate
               if: steps.changes.outputs.e2e == 'true'
               run: npm run test:critical:payments
               env:
                   TEST_LOCAL_SERVER: php
-                  PIELARMONIA_ADMIN_PASSWORD: admin123
+                  PIELARMONIA_ADMIN_PASSWORD: test-ci-admin-password
             - name: Run Playwright Tests (non-critical)
               if: steps.changes.outputs.e2e == 'true'
               shell: bash
@@ -279,7 +279,7 @@ jobs:
                   npx playwright test --grep-invert "@visual" "${spec_files[@]}"
               env:
                   TEST_LOCAL_SERVER: php
-                  PIELARMONIA_ADMIN_PASSWORD: admin123
+                  PIELARMONIA_ADMIN_PASSWORD: test-ci-admin-password
             - name: Skip e2e (no relevant changes)
               if: steps.changes.outputs.e2e != 'true'
               run: |

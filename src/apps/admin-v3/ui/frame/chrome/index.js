@@ -5,7 +5,7 @@ import { renderChromeSession } from './session.js';
 
 export function renderAdminChrome(state) {
     const metrics = getChromeMetrics(state);
-    renderChromeContext(state, metrics.config);
+    renderChromeContext(state, metrics.config, metrics.internalConsoleMeta);
     renderChromeBadges(metrics);
-    renderChromeSession(metrics.auth);
+    renderChromeSession(metrics.auth, metrics.internalConsoleMeta);
 }

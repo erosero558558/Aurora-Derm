@@ -88,6 +88,64 @@ final class StorageSQLiteFallbackTest extends TestCase
         $this->assertSame(1, substr_count($logRaw, $message));
     }
 
+    /**
+     * @runInSeparateProcess
+     */
+    public function testDbConnectionSwitchesWhenSqlitePathChanges(): void
+    {
+        if (!db_sqlite_driver_available()) {
+            $this->markTestSkipped('SQLite no disponible en este entorno.');
+        }
+
+        $tempDir = $this->createTempDataDir('sqlite-connection-switch');
+        $dbPathOne = $tempDir . DIRECTORY_SEPARATOR . 'one.sqlite';
+        $dbPathTwo = $tempDir . DIRECTORY_SEPARATOR . 'two.sqlite';
+
+        get_db_connection(null, true);
+
+        $pdoOne = get_db_connection($dbPathOne);
+        $this->assertInstanceOf(\PDO::class, $pdoOne);
+        $this->assertSame($pdoOne, get_db_connection($dbPathOne));
+        $this->assertSame($pdoOne, get_db_connection());
+
+        $pdoTwo = get_db_connection($dbPathTwo);
+        $this->assertInstanceOf(\PDO::class, $pdoTwo);
+        $this->assertNotSame($pdoOne, $pdoTwo);
+        $this->assertSame($pdoTwo, get_db_connection($dbPathTwo));
+        $this->assertSame($pdoTwo, get_db_connection());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testSqliteDriverAvailabilityReactsToForceToggle(): void
+    {
+        putenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE=true');
+        $this->assertFalse(db_sqlite_driver_available());
+
+        putenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE');
+
+        $expected = class_exists(\PDO::class)
+            && extension_loaded('pdo_sqlite')
+            && in_array('sqlite', \PDO::getAvailableDrivers(), true);
+        $this->assertSame($expected, db_sqlite_driver_available());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testStorePathsReactToDataDirEnvChanges(): void
+    {
+        $dirOne = $this->createTempDataDir('store-path-one');
+        $dirTwo = $this->createTempDataDir('store-path-two');
+
+        putenv('PIELARMONIA_DATA_DIR=' . $dirOne);
+        $this->assertSame($dirOne, data_dir_path());
+
+        putenv('PIELARMONIA_DATA_DIR=' . $dirTwo);
+        $this->assertSame($dirTwo, data_dir_path());
+    }
+
     protected function tearDown(): void
     {
         foreach ($this->envKeys as $key) {

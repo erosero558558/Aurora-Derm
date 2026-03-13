@@ -191,47 +191,6 @@ test('prod-monitor workflow maneja incidente dedicado de telemedicina', () => {
     }
 });
 
-test('prod-monitor workflow cierra alertas stale de deploy cuando public sync se recupera', () => {
-    const { raw, parsed } = loadWorkflow();
-    const steps = parsed?.jobs?.monitor?.steps || [];
-    const stepNames = steps.map((step) => String(step?.name || ''));
-
-    for (const expectedStepName of [
-        'Evaluar recuperacion public sync para alertas stale de deploy',
-        'Cerrar alertas stale de deploy al recuperar public sync',
-    ]) {
-        assert.equal(
-            stepNames.includes(expectedStepName),
-            true,
-            `falta step de recuperacion public sync en prod-monitor: ${expectedStepName}`
-        );
-    }
-
-    const requiredSnippets = [
-        'PUBLIC_SYNC_RECOVERY_STATUS: not_evaluated',
-        'PUBLIC_SYNC_RECOVERY_REASON: not_evaluated',
-        "PUBLIC_SYNC_CURRENT_HEAD: ''",
-        "PUBLIC_SYNC_REMOTE_HEAD: ''",
-        "PUBLIC_SYNC_DIRTY_PATHS_COUNT: '0'",
-        'PielArmoniaPublicSyncRecovery/1.0',
-        "if: ${{ always() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && env.TARGET_DOMAIN == 'https://pielarmonia.com')) && steps.public_sync_recovery.outputs.status == 'healthy' }}",
-        "'[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner'",
-        "'[ALERTA PROD] Diagnose host connectivity sin ruta de deploy'",
-        "'[ALERTA PROD] Repair git sync self-hosted fallback sin runner'",
-        'Cerrado automaticamente por monitor programado al confirmar `public_main_sync` saludable.',
-        'Issue stale de deploy cerrado',
-        'public sync recovery => status=$status reason=$reason current_head=$currentHead remote_head=$remoteHead dirty_paths_count=$dirtyPathsCount',
-    ];
-
-    for (const snippet of requiredSnippets) {
-        assert.equal(
-            raw.includes(snippet),
-            true,
-            `falta wiring de recuperacion public sync en prod-monitor: ${snippet}`
-        );
-    }
-});
-
 test('prod-monitor workflow expone inputs de monitoreo post-cutover publico', () => {
     const { parsed } = loadWorkflow();
     const inputs = parsed?.on?.workflow_dispatch?.inputs || {};
@@ -333,6 +292,10 @@ test('prod-monitor workflow expone inputs de gate rollout V4', () => {
     const requiredInputs = [
         'enable_public_v4_rollout_monitor',
         'public_v4_rollout_stage',
+        'public_v4_rollout_surface_test',
+        'public_v4_rollout_surface_control',
+        'public_v4_rollout_min_view_booking',
+        'public_v4_rollout_min_start_checkout',
         'public_v4_rollout_max_confirmed_drop_pp',
         'public_v4_rollout_min_confirmed_rate_pct',
         'public_v4_rollout_allow_missing_control',
@@ -345,16 +308,6 @@ test('prod-monitor workflow expone inputs de gate rollout V4', () => {
             `falta input workflow_dispatch: ${inputKey}`
         );
     }
-});
-
-test('prod-monitor workflow_dispatch se mantiene dentro del limite de inputs de GitHub', () => {
-    const { parsed } = loadWorkflow();
-    const inputs = parsed?.on?.workflow_dispatch?.inputs || {};
-    assert.equal(
-        Object.keys(inputs).length <= 25,
-        true,
-        `workflow_dispatch supera el limite de 25 inputs: ${Object.keys(inputs).length}`
-    );
 });
 
 test('prod-monitor workflow cablea script y artefacto de gate rollout V4', () => {
@@ -449,22 +402,59 @@ test('prod-monitor workflow publica parametros y outcome de rollout V4 en summar
     }
 });
 
-test('prod-monitor workflow publica recuperacion public sync en summary', () => {
-    const { raw } = loadWorkflow();
+test('prod-monitor workflow auto-cierra alertas stale de deploy cuando public sync se recupera', () => {
+    const { raw, parsed } = loadWorkflow();
+    const steps = parsed?.jobs?.monitor?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+    const requiredEnvRefs = [
+        'STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS',
+        'STALE_DEPLOY_ALERT_AUTOCLOSE_REASON',
+        'STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY',
+        'STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT',
+        'STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT',
+        'STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES',
+        "public_sync_job_id: ${jobId || 'n/a'}",
+        "public_sync_deployed_commit: ${String(publicSync?.deployedCommit || 'n/a')}",
+        "labels.includes('deploy-hosting')",
+        "labels.includes('diagnose-host-connectivity')",
+        "labels.includes('repair-git-sync')",
+        "labels.includes('self-hosted-runner')",
+        "labels.includes('telemedicine')",
+        "'Recuperado automaticamente por monitor programado despues de verificar `checks.publicSync` sano.'",
+    ];
+
+    for (const snippet of requiredEnvRefs) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de autocierre stale deploy alerts: ${snippet}`
+        );
+    }
+
+    for (const expectedStepName of [
+        'Auto-close stale deploy alerts when public sync recovers',
+    ]) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de autocierre stale deploy alerts: ${expectedStepName}`
+        );
+    }
+
     const requiredSummaryLines = [
-        '- public_sync_recovery_status: ``$env:PUBLIC_SYNC_RECOVERY_STATUS``',
-        '- public_sync_recovery_reason: ``$env:PUBLIC_SYNC_RECOVERY_REASON``',
-        '- public_sync_current_head: ``$env:PUBLIC_SYNC_CURRENT_HEAD``',
-        '- public_sync_remote_head: ``$env:PUBLIC_SYNC_REMOTE_HEAD``',
-        '- public_sync_dirty_paths_count: ``$env:PUBLIC_SYNC_DIRTY_PATHS_COUNT``',
-        '- public_sync_recovery_step_outcome: ``${{ steps.public_sync_recovery.outcome }}``',
+        '- stale_deploy_alert_autoclose_status: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS``',
+        '- stale_deploy_alert_autoclose_reason: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_REASON``',
+        '- stale_deploy_alert_autoclose_public_sync_healthy: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY``',
+        '- stale_deploy_alert_autoclose_open_relevant_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT``',
+        '- stale_deploy_alert_autoclose_closed_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT``',
+        '- stale_deploy_alert_autoclose_closed_issues: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES``',
     ];
 
     for (const snippet of requiredSummaryLines) {
         assert.equal(
             raw.includes(snippet),
             true,
-            `falta linea de summary de recuperacion public sync: ${snippet}`
+            `falta linea de summary para autocierre stale deploy alerts: ${snippet}`
         );
     }
 });

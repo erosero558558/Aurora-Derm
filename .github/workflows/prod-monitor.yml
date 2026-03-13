@@ -196,6 +196,12 @@ jobs:
             PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP_EFFECTIVE: ${{ github.event.inputs.public_v4_rollout_max_confirmed_drop_pp || vars.PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP || '8' }}
             PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT_EFFECTIVE: ${{ github.event.inputs.public_v4_rollout_min_confirmed_rate_pct || vars.PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT || '20' }}
             PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL_EFFECTIVE: ${{ github.event.inputs.public_v4_rollout_allow_missing_control || vars.PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL || 'false' }}
+            STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS: not_evaluated
+            STALE_DEPLOY_ALERT_AUTOCLOSE_REASON: not_schedule
+            STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY: 'false'
+            STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT: '0'
+            STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT: '0'
+            STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES: none
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -267,7 +273,7 @@ jobs:
                   if ($maxTelemedicineUnlinkedIntakes -lt 0) { $maxTelemedicineUnlinkedIntakes = 0 }
                   $monitorArgs.MaxTelemedicineUnlinkedIntakes = $maxTelemedicineUnlinkedIntakes
 
-                  & ./MONITOR-PRODUCCION.ps1 @monitorArgs
+                  & ./scripts/ops/prod/MONITOR-PRODUCCION.ps1 @monitorArgs
 
             - name: Evaluar recuperacion public sync para alertas stale de deploy
               id: public_sync_recovery
@@ -646,6 +652,204 @@ jobs:
                   if-no-files-found: warn
                   retention-days: 7
 
+            - name: Auto-close stale deploy alerts when public sync recovers
+              if: ${{ always() && github.event_name == 'schedule' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const healthUrl = `${String(process.env.TARGET_DOMAIN || '').replace(/\/$/, '')}/api.php?resource=health`;
+                      const publicSyncJobIdExpected = '8d31e299-7e57-4959-80b5-aaa2d73e9674';
+                      const exportState = (values) => {
+                        for (const [key, value] of Object.entries(values)) {
+                          const normalized = String(value ?? '');
+                          core.exportVariable(key, normalized);
+                          core.setOutput(key.toLowerCase(), normalized);
+                        }
+                      };
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const isRelevantDeployAlert = (issue) => {
+                        const labels = normalizeLabels(issue.labels);
+                        if (labels.includes('telemedicine')) {
+                          return false;
+                        }
+                        return (
+                          labels.includes('production-alert') &&
+                          (
+                            labels.includes('deploy-hosting') ||
+                            labels.includes('transport-preflight') ||
+                            labels.includes('diagnose-host-connectivity') ||
+                            labels.includes('deploy-connectivity') ||
+                            labels.includes('repair-git-sync') ||
+                            labels.includes('self-hosted-runner')
+                          )
+                        );
+                      };
+
+                      exportState({
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS: 'not_schedule',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_REASON: 'not_schedule',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY: 'false',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT: '0',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT: '0',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES: 'none',
+                      });
+
+                      let health;
+                      try {
+                        const response = await fetch(healthUrl, {
+                          headers: {
+                            Accept: 'application/json',
+                            'User-Agent': 'PielArmoniaProdMonitor/1.0',
+                          },
+                        });
+                        if (!response.ok) {
+                          throw new Error(`health_status_${response.status}`);
+                        }
+                        health = await response.json();
+                      } catch (error) {
+                        const reason = `health_unreachable:${error instanceof Error ? error.message : String(error)}`;
+                        core.warning(`No se pudo evaluar publicSync para autocierre de alertas stale: ${reason}`);
+                        exportState({
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS: 'health_unreachable',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_REASON: reason,
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY: 'false',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT: '0',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT: '0',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES: 'none',
+                        });
+                        return;
+                      }
+
+                      const publicSync = health?.checks?.publicSync || {};
+                      const configured = Boolean(publicSync?.configured);
+                      const healthy = Boolean(publicSync?.healthy);
+                      const operationallyHealthy =
+                        publicSync?.operationallyHealthy === undefined
+                          ? healthy
+                          : Boolean(publicSync?.operationallyHealthy);
+                      const repoHygieneIssue = Boolean(publicSync?.repoHygieneIssue);
+                      const currentHead = String(publicSync?.currentHead || '');
+                      const remoteHead = String(publicSync?.remoteHead || '');
+                      const ageSeconds = Number(publicSync?.ageSeconds ?? Number.NaN);
+                      const expectedMaxLagSeconds = Number(publicSync?.expectedMaxLagSeconds ?? 120);
+                      const headDrift =
+                        publicSync?.headDrift === undefined
+                          ? Boolean(currentHead && remoteHead && currentHead !== remoteHead)
+                          : Boolean(publicSync?.headDrift);
+                      const telemetryGap =
+                        publicSync?.telemetryGap === undefined
+                          ? false
+                          : Boolean(publicSync?.telemetryGap);
+                      const jobId = String(publicSync?.jobId || '');
+                      const ageWithinLagBudget =
+                        Number.isFinite(ageSeconds) && Number.isFinite(expectedMaxLagSeconds)
+                          ? ageSeconds <= expectedMaxLagSeconds
+                          : true;
+                      const publicSyncRecovered = (
+                        configured &&
+                        healthy &&
+                        operationallyHealthy &&
+                        !repoHygieneIssue &&
+                        !headDrift &&
+                        !telemetryGap &&
+                        ageWithinLagBudget &&
+                        jobId === publicSyncJobIdExpected
+                      );
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100,
+                      });
+                      const relevantOpenIssues = openIssues.filter(
+                        (issue) => !issue.pull_request && isRelevantDeployAlert(issue)
+                      );
+                      const relevantOpenCount = String(relevantOpenIssues.length);
+
+                      if (!publicSyncRecovered) {
+                        const reasonParts = [];
+                        if (!configured) reasonParts.push('public_sync_not_configured');
+                        if (!healthy) reasonParts.push('public_sync_unhealthy');
+                        if (!operationallyHealthy) reasonParts.push('public_sync_operationally_unhealthy');
+                        if (repoHygieneIssue) reasonParts.push('public_sync_repo_hygiene_issue');
+                        if (headDrift) reasonParts.push('public_sync_head_drift');
+                        if (telemetryGap) reasonParts.push('public_sync_telemetry_gap');
+                        if (!ageWithinLagBudget) reasonParts.push('public_sync_stale');
+                        if (jobId !== publicSyncJobIdExpected) reasonParts.push(`public_sync_job_id:${jobId || 'missing'}`);
+                        const reason = reasonParts.length > 0 ? reasonParts.join('|') : 'public_sync_not_recovered';
+                        exportState({
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS: 'not_recovered',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_REASON: reason,
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY: 'false',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT: relevantOpenCount,
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT: '0',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES: 'none',
+                        });
+                        core.info(`publicSync aun no esta recuperado para autocierre de alertas stale (${reason}).`);
+                        return;
+                      }
+
+                      if (relevantOpenIssues.length === 0) {
+                        exportState({
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS: 'no_open_alerts',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_REASON: 'public_sync_recovered_no_open_alerts',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY: 'true',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT: relevantOpenCount,
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT: '0',
+                          STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES: 'none',
+                        });
+                        core.info('publicSync recuperado y sin alertas stale de deploy abiertas.');
+                        return;
+                      }
+
+                      const closedIssues = [];
+                      for (const issue of relevantOpenIssues) {
+                        const issueNumber = Number(issue.number);
+                        const issueTitle = String(issue.title || 'sin_titulo');
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: issueNumber,
+                          body: [
+                            'Recuperado automaticamente por monitor programado despues de verificar `checks.publicSync` sano.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- public_sync_job_id: ${jobId || 'n/a'}`,
+                            `- public_sync_state: ${String(publicSync?.state || 'unknown')}`,
+                            `- public_sync_age_seconds: ${Number.isFinite(ageSeconds) ? ageSeconds : 'n/a'}`,
+                            `- public_sync_current_head: ${currentHead || 'n/a'}`,
+                            `- public_sync_remote_head: ${remoteHead || 'n/a'}`,
+                            `- public_sync_deployed_commit: ${String(publicSync?.deployedCommit || 'n/a')}`,
+                          ].join('\n'),
+                        });
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: issueNumber,
+                          state: 'closed',
+                        });
+                        closedIssues.push(`#${issueNumber} ${issueTitle}`);
+                      }
+
+                      exportState({
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS: 'closed',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_REASON: 'public_sync_recovered',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY: 'true',
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT: relevantOpenCount,
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT: String(closedIssues.length),
+                        STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES: closedIssues.join(' | '),
+                      });
+                      core.info(`Alertas stale de deploy cerradas tras recuperar publicSync: ${closedIssues.join(' | ')}`);
+
             - name: Resumen
               if: ${{ always() }}
               shell: pwsh
@@ -705,6 +909,12 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_min_confirmed_rate_pct_effective: ``$env:PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_allow_missing_control_effective: ``$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_step_outcome: ``${{ steps.public_v4_rollout.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_status: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_reason: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_REASON``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_public_sync_healthy: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_open_relevant_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_closed_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_closed_issues: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES``"
 
             - name: Crear/actualizar incidente (solo schedule)
               if: ${{ failure() && github.event_name == 'schedule' && steps.public_cutover.outcome != 'failure' && steps.public_v4_rollout.outcome != 'failure' && ((env.TELEMEDICINE_MONITOR_STATUS != 'failed' && env.TELEMEDICINE_MONITOR_STATUS != 'unknown') || env.TELEMEDICINE_MONITOR_NON_TELE_FAILURES != '0') }}

@@ -93,6 +93,124 @@ test('intake buildTaskFromSignal asigna codex_frontend para señales puramente f
     assert.equal(task.cross_domain, false);
 });
 
+test('intake buildTaskFromSignal acota leadops_worker al lane transversal runtime', () => {
+    const task = intake.buildTaskFromSignal(
+        {
+            source: 'issue',
+            source_ref: 'issue#451',
+            title: 'LeadOps OpenClaw callback degraded',
+            severity: 'high',
+            critical: false,
+            runtime_impact: 'high',
+            labels: ['openclaw', 'leadops'],
+        },
+        { nowIso: '2026-02-25T10:00:00Z', owner: 'ernesto' }
+    );
+
+    assert.equal(task.scope, 'openclaw_runtime');
+    assert.equal(task.executor, 'codex');
+    assert.equal(task.codex_instance, 'codex_transversal');
+    assert.equal(task.domain_lane, 'transversal_runtime');
+    assert.equal(task.provider_mode, 'openclaw_chatgpt');
+    assert.equal(task.runtime_surface, 'leadops_worker');
+    assert.equal(task.runtime_transport, 'hybrid_http_cli');
+    assert.deepEqual(task.files, [
+        'bin/lead-ai-worker.js',
+        'bin/lib/lead-ai-worker.js',
+        'controllers/LeadAiController.php',
+        'lib/LeadOpsService.php',
+    ]);
+});
+
+test('intake buildTaskFromSignal acota operator_auth al surface verificable correcto', () => {
+    const task = intake.buildTaskFromSignal(
+        {
+            source: 'workflow',
+            source_ref: 'workflow:operator-auth-status:main',
+            title: 'Operator auth OpenClaw degraded',
+            severity: 'high',
+            critical: false,
+            runtime_impact: 'high',
+            labels: ['operator-auth', 'openclaw'],
+        },
+        { nowIso: '2026-02-25T10:00:00Z', owner: 'ernesto' }
+    );
+
+    assert.equal(task.scope, 'openclaw_runtime');
+    assert.equal(task.codex_instance, 'codex_transversal');
+    assert.equal(task.domain_lane, 'transversal_runtime');
+    assert.equal(task.provider_mode, 'openclaw_chatgpt');
+    assert.equal(task.runtime_surface, 'operator_auth');
+    assert.deepEqual(task.files, [
+        'lib/auth.php',
+        'controllers/OperatorAuthController.php',
+    ]);
+});
+
+test('intake buildTaskFromSignal detecta runtime OpenClaw desde source_ref de lead-ai-worker', () => {
+    const task = intake.buildTaskFromSignal(
+        {
+            source: 'issue',
+            source_ref: 'bin/lead-ai-worker.js',
+            title: 'Worker callback degraded',
+            severity: 'medium',
+            critical: false,
+        },
+        { nowIso: '2026-02-25T10:00:00Z', owner: 'ernesto' }
+    );
+
+    assert.equal(task.scope, 'openclaw_runtime');
+    assert.equal(task.runtime_impact, 'high');
+    assert.equal(task.codex_instance, 'codex_transversal');
+    assert.equal(task.domain_lane, 'transversal_runtime');
+    assert.equal(task.runtime_surface, 'leadops_worker');
+    assert.deepEqual(task.files, [
+        'bin/lead-ai-worker.js',
+        'bin/lib/lead-ai-worker.js',
+        'controllers/LeadAiController.php',
+        'lib/LeadOpsService.php',
+    ]);
+});
+
+test('intake buildTaskFromSignal detecta runtime OpenClaw desde source_ref de auth y figo', () => {
+    const operatorAuthTask = intake.buildTaskFromSignal(
+        {
+            source: 'issue',
+            source_ref: 'lib/auth.php',
+            title: 'Auth status degraded',
+            severity: 'medium',
+            critical: false,
+        },
+        { nowIso: '2026-02-25T10:00:00Z', owner: 'ernesto' }
+    );
+    const figoTask = intake.buildTaskFromSignal(
+        {
+            source: 'issue',
+            source_ref: 'check-ai-response.php',
+            title: 'Gateway polling degraded',
+            severity: 'medium',
+            critical: false,
+        },
+        { nowIso: '2026-02-25T10:00:00Z', owner: 'ernesto' }
+    );
+
+    assert.equal(operatorAuthTask.scope, 'openclaw_runtime');
+    assert.equal(operatorAuthTask.runtime_surface, 'operator_auth');
+    assert.deepEqual(operatorAuthTask.files, [
+        'lib/auth.php',
+        'controllers/OperatorAuthController.php',
+    ]);
+
+    assert.equal(figoTask.scope, 'openclaw_runtime');
+    assert.equal(figoTask.runtime_surface, 'figo_queue');
+    assert.deepEqual(figoTask.files, [
+        'figo-ai-bridge.php',
+        'check-ai-response.php',
+        'lib/figo_queue.php',
+        'lib/figo_queue/JobProcessor.php',
+    ]);
+});
+
 test('intake normalizeTaskForScoring escala a codex tras 2 intentos', () => {
     const task = intake.normalizeTaskForScoring(
         {

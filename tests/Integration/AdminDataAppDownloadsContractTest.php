@@ -73,7 +73,7 @@ final class AdminDataAppDownloadsContractTest extends TestCase
         $this->assertArrayHasKey('operator', $appDownloads['catalog']);
         $this->assertArrayHasKey('sala_tv', $appDownloads['surfaces']);
         $this->assertSame(
-            '/app-downloads/stable/operator/win/TurneroOperadorSetup.exe',
+            '/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe',
             (string) ($appDownloads['catalog']['operator']['targets']['win']['url'] ?? '')
         );
         $this->assertSame(

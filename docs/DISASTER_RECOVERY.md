@@ -84,7 +84,7 @@ Las credenciales y claves de API (Stripe, SMTP, Admin Pass) deben estar document
     - Si se tiene copia local reciente de `store.json`, subirla a `data/`.
     - Si no, contactar al proveedor de hosting anterior para intentar recuperar backups de sistema.
 4.  **Redirigir DNS:** Apuntar el dominio `pielarmonia.com` a la nueva IP.
-5.  **Verificación:** Ejecutar `GATE-POSTDEPLOY.ps1`.
+5.  **Verificación:** Ejecutar `scripts/ops/prod/GATE-POSTDEPLOY.ps1`.
     Implementacion canonica: `scripts/ops/prod/GATE-POSTDEPLOY.ps1`.
 
 ### Escenario 3: Compromiso de Seguridad (Hackeo)

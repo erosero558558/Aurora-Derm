@@ -50,6 +50,12 @@ function request($method, $path, $data = null, $headers = [])
     return ['status' => $status, 'body' => $result, 'headers' => $http_response_header];
 }
 
+function decode_json_body(array $result): array
+{
+    $decoded = json_decode((string) ($result['body'] ?? ''), true);
+    return is_array($decoded) ? $decoded : [];
+}
+
 $failures = 0;
 
 function check($name, $result, $expectedStatuses, $unexpectedContent = null)
@@ -101,10 +107,21 @@ try {
     }
 
     // 4. SQL Injection / Logic Bypass
+    $authStatusResponse = request('GET', '/admin-auth.php?action=status');
+    $authStatusBody = decode_json_body($authStatusResponse);
+    $authMode = (string) ($authStatusBody['mode'] ?? '');
+    $authConfigured = ($authStatusBody['configured'] ?? true) !== false;
+    $authStatus = (string) ($authStatusBody['status'] ?? '');
     $res = request('POST', '/admin-auth.php?action=login', [
         'password' => "' OR '1'='1"
     ]);
-    check('SQLi in Login', $res, 401);
+    if ($authMode === 'legacy_password' && (!$authConfigured || $authStatus === 'legacy_auth_not_configured')) {
+        check('SQLi in Login (Legacy Misconfigured)', $res, 503);
+    } elseif ($authMode === 'openclaw_chatgpt') {
+        check('Legacy Login Blocked in OpenClaw Mode', $res, 401);
+    } else {
+        check('SQLi in Login', $res, 401);
+    }
 
     // 5. CSRF / CORS Check
     $res = request('OPTIONS', '/api.php');

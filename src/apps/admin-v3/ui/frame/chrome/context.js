@@ -11,10 +11,26 @@ function formatSyncMeta(lastRefreshAt) {
     })}`;
 }
 
-export function renderChromeContext(state, config) {
+function resolveContextSummary(config, internalConsoleMeta) {
+    if (internalConsoleMeta?.overall?.ready === false) {
+        const summary = String(
+            internalConsoleMeta?.overall?.summary || ''
+        ).trim();
+        if (summary) {
+            return summary;
+        }
+    }
+
+    return config.summary;
+}
+
+export function renderChromeContext(state, config, internalConsoleMeta) {
     setText('#adminSectionEyebrow', config.eyebrow);
     setText('#adminContextTitle', config.title);
-    setText('#adminContextSummary', config.summary);
+    setText(
+        '#adminContextSummary',
+        resolveContextSummary(config, internalConsoleMeta)
+    );
     setHtml(
         '#adminContextActions',
         config.actions.map((action) => contextActionItem(action)).join('')

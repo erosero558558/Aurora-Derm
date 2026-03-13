@@ -152,7 +152,7 @@ jobs:
               id: gate_fast
               shell: pwsh
               run: |
-                  ./GATE-POSTDEPLOY.ps1 `
+                  ./scripts/ops/prod/GATE-POSTDEPLOY.ps1 `
                     -Domain $env:TARGET_DOMAIN `
                     -SkipBenchmark `
                     -SkipAssetHashChecks `

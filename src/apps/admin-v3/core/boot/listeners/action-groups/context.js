@@ -1,4 +1,5 @@
 import {
+    clearAppointmentReviewContext,
     setAppointmentFilter,
     setAppointmentSearch,
 } from '../../../../sections/appointments.js';
@@ -9,11 +10,13 @@ export async function handleContextAction(action, element) {
     switch (action) {
         case 'context-open-appointments-overview':
             await navigateToSection('appointments');
+            clearAppointmentReviewContext();
             setAppointmentFilter('all');
             setAppointmentSearch('');
             return true;
         case 'context-open-appointments-transfer':
             await navigateToSection('appointments');
+            clearAppointmentReviewContext();
             setAppointmentFilter('pending_transfer');
             return true;
         case 'context-open-availability':

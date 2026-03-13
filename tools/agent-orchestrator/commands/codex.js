@@ -30,9 +30,52 @@ async function handleCodexCheckCommand(ctx) {
         parseHandoffs,
         loadMetricsSnapshot,
         loadJobsSnapshot,
+        verifyOpenClawRuntime,
+        buildRuntimeBlockingErrors,
     } = ctx;
     const wantsJson = args.includes('--json');
+    const board = parseBoard();
     const report = buildCodexCheckReport();
+    const hasActiveRuntimeTask = Array.isArray(board?.tasks)
+        ? board.tasks.some((task) => {
+              const status = String(task?.status || '')
+                  .trim()
+                  .toLowerCase();
+              const codexInstance = String(task?.codex_instance || '')
+                  .trim()
+                  .toLowerCase();
+              const providerMode = String(task?.provider_mode || '')
+                  .trim()
+                  .toLowerCase();
+              return (
+                  ['ready', 'in_progress', 'review', 'blocked'].includes(
+                      status
+                  ) &&
+                  codexInstance === 'codex_transversal' &&
+                  providerMode === 'openclaw_chatgpt'
+              );
+          })
+        : false;
+    const runtimeVerification =
+        hasActiveRuntimeTask && typeof verifyOpenClawRuntime === 'function'
+            ? await verifyOpenClawRuntime()
+            : null;
+    if (runtimeVerification) {
+        const runtimeErrors =
+            typeof buildRuntimeBlockingErrors === 'function'
+                ? buildRuntimeBlockingErrors(
+                      Array.isArray(board?.tasks) ? board.tasks : [],
+                      runtimeVerification
+                  )
+                : [];
+        report.runtime = runtimeVerification;
+        if (runtimeErrors.length > 0) {
+            report.ok = false;
+            report.error_count =
+                Number(report.error_count || 0) + runtimeErrors.length;
+            report.errors = [...(report.errors || []), ...runtimeErrors];
+        }
+    }
     const metricsSnapshot =
         typeof loadMetricsSnapshot === 'function'
             ? loadMetricsSnapshot()
@@ -45,7 +88,7 @@ async function handleCodexCheckCommand(ctx) {
         report,
         buildWarnFirstDiagnostics({
             source: 'codex-check',
-            board: parseBoard(),
+            board,
             handoffData: parseHandoffs(),
             metricsSnapshot,
             jobsSnapshot,

@@ -334,7 +334,7 @@ jobs:
               id: verify_after_repair
               shell: pwsh
               run: |
-                  ./VERIFICAR-DESPLIEGUE.ps1 `
+                  ./scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1 `
                     -Domain $env:TARGET_DOMAIN `
                     -AssetHashRetryCount 3 `
                     -AssetHashRetryDelaySec 6
@@ -344,7 +344,7 @@ jobs:
               if: ${{ always() }}
               shell: pwsh
               run: |
-                  ./SMOKE-PRODUCCION.ps1 -Domain $env:TARGET_DOMAIN -AllowFigoRateLimit
+                  ./scripts/ops/prod/SMOKE-PRODUCCION.ps1 -Domain $env:TARGET_DOMAIN -AllowFigoRateLimit
 
             - name: Evaluar estado telemedicina post-repair
               if: ${{ always() }}

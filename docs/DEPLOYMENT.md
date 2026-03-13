@@ -145,7 +145,7 @@ Despu√©s de cada despliegue, es **obligatorio** ejecutar las validaciones autom√
 **Windows (PowerShell):**
 
 ```powershell
-.\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com"
+.\scripts\ops\prod\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com"
 ```
 
 Implementacion canonica: `scripts/ops/prod/GATE-POSTDEPLOY.ps1`.

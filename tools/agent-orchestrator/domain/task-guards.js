@@ -13,12 +13,25 @@ const DEFAULT_ALLOWED_EXECUTORS = new Set(['codex']);
 const DEFAULT_ALLOWED_CODEX_INSTANCES = new Set([
     'codex_backend_ops',
     'codex_frontend',
+    'codex_transversal',
 ]);
 const DEFAULT_ALLOWED_DOMAIN_LANES = new Set([
     'backend_ops',
     'frontend_content',
+    'transversal_runtime',
 ]);
 const DEFAULT_ALLOWED_LANE_LOCKS = new Set(['strict', 'handoff_allowed']);
+const DEFAULT_ALLOWED_PROVIDER_MODES = new Set(['openclaw_chatgpt']);
+const DEFAULT_ALLOWED_RUNTIME_SURFACES = new Set([
+    'figo_queue',
+    'leadops_worker',
+    'operator_auth',
+]);
+const DEFAULT_ALLOWED_RUNTIME_TRANSPORTS = new Set([
+    'hybrid_http_cli',
+    'http_bridge',
+    'cli_helper',
+]);
 const DEFAULT_ACTIVE_STATUSES = new Set([
     'ready',
     'in_progress',
@@ -45,7 +58,34 @@ const DEFAULT_DUAL_CODEX_OWNERSHIP = {
         'content/**',
         '*.html',
     ],
+    transversal_runtime: [
+        'agent-orchestrator.js',
+        'agents.md',
+        'agent_board.yaml',
+        'agent_handoffs.yaml',
+        'agent_jobs.yaml',
+        'agent_signals.yaml',
+        'governance-policy.json',
+        'dual_codex_runbook.md',
+        'tri_lane_runtime_runbook.md',
+        'plan_maestro_codex_2026.md',
+        'tools/agent-orchestrator/**',
+        'bin/validate-agent-governance.php',
+        'figo-ai-bridge.php',
+        'check-ai-response.php',
+        'lib/figo_queue.php',
+        'lib/figo_queue/**',
+        'lib/auth.php',
+        'lib/leadopsservice.php',
+        'controllers/operatorauthcontroller.php',
+        'controllers/leadaicontroller.php',
+        'bin/lead-ai-worker.js',
+        'bin/lib/lead-ai-worker.js',
+    ],
 };
+
+const DEFAULT_TRANSVERSAL_PRIORITY_PATTERNS =
+    DEFAULT_DUAL_CODEX_OWNERSHIP.transversal_runtime;
 
 function normalizePathToken(value) {
     return String(value || '')
@@ -69,6 +109,12 @@ function pathMatchesPattern(path, pattern) {
     return wildcardToRegex(safePattern).test(safePath);
 }
 
+function normalizeOptionalToken(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase();
+}
+
 function toBoolean(value, fallback = false) {
     if (typeof value === 'boolean') return value;
     if (typeof value === 'number') return value !== 0;
@@ -79,6 +125,74 @@ function toBoolean(value, fallback = false) {
     if (['true', '1', 'yes', 'y', 'si', 's', 'on'].includes(raw)) return true;
     if (['false', '0', 'no', 'n', 'off'].includes(raw)) return false;
     return fallback;
+}
+
+function mapLaneToCodexInstance(domainLane) {
+    const lane = normalizeOptionalToken(domainLane);
+    if (lane === 'frontend_content') return 'codex_frontend';
+    if (lane === 'transversal_runtime') return 'codex_transversal';
+    return 'codex_backend_ops';
+}
+
+function isOpenClawRuntimeTask(task) {
+    const providerMode = normalizeOptionalToken(task?.provider_mode);
+    const runtimeSurface = normalizeOptionalToken(task?.runtime_surface);
+    const runtimeTransport = normalizeOptionalToken(task?.runtime_transport);
+    const runtimeLastTransport = normalizeOptionalToken(
+        task?.runtime_last_transport
+    );
+    return Boolean(
+        providerMode === 'openclaw_chatgpt' ||
+        runtimeSurface ||
+        runtimeTransport ||
+        runtimeLastTransport
+    );
+}
+
+function inferOpenClawRuntimeSurface(task) {
+    const corpus = [
+        String(task?.scope || ''),
+        String(task?.title || ''),
+        String(task?.acceptance || ''),
+        String(task?.prompt || ''),
+        String(task?.source_ref || ''),
+        ...(Array.isArray(task?.files) ? task.files : []),
+    ]
+        .join(' ')
+        .toLowerCase();
+
+    if (
+        corpus.includes('operator auth') ||
+        corpus.includes('operator-auth') ||
+        corpus.includes('operator_auth') ||
+        corpus.includes('lib/auth.php') ||
+        corpus.includes('controllers/operatorauthcontroller.php')
+    ) {
+        return 'operator_auth';
+    }
+    if (
+        corpus.includes('leadops') ||
+        corpus.includes('lead ops') ||
+        corpus.includes('lead-ai-worker') ||
+        corpus.includes('lead_ai_worker') ||
+        corpus.includes('lead-ai-queue') ||
+        corpus.includes('lead-ai-result') ||
+        corpus.includes('lib/leadopsservice.php') ||
+        corpus.includes('controllers/leadaicontroller.php')
+    ) {
+        return 'leadops_worker';
+    }
+    if (
+        corpus.includes('figo queue') ||
+        corpus.includes('figo-ai-bridge') ||
+        corpus.includes('figo_queue') ||
+        corpus.includes('lib/figo_queue.php') ||
+        corpus.includes('check-ai-response') ||
+        corpus.includes('openclaw')
+    ) {
+        return 'figo_queue';
+    }
+    return 'figo_queue';
 }
 
 function findCriticalScopeKeyword(
@@ -100,7 +214,33 @@ function findCriticalScopeKeyword(
 function classifyPathLane(path, options = {}) {
     const ownershipMatrix =
         options.ownershipMatrix || DEFAULT_DUAL_CODEX_OWNERSHIP;
+    const priorityLanePatterns = options.priorityLanePatterns || {
+        transversal_runtime: DEFAULT_TRANSVERSAL_PRIORITY_PATTERNS,
+    };
     const safePath = normalizePathToken(path);
+    const priorityMatches = [];
+    for (const [lane, patterns] of Object.entries(priorityLanePatterns)) {
+        const safePatterns = Array.isArray(patterns) ? patterns : [];
+        if (
+            safePatterns.some((pattern) =>
+                pathMatchesPattern(safePath, pattern)
+            )
+        ) {
+            priorityMatches.push(
+                String(lane || '')
+                    .trim()
+                    .toLowerCase()
+            );
+        }
+    }
+    if (priorityMatches.length > 0) {
+        const lane = priorityMatches[0];
+        return {
+            lane,
+            reason: 'priority_lane_match',
+            matched_lanes: priorityMatches,
+        };
+    }
     const matchedLanes = [];
     for (const [lane, patterns] of Object.entries(ownershipMatrix)) {
         const safePatterns = Array.isArray(patterns) ? patterns : [];
@@ -118,6 +258,14 @@ function classifyPathLane(path, options = {}) {
     }
     const hasBackend = matchedLanes.includes('backend_ops');
     const hasFrontend = matchedLanes.includes('frontend_content');
+    const hasTransversal = matchedLanes.includes('transversal_runtime');
+    if (hasTransversal) {
+        return {
+            lane: 'transversal_runtime',
+            reason: 'transversal_runtime_match',
+            matched_lanes: matchedLanes,
+        };
+    }
     if (hasBackend && hasFrontend) {
         return {
             lane: 'backend_ops',
@@ -150,6 +298,7 @@ function inferDomainLaneFromFiles(files, options = {}) {
     const safeFiles = Array.isArray(files) ? files : [];
     let backendCount = 0;
     let frontendCount = 0;
+    let transversalCount = 0;
     const details = [];
     for (const rawFile of safeFiles) {
         const classified = classifyPathLane(rawFile, options);
@@ -161,21 +310,33 @@ function inferDomainLaneFromFiles(files, options = {}) {
         });
         if (classified.lane === 'frontend_content') {
             frontendCount += 1;
+        } else if (classified.lane === 'transversal_runtime') {
+            transversalCount += 1;
         } else {
             backendCount += 1;
         }
     }
-    const lane =
-        frontendCount > 0 && backendCount === 0
-            ? 'frontend_content'
-            : 'backend_ops';
-    const hasCrossDomainFiles = frontendCount > 0 && backendCount > 0;
+    let lane = 'backend_ops';
+    if (transversalCount > 0 && backendCount === 0 && frontendCount === 0) {
+        lane = 'transversal_runtime';
+    } else if (
+        frontendCount > 0 &&
+        backendCount === 0 &&
+        transversalCount === 0
+    ) {
+        lane = 'frontend_content';
+    }
+    const nonZeroLanes = [backendCount, frontendCount, transversalCount].filter(
+        (count) => count > 0
+    ).length;
+    const hasCrossDomainFiles = nonZeroLanes > 1;
     return {
         lane,
         hasCrossDomainFiles,
         counts: {
             backend_ops: backendCount,
             frontend_content: frontendCount,
+            transversal_runtime: transversalCount,
         },
         details,
     };
@@ -184,6 +345,8 @@ function inferDomainLaneFromFiles(files, options = {}) {
 function ensureTaskDualCodexDefaults(task, options = {}) {
     if (!task || typeof task !== 'object') return task;
     const inferred = inferDomainLaneFromFiles(task.files, options);
+    const runtimeScope =
+        normalizeOptionalToken(task?.scope) === 'openclaw_runtime';
 
     if (!String(task.domain_lane || '').trim()) {
         task.domain_lane = inferred.lane;
@@ -192,10 +355,7 @@ function ensureTaskDualCodexDefaults(task, options = {}) {
     }
 
     if (!String(task.codex_instance || '').trim()) {
-        task.codex_instance =
-            task.domain_lane === 'frontend_content'
-                ? 'codex_frontend'
-                : 'codex_backend_ops';
+        task.codex_instance = mapLaneToCodexInstance(task.domain_lane);
     } else {
         task.codex_instance = String(task.codex_instance).trim().toLowerCase();
     }
@@ -209,6 +369,26 @@ function ensureTaskDualCodexDefaults(task, options = {}) {
     }
 
     task.cross_domain = toBoolean(task.cross_domain, false);
+    task.provider_mode = normalizeOptionalToken(task.provider_mode);
+    task.runtime_surface = normalizeOptionalToken(task.runtime_surface);
+    task.runtime_transport = normalizeOptionalToken(task.runtime_transport);
+    task.runtime_last_transport = normalizeOptionalToken(
+        task.runtime_last_transport
+    );
+    const runtimeTask = runtimeScope || isOpenClawRuntimeTask(task);
+    if (runtimeTask) {
+        task.domain_lane = 'transversal_runtime';
+        task.codex_instance = 'codex_transversal';
+        if (!task.provider_mode) {
+            task.provider_mode = 'openclaw_chatgpt';
+        }
+        if (!task.runtime_transport) {
+            task.runtime_transport = 'hybrid_http_cli';
+        }
+        if (!task.runtime_surface) {
+            task.runtime_surface = inferOpenClawRuntimeSurface(task);
+        }
+    }
     return task;
 }
 
@@ -310,6 +490,12 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
         .toLowerCase();
     const scope = String(task?.scope || '');
     const deps = Array.isArray(task?.depends_on) ? task.depends_on : [];
+    const providerMode = normalizeOptionalToken(task?.provider_mode);
+    const runtimeSurface = normalizeOptionalToken(task?.runtime_surface);
+    const runtimeTransport = normalizeOptionalToken(task?.runtime_transport);
+    const runtimeLastTransport = normalizeOptionalToken(
+        task?.runtime_last_transport
+    );
 
     const allowedCodexInstances =
         options.allowedCodexInstances || DEFAULT_ALLOWED_CODEX_INSTANCES;
@@ -317,6 +503,12 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
         options.allowedDomainLanes || DEFAULT_ALLOWED_DOMAIN_LANES;
     const allowedLaneLocks =
         options.allowedLaneLocks || DEFAULT_ALLOWED_LANE_LOCKS;
+    const allowedProviderModes =
+        options.allowedProviderModes || DEFAULT_ALLOWED_PROVIDER_MODES;
+    const allowedRuntimeSurfaces =
+        options.allowedRuntimeSurfaces || DEFAULT_ALLOWED_RUNTIME_SURFACES;
+    const allowedRuntimeTransports =
+        options.allowedRuntimeTransports || DEFAULT_ALLOWED_RUNTIME_TRANSPORTS;
     const criticalScopeKeywords = Array.isArray(options.criticalScopeKeywords)
         ? options.criticalScopeKeywords
         : DEFAULT_CRITICAL_SCOPE_KEYWORDS;
@@ -338,6 +530,29 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
             `task ${taskId || '(sin id)'}: lane_lock invalido (${laneLock || 'vacio'})`
         );
     }
+    if (providerMode && !allowedProviderModes.has(providerMode)) {
+        throw new Error(
+            `task ${taskId || '(sin id)'}: provider_mode invalido (${providerMode})`
+        );
+    }
+    if (runtimeSurface && !allowedRuntimeSurfaces.has(runtimeSurface)) {
+        throw new Error(
+            `task ${taskId || '(sin id)'}: runtime_surface invalido (${runtimeSurface})`
+        );
+    }
+    if (runtimeTransport && !allowedRuntimeTransports.has(runtimeTransport)) {
+        throw new Error(
+            `task ${taskId || '(sin id)'}: runtime_transport invalido (${runtimeTransport})`
+        );
+    }
+    if (
+        runtimeLastTransport &&
+        !allowedRuntimeTransports.has(runtimeLastTransport)
+    ) {
+        throw new Error(
+            `task ${taskId || '(sin id)'}: runtime_last_transport invalido (${runtimeLastTransport})`
+        );
+    }
 
     if (
         domainLane === 'frontend_content' &&
@@ -352,12 +567,49 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
             `task ${taskId || '(sin id)'}: domain_lane backend_ops requiere codex_instance=codex_backend_ops`
         );
     }
+    if (
+        domainLane === 'transversal_runtime' &&
+        codexInstance !== 'codex_transversal'
+    ) {
+        throw new Error(
+            `task ${taskId || '(sin id)'}: domain_lane transversal_runtime requiere codex_instance=codex_transversal`
+        );
+    }
+
+    const runtimeTask = isOpenClawRuntimeTask(task);
+    if (runtimeTask) {
+        if (providerMode !== 'openclaw_chatgpt') {
+            throw new Error(
+                `task ${taskId || '(sin id)'}: runtime OpenClaw requiere provider_mode=openclaw_chatgpt`
+            );
+        }
+        if (domainLane !== 'transversal_runtime') {
+            throw new Error(
+                `task ${taskId || '(sin id)'}: runtime OpenClaw requiere domain_lane=transversal_runtime`
+            );
+        }
+        if (codexInstance !== 'codex_transversal') {
+            throw new Error(
+                `task ${taskId || '(sin id)'}: runtime OpenClaw requiere codex_instance=codex_transversal`
+            );
+        }
+        if (!runtimeSurface) {
+            throw new Error(
+                `task ${taskId || '(sin id)'}: provider_mode=openclaw_chatgpt requiere runtime_surface`
+            );
+        }
+        if (!runtimeTransport) {
+            throw new Error(
+                `task ${taskId || '(sin id)'}: provider_mode=openclaw_chatgpt requiere runtime_transport`
+            );
+        }
+    }
 
     const isCritical =
         Boolean(task?.critical_zone) ||
         runtimeImpact === 'high' ||
         Boolean(findCriticalScopeKeyword(scope, criticalScopeKeywords));
-    if (isCritical && codexInstance !== 'codex_backend_ops') {
+    if (isCritical && !runtimeTask && codexInstance !== 'codex_backend_ops') {
         throw new Error(
             `task ${taskId || '(sin id)'}: critical_zone/runtime scope critico requiere codex_instance=codex_backend_ops`
         );
@@ -368,6 +620,13 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
     for (const rawFile of safeFiles) {
         const classified = classifyPathLane(rawFile, options);
         if (crossDomain) continue;
+        if (
+            !runtimeTask &&
+            domainLane === 'backend_ops' &&
+            classified.lane === 'transversal_runtime'
+        ) {
+            continue;
+        }
         if (classified.lane !== domainLane) {
             laneViolations.push(
                 `${normalizePathToken(rawFile)}=>${classified.lane}`
@@ -447,9 +706,16 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
 
 module.exports = {
     DEFAULT_DUAL_CODEX_OWNERSHIP,
+    DEFAULT_TRANSVERSAL_PRIORITY_PATTERNS,
+    DEFAULT_ALLOWED_PROVIDER_MODES,
+    DEFAULT_ALLOWED_RUNTIME_SURFACES,
+    DEFAULT_ALLOWED_RUNTIME_TRANSPORTS,
     findCriticalScopeKeyword,
     classifyPathLane,
     inferDomainLaneFromFiles,
+    mapLaneToCodexInstance,
+    isOpenClawRuntimeTask,
+    inferOpenClawRuntimeSurface,
     ensureTaskDualCodexDefaults,
     validateTaskExecutorScopeGuard,
     validateTaskDependsOn,

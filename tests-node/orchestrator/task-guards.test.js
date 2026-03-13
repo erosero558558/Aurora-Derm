@@ -8,6 +8,7 @@ const {
     classifyPathLane,
     inferDomainLaneFromFiles,
     findCriticalScopeKeyword,
+    ensureTaskDualCodexDefaults,
     validateTaskExecutorScopeGuard,
     validateTaskDependsOn,
     validateTaskDualCodexGuard,
@@ -151,6 +152,13 @@ test('task-guards infiere lane conservador por files', () => {
     ]);
     assert.equal(inferredMixed.lane, 'backend_ops');
     assert.equal(inferredMixed.hasCrossDomainFiles, true);
+
+    const inferredTransversal = inferDomainLaneFromFiles([
+        'figo-ai-bridge.php',
+        'lib/figo_queue/JobProcessor.php',
+    ]);
+    assert.equal(inferredTransversal.lane, 'transversal_runtime');
+    assert.equal(inferredTransversal.hasCrossDomainFiles, false);
 });
 
 test('task-guards bloquea archivo fuera de lane sin cross_domain', () => {
@@ -226,4 +234,87 @@ test('task-guards exige handoff activo para cross_domain en estado activo', () =
             isExpired: () => false,
         })
     );
+});
+
+test('task-guards valida tareas runtime OpenClaw en lane transversal', () => {
+    const board = {
+        tasks: [{ id: 'AG-001' }],
+    };
+
+    assert.throws(
+        () =>
+            validateTaskDualCodexGuard(
+                board,
+                {
+                    id: 'AG-200',
+                    status: 'ready',
+                    domain_lane: 'backend_ops',
+                    codex_instance: 'codex_backend_ops',
+                    lane_lock: 'strict',
+                    cross_domain: false,
+                    provider_mode: 'openclaw_chatgpt',
+                    runtime_surface: 'figo_queue',
+                    runtime_transport: 'hybrid_http_cli',
+                    files: ['controllers/AdminController.php'],
+                    depends_on: [],
+                    runtime_impact: 'high',
+                    critical_zone: true,
+                },
+                {
+                    activeStatuses: ACTIVE_STATUSES,
+                    handoffs: [],
+                }
+            ),
+        /archivos fuera de lane transversal_runtime/i
+    );
+
+    assert.doesNotThrow(() =>
+        validateTaskDualCodexGuard(
+            board,
+            {
+                id: 'AG-201',
+                status: 'ready',
+                domain_lane: 'transversal_runtime',
+                codex_instance: 'codex_transversal',
+                lane_lock: 'strict',
+                cross_domain: false,
+                provider_mode: 'openclaw_chatgpt',
+                runtime_surface: 'leadops_worker',
+                runtime_transport: 'hybrid_http_cli',
+                files: ['bin/lead-ai-worker.js'],
+                depends_on: [],
+                runtime_impact: 'high',
+                critical_zone: true,
+            },
+            {
+                activeStatuses: ACTIVE_STATUSES,
+                handoffs: [],
+            }
+        )
+    );
+});
+
+test('task-guards completa defaults OpenClaw cuando scope es openclaw_runtime', () => {
+    const task = {
+        id: 'AG-300',
+        scope: 'openclaw_runtime',
+        files: ['bin/lead-ai-worker.js'],
+        provider_mode: '',
+        runtime_surface: '',
+        runtime_transport: '',
+        runtime_last_transport: '',
+        domain_lane: '',
+        codex_instance: '',
+        lane_lock: '',
+        cross_domain: false,
+    };
+
+    ensureTaskDualCodexDefaults(task);
+
+    assert.equal(task.domain_lane, 'transversal_runtime');
+    assert.equal(task.codex_instance, 'codex_transversal');
+    assert.equal(task.lane_lock, 'strict');
+    assert.equal(task.provider_mode, 'openclaw_chatgpt');
+    assert.equal(task.runtime_transport, 'hybrid_http_cli');
+    assert.equal(task.runtime_surface, 'leadops_worker');
 });

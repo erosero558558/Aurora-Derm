@@ -1,5 +1,12 @@
 'use strict';
 
+const {
+    isOpenClawRuntimeTask,
+    mapLaneToCodexInstance,
+} = require('./task-guards');
+
+const MAX_CODEX_ACTIVE_BLOCKS = 3;
+
 function serializeBlock(block, deps = {}) {
     const {
         serializeArrayInline = (values) =>
@@ -170,8 +177,10 @@ function buildCodexCheckReport(input = {}, deps = {}) {
             );
         }
     }
-    if (codexBlocks.length > 2) {
-        errors.push(`Mas de dos bloques CODEX_ACTIVE en ${codexPlanPath}`);
+    if (codexBlocks.length > MAX_CODEX_ACTIVE_BLOCKS) {
+        errors.push(
+            `Mas de ${MAX_CODEX_ACTIVE_BLOCKS} bloques CODEX_ACTIVE en ${codexPlanPath}`
+        );
     }
 
     for (const task of tasks) {
@@ -181,14 +190,42 @@ function buildCodexCheckReport(input = {}, deps = {}) {
             .toLowerCase();
         const isCritical =
             Boolean(task?.critical_zone) || runtimeImpact === 'high';
+        const isRuntimeTask = isOpenClawRuntimeTask(task);
         if (
             isCritical &&
+            !isRuntimeTask &&
             String(task?.codex_instance || 'codex_backend_ops')
                 .trim()
                 .toLowerCase() !== 'codex_backend_ops'
         ) {
             errors.push(
                 `${taskId || '(sin id)'}: critical_zone/runtime high requiere codex_instance=codex_backend_ops`
+            );
+        }
+        if (
+            isRuntimeTask &&
+            String(task?.codex_instance || '')
+                .trim()
+                .toLowerCase() !== 'codex_transversal'
+        ) {
+            errors.push(
+                `${taskId || '(sin id)'}: runtime OpenClaw requiere codex_instance=codex_transversal`
+            );
+        }
+        const expectedInstance = mapLaneToCodexInstance(
+            task?.domain_lane || ''
+        );
+        const actualInstance = String(
+            task?.codex_instance || 'codex_backend_ops'
+        )
+            .trim()
+            .toLowerCase();
+        if (
+            String(task?.domain_lane || '').trim() &&
+            actualInstance !== expectedInstance
+        ) {
+            errors.push(
+                `${taskId || '(sin id)'}: domain_lane=${String(task?.domain_lane || '')} requiere codex_instance=${expectedInstance}`
             );
         }
     }
@@ -311,6 +348,15 @@ function buildCodexCheckReport(input = {}, deps = {}) {
             codex_active: activeCodexTasks.length,
             plan_blocks: codexBlocks.length,
             codex_in_progress_by_instance: codexInProgressByInstance,
+            codex_active_by_instance: activeCodexTasks.reduce((acc, task) => {
+                const instance = String(
+                    task?.codex_instance || 'codex_backend_ops'
+                )
+                    .trim()
+                    .toLowerCase();
+                acc[instance] = (acc[instance] || 0) + 1;
+                return acc;
+            }, {}),
         },
         codex_task_ids: codexTasks.map((task) => String(task.id)),
         codex_in_progress_ids: codexInProgress.map((task) => String(task.id)),

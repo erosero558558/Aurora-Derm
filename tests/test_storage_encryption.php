@@ -59,6 +59,7 @@ run_test('write_store_json_fallback should write encrypted file', function () us
     // Since we are in same process, data_encryption_key() is already resolved with our key.
     $readStore = read_store_json_fallback();
     assert_equals('Secret Patient', $readStore['appointments'][0]['name'] ?? null, 'Should be able to read back decrypted data');
+    assert_true(store_file_is_encrypted(), 'store_file_is_encrypted should report encrypted JSON fallback');
 });
 
 // Cleanup

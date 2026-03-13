@@ -1,6 +1,10 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { adminLogin, getEnv } = require('./helpers/admin-auth');
+const {
+    adminLogin,
+    getEnv,
+    safeJson,
+} = require('./helpers/admin-auth');
 const {
     expectNoLegacyPublicShell,
     gotoPublicRoute,
@@ -35,14 +39,6 @@ function enforceOrSkipGoogleMode(testInfo, health) {
         !googleActive,
         'La fuente de agenda no es Google en este entorno.'
     );
-}
-
-async function safeJson(response) {
-    try {
-        return await response.json();
-    } catch (_) {
-        return {};
-    }
 }
 
 async function findFreeSlot(request, doctor, service, days = 21) {
@@ -206,10 +202,18 @@ test.describe('Fase 2: consistencia calendario', () => {
             'TEST_ENABLE_CALENDAR_WRITE=true es requerido para prueba de concurrencia real.'
         );
 
+        const adminPassword =
+            getEnv('TEST_ADMIN_PASSWORD') ||
+            getEnv('PIELARMONIA_ADMIN_PASSWORD');
+        test.skip(
+            !adminPassword,
+            'TEST_ADMIN_PASSWORD o PIELARMONIA_ADMIN_PASSWORD es requerido para cleanup seguro.'
+        );
+
         const health = await getHealthPayload(request);
         enforceOrSkipGoogleMode(testInfo, health);
 
-        const login = await adminLogin(request);
+        const login = await adminLogin(request, { password: adminPassword });
         test.skip(!login.ok, `No se pudo autenticar admin: ${login.reason}`);
 
         const createdAppointmentIds = [];

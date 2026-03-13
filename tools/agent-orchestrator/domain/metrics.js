@@ -350,6 +350,18 @@ function inferTaskDomain(task, options = {}) {
     const corpus = [scope, ...files].join(' ');
 
     if (
+        corpus.includes('openclaw') ||
+        corpus.includes('leadops') ||
+        corpus.includes('operator-auth') ||
+        corpus.includes('operator auth') ||
+        corpus.includes('figo-ai-bridge') ||
+        corpus.includes('figo_queue') ||
+        corpus.includes('check-ai-response')
+    ) {
+        return 'openclaw_runtime';
+    }
+
+    if (
         corpus.includes('calendar') ||
         corpus.includes('availability') ||
         corpus.includes('booked-slots')
@@ -376,6 +388,126 @@ function inferTaskDomain(task, options = {}) {
         if (first) return first;
     }
     return 'other';
+}
+
+function buildCodexInstanceSummary(tasks, options = {}) {
+    const activeStatuses =
+        options.activeStatuses instanceof Set
+            ? options.activeStatuses
+            : new Set(options.activeStatuses || []);
+    const safeTasks = Array.isArray(tasks) ? tasks : [];
+    const map = new Map();
+
+    for (const task of safeTasks) {
+        const codexInstance =
+            String(task?.codex_instance || '')
+                .trim()
+                .toLowerCase() || 'unassigned';
+        const status = String(task?.status || '')
+            .trim()
+            .toLowerCase();
+        if (!map.has(codexInstance)) {
+            map.set(codexInstance, {
+                codex_instance: codexInstance,
+                tasks: 0,
+                active_tasks: 0,
+                in_progress_tasks: 0,
+                done_tasks: 0,
+            });
+        }
+        const row = map.get(codexInstance);
+        row.tasks += 1;
+        if (activeStatuses.has(status)) row.active_tasks += 1;
+        if (status === 'in_progress') row.in_progress_tasks += 1;
+        if (status === 'done') row.done_tasks += 1;
+    }
+
+    return {
+        total_instances: map.size,
+        rows: Array.from(map.values()).sort((a, b) =>
+            String(a.codex_instance).localeCompare(String(b.codex_instance))
+        ),
+    };
+}
+
+function buildProviderModeSummary(tasks, options = {}) {
+    const activeStatuses =
+        options.activeStatuses instanceof Set
+            ? options.activeStatuses
+            : new Set(options.activeStatuses || []);
+    const safeTasks = Array.isArray(tasks) ? tasks : [];
+    const map = new Map();
+
+    for (const task of safeTasks) {
+        const providerMode =
+            String(task?.provider_mode || '')
+                .trim()
+                .toLowerCase() || 'none';
+        const status = String(task?.status || '')
+            .trim()
+            .toLowerCase();
+        if (!map.has(providerMode)) {
+            map.set(providerMode, {
+                provider_mode: providerMode,
+                tasks: 0,
+                active_tasks: 0,
+                in_progress_tasks: 0,
+                done_tasks: 0,
+            });
+        }
+        const row = map.get(providerMode);
+        row.tasks += 1;
+        if (activeStatuses.has(status)) row.active_tasks += 1;
+        if (status === 'in_progress') row.in_progress_tasks += 1;
+        if (status === 'done') row.done_tasks += 1;
+    }
+
+    return {
+        total_provider_modes: map.size,
+        rows: Array.from(map.values()).sort((a, b) =>
+            String(a.provider_mode).localeCompare(String(b.provider_mode))
+        ),
+    };
+}
+
+function buildRuntimeSurfaceSummary(tasks, options = {}) {
+    const activeStatuses =
+        options.activeStatuses instanceof Set
+            ? options.activeStatuses
+            : new Set(options.activeStatuses || []);
+    const safeTasks = Array.isArray(tasks) ? tasks : [];
+    const map = new Map();
+
+    for (const task of safeTasks) {
+        const runtimeSurface =
+            String(task?.runtime_surface || '')
+                .trim()
+                .toLowerCase() || 'none';
+        const status = String(task?.status || '')
+            .trim()
+            .toLowerCase();
+        if (!map.has(runtimeSurface)) {
+            map.set(runtimeSurface, {
+                runtime_surface: runtimeSurface,
+                tasks: 0,
+                active_tasks: 0,
+                in_progress_tasks: 0,
+                done_tasks: 0,
+            });
+        }
+        const row = map.get(runtimeSurface);
+        row.tasks += 1;
+        if (activeStatuses.has(status)) row.active_tasks += 1;
+        if (status === 'in_progress') row.in_progress_tasks += 1;
+        if (status === 'done') row.done_tasks += 1;
+    }
+
+    return {
+        total_runtime_surfaces: map.size,
+        rows: Array.from(map.values()).sort((a, b) =>
+            String(a.runtime_surface).localeCompare(String(b.runtime_surface))
+        ),
+    };
 }
 
 function buildDomainHealth(
@@ -924,6 +1056,9 @@ module.exports = {
     getContributionSignal,
     formatPpDelta,
     inferTaskDomain,
+    buildCodexInstanceSummary,
+    buildProviderModeSummary,
+    buildRuntimeSurfaceSummary,
     buildDomainHealth,
     sanitizeDomainHealthSnapshot,
     upsertDomainHealthHistory,

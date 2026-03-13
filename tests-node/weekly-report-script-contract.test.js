@@ -42,6 +42,7 @@ test('weekly report root wrapper delega a la implementacion canonica de prod ops
 test('weekly report script expone parametros de ciclo semanal', () => {
     const raw = loadScript();
     const requiredSnippets = [
+        'resource=health-diagnostics',
         '[int]$CriticalFreeCycleTarget = 2',
         '[switch]$FailOnCycleNotReady',
         '$CriticalFreeCycleTarget -lt 1',
@@ -140,12 +141,18 @@ test('weekly report script integra bloque public sync operativo', () => {
     );
     const requiredReportSnippets = [
         "$publicSyncCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'publicSync' -DefaultValue $null",
+        '$publicSyncOperationallyHealthy',
+        '$publicSyncRepoHygieneIssue',
+        '$publicSyncFailureReason',
         '$publicSyncExpectedMaxLagSeconds',
         '$publicSyncLastCheckedAt',
         '$publicSyncTelemetryGap',
         'public_sync_unconfigured',
         'public_sync_working_tree_dirty_${publicSyncDirtyPathsCount}',
         'public_sync_telemetry_gap',
+        'public_sync_operationally_healthy=$publicSyncOperationallyHealthy',
+        'public_sync_repo_hygiene_issue=$publicSyncRepoHygieneIssue',
+        'public_sync_failure_reason=$publicSyncFailureReason',
         'public_sync_last_error_message=$publicSyncLastErrorMessage',
         'public_sync_current_head=$publicSyncCurrentHead',
         'public_sync_dirty_paths_sample=$publicSyncDirtyPathsSampleLabel',
@@ -153,7 +160,10 @@ test('weekly report script integra bloque public sync operativo', () => {
     const requiredWarningsSnippets = [
         '## Public Sync Ops',
         'publicSync = [ordered]@{',
+        'operationallyHealthy = [bool]$publicSyncOperationallyHealthy',
+        'repoHygieneIssue = [bool]$publicSyncRepoHygieneIssue',
         'expectedMaxLagSeconds = $publicSyncExpectedMaxLagSeconds',
+        'failureReason = $publicSyncFailureReason',
         'lastErrorMessage = $publicSyncLastErrorMessage',
         'dirtyPathsSample = @($publicSyncDirtyPathsSample)',
         'telemetryGap = [bool]$publicSyncTelemetryGap',
@@ -194,7 +204,7 @@ test('weekly report script integra bloque GitHub deploy alerts operativo', () =>
         'utf8'
     );
     const requiredReportSnippets = [
-        "[string]$GitHubRepo = 'erosero558558/Aurora-Derm'",
+        "[string]$GitHubRepo = 'erosero558558/piel-en-armonia'",
         '$githubDeployAlertsSummary = Get-GitHubProductionAlertSummary',
         'github_deploy_alerts_unreachable',
         'github_deploy_alerts_open_${githubDeployAlertsRelevantCount}',
@@ -280,6 +290,171 @@ test('weekly report script integra bloque lead ops comercial', () => {
             rawWarnings.includes(snippet),
             true,
             `falta snippet leadOps en Common.Warnings.ps1: ${snippet}`
+        );
+    }
+});
+
+test('weekly report script integra bloque de postura auth operativa', () => {
+    const rawReport = loadScript();
+    const rawWarnings = readFileSync(
+        resolve(__dirname, '..', 'bin', 'powershell', 'Common.Warnings.ps1'),
+        'utf8'
+    );
+    const requiredReportSnippets = [
+        "$authCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'auth' -DefaultValue $null",
+        "$authMode = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'mode' -DefaultValue 'unknown')",
+        "$authStatus = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'status' -DefaultValue 'unknown')",
+        'auth_status_${authStatus}',
+        'auth_mode_${authMode}',
+        'auth_2fa_disabled',
+        'auth_mode=$authMode',
+        'auth_two_factor_enabled=$authTwoFactorEnabled',
+        'auth_operator_enabled=$authOperatorAuthEnabled',
+        'auth_legacy_password_configured=$authLegacyPasswordConfigured',
+    ];
+    const requiredWarningsSnippets = [
+        '## Auth Posture',
+        'auth = [ordered]@{',
+        "if ($WarningCode.StartsWith('auth_')) {",
+        'mode = $authMode',
+        'hardeningCompliant = [bool]$authHardeningCompliant',
+        'recommendedMode = $authRecommendedMode',
+        'twoFactorEnabled = [bool]$authTwoFactorEnabled',
+    ];
+
+    for (const snippet of requiredReportSnippets) {
+        assert.equal(
+            rawReport.includes(snippet),
+            true,
+            `falta snippet auth en REPORTE-SEMANAL-PRODUCCION.ps1: ${snippet}`
+        );
+    }
+
+    for (const snippet of requiredWarningsSnippets) {
+        assert.equal(
+            rawWarnings.includes(snippet),
+            true,
+            `falta snippet auth en Common.Warnings.ps1: ${snippet}`
+        );
+    }
+});
+
+test('weekly report script integra bloque operator auth rollout operativo', () => {
+    const rawReport = loadScript();
+    const rawWarnings = readFileSync(
+        resolve(__dirname, '..', 'bin', 'powershell', 'Common.Warnings.ps1'),
+        'utf8'
+    );
+    const requiredReportSnippets = [
+        'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1',
+        'function Invoke-OpenClawAuthRolloutDiagnostic',
+        '$operatorAuthRollout = Invoke-OpenClawAuthRolloutDiagnostic -BaseUrl $base -ScriptPath $openClawAuthDiagnosticScriptPath',
+        "$operatorAuthRolloutDiagnosis = [string](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'diagnosis' -DefaultValue 'unknown')",
+        "$operatorAuthRolloutOk = [bool](Get-ObjectValueOrDefault -Object $operatorAuthRollout -Property 'ok' -DefaultValue $false)",
+        'auth_rollout_${operatorAuthRolloutDiagnosis}',
+        'auth_rollout_available=$operatorAuthRolloutAvailable',
+        'auth_rollout_diagnosis=$operatorAuthRolloutDiagnosis',
+        'auth_rollout_next_action=$operatorAuthRolloutNextAction',
+    ];
+    const requiredWarningsSnippets = [
+        '## Operator Auth Rollout',
+        'operatorAuthRollout = [ordered]@{',
+        'available = [bool]$operatorAuthRolloutAvailable',
+        'diagnosis = $operatorAuthRolloutDiagnosis',
+        'operatorAuthStatusHttpStatus = $operatorAuthRolloutOperatorAuthStatusHttpStatus',
+        'adminAuthFacadeHttpStatus = $operatorAuthRolloutAdminAuthFacadeHttpStatus',
+        'nextAction = $operatorAuthRolloutNextAction',
+    ];
+
+    for (const snippet of requiredReportSnippets) {
+        assert.equal(
+            rawReport.includes(snippet),
+            true,
+            `falta snippet operator auth rollout en REPORTE-SEMANAL-PRODUCCION.ps1: ${snippet}`
+        );
+    }
+
+    for (const snippet of requiredWarningsSnippets) {
+        assert.equal(
+            rawWarnings.includes(snippet),
+            true,
+            `falta snippet operator auth rollout en Common.Warnings.ps1: ${snippet}`
+        );
+    }
+});
+
+test('weekly report script integra bloque de postura storage operativa', () => {
+    const rawReport = loadScript();
+    const rawWarnings = readFileSync(
+        resolve(__dirname, '..', 'bin', 'powershell', 'Common.Warnings.ps1'),
+        'utf8'
+    );
+    const requiredReportSnippets = [
+        "$hostChecklistCommand = 'npm run checklist:prod:public-sync:host'",
+        "$storageCheck = Get-ObjectValueOrDefault -Object $healthChecks -Property 'storage' -DefaultValue $null",
+        "$storageBackend = [string](Get-ObjectValueOrDefault -Object $storageCheck -Property 'backend' -DefaultValue 'unknown')",
+        "$storeEncryptionStatus = [string](Get-ObjectValueOrDefault -Object $storageCheck -Property 'encryptionStatus' -DefaultValue 'unknown')",
+        'storage_encryption_required_noncompliant_${storeEncryptionStatus}',
+        'storage_encryption_noncompliant_${storeEncryptionStatus}',
+        'storage_backend_json_fallback',
+        'storage_backend=$storageBackend',
+        'storage_encryption_status=$storeEncryptionStatus',
+        'storage_host_checklist_command=$hostChecklistCommand',
+    ];
+    const requiredWarningsSnippets = [
+        '## Storage Posture',
+        'storage = [ordered]@{',
+        "if ($WarningCode.StartsWith('storage_')) {",
+        "return 'docs/SECURITY.md'",
+        "return 'npm run checklist:prod:public-sync:host'",
+        'encryptionConfigured = [bool]$storeEncryptionConfigured',
+        'encryptionCompliant = [bool]$storeEncryptionCompliant',
+        'hostChecklistCommand = $effectiveHostChecklistCommand',
+    ];
+
+    for (const snippet of requiredReportSnippets) {
+        assert.equal(
+            rawReport.includes(snippet),
+            true,
+            `falta snippet storage en REPORTE-SEMANAL-PRODUCCION.ps1: ${snippet}`
+        );
+    }
+
+    for (const snippet of requiredWarningsSnippets) {
+        assert.equal(
+            rawWarnings.includes(snippet),
+            true,
+            `falta snippet storage en Common.Warnings.ps1: ${snippet}`
+        );
+    }
+});
+
+test('weekly report warning details incluyen remediacion y comando sugerido', () => {
+    const rawWarnings = readFileSync(
+        resolve(__dirname, '..', 'bin', 'powershell', 'Common.Warnings.ps1'),
+        'utf8'
+    );
+    const requiredSnippets = [
+        'function Get-WarningSuggestedCommand',
+        'function Get-WarningRemediationSummary',
+        'remediation = $warningRemediation',
+        'suggestedCommand = $warningSuggestedCommand',
+        'remediation = [string]$_.remediation',
+        'suggestedCommand = [string]$_.suggestedCommand',
+        'minute_5_10_host',
+        '$hostChecklistCommand',
+        'hostChecklistIssueFamilies = @(',
+        'public_sync_*',
+        'github_deploy_*',
+        'auth_*',
+        'storage_*',
+    ];
+
+    for (const snippet of requiredSnippets) {
+        assert.equal(
+            rawWarnings.includes(snippet),
+            true,
+            `falta snippet de remediacion semanal en Common.Warnings.ps1: ${snippet}`
         );
     }
 });

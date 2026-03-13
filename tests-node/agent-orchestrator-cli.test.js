@@ -15,11 +15,23 @@ const {
 } = require('fs');
 const { tmpdir } = require('os');
 const { join, resolve } = require('path');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
+const http = require('http');
 
 const REPO_ROOT = resolve(__dirname, '..');
 const ORCHESTRATOR_SOURCE = join(REPO_ROOT, 'agent-orchestrator.js');
 const ORCHESTRATOR_TOOLS_DIR = join(REPO_ROOT, 'tools', 'agent-orchestrator');
+const OPENCLAW_RUNTIME_HELPER_SOURCE = join(
+    REPO_ROOT,
+    'bin',
+    'openclaw-runtime-helper.js'
+);
+const LEADOPS_HELPER_SOURCE = join(
+    REPO_ROOT,
+    'bin',
+    'lib',
+    'lead-ai-worker.js'
+);
 const DATE = '2026-02-24';
 
 function createFixtureDir() {
@@ -33,6 +45,18 @@ function createFixtureDir() {
 
 function cleanupFixtureDir(dir) {
     rmSync(dir, { recursive: true, force: true });
+}
+
+function installRuntimeHelperFixture(dir) {
+    mkdirSync(join(dir, 'bin', 'lib'), { recursive: true });
+    copyFileSync(
+        OPENCLAW_RUNTIME_HELPER_SOURCE,
+        join(dir, 'bin', 'openclaw-runtime-helper.js')
+    );
+    copyFileSync(
+        LEADOPS_HELPER_SOURCE,
+        join(dir, 'bin', 'lib', 'lead-ai-worker.js')
+    );
 }
 
 function writeFixtureFiles(dir, { board, handoffs, plan }) {
@@ -166,6 +190,50 @@ function runCliWithEnv(dir, args, envPatch, expectedStatus = 0) {
     return result;
 }
 
+async function runCliWithEnvAsync(dir, args, envPatch, expectedStatus = 0) {
+    const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
+    const child = spawn(
+        process.execPath,
+        [join(dir, 'agent-orchestrator.js'), ...finalArgs],
+        {
+            cwd: dir,
+            env: { ...process.env, ...(envPatch || {}) },
+            stdio: ['ignore', 'pipe', 'pipe'],
+        }
+    );
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+        stderr += chunk;
+    });
+
+    const result = await new Promise((resolvePromise, rejectPromise) => {
+        child.on('error', rejectPromise);
+        child.on('close', (status, signal) => {
+            resolvePromise({
+                status,
+                signal,
+                stdout,
+                stderr,
+            });
+        });
+    });
+
+    assert.equal(
+        result.status,
+        expectedStatus,
+        `Unexpected exit for ${finalArgs.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+    );
+
+    return result;
+}
+
 function runCliWithInput(
     dir,
     args,
@@ -259,6 +327,260 @@ function parseJsonStdout(result) {
 
 function readBoard(dir) {
     return readFileSync(join(dir, 'AGENT_BOARD.yaml'), 'utf8');
+}
+
+async function startRuntimeFixtureServer(options = {}) {
+    const requests = [];
+    const sockets = new Set();
+    const server = http.createServer((req, res) => {
+        const url = new URL(req.url, 'http://127.0.0.1');
+        const requestRecord = {
+            method: req.method,
+            path: url.pathname,
+            search: url.search,
+        };
+        requests.push(requestRecord);
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Connection', 'close');
+
+        if (req.method === 'GET' && url.pathname === '/figo-ai-bridge.php') {
+            res.statusCode = Number(options.figoGetStatusCode ?? 200);
+            res.end(
+                JSON.stringify({
+                    ok: true,
+                    provider: 'openclaw_queue',
+                    providerMode: 'openclaw_queue',
+                    gatewayConfigured: true,
+                    openclawReachable: true,
+                    ...(options.figoGetPayload || {}),
+                })
+            );
+            return;
+        }
+        if (req.method === 'POST' && url.pathname === '/figo-ai-bridge.php') {
+            let body = '';
+            req.on('data', (chunk) => {
+                body += chunk.toString('utf8');
+            });
+            req.on('end', () => {
+                const parsed = body ? JSON.parse(body) : {};
+                requestRecord.body = body;
+                requestRecord.parsed_body = parsed;
+                const payload =
+                    typeof options.figoPostPayload === 'function'
+                        ? options.figoPostPayload({
+                              parsed,
+                              body,
+                              request: requestRecord,
+                          })
+                        : options.figoPostPayload &&
+                            typeof options.figoPostPayload === 'object'
+                          ? options.figoPostPayload
+                          : {
+                                ok: true,
+                                mode: 'live',
+                                provider: 'openclaw_queue',
+                                completion: {
+                                    id: 'cmpl-runtime',
+                                    object: 'chat.completion',
+                                    created: 1,
+                                    model: parsed.model || 'openclaw:main',
+                                    choices: [
+                                        {
+                                            index: 0,
+                                            message: {
+                                                role: 'assistant',
+                                                content: 'runtime-ok',
+                                            },
+                                            finish_reason: 'stop',
+                                        },
+                                    ],
+                                },
+                            };
+                res.statusCode = Number(options.figoPostStatusCode ?? 200);
+                res.end(JSON.stringify(payload));
+            });
+            return;
+        }
+        if (req.method === 'POST' && url.pathname === '/openclaw-gateway') {
+            let body = '';
+            req.on('data', (chunk) => {
+                body += chunk.toString('utf8');
+            });
+            req.on('end', () => {
+                const parsed = body ? JSON.parse(body) : {};
+                requestRecord.body = body;
+                requestRecord.parsed_body = parsed;
+                const payload =
+                    typeof options.gatewayPayload === 'function'
+                        ? options.gatewayPayload({
+                              parsed,
+                              body,
+                              request: requestRecord,
+                          })
+                        : options.gatewayPayload &&
+                            typeof options.gatewayPayload === 'object'
+                          ? options.gatewayPayload
+                          : {
+                                output_text:
+                                    '{"summary":"leadops-runtime-ok","draft":"mensaje de prueba"}',
+                            };
+                res.statusCode = Number(options.gatewayStatusCode ?? 200);
+                res.end(JSON.stringify(payload));
+            });
+            return;
+        }
+        if (
+            req.method === 'GET' &&
+            url.pathname === '/api.php' &&
+            url.searchParams.get('resource') === 'health'
+        ) {
+            res.statusCode = Number(options.healthStatusCode ?? 200);
+            res.end(
+                JSON.stringify({
+                    ok: true,
+                    leadOpsMode: 'online',
+                    leadOpsWorkerDegraded: false,
+                    checks: {
+                        leadOps: {
+                            configured: true,
+                            mode: 'online',
+                            degraded: false,
+                        },
+                    },
+                    ...(options.healthPayload || {}),
+                })
+            );
+            return;
+        }
+        if (
+            req.method === 'GET' &&
+            url.pathname === '/api.php' &&
+            url.searchParams.get('resource') === 'operator-auth-status'
+        ) {
+            res.statusCode = Number(options.operatorStatusCode ?? 200);
+            res.end(
+                JSON.stringify({
+                    ok: true,
+                    authenticated: false,
+                    status: 'anonymous',
+                    mode: 'openclaw_chatgpt',
+                    ...(options.operatorPayload || {}),
+                })
+            );
+            return;
+        }
+
+        res.statusCode = 404;
+        res.end(JSON.stringify({ ok: false, error: 'not_found' }));
+    });
+    server.on('connection', (socket) => {
+        sockets.add(socket);
+        socket.on('close', () => sockets.delete(socket));
+    });
+
+    await new Promise((resolvePromise) =>
+        server.listen(0, '127.0.0.1', resolvePromise)
+    );
+    const address = server.address();
+    return {
+        baseUrl: `http://127.0.0.1:${address.port}`,
+        requests,
+        close: () =>
+            new Promise((resolvePromise) => {
+                server.close(() => resolvePromise());
+                if (typeof server.closeAllConnections === 'function') {
+                    server.closeAllConnections();
+                }
+                for (const socket of sockets) {
+                    socket.destroy();
+                }
+            }),
+    };
+}
+
+function boardForRuntimeTaskFixture(options = {}) {
+    const taskId = String(options.id || 'AG-900');
+    const title = String(options.title || 'Runtime OpenClaw fixture');
+    const runtimeSurface = String(options.runtimeSurface || 'figo_queue');
+    const runtimeTransport = String(options.runtimeTransport || 'http_bridge');
+    const files = Array.isArray(options.files)
+        ? options.files
+        : runtimeSurface === 'leadops_worker'
+          ? ['bin/lead-ai-worker.js']
+          : runtimeSurface === 'operator_auth'
+            ? ['lib/auth.php']
+            : ['figo-ai-bridge.php'];
+    const prompt = String(
+        options.prompt ||
+            (runtimeSurface === 'leadops_worker'
+                ? 'Genera un borrador para el callback LeadOps'
+                : 'Genera una respuesta de runtime')
+    );
+    const acceptance = String(
+        options.acceptance ||
+            (runtimeSurface === 'leadops_worker'
+                ? 'Responder desde LeadOps'
+                : 'Responder desde runtime')
+    );
+    const status = String(options.status || 'ready');
+    const sourceRef = String(options.sourceRef || '');
+    const priorityScore = Number(options.priorityScore ?? 70);
+    return `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  codex_partition_model: tri_lane_runtime
+  codex_backend_instance: codex_backend_ops
+  codex_frontend_instance: codex_frontend
+  codex_transversal_instance: codex_transversal
+  revision: 0
+  updated_at: ${DATE}
+tasks:
+  - id: ${taskId}
+    title: "${title}"
+    owner: ernesto
+    executor: codex
+    status: ${status}
+    status_since_at: "${DATE}"
+    risk: medium
+    scope: openclaw_runtime
+    codex_instance: codex_transversal
+    domain_lane: transversal_runtime
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: openclaw_chatgpt
+    runtime_surface: ${runtimeSurface}
+    runtime_transport: ${runtimeTransport}
+    runtime_last_transport: ""
+    files: [${files.map((item) => `"${item}"`).join(', ')}]
+    source_signal: manual
+    source_ref: "${sourceRef}"
+    priority_score: ${priorityScore}
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "${acceptance}"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "${prompt}"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`.trim();
 }
 
 function readPlan(dir) {
@@ -895,6 +1217,58 @@ test('task create soporta --template docs y permite override de defaults', (t) =
     assert.match(board, /executor: ci/);
     assert.match(board, /risk: low/);
     assert.match(board, /scope: docs/);
+});
+
+test('task create soporta --template runtime y completa defaults OpenClaw transversales', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCliWithEnv(
+        dir,
+        [
+            'task',
+            'create',
+            '--title',
+            'LeadOps runtime template task',
+            '--template',
+            'runtime',
+            '--files',
+            'bin/lead-ai-worker.js',
+            '--json',
+        ],
+        { AGENT_OWNER: 'ernesto' }
+    );
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.template, 'runtime');
+    assert.equal(json.task.id, 'AG-011');
+    assert.equal(json.task.owner, 'ernesto');
+    assert.equal(json.task.status, 'ready');
+    assert.equal(json.task.risk, 'medium');
+    assert.equal(json.task.scope, 'openclaw_runtime');
+    assert.equal(json.task.executor, 'codex');
+    assert.equal(json.task.domain_lane, 'transversal_runtime');
+    assert.equal(json.task.codex_instance, 'codex_transversal');
+    assert.equal(json.task.provider_mode, 'openclaw_chatgpt');
+    assert.equal(json.task.runtime_transport, 'hybrid_http_cli');
+    assert.equal(json.task.runtime_surface, 'leadops_worker');
+    assert.equal(json.executor_source, 'template');
+
+    const board = readBoard(dir);
+    assert.match(board, /scope: openclaw_runtime/);
+    assert.match(board, /domain_lane: transversal_runtime/);
+    assert.match(board, /codex_instance: codex_transversal/);
+    assert.match(board, /provider_mode: openclaw_chatgpt/);
+    assert.match(board, /runtime_surface: leadops_worker/);
+    assert.match(board, /runtime_transport: hybrid_http_cli/);
+    assert.match(board, /runtime_impact: high/);
+    assert.match(board, /critical_zone: true/);
 });
 
 test('task create --from-files infiere scope/risk y puede sobreescribir template', (t) => {
@@ -2602,6 +2976,7 @@ test('status expone failure_reason y telemetry_gap para public_main_sync legacy'
         'working_tree_dirty'
     );
     assert.equal(json.jobs.public_main_sync.telemetry_gap, true);
+    assert.equal(json.jobs.public_main_sync.repo_hygiene_issue, false);
     assert.equal(json.jobs.public_main_sync.head_drift, false);
 
     const failed = json.diagnostics.find(
@@ -2617,6 +2992,60 @@ test('status expone failure_reason y telemetry_gap para public_main_sync legacy'
     assert.ok(telemetryGap);
     assert.equal(telemetryGap.meta.failure_reason, 'working_tree_dirty');
     assert.equal(telemetryGap.meta.telemetry_gap, true);
+});
+
+test('status reclasifica working_tree_dirty con dirty paths como repo hygiene warning', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForConflictFixture({ codexStatus: 'in_progress' }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithCodexBlock({ status: 'review' }),
+    });
+    writeGovernancePolicy(dir, {
+        version: 1,
+        enforcement: {
+            warning_policies: {
+                public_main_sync_failed: {
+                    enabled: true,
+                    severity: 'warning',
+                },
+            },
+        },
+    });
+    writePublicSyncJobsFixture(dir, {
+        state: 'failed',
+        last_error_message: 'working_tree_dirty',
+        current_head: 'abc1234',
+        remote_head: 'abc1234',
+        dirty_paths_count: 2,
+        dirty_paths_sample: ['styles.css'],
+        dirty_paths: ['styles.css'],
+    });
+
+    const json = parseJsonStdout(runCli(dir, ['status', '--json']));
+    assert.equal(
+        json.jobs.public_main_sync.failure_reason,
+        'working_tree_dirty'
+    );
+    assert.equal(json.jobs.public_main_sync.healthy, true);
+    assert.equal(json.jobs.public_main_sync.operationally_healthy, true);
+    assert.equal(json.jobs.public_main_sync.repo_hygiene_issue, true);
+    assert.equal(json.jobs.public_main_sync.telemetry_gap, false);
+
+    const failed = json.diagnostics.find(
+        (item) => item.code === 'warn.jobs.public_main_sync_failed'
+    );
+    assert.equal(failed, undefined);
+
+    const repoHygiene = json.diagnostics.find(
+        (item) => item.code === 'warn.jobs.public_main_sync_repo_hygiene'
+    );
+    assert.ok(repoHygiene);
+    assert.match(repoHygiene.message, /repo hygiene issue/);
+    assert.equal(repoHygiene.meta.repo_hygiene_issue, true);
+    assert.equal(repoHygiene.meta.operationally_healthy, true);
 });
 
 test('handoffs create/close escriben eventos append-only en board events', (t) => {
@@ -2801,6 +3230,568 @@ tasks:
             (d) =>
                 d.code === 'warn.board.wip_limit_executor' ||
                 d.code === 'warn.board.wip_limit_scope'
+        ),
+        true
+    );
+});
+
+test('dispatch prioriza runtime transversal empatado y expone dispatched_tasks en JSON', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer();
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  updated_at: ${DATE}
+tasks:
+  - id: AG-001
+    title: "Docs task"
+    owner: ernesto
+    executor: codex
+    status: ready
+    risk: medium
+    scope: docs
+    files: ["docs/a.md"]
+    priority_score: 60
+    sla_due_at: "${DATE}T12:00:00.000Z"
+    acceptance: "a"
+    depends_on: []
+    prompt: "a"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+  - id: AG-002
+    title: "LeadOps runtime"
+    owner: ernesto
+    executor: codex
+    status: ready
+    risk: medium
+    scope: openclaw_runtime
+    codex_instance: codex_transversal
+    domain_lane: transversal_runtime
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: openclaw_chatgpt
+    runtime_surface: leadops_worker
+    runtime_transport: hybrid_http_cli
+    files: ["bin/lead-ai-worker.js"]
+    priority_score: 60
+    runtime_impact: high
+    critical_zone: true
+    sla_due_at: "${DATE}T12:00:00.000Z"
+    acceptance: "b"
+    depends_on: []
+    prompt: "b"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`.trim(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const dispatchJson = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['dispatch', '--agent', 'codex', '--json'],
+            {
+                CODEX_DAILY_LIMIT: '1',
+                OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+            }
+        )
+    );
+    assert.deepEqual(dispatchJson.dispatched, ['AG-002']);
+    assert.equal(Array.isArray(dispatchJson.dispatched_tasks), true);
+    assert.equal(dispatchJson.dispatched_tasks.length, 1);
+    assert.equal(dispatchJson.dispatched_tasks[0].id, 'AG-002');
+    assert.equal(dispatchJson.dispatched_tasks[0].scope, 'openclaw_runtime');
+    assert.equal(
+        dispatchJson.dispatched_tasks[0].domain_lane,
+        'transversal_runtime'
+    );
+    assert.equal(
+        dispatchJson.dispatched_tasks[0].provider_mode,
+        'openclaw_chatgpt'
+    );
+    assert.equal(
+        dispatchJson.dispatched_tasks[0].runtime_surface,
+        'leadops_worker'
+    );
+});
+
+test('dispatch omite runtime_surface degradada y sigue con tareas sanas', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer({
+        healthPayload: {
+            leadOpsMode: 'online',
+            leadOpsWorkerDegraded: true,
+            checks: {
+                leadOps: {
+                    configured: true,
+                    mode: 'online',
+                    degraded: true,
+                },
+            },
+        },
+    });
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  updated_at: ${DATE}
+tasks:
+  - id: AG-001
+    title: "Docs fallback"
+    owner: ernesto
+    executor: codex
+    status: ready
+    risk: medium
+    scope: docs
+    files: ["docs/a.md"]
+    priority_score: 60
+    sla_due_at: "${DATE}T12:00:00.000Z"
+    acceptance: "a"
+    depends_on: []
+    prompt: "a"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+  - id: AG-002
+    title: "LeadOps runtime"
+    owner: ernesto
+    executor: codex
+    status: ready
+    risk: medium
+    scope: openclaw_runtime
+    codex_instance: codex_transversal
+    domain_lane: transversal_runtime
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: openclaw_chatgpt
+    runtime_surface: leadops_worker
+    runtime_transport: hybrid_http_cli
+    files: ["bin/lead-ai-worker.js"]
+    priority_score: 60
+    runtime_impact: high
+    critical_zone: true
+    sla_due_at: "${DATE}T12:00:00.000Z"
+    acceptance: "b"
+    depends_on: []
+    prompt: "b"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`.trim(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const dispatchJson = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['dispatch', '--agent', 'codex', '--json'],
+            {
+                CODEX_DAILY_LIMIT: '1',
+                OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+            }
+        )
+    );
+    assert.deepEqual(dispatchJson.dispatched, ['AG-001']);
+    assert.equal(Array.isArray(dispatchJson.skipped_unhealthy_tasks), true);
+    assert.equal(dispatchJson.skipped_unhealthy_tasks.length, 1);
+    assert.equal(dispatchJson.skipped_unhealthy_tasks[0].id, 'AG-002');
+    assert.equal(
+        dispatchJson.skipped_unhealthy_tasks[0].skip_reason,
+        'runtime_surface_unhealthy'
+    );
+    assert.equal(
+        dispatchJson.skipped_unhealthy_tasks[0].runtime_surface,
+        'leadops_worker'
+    );
+    assert.equal(
+        dispatchJson.diagnostics.some(
+            (diag) => diag.code === 'warn.dispatch.runtime_surface_unhealthy'
+        ),
+        true
+    );
+});
+
+test('runtime verify e invoke integran OpenClaw transversal con bridge HTTP', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer();
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  codex_partition_model: tri_lane_runtime
+  codex_backend_instance: codex_backend_ops
+  codex_frontend_instance: codex_frontend
+  codex_transversal_instance: codex_transversal
+  revision: 0
+  updated_at: ${DATE}
+tasks:
+  - id: AG-900
+    title: "Runtime OpenClaw fixture"
+    owner: ernesto
+    executor: codex
+    status: ready
+    status_since_at: "${DATE}"
+    risk: medium
+    scope: openclaw_runtime
+    codex_instance: codex_transversal
+    domain_lane: transversal_runtime
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: openclaw_chatgpt
+    runtime_surface: figo_queue
+    runtime_transport: http_bridge
+    runtime_last_transport: ""
+    files: ["figo-ai-bridge.php"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 70
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "Responder desde runtime"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Genera una respuesta de runtime"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`.trim(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const env = {
+        OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+    };
+
+    const verifyPayload = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['runtime', 'verify', 'openclaw_chatgpt', '--json'],
+            env
+        )
+    );
+    assert.equal(verifyPayload.ok, true);
+    assert.equal(verifyPayload.runtime.provider, 'openclaw_chatgpt');
+    assert.equal(
+        verifyPayload.runtime.surfaces.every((surface) => surface.healthy),
+        true
+    );
+
+    const invokePayload = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['runtime', 'invoke', 'AG-900', '--json', '--expect-rev', '0'],
+            env
+        )
+    );
+    assert.equal(invokePayload.ok, true);
+    assert.equal(invokePayload.result.mode, 'live');
+    assert.equal(invokePayload.result.provider, 'openclaw_chatgpt');
+    assert.equal(invokePayload.result.upstream_provider, 'openclaw_queue');
+    assert.equal(invokePayload.result.runtime_transport, 'http_bridge');
+    assert.match(readBoard(dir), /runtime_last_transport: http_bridge/);
+    assert.equal(
+        runtimeServer.requests.some(
+            (request) =>
+                request.method === 'POST' &&
+                request.path === '/figo-ai-bridge.php'
+        ),
+        true
+    );
+});
+
+test('runtime invoke integra leadops_worker con gateway HTTP reutilizando parser actual', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer();
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForRuntimeTaskFixture({
+            id: 'AG-901',
+            title: 'LeadOps worker fixture',
+            runtimeSurface: 'leadops_worker',
+            runtimeTransport: 'http_bridge',
+            files: ['bin/lead-ai-worker.js'],
+            sourceRef: 'callback:321',
+            prompt: 'service_match para callback 321',
+            acceptance: 'Responder desde LeadOps',
+        }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const env = {
+        OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+        OPENCLAW_GATEWAY_ENDPOINT: `${runtimeServer.baseUrl}/openclaw-gateway`,
+        OPENCLAW_GATEWAY_MODEL: 'openclaw:main',
+    };
+
+    const invokePayload = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['runtime', 'invoke', 'AG-901', '--json', '--expect-rev', '0'],
+            env
+        )
+    );
+
+    assert.equal(invokePayload.ok, true);
+    assert.equal(invokePayload.result.provider, 'openclaw_chatgpt');
+    assert.equal(invokePayload.result.runtime_surface, 'leadops_worker');
+    assert.equal(invokePayload.result.runtime_transport, 'http_bridge');
+    assert.equal(invokePayload.result.completion.summary, 'leadops-runtime-ok');
+    assert.equal(invokePayload.result.completion.draft, 'mensaje de prueba');
+
+    const gatewayRequest = runtimeServer.requests.find(
+        (request) =>
+            request.method === 'POST' && request.path === '/openclaw-gateway'
+    );
+    assert.ok(gatewayRequest);
+    assert.match(
+        String(gatewayRequest.parsed_body.instructions || ''),
+        /asistente comercial interno/i
+    );
+    assert.match(
+        String(gatewayRequest.parsed_body.input || ''),
+        /service_match/i
+    );
+});
+
+test('runtime invoke cae a cli_helper cuando http_bridge falla', async (t) => {
+    const dir = createFixtureDir();
+    installRuntimeHelperFixture(dir);
+    const runtimeServer = await startRuntimeFixtureServer({
+        figoPostStatusCode: 503,
+        figoPostPayload: {
+            ok: false,
+            mode: 'failed',
+            provider: 'openclaw_queue',
+            errorCode: 'bridge_down',
+            error: 'bridge down',
+        },
+    });
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForRuntimeTaskFixture({
+            id: 'AG-902',
+            title: 'Runtime fallback fixture',
+            runtimeSurface: 'figo_queue',
+            runtimeTransport: 'hybrid_http_cli',
+            files: ['figo-ai-bridge.php'],
+        }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const env = {
+        OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+        OPENCLAW_GATEWAY_ENDPOINT: `${runtimeServer.baseUrl}/openclaw-gateway`,
+        OPENCLAW_GATEWAY_MODEL: 'openclaw:main',
+    };
+
+    const invokePayload = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['runtime', 'invoke', 'AG-902', '--json', '--expect-rev', '0'],
+            env
+        )
+    );
+
+    assert.equal(invokePayload.ok, true);
+    assert.equal(invokePayload.result.runtime_transport, 'cli_helper');
+    assert.equal(invokePayload.result.provider, 'openclaw_chatgpt');
+    assert.equal(
+        invokePayload.result.diagnostics.some(
+            (item) => item.transport === 'http_bridge'
+        ),
+        true
+    );
+    assert.match(readBoard(dir), /runtime_last_transport: cli_helper/);
+    assert.equal(
+        runtimeServer.requests.some(
+            (request) =>
+                request.method === 'POST' &&
+                request.path === '/figo-ai-bridge.php'
+        ),
+        true
+    );
+    assert.equal(
+        runtimeServer.requests.some(
+            (request) =>
+                request.method === 'POST' &&
+                request.path === '/openclaw-gateway'
+        ),
+        true
+    );
+});
+
+test('runtime invoke reporta fallo total cuando fallan http_bridge y cli_helper', async (t) => {
+    const dir = createFixtureDir();
+    installRuntimeHelperFixture(dir);
+    const runtimeServer = await startRuntimeFixtureServer({
+        figoPostStatusCode: 503,
+        figoPostPayload: {
+            ok: false,
+            mode: 'failed',
+            provider: 'openclaw_queue',
+            errorCode: 'bridge_down',
+            error: 'bridge down',
+        },
+        gatewayStatusCode: 500,
+        gatewayPayload: {
+            error: 'gateway down',
+        },
+    });
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForRuntimeTaskFixture({
+            id: 'AG-903',
+            title: 'Runtime total failure fixture',
+            runtimeSurface: 'figo_queue',
+            runtimeTransport: 'hybrid_http_cli',
+            files: ['figo-ai-bridge.php'],
+        }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const env = {
+        OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+        OPENCLAW_GATEWAY_ENDPOINT: `${runtimeServer.baseUrl}/openclaw-gateway`,
+        OPENCLAW_GATEWAY_MODEL: 'openclaw:main',
+    };
+
+    const invokePayload = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['runtime', 'invoke', 'AG-903', '--json', '--expect-rev', '0'],
+            env,
+            1
+        )
+    );
+
+    assert.equal(invokePayload.ok, false);
+    assert.equal(invokePayload.result.errorCode, 'cli_helper_failed');
+    assert.equal(invokePayload.result.runtime_transport, 'cli_helper');
+    assert.equal(invokePayload.result.provider, 'openclaw_chatgpt');
+    assert.equal(invokePayload.result.diagnostics.length >= 2, true);
+    assert.equal(
+        invokePayload.result.diagnostics.some(
+            (item) => item.transport === 'http_bridge'
+        ),
+        true
+    );
+    assert.equal(
+        invokePayload.result.diagnostics.some(
+            (item) => item.transport === 'cli_helper'
+        ),
+        true
+    );
+    assert.match(readBoard(dir), /blocked_reason:\s*"cli_helper_failed"/);
+});
+
+test('codex-check bloquea tareas runtime transversales con surface no saludable', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer({
+        healthStatusCode: 503,
+        healthPayload: {
+            ok: false,
+            leadOpsWorkerDegraded: true,
+            checks: {
+                leadOps: {
+                    configured: true,
+                    mode: 'online',
+                    degraded: true,
+                },
+            },
+        },
+    });
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForRuntimeTaskFixture({
+            id: 'AG-904',
+            title: 'Runtime unhealthy surface fixture',
+            runtimeSurface: 'leadops_worker',
+            runtimeTransport: 'http_bridge',
+            files: ['bin/lead-ai-worker.js'],
+            status: 'in_progress',
+        }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const payload = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['codex-check', '--json'],
+            {
+                OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+            },
+            1
+        )
+    );
+
+    assert.equal(payload.ok, false);
+    assert.match(
+        payload.errors.join(' | '),
+        /runtime_surface=leadops_worker no saludable/i
+    );
+    assert.equal(
+        payload.runtime.surfaces.some(
+            (surface) =>
+                surface.surface === 'leadops_worker' &&
+                surface.healthy === false
         ),
         true
     );

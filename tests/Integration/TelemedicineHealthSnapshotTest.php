@@ -110,6 +110,7 @@ final class TelemedicineHealthSnapshotTest extends TestCase
                 'method' => 'GET',
                 'resource' => 'health',
                 'requestStartedAt' => microtime(true),
+                'diagnosticsAuthorized' => true,
             ]);
             self::fail('Se esperaba TestingExitException');
         } catch (\TestingExitException $e) {

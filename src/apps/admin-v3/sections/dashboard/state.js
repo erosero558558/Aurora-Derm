@@ -31,6 +31,11 @@ export function getDashboardCollections(state) {
             state?.data?.queueMeta && typeof state.data.queueMeta === 'object'
                 ? state.data.queueMeta
                 : null,
+        internalConsoleMeta:
+            state?.data?.internalConsoleMeta &&
+            typeof state.data.internalConsoleMeta === 'object'
+                ? state.data.internalConsoleMeta
+                : null,
         funnel: state?.data?.funnelMetrics || {},
     };
 }
@@ -41,6 +46,7 @@ export function getDashboardDerivedState(state) {
         availability,
         callbacks,
         funnel,
+        internalConsoleMeta,
         queueMeta,
         queueTickets,
         reviews,
@@ -58,7 +64,8 @@ export function getDashboardDerivedState(state) {
     const waitingTickets = Number.isFinite(Number(queueMeta?.waitingCount))
         ? Math.max(0, Number(queueMeta.waitingCount))
         : queueTickets.filter(
-              (ticket) => String(ticket.status || '').toLowerCase() === 'waiting'
+              (ticket) =>
+                  String(ticket.status || '').toLowerCase() === 'waiting'
           ).length;
     const calledTickets = Number.isFinite(Number(queueMeta?.calledCount))
         ? Math.max(0, Number(queueMeta.calledCount))
@@ -79,6 +86,7 @@ export function getDashboardDerivedState(state) {
         pendingCallbacks,
         pendingTasks,
         pendingTransfers,
+        internalConsoleMeta,
         queueMeta,
         recentReviews,
         reviews,

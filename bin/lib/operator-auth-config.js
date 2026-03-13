@@ -1,0 +1,135 @@
+'use strict';
+
+function env(name, fallback = '') {
+    const value = process.env[name];
+    return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function firstNonEmpty(...values) {
+    for (const value of values) {
+        const normalized = String(value || '').trim();
+        if (normalized) {
+            return normalized;
+        }
+    }
+
+    return '';
+}
+
+function trimTrailingSlash(value) {
+    return String(value || '').replace(/\/+$/, '');
+}
+
+function normalizeHelperBasePath(pathname) {
+    const raw = String(pathname || '').trim();
+    if (!raw || raw === '/') {
+        return '';
+    }
+
+    return `/${raw.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function loadOpenClawOperatorAuthConfig(overrides = {}) {
+    const bridgeToken = firstNonEmpty(
+        overrides.bridgeToken,
+        env('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN')
+    );
+
+    return {
+        helperBaseUrl: trimTrailingSlash(
+            firstNonEmpty(
+                overrides.helperBaseUrl,
+                env(
+                    'PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL',
+                    'http://127.0.0.1:4173'
+                )
+            )
+        ),
+        runtimeBaseUrl: trimTrailingSlash(
+            firstNonEmpty(
+                overrides.runtimeBaseUrl,
+                env('OPENCLAW_RUNTIME_BASE_URL', 'http://127.0.0.1:4141')
+            )
+        ),
+        bridgeToken,
+        bridgeSecret: firstNonEmpty(
+            overrides.bridgeSecret,
+            env('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET'),
+            bridgeToken
+        ),
+        bridgeHeader: firstNonEmpty(
+            overrides.bridgeHeader,
+            env(
+                'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER',
+                'Authorization'
+            )
+        ),
+        bridgePrefix: firstNonEmpty(
+            overrides.bridgePrefix,
+            env('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX', 'Bearer')
+        ),
+        helperDeviceId: firstNonEmpty(
+            overrides.helperDeviceId,
+            env('OPENCLAW_HELPER_DEVICE_ID')
+        ),
+    };
+}
+
+function loadOpenClawHelperServerConfig(overrides = {}) {
+    const config = loadOpenClawOperatorAuthConfig(overrides);
+    const parsed = new URL(config.helperBaseUrl);
+
+    if (parsed.protocol !== 'http:') {
+        throw new Error('El helper local solo soporta HTTP.');
+    }
+
+    return {
+        ...config,
+        helperHostname: overrides.hostname || parsed.hostname || '127.0.0.1',
+        helperPort:
+            overrides.port !== undefined
+                ? Number(overrides.port)
+                : Number(parsed.port || 80),
+        helperBasePath: normalizeHelperBasePath(parsed.pathname),
+    };
+}
+
+function buildOpenClawGatewayHeaders() {
+    const headers = {
+        Accept: 'application/json',
+    };
+    const apiKey = env('OPENCLAW_GATEWAY_API_KEY');
+    if (!apiKey) {
+        return headers;
+    }
+
+    const headerName = env('OPENCLAW_GATEWAY_KEY_HEADER', 'Authorization');
+    const prefix = env('OPENCLAW_GATEWAY_KEY_PREFIX', 'Bearer');
+    headers[headerName] = prefix ? `${prefix} ${apiKey}` : apiKey;
+    return headers;
+}
+
+function buildOperatorAuthBridgeHeaders(overrides = {}) {
+    const config = loadOpenClawOperatorAuthConfig(overrides);
+    if (!config.bridgeToken) {
+        throw new Error('Falta PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
+    }
+
+    return {
+        [config.bridgeHeader]: config.bridgePrefix
+            ? `${config.bridgePrefix} ${config.bridgeToken}`
+            : config.bridgeToken,
+        Accept: 'application/json',
+    };
+}
+
+module.exports = {
+    buildOpenClawGatewayHeaders,
+    buildOperatorAuthBridgeHeaders,
+    env,
+    firstNonEmpty,
+    loadOpenClawHelperServerConfig,
+    loadOpenClawOperatorAuthConfig,
+    normalizeHelperBasePath,
+    trimTrailingSlash,
+};

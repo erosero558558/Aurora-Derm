@@ -23,6 +23,8 @@ module.exports = [
     },
     js.configs.recommended,
     {
+        // These runtime bundles stay versioned for git-sync deploy, but drift is
+        // enforced by artifact contracts instead of authored-source lint.
         ignores: [
             'admin.js',
             'script.js',

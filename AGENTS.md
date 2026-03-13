@@ -6,7 +6,8 @@ AUTONOMY_MODEL: semi_autonomous_guardrails
 PRIMARY_KPI: reduce_rework
 
 Este documento es la fuente de verdad operativa del modo `codex-only` del
-repositorio: `codex_backend_ops`, `codex_frontend` y `CI` (GitHub Actions).
+repositorio: `codex_backend_ops`, `codex_frontend`, `codex_transversal` y
+`CI` (GitHub Actions).
 `Claude`, `Kimi` y `Jules` quedan solo como referencias historicas de tareas
 terminales ya cerradas.
 
@@ -35,6 +36,10 @@ Metas de operacion:
 ```text
 La tarea toca zona critica? (pagos/auth/calendar prod/deploy/env/seguridad)
   Si -> codex_backend_ops lidera con plan + checklist + tests + gate backend.
+  No -> continuar.
+
+La tarea toca orquestador, gobernanza o runtime OpenClaw transversal?
+  Si -> codex_transversal lidera con verificacion de surface + tests + gate runtime.
   No -> continuar.
 
 La tarea es puramente frontend/publica?
@@ -93,24 +98,34 @@ Para zona critica es obligatorio:
 
 - `codex_backend_ops`: backend, cron, deploy, workflows, seguridad, runtime critico.
 - `codex_frontend`: `src/apps/**`, `templates/**`, `content/**`, `*.html`, `js/**`, `styles*.css`.
+- `codex_transversal`: orquestador, board/policy, CI de gobernanza y superficies OpenClaw/ChatGPT transversales.
 - `ci`: arbitro de consistencia, conflictos y calidad minima.
 - `claude`, `kimi`, `jules`: retirados para trabajo activo; solo tolerados en tareas terminales historicas.
 
-## Dual Codex Matrix (Dominios Fijos)
+## Tri-Lane Codex Matrix (Runtime Transversal)
 
-Particion operativa obligatoria entre dos instancias de Codex:
+Particion operativa obligatoria entre tres instancias de Codex:
 
 - `codex_backend_ops`: `controllers/**`, `lib/**`, `api.php`, `figo-*.php`,
   `.github/workflows/**`, `cron.php`, `env*.php`, `bin/**`.
 - `codex_frontend`: `src/apps/**`, `js/**`, `styles*.css`, `templates/**`,
   `content/**`, `*.html`.
+- `codex_transversal`: `agent-orchestrator.js`, `AGENTS.md`,
+  `AGENT_BOARD.yaml`, `AGENT_HANDOFFS.yaml`, `AGENT_JOBS.yaml`,
+  `AGENT_SIGNALS.yaml`, `governance-policy.json`,
+  `TRI_LANE_RUNTIME_RUNBOOK.md`, `PLAN_MAESTRO_CODEX_2026.md`,
+  `tools/agent-orchestrator/**`, `bin/validate-agent-governance.php`,
+  `figo-ai-bridge.php`, `lib/figo_queue.php`, `lib/auth.php`,
+  `controllers/OperatorAuthController.php`, `controllers/LeadAiController.php`,
+  `bin/lead-ai-worker.js`, `bin/lib/lead-ai-worker.js`.
 
 Reglas:
 
 - Si hay duda de ownership de archivo, gana criterio conservador:
   `codex_backend_ops`.
-- `critical_zone=true` (o runtime alto equivalente) solo puede ejecutarse en
-  `codex_backend_ops`.
+- `critical_zone=true` solo puede ejecutarse en `codex_backend_ops`, salvo
+  tareas runtime OpenClaw con `provider_mode=openclaw_chatgpt`, que viven en
+  `codex_transversal`.
 - Cruces de dominio solo con handoff activo (`AGENT_HANDOFFS.yaml`) y
   expiracion definida.
 - No se permite solape cross-lane sin handoff activo.
@@ -123,17 +138,29 @@ Campos obligatorios por tarea:
 
 - `id`, `title`, `owner`, `executor`, `status`, `risk`, `scope`, `files`,
   `codex_instance`, `domain_lane`, `lane_lock`, `cross_domain`,
+  `provider_mode`, `runtime_surface`, `runtime_transport`,
+  `runtime_last_transport`,
   `source_signal`, `source_ref`, `priority_score`, `sla_due_at`,
   `last_attempt_at`, `attempts`, `blocked_reason`, `runtime_impact`,
   `critical_zone`, `acceptance`, `acceptance_ref`, `evidence_ref`,
   `depends_on`, `created_at`, `updated_at`.
 
-Valores validos para coordinacion dual:
+Valores validos para coordinacion tri-lane:
 
-- `codex_instance`: `codex_backend_ops | codex_frontend`
-- `domain_lane`: `backend_ops | frontend_content`
+- `codex_instance`: `codex_backend_ops | codex_frontend | codex_transversal`
+- `domain_lane`: `backend_ops | frontend_content | transversal_runtime`
 - `lane_lock`: `strict | handoff_allowed`
 - `cross_domain`: `true | false`
+- `provider_mode`: `openclaw_chatgpt | ""`
+- `runtime_surface`: `figo_queue | leadops_worker | operator_auth | ""`
+- `runtime_transport`: `hybrid_http_cli | http_bridge | cli_helper | ""`
+
+Regla adicional:
+
+- Si una tarea depende del runtime OpenClaw, debe usar
+  `domain_lane=transversal_runtime`,
+  `codex_instance=codex_transversal`,
+  `provider_mode=openclaw_chatgpt` y surface/transport validos.
 
 Estados permitidos:
 
@@ -176,6 +203,8 @@ node agent-orchestrator.js codex-check
 node agent-orchestrator.js codex-check --json
 node agent-orchestrator.js jobs status --json
 node agent-orchestrator.js jobs verify public_main_sync --json
+node agent-orchestrator.js runtime verify openclaw_chatgpt --json
+node agent-orchestrator.js runtime invoke AG-900 --expect-rev 12 --json
 node agent-orchestrator.js codex start CDX-001 --block C1
 node agent-orchestrator.js codex start CDX-001 --block C1 --expect-rev 12
 node agent-orchestrator.js codex stop CDX-001 --to review
@@ -252,9 +281,11 @@ Candado de concurrencia:
 - Obtener revision actual desde `AGENT_BOARD.yaml.policy.revision` o `node agent-orchestrator.js status --json`.
 - Si un `rebase` deja conflicto textual **solo** en `policy.revision`, resolver rapido con `npm run agent:board:resolve-revision` y continuar (`git add AGENT_BOARD.yaml && git rebase --continue`).
 
-Runbook operativo dual Codex:
+Runbook operativo tri-lane runtime:
 
-- `DUAL_CODEX_RUNBOOK.md` define flujo diario, ownership por lane y comandos de handoff.
+- `TRI_LANE_RUNTIME_RUNBOOK.md` define flujo diario, ownership por lane,
+  surfaces OpenClaw y comandos de handoff/runtime.
+- `DUAL_CODEX_RUNBOOK.md` queda como nota de migracion/redirect.
 
 Nota:
 
@@ -271,6 +302,7 @@ Nota:
 - `metrics baseline <show|set|reset>` permite gestionar baseline explicito en `verification/agent-metrics.json` (recomendado usar `set --from current` tras cambios estructurales del board/politica).
 - `task create`, `task claim` (si cambia `status` a activo) y `task start` aplican guardrails locales de gobernanza: validan `depends_on` (IDs existentes, sin duplicados) y bloquean scopes criticos asignados a ejecutores no permitidos (`codex`).
 - `task create --template <docs|bugfix|critical>` aplica defaults de `executor/status/risk/scope`; los flags explicitos sobreescriben la plantilla. `critical` exige `--scope` con keyword critica (`payments|auth|calendar|deploy|env|security`).
+- `task create --template <docs|bugfix|critical|runtime>` aplica defaults de `executor/status/risk/scope`; la plantilla `runtime` fija `scope=openclaw_runtime`, `domain_lane=transversal_runtime`, `codex_instance=codex_transversal`, `provider_mode=openclaw_chatgpt` y `runtime_transport=hybrid_http_cli`. Los flags explicitos sobreescriben la plantilla. `critical` exige `--scope` con keyword critica (`payments|auth|calendar|deploy|env|security`).
 - `task create --from-files` infiere `scope` y `risk` desde rutas de `files` (precedencia: flags explicitos > inferencia por files > template > defaults). Si detecta scope critico y no se paso `--executor`, puede autoajustar `executor` a `codex` para evitar fallo por guardrail.
 - `task create --interactive` solicita por prompt los campos minimos (incluye opcion de activar `--from-files`); con `--json` los prompts salen por `stderr` para no romper el payload.
 - `task create --preview` / `--dry-run` valida y calcula la tarea (incluyendo conflictos/inferencia) pero no escribe `AGENT_BOARD.yaml` ni colas derivadas.
@@ -318,10 +350,12 @@ Nota:
 - `PLAN_MAESTRO_CODEX_2026.md` sigue siendo la fuente de estrategia/evidencia de la linea Codex.
 - Toda ejecucion activa de Codex debe tener tarea espejo `CDX-*` en `AGENT_BOARD.yaml` con `executor: codex`.
 - Maximo una tarea `CDX-*` activa por `codex_instance`.
-- Maximo dos tareas `CDX-*` activas en total, una por lane.
+- Maximo tres tareas `CDX-*` activas en total, una por lane.
 - El bloqueo por solape se decide por `files` en tareas activas del board (`ready`, `in_progress`, `review`, `blocked`).
 - Excepcion permitida: handoff temporal y explicito en `AGENT_HANDOFFS.yaml` (TTL + archivos acotados).
 - Si hay drift entre el bloque `CODEX_ACTIVE` del plan Codex y el task `CDX-*` espejo, CI debe fallar.
+- `codex-check` debe bloquear si una tarea activa en `codex_transversal`
+  depende de una `runtime_surface` no saludable.
 
 ## CI y gobernanza
 
@@ -335,6 +369,6 @@ CI valida automaticamente:
 - Solape de archivos entre tareas activas.
 - Integridad del espejo Codex (`PLAN_MAESTRO_CODEX_2026.md` <-> `AGENT_BOARD.yaml`).
 - Push directo a `main/staging` con cambio en `AGENT_BOARD.yaml` sin PR asociado (bloqueante).
-- Drift legacy de dual-lane en `AGENT_BOARD.yaml` (detector/normalizador en gobernanza).
+- Drift legacy de dual-lane/tri-lane en `AGENT_BOARD.yaml` (detector/normalizador en gobernanza).
 
 Si falla la gobernanza, el pipeline debe bloquear merge.

@@ -21,10 +21,12 @@ function register_api_routes(Router $router): void
     $router->add('PATCH', 'figo-config', [ConfigController::class, 'updateFigoConfig']);
 
     $router->add('GET', 'health', [HealthController::class, 'check']);
+    $router->add('GET', 'health-diagnostics', [HealthController::class, 'diagnostics']);
 
     $router->add('GET', 'payment-config', [PaymentController::class, 'config']);
 
     $router->add('GET', 'data', [AdminDataController::class, 'index']);
+    $router->add('GET', 'patient-cases', [PatientCaseController::class, 'index']);
     $router->add('POST', 'import', [AdminDataController::class, 'import']);
     $router->add('GET', 'telemedicine-intakes', [TelemedicineAdminController::class, 'index']);
     $router->add('PATCH', 'telemedicine-intakes', [TelemedicineAdminController::class, 'patch']);

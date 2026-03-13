@@ -91,7 +91,10 @@ final class TelemedicineMetricsExportTest extends TestCase
         \write_store($store, false);
 
         ob_start();
-        \SystemController::metrics(['store' => \read_store()]);
+        \SystemController::metrics([
+            'store' => \read_store(),
+            'diagnosticsAuthorized' => true,
+        ]);
         $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('pielarmonia_telemedicine_intakes_total 1', $output);

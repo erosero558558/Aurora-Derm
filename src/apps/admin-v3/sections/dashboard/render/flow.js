@@ -5,6 +5,7 @@ export function setFlowMetrics(state) {
     const {
         availabilityDays,
         calledTickets,
+        internalConsoleMeta,
         nextAppointment,
         pendingCallbacks,
         pendingTransfers,
@@ -12,20 +13,35 @@ export function setFlowMetrics(state) {
         urgentCallbacks,
         waitingTickets,
     } = state;
+    const readinessSummary =
+        String(internalConsoleMeta?.overall?.summary || '').trim() ||
+        'Piloto interno de consultorio en revision.';
+    const readinessBlocked = Boolean(
+        internalConsoleMeta?.overall?.ready === false
+    );
+    const blockerTitles = Array.isArray(internalConsoleMeta?.overall?.blockers)
+        ? internalConsoleMeta.overall.blockers
+              .map((item) => String(item?.title || '').trim())
+              .filter(Boolean)
+        : [];
 
     setText(
         '#dashboardQueueHealth',
-        waitingTickets > 0 || calledTickets > 0
-            ? 'El turnero esta activo en una app separada'
-            : 'El turnero avanzado sigue disponible en Mas herramientas'
+        readinessBlocked
+            ? blockerTitles[0] || 'Piloto interno bloqueado'
+            : waitingTickets > 0 || calledTickets > 0
+              ? 'Turnero activo en una app separada'
+              : 'Nucleo interno listo para consultorio'
     );
     setText(
         '#dashboardFlowStatus',
-        nextAppointment?.item
-            ? `${relativeWindow(nextAppointment.stamp)} | ${nextAppointment.item.name || 'Paciente'}`
-            : availabilityDays > 0
-              ? `${availabilityDays} dia(s) con horarios publicados`
-              : 'Sin citas inmediatas ni cola activa'
+        readinessBlocked
+            ? readinessSummary
+            : nextAppointment?.item
+              ? `${relativeWindow(nextAppointment.stamp)} | ${nextAppointment.item.name || 'Paciente'}`
+              : availabilityDays > 0
+                ? `${availabilityDays} dia(s) con horarios publicados`
+                : readinessSummary
     );
 
     setText('#operationPendingReviewCount', pendingTransfers);
@@ -41,10 +57,12 @@ export function setFlowMetrics(state) {
     );
     setText(
         '#operationQueueHealth',
-        pendingTransfers > 0
-            ? `${pendingTransfers} pago(s) requieren revision antes de cerrar el dia`
-            : nextAppointment?.item
-              ? `Siguiente paciente: ${nextAppointment.item.name || 'Paciente'} ${relativeWindow(nextAppointment.stamp).toLowerCase()}`
-              : 'Sin citas inmediatas en cola'
+        readinessBlocked
+            ? readinessSummary
+            : pendingTransfers > 0
+              ? `${pendingTransfers} pago(s) requieren revision antes de cerrar el dia`
+              : nextAppointment?.item
+                ? `Siguiente paciente: ${nextAppointment.item.name || 'Paciente'} ${relativeWindow(nextAppointment.stamp).toLowerCase()}`
+                : 'Sin citas inmediatas en cola'
     );
 }

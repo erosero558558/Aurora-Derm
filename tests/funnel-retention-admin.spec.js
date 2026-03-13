@@ -1,7 +1,15 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { adminLogin, safeJson } = require('./helpers/admin-auth');
+const {
+    adminLogin,
+    safeJson,
+} = require('./helpers/admin-auth');
 const { skipIfPhpRuntimeMissing } = require('./helpers/php-backend');
+
+function getEnv(name, fallback = '') {
+    const value = process.env[name];
+    return typeof value === 'string' ? value.trim() : fallback;
+}
 
 test.describe('Retention metrics contract (admin)', () => {
     test('funnel-metrics expone bloque retention no-break', async ({
@@ -9,7 +17,15 @@ test.describe('Retention metrics contract (admin)', () => {
     }) => {
         await skipIfPhpRuntimeMissing(test, request);
 
-        const login = await adminLogin(request);
+        const adminPassword =
+            getEnv('TEST_ADMIN_PASSWORD') ||
+            getEnv('PIELARMONIA_ADMIN_PASSWORD');
+        test.skip(
+            !adminPassword,
+            'TEST_ADMIN_PASSWORD o PIELARMONIA_ADMIN_PASSWORD es requerido.'
+        );
+
+        const login = await adminLogin(request, { password: adminPassword });
         test.skip(!login.ok, `No se pudo autenticar admin: ${login.reason}`);
 
         const response = await request.get('/api.php?resource=funnel-metrics');

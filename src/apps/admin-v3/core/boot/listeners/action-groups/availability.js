@@ -16,6 +16,7 @@ import {
     saveAvailabilityDraft,
     selectAvailabilityDate,
 } from '../../../../sections/availability.js';
+import { navigateToSection } from '../../navigation.js';
 
 export async function handleAvailabilityAction(action, element) {
     switch (action) {
@@ -74,6 +75,9 @@ export async function handleAvailabilityAction(action, element) {
         case 'discard-availability-draft':
             discardAvailabilityDraft();
             createToast('Borrador descartado', 'info');
+            return true;
+        case 'availability-open-appointments-review':
+            await navigateToSection('appointments');
             return true;
         default:
             return false;

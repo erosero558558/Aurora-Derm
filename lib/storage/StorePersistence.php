@@ -26,12 +26,16 @@ final class StorePersistence
     public static function readStoreJsonFallback(): array
     {
         if (!self::ensureJsonStoreFile()) {
-            return StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload());
+            return self::hydratePatientFlowStore(
+                StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload())
+            );
         }
 
         $raw = @file_get_contents(StorePaths::dataJsonPath());
         if (!is_string($raw) || trim($raw) === '') {
-            return StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload());
+            return self::hydratePatientFlowStore(
+                StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload())
+            );
         }
 
         $decoded = StoreCrypto::decryptPayload($raw);
@@ -41,10 +45,12 @@ final class StorePersistence
 
         $data = json_decode($decoded, true);
         if (!is_array($data)) {
-            return StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload());
+            return self::hydratePatientFlowStore(
+                StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload())
+            );
         }
 
-        return StorageConfig::normalizeStorePayload($data);
+        return self::hydratePatientFlowStore(StorageConfig::normalizeStorePayload($data));
     }
 
     public static function writeStoreJsonFallback(array $store): bool
@@ -53,7 +59,7 @@ final class StorePersistence
             return false;
         }
 
-        $store = StorageConfig::normalizeStorePayload($store);
+        $store = self::hydratePatientFlowStore(StorageConfig::normalizeStorePayload($store));
         if (!self::ensureJsonStoreFile()) {
             return false;
         }
@@ -161,7 +167,7 @@ final class StorePersistence
             error_log('Migration failed: invalid JSON');
             return false;
         }
-        $data = StorageConfig::normalizeStorePayload($data);
+        $data = self::hydratePatientFlowStore(StorageConfig::normalizeStorePayload($data));
 
         $pdo = get_db_connection($sqlitePath);
         if (!$pdo) {
@@ -325,16 +331,20 @@ final class StorePersistence
                 json_encode($data['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
             $stmt->execute([
-                'clinical_history_sessions_json',
-                json_encode($data['clinical_history_sessions'] ?? [], JSON_UNESCAPED_UNICODE),
+                'patient_cases_json',
+                json_encode($data['patient_cases'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
             $stmt->execute([
-                'clinical_history_drafts_json',
-                json_encode($data['clinical_history_drafts'] ?? [], JSON_UNESCAPED_UNICODE),
+                'patient_case_links_json',
+                json_encode($data['patient_case_links'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
             $stmt->execute([
-                'clinical_history_events_json',
-                json_encode($data['clinical_history_events'] ?? [], JSON_UNESCAPED_UNICODE),
+                'patient_case_timeline_events_json',
+                json_encode($data['patient_case_timeline_events'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+            $stmt->execute([
+                'patient_case_approvals_json',
+                json_encode($data['patient_case_approvals'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
 
             $pdo->commit();
@@ -414,14 +424,16 @@ final class StorePersistence
     public static function readStore(): array
     {
         if (!self::ensureDataFile()) {
-            return StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload());
+            return self::hydratePatientFlowStore(
+                StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload())
+            );
         }
 
         $pdo = get_db_connection(StorePaths::dataFilePath());
         if (!$pdo) {
             return StorageConfig::jsonFallbackEnabled()
                 ? self::readStoreJsonFallback()
-                : StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload());
+                : self::hydratePatientFlowStore(StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload()));
         }
 
         try {
@@ -431,11 +443,12 @@ final class StorePersistence
                 'reviews' => self::fetchJsonDataRows($pdo, 'reviews'),
                 'queue_tickets' => self::fetchJsonDataRows($pdo, 'queue_tickets'),
                 'queue_help_requests' => [],
+                'patient_cases' => [],
+                'patient_case_links' => [],
+                'patient_case_timeline_events' => [],
+                'patient_case_approvals' => [],
                 'telemedicine_intakes' => self::fetchJsonDataRows($pdo, 'telemedicine_intakes'),
                 'clinical_uploads' => self::fetchJsonDataRows($pdo, 'clinical_uploads'),
-                'clinical_history_sessions' => [],
-                'clinical_history_drafts' => [],
-                'clinical_history_events' => [],
                 'availability' => self::fetchAvailability($pdo),
                 'updatedAt' => local_date('c'),
                 'idx_appointments_date' => [],
@@ -456,40 +469,31 @@ final class StorePersistence
                 }
             }
 
-            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'clinical_history_sessions_json'");
-            $row = $stmt->fetch();
-            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
-                $decoded = json_decode((string) $row['value'], true);
-                if (is_array($decoded)) {
-                    $store['clinical_history_sessions'] = $decoded;
-                }
-            }
-
-            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'clinical_history_drafts_json'");
-            $row = $stmt->fetch();
-            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
-                $decoded = json_decode((string) $row['value'], true);
-                if (is_array($decoded)) {
-                    $store['clinical_history_drafts'] = $decoded;
-                }
-            }
-
-            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'clinical_history_events_json'");
-            $row = $stmt->fetch();
-            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
-                $decoded = json_decode((string) $row['value'], true);
-                if (is_array($decoded)) {
-                    $store['clinical_history_events'] = $decoded;
-                }
-            }
-
             $store['idx_appointments_date'] = build_appointment_index($store['appointments']);
-            return StorageConfig::normalizeStorePayload($store);
+            foreach ([
+                'patient_cases' => 'patient_cases_json',
+                'patient_case_links' => 'patient_case_links_json',
+                'patient_case_timeline_events' => 'patient_case_timeline_events_json',
+                'patient_case_approvals' => 'patient_case_approvals_json',
+            ] as $storeKey => $kvKey) {
+                $stmt = $pdo->prepare("SELECT value FROM kv_store WHERE key = ?");
+                $stmt->execute([$kvKey]);
+                $row = $stmt->fetch();
+                if (!$row || !is_string($row['value'] ?? null) || trim((string) $row['value']) === '') {
+                    continue;
+                }
+                $decoded = json_decode((string) $row['value'], true);
+                if (is_array($decoded)) {
+                    $store[$storeKey] = $decoded;
+                }
+            }
+
+            return self::hydratePatientFlowStore(StorageConfig::normalizeStorePayload($store));
         } catch (PDOException $e) {
             error_log('Read Store Error: ' . $e->getMessage());
             return StorageConfig::jsonFallbackEnabled()
                 ? self::readStoreJsonFallback()
-                : StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload());
+                : self::hydratePatientFlowStore(StorageConfig::normalizeStorePayload(StorageConfig::defaultStorePayload()));
         }
     }
 
@@ -540,7 +544,7 @@ final class StorePersistence
             return self::handleWriteFailure($emitHttpErrors, 'Storage error');
         }
 
-        $store = StorageConfig::normalizeStorePayload($store);
+        $store = self::hydratePatientFlowStore(StorageConfig::normalizeStorePayload($store));
         $dbPath = StorePaths::dataFilePath();
         $pdo = get_db_connection($dbPath);
         if (!$pdo) {
@@ -710,16 +714,20 @@ final class StorePersistence
                 json_encode($store['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
             $stmt->execute([
-                'clinical_history_sessions_json',
-                json_encode($store['clinical_history_sessions'] ?? [], JSON_UNESCAPED_UNICODE),
+                'patient_cases_json',
+                json_encode($store['patient_cases'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
             $stmt->execute([
-                'clinical_history_drafts_json',
-                json_encode($store['clinical_history_drafts'] ?? [], JSON_UNESCAPED_UNICODE),
+                'patient_case_links_json',
+                json_encode($store['patient_case_links'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
             $stmt->execute([
-                'clinical_history_events_json',
-                json_encode($store['clinical_history_events'] ?? [], JSON_UNESCAPED_UNICODE),
+                'patient_case_timeline_events_json',
+                json_encode($store['patient_case_timeline_events'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+            $stmt->execute([
+                'patient_case_approvals_json',
+                json_encode($store['patient_case_approvals'] ?? [], JSON_UNESCAPED_UNICODE),
             ]);
 
             $pdo->commit();
@@ -771,6 +779,21 @@ final class StorePersistence
             $availability[$date][] = $time;
         }
         return $availability;
+    }
+
+    private static function hydratePatientFlowStore(array $store): array
+    {
+        if (!class_exists('PatientCaseService')) {
+            return $store;
+        }
+
+        try {
+            $service = new PatientCaseService();
+            return $service->hydrateStore($store);
+        } catch (Throwable $e) {
+            error_log('Patient case hydration error: ' . $e->getMessage());
+            return $store;
+        }
     }
 
     private static function syncJsonTable(PDO $pdo, string $table, array $records, string $upsertSql, callable $mapper): void

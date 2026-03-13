@@ -1,4 +1,5 @@
 import {
+    clearAppointmentReviewContext,
     setAppointmentFilter,
     setAppointmentSearch,
 } from '../../../sections/appointments.js';
@@ -13,21 +14,25 @@ import { navigateToSection } from './sections.js';
 const QUICK_ACTIONS = {
     appointments_overview: async () => {
         await navigateToSection('appointments');
+        clearAppointmentReviewContext();
         setAppointmentFilter('all');
         setAppointmentSearch('');
     },
     appointments_pending_transfer: async () => {
         await navigateToSection('appointments');
+        clearAppointmentReviewContext();
         setAppointmentFilter('pending_transfer');
         setAppointmentSearch('');
     },
     appointments_all: async () => {
         await navigateToSection('appointments');
+        clearAppointmentReviewContext();
         setAppointmentFilter('all');
         setAppointmentSearch('');
     },
     appointments_no_show: async () => {
         await navigateToSection('appointments');
+        clearAppointmentReviewContext();
         setAppointmentFilter('no_show');
         setAppointmentSearch('');
     },

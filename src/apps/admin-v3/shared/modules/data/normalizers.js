@@ -1,5 +1,3 @@
-import { getTurneroClinicProfileFingerprint } from '../../../../queue-shared/clinic-profile.js';
-
 function normalizeCallbacks(list) {
     return (Array.isArray(list) ? list : []).map((item) => ({
         ...item,
@@ -9,7 +7,9 @@ function normalizeCallbacks(list) {
             ? 'contacted'
             : 'pending',
         leadOps:
-            item.leadOps && typeof item.leadOps === 'object' ? item.leadOps : {},
+            item.leadOps && typeof item.leadOps === 'object'
+                ? item.leadOps
+                : {},
     }));
 }
 
@@ -20,45 +20,6 @@ function normalizeQueueTickets(data) {
 }
 
 export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
-    const remoteProfile =
-        data.turneroClinicProfile &&
-        typeof data.turneroClinicProfile === 'object'
-            ? data.turneroClinicProfile
-            : null;
-    const fallbackProfile =
-        fallbackState?.turneroClinicProfile &&
-        typeof fallbackState.turneroClinicProfile === 'object'
-            ? fallbackState.turneroClinicProfile
-            : null;
-    const profile = remoteProfile || fallbackProfile || null;
-    const fallbackProfileMeta =
-        fallbackState?.turneroClinicProfileMeta &&
-        typeof fallbackState.turneroClinicProfileMeta === 'object'
-            ? fallbackState.turneroClinicProfileMeta
-            : null;
-    const fallbackCatalogStatus =
-        fallbackState?.turneroClinicProfileCatalogStatus &&
-        typeof fallbackState.turneroClinicProfileCatalogStatus === 'object'
-            ? fallbackState.turneroClinicProfileCatalogStatus
-            : null;
-    const turneroClinicProfileMeta = profile
-        ? {
-              source: remoteProfile ? 'remote' : 'fallback_local',
-              cached: remoteProfile ? false : true,
-              clinicId: String(profile?.clinic_id || '').trim(),
-              profileFingerprint:
-                  getTurneroClinicProfileFingerprint(profile),
-              fetchedAt: remoteProfile
-                  ? new Date().toISOString()
-                  : String(fallbackProfileMeta?.fetchedAt || '').trim(),
-              }
-        : null;
-    const turneroClinicProfileCatalogStatus =
-        data.turneroClinicProfileCatalogStatus &&
-        typeof data.turneroClinicProfileCatalogStatus === 'object'
-            ? data.turneroClinicProfileCatalogStatus
-            : fallbackCatalogStatus;
-
     return {
         appointments: Array.isArray(data.appointments) ? data.appointments : [],
         callbacks: Array.isArray(data.callbacks) ? data.callbacks : [],
@@ -83,7 +44,8 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
                 ? data.leadOpsMeta
                 : fallbackState?.leadOpsMeta || null,
         queueSurfaceStatus:
-            data.queueSurfaceStatus && typeof data.queueSurfaceStatus === 'object'
+            data.queueSurfaceStatus &&
+            typeof data.queueSurfaceStatus === 'object'
                 ? data.queueSurfaceStatus
                 : data.queue_surface_status &&
                     typeof data.queue_surface_status === 'object'
@@ -93,19 +55,13 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
             data.appDownloads && typeof data.appDownloads === 'object'
                 ? data.appDownloads
                 : fallbackState?.appDownloads || null,
-        turneroClinicProfile: profile,
-        turneroClinicProfileMeta: turneroClinicProfileMeta,
-        turneroClinicProfileCatalogStatus: turneroClinicProfileCatalogStatus,
-        clinicalHistoryMeta:
-            data.clinicalHistoryMeta &&
-            typeof data.clinicalHistoryMeta === 'object'
-                ? data.clinicalHistoryMeta
-                : fallbackState?.clinicalHistoryMeta || null,
-        mediaFlowMeta:
-            data.mediaFlowMeta && typeof data.mediaFlowMeta === 'object'
-                ? data.mediaFlowMeta
-                : fallbackState?.mediaFlowMeta || null,
-        funnelMetrics: data.funnelMetrics || fallbackState?.funnelMetrics || null,
+        internalConsoleMeta:
+            data.internalConsoleMeta &&
+            typeof data.internalConsoleMeta === 'object'
+                ? data.internalConsoleMeta
+                : fallbackState?.internalConsoleMeta || null,
+        funnelMetrics:
+            data.funnelMetrics || fallbackState?.funnelMetrics || null,
         health: healthPayload && healthPayload.ok ? healthPayload : null,
     };
 }
@@ -122,12 +78,7 @@ export function normalizeAdminStorePayload(payload, currentFunnelMetrics) {
         leadOpsMeta: payload.leadOpsMeta || null,
         queueSurfaceStatus: payload.queueSurfaceStatus || null,
         appDownloads: payload.appDownloads || null,
-        turneroClinicProfile: payload.turneroClinicProfile || null,
-        turneroClinicProfileMeta: payload.turneroClinicProfileMeta || null,
-        turneroClinicProfileCatalogStatus:
-            payload.turneroClinicProfileCatalogStatus || null,
-        clinicalHistoryMeta: payload.clinicalHistoryMeta || null,
-        mediaFlowMeta: payload.mediaFlowMeta || null,
+        internalConsoleMeta: payload.internalConsoleMeta || null,
         funnelMetrics: payload.funnelMetrics || currentFunnelMetrics,
         health: payload.health || null,
     };

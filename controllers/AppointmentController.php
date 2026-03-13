@@ -249,6 +249,7 @@ class AppointmentController
 
         $lockResult = with_store_lock(function () use ($id, $payload) {
             $store = read_store();
+            $patientCaseService = new PatientCaseService();
             $found = false;
             $cancelledAppointment = null;
             $updatedAppointment = null;
@@ -300,6 +301,15 @@ class AppointmentController
 
             if (!$found) {
                 return ['ok' => false, 'error' => 'Cita no encontrada', 'code' => 404];
+            }
+
+            $store = $patientCaseService->hydrateStore($store);
+            $updatedAppointment = self::findAppointmentById($store, $id) ?? $updatedAppointment;
+            if (
+                is_array($updatedAppointment) &&
+                map_appointment_status((string) ($updatedAppointment['status'] ?? 'confirmed')) === 'cancelled'
+            ) {
+                $cancelledAppointment = $updatedAppointment;
             }
 
             if (!write_store($store)) {
@@ -692,5 +702,26 @@ class AppointmentController
             return 'slot_conflict';
         }
         return $normalized;
+    }
+
+    private static function findAppointmentById(array $store, int $appointmentId): ?array
+    {
+        if ($appointmentId <= 0) {
+            return null;
+        }
+
+        $appointments = isset($store['appointments']) && is_array($store['appointments'])
+            ? $store['appointments']
+            : [];
+        foreach ($appointments as $appointment) {
+            if (!is_array($appointment)) {
+                continue;
+            }
+            if ((int) ($appointment['id'] ?? 0) === $appointmentId) {
+                return $appointment;
+            }
+        }
+
+        return null;
     }
 }

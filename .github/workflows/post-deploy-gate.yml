@@ -383,7 +383,7 @@ jobs:
                   $requireTelemedicineReadyEffective = if ($requireTelemedicineReady) { 'true' } else { 'false' }
                   "REQUIRE_TELEMEDICINE_READY_EFFECTIVE=$requireTelemedicineReadyEffective" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                   Write-Host "Require telemedicine ready => input=$requireTelemedicineReadyInput effective=$requireTelemedicineReadyEffective"
-                  ./GATE-POSTDEPLOY.ps1 `
+                  ./scripts/ops/prod/GATE-POSTDEPLOY.ps1 `
                     -Domain $env:TARGET_DOMAIN `
                     -BenchRuns $benchRuns `
                     -SkipAssetHashChecks:$skipAssetHashChecks `

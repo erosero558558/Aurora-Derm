@@ -91,6 +91,17 @@ class SystemController
 
     public static function metrics(array $context): void
     {
+        if (!diagnostics_request_authorized($context)) {
+            audit_log_event('api.metrics_blocked', [
+                'method' => $context['method'] ?? 'GET',
+                'resource' => $context['resource'] ?? 'metrics',
+            ]);
+            json_response([
+                'ok' => false,
+                'error' => 'No autorizado',
+            ], 403);
+        }
+
         $store = $context['store'];
 
         if (!class_exists('Metrics')) {

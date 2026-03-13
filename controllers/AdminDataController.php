@@ -5,17 +5,17 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/QueueService.php';
 require_once __DIR__ . '/../lib/QueueSurfaceStatusStore.php';
 require_once __DIR__ . '/../lib/AppDownloadsCatalog.php';
-require_once __DIR__ . '/../lib/CaseMediaFlowService.php';
-require_once __DIR__ . '/../lib/TurneroClinicProfile.php';
+require_once __DIR__ . '/../lib/PatientCaseService.php';
+require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
-require_once __DIR__ . '/../lib/clinical_history/bootstrap.php';
 
 class AdminDataController
 {
     public static function index(array $context): void
     {
         // GET /data (Admin)
-        $store = $context['store'];
+        $patientCaseService = new PatientCaseService();
+        $store = $patientCaseService->hydrateStore($context['store']);
         $availabilityService = CalendarAvailabilityService::fromEnv();
         $calendarClient = $availabilityService->getClient();
         $calendarActive = $availabilityService->isGoogleActive();
@@ -105,23 +105,47 @@ class AdminDataController
             $store['queueMeta'] = null;
         }
 
+        $store['patientFlowMeta'] = $patientCaseService->buildSummary($store);
+        $store['internalConsoleMeta'] = function_exists('internal_console_readiness_snapshot')
+            ? internal_console_readiness_snapshot()
+            : null;
+        $store = self::redactClinicalReadModelsIfBlocked($store);
+
         $store['appDownloads'] = self::buildAppDownloads();
-        $store['turneroClinicProfile'] = read_turnero_clinic_profile();
-        $store['turneroClinicProfileCatalogStatus'] = read_turnero_clinic_profile_catalog_status();
         $store['queueSurfaceStatus'] = QueueSurfaceStatusStore::readSummary();
 
         $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(
             TelemedicineOpsSnapshot::build($store)
         );
-        $store['clinicalHistoryMeta'] = ClinicalHistoryOpsSnapshot::forAdmin(
-            ClinicalHistoryOpsSnapshot::build($store)
-        );
-        $store['mediaFlowMeta'] = CaseMediaFlowService::buildAdminMeta($store);
 
         json_response([
             'ok' => true,
             'data' => $store
         ]);
+    }
+
+    private static function redactClinicalReadModelsIfBlocked(array $store): array
+    {
+        $internalConsoleMeta = isset($store['internalConsoleMeta']) && is_array($store['internalConsoleMeta'])
+            ? $store['internalConsoleMeta']
+            : [];
+        $clinicalReady = (bool) ($internalConsoleMeta['clinicalData']['ready'] ?? true);
+        if ($clinicalReady) {
+            return $store;
+        }
+
+        foreach ([
+            'patient_cases',
+            'patient_case_links',
+            'patient_case_timeline_events',
+            'patient_case_approvals',
+            'clinical_uploads',
+            'telemedicine_intakes',
+        ] as $key) {
+            $store[$key] = [];
+        }
+
+        return $store;
     }
 
     public static function import(array $context): void
@@ -134,6 +158,24 @@ class AdminDataController
         require_csrf();
 
         $payload = require_json_body();
+        $clinicalFields = array_values(array_intersect(
+            ['patient_case_approvals', 'telemedicine_intakes', 'clinical_uploads'],
+            array_keys(is_array($payload) ? $payload : [])
+        ));
+        if ($clinicalFields !== [] && function_exists('internal_console_clinical_data_ready') && !internal_console_clinical_data_ready()) {
+            $response = function_exists('internal_console_clinical_guard_payload')
+                ? internal_console_clinical_guard_payload([
+                    'clinicalFields' => $clinicalFields,
+                ])
+                : [
+                    'ok' => false,
+                    'code' => 'clinical_storage_not_ready',
+                    'error' => 'Historias clinicas bloqueadas hasta habilitar almacenamiento cifrado.',
+                    'clinicalFields' => $clinicalFields,
+                ];
+            json_response($response, 409);
+        }
+
         $store['appointments'] = isset($payload['appointments']) && is_array($payload['appointments']) ? $payload['appointments'] : [];
         $store['callbacks'] = isset($payload['callbacks']) && is_array($payload['callbacks']) ? $payload['callbacks'] : [];
         $store['reviews'] = isset($payload['reviews']) && is_array($payload['reviews']) ? $payload['reviews'] : [];
@@ -141,29 +183,14 @@ class AdminDataController
         $store['queue_help_requests'] = isset($payload['queue_help_requests']) && is_array($payload['queue_help_requests'])
             ? $payload['queue_help_requests']
             : [];
+        if (isset($payload['patient_case_approvals']) && is_array($payload['patient_case_approvals'])) {
+            $store['patient_case_approvals'] = $payload['patient_case_approvals'];
+        }
         if (isset($payload['telemedicine_intakes']) && is_array($payload['telemedicine_intakes'])) {
             $store['telemedicine_intakes'] = $payload['telemedicine_intakes'];
         }
         if (isset($payload['clinical_uploads']) && is_array($payload['clinical_uploads'])) {
             $store['clinical_uploads'] = $payload['clinical_uploads'];
-        }
-        if (isset($payload['clinical_history_sessions']) && is_array($payload['clinical_history_sessions'])) {
-            $store['clinical_history_sessions'] = $payload['clinical_history_sessions'];
-        }
-        if (isset($payload['clinical_history_drafts']) && is_array($payload['clinical_history_drafts'])) {
-            $store['clinical_history_drafts'] = $payload['clinical_history_drafts'];
-        }
-        if (isset($payload['clinical_history_events']) && is_array($payload['clinical_history_events'])) {
-            $store['clinical_history_events'] = $payload['clinical_history_events'];
-        }
-        if (isset($payload['case_media_proposals']) && is_array($payload['case_media_proposals'])) {
-            $store['case_media_proposals'] = $payload['case_media_proposals'];
-        }
-        if (isset($payload['case_media_publications']) && is_array($payload['case_media_publications'])) {
-            $store['case_media_publications'] = $payload['case_media_publications'];
-        }
-        if (isset($payload['case_media_events']) && is_array($payload['case_media_events'])) {
-            $store['case_media_events'] = $payload['case_media_events'];
         }
         $store['availability'] = isset($payload['availability']) && is_array($payload['availability']) ? $payload['availability'] : [];
         write_store($store);

@@ -54,7 +54,7 @@ Si el despliegue automatico falla, se puede subir manualmente.
 Despues de cualquier despliegue, ejecutar el script de verificacion:
 
 ```powershell
-.\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com"
+.\scripts\ops\prod\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com"
 ```
 
 Implementacion canonica: `scripts/ops/prod/GATE-POSTDEPLOY.ps1`.
@@ -73,7 +73,7 @@ Para cerrar formalmente hardening y reactivar el gate estricto:
 2.  Ejecutar validacion strict de hashes:
 
 ```powershell
-.\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com" -ForceAssetHashChecks
+.\scripts\ops\prod\GATE-POSTDEPLOY.ps1 -Domain "https://pielarmonia.com" -ForceAssetHashChecks
 ```
 
 3.  Repetir hasta tener 3 corridas consecutivas en verde.
@@ -376,9 +376,9 @@ Revisar `data/audit.log` semanalmente en busca de:
 
 Utilizar los scripts de PowerShell incluidos en el repositorio para metricas.
 
-- **Latencia:** `.\BENCH-API-PRODUCCION.ps1` mide el tiempo de respuesta de la
+- **Latencia:** `.\scripts\ops\prod\BENCH-API-PRODUCCION.ps1` mide el tiempo de respuesta de la
   API.
-- **Disponibilidad:** `.\SMOKE-PRODUCCION.ps1` realiza un recorrido rapido por
+- **Disponibilidad:** `.\scripts\ops\prod\SMOKE-PRODUCCION.ps1` realiza un recorrido rapido por
   las URLs principales.
 - **Benchmark local o dirigido:** `npm run benchmark:local` reutiliza
   `TEST_BASE_URL` o levanta `127.0.0.1:8011`.

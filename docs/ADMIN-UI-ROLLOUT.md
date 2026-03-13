@@ -1,5 +1,8 @@
 # Admin UI Rollout (V3 Only)
 
+La politica canonica de source-vs-output para bundles versionados vive en
+`docs/RUNTIME_ARTIFACT_POLICY.md`.
+
 ## Estado actual
 
 El admin opera en modo `sony_v3 only`.
@@ -34,16 +37,23 @@ reescribe ni los limpia de forma oportunista.
 
 ```powershell
 npm run chunks:admin:check
+npm run check:runtime:artifacts
 npm run test:admin:runtime-smoke
 npm run test:frontend:qa:admin
 npm run gate:admin:rollout
+npm run gate:admin:rollout:openclaw
+npm run diagnose:admin:openclaw-auth:rollout
 ```
+
+`npm run test:frontend:qa:admin` ya incluye `tests/admin-openclaw-login.spec.js`
+como parte del carril canonico del shell.
 
 Para local QA:
 
 - Playwright usa `127.0.0.1:8011` como servidor fresco por defecto.
 - Si ya existe un servidor levantado, usar `TEST_BASE_URL=http://127.0.0.1:8011`.
 - `TEST_REUSE_EXISTING_SERVER` queda como opt-in explicito.
+- Si el runtime usa `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`, levantar el helper del operador con `npm run openclaw:auth:start`.
 
 ## Gate operativo
 
@@ -55,7 +65,11 @@ Para local QA:
 - el shell no referencia `styles.min.css`, `admin.min.css`, `admin.css` ni `admin-v2.css`
 - la CSP sigue endurecida
 - las suites `admin-ui-runtime-smoke` y `admin-v3-runtime` pasan
+- la suite `admin-openclaw-login` pasa como parte del gate cuando el shell usa el contrato OpenClaw
 - las suites Playwright se ejecutan contra el `-Domain` solicitado via `TEST_BASE_URL`
+- `gate:admin:rollout:openclaw` endurece el gate para exigir `operator-auth-status` con `mode=openclaw_chatgpt` y `configured=true`
+- si `operator-auth-status` falla o sigue en 503, el gate consulta `admin-auth.php?action=status` para distinguir entre contrato OpenClaw valido y fachada legacy
+- `diagnose:admin:openclaw-auth:rollout` devuelve `diagnosis` y `nextAction` para separar rapido si el entorno esta en `facade_only_rollout`, `admin_auth_legacy_facade`, `openclaw_not_configured` o `openclaw_ready`
 
 ## Rollback
 
@@ -87,6 +101,8 @@ El prune debe dejar `js/admin-chunks/**` solo con archivos alcanzables desde
 canonico.
 `npm run chunks:admin:check` tambien falla si `admin.js` o cualquier chunk
 activo contiene marcadores de merge.
+`npm run check:runtime:artifacts` agrega el chequeo compartido del runtime
+versionado cuando el cambio toca mas de una familia de outputs frontend.
 
 O usar el build canonico del repo:
 

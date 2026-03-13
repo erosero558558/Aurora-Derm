@@ -122,6 +122,18 @@ function parseBoardContent(content, options = {}) {
             .trim()
             .toLowerCase();
         item.cross_domain = parseBooleanLike(item.cross_domain, false);
+        item.provider_mode = String(item.provider_mode || '')
+            .trim()
+            .toLowerCase();
+        item.runtime_surface = String(item.runtime_surface || '')
+            .trim()
+            .toLowerCase();
+        item.runtime_transport = String(item.runtime_transport || '')
+            .trim()
+            .toLowerCase();
+        item.runtime_last_transport = String(item.runtime_last_transport || '')
+            .trim()
+            .toLowerCase();
         item.status = String(item.status || '').trim();
         if (allowedStatuses.size > 0 && !allowedStatuses.has(item.status)) {
             throw new Error(

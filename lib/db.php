@@ -41,11 +41,18 @@ if (!function_exists('db_sqlite_driver_available')) {
     function db_sqlite_driver_available(): bool
     {
         static $available = null;
+        static $lastForcedUnavailable = null;
+        $forcedUnavailable = db_force_sqlite_unavailable();
+        if ($lastForcedUnavailable !== $forcedUnavailable) {
+            $available = null;
+            $lastForcedUnavailable = $forcedUnavailable;
+        }
+
         if (is_bool($available)) {
             return $available;
         }
 
-        if (db_force_sqlite_unavailable()) {
+        if ($forcedUnavailable) {
             $available = false;
             return $available;
         }
@@ -69,12 +76,25 @@ if (!function_exists('db_sqlite_driver_available')) {
 function get_db_connection(?string $dbPath = null, bool $reset = false): ?PDO
 {
     static $pdo = null;
+    static $connectionKey = null;
+
     if ($reset) {
         $pdo = null;
+        $connectionKey = null;
         return null;
     }
-    if ($pdo !== null) {
+
+    if ($pdo !== null && $dbPath === null) {
         return $pdo;
+    }
+
+    $requestedConnectionKey = $dbPath !== null ? 'sqlite:' . $dbPath : null;
+    if ($pdo !== null && $requestedConnectionKey !== null && $connectionKey === $requestedConnectionKey) {
+        return $pdo;
+    }
+    if ($pdo !== null && $requestedConnectionKey !== null && $connectionKey !== $requestedConnectionKey) {
+        $pdo = null;
+        $connectionKey = null;
     }
 
     // Try SQLite if path provided
@@ -94,6 +114,7 @@ function get_db_connection(?string $dbPath = null, bool $reset = false): ?PDO
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            $connectionKey = $requestedConnectionKey;
             // Optimize SQLite
             // $pdo->exec('PRAGMA journal_mode = WAL;'); // Disabled to simplify file-based backups
             $pdo->exec('PRAGMA synchronous = NORMAL;');
@@ -124,6 +145,7 @@ function get_db_connection(?string $dbPath = null, bool $reset = false): ?PDO
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            $connectionKey = 'mysql:' . $host . ':' . $name . ':' . $user;
             return $pdo;
         } catch (PDOException $e) {
             error_log('Piel en Armonía DB Connection Error: Could not connect to database.');

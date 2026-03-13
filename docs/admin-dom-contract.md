@@ -28,10 +28,15 @@ This document freezes the active admin frontend contract after the total cutover
 
 ## Auth/API Contract
 
-- `POST /admin-auth.php?action=login`
-- `POST /admin-auth.php?action=login-2fa`
-- `GET /admin-auth.php?action=status`
-- `POST /admin-auth.php?action=logout`
+- Primary consultorio auth:
+    - `POST /admin-auth.php?action=start`
+    - `GET /admin-auth.php?action=status`
+    - `POST /api.php?resource=operator-auth-complete`
+    - `POST /admin-auth.php?action=logout`
+- Legacy support override only:
+    - `POST /admin-auth.php?action=login`
+    - `POST /admin-auth.php?action=login-2fa`
+    - requires `PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password`
 - `GET /api.php?resource=data`
 - `GET /api.php?resource=funnel-metrics`
 - `GET /api.php?resource=health`

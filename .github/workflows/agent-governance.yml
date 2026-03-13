@@ -17,7 +17,7 @@ permissions:
     pull-requests: write
 
 jobs:
-    dual-codex-guard:
+    tri-lane-runtime-guard:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -73,14 +73,14 @@ jobs:
             - name: Legacy board drift guard (check)
               run: node bin/board-legacy-drift-guard.js --check --json
 
-            - name: Dual Codex check (JSON)
+            - name: Tri-lane runtime check (JSON)
               run: node agent-orchestrator.js codex-check --json
 
             - name: Handoffs lint (JSON)
               run: node agent-orchestrator.js handoffs lint --json
 
     governance:
-        needs: dual-codex-guard
+        needs: tri-lane-runtime-guard
         runs-on: ubuntu-latest
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

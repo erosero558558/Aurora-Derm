@@ -25,6 +25,12 @@
 // Legacy/test only:
 // putenv('PIELARMONIA_ADMIN_PASSWORD_HASH=$2y$...');
 
+// ── Cifrado de datos en reposo ────────────────────────
+// Recomendado/obligatorio en produccion cuando el backend usa JSON fallback.
+// putenv('PIELARMONIA_DATA_ENCRYPTION_KEY=clave_larga_rotada_o_base64:...');
+// Fuerza el cumplimiento en health/readiness aunque el entorno no exponga APP_ENV.
+// putenv('PIELARMONIA_REQUIRE_DATA_ENCRYPTION=true');
+
 // ── Stripe ────────────────────────────────────────────
 // putenv('PIELARMONIA_STRIPE_SECRET_KEY=sk_live_...');
 // putenv('PIELARMONIA_STRIPE_PUBLISHABLE_KEY=pk_live_...');
@@ -144,7 +150,11 @@
 // -- Operator auth (OpenClaw + ChatGPT/OpenAI OAuth) --------------------------
 // Habilita el flujo canonico de autenticacion del operador.
 // putenv('PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt');
+// Modo principal del nucleo interno. Default recomendado: OpenClaw.
+// Usa `legacy_password` solo si necesitas exponer el login clasico en la pantalla principal.
+// putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=openclaw_chatgpt');
 // Lista blanca de correos permitidos para operar el admin.
+// Si no defines allowlist explicita, el backend puede reutilizar `PIELARMONIA_ADMIN_EMAIL` como fallback minimo.
 // putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=operador@pielarmonia.com,otra.persona@pielarmonia.com');
 // Token compartido entre el bridge local y el servidor.
 // putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN=token_bridge_largo_rotado');
@@ -157,6 +167,14 @@
 // putenv('PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL=https://pielarmonia.com');
 // URL base del helper local que corre en el laptop del operador.
 // putenv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL=http://127.0.0.1:4173');
+// URL base del gateway local OpenClaw que expone /v1/session y /v1/session/login.
+// putenv('OPENCLAW_RUNTIME_BASE_URL=http://127.0.0.1:4141');
+// API key opcional para el gateway local si no admite localhost anonimo.
+// putenv('OPENCLAW_GATEWAY_API_KEY=token_gateway_local');
+// putenv('OPENCLAW_GATEWAY_KEY_HEADER=Authorization');
+// putenv('OPENCLAW_GATEWAY_KEY_PREFIX=Bearer');
+// Device label opcional reportado al bridge firmado.
+// putenv('OPENCLAW_HELPER_DEVICE_ID=operator-laptop-c1');
 // TTL del challenge, sesion interna y tolerancia del timestamp firmado.
 // putenv('PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS=300');
 // putenv('PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS=1800');
@@ -164,6 +182,11 @@
 
 // ── Cron (recordatorios automáticos) ────────────────
 // putenv('PIELARMONIA_CRON_SECRET=un_token_secreto_largo');
+// Token opcional para acceder a health/metrics detallados desde tooling externo.
+// Si no se define, los scripts de ops reutilizan PIELARMONIA_CRON_SECRET.
+// putenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN=token_diagnostico_largo');
+// putenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER=Authorization');
+// putenv('PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX=Bearer');
 // ── Rate limit (IP + usuario) ────────────────────────
 // Proxies de confianza (para usar X-Forwarded-For).
 // Por seguridad, X-Forwarded-For se ignora si la peticion no viene de una IP confiable.

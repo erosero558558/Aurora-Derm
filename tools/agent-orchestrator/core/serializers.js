@@ -61,13 +61,16 @@ function serializeBoard(board, options = {}) {
     );
     lines.push(`  kpi: ${board.policy.kpi || 'reduce_rework'}`);
     lines.push(
-        `  codex_partition_model: ${board.policy.codex_partition_model || 'dual_fixed_domains'}`
+        `  codex_partition_model: ${board.policy.codex_partition_model || 'tri_lane_runtime'}`
     );
     lines.push(
         `  codex_backend_instance: ${board.policy.codex_backend_instance || 'codex_backend_ops'}`
     );
     lines.push(
         `  codex_frontend_instance: ${board.policy.codex_frontend_instance || 'codex_frontend'}`
+    );
+    lines.push(
+        `  codex_transversal_instance: ${board.policy.codex_transversal_instance || 'codex_transversal'}`
     );
     lines.push(`  revision: ${normalizeTaskInt(board.policy.revision, 0)}`);
     lines.push(`  updated_at: ${board.policy.updated_at || getDate()}`);
@@ -89,6 +92,12 @@ function serializeBoard(board, options = {}) {
         lines.push(`    domain_lane: ${task.domain_lane || 'backend_ops'}`);
         lines.push(`    lane_lock: ${task.lane_lock || 'strict'}`);
         lines.push(`    cross_domain: ${task.cross_domain ? 'true' : 'false'}`);
+        lines.push(`    provider_mode: ${task.provider_mode || ''}`);
+        lines.push(`    runtime_surface: ${task.runtime_surface || ''}`);
+        lines.push(`    runtime_transport: ${task.runtime_transport || ''}`);
+        lines.push(
+            `    runtime_last_transport: ${task.runtime_last_transport || ''}`
+        );
         lines.push(`    files: ${serializeArrayInline(task.files || [])}`);
         lines.push(`    source_signal: ${task.source_signal || 'manual'}`);
         lines.push(`    source_ref: ${quote(task.source_ref || '')}`);

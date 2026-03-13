@@ -16,6 +16,48 @@
         "health_url": "https://pielarmonia.com/api.php?resource=health",
         "required_job_key": "public_main_sync"
     },
+    "runtime": {
+        "providers": {
+            "openclaw_chatgpt": {
+                "default_transport": "hybrid_http_cli",
+                "preferred_transport": "http_bridge",
+                "surfaces": {
+                    "figo_queue": {
+                        "verification": "/figo-ai-bridge.php",
+                        "invoke": "/figo-ai-bridge.php",
+                        "supports_invoke": true
+                    },
+                    "leadops_worker": {
+                        "verification": "/api.php?resource=health",
+                        "invoke": "/api.php?resource=lead-ai-request",
+                        "supports_invoke": true
+                    },
+                    "operator_auth": {
+                        "verification": "/api.php?resource=operator-auth-status",
+                        "supports_invoke": false
+                    }
+                },
+                "transports": {
+                    "hybrid_http_cli": {
+                        "ready_states": ["healthy", "degraded"]
+                    },
+                    "http_bridge": {
+                        "ready_states": ["healthy", "degraded"]
+                    },
+                    "cli_helper": {
+                        "ready_states": ["healthy", "degraded"]
+                    }
+                }
+            }
+        },
+        "quotas": {
+            "by_codex_instance": {
+                "codex_backend_ops": 1,
+                "codex_frontend": 1,
+                "codex_transversal": 1
+            }
+        }
+    },
     "domain_health": {
         "priority_domains": ["calendar", "chat", "payments"],
         "domain_weights": {
