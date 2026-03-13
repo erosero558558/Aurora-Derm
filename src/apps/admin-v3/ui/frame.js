@@ -15,7 +15,6 @@ export {
     setLogin2FAVisibility,
     setOpenClawChallenge,
     setLoginFeedback,
-    setOperatorAuthLoginState,
     setLoginSubmittingState,
     resetLoginForm,
     focusLoginField,

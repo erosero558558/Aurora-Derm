@@ -209,10 +209,9 @@ function getOperatorConsultorioShortLabel(consultorio) {
 
 function renderOperatorProfileStatus(profile) {
     const surfaceContract = getOperatorSurfaceContract(profile);
-    const profileFingerprint = getTurneroClinicProfileFingerprint(profile).slice(
-        0,
-        8
-    );
+    const profileFingerprint = getTurneroClinicProfileFingerprint(
+        profile
+    ).slice(0, 8);
     const state =
         surfaceContract.state === 'alert'
             ? 'danger'
@@ -226,13 +225,15 @@ function renderOperatorProfileStatus(profile) {
                 : `Bloqueado · ruta fuera de canon · se esperaba ${surfaceContract.expectedRoute || '/operador-turnos.html'}`
             : `Perfil remoto verificado · firma ${profileFingerprint} · canon ${surfaceContract.expectedRoute || '/operador-turnos.html'}`;
 
-    document.querySelectorAll('.queue-operator-profile-status').forEach((node) => {
-        if (!(node instanceof HTMLElement)) {
-            return;
-        }
-        node.dataset.state = state;
-        node.textContent = text;
-    });
+    document
+        .querySelectorAll('.queue-operator-profile-status')
+        .forEach((node) => {
+            if (!(node instanceof HTMLElement)) {
+                return;
+            }
+            node.dataset.state = state;
+            node.textContent = text;
+        });
 }
 
 function getOperatorSurfaceContract(profile = operatorClinicProfile) {
@@ -303,11 +304,7 @@ function applyOperatorClinicProfile(profile) {
     });
     setText(
         '#operatorClinicMeta',
-        [
-            'Piloto web por clínica',
-            clinicId,
-            clinicCity || clinicShortName,
-        ]
+        ['Piloto web por clínica', clinicId, clinicCity || clinicShortName]
             .filter(Boolean)
             .join(' · ')
     );
@@ -1144,16 +1141,16 @@ function updateOperatorReadiness() {
                     ? 'Perfil de clínica no cargado'
                     : 'Ruta del piloto incorrecta'
                 : blocker?.key === 'offline_safe'
-                ? 'Modo seguro'
-                : blocker?.key === 'fallback'
-                  ? 'Sincronización pendiente'
-                  : readyForOfflineUse
-                    ? 'Offline operativo'
-                    : readyForLiveUse
-                      ? 'Equipo listo para operar'
-                      : pendingCount === numpadStatus.requiredCount
-                        ? 'Falta validar el numpad'
-                        : `Faltan validar ${pendingCount} tecla(s)`;
+                  ? 'Modo seguro'
+                  : blocker?.key === 'fallback'
+                    ? 'Sincronización pendiente'
+                    : readyForOfflineUse
+                      ? 'Offline operativo'
+                      : readyForLiveUse
+                        ? 'Equipo listo para operar'
+                        : pendingCount === numpadStatus.requiredCount
+                          ? 'Falta validar el numpad'
+                          : `Faltan validar ${pendingCount} tecla(s)`;
     }
 
     if (readinessSummary) {
@@ -1161,16 +1158,16 @@ function updateOperatorReadiness() {
             surfaceContract.state === 'alert'
                 ? surfaceContract.detail
                 : blocker?.key === 'offline_safe'
-                ? 'Mantén la pantalla solo como referencia hasta recuperar red o una sesión válida.'
-                : blocker?.key === 'fallback'
-                  ? 'La cola está en fallback local. Mantén la vista como referencia y refresca antes de reanudar llamados o cierres.'
-                  : readyForOfflineUse
-                    ? 'La contingencia offline está habilitada. Puedes operar con las cuatro teclas del numpad y el replay se hará al reconectar.'
-                    : readyForLiveUse
-                      ? 'La ruta, la sesión y las cuatro teclas operativas ya respondieron. Puedes pasar al primer llamado real.'
-                    : `Valida ${formatOperatorLabelList(
-                            numpadStatus.pendingLabels
-                        )} en el Genius Numpad 1000 antes del primer llamado real.`;
+                  ? 'Mantén la pantalla solo como referencia hasta recuperar red o una sesión válida.'
+                  : blocker?.key === 'fallback'
+                    ? 'La cola está en fallback local. Mantén la vista como referencia y refresca antes de reanudar llamados o cierres.'
+                    : readyForOfflineUse
+                      ? 'La contingencia offline está habilitada. Puedes operar con las cuatro teclas del numpad y el replay se hará al reconectar.'
+                      : readyForLiveUse
+                        ? 'La ruta, la sesión y las cuatro teclas operativas ya respondieron. Puedes pasar al primer llamado real.'
+                        : `Valida ${formatOperatorLabelList(
+                              numpadStatus.pendingLabels
+                          )} en el Genius Numpad 1000 antes del primer llamado real.`;
     }
 }
 
@@ -1723,8 +1720,7 @@ function ensureOperatorAuthPolling() {
                     'No se pudo consultar el estado del login OpenClaw.'
             );
             createToast(
-                error?.message ||
-                    'No se pudo consultar el estado de OpenClaw',
+                error?.message || 'No se pudo consultar el estado de OpenClaw',
                 'error'
             );
             return getState().auth;

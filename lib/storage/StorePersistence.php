@@ -4,6 +4,26 @@ declare(strict_types=1);
 
 final class StorePersistence
 {
+    /**
+     * @return array<string, string>
+     */
+    private static function kvStoreJsonCollections(): array
+    {
+        return [
+            'queue_help_requests' => 'queue_help_requests_json',
+            'patient_cases' => 'patient_cases_json',
+            'patient_case_links' => 'patient_case_links_json',
+            'patient_case_timeline_events' => 'patient_case_timeline_events_json',
+            'patient_case_approvals' => 'patient_case_approvals_json',
+            'clinical_history_sessions' => 'clinical_history_sessions_json',
+            'clinical_history_drafts' => 'clinical_history_drafts_json',
+            'clinical_history_events' => 'clinical_history_events_json',
+            'case_media_proposals' => 'case_media_proposals_json',
+            'case_media_publications' => 'case_media_publications_json',
+            'case_media_events' => 'case_media_events_json',
+        ];
+    }
+
     public static function ensureJsonStoreFile(): bool
     {
         $jsonPath = StorePaths::dataJsonPath();
@@ -326,26 +346,12 @@ final class StorePersistence
             if (isset($data['createdAt'])) {
                 $stmt->execute(['createdAt', $data['createdAt']]);
             }
-            $stmt->execute([
-                'queue_help_requests_json',
-                json_encode($data['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_cases_json',
-                json_encode($data['patient_cases'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_case_links_json',
-                json_encode($data['patient_case_links'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_case_timeline_events_json',
-                json_encode($data['patient_case_timeline_events'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_case_approvals_json',
-                json_encode($data['patient_case_approvals'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
+            foreach (self::kvStoreJsonCollections() as $storeKey => $kvKey) {
+                $stmt->execute([
+                    $kvKey,
+                    json_encode($data[$storeKey] ?? [], JSON_UNESCAPED_UNICODE),
+                ]);
+            }
 
             $pdo->commit();
             @rename($jsonPath, $jsonPath . '.migrated');
@@ -447,6 +453,12 @@ final class StorePersistence
                 'patient_case_links' => [],
                 'patient_case_timeline_events' => [],
                 'patient_case_approvals' => [],
+                'clinical_history_sessions' => [],
+                'clinical_history_drafts' => [],
+                'clinical_history_events' => [],
+                'case_media_proposals' => [],
+                'case_media_publications' => [],
+                'case_media_events' => [],
                 'telemedicine_intakes' => self::fetchJsonDataRows($pdo, 'telemedicine_intakes'),
                 'clinical_uploads' => self::fetchJsonDataRows($pdo, 'clinical_uploads'),
                 'availability' => self::fetchAvailability($pdo),
@@ -460,22 +472,8 @@ final class StorePersistence
                 $store['updatedAt'] = $row['value'];
             }
 
-            $stmt = $pdo->query("SELECT value FROM kv_store WHERE key = 'queue_help_requests_json'");
-            $row = $stmt->fetch();
-            if ($row && is_string($row['value'] ?? null) && trim((string) $row['value']) !== '') {
-                $decoded = json_decode((string) $row['value'], true);
-                if (is_array($decoded)) {
-                    $store['queue_help_requests'] = $decoded;
-                }
-            }
-
             $store['idx_appointments_date'] = build_appointment_index($store['appointments']);
-            foreach ([
-                'patient_cases' => 'patient_cases_json',
-                'patient_case_links' => 'patient_case_links_json',
-                'patient_case_timeline_events' => 'patient_case_timeline_events_json',
-                'patient_case_approvals' => 'patient_case_approvals_json',
-            ] as $storeKey => $kvKey) {
+            foreach (self::kvStoreJsonCollections() as $storeKey => $kvKey) {
                 $stmt = $pdo->prepare("SELECT value FROM kv_store WHERE key = ?");
                 $stmt->execute([$kvKey]);
                 $row = $stmt->fetch();
@@ -709,26 +707,12 @@ final class StorePersistence
 
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)");
             $stmt->execute(['updatedAt', local_date('c')]);
-            $stmt->execute([
-                'queue_help_requests_json',
-                json_encode($store['queue_help_requests'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_cases_json',
-                json_encode($store['patient_cases'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_case_links_json',
-                json_encode($store['patient_case_links'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_case_timeline_events_json',
-                json_encode($store['patient_case_timeline_events'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
-            $stmt->execute([
-                'patient_case_approvals_json',
-                json_encode($store['patient_case_approvals'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]);
+            foreach (self::kvStoreJsonCollections() as $storeKey => $kvKey) {
+                $stmt->execute([
+                    $kvKey,
+                    json_encode($store[$storeKey] ?? [], JSON_UNESCAPED_UNICODE),
+                ]);
+            }
 
             $pdo->commit();
             return true;

@@ -1,6 +1,36 @@
 import { authRequest, setApiCsrfToken } from '../core/api-client.js';
 import { getState, updateState } from '../core/store.js';
 
+function snapshotAuthState() {
+    return {
+        ...getState().auth,
+    };
+}
+
+function openHelperWindow(helperUrl) {
+    const url = String(helperUrl || '').trim();
+    if (
+        !url ||
+        typeof window === 'undefined' ||
+        typeof window.open !== 'function'
+    ) {
+        return false;
+    }
+
+    try {
+        const popup = window.open(url, '_blank', 'noopener,noreferrer');
+        return Boolean(popup);
+    } catch (_error) {
+        return false;
+    }
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => {
+        window.setTimeout(resolve, Math.max(0, Number(ms || 0)));
+    });
+}
+
 function normalizeAuthMode(payload, fallback = 'legacy_password') {
     const raw = String(payload?.mode || '')
         .trim()
@@ -82,7 +112,13 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     const status = String(
         payload?.status || (authenticated ? 'autenticado' : 'anonymous')
     ).trim();
-    const challenge = normalizeChallenge(payload?.challenge);
+    const currentAuth = getState().auth;
+    const nextChallenge = normalizeChallenge(payload?.challenge);
+    const challenge =
+        nextChallenge ||
+        (authenticated || mode !== 'openclaw_chatgpt'
+            ? null
+            : currentAuth.challenge);
     const operator = normalizeOperator(payload?.operator);
     const configured =
         payload?.configured !== false &&
@@ -117,6 +153,10 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
             status,
             configured,
             challenge,
+            helperUrlOpened:
+                authenticated || mode !== 'openclaw_chatgpt'
+                    ? false
+                    : currentAuth.helperUrlOpened === true,
             operator,
             capabilities,
             lastError: authenticated ? '' : String(payload?.error || ''),
@@ -131,13 +171,21 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     };
 }
 
+export function isOperatorAuthMode(auth = getState().auth) {
+    return (
+        normalizeAuthMode(auth, getState().auth.mode || 'legacy_password') ===
+        'openclaw_chatgpt'
+    );
+}
+
 export async function checkAuthStatus() {
     try {
         const payload = await authRequest('status');
-        return applyAuthPayload(
+        const snapshot = applyAuthPayload(
             payload,
             getState().auth.mode || 'legacy_password'
-        ).authenticated;
+        );
+        return snapshot.authenticated;
     } catch (_error) {
         return false;
     }
@@ -150,6 +198,58 @@ export async function startOpenClawLogin() {
     });
 
     return applyAuthPayload(payload, 'openclaw_chatgpt');
+}
+
+export async function startOperatorAuth(options = {}) {
+    const forceNew = options?.forceNew === true;
+    const openHelper = options?.openHelper === true;
+
+    const payload = await authRequest('start', {
+        method: 'POST',
+        body: forceNew ? { forceNew: true } : {},
+    });
+    applyAuthPayload(payload, 'openclaw_chatgpt');
+
+    const helperUrl = String(getState().auth.challenge?.helperUrl || '').trim();
+    const helperUrlOpened = openHelper ? openHelperWindow(helperUrl) : false;
+
+    updateState((state) => ({
+        ...state,
+        auth: {
+            ...state.auth,
+            helperUrlOpened,
+        },
+    }));
+
+    return snapshotAuthState();
+}
+
+export async function pollOperatorAuthStatus(options = {}) {
+    const onUpdate =
+        typeof options?.onUpdate === 'function' ? options.onUpdate : null;
+    const maxAttempts = Math.max(1, Number(options?.maxAttempts || 20) || 20);
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+        attempts += 1;
+        await checkAuthStatus();
+        const snapshot = snapshotAuthState();
+        if (onUpdate) {
+            onUpdate(snapshot);
+        }
+
+        if (
+            snapshot.authenticated ||
+            !isOperatorAuthMode(snapshot) ||
+            String(snapshot.status || '') !== 'pending'
+        ) {
+            return snapshot;
+        }
+
+        await sleep(snapshot.challenge?.pollAfterMs || 1200);
+    }
+
+    return snapshotAuthState();
 }
 
 export async function loginWithPassword(password) {
@@ -175,6 +275,7 @@ export async function loginWithPassword(password) {
                 status: 'two_factor_required',
                 configured: true,
                 challenge: null,
+                helperUrlOpened: false,
                 operator: null,
                 capabilities: {
                     adminAgent: false,
@@ -201,6 +302,7 @@ export async function loginWithPassword(password) {
             status: 'authenticated',
             configured: true,
             challenge: null,
+            helperUrlOpened: false,
             operator: null,
             capabilities: normalizeCapabilities(
                 payload?.capabilities,
@@ -241,6 +343,7 @@ export async function loginWith2FA(code) {
             status: 'authenticated',
             configured: true,
             challenge: null,
+            helperUrlOpened: false,
             operator: null,
             capabilities: normalizeCapabilities(
                 payload?.capabilities,
@@ -280,6 +383,7 @@ export async function logoutSession() {
                 String(payload?.status || '') !==
                     'operator_auth_not_configured',
             challenge: null,
+            helperUrlOpened: false,
             operator: null,
             capabilities: {
                 adminAgent: false,

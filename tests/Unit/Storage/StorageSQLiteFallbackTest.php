@@ -146,6 +146,100 @@ final class StorageSQLiteFallbackTest extends TestCase
         $this->assertSame($dirTwo, data_dir_path());
     }
 
+    /**
+     * @runInSeparateProcess
+     */
+    public function testSqliteRoundTripPreservesClinicalHistoryAndCaseMediaCollections(): void
+    {
+        if (!db_sqlite_driver_available()) {
+            $this->markTestSkipped('SQLite no disponible en este entorno.');
+        }
+
+        $tempDir = $this->createTempDataDir('sqlite-roundtrip-clinical-media');
+        putenv('PIELARMONIA_DATA_DIR=' . $tempDir);
+        putenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE');
+        putenv('PIELARMONIA_STORAGE_JSON_FALLBACK=true');
+
+        get_db_connection(null, true);
+
+        $this->assertTrue(ensure_data_file());
+        $this->assertSame('sqlite', storage_backend_mode());
+
+        $store = read_store();
+        $store['clinical_history_sessions'] = [
+            [
+                'id' => 70101,
+                'sessionId' => 'chs_media_701',
+                'caseId' => 'CASE-MEDIA-701',
+                'appointmentId' => 701,
+                'patient' => [
+                    'name' => 'Ana Test',
+                ],
+            ],
+        ];
+        $store['clinical_history_drafts'] = [
+            [
+                'id' => 70102,
+                'sessionId' => 'chs_media_701',
+                'caseId' => 'CASE-MEDIA-701',
+                'clinicianDraft' => [
+                    'resumen' => 'Seguimiento dermatologico con media before/after.',
+                ],
+            ],
+        ];
+        $store['clinical_history_events'] = [
+            [
+                'id' => 70103,
+                'sessionId' => 'chs_media_701',
+                'caseId' => 'CASE-MEDIA-701',
+                'eventType' => 'draft_saved',
+            ],
+        ];
+        $store['case_media_proposals'] = [
+            [
+                'id' => 70104,
+                'proposalId' => 'cmp_701',
+                'caseId' => 'CASE-MEDIA-701',
+                'status' => 'draft',
+                'channels' => ['instagram_feed'],
+            ],
+        ];
+        $store['case_media_publications'] = [
+            [
+                'id' => 70105,
+                'publicationId' => 'pub_701',
+                'proposalId' => 'cmp_701',
+                'caseId' => 'CASE-MEDIA-701',
+                'status' => 'scheduled',
+            ],
+        ];
+        $store['case_media_events'] = [
+            [
+                'id' => 70106,
+                'caseId' => 'CASE-MEDIA-701',
+                'eventType' => 'proposal_generated',
+                'proposalId' => 'cmp_701',
+            ],
+        ];
+
+        $this->assertTrue(write_store($store, false));
+
+        $roundTrip = read_store();
+
+        $this->assertCount(1, $roundTrip['clinical_history_sessions'] ?? []);
+        $this->assertSame('CASE-MEDIA-701', (string) ($roundTrip['clinical_history_sessions'][0]['caseId'] ?? ''));
+        $this->assertCount(1, $roundTrip['clinical_history_drafts'] ?? []);
+        $this->assertSame('chs_media_701', (string) ($roundTrip['clinical_history_drafts'][0]['sessionId'] ?? ''));
+        $this->assertCount(1, $roundTrip['clinical_history_events'] ?? []);
+        $this->assertSame('draft_saved', (string) ($roundTrip['clinical_history_events'][0]['eventType'] ?? ''));
+        $this->assertCount(1, $roundTrip['case_media_proposals'] ?? []);
+        $this->assertSame('cmp_701', (string) ($roundTrip['case_media_proposals'][0]['proposalId'] ?? ''));
+        $this->assertCount(1, $roundTrip['case_media_publications'] ?? []);
+        $this->assertSame('pub_701', (string) ($roundTrip['case_media_publications'][0]['publicationId'] ?? ''));
+        $this->assertCount(1, $roundTrip['case_media_events'] ?? []);
+        $this->assertSame('proposal_generated', (string) ($roundTrip['case_media_events'][0]['eventType'] ?? ''));
+    }
+
     protected function tearDown(): void
     {
         foreach ($this->envKeys as $key) {

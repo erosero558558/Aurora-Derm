@@ -32,7 +32,10 @@ const shouldStartLocalServer = !process.env.TEST_BASE_URL;
 const localServerPreference = (
     process.env.TEST_LOCAL_SERVER || ''
 ).toLowerCase();
-const reuseExistingServer = readBooleanEnv('TEST_REUSE_EXISTING_SERVER', false);
+const reuseExistingServer = readBooleanEnv(
+    'TEST_REUSE_EXISTING_SERVER',
+    !readBooleanEnv('CI', false)
+);
 
 function hasPhpRuntime() {
     const probe = spawnSync('php', ['-v'], { stdio: 'ignore' });

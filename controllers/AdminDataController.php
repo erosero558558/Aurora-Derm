@@ -7,6 +7,7 @@ require_once __DIR__ . '/../lib/QueueSurfaceStatusStore.php';
 require_once __DIR__ . '/../lib/AppDownloadsCatalog.php';
 require_once __DIR__ . '/../lib/PatientCaseService.php';
 require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
+require_once __DIR__ . '/../lib/TurneroClinicProfile.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 
 class AdminDataController
@@ -109,6 +110,9 @@ class AdminDataController
         $store['internalConsoleMeta'] = function_exists('internal_console_readiness_snapshot')
             ? internal_console_readiness_snapshot()
             : null;
+        $store['turneroClinicProfile'] = read_turnero_clinic_profile();
+        $store['turneroClinicProfileMeta'] = read_turnero_clinic_profile_runtime_meta();
+        $store['turneroClinicProfileCatalogStatus'] = read_turnero_clinic_profile_catalog_status();
         $store = self::redactClinicalReadModelsIfBlocked($store);
 
         $store['appDownloads'] = self::buildAppDownloads();

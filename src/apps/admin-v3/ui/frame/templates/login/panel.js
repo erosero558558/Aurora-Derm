@@ -22,59 +22,6 @@ export function renderLoginPanel() {
                 </p>
             </div>
 
-            <div id="adminOpenClawFlow" class="sony-login-form is-hidden">
-                <div class="admin-login-field">
-                    <span>OpenClaw / ChatGPT</span>
-                    <p id="adminOpenClawSummary">
-                        Abre OpenClaw para validar tu sesion de operador sin usar clave local.
-                    </p>
-                </div>
-                <div class="admin-login-actions">
-                    <button
-                        id="adminOpenClawBtn"
-                        type="button"
-                        data-action="start-operator-auth"
-                    >
-                        Abrir OpenClaw
-                    </button>
-                    <button
-                        id="adminOpenClawRetryBtn"
-                        type="button"
-                        class="sony-login-reset is-hidden"
-                        data-action="retry-operator-auth"
-                    >
-                        Generar nuevo enlace
-                    </button>
-                </div>
-                <p
-                    id="adminOpenClawHelperMeta"
-                    class="admin-login-support-copy"
-                >
-                    Si la ventana no se abre, usa el enlace manual o genera un
-                    nuevo challenge.
-                </p>
-                <p
-                    id="adminOpenClawManualRow"
-                    class="admin-login-support-copy is-hidden"
-                >
-                    Codigo manual:
-                    <code id="adminOpenClawManualCode"></code>
-                </p>
-                <p
-                    id="adminOpenClawLinkRow"
-                    class="admin-login-support-copy is-hidden"
-                >
-                    <a
-                        id="adminOpenClawHelperLink"
-                        href="#"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        Abrir helper manualmente
-                    </a>
-                </p>
-            </div>
-
             <form id="loginForm" class="sony-login-form" novalidate>
                 <div id="legacyLoginStage">
                     <label id="adminPasswordField" class="admin-login-field" for="adminPassword">

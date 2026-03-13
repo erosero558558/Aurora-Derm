@@ -56,6 +56,12 @@ async function waitForAdminReady(page) {
     );
 }
 
+async function expectAdminOpenClawStage(page) {
+    await expect(page.locator('#loginForm')).toBeVisible();
+    await expect(page.locator('#openclawLoginStage')).toBeVisible();
+    await expect(page.locator('#legacyLoginStage')).toHaveClass(/is-hidden/);
+}
+
 async function installSharedOperatorAuthMocks(context) {
     const queueTicket = {
         id: 2201,
@@ -124,7 +130,9 @@ async function installSharedOperatorAuthMocks(context) {
 
     await context.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
-        const action = String(url.searchParams.get('action') || '').toLowerCase();
+        const action = String(
+            url.searchParams.get('action') || ''
+        ).toLowerCase();
 
         if (action === 'status') {
             if (authState.authenticated) {
@@ -294,12 +302,14 @@ test.describe('OpenClaw shared session', () => {
 
         await page.goto(adminUrl());
         await waitForAdminReady(page);
-        await expect(page.locator('#adminOpenClawFlow')).toBeVisible();
+        await expectAdminOpenClawStage(page);
 
-        await page.locator('#adminOpenClawBtn').click();
+        await page.locator('#loginBtn').click();
 
         await expect
-            .poll(() => String(session.getLastIssuedChallenge()?.helperUrl || ''))
+            .poll(() =>
+                String(session.getLastIssuedChallenge()?.helperUrl || '')
+            )
             .not.toBe('');
         await expect
             .poll(() =>
@@ -308,7 +318,10 @@ test.describe('OpenClaw shared session', () => {
             .toBe(session.getLastIssuedChallenge().helperUrl);
         await expect(page.locator('#adminDashboard')).toBeVisible();
         await expect(page.locator('#adminSessionMeta')).toContainText(
-            'OpenClaw / ChatGPT'
+            /operator@example\.com/i
+        );
+        await expect(page.locator('#adminSessionMeta')).toContainText(
+            /OpenClaw/i
         );
 
         const operatorPage = await context.newPage();
@@ -318,9 +331,9 @@ test.describe('OpenClaw shared session', () => {
         await expect(operatorPage.locator('#operatorLoginView')).toHaveClass(
             /is-hidden/
         );
-        await expect(operatorPage.locator('#operatorActionTitle')).toContainText(
-            'Siguiente: B-2201'
-        );
+        await expect(
+            operatorPage.locator('#operatorActionTitle')
+        ).toContainText('Siguiente: B-2201');
     });
 
     test('operator autentica, admin reutiliza, y logout invalida ambas superficies', async ({
@@ -336,7 +349,9 @@ test.describe('OpenClaw shared session', () => {
         await page.locator('#operatorOpenClawBtn').click();
 
         await expect
-            .poll(() => String(session.getLastIssuedChallenge()?.helperUrl || ''))
+            .poll(() =>
+                String(session.getLastIssuedChallenge()?.helperUrl || '')
+            )
             .not.toBe('');
         await expect
             .poll(() =>
@@ -351,7 +366,10 @@ test.describe('OpenClaw shared session', () => {
 
         await expect(adminPage.locator('#adminDashboard')).toBeVisible();
         await expect(adminPage.locator('#adminSessionMeta')).toContainText(
-            'OpenClaw / ChatGPT'
+            /operator@example\.com/i
+        );
+        await expect(adminPage.locator('#adminSessionMeta')).toContainText(
+            /OpenClaw/i
         );
 
         await page.locator('#operatorLogoutBtn').click();
@@ -364,9 +382,8 @@ test.describe('OpenClaw shared session', () => {
 
         await adminPage.reload();
         await waitForAdminReady(adminPage);
-        await expect(adminPage.locator('#adminOpenClawFlow')).toBeVisible();
+        await expectAdminOpenClawStage(adminPage);
         await expect(page.locator('#operatorApp')).toHaveClass(/is-hidden/);
-        await expect(adminPage.locator('#loginForm')).toHaveClass(/is-hidden/);
         await expect(adminPage.locator('#adminDashboard')).toHaveClass(
             /is-hidden/
         );

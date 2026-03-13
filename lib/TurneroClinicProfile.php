@@ -160,6 +160,45 @@ function turnero_clinic_profile_normalize(array $profile): array
     ];
 }
 
+function turnero_clinic_profile_hash_source(string $input): string
+{
+    $hash = 2166136261;
+    $length = strlen($input);
+    for ($index = 0; $index < $length; $index += 1) {
+        $hash ^= ord($input[$index]);
+        $hash = ($hash * 16777619) & 0xffffffff;
+    }
+
+    return sprintf('%08x', $hash & 0xffffffff);
+}
+
+function turnero_clinic_profile_fingerprint(array $profile): string
+{
+    $normalized = turnero_clinic_profile_normalize($profile);
+    $source = implode('|', [
+        (string) ($normalized['clinic_id'] ?? ''),
+        (string) ($normalized['branding']['base_url'] ?? ''),
+        (string) ($normalized['consultorios']['c1']['label'] ?? ''),
+        (string) ($normalized['consultorios']['c1']['short_label'] ?? ''),
+        (string) ($normalized['consultorios']['c2']['label'] ?? ''),
+        (string) ($normalized['consultorios']['c2']['short_label'] ?? ''),
+        !empty($normalized['surfaces']['admin']['enabled']) ? '1' : '0',
+        (string) ($normalized['surfaces']['admin']['route'] ?? ''),
+        !empty($normalized['surfaces']['operator']['enabled']) ? '1' : '0',
+        (string) ($normalized['surfaces']['operator']['route'] ?? ''),
+        !empty($normalized['surfaces']['kiosk']['enabled']) ? '1' : '0',
+        (string) ($normalized['surfaces']['kiosk']['route'] ?? ''),
+        !empty($normalized['surfaces']['display']['enabled']) ? '1' : '0',
+        (string) ($normalized['surfaces']['display']['route'] ?? ''),
+        (string) ($normalized['release']['mode'] ?? ''),
+        (string) ($normalized['release']['admin_mode_default'] ?? ''),
+        !empty($normalized['release']['separate_deploy']) ? '1' : '0',
+        !empty($normalized['release']['native_apps_blocking']) ? '1' : '0',
+    ]);
+
+    return turnero_clinic_profile_hash_source($source);
+}
+
 function read_turnero_clinic_profile(): array
 {
     static $cache = null;
@@ -187,6 +226,19 @@ function read_turnero_clinic_profile(): array
     );
 
     return $cache;
+}
+
+function read_turnero_clinic_profile_runtime_meta(): array
+{
+    $profile = read_turnero_clinic_profile();
+
+    return [
+        'source' => 'remote',
+        'cached' => false,
+        'clinicId' => (string) ($profile['clinic_id'] ?? ''),
+        'profileFingerprint' => turnero_clinic_profile_fingerprint($profile),
+        'fetchedAt' => function_exists('local_date') ? local_date('c') : date('c'),
+    ];
 }
 
 function list_turnero_clinic_profile_catalog(): array

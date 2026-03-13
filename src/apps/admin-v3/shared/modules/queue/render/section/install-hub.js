@@ -4095,47 +4095,61 @@ function renderQueueAdminViewMode(manifest, detectedPlatform) {
     const secondaryNote =
         releaseNotes[1] ||
         'Instaladores y Android TV quedan como siguiente release, no como bloqueo del go-live.';
+    const renderKey = [
+        adminMode,
+        clinicName,
+        clinicShortName,
+        clinicId,
+        releaseNote,
+        secondaryNote,
+    ].join('|');
+    const shouldRender =
+        root.dataset.queueAdminViewModeRenderKey !== renderKey ||
+        root.childElementCount === 0;
 
-    setHtml(
-        '#queueAdminViewMode',
-        `
-            <section class="queue-admin-view-mode__shell" data-state="${escapeHtml(
-                adminMode
-            )}">
-                <div class="queue-admin-view-mode__header">
-                    <div class="queue-admin-view-mode__copy">
-                        <p class="queue-admin-view-mode__eyebrow">Corte de produccion</p>
-                        <h5 id="queueAdminViewModeTitle">${escapeHtml(
-                            `${clinicShortName} · piloto web por clinica`
-                        )}</h5>
-                        <p id="queueAdminViewModeSummary" class="queue-admin-view-mode__summary">${escapeHtml(
-                            modeSummary
-                        )}</p>
+    if (shouldRender) {
+        setHtml(
+            '#queueAdminViewMode',
+            `
+                <section class="queue-admin-view-mode__shell" data-state="${escapeHtml(
+                    adminMode
+                )}">
+                    <div class="queue-admin-view-mode__header">
+                        <div class="queue-admin-view-mode__copy">
+                            <p class="queue-admin-view-mode__eyebrow">Corte de produccion</p>
+                            <h5 id="queueAdminViewModeTitle">${escapeHtml(
+                                `${clinicShortName} · piloto web por clinica`
+                            )}</h5>
+                            <p id="queueAdminViewModeSummary" class="queue-admin-view-mode__summary">${escapeHtml(
+                                modeSummary
+                            )}</p>
+                        </div>
+                        <div class="queue-admin-view-mode__meta">
+                            <span id="queueAdminViewModeChip" class="queue-admin-view-mode__chip" data-state="${escapeHtml(
+                                adminMode
+                            )}">${escapeHtml(modeChip)}</span>
+                            <span id="queueAdminViewModeClinic" class="queue-admin-view-mode__clinic">${escapeHtml(
+                                `${clinicName} · ${clinicId}`
+                            )}</span>
+                        </div>
                     </div>
-                    <div class="queue-admin-view-mode__meta">
-                        <span id="queueAdminViewModeChip" class="queue-admin-view-mode__chip" data-state="${escapeHtml(
-                            adminMode
-                        )}">${escapeHtml(modeChip)}</span>
-                        <span id="queueAdminViewModeClinic" class="queue-admin-view-mode__clinic">${escapeHtml(
-                            `${clinicName} · ${clinicId}`
-                        )}</span>
+                    <div class="queue-admin-view-mode__actions" role="group" aria-label="Modo del hub de turnero">
+                        <button id="queueAdminViewModeBasic" type="button" class="queue-admin-view-mode__choice" data-state="${adminMode === 'basic' ? 'active' : 'idle'}">
+                            Basic
+                        </button>
+                        <button id="queueAdminViewModeExpert" type="button" class="queue-admin-view-mode__choice" data-state="${adminMode === 'expert' ? 'active' : 'idle'}">
+                            Expert
+                        </button>
                     </div>
-                </div>
-                <div class="queue-admin-view-mode__actions" role="group" aria-label="Modo del hub de turnero">
-                    <button id="queueAdminViewModeBasic" type="button" class="queue-admin-view-mode__choice" data-state="${adminMode === 'basic' ? 'active' : 'idle'}">
-                        Basic
-                    </button>
-                    <button id="queueAdminViewModeExpert" type="button" class="queue-admin-view-mode__choice" data-state="${adminMode === 'expert' ? 'active' : 'idle'}">
-                        Expert
-                    </button>
-                </div>
-                <ul class="queue-admin-view-mode__notes">
-                    <li>${escapeHtml(releaseNote)}</li>
-                    <li>${escapeHtml(secondaryNote)}</li>
-                </ul>
-            </section>
-        `
-    );
+                    <ul class="queue-admin-view-mode__notes">
+                        <li>${escapeHtml(releaseNote)}</li>
+                        <li>${escapeHtml(secondaryNote)}</li>
+                    </ul>
+                </section>
+            `
+        );
+        root.dataset.queueAdminViewModeRenderKey = renderKey;
+    }
 
     const rerenderFullHub = (nextMode) => {
         persistQueueAdminViewMode(nextMode);

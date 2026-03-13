@@ -9,6 +9,9 @@ export const LOCAL_DATA_KEYS = {
     leadOpsMeta: 'leadops-meta',
     queueSurfaceStatus: 'queue-surface-status',
     appDownloads: 'app-downloads',
+    turneroClinicProfile: 'turnero-clinic-profile',
+    turneroClinicProfileMeta: 'turnero-clinic-profile-meta',
+    turneroClinicProfileCatalogStatus: 'turnero-clinic-profile-catalog-status',
     internalConsoleMeta: 'internal-console-meta',
     health: 'health-status',
 };

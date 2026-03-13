@@ -25,11 +25,14 @@ test.describe('OpenClaw local real smoke', () => {
             'data-admin-ready',
             'true'
         );
-        await expect(page.locator('#adminOpenClawFlow')).toBeVisible();
-        await expect(page.locator('#loginForm')).toHaveClass(/is-hidden/);
+        await expect(page.locator('#loginForm')).toBeVisible();
+        await expect(page.locator('#openclawLoginStage')).toBeVisible();
+        await expect(page.locator('#legacyLoginStage')).toHaveClass(
+            /is-hidden/
+        );
 
         const popupPromise = page.waitForEvent('popup');
-        await page.locator('#adminOpenClawBtn').click();
+        await page.locator('#loginBtn').click();
         const popup = await popupPromise;
 
         await popup.waitForLoadState('domcontentloaded');
@@ -68,7 +71,10 @@ test.describe('OpenClaw local real smoke', () => {
             timeout: 20000,
         });
         await page.reload();
-        await expect(page.locator('#adminOpenClawFlow')).toBeVisible({
+        await expect(page.locator('#loginForm')).toBeVisible({
+            timeout: 20000,
+        });
+        await expect(page.locator('#openclawLoginStage')).toBeVisible({
             timeout: 20000,
         });
         await expect(page.locator('#adminDashboard')).toHaveClass(/is-hidden/);

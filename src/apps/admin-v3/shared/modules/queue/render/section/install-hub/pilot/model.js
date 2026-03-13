@@ -33,6 +33,44 @@ function normalizePilotRoute(route) {
     }
 }
 
+function hashClinicProfileSource(input) {
+    let hash = 2166136261;
+    for (let index = 0; index < input.length; index += 1) {
+        hash ^= input.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function getPilotProfileFingerprint(profile) {
+    if (!profile || typeof profile !== 'object') {
+        return '';
+    }
+
+    const source = [
+        String(profile?.clinic_id || '').trim(),
+        String(profile?.branding?.base_url || '').trim(),
+        String(profile?.consultorios?.c1?.label || '').trim(),
+        String(profile?.consultorios?.c1?.short_label || '').trim(),
+        String(profile?.consultorios?.c2?.label || '').trim(),
+        String(profile?.consultorios?.c2?.short_label || '').trim(),
+        profile?.surfaces?.admin?.enabled ? '1' : '0',
+        String(profile?.surfaces?.admin?.route || '').trim(),
+        profile?.surfaces?.operator?.enabled ? '1' : '0',
+        String(profile?.surfaces?.operator?.route || '').trim(),
+        profile?.surfaces?.kiosk?.enabled ? '1' : '0',
+        String(profile?.surfaces?.kiosk?.route || '').trim(),
+        profile?.surfaces?.display?.enabled ? '1' : '0',
+        String(profile?.surfaces?.display?.route || '').trim(),
+        String(profile?.release?.mode || '').trim(),
+        String(profile?.release?.admin_mode_default || '').trim(),
+        profile?.release?.separate_deploy ? '1' : '0',
+        profile?.release?.native_apps_blocking ? '1' : '0',
+    ].join('|');
+
+    return source ? hashClinicProfileSource(source) : '';
+}
+
 function getCurrentPilotRoute() {
     if (
         typeof window === 'undefined' ||
@@ -121,7 +159,12 @@ function buildGoLiveIssue({
     return {
         id,
         label,
-        state: state === 'alert' ? 'alert' : state === 'ready' ? 'ready' : 'warning',
+        state:
+            state === 'alert'
+                ? 'alert'
+                : state === 'ready'
+                  ? 'ready'
+                  : 'warning',
         detail: String(detail || '').trim(),
         href: String(href || '').trim(),
         actionLabel: String(actionLabel || '').trim(),
@@ -257,10 +300,13 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             : 0;
     const profile = getTurneroClinicProfile?.() || null;
     const profileMeta = getTurneroClinicProfileMeta?.() || null;
-    const profileCatalogStatus = getTurneroClinicProfileCatalogStatus?.() || null;
-    const profileSource = String(profileMeta?.source || '').trim().toLowerCase();
+    const profileCatalogStatus =
+        getTurneroClinicProfileCatalogStatus?.() || null;
+    const profileSource = String(profileMeta?.source || '')
+        .trim()
+        .toLowerCase();
     const profileFingerprint = String(
-        profileMeta?.profileFingerprint || ''
+        profileMeta?.profileFingerprint || getPilotProfileFingerprint(profile)
     ).trim();
     const release =
         profile?.release && typeof profile.release === 'object'
@@ -303,8 +349,8 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             : true;
     const catalogReady = Boolean(
         profileCatalogStatus?.catalogAvailable &&
-            profileCatalogStatus?.matchingProfileId &&
-            profileCatalogStatus?.matchesCatalog
+        profileCatalogStatus?.matchingProfileId &&
+        profileCatalogStatus?.matchesCatalog
     );
     const canonicalSurfaces = requiredSurfaceKeys.map((surfaceKey) => {
         const surface = profileSurfaces[surfaceKey];
@@ -405,7 +451,8 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
 
         return {
             id: surfaceKey,
-            label: String(surface?.label || fallbackLabel).trim() || fallbackLabel,
+            label:
+                String(surface?.label || fallbackLabel).trim() || fallbackLabel,
             route: route || 'Sin ruta declarada',
             url: buildCanonicalSurfaceUrl(clinicBaseUrl, route),
             ready: enabled,
@@ -443,16 +490,16 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                 String(release?.admin_mode_default || '').trim() === 'basic',
             label: 'Perfil por clínica',
             detail:
-                Boolean(profile) &&
-                profileSource !== 'remote'
+                Boolean(profile) && profileSource !== 'remote'
                     ? 'El admin sigue usando un perfil cacheado localmente. Recupera `/data` o vuelve a publicar antes de abrir esta clínica.'
                     : Boolean(profile) &&
-                String(profile?.clinic_id || '').trim() !== '' &&
-                String(release?.mode || '').trim() === 'web_pilot' &&
-                release?.separate_deploy === true &&
-                String(release?.admin_mode_default || '').trim() === 'basic'
-                    ? `${clinicName} ya quedó perfilada como piloto web separado.`
-                    : 'Falta cerrar `clinic_id`, release web o `basic` por defecto antes de abrir otra clínica.',
+                        String(profile?.clinic_id || '').trim() !== '' &&
+                        String(release?.mode || '').trim() === 'web_pilot' &&
+                        release?.separate_deploy === true &&
+                        String(release?.admin_mode_default || '').trim() ===
+                            'basic'
+                      ? `${clinicName} ya quedó perfilada como piloto web separado.`
+                      : 'Falta cerrar `clinic_id`, release web o `basic` por defecto antes de abrir otra clínica.',
             blocker: true,
         },
         {
@@ -582,29 +629,30 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                           telemetryMap.operator,
                           'Operador fuera del canon del piloto.'
                       )
-                :
-                canonicalSurfaceMap.operator?.ready &&
-                getSurfaceTelemetryClinicId(telemetryMap.operator) &&
-                getSurfaceTelemetryClinicId(telemetryMap.operator) !==
-                    clinicId.toLowerCase()
-                    ? `Operador reporta clinic_id ${getSurfaceTelemetryClinicId(
-                          telemetryMap.operator
-                      )}; corrige el equipo antes del llamado.`
-                : canonicalSurfaceMap.operator?.ready &&
-                  getSurfaceTelemetryProfileFingerprint(telemetryMap.operator) &&
-                  getSurfaceTelemetryProfileFingerprint(telemetryMap.operator) !==
-                      profileFingerprint
-                    ? `Operador reporta firma ${getSurfaceTelemetryProfileFingerprint(
-                          telemetryMap.operator
-                      )}; actualiza el perfil antes del llamado.`
-                :
-                canonicalSurfaceMap.operator?.ready &&
-                telemetryMap.operator?.status === 'ready' &&
-                telemetryMap.operator?.stale !== true
-                    ? `Operador listo: ${telemetryMap.operator.summary || 'heartbeat activo para llamado y cierre.'}`
-                    : canonicalSurfaceMap.operator?.ready
-                      ? `Falta dejar el operador en verde antes del llamado: ${telemetryMap.operator?.summary || 'sin heartbeat listo.'}`
-                      : 'Falta declarar la ruta canónica del operador en el perfil de la clínica.',
+                    : canonicalSurfaceMap.operator?.ready &&
+                        getSurfaceTelemetryClinicId(telemetryMap.operator) &&
+                        getSurfaceTelemetryClinicId(telemetryMap.operator) !==
+                            clinicId.toLowerCase()
+                      ? `Operador reporta clinic_id ${getSurfaceTelemetryClinicId(
+                            telemetryMap.operator
+                        )}; corrige el equipo antes del llamado.`
+                      : canonicalSurfaceMap.operator?.ready &&
+                          getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.operator
+                          ) &&
+                          getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.operator
+                          ) !== profileFingerprint
+                        ? `Operador reporta firma ${getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.operator
+                          )}; actualiza el perfil antes del llamado.`
+                        : canonicalSurfaceMap.operator?.ready &&
+                            telemetryMap.operator?.status === 'ready' &&
+                            telemetryMap.operator?.stale !== true
+                          ? `Operador listo: ${telemetryMap.operator.summary || 'heartbeat activo para llamado y cierre.'}`
+                          : canonicalSurfaceMap.operator?.ready
+                            ? `Falta dejar el operador en verde antes del llamado: ${telemetryMap.operator?.summary || 'sin heartbeat listo.'}`
+                            : 'Falta declarar la ruta canónica del operador en el perfil de la clínica.',
             href: canonicalSurfaceMap.operator?.url || '',
             actionLabel: 'Abrir operador',
         },
@@ -619,35 +667,35 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             ),
             detail:
                 canonicalSurfaceMap.kiosk?.ready &&
-                getSurfaceTelemetryContractState(telemetryMap.kiosk) ===
-                    'alert'
+                getSurfaceTelemetryContractState(telemetryMap.kiosk) === 'alert'
                     ? getSurfaceTelemetryAlertDetail(
                           telemetryMap.kiosk,
                           'Kiosco fuera del canon del piloto.'
                       )
-                :
-                canonicalSurfaceMap.kiosk?.ready &&
-                getSurfaceTelemetryClinicId(telemetryMap.kiosk) &&
-                getSurfaceTelemetryClinicId(telemetryMap.kiosk) !==
-                    clinicId.toLowerCase()
-                    ? `Kiosco reporta clinic_id ${getSurfaceTelemetryClinicId(
-                          telemetryMap.kiosk
-                      )}; corrige la superficie antes del check-in.`
-                : canonicalSurfaceMap.kiosk?.ready &&
-                  getSurfaceTelemetryProfileFingerprint(telemetryMap.kiosk) &&
-                  getSurfaceTelemetryProfileFingerprint(telemetryMap.kiosk) !==
-                      profileFingerprint
-                    ? `Kiosco reporta firma ${getSurfaceTelemetryProfileFingerprint(
-                          telemetryMap.kiosk
-                      )}; actualiza el perfil antes del check-in.`
-                :
-                canonicalSurfaceMap.kiosk?.ready &&
-                telemetryMap.kiosk?.status === 'ready' &&
-                telemetryMap.kiosk?.stale !== true
-                    ? 'Kiosco listo para probar check-in con cita o sin cita desde la ruta canónica.'
-                    : canonicalSurfaceMap.kiosk?.ready
-                      ? `Falta cerrar el smoke de check-in en kiosco: ${telemetryMap.kiosk?.summary || 'heartbeat no listo.'}`
-                      : 'Falta declarar la ruta canónica del kiosco dentro del perfil del piloto.',
+                    : canonicalSurfaceMap.kiosk?.ready &&
+                        getSurfaceTelemetryClinicId(telemetryMap.kiosk) &&
+                        getSurfaceTelemetryClinicId(telemetryMap.kiosk) !==
+                            clinicId.toLowerCase()
+                      ? `Kiosco reporta clinic_id ${getSurfaceTelemetryClinicId(
+                            telemetryMap.kiosk
+                        )}; corrige la superficie antes del check-in.`
+                      : canonicalSurfaceMap.kiosk?.ready &&
+                          getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.kiosk
+                          ) &&
+                          getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.kiosk
+                          ) !== profileFingerprint
+                        ? `Kiosco reporta firma ${getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.kiosk
+                          )}; actualiza el perfil antes del check-in.`
+                        : canonicalSurfaceMap.kiosk?.ready &&
+                            telemetryMap.kiosk?.status === 'ready' &&
+                            telemetryMap.kiosk?.stale !== true
+                          ? 'Kiosco listo para probar check-in con cita o sin cita desde la ruta canónica.'
+                          : canonicalSurfaceMap.kiosk?.ready
+                            ? `Falta cerrar el smoke de check-in en kiosco: ${telemetryMap.kiosk?.summary || 'heartbeat no listo.'}`
+                            : 'Falta declarar la ruta canónica del kiosco dentro del perfil del piloto.',
             href: canonicalSurfaceMap.kiosk?.url || '',
             actionLabel: 'Abrir kiosco',
         },
@@ -668,29 +716,30 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                           telemetryMap.display,
                           'Sala fuera del canon del piloto.'
                       )
-                :
-                canonicalSurfaceMap.display?.ready &&
-                getSurfaceTelemetryClinicId(telemetryMap.display) &&
-                getSurfaceTelemetryClinicId(telemetryMap.display) !==
-                    clinicId.toLowerCase()
-                    ? `Sala reporta clinic_id ${getSurfaceTelemetryClinicId(
-                          telemetryMap.display
-                      )}; corrige la TV antes del go-live.`
-                : canonicalSurfaceMap.display?.ready &&
-                  getSurfaceTelemetryProfileFingerprint(telemetryMap.display) &&
-                  getSurfaceTelemetryProfileFingerprint(telemetryMap.display) !==
-                      profileFingerprint
-                    ? `Sala reporta firma ${getSurfaceTelemetryProfileFingerprint(
-                          telemetryMap.display
-                      )}; actualiza el perfil antes del go-live.`
-                :
-                canonicalSurfaceMap.display?.ready &&
-                telemetryMap.display?.status === 'ready' &&
-                telemetryMap.display?.stale !== true
-                    ? `Sala lista: ${telemetryMap.display.summary || 'refleja llamado y audio activo.'}`
-                    : canonicalSurfaceMap.display?.ready
-                      ? `Falta validar la sala antes de abrir: ${telemetryMap.display?.summary || 'heartbeat no listo.'}`
-                      : 'Falta declarar la ruta canónica de sala dentro del perfil del piloto.',
+                    : canonicalSurfaceMap.display?.ready &&
+                        getSurfaceTelemetryClinicId(telemetryMap.display) &&
+                        getSurfaceTelemetryClinicId(telemetryMap.display) !==
+                            clinicId.toLowerCase()
+                      ? `Sala reporta clinic_id ${getSurfaceTelemetryClinicId(
+                            telemetryMap.display
+                        )}; corrige la TV antes del go-live.`
+                      : canonicalSurfaceMap.display?.ready &&
+                          getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.display
+                          ) &&
+                          getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.display
+                          ) !== profileFingerprint
+                        ? `Sala reporta firma ${getSurfaceTelemetryProfileFingerprint(
+                              telemetryMap.display
+                          )}; actualiza el perfil antes del go-live.`
+                        : canonicalSurfaceMap.display?.ready &&
+                            telemetryMap.display?.status === 'ready' &&
+                            telemetryMap.display?.stale !== true
+                          ? `Sala lista: ${telemetryMap.display.summary || 'refleja llamado y audio activo.'}`
+                          : canonicalSurfaceMap.display?.ready
+                            ? `Falta validar la sala antes de abrir: ${telemetryMap.display?.summary || 'heartbeat no listo.'}`
+                            : 'Falta declarar la ruta canónica de sala dentro del perfil del piloto.',
             href: canonicalSurfaceMap.display?.url || '',
             actionLabel: 'Abrir sala',
         },
@@ -754,7 +803,9 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             buildGoLiveIssue({
                 id: 'catalog',
                 label: 'Perfil catalogado',
-                state: readinessItemsById.catalog?.blocker ? 'alert' : 'warning',
+                state: readinessItemsById.catalog?.blocker
+                    ? 'alert'
+                    : 'warning',
                 detail: readinessItemsById.catalog?.detail,
                 href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
                 actionLabel: 'Revisar perfil',
@@ -767,7 +818,9 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             buildGoLiveIssue({
                 id: 'publish',
                 label: 'Publicación verificable',
-                state: readinessItemsById.publish?.blocker ? 'alert' : 'warning',
+                state: readinessItemsById.publish?.blocker
+                    ? 'alert'
+                    : 'warning',
                 detail: readinessItemsById.publish?.detail,
                 href: '/api.php?resource=health',
                 actionLabel: 'Ver health',
@@ -788,12 +841,17 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         );
     }
 
-    if (!readinessItemsById.surfaces?.ready && canonicalSurfaceAlertCount === 0) {
+    if (
+        !readinessItemsById.surfaces?.ready &&
+        canonicalSurfaceAlertCount === 0
+    ) {
         addGoLiveIssue(
             buildGoLiveIssue({
                 id: 'surfaces',
                 label: 'Superficies web canónicas',
-                state: readinessItemsById.surfaces?.blocker ? 'alert' : 'warning',
+                state: readinessItemsById.surfaces?.blocker
+                    ? 'alert'
+                    : 'warning',
                 detail: readinessItemsById.surfaces?.detail,
                 href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
                 actionLabel: 'Revisar canon',
@@ -810,8 +868,13 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                     label: surface.label,
                     state: 'alert',
                     detail: surface.detail,
-                    href: surface.url || canonicalSurfaceMap.admin?.url || '/admin.html#queue',
-                    actionLabel: surface.url ? 'Abrir superficie' : 'Abrir admin',
+                    href:
+                        surface.url ||
+                        canonicalSurfaceMap.admin?.url ||
+                        '/admin.html#queue',
+                    actionLabel: surface.url
+                        ? 'Abrir superficie'
+                        : 'Abrir admin',
                 })
             );
         });
