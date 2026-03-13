@@ -150,6 +150,7 @@ async function setupOperatorAuthOperatorMocks(
     let startIndex = 0;
     const startRequests = [];
     const heartbeatRequests = [];
+    const queueCallNextRequests = [];
 
     await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
         const action =
@@ -218,6 +219,10 @@ async function setupOperatorAuthOperatorMocks(
         }
 
         if (resource === 'queue-call-next') {
+            queueCallNextRequests.push({
+                method: request.method(),
+                url: request.url(),
+            });
             const calledTicket = {
                 ...queueTickets[0],
                 status: 'called',
@@ -287,6 +292,7 @@ async function setupOperatorAuthOperatorMocks(
         challenge: startResponse.challenge,
         startRequests,
         heartbeatRequests,
+        queueCallNextRequests,
     };
 }
 
@@ -335,6 +341,9 @@ test.describe('Turnero Operador', () => {
         await expect(page.locator('#operatorClinicMeta')).toContainText(
             'clinica-norte-demo'
         );
+        await expect(
+            page.locator('.queue-operator-profile-status').first()
+        ).toContainText('Perfil remoto verificado');
         await expect(page.locator('#operatorSurfaceMeta')).toContainText(
             '/operador-turnos.html · D1 / D2'
         );
@@ -365,7 +374,8 @@ test.describe('Turnero Operador', () => {
                 })
         );
 
-        await setupOperatorAuthOperatorMocks(page);
+        const { queueCallNextRequests } =
+            await setupOperatorAuthOperatorMocks(page);
         await installWindowOpenRecorder(page);
         await page.goto(operatorUrl('station=c2&lock=1&one_tap=1'));
         await page.locator('#operatorOpenClawBtn').click();
@@ -374,9 +384,22 @@ test.describe('Turnero Operador', () => {
         await expect(page.locator('#operatorReadinessTitle')).toContainText(
             'Ruta del piloto incorrecta'
         );
+        await expect(
+            page.locator('.queue-operator-profile-status').last()
+        ).toContainText('Bloqueado · ruta fuera de canon');
         await expect(page.locator('#operatorReadyRoute')).toContainText(
             '/operador-alt.html'
         );
+        await page
+            .locator('[data-action="queue-call-next"][data-queue-consultorio="2"]')
+            .click();
+        await expect(page.locator('#toastContainer')).toContainText(
+            'No se puede operar este equipo'
+        );
+        await expect(page.locator('#operatorActionTitle')).toContainText(
+            'Operación bloqueada por ruta'
+        );
+        expect(queueCallNextRequests).toHaveLength(0);
     });
 
     test('degrada operador si clinic-profile.json no carga y queda en perfil de respaldo', async ({
@@ -392,7 +415,8 @@ test.describe('Turnero Operador', () => {
                 })
         );
 
-        await setupOperatorAuthOperatorMocks(page);
+        const { queueCallNextRequests } =
+            await setupOperatorAuthOperatorMocks(page);
         await installWindowOpenRecorder(page);
         await page.goto(operatorUrl('station=c1&lock=1'));
         await page.locator('#operatorOpenClawBtn').click();
@@ -400,9 +424,20 @@ test.describe('Turnero Operador', () => {
         await expect(page.locator('#operatorReadinessTitle')).toContainText(
             'Perfil de clínica no cargado'
         );
+        await expect(
+            page.locator('.queue-operator-profile-status').last()
+        ).toContainText('Bloqueado · perfil de respaldo');
         await expect(page.locator('#operatorReadyRoute')).toContainText(
             'perfil de respaldo'
         );
+        await page.keyboard.press('NumpadEnter');
+        await expect(page.locator('#toastContainer')).toContainText(
+            'No se puede operar este equipo'
+        );
+        await expect(page.locator('#operatorActionTitle')).toContainText(
+            'Operación bloqueada por perfil'
+        );
+        expect(queueCallNextRequests).toHaveLength(0);
     });
 
     test('incluye clinicId del perfil clinico en el heartbeat del operador', async ({

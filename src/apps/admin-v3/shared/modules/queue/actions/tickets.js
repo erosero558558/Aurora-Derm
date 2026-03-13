@@ -13,11 +13,19 @@ import { requiresSensitiveConfirm, setTicketCalledLocal } from './shared.js';
 import { apiRequest } from '../../../core/api-client.js';
 import { applyQueueStateResponse } from '../sync.js';
 import { normalizeQueueAction } from '../helpers.js';
+import {
+    notifyAdminQueuePilotBlocked,
+    shouldBlockAdminQueueAction,
+} from '../pilot-guard.js';
 
 export async function callNextForConsultorio(consultorio) {
     const target = Number(consultorio || 0) === 2 ? 2 : 1;
     const state = getState();
     if (CALL_NEXT_IN_FLIGHT.get(target)) return;
+    if (shouldBlockAdminQueueAction('queue-call-next')) {
+        notifyAdminQueuePilotBlocked('queue-call-next');
+        return;
+    }
 
     if (
         state.queue.stationMode === 'locked' &&
@@ -68,6 +76,10 @@ export async function runQueueTicketAction(ticketId, action, consultorio = 0) {
         action: normalizeQueueAction(action),
         consultorio: Number(consultorio || 0),
     };
+    if (shouldBlockAdminQueueAction('queue-ticket-action')) {
+        notifyAdminQueuePilotBlocked('queue-ticket-action');
+        return;
+    }
     const state = getState();
     const currentTicket = getQueueTicketById(payload.ticketId);
     if (

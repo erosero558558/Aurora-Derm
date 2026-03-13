@@ -200,6 +200,11 @@ function getTurneroClinicProfileMeta() {
     return meta && typeof meta === 'object' ? meta : null;
 }
 
+function getTurneroClinicProfileCatalogStatus() {
+    const status = getState().data.turneroClinicProfileCatalogStatus;
+    return status && typeof status === 'object' ? status : null;
+}
+
 function getTurneroClinicBrandName() {
     return String(
         getTurneroClinicProfile()?.branding?.name || 'Piel en Armonia'
@@ -2343,6 +2348,7 @@ function buildQueueOpsPilot(manifest, detectedPlatform) {
         getSurfaceTelemetryState,
         getTurneroClinicProfile,
         getTurneroClinicProfileMeta,
+        getTurneroClinicProfileCatalogStatus,
         getTurneroClinicBrandName,
         getTurneroPublicSyncStatus,
         hasRecentQueueSmokeSignal,

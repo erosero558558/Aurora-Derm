@@ -65,11 +65,15 @@ test.describe('Kiosco turnos', () => {
         await expect(page.locator('#kioskClinicContext')).toContainText(
             'Norte · /kiosco-turnos.html · Dermatología 1 · Dermatología 2'
         );
+        await expect(page.locator('#kioskProfileStatus')).toContainText(
+            'Perfil remoto verificado'
+        );
     });
 
     test('degrada kiosco si la ruta del perfil no coincide con la superficie activa', async ({
         page,
     }) => {
+        let ticketRequests = 0;
         await page.route(
             /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
             async (route) =>
@@ -90,7 +94,8 @@ test.describe('Kiosco turnos', () => {
 
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());
-            if ((url.searchParams.get('resource') || '') === 'queue-state') {
+            const resource = url.searchParams.get('resource') || '';
+            if (resource === 'queue-state') {
                 return json(route, {
                     ok: true,
                     data: {
@@ -102,6 +107,9 @@ test.describe('Kiosco turnos', () => {
                     },
                 });
             }
+            if (resource === 'queue-ticket') {
+                ticketRequests += 1;
+            }
             return json(route, { ok: true, data: {} });
         });
 
@@ -110,14 +118,30 @@ test.describe('Kiosco turnos', () => {
         await expect(page.locator('#kioskSetupTitle')).toContainText(
             'Ruta del piloto incorrecta'
         );
+        await expect(page.locator('#kioskProfileStatus')).toContainText(
+            'Bloqueado · ruta fuera de canon'
+        );
         await expect(page.locator('#kioskSetupChecks')).toContainText(
             '/kiosco-alt.html'
         );
+        await page.fill('#walkinInitials', 'EP');
+        await page.click('#walkinSubmit');
+        await expect(page.locator('#kioskStatus')).toContainText(
+            'No se puede operar este kiosco'
+        );
+        await expect(page.locator('#ticketResult')).toContainText(
+            'Todavia no se ha generado ningun ticket.'
+        );
+        await expect(page.locator('#queueOutboxHint')).toContainText(
+            'Pendientes offline: 0'
+        );
+        expect(ticketRequests).toBe(0);
     });
 
     test('degrada kiosco si clinic-profile.json no carga y queda en perfil de respaldo', async ({
         page,
     }) => {
+        let checkinRequests = 0;
         await page.route(
             /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
             async (route) =>
@@ -130,7 +154,8 @@ test.describe('Kiosco turnos', () => {
 
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());
-            if ((url.searchParams.get('resource') || '') === 'queue-state') {
+            const resource = url.searchParams.get('resource') || '';
+            if (resource === 'queue-state') {
                 return json(route, {
                     ok: true,
                     data: {
@@ -142,6 +167,9 @@ test.describe('Kiosco turnos', () => {
                     },
                 });
             }
+            if (resource === 'queue-checkin') {
+                checkinRequests += 1;
+            }
             return json(route, { ok: true, data: {} });
         });
 
@@ -150,9 +178,26 @@ test.describe('Kiosco turnos', () => {
         await expect(page.locator('#kioskSetupTitle')).toContainText(
             'Perfil de clínica no cargado'
         );
+        await expect(page.locator('#kioskProfileStatus')).toContainText(
+            'Bloqueado · perfil de respaldo'
+        );
         await expect(page.locator('#kioskSetupChecks')).toContainText(
             'perfil de respaldo'
         );
+        await page.fill('#checkinPhone', '0999999999');
+        await page.fill('#checkinDate', '2026-03-13');
+        await page.fill('#checkinTime', '09:30');
+        await page.click('#checkinSubmit');
+        await expect(page.locator('#kioskStatus')).toContainText(
+            'No se puede operar este kiosco'
+        );
+        await expect(page.locator('#ticketResult')).toContainText(
+            'Todavia no se ha generado ningun ticket.'
+        );
+        await expect(page.locator('#queueOutboxHint')).toContainText(
+            'Pendientes offline: 0'
+        );
+        expect(checkinRequests).toBe(0);
     });
 
     test('genera walk-in y responde asistente de sala', async ({ page }) => {
@@ -564,14 +609,37 @@ test.describe('Kiosco turnos', () => {
             localStorage.setItem(
                 'queueKioskPrinterState',
                 JSON.stringify({
-                    ok: true,
-                    printed: true,
-                    errorCode: '',
-                    message: 'ok',
-                    at: new Date().toISOString(),
+                    schema: 'turnero-clinic-storage/v1',
+                    values: {
+                        'clinica-norte-demo': {
+                            ok: true,
+                            printed: true,
+                            errorCode: '',
+                            message: 'ok',
+                            at: new Date().toISOString(),
+                        },
+                    },
                 })
             );
         });
+
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    surfaces: {
+                        kiosk: {
+                            enabled: true,
+                            route: '/kiosco-turnos.html',
+                        },
+                    },
+                })
+        );
 
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());
@@ -603,6 +671,111 @@ test.describe('Kiosco turnos', () => {
         );
         await expect(page.locator('#kioskSetupChecks')).toContainText(
             'Sin pendientes locales'
+        );
+    });
+
+    test('ignora senior mode, impresora y outbox heredados de otra clinica', async ({
+        page,
+    }) => {
+        await page.addInitScript(() => {
+            localStorage.setItem(
+                'queueKioskSeniorMode',
+                JSON.stringify({
+                    schema: 'turnero-clinic-storage/v1',
+                    values: {
+                        'clinica-sur-demo': '1',
+                    },
+                })
+            );
+            localStorage.setItem(
+                'queueKioskPrinterState',
+                JSON.stringify({
+                    schema: 'turnero-clinic-storage/v1',
+                    values: {
+                        'clinica-sur-demo': {
+                            ok: true,
+                            printed: true,
+                            errorCode: '',
+                            message: 'ok',
+                            at: new Date().toISOString(),
+                        },
+                    },
+                })
+            );
+            localStorage.setItem(
+                'queueKioskOfflineOutbox',
+                JSON.stringify({
+                    schema: 'turnero-clinic-storage/v1',
+                    values: {
+                        'clinica-sur-demo': [
+                            {
+                                id: 'offline-sur-1',
+                                resource: 'queue-ticket',
+                                body: { patientInitials: 'SR' },
+                                originLabel: 'Ticket offline',
+                                patientInitials: 'SR',
+                                queueType: 'walk_in',
+                                renderMode: 'ticket',
+                                queuedAt: new Date().toISOString(),
+                                attempts: 0,
+                                lastError: '',
+                                fingerprint: 'sur-fingerprint',
+                            },
+                        ],
+                    },
+                })
+            );
+        });
+
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    surfaces: {
+                        kiosk: {
+                            enabled: true,
+                            route: '/kiosco-turnos.html',
+                        },
+                    },
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, {
+                ok: true,
+                data: {
+                    updatedAt: new Date().toISOString(),
+                    waitingCount: 0,
+                    calledCount: 0,
+                    callingNow: [],
+                    nextTickets: [],
+                },
+            });
+        });
+
+        await page.goto('/kiosco-turnos.html');
+
+        await expect(page.locator('#kioskSeniorToggle')).toContainText('Off');
+        await expect(page.locator('#queueOutboxHint')).toContainText(
+            'Pendientes offline: 0'
+        );
+        await expect(page.locator('#queuePrinterHint')).toContainText(
+            'estado pendiente'
+        );
+        await expect(page.locator('#kioskSetupChecks')).not.toContainText(
+            'Impresion OK'
         );
     });
 

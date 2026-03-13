@@ -11,6 +11,7 @@ export const LOCAL_DATA_KEYS = {
     appDownloads: 'app-downloads',
     turneroClinicProfile: 'turnero-clinic-profile',
     turneroClinicProfileMeta: 'turnero-clinic-profile-meta',
+    turneroClinicProfileCatalogStatus: 'turnero-clinic-profile-catalog-status',
     clinicalHistoryMeta: 'clinical-history-meta',
     mediaFlowMeta: 'media-flow-meta',
     health: 'health-status',

@@ -7,6 +7,11 @@ import {
     getTurneroSurfaceContract,
     loadTurneroClinicProfile,
 } from '../queue-shared/clinic-profile.js';
+import {
+    persistClinicScopedStorageValue,
+    readClinicScopedStorageValue,
+    removeClinicScopedStorageValue,
+} from '../queue-shared/clinic-storage.js';
 
 const API_ENDPOINT = '/api.php';
 const POLL_MS = 2500;
@@ -79,6 +84,52 @@ function getDisplayConsultorioLabel(consultorio) {
     return getTurneroConsultorioLabel(state.clinicProfile, consultorio);
 }
 
+function getDisplaySurfaceContract(profile = state.clinicProfile) {
+    return getTurneroSurfaceContract(profile, 'display');
+}
+
+function renderDisplayProfileStatus(profile) {
+    const surfaceContract = getDisplaySurfaceContract(profile);
+    const profileFingerprint = getTurneroClinicProfileFingerprint(profile).slice(
+        0,
+        8
+    );
+    const el = getById('displayProfileStatus');
+    if (!(el instanceof HTMLElement)) {
+        return;
+    }
+
+    el.dataset.state =
+        surfaceContract.state === 'alert'
+            ? 'alert'
+            : surfaceContract.state === 'ready'
+              ? 'ready'
+              : 'warning';
+    el.textContent =
+        surfaceContract.state === 'alert'
+            ? surfaceContract.reason === 'profile_missing'
+                ? 'Bloqueado · perfil de respaldo · clinic-profile.json remoto ausente'
+                : `Bloqueado · ruta fuera de canon · se esperaba ${surfaceContract.expectedRoute || '/sala-turnos.html'}`
+            : `Perfil remoto verificado · firma ${profileFingerprint} · canon ${surfaceContract.expectedRoute || '/sala-turnos.html'}`;
+}
+
+function getDisplayPilotBlockDetail() {
+    const surfaceContract = getDisplaySurfaceContract();
+    if (surfaceContract.state !== 'alert') {
+        return '';
+    }
+
+    if (surfaceContract.reason === 'profile_missing') {
+        return 'Pantalla bloqueada: clinic-profile.json remoto ausente. Corrige el perfil y recarga antes de mostrar llamados.';
+    }
+
+    return `Pantalla bloqueada: la ruta no coincide con el canon del piloto (${surfaceContract.expectedRoute || '/sala-turnos.html'}). Corrige el acceso antes de usar esta TV.`;
+}
+
+function isDisplayPilotBlocked() {
+    return getDisplaySurfaceContract().state === 'alert';
+}
+
 function applyDisplayClinicProfile(profile) {
     state.clinicProfile = profile;
     const clinicName = getTurneroClinicBrandName(profile);
@@ -107,6 +158,7 @@ function applyDisplayClinicProfile(profile) {
             .filter(Boolean)
             .join(' · ');
     }
+    renderDisplayProfileStatus(profile);
 
     if (state.lastRenderedState) {
         renderState(state.lastRenderedState);
@@ -125,6 +177,62 @@ function applyDisplayClinicProfile(profile) {
     );
 }
 
+function parseStructuredStorageValue(rawValue) {
+    if (!rawValue) return null;
+    if (typeof rawValue === 'object') {
+        return rawValue;
+    }
+    if (typeof rawValue !== 'string' || !rawValue.trim()) {
+        return null;
+    }
+    try {
+        const parsed = JSON.parse(rawValue);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (_error) {
+        return null;
+    }
+}
+
+function normalizeDisplayBellPreference(rawValue, fallbackValue = false) {
+    if (
+        rawValue === true ||
+        rawValue === 1 ||
+        rawValue === '1' ||
+        rawValue === 'true'
+    ) {
+        return true;
+    }
+    if (
+        rawValue === false ||
+        rawValue === 0 ||
+        rawValue === '0' ||
+        rawValue === 'false'
+    ) {
+        return false;
+    }
+    return Boolean(fallbackValue);
+}
+
+function normalizeDisplaySnapshotStorage(rawValue) {
+    const parsed = parseStructuredStorageValue(rawValue);
+    if (!parsed || Array.isArray(parsed)) {
+        return null;
+    }
+
+    const savedAtTs = Date.parse(String(parsed.savedAt || ''));
+    if (!Number.isFinite(savedAtTs)) {
+        return null;
+    }
+    if (Date.now() - savedAtTs > DISPLAY_LAST_SNAPSHOT_MAX_AGE_MS) {
+        return null;
+    }
+
+    return {
+        savedAt: new Date(savedAtTs).toISOString(),
+        data: normalizeQueueStateSnapshot(parsed.data || {}),
+    };
+}
+
 function resolveDisplayAppMode() {
     const agent = `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
     if (agent.includes('android') || agent.includes('google tv') || agent.includes('aft')) {
@@ -136,10 +244,7 @@ function resolveDisplayAppMode() {
 function buildDisplayHeartbeatPayload() {
     const connectionState = String(state.connectionState || 'paused');
     const healthySync = Boolean(state.lastHealthySyncAt);
-    const surfaceContract = getTurneroSurfaceContract(
-        state.clinicProfile,
-        'display'
-    );
+    const surfaceContract = getDisplaySurfaceContract();
     const clinicId = String(state.clinicProfile?.clinic_id || '').trim();
     const clinicName = String(
         state.clinicProfile?.branding?.name ||
@@ -635,6 +740,18 @@ function ensureDisplayAnnouncementStyles() {
             border-color: var(--border);
             background: linear-gradient(160deg, var(--surface-soft), #fff);
         }
+        #displayAnnouncement.is-blocked {
+            border-color: color-mix(in srgb, var(--danger) 50%, #fff 50%);
+            background:
+                linear-gradient(160deg, rgb(239 107 107 / 14%), rgb(255 255 255 / 5%)),
+                var(--surface-soft);
+        }
+        #displayAnnouncement.is-blocked .display-announcement-text {
+            color: #ffd7d7;
+        }
+        #displayAnnouncement.is-blocked .display-announcement-support {
+            color: #ffd7d7;
+        }
         @media (max-width: 720px) {
             #displayAnnouncement {
                 margin: 0.6rem 0.9rem 0;
@@ -688,6 +805,7 @@ function setDisplayAnnouncement(ticket) {
     if (!ticket) {
         el.classList.add('is-idle');
         el.classList.remove('is-live');
+        el.classList.remove('is-blocked');
         delete el.dataset.consultorio;
         const idleText = 'Esperando siguiente llamado...';
         const idleSupport =
@@ -719,6 +837,7 @@ function setDisplayAnnouncement(ticket) {
     const supportText = `Paciente ${patientInitials}: pasa con calma al ${consultorioLabel}.`;
     el.classList.remove('is-idle');
     el.classList.add('is-live');
+    el.classList.remove('is-blocked');
     el.dataset.consultorio = String(consultorio || '');
     if (textEl.textContent !== nextText) {
         textEl.textContent = nextText;
@@ -733,6 +852,32 @@ function setDisplayAnnouncement(ticket) {
         supportEl.textContent !== supportText
     ) {
         supportEl.textContent = supportText;
+    }
+}
+
+function setDisplayBlockedAnnouncement(detail) {
+    const el = ensureDisplayAnnouncementEl();
+    if (!(el instanceof HTMLElement)) return;
+
+    const textEl = el.querySelector('.display-announcement-text');
+    const supportEl = el.querySelector('.display-announcement-support');
+    if (!(textEl instanceof HTMLElement)) return;
+
+    const title = 'Pantalla bloqueada';
+    const support =
+        String(detail || '').trim() ||
+        'Corrige el perfil por clínica antes de usar esta TV.';
+    el.classList.remove('is-live', 'is-idle');
+    el.classList.add('is-blocked');
+    delete el.dataset.consultorio;
+    if (textEl.textContent !== title) {
+        textEl.textContent = title;
+        emitQueueOpsEvent('announcement_update', {
+            mode: 'blocked',
+        });
+    }
+    if (supportEl instanceof HTMLElement && supportEl.textContent !== support) {
+        supportEl.textContent = support;
     }
 }
 
@@ -1034,15 +1179,22 @@ function renderBellToggle() {
 }
 
 function persistBellPreference() {
-    localStorage.setItem(
+    persistClinicScopedStorageValue(
         DISPLAY_BELL_MUTED_STORAGE_KEY,
+        state.clinicProfile,
         state.bellMuted ? '1' : '0'
     );
 }
 
 function loadBellPreference() {
-    const stored = localStorage.getItem(DISPLAY_BELL_MUTED_STORAGE_KEY);
-    state.bellMuted = stored === '1';
+    state.bellMuted = readClinicScopedStorageValue(
+        DISPLAY_BELL_MUTED_STORAGE_KEY,
+        state.clinicProfile,
+        {
+            fallbackValue: false,
+            normalizeValue: normalizeDisplayBellPreference,
+        }
+    );
 }
 
 function setBellMuted(nextMuted, { announce = false } = {}) {
@@ -1088,56 +1240,32 @@ function persistLastSnapshot(queueState) {
         data,
     };
     state.lastSnapshot = snapshot;
-    try {
-        localStorage.setItem(
-            DISPLAY_LAST_SNAPSHOT_STORAGE_KEY,
-            JSON.stringify(snapshot)
-        );
-    } catch (_error) {
-        // Ignore storage write failures.
-    }
+    persistClinicScopedStorageValue(
+        DISPLAY_LAST_SNAPSHOT_STORAGE_KEY,
+        state.clinicProfile,
+        snapshot
+    );
     renderSnapshotHint();
 }
 
 function loadLastSnapshot() {
-    state.lastSnapshot = null;
-    try {
-        const raw = localStorage.getItem(DISPLAY_LAST_SNAPSHOT_STORAGE_KEY);
-        if (!raw) {
-            renderSnapshotHint();
-            return null;
+    state.lastSnapshot = readClinicScopedStorageValue(
+        DISPLAY_LAST_SNAPSHOT_STORAGE_KEY,
+        state.clinicProfile,
+        {
+            fallbackValue: null,
+            normalizeValue: normalizeDisplaySnapshotStorage,
         }
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') {
-            renderSnapshotHint();
-            return null;
-        }
-
-        const savedAtTs = Date.parse(String(parsed.savedAt || ''));
-        if (!Number.isFinite(savedAtTs)) {
-            renderSnapshotHint();
-            return null;
-        }
-        if (Date.now() - savedAtTs > DISPLAY_LAST_SNAPSHOT_MAX_AGE_MS) {
-            renderSnapshotHint();
-            return null;
-        }
-
-        const data = normalizeQueueStateSnapshot(parsed.data || {});
-        const snapshot = {
-            savedAt: new Date(savedAtTs).toISOString(),
-            data,
-        };
-        state.lastSnapshot = snapshot;
-        renderSnapshotHint();
-        return snapshot;
-    } catch (_error) {
-        renderSnapshotHint();
-        return null;
-    }
+    );
+    renderSnapshotHint();
+    return state.lastSnapshot;
 }
 
 function renderFromSnapshot(snapshot, { mode = 'restore' } = {}) {
+    if (isDisplayPilotBlocked()) {
+        renderDisplayPilotBlockedState();
+        return false;
+    }
     if (!snapshot?.data) return false;
 
     renderState(snapshot.data);
@@ -1234,16 +1362,51 @@ function renderNoDataFallback(message = 'No hay turnos pendientes.') {
     if (list) {
         list.innerHTML = `<li class="display-empty">${escapeHtml(message)}</li>`;
     }
+    renderDisplayMetrics({
+        waitingCount: 0,
+        callingNow: [],
+        nextTickets: [],
+    });
+}
+
+function renderDisplayPilotBlockedState() {
+    const detail = getDisplayPilotBlockDetail();
+    state.lastRenderedState = null;
+    state.lastRenderedSignature = '';
+    state.lastCalledSignature = '';
+    state.callBaselineReady = true;
+    clearBellFlashClass();
+    renderCalledTicket(
+        'displayConsultorio1',
+        null,
+        getDisplayConsultorioLabel(1)
+    );
+    renderCalledTicket(
+        'displayConsultorio2',
+        null,
+        getDisplayConsultorioLabel(2)
+    );
+    setDisplayBlockedAnnouncement(detail);
+    const list = getById('displayNextList');
+    if (list) {
+        list.innerHTML = `<li class="display-empty display-empty-blocked">${escapeHtml(detail || 'Pantalla bloqueada por configuración del piloto.')}</li>`;
+    }
+    renderDisplayMetrics({
+        waitingCount: 0,
+        callingNow: [],
+        nextTickets: [],
+    });
+    setConnectionStatus('paused', 'Pantalla bloqueada');
+    setDisplayOpsHint(detail);
 }
 
 function clearLastSnapshot({ announce = false } = {}) {
     state.lastSnapshot = null;
     state.lastRenderedSignature = '';
-    try {
-        localStorage.removeItem(DISPLAY_LAST_SNAPSHOT_STORAGE_KEY);
-    } catch (_error) {
-        // Ignore storage remove failures.
-    }
+    removeClinicScopedStorageValue(
+        DISPLAY_LAST_SNAPSHOT_STORAGE_KEY,
+        state.clinicProfile
+    );
     renderSnapshotHint();
     if (state.connectionState !== 'live') {
         renderNoDataFallback('Sin respaldo local disponible.');
@@ -1463,6 +1626,9 @@ function showBellBlockedHintIfDue() {
 }
 
 async function playBell({ source = 'new_call', force = false } = {}) {
+    if (isDisplayPilotBlocked()) {
+        return;
+    }
     triggerBellFlash();
     if (state.bellMuted && !force) {
         return;
@@ -1557,6 +1723,10 @@ function computeDisplayRenderSignature(queueState) {
 }
 
 function renderState(queueState) {
+    if (isDisplayPilotBlocked()) {
+        renderDisplayPilotBlockedState();
+        return;
+    }
     const normalizedState = normalizeQueueStatePayload(queueState);
     state.lastRenderedState = normalizedState;
     const renderSignature = computeDisplayRenderSignature(normalizedState);
@@ -1653,6 +1823,16 @@ function scheduleNextPoll({ immediate = false } = {}) {
 }
 
 async function refreshDisplayState() {
+    if (isDisplayPilotBlocked()) {
+        renderDisplayPilotBlockedState();
+        return {
+            ok: false,
+            stale: false,
+            blocked: true,
+            reason: 'pilot_blocked',
+            usedSnapshot: false,
+        };
+    }
     if (state.refreshBusy) {
         return { ok: false, stale: false, reason: 'busy' };
     }
@@ -1694,6 +1874,11 @@ async function refreshDisplayState() {
 
 async function runDisplayPollTick() {
     if (!state.pollingEnabled) return;
+
+    if (isDisplayPilotBlocked()) {
+        renderDisplayPilotBlockedState();
+        return;
+    }
 
     if (document.hidden) {
         setConnectionStatus('paused', 'En pausa (pestana oculta)');
@@ -1750,6 +1935,10 @@ async function runDisplayPollTick() {
 
 async function runDisplayManualRefresh() {
     if (state.manualRefreshBusy) return;
+    if (isDisplayPilotBlocked()) {
+        renderDisplayPilotBlockedState();
+        return;
+    }
     state.manualRefreshBusy = true;
     setDisplayManualRefreshLoading(true);
     setConnectionStatus('reconnecting', 'Refrescando panel...');
@@ -1837,13 +2026,8 @@ function updateClock() {
 }
 
 function initDisplay() {
-    void loadTurneroClinicProfile().then((profile) => {
-        applyDisplayClinicProfile(profile);
-    });
     document.body.dataset.displayMode = 'star';
     ensureDisplayStarStyles();
-    loadBellPreference();
-    loadLastSnapshot();
     updateClock();
     state.clockId = window.setInterval(updateClock, 1000);
 
@@ -1881,12 +2065,9 @@ function initDisplay() {
     renderBellToggle();
     renderSnapshotHint();
     renderDisplaySetupStatus();
-    ensureDisplayHeartbeat().start({ immediate: false });
 
     setConnectionStatus('paused', 'Sincronizacion lista');
-    if (!renderFromSnapshot(state.lastSnapshot, { mode: 'startup' })) {
-        setDisplayOpsHint('Esperando primera sincronizacion...');
-    }
+    setDisplayOpsHint('Cargando perfil de clinica...');
 
     const unlockAudio = () => {
         void primeBellAudio({ source: 'user_gesture' });
@@ -1894,17 +2075,21 @@ function initDisplay() {
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     window.addEventListener('keydown', unlockAudio, { once: true });
 
-    startDisplayPolling({ immediate: true });
-
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             stopDisplayPolling({ reason: 'hidden' });
+            return;
+        }
+        if (!state.clinicProfile || isDisplayPilotBlocked()) {
             return;
         }
         startDisplayPolling({ immediate: true });
     });
 
     window.addEventListener('online', () => {
+        if (!state.clinicProfile || isDisplayPilotBlocked()) {
+            return;
+        }
         startDisplayPolling({ immediate: true });
     });
 
@@ -1944,6 +2129,26 @@ function initDisplay() {
             event.preventDefault();
             clearLastSnapshot({ announce: true });
         }
+    });
+
+    void loadTurneroClinicProfile().then((profile) => {
+        applyDisplayClinicProfile(profile);
+        loadBellPreference();
+        loadLastSnapshot();
+        renderBellToggle();
+        renderSnapshotHint();
+        renderDisplaySetupStatus();
+        ensureDisplayHeartbeat().start({ immediate: false });
+
+        if (isDisplayPilotBlocked()) {
+            renderDisplayPilotBlockedState();
+            return;
+        }
+
+        if (!renderFromSnapshot(state.lastSnapshot, { mode: 'startup' })) {
+            setDisplayOpsHint('Esperando primera sincronizacion...');
+        }
+        startDisplayPolling({ immediate: true });
     });
 }
 

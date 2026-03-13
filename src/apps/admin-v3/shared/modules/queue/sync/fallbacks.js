@@ -1,15 +1,14 @@
-import { getStorageJson } from '../../../core/persistence.js';
 import { getState } from '../../../core/store.js';
-import { QUEUE_SNAPSHOT_STORAGE_KEY } from '../constants.js';
 import {
     buildTicketsFromMeta,
     normalizeQueueMeta,
     normalizeTicket,
 } from '../model.js';
+import { getQueueSnapshot as getScopedQueueSnapshot } from '../persistence.js';
 import { appendActivity, setQueueStateWithTickets } from '../state.js';
 
 export function getQueueSnapshot() {
-    return getStorageJson(QUEUE_SNAPSHOT_STORAGE_KEY, null);
+    return getScopedQueueSnapshot();
 }
 
 export function getNormalizedStateTickets() {

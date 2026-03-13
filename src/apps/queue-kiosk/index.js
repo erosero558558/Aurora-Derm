@@ -7,6 +7,10 @@ import {
     getTurneroSurfaceContract,
     loadTurneroClinicProfile,
 } from '../queue-shared/clinic-profile.js';
+import {
+    persistClinicScopedStorageValue,
+    readClinicScopedStorageValue,
+} from '../queue-shared/clinic-storage.js';
 
 const API_ENDPOINT = '/api.php';
 const CHAT_ENDPOINT = '/figo-chat.php';
@@ -82,6 +86,107 @@ const state = {
 
 let kioskHeartbeat = null;
 
+function parseStructuredStorageValue(rawValue) {
+    if (!rawValue) return null;
+    if (typeof rawValue === 'object') {
+        return rawValue;
+    }
+    if (typeof rawValue !== 'string' || !rawValue.trim()) {
+        return null;
+    }
+    try {
+        const parsed = JSON.parse(rawValue);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (_error) {
+        return null;
+    }
+}
+
+function normalizeStoredBoolean(rawValue, fallbackValue = false) {
+    if (
+        rawValue === true ||
+        rawValue === 1 ||
+        rawValue === '1' ||
+        rawValue === 'true'
+    ) {
+        return true;
+    }
+    if (
+        rawValue === false ||
+        rawValue === 0 ||
+        rawValue === '0' ||
+        rawValue === 'false'
+    ) {
+        return false;
+    }
+    return Boolean(fallbackValue);
+}
+
+function normalizePrinterStateStorage(rawValue) {
+    const parsed = parseStructuredStorageValue(rawValue);
+    if (!parsed || Array.isArray(parsed)) {
+        return null;
+    }
+
+    return {
+        ok: Boolean(parsed.ok),
+        printed: Boolean(parsed.printed),
+        errorCode: String(parsed.errorCode || ''),
+        message: String(parsed.message || ''),
+        at: String(parsed.at || new Date().toISOString()),
+    };
+}
+
+function normalizeOfflineOutboxStorage(rawValue) {
+    let parsed = rawValue;
+    if (typeof rawValue === 'string') {
+        try {
+            parsed = JSON.parse(rawValue);
+        } catch (_error) {
+            parsed = null;
+        }
+    }
+    if (!Array.isArray(parsed)) {
+        return [];
+    }
+
+    return parsed
+        .map((item) => ({
+            id: String(item?.id || ''),
+            resource: String(item?.resource || ''),
+            body:
+                item && typeof item.body === 'object' && item.body
+                    ? item.body
+                    : {},
+            originLabel: String(item?.originLabel || 'Solicitud offline'),
+            patientInitials: String(item?.patientInitials || '--'),
+            queueType: String(item?.queueType || '--'),
+            renderMode:
+                String(item?.renderMode || 'ticket').toLowerCase() ===
+                'support'
+                    ? 'support'
+                    : 'ticket',
+            queuedAt: String(item?.queuedAt || new Date().toISOString()),
+            attempts: Number(item?.attempts || 0),
+            lastError: String(item?.lastError || ''),
+            fingerprint: String(item?.fingerprint || ''),
+        }))
+        .filter(
+            (item) =>
+                item.id &&
+                (item.resource === 'queue-ticket' ||
+                    item.resource === 'queue-checkin' ||
+                    item.resource === 'queue-help-request')
+        )
+        .map((item) => ({
+            ...item,
+            fingerprint:
+                item.fingerprint ||
+                buildOutboxFingerprint(item.resource, item.body),
+        }))
+        .slice(0, KIOSK_OFFLINE_OUTBOX_MAX_ITEMS);
+}
+
 function createRuntimeId(prefix = 'runtime') {
     const safePrefix = String(prefix || 'runtime').trim() || 'runtime';
     try {
@@ -133,6 +238,66 @@ function getKioskConsultorioLabel(consultorio) {
     return getTurneroConsultorioLabel(state.clinicProfile, consultorio);
 }
 
+function renderKioskProfileStatus(profile) {
+    const surfaceContract = getKioskSurfaceContract(profile);
+    const profileFingerprint = getTurneroClinicProfileFingerprint(profile).slice(
+        0,
+        8
+    );
+    const el = getById('kioskProfileStatus');
+    if (!(el instanceof HTMLElement)) {
+        return;
+    }
+
+    el.dataset.state =
+        surfaceContract.state === 'alert'
+            ? 'alert'
+            : surfaceContract.state === 'ready'
+              ? 'ready'
+              : 'warning';
+    el.textContent =
+        surfaceContract.state === 'alert'
+            ? surfaceContract.reason === 'profile_missing'
+                ? 'Bloqueado · perfil de respaldo · clinic-profile.json remoto ausente'
+                : `Bloqueado · ruta fuera de canon · se esperaba ${surfaceContract.expectedRoute || '/kiosco-turnos.html'}`
+            : `Perfil remoto verificado · firma ${profileFingerprint} · canon ${surfaceContract.expectedRoute || '/kiosco-turnos.html'}`;
+}
+
+function getKioskSurfaceContract(profile = state.clinicProfile) {
+    return getTurneroSurfaceContract(profile, 'kiosk');
+}
+
+function getKioskPilotBlockMessage() {
+    const surfaceContract = getKioskSurfaceContract();
+    if (surfaceContract.state !== 'alert') {
+        return '';
+    }
+
+    if (surfaceContract.reason === 'profile_missing') {
+        return 'No se puede operar este kiosco: clinic-profile.json remoto ausente. Corrige el perfil y recarga la página antes de recibir pacientes.';
+    }
+
+    return `No se puede operar este kiosco: la ruta no coincide con el canon del piloto (${surfaceContract.expectedRoute || '/kiosco-turnos.html'}). Abre la ruta correcta antes de registrar turnos.`;
+}
+
+function isKioskPilotBlocked() {
+    return getKioskSurfaceContract().state === 'alert';
+}
+
+function applyKioskPilotBlockFeedback() {
+    const message = getKioskPilotBlockMessage();
+    if (!message) {
+        return false;
+    }
+
+    setKioskStatus(message, 'error');
+    setKioskProgressHint(
+        'Este equipo queda bloqueado hasta cargar el perfil remoto correcto y la ruta canónica del piloto.',
+        'warn'
+    );
+    return true;
+}
+
 function applyKioskClinicProfile(profile) {
     state.clinicProfile = profile;
     const clinicName = getTurneroClinicBrandName(profile);
@@ -169,6 +334,7 @@ function applyKioskClinicProfile(profile) {
     if (clinicContext instanceof HTMLElement) {
         clinicContext.textContent = `${clinicShortName} · ${kioskRoute} · ${consultorioSummary}`;
     }
+    renderKioskProfileStatus(profile);
 
     const headerNote = document.querySelector('.kiosk-header-note');
     if (headerNote instanceof HTMLElement) {
@@ -191,10 +357,7 @@ function buildKioskHeartbeatPayload() {
     const printerPrinted = Boolean(printer?.printed);
     const printerErrorCode = String(printer?.errorCode || '');
     const healthySync = Boolean(state.queueLastHealthySyncAt);
-    const surfaceContract = getTurneroSurfaceContract(
-        state.clinicProfile,
-        'kiosk'
-    );
+    const surfaceContract = getKioskSurfaceContract();
     const clinicId = String(state.clinicProfile?.clinic_id || '').trim();
     const clinicName = String(
         state.clinicProfile?.branding?.name ||
@@ -506,22 +669,22 @@ function setKioskSeniorHint(message, tone = 'info') {
 }
 
 function readSeniorModePreference() {
-    try {
-        return localStorage.getItem(KIOSK_SENIOR_MODE_STORAGE_KEY) === '1';
-    } catch (_error) {
-        return false;
-    }
+    return readClinicScopedStorageValue(
+        KIOSK_SENIOR_MODE_STORAGE_KEY,
+        state.clinicProfile,
+        {
+            fallbackValue: false,
+            normalizeValue: normalizeStoredBoolean,
+        }
+    );
 }
 
 function persistSeniorModePreference(enabled) {
-    try {
-        localStorage.setItem(
-            KIOSK_SENIOR_MODE_STORAGE_KEY,
-            enabled ? '1' : '0'
-        );
-    } catch (_error) {
-        // ignore storage failures
-    }
+    persistClinicScopedStorageValue(
+        KIOSK_SENIOR_MODE_STORAGE_KEY,
+        state.clinicProfile,
+        enabled ? '1' : '0'
+    );
 }
 
 function syncSeniorModeButton() {
@@ -1578,10 +1741,7 @@ function renderKioskSetupStatus() {
     const printerReady = Boolean(printer?.printed);
     const printerBlocked = Boolean(printer && !printer.printed);
     const hasHealthySync = Boolean(state.queueLastHealthySyncAt);
-    const surfaceContract = getTurneroSurfaceContract(
-        state.clinicProfile,
-        'kiosk'
-    );
+    const surfaceContract = getKioskSurfaceContract();
     const oldestQueuedAt = Date.parse(
         String(state.offlineOutbox[0]?.queuedAt || '')
     );
@@ -1726,38 +1886,22 @@ function ensureQueuePrinterHintEl() {
 }
 
 function savePrinterState() {
-    try {
-        localStorage.setItem(
-            KIOSK_PRINTER_STATE_STORAGE_KEY,
-            JSON.stringify(state.printerState)
-        );
-    } catch (_error) {
-        // ignore storage write failures
-    }
+    persistClinicScopedStorageValue(
+        KIOSK_PRINTER_STATE_STORAGE_KEY,
+        state.clinicProfile,
+        state.printerState
+    );
 }
 
 function loadPrinterState() {
-    try {
-        const raw = localStorage.getItem(KIOSK_PRINTER_STATE_STORAGE_KEY);
-        if (!raw) {
-            state.printerState = null;
-            return;
+    state.printerState = readClinicScopedStorageValue(
+        KIOSK_PRINTER_STATE_STORAGE_KEY,
+        state.clinicProfile,
+        {
+            fallbackValue: null,
+            normalizeValue: normalizePrinterStateStorage,
         }
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') {
-            state.printerState = null;
-            return;
-        }
-        state.printerState = {
-            ok: Boolean(parsed.ok),
-            printed: Boolean(parsed.printed),
-            errorCode: String(parsed.errorCode || ''),
-            message: String(parsed.message || ''),
-            at: String(parsed.at || new Date().toISOString()),
-        };
-    } catch (_error) {
-        state.printerState = null;
-    }
+    );
 }
 
 function renderPrinterHint() {
@@ -1903,66 +2047,22 @@ function discardOldestOutboxItem() {
 }
 
 function saveOfflineOutbox() {
-    try {
-        localStorage.setItem(
-            KIOSK_OFFLINE_OUTBOX_STORAGE_KEY,
-            JSON.stringify(state.offlineOutbox)
-        );
-    } catch (_error) {
-        // Ignore localStorage write failures.
-    }
+    persistClinicScopedStorageValue(
+        KIOSK_OFFLINE_OUTBOX_STORAGE_KEY,
+        state.clinicProfile,
+        state.offlineOutbox
+    );
 }
 
 function loadOfflineOutbox() {
-    try {
-        const raw = localStorage.getItem(KIOSK_OFFLINE_OUTBOX_STORAGE_KEY);
-        if (!raw) {
-            state.offlineOutbox = [];
-            return;
+    state.offlineOutbox = readClinicScopedStorageValue(
+        KIOSK_OFFLINE_OUTBOX_STORAGE_KEY,
+        state.clinicProfile,
+        {
+            fallbackValue: [],
+            normalizeValue: normalizeOfflineOutboxStorage,
         }
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) {
-            state.offlineOutbox = [];
-            return;
-        }
-        state.offlineOutbox = parsed
-            .map((item) => ({
-                id: String(item?.id || ''),
-                resource: String(item?.resource || ''),
-                body:
-                    item && typeof item.body === 'object' && item.body
-                        ? item.body
-                        : {},
-                originLabel: String(item?.originLabel || 'Solicitud offline'),
-                patientInitials: String(item?.patientInitials || '--'),
-                queueType: String(item?.queueType || '--'),
-                renderMode:
-                    String(item?.renderMode || 'ticket').toLowerCase() ===
-                    'support'
-                        ? 'support'
-                        : 'ticket',
-                queuedAt: String(item?.queuedAt || new Date().toISOString()),
-                attempts: Number(item?.attempts || 0),
-                lastError: String(item?.lastError || ''),
-                fingerprint: String(item?.fingerprint || ''),
-            }))
-            .filter(
-                (item) =>
-                    item.id &&
-                    (item.resource === 'queue-ticket' ||
-                        item.resource === 'queue-checkin' ||
-                        item.resource === 'queue-help-request')
-            )
-            .map((item) => ({
-                ...item,
-                fingerprint:
-                    item.fingerprint ||
-                    buildOutboxFingerprint(item.resource, item.body),
-            }))
-            .slice(0, KIOSK_OFFLINE_OUTBOX_MAX_ITEMS);
-    } catch (_error) {
-        state.offlineOutbox = [];
-    }
+    );
 }
 
 function renderOfflineOutboxHint() {
@@ -2475,6 +2575,9 @@ async function submitCheckin(event) {
     event.preventDefault();
     registerKioskActivity();
     dismissWelcomeScreen({ reason: 'form_submit' });
+    if (applyKioskPilotBlockFeedback()) {
+        return;
+    }
     const form = event.currentTarget;
     if (!(form instanceof HTMLFormElement)) return;
 
@@ -2596,6 +2699,9 @@ async function submitWalkIn(event) {
     event.preventDefault();
     registerKioskActivity();
     dismissWelcomeScreen({ reason: 'form_submit' });
+    if (applyKioskPilotBlockFeedback()) {
+        return;
+    }
     const nameInput = getById('walkinName');
     const initialsInput = getById('walkinInitials');
     const phoneInput = getById('walkinPhone');
@@ -2993,6 +3099,9 @@ function appendAssistantMessage(role, content) {
 async function submitAssistant(event) {
     event.preventDefault();
     registerKioskActivity();
+    if (applyKioskPilotBlockFeedback()) {
+        return;
+    }
     if (state.assistantBusy) return;
 
     const input = getById('assistantInput');
@@ -3369,13 +3478,29 @@ function stopQueuePolling({ reason = 'paused' } = {}) {
 function initKiosk() {
     void loadTurneroClinicProfile().then((profile) => {
         applyKioskClinicProfile(profile);
+        setSeniorModeEnabled(readSeniorModePreference(), {
+            persist: false,
+            source: 'clinic_profile',
+        });
+        loadOfflineOutbox();
+        loadPrinterState();
+        renderPrinterHint();
+        renderOfflineOutboxHint();
+        setQueueConnectionStatus('paused', 'Sincronizacion lista');
+        setQueueOpsHint('Esperando primera sincronizacion de cola...');
+        renderQueueUpdatedAt('');
+        if (navigator.onLine !== false) {
+            void flushOfflineOutbox({ source: 'startup', force: true });
+        }
+        ensureKioskHeartbeat().start({ immediate: false });
+        startQueuePolling({ immediate: true });
     });
     document.body.dataset.kioskMode = 'star';
     ensureKioskStarStyles();
     state.idleResetMs = resolveIdleResetMs();
     state.voiceGuideSupported = supportsVoiceGuide();
     initTheme();
-    setSeniorModeEnabled(readSeniorModePreference(), {
+    setSeniorModeEnabled(false, {
         persist: false,
         source: 'init',
     });
@@ -3421,8 +3546,6 @@ function initKiosk() {
     ensureQueueOutboxHintEl();
     ensureQueuePrinterHintEl();
     ensureQueueOutboxConsoleEl();
-    loadOfflineOutbox();
-    loadPrinterState();
     renderPrinterHint();
     renderOfflineOutboxHint();
     const manualRefreshButton = ensureQueueManualRefreshButton();
@@ -3453,25 +3576,21 @@ function initKiosk() {
             clearOfflineOutbox({ reason: 'manual' });
         });
     }
-
-    setQueueConnectionStatus('paused', 'Sincronizacion lista');
-    setQueueOpsHint('Esperando primera sincronizacion de cola...');
-    renderQueueUpdatedAt('');
-    if (navigator.onLine !== false) {
-        void flushOfflineOutbox({ source: 'startup', force: true });
-    }
-    ensureKioskHeartbeat().start({ immediate: false });
-    startQueuePolling({ immediate: true });
-
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             stopQueuePolling({ reason: 'hidden' });
+            return;
+        }
+        if (!state.clinicProfile) {
             return;
         }
         startQueuePolling({ immediate: true });
     });
 
     window.addEventListener('online', () => {
+        if (!state.clinicProfile) {
+            return;
+        }
         void flushOfflineOutbox({ source: 'online', force: true });
         startQueuePolling({ immediate: true });
     });

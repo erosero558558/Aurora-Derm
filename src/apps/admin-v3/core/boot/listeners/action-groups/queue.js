@@ -3,8 +3,17 @@ import { handleQueueInstallAction } from './queue/install.js';
 import { handleQueueSensitiveActionGroup } from './queue/sensitive.js';
 import { handleQueueStationActionGroup } from './queue/station.js';
 import { handleQueueTicketActionGroup } from './queue/tickets.js';
+import {
+    notifyAdminQueuePilotBlocked,
+    shouldBlockAdminQueueAction,
+} from '../../../../shared/modules/queue/pilot-guard.js';
 
 export async function handleQueueAction(action, element) {
+    if (shouldBlockAdminQueueAction(action)) {
+        notifyAdminQueuePilotBlocked(action);
+        return true;
+    }
+
     const handlers = [
         handleQueueStationActionGroup,
         handleQueueTicketActionGroup,

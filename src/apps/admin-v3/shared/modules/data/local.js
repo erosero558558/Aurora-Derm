@@ -27,6 +27,10 @@ export function persistLocalAdminData(data) {
         data.turneroClinicProfileMeta || null
     );
     setStorageJson(
+        LOCAL_DATA_KEYS.turneroClinicProfileCatalogStatus,
+        data.turneroClinicProfileCatalogStatus || null
+    );
+    setStorageJson(
         LOCAL_DATA_KEYS.clinicalHistoryMeta,
         data.clinicalHistoryMeta || null
     );
@@ -55,6 +59,10 @@ export function loadLocalAdminFallback() {
         ),
         turneroClinicProfileMeta: getStorageJson(
             LOCAL_DATA_KEYS.turneroClinicProfileMeta,
+            null
+        ),
+        turneroClinicProfileCatalogStatus: getStorageJson(
+            LOCAL_DATA_KEYS.turneroClinicProfileCatalogStatus,
             null
         ),
         clinicalHistoryMeta: getStorageJson(

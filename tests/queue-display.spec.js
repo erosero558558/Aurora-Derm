@@ -65,11 +65,15 @@ test.describe('Sala turnos display', () => {
         await expect(page.locator('#displayClinicMeta')).toContainText(
             'clinica-norte-demo · Quito'
         );
+        await expect(page.locator('#displayProfileStatus')).toContainText(
+            'Perfil remoto verificado'
+        );
     });
 
     test('degrada sala si la ruta del perfil no coincide con la superficie activa', async ({
         page,
     }) => {
+        let queueStateCalls = 0;
         await page.route(
             /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
             async (route) =>
@@ -94,13 +98,29 @@ test.describe('Sala turnos display', () => {
             if (resource !== 'queue-state') {
                 return json(route, { ok: true, data: {} });
             }
+            queueStateCalls += 1;
 
             return json(route, {
                 ok: true,
                 data: {
                     updatedAt: new Date().toISOString(),
-                    callingNow: [],
-                    nextTickets: [],
+                    callingNow: [
+                        {
+                            id: 91,
+                            ticketCode: 'A-091',
+                            patientInitials: 'JR',
+                            assignedConsultorio: 1,
+                            calledAt: new Date().toISOString(),
+                        },
+                    ],
+                    nextTickets: [
+                        {
+                            id: 92,
+                            ticketCode: 'A-092',
+                            patientInitials: 'LM',
+                            position: 1,
+                        },
+                    ],
                 },
             });
         });
@@ -110,14 +130,28 @@ test.describe('Sala turnos display', () => {
         await expect(page.locator('#displaySetupTitle')).toContainText(
             'Ruta del piloto incorrecta'
         );
+        await expect(page.locator('#displayProfileStatus')).toContainText(
+            'Bloqueado · ruta fuera de canon'
+        );
         await expect(page.locator('#displaySetupChecks')).toContainText(
             '/sala-alt.html'
         );
+        await expect(page.locator('#displayAnnouncement')).toContainText(
+            'Pantalla bloqueada'
+        );
+        await expect(page.locator('#displayConsultorio1')).toContainText(
+            'Sin llamado activo'
+        );
+        await expect(page.locator('#displayNextList')).toContainText(
+            'Pantalla bloqueada'
+        );
+        expect(queueStateCalls).toBe(0);
     });
 
     test('degrada sala si clinic-profile.json no carga y queda en perfil de respaldo', async ({
         page,
     }) => {
+        let queueStateCalls = 0;
         await page.route(
             /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
             async (route) =>
@@ -134,13 +168,29 @@ test.describe('Sala turnos display', () => {
             if (resource !== 'queue-state') {
                 return json(route, { ok: true, data: {} });
             }
+            queueStateCalls += 1;
 
             return json(route, {
                 ok: true,
                 data: {
                     updatedAt: new Date().toISOString(),
-                    callingNow: [],
-                    nextTickets: [],
+                    callingNow: [
+                        {
+                            id: 93,
+                            ticketCode: 'A-093',
+                            patientInitials: 'EP',
+                            assignedConsultorio: 2,
+                            calledAt: new Date().toISOString(),
+                        },
+                    ],
+                    nextTickets: [
+                        {
+                            id: 94,
+                            ticketCode: 'A-094',
+                            patientInitials: 'QV',
+                            position: 1,
+                        },
+                    ],
                 },
             });
         });
@@ -150,9 +200,22 @@ test.describe('Sala turnos display', () => {
         await expect(page.locator('#displaySetupTitle')).toContainText(
             'Perfil de clínica no cargado'
         );
+        await expect(page.locator('#displayProfileStatus')).toContainText(
+            'Bloqueado · perfil de respaldo'
+        );
         await expect(page.locator('#displaySetupChecks')).toContainText(
             'perfil de respaldo'
         );
+        await expect(page.locator('#displayAnnouncement')).toContainText(
+            'Pantalla bloqueada'
+        );
+        await expect(page.locator('#displayConsultorio2')).toContainText(
+            'Sin llamado activo'
+        );
+        await expect(page.locator('#displayNextList')).toContainText(
+            'Pantalla bloqueada'
+        );
+        expect(queueStateCalls).toBe(0);
     });
 
     test('renderiza llamados activos y siguientes turnos', async ({ page }) => {
@@ -343,6 +406,23 @@ test.describe('Sala turnos display', () => {
     test('permite silenciar campanilla y mantiene preferencia local', async ({
         page,
     }) => {
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    surfaces: {
+                        display: {
+                            enabled: true,
+                            route: '/sala-turnos.html',
+                        },
+                    },
+                })
+        );
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());
             const resource = url.searchParams.get('resource') || '';
@@ -381,9 +461,9 @@ test.describe('Sala turnos display', () => {
         );
 
         const storedMuted = await page.evaluate(() =>
-            localStorage.getItem('queueDisplayBellMuted')
+            JSON.parse(localStorage.getItem('queueDisplayBellMuted') || '{}')
         );
-        expect(storedMuted).toBe('1');
+        expect(storedMuted.values?.['clinica-norte-demo']).toBe('1');
 
         await page.reload();
         await expect(page.locator('#displayBellToggleBtn')).toContainText(
@@ -392,6 +472,83 @@ test.describe('Sala turnos display', () => {
 
         await page.keyboard.press('Alt+Shift+KeyM');
         await expect(page.locator('#displayBellToggleBtn')).toContainText('On');
+    });
+
+    test('ignora snapshot y mute heredados de otra clinica', async ({
+        page,
+    }) => {
+        await page.addInitScript(() => {
+            localStorage.setItem(
+                'queueDisplayBellMuted',
+                JSON.stringify({
+                    schema: 'turnero-clinic-storage/v1',
+                    values: {
+                        'clinica-sur-demo': '1',
+                    },
+                })
+            );
+            localStorage.setItem(
+                'queueDisplayLastSnapshot',
+                JSON.stringify({
+                    schema: 'turnero-clinic-storage/v1',
+                    values: {
+                        'clinica-sur-demo': {
+                            savedAt: new Date().toISOString(),
+                            data: {
+                                updatedAt: new Date().toISOString(),
+                                callingNow: [
+                                    {
+                                        id: 9,
+                                        ticketCode: 'A-909',
+                                        patientInitials: 'LR',
+                                        assignedConsultorio: 2,
+                                        calledAt: new Date().toISOString(),
+                                    },
+                                ],
+                                nextTickets: [],
+                            },
+                        },
+                    },
+                })
+            );
+        });
+
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    surfaces: {
+                        display: {
+                            enabled: true,
+                            route: '/sala-turnos.html',
+                        },
+                    },
+                })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+            if (resource !== 'queue-state') {
+                return json(route, { ok: true, data: {} });
+            }
+            return route.abort('failed');
+        });
+
+        await page.goto('/sala-turnos.html');
+
+        await expect(page.locator('#displayBellToggleBtn')).toContainText('On');
+        await expect(page.locator('#displayConsultorio2')).not.toContainText(
+            'A-909'
+        );
+        await expect(page.locator('#displaySnapshotHint')).toContainText(
+            'sin datos locales'
+        );
     });
 
     test('guia puesta en marcha de TV y valida campanilla manual', async ({
@@ -540,23 +697,46 @@ test.describe('Sala turnos display', () => {
             localStorage.setItem(
                 'queueDisplayLastSnapshot',
                 JSON.stringify({
-                    savedAt: new Date().toISOString(),
-                    data: {
-                        updatedAt: new Date().toISOString(),
-                        callingNow: [
-                            {
-                                id: 9,
-                                ticketCode: 'A-909',
-                                patientInitials: 'LR',
-                                assignedConsultorio: 2,
-                                calledAt: new Date().toISOString(),
+                    schema: 'turnero-clinic-storage/v1',
+                    values: {
+                        'clinica-norte-demo': {
+                            savedAt: new Date().toISOString(),
+                            data: {
+                                updatedAt: new Date().toISOString(),
+                                callingNow: [
+                                    {
+                                        id: 9,
+                                        ticketCode: 'A-909',
+                                        patientInitials: 'LR',
+                                        assignedConsultorio: 2,
+                                        calledAt: new Date().toISOString(),
+                                    },
+                                ],
+                                nextTickets: [],
                             },
-                        ],
-                        nextTickets: [],
+                        },
                     },
                 })
             );
         });
+
+        await page.route(
+            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
+            async (route) =>
+                json(route, {
+                    clinic_id: 'clinica-norte-demo',
+                    branding: {
+                        name: 'Clinica Norte',
+                        short_name: 'Norte',
+                    },
+                    surfaces: {
+                        display: {
+                            enabled: true,
+                            route: '/sala-turnos.html',
+                        },
+                    },
+                })
+        );
 
         await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
             const url = new URL(route.request().url());

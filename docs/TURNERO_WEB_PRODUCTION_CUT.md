@@ -14,6 +14,7 @@ Cerrar un `piloto web por clínica` del turnero que pueda operar una clínica re
 ## Perfil por clínica
 
 Cada despliegue usa un perfil propio en `content/turnero/clinic-profile.json`.
+La fuente canónica de perfiles vive en `content/turnero/clinic-profiles/*.json`, y el perfil activo se prepara con `node bin/turnero-clinic-profile.js stage --id <clinic_id>`.
 
 Contrato mínimo:
 
@@ -50,6 +51,9 @@ Contrato mínimo:
 - sala reflejando llamados
 - operador, kiosco y sala muestran branding/contexto de la clínica activa
 - operador, kiosco y sala degradan la operación si la ruta activa no coincide con la ruta canónica declarada en el perfil
+- `admin.html#queue` en `basic` también debe bloquear llamadas, acciones por ticket, bulk, cambios de estación y numpad si carga un `clinic-profile` inválido o fuera de canon
+- operador y kiosco bloquean acciones reales si la superficie cae en `perfil de respaldo` o `ruta fuera de canon`
+- sala bloquea polling, snapshot y visualización de llamados si la superficie cae en `perfil de respaldo` o `ruta fuera de canon`
 - `queueSurfaceStatus` sano para `operator`, `kiosk` y `display`
 - `GET /api.php?resource=data` expone `turneroClinicProfile`
 
@@ -91,17 +95,34 @@ La evidencia local del piloto (`opening checklist`, `relevo`, `bitácora`) debe 
 
 La misma regla aplica al estado operativo persistido del hub (`filtro de bitácora`, `alertas revisadas`, `focus mode`, `playbook`, `dominio del hub` y `lookup de ticket`). Ninguna de esas ayudas puede sobrevivir al cambio de clínica.
 
+El runtime operativo del queue en admin también debe ser clínico: `station lock`, `consultorio activo`, `1 tecla`, panel de atajos, tecla externa calibrada y `queueAdminLastSnapshot` no pueden contaminar otra clínica. Si cambias de `clinic_id`, deben cargarse solo los valores de esa clínica.
+
 El heurístico de `smoke final` también debe ser clínico: la actividad local del admin solo cuenta si el llamado/rellamado reciente pertenece al `clinic_id` activo. Actividad heredada o sin `clinicId` no puede dejar el piloto en verde.
 
-Debe evaluar cinco señales antes de abrir una clínica real:
+La misma regla aplica a las superficies web canónicas: `queueDisplayBellMuted`, `queueDisplayLastSnapshot`, `queueKioskSeniorMode`, `queueKioskPrinterState` y `queueKioskOfflineOutbox` deben persistirse por `clinic_id`. Una TV o kiosco no puede heredar preferencias, respaldo local ni pendientes offline de otra clínica.
+
+Además, `operador-turnos.html`, `kiosco-turnos.html` y `sala-turnos.html` deben exponer un estado visible de perfil por clínica para el personal local: `Perfil remoto verificado` cuando la superficie carga el perfil correcto, y `Bloqueado` cuando cae a `perfil de respaldo` o a una `ruta fuera de canon`.
+En `operador` y `kiosco`, ese estado no puede ser solo informativo: debe impedir llamados, check-ins, turnos nuevos y cola offline mientras el perfil siga inválido.
+En `sala`, el mismo estado debe detener `queue-state`, ignorar snapshot local y mostrar `Pantalla bloqueada`, nunca llamados de otra clínica o de una ruta fuera de canon.
+
+Comandos operativos del perfil por clínica:
+
+- `node bin/turnero-clinic-profile.js list --json`
+- `node bin/turnero-clinic-profile.js validate --id <clinic_id> --json`
+- `node bin/turnero-clinic-profile.js stage --id <clinic_id> --json`
+- `node bin/turnero-clinic-profile.js status --json`
+
+Debe evaluar seis señales antes de abrir una clínica real:
 
 - `perfil por clínica`
+- `perfil catalogado`
 - `superficies web canónicas`
 - `publicación del release`
 - `señal viva + heartbeats`
 - `smoke final del turno`
 
 Además, `perfil por clínica` solo cuenta como listo si viene del servidor; un perfil servido desde `fallback local` debe bloquear el go-live aunque la UI conserve contexto.
+Además, `perfil catalogado` solo cuenta como listo si el `clinic-profile.json` activo coincide byte a byte con una entrada válida bajo `content/turnero/clinic-profiles/*.json`; si no, el deploy sigue dependiendo de edición manual y el piloto debe quedar bloqueado.
 Si un heartbeat de `operator`, `kiosk` o `display` reporta un `clinic_id` distinto al del perfil activo, el canon del piloto debe pasar a `Bloquea` aunque la ruta sea correcta.
 Si el heartbeat trae la misma clínica pero una `firma` de perfil distinta, también debe bloquearse: eso indica una superficie con configuración vieja frente al perfil activo.
 

@@ -1,0 +1,52 @@
+{
+    "schema": "turnero-clinic-profile/v1",
+    "clinic_id": "piel-armonia-quito",
+    "branding": {
+        "name": "Piel en Armonia",
+        "short_name": "Piel en Armonia",
+        "city": "Quito",
+        "base_url": "https://pielarmonia.com"
+    },
+    "consultorios": {
+        "c1": {
+            "label": "Consultorio 1",
+            "short_label": "C1"
+        },
+        "c2": {
+            "label": "Consultorio 2",
+            "short_label": "C2"
+        }
+    },
+    "surfaces": {
+        "admin": {
+            "enabled": true,
+            "label": "Admin web",
+            "route": "/admin.html#queue"
+        },
+        "operator": {
+            "enabled": true,
+            "label": "Operador web",
+            "route": "/operador-turnos.html"
+        },
+        "kiosk": {
+            "enabled": true,
+            "label": "Kiosco web",
+            "route": "/kiosco-turnos.html"
+        },
+        "display": {
+            "enabled": true,
+            "label": "Sala web",
+            "route": "/sala-turnos.html"
+        }
+    },
+    "release": {
+        "mode": "web_pilot",
+        "admin_mode_default": "basic",
+        "separate_deploy": true,
+        "native_apps_blocking": false,
+        "notes": [
+            "El piloto a produccion usa las superficies web como canon operativo.",
+            "Instaladores desktop y Android TV quedan como siguiente release, no como bloqueo de salida."
+        ]
+    }
+}

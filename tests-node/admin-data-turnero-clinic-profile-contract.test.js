@@ -38,6 +38,7 @@ test('AdminDataController expone turneroClinicProfile para el piloto web por cli
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(result.stdout);
     const profile = payload?.data?.turneroClinicProfile;
+    const catalogStatus = payload?.data?.turneroClinicProfileCatalogStatus;
 
     assert.equal(payload.ok, true);
     assert.equal(profile?.schema, 'turnero-clinic-profile/v1');
@@ -48,4 +49,9 @@ test('AdminDataController expone turneroClinicProfile para el piloto web por cli
     assert.equal(profile?.surfaces?.operator?.route, '/operador-turnos.html');
     assert.equal(profile?.surfaces?.kiosk?.route, '/kiosco-turnos.html');
     assert.equal(profile?.surfaces?.display?.route, '/sala-turnos.html');
+    assert.equal(catalogStatus?.catalogAvailable, true);
+    assert.equal(catalogStatus?.clinicId, 'piel-armonia-quito');
+    assert.equal(catalogStatus?.matchingProfileId, 'piel-armonia-quito');
+    assert.equal(catalogStatus?.matchesCatalog, true);
+    assert.equal(catalogStatus?.ready, true);
 });

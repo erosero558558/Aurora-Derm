@@ -57,6 +57,7 @@ import {
 
 const QUEUE_REFRESH_MS = 8000;
 const OPERATOR_HEARTBEAT_MS = 15000;
+const OPERATOR_PILOT_BLOCK_TOAST_COOLDOWN_MS = 2500;
 
 let refreshIntervalId = 0;
 let operatorHeartbeat = null;
@@ -96,6 +97,7 @@ const operatorRuntime = {
     numpad: createEmptyNumpadValidationState(),
     shell: createEmptyShellState(),
     surfaceContract: null,
+    pilotBlockToastAt: 0,
 };
 let operatorClinicProfile = null;
 
@@ -116,6 +118,76 @@ function getOperatorConsultorioShortLabel(consultorio) {
     return getTurneroConsultorioLabel(operatorClinicProfile, consultorio, {
         short: true,
     });
+}
+
+function renderOperatorProfileStatus(profile) {
+    const surfaceContract = getOperatorSurfaceContract(profile);
+    const profileFingerprint = getTurneroClinicProfileFingerprint(profile).slice(
+        0,
+        8
+    );
+    const state =
+        surfaceContract.state === 'alert'
+            ? 'danger'
+            : surfaceContract.state === 'ready'
+              ? 'success'
+              : 'warning';
+    const text =
+        surfaceContract.state === 'alert'
+            ? surfaceContract.reason === 'profile_missing'
+                ? 'Bloqueado · perfil de respaldo · clinic-profile.json remoto ausente'
+                : `Bloqueado · ruta fuera de canon · se esperaba ${surfaceContract.expectedRoute || '/operador-turnos.html'}`
+            : `Perfil remoto verificado · firma ${profileFingerprint} · canon ${surfaceContract.expectedRoute || '/operador-turnos.html'}`;
+
+    document.querySelectorAll('.queue-operator-profile-status').forEach((node) => {
+        if (!(node instanceof HTMLElement)) {
+            return;
+        }
+        node.dataset.state = state;
+        node.textContent = text;
+    });
+}
+
+function getOperatorSurfaceContract(profile = operatorClinicProfile) {
+    return (
+        operatorRuntime.surfaceContract ||
+        getTurneroSurfaceContract(profile, 'operator')
+    );
+}
+
+function getOperatorPilotBlockDetail() {
+    const surfaceContract = getOperatorSurfaceContract();
+    if (surfaceContract.state !== 'alert') {
+        return '';
+    }
+
+    if (surfaceContract.reason === 'profile_missing') {
+        return 'No se puede operar este equipo: clinic-profile.json remoto ausente. Corrige el perfil y recarga la página antes de llamar tickets.';
+    }
+
+    return `No se puede operar este equipo: la ruta no coincide con el canon del piloto (${surfaceContract.expectedRoute || '/operador-turnos.html'}). Corrige el acceso antes de operar la cola.`;
+}
+
+function isOperatorPilotBlocked() {
+    return getOperatorSurfaceContract().state === 'alert';
+}
+
+function notifyOperatorPilotBlocked() {
+    const detail = getOperatorPilotBlockDetail();
+    if (!detail) {
+        return;
+    }
+
+    const now = Date.now();
+    if (
+        now - Number(operatorRuntime.pilotBlockToastAt || 0) <
+        OPERATOR_PILOT_BLOCK_TOAST_COOLDOWN_MS
+    ) {
+        return;
+    }
+
+    operatorRuntime.pilotBlockToastAt = now;
+    createToast(detail, 'error');
 }
 
 function applyOperatorClinicProfile(profile) {
@@ -156,6 +228,7 @@ function applyOperatorClinicProfile(profile) {
         '#operatorSurfaceMeta',
         `Ruta ${operatorRoute} · ${consultorioSummary}`
     );
+    renderOperatorProfileStatus(profile);
 }
 
 function getDesktopBridge() {
@@ -953,6 +1026,7 @@ function noteNumpadActivity(event) {
 function updateOperatorActionGuide() {
     const state = getState();
     const numpadStatus = buildOperatorNumpadStatus(state.queue);
+    const surfaceContract = getOperatorSurfaceContract();
     const activeTicket = getActiveCalledTicketForStation();
     const waitingTicket = getWaitingForConsultorio(
         Number(state.queue.stationConsultorio || 1)
@@ -962,7 +1036,13 @@ function updateOperatorActionGuide() {
     let title;
     let summary;
 
-    if (pendingAction && pendingAction.action) {
+    if (surfaceContract.state === 'alert') {
+        title =
+            surfaceContract.reason === 'profile_missing'
+                ? 'Operación bloqueada por perfil'
+                : 'Operación bloqueada por ruta';
+        summary = getOperatorPilotBlockDetail();
+    } else if (pendingAction && pendingAction.action) {
         const actionLabel =
             pendingAction.action === 'completed'
                 ? 'completar'
@@ -1333,6 +1413,12 @@ async function handleDocumentClick(event) {
         return;
     }
 
+    if (isOperatorPilotBlocked()) {
+        notifyOperatorPilotBlocked();
+        updateOperatorChrome();
+        return;
+    }
+
     await handleQueueAction(action, actionNode);
     updateOperatorChrome();
 }
@@ -1377,6 +1463,14 @@ function attachKeyboardBridge() {
         }
 
         if (hasFocusedInput()) {
+            return;
+        }
+
+        if (isOperatorPilotBlocked()) {
+            event.preventDefault();
+            noteNumpadActivity(event);
+            notifyOperatorPilotBlocked();
+            updateOperatorChrome();
             return;
         }
 

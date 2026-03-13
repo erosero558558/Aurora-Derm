@@ -11603,6 +11603,37 @@
     color: var(--text-muted, #526173);
 }
 
+.queue-operator-profile-status {
+    margin: 0;
+    width: fit-content;
+    border: 1px solid rgb(15 23 32 / 12%);
+    border-radius: 999px;
+    padding: 0.22rem 0.66rem;
+    background: rgb(255 255 255 / 82%);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.queue-operator-profile-status[data-state='warning'] {
+    border-color: rgb(180 83 9 / 28%);
+    background: rgb(254 243 199 / 72%);
+    color: rgb(120 53 15);
+}
+
+.queue-operator-profile-status[data-state='danger'] {
+    border-color: rgb(190 24 93 / 25%);
+    background: rgb(255 228 230 / 76%);
+    color: rgb(159 18 57);
+}
+
+.queue-operator-profile-status[data-state='success'] {
+    border-color: rgb(22 163 74 / 24%);
+    background: rgb(220 252 231 / 78%);
+    color: rgb(22 101 52);
+}
+
 .queue-operator-workbench {
     display: grid;
     grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.8fr);

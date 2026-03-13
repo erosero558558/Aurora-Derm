@@ -13,6 +13,7 @@ import {
     renderQueueTableBody,
 } from './section/content.js';
 import { renderQueueInstallHub } from './section/install-hub/index.js';
+import { syncQueueUiToActiveClinic } from '../persistence.js';
 import {
     syncQueueSelectionControls,
     syncQueueStationControls,
@@ -21,6 +22,7 @@ import {
 import { updateQueueTriageSummary } from './section/triage.js';
 
 export function renderQueueSection(appendActivity = () => {}) {
+    syncQueueUiToActiveClinic();
     const state = getState();
     const { queueMeta } = getQueueSource();
     const visible = getVisibleTickets();

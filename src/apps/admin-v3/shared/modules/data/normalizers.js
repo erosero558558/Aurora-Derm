@@ -36,6 +36,11 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
         typeof fallbackState.turneroClinicProfileMeta === 'object'
             ? fallbackState.turneroClinicProfileMeta
             : null;
+    const fallbackCatalogStatus =
+        fallbackState?.turneroClinicProfileCatalogStatus &&
+        typeof fallbackState.turneroClinicProfileCatalogStatus === 'object'
+            ? fallbackState.turneroClinicProfileCatalogStatus
+            : null;
     const turneroClinicProfileMeta = profile
         ? {
               source: remoteProfile ? 'remote' : 'fallback_local',
@@ -46,8 +51,13 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
               fetchedAt: remoteProfile
                   ? new Date().toISOString()
                   : String(fallbackProfileMeta?.fetchedAt || '').trim(),
-          }
+              }
         : null;
+    const turneroClinicProfileCatalogStatus =
+        data.turneroClinicProfileCatalogStatus &&
+        typeof data.turneroClinicProfileCatalogStatus === 'object'
+            ? data.turneroClinicProfileCatalogStatus
+            : fallbackCatalogStatus;
 
     return {
         appointments: Array.isArray(data.appointments) ? data.appointments : [],
@@ -85,6 +95,7 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
                 : fallbackState?.appDownloads || null,
         turneroClinicProfile: profile,
         turneroClinicProfileMeta: turneroClinicProfileMeta,
+        turneroClinicProfileCatalogStatus: turneroClinicProfileCatalogStatus,
         clinicalHistoryMeta:
             data.clinicalHistoryMeta &&
             typeof data.clinicalHistoryMeta === 'object'
@@ -113,6 +124,8 @@ export function normalizeAdminStorePayload(payload, currentFunnelMetrics) {
         appDownloads: payload.appDownloads || null,
         turneroClinicProfile: payload.turneroClinicProfile || null,
         turneroClinicProfileMeta: payload.turneroClinicProfileMeta || null,
+        turneroClinicProfileCatalogStatus:
+            payload.turneroClinicProfileCatalogStatus || null,
         clinicalHistoryMeta: payload.clinicalHistoryMeta || null,
         mediaFlowMeta: payload.mediaFlowMeta || null,
         funnelMetrics: payload.funnelMetrics || currentFunnelMetrics,

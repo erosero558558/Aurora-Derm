@@ -4,6 +4,10 @@ import { appendActivity } from '../state.js';
 import { applyQueueStateResponse } from '../sync.js';
 import { normalizeQueueAction } from '../helpers.js';
 import { setTicketStatusLocal } from './shared.js';
+import {
+    notifyAdminQueuePilotBlocked,
+    shouldBlockAdminQueueAction,
+} from '../pilot-guard.js';
 
 function applyPracticeTicketAction(targetId, targetAction, consultorio) {
     if (targetAction === 'reasignar' || targetAction === 're-llamar') {
@@ -39,6 +43,10 @@ export async function executeTicketAction({ ticketId, action, consultorio }) {
     const targetId = Number(ticketId || 0);
     const targetAction = normalizeQueueAction(action);
     if (!targetId || !targetAction) return;
+    if (shouldBlockAdminQueueAction('queue-ticket-action')) {
+        notifyAdminQueuePilotBlocked('queue-ticket-action');
+        return;
+    }
 
     if (getState().queue.practiceMode) {
         applyPracticeTicketAction(targetId, targetAction, consultorio);

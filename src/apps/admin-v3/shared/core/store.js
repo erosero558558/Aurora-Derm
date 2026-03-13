@@ -47,6 +47,7 @@ const initialState = {
         appDownloads: null,
         turneroClinicProfile: null,
         turneroClinicProfileMeta: null,
+        turneroClinicProfileCatalogStatus: null,
         clinicalHistoryMeta: null,
         mediaFlowMeta: null,
         funnelMetrics: null,

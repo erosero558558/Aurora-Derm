@@ -1,10 +1,10 @@
 import {
     getStorageItem,
-    setStorageItem,
     setStorageJson,
     getStorageJson,
     removeStorageItem,
 } from '../../core/persistence.js';
+import { getState, updateState } from '../../core/store.js';
 import {
     QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY,
     QUEUE_HELP_STORAGE_KEY,
@@ -15,53 +15,133 @@ import {
 } from './constants.js';
 import { normalize } from './helpers.js';
 
-export function persistQueueUi(state) {
-    setStorageItem(
-        QUEUE_STATION_MODE_STORAGE_KEY,
-        state.queue.stationMode || 'free'
-    );
-    setStorageItem(
-        QUEUE_STATION_CONSULTORIO_STORAGE_KEY,
-        state.queue.stationConsultorio || 1
-    );
-    setStorageItem(
-        QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY,
-        state.queue.oneTap ? '1' : '0'
-    );
-    setStorageItem(QUEUE_HELP_STORAGE_KEY, state.queue.helpOpen ? '1' : '0');
+let lastQueueUiClinicId = null;
 
-    if (state.queue.customCallKey) {
-        setStorageJson(
-            QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY,
-            state.queue.customCallKey
-        );
-    } else {
-        removeStorageItem(QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY);
-    }
-
-    setStorageJson(QUEUE_SNAPSHOT_STORAGE_KEY, {
-        queueMeta: state.data.queueMeta,
-        queueTickets: state.data.queueTickets,
-        updatedAt: new Date().toISOString(),
-    });
+function getActiveQueueClinicId() {
+    return (
+        String(getState().data.turneroClinicProfile?.clinic_id || '').trim() ||
+        'default-clinic'
+    );
 }
 
-export function readQueueUiDefaults() {
-    const stationMode =
-        normalize(getStorageItem(QUEUE_STATION_MODE_STORAGE_KEY, 'free')) ===
-        'locked'
-            ? 'locked'
-            : 'free';
-    const stationConsultorio =
-        Number(getStorageItem(QUEUE_STATION_CONSULTORIO_STORAGE_KEY, '1')) === 2
-            ? 2
-            : 1;
-    const oneTap =
-        getStorageItem(QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY, '0') === '1';
-    const helpOpen = getStorageItem(QUEUE_HELP_STORAGE_KEY, '0') === '1';
-    const customCallKey = getStorageJson(
+function normalizeScopedStorageMap(rawValue) {
+    const source = rawValue && typeof rawValue === 'object' ? rawValue : {};
+    const values =
+        source.values && typeof source.values === 'object' ? source.values : {};
+    return {
+        values: { ...values },
+    };
+}
+
+function readScopedStorageValue(key, clinicId, fallback, normalizeValue) {
+    const activeClinicId = String(clinicId || '').trim() || 'default-clinic';
+    try {
+        const rawValue = getStorageItem(key, '');
+        if (!rawValue) {
+            return fallback;
+        }
+        const parsed = JSON.parse(rawValue);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (
+                parsed.values &&
+                typeof parsed.values === 'object'
+            ) {
+                return Object.prototype.hasOwnProperty.call(
+                    parsed.values,
+                    activeClinicId
+                )
+                    ? normalizeValue(parsed.values[activeClinicId])
+                    : fallback;
+            }
+            if (
+                Object.prototype.hasOwnProperty.call(parsed, 'clinicId') &&
+                Object.prototype.hasOwnProperty.call(parsed, 'value')
+            ) {
+                return String(parsed.clinicId || '').trim() === activeClinicId
+                    ? normalizeValue(parsed.value)
+                    : fallback;
+            }
+            return normalizeValue(parsed);
+        }
+        return normalizeValue(parsed);
+    } catch (_error) {
+        const rawValue = getStorageItem(key, '');
+        if (!rawValue) {
+            return fallback;
+        }
+        return normalizeValue(rawValue);
+    }
+}
+
+function persistScopedStorageValue(key, clinicId, value) {
+    const activeClinicId = String(clinicId || '').trim() || 'default-clinic';
+    const nextState = normalizeScopedStorageMap(getStorageJson(key, null));
+    nextState.values[activeClinicId] = value;
+    setStorageJson(key, nextState);
+}
+
+function removeScopedStorageValue(key, clinicId) {
+    const activeClinicId = String(clinicId || '').trim() || 'default-clinic';
+    const nextState = normalizeScopedStorageMap(getStorageJson(key, null));
+    delete nextState.values[activeClinicId];
+    if (Object.keys(nextState.values).length === 0) {
+        removeStorageItem(key);
+        return;
+    }
+    setStorageJson(key, nextState);
+}
+
+function normalizeStationModeValue(value) {
+    return normalize(value) === 'locked' ? 'locked' : 'free';
+}
+
+function normalizeStationConsultorioValue(value) {
+    return Number(value || 0) === 2 ? 2 : 1;
+}
+
+function normalizeBooleanStorageValue(value) {
+    return (
+        value === true ||
+        value === 1 ||
+        value === '1' ||
+        String(value || '').trim().toLowerCase() === 'true'
+    );
+}
+
+function normalizeCustomCallKeyValue(value) {
+    return value && typeof value === 'object' ? value : null;
+}
+
+function buildQueueUiDefaultsForClinic(clinicId) {
+    const stationMode = readScopedStorageValue(
+        QUEUE_STATION_MODE_STORAGE_KEY,
+        clinicId,
+        'free',
+        normalizeStationModeValue
+    );
+    const stationConsultorio = readScopedStorageValue(
+        QUEUE_STATION_CONSULTORIO_STORAGE_KEY,
+        clinicId,
+        1,
+        normalizeStationConsultorioValue
+    );
+    const oneTap = readScopedStorageValue(
+        QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY,
+        clinicId,
+        false,
+        normalizeBooleanStorageValue
+    );
+    const helpOpen = readScopedStorageValue(
+        QUEUE_HELP_STORAGE_KEY,
+        clinicId,
+        false,
+        normalizeBooleanStorageValue
+    );
+    const customCallKey = readScopedStorageValue(
         QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY,
-        null
+        clinicId,
+        null,
+        normalizeCustomCallKeyValue
     );
 
     return {
@@ -71,4 +151,89 @@ export function readQueueUiDefaults() {
         helpOpen,
         customCallKey,
     };
+}
+
+function persistQueueUiPreferences(state) {
+    const clinicId = getActiveQueueClinicId();
+    lastQueueUiClinicId = clinicId;
+    persistScopedStorageValue(
+        QUEUE_STATION_MODE_STORAGE_KEY,
+        clinicId,
+        normalizeStationModeValue(state.queue.stationMode || 'free')
+    );
+    persistScopedStorageValue(
+        QUEUE_STATION_CONSULTORIO_STORAGE_KEY,
+        clinicId,
+        normalizeStationConsultorioValue(state.queue.stationConsultorio || 1)
+    );
+    persistScopedStorageValue(
+        QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY,
+        clinicId,
+        Boolean(state.queue.oneTap)
+    );
+    persistScopedStorageValue(
+        QUEUE_HELP_STORAGE_KEY,
+        clinicId,
+        Boolean(state.queue.helpOpen)
+    );
+
+    if (state.queue.customCallKey) {
+        persistScopedStorageValue(
+            QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY,
+            clinicId,
+            state.queue.customCallKey
+        );
+    } else {
+        removeScopedStorageValue(QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY, clinicId);
+    }
+}
+
+function persistQueueSnapshot(state) {
+    persistScopedStorageValue(QUEUE_SNAPSHOT_STORAGE_KEY, getActiveQueueClinicId(), {
+        queueMeta: state.data.queueMeta,
+        queueTickets: state.data.queueTickets,
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+export function persistQueueUi(state) {
+    persistQueueUiPreferences(state);
+    persistQueueSnapshot(state);
+}
+
+export function readQueueUiDefaults() {
+    return buildQueueUiDefaultsForClinic(getActiveQueueClinicId());
+}
+
+export function getQueueSnapshot() {
+    return readScopedStorageValue(
+        QUEUE_SNAPSHOT_STORAGE_KEY,
+        getActiveQueueClinicId(),
+        null,
+        (value) => (value && typeof value === 'object' ? value : null)
+    );
+}
+
+export function syncQueueUiToActiveClinic() {
+    const clinicId = getActiveQueueClinicId();
+    if (lastQueueUiClinicId === clinicId) {
+        return false;
+    }
+
+    const defaults = buildQueueUiDefaultsForClinic(clinicId);
+    updateState((state) => ({
+        ...state,
+        queue: {
+            ...state.queue,
+            stationMode: defaults.stationMode,
+            stationConsultorio: defaults.stationConsultorio,
+            oneTap: defaults.oneTap,
+            helpOpen: defaults.helpOpen,
+            customCallKey: defaults.customCallKey,
+            captureCallKeyMode: false,
+        },
+    }));
+    persistQueueUiPreferences(getState());
+    lastQueueUiClinicId = clinicId;
+    return true;
 }

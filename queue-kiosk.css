@@ -115,6 +115,45 @@ body {
     line-height: 1.4;
 }
 
+.kiosk-profile-status {
+    margin: 0 0 0.72rem;
+    width: fit-content;
+    border: 1px solid rgb(255 255 255 / 14%);
+    border-radius: 999px;
+    padding: 0.24rem 0.72rem;
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(255 255 255 / 1%)),
+        var(--surface-soft);
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.kiosk-profile-status[data-state='ready'] {
+    border-color: color-mix(in srgb, var(--sony-success) 58%, var(--border) 42%);
+    color: #dbffea;
+    background:
+        linear-gradient(180deg, rgb(79 207 155 / 18%), rgb(79 207 155 / 7%)),
+        var(--surface-strong);
+}
+
+.kiosk-profile-status[data-state='warning'] {
+    border-color: color-mix(in srgb, var(--sony-warning) 58%, var(--border) 42%);
+    color: #ffe8be;
+    background:
+        linear-gradient(180deg, rgb(242 187 99 / 16%), rgb(242 187 99 / 6%)),
+        var(--surface-strong);
+}
+
+.kiosk-profile-status[data-state='alert'] {
+    border-color: color-mix(in srgb, var(--sony-danger) 58%, var(--border) 42%);
+    color: #ffd7d7;
+    background:
+        linear-gradient(180deg, rgb(239 107 107 / 18%), rgb(239 107 107 / 8%)),
+        var(--surface-strong);
+}
+
 .kiosk-header-controls {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

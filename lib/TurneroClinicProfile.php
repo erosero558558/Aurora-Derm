@@ -9,6 +9,11 @@ function turnero_clinic_profile_path(): string
     return dirname(__DIR__) . '/content/turnero/clinic-profile.json';
 }
 
+function turnero_clinic_profiles_catalog_dir(): string
+{
+    return dirname(__DIR__) . '/content/turnero/clinic-profiles';
+}
+
 function turnero_clinic_profile_defaults(): array
 {
     return [
@@ -182,4 +187,99 @@ function read_turnero_clinic_profile(): array
     );
 
     return $cache;
+}
+
+function list_turnero_clinic_profile_catalog(): array
+{
+    static $cache = null;
+
+    if ($cache !== null) {
+        return $cache;
+    }
+
+    $catalog = [];
+    $dir = turnero_clinic_profiles_catalog_dir();
+    if (!is_dir($dir)) {
+        $cache = [];
+        return $cache;
+    }
+
+    $entries = scandir($dir);
+    if ($entries === false) {
+        $cache = [];
+        return $cache;
+    }
+
+    foreach ($entries as $entry) {
+        if ($entry === '.' || $entry === '..' || !str_ends_with($entry, '.json')) {
+            continue;
+        }
+        $path = $dir . DIRECTORY_SEPARATOR . $entry;
+        if (!is_file($path)) {
+            continue;
+        }
+        $raw = file_get_contents($path);
+        if ($raw === false || trim($raw) === '') {
+            continue;
+        }
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            continue;
+        }
+        $normalized = turnero_clinic_profile_normalize($decoded);
+        $catalog[] = [
+            'id' => basename($entry, '.json'),
+            'path' => $path,
+            'profile' => $normalized,
+        ];
+    }
+
+    usort(
+        $catalog,
+        static fn (array $left, array $right): int => strcmp(
+            (string) $left['id'],
+            (string) $right['id']
+        )
+    );
+
+    $cache = $catalog;
+    return $cache;
+}
+
+function read_turnero_clinic_profile_catalog_status(): array
+{
+    $activeProfile = read_turnero_clinic_profile();
+    $activePath = turnero_clinic_profile_path();
+    $catalog = list_turnero_clinic_profile_catalog();
+    $matchingProfileId = '';
+    $matchesCatalog = false;
+    $catalogPath = '';
+
+    foreach ($catalog as $entry) {
+        $entryProfile = isset($entry['profile']) && is_array($entry['profile'])
+            ? $entry['profile']
+            : null;
+        if (!$entryProfile) {
+            continue;
+        }
+        if ((string) ($entryProfile['clinic_id'] ?? '') !== (string) ($activeProfile['clinic_id'] ?? '')) {
+            continue;
+        }
+
+        $matchingProfileId = (string) ($entry['id'] ?? '');
+        $catalogPath = (string) ($entry['path'] ?? '');
+        $matchesCatalog = $entryProfile == $activeProfile;
+        break;
+    }
+
+    return [
+        'catalogAvailable' => !empty($catalog),
+        'catalogCount' => count($catalog),
+        'activePath' => $activePath,
+        'clinicId' => (string) ($activeProfile['clinic_id'] ?? ''),
+        'matchingProfileId' => $matchingProfileId,
+        'matchingCatalogPath' => $catalogPath,
+        'matchesCatalog' => $matchesCatalog,
+        'ready' => $matchingProfileId !== '' && $matchesCatalog,
+    ];
 }

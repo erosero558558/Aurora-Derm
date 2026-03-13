@@ -1,0 +1,52 @@
+{
+    "schema": "turnero-clinic-profile/v1",
+    "clinic_id": "clinica-norte-demo",
+    "branding": {
+        "name": "Clinica Norte",
+        "short_name": "Norte",
+        "city": "Quito",
+        "base_url": "https://norte-demo.pielarmonia.com"
+    },
+    "consultorios": {
+        "c1": {
+            "label": "Dermatologia 1",
+            "short_label": "D1"
+        },
+        "c2": {
+            "label": "Dermatologia 2",
+            "short_label": "D2"
+        }
+    },
+    "surfaces": {
+        "admin": {
+            "enabled": true,
+            "label": "Admin web",
+            "route": "/admin.html#queue"
+        },
+        "operator": {
+            "enabled": true,
+            "label": "Operador web",
+            "route": "/operador-turnos.html"
+        },
+        "kiosk": {
+            "enabled": true,
+            "label": "Kiosco web",
+            "route": "/kiosco-turnos.html"
+        },
+        "display": {
+            "enabled": true,
+            "label": "Sala web",
+            "route": "/sala-turnos.html"
+        }
+    },
+    "release": {
+        "mode": "web_pilot",
+        "admin_mode_default": "basic",
+        "separate_deploy": true,
+        "native_apps_blocking": false,
+        "notes": [
+            "Perfil de demostracion para validar deploy separado por clinica.",
+            "No usar este perfil como multi-tenant compartido."
+        ]
+    }
+}

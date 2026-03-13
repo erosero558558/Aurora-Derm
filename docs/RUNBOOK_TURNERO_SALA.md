@@ -20,6 +20,7 @@ Notas del corte:
 - `expert` conserva paneles avanzados de coaching, simulación y recepción, pero no bloquea el piloto.
 - Antes de abrir una clínica real, usa `queueOpsPilotReadiness` en dominio `deployment` como gate de salida. Debe quedar en `Piloto web listo para abrir` y confirmar `publicación del release`; si no, resuelve los bloqueos marcados allí antes del primer turno.
 - El ítem `Perfil por clínica` solo cuenta como listo si viene del servidor. Si el panel habla de perfil `cacheado localmente`, no abras la clínica aunque el resto del dashboard siga visible.
+- El ítem `Perfil catalogado` debe quedar en `Listo` antes del go-live. Si aparece `desalineado` o `sin entrada catalogada`, vuelve a preparar `content/turnero/clinic-profile.json` desde `content/turnero/clinic-profiles/*.json` y no abras la clínica todavía.
 - En el mismo shell, revisa `queueOpsPilotIssues`: debe dejar una lista corta de `Bloqueos de salida`. Si algo aparece en `Bloquea`, resuélvelo primero y vuelve recién después al smoke final.
 - En el mismo bloque valida `queueOpsPilotCanon`: debe listar las cuatro rutas web activas de esa clínica (`admin`, `operador`, `kiosco`, `sala`) antes de compartir accesos al equipo local.
 - Dentro de ese canon, cada superficie debe quedar como `Verificada`, `Declarada` o `Bloquea`; si aparece `Bloquea`, el piloto no abre hasta corregir la ruta reportada por heartbeat.
@@ -27,14 +28,23 @@ Notas del corte:
 - Si el `clinic_id` coincide pero la superficie reporta otra `firma` de perfil, trátalo como un equipo desactualizado: vuelve a desplegar o refrescar esa superficie antes del go-live.
 - Debajo del canon, valida `queueOpsPilotSmoke`: debe dejar visible una secuencia repetible con enlaces directos por clínica para `admin`, `operador`, `kiosco`, `sala` y el cierre del llamado final antes del go-live.
 - Usa `queueOpsPilotHandoffCopyBtn` para copiar el paquete de apertura por clínica cuando necesites pasar el estado del piloto a recepción, operación o soporte sin resumirlo a mano. Ese paquete ya debe decir si el perfil viene `remoto verificado` o `fallback local`.
+- Ese mismo paquete también debe decir si el perfil quedó `catalogado` (`*.json verificado`) o si sigue `desalineado`; úsalo para detectar enseguida un deploy separado mal preparado.
 - Ese mismo paquete ya debe incluir `Bloqueo activo`; úsalo como primera línea del handoff para que el segundo equipo vea de inmediato qué sigue frenando el go-live.
 - `queueOpeningChecklistV1`, `queueShiftHandoffV1` y `queueOpsLogV1` ahora se consideran válidos solo para la clínica activa. Si cambias de `clinic_id`, esos bloques deben reiniciarse aunque sigan siendo del mismo día.
 - Lo mismo aplica a `queueOpsLogFilterV1`, `queueOpsAlertsV1`, `queueOpsFocusModeV1`, `queueOpsPlaybookV1`, `queueHubDomainViewV1` y `queueTicketLookupV1`: si cambias de clínica, el hub debe volver a estado limpio antes de operar.
+- El runtime operativo del admin también queda acotado por clínica: `queueStationMode`, `queueStationConsultorio`, `queueOneTapAdvance`, `queueNumpadHelpOpen`, `queueCallKeyBindingV1` y `queueAdminLastSnapshot` deben leerse solo para la clínica activa.
 - La sugerencia automática de `smoke final` también ignora actividad local de otra clínica. Un `Llamado C1 ejecutado` heredado de otra sede o sin `clinicId` ya no sirve para abrir el piloto.
+- La TV y el kiosco también deben quedar aislados por clínica: `queueDisplayBellMuted`, `queueDisplayLastSnapshot`, `queueKioskSeniorMode`, `queueKioskPrinterState` y `queueKioskOfflineOutbox` solo pueden leerse para la clínica activa. Si cambias `clinic_id`, no reutilices mute, snapshot, termal ni outbox de otra sede.
 - Verifica también las superficies reales: `operador-turnos.html`, `kiosco-turnos.html` y `sala-turnos.html` deben mostrar branding y contexto de la clínica activa, no nombres genéricos de otra sede.
+- En esas mismas superficies debe verse un estado corto de perfil: `Perfil remoto verificado` para operar y `Bloqueado` si cargaron `perfil de respaldo` o una `ruta fuera de canon`.
 - Si alguna superficie carga una ruta distinta a la declarada en `clinic-profile.json`, debe pasar a estado visible de bloqueo (`Ruta del piloto incorrecta`) antes de operar.
+- En `operador-turnos.html` y `kiosco-turnos.html`, ese bloqueo debe detener la operación real: no deben llamar tickets, registrar check-ins, crear turnos ni guardar outbox offline mientras el perfil siga inválido.
+- En `sala-turnos.html`, ese bloqueo también debe ser duro: la TV no debe consultar `queue-state`, restaurar snapshot ni mostrar llamados mientras el perfil siga inválido.
+- En `admin.html#queue`, el bloqueo también debe ser duro: si el admin carga `perfil de respaldo` o `ruta fuera de canon`, no debe llamar cola, ni ejecutar acciones por ticket, ni operar el numpad hasta corregir el perfil.
 - `app-downloads/`, Electron y Android TV quedan como `siguiente release`; no son requisito para el go-live web.
 - Cada clínica debe desplegar su propia copia con `content/turnero/clinic-profile.json` dedicado; no hay runtime multi-tenant compartido en este corte.
+- La fuente canónica de esos perfiles ahora vive en `content/turnero/clinic-profiles/*.json`. Antes del deploy, prepara el perfil activo con `node bin/turnero-clinic-profile.js stage --id <clinic_id>`.
+- Usa `node bin/turnero-clinic-profile.js validate --id <clinic_id>` para validar branding, rutas canónicas y `separate_deploy=true` antes de publicar.
 
 ## Superficies operativas
 

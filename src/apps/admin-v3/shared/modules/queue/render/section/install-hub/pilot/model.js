@@ -209,6 +209,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         getSurfaceTelemetryState,
         getTurneroClinicProfile,
         getTurneroClinicProfileMeta,
+        getTurneroClinicProfileCatalogStatus,
         getTurneroClinicBrandName,
         getTurneroPublicSyncStatus,
         hasRecentQueueSmokeSignal,
@@ -256,6 +257,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             : 0;
     const profile = getTurneroClinicProfile?.() || null;
     const profileMeta = getTurneroClinicProfileMeta?.() || null;
+    const profileCatalogStatus = getTurneroClinicProfileCatalogStatus?.() || null;
     const profileSource = String(profileMeta?.source || '').trim().toLowerCase();
     const profileFingerprint = String(
         profileMeta?.profileFingerprint || ''
@@ -299,6 +301,11 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                   String(publicSync?.deployedCommit || '').trim() !== ''
               )
             : true;
+    const catalogReady = Boolean(
+        profileCatalogStatus?.catalogAvailable &&
+            profileCatalogStatus?.matchingProfileId &&
+            profileCatalogStatus?.matchesCatalog
+    );
     const canonicalSurfaces = requiredSurfaceKeys.map((surfaceKey) => {
         const surface = profileSurfaces[surfaceKey];
         const route = String(surface?.route || '').trim();
@@ -446,6 +453,20 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                 String(release?.admin_mode_default || '').trim() === 'basic'
                     ? `${clinicName} ya quedó perfilada como piloto web separado.`
                     : 'Falta cerrar `clinic_id`, release web o `basic` por defecto antes de abrir otra clínica.',
+            blocker: true,
+        },
+        {
+            id: 'catalog',
+            ready: catalogReady,
+            label: 'Perfil catalogado',
+            detail: !profileCatalogStatus?.catalogAvailable
+                ? 'No existe catálogo de perfiles por clínica; el deploy sigue dependiendo de edición manual del perfil activo.'
+                : profileCatalogStatus?.matchingProfileId &&
+                    profileCatalogStatus?.matchesCatalog
+                  ? `El perfil activo coincide con ${profileCatalogStatus.matchingProfileId}.json y puede repetirse en otro deploy separado.`
+                  : profileCatalogStatus?.matchingProfileId
+                    ? `El perfil activo usa clinic_id ${clinicId}, pero ya difiere de ${profileCatalogStatus.matchingProfileId}.json. Vuelve a stagear el catálogo antes del go-live.`
+                    : `No existe un perfil catalogado para ${clinicId}. Agrega la entrada a clinic-profiles antes del go-live.`,
             blocker: true,
         },
         {
@@ -728,6 +749,19 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         );
     }
 
+    if (!readinessItemsById.catalog?.ready) {
+        addGoLiveIssue(
+            buildGoLiveIssue({
+                id: 'catalog',
+                label: 'Perfil catalogado',
+                state: readinessItemsById.catalog?.blocker ? 'alert' : 'warning',
+                detail: readinessItemsById.catalog?.detail,
+                href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
+                actionLabel: 'Revisar perfil',
+            })
+        );
+    }
+
     if (!readinessItemsById.publish?.ready) {
         addGoLiveIssue(
             buildGoLiveIssue({
@@ -843,6 +877,15 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             id: 'profile_source',
             label: 'Perfil',
             value: profileSourceLabel,
+        },
+        {
+            id: 'catalog',
+            label: 'Catálogo',
+            value: catalogReady
+                ? `${profileCatalogStatus?.matchingProfileId}.json verificado`
+                : profileCatalogStatus?.matchingProfileId
+                  ? `${profileCatalogStatus.matchingProfileId}.json desalineado`
+                  : 'sin entrada catalogada',
         },
         {
             id: 'release',

@@ -1,6 +1,10 @@
 import { hasFocusedInput } from '../../ui/render.js';
 import { getState } from '../store.js';
 import {
+    notifyAdminQueuePilotBlocked,
+    shouldBlockAdminQueueAction,
+} from '../../modules/queue/pilot-guard.js';
+import {
     getEventKeyData,
     isNumpadEvent,
     matchesCustomCallKey,
@@ -23,6 +27,12 @@ export function handleQueueKeyboardShortcut(event, queueNumpadAction) {
         return false;
     }
     if (hasFocusedInput()) {
+        return true;
+    }
+
+    if (shouldBlockAdminQueueAction('queue-admin-numpad')) {
+        event.preventDefault();
+        notifyAdminQueuePilotBlocked('queue-admin-numpad');
         return true;
     }
 

@@ -107,6 +107,7 @@ class AdminDataController
 
         $store['appDownloads'] = self::buildAppDownloads();
         $store['turneroClinicProfile'] = read_turnero_clinic_profile();
+        $store['turneroClinicProfileCatalogStatus'] = read_turnero_clinic_profile_catalog_status();
         $store['queueSurfaceStatus'] = QueueSurfaceStatusStore::readSummary();
 
         $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(

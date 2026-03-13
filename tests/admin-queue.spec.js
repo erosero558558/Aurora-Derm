@@ -35,6 +35,32 @@ function buildQueueMetaFromState(state) {
     };
 }
 
+function buildTurneroClinicProfileCatalogStatus(options = {}) {
+    const clinicId = String(options.clinicId || '').trim();
+    const matchingProfileId =
+        options.matchingProfileId === undefined
+            ? clinicId
+            : String(options.matchingProfileId || '').trim();
+    const catalogAvailable = options.catalogAvailable !== false;
+    const catalogCount = Number(
+        options.catalogCount === undefined ? 2 : options.catalogCount
+    );
+    const matchesCatalog = options.matchesCatalog !== false;
+
+    return {
+        catalogAvailable,
+        catalogCount,
+        activePath: '/content/turnero/clinic-profile.json',
+        clinicId,
+        matchingProfileId,
+        matchingCatalogPath: matchingProfileId
+            ? `/content/turnero/clinic-profiles/${matchingProfileId}.json`
+            : '',
+        matchesCatalog,
+        ready: Boolean(catalogAvailable && matchingProfileId && matchesCatalog),
+    };
+}
+
 function buildQueueStateFromTickets(queueTickets) {
     const waiting = queueTickets.filter(
         (ticket) => ticket.status === 'waiting'
@@ -11344,6 +11370,10 @@ test.describe('Admin turnero sala', () => {
                             clinicId: 'clinica-norte-demo',
                             fetchedAt: nowIso,
                         },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-norte-demo',
+                            }),
                         queue_tickets: [],
                         queueMeta: buildQueueMetaFromState({
                             updatedAt: nowIso,
@@ -11505,6 +11535,9 @@ test.describe('Admin turnero sala', () => {
             page.locator('#queueOpsPilotReadinessItem_profile')
         ).toContainText('Listo');
         await expect(
+            page.locator('#queueOpsPilotReadinessItem_catalog')
+        ).toContainText('clinica-norte-demo.json');
+        await expect(
             page.locator('#queueOpsPilotReadinessItem_surfaces')
         ).toContainText('Admin, operador, kiosco y sala web');
         await expect(
@@ -11573,6 +11606,9 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueOpsPilotHandoffItem_profile_source')
         ).toContainText('remoto verificado');
+        await expect(
+            page.locator('#queueOpsPilotHandoffItem_catalog')
+        ).toContainText('clinica-norte-demo.json verificado');
         await expect(
             page.locator('#queueOpsPilotHandoffItem_publish')
         ).toContainText('commit 3de287e2');
@@ -11759,6 +11795,77 @@ test.describe('Admin turnero sala', () => {
                         term: 'A-1999',
                     })
                 );
+                window.localStorage.setItem(
+                    'queueStationMode',
+                    JSON.stringify({
+                        values: {
+                            'clinica-sur-demo': 'locked',
+                        },
+                    })
+                );
+                window.localStorage.setItem(
+                    'queueStationConsultorio',
+                    JSON.stringify({
+                        values: {
+                            'clinica-sur-demo': 2,
+                        },
+                    })
+                );
+                window.localStorage.setItem(
+                    'queueOneTapAdvance',
+                    JSON.stringify({
+                        values: {
+                            'clinica-sur-demo': true,
+                        },
+                    })
+                );
+                window.localStorage.setItem(
+                    'queueNumpadHelpOpen',
+                    JSON.stringify({
+                        values: {
+                            'clinica-sur-demo': true,
+                        },
+                    })
+                );
+                window.localStorage.setItem(
+                    'queueCallKeyBindingV1',
+                    JSON.stringify({
+                        values: {
+                            'clinica-sur-demo': {
+                                key: 'Enter',
+                                code: 'NumpadEnter',
+                                location: 3,
+                            },
+                        },
+                    })
+                );
+                window.localStorage.setItem(
+                    'queueAdminLastSnapshot',
+                    JSON.stringify({
+                        values: {
+                            'clinica-sur-demo': {
+                                queueMeta: {
+                                    updatedAt: now,
+                                    waitingCount: 1,
+                                    calledCount: 0,
+                                },
+                                queueTickets: [
+                                    {
+                                        id: 1999,
+                                        ticketCode: 'A-1999',
+                                        queueType: 'walk_in',
+                                        patientInitials: 'ZZ',
+                                        priorityClass: 'walk_in',
+                                        status: 'waiting',
+                                        assignedConsultorio: 2,
+                                        createdAt: now,
+                                    },
+                                ],
+                                updatedAt: now,
+                            },
+                        },
+                    })
+                );
             },
             { today: todayLocal, now: nowIso }
         );
@@ -11852,6 +11959,10 @@ test.describe('Admin turnero sala', () => {
                             clinicId: 'clinica-norte-demo',
                             fetchedAt: nowIso,
                         },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-norte-demo',
+                            }),
                         queue_tickets: [],
                         queueMeta: buildQueueMetaFromState({
                             updatedAt: nowIso,
@@ -12023,6 +12134,16 @@ test.describe('Admin turnero sala', () => {
                 opsPlaybook: readStorageValue('queueOpsPlaybookV1'),
                 domainView: readStorageValue('queueHubDomainViewV1'),
                 ticketLookup: readStorageValue('queueTicketLookupV1'),
+                queueStationMode: readStorageValue('queueStationMode'),
+                queueStationConsultorio: readStorageValue(
+                    'queueStationConsultorio'
+                ),
+                queueOneTapAdvance: readStorageValue('queueOneTapAdvance'),
+                queueNumpadHelpOpen: readStorageValue('queueNumpadHelpOpen'),
+                queueCallKeyBinding: readStorageValue('queueCallKeyBindingV1'),
+                queueAdminLastSnapshot: readStorageValue(
+                    'queueAdminLastSnapshot'
+                ),
                 adminViewMode: window.localStorage.getItem(
                     'queueAdminViewModeV1'
                 ),
@@ -12064,6 +12185,26 @@ test.describe('Admin turnero sala', () => {
         expect(scopedState.domainView?.clinicId).toBe('clinica-norte-demo');
         expect(scopedState.domainView?.selection).toBe('auto');
         expect(scopedState.ticketLookup).toBeNull();
+        expect(scopedState.queueStationMode?.values?.['clinica-norte-demo']).toBe(
+            'free'
+        );
+        expect(
+            scopedState.queueStationConsultorio?.values?.['clinica-norte-demo']
+        ).toBe(1);
+        expect(
+            scopedState.queueOneTapAdvance?.values?.['clinica-norte-demo']
+        ).toBe(false);
+        expect(
+            scopedState.queueNumpadHelpOpen?.values?.['clinica-norte-demo']
+        ).toBe(false);
+        expect(
+            scopedState.queueCallKeyBinding?.values?.['clinica-norte-demo'] ||
+                null
+        ).toBeNull();
+        expect(
+            scopedState.queueAdminLastSnapshot?.values?.['clinica-sur-demo']
+                ?.queueTickets?.[0]?.ticketCode
+        ).toBe('A-1999');
         expect(scopedState.adminViewMode).toBe('basic');
         expect(scopedState.adminViewModeClinic).toBe('clinica-norte-demo');
         expect(scopedState.installPreset?.clinicId).toBe('clinica-norte-demo');
@@ -12071,7 +12212,23 @@ test.describe('Admin turnero sala', () => {
         expect(scopedState.installPreset?.station).toBe('c1');
         expect(scopedState.installPreset?.lock).toBe(true);
         expect(scopedState.installPreset?.oneTap).toBe(false);
+        await expect(page.locator('#queueStationModeBadge')).toContainText(
+            'Libre'
+        );
+        await expect(page.locator('#queueStationBadge')).toContainText(
+            'Estación C1'
+        );
+        await expect(
+            page.locator('[data-action="queue-toggle-one-tap"]')
+        ).toContainText('1 tecla OFF');
+        await expect(page.locator('#queueShortcutPanel')).toBeHidden();
+        await expect(
+            page.locator('[data-action="queue-clear-call-key"]')
+        ).toBeHidden();
         await expect(page.locator('#queueTicketLookupInput')).toHaveValue('');
+        await expect(page.locator('#queueTableBody')).not.toContainText(
+            'A-1999'
+        );
     });
 
     test('queue bloquea el piloto web si una superficie reporta otra ruta canónica', async ({
@@ -12168,6 +12325,10 @@ test.describe('Admin turnero sala', () => {
                             clinicId: 'clinica-sur-alerta',
                             fetchedAt: nowIso,
                         },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-sur-alerta',
+                            }),
                         queue_tickets: [],
                         queueMeta: buildQueueMetaFromState({
                             updatedAt: nowIso,
@@ -12419,6 +12580,10 @@ test.describe('Admin turnero sala', () => {
                             calendarReachable: true,
                             generatedAt: nowIso,
                         },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-cache-demo',
+                            }),
                         queue_tickets: [],
                         queueMeta: buildQueueMetaFromState({
                             updatedAt: nowIso,
@@ -12646,6 +12811,10 @@ test.describe('Admin turnero sala', () => {
                             clinicId: 'clinica-centro-demo',
                             fetchedAt: nowIso,
                         },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-centro-demo',
+                            }),
                         queue_tickets: [],
                         queueMeta: buildQueueMetaFromState({
                             updatedAt: nowIso,
@@ -12873,6 +13042,10 @@ test.describe('Admin turnero sala', () => {
                                 native_apps_blocking: false,
                             },
                         },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-aurora-demo',
+                            }),
                         queue_tickets: [],
                         queueMeta: buildQueueMetaFromState({
                             updatedAt: nowIso,
@@ -13104,6 +13277,10 @@ test.describe('Admin turnero sala', () => {
                             profileFingerprint: 'bosque123',
                             fetchedAt: nowIso,
                         },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-bosque-demo',
+                            }),
                         queue_tickets: [],
                         queueMeta: buildQueueMetaFromState({
                             updatedAt: nowIso,
@@ -13246,6 +13423,269 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueOpsPilotHandoffItem_blockers')
         ).toContainText('clinic-profile.json');
+    });
+
+    test('queue bloquea acciones operativas del admin si admin.html#queue queda fuera del canon del piloto', async ({
+        page,
+    }) => {
+        const nowIso = new Date().toISOString();
+        const queueCallNextRequests = [];
+        const queueTickets = [
+            {
+                id: 9101,
+                ticketCode: 'A-9101',
+                queueType: 'appointment',
+                patientInitials: 'QP',
+                priorityClass: 'appt_current',
+                status: 'waiting',
+                assignedConsultorio: 1,
+                createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+            },
+        ];
+        const queueState = buildQueueStateFromTickets(queueTickets);
+
+        await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) =>
+            json(route, {
+                ok: true,
+                authenticated: true,
+                csrfToken: 'csrf_queue_admin_pilot_block',
+            })
+        );
+
+        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
+            const url = new URL(route.request().url());
+            const resource = url.searchParams.get('resource') || '';
+
+            if (resource === 'features') {
+                return json(route, {
+                    ok: true,
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+            }
+
+            if (resource === 'data') {
+                return json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: nowIso,
+                        },
+                        turneroClinicProfile: {
+                            schema: 'turnero-clinic-profile/v1',
+                            clinic_id: 'clinica-admin-bloqueada',
+                            branding: {
+                                name: 'Clínica Admin Bloqueada',
+                                short_name: 'Admin Bloq',
+                                base_url:
+                                    'https://clinica-admin-bloqueada.example',
+                            },
+                            consultorios: {
+                                c1: {
+                                    label: 'Consultorio 1',
+                                    short_label: 'AB1',
+                                },
+                                c2: {
+                                    label: 'Consultorio 2',
+                                    short_label: 'AB2',
+                                },
+                            },
+                            surfaces: {
+                                admin: {
+                                    enabled: true,
+                                    label: 'Admin web',
+                                    route: '/admin-alt.html#queue',
+                                },
+                                operator: {
+                                    enabled: true,
+                                    label: 'Operador web',
+                                    route: '/operador-turnos.html',
+                                },
+                                kiosk: {
+                                    enabled: true,
+                                    label: 'Kiosco web',
+                                    route: '/kiosco-turnos.html',
+                                },
+                                display: {
+                                    enabled: true,
+                                    label: 'Sala web',
+                                    route: '/sala-turnos.html',
+                                },
+                            },
+                            release: {
+                                mode: 'web_pilot',
+                                admin_mode_default: 'basic',
+                                separate_deploy: true,
+                                native_apps_blocking: false,
+                            },
+                        },
+                        turneroClinicProfileMeta: {
+                            source: 'remote',
+                            cached: false,
+                            clinicId: 'clinica-admin-bloqueada',
+                            fetchedAt: nowIso,
+                        },
+                        turneroClinicProfileCatalogStatus:
+                            buildTurneroClinicProfileCatalogStatus({
+                                clinicId: 'clinica-admin-bloqueada',
+                            }),
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                        queueSurfaceStatus: {
+                            operator: {
+                                surface: 'operator',
+                                label: 'Operador',
+                                status: 'ready',
+                                updatedAt: nowIso,
+                                ageSec: 6,
+                                stale: false,
+                                summary: 'Operador listo.',
+                                latest: {
+                                    deviceLabel: 'Operador Bloq',
+                                    appMode: 'browser',
+                                    ageSec: 6,
+                                    details: {
+                                        clinicId: 'clinica-admin-bloqueada',
+                                        surfaceContractState: 'ready',
+                                        surfaceRouteExpected:
+                                            '/operador-turnos.html',
+                                        surfaceRouteCurrent:
+                                            '/operador-turnos.html',
+                                    },
+                                },
+                                instances: [],
+                            },
+                            kiosk: {
+                                surface: 'kiosk',
+                                label: 'Kiosco',
+                                status: 'ready',
+                                updatedAt: nowIso,
+                                ageSec: 7,
+                                stale: false,
+                                summary: 'Kiosco listo.',
+                                latest: {
+                                    deviceLabel: 'Kiosco Bloq',
+                                    appMode: 'browser',
+                                    ageSec: 7,
+                                    details: {
+                                        clinicId: 'clinica-admin-bloqueada',
+                                        surfaceContractState: 'ready',
+                                        surfaceRouteExpected:
+                                            '/kiosco-turnos.html',
+                                        surfaceRouteCurrent:
+                                            '/kiosco-turnos.html',
+                                    },
+                                },
+                                instances: [],
+                            },
+                            display: {
+                                surface: 'display',
+                                label: 'Sala',
+                                status: 'ready',
+                                updatedAt: nowIso,
+                                ageSec: 8,
+                                stale: false,
+                                summary: 'Sala lista.',
+                                latest: {
+                                    deviceLabel: 'Sala Bloq',
+                                    appMode: 'browser',
+                                    ageSec: 8,
+                                    details: {
+                                        clinicId: 'clinica-admin-bloqueada',
+                                        surfaceContractState: 'ready',
+                                        surfaceRouteExpected:
+                                            '/sala-turnos.html',
+                                        surfaceRouteCurrent:
+                                            '/sala-turnos.html',
+                                    },
+                                },
+                                instances: [],
+                            },
+                        },
+                    },
+                });
+            }
+
+            if (
+                resource === 'queue-call-next' &&
+                route.request().method() === 'POST'
+            ) {
+                queueCallNextRequests.push(route.request().postData() || '');
+                return json(route, {
+                    ok: true,
+                    data: {
+                        queueState,
+                    },
+                });
+            }
+
+            if (resource === 'health') {
+                return json(route, {
+                    ok: true,
+                    status: 'ok',
+                    checks: {
+                        publicSync: {
+                            configured: true,
+                            healthy: true,
+                            state: 'ok',
+                            deployedCommit:
+                                '03729fced585d79a66e6dd40e026cdb9fef3fdc7',
+                            headDrift: false,
+                            ageSeconds: 20,
+                            failureReason: '',
+                        },
+                    },
+                });
+            }
+
+            if (resource === 'funnel-metrics') {
+                return json(route, { ok: true, data: {} });
+            }
+
+            return json(route, { ok: true, data: {} });
+        });
+
+        await page.goto(adminUrl());
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+
+        await expect(
+            page.locator('#queueOpsPilotReadinessTitle')
+        ).toContainText('Piloto web bloqueado');
+        await page
+            .locator(
+                '#queue .queue-admin-header-actions [data-action="queue-call-next"][data-queue-consultorio="1"]'
+            )
+            .click();
+        await expect(page.locator('#toastContainer')).toContainText(
+            'No se puede operar esta clínica desde admin'
+        );
+        await expect.poll(() => queueCallNextRequests.length).toBe(0);
+
+        await page.evaluate(() => {
+            if (document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur();
+            }
+        });
+        await page.keyboard.press('NumpadEnter');
+        await expect(page.locator('#toastContainer')).toContainText(
+            'No se puede operar esta clínica desde admin'
+        );
+        await expect.poll(() => queueCallNextRequests.length).toBe(0);
+
+        await page.locator('#queueConsultorioPrimary_c1').click();
+        await expect(page.locator('#toastContainer')).toContainText(
+            'No se puede operar esta clínica desde admin'
+        );
+        await expect.poll(() => queueCallNextRequests.length).toBe(0);
     });
 
     test('queue muestra hub de apps operativas con desktop y Android TV', async ({

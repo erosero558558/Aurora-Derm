@@ -5,6 +5,10 @@ import { normalizeQueueAction } from '../helpers.js';
 import { getBulkTargetTickets } from '../selectors.js';
 import { appendActivity, clearQueueSelection } from '../state.js';
 import { executeTicketAction } from './execute.js';
+import {
+    notifyAdminQueuePilotBlocked,
+    shouldBlockAdminQueueAction,
+} from '../pilot-guard.js';
 
 function bulkActionLabel(action) {
     if (action === 'no_show') {
@@ -17,6 +21,10 @@ function bulkActionLabel(action) {
 }
 
 export async function runQueueBulkAction(action) {
+    if (shouldBlockAdminQueueAction('queue-bulk-action')) {
+        notifyAdminQueuePilotBlocked('queue-bulk-action');
+        return;
+    }
     const targets = getBulkTargetTickets();
     const normalizedAction = normalizeQueueAction(action);
     if (!targets.length) return;
@@ -48,6 +56,10 @@ export async function runQueueBulkAction(action) {
 export async function reprintQueueTicket(ticketId) {
     const id = Number(ticketId || 0);
     if (!id) return;
+    if (shouldBlockAdminQueueAction('queue-reprint-ticket')) {
+        notifyAdminQueuePilotBlocked('queue-reprint-ticket');
+        return;
+    }
 
     if (getState().queue.practiceMode) {
         appendActivity(`Practica: reprint ticket ${id}`);
@@ -62,6 +74,10 @@ export async function reprintQueueTicket(ticketId) {
 }
 
 export async function runQueueBulkReprint() {
+    if (shouldBlockAdminQueueAction('queue-bulk-reprint')) {
+        notifyAdminQueuePilotBlocked('queue-bulk-reprint');
+        return;
+    }
     const targets = getBulkTargetTickets();
     for (const ticket of targets) {
         try {
