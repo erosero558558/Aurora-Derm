@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 681
+  revision: 682
   updated_at: 2026-03-14
 
 strategy:
@@ -17,9 +17,11 @@ strategy:
     objective: "Convertir el frente admin clinico, queue/turnero y OpenClaw UX en una entrega operable y visible, con soporte backend y runtime estrictamente alineado."
     owner: Ernesto
     owner_policy: "detected_default_owner"
-    status: active
+    status: closed
     started_at: "2026-03-14"
     review_due_at: "2026-03-21"
+    closed_at: "2026-03-14"
+    close_reason: "review_complete"
     exit_criteria: ["Admin clinico y queue/turnero navegables sin flujos rotos", "Auth/readiness/gates en verde para el frente activo", "Runtime OpenClaw solo usado como desbloqueo directo del mismo objetivo"]
     success_signal: "Un mismo corte operativo puede demostrarse de punta a punta sin abrir trabajo fuera del frente admin operativo."
     subfronts:

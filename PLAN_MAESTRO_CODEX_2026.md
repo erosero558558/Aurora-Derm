@@ -7,7 +7,7 @@ Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite po
 <!-- CODEX_STRATEGY_ACTIVE
 id: STRAT-2026-03-admin-operativo
 title: "Admin operativo"
-status: active
+status: closed
 owner: Ernesto
 owner_policy: "detected_default_owner"
 objective: "Convertir el frente admin clinico, queue/turnero y OpenClaw UX en una entrega operable y visible, con soporte backend y runtime estrictamente alineado."
