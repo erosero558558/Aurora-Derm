@@ -16,6 +16,10 @@ android {
     namespace = "com.pielarmonia.turnerosalatv"
     compileSdk = 35
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.pielarmonia.turnerosalatv"
         minSdk = 28
