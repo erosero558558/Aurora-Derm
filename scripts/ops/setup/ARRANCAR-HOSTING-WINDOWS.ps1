@@ -319,6 +319,13 @@ if ($StopLegacy) {
     Stop-ProcessesByNeedle -Needles @('--url http://127.0.0.1:8011', $TunnelId, 'cloudflared.exe') -Label 'legacy cloudflared tunnel'
 }
 
+# Always recycle the canonical stack on explicit start so new deploys pick up
+# updated Caddy rules, php-cgi flags and turnero pilot artifacts immediately.
+Stop-ProcessesByNeedle -Needles @('openclaw-auth-helper.js') -Label 'OpenClaw auth helper'
+Stop-ProcessesByNeedle -Needles @('php-cgi.exe', '-b 127.0.0.1:9000') -Label 'PHP-CGI'
+Stop-ProcessesByNeedle -Needles @('cloudflared.exe', $TunnelId, '--url http://127.0.0.1') -Label 'Cloudflare tunnel'
+Stop-ProcessesByNeedle -Needles @($caddyConfigPath, 'caddy.exe', 'run') -Label 'Caddy edge'
+
 Ensure-PhpCgiListener `
     -PhpCgiExecutable $phpCgiExe `
     -WorkingDirectory $repoRoot `
