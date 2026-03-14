@@ -507,6 +507,57 @@ test.describe('Panel de administracion', () => {
         await expect(page).toHaveURL(/\/operador-turnos\.html$/);
     });
 
+    test('dashboard incorpora telemedicina y patient flow en la atencion operativa', async ({
+        page,
+    }) => {
+        await setupAuthenticatedAdminMocks(page, {
+            patientFlowMeta: {
+                casesTotal: 3,
+                casesOpen: 2,
+                pendingApprovals: 1,
+                activeHelpRequests: 1,
+            },
+            telemedicineMeta: {
+                summary: {
+                    reviewQueueCount: 2,
+                },
+            },
+            internalConsoleMeta: {
+                clinicalData: {
+                    ready: false,
+                },
+                overall: {
+                    ready: false,
+                    summary:
+                        'Historias clinicas bloqueadas hasta habilitar almacenamiento cifrado.',
+                },
+            },
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+
+        const telemedicineItem = page
+            .locator('#dashboardAttentionList .dashboard-attention-item')
+            .filter({ hasText: 'Telemedicina' });
+        await expect(telemedicineItem).toContainText('2');
+        await expect(telemedicineItem).toContainText(/gate clinico/i);
+
+        const patientFlowItem = page
+            .locator('#dashboardAttentionList .dashboard-attention-item')
+            .filter({ hasText: 'Casos activos' });
+        await expect(patientFlowItem).toContainText('2');
+        await expect(patientFlowItem).toContainText(/3 caso\(s\) totales/i);
+        await expect(patientFlowItem).toContainText(/1 aprobacion\(es\)/i);
+
+        await expect(page.locator('#dashboardFlowStatus')).toContainText(
+            '2 intake(s) telemedicina'
+        );
+        await expect(page.locator('#dashboardFlowStatus')).toContainText(
+            '2 caso(s) activos'
+        );
+    });
+
     test('acciones secundarias del dashboard siguen llevando a triage util', async ({
         page,
     }) => {

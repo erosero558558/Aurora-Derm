@@ -9,6 +9,8 @@ export function setFlowMetrics(state) {
         nextAppointment,
         pendingCallbacks,
         pendingTransfers,
+        patientFlowMeta,
+        telemedicineMeta,
         todayAppointments,
         urgentCallbacks,
         waitingTickets,
@@ -24,6 +26,19 @@ export function setFlowMetrics(state) {
               .map((item) => String(item?.title || '').trim())
               .filter(Boolean)
         : [];
+    const blockedClinicalSignals = [];
+    const telemedicineReviewQueueCount = Number(
+        telemedicineMeta?.summary?.reviewQueueCount || 0
+    );
+    const patientCasesOpen = Number(patientFlowMeta?.casesOpen || 0);
+    if (telemedicineReviewQueueCount > 0) {
+        blockedClinicalSignals.push(
+            `${telemedicineReviewQueueCount} intake(s) telemedicina`
+        );
+    }
+    if (patientCasesOpen > 0) {
+        blockedClinicalSignals.push(`${patientCasesOpen} caso(s) activos`);
+    }
 
     setText(
         '#dashboardQueueHealth',
@@ -36,7 +51,9 @@ export function setFlowMetrics(state) {
     setText(
         '#dashboardFlowStatus',
         readinessBlocked
-            ? readinessSummary
+            ? blockedClinicalSignals.length > 0
+                ? `${readinessSummary} | ${blockedClinicalSignals.join(' | ')}`
+                : readinessSummary
             : nextAppointment?.item
               ? `${relativeWindow(nextAppointment.stamp)} | ${nextAppointment.item.name || 'Paciente'}`
               : availabilityDays > 0

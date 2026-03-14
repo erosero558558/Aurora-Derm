@@ -43,6 +43,23 @@ export function normalizeAdminDataPayload(data, healthPayload, fallbackState) {
             data.leadOpsMeta && typeof data.leadOpsMeta === 'object'
                 ? data.leadOpsMeta
                 : fallbackState?.leadOpsMeta || null,
+        patientFlowMeta:
+            data.patientFlowMeta && typeof data.patientFlowMeta === 'object'
+                ? data.patientFlowMeta
+                : fallbackState?.patientFlowMeta || null,
+        clinicalHistoryMeta:
+            data.clinicalHistoryMeta &&
+            typeof data.clinicalHistoryMeta === 'object'
+                ? data.clinicalHistoryMeta
+                : fallbackState?.clinicalHistoryMeta || null,
+        mediaFlowMeta:
+            data.mediaFlowMeta && typeof data.mediaFlowMeta === 'object'
+                ? data.mediaFlowMeta
+                : fallbackState?.mediaFlowMeta || null,
+        telemedicineMeta:
+            data.telemedicineMeta && typeof data.telemedicineMeta === 'object'
+                ? data.telemedicineMeta
+                : fallbackState?.telemedicineMeta || null,
         queueSurfaceStatus:
             data.queueSurfaceStatus &&
             typeof data.queueSurfaceStatus === 'object'
@@ -91,6 +108,10 @@ export function normalizeAdminStorePayload(payload, currentFunnelMetrics) {
         queueTickets: payload.queueTickets || [],
         queueMeta: payload.queueMeta || null,
         leadOpsMeta: payload.leadOpsMeta || null,
+        patientFlowMeta: payload.patientFlowMeta || null,
+        clinicalHistoryMeta: payload.clinicalHistoryMeta || null,
+        mediaFlowMeta: payload.mediaFlowMeta || null,
+        telemedicineMeta: payload.telemedicineMeta || null,
         queueSurfaceStatus: payload.queueSurfaceStatus || null,
         appDownloads: payload.appDownloads || null,
         turneroClinicProfile: payload.turneroClinicProfile || null,

@@ -118,6 +118,7 @@ const d = new Set(),
             queueTickets: [],
             queueMeta: null,
             leadOpsMeta: null,
+            patientFlowMeta: null,
             queueSurfaceStatus: null,
             appDownloads: null,
             turneroClinicProfile: null,
@@ -125,6 +126,7 @@ const d = new Set(),
             turneroClinicProfileCatalogStatus: null,
             clinicalHistoryMeta: null,
             mediaFlowMeta: null,
+            telemedicineMeta: null,
             internalConsoleMeta: null,
             funnelMetrics: null,
             health: null,
@@ -753,7 +755,7 @@ function H(e, t = 'legacy_password') {
         { authenticated: a, mode: n, status: o, challenge: l }
     );
 }
-async function U() {
+async function F() {
     try {
         return H(await P('status'), g().auth.mode || 'legacy_password')
             .authenticated;
@@ -761,7 +763,7 @@ async function U() {
         return !1;
     }
 }
-const F = {
+const U = {
     dashboard:
         '<path d="M3 13h8V3H3v10zm10 8h8V3h-8v18zM3 21h8v-6H3v6zm10 0h8v-6h-8v6z"/>',
     appointments: '<path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H6v10h14V10z"/>',
@@ -779,7 +781,7 @@ const F = {
     system: '<path d="M3 4h18v12H3V4zm2 2v8h14V6H5zm-2 12h18v2H3v-2z"/>',
 };
 function K(e) {
-    return `<svg class="icon icon-${e}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${F[e] || F.menu}</svg>`;
+    return `<svg class="icon icon-${e}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${U[e] || U.menu}</svg>`;
 }
 function Q(e) {
     return `\n        <div class="sony-theme-switcher ${e}" role="group" aria-label="Tema">\n            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="light">${K('sun')}</button>\n            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="dark">${K('moon')}</button>\n            <button type="button" class="admin-theme-btn" data-action="set-admin-theme" data-theme-mode="system">${K('system')}</button>\n        </div>\n    `;
@@ -2317,10 +2319,10 @@ function He(e) {
     }),
         Ne());
 }
-function Ue() {
+function Fe() {
     De({ reviewContext: null });
 }
-function Fe(e, t) {
+function Ue(e, t) {
     const a = Number(e || 0);
     (b((e) => ({
         ...e,
@@ -2871,7 +2873,7 @@ function Ht(e) {
           ? 'resolved'
           : 'pending';
 }
-function Ut() {
+function Ft() {
     const t = document.getElementById('availabilityReviewContext');
     if (!(t instanceof HTMLElement)) return;
     const a = g()?.appointments?.reviewContext;
@@ -2966,8 +2968,8 @@ function Ut() {
             })(a)}\n            </section>\n        `
         ));
 }
-function Ft() {
-    (Ut(),
+function Ut() {
+    (Ft(),
         (function () {
             const e = g(),
                 t = Et(e.availability.monthAnchor, e.availability.selectedDate),
@@ -3131,7 +3133,7 @@ function Ft() {
 }
 function Kt(e, { render: t = !1 } = {}) {
     (b((t) => ({ ...t, availability: { ...t.availability, ...e } })),
-        t ? Ft() : Rt());
+        t ? Ut() : Rt());
 }
 function Qt(e, t = {}) {
     const a = Mt(e),
@@ -3973,7 +3975,7 @@ function Ha(t) {
         })(t.status)
     )}</td>\n            <td>${a}</td>\n            <td>${n} min</td>\n            <td>\n                <div class="table-actions">\n                    ${d}\n                </div>\n            </td>\n        </tr>\n    `;
 }
-function Ua(e, ...t) {
+function Fa(e, ...t) {
     if (!e || 'object' != typeof e) return '';
     for (const a of t) {
         const t = e[a];
@@ -3984,7 +3986,7 @@ function Ua(e, ...t) {
     }
     return '';
 }
-function Fa(e) {
+function Ua(e) {
     return 'clinical_redirect' ===
         String(e || 'general')
             .trim()
@@ -4009,7 +4011,7 @@ function Qa(e, ...t) {
             if ('' !== e) return e;
         }
     }
-    return Ua(a.context, ...t);
+    return Fa(a.context, ...t);
 }
 function za(e, t) {
     const a = String(e?.reason || 'general')
@@ -4124,10 +4126,10 @@ function za(e, t) {
 }
 function Va(t) {
     const a = t?.context && 'object' == typeof t.context ? t.context : {},
-        n = String(Ua(a, 'phoneLast4', 'phone_last4')).trim(),
-        i = String(Ua(a, 'requestedDate', 'requested_date')).trim(),
-        o = String(Ua(a, 'requestedTime', 'requested_time')).trim(),
-        s = Number(Ua(a, 'appointmentId', 'appointment_id') || 0) || 0,
+        n = String(Fa(a, 'phoneLast4', 'phone_last4')).trim(),
+        i = String(Fa(a, 'requestedDate', 'requested_date')).trim(),
+        o = String(Fa(a, 'requestedTime', 'requested_time')).trim(),
+        s = Number(Fa(a, 'appointmentId', 'appointment_id') || 0) || 0,
         r = [];
     return (
         n && r.push(`tel. *${n.slice(-4)}`),
@@ -4366,7 +4368,7 @@ function Ja(t) {
                 l.push(
                     Ga({
                         action: 'queue-help-request-status',
-                        label: Fa(s),
+                        label: Ua(s),
                         shortcut: 'attend',
                         helpRequestId: n,
                         helpRequestStatus: 'attending',
@@ -5310,7 +5312,7 @@ function Hn({
         actionLabel: String(o || '').trim(),
     };
 }
-function Un(e, t, a) {
+function Fn(e, t, a) {
     if (!0 !== a?.separate_deploy)
         return 'Este release no exige deploy separado por clínica.';
     if (!e || !0 !== e.available)
@@ -5331,7 +5333,7 @@ function Un(e, t, a) {
         ? `public_main_sync sano y commit ${Mn(e.deployedCommit)} ya coincide con la publicación activa de ${t}.`
         : 'La publicación no reporta `deployedCommit`; falta una referencia verificable del release activo.';
 }
-function Fn(e, t, a, n, i, o, s) {
+function Un(e, t, a, n, i, o, s) {
     return e && !0 === e.available
         ? !0 !== e.configured
             ? 'El host todavía no expone el contrato `turneroPilot` en `/health`.'
@@ -5451,8 +5453,8 @@ function Qn(e, t, a) {
         O = String(T?.clinic_id || '').trim() || 'sin-clinic-id',
         x = 'function' == typeof p ? p() : null,
         H = 'function' == typeof m ? m() : null,
-        U = ['admin', 'operator', 'kiosk', 'display'],
-        F = U.filter(
+        F = ['admin', 'operator', 'kiosk', 'display'],
+        U = F.filter(
             (e) =>
                 Boolean(D[e]?.enabled) &&
                 '' !== String(D[e]?.route || '').trim()
@@ -5470,7 +5472,7 @@ function Qn(e, t, a) {
         V = Boolean(
             M?.catalogAvailable && M?.matchingProfileId && M?.matchesCatalog
         ),
-        G = U.map((e) => {
+        G = F.map((e) => {
             const t = D[e],
                 a = String(t?.route || '').trim(),
                 n = Rn(a),
@@ -5607,11 +5609,11 @@ function Qn(e, t, a) {
             },
             {
                 id: 'surfaces',
-                ready: F.length === U.length && 0 === J,
+                ready: U.length === F.length && 0 === J,
                 label: 'Superficies web canónicas',
                 detail:
-                    F.length !== U.length
-                        ? `Solo ${F.length}/${U.length} superficies del piloto quedaron habilitadas en el perfil.`
+                    U.length !== F.length
+                        ? `Solo ${U.length}/${F.length} superficies del piloto quedaron habilitadas en el perfil.`
                         : J > 0
                           ? `${J} superficie(s) están vivas fuera de la ruta canónica del perfil.`
                           : 'Admin, operador, kiosco y sala web ya están declarados como superficies activas del piloto.',
@@ -5621,7 +5623,7 @@ function Qn(e, t, a) {
                 id: 'publish',
                 ready: z,
                 label: 'Publicación del release',
-                detail: Un(x, P, N),
+                detail: Fn(x, P, N),
                 blocker: !0,
             },
             {
@@ -5639,7 +5641,7 @@ function Qn(e, t, a) {
                     'ready' === _.state &&
                     K === q.length,
                 label: 'Señal viva + heartbeats',
-                detail: Fn(H, P, O, R, _, K, q.length),
+                detail: Un(H, P, O, R, _, K, q.length),
                 blocker: !1,
             },
             {
@@ -6527,7 +6529,7 @@ function xi(e) {
 function Hi() {
     return xi(Mi()?.release?.admin_mode_default || 'basic');
 }
-function Ui() {
+function Fi() {
     const e = uo();
     return (
         (Ci && Li === e) ||
@@ -6552,7 +6554,7 @@ function Ui() {
         Ci
     );
 }
-function Fi() {
+function Ui() {
     const e = [...An.surfaceOrder];
     return e.length > 0 ? e : Object.keys(Ei());
 }
@@ -6840,7 +6842,7 @@ function so(e) {
         : oo(
               (function (e) {
                   const t = g(),
-                      a = Uo('operator'),
+                      a = Fo('operator'),
                       n = String(a.details.station || '').toLowerCase(),
                       i = String(a.details.stationMode || '')
                           .trim()
@@ -7508,7 +7510,7 @@ function Ho(e, t) {
         },
     ];
 }
-function Uo(e) {
+function Fo(e) {
     const t = es(e),
         a = t.latest && 'object' == typeof t.latest ? ts(t.latest, t) : null;
     return {
@@ -7517,7 +7519,7 @@ function Uo(e) {
         details: a?.details && 'object' == typeof a.details ? a.details : {},
     };
 }
-function Fo(e = 21600) {
+function Uo(e = 21600) {
     return (function (e, t, a = 21600) {
         const n = e && 'object' == typeof e ? e : {},
             i = n?.data?.queueMeta;
@@ -7549,9 +7551,9 @@ function Ko(e) {
     const t = so(e),
         a = bo(),
         n = 'c2' === t.station ? 'c2' : 'c1',
-        i = Uo('operator'),
-        o = Uo('kiosk'),
-        s = Uo('display'),
+        i = Fo('operator'),
+        o = Fo('kiosk'),
+        s = Fo('display'),
         r = String(i.details.station || '').toLowerCase(),
         l = String(i.details.connection || 'live').toLowerCase(),
         c = !t.lock || !r || r === n,
@@ -7574,7 +7576,7 @@ function Ko(e) {
             Boolean(s.details.bellPrimed) &&
             !s.details.bellMuted &&
             'live' === m,
-        b = u && g && Fo(),
+        b = u && g && Uo(),
         f = {
             operator_ready: {
                 suggested: u,
@@ -7629,9 +7631,9 @@ function Ko(e) {
 function Qo(e) {
     const t = ko(),
         { queueMeta: a } = Ea(),
-        n = Uo('operator'),
-        i = Uo('kiosk'),
-        o = Uo('display'),
+        n = Fo('operator'),
+        i = Fo('kiosk'),
+        o = Fo('display'),
         s = Number(a?.waitingCount || 0),
         r = Number(a?.calledCount || 0),
         l = s <= 0 && r <= 0,
@@ -7687,9 +7689,9 @@ function zo(e) {
         o = ko(),
         s = mi.filter((e) => n.steps[e]).length,
         r = gi.filter((e) => o.steps[e]).length,
-        l = Uo('operator'),
-        c = Uo('kiosk'),
-        u = Uo('display'),
+        l = Fo('operator'),
+        c = Fo('kiosk'),
+        u = Fo('display'),
         d = Cs(),
         p = `Cola: espera ${Number(a?.waitingCount || 0)}, llamados ${Number(a?.calledCount || 0)}, sync ${String(t.queue?.syncMode || 'live')}.`,
         m = `Operador: ${String(l.latest?.deviceLabel || 'sin equipo')} · ${String(l.group.summary || 'sin resumen')} `,
@@ -7770,7 +7772,7 @@ function Jo(e, t) {
                 getTurneroClinicBrandName: Ni,
                 getTurneroPublicSyncStatus: Pi,
                 getTurneroPilotHealthStatus: Oi,
-                hasRecentQueueSmokeSignal: Fo,
+                hasRecentQueueSmokeSignal: Uo,
                 buildPreparedSurfaceUrl: xo,
                 defaultAppDownloads: Ei(),
                 ensureInstallPreset: so,
@@ -7894,7 +7896,7 @@ function Yo(t, a) {
             renderQueuePlaybook: Ol,
             renderQueueOpsPilot: Yo,
             renderOpeningChecklist: xl,
-            renderQueueOpsLog: Ul,
+            renderQueueOpsLog: Fl,
         });
     })(t, a);
 }
@@ -8486,7 +8488,7 @@ function Ls(e, t) {
         ensureInstallPreset: so,
         getDefaultAppDownloads: Ei,
         buildPreparedSurfaceUrl: xo,
-        getLatestSurfaceDetails: Uo,
+        getLatestSurfaceDetails: Fo,
         buildSignalAgeLabel: Xo,
         getOperatorShellPhase: cs,
         buildOperatorShellLifecycleLabel: ds,
@@ -8564,7 +8566,7 @@ function As(t, a) {
         appendOpsLogEntry: Lo,
         getInstallPresetLabel: ro,
         renderQueueOpsAlerts: As,
-        renderQueueOpsLog: Ul,
+        renderQueueOpsLog: Fl,
         setOpsAlertReviewed: Io,
     });
 }
@@ -8762,7 +8764,7 @@ function Ps(t, a) {
                         ).trim();
                         return t ? `Externa ${t}` : 'Tecla externa';
                     })(a.queue.customCallKey),
-                    u = Uo('operator'),
+                    u = Fo('operator'),
                     d = String(u.details.station || '')
                         .trim()
                         .toUpperCase(),
@@ -8863,7 +8865,7 @@ function Ps(t, a) {
                                 ? 'Desactivar 1 tecla'
                                 : 'Activar 1 tecla',
                         },
-                        keyCards: Fs(a, s, r),
+                        keyCards: Us(a, s, r),
                     }
                 );
             })(t, a);
@@ -9507,7 +9509,7 @@ function Ps(t, a) {
                 c = document.getElementById('queueTicketLookupClearBtn'),
                 u = () => {
                     (zi(o instanceof HTMLInputElement ? o.value : i.term),
-                        Fl(t, a));
+                        Ul(t, a));
                 };
             (o instanceof HTMLInputElement &&
                 (o.onkeydown = (e) => {
@@ -9518,12 +9520,12 @@ function Ps(t, a) {
                           (e.preventDefault(),
                           (o.value = ''),
                           zi(''),
-                          Fl(t, a));
+                          Ul(t, a));
                 }),
                 r instanceof HTMLButtonElement && (r.onclick = u),
                 c instanceof HTMLButtonElement &&
                     (c.onclick = () => {
-                        (zi(''), Fl(t, a));
+                        (zi(''), Ul(t, a));
                     }),
                 n
                     .querySelectorAll('[data-queue-ticket-lookup-suggestion]')
@@ -9533,7 +9535,7 @@ function Ps(t, a) {
                                 (zi(
                                     e.dataset.queueTicketLookupSuggestion || ''
                                 ),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }),
                 n
@@ -9561,7 +9563,7 @@ function Ps(t, a) {
                                                 runQueueTicketAction: r,
                                             } = await Promise.resolve().then(
                                                 function () {
-                                                    return Du;
+                                                    return xu;
                                                 }
                                             );
                                             if (
@@ -9606,7 +9608,7 @@ function Ps(t, a) {
                                                 ),
                                                     g().queue
                                                         .pendingSensitiveAction &&
-                                                        Us());
+                                                        Fs());
                                             else if (
                                                 'release' === t &&
                                                 e.ticketId > 0
@@ -9686,7 +9688,7 @@ function Ps(t, a) {
                                                 'error'
                                             );
                                         } finally {
-                                            Fl(a, n);
+                                            Ul(a, n);
                                         }
                                     })(
                                         i.result,
@@ -10281,7 +10283,7 @@ function Os(t, a) {
                         title: 'Ruta del ticket: pivote principal',
                         summary: `${n.pivots[0].ticketCode} quedó cargado desde la ruta de ${n.result.ticketCode}.`,
                     }),
-                    Fl(t, a));
+                    Ul(t, a));
             });
         const c = document.getElementById('queueTicketRoutePivotSecondary');
         c instanceof HTMLButtonElement &&
@@ -10294,7 +10296,7 @@ function Os(t, a) {
                         title: 'Ruta del ticket: pivote secundario',
                         summary: `${n.pivots[1].ticketCode} quedó cargado desde la ruta de ${n.result.ticketCode}.`,
                     }),
-                    Fl(t, a));
+                    Ul(t, a));
             });
     })(t, a),
         (function (t, a) {
@@ -10748,7 +10750,7 @@ function Os(t, a) {
                             title: 'Simulación operativa: foco siguiente',
                             summary: `${n.focusPivot.ticketCode} quedó cargado desde la simulación de ${n.result.ticketCode}.`,
                         }),
-                        Fl(t, a));
+                        Ul(t, a));
                 });
         })(t, a),
         (function (t, a) {
@@ -10809,7 +10811,7 @@ function Os(t, a) {
                                         title: 'Próximos turnos: ticket cargado',
                                         summary: `${n} quedó cargado desde la secuencia inmediata (${i || 'sin acción visible'}).`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
         })(t, a),
@@ -10912,7 +10914,7 @@ function Os(t, a) {
                                         title: 'Ronda maestra: ticket cargado',
                                         summary: `${n} quedó cargado desde la secuencia global (${i || 'sin acción visible'}).`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
         })(t, a),
@@ -10971,7 +10973,7 @@ function Os(t, a) {
                                         title: 'Cobertura siguiente: ticket cargado',
                                         summary: `${n} quedó cargado desde cobertura siguiente (${i || 'sin recomendación visible'}).`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
         })(t, a),
@@ -11031,7 +11033,7 @@ function Os(t, a) {
                                         title: 'Reserva inmediata: ticket cargado',
                                         summary: `${n} quedó cargado desde reserva inmediata (${i || 'sin recomendación visible'}).`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
         })(t, a),
@@ -11089,7 +11091,7 @@ function Os(t, a) {
                                         title: 'Cola general guiada: ticket cargado',
                                         summary: `${n} quedó cargado desde la cola general guiada.`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
         })(t, a),
@@ -11231,7 +11233,7 @@ function Os(t, a) {
                                         title: 'Proyección de cola: ticket cargado',
                                         summary: `${n} quedó cargado desde la proyección de cola.`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
         })(t, a),
@@ -12459,7 +12461,7 @@ function Os(t, a) {
         (function (t, a) {
             const n = document.getElementById('queueDeskEscalation');
             if (!(n instanceof HTMLElement)) return;
-            const o = Fr(t, a);
+            const o = Ur(t, a);
             l(
                 '#queueDeskEscalation',
                 `\n            <section class="queue-desk-closeout__shell queue-desk-escalation__shell" data-state="${e(o.statusState)}">\n                <div class="queue-desk-closeout__header queue-desk-escalation__header">\n                    <div>\n                        <p class="queue-app-card__eyebrow">Cuándo sí debe escalar recepción</p>\n                        <h5 id="queueDeskEscalationTitle" class="queue-app-card__title">${e(o.title)}</h5>\n                        <p id="queueDeskEscalationSummary" class="queue-desk-closeout__summary queue-desk-escalation__summary">${e(o.summary)}</p>\n                    </div>\n                    <div class="queue-desk-closeout__meta queue-desk-escalation__meta">\n                        <span\n                            id="queueDeskEscalationStatus"\n                            class="queue-desk-closeout__status queue-desk-escalation__status"\n                            data-state="${e(o.statusState)}"\n                        >\n                            ${e(o.statusLabel)}\n                        </span>\n                        <button\n                            id="queueDeskEscalationCopyBtn"\n                            type="button"\n                            class="queue-desk-closeout__action queue-desk-escalation__action"\n                            ${o.items.length ? '' : 'disabled'}\n                        >\n                            Copiar escala\n                        </button>\n                    </div>\n                </div>\n                ${o.items.length ? `\n                            <div id="queueDeskEscalationItems" class="queue-desk-closeout__grid queue-desk-escalation__grid" role="list" aria-label="Escalación sugerida por tipo">\n                                ${o.items.map((t) => `\n                                            <article\n                                                id="queueDeskEscalationItem_${e(t.key)}"\n                                                class="queue-desk-closeout__item queue-desk-escalation__item"\n                                                data-state="${e(t.tone)}"\n                                                role="listitem"\n                                            >\n                                                <div class="queue-desk-closeout__head queue-desk-escalation__head">\n                                                    <div>\n                                                        <p class="queue-desk-closeout__lane queue-desk-escalation__lane">${e(t.label)}</p>\n                                                        <strong id="queueDeskEscalationHeadline_${e(t.key)}">${e(t.headline)}</strong>\n                                                    </div>\n                                                </div>\n                                                <p id="queueDeskEscalationPhrase_${e(t.key)}" class="queue-desk-closeout__phrase queue-desk-escalation__phrase">${e(`"${t.phrase}"`)}</p>\n                                                <p id="queueDeskEscalationSupport_${e(t.key)}" class="queue-desk-closeout__support queue-desk-escalation__support">${e(t.support)}</p>\n                                                <div class="queue-desk-closeout__actions queue-desk-escalation__actions">\n                                                    <a\n                                                        id="queueDeskEscalationOpen_${e(t.key)}"\n                                                        href="${e(t.actionUrl)}"\n                                                        class="queue-desk-closeout__open queue-desk-escalation__open"\n                                                        data-queue-desk-escalation-label="${e(t.label)}"\n                                                        target="_blank"\n                                                        rel="noopener"\n                                                    >\n                                                        ${e(t.actionLabel)}\n                                                    </a>\n                                                </div>\n                                            </article>\n                                        `).join('')}\n                            </div>\n                        ` : '\n                            <article id="queueDeskEscalationEmpty" class="queue-desk-closeout__empty queue-desk-escalation__empty">\n                                <strong>Sin escala visible</strong>\n                                <p>Hace falta más contexto de cola para sugerir una escalación de mostrador.</p>\n                            </article>\n                        '}\n            </section>\n        `
@@ -12513,7 +12515,7 @@ function Os(t, a) {
             const o = (function (e, t) {
                 const a = Cr(e, t),
                     n = Er(e, t),
-                    i = Fr(e, t),
+                    i = Ur(e, t),
                     o = new Map((n.cards || []).map((e) => [e.slotKey, e])),
                     s = new Map((a.cards || []).map((e) => [e.badge, e])),
                     r = new Map((i.items || []).map((e) => [e.key, e])),
@@ -13133,7 +13135,7 @@ function Os(t, a) {
                                         title: 'Bloqueos vivos: ticket cargado',
                                         summary: `${n} quedó cargado desde la cadena de desbloqueo (${i || 'sin acción visible'}).`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
         })(t, a),
@@ -13189,7 +13191,7 @@ function Os(t, a) {
                                     title: 'SLA vivo: ticket cargado',
                                     summary: `${n} quedó cargado desde la presión SLA (${i || 'sin acción visible'}).`,
                                 }),
-                                Fl(t, a));
+                                Ul(t, a));
                         });
                 }));
         })(t, a),
@@ -14056,7 +14058,7 @@ function Os(t, a) {
                                                 } =
                                                     await Promise.resolve().then(
                                                         function () {
-                                                            return Du;
+                                                            return xu;
                                                         }
                                                     );
                                                 (await t(
@@ -14077,7 +14079,7 @@ function Os(t, a) {
                                                 'error'
                                             );
                                         } finally {
-                                            Fl(t, a);
+                                            Ul(t, a);
                                         }
                                 })(e, t, a));
                         });
@@ -14117,7 +14119,7 @@ function Os(t, a) {
                                         'error'
                                     );
                                 } finally {
-                                    Fl(e, t);
+                                    Ul(e, t);
                                 }
                         })(t, a));
                 });
@@ -14216,7 +14218,7 @@ function Os(t, a) {
         l(
             '#queueAppDownloadsCards',
             (function (t, a) {
-                return Fi()
+                return Ui()
                     .map((n) => {
                         const o = In(n),
                             s = t[n] || Ei()[n];
@@ -14258,7 +14260,7 @@ function Os(t, a) {
                     .join('');
             })(t, a)
         ),
-        Ul(t, a),
+        Fl(t, a),
         (function (t, a) {
             const n = document.getElementById('queueInstallConfigurator');
             if (!(n instanceof HTMLElement)) return;
@@ -14362,13 +14364,13 @@ function Os(t, a) {
                                         title: `Preset rápido: ${n.label}`,
                                         summary: `${ro(a)}. El asistente ya quedó listo con este perfil.`,
                                     }),
-                                    Fl(t, a));
+                                    Ul(t, a));
                             });
                     }));
             const f = document.getElementById('queueInstallSurfaceSelect');
             f instanceof HTMLSelectElement &&
                 (f.onchange = () => {
-                    (oo({ ...i, surface: f.value }, a), Fl(t, a));
+                    (oo({ ...i, surface: f.value }, a), Ul(t, a));
                 });
             const y = document.getElementById('queueInstallProfileSelect');
             y instanceof HTMLSelectElement &&
@@ -14387,7 +14389,7 @@ function Os(t, a) {
                             title: 'Perfil operativo ajustado',
                             summary: `${ro(a)}. La ruta preparada ya quedó alineada para descarga y fallback.`,
                         }),
-                        Fl(t, a));
+                        Ul(t, a));
                 });
             const v = document.getElementById('queueInstallPlatformSelect');
             v instanceof HTMLSelectElement &&
@@ -14396,7 +14398,7 @@ function Os(t, a) {
                         { ...i, platform: 'mac' === v.value ? 'mac' : 'win' },
                         a
                     ),
-                        Fl(t, a));
+                        Ul(t, a));
                 });
             const h = document.getElementById('queueInstallOneTapInput');
             h instanceof HTMLInputElement &&
@@ -14410,14 +14412,14 @@ function Os(t, a) {
                                 : 'Modo 1 tecla desactivado',
                             summary: `${ro(a)}. Ajuste guardado en el preparador de rutas operativas.`,
                         }),
-                        Fl(t, a));
+                        Ul(t, a));
                 });
         })(t, a));
 }
 function xs(t, a) {
     const n = document.getElementById('queueAdminViewMode');
     if (!(n instanceof HTMLElement)) return;
-    const i = Ui(),
+    const i = Fi(),
         o = Ni(),
         s = (function () {
             const e = Mi();
@@ -14490,13 +14492,13 @@ function Hs(e, t) {
               ? `liberar ${s} en ${i}`
               : `${n || 'confirmar acción'} ${s} en ${i}`;
 }
-function Us() {
+function Fs() {
     const e = document.getElementById('queueSensitiveConfirmDialog');
     (e instanceof HTMLDialogElement && e.open && e.close(),
         e instanceof HTMLElement &&
             (e.removeAttribute('open'), (e.hidden = !0)));
 }
-function Fs(e, t, a) {
+function Us(e, t, a) {
     const n = ji(2 === Number(e.queue.stationConsultorio || 1) ? 2 : 1, {
             short: !0,
         }),
@@ -14663,7 +14665,7 @@ function ar(e, t, a) {
     const n = 2 === Number(a || 0) ? 2 : 1,
         i = (function (e) {
             const t = 'c' + (2 === Number(e) ? 2 : 1),
-                { group: a, latest: n } = Uo('operator'),
+                { group: a, latest: n } = Fo('operator'),
                 i = as('operator'),
                 o = i.length > 0 ? i : n ? [n] : [],
                 s = o.find((e) => rs(e?.details?.station) === t) || null,
@@ -14776,7 +14778,7 @@ async function ir(e, t, a, n) {
         try {
             const { callNextForConsultorio: a, runQueueTicketAction: n } =
                 await Promise.resolve().then(function () {
-                    return Du;
+                    return xu;
                 });
             if ('recall' === t && e.currentTicketId > 0)
                 await n(e.currentTicketId, 're-llamar', e.slot);
@@ -14802,7 +14804,7 @@ async function ir(e, t, a, n) {
         } catch (e) {
             s('No se pudo ejecutar la acción de seguimiento', 'error');
         } finally {
-            Fl(a, n);
+            Ul(a, n);
         }
 }
 function or(e, t, a = '') {
@@ -14856,13 +14858,13 @@ async function sr(e, t, a, n) {
                 confirmQueueSensitiveAction: i,
                 runQueueTicketAction: o,
             } = await Promise.resolve().then(function () {
-                return Du;
+                return xu;
             });
             if ('complete' === t && e.currentTicketId > 0)
                 await o(e.currentTicketId, 'completar');
             else if ('no_show' === t && e.currentTicketId > 0)
                 (await o(e.currentTicketId, 'no_show', e.slot),
-                    g().queue.pendingSensitiveAction && Us());
+                    g().queue.pendingSensitiveAction && Fs());
             else if ('release' === t && e.currentTicketId > 0)
                 await o(e.currentTicketId, 'liberar');
             else if ('confirm' === t) await i();
@@ -14894,7 +14896,7 @@ async function sr(e, t, a, n) {
         } catch (e) {
             s('No se pudo ejecutar la resolución rápida', 'error');
         } finally {
-            Fl(a, n);
+            Ul(a, n);
         }
 }
 function rr(e) {
@@ -16710,7 +16712,7 @@ function Hr(e, t, a, n, i, o, s) {
         actionUrl: a.operatorUrl,
     };
 }
-function Ur(e, t, a) {
+function Fr(e, t, a) {
     const n =
             [...(e.cards || [])].sort((e, t) => {
                 const a = Number(e?.etaMinutes || Number.POSITIVE_INFINITY),
@@ -16751,7 +16753,7 @@ function Ur(e, t, a) {
         actionUrl: n?.actionUrl || '/admin.html#queue',
     };
 }
-function Fr(e, t) {
+function Ur(e, t) {
     const a = Cr(e, t),
         n = Er(e, t),
         i = jr(e, t),
@@ -16781,7 +16783,7 @@ function Fr(e, t) {
                 o,
                 s
             ),
-            Ur(n, o, s),
+            Fr(n, o, s),
         ].filter(Boolean),
         m =
             p.find((e) => 'warning' === e.tone) ||
@@ -16972,7 +16974,7 @@ function Wr(e) {
 function Jr(e, t) {
     const a = Cr(e, t),
         n = Er(e, t),
-        i = Fr(e, t),
+        i = Ur(e, t),
         o = new Map((n.cards || []).map((e) => [e.slotKey, e])),
         s = new Map((a.cards || []).map((e) => [e.badge, e])),
         r = new Map((i.items || []).map((e) => [e.key, e])),
@@ -18228,7 +18230,7 @@ async function Tl(e, t, a) {
         }));
     const { callNextForConsultorio: n, runQueueTicketAction: i } =
         await Promise.resolve().then(function () {
-            return Du;
+            return xu;
         });
     if ('call' === e.kind && e.consultorio > 0)
         return (
@@ -18405,7 +18407,7 @@ async function Bl(e, t, a, n = {}) {
         try {
             const { callNextForConsultorio: t, runQueueTicketAction: a } =
                 await Promise.resolve().then(function () {
-                    return Du;
+                    return xu;
                 });
             ('call' === e.primaryAction
                 ? await t(e.slot)
@@ -18426,7 +18428,7 @@ async function Bl(e, t, a, n = {}) {
         } catch (e) {
             s('No se pudo ejecutar el despacho sugerido', 'error');
         } finally {
-            n.deferRerender || Fl(t, a);
+            n.deferRerender || Ul(t, a);
         }
 }
 function Rl(e, t) {
@@ -18755,7 +18757,7 @@ function Nl(t, a) {
             renderQueueOpsPilot: Yo,
             renderOpeningChecklist: xl,
             renderShiftHandoff: Hl,
-            renderQueueOpsLog: Ul,
+            renderQueueOpsLog: Fl,
             buildOpsLogIncidentEntry: Vo,
             buildShiftHandoffAssist: Qo,
             applyShiftHandoffSuggestions: _o,
@@ -19106,7 +19108,7 @@ function Ol(t, a) {
         setOpsPlaybookStep: jo,
         appendOpsLogEntry: Lo,
         renderQueuePlaybook: Ol,
-        renderQueueOpsLog: Ul,
+        renderQueueOpsLog: Fl,
         copyQueuePlaybookReport: Pl,
         resetOpsPlaybookMode: Po,
     });
@@ -19186,7 +19188,7 @@ function xl(t, a) {
                 Yo(t, a),
                 xl(t, a),
                 Hl(t, a),
-                Ul(t, a));
+                Fl(t, a));
         });
     const m = document.getElementById('queueOpeningChecklistResetBtn');
     m instanceof HTMLButtonElement &&
@@ -19205,7 +19207,7 @@ function xl(t, a) {
                 Yo(t, a),
                 xl(t, a),
                 Hl(t, a),
-                Ul(t, a));
+                Fl(t, a));
         });
 }
 function Hl(t, a) {
@@ -19314,7 +19316,7 @@ function Hl(t, a) {
                 Nl(t, a),
                 Ol(t, a),
                 Hl(t, a),
-                Ul(t, a));
+                Fl(t, a));
         });
     const b = document.getElementById('queueShiftHandoffResetBtn');
     (b instanceof HTMLButtonElement &&
@@ -19331,7 +19333,7 @@ function Hl(t, a) {
                 Nl(t, a),
                 Ol(t, a),
                 Hl(t, a),
-                Ul(t, a));
+                Fl(t, a));
         }),
         n.querySelectorAll('[data-queue-shift-step]').forEach((e) => {
             e instanceof HTMLButtonElement &&
@@ -19352,7 +19354,7 @@ function Hl(t, a) {
                 });
         }));
 }
-function Ul(t, a) {
+function Fl(t, a) {
     const n = document.getElementById('queueOpsLog');
     if (!(n instanceof HTMLElement)) return;
     const o = Co(),
@@ -19574,12 +19576,12 @@ function Ul(t, a) {
                     };
                 })(t, a)
             ),
-                Ul(t, a));
+                Fl(t, a));
         });
     const b = document.getElementById('queueOpsLogIncidentBtn');
     b instanceof HTMLButtonElement &&
         (b.onclick = () => {
-            (Lo(Vo(t, a)), Ul(t, a));
+            (Lo(Vo(t, a)), Fl(t, a));
         });
     const f = document.getElementById('queueOpsLogCopyBtn');
     f instanceof HTMLButtonElement &&
@@ -19612,7 +19614,7 @@ function Ul(t, a) {
     const y = document.getElementById('queueOpsLogClearBtn');
     (y instanceof HTMLButtonElement &&
         (y.onclick = () => {
-            (wo(qo(co())), Ul(t, a));
+            (wo(qo(co())), Fl(t, a));
         }),
         n.querySelectorAll('[data-filter]').forEach((e) => {
             e instanceof HTMLButtonElement &&
@@ -19627,12 +19629,12 @@ function Ul(t, a) {
                             );
                         } catch (e) {}
                     })(e.dataset.filter || 'all'),
-                        Ul(t, a));
+                        Fl(t, a));
                 });
         }));
 }
-function Fl(e, t) {
-    const a = Ui();
+function Ul(e, t) {
+    const a = Fi();
     (xs(e, t),
         Ps(e, t),
         'expert' === a ? Os(e, t) : (js(), Ms('queueAppDownloadsCards')),
@@ -19786,7 +19788,7 @@ function Kl(e = {}) {
     ),
         l instanceof HTMLElement && l.setAttribute('data-platform', s),
         (c = s),
-        Ui(),
+        Fi(),
         so(c),
         bo(),
         ko(),
@@ -19811,7 +19813,7 @@ function Kl(e = {}) {
                       })();
                   if (!t || 'object' != typeof t) return e;
                   const a = Array.from(
-                      new Set([...Fi(), ...Object.keys(e), ...Object.keys(t)])
+                      new Set([...Ui(), ...Object.keys(e), ...Object.keys(t)])
                   ).filter(Boolean);
                   return Object.fromEntries(
                       a.map((a) => {
@@ -19827,7 +19829,7 @@ function Kl(e = {}) {
     if (!t && o && 'true' === o.dataset.queueHubReady && Yi.hasActive())
         return void Yi.scheduleDeferred(u, s);
     Yi.clearDeferred();
-    const d = Ui();
+    const d = Fi();
     (xs(u, s),
         Ps(u, s),
         'expert' === d ? Os(u, s) : (js(), Ms('queueAppDownloadsCards')),
@@ -20658,16 +20660,20 @@ const Dc = 'appointments',
     Oc = 'availability',
     xc = 'availability-meta',
     Hc = 'queue-tickets',
-    Uc = 'queue-meta',
-    Fc = 'leadops-meta',
-    Kc = 'queue-surface-status',
-    Qc = 'app-downloads',
-    zc = 'turnero-clinic-profile',
-    Vc = 'turnero-clinic-profile-meta',
-    Gc = 'turnero-clinic-profile-catalog-status',
-    Wc = 'internal-console-meta',
-    Jc = 'health-status',
-    Yc = {
+    Fc = 'queue-meta',
+    Uc = 'leadops-meta',
+    Kc = 'patient-flow-meta',
+    Qc = 'clinical-history-meta',
+    zc = 'media-flow-meta',
+    Vc = 'telemedicine-meta',
+    Gc = 'queue-surface-status',
+    Wc = 'app-downloads',
+    Jc = 'turnero-clinic-profile',
+    Yc = 'turnero-clinic-profile-meta',
+    Zc = 'turnero-clinic-profile-catalog-status',
+    Xc = 'internal-console-meta',
+    eu = 'health-status',
+    tu = {
         summary: {
             viewBooking: 0,
             startCheckout: 0,
@@ -20722,7 +20728,7 @@ const Dc = 'appointments',
             generatedAt: '',
         },
     };
-function Zc() {
+function au() {
     return {
         appointments: Vl(Dc, []),
         callbacks: Vl(jc, []),
@@ -20730,30 +20736,34 @@ function Zc() {
         availability: Vl(Oc, {}),
         availabilityMeta: Vl(xc, {}),
         queueTickets: Vl(Hc, []),
-        queueMeta: Vl(Uc, null),
-        leadOpsMeta: Vl(Fc, null),
-        queueSurfaceStatus: Vl(Kc, null),
-        appDownloads: Vl(Qc, null),
-        turneroClinicProfile: Vl(zc, null),
-        turneroClinicProfileMeta: Vl(Vc, null),
-        turneroClinicProfileCatalogStatus: Vl(Gc, null),
-        internalConsoleMeta: Vl(Wc, null),
-        health: Vl(Jc, null),
-        funnelMetrics: Yc,
+        queueMeta: Vl(Fc, null),
+        leadOpsMeta: Vl(Uc, null),
+        patientFlowMeta: Vl(Kc, null),
+        clinicalHistoryMeta: Vl(Qc, null),
+        mediaFlowMeta: Vl(zc, null),
+        telemedicineMeta: Vl(Vc, null),
+        queueSurfaceStatus: Vl(Gc, null),
+        appDownloads: Vl(Wc, null),
+        turneroClinicProfile: Vl(Jc, null),
+        turneroClinicProfileMeta: Vl(Yc, null),
+        turneroClinicProfileCatalogStatus: Vl(Zc, null),
+        internalConsoleMeta: Vl(Xc, null),
+        health: Vl(eu, null),
+        funnelMetrics: tu,
     };
 }
-function Xc(e) {
+function nu(e) {
     return Array.isArray(e.queue_tickets)
         ? e.queue_tickets
         : Array.isArray(e.queueTickets)
           ? e.queueTickets
           : [];
 }
-function eu(e) {
+function iu(e) {
     const t = new Date(e || '').getTime();
     return Number.isFinite(t) ? t : 0;
 }
-function tu(e, t = {}) {
+function ou(e, t = {}) {
     let a = !1;
     return (
         b((n) => {
@@ -20780,6 +20790,10 @@ function tu(e, t = {}) {
                     queueTickets: e.queueTickets || [],
                     queueMeta: e.queueMeta || null,
                     leadOpsMeta: e.leadOpsMeta || null,
+                    patientFlowMeta: e.patientFlowMeta || null,
+                    clinicalHistoryMeta: e.clinicalHistoryMeta || null,
+                    mediaFlowMeta: e.mediaFlowMeta || null,
+                    telemedicineMeta: e.telemedicineMeta || null,
                     queueSurfaceStatus: e.queueSurfaceStatus || null,
                     appDownloads: e.appDownloads || null,
                     turneroClinicProfile: e.turneroClinicProfile || null,
@@ -20798,11 +20812,11 @@ function tu(e, t = {}) {
                     const n = Number(a.queueRuntimeRevision ?? -1),
                         i = Number(e.queue?.runtimeRevision || 0);
                     if (n >= 0 && i !== n) return !0;
-                    const o = eu(
+                    const o = iu(
                             e.data?.queueMeta?.updatedAt ||
                                 e.data?.queueMeta?.updated_at
                         ),
-                        s = eu(
+                        s = iu(
                             t.queueMeta?.updatedAt || t.queueMeta?.updated_at
                         );
                     return o > 0 && s > 0 && o > s;
@@ -20822,26 +20836,26 @@ function tu(e, t = {}) {
         { preservedQueueData: a }
     );
 }
-function au() {
+function su() {
     const e = g(),
         t = Number(e.ui.lastRefreshAt || 0);
     if (!t) return 'Datos: sin sincronizar';
     const a = Math.max(0, Math.round((Date.now() - t) / 1e3));
     return a < 60 ? `Datos: hace ${a}s` : `Datos: hace ${Math.round(a / 60)}m`;
 }
-async function nu(e) {
+async function ru(e) {
     if (e.funnelMetrics) return e.funnelMetrics;
     const t = await j('funnel-metrics').catch(() => null);
     return t?.data || null;
 }
-function iu(e) {
+function lu(e) {
     return Array.isArray(e) ? e : [];
 }
-function ou(e) {
+function cu(e) {
     const t = Number(e || 0);
     return Number.isFinite(t) ? Math.max(0, t) : 0;
 }
-function su(e, t = {}) {
+function uu(e, t = {}) {
     const a = e && 'object' == typeof e ? e : {},
         n = Object.keys(a).length > 0,
         i = void 0 !== t.available ? !0 === t.available : n;
@@ -20857,34 +20871,34 @@ function su(e, t = {}) {
             a.bridgeStatus && 'object' == typeof a.bridgeStatus
                 ? a.bridgeStatus
                 : {},
-        pendingOutbox: ou(a.pendingOutbox),
-        activeConversations: ou(a.activeConversations),
-        aliveHolds: ou(a.aliveHolds),
-        bookingsClosed: ou(a.bookingsClosed),
-        paymentsStarted: ou(a.paymentsStarted),
-        paymentsCompleted: ou(a.paymentsCompleted),
-        deliveryFailures: ou(a.deliveryFailures),
+        pendingOutbox: cu(a.pendingOutbox),
+        activeConversations: cu(a.activeConversations),
+        aliveHolds: cu(a.aliveHolds),
+        bookingsClosed: cu(a.bookingsClosed),
+        paymentsStarted: cu(a.paymentsStarted),
+        paymentsCompleted: cu(a.paymentsCompleted),
+        deliveryFailures: cu(a.deliveryFailures),
         automationSuccessRate: Number.isFinite(Number(a.automationSuccessRate))
             ? Number(a.automationSuccessRate)
             : 0,
         lastInboundAt: String(a.lastInboundAt || ''),
         lastOutboundAt: String(a.lastOutboundAt || ''),
-        pendingOutboxItems: iu(a.pendingOutboxItems),
-        failedOutboxItems: iu(a.failedOutboxItems),
-        activeHolds: iu(a.activeHolds),
-        pendingCheckouts: iu(a.pendingCheckouts),
-        conversations: iu(a.conversations),
+        pendingOutboxItems: lu(a.pendingOutboxItems),
+        failedOutboxItems: lu(a.failedOutboxItems),
+        activeHolds: lu(a.activeHolds),
+        pendingCheckouts: lu(a.pendingCheckouts),
+        conversations: lu(a.conversations),
     };
 }
-function ru(e) {
+function du(e) {
     b((t) => ({ ...t, data: { ...t.data, whatsappOpenclawOps: e } }));
 }
-async function lu() {
+async function pu() {
     try {
         const e = await j('whatsapp-openclaw-ops');
-        return su(e?.data || {}, { available: !0, statusCode: 200 });
+        return uu(e?.data || {}, { available: !0, statusCode: 200 });
     } catch (e) {
-        return su(null, {
+        return uu(null, {
             available: !1,
             statusCode: Number(e?.status || 0),
             error:
@@ -20893,16 +20907,16 @@ async function lu() {
         });
     }
 }
-async function cu() {
+async function mu() {
     const e = Number(g().queue?.runtimeRevision || 0);
     try {
         const [t, a, n] = await Promise.all([
                 j('data'),
                 j('health').catch(() => null),
-                lu(),
+                pu(),
             ]),
             i = t.data || {},
-            o = Zc(),
+            o = au(),
             s = (function (e, t, a) {
                 return {
                     appointments: Array.isArray(e.appointments)
@@ -20919,7 +20933,7 @@ async function cu() {
                         'object' == typeof e.availabilityMeta
                             ? e.availabilityMeta
                             : {},
-                    queueTickets: Xc(e),
+                    queueTickets: nu(e),
                     queueMeta:
                         e.queueMeta && 'object' == typeof e.queueMeta
                             ? e.queueMeta
@@ -20930,6 +20944,25 @@ async function cu() {
                         e.leadOpsMeta && 'object' == typeof e.leadOpsMeta
                             ? e.leadOpsMeta
                             : a?.leadOpsMeta || null,
+                    patientFlowMeta:
+                        e.patientFlowMeta &&
+                        'object' == typeof e.patientFlowMeta
+                            ? e.patientFlowMeta
+                            : a?.patientFlowMeta || null,
+                    clinicalHistoryMeta:
+                        e.clinicalHistoryMeta &&
+                        'object' == typeof e.clinicalHistoryMeta
+                            ? e.clinicalHistoryMeta
+                            : a?.clinicalHistoryMeta || null,
+                    mediaFlowMeta:
+                        e.mediaFlowMeta && 'object' == typeof e.mediaFlowMeta
+                            ? e.mediaFlowMeta
+                            : a?.mediaFlowMeta || null,
+                    telemedicineMeta:
+                        e.telemedicineMeta &&
+                        'object' == typeof e.telemedicineMeta
+                            ? e.telemedicineMeta
+                            : a?.telemedicineMeta || null,
                     queueSurfaceStatus:
                         e.queueSurfaceStatus &&
                         'object' == typeof e.queueSurfaceStatus
@@ -20965,8 +20998,8 @@ async function cu() {
                     funnelMetrics: e.funnelMetrics || a?.funnelMetrics || null,
                     health: t && t.ok ? t : null,
                 };
-            })({ ...i, funnelMetrics: await nu(i) }, a, o),
-            { preservedQueueData: r } = tu(s, { queueRuntimeRevision: e });
+            })({ ...i, funnelMetrics: await ru(i) }, a, o),
+            { preservedQueueData: r } = ou(s, { queueRuntimeRevision: e });
         return (
             (function (e) {
                 (Gl(Dc, e.appointments || []),
@@ -20975,23 +21008,27 @@ async function cu() {
                     Gl(Oc, e.availability || {}),
                     Gl(xc, e.availabilityMeta || {}),
                     Gl(Hc, e.queueTickets || []),
-                    Gl(Uc, e.queueMeta || null),
-                    Gl(Fc, e.leadOpsMeta || null),
-                    Gl(Kc, e.queueSurfaceStatus || null),
-                    Gl(Qc, e.appDownloads || null),
-                    Gl(zc, e.turneroClinicProfile || null),
-                    Gl(Vc, e.turneroClinicProfileMeta || null),
-                    Gl(Gc, e.turneroClinicProfileCatalogStatus || null),
-                    Gl(Wc, e.internalConsoleMeta || null),
-                    Gl(Jc, e.health || null));
+                    Gl(Fc, e.queueMeta || null),
+                    Gl(Uc, e.leadOpsMeta || null),
+                    Gl(Kc, e.patientFlowMeta || null),
+                    Gl(Qc, e.clinicalHistoryMeta || null),
+                    Gl(zc, e.mediaFlowMeta || null),
+                    Gl(Vc, e.telemedicineMeta || null),
+                    Gl(Gc, e.queueSurfaceStatus || null),
+                    Gl(Wc, e.appDownloads || null),
+                    Gl(Jc, e.turneroClinicProfile || null),
+                    Gl(Yc, e.turneroClinicProfileMeta || null),
+                    Gl(Zc, e.turneroClinicProfileCatalogStatus || null),
+                    Gl(Xc, e.internalConsoleMeta || null),
+                    Gl(eu, e.health || null));
             })(s),
-            ru(n),
+            du(n),
             { ok: !0, preservedQueueData: r }
         );
     } catch (e) {
-        const t = Zc();
+        const t = au();
         return (
-            tu({
+            ou({
                 ...t,
                 turneroClinicProfileMeta: t.turneroClinicProfile
                     ? {
@@ -21010,8 +21047,8 @@ async function cu() {
                       }
                     : null,
             }),
-            ru(
-                su(g().data?.whatsappOpenclawOps || null, {
+            du(
+                uu(g().data?.whatsappOpenclawOps || null, {
                     available: Boolean(g().data?.whatsappOpenclawOps),
                 })
             ),
@@ -21019,16 +21056,16 @@ async function cu() {
         );
     }
 }
-let uu = !1,
-    du = !1;
-function pu() {
+let gu = !1,
+    bu = !1;
+function fu() {
     if ('undefined' != typeof window) {
         const e = Number(window.__QUEUE_AUTO_REFRESH_INTERVAL_MS__);
         if (Number.isFinite(e) && e > 0) return Math.max(50, Math.round(e));
     }
     return 45e3;
 }
-function mu(e) {
+function yu(e) {
     b((t) => ({
         ...t,
         ui: {
@@ -21036,7 +21073,7 @@ function mu(e) {
             queueAutoRefresh: {
                 state: 'idle',
                 reason: 'Abre Turnero Sala para activar el monitoreo continuo.',
-                intervalMs: pu(),
+                intervalMs: fu(),
                 lastAttemptAt: 0,
                 lastSuccessAt: 0,
                 lastError: '',
@@ -21047,7 +21084,7 @@ function mu(e) {
         },
     }));
 }
-function gu() {
+function vu() {
     const e = g();
     return e.auth?.authenticated
         ? 'queue' !== e.ui?.activeSection
@@ -21074,12 +21111,12 @@ function gu() {
               reason: 'Inicia sesión para monitorear los equipos.',
           };
 }
-async function bu(e = 'timer') {
-    const t = gu(),
-        a = pu();
+async function hu(e = 'timer') {
+    const t = vu(),
+        a = fu();
     if (!t.active)
         return (
-            mu({
+            yu({
                 state: t.state,
                 reason: t.reason,
                 intervalMs: a,
@@ -21087,9 +21124,9 @@ async function bu(e = 'timer') {
             }),
             !1
         );
-    if (du) return !1;
-    ((du = !0),
-        mu({
+    if (bu) return !1;
+    ((bu = !0),
+        yu({
             state: 'refreshing',
             reason:
                 'visibility' === e || 'focus' === e || 'online' === e
@@ -21101,12 +21138,12 @@ async function bu(e = 'timer') {
             lastError: '',
         }));
     try {
-        const e = await cu(),
+        const e = await mu(),
             t = Boolean(e?.ok),
             n = Boolean(e?.preservedQueueData);
         return (
             n || (await Nc()),
-            mu({
+            yu({
                 state: t ? 'active' : 'warning',
                 reason: t
                     ? n
@@ -21125,7 +21162,7 @@ async function bu(e = 'timer') {
                 ),
             yc(),
             (function () {
-                const e = au();
+                const e = su();
                 (r('#adminRefreshStatus', e),
                     r(
                         '#adminSyncState',
@@ -21138,7 +21175,7 @@ async function bu(e = 'timer') {
         );
     } catch (e) {
         return (
-            mu({
+            yu({
                 state: 'warning',
                 reason: 'No se pudo refrescar Equipos en vivo. Revisa red local o fuerza una actualización manual.',
                 intervalMs: a,
@@ -21149,30 +21186,30 @@ async function bu(e = 'timer') {
             !1
         );
     } finally {
-        du = !1;
+        bu = !1;
     }
 }
-function fu(e = {}) {
+function ku(e = {}) {
     const { immediate: t = !1, reason: a = 'sync' } = e,
-        n = gu(),
-        i = pu();
+        n = vu(),
+        i = fu();
     return (
-        mu({ state: n.state, reason: n.reason, intervalMs: i, inFlight: du }),
+        yu({ state: n.state, reason: n.reason, intervalMs: i, inFlight: bu }),
         'queue' === g().ui?.activeSection && yc(),
-        t && n.active ? (bu(a), !0) : n.active
+        t && n.active ? (hu(a), !0) : n.active
     );
 }
-function yu() {
-    'visible' !== document.visibilityState ? fu() : bu('visibility');
+function _u() {
+    'visible' !== document.visibilityState ? ku() : hu('visibility');
 }
-function vu() {
+function qu() {
     ('undefined' != typeof document && 'hidden' === document.visibilityState) ||
-        ('queue' === g().ui?.activeSection && bu('focus'));
+        ('queue' === g().ui?.activeSection && hu('focus'));
 }
-function hu() {
-    'queue' === g().ui?.activeSection && bu('online');
+function $u() {
+    'queue' === g().ui?.activeSection && hu('online');
 }
-function ku(e, t, a = void 0) {
+function Su(e, t, a = void 0) {
     Sc(e, (e) => ({
         ...e,
         status: t,
@@ -21189,7 +21226,7 @@ function ku(e, t, a = void 0) {
                 : '',
     }));
 }
-async function _u({ ticketId: e, action: t, consultorio: a }) {
+async function wu({ ticketId: e, action: t, consultorio: a }) {
     const n = Number(e || 0),
         i = la(t);
     if (n && i) {
@@ -21200,11 +21237,11 @@ async function _u({ ticketId: e, action: t, consultorio: a }) {
                           ? 'liberar' !== t
                               ? 'completar' !== t
                                   ? 'no_show' !== t
-                                      ? 'cancelar' === t && ku(e, 'cancelled')
-                                      : ku(e, 'no_show')
-                                  : ku(e, 'completed')
-                              : ku(e, 'waiting', null)
-                          : ku(e, 'called', 2 === Number(a || 1) ? 2 : 1);
+                                      ? 'cancelar' === t && Su(e, 'cancelled')
+                                      : Su(e, 'no_show')
+                                  : Su(e, 'completed')
+                              : Su(e, 'waiting', null)
+                          : Su(e, 'called', 2 === Number(a || 1) ? 2 : 1);
                   })(n, i, a),
                   void vc(`Practica: accion ${i} en ticket ${n}`))
                 : (Ic(
@@ -21222,7 +21259,7 @@ async function _u({ ticketId: e, action: t, consultorio: a }) {
         M();
     }
 }
-function qu(e) {
+function Cu(e) {
     const t = sa(e);
     return 'pending' === t
         ? 'pending'
@@ -21232,18 +21269,18 @@ function qu(e) {
             ? 'resolved'
             : '';
 }
-function $u(e) {
+function Lu(e) {
     return 'attending' === e
         ? 'atendido'
         : 'resolved' === e
           ? 'resuelto'
           : 'actualizado';
 }
-function Su(e) {
+function Au(e) {
     return e && 'object' == typeof e ? e : {};
 }
-function wu(e) {
-    const t = Su(e),
+function Eu(e) {
+    const t = Au(e),
         a = [
             'resolutionOutcomeLabel',
             'resolution_outcome_label',
@@ -21260,13 +21297,13 @@ function wu(e) {
     }
     return '';
 }
-async function Cu({
+async function Tu({
     helpRequestId: e,
     ticketId: t,
     status: a,
     context: n = null,
 }) {
-    const i = qu(a),
+    const i = Cu(a),
         o = Number(e || 0) || 0,
         s = Number(t || 0) || 0;
     if (!i || (!o && !s)) return;
@@ -21277,7 +21314,7 @@ async function Cu({
             status: a,
             context: n = null,
         }) {
-            const i = qu(a);
+            const i = Cu(a);
             if (!i) return;
             const o = g(),
                 s = new Date().toISOString(),
@@ -21288,7 +21325,7 @@ async function Cu({
                 l = Array.isArray(o.data.queueTickets)
                     ? o.data.queueTickets
                     : [],
-                c = Su(n);
+                c = Au(n);
             let u = Number(t || 0) || 0,
                 d = null;
             const p = ca(r.activeHelpRequests)
@@ -21332,7 +21369,7 @@ async function Cu({
                             : t
                     )
                     .filter((e) => {
-                        const t = qu(e?.status);
+                        const t = Cu(e?.status);
                         return 'resolved' === t
                             ? ((d = e), !1)
                             : ['pending', 'attending'].includes(t);
@@ -21406,7 +21443,7 @@ async function Cu({
                         activeHelpRequests: p,
                         recentResolvedHelpRequests: m,
                         assistancePendingCount: p.filter(
-                            (e) => 'pending' === qu(e?.status)
+                            (e) => 'pending' === Cu(e?.status)
                         ).length,
                     },
                     {
@@ -21416,7 +21453,7 @@ async function Cu({
                     }
                 ),
                 vc(
-                    `Practica: apoyo ${$u(i)} ${u || e}${wu(d?.context || c) ? ` · ${wu(d?.context || c)}` : ''}`
+                    `Practica: apoyo ${Lu(i)} ${u || e}${Eu(d?.context || c) ? ` · ${Eu(d?.context || c)}` : ''}`
                 ));
         })({ helpRequestId: o, ticketId: s, status: i, context: n });
     const r = { status: i };
@@ -21427,10 +21464,10 @@ async function Cu({
             syncMode: 'live',
             bumpRuntimeRevision: !0,
         }));
-    const l = wu(n) ? ` · ${wu(n)}` : '';
-    vc(`Apoyo ${$u(i)} ${s || o}${l}`);
+    const l = Eu(n) ? ` · ${Eu(n)}` : '';
+    vc(`Apoyo ${Lu(i)} ${s || o}${l}`);
 }
-async function Lu(e) {
+async function Iu(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = g();
     if (!nc.get(t))
@@ -21479,7 +21516,7 @@ async function Lu(e) {
             }
         }
 }
-async function Au(e, t, a = 0) {
+async function Mu(e, t, a = 0) {
     const n = {
         ticketId: Number(e || 0),
         action: la(t),
@@ -21487,9 +21524,9 @@ async function Au(e, t, a = 0) {
     };
     if (I('queue-ticket-action')) return void M();
     if ('atender_apoyo' === n.action)
-        return void (await Cu({ ticketId: n.ticketId, status: 'attending' }));
+        return void (await Tu({ ticketId: n.ticketId, status: 'attending' }));
     if ('resolver_apoyo' === n.action)
-        return void (await Cu({ ticketId: n.ticketId, status: 'resolved' }));
+        return void (await Tu({ ticketId: n.ticketId, status: 'resolved' }));
     const i = g(),
         o = Da(n.ticketId);
     if (
@@ -21507,23 +21544,23 @@ async function Au(e, t, a = 0) {
         })(n.action, o)
     )
         return (ta(n), void vc(`Accion ${n.action} pendiente de confirmacion`));
-    await _u(n);
+    await wu(n);
 }
-async function Eu(e) {
+async function Bu(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = ja(t);
     a
-        ? await Au(a.id, 'liberar', t)
+        ? await Mu(a.id, 'liberar', t)
         : vc(`Sin ticket activo para liberar en C${t}`);
 }
-async function Tu() {
+async function Ru() {
     const e = g().queue.pendingSensitiveAction;
-    e ? (aa(), await _u(e)) : aa();
+    e ? (aa(), await wu(e)) : aa();
 }
-function Iu() {
+function Nu() {
     (aa(), vc('Accion sensible cancelada'));
 }
-function Mu() {
+function Du() {
     const e = document.getElementById('queueSensitiveConfirmDialog'),
         t = g().queue.pendingSensitiveAction;
     return !(
@@ -21532,10 +21569,10 @@ function Mu() {
                 ? e.open
                 : e instanceof HTMLElement &&
                   (!e.hidden || e.hasAttribute('open')))) ||
-        (Iu(), 0)
+        (Nu(), 0)
     );
 }
-async function Bu(e) {
+async function ju(e) {
     if (I('queue-bulk-action')) return void M();
     const t = Na(),
         a = la(e);
@@ -21554,7 +21591,7 @@ async function Bu(e) {
         }
         for (const e of t)
             try {
-                await _u({
+                await wu({
                     ticketId: e.id,
                     action: a,
                     consultorio:
@@ -21564,7 +21601,7 @@ async function Bu(e) {
         (qc(), vc(`Bulk ${a} sobre ${t.length} tickets`));
     }
 }
-async function Ru(e) {
+async function Pu(e) {
     const t = Number(e || 0);
     t &&
         (I('queue-reprint-ticket')
@@ -21574,39 +21611,39 @@ async function Ru(e) {
               : (await j('queue-reprint', { method: 'POST', body: { id: t } }),
                 vc(`Reimpresion ticket ${t}`)));
 }
-async function Nu() {
+async function Ou() {
     if (I('queue-bulk-reprint')) return void M();
     const e = Na();
     for (const t of e)
         try {
-            await Ru(t.id);
+            await Pu(t.id);
         } catch (e) {}
     (qc(), vc(`Bulk reimpresion ${e.length}`));
 }
-var Du = Object.freeze({
+var xu = Object.freeze({
     __proto__: null,
-    callNextForConsultorio: Lu,
-    cancelQueueSensitiveAction: Iu,
-    confirmQueueSensitiveAction: Tu,
-    dismissQueueSensitiveDialog: Mu,
-    reprintQueueTicket: Ru,
-    runQueueBulkAction: Bu,
-    runQueueBulkReprint: Nu,
-    runQueueReleaseStation: Eu,
-    runQueueTicketAction: Au,
-    updateQueueHelpRequestStatus: Cu,
+    callNextForConsultorio: Iu,
+    cancelQueueSensitiveAction: Nu,
+    confirmQueueSensitiveAction: Ru,
+    dismissQueueSensitiveDialog: Du,
+    reprintQueueTicket: Pu,
+    runQueueBulkAction: ju,
+    runQueueBulkReprint: Ou,
+    runQueueReleaseStation: Bu,
+    runQueueTicketAction: Mu,
+    updateQueueHelpRequestStatus: Tu,
 });
-function ju() {
+function Hu() {
     wc({ helpOpen: !g().queue.helpOpen });
 }
-function Pu(e) {
+function Fu(e) {
     if (I(Boolean(e) ? 'queue-start-practice' : 'queue-stop-practice'))
         return void M();
     const t = Boolean(e);
     (wc({ practiceMode: t, pendingSensitiveAction: null }),
         vc(t ? 'Modo practica activo' : 'Modo practica desactivado'));
 }
-function Ou(e) {
+function Uu(e) {
     const t = Oa();
     return (
         !!t &&
@@ -21618,7 +21655,7 @@ function Ou(e) {
         !0)
     );
 }
-async function xu(e) {
+async function Ku(e) {
     const t = g();
     if (t.queue.captureCallKeyMode)
         return void (function (e) {
@@ -21641,7 +21678,7 @@ async function xu(e) {
             );
         })(e, t.queue.customCallKey)
     )
-        return void (await Lu(t.queue.stationConsultorio));
+        return void (await Iu(t.queue.stationConsultorio));
     const a = sa(e.code),
         n = sa(e.key),
         i = (function (e, t, a) {
@@ -21651,7 +21688,7 @@ async function xu(e) {
                 ('enter' === a && 3 === Number(e.location || 0))
             );
         })(e, a, n);
-    if (i && t.queue.pendingSensitiveAction) return void (await Tu());
+    if (i && t.queue.pendingSensitiveAction) return void (await Ru());
     const o = (function (e, t) {
         return 'numpad2' === e || '2' === t
             ? 2
@@ -21661,8 +21698,8 @@ async function xu(e) {
     })(a, n);
     if (!o)
         return i
-            ? (t.queue.oneTap && Ou(t) && (await Tu()),
-              void (await Lu(t.queue.stationConsultorio)))
+            ? (t.queue.oneTap && Uu(t) && (await Ru()),
+              void (await Iu(t.queue.stationConsultorio)))
             : void ((function (e, t) {
                   return (
                       'numpaddecimal' === e ||
@@ -21672,7 +21709,7 @@ async function xu(e) {
                       '.' === t
                   );
               })(a, n)
-                  ? Ou(t)
+                  ? Uu(t)
                   : (function (e, t) {
                           return (
                               'numpadsubtract' === e ||
@@ -21697,7 +21734,7 @@ async function xu(e) {
                       (await (async function (e) {
                           const t = Oa();
                           t &&
-                              (await Au(
+                              (await Mu(
                                   t.id,
                                   're-llamar',
                                   e.queue.stationConsultorio
@@ -21717,16 +21754,16 @@ async function xu(e) {
             : (wc({ stationConsultorio: e }), vc(`Numpad: estacion C${e}`));
     })(o, t);
 }
-function Hu(e, t) {
+function Qu(e, t) {
     return 'c2' === e || '2' === e ? 2 : 'c1' === e || '1' === e ? 1 : t;
 }
-function Uu(e, t) {
+function zu(e, t) {
     return '1' === e || 'true' === e ? 'locked' : t;
 }
-function Fu(e, t) {
+function Vu(e, t) {
     return '1' === e || 'true' === e || ('0' !== e && 'false' !== e && t);
 }
-const Ku = new Set([
+const Gu = new Set([
     'dashboard',
     'clinical-history',
     'appointments',
@@ -21735,13 +21772,13 @@ const Ku = new Set([
     'availability',
     'queue',
 ]);
-function Qu(e, t = 'dashboard') {
+function Wu(e, t = 'dashboard') {
     const a = String(e || '')
         .trim()
         .toLowerCase();
-    return Ku.has(a) ? a : t;
+    return Gu.has(a) ? a : t;
 }
-function zu(e) {
+function Ju(e) {
     !(function (e) {
         const t = String(e || '').replace(/^#/, ''),
             a = t ? `#${t}` : '';
@@ -21751,9 +21788,9 @@ function zu(e) {
                 '',
                 `${window.location.pathname}${window.location.search}${a}`
             );
-    })(Qu(e));
+    })(Wu(e));
 }
-function Vu(t, a, n) {
+function Yu(t, a, n) {
     return Array.isArray(t) && 0 !== t.length
         ? t
               .slice(0, 5)
@@ -21765,22 +21802,22 @@ function Vu(t, a, n) {
               .join('')
         : '<li><span>Sin datos</span><strong>0</strong></li>';
 }
-function Gu(t, a, n, i = 'neutral') {
+function Zu(t, a, n, i = 'neutral') {
     return `\n        <li class="dashboard-attention-item" data-tone="${e(i)}">\n            <div>\n                <span>${e(t)}</span>\n                <small>${e(n)}</small>\n            </div>\n            <strong>${e(String(a))}</strong>\n        </li>\n    `;
 }
-function Wu(e) {
+function Xu(e) {
     return String(e || '')
         .toLowerCase()
         .trim();
 }
-function Ju(e) {
+function ed(e) {
     const t = new Date(e || '');
     return Number.isNaN(t.getTime()) ? 0 : t.getTime();
 }
-function Yu(e) {
-    return Ju(`${e?.date || ''}T${e?.time || '00:00'}:00`);
+function td(e) {
+    return ed(`${e?.date || ''}T${e?.time || '00:00'}:00`);
 }
-function Zu(e) {
+function ad(e) {
     if (!e) return 'Sin fecha';
     const t = Math.round((e - Date.now()) / 6e4),
         a = Math.abs(t);
@@ -21796,14 +21833,14 @@ function Zu(e) {
             ? `En ${Math.round(t / 60)} h`
             : `En ${Math.round(t / 1440)} d`;
 }
-function Xu(t, a, n) {
+function nd(t, a, n) {
     return `\n        <button type="button" class="operations-action-item" data-action="${e(t)}">\n            <span>${e(a)}</span>\n            <small>${e(n)}</small>\n        </button>\n    `;
 }
-function ed(e, t = 72) {
+function id(e, t = 72) {
     const a = String(e || '').trim();
     return a.length <= t ? a : `${a.slice(0, Math.max(0, t - 1)).trim()}...`;
 }
-function td(t, a, n, i = {}) {
+function od(t, a, n, i = {}) {
     return `\n        <button\n            type="button"\n            class="operations-action-item"\n            data-whatsapp-ops-action="${e(t)}"${(function (
         t = {}
     ) {
@@ -21815,12 +21852,12 @@ function td(t, a, n, i = {}) {
         i
     )}\n        >\n            <span>${e(a)}</span>\n            <small>${e(n)}</small>\n        </button>\n    `;
 }
-function ad(e) {
+function sd(e) {
     return (Array.isArray(e) ? e : [])
         .map((e) => String(e || '').trim())
         .filter(Boolean);
 }
-function nd(e) {
+function rd(e) {
     switch (
         String(e || '')
             .trim()
@@ -21840,7 +21877,7 @@ function nd(e) {
             return 'En curso';
     }
 }
-function id(e, t, a) {
+function ld(e, t, a) {
     return 'critical' ===
         String(a || '')
             .trim()
@@ -21864,11 +21901,11 @@ function id(e, t, a) {
               ? 'warning'
               : 'neutral';
 }
-function od(e) {
+function cd(e) {
     const t = Number(e || 0);
     return !Number.isFinite(t) || t <= 0 ? '' : `${Math.round(100 * t)}% conf.`;
 }
-function sd(t, a, n, i = {}) {
+function ud(t, a, n, i = {}) {
     return `\n        <button\n            type="button"\n            class="operations-action-item"\n            data-action="${e(t)}"${(function (
         t = {}
     ) {
@@ -21880,45 +21917,51 @@ function sd(t, a, n, i = {}) {
         i
     )}\n        >\n            <span>${e(a)}</span>\n            <small>${e(n)}</small>\n        </button>\n    `;
 }
-function rd(e) {
-    const t = ad(e?.reviewReasons),
-        a = ad(e?.missingFields),
-        n = ad(e?.redFlags);
-    return ed(
+function dd(e) {
+    const t = sd(e?.reviewReasons),
+        a = sd(e?.missingFields),
+        n = sd(e?.redFlags);
+    return id(
         [
             String(e?.summary || '').trim(),
             a.length > 0 ? `${a.length} dato(s) faltante(s)` : '',
             t.length > 0 ? `${t.length} motivo(s) de revision` : '',
             n.length > 0 ? `${n.length} red flag(s)` : '',
-            od(e?.confidence),
+            cd(e?.confidence),
         ]
             .filter(Boolean)
             .join(' • '),
         110
     );
 }
-function ld(e) {
-    return ed(
+function pd(e) {
+    return id(
         [
             String(e?.patientName || e?.caseId || 'Caso clinico').trim(),
             e?.occurredAt ? i(e.occurredAt) : '',
-            nd(e?.reviewStatus || e?.status),
+            rd(e?.reviewStatus || e?.status),
         ]
             .filter(Boolean)
             .join(' • '),
         110
     );
 }
-function cd(e) {
+function md(e) {
+    const t = Number(e || 0);
+    return Number.isFinite(t) ? Math.max(0, t) : 0;
+}
+function gd(e) {
     const {
             appointments: t,
             availability: a,
             callbacks: n,
             funnel: i,
             internalConsoleMeta: o,
-            queueMeta: s,
-            queueTickets: r,
-            reviews: l,
+            patientFlowMeta: s,
+            queueMeta: r,
+            queueTickets: l,
+            reviews: c,
+            telemedicineMeta: u,
         } = (function (e) {
             return {
                 appointments: Array.isArray(e?.data?.appointments)
@@ -21945,10 +21988,20 @@ function cd(e) {
                     'object' == typeof e.data.internalConsoleMeta
                         ? e.data.internalConsoleMeta
                         : null,
+                patientFlowMeta:
+                    e?.data?.patientFlowMeta &&
+                    'object' == typeof e.data.patientFlowMeta
+                        ? e.data.patientFlowMeta
+                        : null,
+                telemedicineMeta:
+                    e?.data?.telemedicineMeta &&
+                    'object' == typeof e.data.telemedicineMeta
+                        ? e.data.telemedicineMeta
+                        : null,
                 funnel: e?.data?.funnelMetrics || {},
             };
         })(e),
-        c = (function (e) {
+        d = (function (e) {
             return e.filter((e) =>
                 (function (e) {
                     if (!e) return !1;
@@ -21959,173 +22012,175 @@ function cd(e) {
                         t.getMonth() === a.getMonth() &&
                         t.getDate() === a.getDate()
                     );
-                })(Yu(e))
+                })(td(e))
             ).length;
         })(t),
-        u = (function (e) {
+        p = (function (e) {
             return e.filter((e) => {
-                const t = Wu(e.paymentStatus || e.payment_status);
+                const t = Xu(e.paymentStatus || e.payment_status);
                 return (
                     'pending_transfer_review' === t || 'pending_transfer' === t
                 );
             }).length;
         })(t),
-        d = (function (e) {
-            return e.filter((e) => 'pending' === Wu(e.status)).length;
+        m = (function (e) {
+            return e.filter((e) => 'pending' === Xu(e.status)).length;
         })(n),
-        p = (function (e) {
+        g = (function (e) {
             return e.filter((e) => {
-                if ('pending' !== Wu(e.status)) return !1;
+                if ('pending' !== Xu(e.status)) return !1;
                 const t = (function (e) {
-                    return Ju(e?.fecha || e?.createdAt || '');
+                    return ed(e?.fecha || e?.createdAt || '');
                 })(e);
                 return !!t && Math.round((Date.now() - t) / 6e4) >= 120;
             }).length;
         })(n),
-        m = (function (e) {
-            return e.filter((e) => 'no_show' === Wu(e.status)).length;
+        b = (function (e) {
+            return e.filter((e) => 'no_show' === Xu(e.status)).length;
         })(t),
-        g = (function (e) {
+        f = (function (e) {
             return e.length
                 ? (
                       e.reduce((e, t) => e + Number(t.rating || 0), 0) /
                       e.length
                   ).toFixed(1)
                 : '0.0';
-        })(l),
-        b = (function (e, t = 30) {
+        })(c),
+        y = (function (e, t = 30) {
             const a = Date.now();
             return e.filter((e) => {
-                const n = Ju(e.date || e.createdAt || '');
+                const n = ed(e.date || e.createdAt || '');
                 return n && a - n <= 24 * t * 60 * 60 * 1e3;
             }).length;
-        })(l),
-        f = (function (e) {
+        })(c),
+        v = (function (e) {
             return Object.values(e || {}).filter(
                 (e) => Array.isArray(e) && e.length > 0
             ).length;
         })(a),
-        y = (function (e) {
+        h = (function (e) {
             return e
-                .map((e) => ({ item: e, stamp: Yu(e) }))
+                .map((e) => ({ item: e, stamp: td(e) }))
                 .filter((e) => e.stamp > 0 && e.stamp >= Date.now())
                 .sort((e, t) => e.stamp - t.stamp)[0];
         })(t),
-        v = Number.isFinite(Number(s?.waitingCount))
-            ? Math.max(0, Number(s.waitingCount))
-            : r.filter(
+        k = Number.isFinite(Number(r?.waitingCount))
+            ? Math.max(0, Number(r.waitingCount))
+            : l.filter(
                   (e) => 'waiting' === String(e.status || '').toLowerCase()
               ).length;
     return {
         appointments: t,
-        availabilityDays: f,
-        avgRating: g,
-        calledTickets: Number.isFinite(Number(s?.calledCount))
-            ? Math.max(0, Number(s.calledCount))
-            : r.filter((e) => 'called' === String(e.status || '').toLowerCase())
+        availabilityDays: v,
+        avgRating: f,
+        calledTickets: Number.isFinite(Number(r?.calledCount))
+            ? Math.max(0, Number(r.calledCount))
+            : l.filter((e) => 'called' === String(e.status || '').toLowerCase())
                   .length,
         callbacks: n,
         funnel: i,
-        nextAppointment: y,
-        noShows: m,
-        pendingCallbacks: d,
-        pendingTasks: u + d,
-        pendingTransfers: u,
+        nextAppointment: h,
+        noShows: b,
+        pendingCallbacks: m,
+        pendingTasks: p + m,
+        pendingTransfers: p,
         internalConsoleMeta: o,
-        queueMeta: s,
-        recentReviews: b,
-        reviews: l,
-        todayAppointments: c,
-        urgentCallbacks: p,
-        waitingTickets: v,
+        patientFlowMeta: s,
+        queueMeta: r,
+        recentReviews: y,
+        reviews: c,
+        telemedicineMeta: u,
+        todayAppointments: d,
+        urgentCallbacks: g,
+        waitingTickets: k,
     };
 }
-function ud(e) {
+function bd(e) {
     return e && 'object' == typeof e ? e : {};
 }
-function dd(e, t, a = 0) {
-    const n = ud(e);
+function fd(e, t, a = 0) {
+    const n = bd(e);
     for (const e of t)
         if (Object.prototype.hasOwnProperty.call(n, e)) return n[e];
     return a;
 }
-function pd(e, t) {
-    const a = Number(dd(e, t, 0));
+function yd(e, t) {
+    const a = Number(fd(e, t, 0));
     return Number.isFinite(a) ? Math.max(0, Math.round(a)) : 0;
 }
-function md(e) {
+function vd(e) {
     return ((t = e), Array.isArray(t) ? t : [])
         .map((e) => ({
             label: String(e?.label || e?.reason || e?.intent || '')
                 .trim()
                 .toLowerCase(),
-            count: pd(e, ['count']),
+            count: yd(e, ['count']),
         }))
         .filter((e) => e.label && e.count > 0)
         .sort((e, t) => t.count - e.count);
     var t;
 }
-function gd(e) {
-    const t = ud(e);
+function hd(e) {
+    const t = bd(e);
     return {
-        actioned: pd(t, ['actioned']),
-        resolvedWithoutHuman: pd(t, [
+        actioned: yd(t, ['actioned']),
+        resolvedWithoutHuman: yd(t, [
             'resolvedWithoutHuman',
             'resolved_without_human',
         ]),
-        assistedResolutions: pd(t, [
+        assistedResolutions: yd(t, [
             'assistedResolutions',
             'assisted_resolutions',
         ]),
-        escalated: pd(t, ['escalated']),
-        clinicalBlocked: pd(t, ['clinicalBlocked', 'clinical_blocked']),
-        fallback: pd(t, ['fallback']),
-        errors: pd(t, ['errors']),
-        latencyTotalMs: pd(t, ['latencyTotalMs', 'latency_total_ms']),
-        latencySamples: pd(t, ['latencySamples', 'latency_samples']),
-        sessions: pd(t, ['sessions']),
-        usefulSessions: pd(t, ['usefulSessions', 'useful_sessions']),
-        avgLatencyMs: pd(t, ['avgLatencyMs', 'avg_latency_ms']),
+        escalated: yd(t, ['escalated']),
+        clinicalBlocked: yd(t, ['clinicalBlocked', 'clinical_blocked']),
+        fallback: yd(t, ['fallback']),
+        errors: yd(t, ['errors']),
+        latencyTotalMs: yd(t, ['latencyTotalMs', 'latency_total_ms']),
+        latencySamples: yd(t, ['latencySamples', 'latency_samples']),
+        sessions: yd(t, ['sessions']),
+        usefulSessions: yd(t, ['usefulSessions', 'useful_sessions']),
+        avgLatencyMs: yd(t, ['avgLatencyMs', 'avg_latency_ms']),
     };
 }
-function bd(e, t) {
-    const a = ud(e),
+function kd(e, t) {
+    const a = bd(e),
         n = (function (e) {
-            return String(dd(e, ['label'], '') || '').trim();
+            return String(fd(e, ['label'], '') || '').trim();
         })(a),
-        i = pd(a, ['count']);
+        i = yd(a, ['count']);
     return n ? { label: n, count: i } : t[0] || { label: '', count: 0 };
 }
-function fd(e, t = 'sin datos') {
+function _d(e, t = 'sin datos') {
     return (
         String(e || '')
             .trim()
             .replace(/[_-]+/g, ' ') || t
     );
 }
-let yd = !1;
-function vd(e) {
+let qd = !1;
+function $d(e) {
     const t = Number(e || 0);
     return Number.isFinite(t) ? Math.max(0, t) : 0;
 }
-function hd(e) {
+function Sd(e) {
     return Array.isArray(e) ? e : [];
 }
-function kd(e) {
+function wd(e) {
     return String(e || '').trim();
 }
-function _d(e) {
-    return hd(e)
+function Cd(e) {
+    return Sd(e)
         .map((e) => String(e || '').trim())
         .filter(Boolean);
 }
-function qd(e) {
+function Ld(e) {
     const t = e && 'object' == typeof e ? e : {};
     return Object.fromEntries(
-        Object.entries(t).map(([e, t]) => [String(e), vd(t)])
+        Object.entries(t).map(([e, t]) => [String(e), $d(t)])
     );
 }
-function $d(e) {
+function Ad(e) {
     const t = e && 'object' == typeof e ? e : {},
         a =
             void 0 !== t.available
@@ -22143,82 +22198,82 @@ function $d(e) {
             t.bridgeStatus && 'object' == typeof t.bridgeStatus
                 ? t.bridgeStatus
                 : {},
-        pendingOutbox: vd(t.pendingOutbox),
-        activeConversations: vd(t.activeConversations),
-        aliveHolds: vd(t.aliveHolds),
-        bookingsClosed: vd(t.bookingsClosed),
-        paymentsStarted: vd(t.paymentsStarted),
-        paymentsCompleted: vd(t.paymentsCompleted),
-        deliveryFailures: vd(t.deliveryFailures),
+        pendingOutbox: $d(t.pendingOutbox),
+        activeConversations: $d(t.activeConversations),
+        aliveHolds: $d(t.aliveHolds),
+        bookingsClosed: $d(t.bookingsClosed),
+        paymentsStarted: $d(t.paymentsStarted),
+        paymentsCompleted: $d(t.paymentsCompleted),
+        deliveryFailures: $d(t.deliveryFailures),
         automationSuccessRate: Number.isFinite(Number(t.automationSuccessRate))
             ? Number(t.automationSuccessRate)
             : 0,
         lastInboundAt: String(t.lastInboundAt || ''),
         lastOutboundAt: String(t.lastOutboundAt || ''),
-        pendingOutboxItems: hd(t.pendingOutboxItems),
-        failedOutboxItems: hd(t.failedOutboxItems),
-        activeHolds: hd(t.activeHolds),
-        pendingCheckouts: hd(t.pendingCheckouts),
-        conversations: hd(t.conversations),
+        pendingOutboxItems: Sd(t.pendingOutboxItems),
+        failedOutboxItems: Sd(t.failedOutboxItems),
+        activeHolds: Sd(t.activeHolds),
+        pendingCheckouts: Sd(t.pendingCheckouts),
+        conversations: Sd(t.conversations),
     };
 }
-function Sd(e) {
+function Ed(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
-        sessionId: kd(t.sessionId),
-        caseId: kd(t.caseId),
+        sessionId: wd(t.sessionId),
+        caseId: wd(t.caseId),
         appointmentId: t.appointmentId ?? null,
-        surface: kd(t.surface),
-        sessionStatus: kd(t.sessionStatus),
-        reviewStatus: kd(t.reviewStatus),
+        surface: wd(t.surface),
+        sessionStatus: wd(t.sessionStatus),
+        reviewStatus: wd(t.reviewStatus),
         requiresHumanReview: !0 === t.requiresHumanReview,
         confidence: Number.isFinite(Number(t.confidence))
             ? Number(t.confidence)
             : 0,
-        reviewReasons: _d(t.reviewReasons),
-        missingFields: _d(t.missingFields),
-        redFlags: _d(t.redFlags),
-        pendingAiStatus: kd(t.pendingAiStatus),
-        pendingAiJobId: kd(t.pendingAiJobId),
-        patientName: kd(t.patientName),
-        patientEmail: kd(t.patientEmail),
-        patientPhone: kd(t.patientPhone),
-        attachmentCount: vd(t.attachmentCount),
-        summary: kd(t.summary),
-        createdAt: kd(t.createdAt),
-        updatedAt: kd(t.updatedAt),
+        reviewReasons: Cd(t.reviewReasons),
+        missingFields: Cd(t.missingFields),
+        redFlags: Cd(t.redFlags),
+        pendingAiStatus: wd(t.pendingAiStatus),
+        pendingAiJobId: wd(t.pendingAiJobId),
+        patientName: wd(t.patientName),
+        patientEmail: wd(t.patientEmail),
+        patientPhone: wd(t.patientPhone),
+        attachmentCount: $d(t.attachmentCount),
+        summary: wd(t.summary),
+        createdAt: wd(t.createdAt),
+        updatedAt: wd(t.updatedAt),
     };
 }
-function wd(e) {
+function Td(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
-        eventId: kd(t.eventId),
-        sessionId: kd(t.sessionId),
-        caseId: kd(t.caseId),
+        eventId: wd(t.eventId),
+        sessionId: wd(t.sessionId),
+        caseId: wd(t.caseId),
         appointmentId: t.appointmentId ?? null,
-        type: kd(t.type),
-        severity: kd(t.severity),
-        status: kd(t.status),
-        title: kd(t.title),
-        message: kd(t.message),
+        type: wd(t.type),
+        severity: wd(t.severity),
+        status: wd(t.status),
+        title: wd(t.title),
+        message: wd(t.message),
         requiresAction: !0 === t.requiresAction,
-        jobId: kd(t.jobId),
-        patientName: kd(t.patientName),
-        patientEmail: kd(t.patientEmail),
-        patientPhone: kd(t.patientPhone),
-        reviewStatus: kd(t.reviewStatus),
+        jobId: wd(t.jobId),
+        patientName: wd(t.patientName),
+        patientEmail: wd(t.patientEmail),
+        patientPhone: wd(t.patientPhone),
+        reviewStatus: wd(t.reviewStatus),
         requiresHumanReview: !0 === t.requiresHumanReview,
         confidence: Number.isFinite(Number(t.confidence))
             ? Number(t.confidence)
             : 0,
-        reviewReasons: _d(t.reviewReasons),
-        createdAt: kd(t.createdAt),
-        occurredAt: kd(t.occurredAt),
-        acknowledgedAt: kd(t.acknowledgedAt),
-        resolvedAt: kd(t.resolvedAt),
+        reviewReasons: Cd(t.reviewReasons),
+        createdAt: wd(t.createdAt),
+        occurredAt: wd(t.occurredAt),
+        acknowledgedAt: wd(t.acknowledgedAt),
+        resolvedAt: wd(t.resolvedAt),
     };
 }
-function Cd(e) {
+function Id(e) {
     const t = e && 'object' == typeof e ? e : {},
         a = t.summary && 'object' == typeof t.summary ? t.summary : {},
         n = a.sessions && 'object' == typeof a.sessions ? a.sessions : {},
@@ -22234,56 +22289,56 @@ function Cd(e) {
     return {
         summary: {
             configured: !0 === a.configured,
-            sessions: { total: vd(n.total), byStatus: qd(n.byStatus) },
+            sessions: { total: $d(n.total), byStatus: Ld(n.byStatus) },
             drafts: {
-                total: vd(i.total),
-                byReviewStatus: qd(i.byReviewStatus),
-                pendingAiCount: vd(i.pendingAiCount),
-                reviewQueueCount: vd(i.reviewQueueCount),
+                total: $d(i.total),
+                byReviewStatus: Ld(i.byReviewStatus),
+                pendingAiCount: $d(i.pendingAiCount),
+                reviewQueueCount: $d(i.reviewQueueCount),
             },
             events: {
-                total: vd(o.total),
-                openCount: vd(o.openCount),
-                unreadCount: vd(o.unreadCount),
-                byStatus: qd(o.byStatus),
-                bySeverity: qd(o.bySeverity),
-                openBySeverity: qd(o.openBySeverity),
-                byType: qd(o.byType),
+                total: $d(o.total),
+                openCount: $d(o.openCount),
+                unreadCount: $d(o.unreadCount),
+                byStatus: Ld(o.byStatus),
+                bySeverity: Ld(o.bySeverity),
+                openBySeverity: Ld(o.openBySeverity),
+                byType: Ld(o.byType),
             },
-            reviewQueueCount: vd(a.reviewQueueCount),
-            latestActivityAt: kd(a.latestActivityAt),
+            reviewQueueCount: $d(a.reviewQueueCount),
+            latestActivityAt: wd(a.latestActivityAt),
             diagnostics: {
-                status: kd(s.status || 'unknown'),
+                status: wd(s.status || 'unknown'),
                 healthy: !0 === s.healthy,
                 summary: {
-                    critical: vd(r.critical),
-                    warning: vd(r.warning),
-                    info: vd(r.info),
-                    totalChecks: vd(r.totalChecks),
-                    totalIssues: vd(r.totalIssues),
+                    critical: $d(r.critical),
+                    warning: $d(r.warning),
+                    info: $d(r.info),
+                    totalChecks: $d(r.totalChecks),
+                    totalIssues: $d(r.totalIssues),
                 },
             },
         },
-        reviewQueue: hd(t.reviewQueue).map(Sd),
-        events: hd(t.events).map(wd),
+        reviewQueue: Sd(t.reviewQueue).map(Ed),
+        events: Sd(t.events).map(Td),
         diagnostics: {
-            status: kd(s.status || 'unknown'),
+            status: wd(s.status || 'unknown'),
             healthy: !0 === s.healthy,
             summary: {
-                critical: vd(r.critical),
-                warning: vd(r.warning),
-                info: vd(r.info),
-                totalChecks: vd(r.totalChecks),
-                totalIssues: vd(r.totalIssues),
+                critical: $d(r.critical),
+                warning: $d(r.warning),
+                info: $d(r.info),
+                totalChecks: $d(r.totalChecks),
+                totalIssues: $d(r.totalIssues),
             },
         },
     };
 }
-function Ld(e) {
+function Md(e) {
     const t = {
-        ...cd(e),
-        clinicalHistoryMeta: Cd(e?.data?.clinicalHistoryMeta),
-        whatsappOpenclawOps: $d(e?.data?.whatsappOpenclawOps),
+        ...gd(e),
+        clinicalHistoryMeta: Id(e?.data?.clinicalHistoryMeta),
+        whatsappOpenclawOps: Ad(e?.data?.whatsappOpenclawOps),
     };
     var a;
     ((function (e) {
@@ -22347,7 +22402,7 @@ function Ld(e) {
                         : n > 0
                           ? `Revisa ${n} no show para cerrar seguimiento del dia.`
                           : i?.item
-                            ? `La siguiente atencion es ${i.item.name || 'sin nombre'} ${Zu(i.stamp).toLowerCase()}.`
+                            ? `La siguiente atencion es ${i.item.name || 'sin nombre'} ${ad(i.stamp).toLowerCase()}.`
                             : 'Empieza por agenda, pendientes y turnero sin mezclar herramientas avanzadas en el primer paso.';
             })({
                 pendingCallbacks: d,
@@ -22715,43 +22770,52 @@ function Ld(e) {
                     nextAppointment: i,
                     pendingCallbacks: o,
                     pendingTransfers: s,
-                    todayAppointments: l,
-                    urgentCallbacks: c,
-                    waitingTickets: u,
+                    patientFlowMeta: l,
+                    telemedicineMeta: c,
+                    todayAppointments: u,
+                    urgentCallbacks: d,
+                    waitingTickets: p,
                 } = e,
-                d =
+                m =
                     String(n?.overall?.summary || '').trim() ||
                     'Piloto interno de consultorio en revision.',
-                p = Boolean(!1 === n?.overall?.ready),
-                m = Array.isArray(n?.overall?.blockers)
+                g = Boolean(!1 === n?.overall?.ready),
+                b = Array.isArray(n?.overall?.blockers)
                     ? n.overall.blockers
                           .map((e) => String(e?.title || '').trim())
                           .filter(Boolean)
-                    : [];
-            (r(
-                '#dashboardQueueHealth',
-                p
-                    ? m[0] || 'Piloto interno bloqueado'
-                    : u > 0 || a > 0
-                      ? 'Turnero activo en una app separada'
-                      : 'Nucleo interno listo para consultorio'
-            ),
+                    : [],
+                f = [],
+                y = Number(c?.summary?.reviewQueueCount || 0),
+                v = Number(l?.casesOpen || 0);
+            (y > 0 && f.push(`${y} intake(s) telemedicina`),
+                v > 0 && f.push(`${v} caso(s) activos`),
+                r(
+                    '#dashboardQueueHealth',
+                    g
+                        ? b[0] || 'Piloto interno bloqueado'
+                        : p > 0 || a > 0
+                          ? 'Turnero activo en una app separada'
+                          : 'Nucleo interno listo para consultorio'
+                ),
                 r(
                     '#dashboardFlowStatus',
-                    p
-                        ? d
+                    g
+                        ? f.length > 0
+                            ? `${m} | ${f.join(' | ')}`
+                            : m
                         : i?.item
-                          ? `${Zu(i.stamp)} | ${i.item.name || 'Paciente'}`
+                          ? `${ad(i.stamp)} | ${i.item.name || 'Paciente'}`
                           : t > 0
                             ? `${t} dia(s) con horarios publicados`
-                            : d
+                            : m
                 ),
                 r('#operationPendingReviewCount', s),
                 r('#operationPendingCallbacksCount', o),
-                r('#operationTodayLoadCount', l),
+                r('#operationTodayLoadCount', u),
                 r(
                     '#operationDeckMeta',
-                    s > 0 || c > 0 || o > 0
+                    s > 0 || d > 0 || o > 0
                         ? 'Estas son las acciones utiles del dia'
                         : i?.item
                           ? 'La siguiente accion ya esta clara'
@@ -22759,12 +22823,12 @@ function Ld(e) {
                 ),
                 r(
                     '#operationQueueHealth',
-                    p
-                        ? d
+                    g
+                        ? m
                         : s > 0
                           ? `${s} pago(s) requieren revision antes de cerrar el dia`
                           : i?.item
-                            ? `Siguiente paciente: ${i.item.name || 'Paciente'} ${Zu(i.stamp).toLowerCase()}`
+                            ? `Siguiente paciente: ${i.item.name || 'Paciente'} ${ad(i.stamp).toLowerCase()}`
                             : 'Sin citas inmediatas en cola'
                 ));
         })(t),
@@ -22780,21 +22844,21 @@ function Ld(e) {
                     waitingTickets: s,
                 } = e;
                 return [
-                    Xu(
+                    nd(
                         'context-open-appointments-overview',
                         'Abrir agenda',
                         n?.item
-                            ? `Siguiente cita ${Zu(n.stamp).toLowerCase()}`
+                            ? `Siguiente cita ${ad(n.stamp).toLowerCase()}`
                             : `${t.length} cita(s) cargadas`
                     ),
-                    Xu(
+                    nd(
                         'context-open-callbacks-pending',
                         'Revisar pendientes',
                         o > 0
                             ? `${o} pago(s) y ${i} llamada(s) por resolver`
                             : `${i} llamada(s) pendientes`
                     ),
-                    Xu(
+                    nd(
                         'context-open-availability',
                         'Abrir horarios',
                         a > 0
@@ -22822,7 +22886,7 @@ function Ld(e) {
                 return (
                     a?.id &&
                         t.push(
-                            td(
+                            od(
                                 'requeue_outbox',
                                 'Reencolar fallo',
                                 (function (e) {
@@ -22831,14 +22895,14 @@ function Ld(e) {
                                             'Sin telefono',
                                         a = String(e?.error || '').trim(),
                                         n = String(e?.text || '').trim();
-                                    return `${t} • ${ed(a || n || 'Reintenta la entrega')}`;
+                                    return `${t} • ${id(a || n || 'Reintenta la entrega')}`;
                                 })(a),
                                 { id: a.id }
                             )
                         ),
                     n
                         ? t.push(
-                              td(
+                              od(
                                   'expire_checkout',
                                   'Expirar checkout',
                                   (function (e) {
@@ -22850,7 +22914,7 @@ function Ld(e) {
                                           i = String(
                                               e?.paymentStatus || ''
                                           ).trim();
-                                      return ed(
+                                      return id(
                                           [
                                               t,
                                               [a, n]
@@ -22871,11 +22935,11 @@ function Ld(e) {
                           )
                         : i?.id &&
                           t.push(
-                              td(
+                              od(
                                   'release_hold',
                                   'Liberar hold',
                                   ((o = i),
-                                  ed(
+                                  id(
                                       [
                                           String(o?.phone || '').trim() ||
                                               'Sin telefono',
@@ -22895,7 +22959,7 @@ function Ld(e) {
                               )
                           ),
                     t.push(
-                        td(
+                        od(
                             'sweep_stale',
                             'Barrer stale',
                             e.deliveryFailures > 0 ||
@@ -22914,7 +22978,7 @@ function Ld(e) {
             ((a = t.whatsappOpenclawOps),
             a?.available
                 ? [
-                      Gu(
+                      Zu(
                           'Bridge',
                           String(a.bridgeMode || 'pending').toUpperCase(),
                           a.lastInboundAt || a.lastOutboundAt
@@ -22928,7 +22992,7 @@ function Ld(e) {
                                   ? 'danger'
                                   : 'neutral'
                       ),
-                      Gu(
+                      Zu(
                           'Outbox',
                           a.pendingOutbox,
                           a.deliveryFailures > 0
@@ -22936,7 +23000,7 @@ function Ld(e) {
                               : 'Sin entregas fallidas en este momento.',
                           a.deliveryFailures > 0 ? 'warning' : 'success'
                       ),
-                      Gu(
+                      Zu(
                           'Slots retenidos',
                           a.aliveHolds,
                           a.pendingCheckouts.length > 0
@@ -22947,7 +23011,7 @@ function Ld(e) {
                               : 'success'
                       ),
                   ].join('')
-                : Gu(
+                : Zu(
                       'Bridge',
                       a?.statusCode || 'offline',
                       a?.error || 'Sin lectura del bridge operativo.',
@@ -22968,20 +23032,20 @@ function Ld(e) {
                     (t.slice(0, 2).forEach((e, t) => {
                         e?.sessionId &&
                             i.push(
-                                sd(
+                                ud(
                                     'context-open-clinical-history',
                                     (function (e, t) {
                                         const a = String(
                                             e?.patientName || ''
                                         ).trim();
-                                        return a ? ed(`Abrir ${a}`, 28) : t;
+                                        return a ? id(`Abrir ${a}`, 28) : t;
                                     })(
                                         e,
                                         0 === t
                                             ? 'Abrir borrador'
                                             : 'Abrir siguiente'
                                     ),
-                                    rd(e) || 'Abrir revision clinica',
+                                    dd(e) || 'Abrir revision clinica',
                                     { 'session-id': e.sessionId }
                                 )
                             );
@@ -22993,10 +23057,10 @@ function Ld(e) {
                     );
                     e?.sessionId &&
                         i.push(
-                            sd(
+                            ud(
                                 'context-open-clinical-history',
                                 'Abrir ultimo evento',
-                                ld(e),
+                                pd(e),
                                 { 'session-id': e.sessionId }
                             )
                         );
@@ -23006,7 +23070,7 @@ function Ld(e) {
                 return (
                     (o > 0 || s > 0) &&
                         i.push(
-                            Xu(
+                            nd(
                                 'refresh-admin-data',
                                 'Actualizar snapshot',
                                 o > 0
@@ -23023,7 +23087,7 @@ function Ld(e) {
             (function (e) {
                 const t = Array.isArray(e?.reviewQueue) ? e.reviewQueue : [];
                 return 0 === t.length
-                    ? Gu(
+                    ? Zu(
                           'Cola clinica',
                           0,
                           'No hay historias clinicas pendientes de revision en este momento.',
@@ -23041,7 +23105,7 @@ function Ld(e) {
                                       e?.reviewStatus || e?.sessionStatus || ''
                                   ).trim(),
                                   n = String(e?.pendingAiStatus || '').trim();
-                              return Gu(
+                              return Zu(
                                   t || 'Caso clinico',
                                   n
                                       ? (function (e) {
@@ -23062,9 +23126,9 @@ function Ld(e) {
                                                     return 'IA pendiente';
                                             }
                                         })(n)
-                                      : nd(a),
-                                  rd(e) || 'Sin detalles clinicos adicionales.',
-                                  id(a, n, '')
+                                      : rd(a),
+                                  dd(e) || 'Sin detalles clinicos adicionales.',
+                                  ld(a, n, '')
                               );
                           })
                           .join('');
@@ -23075,7 +23139,7 @@ function Ld(e) {
             (function (e) {
                 const t = Array.isArray(e?.events) ? e.events : [];
                 return 0 === t.length
-                    ? Gu(
+                    ? Zu(
                           'Eventos',
                           0,
                           'Sin actividad clinica reciente en la cola operativa.',
@@ -23084,7 +23148,7 @@ function Ld(e) {
                     : t
                           .slice(0, 3)
                           .map((e) =>
-                              Gu(
+                              Zu(
                                   String(
                                       e?.title ||
                                           e?.patientName ||
@@ -23106,8 +23170,8 @@ function Ld(e) {
                                               return 'Evento';
                                       }
                                   })(e?.severity),
-                                  ld(e) || 'Sin detalle operativo adicional.',
-                                  id(e?.reviewStatus, '', e?.severity)
+                                  pd(e) || 'Sin detalle operativo adicional.',
+                                  ld(e?.reviewStatus, '', e?.severity)
                               )
                           )
                           .join('');
@@ -23117,37 +23181,46 @@ function Ld(e) {
             '#dashboardAttentionList',
             (function (e) {
                 const {
-                    availabilityDays: t,
-                    pendingTransfers: a,
-                    todayAppointments: n,
-                    urgentCallbacks: i,
-                } = e;
+                        availabilityDays: t,
+                        internalConsoleMeta: a,
+                        pendingTransfers: n,
+                        patientFlowMeta: i,
+                        telemedicineMeta: o,
+                        todayAppointments: s,
+                        urgentCallbacks: r,
+                    } = e,
+                    l = !1 !== a?.clinicalData?.ready,
+                    c = md(o?.summary?.reviewQueueCount),
+                    u = md(i?.casesTotal),
+                    d = md(i?.casesOpen),
+                    p = md(i?.pendingApprovals),
+                    m = md(i?.activeHelpRequests);
                 return [
-                    Gu(
+                    Zu(
                         'Transferencias',
-                        a,
-                        a > 0
-                            ? 'Pago detenido antes de confirmar.'
-                            : 'Sin comprobantes pendientes.',
-                        a > 0 ? 'warning' : 'success'
-                    ),
-                    Gu(
-                        'Callbacks urgentes',
-                        i,
-                        i > 0
-                            ? 'Mas de 120 min en espera.'
-                            : 'SLA dentro de rango.',
-                        i > 0 ? 'danger' : 'success'
-                    ),
-                    Gu(
-                        'Agenda de hoy',
                         n,
                         n > 0
-                            ? `${n} ingreso(s) en la jornada.`
-                            : 'No hay citas hoy.',
-                        n > 6 ? 'warning' : 'neutral'
+                            ? 'Pago detenido antes de confirmar.'
+                            : 'Sin comprobantes pendientes.',
+                        n > 0 ? 'warning' : 'success'
                     ),
-                    Gu(
+                    Zu(
+                        'Callbacks urgentes',
+                        r,
+                        r > 0
+                            ? 'Mas de 120 min en espera.'
+                            : 'SLA dentro de rango.',
+                        r > 0 ? 'danger' : 'success'
+                    ),
+                    Zu(
+                        'Agenda de hoy',
+                        s,
+                        s > 0
+                            ? `${s} ingreso(s) en la jornada.`
+                            : 'No hay citas hoy.',
+                        s > 6 ? 'warning' : 'neutral'
+                    ),
+                    Zu(
                         'Disponibilidad',
                         t,
                         t > 0
@@ -23155,11 +23228,37 @@ function Ld(e) {
                             : 'Sin slots cargados en el calendario.',
                         t > 0 ? 'success' : 'warning'
                     ),
+                    Zu(
+                        'Telemedicina',
+                        c,
+                        l
+                            ? c > 0
+                                ? 'Intakes pendientes de decision clinica.'
+                                : 'Sin intakes pendientes de revision.'
+                            : 'Pausada por gate clinico hasta storage cifrado.',
+                        !l || c > 0 ? 'warning' : 'success'
+                    ),
+                    Zu(
+                        'Casos activos',
+                        d,
+                        p > 0
+                            ? `${u} caso(s) totales • ${p} aprobacion(es) pendiente(s).`
+                            : m > 0
+                              ? `${u} caso(s) totales • ${m} apoyo(s) activo(s) en sala.`
+                              : u > 0
+                                ? `${u} caso(s) trazados del booking al consultorio.`
+                                : 'Sin flujo clinico activo en este momento.',
+                        p > 0 || m > 0
+                            ? 'warning'
+                            : d > 0
+                              ? 'neutral'
+                              : 'success'
+                    ),
                 ].join('');
             })(t)
         ),
         (function (e) {
-            const t = ud(e.summary);
+            const t = bd(e.summary);
             (r('#funnelViewBooking', o(t.viewBooking || 0)),
                 r('#funnelStartCheckout', o(t.startCheckout || 0)),
                 r('#funnelBookingConfirmed', o(t.bookingConfirmed || 0)),
@@ -23169,11 +23268,11 @@ function Ld(e) {
                 ),
                 l(
                     '#funnelEntryList',
-                    Vu(e.checkoutEntryBreakdown, 'entry', 'count')
+                    Yu(e.checkoutEntryBreakdown, 'entry', 'count')
                 ),
                 l(
                     '#funnelSourceList',
-                    Vu(
+                    Yu(
                         e.sourceBreakdown || e.eventSourceBreakdown,
                         'source',
                         'count'
@@ -23181,15 +23280,15 @@ function Ld(e) {
                 ),
                 l(
                     '#funnelPaymentMethodList',
-                    Vu(e.paymentMethodBreakdown, 'method', 'count')
+                    Yu(e.paymentMethodBreakdown, 'method', 'count')
                 ),
                 l(
                     '#funnelAbandonList',
-                    Vu(e.checkoutAbandonByStep, 'step', 'count')
+                    Yu(e.checkoutAbandonByStep, 'step', 'count')
                 ),
                 l(
                     '#funnelAbandonReasonList',
-                    Vu(
+                    Yu(
                         e.abandonReasonBreakdown || e.checkoutAbandonByReason,
                         'reason',
                         'count'
@@ -23197,17 +23296,17 @@ function Ld(e) {
                 ),
                 l(
                     '#funnelStepList',
-                    Vu(e.bookingStepBreakdown, 'step', 'count')
+                    Yu(e.bookingStepBreakdown, 'step', 'count')
                 ),
                 l(
                     '#funnelErrorCodeList',
-                    Vu(e.errorCodeBreakdown, 'code', 'count')
+                    Yu(e.errorCodeBreakdown, 'code', 'count')
                 ),
                 (function (e) {
                     const t = (function (e) {
-                            const t = ud(e),
-                                a = gd(
-                                    dd(
+                            const t = bd(e),
+                                a = hd(
+                                    fd(
                                         t,
                                         [
                                             'today',
@@ -23217,8 +23316,8 @@ function Ld(e) {
                                         {}
                                     )
                                 ),
-                                n = gd(
-                                    dd(
+                                n = hd(
+                                    fd(
                                         t,
                                         [
                                             'last7d',
@@ -23229,15 +23328,15 @@ function Ld(e) {
                                         {}
                                     )
                                 ),
-                                i = md(
-                                    dd(
+                                i = vd(
+                                    fd(
                                         t,
                                         ['intentBreakdown', 'intent_breakdown'],
                                         []
                                     )
                                 ),
-                                o = md(
-                                    dd(
+                                o = vd(
+                                    fd(
                                         t,
                                         [
                                             'helpReasonBreakdown',
@@ -23246,8 +23345,8 @@ function Ld(e) {
                                         []
                                     )
                                 ),
-                                s = md(
-                                    dd(
+                                s = vd(
+                                    fd(
                                         t,
                                         [
                                             'reviewOutcomeBreakdown',
@@ -23262,20 +23361,20 @@ function Ld(e) {
                                 intentBreakdown: i,
                                 helpReasonBreakdown: o,
                                 reviewOutcomeBreakdown: s,
-                                topIntent: bd(
-                                    dd(t, ['topIntent', 'top_intent'], {}),
+                                topIntent: kd(
+                                    fd(t, ['topIntent', 'top_intent'], {}),
                                     i
                                 ),
-                                topHelpReason: bd(
-                                    dd(
+                                topHelpReason: kd(
+                                    fd(
                                         t,
                                         ['topHelpReason', 'top_help_reason'],
                                         {}
                                     ),
                                     o
                                 ),
-                                topReviewOutcome: bd(
-                                    dd(
+                                topReviewOutcome: kd(
+                                    fd(
                                         t,
                                         [
                                             'topReviewOutcome',
@@ -23383,19 +23482,19 @@ function Ld(e) {
                         r(
                             '#dashboardAssistantTopIntent',
                             i.count > 0
-                                ? `Intent principal: ${fd(i.label)} (${o(i.count)})`
+                                ? `Intent principal: ${_d(i.label)} (${o(i.count)})`
                                 : 'Intent principal: sin datos'
                         ),
                         r(
                             '#dashboardAssistantTopReason',
                             s.count > 0
-                                ? `Motivo de apoyo: ${fd(s.label)} (${o(s.count)})`
+                                ? `Motivo de apoyo: ${_d(s.label)} (${o(s.count)})`
                                 : 'Motivo de apoyo: sin datos'
                         ),
                         r(
                             '#dashboardAssistantTopOutcome',
                             l.count > 0
-                                ? `Cierre asistido: ${fd(l.label)} (${o(l.count)})`
+                                ? `Cierre asistido: ${_d(l.label)} (${o(l.count)})`
                                 : 'Cierre asistido: sin datos'
                         ));
                 })(e.queueAssistant || e.queue_assistant || {}));
@@ -23415,8 +23514,8 @@ function Ld(e) {
                             const t = String(
                                 e.dataset.whatsappOpsAction || ''
                             ).trim();
-                            if (t && !yd) {
-                                ((yd = !0),
+                            if (t && !qd) {
+                                ((qd = !0),
                                     e instanceof HTMLButtonElement &&
                                         (e.disabled = !0));
                                 try {
@@ -23478,8 +23577,8 @@ function Ld(e) {
                                             );
                                         })(e)
                                     );
-                                    (await cu(),
-                                        Ld(g()),
+                                    (await mu(),
+                                        Md(g()),
                                         s(
                                             (function (e, t) {
                                                 switch (e) {
@@ -23504,7 +23603,7 @@ function Ld(e) {
                                         'error'
                                     );
                                 } finally {
-                                    ((yd = !1),
+                                    ((qd = !1),
                                         e.isConnected &&
                                             e instanceof HTMLButtonElement &&
                                             (e.disabled = !1));
@@ -23515,28 +23614,28 @@ function Ld(e) {
                 (e.dataset.whatsappOpsBound = 'true'));
         })());
 }
-let Ad = '';
-function Ed(e) {
+let Bd = '';
+function Rd(e) {
     return String(e || '').trim();
 }
-function Td(e) {
+function Nd(e) {
     return Array.isArray(e) ? e : [];
 }
-function Id(e = g()) {
+function Dd(e = g()) {
     return e?.data?.mediaFlowMeta && 'object' == typeof e.data.mediaFlowMeta
         ? e.data.mediaFlowMeta
         : {};
 }
-function Md(e = g()) {
+function jd(e = g()) {
     return e?.caseMediaFlow && 'object' == typeof e.caseMediaFlow
         ? e.caseMediaFlow
         : {};
 }
-function Bd(e) {
+function Pd(e) {
     b((t) => ({ ...t, caseMediaFlow: { ...t.caseMediaFlow, ...e } }));
 }
-function Rd(e) {
-    switch (Ed(e)) {
+function Od(e) {
+    switch (Rd(e)) {
         case 'eligible':
             return 'Elegible';
         case 'blocked':
@@ -23545,8 +23644,8 @@ function Rd(e) {
             return 'Requiere revision';
     }
 }
-function Nd(e) {
-    switch (Ed(e)) {
+function xd(e) {
+    switch (Rd(e)) {
         case 'eligible':
             return 'success';
         case 'blocked':
@@ -23555,22 +23654,22 @@ function Nd(e) {
             return 'neutral';
     }
 }
-function Dd(e, t, a) {
+function Hd(e, t, a) {
     const n = e?.copy && 'object' == typeof e.copy ? e.copy : {};
-    return Ed((n[t] && 'object' == typeof n[t] ? n[t] : {})[a]);
+    return Rd((n[t] && 'object' == typeof n[t] ? n[t] : {})[a]);
 }
-function jd(e, t, a) {
+function Fd(e, t, a) {
     const n = e?.alt && 'object' == typeof e.alt ? e.alt : {};
-    return Ed((n[t] && 'object' == typeof n[t] ? n[t] : {})[a]);
+    return Rd((n[t] && 'object' == typeof n[t] ? n[t] : {})[a]);
 }
-function Pd(e, t = g()) {
-    const a = gm(t),
+function Ud(e, t = g()) {
+    const a = hm(t),
         n = e?.proposal && 'object' == typeof e.proposal ? e.proposal : {},
-        i = Td(t?.data?.mediaFlowMeta?.queue),
-        o = Td(n.selectedAssetIds || Td(e?.mediaAssets).map((e) => e?.assetId))
-            .map((e) => Ed(e))
+        i = Nd(t?.data?.mediaFlowMeta?.queue),
+        o = Nd(n.selectedAssetIds || Nd(e?.mediaAssets).map((e) => e?.assetId))
+            .map((e) => Rd(e))
             .filter(Boolean),
-        s = Ed(e?.caseId);
+        s = Rd(e?.caseId);
     return {
         ...a,
         section: 'clinical-history',
@@ -23579,32 +23678,32 @@ function Pd(e, t = g()) {
             type: 'case_media',
             id: 0,
             ref: s,
-            label: Ed(e?.summary?.headline) || Ed(e?.patient?.name) || s,
+            label: Rd(e?.summary?.headline) || Rd(e?.patient?.name) || s,
         },
         filters: {
             ...(a.filters || {}),
             workspace: 'media-flow',
-            publicationStatus: Ed(e?.publication?.status),
-            policyStatus: Ed(e?.policy?.status),
+            publicationStatus: Rd(e?.publication?.status),
+            policyStatus: Rd(e?.policy?.status),
         },
-        visibleIds: i.map((e) => Ed(e?.caseId)).filter(Boolean),
+        visibleIds: i.map((e) => Rd(e?.caseId)).filter(Boolean),
         caseId: s,
-        proposalId: Ed(n.proposalId),
+        proposalId: Rd(n.proposalId),
         selectedAssetIds: o,
         domainContext: {
             caseId: s,
-            proposalId: Ed(n.proposalId),
+            proposalId: Rd(n.proposalId),
             selectedAssetIds: o,
         },
     };
 }
-function Od(e, t = g()) {
-    const a = Ed(e?.caseId),
-        n = Td(t?.agent?.turns);
+function Kd(e, t = g()) {
+    const a = Rd(e?.caseId),
+        n = Nd(t?.agent?.turns);
     for (let e = n.length - 1; e >= 0; e -= 1) {
         const t = n[e];
         if (
-            Ed(
+            Rd(
                 t?.domainResponse?.caseId ||
                     t?.context?.caseId ||
                     t?.context?.domainContext?.caseId
@@ -23614,32 +23713,32 @@ function Od(e, t = g()) {
     }
     return null;
 }
-function xd(t, a, n = g()) {
+function Qd(t, a, n = g()) {
     if (!t)
         return '\n            <article class="clinical-history-empty-card">\n                <strong>OpenClaw por caso</strong>\n                <small>Selecciona un caso para hablar con el copiloto editorial desde Media Flow.</small>\n            </article>\n        ';
-    if (!mm(n))
+    if (!vm(n))
         return '\n            <article class="clinical-history-empty-card">\n                <strong>Acceso restringido</strong>\n                <small>OpenClaw está disponible solo para perfiles admin/editorial en esta fase.</small>\n            </article>\n        ';
-    const o = Ed(n?.agent?.health?.relay?.mode) || 'disabled',
-        s = Ed(n?.agent?.session?.status) || 'idle',
-        r = Od(t, n),
+    const o = Rd(n?.agent?.health?.relay?.mode) || 'disabled',
+        s = Rd(n?.agent?.session?.status) || 'idle',
+        r = Kd(t, n),
         l =
             r?.domainResponse && 'object' == typeof r.domainResponse
                 ? r.domainResponse
                 : {},
         c = a.loading || a.saving || a.generating || n?.agent?.submitting,
         u =
-            Ed(l.assistantMessage) ||
-            Ed(r?.finalAnswer) ||
+            Rd(l.assistantMessage) ||
+            Rd(r?.finalAnswer) ||
             'Habla con OpenClaw sobre este caso para regenerar propuesta, copy o comparativas.';
-    return `\n        <article class="clinical-media-flow-agent-card">\n            <header class="section-header">\n                <div>\n                    <h4>OpenClaw por caso</h4>\n                    <p>\n                        Misma sesión compartida del panel global, pero enfocada en el caso editorial activo.\n                    </p>\n                </div>\n                <div class="clinical-history-header-status">\n                    <span class="clinical-history-status-chip" data-tone="${e('online' === o ? 'success' : 'degraded' === o ? 'warning' : 'neutral')}">\n                        ${e(o)}\n                    </span>\n                    <span class="clinical-history-status-meta">\n                        ${e(s)}\n                    </span>\n                </div>\n            </header>\n\n            <div class="clinical-media-flow-agent-summary">\n                <p>${e(u)}</p>\n                <div class="clinical-history-mini-chip-row">\n                    <span class="clinical-history-mini-chip">\n                        ${e(Ed(t?.policy?.status) || 'needs_review')}\n                    </span>\n                    <span class="clinical-history-mini-chip">\n                        ${e(Ed(t?.proposal?.recommendation) || Ed(t?.publication?.status) || 'draft')}\n                    </span>\n                </div>\n            </div>\n\n            <div class="clinical-media-flow-agent-grid">\n                <div class="clinical-media-flow-agent-conversation">\n                    ${(function (
+    return `\n        <article class="clinical-media-flow-agent-card">\n            <header class="section-header">\n                <div>\n                    <h4>OpenClaw por caso</h4>\n                    <p>\n                        Misma sesión compartida del panel global, pero enfocada en el caso editorial activo.\n                    </p>\n                </div>\n                <div class="clinical-history-header-status">\n                    <span class="clinical-history-status-chip" data-tone="${e('online' === o ? 'success' : 'degraded' === o ? 'warning' : 'neutral')}">\n                        ${e(o)}\n                    </span>\n                    <span class="clinical-history-status-meta">\n                        ${e(s)}\n                    </span>\n                </div>\n            </header>\n\n            <div class="clinical-media-flow-agent-summary">\n                <p>${e(u)}</p>\n                <div class="clinical-history-mini-chip-row">\n                    <span class="clinical-history-mini-chip">\n                        ${e(Rd(t?.policy?.status) || 'needs_review')}\n                    </span>\n                    <span class="clinical-history-mini-chip">\n                        ${e(Rd(t?.proposal?.recommendation) || Rd(t?.publication?.status) || 'draft')}\n                    </span>\n                </div>\n            </div>\n\n            <div class="clinical-media-flow-agent-grid">\n                <div class="clinical-media-flow-agent-conversation">\n                    ${(function (
         t,
         a = g()
     ) {
-        const n = Ed(t?.caseId),
-            o = Td(a?.agent?.messages).filter(
+        const n = Rd(t?.caseId),
+            o = Nd(a?.agent?.messages).filter(
                 (e) =>
                     (function (e) {
-                        return Ed(
+                        return Rd(
                             e?.context?.caseId ||
                                 e?.context?.domainContext?.caseId
                         );
@@ -23650,7 +23749,7 @@ function xd(t, a, n = g()) {
                   .slice(-6)
                   .map(
                       (t) =>
-                          `\n                <article class="clinical-media-flow-agent-message" data-role="${e(Ed(t.role) || 'assistant')}">\n                    <div class="clinical-history-event-head">\n                        <strong>${e('user' === Ed(t.role) ? 'Operador' : 'OpenClaw')}</strong>\n                        <span class="clinical-history-mini-chip">${e(i(Ed(t.createdAt)))}</span>\n                    </div>\n                    <p>${e(Ed(t.content))}</p>\n                </article>\n            `
+                          `\n                <article class="clinical-media-flow-agent-message" data-role="${e(Rd(t.role) || 'assistant')}">\n                    <div class="clinical-history-event-head">\n                        <strong>${e('user' === Rd(t.role) ? 'Operador' : 'OpenClaw')}</strong>\n                        <span class="clinical-history-mini-chip">${e(i(Rd(t.createdAt)))}</span>\n                    </div>\n                    <p>${e(Rd(t.content))}</p>\n                </article>\n            `
                   )
                   .join('')
             : '\n            <article class="clinical-history-empty-card">\n                <strong>Sin hilo editorial</strong>\n                <small>Usa el composer para abrir la misma sesión compartida de OpenClaw sobre este caso.</small>\n            </article>\n        ';
@@ -23662,8 +23761,8 @@ function xd(t, a, n = g()) {
         a = g()
     ) {
         const n = (function (e, t = g()) {
-            const a = Od(e, t),
-                n = Td(a?.domainResponse?.toolSuggestions);
+            const a = Kd(e, t),
+                n = Nd(a?.domainResponse?.toolSuggestions);
             return n.length
                 ? n
                 : (function (e) {
@@ -23703,7 +23802,7 @@ function xd(t, a, n = g()) {
                           },
                       ];
                       return (
-                          'blocked' === Ed(e?.policy?.status)
+                          'blocked' === Rd(e?.policy?.status)
                               ? t.push({
                                     id: 'blocked-reason',
                                     label: 'Blocked reason',
@@ -23725,11 +23824,11 @@ function xd(t, a, n = g()) {
                   })(e);
         })(t, a);
         if (!n.length) return '';
-        const i = Md(a).loading || Md(a).saving || a?.agent?.submitting;
+        const i = jd(a).loading || jd(a).saving || a?.agent?.submitting;
         return n
             .map(
                 (t) =>
-                    `\n                <article class="clinical-media-flow-agent-suggestion" data-tone="${e(Ed(t.tone) || 'neutral')}">\n                    <div class="clinical-history-event-head">\n                        <strong>${e(Ed(t.label) || 'Accion')}</strong>\n                        <span class="clinical-history-mini-chip">${e(Ed(t.id))}</span>\n                    </div>\n                    <p>${e(Ed(t.description))}</p>\n                    <button\n                        type="button"\n                        data-media-agent-prompt="${e(Ed(t.prompt))}"\n                        ${i ? 'disabled' : ''}\n                    >\n                        Ejecutar sugerencia\n                    </button>\n                </article>\n            `
+                    `\n                <article class="clinical-media-flow-agent-suggestion" data-tone="${e(Rd(t.tone) || 'neutral')}">\n                    <div class="clinical-history-event-head">\n                        <strong>${e(Rd(t.label) || 'Accion')}</strong>\n                        <span class="clinical-history-mini-chip">${e(Rd(t.id))}</span>\n                    </div>\n                    <p>${e(Rd(t.description))}</p>\n                    <button\n                        type="button"\n                        data-media-agent-prompt="${e(Rd(t.prompt))}"\n                        ${i ? 'disabled' : ''}\n                    >\n                        Ejecutar sugerencia\n                    </button>\n                </article>\n            `
             )
             .join('');
     })(
@@ -23737,7 +23836,7 @@ function xd(t, a, n = g()) {
         n
     )}\n                </div>\n            </div>\n\n            <div class="clinical-media-flow-agent-composer">\n                <label class="clinical-history-field" for="clinicalMediaFlowAgentPrompt">\n                    <span>Hablar con OpenClaw sobre este caso</span>\n                    <textarea\n                        id="clinicalMediaFlowAgentPrompt"\n                        placeholder="Ej. Reempareja el before/after y reescribe el copy editorial"\n                        ${c ? 'disabled' : ''}\n                    ></textarea>\n                </label>\n                <div class="toolbar-row clinical-media-flow-agent-actions">\n                    <button\n                        type="button"\n                        data-media-agent-action="open-panel"\n                        ${c ? 'disabled' : ''}\n                    >\n                        Abrir panel global\n                    </button>\n                    <button\n                        type="button"\n                        data-media-agent-action="submit"\n                        ${c ? 'disabled' : ''}\n                    >\n                        Enviar al caso\n                    </button>\n                </div>\n            </div>\n        </article>\n    `;
 }
-function Hd() {
+function zd() {
     const e = document.getElementById('clinicalMediaFlowTitleEs')?.value || '',
         t = document.getElementById('clinicalMediaFlowTitleEn')?.value || '',
         a = document.getElementById('clinicalMediaFlowSummaryEs')?.value || '',
@@ -23766,102 +23865,102 @@ function Hd() {
         disclaimer: String(l).trim(),
     };
 }
-async function Ud(e, t = {}) {
-    const a = Ed(e);
+async function Vd(e, t = {}) {
+    const a = Rd(e);
     if (!a) return null;
-    const n = Md();
-    if (!t.force && a === Ed(n.selectedCaseId) && n.current) return n.current;
-    (Bd({ loading: !0, selectedCaseId: a, error: '' }), Qd());
+    const n = jd();
+    if (!t.force && a === Rd(n.selectedCaseId) && n.current) return n.current;
+    (Pd({ loading: !0, selectedCaseId: a, error: '' }), Jd());
     try {
         const e = await j('media-flow-case', { query: { caseId: a } }),
             t = e?.data && 'object' == typeof e.data ? e.data : null;
         return (
-            Bd({
+            Pd({
                 loading: !1,
                 selectedCaseId: a,
                 current: t,
                 lastLoadedAt: Date.now(),
                 error: '',
             }),
-            Qd(),
+            Jd(),
             t
         );
     } catch (e) {
         return (
-            Bd({
+            Pd({
                 loading: !1,
                 error: e?.message || 'No se pudo cargar el caso de Media Flow.',
             }),
-            Qd(),
+            Jd(),
             null
         );
     }
 }
-async function Fd(e) {
-    (await cu(), Ed(e) ? await Ud(e, { force: !0 }) : Qd());
+async function Gd(e) {
+    (await mu(), Rd(e) ? await Vd(e, { force: !0 }) : Jd());
 }
-async function Kd(e = '') {
+async function Wd(e = '') {
     const t = g(),
-        a = Md(t).current;
+        a = jd(t).current;
     if (!a || 'object' != typeof a)
         return void s(
             'Selecciona un caso antes de hablar con OpenClaw.',
             'warning'
         );
-    if (!mm(t))
+    if (!vm(t))
         return void s(
             'OpenClaw está disponible solo para perfiles admin/editorial.',
             'warning'
         );
     const n = document.getElementById('clinicalMediaFlowAgentPrompt'),
-        i = Ed(e || (n instanceof HTMLTextAreaElement ? n.value : ''));
+        i = Rd(e || (n instanceof HTMLTextAreaElement ? n.value : ''));
     if (i) {
-        Qd();
+        Jd();
         try {
             const o = await (async function (e, t = {}) {
                 const a = String(e || '').trim();
                 if (!a)
                     throw new Error('Escribe una instruccion para el copiloto');
-                if (!mm(g()))
+                if (!vm(g()))
                     throw new Error(
                         'OpenClaw disponible solo para admin/editorial'
                     );
                 const n = await (async function () {
                     const e = g();
-                    if (!mm(e))
+                    if (!vm(e))
                         throw new Error(
                             'OpenClaw disponible solo para admin/editorial'
                         );
                     if (e.agent?.session?.sessionId)
                         return e.agent.session.sessionId;
-                    (rm({ starting: !0, lastError: '' }), fm());
+                    (pm({ starting: !0, lastError: '' }), _m());
                     try {
                         const e = await j('admin-agent-session-start', {
                                 method: 'POST',
                                 body: {
                                     riskMode: 'autopilot_partial',
-                                    context: gm(),
+                                    context: hm(),
                                 },
                             }),
-                            t = cm(e?.data) || e?.data || null;
-                        return (um(t), vm(), fm(), t?.session?.sessionId || '');
+                            t = gm(e?.data) || e?.data || null;
+                        return (bm(t), $m(), _m(), t?.session?.sessionId || '');
                     } catch (e) {
                         throw (
-                            rm({
+                            pm({
                                 starting: !1,
                                 lastError:
                                     e?.message ||
                                     'No se pudo iniciar la sesion del agente',
                             }),
-                            fm(),
+                            _m(),
                             e
                         );
                     }
                 })();
                 if (!n)
                     throw new Error('No se pudo preparar la sesion del agente');
-                const i = bm(gm(), t?.contextOverride || {});
-                (rm({ submitting: !0, lastError: '' }), fm());
+                const i = km(hm(), t?.contextOverride || {});
+                (pm({ submitting: !0, lastError: '' }), _m());
                 try {
                     const e = await j('admin-agent-turn', {
                             method: 'POST',
@@ -23877,9 +23976,9 @@ async function Kd(e = '') {
                             },
                         }),
                         t = e?.data || {},
-                        o = cm(t) || null;
+                        o = gm(t) || null;
                     return (
-                        o && um(o),
+                        o && bm(o),
                         await (async function (e) {
                             for (const t of e || []) {
                                 const e = String(t?.tool || ''),
@@ -23891,7 +23990,7 @@ async function Kd(e = '') {
                                             ),
                                             t = String(a.filter || 'all');
                                         (g().ui.activeSection !== e &&
-                                            (await Gp(e)),
+                                            (await Xp(e)),
                                             'callbacks' === e
                                                 ? vt(t)
                                                 : 'appointments' === e
@@ -23904,37 +24003,37 @@ async function Kd(e = '') {
                                               e &&
                                           ('callbacks' !==
                                               g().ui.activeSection &&
-                                              (await Gp('callbacks')),
+                                              (await Xp('callbacks')),
                                           qt())
                                         : ('availability' !==
                                               g().ui.activeSection &&
-                                              (await Gp('availability')),
+                                              (await Xp('availability')),
                                           Zt(String(a.date || '')));
-                                } else await Gp(a.section || 'dashboard');
+                                } else await Xp(a.section || 'dashboard');
                             }
                         })(t?.clientActions || []),
-                        vm(),
-                        fm(),
+                        $m(),
+                        _m(),
                         t
                     );
                 } catch (e) {
                     throw (
-                        rm({
+                        pm({
                             submitting: !1,
                             lastError:
                                 e?.message ||
                                 'No se pudo procesar el turno del agente',
                         }),
-                        fm(),
+                        _m(),
                         e
                     );
                 }
-            })(i, { contextOverride: Pd(a, t) });
+            })(i, { contextOverride: Ud(a, t) });
             (n instanceof HTMLTextAreaElement && !e && (n.value = ''),
-                o?.refreshRecommended ? await Fd(Ed(a.caseId)) : Qd(),
+                o?.refreshRecommended ? await Gd(Rd(a.caseId)) : Jd(),
                 s('Turno de OpenClaw procesado para este caso.', 'success'));
         } catch (e) {
-            (Qd(),
+            (Jd(),
                 s(
                     e?.message || 'No se pudo procesar el turno editorial.',
                     'error'
@@ -23942,32 +24041,32 @@ async function Kd(e = '') {
         }
     } else s('Escribe una instrucción para OpenClaw.', 'warning');
 }
-function Qd() {
+function Jd() {
     const t = g(),
-        a = Id(t),
-        n = Md(t),
+        a = Dd(t),
+        n = jd(t),
         o = n.current && 'object' == typeof n.current ? n.current : null;
     (r(
         '#clinicalMediaFlowQueueMeta',
-        `${Td(a.queue).length} caso(s) con media privada disponible para curacion editorial.`
+        `${Nd(a.queue).length} caso(s) con media privada disponible para curacion editorial.`
     ),
         r(
             '#clinicalMediaFlowStatusChip',
-            o ? Rd(o?.policy?.status) : 'Sin caso'
+            o ? Od(o?.policy?.status) : 'Sin caso'
         ),
         document
             .getElementById('clinicalMediaFlowStatusChip')
-            ?.setAttribute('data-tone', Nd(o?.policy?.status || 'neutral')),
+            ?.setAttribute('data-tone', xd(o?.policy?.status || 'neutral')),
         r(
             '#clinicalMediaFlowStatusMeta',
             o
-                ? `${Ed(o?.publication?.status) || 'draft'} · ${Ed(o?.proposal?.recommendation) || 'needs_review'}`
+                ? `${Rd(o?.publication?.status) || 'draft'} · ${Rd(o?.proposal?.recommendation) || 'needs_review'}`
                 : n.error || 'Esperando seleccion'
         ),
         r(
             '#clinicalMediaFlowCaseMeta',
             o
-                ? `${Ed(o?.summary?.headline) || o.caseId} · ${Ed(o?.service?.label) || 'Caso dermatologico'}`
+                ? `${Rd(o?.summary?.headline) || o.caseId} · ${Rd(o?.service?.label) || 'Caso dermatologico'}`
                 : 'OpenClaw prepara comparativas, copy y paquete publico antes de publicar.'
         ));
     const c = document.getElementById('clinicalMediaFlowRefreshBtn'),
@@ -23979,24 +24078,24 @@ function Qd() {
         l(
             '#clinicalMediaFlowQueueList',
             (function (t, a, n) {
-                const i = Td(t.queue);
+                const i = Nd(t.queue);
                 return i.length
                     ? i
                           .map((t) => {
-                              const i = Ed(t.caseId),
+                              const i = Rd(t.caseId),
                                   o = i === a,
-                                  s = Td(t.policyFlags)
+                                  s = Nd(t.policyFlags)
                                       .slice(0, 3)
                                       .map(
                                           (t) =>
                                               `<span class="clinical-history-mini-chip">${e(String(t).replace(/_/g, ' '))}</span>`
                                       )
                                       .join('');
-                              return `\n                <button\n                    type="button"\n                    class="clinical-history-queue-item clinical-media-flow-queue-item${o ? ' is-selected' : ''}"\n                    data-media-case-id="${e(i)}"\n                    ${n ? 'disabled' : ''}\n                >\n                    <div class="clinical-history-queue-head">\n                        <strong>${e(Ed(t.patientName) || i)}</strong>\n                        <span class="clinical-history-mini-chip" data-tone="${e(Nd(t.policyStatus))}">\n                            ${e(Rd(t.policyStatus))}\n                        </span>\n                    </div>\n                    <p>${e(Ed(t.summary) || 'Caso listo para curacion editorial.')}</p>\n                    <div class="clinical-history-mini-chip-row">\n                        <span class="clinical-history-mini-chip">\n                            ${e(Ed(t.serviceLabel) || 'Caso')}\n                        </span>\n                        <span class="clinical-history-mini-chip">\n                            ${e(`${Number(t.assetCount || 0)} asset(s)`)}\n                        </span>\n                        <span class="clinical-history-mini-chip">\n                            ${e(Ed(t.publicationStatus) || 'draft')}\n                        </span>\n                        ${s}\n                    </div>\n                </button>\n            `;
+                              return `\n                <button\n                    type="button"\n                    class="clinical-history-queue-item clinical-media-flow-queue-item${o ? ' is-selected' : ''}"\n                    data-media-case-id="${e(i)}"\n                    ${n ? 'disabled' : ''}\n                >\n                    <div class="clinical-history-queue-head">\n                        <strong>${e(Rd(t.patientName) || i)}</strong>\n                        <span class="clinical-history-mini-chip" data-tone="${e(xd(t.policyStatus))}">\n                            ${e(Od(t.policyStatus))}\n                        </span>\n                    </div>\n                    <p>${e(Rd(t.summary) || 'Caso listo para curacion editorial.')}</p>\n                    <div class="clinical-history-mini-chip-row">\n                        <span class="clinical-history-mini-chip">\n                            ${e(Rd(t.serviceLabel) || 'Caso')}\n                        </span>\n                        <span class="clinical-history-mini-chip">\n                            ${e(`${Number(t.assetCount || 0)} asset(s)`)}\n                        </span>\n                        <span class="clinical-history-mini-chip">\n                            ${e(Rd(t.publicationStatus) || 'draft')}\n                        </span>\n                        ${s}\n                    </div>\n                </button>\n            `;
                           })
                           .join('')
                     : '\n            <article class="clinical-history-empty-card">\n                <strong>Sin casos editoriales</strong>\n                <small>Los activos privados apareceran aqui cuando exista media clinica con ruta privada.</small>\n            </article>\n        ';
-            })(a, Ed(n.selectedCaseId), n.loading)
+            })(a, Rd(n.selectedCaseId), n.loading)
         ),
         l(
             '#clinicalMediaFlowConsentStrip',
@@ -24005,38 +24104,38 @@ function Qd() {
                     return '\n            <article class="clinical-history-empty-card">\n                <strong>Sin seleccion</strong>\n                <small>Selecciona un caso para revisar consentimiento, activos y propuesta OpenClaw.</small>\n            </article>\n        ';
                 const a = t.consent || {},
                     n = t.policy || {},
-                    i = Td(n.flags)
+                    i = Nd(n.flags)
                         .map(
                             (t) =>
                                 `\n                <span class="clinical-history-mini-chip">\n                    ${e(String(t).replace(/_/g, ' '))}\n                </span>\n            `
                         )
                         .join('');
-                return `\n        <article class="clinical-media-flow-consent-card">\n            <strong>Consentimiento</strong>\n            <div class="clinical-history-mini-chip-row">\n                <span class="clinical-history-mini-chip">${e(Ed(a.status) || 'missing')}</span>\n                <span class="clinical-history-mini-chip">${e(Ed(n.status) || 'needs_review')}</span>\n                ${i}\n            </div>\n            <small>\n                Privacidad: ${e(a.privacyAccepted ? 'aceptada' : 'pendiente')} ·\n                Publicacion: ${e(a.publicationExplicit ? 'explicita' : 'no registrada')}\n            </small>\n        </article>\n    `;
+                return `\n        <article class="clinical-media-flow-consent-card">\n            <strong>Consentimiento</strong>\n            <div class="clinical-history-mini-chip-row">\n                <span class="clinical-history-mini-chip">${e(Rd(a.status) || 'missing')}</span>\n                <span class="clinical-history-mini-chip">${e(Rd(n.status) || 'needs_review')}</span>\n                ${i}\n            </div>\n            <small>\n                Privacidad: ${e(a.privacyAccepted ? 'aceptada' : 'pendiente')} ·\n                Publicacion: ${e(a.publicationExplicit ? 'explicita' : 'no registrada')}\n            </small>\n        </article>\n    `;
             })(o)
         ),
         l(
             '#clinicalMediaFlowAssetGrid',
             (function (t) {
                 if (!t) return '';
-                const a = Td(t.mediaAssets);
+                const a = Nd(t.mediaAssets);
                 return a.length
                     ? a
                           .map((t) => {
-                              const a = Td(t.qualityFlags)
-                                  .concat(Td(t.riskFlags))
+                              const a = Nd(t.qualityFlags)
+                                  .concat(Nd(t.riskFlags))
                                   .slice(0, 4)
                                   .map(
                                       (t) =>
                                           `\n                        <span class="clinical-history-mini-chip">\n                            ${e(String(t).replace(/_/g, ' '))}\n                        </span>\n                    `
                                   )
                                   .join('');
-                              return `\n                <article class="clinical-media-flow-asset-card">\n                    <figure class="clinical-media-flow-asset-media">\n                        <img\n                            src="${e(Ed(t.previewUrl))}"\n                            alt="${e(Ed(t.originalName) || Ed(t.kind) || 'Asset clinico')}"\n                            loading="lazy"\n                            decoding="async"\n                        />\n                    </figure>\n                    <div class="clinical-media-flow-asset-meta">\n                        <strong>${e(Ed(t.originalName) || Ed(t.assetId))}</strong>\n                        <small>\n                            ${e(Ed(t.kind) || 'progress')}\n                            · ${e(Ed(t.visibility) || 'private_only')}\n                        </small>\n                        <div class="clinical-history-mini-chip-row">\n                            ${a}\n                        </div>\n                    </div>\n                </article>\n            `;
+                              return `\n                <article class="clinical-media-flow-asset-card">\n                    <figure class="clinical-media-flow-asset-media">\n                        <img\n                            src="${e(Rd(t.previewUrl))}"\n                            alt="${e(Rd(t.originalName) || Rd(t.kind) || 'Asset clinico')}"\n                            loading="lazy"\n                            decoding="async"\n                        />\n                    </figure>\n                    <div class="clinical-media-flow-asset-meta">\n                        <strong>${e(Rd(t.originalName) || Rd(t.assetId))}</strong>\n                        <small>\n                            ${e(Rd(t.kind) || 'progress')}\n                            · ${e(Rd(t.visibility) || 'private_only')}\n                        </small>\n                        <div class="clinical-history-mini-chip-row">\n                            ${a}\n                        </div>\n                    </div>\n                </article>\n            `;
                           })
                           .join('')
                     : '\n            <article class="clinical-history-empty-card">\n                <strong>Sin media privada</strong>\n                <small>Este caso todavia no tiene activos clinicos privados elegibles.</small>\n            </article>\n        ';
             })(o)
         ),
-        l('#clinicalMediaFlowAgentSurface', xd(o, n, t)),
+        l('#clinicalMediaFlowAgentSurface', Qd(o, n, t)),
         l(
             '#clinicalMediaFlowProposalForm',
             (function (t, a) {
@@ -24050,22 +24149,22 @@ function Qd() {
                             ? t.publication
                             : {},
                     o = a.saving || a.generating,
-                    s = Ed(n?.status) || 'draft',
-                    r = Ed(i.status) || 'draft';
+                    s = Rd(n?.status) || 'draft',
+                    r = Rd(i.status) || 'draft';
                 return n
-                    ? `\n        <div class="clinical-media-flow-form-grid">\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Copy editorial</h4>\n                    <p>\n                        Recomendacion: ${e(Ed(n.recommendation) || 'needs_review')} ·\n                        Publicacion: ${e(r)}\n                    </p>\n                </header>\n                <div class="clinical-history-inline-grid">\n                    <label class="clinical-history-field" for="clinicalMediaFlowTitleEs">\n                        <span>Titulo ES</span>\n                        <input\n                            id="clinicalMediaFlowTitleEs"\n                            name="titleEs"\n                            type="text"\n                            value="${e(Dd(n, 'es', 'title'))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                    <label class="clinical-history-field" for="clinicalMediaFlowTitleEn">\n                        <span>Title EN</span>\n                        <input\n                            id="clinicalMediaFlowTitleEn"\n                            name="titleEn"\n                            type="text"\n                            value="${e(Dd(n, 'en', 'title'))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                </div>\n                <label class="clinical-history-field" for="clinicalMediaFlowSummaryEs">\n                    <span>Resumen ES</span>\n                    <textarea\n                        id="clinicalMediaFlowSummaryEs"\n                        name="summaryEs"\n                        ${o ? 'disabled' : ''}\n                    >${e(Dd(n, 'es', 'summary'))}</textarea>\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowSummaryEn">\n                    <span>Summary EN</span>\n                    <textarea\n                        id="clinicalMediaFlowSummaryEn"\n                        name="summaryEn"\n                        ${o ? 'disabled' : ''}\n                    >${e(Dd(n, 'en', 'summary'))}</textarea>\n                </label>\n                <div class="clinical-history-inline-grid">\n                    <label class="clinical-history-field" for="clinicalMediaFlowCategory">\n                        <span>Categoria</span>\n                        <input\n                            id="clinicalMediaFlowCategory"\n                            name="category"\n                            type="text"\n                            value="${e(Ed(n.category))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                    <label class="clinical-history-field" for="clinicalMediaFlowTags">\n                        <span>Tags</span>\n                        <input\n                            id="clinicalMediaFlowTags"\n                            name="tags"\n                            type="text"\n                            value="${e(Td(n.tags).join(', '))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                </div>\n            </section>\n\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Accesibilidad y comparativas</h4>\n                    <p>\n                        Score: ${e(`${Number(n.publicationScore || 0)}`)} · Estado: ${e(s)}\n                    </p>\n                </header>\n                <label class="clinical-history-field" for="clinicalMediaFlowAltCoverEs">\n                    <span>Alt cover ES</span>\n                    <input\n                        id="clinicalMediaFlowAltCoverEs"\n                        name="altCoverEs"\n                        type="text"\n                        value="${e(jd(n, 'es', 'cover'))}"\n                        ${o ? 'disabled' : ''}\n                    />\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowAltCoverEn">\n                    <span>Alt cover EN</span>\n                    <input\n                        id="clinicalMediaFlowAltCoverEn"\n                        name="altCoverEn"\n                        type="text"\n                        value="${e(jd(n, 'en', 'cover'))}"\n                        ${o ? 'disabled' : ''}\n                    />\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowCompareSummary">\n                    <span>Pares before/after</span>\n                    <textarea\n                        id="clinicalMediaFlowCompareSummary"\n                        name="compareSummary"\n                        disabled\n                    >${e(
+                    ? `\n        <div class="clinical-media-flow-form-grid">\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Copy editorial</h4>\n                    <p>\n                        Recomendacion: ${e(Rd(n.recommendation) || 'needs_review')} ·\n                        Publicacion: ${e(r)}\n                    </p>\n                </header>\n                <div class="clinical-history-inline-grid">\n                    <label class="clinical-history-field" for="clinicalMediaFlowTitleEs">\n                        <span>Titulo ES</span>\n                        <input\n                            id="clinicalMediaFlowTitleEs"\n                            name="titleEs"\n                            type="text"\n                            value="${e(Hd(n, 'es', 'title'))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                    <label class="clinical-history-field" for="clinicalMediaFlowTitleEn">\n                        <span>Title EN</span>\n                        <input\n                            id="clinicalMediaFlowTitleEn"\n                            name="titleEn"\n                            type="text"\n                            value="${e(Hd(n, 'en', 'title'))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                </div>\n                <label class="clinical-history-field" for="clinicalMediaFlowSummaryEs">\n                    <span>Resumen ES</span>\n                    <textarea\n                        id="clinicalMediaFlowSummaryEs"\n                        name="summaryEs"\n                        ${o ? 'disabled' : ''}\n                    >${e(Hd(n, 'es', 'summary'))}</textarea>\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowSummaryEn">\n                    <span>Summary EN</span>\n                    <textarea\n                        id="clinicalMediaFlowSummaryEn"\n                        name="summaryEn"\n                        ${o ? 'disabled' : ''}\n                    >${e(Hd(n, 'en', 'summary'))}</textarea>\n                </label>\n                <div class="clinical-history-inline-grid">\n                    <label class="clinical-history-field" for="clinicalMediaFlowCategory">\n                        <span>Categoria</span>\n                        <input\n                            id="clinicalMediaFlowCategory"\n                            name="category"\n                            type="text"\n                            value="${e(Rd(n.category))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                    <label class="clinical-history-field" for="clinicalMediaFlowTags">\n                        <span>Tags</span>\n                        <input\n                            id="clinicalMediaFlowTags"\n                            name="tags"\n                            type="text"\n                            value="${e(Nd(n.tags).join(', '))}"\n                            ${o ? 'disabled' : ''}\n                        />\n                    </label>\n                </div>\n            </section>\n\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Accesibilidad y comparativas</h4>\n                    <p>\n                        Score: ${e(`${Number(n.publicationScore || 0)}`)} · Estado: ${e(s)}\n                    </p>\n                </header>\n                <label class="clinical-history-field" for="clinicalMediaFlowAltCoverEs">\n                    <span>Alt cover ES</span>\n                    <input\n                        id="clinicalMediaFlowAltCoverEs"\n                        name="altCoverEs"\n                        type="text"\n                        value="${e(Fd(n, 'es', 'cover'))}"\n                        ${o ? 'disabled' : ''}\n                    />\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowAltCoverEn">\n                    <span>Alt cover EN</span>\n                    <input\n                        id="clinicalMediaFlowAltCoverEn"\n                        name="altCoverEn"\n                        type="text"\n                        value="${e(Fd(n, 'en', 'cover'))}"\n                        ${o ? 'disabled' : ''}\n                    />\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowCompareSummary">\n                    <span>Pares before/after</span>\n                    <textarea\n                        id="clinicalMediaFlowCompareSummary"\n                        name="compareSummary"\n                        disabled\n                    >${e(
                           (function (e) {
-                              const t = Td(e?.comparePairs);
+                              const t = Nd(e?.comparePairs);
                               return t.length
                                   ? t
                                         .map(
                                             (e, t) =>
-                                                `Par ${t + 1}: ${Ed(e.beforeAssetId)} -> ${Ed(e.afterAssetId)}`
+                                                `Par ${t + 1}: ${Rd(e.beforeAssetId)} -> ${Rd(e.afterAssetId)}`
                                         )
                                         .join('\n')
                                   : 'OpenClaw no encontro un before/after fuerte; queda en revision editorial.';
                           })(n)
-                      )}</textarea>\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowDisclaimer">\n                    <span>Disclaimer</span>\n                    <textarea\n                        id="clinicalMediaFlowDisclaimer"\n                        name="disclaimer"\n                        ${o ? 'disabled' : ''}\n                    >${e(Ed(n.disclaimer))}</textarea>\n                </label>\n            </section>\n        </div>\n\n        <div class="toolbar-row clinical-media-flow-action-row">\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="approve"\n                ${o ? 'disabled' : ''}\n            >\n                Aprobar\n            </button>\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="edit_and_publish"\n                ${o ? 'disabled' : ''}\n            >\n                Guardar y publicar\n            </button>\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="reject"\n                ${o ? 'disabled' : ''}\n            >\n                Rechazar\n            </button>\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="archive"\n                ${o ? 'disabled' : ''}\n            >\n                Archivar\n            </button>\n            ${'approved' === r ? `\n                        <button\n                            type="button"\n                            data-media-flow-action="publication-state"\n                            data-media-publication-state="published"\n                            ${o ? 'disabled' : ''}\n                        >\n                            Publicar aprobada\n                        </button>\n                    ` : ''}\n        </div>\n    `
+                      )}</textarea>\n                </label>\n                <label class="clinical-history-field" for="clinicalMediaFlowDisclaimer">\n                    <span>Disclaimer</span>\n                    <textarea\n                        id="clinicalMediaFlowDisclaimer"\n                        name="disclaimer"\n                        ${o ? 'disabled' : ''}\n                    >${e(Rd(n.disclaimer))}</textarea>\n                </label>\n            </section>\n        </div>\n\n        <div class="toolbar-row clinical-media-flow-action-row">\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="approve"\n                ${o ? 'disabled' : ''}\n            >\n                Aprobar\n            </button>\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="edit_and_publish"\n                ${o ? 'disabled' : ''}\n            >\n                Guardar y publicar\n            </button>\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="reject"\n                ${o ? 'disabled' : ''}\n            >\n                Rechazar\n            </button>\n            <button\n                type="button"\n                data-media-flow-action="review"\n                data-media-flow-decision="archive"\n                ${o ? 'disabled' : ''}\n            >\n                Archivar\n            </button>\n            ${'approved' === r ? `\n                        <button\n                            type="button"\n                            data-media-flow-action="publication-state"\n                            data-media-publication-state="published"\n                            ${o ? 'disabled' : ''}\n                        >\n                            Publicar aprobada\n                        </button>\n                    ` : ''}\n        </div>\n    `
                     : '\n            <article class="clinical-history-empty-card">\n                <strong>Sin propuesta</strong>\n                <small>Genera una propuesta para que OpenClaw prepare selección, copy, alt text y paquete editorial.</small>\n            </article>\n        ';
             })(o, n)
         ),
@@ -24073,12 +24172,12 @@ function Qd() {
             '#clinicalMediaFlowTimeline',
             (function (t) {
                 if (!t) return '';
-                const a = Td(t.timeline);
+                const a = Nd(t.timeline);
                 return a.length
                     ? a
                           .map(
                               (t) =>
-                                  `\n                <article class="clinical-history-event-card">\n                    <div class="clinical-history-event-head">\n                        <strong>${e(Ed(t.title) || Ed(t.type))}</strong>\n                        <span class="clinical-history-mini-chip">${e(i(Ed(t.createdAt)))}</span>\n                    </div>\n                    <p>${e(Ed(t.message) || 'Evento registrado.')}</p>\n                </article>\n            `
+                                  `\n                <article class="clinical-history-event-card">\n                    <div class="clinical-history-event-head">\n                        <strong>${e(Rd(t.title) || Rd(t.type))}</strong>\n                        <span class="clinical-history-mini-chip">${e(i(Rd(t.createdAt)))}</span>\n                    </div>\n                    <p>${e(Rd(t.message) || 'Evento registrado.')}</p>\n                </article>\n            `
                           )
                           .join('')
                     : '\n            <article class="clinical-history-empty-card">\n                <strong>Sin timeline</strong>\n                <small>Las regeneraciones, revisiones y publicaciones apareceran aqui.</small>\n            </article>\n        ';
@@ -24096,7 +24195,7 @@ function Qd() {
                     if (t instanceof HTMLButtonElement)
                         return (
                             e.preventDefault(),
-                            void (await Ud(t.dataset.mediaCaseId))
+                            void (await Vd(t.dataset.mediaCaseId))
                         );
                     const a =
                         e.target instanceof Element
@@ -24109,22 +24208,22 @@ function Qd() {
                                 : null;
                         return t instanceof HTMLButtonElement
                             ? (e.preventDefault(),
-                              void (await Kd(t.dataset.mediaAgentPrompt || '')))
+                              void (await Wd(t.dataset.mediaAgentPrompt || '')))
                             : void 0;
                     }
                     e.preventDefault();
-                    const n = Ed(a.dataset.mediaFlowAction);
+                    const n = Rd(a.dataset.mediaFlowAction);
                     'refresh' !== n
                         ? 'generate-proposal' !== n
                             ? 'review' !== n
                                 ? 'publication-state' === n &&
                                   (await (async function (e) {
-                                      const t = Md().current,
-                                          a = Ed(
-                                              t?.caseId || Md().selectedCaseId
+                                      const t = jd().current,
+                                          a = Rd(
+                                              t?.caseId || jd().selectedCaseId
                                           );
                                       if (a) {
-                                          (Bd({ saving: !0, error: '' }), Qd());
+                                          (Pd({ saving: !0, error: '' }), Jd());
                                           try {
                                               (await j(
                                                   'media-flow-publication-state',
@@ -24136,20 +24235,20 @@ function Qd() {
                                                       },
                                                   }
                                               ),
-                                                  Bd({ saving: !1 }),
-                                                  await Fd(a),
+                                                  Pd({ saving: !1 }),
+                                                  await Gd(a),
                                                   s(
                                                       'Estado de publicacion actualizado.',
                                                       'success'
                                                   ));
                                           } catch (e) {
-                                              (Bd({
+                                              (Pd({
                                                   saving: !1,
                                                   error:
                                                       e?.message ||
                                                       'No se pudo actualizar el estado de publicacion.',
                                               }),
-                                                  Qd(),
+                                                  Jd(),
                                                   s(
                                                       e?.message ||
                                                           'No se pudo actualizar el estado de publicacion.',
@@ -24159,17 +24258,17 @@ function Qd() {
                                       }
                                   })(a.dataset.mediaPublicationState || ''))
                                 : await (async function (e) {
-                                      const t = Md().current,
+                                      const t = jd().current,
                                           a =
                                               t?.proposal &&
                                               'object' == typeof t.proposal
                                                   ? t.proposal
                                                   : null,
-                                          n = Ed(
-                                              t?.caseId || Md().selectedCaseId
+                                          n = Rd(
+                                              t?.caseId || jd().selectedCaseId
                                           );
                                       if (a && n) {
-                                          (Bd({ saving: !0, error: '' }), Qd());
+                                          (Pd({ saving: !0, error: '' }), Jd());
                                           try {
                                               (await j(
                                                   'media-flow-proposal-review',
@@ -24180,24 +24279,24 @@ function Qd() {
                                                           proposalId:
                                                               a.proposalId,
                                                           decision: e,
-                                                          edits: Hd(),
+                                                          edits: zd(),
                                                       },
                                                   }
                                               ),
-                                                  Bd({ saving: !1 }),
-                                                  await Fd(n),
+                                                  Pd({ saving: !1 }),
+                                                  await Gd(n),
                                                   s(
                                                       'Decision editorial registrada.',
                                                       'success'
                                                   ));
                                           } catch (e) {
-                                              (Bd({
+                                              (Pd({
                                                   saving: !1,
                                                   error:
                                                       e?.message ||
                                                       'No se pudo guardar la decision editorial.',
                                               }),
-                                                  Qd(),
+                                                  Jd(),
                                                   s(
                                                       e?.message ||
                                                           'No se pudo guardar la decision editorial.',
@@ -24211,9 +24310,9 @@ function Qd() {
                                           );
                                   })(a.dataset.mediaFlowDecision || '')
                             : await (async function () {
-                                  const e = Ed(Md().selectedCaseId);
+                                  const e = Rd(jd().selectedCaseId);
                                   if (e) {
-                                      (Bd({ generating: !0, error: '' }), Qd());
+                                      (Pd({ generating: !0, error: '' }), Jd());
                                       try {
                                           (await j(
                                               'media-flow-proposal-generate',
@@ -24222,20 +24321,20 @@ function Qd() {
                                                   body: { caseId: e },
                                               }
                                           ),
-                                              Bd({ generating: !1 }),
-                                              await Fd(e),
+                                              Pd({ generating: !1 }),
+                                              await Gd(e),
                                               s(
                                                   'Propuesta editorial generada.',
                                                   'success'
                                               ));
                                       } catch (e) {
-                                          (Bd({
+                                          (Pd({
                                               generating: !1,
                                               error:
                                                   e?.message ||
                                                   'No se pudo generar la propuesta editorial.',
                                           }),
-                                              Qd(),
+                                              Jd(),
                                               s(
                                                   e?.message ||
                                                       'No se pudo generar la propuesta editorial.',
@@ -24249,8 +24348,8 @@ function Qd() {
                                       );
                               })()
                         : await (async function () {
-                              const e = Ed(Md().selectedCaseId);
-                              return e ? Ud(e, { force: !0 }) : null;
+                              const e = Rd(jd().selectedCaseId);
+                              return e ? Vd(e, { force: !0 }) : null;
                           })();
                 }),
                 e.addEventListener('click', async (e) => {
@@ -24260,84 +24359,84 @@ function Qd() {
                             : null;
                     if (!(t instanceof HTMLButtonElement)) return;
                     e.preventDefault();
-                    const a = Ed(t.dataset.mediaAgentAction);
+                    const a = Rd(t.dataset.mediaAgentAction);
                     'open-panel' !== a
-                        ? 'submit' === a && (await Kd())
-                        : await hm({ focus: !0 });
+                        ? 'submit' === a && (await Wd())
+                        : await Sm({ focus: !0 });
                 }),
                 (e.dataset.mediaFlowBound = 'true'));
         })(),
         (function () {
             const e = g();
             if ('clinical-history' !== e?.ui?.activeSection) return;
-            const t = Md(e);
+            const t = jd(e);
             if (t.loading || t.generating || t.saving) return;
-            const a = Td(Id(e).queue),
+            const a = Nd(Dd(e).queue),
                 n =
                     (function (e = g()) {
-                        return Ed(
+                        return Rd(
                             e?.clinicalHistory?.current?.session?.caseId ||
                                 e?.clinicalHistory?.draftForm?.caseId
                         );
                     })(e) ||
-                    Ed(t.selectedCaseId) ||
-                    Ed(a[0]?.caseId);
+                    Rd(t.selectedCaseId) ||
+                    Rd(a[0]?.caseId);
             n
-                ? n === Ed(t.selectedCaseId) && t.current
-                    ? (Ad = '')
-                    : Ad !== n &&
-                      ((Ad = n),
+                ? n === Rd(t.selectedCaseId) && t.current
+                    ? (Bd = '')
+                    : Bd !== n &&
+                      ((Bd = n),
                       window.setTimeout(() => {
                           'clinical-history' === g()?.ui?.activeSection
-                              ? Ud(n).finally(() => {
-                                    Ad = '';
+                              ? Vd(n).finally(() => {
+                                    Bd = '';
                                 })
-                              : (Ad = '');
+                              : (Bd = '');
                       }, 0))
-                : (Ad = '');
+                : (Bd = '');
         })());
 }
-const zd = 'clinicalSessionId';
-let Vd = '';
-function Gd(e) {
+const Yd = 'clinicalSessionId';
+let Zd = '';
+function Xd(e) {
     return String(e || '').trim();
 }
-function Wd(e) {
+function ep(e) {
     return Array.isArray(e) ? e : [];
 }
-function Jd(e) {
-    return Wd(e)
-        .map((e) => Gd(e))
+function tp(e) {
+    return ep(e)
+        .map((e) => Xd(e))
         .filter(Boolean);
 }
-function Yd(e) {
+function ap(e) {
     const t = Number(e || 0);
     return Number.isFinite(t) ? t : 0;
 }
-function Zd(e) {
+function np(e) {
     if ('' === e || null == e) return null;
     const t = Number(e);
     return Number.isFinite(t) ? Math.max(0, Math.round(t)) : null;
 }
-function Xd(e) {
+function ip(e) {
     if ('' === e || null == e) return null;
     const t = Number(e);
     return Number.isFinite(t) ? Math.max(0, Number(t)) : null;
 }
-function ep(e) {
+function op(e) {
     return 'function' == typeof structuredClone
         ? structuredClone(e)
         : JSON.parse(JSON.stringify(e));
 }
-function tp(e) {
+function sp(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
-        name: Gd(t.name || t.fullName),
-        email: Gd(t.email),
-        phone: Gd(t.phone),
-        ageYears: Zd(t.ageYears || t.edadAnios),
-        weightKg: Xd(t.weightKg || t.pesoKg),
-        sexAtBirth: Gd(t.sexAtBirth || t.sexoBiologico),
+        name: Xd(t.name || t.fullName),
+        email: Xd(t.email),
+        phone: Xd(t.phone),
+        ageYears: np(t.ageYears || t.edadAnios),
+        weightKg: ip(t.weightKg || t.pesoKg),
+        sexAtBirth: Xd(t.sexAtBirth || t.sexoBiologico),
         pregnant:
             null === t.pregnant || void 0 === t.pregnant
                 ? null === t.embarazo || void 0 === t.embarazo
@@ -24346,43 +24445,43 @@ function tp(e) {
                 : !0 === t.pregnant,
     };
 }
-function ap(e) {
+function rp(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
-        id: Gd(t.id),
-        role: Gd(t.role || 'user'),
-        actor: Gd(t.actor || 'patient'),
-        content: Gd(t.content),
-        surface: Gd(t.surface),
-        createdAt: Gd(t.createdAt),
-        fieldKey: Gd(t.fieldKey),
+        id: Xd(t.id),
+        role: Xd(t.role || 'user'),
+        actor: Xd(t.actor || 'patient'),
+        content: Xd(t.content),
+        surface: Xd(t.surface),
+        createdAt: Xd(t.createdAt),
+        fieldKey: Xd(t.fieldKey),
         meta: t.meta && 'object' == typeof t.meta ? t.meta : {},
     };
 }
-function np(e) {
+function lp(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
-        id: Zd(t.id),
-        kind: Gd(t.kind),
-        originalName: Gd(t.originalName || t.name),
-        mime: Gd(t.mime),
-        size: Math.max(0, Yd(t.size)),
-        privatePath: Gd(t.privatePath),
-        appointmentId: Zd(t.appointmentId),
+        id: np(t.id),
+        kind: Xd(t.kind),
+        originalName: Xd(t.originalName || t.name),
+        mime: Xd(t.mime),
+        size: Math.max(0, ap(t.size)),
+        privatePath: Xd(t.privatePath),
+        appointmentId: np(t.appointmentId),
     };
 }
-function ip(e) {
+function cp(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
-        texto: Gd(t.texto),
-        baseCalculo: Gd(t.baseCalculo),
-        pesoKg: Xd(t.pesoKg),
-        edadAnios: Zd(t.edadAnios),
-        units: Gd(t.units),
+        texto: Xd(t.texto),
+        baseCalculo: Xd(t.baseCalculo),
+        pesoKg: ip(t.pesoKg),
+        edadAnios: np(t.edadAnios),
+        units: Xd(t.units),
         ambiguous: void 0 === t.ambiguous || !0 === t.ambiguous,
     };
 }
-function op(e) {
+function up(e) {
     const t = {
             sessionId: '',
             caseId: '',
@@ -24446,7 +24545,7 @@ function op(e) {
             n.datosPaciente && 'object' == typeof n.datosPaciente
                 ? n.datosPaciente
                 : {},
-        s = Gd(a.reviewStatus) || t.reviewStatus;
+        s = Xd(a.reviewStatus) || t.reviewStatus;
     let r =
         void 0 === a.requiresHumanReview
             ? t.requiresHumanReview
@@ -24455,35 +24554,35 @@ function op(e) {
         'approved' === s ? (r = !1) : 'review_required' === s && (r = !0),
         {
             ...t,
-            sessionId: Gd(a.sessionId),
-            caseId: Gd(a.caseId),
-            appointmentId: Zd(a.appointmentId),
+            sessionId: Xd(a.sessionId),
+            caseId: Xd(a.caseId),
+            appointmentId: np(a.appointmentId),
             reviewStatus: s,
             requiresHumanReview: r,
-            confidence: Yd(a.confidence),
-            reviewReasons: Jd(a.reviewReasons),
+            confidence: ap(a.confidence),
+            reviewReasons: tp(a.reviewReasons),
             pendingAi:
                 a.pendingAi && 'object' == typeof a.pendingAi
                     ? a.pendingAi
                     : {},
             intake: {
                 ...t.intake,
-                motivoConsulta: Gd(n.motivoConsulta),
-                enfermedadActual: Gd(n.enfermedadActual),
-                antecedentes: Gd(n.antecedentes),
-                alergias: Gd(n.alergias),
-                medicacionActual: Gd(n.medicacionActual),
-                rosRedFlags: Jd(n.rosRedFlags),
-                adjuntos: Wd(n.adjuntos).map(np),
-                resumenClinico: Gd(n.resumenClinico),
-                cie10Sugeridos: Jd(n.cie10Sugeridos),
-                tratamientoBorrador: Gd(n.tratamientoBorrador),
-                posologiaBorrador: ip(n.posologiaBorrador),
-                preguntasFaltantes: Jd(n.preguntasFaltantes),
+                motivoConsulta: Xd(n.motivoConsulta),
+                enfermedadActual: Xd(n.enfermedadActual),
+                antecedentes: Xd(n.antecedentes),
+                alergias: Xd(n.alergias),
+                medicacionActual: Xd(n.medicacionActual),
+                rosRedFlags: tp(n.rosRedFlags),
+                adjuntos: ep(n.adjuntos).map(lp),
+                resumenClinico: Xd(n.resumenClinico),
+                cie10Sugeridos: tp(n.cie10Sugeridos),
+                tratamientoBorrador: Xd(n.tratamientoBorrador),
+                posologiaBorrador: cp(n.posologiaBorrador),
+                preguntasFaltantes: tp(n.preguntasFaltantes),
                 datosPaciente: {
-                    edadAnios: Zd(o.edadAnios),
-                    pesoKg: Xd(o.pesoKg),
-                    sexoBiologico: Gd(o.sexoBiologico),
+                    edadAnios: np(o.edadAnios),
+                    pesoKg: ip(o.pesoKg),
+                    sexoBiologico: Xd(o.sexoBiologico),
                     embarazo:
                         null === o.embarazo || void 0 === o.embarazo
                             ? null
@@ -24492,35 +24591,35 @@ function op(e) {
             },
             clinicianDraft: {
                 ...t.clinicianDraft,
-                resumen: Gd(i.resumen || i.resumenClinico),
-                preguntasFaltantes: Jd(i.preguntasFaltantes),
-                cie10Sugeridos: Jd(i.cie10Sugeridos),
-                tratamientoBorrador: Gd(i.tratamientoBorrador),
-                posologiaBorrador: ip(i.posologiaBorrador),
+                resumen: Xd(i.resumen || i.resumenClinico),
+                preguntasFaltantes: tp(i.preguntasFaltantes),
+                cie10Sugeridos: tp(i.cie10Sugeridos),
+                tratamientoBorrador: Xd(i.tratamientoBorrador),
+                posologiaBorrador: cp(i.posologiaBorrador),
             },
-            updatedAt: Gd(a.updatedAt),
-            createdAt: Gd(a.createdAt),
+            updatedAt: Xd(a.updatedAt),
+            createdAt: Xd(a.createdAt),
         }
     );
 }
-function sp(e) {
+function dp(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
-        eventId: Gd(t.eventId),
-        sessionId: Gd(t.sessionId),
-        type: Gd(t.type),
-        severity: Gd(t.severity || 'info'),
-        status: Gd(t.status || 'open'),
-        title: Gd(t.title),
-        message: Gd(t.message),
+        eventId: Xd(t.eventId),
+        sessionId: Xd(t.sessionId),
+        type: Xd(t.type),
+        severity: Xd(t.severity || 'info'),
+        status: Xd(t.status || 'open'),
+        title: Xd(t.title),
+        message: Xd(t.message),
         requiresAction: !0 === t.requiresAction,
-        occurredAt: Gd(t.occurredAt || t.createdAt),
-        acknowledgedAt: Gd(t.acknowledgedAt),
-        resolvedAt: Gd(t.resolvedAt),
-        patient: tp(t.patient),
+        occurredAt: Xd(t.occurredAt || t.createdAt),
+        acknowledgedAt: Xd(t.acknowledgedAt),
+        resolvedAt: Xd(t.resolvedAt),
+        patient: sp(t.patient),
     };
 }
-function rp(e) {
+function pp(e) {
     const t = {
             session: {
                 sessionId: '',
@@ -24604,44 +24703,44 @@ function rp(e) {
     return (
         (t.session = {
             ...t.session,
-            sessionId: Gd(n.sessionId),
-            caseId: Gd(n.caseId),
-            appointmentId: Zd(n.appointmentId),
-            surface: Gd(n.surface),
-            status: Gd(n.status),
-            patient: tp(n.patient),
-            transcript: Wd(n.transcript).map(ap),
+            sessionId: Xd(n.sessionId),
+            caseId: Xd(n.caseId),
+            appointmentId: np(n.appointmentId),
+            surface: Xd(n.surface),
+            status: Xd(n.status),
+            patient: sp(n.patient),
+            transcript: ep(n.transcript).map(rp),
             pendingAi:
                 n.pendingAi && 'object' == typeof n.pendingAi
                     ? n.pendingAi
                     : {},
             metadata:
                 n.metadata && 'object' == typeof n.metadata ? n.metadata : {},
-            createdAt: Gd(n.createdAt),
-            updatedAt: Gd(n.updatedAt),
-            lastMessageAt: Gd(n.lastMessageAt),
+            createdAt: Xd(n.createdAt),
+            updatedAt: Xd(n.updatedAt),
+            lastMessageAt: Xd(n.lastMessageAt),
         }),
-        (t.draft = op(a.draft)),
-        (t.events = Wd(a.events).map(sp)),
+        (t.draft = up(a.draft)),
+        (t.events = ep(a.events).map(dp)),
         t
     );
 }
-function lp(e = g()) {
+function mp(e = g()) {
     return e?.data?.clinicalHistoryMeta &&
         'object' == typeof e.data.clinicalHistoryMeta
         ? e.data.clinicalHistoryMeta
         : {};
 }
-function cp(e = g()) {
+function gp(e = g()) {
     return e?.clinicalHistory && 'object' == typeof e.clinicalHistory
         ? e.clinicalHistory
         : {};
 }
-function up(e) {
+function bp(e) {
     b((t) => ({ ...t, clinicalHistory: { ...t.clinicalHistory, ...e } }));
 }
-function dp(e) {
-    switch (Gd(e).toLowerCase()) {
+function fp(e) {
+    switch (Xd(e).toLowerCase()) {
         case 'approved':
             return 'Aprobada';
         case 'ready_for_review':
@@ -24654,8 +24753,8 @@ function dp(e) {
             return 'Pendiente';
     }
 }
-function pp(e) {
-    switch (Gd(e).toLowerCase()) {
+function yp(e) {
+    switch (Xd(e).toLowerCase()) {
         case 'queued':
             return 'IA en cola';
         case 'processing':
@@ -24668,42 +24767,42 @@ function pp(e) {
             return '';
     }
 }
-function mp(e) {
-    const t = Yd(e);
+function vp(e) {
+    const t = ap(e);
     return t <= 0 ? 'Sin confianza' : `${Math.round(100 * t)}% confianza`;
 }
-function gp(e, t, a) {
-    return '' !== Gd(a)
+function hp(e, t, a) {
+    return '' !== Xd(a)
         ? 'warning'
-        : 'approved' === Gd(e)
+        : 'approved' === Xd(e)
           ? 'success'
           : t
             ? 'warning'
             : 'neutral';
 }
-function bp(e) {
-    return Jd(e).join('\n');
+function kp(e) {
+    return tp(e).join('\n');
 }
-function fp(e) {
+function _p(e) {
     return String(e || '')
         .split(/\r?\n/)
-        .map((e) => Gd(e))
+        .map((e) => Xd(e))
         .filter(Boolean);
 }
-function yp(e) {
-    const t = Gd(e);
+function qp(e) {
+    const t = Xd(e);
     return t ? i(t) : '-';
 }
-function vp(e) {
-    const t = Gd(e.session.patient.name);
+function $p(e) {
+    const t = Xd(e.session.patient.name);
     if (t) return t;
-    const a = Gd(e.session.caseId);
+    const a = Xd(e.session.caseId);
     return a ? `Caso ${a}` : 'Sin seleccion';
 }
-function hp(e = g()) {
-    const t = cp(e);
+function Sp(e = g()) {
+    const t = gp(e);
     return t.current && 'object' == typeof t.current
-        ? rp(t.current)
+        ? pp(t.current)
         : {
               session: {
                   sessionId: '',
@@ -24783,18 +24882,18 @@ function hp(e = g()) {
               events: [],
           };
 }
-function kp(e = g()) {
-    const t = cp(e);
+function wp(e = g()) {
+    const t = gp(e);
     return t.draftForm && 'object' == typeof t.draftForm
-        ? op(t.draftForm)
-        : hp(e).draft;
+        ? up(t.draftForm)
+        : Sp(e).draft;
 }
-function _p(e, t = 120) {
-    const a = Gd(e);
+function Cp(e, t = 120) {
+    const a = Xd(e);
     return a.length <= t ? a : `${a.slice(0, Math.max(0, t - 1)).trim()}...`;
 }
-function qp(e) {
-    const t = Yd(e);
+function Lp(e) {
+    const t = ap(e);
     return t <= 0
         ? '0 B'
         : t < 1024
@@ -24803,18 +24902,18 @@ function qp(e) {
             ? `${(t / 1024).toFixed(1)} KB`
             : `${(t / 1048576).toFixed(1)} MB`;
 }
-function $p(e) {
-    const t = Gd(e).toLowerCase();
+function Ap(e) {
+    const t = Xd(e).toLowerCase();
     return 'yes' === t || ('no' !== t && null);
 }
-function Sp(e, t) {
-    const a = Zd(t?.datosPaciente?.edadAnios ?? e.ageYears),
-        n = Xd(t?.datosPaciente?.pesoKg ?? e.weightKg);
+function Ep(e, t) {
+    const a = np(t?.datosPaciente?.edadAnios ?? e.ageYears),
+        n = ip(t?.datosPaciente?.pesoKg ?? e.weightKg);
     return [
         null !== a ? `${a} anos` : '',
         null !== n ? `${n} kg` : '',
-        Gd(t?.datosPaciente?.sexoBiologico) ||
-            Gd(e.sexAtBirth) ||
+        Xd(t?.datosPaciente?.sexoBiologico) ||
+            Xd(e.sexAtBirth) ||
             'Sin sexo biologico',
         ((i =
             void 0 !== t?.datosPaciente?.embarazo
@@ -24830,10 +24929,10 @@ function Sp(e, t) {
         .join(' • ');
     var i;
 }
-function wp(t, a, n, i = 'neutral') {
+function Tp(t, a, n, i = 'neutral') {
     return `\n        <article class="clinical-history-stat-card" data-tone="${e(i)}">\n            <span>${e(t)}</span>\n            <strong>${e(a)}</strong>\n            <small>${e(n)}</small>\n        </article>\n    `;
 }
-function Cp(t, a, n, i = {}) {
+function Ip(t, a, n, i = {}) {
     const {
         placeholder: o = '',
         rows: s = 4,
@@ -24842,7 +24941,7 @@ function Cp(t, a, n, i = {}) {
     } = i;
     return `\n        <label class="clinical-history-field" for="${e(t)}">\n            <span>${e(a)}</span>\n            <textarea\n                id="${e(t)}"\n                name="${e(t)}"\n                rows="${Number(s) || 4}"\n                placeholder="${e(o)}"\n                ${l ? 'disabled' : ''}\n            >${e(n)}</textarea>\n            ${r ? `<small>${e(r)}</small>` : '<small>&nbsp;</small>'}\n        </label>\n    `;
 }
-function Lp(t, a, n, i = {}) {
+function Mp(t, a, n, i = {}) {
     const {
         type: o = 'text',
         placeholder: s = '',
@@ -24853,19 +24952,19 @@ function Lp(t, a, n, i = {}) {
     } = i;
     return `\n        <label class="clinical-history-field" for="${e(t)}">\n            <span>${e(a)}</span>\n            <input\n                id="${e(t)}"\n                name="${e(t)}"\n                type="${e(o)}"\n                value="${e(n)}"\n                placeholder="${e(s)}"\n                ${'' !== l ? `step="${e(l)}"` : ''}\n                ${'' !== c ? `min="${e(c)}"` : ''}\n                ${u ? 'disabled' : ''}\n            />\n            ${r ? `<small>${e(r)}</small>` : '<small>&nbsp;</small>'}\n        </label>\n    `;
 }
-function Ap(t, a, n, i = {}) {
+function Bp(t, a, n, i = {}) {
     const { hint: o = '', disabled: s = !1 } = i;
     return `\n        <label class="clinical-history-toggle" for="${e(t)}">\n            <input\n                id="${e(t)}"\n                name="${e(t)}"\n                type="checkbox"\n                ${n ? 'checked' : ''}\n                ${s ? 'disabled' : ''}\n            />\n            <span>\n                <strong>${e(a)}</strong>\n                <small>${e(o || ' ')}</small>\n            </span>\n        </label>\n    `;
 }
-function Ep(t, a, n, i, o = {}) {
+function Rp(t, a, n, i, o = {}) {
     const { hint: s = '', disabled: r = !1 } = o;
-    return `\n        <label class="clinical-history-field" for="${e(t)}">\n            <span>${e(a)}</span>\n            <select\n                id="${e(t)}"\n                name="${e(t)}"\n                ${r ? 'disabled' : ''}\n            >\n                ${i.map((t) => `\n                            <option\n                                value="${e(t.value)}"\n                                ${Gd(t.value) === Gd(n) ? 'selected' : ''}\n                            >\n                                ${e(t.label)}\n                            </option>\n                        `).join('')}\n            </select>\n            ${s ? `<small>${e(s)}</small>` : '<small>&nbsp;</small>'}\n        </label>\n    `;
+    return `\n        <label class="clinical-history-field" for="${e(t)}">\n            <span>${e(a)}</span>\n            <select\n                id="${e(t)}"\n                name="${e(t)}"\n                ${r ? 'disabled' : ''}\n            >\n                ${i.map((t) => `\n                            <option\n                                value="${e(t.value)}"\n                                ${Xd(t.value) === Xd(n) ? 'selected' : ''}\n                            >\n                                ${e(t.label)}\n                            </option>\n                        `).join('')}\n            </select>\n            ${s ? `<small>${e(s)}</small>` : '<small>&nbsp;</small>'}\n        </label>\n    `;
 }
-function Tp() {
+function Np() {
     const e = g(),
-        t = cp(e),
-        a = hp(e),
-        n = kp(e);
+        t = gp(e),
+        a = Sp(e),
+        n = wp(e);
     let i = 'Sin cambios';
     (t.saving
         ? (i = 'Guardando borrador clinico...')
@@ -24875,21 +24974,21 @@ function Tp() {
             ? (i = t.error)
             : t.dirty
               ? (i = 'Cambios sin guardar')
-              : n.updatedAt && (i = `Ultima actualizacion ${yp(n.updatedAt)}`),
+              : n.updatedAt && (i = `Ultima actualizacion ${qp(n.updatedAt)}`),
         r('#clinicalHistoryDraftMeta', i),
         r(
             '#clinicalHistoryDraftSummary',
             a.session.sessionId
-                ? `Editando ${vp(a)} • ${dp(n.reviewStatus)}`
+                ? `Editando ${$p(a)} • ${fp(n.reviewStatus)}`
                 : 'Selecciona un caso para editar anamnesis, plan y guardrails.'
         ),
         r(
             '#clinicalHistoryFollowUpMeta',
             a.session.sessionId
-                ? `La pregunta saldra por el mismo hilo de ${vp(a)}.`
+                ? `La pregunta saldra por el mismo hilo de ${$p(a)}.`
                 : 'Envia una pregunta puntual al paciente sin salir del review.'
         ));
-    const o = !('' !== Gd(a.session.sessionId)) || t.loading || t.saving,
+    const o = !('' !== Xd(a.session.sessionId)) || t.loading || t.saving,
         s = document.getElementById('clinicalHistorySaveBtn'),
         l = document.getElementById('clinicalHistoryApproveBtn'),
         c = document.getElementById('clinicalHistoryRefreshBtn'),
@@ -24900,11 +24999,11 @@ function Tp() {
         c instanceof HTMLButtonElement && (c.disabled = o),
         u instanceof HTMLButtonElement && (u.disabled = o),
         d instanceof HTMLButtonElement &&
-            (d.disabled = o || '' === Gd(t.followUpQuestion)));
+            (d.disabled = o || '' === Xd(t.followUpQuestion)));
 }
-function Ip(e, t) {
-    const a = op(
-        ep(
+function Dp(e, t) {
+    const a = up(
+        op(
             t || {
                 sessionId: '',
                 caseId: '',
@@ -24974,28 +25073,28 @@ function Ip(e, t) {
             return a instanceof HTMLInputElement && a.checked;
         };
     return (
-        (a.intake.motivoConsulta = Gd(n('intake_motivo_consulta'))),
-        (a.intake.enfermedadActual = Gd(n('intake_enfermedad_actual'))),
-        (a.intake.antecedentes = Gd(n('intake_antecedentes'))),
-        (a.intake.alergias = Gd(n('intake_alergias'))),
-        (a.intake.medicacionActual = Gd(n('intake_medicacion_actual'))),
-        (a.intake.rosRedFlags = fp(n('intake_ros_red_flags'))),
-        (a.intake.resumenClinico = Gd(n('intake_resumen_clinico'))),
-        (a.intake.preguntasFaltantes = fp(n('intake_preguntas_faltantes'))),
+        (a.intake.motivoConsulta = Xd(n('intake_motivo_consulta'))),
+        (a.intake.enfermedadActual = Xd(n('intake_enfermedad_actual'))),
+        (a.intake.antecedentes = Xd(n('intake_antecedentes'))),
+        (a.intake.alergias = Xd(n('intake_alergias'))),
+        (a.intake.medicacionActual = Xd(n('intake_medicacion_actual'))),
+        (a.intake.rosRedFlags = _p(n('intake_ros_red_flags'))),
+        (a.intake.resumenClinico = Xd(n('intake_resumen_clinico'))),
+        (a.intake.preguntasFaltantes = _p(n('intake_preguntas_faltantes'))),
         (a.intake.datosPaciente = {
             ...a.intake.datosPaciente,
-            edadAnios: Zd(n('patient_edad_anios')),
-            pesoKg: Xd(n('patient_peso_kg')),
-            sexoBiologico: Gd(n('patient_sexo_biologico')),
-            embarazo: $p(n('patient_embarazo')),
+            edadAnios: np(n('patient_edad_anios')),
+            pesoKg: ip(n('patient_peso_kg')),
+            sexoBiologico: Xd(n('patient_sexo_biologico')),
+            embarazo: Ap(n('patient_embarazo')),
         }),
-        (a.clinicianDraft.resumen = Gd(n('clinician_resumen'))),
-        (a.clinicianDraft.preguntasFaltantes = fp(
+        (a.clinicianDraft.resumen = Xd(n('clinician_resumen'))),
+        (a.clinicianDraft.preguntasFaltantes = _p(
             n('clinician_preguntas_faltantes')
         )),
-        (a.clinicianDraft.cie10Sugeridos = fp(n('clinician_cie10'))),
-        (a.clinicianDraft.tratamientoBorrador = Gd(n('clinician_tratamiento'))),
-        (a.clinicianDraft.posologiaBorrador = ip({
+        (a.clinicianDraft.cie10Sugeridos = _p(n('clinician_cie10'))),
+        (a.clinicianDraft.tratamientoBorrador = Xd(n('clinician_tratamiento'))),
+        (a.clinicianDraft.posologiaBorrador = cp({
             texto: n('posologia_texto'),
             baseCalculo: n('posologia_base_calculo'),
             pesoKg: n('posologia_peso_kg'),
@@ -25007,12 +25106,12 @@ function Ip(e, t) {
         a
     );
 }
-async function Mp(e, t = {}) {
-    const a = Gd(e);
+async function jp(e, t = {}) {
+    const a = Xd(e);
     if (!a)
         return (
-            Jl(zd, ''),
-            up({
+            Jl(Yd, ''),
+            bp({
                 selectedSessionId: '',
                 loading: !1,
                 error: '',
@@ -25020,34 +25119,34 @@ async function Mp(e, t = {}) {
                 current: null,
                 draftForm: null,
             }),
-            Pp(),
+            Up(),
             null
         );
-    const n = cp();
-    if (!0 !== t.force && a === Gd(n.selectedSessionId) && n.current)
-        return hp();
-    (Jl(zd, a), up({ selectedSessionId: a, loading: !0, error: '' }), Pp());
+    const n = gp();
+    if (!0 !== t.force && a === Xd(n.selectedSessionId) && n.current)
+        return Sp();
+    (Jl(Yd, a), bp({ selectedSessionId: a, loading: !0, error: '' }), Up());
     try {
-        const e = rp(
+        const e = pp(
             (await j('clinical-history-review', { query: { sessionId: a } }))
                 .data
         );
         return (
-            up({
+            bp({
                 selectedSessionId: e.session.sessionId || a,
                 loading: !1,
                 error: '',
                 dirty: !1,
                 lastLoadedAt: Date.now(),
                 current: e,
-                draftForm: ep(e.draft),
+                draftForm: op(e.draft),
             }),
-            Pp(),
+            Up(),
             e
         );
     } catch (e) {
         return (
-            up({
+            bp({
                 selectedSessionId: a,
                 loading: !1,
                 error:
@@ -25056,7 +25155,7 @@ async function Mp(e, t = {}) {
                 current: null,
                 draftForm: null,
             }),
-            Pp(),
+            Up(),
             !0 !== t.silent &&
                 s(
                     e?.message ||
@@ -25067,11 +25166,11 @@ async function Mp(e, t = {}) {
         );
     }
 }
-function Bp(e, t) {
-    const a = hp(),
-        n = kp(),
+function Pp(e, t) {
+    const a = Sp(),
+        n = wp(),
         i = {
-            sessionId: Gd(a.session.sessionId || n.sessionId),
+            sessionId: Xd(a.session.sessionId || n.sessionId),
             draft: {
                 intake: {
                     motivoConsulta: n.intake.motivoConsulta,
@@ -25079,12 +25178,12 @@ function Bp(e, t) {
                     antecedentes: n.intake.antecedentes,
                     alergias: n.intake.alergias,
                     medicacionActual: n.intake.medicacionActual,
-                    rosRedFlags: ep(n.intake.rosRedFlags),
+                    rosRedFlags: op(n.intake.rosRedFlags),
                     resumenClinico: n.intake.resumenClinico,
-                    preguntasFaltantes: ep(n.intake.preguntasFaltantes),
-                    datosPaciente: ep(n.intake.datosPaciente),
+                    preguntasFaltantes: op(n.intake.preguntasFaltantes),
+                    datosPaciente: op(n.intake.datosPaciente),
                 },
-                clinicianDraft: ep(n.clinicianDraft),
+                clinicianDraft: op(n.clinicianDraft),
             },
             requiresHumanReview: !0 === n.requiresHumanReview,
         };
@@ -25093,52 +25192,52 @@ function Bp(e, t) {
             ((i.reviewStatus = 'review_required'),
             (i.requiresHumanReview = !0)),
         'approve' === e && ((i.approve = !0), (i.requiresHumanReview = !1)),
-        'follow-up' === e && (i.requestAdditionalQuestion = Gd(t)),
+        'follow-up' === e && (i.requestAdditionalQuestion = Xd(t)),
         i
     );
 }
-async function Rp(e, t) {
-    const a = Gd(hp().session.sessionId);
+async function Op(e, t) {
+    const a = Xd(Sp().session.sessionId);
     if (!a)
         return (
             s('Selecciona un caso clinico antes de guardar.', 'warning'),
             null
         );
-    (up({
-        draftForm: ep(
-            Ip(document.getElementById('clinicalHistoryDraftForm'), kp())
+    (bp({
+        draftForm: op(
+            Dp(document.getElementById('clinicalHistoryDraftForm'), wp())
         ),
         saving: !0,
         error: '',
         dirty: !0,
     }),
-        Tp());
+        Np());
     try {
-        const n = rp(
+        const n = pp(
             (
                 await j('clinical-history-review', {
                     method: 'PATCH',
-                    body: Bp(e, t),
+                    body: Pp(e, t),
                 })
             ).data
         );
-        up({
+        bp({
             saving: !1,
             error: '',
             dirty: !1,
             current: n,
-            draftForm: ep(n.draft),
+            draftForm: op(n.draft),
             selectedSessionId: n.session.sessionId || a,
-            followUpQuestion: 'follow-up' === e ? '' : cp().followUpQuestion,
+            followUpQuestion: 'follow-up' === e ? '' : gp().followUpQuestion,
             lastLoadedAt: Date.now(),
         });
         try {
-            await cu();
+            await mu();
         } catch (e) {}
         return (
             re(g()),
-            Ld(g()),
-            Pp(),
+            Md(g()),
+            Up(),
             s(
                 'approve' === e
                     ? 'Historia clinica aprobada.'
@@ -25153,13 +25252,13 @@ async function Rp(e, t) {
         );
     } catch (e) {
         return (
-            up({
+            bp({
                 saving: !1,
                 error:
                     e?.message ||
                     'No se pudo guardar la revision clinica del caso.',
             }),
-            Tp(),
+            Np(),
             s(
                 e?.message ||
                     'No se pudo guardar la revision clinica del caso.',
@@ -25169,50 +25268,50 @@ async function Rp(e, t) {
         );
     }
 }
-function Np() {
+function xp() {
     const e = document.getElementById('clinicalHistoryDraftForm');
     if (!(e instanceof HTMLFormElement)) return;
-    const t = hp(),
-        a = Ip(e, kp()),
-        n = JSON.stringify(a) !== JSON.stringify(op(t.draft));
-    (up({ draftForm: ep(a), dirty: n }), Tp());
+    const t = Sp(),
+        a = Dp(e, wp()),
+        n = JSON.stringify(a) !== JSON.stringify(up(t.draft));
+    (bp({ draftForm: op(a), dirty: n }), Np());
 }
-async function Dp(e) {
-    const t = Gd(e),
-        a = cp();
+async function Hp(e) {
+    const t = Xd(e),
+        a = gp();
     return !t || a.loading || a.saving
         ? null
-        : t === Gd(a.selectedSessionId) && a.current
-          ? hp()
+        : t === Xd(a.selectedSessionId) && a.current
+          ? Sp()
           : a.dirty &&
-              Gd(a.selectedSessionId) !== t &&
+              Xd(a.selectedSessionId) !== t &&
               !window.confirm(
                   'Hay cambios sin guardar en este borrador. ¿Deseas cambiar de caso igualmente?'
               )
             ? null
-            : Mp(t, { force: !0 });
+            : jp(t, { force: !0 });
 }
-async function jp(e = '') {
-    const t = Gd(e) || Gd(Wl(zd)),
-        a = Gd(Wd(lp().reviewQueue)[0]?.sessionId);
-    return Dp(t || a);
+async function Fp(e = '') {
+    const t = Xd(e) || Xd(Wl(Yd)),
+        a = Xd(ep(mp().reviewQueue)[0]?.sessionId);
+    return Hp(t || a);
 }
-function Pp() {
+function Up() {
     const t = g(),
-        a = lp(t),
-        n = cp(t),
-        i = hp(t),
-        o = kp(t);
+        a = mp(t),
+        n = gp(t),
+        i = Sp(t),
+        o = wp(t);
     (!(function (e, t) {
-        const a = vp(e),
-            n = kp(),
-            i = pp(e.session.pendingAi?.status || n.pendingAi?.status) || '',
-            o = gp(n.reviewStatus, n.requiresHumanReview, i),
+        const a = $p(e),
+            n = wp(),
+            i = yp(e.session.pendingAi?.status || n.pendingAi?.status) || '',
+            o = hp(n.reviewStatus, n.requiresHumanReview, i),
             s = document.getElementById('clinicalHistoryStatusChip');
         (s instanceof HTMLElement &&
             ((s.dataset.tone = o),
             (s.textContent = e.session.sessionId
-                ? dp(n.reviewStatus)
+                ? fp(n.reviewStatus)
                 : 'Sin seleccion')),
             r(
                 '#clinicalHistoryHeaderMeta',
@@ -25235,26 +25334,26 @@ function Pp() {
                     n.requiresHumanReview
                         ? 'Firma humana requerida'
                         : 'Lista para cierre',
-                    mp(n.confidence),
+                    vp(n.confidence),
                 ]
                     .filter(Boolean)
                     .join(' • ') ||
-                    `${Wd(t.reviewQueue).length} caso(s) listos para revision`
+                    `${ep(t.reviewQueue).length} caso(s) listos para revision`
             ));
     })(i, a),
         r(
             '#clinicalHistoryQueueMeta',
-            `${Wd(a.reviewQueue).length} caso(s) listos para revision humana.`
+            `${ep(a.reviewQueue).length} caso(s) listos para revision humana.`
         ),
         r(
             '#clinicalHistoryTranscriptMeta',
             i.session.sessionId
-                ? `${vp(i)} • ${i.session.surface || 'clinical_intake'}`
+                ? `${$p(i)} • ${i.session.surface || 'clinical_intake'}`
                 : 'El transcript del paciente aparece aqui.'
         ),
         r(
             '#clinicalHistoryTranscriptCount',
-            `${Wd(i.session.transcript).length} mensaje(s)`
+            `${ep(i.session.transcript).length} mensaje(s)`
         ),
         r(
             '#clinicalHistoryEventsMeta',
@@ -25267,8 +25366,8 @@ function Pp() {
             (function (e) {
                 const t = e.session.patient,
                     a = e.draft,
-                    n = pp(e.session.pendingAi?.status || a.pendingAi?.status),
-                    i = gp(a.reviewStatus, a.requiresHumanReview, n),
+                    n = yp(e.session.pendingAi?.status || a.pendingAi?.status),
+                    i = hp(a.reviewStatus, a.requiresHumanReview, n),
                     o =
                         a.reviewReasons.length > 0
                             ? a.reviewReasons.join(', ')
@@ -25279,26 +25378,26 @@ function Pp() {
                         a.clinicianDraft.preguntasFaltantes.length ||
                         a.intake.preguntasFaltantes.length;
                 return [
-                    wp(
+                    Tp(
                         'Paciente',
-                        vp(e),
+                        $p(e),
                         t.email || t.phone || 'Sin contacto documentado'
                     ),
-                    wp('Estado', dp(a.reviewStatus), n || o, i),
-                    wp(
+                    Tp('Estado', fp(a.reviewStatus), n || o, i),
+                    Tp(
                         'Guardrails',
                         a.requiresHumanReview ? 'Revisar' : 'Listo',
                         a.reviewReasons.length > 0
-                            ? _p(a.reviewReasons.join(', '), 90)
+                            ? Cp(a.reviewReasons.join(', '), 90)
                             : 'Sin bloqueo determinista activo',
                         a.requiresHumanReview ? 'warning' : 'success'
                     ),
-                    wp(
+                    Tp(
                         'Paciente facts',
-                        mp(a.confidence),
-                        Sp(t, a.intake) || 'Sin datos clinicos base'
+                        vp(a.confidence),
+                        Ep(t, a.intake) || 'Sin datos clinicos base'
                     ),
-                    wp(
+                    Tp(
                         'Preguntas',
                         String(s),
                         s > 0
@@ -25306,9 +25405,9 @@ function Pp() {
                             : 'Sin preguntas abiertas',
                         s > 0 ? 'warning' : 'success'
                     ),
-                    wp(
+                    Tp(
                         'Actividad',
-                        yp(
+                        qp(
                             e.session.lastMessageAt ||
                                 e.session.updatedAt ||
                                 a.updatedAt
@@ -25321,15 +25420,15 @@ function Pp() {
         l(
             '#clinicalHistoryAttachmentStrip',
             (function (t) {
-                const a = Wd(t.draft.intake.adjuntos);
+                const a = ep(t.draft.intake.adjuntos);
                 return 0 === a.length
                     ? '\n            <article class="clinical-history-attachment-card is-empty">\n                <strong>Sin adjuntos clinicos</strong>\n                <small>Las fotos y documentos privados del caso apareceran aqui.</small>\n            </article>\n        '
                     : a
                           .map((t) => {
                               const a = [
-                                  Gd(t.kind) || 'archivo',
-                                  Gd(t.mime),
-                                  qp(t.size),
+                                  Xd(t.kind) || 'archivo',
+                                  Xd(t.mime),
+                                  Lp(t.size),
                               ]
                                   .filter(Boolean)
                                   .join(' • ');
@@ -25341,43 +25440,43 @@ function Pp() {
         l(
             '#clinicalHistoryQueueList',
             (function (t, a, n) {
-                const i = Wd(t.reviewQueue);
+                const i = ep(t.reviewQueue);
                 return 0 === i.length
                     ? '\n            <article class="clinical-history-empty-card">\n                <strong>Sin cola activa</strong>\n                <p>No hay historias clinicas esperando revision humana.</p>\n            </article>\n        '
                     : i
                           .map((t) => {
-                              const i = Gd(t.sessionId),
-                                  o = _p(
+                              const i = Xd(t.sessionId),
+                                  o = Cp(
                                       t.summary ||
                                           (function (e) {
                                               return [
-                                                  ...Jd(e.missingFields),
-                                                  ...Jd(e.reviewReasons),
-                                                  ...Jd(e.redFlags),
+                                                  ...tp(e.missingFields),
+                                                  ...tp(e.reviewReasons),
+                                                  ...tp(e.redFlags),
                                               ];
                                           })(t).join(' • ') ||
                                           'Caso listo para revision clinica.',
                                       140
                                   ),
                                   s =
-                                      pp(t.pendingAiStatus) ||
-                                      dp(t.reviewStatus || t.sessionStatus),
-                                  r = gp(
+                                      yp(t.pendingAiStatus) ||
+                                      fp(t.reviewStatus || t.sessionStatus),
+                                  r = hp(
                                       t.reviewStatus || t.sessionStatus,
                                       t.requiresHumanReview,
                                       t.pendingAiStatus
                                   ),
                                   l = [
                                       s,
-                                      mp(t.confidence),
+                                      vp(t.confidence),
                                       t.attachmentCount > 0
                                           ? `${t.attachmentCount} adjunto(s)`
                                           : '',
                                   ].filter(Boolean);
-                              return `\n                <button\n                    type="button"\n                    class="clinical-history-queue-item${i === a ? ' is-selected' : ''}"\n                    data-clinical-session-id="${e(i)}"\n                    ${n ? 'disabled' : ''}\n                >\n                    <div class="clinical-history-queue-head">\n                        <strong>${e(t.patientName || t.caseId || 'Caso clinico')}</strong>\n                        <span class="clinical-history-mini-chip" data-tone="${e(r)}">\n                            ${e(s)}\n                        </span>\n                    </div>\n                    <p>${e(o)}</p>\n                    <div class="clinical-history-mini-chip-row">\n                        ${l.map((t) => `<span class="clinical-history-mini-chip">${e(t)}</span>`).join('')}\n                    </div>\n                    <small>${e(yp(t.updatedAt || t.createdAt))}</small>\n                </button>\n            `;
+                              return `\n                <button\n                    type="button"\n                    class="clinical-history-queue-item${i === a ? ' is-selected' : ''}"\n                    data-clinical-session-id="${e(i)}"\n                    ${n ? 'disabled' : ''}\n                >\n                    <div class="clinical-history-queue-head">\n                        <strong>${e(t.patientName || t.caseId || 'Caso clinico')}</strong>\n                        <span class="clinical-history-mini-chip" data-tone="${e(r)}">\n                            ${e(s)}\n                        </span>\n                    </div>\n                    <p>${e(o)}</p>\n                    <div class="clinical-history-mini-chip-row">\n                        ${l.map((t) => `<span class="clinical-history-mini-chip">${e(t)}</span>`).join('')}\n                    </div>\n                    <small>${e(qp(t.updatedAt || t.createdAt))}</small>\n                </button>\n            `;
                           })
                           .join('');
-            })(a, Gd(n.selectedSessionId), n.loading)
+            })(a, Xd(n.selectedSessionId), n.loading)
         ),
         l(
             '#clinicalHistoryTranscript',
@@ -25390,12 +25489,12 @@ function Pp() {
                         ? '\n            <article class="clinical-history-empty-card">\n                <strong>Sin transcript</strong>\n                <p>La conversacion del paciente aparecera aqui cuando exista una sesion cargada.</p>\n            </article>\n        '
                         : t.session.transcript
                               .map((t) => {
-                                  const a = [Gd(t.surface), Gd(t.fieldKey)]
+                                  const a = [Xd(t.surface), Xd(t.fieldKey)]
                                       .filter(Boolean)
                                       .join(' • ');
                                   return `\n                <article\n                    class="clinical-history-message"\n                    data-actor-tone="${e(
                                       (function (e) {
-                                          switch (Gd(e.actor).toLowerCase()) {
+                                          switch (Xd(e.actor).toLowerCase()) {
                                               case 'clinical_intake':
                                                   return 'assistant';
                                               case 'clinician_review':
@@ -25406,7 +25505,7 @@ function Pp() {
                                       })(t)
                                   )}"\n                >\n                    <header>\n                        <span class="clinical-history-mini-chip">${e(
                                       (function (e) {
-                                          switch (Gd(e.actor).toLowerCase()) {
+                                          switch (Xd(e.actor).toLowerCase()) {
                                               case 'clinical_intake':
                                                   return 'IA';
                                               case 'clinician_review':
@@ -25415,10 +25514,10 @@ function Pp() {
                                                   return 'Paciente';
                                           }
                                       })(t)
-                                  )}</span>\n                        <time>${e(yp(t.createdAt))}</time>\n                    </header>\n                    <p>${(function (
+                                  )}</span>\n                        <time>${e(qp(t.createdAt))}</time>\n                    </header>\n                    <p>${(function (
                                       t
                                   ) {
-                                      const a = e(Gd(t));
+                                      const a = e(Xd(t));
                                       return a ? a.replace(/\n/g, '<br>') : '';
                                   })(
                                       t.content
@@ -25430,7 +25529,7 @@ function Pp() {
         l(
             '#clinicalHistoryDraftForm',
             (function (e, t) {
-                const a = t || '' === Gd(e.sessionId),
+                const a = t || '' === Xd(e.sessionId),
                     n =
                         !0 === (i = e.intake.datosPaciente.embarazo)
                             ? 'yes'
@@ -25439,7 +25538,7 @@ function Pp() {
                               : '';
                 var i;
                 const o = e.reviewReasons.join(', ');
-                return `\n        <div class="clinical-history-form-grid">\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Intake estructurado</h4>\n                    <p>Motivo de consulta, evolucion y datos del paciente.</p>\n                </header>\n                ${Lp('intake_motivo_consulta', 'Motivo de consulta', e.intake.motivoConsulta, { placeholder: 'Ej. prurito, acne inflamatorio, rash', disabled: a })}\n                ${Cp('intake_enfermedad_actual', 'Enfermedad actual', e.intake.enfermedadActual, { rows: 5, placeholder: 'Evolucion temporal, distribucion, desencadenantes.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Cp('intake_antecedentes', 'Antecedentes', e.intake.antecedentes, { rows: 4, placeholder: 'Dermatologicos, familiares, cronicos.', disabled: a })}\n                    ${Cp('intake_alergias', 'Alergias', e.intake.alergias, { rows: 4, placeholder: 'Medicamentos, alimentos, contacto.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Cp('intake_medicacion_actual', 'Medicacion actual', e.intake.medicacionActual, { rows: 4, placeholder: 'Nombre, dosis, frecuencia.', disabled: a })}\n                    ${Cp('intake_ros_red_flags', 'ROS / red flags', bp(e.intake.rosRedFlags), { rows: 4, placeholder: 'Una linea por dato clinico o red flag.', hint: 'Cada linea se guarda como item separado.', disabled: a })}\n                </div>\n                ${Cp('intake_resumen_clinico', 'Resumen clinico', e.intake.resumenClinico, { rows: 4, placeholder: 'Resumen limpio para pasar a la consulta.', disabled: a })}\n                ${Cp('intake_preguntas_faltantes', 'Preguntas faltantes del intake', bp(e.intake.preguntasFaltantes), { rows: 3, placeholder: 'Una pregunta por linea.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Lp('patient_edad_anios', 'Edad (anos)', e.intake.datosPaciente.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Lp('patient_peso_kg', 'Peso (kg)', e.intake.datosPaciente.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Ep(
+                return `\n        <div class="clinical-history-form-grid">\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Intake estructurado</h4>\n                    <p>Motivo de consulta, evolucion y datos del paciente.</p>\n                </header>\n                ${Mp('intake_motivo_consulta', 'Motivo de consulta', e.intake.motivoConsulta, { placeholder: 'Ej. prurito, acne inflamatorio, rash', disabled: a })}\n                ${Ip('intake_enfermedad_actual', 'Enfermedad actual', e.intake.enfermedadActual, { rows: 5, placeholder: 'Evolucion temporal, distribucion, desencadenantes.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Ip('intake_antecedentes', 'Antecedentes', e.intake.antecedentes, { rows: 4, placeholder: 'Dermatologicos, familiares, cronicos.', disabled: a })}\n                    ${Ip('intake_alergias', 'Alergias', e.intake.alergias, { rows: 4, placeholder: 'Medicamentos, alimentos, contacto.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Ip('intake_medicacion_actual', 'Medicacion actual', e.intake.medicacionActual, { rows: 4, placeholder: 'Nombre, dosis, frecuencia.', disabled: a })}\n                    ${Ip('intake_ros_red_flags', 'ROS / red flags', kp(e.intake.rosRedFlags), { rows: 4, placeholder: 'Una linea por dato clinico o red flag.', hint: 'Cada linea se guarda como item separado.', disabled: a })}\n                </div>\n                ${Ip('intake_resumen_clinico', 'Resumen clinico', e.intake.resumenClinico, { rows: 4, placeholder: 'Resumen limpio para pasar a la consulta.', disabled: a })}\n                ${Ip('intake_preguntas_faltantes', 'Preguntas faltantes del intake', kp(e.intake.preguntasFaltantes), { rows: 3, placeholder: 'Una pregunta por linea.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Mp('patient_edad_anios', 'Edad (anos)', e.intake.datosPaciente.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Mp('patient_peso_kg', 'Peso (kg)', e.intake.datosPaciente.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Rp(
                     'patient_sexo_biologico',
                     'Sexo biologico',
                     e.intake.datosPaciente.sexoBiologico,
@@ -25450,7 +25549,7 @@ function Pp() {
                         { value: 'intersexual', label: 'Intersexual' },
                     ],
                     { disabled: a }
-                )}\n                    ${Ep(
+                )}\n                    ${Rp(
                     'patient_embarazo',
                     'Embarazo',
                     n,
@@ -25460,7 +25559,7 @@ function Pp() {
                         { value: 'yes', label: 'Si' },
                     ],
                     { disabled: a }
-                )}\n                </div>\n            </section>\n\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Sintesis del medico</h4>\n                    <p>Bloque solo interno: resumen, CIE-10, plan y guardrails.</p>\n                </header>\n                ${Cp('clinician_resumen', 'Resumen medico', e.clinicianDraft.resumen, { rows: 4, placeholder: 'Sintesis final para presentar o firmar.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Cp('clinician_preguntas_faltantes', 'Preguntas faltantes', bp(e.clinicianDraft.preguntasFaltantes), { rows: 4, placeholder: 'Una linea por pregunta.', disabled: a })}\n                    ${Cp('clinician_cie10', 'CIE-10 sugeridos', bp(e.clinicianDraft.cie10Sugeridos), { rows: 4, placeholder: 'Ej. L20.9', disabled: a })}\n                </div>\n                ${Cp('clinician_tratamiento', 'Tratamiento borrador', e.clinicianDraft.tratamientoBorrador, { rows: 4, placeholder: 'No se muestra al paciente; requiere firma humana.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Cp('posologia_texto', 'Posologia borrador', e.clinicianDraft.posologiaBorrador.texto, { rows: 4, placeholder: 'Ej. 1 comp cada 12 h por 7 dias.', disabled: a })}\n                    ${Cp('posologia_base_calculo', 'Base de calculo', e.clinicianDraft.posologiaBorrador.baseCalculo, { rows: 4, placeholder: 'Regla, mg/kg, fuente o criterio.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Lp('posologia_peso_kg', 'Peso usado (kg)', e.clinicianDraft.posologiaBorrador.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Lp('posologia_edad_anios', 'Edad usada (anos)', e.clinicianDraft.posologiaBorrador.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Lp('posologia_units', 'Unidades', e.clinicianDraft.posologiaBorrador.units, { placeholder: 'mg, mg/kg/dia, ml', disabled: a })}\n                </div>\n                ${Ap('posologia_ambiguous', 'La posologia sigue ambigua', !0 === e.clinicianDraft.posologiaBorrador.ambiguous, { hint: 'Mantiene el caso en revisado con cautela.', disabled: a })}\n                ${Ap('requires_human_review', 'Requiere revision humana', !0 === e.requiresHumanReview, { hint: o || 'Toda aprobacion final sigue siendo humana.', disabled: a })}\n            </section>\n        </div>\n    `;
+                )}\n                </div>\n            </section>\n\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Sintesis del medico</h4>\n                    <p>Bloque solo interno: resumen, CIE-10, plan y guardrails.</p>\n                </header>\n                ${Ip('clinician_resumen', 'Resumen medico', e.clinicianDraft.resumen, { rows: 4, placeholder: 'Sintesis final para presentar o firmar.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Ip('clinician_preguntas_faltantes', 'Preguntas faltantes', kp(e.clinicianDraft.preguntasFaltantes), { rows: 4, placeholder: 'Una linea por pregunta.', disabled: a })}\n                    ${Ip('clinician_cie10', 'CIE-10 sugeridos', kp(e.clinicianDraft.cie10Sugeridos), { rows: 4, placeholder: 'Ej. L20.9', disabled: a })}\n                </div>\n                ${Ip('clinician_tratamiento', 'Tratamiento borrador', e.clinicianDraft.tratamientoBorrador, { rows: 4, placeholder: 'No se muestra al paciente; requiere firma humana.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Ip('posologia_texto', 'Posologia borrador', e.clinicianDraft.posologiaBorrador.texto, { rows: 4, placeholder: 'Ej. 1 comp cada 12 h por 7 dias.', disabled: a })}\n                    ${Ip('posologia_base_calculo', 'Base de calculo', e.clinicianDraft.posologiaBorrador.baseCalculo, { rows: 4, placeholder: 'Regla, mg/kg, fuente o criterio.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Mp('posologia_peso_kg', 'Peso usado (kg)', e.clinicianDraft.posologiaBorrador.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Mp('posologia_edad_anios', 'Edad usada (anos)', e.clinicianDraft.posologiaBorrador.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Mp('posologia_units', 'Unidades', e.clinicianDraft.posologiaBorrador.units, { placeholder: 'mg, mg/kg/dia, ml', disabled: a })}\n                </div>\n                ${Bp('posologia_ambiguous', 'La posologia sigue ambigua', !0 === e.clinicianDraft.posologiaBorrador.ambiguous, { hint: 'Mantiene el caso en revisado con cautela.', disabled: a })}\n                ${Bp('requires_human_review', 'Requiere revision humana', !0 === e.requiresHumanReview, { hint: o || 'Toda aprobacion final sigue siendo humana.', disabled: a })}\n            </section>\n        </div>\n    `;
             })(o, n.saving)
         ),
         l(
@@ -25472,10 +25571,10 @@ function Pp() {
                           .map((t) => {
                               const a =
                                       'critical' ===
-                                      Gd(t.severity).toLowerCase()
+                                      Xd(t.severity).toLowerCase()
                                           ? 'danger'
                                           : 'warning' ===
-                                                  Gd(
+                                                  Xd(
                                                       t.severity
                                                   ).toLowerCase() ||
                                               t.requiresAction
@@ -25483,7 +25582,7 @@ function Pp() {
                                             : 'neutral',
                                   n = [
                                       t.status ? `Estado ${t.status}` : '',
-                                      yp(
+                                      qp(
                                           t.occurredAt ||
                                               t.acknowledgedAt ||
                                               t.resolvedAt
@@ -25493,7 +25592,7 @@ function Pp() {
                                       .join(' • ');
                               return `\n                <article class="clinical-history-event-card" data-tone="${e(a)}">\n                    <div class="clinical-history-event-head">\n                        <span class="clinical-history-mini-chip">${e(
                                   (function (e) {
-                                      switch (Gd(e).toLowerCase()) {
+                                      switch (Xd(e).toLowerCase()) {
                                           case 'critical':
                                               return 'Critico';
                                           case 'warning':
@@ -25508,14 +25607,14 @@ function Pp() {
             })(i)
         ),
         (function () {
-            const e = cp(),
+            const e = gp(),
                 t = document.getElementById('clinicalHistoryFollowUpInput');
             t instanceof HTMLTextAreaElement &&
                 (t.value !== String(e.followUpQuestion || '') &&
                     (t.value = String(e.followUpQuestion || '')),
                 (t.disabled = e.loading || e.saving));
         })(),
-        Tp(),
+        Np(),
         (function () {
             const e = document.getElementById('clinical-history');
             e instanceof HTMLElement &&
@@ -25534,16 +25633,16 @@ function Pp() {
                     if (a instanceof HTMLButtonElement)
                         return (
                             e.preventDefault(),
-                            void (await Dp(a.dataset.clinicalSessionId))
+                            void (await Hp(a.dataset.clinicalSessionId))
                         );
                     if (!(t instanceof HTMLButtonElement)) return;
                     e.preventDefault();
-                    const n = Gd(t.dataset.clinicalReviewAction);
+                    const n = Xd(t.dataset.clinicalReviewAction);
                     if ('refresh-current' !== n) {
                         if ('send-follow-up' === n) {
-                            const e = Gd(cp().followUpQuestion);
+                            const e = Xd(gp().followUpQuestion);
                             return e
-                                ? void (await Rp('follow-up', e))
+                                ? void (await Op('follow-up', e))
                                 : void s(
                                       'Escribe la pregunta adicional antes de enviarla.',
                                       'warning'
@@ -25551,25 +25650,25 @@ function Pp() {
                         }
                         'mark-review-required' !== n
                             ? 'approve-current' === n &&
-                              (await Rp('approve', ''))
-                            : await Rp('review-required', '');
+                              (await Op('approve', ''))
+                            : await Op('review-required', '');
                     } else
                         await (async function () {
                             const e =
                                 (function (e = g()) {
                                     return (
-                                        Gd(cp(e).selectedSessionId) ||
-                                        Gd(hp(e).session.sessionId)
+                                        Xd(gp(e).selectedSessionId) ||
+                                        Xd(Sp(e).session.sessionId)
                                     );
-                                })() || Gd(Wl(zd));
-                            return e ? Mp(e, { force: !0 }) : (Pp(), null);
+                                })() || Xd(Wl(Yd));
+                            return e ? jp(e, { force: !0 }) : (Up(), null);
                         })();
                 }),
                 e.addEventListener('submit', async (e) => {
                     const t = e.target;
                     t instanceof HTMLFormElement &&
                         'clinicalHistoryDraftForm' === t.id &&
-                        (e.preventDefault(), await Rp('save', ''));
+                        (e.preventDefault(), await Op('save', ''));
                 }),
                 e.addEventListener('input', (e) => {
                     const t = e.target;
@@ -25577,12 +25676,12 @@ function Pp() {
                         t instanceof HTMLTextAreaElement &&
                         'clinicalHistoryFollowUpInput' === t.id
                     )
-                        return (up({ followUpQuestion: t.value }), void Tp());
+                        return (bp({ followUpQuestion: t.value }), void Np());
                     (t instanceof HTMLInputElement ||
                         t instanceof HTMLTextAreaElement ||
                         t instanceof HTMLSelectElement) &&
                         'clinicalHistoryDraftForm' === t.form?.id &&
-                        Np();
+                        xp();
                 }),
                 e.addEventListener('change', (e) => {
                     const t = e.target;
@@ -25590,39 +25689,39 @@ function Pp() {
                         t instanceof HTMLTextAreaElement ||
                         t instanceof HTMLSelectElement) &&
                         'clinicalHistoryDraftForm' === t.form?.id &&
-                        Np();
+                        xp();
                 }),
                 (e.dataset.bound = 'true'));
         })(),
-        Qd(),
+        Jd(),
         (function () {
             const e = g();
             if ('clinical-history' !== e?.ui?.activeSection) return;
-            const t = cp(e);
+            const t = gp(e);
             if (t.loading || t.saving) return;
-            const a = Gd(Wl(zd)),
-                n = Gd(Wd(lp(e).reviewQueue)[0]?.sessionId),
-                i = a || Gd(t.selectedSessionId) || n;
+            const a = Xd(Wl(Yd)),
+                n = Xd(ep(mp(e).reviewQueue)[0]?.sessionId),
+                i = a || Xd(t.selectedSessionId) || n;
             i
-                ? i === Gd(t.selectedSessionId) && t.current
-                    ? (Vd = '')
-                    : i !== Gd(t.selectedSessionId) || '' === Gd(t.error)
-                      ? Vd !== i &&
-                        ((Vd = i),
+                ? i === Xd(t.selectedSessionId) && t.current
+                    ? (Zd = '')
+                    : i !== Xd(t.selectedSessionId) || '' === Xd(t.error)
+                      ? Zd !== i &&
+                        ((Zd = i),
                         window.setTimeout(() => {
                             'clinical-history' === g()?.ui?.activeSection
-                                ? jp(i).finally(() => {
-                                      Vd = '';
+                                ? Fp(i).finally(() => {
+                                      Zd = '';
                                   })
-                                : (Vd = '');
+                                : (Zd = '');
                         }, 0))
-                      : (Vd = '')
-                : (Vd = '');
+                      : (Zd = '')
+                : (Zd = '');
         })());
 }
-const Op = 'themeMode',
-    xp = new Set(['light', 'dark', 'system']);
-function Hp(e, { persist: t = !1 } = {}) {
+const Kp = 'themeMode',
+    Qp = new Set(['light', 'dark', 'system']);
+function zp(e, { persist: t = !1 } = {}) {
     const a = (function (e) {
         const t = (function (e) {
             return 'light' === e || 'dark' === e
@@ -25641,8 +25740,8 @@ function Hp(e, { persist: t = !1 } = {}) {
     (b((t) => ({ ...t, ui: { ...t.ui, themeMode: e, theme: a } })),
         t &&
             (function (e) {
-                const t = xp.has(e) ? e : 'system';
-                zl(Op, t);
+                const t = Qp.has(e) ? e : 'system';
+                zl(Kp, t);
             })(e),
         Array.from(
             document.querySelectorAll('.admin-theme-btn[data-theme-mode]')
@@ -25652,12 +25751,12 @@ function Hp(e, { persist: t = !1 } = {}) {
                 t.setAttribute('aria-pressed', String(a)));
         }));
 }
-const Up = 'adminLastSection',
-    Fp = 'adminSidebarCollapsed';
-function Kp() {
+const Vp = 'adminLastSection',
+    Gp = 'adminSidebarCollapsed';
+function Wp() {
     return window.matchMedia('(max-width: 1024px)').matches;
 }
-function Qp(e) {
+function Jp(e) {
     return (
         e instanceof HTMLElement &&
         !e.hidden &&
@@ -25666,9 +25765,9 @@ function Qp(e) {
         e.getClientRects().length > 0
     );
 }
-function zp() {
+function Yp() {
     const e = g(),
-        a = Kp(),
+        a = Wp(),
         n = t('#adminSidebar'),
         i = n instanceof HTMLElement && n.classList.contains('is-open');
     (!(function ({ open: e, collapsed: a }) {
@@ -25703,12 +25802,12 @@ function zp() {
                     });
             })());
 }
-function Vp() {
+function Zp() {
     const e = g();
-    (zl(Up, e.ui.activeSection), zl(Fp, e.ui.sidebarCollapsed ? '1' : '0'));
+    (zl(Vp, e.ui.activeSection), zl(Gp, e.ui.sidebarCollapsed ? '1' : '0'));
 }
-async function Gp(e, t = {}) {
-    const a = Qu(e, 'dashboard'),
+async function Xp(e, t = {}) {
+    const a = Wu(e, 'dashboard'),
         { force: n = !1 } = t,
         i = g().ui.activeSection;
     return (
@@ -25726,14 +25825,14 @@ async function Gp(e, t = {}) {
             )
         ) &&
         ((function (e) {
-            const t = Qu(e, 'dashboard');
+            const t = Wu(e, 'dashboard');
             (b((e) => ({ ...e, ui: { ...e.ui, activeSection: t } })),
                 te(t),
                 re(g()),
-                zu(t),
-                Vp());
+                Ju(t),
+                Zp());
         })(a),
-        fu({
+        ku({
             immediate: 'queue' === a,
             reason: 'queue' === a ? 'section-enter' : 'section-exit',
         }),
@@ -25747,32 +25846,32 @@ async function Gp(e, t = {}) {
                 );
             })() &&
             (await Rc()),
-        'clinical-history' === a && (await jp()),
+        'clinical-history' === a && (await Fp()),
         !0)
     );
 }
-function Wp(e) {
+function em(e) {
     b((t) => ({ ...t, ui: { ...t.ui, ...e(t.ui) } }));
 }
-function Jp() {
-    (Wp((e) => ({
+function tm() {
+    (em((e) => ({
         sidebarCollapsed: !e.sidebarCollapsed,
         sidebarOpen: e.sidebarOpen,
     })),
-        zp(),
-        Vp());
+        Yp(),
+        Zp());
 }
-function Yp() {
-    (Wp((e) => ({ sidebarOpen: !e.sidebarOpen })), zp());
+function am() {
+    (em((e) => ({ sidebarOpen: !e.sidebarOpen })), Yp());
 }
-function Zp({ restoreFocus: e = !1 } = {}) {
+function nm({ restoreFocus: e = !1 } = {}) {
     if (
         (b((e) => ({
             ...e,
             ui: { ...e.ui, sidebarOpen: !1 },
             agent: { ...e.agent, open: !1 },
         })),
-        zp(),
+        Yp(),
         ee(),
         (function () {
             const e = t('#adminAgentPanel'),
@@ -25789,12 +25888,12 @@ function Zp({ restoreFocus: e = !1 } = {}) {
         e instanceof HTMLElement && e.focus();
     }
 }
-function Xp() {
+function im() {
     X();
     const e = document.getElementById('adminQuickCommand');
     e instanceof HTMLInputElement && e.focus();
 }
-function em() {
+function om() {
     const e = g().ui.activeSection;
     if ('appointments' === e) {
         const e = document.getElementById('searchAppointments');
@@ -25809,55 +25908,55 @@ function em() {
         e instanceof HTMLInputElement && e.focus();
     }
 }
-const tm = {
+const sm = {
     appointments_overview: async () => {
-        (await Gp('appointments'), Ue(), Oe('all'), xe(''));
+        (await Xp('appointments'), Fe(), Oe('all'), xe(''));
     },
     appointments_pending_transfer: async () => {
-        (await Gp('appointments'), Ue(), Oe('pending_transfer'), xe(''));
+        (await Xp('appointments'), Fe(), Oe('pending_transfer'), xe(''));
     },
     appointments_all: async () => {
-        (await Gp('appointments'), Ue(), Oe('all'), xe(''));
+        (await Xp('appointments'), Fe(), Oe('all'), xe(''));
     },
     appointments_no_show: async () => {
-        (await Gp('appointments'), Ue(), Oe('no_show'), xe(''));
+        (await Xp('appointments'), Fe(), Oe('no_show'), xe(''));
     },
     callbacks_pending: async () => {
-        (await Gp('callbacks'), vt('pending'));
+        (await Xp('callbacks'), vt('pending'));
     },
     callbacks_contacted: async () => {
-        (await Gp('callbacks'), vt('contacted'));
+        (await Xp('callbacks'), vt('contacted'));
     },
     callbacks_sla_urgent: async () => {
-        (await Gp('callbacks'), vt('sla_urgent'));
+        (await Xp('callbacks'), vt('sla_urgent'));
     },
     availability_section: async () => {
-        await Gp('availability');
+        await Xp('availability');
     },
     queue_sla_risk: async () => {
-        (await Gp('queue'), Cc('sla_risk'));
+        (await Xp('queue'), Cc('sla_risk'));
     },
     queue_waiting: async () => {
-        (await Gp('queue'), Cc('waiting'));
+        (await Xp('queue'), Cc('waiting'));
     },
     queue_called: async () => {
-        (await Gp('queue'), Cc('called'));
+        (await Xp('queue'), Cc('called'));
     },
     queue_no_show: async () => {
-        (await Gp('queue'), Cc('no_show'));
+        (await Xp('queue'), Cc('no_show'));
     },
     queue_all: async () => {
-        (await Gp('queue'), Cc('all'));
+        (await Xp('queue'), Cc('all'));
     },
     queue_call_next: async () => {
-        (await Gp('queue'), await Lu(g().queue.stationConsultorio));
+        (await Xp('queue'), await Iu(g().queue.stationConsultorio));
     },
 };
-async function am(e) {
-    const t = tm[e];
+async function rm(e) {
+    const t = sm[e];
     'function' == typeof t && (await t());
 }
-function nm(e) {
+function lm(e) {
     const t = String(e || '')
         .trim()
         .toLowerCase();
@@ -25887,13 +25986,13 @@ function nm(e) {
                         : null
         : null;
 }
-const im = 15e3;
-let om = 0,
-    sm = !1;
-function rm(e) {
+const cm = 15e3;
+let um = 0,
+    dm = !1;
+function pm(e) {
     b((t) => ({ ...t, agent: { ...t.agent, ...e } }));
 }
-function lm({ keepOpen: e = !1 } = {}) {
+function mm({ keepOpen: e = !1 } = {}) {
     b((t) => ({
         ...t,
         agent: {
@@ -25919,14 +26018,14 @@ function lm({ keepOpen: e = !1 } = {}) {
         },
     }));
 }
-function cm(e) {
+function gm(e) {
     return e?.session?.session
         ? e.session
         : e?.session && e?.messages
           ? e
           : null;
 }
-function um(e, t = {}) {
+function bm(e, t = {}) {
     if (!e) return;
     const a = Date.parse(
         String(
@@ -25961,7 +26060,7 @@ function um(e, t = {}) {
         },
     }));
 }
-function dm(e) {
+function fm(e) {
     const t = String(e || '')
         .trim()
         .toLowerCase();
@@ -25977,19 +26076,19 @@ function dm(e) {
         ? t
         : 'dashboard';
 }
-function pm(e) {
+function ym(e) {
     return Array.isArray(e)
         ? e.map((e) => String(e || '').trim()).filter(Boolean)
         : [];
 }
-function mm(e = g()) {
+function vm(e = g()) {
     return (
         !0 === e?.auth?.authenticated &&
         !0 === e?.auth?.capabilities?.adminAgent
     );
 }
-function gm(e = g()) {
-    const t = dm(e.ui.activeSection),
+function hm(e = g()) {
+    const t = fm(e.ui.activeSection),
         a = {
             section: t,
             workspace: '',
@@ -26135,7 +26234,7 @@ function gm(e = g()) {
                 n?.proposal && 'object' == typeof n.proposal
                     ? n.proposal
                     : null,
-            s = pm(
+            s = ym(
                 o?.selectedAssetIds || n?.mediaAssets?.map?.((e) => e?.assetId)
             );
         ((a.workspace = i ? 'media-flow' : ''),
@@ -26166,7 +26265,7 @@ function gm(e = g()) {
     }
     return a;
 }
-function bm(e, t = {}) {
+function km(e, t = {}) {
     const a = e && 'object' == typeof e ? e : {},
         n = t && 'object' == typeof t ? t : {},
         i =
@@ -26184,7 +26283,7 @@ function bm(e, t = {}) {
             domainContext: { ...(a.domainContext || {}), ...o },
         };
     return (
-        (s.section = dm(s.section)),
+        (s.section = fm(s.section)),
         (s.caseId = String(
             s.caseId || s.domainContext?.caseId || s.selectedEntity?.ref || ''
         ).trim()),
@@ -26201,7 +26300,7 @@ function bm(e, t = {}) {
         (s.proposalId = String(
             s.proposalId || s.domainContext?.proposalId || ''
         ).trim()),
-        (s.selectedAssetIds = pm(
+        (s.selectedAssetIds = ym(
             s.selectedAssetIds || s.domainContext?.selectedAssetIds || []
         )),
         (s.visibleIds = Array.isArray(s.visibleIds)
@@ -26216,14 +26315,14 @@ function bm(e, t = {}) {
         s
     );
 }
-function fm() {
+function _m() {
     const a = g(),
         n =
             (function (e) {
-                return e && 'object' == typeof e ? bm(gm(), e) : null;
-            })(a.agent?.context) || gm(a),
+                return e && 'object' == typeof e ? km(hm(), e) : null;
+            })(a.agent?.context) || hm(a),
         o = a.agent || {},
-        s = mm(a),
+        s = vm(a),
         c = String(o.health?.relay?.mode || 'disabled'),
         u = String(o.session?.status || 'idle'),
         d = Array.isArray(o.messages) ? o.messages : [],
@@ -26371,46 +26470,46 @@ function fm() {
         (($.disabled = !y || !s || !0 === o.submitting),
         ($.textContent = o.submitting ? 'Procesando...' : 'Ejecutar'));
 }
-function ym() {
-    (om && (window.clearInterval(om), (om = 0)), (sm = !1));
+function qm() {
+    (um && (window.clearInterval(um), (um = 0)), (dm = !1));
 }
-function vm() {
-    (ym(),
-        mm(g()) &&
+function $m() {
+    (qm(),
+        vm(g()) &&
             !0 === g().agent?.open &&
             g().agent?.session?.sessionId &&
-            (om = window.setInterval(() => {
+            (um = window.setInterval(() => {
                 (async function ({ silent: e = !1 } = {}) {
                     const t = g(),
                         a = String(t.agent?.session?.sessionId || '');
-                    if (!a || !mm(t) || !0 !== t.agent?.open || sm) return null;
-                    ((sm = !0),
+                    if (!a || !vm(t) || !0 !== t.agent?.open || dm) return null;
+                    ((dm = !0),
                         e ||
-                            (rm({
+                            (pm({
                                 syncing: !0,
                                 syncState: 'syncing',
                                 lastError: '',
                             }),
-                            fm()));
+                            _m()));
                     try {
                         const e = await j('admin-agent-events', {
                                 query: { sessionId: a },
                             }),
-                            t = cm(e?.data) || e?.data || null;
+                            t = gm(e?.data) || e?.data || null;
                         return (
                             t
-                                ? um(t, { syncState: 'live' })
-                                : rm({
+                                ? bm(t, { syncState: 'live' })
+                                : pm({
                                       syncing: !1,
                                       syncState: 'idle',
                                       lastSyncAt: Date.now(),
                                   }),
-                            fm(),
+                            _m(),
                             t
                         );
                     } catch (t) {
                         throw (
-                            rm({
+                            pm({
                                 syncing: !1,
                                 syncState: 'error',
                                 lastSyncAt: Date.now(),
@@ -26422,19 +26521,19 @@ function vm() {
                                               'No se pudo sincronizar la sesion del agente',
                                       }),
                             }),
-                            fm(),
+                            _m(),
                             t
                         );
                     } finally {
-                        sm = !1;
+                        dm = !1;
                     }
                 })({ silent: !0 }).catch(() => {});
-            }, im)));
+            }, cm)));
 }
-async function hm({ focus: e = !1 } = {}) {
-    if (!mm(g())) return (fm(), null);
+async function Sm({ focus: e = !1 } = {}) {
+    if (!vm(g())) return (_m(), null);
     if (
-        (rm({ open: !0 }),
+        (pm({ open: !0 }),
         (function () {
             const e = t('#adminAgentPanel'),
                 a = t('.admin-v3-shell');
@@ -26444,30 +26543,30 @@ async function hm({ focus: e = !1 } = {}) {
                 a?.classList.add('has-agent-panel'),
                 document.body.classList.add('admin-agent-open'));
         })(),
-        fm(),
+        _m(),
         await (async function () {
             const e = g();
-            if (!mm(e))
+            if (!vm(e))
                 return (
-                    ym(),
-                    lm({ keepOpen: !0 === e.agent?.open }),
-                    fm(),
+                    qm(),
+                    mm({ keepOpen: !0 === e.agent?.open }),
+                    _m(),
                     null
                 );
             try {
                 const t = await j('admin-agent-status'),
-                    a = cm(t?.data) || t?.data || null;
+                    a = gm(t?.data) || t?.data || null;
                 return (
                     a?.session || a?.health
-                        ? (um(a), vm())
-                        : (ym(), lm({ keepOpen: !0 === e.agent?.open })),
-                    fm(),
+                        ? (bm(a), $m())
+                        : (qm(), mm({ keepOpen: !0 === e.agent?.open })),
+                    _m(),
                     a
                 );
             } catch (e) {
                 return (
-                    ym(),
-                    rm({
+                    qm(),
+                    pm({
                         bootstrapped: !0,
                         syncing: !1,
                         syncState: 'error',
@@ -26475,7 +26574,7 @@ async function hm({ focus: e = !1 } = {}) {
                             e?.message ||
                             'No se pudo cargar la sesion del agente',
                     }),
-                    fm(),
+                    _m(),
                     null
                 );
             }
@@ -26486,23 +26585,23 @@ async function hm({ focus: e = !1 } = {}) {
         e instanceof HTMLTextAreaElement && e.focus();
     }
 }
-async function km() {
-    if (!mm(g())) return null;
-    await hm({ focus: !0 });
+async function wm() {
+    if (!vm(g())) return null;
+    await Sm({ focus: !0 });
 }
-function _m(e) {
+function Cm(e) {
     return String(e || '')
         .toLowerCase()
         .trim();
 }
-function qm(e) {
+function Lm(e) {
     const t = new Date(e?.date || e?.createdAt || '');
     return Number.isNaN(t.getTime()) ? 0 : t.getTime();
 }
-function $m(e) {
+function Am(e) {
     return `${Math.max(0, Math.min(5, Math.round(Number(e || 0))))}/5`;
 }
-function Sm(e) {
+function Em(e) {
     const t = String(e || 'Anonimo')
         .trim()
         .split(/\s+/)
@@ -26510,7 +26609,7 @@ function Sm(e) {
         .slice(0, 2);
     return t.length ? t.map((e) => e.charAt(0).toUpperCase()).join('') : 'AN';
 }
-function wm(e, t = 220) {
+function Tm(e, t = 220) {
     const a = String(e || '').trim();
     return a
         ? a.length <= t
@@ -26518,11 +26617,11 @@ function wm(e, t = 220) {
             : `${a.slice(0, t - 1).trim()}...`
         : 'Sin comentario escrito.';
 }
-function Cm() {
+function Im() {
     const t = g(),
         a = Array.isArray(t?.data?.reviews) ? t.data.reviews : [],
         n = (function (e) {
-            return e.slice().sort((e, t) => qm(t) - qm(e));
+            return e.slice().sort((e, t) => Lm(t) - Lm(e));
         })(a),
         o = (function (e) {
             return e.length
@@ -26532,7 +26631,7 @@ function Cm() {
         s = (function (e, t = 30) {
             const a = Date.now();
             return e.filter((e) => {
-                const n = qm(e);
+                const n = Lm(e);
                 return !!n && a - n <= 24 * t * 60 * 60 * 1e3;
             }).length;
         })(a),
@@ -26636,7 +26735,7 @@ function Cm() {
               '#reviewsSpotlight',
               (function (t) {
                   const a = t.item;
-                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(Sm(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e($m(a.rating))}</p>\n            <p>${e(wm(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
+                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(Em(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e(Am(a.rating))}</p>\n            <p>${e(Tm(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
               })(u)
           )
         : l(
@@ -26662,20 +26761,20 @@ function Cm() {
                                         : n <= 3
                                           ? 'Revisar posible friccion'
                                           : 'Resena util para contexto';
-                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(Sm(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e($m(n))}</span>\n            </header>\n            <p>${e(wm(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
+                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(Em(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e(Am(n))}</span>\n            </header>\n            <p>${e(Tm(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
                         })(t, {
                             featured:
                                 a.item &&
-                                _m(t.name) === _m(a.item.name) &&
-                                qm(t) === qm(a.item),
+                                Cm(t.name) === Cm(a.item.name) &&
+                                Lm(t) === Lm(a.item),
                         })
                     )
                     .join('');
             })(n, u)
         ));
 }
-function Lm() {
-    const e = au();
+function Mm() {
+    const e = su();
     (r('#adminRefreshStatus', e),
         r(
             '#adminSyncState',
@@ -26684,8 +26783,8 @@ function Lm() {
                 : e.replace('Datos: ', 'Estado: ')
         ));
 }
-async function Am(e = !1) {
-    const t = await cu(),
+async function Bm(e = !1) {
+    const t = await mu(),
         a = Boolean(t?.ok);
     return (
         (function () {
@@ -26699,19 +26798,19 @@ async function Am(e = !1) {
                 draftDirty: !1,
                 lastAction: '',
             }),
-                Ft());
+                Ut());
         })(),
         t?.preservedQueueData || (await Nc()),
         re(g()),
-        Ld(g()),
-        Pp(),
+        Md(g()),
+        Up(),
         Ne(),
         ft(),
-        Cm(),
-        Ft(),
+        Im(),
+        Ut(),
         yc(),
-        Lm(),
-        fm(),
+        Mm(),
+        _m(),
         e &&
             s(
                 a ? 'Datos actualizados' : 'Datos cargados desde cache local',
@@ -26720,7 +26819,7 @@ async function Am(e = !1) {
         a
     );
 }
-const Em = new Set([
+const Rm = new Set([
     'anonymous',
     'operator_auth_not_configured',
     'openclaw_no_logueado',
@@ -26728,20 +26827,20 @@ const Em = new Set([
     'challenge_expirado',
     'helper_no_disponible',
 ]);
-let Tm = 0,
-    Im = !1;
-function Mm(e) {
+let Nm = 0,
+    Dm = !1;
+function jm(e) {
     return String(e || 'anonymous')
         .trim()
         .toLowerCase();
 }
-function Bm() {
-    Tm && (window.clearTimeout(Tm), (Tm = 0));
+function Pm() {
+    Nm && (window.clearTimeout(Nm), (Nm = 0));
 }
-function Rm() {
+function Om() {
     const e = g().auth,
         a = String(e.mode || 'legacy_password').trim() || 'legacy_password',
-        n = Mm(e.status);
+        n = jm(e.status);
     if (
         ((function (e = 'legacy_password') {
             const a =
@@ -26869,7 +26968,7 @@ function Rm() {
             ie(!1, { mode: a, status: n }),
             void ne(
                 (function (e) {
-                    const t = Mm(e.status),
+                    const t = jm(e.status),
                         a = e.challenge || null;
                     switch (t) {
                         case 'pending':
@@ -26944,7 +27043,7 @@ function Rm() {
         ie(!1, { mode: a, status: n }),
         ne(
             (function (e) {
-                const t = Mm(e.status);
+                const t = jm(e.status);
                 return e.requires2FA
                     ? {
                           tone: 'warning',
@@ -26969,51 +27068,51 @@ function Rm() {
             })(e)
         ));
 }
-function Nm(e = 1200) {
-    (Bm(),
-        (Tm = window.setTimeout(
+function xm(e = 1200) {
+    (Pm(),
+        (Nm = window.setTimeout(
             () => {
                 !(async function () {
-                    if (Im) return;
-                    Im = !0;
+                    if (Dm) return;
+                    Dm = !0;
                     try {
-                        await U();
+                        await F();
                     } finally {
-                        Im = !1;
+                        Dm = !1;
                     }
                     const e = g().auth;
-                    if ((Rm(), e.authenticated))
-                        return void (await Dm('Sesion iniciada con OpenClaw'));
+                    if ((Om(), e.authenticated))
+                        return void (await Hm('Sesion iniciada con OpenClaw'));
                     if ('openclaw_chatgpt' !== String(e.mode || ''))
-                        return void Bm();
-                    const t = Mm(e.status);
+                        return void Pm();
+                    const t = jm(e.status);
                     'pending' === t && e.challenge
-                        ? Nm(e.challenge.pollAfterMs || 1200)
-                        : Em.has(t) && Bm();
+                        ? xm(e.challenge.pollAfterMs || 1200)
+                        : Rm.has(t) && Pm();
                 })();
             },
             Math.max(600, Number(e || 1200))
         )));
 }
-async function Dm(e = 'Sesion iniciada') {
-    (Bm(),
+async function Hm(e = 'Sesion iniciada') {
+    (Pm(),
         Z(),
         ee(),
         ae(!1),
         oe({ clearPassword: !0 }),
-        await Am(!1),
-        fu({ immediate: 'queue' === g().ui.activeSection, reason: 'login' }),
+        await Bm(!1),
+        ku({ immediate: 'queue' === g().ui.activeSection, reason: 'login' }),
         s(e, 'success'));
 }
-function jm() {
-    (g().auth.requires2FA || oe(), Rm());
+function Fm() {
+    (g().auth.requires2FA || oe(), Om());
 }
-async function Pm(e) {
+async function Um(e) {
     e.preventDefault();
     const t = g();
     if ('openclaw_chatgpt' === String(t.auth.mode || ''))
         return void (await (async function () {
-            (Bm(),
+            (Pm(),
                 ie(!0, { mode: 'openclaw_chatgpt', status: g().auth.status }),
                 ne({
                     tone: 'neutral',
@@ -27029,8 +27128,8 @@ async function Pm(e) {
                         );
                     })(),
                     t = g().auth;
-                if ((Rm(), e.authenticated || t.authenticated))
-                    return void (await Dm('Sesion iniciada con OpenClaw'));
+                if ((Om(), e.authenticated || t.authenticated))
+                    return void (await Hm('Sesion iniciada con OpenClaw'));
                 (!(function (e) {
                     const t = String(e || '').trim();
                     if (!t) return !1;
@@ -27050,9 +27149,9 @@ async function Pm(e) {
                         'Abre el helper local desde el enlace del challenge.',
                         'warning'
                     ),
-                    'pending' === Mm(e.status) &&
+                    'pending' === jm(e.status) &&
                         e.challenge &&
-                        (Nm(e.challenge.pollAfterMs || 1200),
+                        (xm(e.challenge.pollAfterMs || 1200),
                         s('Challenge OpenClaw emitido', 'info')));
             } catch (e) {
                 (b((t) => ({
@@ -27065,7 +27164,7 @@ async function Pm(e) {
                                 : 'No se pudo iniciar el flujo OpenClaw.',
                     },
                 })),
-                    Rm(),
+                    Om(),
                     s(
                         e?.message || 'No se pudo iniciar el flujo OpenClaw',
                         'error'
@@ -27211,7 +27310,7 @@ async function Pm(e) {
             title: 'Acceso concedido',
             message: 'Sesion autenticada. Cargando centro operativo.',
         }),
-            await Dm('Sesion iniciada'));
+            await Hm('Sesion iniciada'));
     } catch (e) {
         (ne({
             tone: 'danger',
@@ -27229,7 +27328,7 @@ async function Pm(e) {
         });
     }
 }
-function Om(e, ...t) {
+function Km(e, ...t) {
     const a = e?.dataset || {};
     for (const e of t) {
         const t = a[e];
@@ -27239,12 +27338,12 @@ function Om(e, ...t) {
     }
     return '';
 }
-function xm(e, t = '') {
+function Qm(e, t = '') {
     const a = {
         reviewSource: 'appointments',
-        reviewAssessmentKind: Om(e, 'reviewAssessmentKind'),
-        reviewAssessmentLabel: Om(e, 'reviewAssessmentLabel'),
-        reviewAssessmentDetail: Om(e, 'reviewAssessmentDetail'),
+        reviewAssessmentKind: Km(e, 'reviewAssessmentKind'),
+        reviewAssessmentLabel: Km(e, 'reviewAssessmentLabel'),
+        reviewAssessmentDetail: Km(e, 'reviewAssessmentDetail'),
     };
     return (
         'resolved' ===
@@ -27252,15 +27351,15 @@ function xm(e, t = '') {
                 .trim()
                 .toLowerCase() &&
             ((a.resolutionSource = 'appointments'),
-            (a.resolutionOutcome = Om(e, 'reviewResolutionOutcome')),
-            (a.resolutionOutcomeLabel = Om(e, 'reviewResolutionLabel')),
-            (a.resolutionNote = Om(e, 'reviewResolutionNote'))),
+            (a.resolutionOutcome = Km(e, 'reviewResolutionOutcome')),
+            (a.resolutionOutcomeLabel = Km(e, 'reviewResolutionLabel')),
+            (a.resolutionNote = Km(e, 'reviewResolutionNote'))),
         Object.fromEntries(
             Object.entries(a).filter(([, e]) => String(e || '').trim())
         )
     );
 }
-async function Hm(e, t) {
+async function zm(e, t) {
     switch (e) {
         case 'appointment-quick-filter':
             return (Oe(String(t.dataset.filterValue || 'all')), !0);
@@ -27281,7 +27380,7 @@ async function Hm(e, t) {
             return (
                 await (async function (e) {
                     (await Ke(e, { paymentStatus: 'paid' }),
-                        Fe(e, { paymentStatus: 'paid' }));
+                        Ue(e, { paymentStatus: 'paid' }));
                 })(Number(t.dataset.id || 0)),
                 s('Transferencia aprobada', 'success'),
                 !0
@@ -27290,7 +27389,7 @@ async function Hm(e, t) {
             return (
                 await (async function (e) {
                     (await Ke(e, { paymentStatus: 'failed' }),
-                        Fe(e, { paymentStatus: 'failed' }));
+                        Ue(e, { paymentStatus: 'failed' }));
                 })(Number(t.dataset.id || 0)),
                 s('Transferencia rechazada', 'warning'),
                 !0
@@ -27299,7 +27398,7 @@ async function Hm(e, t) {
             return (
                 await (async function (e) {
                     (await Ke(e, { status: 'no_show' }),
-                        Fe(e, { status: 'no_show' }));
+                        Ue(e, { status: 'no_show' }));
                 })(Number(t.dataset.id || 0)),
                 s('Marcado como no show', 'warning'),
                 !0
@@ -27308,7 +27407,7 @@ async function Hm(e, t) {
             return (
                 await (async function (e) {
                     (await Ke(e, { status: 'cancelled' }),
-                        Fe(e, { status: 'cancelled' }));
+                        Ue(e, { status: 'cancelled' }));
                 })(Number(t.dataset.id || 0)),
                 s('Cita cancelada', 'warning'),
                 !0
@@ -27359,9 +27458,9 @@ async function Hm(e, t) {
             );
         case 'appointment-review-help-request-status': {
             const e = String(t.dataset.reviewHelpRequestStatus || '').trim(),
-                a = xm(t, e);
+                a = Qm(t, e);
             return (
-                await Cu({
+                await Tu({
                     helpRequestId:
                         Number(t.dataset.reviewHelpRequestId || 0) || 0,
                     ticketId: Number(t.dataset.reviewTicketId || 0) || 0,
@@ -27392,9 +27491,9 @@ async function Hm(e, t) {
             );
         }
         case 'appointment-review-confirm-appointment': {
-            const e = xm(t, 'resolved');
+            const e = Qm(t, 'resolved');
             return (
-                await Cu({
+                await Tu({
                     helpRequestId:
                         Number(t.dataset.reviewHelpRequestId || 0) || 0,
                     ticketId: Number(t.dataset.reviewTicketId || 0) || 0,
@@ -27416,7 +27515,7 @@ async function Hm(e, t) {
             );
         }
         case 'appointment-review-open-availability': {
-            if (!1 === (await Gp('availability'))) return !0;
+            if (!1 === (await Xp('availability'))) return !0;
             const e = String(t.dataset.reviewRequestedDate || '').trim(),
                 a = String(t.dataset.reviewRequestedTime || '').trim();
             return (
@@ -27477,7 +27576,7 @@ async function Hm(e, t) {
             );
         }
         case 'appointment-review-open-queue': {
-            if (!1 === (await Gp('queue'))) return !0;
+            if (!1 === (await Xp('queue'))) return !0;
             (Ac(), Cc('all'));
             const e = Number(t.dataset.reviewTicketId || 0) || 0,
                 a = String(t.dataset.reviewTicketCode || '').trim();
@@ -27520,12 +27619,12 @@ async function Hm(e, t) {
             );
         }
         case 'appointment-review-clear-context':
-            return (Ue(), s('Contexto de sala cerrado', 'info'), !0);
+            return (Fe(), s('Contexto de sala cerrado', 'info'), !0);
         default:
             return !1;
     }
 }
-async function Um(e, a) {
+async function Vm(e, a) {
     switch (e) {
         case 'change-month':
             return (
@@ -27751,7 +27850,7 @@ async function Um(e, a) {
                             lastAction: `Cambios guardados ${new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: !1 })}`,
                         },
                     })),
-                        Ft());
+                        Ut());
                 })(),
                 s('Disponibilidad guardada', 'success'),
                 !0
@@ -27785,12 +27884,12 @@ async function Um(e, a) {
                 !0
             );
         case 'availability-open-appointments-review':
-            return (await Gp('appointments'), !0);
+            return (await Xp('appointments'), !0);
         default:
             return !1;
     }
 }
-async function Fm(e, t) {
+async function Gm(e, t) {
     switch (e) {
         case 'callback-quick-filter':
             return (vt(String(t.dataset.filterValue || 'all')), !0);
@@ -27806,7 +27905,7 @@ async function Fm(e, t) {
             );
         case 'callbacks-triage-next':
         case 'context-open-callbacks-next':
-            return (await Gp('callbacks'), vt('pending'), qt(), !0);
+            return (await Xp('callbacks'), vt('pending'), qt(), !0);
         case 'mark-contacted':
             return (
                 await _t(
@@ -27902,42 +28001,42 @@ async function Fm(e, t) {
                 !0
             );
         case 'context-open-callbacks-pending':
-            return (await Gp('callbacks'), vt('pending'), !0);
+            return (await Xp('callbacks'), vt('pending'), !0);
         default:
             return !1;
     }
 }
-async function Km(e, t) {
+async function Wm(e, t) {
     switch (e) {
         case 'context-open-appointments-overview':
-            return (await Gp('appointments'), Ue(), Oe('all'), xe(''), !0);
+            return (await Xp('appointments'), Fe(), Oe('all'), xe(''), !0);
         case 'context-open-appointments-transfer':
-            return (await Gp('appointments'), Ue(), Oe('pending_transfer'), !0);
+            return (await Xp('appointments'), Fe(), Oe('pending_transfer'), !0);
         case 'context-open-availability':
-            return (await Gp('availability'), !0);
+            return (await Xp('availability'), !0);
         case 'context-open-dashboard':
-            return (await Gp('dashboard'), !0);
+            return (await Xp('dashboard'), !0);
         case 'context-open-clinical-history':
             return (
-                await Gp('clinical-history'),
-                await jp(t?.dataset?.sessionId || ''),
+                await Xp('clinical-history'),
+                await Fp(t?.dataset?.sessionId || ''),
                 !0
             );
         default:
             return !1;
     }
 }
-async function Qm(e, t) {
+async function Jm(e, t) {
     switch (e) {
         case 'queue-bulk-action':
-            return (await Bu(String(t.dataset.queueAction || 'no_show')), !0);
+            return (await ju(String(t.dataset.queueAction || 'no_show')), !0);
         case 'queue-bulk-reprint':
-            return (await Nu(), !0);
+            return (await Ou(), !0);
         default:
             return !1;
     }
 }
-async function zm(e, t) {
+async function Ym(e, t) {
     return (
         'queue-copy-install-link' === e &&
         (await (async function (e) {
@@ -27954,32 +28053,32 @@ async function zm(e, t) {
         !0)
     );
 }
-async function Vm(e) {
+async function Zm(e) {
     switch (e) {
         case 'queue-sensitive-confirm':
-            return (await Tu(), !0);
+            return (await Ru(), !0);
         case 'queue-sensitive-cancel':
-            return (Iu(), !0);
+            return (Nu(), !0);
         default:
             return !1;
     }
 }
-function Gm(e, t = 0) {
+function Xm(e, t = 0) {
     return Number(e?.dataset?.queueConsultorio || t);
 }
-function Wm(e, t = 0) {
+function eg(e, t = 0) {
     return Number(e?.dataset?.queueId || t);
 }
-async function Jm(e, t) {
+async function tg(e, t) {
     switch (e) {
         case 'queue-refresh-state':
             return (await Rc(), !0);
         case 'queue-call-next':
-            return (await Lu(Gm(t)), !0);
+            return (await Iu(Xm(t)), !0);
         case 'queue-release-station':
-            return (await Eu(Gm(t)), !0);
+            return (await Bu(Xm(t)), !0);
         case 'queue-toggle-shortcuts':
-            return (ju(), !0);
+            return (Hu(), !0);
         case 'queue-toggle-one-tap':
             return (
                 I('queue-toggle-one-tap')
@@ -27988,9 +28087,9 @@ async function Jm(e, t) {
                 !0
             );
         case 'queue-start-practice':
-            return (Pu(!0), !0);
+            return (Fu(!0), !0);
         case 'queue-stop-practice':
-            return (Pu(!1), !0);
+            return (Fu(!1), !0);
         case 'queue-lock-station':
             return (
                 (function (e) {
@@ -27998,7 +28097,7 @@ async function Jm(e, t) {
                     const t = 2 === Number(e || 0) ? 2 : 1;
                     (wc({ stationMode: 'locked', stationConsultorio: t }),
                         vc(`Estacion bloqueada en C${t}`));
-                })(Gm(t, 1)),
+                })(Xm(t, 1)),
                 !0
             );
         case 'queue-set-station-mode':
@@ -28037,7 +28136,7 @@ async function Jm(e, t) {
             return !1;
     }
 }
-function Ym(e, ...t) {
+function ag(e, ...t) {
     if (!e || 'object' != typeof e) return '';
     for (const a of t) {
         const t = e[a];
@@ -28048,7 +28147,7 @@ function Ym(e, ...t) {
     }
     return '';
 }
-function Zm(e, ...t) {
+function ng(e, ...t) {
     const a = e?.dataset || {};
     for (const e of t) {
         const t = a[e];
@@ -28058,56 +28157,56 @@ function Zm(e, ...t) {
     }
     return '';
 }
-function Xm(e, t = '') {
+function ig(e, t = '') {
     const a = {
-        reviewAssessmentKind: Zm(e, 'queueReviewAssessmentKind'),
-        reviewAssessmentLabel: Zm(e, 'queueReviewAssessmentLabel'),
-        reviewAssessmentDetail: Zm(e, 'queueReviewAssessmentDetail'),
+        reviewAssessmentKind: ng(e, 'queueReviewAssessmentKind'),
+        reviewAssessmentLabel: ng(e, 'queueReviewAssessmentLabel'),
+        reviewAssessmentDetail: ng(e, 'queueReviewAssessmentDetail'),
     };
     return (
         'resolved' ===
             String(t || '')
                 .trim()
                 .toLowerCase() &&
-            ((a.resolutionOutcome = Zm(e, 'queueResolutionOutcome')),
-            (a.resolutionOutcomeLabel = Zm(e, 'queueResolutionOutcomeLabel')),
-            (a.resolutionSource = Zm(e, 'queueResolutionSource') || 'queue'),
-            (a.resolutionNote = Zm(e, 'queueResolutionNote'))),
+            ((a.resolutionOutcome = ng(e, 'queueResolutionOutcome')),
+            (a.resolutionOutcomeLabel = ng(e, 'queueResolutionOutcomeLabel')),
+            (a.resolutionSource = ng(e, 'queueResolutionSource') || 'queue'),
+            (a.resolutionNote = ng(e, 'queueResolutionNote'))),
         Object.fromEntries(
             Object.entries(a).filter(([, e]) => String(e || '').trim())
         )
     );
 }
-async function eg(e, t) {
+async function og(e, t) {
     switch (e) {
         case 'queue-toggle-ticket-select':
-            return (kc(Wm(t)), !0);
+            return (kc(eg(t)), !0);
         case 'queue-select-visible':
             return (_c(), !0);
         case 'queue-clear-selection':
             return (qc(), !0);
         case 'queue-ticket-action':
             return (
-                await Au(
-                    Wm(t),
+                await Mu(
+                    eg(t),
                     (function (e, t = '') {
                         return String(e?.dataset?.queueAction || t);
                     })(t),
-                    Gm(t)
+                    Xm(t)
                 ),
                 !0
             );
         case 'queue-reprint-ticket':
-            return (await Ru(Wm(t)), !0);
+            return (await Pu(eg(t)), !0);
         case 'queue-help-request-status': {
             const e = String(t?.dataset?.queueHelpRequestStatus || '').trim();
             return (
-                await Cu({
+                await Tu({
                     helpRequestId:
                         Number(t?.dataset?.queueHelpRequestId || 0) || 0,
-                    ticketId: Wm(t),
+                    ticketId: eg(t),
                     status: e,
-                    context: Xm(t, e),
+                    context: ig(t, e),
                 }),
                 !0
             );
@@ -28116,7 +28215,7 @@ async function eg(e, t) {
             const e = (function (e) {
                 const t = g(),
                     a = Number(e?.dataset?.queueHelpRequestId || 0) || 0,
-                    n = Wm(e),
+                    n = eg(e),
                     i = t?.data?.queueMeta || {},
                     o = Array.isArray(t?.data?.queueTickets)
                         ? t.data.queueTickets
@@ -28140,20 +28239,20 @@ async function eg(e, t) {
                             : {},
                     u =
                         Number(
-                            Ym(c, 'appointmentId', 'appointment_id') ||
+                            ag(c, 'appointmentId', 'appointment_id') ||
                                 l?.appointmentId ||
                                 0
                         ) || 0,
                     d = String(
-                        Ym(c, 'phoneLast4', 'phone_last4') ||
+                        ag(c, 'phoneLast4', 'phone_last4') ||
                             l?.phoneLast4 ||
                             ''
                     ).trim(),
                     p = String(
-                        Ym(c, 'requestedDate', 'requested_date') || ''
+                        ag(c, 'requestedDate', 'requested_date') || ''
                     ).trim(),
                     m = String(
-                        Ym(c, 'requestedTime', 'requested_time') || ''
+                        ag(c, 'requestedTime', 'requested_time') || ''
                     ).trim(),
                     b = String(r?.reason || l?.assistanceReason || 'general')
                         .trim()
@@ -28162,28 +28261,28 @@ async function eg(e, t) {
                         r?.reasonLabel || l?.assistanceReasonLabel || ''
                     ).trim(),
                     y = String(
-                        Ym(
+                        ag(
                             c,
                             'reviewAssessmentKind',
                             'review_assessment_kind'
                         ) || ''
                     ).trim(),
                     v = String(
-                        Ym(
+                        ag(
                             c,
                             'reviewAssessmentLabel',
                             'review_assessment_label'
                         ) || ''
                     ).trim(),
                     h = String(
-                        Ym(
+                        ag(
                             c,
                             'reviewAssessmentDetail',
                             'review_assessment_detail'
                         ) || ''
                     ).trim(),
                     k = String(
-                        Ym(
+                        ag(
                             c,
                             'resolutionOutcome',
                             'resolution_outcome',
@@ -28192,7 +28291,7 @@ async function eg(e, t) {
                         ) || ''
                     ).trim(),
                     _ = String(
-                        Ym(
+                        ag(
                             c,
                             'resolutionOutcomeLabel',
                             'resolution_outcome_label',
@@ -28201,7 +28300,7 @@ async function eg(e, t) {
                         ) || ''
                     ).trim(),
                     q = String(
-                        Ym(
+                        ag(
                             c,
                             'resolutionSource',
                             'resolution_source',
@@ -28210,7 +28309,7 @@ async function eg(e, t) {
                         ) || ''
                     ).trim(),
                     $ = String(
-                        Ym(c, 'resolutionNote', 'resolution_note') || ''
+                        ag(c, 'resolutionNote', 'resolution_note') || ''
                     ).trim();
                 return {
                     mode: 'queue_help_request',
@@ -28247,7 +28346,7 @@ async function eg(e, t) {
                 };
             })(t);
             return (
-                !(await Gp('appointments')) ||
+                !(await Xp('appointments')) ||
                 (Oe('all'),
                 xe(e.phoneLast4),
                 De({ reviewContext: Pe(e) }),
@@ -28304,7 +28403,7 @@ async function eg(e, t) {
             );
         case 'queue-focus-ticket': {
             (Ac(), Cc('all'));
-            const e = Wm(t),
+            const e = eg(t),
                 a = String(t?.dataset?.queueTicketCode || '').trim();
             return (
                 window.requestAnimationFrame(() => {
@@ -28350,35 +28449,35 @@ async function eg(e, t) {
             return !1;
     }
 }
-async function tg(e, t) {
+async function sg(e, t) {
     if (I(e)) return (M(), !0);
-    const a = [Jm, eg, Qm, Vm, zm];
+    const a = [tg, og, Jm, Zm, Ym];
     for (const n of a) if (await n(e, t)) return !0;
     return !1;
 }
-async function ag(e, t) {
+async function rg(e, t) {
     switch (e) {
         case 'close-toast':
             return (t.closest('.toast')?.remove(), !0);
         case 'set-admin-theme':
             return (
-                Hp(String(t.dataset.themeMode || 'system'), { persist: !0 }),
+                zp(String(t.dataset.themeMode || 'system'), { persist: !0 }),
                 !0
             );
         case 'toggle-sidebar-collapse':
-            return (Jp(), !0);
+            return (tm(), !0);
         case 'refresh-admin-data':
-            return (await Am(!0), !0);
+            return (await Bm(!0), !0);
         case 'run-admin-command': {
             const e = document.getElementById('adminQuickCommand');
             if (e instanceof HTMLInputElement) {
-                const t = nm(e.value);
-                t && (await am(t), (e.value = ''), ee());
+                const t = lm(e.value);
+                t && (await rm(t), (e.value = ''), ee());
             }
             return !0;
         }
         case 'open-command-palette':
-            return (X(), Xp(), !0);
+            return (X(), im(), !0);
         case 'open-operator-app':
             return (
                 window.location.assign(
@@ -28400,7 +28499,7 @@ async function ag(e, t) {
             return (ee(), !0);
         case 'logout':
             return (
-                Bm(),
+                Pm(),
                 await (async function () {
                     const e = g().auth.mode || 'legacy_password';
                     let t = null;
@@ -28432,10 +28531,10 @@ async function ag(e, t) {
                             },
                         })));
                 })(),
-                fu({ immediate: !1, reason: 'logout' }),
+                ku({ immediate: !1, reason: 'logout' }),
                 Y(),
                 ee(),
-                jm(),
+                Fm(),
                 s('Sesion cerrada', 'info'),
                 !0
             );
@@ -28460,7 +28559,7 @@ async function ag(e, t) {
             return !1;
     }
 }
-async function ng() {
+async function lg() {
     (!(function () {
         const e = t('#loginScreen'),
             a = t('#adminDashboard');
@@ -28493,7 +28592,7 @@ async function ng() {
                 e.preventDefault();
                 try {
                     await (async function (e, t) {
-                        const a = [ag, Hm, Fm, Um, tg, Km];
+                        const a = [rg, zm, Gm, Vm, sg, Wm];
                         for (const n of a) if (await n(e, t)) return !0;
                         return !1;
                     })(a, t);
@@ -28509,10 +28608,10 @@ async function ng() {
                     : null;
             if (!t) return;
             e.preventDefault();
-            const a = await Gp(
+            const a = await Xp(
                 String(t.getAttribute('data-section') || 'dashboard')
             );
-            Kp() && !1 !== a && Zp();
+            Wp() && !1 !== a && nm();
         }),
         document.addEventListener('click', (e) => {
             const t =
@@ -28580,8 +28679,8 @@ async function ng() {
             }));
         })(),
         (function () {
-            const e = Qu(Ql(Up, 'dashboard')),
-                t = '1' === Ql(Fp, '0');
+            const e = Wu(Ql(Vp, 'dashboard')),
+                t = '1' === Ql(Gp, '0');
             (b((a) => ({
                 ...a,
                 ui: {
@@ -28592,8 +28691,8 @@ async function ng() {
                 },
             })),
                 te(e),
-                zu(e),
-                zp());
+                Ju(e),
+                Yp());
         })(),
         (function () {
             const e = gc(sc()),
@@ -28604,9 +28703,9 @@ async function ng() {
                 ...i,
                 queue: {
                     ...i.queue,
-                    stationMode: Uu(a, e.stationMode),
-                    stationConsultorio: Hu(t, e.stationConsultorio),
-                    oneTap: Fu(n, e.oneTap),
+                    stationMode: zu(a, e.stationMode),
+                    stationConsultorio: Qu(t, e.stationConsultorio),
+                    oneTap: Vu(n, e.oneTap),
                     helpOpen: e.helpOpen,
                     customCallKey:
                         e.customCallKey && 'object' == typeof e.customCallKey
@@ -28616,15 +28715,15 @@ async function ng() {
             })),
                 fc(g()));
         })(),
-        Hp(
+        zp(
             (function () {
-                const e = String(Ql(Op, 'system') || 'system')
+                const e = String(Ql(Kp, 'system') || 'system')
                     .trim()
                     .toLowerCase();
-                return xp.has(e) ? e : 'system';
+                return Qp.has(e) ? e : 'system';
             })()
         ),
-        jm(),
+        Fm(),
         (function () {
             const e = document.getElementById('appointmentFilter');
             e instanceof HTMLSelectElement &&
@@ -28669,8 +28768,8 @@ async function ng() {
                 (l = r).addEventListener('keydown', async (e) => {
                     if ('Enter' !== e.key) return;
                     e.preventDefault();
-                    const t = nm(l.value);
-                    t && (await am(t));
+                    const t = lm(l.value);
+                    t && (await rm(t));
                 });
         })(),
         (function () {
@@ -28678,19 +28777,19 @@ async function ng() {
                 a = t('#adminMenuClose'),
                 n = t('#adminSidebarBackdrop');
             (e?.addEventListener('click', () => {
-                Kp() ? Yp() : Jp();
+                Wp() ? am() : tm();
             }),
-                a?.addEventListener('click', () => Zp({ restoreFocus: !0 })),
-                n?.addEventListener('click', () => Zp({ restoreFocus: !0 })),
+                a?.addEventListener('click', () => nm({ restoreFocus: !0 })),
+                n?.addEventListener('click', () => nm({ restoreFocus: !0 })),
                 window.addEventListener('resize', () => {
-                    Kp() ? zp() : Zp();
+                    Wp() ? Yp() : nm();
                 }),
                 document.addEventListener('keydown', (e) => {
-                    if (!Kp() || !g().ui.sidebarOpen) return;
+                    if (!Wp() || !g().ui.sidebarOpen) return;
                     if ('Escape' === e.key)
                         return (
                             e.preventDefault(),
-                            void Zp({ restoreFocus: !0 })
+                            void nm({ restoreFocus: !0 })
                         );
                     if ('Tab' !== e.key) return;
                     const a = (function () {
@@ -28704,7 +28803,7 @@ async function ng() {
                                 e.querySelectorAll('.nav-item[data-section]')
                             ).filter((e) => e !== n),
                             o = e.querySelector('.logout-btn');
-                        return [a, n, ...i, o].filter(Qp);
+                        return [a, n, ...i, o].filter(Jp);
                     })();
                     if (!a.length) return;
                     const n = a.indexOf(document.activeElement);
@@ -28716,7 +28815,7 @@ async function ng() {
                 }),
                 window.addEventListener('hashchange', async () => {
                     const e = (function (e = 'dashboard') {
-                        return Qu(
+                        return Wu(
                             String(window.location.hash || '').replace(
                                 /^#/,
                                 ''
@@ -28724,10 +28823,10 @@ async function ng() {
                             e
                         );
                     })(g().ui.activeSection);
-                    await Gp(e, { force: !0 });
+                    await Xp(e, { force: !0 });
                 }),
                 window.addEventListener('storage', (e) => {
-                    'themeMode' === e.key && Hp(String(e.newValue || 'system'));
+                    'themeMode' === e.key && zp(String(e.newValue || 'system'));
                 }));
         })(),
         window.addEventListener('beforeunload', (e) => {
@@ -28735,20 +28834,20 @@ async function ng() {
         }));
     const e = document.getElementById('loginForm');
     var a;
-    (e instanceof HTMLFormElement && e.addEventListener('submit', Pm),
+    (e instanceof HTMLFormElement && e.addEventListener('submit', Um),
         (a = {
-            navigateToSection: Gp,
-            focusQuickCommand: Xp,
-            focusAgentPrompt: km,
-            focusCurrentSearch: em,
-            runQuickAction: am,
-            closeSidebar: () => Zp({ restoreFocus: !0 }),
+            navigateToSection: Xp,
+            focusQuickCommand: im,
+            focusAgentPrompt: wm,
+            focusCurrentSearch: om,
+            runQuickAction: rm,
+            closeSidebar: () => nm({ restoreFocus: !0 }),
             toggleMenu: () => {
-                Kp() ? Yp() : Jp();
+                Wp() ? am() : tm();
             },
-            dismissQueueSensitiveDialog: Mu,
-            toggleQueueHelp: () => ju(),
-            queueNumpadAction: xu,
+            dismissQueueSensitiveDialog: Du,
+            toggleQueueHelp: () => Hu(),
+            queueNumpadAction: Ku,
         }),
         window.addEventListener('keydown', (e) => {
             (function (e, t) {
@@ -28862,33 +28961,33 @@ async function ng() {
                                   ).catch(() => {})));
                 })(e, a.queueNumpadAction);
         }),
-        await U(),
+        await F(),
         g().auth.authenticated
             ? (await (async function () {
-                  (Bm(), Z(), ee(), await Am(!1));
+                  (Pm(), Z(), ee(), await Bm(!1));
               })(),
               te(g().ui.activeSection))
             : (Y(),
               ee(),
-              jm(),
+              Fm(),
               (function () {
                   const e = g().auth;
                   !e.authenticated &&
                       'openclaw_chatgpt' === String(e.mode || '') &&
-                      'pending' === Mm(e.status) &&
+                      'pending' === jm(e.status) &&
                       e.challenge &&
-                      Nm(e.challenge.pollAfterMs || 1200);
+                      xm(e.challenge.pollAfterMs || 1200);
               })()),
-        uu ||
+        gu ||
             'undefined' == typeof window ||
-            ((uu = !0),
+            ((gu = !0),
             window.setInterval(() => {
-                bu('timer');
-            }, pu()),
-            document.addEventListener('visibilitychange', yu),
-            window.addEventListener('focus', vu),
-            window.addEventListener('online', hu),
-            fu({
+                hu('timer');
+            }, fu()),
+            document.addEventListener('visibilitychange', _u),
+            window.addEventListener('focus', qu),
+            window.addEventListener('online', $u),
+            ku({
                 immediate:
                     g().auth?.authenticated &&
                     'queue' === g().ui?.activeSection,
@@ -28937,22 +29036,22 @@ async function ng() {
                 }));
         })(),
         window.setInterval(() => {
-            Lm();
+            Mm();
         }, 3e4));
 }
-const ig = (
+const cg = (
     'loading' === document.readyState
         ? new Promise((e, t) => {
               document.addEventListener(
                   'DOMContentLoaded',
                   () => {
-                      ng().then(e).catch(t);
+                      lg().then(e).catch(t);
                   },
                   { once: !0 }
               );
           })
-        : ng()
+        : lg()
 ).catch((e) => {
     throw (console.error('admin-v3 boot failed', e), e);
 });
-export { ig as default };
+export { cg as default };

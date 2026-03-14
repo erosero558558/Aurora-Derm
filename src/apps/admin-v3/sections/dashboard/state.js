@@ -36,6 +36,16 @@ export function getDashboardCollections(state) {
             typeof state.data.internalConsoleMeta === 'object'
                 ? state.data.internalConsoleMeta
                 : null,
+        patientFlowMeta:
+            state?.data?.patientFlowMeta &&
+            typeof state.data.patientFlowMeta === 'object'
+                ? state.data.patientFlowMeta
+                : null,
+        telemedicineMeta:
+            state?.data?.telemedicineMeta &&
+            typeof state.data.telemedicineMeta === 'object'
+                ? state.data.telemedicineMeta
+                : null,
         funnel: state?.data?.funnelMetrics || {},
     };
 }
@@ -47,9 +57,11 @@ export function getDashboardDerivedState(state) {
         callbacks,
         funnel,
         internalConsoleMeta,
+        patientFlowMeta,
         queueMeta,
         queueTickets,
         reviews,
+        telemedicineMeta,
     } = getDashboardCollections(state);
 
     const todayAppointments = countTodayAppointments(appointments);
@@ -87,9 +99,11 @@ export function getDashboardDerivedState(state) {
         pendingTasks,
         pendingTransfers,
         internalConsoleMeta,
+        patientFlowMeta,
         queueMeta,
         recentReviews,
         reviews,
+        telemedicineMeta,
         todayAppointments,
         urgentCallbacks,
         waitingTickets,

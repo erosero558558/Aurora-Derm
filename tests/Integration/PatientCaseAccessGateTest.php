@@ -25,6 +25,11 @@ final class PatientCaseAccessGateTest extends TestCase
 
         $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'patient-case-access-gate-' . bin2hex(random_bytes(6));
         mkdir($this->tempDir, 0777, true);
+        mkdir($this->tempDir . DIRECTORY_SEPARATOR . 'clinical-media', 0777, true);
+        file_put_contents(
+            $this->tempDir . DIRECTORY_SEPARATOR . 'clinical-media' . DIRECTORY_SEPARATOR . 'gate-case.jpg',
+            'gate-case'
+        );
 
         putenv('PIELARMONIA_DATA_DIR=' . $this->tempDir);
         putenv('PIELARMONIA_AVAILABILITY_SOURCE=store');
@@ -93,6 +98,148 @@ final class PatientCaseAccessGateTest extends TestCase
     public function testAdminDataRedactsClinicalReadModelsWhenStorageIsNotReady(): void
     {
         $store = \read_store();
+        $store['appointments'][] = [
+            'id' => 93001,
+            'name' => 'Paciente Bloqueado',
+            'email' => 'blocked@example.com',
+            'service' => 'video',
+            'status' => 'confirmed',
+            'telemedicineIntakeId' => 93011,
+            'privacyConsent' => true,
+            'mediaPublicationConsent' => true,
+            'createdAt' => date('c', strtotime('-2 day')),
+            'updatedAt' => date('c', strtotime('-1 day')),
+        ];
+        $store['telemedicine_intakes'][] = [
+            'id' => 93011,
+            'channel' => 'secure_video',
+            'legacyService' => 'video',
+            'status' => 'review_required',
+            'suitability' => 'review_required',
+            'reviewRequired' => true,
+            'escalationRecommendation' => 'manual_review',
+            'linkedAppointmentId' => 93001,
+            'patient' => [
+                'name' => 'Paciente Bloqueado',
+                'email' => 'blocked@example.com',
+                'phone' => '0991112233',
+            ],
+            'clinicalMediaIds' => [93021],
+            'createdAt' => date('c', strtotime('-2 day')),
+            'updatedAt' => date('c', strtotime('-1 day')),
+        ];
+        $store['clinical_history_sessions'][] = [
+            'id' => 93031,
+            'sessionId' => 'chs-gate-001',
+            'caseId' => 'case-gate-001',
+            'appointmentId' => 93001,
+            'surface' => 'waiting_room',
+            'status' => 'review_required',
+            'patient' => [
+                'name' => 'Paciente Bloqueado',
+                'email' => 'blocked@example.com',
+                'phone' => '0991112233',
+            ],
+            'transcript' => [],
+            'questionHistory' => [],
+            'surfaces' => ['waiting_room'],
+            'lastTurn' => [],
+            'pendingAi' => [],
+            'metadata' => [],
+            'version' => 2,
+            'createdAt' => date('c', strtotime('-2 day')),
+            'updatedAt' => date('c', strtotime('-1 day')),
+            'lastMessageAt' => date('c', strtotime('-1 day')),
+        ];
+        $store['clinical_history_drafts'][] = [
+            'id' => 93032,
+            'draftId' => 'chd-gate-001',
+            'sessionId' => 'chs-gate-001',
+            'caseId' => 'case-gate-001',
+            'appointmentId' => 93001,
+            'status' => 'review_required',
+            'reviewStatus' => 'review_required',
+            'requiresHumanReview' => true,
+            'confidence' => 0.58,
+            'reviewReasons' => ['missing_structured_history'],
+            'intake' => [
+                'motivoConsulta' => 'Seguimiento telemedicina',
+                'resumenClinico' => 'Caso sembrado para redaction gate.',
+                'preguntasFaltantes' => ['alergias'],
+                'adjuntos' => [],
+                'datosPaciente' => [
+                    'edadAnios' => 29,
+                    'pesoKg' => 61,
+                    'sexoBiologico' => 'femenino',
+                    'embarazo' => false,
+                ],
+            ],
+            'clinicianDraft' => [
+                'resumen' => 'Draft pendiente de revision.',
+                'preguntasFaltantes' => ['Alergias'],
+                'cie10Sugeridos' => ['L70.0'],
+                'tratamientoBorrador' => 'Revisar conducta presencial',
+            ],
+            'lastAiEnvelope' => [
+                'redFlags' => ['telemedicine_follow_up'],
+            ],
+            'pendingAi' => [],
+            'version' => 1,
+            'createdAt' => date('c', strtotime('-2 day')),
+            'updatedAt' => date('c', strtotime('-1 day')),
+        ];
+        $store['clinical_history_events'][] = [
+            'id' => 93033,
+            'eventId' => 'che-gate-001',
+            'sessionId' => 'chs-gate-001',
+            'caseId' => 'case-gate-001',
+            'appointmentId' => 93001,
+            'type' => 'draft_reconciled',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Historia lista para revision',
+            'message' => 'Existe actividad clinica pendiente del staff.',
+            'requiresAction' => true,
+            'jobId' => 'job-gate-001',
+            'patient' => [
+                'name' => 'Paciente Bloqueado',
+                'email' => 'blocked@example.com',
+                'phone' => '0991112233',
+            ],
+            'metadata' => [
+                'reason' => 'gate_test',
+            ],
+            'createdAt' => date('c', strtotime('-1 day')),
+            'updatedAt' => date('c', strtotime('-1 day')),
+            'occurredAt' => date('c', strtotime('-1 day')),
+            'acknowledgedAt' => '',
+            'resolvedAt' => '',
+        ];
+        $store['clinical_uploads'][] = [
+            'id' => 93021,
+            'appointmentId' => 93001,
+            'kind' => 'case_photo',
+            'storageMode' => 'private_clinical',
+            'privatePath' => 'clinical-media/gate-case.jpg',
+            'mime' => 'image/jpeg',
+            'size' => 2048,
+            'sha256' => sha1('gate-case'),
+            'originalName' => 'gate-case.jpg',
+            'createdAt' => date('c', strtotime('-2 day')),
+            'updatedAt' => date('c', strtotime('-1 day')),
+        ];
+        $store['case_media_events'][] = [
+            'id' => 93041,
+            'eventId' => 'mfe-gate-001',
+            'caseId' => 'case-gate-001',
+            'type' => 'media_flow.proposal_generated',
+            'title' => 'Propuesta generada',
+            'message' => 'OpenClaw preparo una propuesta para revision.',
+            'payload' => [
+                'patientName' => 'Paciente Bloqueado',
+            ],
+            'createdAt' => date('c', strtotime('-1 day')),
+        ];
         $store['queue_tickets'][] = \normalize_queue_ticket([
             'id' => 91001,
             'ticketCode' => 'Z-902',
@@ -136,6 +283,15 @@ final class PatientCaseAccessGateTest extends TestCase
         $this->assertSame([], $response['payload']['data']['patient_case_approvals'] ?? null);
         $this->assertSame([], $response['payload']['data']['clinical_uploads'] ?? null);
         $this->assertSame([], $response['payload']['data']['telemedicine_intakes'] ?? null);
+        $this->assertSame(1, (int) ($response['payload']['data']['clinicalHistoryMeta']['summary']['reviewQueueCount'] ?? -1));
+        $this->assertSame(1, (int) ($response['payload']['data']['clinicalHistoryMeta']['summary']['events']['openCount'] ?? -1));
+        $this->assertSame([], $response['payload']['data']['clinicalHistoryMeta']['reviewQueue'] ?? null);
+        $this->assertSame([], $response['payload']['data']['clinicalHistoryMeta']['events'] ?? null);
+        $this->assertSame(1, (int) ($response['payload']['data']['mediaFlowMeta']['summary']['totalCases'] ?? -1));
+        $this->assertSame([], $response['payload']['data']['mediaFlowMeta']['queue'] ?? null);
+        $this->assertSame([], $response['payload']['data']['mediaFlowMeta']['recentEvents'] ?? null);
+        $this->assertSame(1, (int) ($response['payload']['data']['telemedicineMeta']['summary']['reviewQueueCount'] ?? -1));
+        $this->assertSame([], $response['payload']['data']['telemedicineMeta']['reviewQueue'] ?? null);
     }
 
     public function testTelemedicineIndexBlocksWhenClinicalStorageIsNotReady(): void

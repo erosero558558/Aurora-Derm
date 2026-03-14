@@ -14,6 +14,19 @@ export function persistLocalAdminData(data) {
     setStorageJson(LOCAL_DATA_KEYS.queueMeta, data.queueMeta || null);
     setStorageJson(LOCAL_DATA_KEYS.leadOpsMeta, data.leadOpsMeta || null);
     setStorageJson(
+        LOCAL_DATA_KEYS.patientFlowMeta,
+        data.patientFlowMeta || null
+    );
+    setStorageJson(
+        LOCAL_DATA_KEYS.clinicalHistoryMeta,
+        data.clinicalHistoryMeta || null
+    );
+    setStorageJson(LOCAL_DATA_KEYS.mediaFlowMeta, data.mediaFlowMeta || null);
+    setStorageJson(
+        LOCAL_DATA_KEYS.telemedicineMeta,
+        data.telemedicineMeta || null
+    );
+    setStorageJson(
         LOCAL_DATA_KEYS.queueSurfaceStatus,
         data.queueSurfaceStatus || null
     );
@@ -47,6 +60,16 @@ export function loadLocalAdminFallback() {
         queueTickets: getStorageJson(LOCAL_DATA_KEYS.queueTickets, []),
         queueMeta: getStorageJson(LOCAL_DATA_KEYS.queueMeta, null),
         leadOpsMeta: getStorageJson(LOCAL_DATA_KEYS.leadOpsMeta, null),
+        patientFlowMeta: getStorageJson(LOCAL_DATA_KEYS.patientFlowMeta, null),
+        clinicalHistoryMeta: getStorageJson(
+            LOCAL_DATA_KEYS.clinicalHistoryMeta,
+            null
+        ),
+        mediaFlowMeta: getStorageJson(LOCAL_DATA_KEYS.mediaFlowMeta, null),
+        telemedicineMeta: getStorageJson(
+            LOCAL_DATA_KEYS.telemedicineMeta,
+            null
+        ),
         queueSurfaceStatus: getStorageJson(
             LOCAL_DATA_KEYS.queueSurfaceStatus,
             null

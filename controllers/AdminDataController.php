@@ -8,6 +8,8 @@ require_once __DIR__ . '/../lib/AppDownloadsCatalog.php';
 require_once __DIR__ . '/../lib/PatientCaseService.php';
 require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
 require_once __DIR__ . '/../lib/TurneroClinicProfile.php';
+require_once __DIR__ . '/../lib/clinical_history/bootstrap.php';
+require_once __DIR__ . '/../lib/CaseMediaFlowService.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 
 class AdminDataController
@@ -107,6 +109,13 @@ class AdminDataController
         }
 
         $store['patientFlowMeta'] = $patientCaseService->buildSummary($store);
+        $store['clinicalHistoryMeta'] = ClinicalHistoryOpsSnapshot::forAdmin(
+            ClinicalHistoryOpsSnapshot::build($store)
+        );
+        $store['mediaFlowMeta'] = CaseMediaFlowService::buildAdminMeta($store);
+        $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(
+            TelemedicineOpsSnapshot::build($store)
+        );
         $store['internalConsoleMeta'] = function_exists('internal_console_readiness_snapshot')
             ? internal_console_readiness_snapshot()
             : null;
@@ -117,10 +126,6 @@ class AdminDataController
 
         $store['appDownloads'] = self::buildAppDownloads();
         $store['queueSurfaceStatus'] = QueueSurfaceStatusStore::readSummary();
-
-        $store['telemedicineMeta'] = TelemedicineOpsSnapshot::forAdmin(
-            TelemedicineOpsSnapshot::build($store)
-        );
 
         json_response([
             'ok' => true,
@@ -147,6 +152,26 @@ class AdminDataController
             'telemedicine_intakes',
         ] as $key) {
             $store[$key] = [];
+        }
+
+        if (isset($store['clinicalHistoryMeta']) && is_array($store['clinicalHistoryMeta'])) {
+            $store['clinicalHistoryMeta'] = array_merge($store['clinicalHistoryMeta'], [
+                'reviewQueue' => [],
+                'events' => [],
+            ]);
+        }
+
+        if (isset($store['mediaFlowMeta']) && is_array($store['mediaFlowMeta'])) {
+            $store['mediaFlowMeta'] = array_merge($store['mediaFlowMeta'], [
+                'queue' => [],
+                'recentEvents' => [],
+            ]);
+        }
+
+        if (isset($store['telemedicineMeta']) && is_array($store['telemedicineMeta'])) {
+            $store['telemedicineMeta'] = array_merge($store['telemedicineMeta'], [
+                'reviewQueue' => [],
+            ]);
         }
 
         return $store;
