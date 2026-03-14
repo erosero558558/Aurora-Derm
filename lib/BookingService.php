@@ -8,6 +8,7 @@ require_once __DIR__ . '/validation.php';
 require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/PatientCaseService.php';
 require_once __DIR__ . '/calendar/runtime.php';
+require_once __DIR__ . '/storage.php';
 require_once __DIR__ . '/telemedicine/LegacyTelemedicineBridge.php';
 $telemedicinePolicyFile = __DIR__ . '/telemedicine/TelemedicineEnforcementPolicy.php';
 if (is_file($telemedicinePolicyFile)) {
@@ -38,6 +39,23 @@ class BookingService
 
         $service = strtolower(trim((string) ($appointment['service'] ?? '')));
         $appointment['service'] = $service;
+
+        if (TelemedicineChannelMapper::isTelemedicineService($service) && !storage_encryption_compliant()) {
+            return [
+                'ok' => false,
+                'error' => 'La telemedicina sigue bloqueada hasta habilitar almacenamiento clinico cifrado.',
+                'code' => 409,
+                'errorCode' => 'clinical_storage_not_ready',
+                'meta' => [
+                    'clinicalData' => [
+                        'ready' => false,
+                        'backend' => storage_backend_mode(),
+                        'encryptionRequired' => storage_encryption_required(),
+                        'encryptionCompliant' => storage_encryption_compliant(),
+                    ],
+                ],
+            ];
+        }
 
         $calendarBooking = CalendarBookingService::fromEnv();
         $requestedDoctor = strtolower(trim((string) ($appointment['doctor'] ?? '')));

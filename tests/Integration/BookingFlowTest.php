@@ -22,6 +22,8 @@ class BookingFlowTest extends TestCase
             $this->fail('Could not create temp dir');
         }
         putenv('PIELARMONIA_DATA_DIR=' . $this->tempDir);
+        ini_set('log_errors', '1');
+        ini_set('error_log', $this->tempDir . '/php-error.log');
 
         // Prevent migration by creating empty store.json
         file_put_contents($this->tempDir . '/store.json', json_encode([
@@ -37,6 +39,14 @@ class BookingFlowTest extends TestCase
 
     protected function tearDown(): void
     {
+        foreach ([
+            'PIELARMONIA_REQUIRE_DATA_ENCRYPTION',
+            'PIELARMONIA_FORCE_SQLITE_UNAVAILABLE',
+            'PIELARMONIA_DATA_ENCRYPTION_KEY',
+        ] as $key) {
+            putenv($key);
+        }
+        $this->resetStorageConnectionQuietly();
         $this->removeDirectory($this->tempDir);
         putenv('PIELARMONIA_DATA_DIR');
     }
@@ -128,5 +138,62 @@ class BookingFlowTest extends TestCase
         $store = read_store();
         $cancelledAppt = $store['appointments'][0];
         $this->assertEquals('cancelled', $cancelledAppt['status']);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testTelemedicineBookingBlocksWhenClinicalStorageIsNotReady(): void
+    {
+        putenv('PIELARMONIA_REQUIRE_DATA_ENCRYPTION=1');
+        putenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE=1');
+        putenv('PIELARMONIA_DATA_ENCRYPTION_KEY');
+        $this->resetStorageConnectionQuietly();
+
+        $futureDate = date('Y-m-d', strtotime('+1 day'));
+        $store = read_store();
+        $store['availability'][$futureDate] = ['10:00'];
+        write_store($store);
+
+        $payload = [
+            'name' => 'Telemedicine Blocked',
+            'email' => 'telemed-blocked@example.com',
+            'phone' => '0991234567',
+            'date' => $futureDate,
+            'time' => '10:00',
+            'doctor' => 'rosero',
+            'service' => 'video',
+            'reason' => 'Seguimiento telemedicina bloqueado.',
+            'affectedArea' => 'rostro',
+            'privacyConsent' => true,
+            'paymentMethod' => 'cash',
+        ];
+
+        $result = $this->service->create(read_store(), $payload);
+
+        $this->assertFalse((bool) ($result['ok'] ?? true));
+        $this->assertSame(409, (int) ($result['code'] ?? 0));
+        $this->assertSame('clinical_storage_not_ready', (string) ($result['errorCode'] ?? ''));
+        $this->assertSame(false, (bool) ($result['meta']['clinicalData']['ready'] ?? true));
+
+        $roundtrip = read_store();
+        $this->assertCount(0, $roundtrip['appointments']);
+        $this->assertCount(0, $roundtrip['telemedicine_intakes']);
+        $this->assertCount(0, $roundtrip['clinical_uploads']);
+    }
+
+    private function resetStorageConnectionQuietly(): void
+    {
+        if (!\function_exists('get_db_connection')) {
+            return;
+        }
+
+        ob_start();
+        try {
+            \get_db_connection(null, true);
+        } finally {
+            ob_end_clean();
+        }
     }
 }

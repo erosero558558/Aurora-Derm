@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
 
 function json(route, payload, status = 200) {
     return route.fulfill({
@@ -389,12 +390,8 @@ async function installSharedQueueMocks(context, options = {}) {
         });
     }
 
-    await context.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
-        return json(route, {
-            ok: true,
-            authenticated: true,
-            csrfToken: 'csrf_queue_integrated',
-        });
+    await installLegacyAdminAuthMock(context, {
+        csrfToken: 'csrf_queue_integrated',
     });
 
     await context.route(/\/figo-chat\.php(\?.*)?$/i, async (route) => {
