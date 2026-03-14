@@ -54,6 +54,7 @@ http://pielarmonia.com, http://127.0.0.1, http://localhost {
 	@health path /healthz
 	@root path /
 	@legacyIndex path /index.html
+	@appDownloadsCenter path /app-downloads /app-downloads/
 	@telemedicina path_regexp telemedicina ^/telemedicina(?:\.html)?/?$
 	@terminos path /terminos.html
 	@privacidad path /privacidad.html
@@ -69,7 +70,7 @@ http://pielarmonia.com, http://127.0.0.1, http://localhost {
 		path_regexp legacyRoot ^/([a-z0-9-]+)\.html$
 		not path /admin.html /operador-turnos.html /kiosco-turnos.html /sala-turnos.html /stats.html
 	}
-	@publicPhp path /index.php /api.php /admin-auth.php /figo-chat.php /figo-backend.php /figo-ai-bridge.php /backup-receiver.php /cron.php /legacy.php /verify-backup.php /check-ai-response.php
+	@publicPhp path /index.php /api.php /admin-auth.php /figo-chat.php /figo-backend.php /figo-ai-bridge.php /backup-receiver.php /cron.php /legacy.php /verify-backup.php /check-ai-response.php /app-downloads/index.php
 
 	route {
 		respond @health "ok" 200
@@ -79,6 +80,7 @@ http://pielarmonia.com, http://127.0.0.1, http://localhost {
 
 		redir @root https://pielarmonia.com/es/{?query} permanent
 		redir @legacyIndex https://pielarmonia.com/es/{?query} permanent
+		rewrite @appDownloadsCenter /app-downloads/index.php
 		redir @telemedicina https://pielarmonia.com/es/telemedicina/{?query} permanent
 		redir @terminos https://pielarmonia.com/es/legal/terminos/{?query} permanent
 		redir @privacidad https://pielarmonia.com/es/legal/privacidad/{?query} permanent
