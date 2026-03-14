@@ -491,7 +491,7 @@ class HealthController
      */
     private static function publicPayload(array $detailedPayload): array
     {
-        return [
+        $payload = [
             'ok' => (bool) ($detailedPayload['ok'] ?? false),
             'status' => (string) ($detailedPayload['status'] ?? 'unknown'),
             'storageReady' => (bool) ($detailedPayload['storageReady'] ?? false),
@@ -499,6 +499,51 @@ class HealthController
             'timingMs' => (int) ($detailedPayload['timingMs'] ?? 0),
             'version' => (string) ($detailedPayload['version'] ?? app_runtime_version()),
             'timestamp' => (string) ($detailedPayload['timestamp'] ?? local_date('c')),
+        ];
+
+        $publicSync = self::publicSyncSummaryPayload(
+            $detailedPayload['checks']['publicSync'] ?? null
+        );
+        if ($publicSync !== null) {
+            $payload['checks'] = [
+                'publicSync' => $publicSync,
+            ];
+        }
+
+        return $payload;
+    }
+
+    private static function publicSyncSummaryPayload($raw): ?array
+    {
+        if (!is_array($raw)) {
+            return null;
+        }
+
+        return [
+            'configured' => (bool) ($raw['configured'] ?? false),
+            'jobId' => (string) ($raw['jobId'] ?? ''),
+            'healthy' => (bool) ($raw['healthy'] ?? false),
+            'operationallyHealthy' => (bool) ($raw['operationallyHealthy'] ?? false),
+            'repoHygieneIssue' => (bool) ($raw['repoHygieneIssue'] ?? false),
+            'state' => (string) ($raw['state'] ?? 'unknown'),
+            'ageSeconds' => array_key_exists('ageSeconds', $raw)
+                ? $raw['ageSeconds']
+                : null,
+            'expectedMaxLagSeconds' => (int) ($raw['expectedMaxLagSeconds'] ?? 120),
+            'lastCheckedAt' => (string) ($raw['lastCheckedAt'] ?? ''),
+            'lastSuccessAt' => (string) ($raw['lastSuccessAt'] ?? ''),
+            'lastErrorAt' => (string) ($raw['lastErrorAt'] ?? ''),
+            'lastErrorMessage' => (string) ($raw['lastErrorMessage'] ?? ''),
+            'failureReason' => (string) ($raw['failureReason'] ?? ''),
+            'deployedCommit' => (string) ($raw['deployedCommit'] ?? ''),
+            'currentHead' => (string) ($raw['currentHead'] ?? ''),
+            'remoteHead' => (string) ($raw['remoteHead'] ?? ''),
+            'headDrift' => (bool) ($raw['headDrift'] ?? false),
+            'telemetryGap' => (bool) ($raw['telemetryGap'] ?? false),
+            'dirtyPathsCount' => (int) ($raw['dirtyPathsCount'] ?? 0),
+            'dirtyPathsSample' => is_array($raw['dirtyPathsSample'] ?? null)
+                ? array_values($raw['dirtyPathsSample'])
+                : [],
         ];
     }
 
