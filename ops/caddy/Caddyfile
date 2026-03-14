@@ -1,0 +1,102 @@
+{
+	admin 127.0.0.1:2019
+	auto_https off
+	persist_config off
+}
+
+http://www.pielarmonia.com {
+	redir https://pielarmonia.com{uri} permanent
+}
+
+http://pielarmonia.com, http://127.0.0.1, http://localhost {
+	root * {$PIELARMONIA_WORKSPACE_ROOT:C:/dev/pielarmonia-workspace}
+	encode zstd gzip
+
+	log {
+		output file {$PIELARMONIA_CADDY_ACCESS_LOG:C:/dev/pielarmonia-workspace/data/runtime/hosting/caddy-access.log}
+		format console
+	}
+
+	@publicHost host pielarmonia.com www.pielarmonia.com
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Cross-Origin-Opener-Policy "same-origin-allow-popups"
+		Cross-Origin-Resource-Policy "same-site"
+		Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' https://js.stripe.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://browser.sentry-cdn.com https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https://images.unsplash.com https://www.google-analytics.com https://*.stripe.com https://cloudflareinsights.com data:; frame-src https://js.stripe.com https://hooks.stripe.com https://www.google.com; connect-src 'self' https://api.stripe.com https://m.stripe.network https://r.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://cloudflareinsights.com https://browser.sentry-cdn.com https://*.ingest.sentry.io https://sentry.io; worker-src 'self' blob:; form-action 'self'"
+		X-XSS-Protection "1; mode=block"
+	}
+	header @publicHost Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+	@dynamicNoStore path /api.php /figo-chat.php /figo-backend.php /figo-ai-bridge.php /admin-auth.php /backup-receiver.php /cron.php /verify-backup.php /check-ai-response.php
+	header @dynamicNoStore Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+	header @dynamicNoStore Pragma "no-cache"
+	header @dynamicNoStore Expires "0"
+
+	@staticScripts path_regexp staticScripts \.(?:css|js)$
+	header @staticScripts Cache-Control "public, max-age=604800, stale-while-revalidate=86400"
+
+	@staticImages path_regexp staticImages \.(?:avif|gif|ico|jpe?g|png|svg|webp)$
+	header @staticImages Cache-Control "public, max-age=2592000"
+
+	@staticFonts path_regexp staticFonts \.(?:woff2?|ttf|otf)$
+	header @staticFonts Cache-Control "public, max-age=31536000, immutable"
+
+	@staticHtml path_regexp staticHtml \.html$
+	header @staticHtml Cache-Control "public, max-age=300, stale-while-revalidate=60"
+
+	@blockedFiles path /.editorconfig /.gitattributes /.gitignore /.htaccess /.lighthouserc.json /.php-cs-fixer.cache /.php-cs-fixer.dist.php /.prettierignore /.prettierrc /AGENT_BOARD.yaml /AGENT_HANDOFFS.yaml /AGENT_JOBS.yaml /AGENT_SIGNALS.yaml /AGENTS.md /CLAUDE.md /JULES_TASKS.md /KIMI_TASKS.md /README.md /SERVIDOR-LOCAL.md /composer.json /composer.lock /env.example.php /env.php /eslint.config.js /governance-policy.json /package-lock.json /package.json /phpunit.xml /playwright.config.js /psalm.xml /rollup.config.mjs /api-lib.php /api-router.php /figo-brain.php /payment-lib.php
+	@blockedRootArtifacts path_regexp blockedRootArtifacts ^/(?:[^/]+\.(?:log|md|ps1)|Dockerfile|docker-compose(?:\.[^/]+)?\.yml)$
+	@blockedDirs path_regexp blockedDirs ^/(?:\.claude|\.codex|\.git|\.github|\.husky|\.vscode|app-downloads|bin|components|content|controllers|data|docs|grafana|k8s|lib|node_modules|release|scripts|src|templates|tests|tools|vendor|verification)(?:/.*)?$
+
+	@health path /healthz
+	@root path /
+	@legacyIndex path /index.html
+	@telemedicina path_regexp telemedicina ^/telemedicina(?:\.html)?/?$
+	@terminos path /terminos.html
+	@privacidad path /privacidad.html
+	@cookies path /cookies.html
+	@avisoMedico path /aviso-medico.html
+	@servicioAcne path_regexp servicioAcne ^/servicios/acne(?:\.html)?/?$
+	@servicioLaser path_regexp servicioLaser ^/servicios/laser(?:\.html)?/?$
+	@servicioHtml path_regexp servicioHtml ^/servicios/([a-z0-9-]+)\.html$
+	@servicioDir path_regexp servicioDir ^/servicios/([a-z0-9-]+)/?$
+	@ninosHtml path_regexp ninosHtml ^/ninos/([a-z0-9-]+)\.html$
+	@ninosDir path_regexp ninosDir ^/ninos/([a-z0-9-]+)/?$
+	@legacyRoot {
+		path_regexp legacyRoot ^/([a-z0-9-]+)\.html$
+		not path /admin.html /operador-turnos.html /kiosco-turnos.html /sala-turnos.html /stats.html
+	}
+	@publicPhp path /index.php /api.php /admin-auth.php /figo-chat.php /figo-backend.php /figo-ai-bridge.php /backup-receiver.php /cron.php /legacy.php /verify-backup.php /check-ai-response.php
+
+	route {
+		respond @health "ok" 200
+		respond @blockedFiles 403
+		respond @blockedRootArtifacts 403
+		respond @blockedDirs 403
+
+		redir @root https://pielarmonia.com/es/{?query} permanent
+		redir @legacyIndex https://pielarmonia.com/es/{?query} permanent
+		redir @telemedicina https://pielarmonia.com/es/telemedicina/{?query} permanent
+		redir @terminos https://pielarmonia.com/es/legal/terminos/{?query} permanent
+		redir @privacidad https://pielarmonia.com/es/legal/privacidad/{?query} permanent
+		redir @cookies https://pielarmonia.com/es/legal/cookies/{?query} permanent
+		redir @avisoMedico https://pielarmonia.com/es/legal/aviso-medico/{?query} permanent
+		redir @servicioAcne https://pielarmonia.com/es/servicios/acne-rosacea/{?query} permanent
+		redir @servicioLaser https://pielarmonia.com/es/servicios/laser-dermatologico/{?query} permanent
+		redir @servicioHtml https://pielarmonia.com/es/servicios/{re.servicioHtml.1}/{?query} permanent
+		redir @servicioDir https://pielarmonia.com/es/servicios/{re.servicioDir.1}/{?query} permanent
+		redir @ninosHtml https://pielarmonia.com/es/servicios/{re.ninosHtml.1}/{?query} permanent
+		redir @ninosDir https://pielarmonia.com/es/servicios/{re.ninosDir.1}/{?query} permanent
+		redir @legacyRoot https://pielarmonia.com/es/{re.legacyRoot.1}/{?query} permanent
+
+		php_fastcgi @publicPhp 127.0.0.1:9000 {
+			try_files {path} =404
+			capture_stderr
+		}
+
+		file_server
+	}
+}

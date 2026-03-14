@@ -34,6 +34,33 @@ Uso:
 - Prueba sin cambios: `dry_run = true`.
 - Si falla `Timeout (control socket)`: prueba `protocol=sftp`, `server_port=22` (o `protocol=ftp`, `server_port=21`).
 
+## Cutover rapido en Windows con este workspace
+
+Si el hosting viejo va a desaparecer y necesitas servir `pielarmonia.com` desde
+`C:\dev\pielarmonia-workspace`, la ruta canonica en Windows es:
+
+- `ops/caddy/Caddyfile` para edge local y redirects canonicos.
+- `php-cgi.exe` en `127.0.0.1:9000` como backend FastCGI.
+- `cloudflared` para exponer el mismo dominio sin depender de NAT/router.
+- `scripts/ops/setup/CONFIGURAR-HOSTING-WINDOWS.ps1` para autoarranque y cutover.
+
+Secuencia recomendada:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ops\setup\CONFIGURAR-HOSTING-WINDOWS.ps1 -RouteDns -OverwriteDns -StartNow
+```
+
+Notas:
+
+- El cutover reusa el tunnel `pielarmonia-local-host` si ya existe en esta
+  maquina.
+- `PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL` debe quedar en
+  `https://pielarmonia.com`; el helper OpenClaw sigue local en `127.0.0.1:4173`.
+- El entrypoint publico sale por Cloudflare Tunnel; no hace falta publicar
+  `8011`, `4173` ni `9000`.
+- El startup shim y la tarea `Pielarmonia Hosting Stack` dejan el stack
+  arrancando al iniciar sesion en Windows.
+
 ## Archivos a subir
 
 Sube a la raiz del hosting (`public_html` o equivalente) el paquete completo
