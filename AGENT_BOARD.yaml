@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 674
+  revision: 676
   updated_at: 2026-03-14
 
 strategy:
@@ -750,12 +750,12 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: ""
-    lease_owner: ""
-    lease_created_at: ""
-    heartbeat_at: ""
-    lease_expires_at: ""
-    lease_reason: ""
+    lease_id: "lease_CDX-041_20260314084155589_8178a5"
+    lease_owner: "Ernesto"
+    lease_created_at: "2026-03-14T08:41:55.589Z"
+    heartbeat_at: "2026-03-14T08:41:55.589Z"
+    lease_expires_at: "2026-03-14T12:41:55.589Z"
+    lease_reason: "leases_heartbeat"
     lease_cleared_at: ""
     lease_cleared_reason: ""
     runtime_impact: low
@@ -795,12 +795,12 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: ""
-    lease_owner: ""
-    lease_created_at: ""
-    heartbeat_at: ""
-    lease_expires_at: ""
-    lease_reason: ""
+    lease_id: "lease_CDX-042_20260314084155609_47b515"
+    lease_owner: "Ernesto"
+    lease_created_at: "2026-03-14T08:41:55.609Z"
+    heartbeat_at: "2026-03-14T08:41:55.664Z"
+    lease_expires_at: "2026-03-14T12:41:55.664Z"
+    lease_reason: "leases_heartbeat"
     lease_cleared_at: ""
     lease_cleared_reason: ""
     runtime_impact: low
