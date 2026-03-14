@@ -183,6 +183,14 @@ final class WhatsappOpenclawConversationOrchestrator
 
     private function bookCashAppointment(array $store, array $conversation, array $draft, string $mutationMode): array
     {
+        $draft['paymentMethod'] = 'cash';
+        $clinicalGuard = $mutationMode === 'live'
+            ? $this->guardClinicalTelemedicineBooking($store, $conversation, $draft, $mutationMode)
+            : null;
+        if (is_array($clinicalGuard)) {
+            return $clinicalGuard;
+        }
+
         $hold = $this->slotHoldService->createOrRefresh($store, $draft);
         if (($hold['ok'] ?? false) !== true) {
             return $this->buildErrorResult(
@@ -198,7 +206,6 @@ final class WhatsappOpenclawConversationOrchestrator
         $holdData = is_array($hold['data'] ?? null) ? $hold['data'] : [];
         $draft['holdId'] = (string) ($holdData['id'] ?? ($draft['holdId'] ?? ''));
         $draft['doctor'] = (string) ($holdData['doctor'] ?? ($draft['doctor'] ?? ''));
-        $draft['paymentMethod'] = 'cash';
 
         if ($mutationMode !== 'live') {
             return [
@@ -216,12 +223,13 @@ final class WhatsappOpenclawConversationOrchestrator
         $payload = $this->buildAppointmentPayload($draft, 'cash');
         $created = $this->bookingService->create($store, $payload);
         if (($created['ok'] ?? false) !== true) {
-            return $this->buildErrorResult(
+            return $this->buildBookingFailureResult(
                 $store,
                 $conversation,
                 $draft,
                 $mutationMode,
-                (string) ($created['error'] ?? 'No pude crear la cita en este momento'),
+                $created,
+                'No pude crear la cita en este momento',
                 'booking_cash_failed'
             );
         }
@@ -252,6 +260,14 @@ final class WhatsappOpenclawConversationOrchestrator
 
     private function bookTransferAppointment(array $store, array $conversation, array $draft, string $mutationMode): array
     {
+        $draft['paymentMethod'] = 'transfer';
+        $clinicalGuard = $mutationMode === 'live'
+            ? $this->guardClinicalTelemedicineBooking($store, $conversation, $draft, $mutationMode)
+            : null;
+        if (is_array($clinicalGuard)) {
+            return $clinicalGuard;
+        }
+
         $reference = trim((string) ($draft['transferReference'] ?? ''));
         $proof = $this->resolveTransferProof($draft);
         if ($reference === '') {
@@ -294,7 +310,6 @@ final class WhatsappOpenclawConversationOrchestrator
         $holdData = is_array($hold['data'] ?? null) ? $hold['data'] : [];
         $draft['holdId'] = (string) ($holdData['id'] ?? ($draft['holdId'] ?? ''));
         $draft['doctor'] = (string) ($holdData['doctor'] ?? ($draft['doctor'] ?? ''));
-        $draft['paymentMethod'] = 'transfer';
 
         if ($mutationMode !== 'live') {
             return [
@@ -312,12 +327,13 @@ final class WhatsappOpenclawConversationOrchestrator
         $payload = array_merge($this->buildAppointmentPayload($draft, 'transfer'), $proof);
         $created = $this->bookingService->create($store, $payload);
         if (($created['ok'] ?? false) !== true) {
-            return $this->buildErrorResult(
+            return $this->buildBookingFailureResult(
                 $store,
                 $conversation,
                 $draft,
                 $mutationMode,
-                (string) ($created['error'] ?? 'No pude registrar la cita con transferencia'),
+                $created,
+                'No pude registrar la cita con transferencia',
                 'booking_transfer_failed'
             );
         }
@@ -348,6 +364,14 @@ final class WhatsappOpenclawConversationOrchestrator
 
     private function prepareCardCheckout(array $store, array $conversation, array $draft, string $mutationMode): array
     {
+        $draft['paymentMethod'] = 'card';
+        $clinicalGuard = $mutationMode === 'live'
+            ? $this->guardClinicalTelemedicineBooking($store, $conversation, $draft, $mutationMode)
+            : null;
+        if (is_array($clinicalGuard)) {
+            return $clinicalGuard;
+        }
+
         $hold = $this->slotHoldService->createOrRefresh($store, $draft);
         if (($hold['ok'] ?? false) !== true) {
             return $this->buildErrorResult(
@@ -363,7 +387,6 @@ final class WhatsappOpenclawConversationOrchestrator
         $holdData = is_array($hold['data'] ?? null) ? $hold['data'] : [];
         $draft['holdId'] = (string) ($holdData['id'] ?? ($draft['holdId'] ?? ''));
         $draft['doctor'] = (string) ($holdData['doctor'] ?? ($draft['doctor'] ?? ''));
-        $draft['paymentMethod'] = 'card';
 
         if ($mutationMode !== 'live') {
             return [
@@ -518,7 +541,7 @@ final class WhatsappOpenclawConversationOrchestrator
             $queued = $this->enqueueTextReply(
                 $conversation,
                 $draft,
-                'Recibi tu pago, pero no pude cerrar la reserva automaticamente. Te escribiremos enseguida para confirmarla.',
+                $this->buildCardFinalizeFailureReply($draft, $created),
                 [
                     'intent' => 'booking_card',
                     'source' => 'stripe_webhook',
@@ -962,6 +985,101 @@ final class WhatsappOpenclawConversationOrchestrator
             'actions' => ['appointment_rescheduled'],
             'mutationMode' => $mutationMode,
         ];
+    }
+
+    private function guardClinicalTelemedicineBooking(
+        array $store,
+        array $conversation,
+        array $draft,
+        string $mutationMode
+    ): ?array {
+        if (!$this->isTelemedicineClinicalStorageBlocked($draft, [])) {
+            return null;
+        }
+
+        return $this->buildErrorResult(
+            $store,
+            $conversation,
+            $draft,
+            $mutationMode,
+            $this->buildTelemedicinePausedReply($draft),
+            'booking_telemedicine_paused'
+        );
+    }
+
+    private function buildBookingFailureResult(
+        array $store,
+        array $conversation,
+        array $draft,
+        string $mutationMode,
+        array $failure,
+        string $fallbackMessage,
+        string $fallbackAction
+    ): array {
+        $action = $this->isTelemedicineClinicalStorageBlocked($draft, $failure)
+            ? 'booking_telemedicine_paused'
+            : $fallbackAction;
+
+        return $this->buildErrorResult(
+            $store,
+            $conversation,
+            $draft,
+            $mutationMode,
+            $this->buildBookingFailureReply($draft, $failure, $fallbackMessage),
+            $action
+        );
+    }
+
+    private function buildBookingFailureReply(array $draft, array $failure, string $fallbackMessage): string
+    {
+        if ($this->isTelemedicineClinicalStorageBlocked($draft, $failure)) {
+            return $this->buildTelemedicinePausedReply($draft);
+        }
+
+        $message = trim((string) ($failure['error'] ?? ''));
+        return $message !== '' ? $message : $fallbackMessage;
+    }
+
+    private function buildCardFinalizeFailureReply(array $draft, array $failure): string
+    {
+        if ($this->isTelemedicineClinicalStorageBlocked($draft, $failure)) {
+            return 'Recibi tu pago, pero la '
+                . $this->telemedicineServiceLabel($draft)
+                . ' sigue pausada mientras habilitamos el almacenamiento clinico cifrado. '
+                . 'Te escribiremos enseguida para resolverla o moverla a consultorio.';
+        }
+
+        return 'Recibi tu pago, pero no pude cerrar la reserva automaticamente. '
+            . 'Te escribiremos enseguida para confirmarla.';
+    }
+
+    private function buildTelemedicinePausedReply(array $draft): string
+    {
+        return 'La ' . $this->telemedicineServiceLabel($draft)
+            . ' sigue pausada mientras habilitamos el almacenamiento clinico cifrado. '
+            . 'Por ahora solo estoy cerrando consultas presenciales en el consultorio. '
+            . 'Si quieres, te propongo un horario presencial por este mismo chat.';
+    }
+
+    private function telemedicineServiceLabel(array $draft): string
+    {
+        return strtolower(trim((string) ($draft['service'] ?? ''))) === 'telefono'
+            ? 'consulta telefonica'
+            : 'consulta por video';
+    }
+
+    private function isTelemedicineClinicalStorageBlocked(array $draft, array $failure): bool
+    {
+        if (!TelemedicineChannelMapper::isTelemedicineService((string) ($draft['service'] ?? ''))) {
+            return false;
+        }
+
+        $errorCode = strtolower(trim((string) ($failure['errorCode'] ?? '')));
+        if ($errorCode !== '') {
+            return $errorCode === 'clinical_storage_not_ready';
+        }
+
+        return !storage_encryption_compliant();
     }
 
     private function buildErrorResult(

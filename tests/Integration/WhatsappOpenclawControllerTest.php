@@ -73,6 +73,9 @@ final class WhatsappOpenclawControllerTest extends TestCase
             'PIELARMONIA_DATA_DIR',
             'PIELARMONIA_SKIP_ENV_FILE',
             'PIELARMONIA_AVAILABILITY_SOURCE',
+            'PIELARMONIA_REQUIRE_DATA_ENCRYPTION',
+            'PIELARMONIA_FORCE_SQLITE_UNAVAILABLE',
+            'PIELARMONIA_DATA_ENCRYPTION_KEY',
             'PIELARMONIA_WHATSAPP_OPENCLAW_ENABLED',
             'PIELARMONIA_WHATSAPP_OPENCLAW_MODE',
             'PIELARMONIA_WHATSAPP_BRIDGE_TOKEN',
@@ -166,6 +169,105 @@ final class WhatsappOpenclawControllerTest extends TestCase
         self::assertSame('live', (string) ($health['payload']['checks']['whatsappOpenclaw']['configuredMode'] ?? ''));
         self::assertSame('online', (string) ($health['payload']['checks']['whatsappOpenclaw']['bridgeMode'] ?? ''));
         self::assertSame(1, (int) ($health['payload']['checks']['whatsappOpenclaw']['bookingsClosed'] ?? 0));
+    }
+
+    public function testInboundTelemedicineCashExplainsConsultorioFallbackWhenClinicalStorageIsNotReady(): void
+    {
+        $this->enableClinicalStorageGate();
+
+        $date = date('Y-m-d', strtotime('+2 days'));
+        $payload = [
+            'eventId' => 'evt-video-cash-001',
+            'providerMessageId' => 'wamid-video-cash-001',
+            'phone' => '+593981110321',
+            'profileName' => 'Ana Video',
+            'text' => 'Hola, quiero una cita virtual el ' . $date . ' a las 10:00, '
+                . 'soy Ana Video, mi correo es ana.video@example.com, autorizo datos y pago en efectivo',
+        ];
+
+        $inbound = $this->captureResponse(
+            static fn () => \WhatsappOpenclawController::inbound([]),
+            'POST',
+            $payload,
+            ['HTTP_AUTHORIZATION' => 'Bearer test-wa-bridge-token']
+        );
+
+        self::assertSame(202, $inbound['status']);
+        self::assertTrue((bool) ($inbound['payload']['ok'] ?? false));
+        self::assertSame('booking_cash', (string) ($inbound['payload']['data']['plan']['intent'] ?? ''));
+        self::assertSame('video', (string) ($inbound['payload']['data']['draft']['service'] ?? ''));
+        self::assertSame('cash', (string) ($inbound['payload']['data']['draft']['paymentMethod'] ?? ''));
+        self::assertSame(
+            ['booking_telemedicine_paused'],
+            array_values($inbound['payload']['data']['actions'] ?? [])
+        );
+        self::assertSame(0, (int) ($inbound['payload']['data']['draft']['appointmentId'] ?? 0));
+        self::assertSame(1, count($inbound['payload']['data']['queuedOutbox'] ?? []));
+        self::assertStringContainsString(
+            'consulta por video sigue pausada',
+            (string) ($inbound['payload']['data']['queuedOutbox'][0]['text'] ?? '')
+        );
+        self::assertStringContainsString(
+            'consultas presenciales en el consultorio',
+            (string) ($inbound['payload']['data']['queuedOutbox'][0]['text'] ?? '')
+        );
+
+        $store = \read_store();
+        self::assertCount(0, $store['appointments'] ?? []);
+        self::assertCount(0, \whatsapp_openclaw_repository()->listSlotHolds(['status' => 'active']));
+    }
+
+    public function testInboundTelemedicineTransferExplainsConsultorioFallbackWhenClinicalStorageIsNotReady(): void
+    {
+        $this->enableClinicalStorageGate();
+
+        $date = date('Y-m-d', strtotime('+2 days'));
+        $payload = [
+            'eventId' => 'evt-video-transfer-001',
+            'providerMessageId' => 'wamid-video-transfer-001',
+            'phone' => '+593981110654',
+            'profileName' => 'Nora Video',
+            'text' => 'Hola, quiero una cita virtual el ' . $date . ' a las 10:30, '
+                . 'soy Nora Video, mi correo es nora.video@example.com, autorizo datos, '
+                . 'pago con transferencia y referencia TRX12345',
+            'media' => [[
+                'url' => 'https://example.test/proofs/trx12345.jpg',
+                'mime' => 'image/jpeg',
+                'name' => 'comprobante-trx12345.jpg',
+                'id' => 'media-video-transfer-001',
+            ]],
+        ];
+
+        $inbound = $this->captureResponse(
+            static fn () => \WhatsappOpenclawController::inbound([]),
+            'POST',
+            $payload,
+            ['HTTP_AUTHORIZATION' => 'Bearer test-wa-bridge-token']
+        );
+
+        self::assertSame(202, $inbound['status']);
+        self::assertTrue((bool) ($inbound['payload']['ok'] ?? false));
+        self::assertSame('booking_transfer', (string) ($inbound['payload']['data']['plan']['intent'] ?? ''));
+        self::assertSame('video', (string) ($inbound['payload']['data']['draft']['service'] ?? ''));
+        self::assertSame('transfer', (string) ($inbound['payload']['data']['draft']['paymentMethod'] ?? ''));
+        self::assertSame(
+            ['booking_telemedicine_paused'],
+            array_values($inbound['payload']['data']['actions'] ?? [])
+        );
+        self::assertSame(0, (int) ($inbound['payload']['data']['draft']['appointmentId'] ?? 0));
+        self::assertSame(1, count($inbound['payload']['data']['queuedOutbox'] ?? []));
+        self::assertStringContainsString(
+            'consulta por video sigue pausada',
+            (string) ($inbound['payload']['data']['queuedOutbox'][0]['text'] ?? '')
+        );
+        self::assertStringContainsString(
+            'consultas presenciales en el consultorio',
+            (string) ($inbound['payload']['data']['queuedOutbox'][0]['text'] ?? '')
+        );
+
+        $store = \read_store();
+        self::assertCount(0, $store['appointments'] ?? []);
+        self::assertCount(0, \whatsapp_openclaw_repository()->listSlotHolds(['status' => 'active']));
     }
 
     public function testDuplicateInboundIsIdempotentAndDoesNotDuplicateOutbox(): void
@@ -300,6 +402,130 @@ final class WhatsappOpenclawControllerTest extends TestCase
         self::assertSame(1, (int) ($health['payload']['checks']['whatsappOpenclaw']['paymentsStarted'] ?? 0));
         self::assertSame(1, (int) ($health['payload']['checks']['whatsappOpenclaw']['paymentsCompleted'] ?? 0));
         self::assertSame(1, (int) ($health['payload']['checks']['whatsappOpenclaw']['bookingsClosed'] ?? 0));
+    }
+
+    public function testInboundTelemedicineCardDoesNotOpenCheckoutWhenClinicalStorageIsNotReady(): void
+    {
+        $this->enableClinicalStorageGate();
+
+        $date = date('Y-m-d', strtotime('+2 days'));
+        $payload = [
+            'eventId' => 'evt-video-card-001',
+            'providerMessageId' => 'wamid-video-card-001',
+            'phone' => '+593981119123',
+            'profileName' => 'Lucia Video',
+            'text' => 'Hola, quiero una cita virtual el ' . $date . ' a las 11:00, '
+                . 'soy Lucia Video, mi correo es lucia.video@example.com, autorizo datos y pago con tarjeta',
+        ];
+
+        $inbound = $this->captureResponse(
+            static fn () => \WhatsappOpenclawController::inbound([]),
+            'POST',
+            $payload,
+            ['HTTP_AUTHORIZATION' => 'Bearer test-wa-bridge-token']
+        );
+
+        self::assertSame(202, $inbound['status']);
+        self::assertTrue((bool) ($inbound['payload']['ok'] ?? false));
+        self::assertSame('booking_card', (string) ($inbound['payload']['data']['plan']['intent'] ?? ''));
+        self::assertSame('video', (string) ($inbound['payload']['data']['draft']['service'] ?? ''));
+        self::assertSame('card', (string) ($inbound['payload']['data']['draft']['paymentMethod'] ?? ''));
+        self::assertSame(
+            ['booking_telemedicine_paused'],
+            array_values($inbound['payload']['data']['actions'] ?? [])
+        );
+        self::assertSame('', (string) ($inbound['payload']['data']['draft']['paymentSessionId'] ?? ''));
+        self::assertSame('', (string) ($inbound['payload']['data']['draft']['paymentSessionUrl'] ?? ''));
+        self::assertSame(1, count($inbound['payload']['data']['queuedOutbox'] ?? []));
+        self::assertStringContainsString(
+            'consulta por video sigue pausada',
+            (string) ($inbound['payload']['data']['queuedOutbox'][0]['text'] ?? '')
+        );
+
+        $store = \read_store();
+        self::assertCount(0, $store['appointments'] ?? []);
+        self::assertCount(0, \whatsapp_openclaw_repository()->listSlotHolds(['status' => 'active']));
+    }
+
+    public function testTelemedicineCardWebhookQueuesManualReviewMessageWhenGateTurnsOnAfterCheckout(): void
+    {
+        $date = date('Y-m-d', strtotime('+2 days'));
+        $payload = [
+            'eventId' => 'evt-video-card-review-001',
+            'providerMessageId' => 'wamid-video-card-review-001',
+            'phone' => '+593981119555',
+            'profileName' => 'Pago Video',
+            'text' => 'Hola, quiero una cita virtual el ' . $date . ' a las 11:00, '
+                . 'soy Pago Video, mi correo es pago.video@example.com, autorizo datos y pago con tarjeta',
+        ];
+
+        $inbound = $this->captureResponse(
+            static fn () => \WhatsappOpenclawController::inbound([]),
+            'POST',
+            $payload,
+            ['HTTP_AUTHORIZATION' => 'Bearer test-wa-bridge-token']
+        );
+
+        self::assertSame(202, $inbound['status']);
+        self::assertSame('booking_card', (string) ($inbound['payload']['data']['plan']['intent'] ?? ''));
+        self::assertSame('video', (string) ($inbound['payload']['data']['draft']['service'] ?? ''));
+        self::assertStringStartsWith('cs_mock_', (string) ($inbound['payload']['data']['draft']['paymentSessionId'] ?? ''));
+
+        $this->enableClinicalStorageGate();
+
+        $GLOBALS['__STRIPE_MOCK_PAYMENT_INTENTS']['pi_mock_whatsapp_video_review_001'] = [
+            'amount' => \payment_expected_amount_cents('video', $date, '11:00'),
+            'amount_received' => \payment_expected_amount_cents('video', $date, '11:00'),
+            'currency' => strtolower(\payment_currency()),
+        ];
+
+        $webhookPayload = [
+            'id' => 'evt_stripe_checkout_video_review_001',
+            'type' => 'checkout.session.completed',
+            'data' => [
+                'object' => [
+                    'id' => (string) ($inbound['payload']['data']['draft']['paymentSessionId'] ?? ''),
+                    'payment_status' => 'paid',
+                    'payment_intent' => 'pi_mock_whatsapp_video_review_001',
+                    'metadata' => [
+                        'source' => 'whatsapp_openclaw',
+                        'wa_conversation_id' => (string) ($inbound['payload']['data']['conversation']['id'] ?? ''),
+                        'wa_draft_id' => (string) ($inbound['payload']['data']['draft']['id'] ?? ''),
+                        'wa_hold_id' => (string) ($inbound['payload']['data']['draft']['holdId'] ?? ''),
+                        'wa_phone' => '593981119555',
+                    ],
+                ],
+            ],
+        ];
+
+        $webhook = $this->captureResponse(
+            static fn () => \PaymentController::webhook([]),
+            'POST',
+            null,
+            ['HTTP_STRIPE_SIGNATURE' => 'valid_signature'],
+            json_encode($webhookPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        );
+
+        self::assertSame(200, $webhook['status']);
+        self::assertTrue((bool) ($webhook['payload']['ok'] ?? false));
+
+        $store = \read_store();
+        self::assertCount(0, $store['appointments'] ?? []);
+
+        $conversationId = (string) ($inbound['payload']['data']['conversation']['id'] ?? '');
+        $draft = \whatsapp_openclaw_repository()->getBookingDraft($conversationId, '593981119555');
+        $hold = \whatsapp_openclaw_repository()->getSlotHold((string) ($draft['holdId'] ?? ''));
+        $outbox = \whatsapp_openclaw_repository()->listPendingOutbox(10);
+        $texts = array_map(
+            static fn (array $item): string => (string) ($item['text'] ?? ''),
+            $outbox
+        );
+
+        self::assertSame('payment_review', (string) ($draft['status'] ?? ''));
+        self::assertSame('paid_needs_review', (string) ($draft['paymentStatus'] ?? ''));
+        self::assertSame('released', (string) ($hold['status'] ?? ''));
+        self::assertTrue($this->arrayContainsSubstring($texts, 'consulta por video sigue pausada'));
+        self::assertTrue($this->arrayContainsSubstring($texts, 'resolverla o moverla a consultorio'));
     }
 
     public function testOpsSnapshotIncludesActionableQueuesAndHolds(): void
@@ -635,8 +861,7 @@ final class WhatsappOpenclawControllerTest extends TestCase
         ?array $body = null,
         array $serverOverrides = [],
         ?string $rawBody = null
-    ): array
-    {
+    ): array {
         $_SERVER['REQUEST_METHOD'] = strtoupper($method);
         foreach ($serverOverrides as $key => $value) {
             $_SERVER[$key] = $value;
@@ -684,6 +909,17 @@ final class WhatsappOpenclawControllerTest extends TestCase
         $_SESSION = is_array($_SESSION ?? null) ? $_SESSION : [];
         $_SESSION['csrf_token'] = 'csrf-wa-ops';
         $_SERVER['HTTP_X_CSRF_TOKEN'] = 'csrf-wa-ops';
+    }
+
+    private function enableClinicalStorageGate(): void
+    {
+        putenv('PIELARMONIA_REQUIRE_DATA_ENCRYPTION=1');
+        putenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE=1');
+        putenv('PIELARMONIA_DATA_ENCRYPTION_KEY');
+
+        if (\function_exists('get_db_connection')) {
+            \get_db_connection(null, true);
+        }
     }
 
     private function removeDirectory(string $dir): void
