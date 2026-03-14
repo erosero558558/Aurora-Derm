@@ -369,6 +369,7 @@ async function installSharedQueueMocks(context, options = {}) {
                     ...ticket,
                     needsAssistance: false,
                     assistanceRequestStatus: '',
+                    assistanceReasonLabel: '',
                     activeHelpRequestId: null,
                 };
             }
@@ -377,6 +378,9 @@ async function installSharedQueueMocks(context, options = {}) {
                 ...ticket,
                 needsAssistance: true,
                 assistanceRequestStatus: activeRequest.status || 'pending',
+                assistanceReasonLabel:
+                    activeRequest.reasonLabel ||
+                    supportReasonLabel(activeRequest.reason || 'general'),
                 activeHelpRequestId: activeRequest.id,
                 assistanceReason: activeRequest.reason || '',
                 specialPriority:

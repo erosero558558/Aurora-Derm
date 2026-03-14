@@ -300,7 +300,7 @@ test('queue-display, queue-kiosk, queue-operator y queue-integrated-flow consume
 
     assert.match(
         queueIntegratedFlowSpec,
-        /const \{ installTurneroQueueStateMock \} = require\('\.\/helpers\/turnero-surface-mocks'\);/
+        /const\s*\{\s*installTurneroQueueStateMock,\s*\}\s*=\s*require\('\.\/helpers\/turnero-surface-mocks'\);/m
     );
     assert.match(
         queueIntegratedFlowSpec,
