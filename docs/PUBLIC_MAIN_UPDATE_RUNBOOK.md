@@ -46,6 +46,13 @@ If the repo is dirty only because of canonical generated public outputs left by
 previous manual runs, the cron wrapper restores those paths from `HEAD` before
 continuing. Any other dirty path still blocks the sync as a safety guard.
 
+To verify the host wrapper matches the canonical script before touching the
+repo, compare both files directly:
+
+```bash
+sha256sum /root/sync-pielarmonia.sh /var/www/figo/bin/deploy-public-v3-cron-sync.sh
+```
+
 5. Verify host state:
 
 ```bash
@@ -62,10 +69,12 @@ pwsh -File scripts/ops/prod/MONITOR-PRODUCCION.ps1
 
 `MONITOR-PRODUCCION.ps1` is the fast-fail entrypoint for `checks.publicSync`.
 It should surface `jobId`, `failureReason`, `lastErrorMessage`,
-`currentHead`, `remoteHead`, `headDrift`, `dirtyPathsCount`,
+`currentHead`, `remoteHead`, `headDrift`, `repoHygieneIssue`, `dirtyPathsCount`,
 `dirtyPathsSample`, and `telemetryGap` before you intervene on the host.
 If you need observation mode without hiding the incident, run it with
 `-AllowDegradedPublicSync`.
+Use `health-diagnostics` as the canonical rich runtime surface for that triage,
+not the public `health` payload alone.
 
 When `content/turnero/clinic-profile.json` is in `release.mode=web_pilot`,
 that same monitor now runs
@@ -118,6 +127,10 @@ Both lanes now also emit standalone workflow artifacts
 `verification/last-turnero-pilot-fast.json` and
 `verification/last-turnero-pilot-gate.json`, so the pilot verdict survives even
 when you only need the workflow evidence and not the full verify report.
+The same verification lane also keeps storage posture visible through
+`storeEncryptionStatus`, `storeEncryptionRequired`, and
+`storeEncryptionCompliant`, so a healthy publish never hides storage drift in
+the same pass.
 `repair-git-sync.yml` now emits the same verdict after self-heal as
 `verification/last-turnero-pilot-repair.json` plus the artifact
 `repair-turnero-pilot-report`, so ops can distinguish a repaired host from a

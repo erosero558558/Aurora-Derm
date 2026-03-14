@@ -20,6 +20,7 @@ Los checks canonicos de runtime publico resuelven engines solo desde
 `utils.js`, `*-engine.js`) deben quedar archivados fuera del carril activo.
 
 Adopcion operativa de `public_main_sync`:
+
 - `MONITOR-PRODUCCION.ps1` hace triage rapido de `checks.publicSync`; trata `healthy=false`, `headDrift`, `telemetryGap` y `jobId` invalido como fallo operativo, pero deja `repoHygieneIssue=true` como warning visible cuando el unico problema es `working_tree_dirty` con telemetria suficiente. `-AllowDegradedPublicSync` deja la corrida en modo observacion sin tapar el diagnostico.
 - `MONITOR-PRODUCCION.ps1` y `REPORTE-SEMANAL-PRODUCCION.ps1` consumen `health-diagnostics` para triage operativo detallado; `health` queda como surface publica para smoke, headers y checks anonimos.
 - Si el `clinic-profile` activo esta en `release.mode=web_pilot`, `MONITOR-PRODUCCION.ps1`, `SMOKE-PRODUCCION.ps1` y `VERIFICAR-DESPLIEGUE.ps1` ejecutan `bin/turnero-clinic-profile.js verify-remote --base-url <dominio>` y bloquean cuando el host publicado no coincide en `clinic_id`, `profileFingerprint`, catalogo o canon del piloto.
@@ -33,8 +34,10 @@ Adopcion operativa de `public_main_sync`:
 - Ese mismo workflow manual clasifica la propia ruta del fallback (`build`, `deploy`, `validate`) como `selfhosted_route_status`, y abre/cierra `[ALERTA PROD] Deploy Frontend Self-Hosted ruta bloqueada` con el mismo `clinic_id/profileFingerprint/releaseMode` del piloto cuando el fallback falla antes de cerrar el publish.
 - `GATE-POSTDEPLOY.ps1` hace preflight local del `clinic-profile` antes de correr `verify + smoke + bench`: si el perfil activo no resuelve, no coincide con catálogo o no está listo para `verify-remote`, el gate cae antes de gastar la corrida completa.
 - `REPORTE-SEMANAL-PRODUCCION.ps1` publica los bloques `Auth Posture`, `Operator Auth Rollout`, `Storage Posture`, `Public Sync Ops` y `Turnero Pilot` en markdown/JSON; clasifica warnings `auth_*`, `storage_*`, `public_sync_*`, `github_deploy_*` y `turnero_pilot_*` con `runbookRef`, `remediation` y `suggestedCommand`.
+- En el mismo triage de `github.deployAlerts`, la categoria verbal exacta `turnero pilot blocked` queda reservada para el mismatch remoto del `clinic-profile` publicado.
 - `MONITOR-PRODUCCION.ps1`, `VERIFICAR-DESPLIEGUE.ps1` y `REPORTE-SEMANAL-PRODUCCION.ps1` consumen `checks.auth` para exponer `mode`, `status`, `configured`, `hardeningCompliant`, `recommendedMode`, `twoFactorEnabled`, `operatorAuthEnabled` y `legacyPasswordConfigured`.
 - `MONITOR-PRODUCCION.ps1` deja la postura de auth visible por default y permite endurecer con `-RequireAuthConfigured`, `-RequireOperatorAuth` y `-RequireAdminTwoFactor`. Cuando se activa `-RequireOperatorAuth`, tanto `MONITOR-PRODUCCION.ps1` como `VERIFICAR-DESPLIEGUE.ps1` corren `scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1`.
+- `VERIFICAR-DESPLIEGUE.ps1` traduce esos guardrails a assets `health-auth-*` cuando el deploy no cumple la postura requerida.
 - `MONITOR-PRODUCCION.ps1` y `VERIFICAR-DESPLIEGUE.ps1` tambien consumen `checks.storage` para exponer `backend`, `source`, `encrypted`, `encryptionConfigured`, `encryptionRequired`, `encryptionStatus` y `encryptionCompliant`.
 - `MONITOR-PRODUCCION.ps1` deja el cifrado en reposo visible por default y permite endurecer con `-RequireStoreEncryption`; aun sin ese flag, si el runtime ya marca `encryptionRequired=true`, el monitor falla cuando `encryptionCompliant=false`. `VERIFICAR-DESPLIEGUE.ps1` traduce ese guardrail a `health-store-encryption-*`.
 - `SMOKE-PRODUCCION.ps1`, `VERIFICAR-DESPLIEGUE.ps1` y `GATE-POSTDEPLOY.ps1` aceptan `-RequireTurneroWebSurfaces` para bloquear si faltan `/operador-turnos.html`, `/kiosco-turnos.html` o `/sala-turnos.html`.

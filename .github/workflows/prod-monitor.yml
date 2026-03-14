@@ -115,6 +115,26 @@ on:
                 required: false
                 default: 'canary'
                 type: string
+            public_v4_rollout_surface_test:
+                description: 'Surface test del rollout V4'
+                required: false
+                default: 'v4'
+                type: string
+            public_v4_rollout_surface_control:
+                description: 'Surface control del rollout V4'
+                required: false
+                default: 'v3'
+                type: string
+            public_v4_rollout_min_view_booking:
+                description: 'Minimo de view_booking requerido para evaluar el rollout V4'
+                required: false
+                default: '20'
+                type: string
+            public_v4_rollout_min_start_checkout:
+                description: 'Minimo de start_checkout requerido para evaluar el rollout V4'
+                required: false
+                default: '10'
+                type: string
             public_v4_rollout_max_confirmed_drop_pp:
                 description: 'Drop maximo permitido (pp) en confirmedRate test vs control'
                 required: false
