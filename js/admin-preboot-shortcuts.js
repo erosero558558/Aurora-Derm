@@ -3,21 +3,18 @@
         ['digit1', 'dashboard'],
         ['digit2', 'appointments'],
         ['digit3', 'callbacks'],
-        ['digit4', 'reviews'],
+        ['digit4', 'clinical-history'],
         ['digit5', 'availability'],
-        ['digit6', 'queue'],
         ['numpad1', 'dashboard'],
         ['numpad2', 'appointments'],
         ['numpad3', 'callbacks'],
-        ['numpad4', 'reviews'],
+        ['numpad4', 'clinical-history'],
         ['numpad5', 'availability'],
-        ['numpad6', 'queue'],
         ['1', 'dashboard'],
         ['2', 'appointments'],
         ['3', 'callbacks'],
-        ['4', 'reviews'],
+        ['4', 'clinical-history'],
         ['5', 'availability'],
-        ['6', 'queue'],
     ]);
     const SHIFTED_ALIASES = Object.freeze({
         '!': 'digit1',
@@ -25,9 +22,7 @@
         '#': 'digit3',
         $: 'digit4',
         '%': 'digit5',
-        '^': 'digit6',
         '"': 'digit2',
-        '&': 'digit6',
     });
     const LAST_SECTION_KEY = 'adminLastSection';
 

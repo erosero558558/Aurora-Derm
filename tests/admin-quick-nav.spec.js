@@ -152,6 +152,34 @@ test.describe('Admin navigation desktop', () => {
         );
     });
 
+    test('quick command no expone queue ni resenas en el shell RC1', async ({
+        page,
+    }) => {
+        await setupAdminApiMocks(page);
+        await page.goto('/admin.html');
+        await waitForAdminRuntimeReady(page);
+
+        await expect(
+            page.locator('.nav-item[data-section="reviews"]')
+        ).toHaveCount(0);
+        await expect(
+            page.locator('.nav-item[data-section="queue"]')
+        ).toHaveCount(0);
+
+        await page.keyboard.press('Control+K');
+        await expect(page.locator('#adminCommandPalette')).not.toHaveClass(
+            /is-hidden/
+        );
+
+        const commandInput = page.locator('#adminQuickCommand');
+        await commandInput.fill('turnero');
+        await page.keyboard.press('Enter');
+
+        await expect(page.locator('#dashboard')).toHaveClass(/active/);
+        await expect(page).not.toHaveURL(/#queue$/);
+        await expect(page).not.toHaveURL(/#reviews$/);
+    });
+
     test('panel del copiloto permite enviar un prompt y cancelar la sesion', async ({
         page,
     }) => {

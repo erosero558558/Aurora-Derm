@@ -103,11 +103,6 @@ function buildActions(reviewContext) {
     return `
         <div class="appointments-review-context__actions">
             <button type="button" data-action="availability-open-appointments-review">Volver a agenda</button>
-            <button type="button" data-action="appointment-review-open-queue" data-review-ticket-id="${escapeHtml(
-                ticketId
-            )}" data-review-ticket-code="${escapeHtml(ticketCode)}">${escapeHtml(
-                queueActionLabel(reviewContext)
-            )}</button>
             <button type="button" data-action="appointment-review-clear-context">Cerrar contexto</button>
         </div>
     `;

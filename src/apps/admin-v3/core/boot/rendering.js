@@ -12,12 +12,7 @@ import {
     renderAvailabilitySection,
     syncAvailabilityFromData,
 } from '../../sections/availability.js';
-import {
-    renderQueueSection,
-    hydrateQueueFromData,
-} from '../../shared/modules/queue.js';
 import { renderDashboard } from '../../sections/dashboard.js';
-import { renderReviewsSection } from '../../sections/reviews.js';
 import { renderAdminChrome } from '../../ui/frame.js';
 
 export function refreshHeaderStatus() {
@@ -37,9 +32,7 @@ export function renderAllSections() {
     renderClinicalHistorySection();
     renderAppointmentsSection();
     renderCallbacksSection();
-    renderReviewsSection();
     renderAvailabilitySection();
-    renderQueueSection();
     refreshHeaderStatus();
     renderAgentPanel();
 }
@@ -48,9 +41,6 @@ export async function refreshDataAndRender(showToast = false) {
     const result = await refreshAdminData();
     const ok = Boolean(result?.ok);
     syncAvailabilityFromData();
-    if (!result?.preservedQueueData) {
-        await hydrateQueueFromData();
-    }
     renderAllSections();
     if (showToast) {
         createToast(

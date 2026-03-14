@@ -11,12 +11,6 @@ import { bindFrameHooks } from '../ui/dom.js';
 import { hydrateAppointmentPreferences } from '../sections/appointments.js';
 import { hydrateCallbacksPreferences } from '../sections/callbacks.js';
 import { hydrateAvailabilityPreferences } from '../sections/availability.js';
-import {
-    applyQueueRuntimeDefaults,
-    initQueueAutoRefresh,
-    queueNumpadAction,
-    toggleQueueHelpPanel,
-} from '../shared/modules/queue.js';
 import { initPushModule } from '../shared/modules/push.js';
 import { focusAgentPrompt } from '../shared/modules/agent.js';
 import {
@@ -59,7 +53,6 @@ export async function bootAdminV3() {
     hydrateCallbacksPreferences();
     hydrateAvailabilityPreferences();
     restoreUiPrefs();
-    applyQueueRuntimeDefaults();
 
     const initialTheme = readInitialThemeMode();
     setThemeMode(initialTheme);
@@ -89,8 +82,6 @@ export async function bootAdminV3() {
             toggleSidebarCollapsed();
         },
         dismissQueueSensitiveDialog,
-        toggleQueueHelp: () => toggleQueueHelpPanel(),
-        queueNumpadAction,
     });
 
     await checkAuthStatus();
@@ -104,7 +95,6 @@ export async function bootAdminV3() {
         resumeOpenClawPolling();
     }
 
-    initQueueAutoRefresh();
     initPushModule();
 
     window.setInterval(() => {

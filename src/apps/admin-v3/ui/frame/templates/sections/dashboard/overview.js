@@ -85,14 +85,14 @@ export function renderDashboardOperationsGrid() {
             <article class="sony-panel" id="funnelSummary">
                 <header>
                     <h3>Herramientas secundarias</h3>
-                    <small>Analitica y diagnostico fuera del flujo clinico principal</small>
+                    <small>Atajos de apoyo sin salir del shell RC1</small>
                 </header>
                 <p class="dashboard-secondary-summary">
-                    Resenas, embudo y diagnostico siguen disponibles, pero ya no compiten con el nucleo interno del consultorio.
+                    Este corte prioriza el shell diario del consultorio: historia clinica, agenda y horarios siguen a un click sin abrir superficies laterales.
                 </p>
                 <div class="dashboard-secondary-links">
-                    <a href="#reviews" class="dashboard-secondary-link" data-section="reviews">Abrir resenas</a>
-                    <a href="#queue" class="dashboard-secondary-link" data-section="queue">Turnero avanzado</a>
+                    <a href="#clinical-history" class="dashboard-secondary-link" data-section="clinical-history">Abrir historia clinica</a>
+                    <a href="#availability" class="dashboard-secondary-link" data-section="availability">Abrir horarios</a>
                 </div>
                 <div class="sony-panel-stats dashboard-secondary-metrics">
                     <div><span>Reservas</span><strong id="funnelViewBooking">0</strong></div>

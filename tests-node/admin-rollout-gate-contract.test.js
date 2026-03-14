@@ -210,6 +210,16 @@ test('admin entrypoint y preboot ya no limpian compatibilidad legacy', () => {
         /adminUiVariant|admin_ui_reset|admin_ui/,
         'preboot admin no debe mutar compatibilidad legacy'
     );
+    assert.match(
+        preboot,
+        /clinical-history/,
+        'preboot admin debe mantener historia clinica dentro del shell RC1'
+    );
+    assert.doesNotMatch(
+        preboot,
+        /reviews|queue/,
+        'preboot admin no debe sembrar shortcuts hacia superficies ocultas del RC1'
+    );
 });
 
 test('service worker precachea el shell admin canonico sin assets legacy', () => {

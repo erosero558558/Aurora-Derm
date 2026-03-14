@@ -227,6 +227,17 @@ test.describe('Admin sony_v3 shell', () => {
         await expect(page.locator('#adminSecondaryNav')).toContainText(
             'Mas herramientas'
         );
+        await expect(page.locator('#adminSecondaryNav')).toContainText(
+            'Historia clinica'
+        );
+        await expect(
+            page.locator('.nav-item[data-section="reviews"]')
+        ).toHaveCount(0);
+        await expect(
+            page.locator('.nav-item[data-section="queue"]')
+        ).toHaveCount(0);
+        await expect(page.locator('#reviews')).toHaveCount(0);
+        await expect(page.locator('#queue')).toHaveCount(0);
         await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
         await expect(page.locator('#opsTodaySummaryCard')).toBeVisible();
         await expect(page.locator('#opsPendingSummaryCard')).toBeVisible();
@@ -256,6 +267,12 @@ test.describe('Admin sony_v3 shell', () => {
         await page.keyboard.press('Enter');
         await expect(page.locator('#callbacks')).toHaveClass(/active/);
         await expect(page.locator('#callbackFilter')).toHaveValue('sla_urgent');
+
+        await page.keyboard.press('Control+K');
+        await page.locator('#adminQuickCommand').fill('turnero');
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#callbacks')).toHaveClass(/active/);
+        await expect(page).not.toHaveURL(/#queue$/);
     });
 
     test('conserva navegacion por atajos y workbench de citas', async ({

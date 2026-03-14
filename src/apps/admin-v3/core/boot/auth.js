@@ -10,7 +10,6 @@ import {
     useLegacyFallbackLoginSurface,
     usePrimaryLoginSurface,
 } from '../../shared/modules/auth.js';
-import { syncQueueAutoRefresh } from '../../shared/modules/queue.js';
 import {
     focusLoginField,
     hideCommandPalette,
@@ -234,10 +233,6 @@ async function finishAuthenticatedLogin(toastMessage = 'Sesion iniciada') {
     setLogin2FAVisibility(false);
     resetLoginForm({ clearPassword: true });
     await refreshDataAndRender(false);
-    syncQueueAutoRefresh({
-        immediate: getState().ui.activeSection === 'queue',
-        reason: 'login',
-    });
     createToast(toastMessage, 'success');
 }
 

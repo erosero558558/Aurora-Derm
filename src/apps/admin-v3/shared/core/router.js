@@ -5,9 +5,7 @@ const VALID_SECTIONS = new Set([
     'clinical-history',
     'appointments',
     'callbacks',
-    'reviews',
     'availability',
-    'queue',
 ]);
 
 export function normalizeSection(value, fallback = 'dashboard') {

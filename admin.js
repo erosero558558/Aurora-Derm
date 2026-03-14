@@ -2,49 +2,44 @@ const t = new Map([
         ['digit1', 'dashboard'],
         ['digit2', 'appointments'],
         ['digit3', 'callbacks'],
-        ['digit4', 'reviews'],
+        ['digit4', 'clinical-history'],
         ['digit5', 'availability'],
-        ['digit6', 'queue'],
         ['numpad1', 'dashboard'],
         ['numpad2', 'appointments'],
         ['numpad3', 'callbacks'],
-        ['numpad4', 'reviews'],
+        ['numpad4', 'clinical-history'],
         ['numpad5', 'availability'],
-        ['numpad6', 'queue'],
         ['1', 'dashboard'],
         ['2', 'appointments'],
         ['3', 'callbacks'],
-        ['4', 'reviews'],
+        ['4', 'clinical-history'],
         ['5', 'availability'],
-        ['6', 'queue'],
     ]),
-    e = Object.freeze({
+    n = Object.freeze({
         '!': 'digit1',
         '@': 'digit2',
         '#': 'digit3',
         $: 'digit4',
         '%': 'digit5',
-        '^': 'digit6',
         '"': 'digit2',
-        '&': 'digit6',
     });
-function n(t) {
+function e(t) {
     document.documentElement.setAttribute(
         'data-admin-ready',
         t ? 'true' : 'false'
     );
 }
 !(async function () {
-    (document.documentElement.setAttribute('data-admin-ui', 'sony_v3'), n(!1));
+    (document.documentElement.setAttribute('data-admin-ui', 'sony_v3'), e(!1));
     const i = (function () {
-        const n = (n) => {
+        const e = (e) => {
             if (
                 'true' ===
                 document.documentElement.getAttribute('data-admin-ready')
             )
                 return;
             if (
-                (i = n.target) instanceof HTMLElement &&
+                (i = e.target) instanceof HTMLElement &&
                 (i.isContentEditable ||
                     Boolean(
                         i.closest(
@@ -54,23 +49,23 @@ function n(t) {
             )
                 return;
             var i;
-            const a = (function (n) {
-                if (!n.altKey || !n.shiftKey || n.ctrlKey || n.metaKey)
+            const a = (function (e) {
+                if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey)
                     return '';
-                const i = String(n.key || '').toLowerCase(),
-                    a = String(n.code || '').toLowerCase(),
+                const i = String(e.key || '').toLowerCase(),
+                    a = String(e.code || '').toLowerCase(),
                     o = [];
                 (a && o.push(a), i && o.push(i));
-                const c = e[i];
+                const c = n[i];
                 c && o.push(c);
-                for (const e of o) {
-                    const n = t.get(e);
-                    if (n) return n;
+                for (const n of o) {
+                    const e = t.get(n);
+                    if (e) return e;
                 }
                 return '';
-            })(n);
+            })(e);
             a &&
-                (n.preventDefault(),
+                (e.preventDefault(),
                 (function (t) {
                     if (t)
                         try {
@@ -80,39 +75,39 @@ function n(t) {
                 (function (t) {
                     if (t)
                         try {
-                            const e = new URL(window.location.href);
-                            ((e.hash = `#${t}`),
+                            const n = new URL(window.location.href);
+                            ((n.hash = `#${t}`),
                                 window.history.replaceState(
                                     null,
                                     '',
-                                    `${e.pathname}${e.search}${e.hash}`
+                                    `${n.pathname}${n.search}${n.hash}`
                                 ));
                         } catch (t) {}
                 })(a));
         };
         return (
-            window.addEventListener('keydown', n, !0),
-            () => window.removeEventListener('keydown', n, !0)
+            window.addEventListener('keydown', e, !0),
+            () => window.removeEventListener('keydown', e, !0)
         );
     })();
     try {
         (await (async function () {
-            const t = await import('./js/admin-chunks/index-Dtd02O3W.js');
-            await (async function (t, e = '') {
+            const t = await import('./js/admin-chunks/index-DbENpOI8.js');
+            await (async function (t, n = '') {
                 if (!t || 'object' != typeof t) return;
-                if (e) {
-                    const n = t[e];
-                    if ('function' == typeof n) return void (await n());
+                if (n) {
+                    const e = t[n];
+                    if ('function' == typeof e) return void (await e());
                 }
-                const n = t.default;
-                'function' != typeof n
-                    ? n && 'function' == typeof n.then && (await n)
-                    : await n();
+                const e = t.default;
+                'function' != typeof e
+                    ? e && 'function' == typeof e.then && (await e)
+                    : await e();
             })(t);
         })(),
-            n(!0));
+            e(!0));
     } catch (t) {
-        throw (n(!1), t);
+        throw (e(!1), t);
     } finally {
         i();
     }

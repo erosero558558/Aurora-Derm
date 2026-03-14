@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 676
+  revision: 681
   updated_at: 2026-03-14
 
 strategy:
@@ -730,8 +730,8 @@ tasks:
     title: "Admin shell core daily-use: auth and readiness lane"
     owner: Ernesto
     executor: codex
-    status: in_progress
-    status_since_at: "2026-03-14T03:01:30-05:00"
+    status: done
+    status_since_at: "2026-03-14T09:03:10.096Z"
     risk: high
     scope: auth
     codex_instance: codex_backend_ops
@@ -750,14 +750,14 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: "lease_CDX-041_20260314084155589_8178a5"
-    lease_owner: "Ernesto"
-    lease_created_at: "2026-03-14T08:41:55.589Z"
-    heartbeat_at: "2026-03-14T08:41:55.589Z"
-    lease_expires_at: "2026-03-14T12:41:55.589Z"
-    lease_reason: "leases_heartbeat"
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-14T09:03:10.096Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: true
     acceptance: "OpenClaw queda como acceso primario del admin shell core, la contingencia web solo aparece cuando el backend la habilita, y /data + internalConsoleMeta sostienen dashboard, agenda, pendientes, horarios e historia clinica incluso bajo bloqueos clinicos."
@@ -775,8 +775,8 @@ tasks:
     title: "Admin shell core daily-use: frontend shell lane"
     owner: Ernesto
     executor: codex
-    status: in_progress
-    status_since_at: "2026-03-14T03:01:30-05:00"
+    status: done
+    status_since_at: "2026-03-14T09:03:27.077Z"
     risk: medium
     scope: frontend-admin
     codex_instance: codex_frontend
@@ -795,14 +795,14 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: "lease_CDX-042_20260314084155609_47b515"
-    lease_owner: "Ernesto"
-    lease_created_at: "2026-03-14T08:41:55.609Z"
-    heartbeat_at: "2026-03-14T08:41:55.664Z"
-    lease_expires_at: "2026-03-14T12:41:55.664Z"
-    lease_reason: "leases_heartbeat"
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-14T09:03:27.077Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
     acceptance: "El admin shell core queda visible y usable a diario: login/shell sin superficies legacy rotas, sidebar + hash sincronizados, quick command operativo, responsive tablet estable y estados vacios sin paneles quebrados en dashboard, agenda, pendientes, horarios e historia clinica."

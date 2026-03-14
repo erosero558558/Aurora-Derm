@@ -4,24 +4,6 @@ Inicio: 2026-02-24
 Cadencia: por commit (cada commit deja evidencia verificable)
 Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite por control)
 
-<!-- CODEX_ACTIVE
-codex_instance: codex_backend_ops
-block: A1-backend-auth
-task_id: CDX-041
-status: in_progress
-files: ["admin-auth.php", "controllers/AdminDataController.php", "lib/InternalConsoleReadiness.php", "tests/test_admin_auth_status.php", "tests/test_admin_auth_openclaw_facade.php", "tests/test_operator_auth.php", "tests/Integration/OperatorAuthControllerTest.php", "tests/Integration/ClinicalHistoryAdminReadModelTest.php", "verification/agent-runs/CDX-041.md"]
-updated_at: 2026-03-14
--->
-
-<!-- CODEX_ACTIVE
-codex_instance: codex_frontend
-block: A1-frontend-shell
-task_id: CDX-042
-status: in_progress
-files: ["admin.html", "src/apps/admin-v3/index.js", "src/apps/admin-v3/core", "src/apps/admin-v3/shared", "src/apps/admin-v3/ui", "src/apps/admin-v3/sections"]
-updated_at: 2026-03-14
--->
-
 <!-- CODEX_STRATEGY_ACTIVE
 id: STRAT-2026-03-admin-operativo
 title: "Admin operativo"
@@ -73,7 +55,7 @@ updated_at: "2026-03-14"
 ## Tri-lane operativo vigente
 
 - `codex_frontend`:
-  admin clinico, queue/turnero, quick-nav y OpenClaw UX.
+  admin clinico, quick-nav y OpenClaw UX; `queue/turnero` queda sembrado pero oculto en `RC1`.
 - `codex_backend_ops`:
   auth, readiness, gates y backend estrictamente necesario para ese mismo frente.
 - `codex_transversal`:
@@ -83,7 +65,7 @@ updated_at: "2026-03-14"
 - Regla critica:
   `critical_zone=true` sigue yendo a `codex_backend_ops`, salvo runtime OpenClaw canonico de `codex_transversal`.
 - Prioridad tecnica inmediata:
-  cerrar `admin operativo` antes de abrir nuevos frentes visibles.
+  cerrar `Admin Shell RC1` en `main` con gates verdes antes de abrir `queue/turnero` como ola 2.
 
 ## Distribucion de esfuerzo
 
@@ -91,36 +73,88 @@ updated_at: "2026-03-14"
 - 35% Auth/readiness del nucleo interno (`admin-auth`, `/data`, `internalConsoleMeta`) y criterio de excepcion transversal solo si el runtime bloquea el acceso real.
 - 15% Checklist y gate de salida para operacion interna controlada.
 
-## A1 - Admin shell core de uso diario
+## A1.1 - Base impecable del Admin Shell RC1
 
-Estado: `IN_PROGRESS`
+Estado: `COMPLETED`
 Ventana: `2026-03-14` -> `2026-03-21`
 Objetivo:
 
-- Convertir la estrategia activa en dos lanes ejecutables y visibles sin abrir trabajo fuera del frente `admin operativo`.
+- Convertir la estrategia activa en una base impecable de integracion y operacion interna antes de abrir mas superficie.
+- Dejar `dashboard`, `appointments`, `callbacks`, `availability` y `clinical-history` como el unico shell visible del `RC1`.
+- Sacar `queue/turnero` y `reviews` del shell visible sin borrar su codigo en disco.
 
-Lanes activos:
+Fase 0 - Integracion antes de `main`:
+
+- Consolidar `strategy.js` como entrypoint canonico unico; no queda `strategy-v2.js` paralelo.
+- Mantener `CODEX_STRATEGY_ACTIVE` tambien cuando la estrategia quede `closed`.
+- Bajar `CDX-041` y `CDX-042` a `ready` hasta abrir lease real.
+- Mantener el texto humano de `status` estable; WIP/expired/aged quedan en JSON.
+
+Lanes sembradas para reactivacion con lease:
 
 - `CDX-041 / codex_backend_ops / SF-backend-admin-operativo`:
-  estabilizar `admin-auth.php`, `AdminDataController` e `InternalConsoleReadiness` para acceso diario interno con `OpenClaw` primario y contingencia web solo si el backend la habilita; `OperatorAuthController` solo entra por excepcion transversal si el runtime bloquea auth real.
+  endurecer `admin-auth.php`, `AdminDataController` e `InternalConsoleReadiness` para acceso diario interno con `OpenClaw` primario y contingencia web solo si el backend la anuncia; `OperatorAuthController` solo entra por excepcion transversal.
 - `CDX-042 / codex_frontend / SF-frontend-admin-operativo`:
-  estabilizar `admin.html` y `src/apps/admin-v3/**` para que el shell core sea visible, navegable y utilizable a diario.
+  cerrar el shell `sony_v3` visible con 5 secciones, sin `queue/turnero`, sin `reviews`, con sidebar/hash, quick command y responsive tablet estables.
 
-Salida requerida:
+Contrato visible del RC1:
 
-- Login estable con `OpenClaw` como camino principal.
-- `dashboard`, `appointments`, `callbacks`, `availability` y `clinical-history` navegables sin flujos rotos.
-- `quick command`, sidebar/hash y responsive tablet en verde.
-- `queue/turnero`, kiosco, TV y controles sensibles quedan fuera de esta ola.
+- `dashboard`
+- `appointments`
+- `callbacks`
+- `availability`
+- `clinical-history`
+
+Scope explicitamente oculto en A1.1:
+
+- `queue/turnero`
+- `reviews`
+- kiosco/TV
+- atajos, listeners y side effects de boot especificos de `queue`
 
 Gates de salida:
 
+- `npm run agent:test`
+- `npm run agent:gate`
 - `npm run test:admin:openclaw-auth`
 - `npm run test:admin:runtime-smoke`
 - `php tests/test_admin_auth_status.php`
 - `php vendor/bin/phpunit --no-coverage tests/Integration/ClinicalHistoryAdminReadModelTest.php`
+- `npx playwright test tests/admin-v3-shell.spec.js tests/admin-openclaw-login.spec.js tests/admin-navigation-responsive.spec.js tests/admin-callbacks-triage.spec.js tests/admin-availability-responsive.spec.js tests/admin-availability-readonly.spec.js tests/admin-quick-nav.spec.js`
 - `npm run checklist:admin:openclaw-auth:local`
 - `npm run gate:admin:rollout:internal`
+
+Criterio de orgullo de esta ola:
+
+- merge limpio a `main`
+- gates verdes
+- shell sin ruido
+- evidencia final clara para `CDX-041` y `CDX-042`
+
+Salida lograda el `2026-03-14`:
+
+- `Admin Shell RC1` interno cerrado con 5 secciones visibles: `dashboard`, `appointments`, `callbacks`, `availability`, `clinical-history`.
+- `queue/turnero` y `reviews` quedaron ocultos del shell visible, del routing y de los atajos.
+- `strategy.js` quedo como entrypoint canonico unico; no queda `strategy-v2.js`.
+- `CDX-041` y `CDX-042` se cerraron con evidencia y sin dejar lanes activos difusos.
+
+Validacion final ejecutada:
+
+- `npm run agent:test`
+- `npm run agent:gate`
+- `npm run test:admin:openclaw-auth`
+- `npm run test:admin:runtime-smoke`
+- `php tests/test_admin_auth_status.php`
+- `php vendor/bin/phpunit --no-coverage tests/Integration/ClinicalHistoryAdminReadModelTest.php`
+- `npx playwright test tests/admin-v3-shell.spec.js tests/admin-openclaw-login.spec.js tests/admin-navigation-responsive.spec.js tests/admin-callbacks-triage.spec.js tests/admin-availability-responsive.spec.js tests/admin-availability-readonly.spec.js tests/admin-quick-nav.spec.js --workers=1`
+- `npm run checklist:admin:openclaw-auth:local`
+- `npm run gate:admin:rollout:internal`
+
+Resumen para ola 2:
+
+- Soportado en RC1: shell core interno + auth OpenClaw primario + contingencia web anunciada por backend.
+- Oculto en RC1: `queue/turnero`, `reviews`, kiosco/TV y side effects de boot asociados.
+- Condicion para abrir la ola 2: mantener `main` verde y abrir un plan dedicado para `queue/turnero`, no reintroducirlo como scope lateral.
 
 ## Bloques
 
