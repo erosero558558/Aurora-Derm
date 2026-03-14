@@ -30,6 +30,12 @@ const QUEUE_OPERATOR_SPEC_PATH = resolve(
     'tests',
     'queue-operator.spec.js'
 );
+const QUEUE_INTEGRATED_FLOW_SPEC_PATH = resolve(
+    __dirname,
+    '..',
+    'tests',
+    'queue-integrated-flow.spec.js'
+);
 
 function createRouteHarness() {
     const handlers = [];
@@ -235,10 +241,14 @@ test('installTurneroQueueStateMock permite side effects en resources no queue-st
     assert.deepEqual(ticket.payload, { ok: true, data: {} });
 });
 
-test('queue-display, queue-kiosk y queue-operator consumen el helper compartido de superficies turnero', () => {
+test('queue-display, queue-kiosk, queue-operator y queue-integrated-flow consumen el helper compartido de superficies turnero', () => {
     const queueDisplaySpec = readFileSync(QUEUE_DISPLAY_SPEC_PATH, 'utf8');
     const queueKioskSpec = readFileSync(QUEUE_KIOSK_SPEC_PATH, 'utf8');
     const queueOperatorSpec = readFileSync(QUEUE_OPERATOR_SPEC_PATH, 'utf8');
+    const queueIntegratedFlowSpec = readFileSync(
+        QUEUE_INTEGRATED_FLOW_SPEC_PATH,
+        'utf8'
+    );
 
     assert.match(
         queueDisplaySpec,
@@ -286,5 +296,14 @@ test('queue-display, queue-kiosk y queue-operator consumen el helper compartido 
     assert.match(
         queueOperatorSpec,
         /await installTurneroQueueStateMock\(page, \{/m
+    );
+
+    assert.match(
+        queueIntegratedFlowSpec,
+        /const \{ installTurneroQueueStateMock \} = require\('\.\/helpers\/turnero-surface-mocks'\);/
+    );
+    assert.match(
+        queueIntegratedFlowSpec,
+        /await installTurneroQueueStateMock\(context, \{/m
     );
 });

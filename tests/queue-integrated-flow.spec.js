@@ -1,6 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
+const {
+    installTurneroQueueStateMock,
+} = require('./helpers/turnero-surface-mocks');
 
 function json(route, payload, status = 200) {
     return route.fulfill({
@@ -416,403 +419,242 @@ async function installSharedQueueMocks(context, options = {}) {
         });
     });
 
-    await context.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const request = route.request();
-        const method = request.method().toUpperCase();
-        const url = new URL(request.url());
-        const resource = url.searchParams.get('resource') || '';
-
-        if (resource === 'features') {
-            return json(route, {
-                ok: true,
-                data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-            });
-        }
-
-        if (resource === 'queue-state') {
-            return json(route, { ok: true, data: currentQueueState() });
-        }
-
-        if (resource === 'queue-ticket' && method === 'POST') {
-            const body = parseBody(request);
-            const ticket = createTicket({
-                queueType: 'walk_in',
-                patientInitials: body.patientInitials,
-                phone: body.phone,
-                priorityClass: 'walk_in',
-            });
-            return json(
-                route,
-                {
+    await installTurneroQueueStateMock(context, {
+        queueState: () => currentQueueState(),
+        async handleApiRoute({ route, request, resource, method }) {
+            if (resource === 'features') {
+                await json(route, {
                     ok: true,
-                    data: ticket,
-                    printed: false,
-                    print: {
-                        ok: false,
-                        errorCode: 'printer_disabled',
-                        message: 'disabled',
-                    },
-                },
-                201
-            );
-        }
+                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+                });
+                return true;
+            }
 
-        if (resource === 'queue-checkin' && method === 'POST') {
-            const body = parseBody(request);
-            const fallbackInitials = String(body.telefono || '').slice(-2);
-            const ticket = createTicket({
-                queueType: 'appointment',
-                patientInitials: body.patientInitials || fallbackInitials,
-                phone: body.telefono,
-                priorityClass: 'appt_current',
-            });
-            return json(
-                route,
-                {
-                    ok: true,
-                    data: ticket,
-                    printed: true,
-                    print: {
+            if (resource === 'queue-ticket' && method === 'POST') {
+                const body = parseBody(request);
+                const ticket = createTicket({
+                    queueType: 'walk_in',
+                    patientInitials: body.patientInitials,
+                    phone: body.phone,
+                    priorityClass: 'walk_in',
+                });
+                await json(
+                    route,
+                    {
                         ok: true,
-                        errorCode: '',
-                        message: 'ok',
+                        data: ticket,
+                        printed: false,
+                        print: {
+                            ok: false,
+                            errorCode: 'printer_disabled',
+                            message: 'disabled',
+                        },
                     },
-                },
-                201
-            );
-        }
+                    201
+                );
+                return true;
+            }
 
-        if (resource === 'queue-help-request' && method === 'POST') {
-            const body = parseBody(request);
-            const nowIso = new Date().toISOString();
-            const ticketId = Number(body.ticketId || body.ticket_id || 0);
-            const ticketCode = String(
-                body.ticketCode || body.ticket_code || ''
-            );
-            const patientInitials = String(
-                body.patientInitials || body.patient_initials || ''
-            );
-            const relatedTicket =
-                queueTickets.find(
-                    (ticket) => Number(ticket.id || 0) === ticketId
-                ) ||
-                queueTickets.find(
-                    (ticket) => String(ticket.ticketCode || '') === ticketCode
-                ) ||
-                queueTickets
-                    .slice()
-                    .reverse()
-                    .find(
-                        (ticket) =>
-                            String(ticket.patientInitials || '') ===
-                            patientInitials
+            if (resource === 'queue-checkin' && method === 'POST') {
+                const body = parseBody(request);
+                const fallbackInitials = String(body.telefono || '').slice(-2);
+                const ticket = createTicket({
+                    queueType: 'appointment',
+                    patientInitials: body.patientInitials || fallbackInitials,
+                    phone: body.telefono,
+                    priorityClass: 'appt_current',
+                });
+                await json(
+                    route,
+                    {
+                        ok: true,
+                        data: ticket,
+                        printed: true,
+                        print: {
+                            ok: true,
+                            errorCode: '',
+                            message: 'ok',
+                        },
+                    },
+                    201
+                );
+                return true;
+            }
+
+            if (resource === 'queue-help-request' && method === 'POST') {
+                const body = parseBody(request);
+                const nowIso = new Date().toISOString();
+                const ticketId = Number(body.ticketId || body.ticket_id || 0);
+                const ticketCode = String(
+                    body.ticketCode || body.ticket_code || ''
+                );
+                const patientInitials = String(
+                    body.patientInitials || body.patient_initials || ''
+                );
+                const relatedTicket =
+                    queueTickets.find(
+                        (ticket) => Number(ticket.id || 0) === ticketId
                     ) ||
-                null;
-            const resolvedTicketId = Number(relatedTicket?.id || 0) || null;
-            const helpRequest = {
-                id: nextHelpRequestId,
-                source: String(body.source || 'assistant'),
-                reason: String(body.reason || 'general'),
-                reasonLabel: supportReasonLabel(body.reason || 'general'),
-                status: 'pending',
-                message: String(body.message || ''),
-                intent: String(body.intent || ''),
-                sessionId: String(body.sessionId || body.session_id || ''),
-                ticketId: resolvedTicketId,
-                ticketCode: String(
-                    body.ticketCode ||
-                        body.ticket_code ||
-                        relatedTicket?.ticketCode ||
-                        ''
-                ),
-                patientInitials: String(
-                    body.patientInitials ||
-                        body.patient_initials ||
-                        relatedTicket?.patientInitials ||
-                        '--'
-                ),
-                createdAt: nowIso,
-                updatedAt: nowIso,
-                context:
-                    body.context && typeof body.context === 'object'
-                        ? body.context
-                        : {},
-            };
-            nextHelpRequestId += 1;
-            queueHelpRequests = [helpRequest, ...queueHelpRequests];
-            syncTicketAssistanceFlags();
-            return json(
-                route,
-                {
-                    ok: true,
-                    data: {
-                        helpRequest,
-                        queueState: currentQueueState(),
-                    },
-                },
-                201
-            );
-        }
-
-        if (resource === 'queue-help-request' && method === 'PATCH') {
-            const body = parseBody(request);
-            const helpRequestId = Number(body.id || 0);
-            const ticketId = Number(body.ticketId || body.ticket_id || 0);
-            const status = String(body.status || 'pending').toLowerCase();
-            const nowIso = new Date().toISOString();
-            let updatedHelpRequest = null;
-
-            queueHelpRequests = queueHelpRequests.map((request) => {
-                const matchesById =
-                    helpRequestId > 0 &&
-                    Number(request.id || 0) === helpRequestId;
-                const matchesByTicket =
-                    helpRequestId <= 0 &&
-                    ticketId > 0 &&
-                    Number(request.ticketId || 0) === ticketId &&
-                    ['pending', 'attending'].includes(
-                        String(request.status || '')
-                    );
-
-                if (!matchesById && !matchesByTicket) {
-                    return request;
-                }
-
-                updatedHelpRequest = {
-                    ...request,
-                    status,
+                    queueTickets.find(
+                        (ticket) =>
+                            String(ticket.ticketCode || '') === ticketCode
+                    ) ||
+                    queueTickets
+                        .slice()
+                        .reverse()
+                        .find(
+                            (ticket) =>
+                                String(ticket.patientInitials || '') ===
+                                patientInitials
+                        ) ||
+                    null;
+                const resolvedTicketId = Number(relatedTicket?.id || 0) || null;
+                const helpRequest = {
+                    id: nextHelpRequestId,
+                    source: String(body.source || 'assistant'),
+                    reason: String(body.reason || 'general'),
+                    reasonLabel: supportReasonLabel(body.reason || 'general'),
+                    status: 'pending',
+                    message: String(body.message || ''),
+                    intent: String(body.intent || ''),
+                    sessionId: String(body.sessionId || body.session_id || ''),
+                    ticketId: resolvedTicketId,
+                    ticketCode: String(
+                        body.ticketCode ||
+                            body.ticket_code ||
+                            relatedTicket?.ticketCode ||
+                            ''
+                    ),
+                    patientInitials: String(
+                        body.patientInitials ||
+                            body.patient_initials ||
+                            relatedTicket?.patientInitials ||
+                            '--'
+                    ),
+                    createdAt: nowIso,
                     updatedAt: nowIso,
                     context:
                         body.context && typeof body.context === 'object'
-                            ? {
-                                  ...(request.context || {}),
-                                  ...body.context,
-                              }
-                            : request.context || {},
-                    ...(status === 'attending' ? { attendedAt: nowIso } : {}),
-                    ...(status === 'resolved' ? { resolvedAt: nowIso } : {}),
+                            ? body.context
+                            : {},
                 };
-                return updatedHelpRequest;
-            });
-
-            if (!updatedHelpRequest) {
-                return json(
-                    route,
-                    { ok: false, error: 'Solicitud de apoyo no encontrada' },
-                    404
-                );
-            }
-
-            syncTicketAssistanceFlags();
-            return json(route, {
-                ok: true,
-                data: {
-                    helpRequest: updatedHelpRequest,
-                    queueState: currentQueueState(),
-                },
-            });
-        }
-
-        if (resource === 'queue-call-next' && method === 'POST') {
-            if (remainingCallNextFailures > 0) {
-                remainingCallNextFailures -= 1;
-                return json(
+                nextHelpRequestId += 1;
+                queueHelpRequests = [helpRequest, ...queueHelpRequests];
+                syncTicketAssistanceFlags();
+                await json(
                     route,
                     {
-                        ok: false,
-                        error: 'Servicio de cola temporalmente no disponible',
+                        ok: true,
+                        data: {
+                            helpRequest,
+                            queueState: currentQueueState(),
+                        },
                     },
-                    503
+                    201
                 );
+                return true;
             }
 
-            const body = parseBody(request);
-            const consultorio = Number(body.consultorio || 0);
-            if (![1, 2].includes(consultorio)) {
-                return json(
-                    route,
-                    { ok: false, error: 'Consultorio invalido' },
-                    400
-                );
-            }
+            if (resource === 'queue-help-request' && method === 'PATCH') {
+                const body = parseBody(request);
+                const helpRequestId = Number(body.id || 0);
+                const ticketId = Number(body.ticketId || body.ticket_id || 0);
+                const status = String(body.status || 'pending').toLowerCase();
+                const nowIso = new Date().toISOString();
+                let updatedHelpRequest = null;
 
-            const consultorioBusy = queueTickets.some(
-                (ticket) =>
-                    String(ticket.status || '') === 'called' &&
-                    Number(ticket.assignedConsultorio || 0) === consultorio
-            );
-            if (consultorioBusy) {
-                return json(
-                    route,
-                    {
-                        ok: false,
-                        error: 'Consultorio ocupado',
-                        errorCode: 'queue_consultorio_busy',
+                queueHelpRequests = queueHelpRequests.map((request) => {
+                    const matchesById =
+                        helpRequestId > 0 &&
+                        Number(request.id || 0) === helpRequestId;
+                    const matchesByTicket =
+                        helpRequestId <= 0 &&
+                        ticketId > 0 &&
+                        Number(request.ticketId || 0) === ticketId &&
+                        ['pending', 'attending'].includes(
+                            String(request.status || '')
+                        );
+
+                    if (!matchesById && !matchesByTicket) {
+                        return request;
+                    }
+
+                    updatedHelpRequest = {
+                        ...request,
+                        status,
+                        updatedAt: nowIso,
+                        context:
+                            body.context && typeof body.context === 'object'
+                                ? {
+                                      ...(request.context || {}),
+                                      ...body.context,
+                                  }
+                                : request.context || {},
+                        ...(status === 'attending'
+                            ? { attendedAt: nowIso }
+                            : {}),
+                        ...(status === 'resolved'
+                            ? { resolvedAt: nowIso }
+                            : {}),
+                    };
+                    return updatedHelpRequest;
+                });
+
+                if (!updatedHelpRequest) {
+                    await json(
+                        route,
+                        {
+                            ok: false,
+                            error: 'Solicitud de apoyo no encontrada',
+                        },
+                        404
+                    );
+                    return true;
+                }
+
+                syncTicketAssistanceFlags();
+                await json(route, {
+                    ok: true,
+                    data: {
+                        helpRequest: updatedHelpRequest,
+                        queueState: currentQueueState(),
                     },
-                    409
-                );
+                });
+                return true;
             }
 
-            const waiting = queueTickets
-                .filter((ticket) => String(ticket.status || '') === 'waiting')
-                .sort(sortWaitingTickets);
-            const candidate = waiting[0] || null;
-            if (candidate) {
-                const calledAt = new Date().toISOString();
-                queueTickets = queueTickets.map((ticket) =>
-                    Number(ticket.id || 0) === Number(candidate.id || 0)
-                        ? {
-                              ...ticket,
-                              status: 'called',
-                              assignedConsultorio: consultorio,
-                              calledAt,
-                          }
-                        : ticket
-                );
-            }
-            return json(route, {
-                ok: true,
-                data: {
-                    ticket: queueTickets.find(
-                        (ticket) =>
-                            candidate &&
-                            Number(ticket.id || 0) === Number(candidate.id || 0)
-                    ),
-                    queueState: currentQueueState(),
-                },
-            });
-        }
+            if (resource === 'queue-call-next' && method === 'POST') {
+                if (remainingCallNextFailures > 0) {
+                    remainingCallNextFailures -= 1;
+                    await json(
+                        route,
+                        {
+                            ok: false,
+                            error: 'Servicio de cola temporalmente no disponible',
+                        },
+                        503
+                    );
+                    return true;
+                }
 
-        if (resource === 'queue-ticket' && method === 'PATCH') {
-            const body = parseBody(request);
-            const ticketId = Number(body.id || 0);
-            const action = String(body.action || '').toLowerCase();
-            const consultorio = Number(body.consultorio || 0);
-            const ticketIndex = queueTickets.findIndex(
-                (ticket) => Number(ticket.id || 0) === ticketId
-            );
-
-            if (ticketIndex < 0) {
-                return json(
-                    route,
-                    { ok: false, error: 'Ticket no encontrado' },
-                    404
-                );
-            }
-
-            const currentTicket = queueTickets[ticketIndex];
-            const nowIso = new Date().toISOString();
-            /** @type {Record<string, any> | null} */
-            let updatedTicket = null;
-
-            if (
-                action === 're-llamar' ||
-                action === 'rellamar' ||
-                action === 'recall' ||
-                action === 'llamar'
-            ) {
-                updatedTicket = {
-                    ...currentTicket,
-                    status: 'called',
-                    assignedConsultorio: [1, 2].includes(consultorio)
-                        ? consultorio
-                        : Number(currentTicket.assignedConsultorio || 0) || 1,
-                    calledAt: nowIso,
-                };
-            } else if (action === 'liberar' || action === 'release') {
-                updatedTicket = {
-                    ...currentTicket,
-                    status: 'waiting',
-                    assignedConsultorio: null,
-                    calledAt: null,
-                    completedAt: null,
-                };
-            } else if (
-                action === 'completar' ||
-                action === 'complete' ||
-                action === 'completed'
-            ) {
-                updatedTicket = {
-                    ...currentTicket,
-                    status: 'completed',
-                    assignedConsultorio: null,
-                    completedAt: nowIso,
-                };
-            } else if (action === 'no_show' || action === 'noshow') {
-                updatedTicket = {
-                    ...currentTicket,
-                    status: 'no_show',
-                    assignedConsultorio: null,
-                    completedAt: nowIso,
-                };
-            } else if (
-                action === 'cancelar' ||
-                action === 'cancel' ||
-                action === 'cancelled'
-            ) {
-                updatedTicket = {
-                    ...currentTicket,
-                    status: 'cancelled',
-                    assignedConsultorio: null,
-                    completedAt: nowIso,
-                };
-            } else if (action === 'atender_apoyo') {
-                queueHelpRequests = queueHelpRequests.map((request) =>
-                    Number(request.ticketId || 0) === ticketId &&
-                    ['pending', 'attending'].includes(
-                        String(request.status || '')
-                    )
-                        ? {
-                              ...request,
-                              status: 'attending',
-                              updatedAt: nowIso,
-                          }
-                        : request
-                );
-                syncTicketAssistanceFlags();
-                updatedTicket =
-                    queueTickets.find(
-                        (ticket) => Number(ticket.id || 0) === ticketId
-                    ) || currentTicket;
-            } else if (action === 'resolver_apoyo') {
-                queueHelpRequests = queueHelpRequests.map((request) =>
-                    Number(request.ticketId || 0) === ticketId &&
-                    ['pending', 'attending'].includes(
-                        String(request.status || '')
-                    )
-                        ? {
-                              ...request,
-                              status: 'resolved',
-                              updatedAt: nowIso,
-                              resolvedAt: nowIso,
-                          }
-                        : request
-                );
-                syncTicketAssistanceFlags();
-                updatedTicket = queueTickets.find(
-                    (ticket) => Number(ticket.id || 0) === ticketId
-                ) || {
-                    ...currentTicket,
-                    needsAssistance: false,
-                    assistanceRequestStatus: '',
-                    activeHelpRequestId: null,
-                };
-            } else if (action === 'reasignar' || action === 'reassign') {
+                const body = parseBody(request);
+                const consultorio = Number(body.consultorio || 0);
                 if (![1, 2].includes(consultorio)) {
-                    return json(
+                    await json(
                         route,
                         { ok: false, error: 'Consultorio invalido' },
                         400
                     );
+                    return true;
                 }
+
                 const consultorioBusy = queueTickets.some(
                     (ticket) =>
-                        Number(ticket.id || 0) !== ticketId &&
                         String(ticket.status || '') === 'called' &&
                         Number(ticket.assignedConsultorio || 0) === consultorio
                 );
                 if (consultorioBusy) {
-                    return json(
+                    await json(
                         route,
                         {
                             ok: false,
@@ -821,93 +663,282 @@ async function installSharedQueueMocks(context, options = {}) {
                         },
                         409
                     );
+                    return true;
                 }
-                updatedTicket = {
-                    ...currentTicket,
-                    assignedConsultorio: consultorio,
-                    calledAt:
-                        String(currentTicket.status || '') === 'called'
-                            ? currentTicket.calledAt || nowIso
-                            : currentTicket.calledAt || null,
-                };
-            } else {
-                return json(
-                    route,
-                    { ok: false, error: 'Accion no soportada' },
-                    400
-                );
+
+                const waiting = queueTickets
+                    .filter(
+                        (ticket) => String(ticket.status || '') === 'waiting'
+                    )
+                    .sort(sortWaitingTickets);
+                const candidate = waiting[0] || null;
+                if (candidate) {
+                    const calledAt = new Date().toISOString();
+                    queueTickets = queueTickets.map((ticket) =>
+                        Number(ticket.id || 0) === Number(candidate.id || 0)
+                            ? {
+                                  ...ticket,
+                                  status: 'called',
+                                  assignedConsultorio: consultorio,
+                                  calledAt,
+                              }
+                            : ticket
+                    );
+                }
+
+                await json(route, {
+                    ok: true,
+                    data: {
+                        ticket: queueTickets.find(
+                            (ticket) =>
+                                candidate &&
+                                Number(ticket.id || 0) ===
+                                    Number(candidate.id || 0)
+                        ),
+                        queueState: currentQueueState(),
+                    },
+                });
+                return true;
             }
 
-            queueTickets = queueTickets.map((ticket, index) =>
-                index === ticketIndex ? updatedTicket : ticket
-            );
+            if (resource === 'queue-ticket' && method === 'PATCH') {
+                const body = parseBody(request);
+                const ticketId = Number(body.id || 0);
+                const action = String(body.action || '').toLowerCase();
+                const consultorio = Number(body.consultorio || 0);
+                const ticketIndex = queueTickets.findIndex(
+                    (ticket) => Number(ticket.id || 0) === ticketId
+                );
 
-            return json(route, {
-                ok: true,
-                data: {
-                    ticket: updatedTicket,
-                    queueState: currentQueueState(),
-                },
-            });
-        }
+                if (ticketIndex < 0) {
+                    await json(
+                        route,
+                        { ok: false, error: 'Ticket no encontrado' },
+                        404
+                    );
+                    return true;
+                }
 
-        if (resource === 'data') {
-            const queueState = currentQueueState();
-            return json(route, {
-                ok: true,
-                data: {
-                    appointments: [],
-                    callbacks: [],
-                    reviews: [],
-                    availability: {},
-                    availabilityMeta: {
+                const currentTicket = queueTickets[ticketIndex];
+                const nowIso = new Date().toISOString();
+                /** @type {Record<string, any> | null} */
+                let updatedTicket = null;
+
+                if (
+                    action === 're-llamar' ||
+                    action === 'rellamar' ||
+                    action === 'recall' ||
+                    action === 'llamar'
+                ) {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'called',
+                        assignedConsultorio: [1, 2].includes(consultorio)
+                            ? consultorio
+                            : Number(currentTicket.assignedConsultorio || 0) ||
+                              1,
+                        calledAt: nowIso,
+                    };
+                } else if (action === 'liberar' || action === 'release') {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'waiting',
+                        assignedConsultorio: null,
+                        calledAt: null,
+                        completedAt: null,
+                    };
+                } else if (
+                    action === 'completar' ||
+                    action === 'complete' ||
+                    action === 'completed'
+                ) {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'completed',
+                        assignedConsultorio: null,
+                        completedAt: nowIso,
+                    };
+                } else if (action === 'no_show' || action === 'noshow') {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'no_show',
+                        assignedConsultorio: null,
+                        completedAt: nowIso,
+                    };
+                } else if (
+                    action === 'cancelar' ||
+                    action === 'cancel' ||
+                    action === 'cancelled'
+                ) {
+                    updatedTicket = {
+                        ...currentTicket,
+                        status: 'cancelled',
+                        assignedConsultorio: null,
+                        completedAt: nowIso,
+                    };
+                } else if (action === 'atender_apoyo') {
+                    queueHelpRequests = queueHelpRequests.map((request) =>
+                        Number(request.ticketId || 0) === ticketId &&
+                        ['pending', 'attending'].includes(
+                            String(request.status || '')
+                        )
+                            ? {
+                                  ...request,
+                                  status: 'attending',
+                                  updatedAt: nowIso,
+                              }
+                            : request
+                    );
+                    syncTicketAssistanceFlags();
+                    updatedTicket =
+                        queueTickets.find(
+                            (ticket) => Number(ticket.id || 0) === ticketId
+                        ) || currentTicket;
+                } else if (action === 'resolver_apoyo') {
+                    queueHelpRequests = queueHelpRequests.map((request) =>
+                        Number(request.ticketId || 0) === ticketId &&
+                        ['pending', 'attending'].includes(
+                            String(request.status || '')
+                        )
+                            ? {
+                                  ...request,
+                                  status: 'resolved',
+                                  updatedAt: nowIso,
+                                  resolvedAt: nowIso,
+                              }
+                            : request
+                    );
+                    syncTicketAssistanceFlags();
+                    updatedTicket = queueTickets.find(
+                        (ticket) => Number(ticket.id || 0) === ticketId
+                    ) || {
+                        ...currentTicket,
+                        needsAssistance: false,
+                        assistanceRequestStatus: '',
+                        activeHelpRequestId: null,
+                    };
+                } else if (action === 'reasignar' || action === 'reassign') {
+                    if (![1, 2].includes(consultorio)) {
+                        await json(
+                            route,
+                            { ok: false, error: 'Consultorio invalido' },
+                            400
+                        );
+                        return true;
+                    }
+                    const consultorioBusy = queueTickets.some(
+                        (ticket) =>
+                            Number(ticket.id || 0) !== ticketId &&
+                            String(ticket.status || '') === 'called' &&
+                            Number(ticket.assignedConsultorio || 0) ===
+                                consultorio
+                    );
+                    if (consultorioBusy) {
+                        await json(
+                            route,
+                            {
+                                ok: false,
+                                error: 'Consultorio ocupado',
+                                errorCode: 'queue_consultorio_busy',
+                            },
+                            409
+                        );
+                        return true;
+                    }
+                    updatedTicket = {
+                        ...currentTicket,
+                        assignedConsultorio: consultorio,
+                        calledAt:
+                            String(currentTicket.status || '') === 'called'
+                                ? currentTicket.calledAt || nowIso
+                                : currentTicket.calledAt || null,
+                    };
+                } else {
+                    await json(
+                        route,
+                        { ok: false, error: 'Accion no soportada' },
+                        400
+                    );
+                    return true;
+                }
+
+                queueTickets = queueTickets.map((ticket, index) =>
+                    index === ticketIndex ? updatedTicket : ticket
+                );
+
+                await json(route, {
+                    ok: true,
+                    data: {
+                        ticket: updatedTicket,
+                        queueState: currentQueueState(),
+                    },
+                });
+                return true;
+            }
+
+            if (resource === 'data') {
+                const queueState = currentQueueState();
+                await json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {
+                            source: 'store',
+                            mode: 'live',
+                            timezone: 'America/Guayaquil',
+                            calendarConfigured: true,
+                            calendarReachable: true,
+                            generatedAt: new Date().toISOString(),
+                        },
+                        queue_tickets: queueTickets,
+                        queueMeta: buildQueueMetaFromState(queueState),
+                    },
+                });
+                return true;
+            }
+
+            if (resource === 'queue-reprint') {
+                await json(route, {
+                    ok: true,
+                    printed: false,
+                    print: {
+                        ok: false,
+                        errorCode: 'printer_disabled',
+                        message: 'disabled',
+                    },
+                });
+                return true;
+            }
+
+            if (resource === 'health') {
+                await json(route, { ok: true, status: 'ok' });
+                return true;
+            }
+
+            if (resource === 'funnel-metrics') {
+                await json(route, { ok: true, data: {} });
+                return true;
+            }
+
+            if (resource === 'availability') {
+                await json(route, {
+                    ok: true,
+                    data: {},
+                    meta: {
                         source: 'store',
                         mode: 'live',
                         timezone: 'America/Guayaquil',
-                        calendarConfigured: true,
-                        calendarReachable: true,
                         generatedAt: new Date().toISOString(),
                     },
-                    queue_tickets: queueTickets,
-                    queueMeta: buildQueueMetaFromState(queueState),
-                },
-            });
-        }
+                });
+                return true;
+            }
 
-        if (resource === 'queue-reprint') {
-            return json(route, {
-                ok: true,
-                printed: false,
-                print: {
-                    ok: false,
-                    errorCode: 'printer_disabled',
-                    message: 'disabled',
-                },
-            });
-        }
-
-        if (resource === 'health') {
-            return json(route, { ok: true, status: 'ok' });
-        }
-
-        if (resource === 'funnel-metrics') {
-            return json(route, { ok: true, data: {} });
-        }
-
-        if (resource === 'availability') {
-            return json(route, {
-                ok: true,
-                data: {},
-                meta: {
-                    source: 'store',
-                    mode: 'live',
-                    timezone: 'America/Guayaquil',
-                    generatedAt: new Date().toISOString(),
-                },
-            });
-        }
-
-        return json(route, { ok: true, data: {} });
+            return false;
+        },
     });
 }
 
