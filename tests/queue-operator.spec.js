@@ -8,6 +8,11 @@ const {
     installOperatorOpenClawAuthMock,
     installWindowOpenRecorder,
 } = require('./helpers/admin-auth-mocks');
+const {
+    installTurneroClinicProfileFailure,
+    installTurneroClinicProfileMock,
+    installTurneroQueueStateMock,
+} = require('./helpers/turnero-surface-mocks');
 
 function json(route, payload, status = 200) {
     return route.fulfill({
@@ -21,6 +26,139 @@ function operatorUrl(query = '') {
     const params = new URLSearchParams(String(query || ''));
     const search = params.toString();
     return `/operador-turnos.html${search ? `?${search}` : ''}`;
+}
+
+async function installOperatorApiMock(
+    page,
+    {
+        failQueueState = () => false,
+        getQueueTickets = () => [],
+        setQueueTickets = () => {},
+        getQueueState = () => ({}),
+        setQueueState = () => {},
+        heartbeatRequests = null,
+        heartbeatPayloads = null,
+        queueCallNextRequests = null,
+    } = {}
+) {
+    await installTurneroQueueStateMock(page, {
+        queueStateResponse() {
+            if (failQueueState()) {
+                return {
+                    ok: false,
+                    error: 'queue_state_unavailable',
+                };
+            }
+
+            return {
+                ok: true,
+                data: getQueueState(),
+            };
+        },
+        queueStateStatus() {
+            return failQueueState() ? 503 : 200;
+        },
+        async handleApiRoute({ resource, request, route }) {
+            if (resource === 'queue-surface-heartbeat') {
+                let body;
+                let parsedBody = true;
+                try {
+                    body = request.postDataJSON() || {};
+                } catch (_error) {
+                    body = {};
+                    parsedBody = false;
+                }
+
+                if (Array.isArray(heartbeatPayloads)) {
+                    heartbeatPayloads.push(parsedBody ? body : null);
+                }
+
+                if (Array.isArray(heartbeatRequests)) {
+                    heartbeatRequests.push({
+                        method: request.method(),
+                        url: request.url(),
+                        body,
+                    });
+                }
+
+                await json(route, {
+                    ok: true,
+                    data: { accepted: true },
+                });
+                return true;
+            }
+
+            if (resource === 'data') {
+                await json(route, {
+                    ok: true,
+                    data: {
+                        appointments: [],
+                        callbacks: [],
+                        reviews: [],
+                        availability: {},
+                        availabilityMeta: {},
+                        queue_tickets: getQueueTickets(),
+                        queueMeta: getQueueState(),
+                    },
+                });
+                return true;
+            }
+
+            if (resource === 'queue-call-next') {
+                if (Array.isArray(queueCallNextRequests)) {
+                    queueCallNextRequests.push({
+                        method: request.method(),
+                        url: request.url(),
+                    });
+                }
+
+                const currentQueueTickets = getQueueTickets();
+                const calledTicket = {
+                    ...currentQueueTickets[0],
+                    status: 'called',
+                    assignedConsultorio: 2,
+                    calledAt: new Date().toISOString(),
+                };
+                const nextQueueTickets = [calledTicket];
+                const nextQueueState = buildOperatorQueueState(
+                    nextQueueTickets,
+                    {
+                        nextTickets: [],
+                    }
+                );
+
+                setQueueTickets(nextQueueTickets);
+                setQueueState(nextQueueState);
+
+                await json(route, {
+                    ok: true,
+                    data: {
+                        ticket: calledTicket,
+                        queueState: nextQueueState,
+                    },
+                });
+                return true;
+            }
+
+            if (resource === 'queue-ticket') {
+                await json(route, {
+                    ok: true,
+                    data: {
+                        ticket: getQueueTickets()[0],
+                        queueState: getQueueState(),
+                    },
+                });
+                return true;
+            }
+
+            if (resource === 'health' || resource === 'funnel-metrics') {
+                await json(route, { ok: true, data: {} });
+                return true;
+            }
+
+            return false;
+        },
+    });
 }
 
 async function setupOperatorAuthOperatorMocks(
@@ -99,101 +237,18 @@ async function setupOperatorAuthOperatorMocks(
             : defaultStatusResponses,
         startResponses: preparedStartResponses,
     });
-
-    await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const request = route.request();
-        const resource =
-            new URL(request.url()).searchParams.get('resource') || '';
-
-        if (resource === 'queue-surface-heartbeat') {
-            let body = {};
-            try {
-                body = request.postDataJSON() || {};
-            } catch (_error) {
-                body = {};
-            }
-            heartbeatRequests.push({
-                method: request.method(),
-                url: request.url(),
-                body,
-            });
-            return json(route, {
-                ok: true,
-                data: { accepted: true },
-            });
-        }
-
-        if (resource === 'data') {
-            return json(route, {
-                ok: true,
-                data: {
-                    appointments: [],
-                    callbacks: [],
-                    reviews: [],
-                    availability: {},
-                    availabilityMeta: {},
-                    queue_tickets: queueTickets,
-                    queueMeta: queueState,
-                },
-            });
-        }
-
-        if (resource === 'queue-state') {
-            if (failQueueState) {
-                return json(
-                    route,
-                    {
-                        ok: false,
-                        error: 'queue_state_unavailable',
-                    },
-                    503
-                );
-            }
-            return json(route, {
-                ok: true,
-                data: queueState,
-            });
-        }
-
-        if (resource === 'queue-call-next') {
-            queueCallNextRequests.push({
-                method: request.method(),
-                url: request.url(),
-            });
-            const calledTicket = {
-                ...queueTickets[0],
-                status: 'called',
-                assignedConsultorio: 2,
-                calledAt: new Date().toISOString(),
-            };
-            queueTickets = [calledTicket];
-            queueState = buildOperatorQueueState(queueTickets, {
-                nextTickets: [],
-            });
-            return json(route, {
-                ok: true,
-                data: {
-                    ticket: calledTicket,
-                    queueState,
-                },
-            });
-        }
-
-        if (resource === 'queue-ticket') {
-            return json(route, {
-                ok: true,
-                data: {
-                    ticket: queueTickets[0],
-                    queueState,
-                },
-            });
-        }
-
-        if (resource === 'health' || resource === 'funnel-metrics') {
-            return json(route, { ok: true, data: {} });
-        }
-
-        return json(route, { ok: true, data: {} });
+    await installOperatorApiMock(page, {
+        failQueueState: () => failQueueState,
+        getQueueTickets: () => queueTickets,
+        setQueueTickets(nextQueueTickets) {
+            queueTickets = nextQueueTickets;
+        },
+        getQueueState: () => queueState,
+        setQueueState(nextQueueState) {
+            queueState = nextQueueState;
+        },
+        heartbeatRequests,
+        queueCallNextRequests,
     });
 
     return {
@@ -215,103 +270,19 @@ async function mockOperatorSurface(page, overrides = {}) {
     await installLegacyAdminAuthMock(page, {
         csrfToken: 'csrf_operator',
     });
-
-    await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-        const request = route.request();
-        const resource =
-            new URL(request.url()).searchParams.get('resource') || '';
-
-        if (resource === 'queue-surface-heartbeat') {
-            let body = {};
-            try {
-                body = request.postDataJSON() || {};
-                heartbeatPayloads.push(body);
-            } catch (_error) {
-                body = {};
-                heartbeatPayloads.push(null);
-            }
-            heartbeatRequests.push({
-                method: request.method(),
-                url: request.url(),
-                body,
-            });
-            return json(route, {
-                ok: true,
-                data: { accepted: true },
-            });
-        }
-
-        if (resource === 'data') {
-            return json(route, {
-                ok: true,
-                data: {
-                    appointments: [],
-                    callbacks: [],
-                    reviews: [],
-                    availability: {},
-                    availabilityMeta: {},
-                    queue_tickets: queueTickets,
-                    queueMeta: queueState,
-                },
-            });
-        }
-
-        if (resource === 'queue-state') {
-            if (failQueueState) {
-                return json(
-                    route,
-                    {
-                        ok: false,
-                        error: 'queue_state_unavailable',
-                    },
-                    503
-                );
-            }
-            return json(route, {
-                ok: true,
-                data: queueState,
-            });
-        }
-
-        if (resource === 'queue-call-next') {
-            queueCallNextRequests.push({
-                method: request.method(),
-                url: request.url(),
-            });
-            const calledTicket = {
-                ...queueTickets[0],
-                status: 'called',
-                assignedConsultorio: 2,
-                calledAt: new Date().toISOString(),
-            };
-            queueTickets = [calledTicket];
-            queueState = buildOperatorQueueState(queueTickets, {
-                nextTickets: [],
-            });
-            return json(route, {
-                ok: true,
-                data: {
-                    ticket: calledTicket,
-                    queueState,
-                },
-            });
-        }
-
-        if (resource === 'queue-ticket') {
-            return json(route, {
-                ok: true,
-                data: {
-                    ticket: queueTickets[0],
-                    queueState,
-                },
-            });
-        }
-
-        if (resource === 'health' || resource === 'funnel-metrics') {
-            return json(route, { ok: true, data: {} });
-        }
-
-        return json(route, { ok: true, data: {} });
+    await installOperatorApiMock(page, {
+        failQueueState: () => failQueueState,
+        getQueueTickets: () => queueTickets,
+        setQueueTickets(nextQueueTickets) {
+            queueTickets = nextQueueTickets;
+        },
+        getQueueState: () => queueState,
+        setQueueState(nextQueueState) {
+            queueState = nextQueueState;
+        },
+        heartbeatRequests,
+        heartbeatPayloads,
+        queueCallNextRequests,
     });
 
     if (overrides.desktopSnapshot) {
@@ -363,28 +334,24 @@ test.describe('Turnero Operador', () => {
     test('aplica branding del perfil clinico en la vista de acceso', async ({
         page,
     }) => {
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                json(route, {
-                    clinic_id: 'clinica-norte-demo',
-                    branding: {
-                        name: 'Clinica Norte',
-                        short_name: 'Norte',
-                        city: 'Quito',
-                    },
-                    consultorios: {
-                        c1: { label: 'Dermatología 1', short_label: 'D1' },
-                        c2: { label: 'Dermatología 2', short_label: 'D2' },
-                    },
-                    surfaces: {
-                        operator: {
-                            enabled: true,
-                            route: '/operador-turnos.html',
-                        },
-                    },
-                })
-        );
+        await installTurneroClinicProfileMock(page, {
+            clinic_id: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+                city: 'Quito',
+            },
+            consultorios: {
+                c1: { label: 'Dermatología 1', short_label: 'D1' },
+                c2: { label: 'Dermatología 2', short_label: 'D2' },
+            },
+            surfaces: {
+                operator: {
+                    enabled: true,
+                    route: '/operador-turnos.html',
+                },
+            },
+        });
 
         await installLegacyAdminAuthMock(page, {
             authenticated: false,
@@ -412,27 +379,23 @@ test.describe('Turnero Operador', () => {
     test('degrada operador si la ruta del perfil no coincide con la superficie activa', async ({
         page,
     }) => {
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                json(route, {
-                    clinic_id: 'clinica-norte-demo',
-                    branding: {
-                        name: 'Clinica Norte',
-                        short_name: 'Norte',
-                    },
-                    consultorios: {
-                        c1: { label: 'Dermatología 1', short_label: 'D1' },
-                        c2: { label: 'Dermatología 2', short_label: 'D2' },
-                    },
-                    surfaces: {
-                        operator: {
-                            enabled: true,
-                            route: '/operador-alt.html',
-                        },
-                    },
-                })
-        );
+        await installTurneroClinicProfileMock(page, {
+            clinic_id: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+            },
+            consultorios: {
+                c1: { label: 'Dermatología 1', short_label: 'D1' },
+                c2: { label: 'Dermatología 2', short_label: 'D2' },
+            },
+            surfaces: {
+                operator: {
+                    enabled: true,
+                    route: '/operador-alt.html',
+                },
+            },
+        });
 
         const { queueCallNextRequests } =
             await setupOperatorAuthOperatorMocks(page);
@@ -467,15 +430,7 @@ test.describe('Turnero Operador', () => {
     test('degrada operador si clinic-profile.json no carga y queda en perfil de respaldo', async ({
         page,
     }) => {
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                route.fulfill({
-                    status: 404,
-                    contentType: 'application/json; charset=utf-8',
-                    body: JSON.stringify({ ok: false }),
-                })
-        );
+        await installTurneroClinicProfileFailure(page);
 
         const { queueCallNextRequests } =
             await setupOperatorAuthOperatorMocks(page);
@@ -505,27 +460,23 @@ test.describe('Turnero Operador', () => {
     test('incluye clinicId del perfil clinico en el heartbeat del operador', async ({
         page,
     }) => {
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                json(route, {
-                    clinic_id: 'clinica-norte-demo',
-                    branding: {
-                        name: 'Clinica Norte',
-                        short_name: 'Norte',
-                    },
-                    consultorios: {
-                        c1: { label: 'Dermatología 1', short_label: 'D1' },
-                        c2: { label: 'Dermatología 2', short_label: 'D2' },
-                    },
-                    surfaces: {
-                        operator: {
-                            enabled: true,
-                            route: '/operador-turnos.html',
-                        },
-                    },
-                })
-        );
+        await installTurneroClinicProfileMock(page, {
+            clinic_id: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+            },
+            consultorios: {
+                c1: { label: 'Dermatología 1', short_label: 'D1' },
+                c2: { label: 'Dermatología 2', short_label: 'D2' },
+            },
+            surfaces: {
+                operator: {
+                    enabled: true,
+                    route: '/operador-turnos.html',
+                },
+            },
+        });
 
         const { challenge, heartbeatRequests } =
             await setupOperatorAuthOperatorMocks(page);
@@ -838,80 +789,15 @@ test.describe('Turnero Operador', () => {
             authenticated: true,
             csrfToken: 'csrf_operator',
         });
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const request = route.request();
-            const resource =
-                new URL(request.url()).searchParams.get('resource') || '';
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {},
-                        queue_tickets: queueTickets,
-                        queueMeta: queueState,
-                    },
-                });
-            }
-
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: queueState,
-                });
-            }
-
-            if (resource === 'queue-call-next') {
-                const calledTicket = {
-                    ...queueTickets[0],
-                    status: 'called',
-                    assignedConsultorio: 2,
-                    calledAt: new Date().toISOString(),
-                };
-                queueTickets = [calledTicket];
-                queueState = {
-                    updatedAt: new Date().toISOString(),
-                    waitingCount: 0,
-                    calledCount: 1,
-                    counts: {
-                        waiting: 0,
-                        called: 1,
-                        completed: 0,
-                        no_show: 0,
-                        cancelled: 0,
-                    },
-                    callingNow: [calledTicket],
-                    nextTickets: [],
-                };
-                return json(route, {
-                    ok: true,
-                    data: {
-                        ticket: calledTicket,
-                        queueState,
-                    },
-                });
-            }
-
-            if (resource === 'queue-ticket') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        ticket: queueTickets[0],
-                        queueState,
-                    },
-                });
-            }
-
-            if (resource === 'health' || resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+        await installOperatorApiMock(page, {
+            getQueueTickets: () => queueTickets,
+            setQueueTickets(nextQueueTickets) {
+                queueTickets = nextQueueTickets;
+            },
+            getQueueState: () => queueState,
+            setQueueState(nextQueueState) {
+                queueState = nextQueueState;
+            },
         });
 
         await page.goto(operatorUrl('station=c2&lock=1&one_tap=1'));

@@ -24,6 +24,12 @@ const QUEUE_KIOSK_SPEC_PATH = resolve(
     'tests',
     'queue-kiosk.spec.js'
 );
+const QUEUE_OPERATOR_SPEC_PATH = resolve(
+    __dirname,
+    '..',
+    'tests',
+    'queue-operator.spec.js'
+);
 
 function createRouteHarness() {
     const handlers = [];
@@ -164,6 +170,51 @@ test('installTurneroQueueStateMock soporta abort controlado del backend', async 
     assert.equal(session.getQueueStateCalls(), 1);
 });
 
+test('installTurneroQueueStateMock soporta respuestas custom y defaultPayload dinamico', async () => {
+    const harness = createRouteHarness();
+
+    await installTurneroQueueStateMock(harness.target, {
+        defaultPayload({ resource }) {
+            return {
+                ok: true,
+                data: { resource },
+            };
+        },
+        queueStateResponse({ callCount }) {
+            return {
+                ok: callCount < 2,
+                error: callCount < 2 ? '' : 'queue_state_unavailable',
+                data: callCount < 2 ? { waitingCount: callCount } : undefined,
+            };
+        },
+        queueStateStatus({ callCount }) {
+            return callCount < 2 ? 200 : 503;
+        },
+    });
+
+    const features = await harness.dispatch(
+        'https://example.test/api.php?resource=features'
+    );
+    assert.deepEqual(features.payload, {
+        ok: true,
+        data: { resource: 'features' },
+    });
+
+    const firstQueueState = await harness.dispatch(
+        'https://example.test/api.php?resource=queue-state'
+    );
+    assert.equal(firstQueueState.fulfilled.status, 200);
+    assert.equal(firstQueueState.payload.ok, true);
+    assert.equal(firstQueueState.payload.data.waitingCount, 1);
+
+    const secondQueueState = await harness.dispatch(
+        'https://example.test/api.php?resource=queue-state'
+    );
+    assert.equal(secondQueueState.fulfilled.status, 503);
+    assert.equal(secondQueueState.payload.ok, false);
+    assert.equal(secondQueueState.payload.error, 'queue_state_unavailable');
+});
+
 test('installTurneroQueueStateMock permite side effects en resources no queue-state via handleApiRoute', async () => {
     const harness = createRouteHarness();
     let ticketRequests = 0;
@@ -184,9 +235,10 @@ test('installTurneroQueueStateMock permite side effects en resources no queue-st
     assert.deepEqual(ticket.payload, { ok: true, data: {} });
 });
 
-test('queue-display y queue-kiosk consumen el helper compartido de superficies turnero', () => {
+test('queue-display, queue-kiosk y queue-operator consumen el helper compartido de superficies turnero', () => {
     const queueDisplaySpec = readFileSync(QUEUE_DISPLAY_SPEC_PATH, 'utf8');
     const queueKioskSpec = readFileSync(QUEUE_KIOSK_SPEC_PATH, 'utf8');
+    const queueOperatorSpec = readFileSync(QUEUE_OPERATOR_SPEC_PATH, 'utf8');
 
     assert.match(
         queueDisplaySpec,
@@ -218,4 +270,21 @@ test('queue-display y queue-kiosk consumen el helper compartido de superficies t
         /await installTurneroClinicProfileFailure\(page\);/m
     );
     assert.match(queueKioskSpec, /await installTurneroQueueStateMock\(page,/m);
+
+    assert.match(
+        queueOperatorSpec,
+        /const \{\s+installTurneroClinicProfileFailure,\s+installTurneroClinicProfileMock,\s+installTurneroQueueStateMock,\s+\} = require\('\.\/helpers\/turnero-surface-mocks'\);/m
+    );
+    assert.match(
+        queueOperatorSpec,
+        /await installTurneroClinicProfileMock\(page, \{/m
+    );
+    assert.match(
+        queueOperatorSpec,
+        /await installTurneroClinicProfileFailure\(page\);/m
+    );
+    assert.match(
+        queueOperatorSpec,
+        /await installTurneroQueueStateMock\(page, \{/m
+    );
 });

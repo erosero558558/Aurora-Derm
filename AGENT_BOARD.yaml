@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 637
+  revision: 640
   updated_at: 2026-03-14
 
 tasks:
@@ -9801,8 +9801,8 @@ tasks:
     title: "Consolidate queue-operator turnero surface mocks"
     owner: Ernesto
     executor: codex
-    status: in_progress
-    status_since_at: "2026-03-14T03:26:20.652Z"
+    status: done
+    status_since_at: "2026-03-14T03:31:50.674Z"
     risk: medium
     scope: backend
     codex_instance: codex_backend_ops
@@ -9813,7 +9813,7 @@ tasks:
     runtime_surface: 
     runtime_transport: 
     runtime_last_transport: 
-    files: ["tests/queue-operator.spec.js", "tests/helpers/turnero-surface-mocks.js", "tests-node/turnero-surface-mocks-helper.test.js", "verification/agent-runs/AG-234.md"]
+    files: ["tests/queue-operator.spec.js", "tests/helpers/turnero-surface-mocks.js", "tests-node/turnero-surface-mocks-helper.test.js", "verification/agent-runs/AG-229.md"]
     source_signal: manual
     source_ref: ""
     priority_score: 0
@@ -9821,20 +9821,62 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: "lease_AG-229_20260314032620652_a75e41"
-    lease_owner: "Ernesto"
-    lease_created_at: "2026-03-14T03:26:20.652Z"
-    heartbeat_at: "2026-03-14T03:26:20.652Z"
-    lease_expires_at: "2026-03-14T07:26:20.652Z"
-    lease_reason: "board_write"
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-14T03:31:50.674Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Consolidate queue-operator turnero surface mocks"
+    acceptance_ref: "verification/agent-runs/AG-229.md"
+    evidence_ref: "verification/agent-runs/AG-229.md"
+    depends_on: []
+    prompt: "Consolidate queue-operator turnero surface mocks"
+    created_at: 2026-03-14
+    updated_at: 2026-03-14
+
+  - id: AG-230
+    title: "Consolidate queue-integrated-flow queue-state mock"
+    owner: Ernesto
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-14T03:32:55.277Z"
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["tests/queue-integrated-flow.spec.js", "tests-node/turnero-surface-mocks-helper.test.js", "verification/agent-runs/AG-230.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
     lease_cleared_at: ""
     lease_cleared_reason: ""
     runtime_impact: low
     critical_zone: false
-    acceptance: "Consolidate queue-operator turnero surface mocks"
+    acceptance: "Consolidate queue-integrated-flow queue-state mock"
     acceptance_ref: ""
     evidence_ref: ""
     depends_on: []
-    prompt: "Consolidate queue-operator turnero surface mocks"
+    prompt: "Consolidate queue-integrated-flow queue-state mock"
     created_at: 2026-03-14
     updated_at: 2026-03-14

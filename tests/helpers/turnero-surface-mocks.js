@@ -39,6 +39,7 @@ async function installTurneroClinicProfileFailure(
 async function installTurneroQueueStateMock(page, options = {}) {
     const {
         queueState = {},
+        queueStateResponse = null,
         queueStateAbortReason = '',
         queueStateStatus = 200,
         defaultPayload = { ok: true, data: {} },
@@ -69,13 +70,54 @@ async function installTurneroQueueStateMock(page, options = {}) {
         }
 
         if (resource !== 'queue-state') {
-            return fulfillJson(route, defaultPayload);
+            const payload =
+                typeof defaultPayload === 'function'
+                    ? await defaultPayload({
+                          route,
+                          request,
+                          url,
+                          resource,
+                          method,
+                          queueStateCalls,
+                          buildTurneroQueueStatePayload,
+                      })
+                    : defaultPayload;
+            return fulfillJson(route, payload);
         }
 
         queueStateCalls += 1;
 
         if (queueStateAbortReason) {
             return route.abort(queueStateAbortReason);
+        }
+
+        if (queueStateResponse !== null) {
+            const responsePayload =
+                typeof queueStateResponse === 'function'
+                    ? await queueStateResponse({
+                          route,
+                          request,
+                          url,
+                          resource,
+                          method,
+                          callCount: queueStateCalls,
+                          buildTurneroQueueStatePayload,
+                      })
+                    : queueStateResponse;
+            const responseStatus =
+                typeof queueStateStatus === 'function'
+                    ? await queueStateStatus({
+                          route,
+                          request,
+                          url,
+                          resource,
+                          method,
+                          callCount: queueStateCalls,
+                          buildTurneroQueueStatePayload,
+                      })
+                    : queueStateStatus;
+
+            return fulfillJson(route, responsePayload, responseStatus);
         }
 
         const queueStateData =
