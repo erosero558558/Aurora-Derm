@@ -54,6 +54,7 @@ This document freezes the active admin frontend contract after the total cutover
 - `dashboard`
 - `appointments`
 - `callbacks`
+- `clinical-history`
 - `reviews`
 - `availability`
 - `queue`
@@ -64,6 +65,7 @@ This document freezes the active admin frontend contract after the total cutover
 - `#pageTitle`, `#adminQuickCommand`, `#adminRunQuickCommandBtn`, `#adminRefreshStatus`, `#adminContextTitle`, `#adminCommandPalette`
 - `#dashboard`, `#opsTodaySummaryCard`, `#opsTodayCount`, `#opsTodayMeta`, `#opsPendingSummaryCard`, `#opsPendingCount`, `#opsPendingMeta`, `#opsAvailabilitySummaryCard`, `#opsAvailabilityCount`, `#opsAvailabilityMeta`
 - `#opsQueueLaunchCard`, `#opsQueueStatus`, `#opsQueueMeta`, `#openOperatorAppBtn`, `#dashboardLiveStatus`, `#dashboardLiveMeta`, `#dashboardQueueHealth`, `#dashboardFlowStatus`, `#dashboardAttentionList`
+- `#dashboardClinicalHistoryMeta`, `#dashboardClinicalHistoryChip`, `#clinicalHistorySessionCount`, `#clinicalHistoryReviewCount`, `#clinicalHistoryPendingAiCount`, `#clinicalHistoryEventCount`, `#dashboardClinicalHistorySummary`, `#dashboardClinicalHistoryActions`, `#clinicalHistoryQueueHeadline`, `#clinicalHistoryQueueMeta`, `#clinicalHistoryEventHeadline`, `#clinicalHistoryEventMeta`, `#dashboardClinicalReviewQueue`, `#dashboardClinicalEventFeed`
 - `#operationPendingReviewCount`, `#operationPendingCallbacksCount`, `#operationTodayLoadCount`, `#operationQueueHealth`, `#operationActionList`
 - `#funnelSummary`, `#dashboardAdvancedAnalytics`, `#funnelAbandonList`, `#funnelEntryList`, `#funnelSourceList`, `#funnelPaymentMethodList`, `#funnelAbandonReasonList`, `#funnelStepList`, `#funnelErrorCodeList`
 - `#appointments`, `#appointmentFilter`, `#appointmentSort`, `#searchAppointments`, `#clearAppointmentsFiltersBtn`, `#appointmentsToolbarMeta`, `#appointmentsToolbarState`, `#appointmentsTableBody`
@@ -149,7 +151,7 @@ This document freezes the active admin frontend contract after the total cutover
 ## Required `data-action`
 
 - Core: `set-admin-theme`, `toggle-sidebar-collapse`, `refresh-admin-data`, `run-admin-command`, `open-command-palette`, `close-command-palette`, `logout`, `close-toast`, `open-operator-app`
-- Dashboard context: `context-open-appointments-overview`, `context-open-callbacks-pending`, `context-open-callbacks-next`, `context-open-availability`
+- Dashboard context: `context-open-appointments-overview`, `context-open-callbacks-pending`, `context-open-callbacks-next`, `context-open-availability`, `context-open-clinical-history`
 - Appointments: `appointment-quick-filter`, `clear-appointment-filters`, `appointment-density`, `approve-transfer`, `reject-transfer`, `mark-no-show`, `cancel-appointment`, `export-csv`
 - Callbacks: `callback-quick-filter`, `clear-callback-filters`, `callbacks-triage-next`, `mark-contacted`, `callbacks-bulk-select-visible`, `callbacks-bulk-clear`, `callbacks-bulk-mark`
 - Availability: `change-month`, `availability-today`, `availability-prev-with-slots`, `availability-next-with-slots`, `select-availability-day`, `prefill-time-slot`, `add-time-slot`, `remove-time-slot`, `copy-availability-day`, `paste-availability-day`, `duplicate-availability-day-next`, `duplicate-availability-next-week`, `clear-availability-day`, `clear-availability-week`, `save-availability-draft`, `discard-availability-draft`
@@ -234,6 +236,7 @@ This document freezes the active admin frontend contract after the total cutover
 - `GET /api.php?resource=data` now includes `data.appDownloads` for `operator`, `kiosk` and `sala_tv`, including `guideUrl` for the public install center. This catalog is optional for the piloto web and does not block the canonical web release.
 - `GET /api.php?resource=data` now also includes `data.queueSurfaceStatus` with grouped heartbeats for `operator`, `kiosk` and `display`.
 - `GET /api.php?resource=data` now also includes `data.turneroClinicProfile` with `clinic_id`, `branding`, `consultorios`, `surfaces` and `release.admin_mode_default`.
+- `GET /api.php?resource=data` now also includes `data.patientFlowMeta`, `data.clinicalHistoryMeta`, `data.mediaFlowMeta` and `data.telemedicineMeta`. If the clinical storage gate is blocked, summaries stay visible but operational lists such as `reviewQueue`, `events`, `queue` and `recentEvents` must be redacted.
 - El perfil activo que alimenta `data.turneroClinicProfile` debe salir de `content/turnero/clinic-profile.json`, pero su fuente canónica de release vive en `content/turnero/clinic-profiles/*.json` y se promueve con `bin/turnero-clinic-profile.js`.
 - The admin runtime also persists `data.turneroClinicProfileMeta` locally to distinguish `remote` vs `fallback_local`; `queueOpsPilotReadinessItem_profile` must block go-live when the profile source is only local fallback.
 - `GET /api.php?resource=health` now also includes `checks.turneroPilot` with `clinicId`, `profileFingerprint`, `profileSource`, `catalogReady`, `catalogEntryId`, `releaseMode`, `adminModeDefault`, `separateDeploy` and `surfaces.*.route`.

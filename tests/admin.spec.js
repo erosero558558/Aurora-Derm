@@ -601,6 +601,7 @@ test.describe('Panel de administracion', () => {
         });
 
         await page.goto('/admin.html');
+        await waitForAdminReady(page);
         await expect(page.locator('#adminDashboard')).toBeVisible();
 
         const clinicalAction = page

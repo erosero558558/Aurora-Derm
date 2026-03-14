@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 658
+  revision: 660
   updated_at: 2026-03-14
 
 tasks:
@@ -23,10 +23,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
-    provider_mode: 
-    runtime_surface: 
-    runtime_transport: 
-    runtime_last_transport: 
+    provider_mode: ""
+    runtime_surface: ""
+    runtime_transport: ""
+    runtime_last_transport: ""
     files: ["backup-receiver.php", "verify-backup.php", "lib/backup.php", "tests/BackupReceiverTest.php", "env.example.php", "docs/RUNBOOKS.md"]
     source_signal: manual
     source_ref: ""
@@ -275,10 +275,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
-    provider_mode: 
-    runtime_surface: 
-    runtime_transport: 
-    runtime_last_transport: 
+    provider_mode: ""
+    runtime_surface: ""
+    runtime_transport: ""
+    runtime_last_transport: ""
     files: ["lib/audit.php", "lib/ratelimit.php", "lib/email.php"]
     source_signal: manual
     source_ref: ""
@@ -10172,5 +10172,47 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-237.md"
     depends_on: []
     prompt: "Consolidar mocks del piloto web en admin queue spec"
+    created_at: 2026-03-14
+    updated_at: 2026-03-14
+
+  - id: AG-238
+    title: "Mantener útil la acción clínica del dashboard con fallback operativo"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-14T04:26:23.001Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: ""
+    runtime_surface: ""
+    runtime_transport: ""
+    runtime_last_transport: ""
+    files: ["src/apps/admin-v3/ui/frame/templates/sections/dashboard/overview.js", "src/apps/admin-v3/sections/dashboard/markup/actions.js", "src/apps/admin-v3/sections/dashboard/render/index.js", "tests/admin.spec.js", "verification/agent-runs/AG-238.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-14T04:26:23.001Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Mantener útil la acción clínica del dashboard con fallback operativo"
+    acceptance_ref: "verification/agent-runs/AG-238.md"
+    evidence_ref: "verification/agent-runs/AG-238.md"
+    depends_on: []
+    prompt: "Mantener útil la acción clínica del dashboard con fallback operativo"
     created_at: 2026-03-14
     updated_at: 2026-03-14
