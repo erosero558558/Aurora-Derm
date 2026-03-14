@@ -1,8 +1,10 @@
 param(
     [string]$Domain = 'https://pielarmonia.com',
-    [ValidateSet('stable')]
+    [ValidateSet('stable', 'internal', 'canary', 'general', 'rollback')]
     [string]$Stage = 'stable',
     [switch]$RequireOpenClawAuth,
+    [switch]$AllowFeatureApiFailure,
+    [switch]$AllowMissingAdminFlag,
     [switch]$SkipRuntimeSmoke,
     [string]$ReportPath = 'verification/last-admin-ui-rollout-gate.json'
 )

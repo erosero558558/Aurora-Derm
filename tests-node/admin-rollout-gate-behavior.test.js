@@ -74,7 +74,16 @@ async function withMockServer(handler, callback) {
     }
 }
 
-function runGate(baseUrl, reportPath) {
+function runGate(baseUrl, reportPath, options = {}) {
+    const stage = String(options.stage || 'stable');
+    const extraArgs = [];
+    if (options.allowFeatureApiFailure) {
+        extraArgs.push('-AllowFeatureApiFailure');
+    }
+    if (options.allowMissingAdminFlag) {
+        extraArgs.push('-AllowMissingAdminFlag');
+    }
+
     return new Promise((resolvePromise, rejectPromise) => {
         const child = spawn(
             'powershell',
@@ -87,9 +96,10 @@ function runGate(baseUrl, reportPath) {
                 '-Domain',
                 baseUrl,
                 '-Stage',
-                'stable',
+                stage,
                 '-RequireOpenClawAuth',
                 '-SkipRuntimeSmoke',
+                ...extraArgs,
                 '-ReportPath',
                 reportPath,
             ],
@@ -124,6 +134,71 @@ function runGate(baseUrl, reportPath) {
         });
     });
 }
+
+test('admin rollout gate acepta stage general y switches de tolerancia usados por deploy-hosting', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'admin-rollout-gate-general-'));
+    const reportPath = join(tempDir, 'report.json');
+
+    try {
+        await withMockServer(
+            (req, res) => {
+                const url = new URL(req.url, 'http://127.0.0.1');
+
+                if (url.pathname === '/admin.html') {
+                    res.writeHead(200, {
+                        'Content-Type': 'text/html; charset=utf-8',
+                    });
+                    res.end(adminShellHtml());
+                    return;
+                }
+
+                if (
+                    url.pathname === '/api.php' &&
+                    url.searchParams.get('resource') === 'operator-auth-status'
+                ) {
+                    sendJson(res, 200, {
+                        ok: true,
+                        authenticated: false,
+                        mode: 'openclaw_chatgpt',
+                        status: 'anonymous',
+                        configured: true,
+                        configuration: {
+                            helperBaseUrl: 'http://127.0.0.1:4173',
+                            bridgeTokenConfigured: true,
+                            bridgeSecretConfigured: true,
+                            allowlistConfigured: true,
+                            missing: [],
+                        },
+                    });
+                    return;
+                }
+
+                res.writeHead(404, {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                });
+                res.end('not-found');
+            },
+            async (baseUrl) => {
+                const result = await runGate(baseUrl, reportPath, {
+                    stage: 'general',
+                    allowFeatureApiFailure: true,
+                    allowMissingAdminFlag: true,
+                });
+
+                assert.equal(result.status, 0, result.stderr || result.stdout);
+
+                const report = readJson(reportPath);
+                assert.equal(report.ok, true);
+                assert.equal(report.stage, 'general');
+            }
+        );
+    } finally {
+        rmSync(tempDir, {
+            recursive: true,
+            force: true,
+        });
+    }
+});
 
 function readJson(path) {
     return JSON.parse(readFileSync(path, 'utf8').replace(/^\uFEFF/, ''));

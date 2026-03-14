@@ -101,9 +101,21 @@ test('admin rollout gate expone stage estable y contrato v3-only', () => {
         'falta flag RequireOpenClawAuth para endurecer el gate'
     );
     assert.equal(
-        raw.includes("[ValidateSet('stable')]"),
+        raw.includes(
+            "[ValidateSet('stable', 'internal', 'canary', 'general', 'rollback')]"
+        ),
         true,
-        'falta stage estable canonico'
+        'falta validate set alineado con los stages canonicos del rollout'
+    );
+    assert.equal(
+        raw.includes('[switch]$AllowFeatureApiFailure'),
+        true,
+        'falta flag AllowFeatureApiFailure para el gate invocado desde deploy-hosting'
+    );
+    assert.equal(
+        raw.includes('[switch]$AllowMissingAdminFlag'),
+        true,
+        'falta flag AllowMissingAdminFlag para el gate invocado desde deploy-hosting'
     );
     assert.equal(
         raw.includes('url = "$base/admin.html"'),
@@ -263,7 +275,7 @@ test('package.json expone gate endurecido para rollout OpenClaw del admin', () =
 
     assert.equal(
         packageJson.includes(
-            '"gate:admin:rollout:openclaw": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage stable -RequireOpenClawAuth"'
+            '"gate:admin:rollout:openclaw": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage general -RequireOpenClawAuth"'
         ),
         true,
         'package.json debe exponer gate:admin:rollout:openclaw'
