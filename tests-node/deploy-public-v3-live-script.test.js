@@ -37,9 +37,20 @@ test('deploy-public-v3-live usa artefactos publicos versionados y verifica el ch
         '"queue-display.css"',
         '"js/chunks"',
         '"js/engines"',
+        '"app-downloads/index.php"',
+        '"app-downloads/app-downloads.css"',
+        '"app-downloads/app-downloads.js"',
+        '"app-downloads/pilot/release-manifest.json"',
+        '"app-downloads/pilot/SHA256SUMS.txt"',
+        '"app-downloads/pilot/operator/win/TurneroOperadorSetup.exe"',
+        '"app-downloads/pilot/operator/win/TurneroOperadorSetup.exe.blockmap"',
+        '"desktop-updates/pilot/operator/win/latest.yml"',
+        '"desktop-updates/pilot/operator/win/TurneroOperadorSetup.exe"',
+        '"desktop-updates/pilot/operator/win/TurneroOperadorSetup.exe.blockmap"',
         'Missing canonical public artifact:',
         'verify_canonical_public_artifacts',
-        'ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro" "$REPO/js/chunks" "$REPO/js/engines" "$REPO/operador-turnos.html" "$REPO/kiosco-turnos.html" "$REPO/sala-turnos.html"',
+        'normalize_public_web_tree_permissions',
+        'ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro" "$REPO/js/chunks" "$REPO/js/engines" "$REPO/app-downloads" "$REPO/desktop-updates" "$REPO/operador-turnos.html" "$REPO/kiosco-turnos.html" "$REPO/sala-turnos.html"',
     ]) {
         assert.equal(
             raw.includes(snippet),
@@ -106,6 +117,26 @@ test('deploy-public-v3-live endurece nginx sin depender de PATH', () => {
     }
 });
 
+test('deploy-public-v3-live normaliza permisos del arbol publico antes de verificar app-downloads y updates', () => {
+    const raw = loadScript(SCRIPT_PATH);
+
+    for (const snippet of [
+        'normalize_public_web_tree_permissions() {',
+        '"$REPO/app-downloads"',
+        '"$REPO/desktop-updates"',
+        'find "$public_dir" -type d -exec chmod 0755 {} +',
+        'find "$public_dir" -type f -exec chmod 0644 {} +',
+        'chmod 0644 "$public_file"',
+        'Normalized public web tree permissions.',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta normalizacion de permisos publicos en script live V3: ${snippet}`
+        );
+    }
+});
+
 test('deploy-public-v3-live neutraliza cron destructivo que borra artefactos no versionados', () => {
     const raw = loadScript(SCRIPT_PATH);
 
@@ -140,6 +171,10 @@ test('deploy-public-v3-live corrige redirects canonicos y valida rutas publicas 
         'curl -I "$LOCAL_VERIFY_BASE_URL/operador-turnos.html"',
         'curl -I "$LOCAL_VERIFY_BASE_URL/kiosco-turnos.html"',
         'curl -I "$LOCAL_VERIFY_BASE_URL/sala-turnos.html"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/app-downloads/"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/app-downloads/?surface=operator&platform=win"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/desktop-updates/pilot/operator/win/latest.yml"',
+        'curl -I "$LOCAL_VERIFY_BASE_URL/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe"',
         'curl -I https://pielarmonia.com/',
         'curl -I https://pielarmonia.com/es/',
         'curl -I https://pielarmonia.com/en/',
@@ -147,6 +182,10 @@ test('deploy-public-v3-live corrige redirects canonicos y valida rutas publicas 
         'curl -I https://pielarmonia.com/operador-turnos.html',
         'curl -I https://pielarmonia.com/kiosco-turnos.html',
         'curl -I https://pielarmonia.com/sala-turnos.html',
+        'curl -I https://pielarmonia.com/app-downloads/',
+        'curl -I "https://pielarmonia.com/app-downloads/?surface=operator&platform=win"',
+        'curl -I https://pielarmonia.com/desktop-updates/pilot/operator/win/latest.yml',
+        'curl -I https://pielarmonia.com/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe',
     ]) {
         assert.equal(
             raw.includes(snippet),

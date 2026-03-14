@@ -81,6 +81,16 @@ verify_canonical_public_artifacts() {
         "queue-display.css"
         "js/chunks"
         "js/engines"
+        "app-downloads/index.php"
+        "app-downloads/app-downloads.css"
+        "app-downloads/app-downloads.js"
+        "app-downloads/pilot/release-manifest.json"
+        "app-downloads/pilot/SHA256SUMS.txt"
+        "app-downloads/pilot/operator/win/TurneroOperadorSetup.exe"
+        "app-downloads/pilot/operator/win/TurneroOperadorSetup.exe.blockmap"
+        "desktop-updates/pilot/operator/win/latest.yml"
+        "desktop-updates/pilot/operator/win/TurneroOperadorSetup.exe"
+        "desktop-updates/pilot/operator/win/TurneroOperadorSetup.exe.blockmap"
     )
     local required_path
     for required_path in "${required_paths[@]}"; do
@@ -91,6 +101,47 @@ verify_canonical_public_artifacts() {
     done
 
     echo "Canonical public artifacts present in repo checkout."
+}
+
+normalize_public_web_tree_permissions() {
+    local public_dirs=(
+        "$REPO/es"
+        "$REPO/en"
+        "$REPO/_astro"
+        "$REPO/js"
+        "$REPO/app-downloads"
+        "$REPO/desktop-updates"
+    )
+    local public_files=(
+        "$REPO/index.html"
+        "$REPO/index.php"
+        "$REPO/script.js"
+        "$REPO/styles.css"
+        "$REPO/styles-deferred.css"
+        "$REPO/operador-turnos.html"
+        "$REPO/kiosco-turnos.html"
+        "$REPO/sala-turnos.html"
+        "$REPO/queue-ops.css"
+        "$REPO/queue-kiosk.css"
+        "$REPO/queue-display.css"
+    )
+    local public_dir
+    local public_file
+
+    for public_dir in "${public_dirs[@]}"; do
+        if [ -d "$public_dir" ]; then
+            find "$public_dir" -type d -exec chmod 0755 {} +
+            find "$public_dir" -type f -exec chmod 0644 {} +
+        fi
+    done
+
+    for public_file in "${public_files[@]}"; do
+        if [ -f "$public_file" ]; then
+            chmod 0644 "$public_file"
+        fi
+    done
+
+    echo "Normalized public web tree permissions."
 }
 
 cd "$REPO"
@@ -137,7 +188,8 @@ fi
 
 echo "== Verify canonical public artifacts =="
 verify_canonical_public_artifacts
-ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro" "$REPO/js/chunks" "$REPO/js/engines" "$REPO/operador-turnos.html" "$REPO/kiosco-turnos.html" "$REPO/sala-turnos.html"
+normalize_public_web_tree_permissions
+ls -ld "$REPO/es" "$REPO/en" "$REPO/_astro" "$REPO/js/chunks" "$REPO/js/engines" "$REPO/app-downloads" "$REPO/desktop-updates" "$REPO/operador-turnos.html" "$REPO/kiosco-turnos.html" "$REPO/sala-turnos.html"
 
 if [ -f "$SITE_PATH" ]; then
     echo "== Patch live Nginx redirect safety =="
@@ -164,6 +216,10 @@ curl -I "$LOCAL_VERIFY_BASE_URL/telemedicina.html"
 curl -I "$LOCAL_VERIFY_BASE_URL/operador-turnos.html"
 curl -I "$LOCAL_VERIFY_BASE_URL/kiosco-turnos.html"
 curl -I "$LOCAL_VERIFY_BASE_URL/sala-turnos.html"
+curl -I "$LOCAL_VERIFY_BASE_URL/app-downloads/"
+curl -I "$LOCAL_VERIFY_BASE_URL/app-downloads/?surface=operator&platform=win"
+curl -I "$LOCAL_VERIFY_BASE_URL/desktop-updates/pilot/operator/win/latest.yml"
+curl -I "$LOCAL_VERIFY_BASE_URL/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe"
 
 echo "== Public verify =="
 curl -I https://pielarmonia.com/
@@ -173,6 +229,10 @@ curl -I https://pielarmonia.com/telemedicina.html
 curl -I https://pielarmonia.com/operador-turnos.html
 curl -I https://pielarmonia.com/kiosco-turnos.html
 curl -I https://pielarmonia.com/sala-turnos.html
+curl -I https://pielarmonia.com/app-downloads/
+curl -I "https://pielarmonia.com/app-downloads/?surface=operator&platform=win"
+curl -I https://pielarmonia.com/desktop-updates/pilot/operator/win/latest.yml
+curl -I https://pielarmonia.com/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe
 
 echo "== Done =="
 echo "Commit actual: $(git rev-parse --short HEAD)"
